@@ -129,9 +129,7 @@ class RepresentationItem(PropertyGroup):
 
 class RepresentationItemObject(PropertyGroup):
     name: StringProperty(name="Name")
-    ifc_definition_id: IntProperty(name="IFC Definition ID")
     obj: PointerProperty(type=bpy.types.Object)
-    is_boolean: BoolProperty(name="Is Boolean", default=False)
 
 
 class ShapeAspect(PropertyGroup):

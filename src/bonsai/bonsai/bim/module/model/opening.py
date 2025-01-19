@@ -555,6 +555,7 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         tool.Geometry.reload_representation(rep_obj)
         if props.is_editing:
             bpy.ops.bim.enable_editing_booleans()
+        tool.Root.reload_item_decorator()
 
 
 class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
@@ -1163,6 +1164,7 @@ class RemoveBoolean(Operator, tool.Ifc.Operator):
         bpy.ops.bim.enable_editing_booleans()
         rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
         tool.Geometry.reload_representation(rep_obj)
+        tool.Root.reload_item_decorator()
 
 
 class SelectBoolean(Operator):

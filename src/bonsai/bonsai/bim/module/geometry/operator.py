@@ -2736,8 +2736,6 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
             new = props.item_objs.add()
             new.obj = item_obj
-            new.is_boolean = item_id in boolean_ids
-            new.ifc_definition_id = item_id
 
             tool.Geometry.import_item(item_obj)
             tool.Geometry.import_item_attributes(item_obj)
@@ -2805,8 +2803,6 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
         obj.show_in_front = True
         new = props.item_objs.add()
         new.obj = obj
-        tool.Root.reload_item_decorator()
-
         tool.Geometry.lock_object(obj)
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
@@ -2830,6 +2826,7 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
         obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
         obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+        tool.Root.reload_item_decorator()
 
 
 class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -2881,6 +2878,7 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         obj.data.BIMMeshProperties.ifc_definition_id = item.id()
         tool.Geometry.import_item(obj)
         tool.Geometry.import_item_attributes(obj)
+        tool.Root.reload_item_decorator()
 
 
 class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
