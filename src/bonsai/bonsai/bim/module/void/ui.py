@@ -162,13 +162,6 @@ class BIM_PT_booleans(Panel):
             )
             op.mark_as_manual = not booleans_are_manual
 
-        elif upsteam_obj := obj.data.BIMMeshProperties.obj:
-            upstream_obj_ifc_id = upsteam_obj.BIMObjectProperties.ifc_definition_id
-
-            row = layout.row(align=True)
-            row.label(text=upsteam_obj.name)
-            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = upstream_obj_ifc_id
-
         if not props.is_editing:
             return
 
