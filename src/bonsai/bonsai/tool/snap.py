@@ -355,7 +355,7 @@ class Snap(bonsai.core.tool.Snap):
 
         objs_to_raycast = []
         for obj, bbox_2d in objs_2d_bbox:
-            if obj.type in {"MESH", "EMPTY"} and bbox_2d:
+            if obj.type in {"MESH", "EMPTY", "CURVE"} and bbox_2d:
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d, offset):
                     if obj.visible_in_viewport_get(
                         context.space_data
@@ -406,6 +406,17 @@ class Snap(bonsai.core.tool.Snap):
                                 "points": snap_points,
                             }
                         )
+            if obj.type == "CURVE":
+                new_object = bpy.data.objects.new('new_object', obj.to_mesh().copy())
+                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, new_object)
+                if snap_points:
+                    detected_snaps.append(
+                        {
+                            "group": "Edge-Vertex",
+                            "object": obj,
+                            "points": snap_points,
+                        }
+                    )
             if obj.type == "EMPTY":
                 snap_point = {
                     "points": [{"type": "Vertex", "point": obj.location}],
