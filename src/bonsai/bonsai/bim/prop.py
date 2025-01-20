@@ -577,9 +577,9 @@ class BIMFacet(PropertyGroup):
 class BIMFilterGroup(PropertyGroup):
     filters: CollectionProperty(type=BIMFacet, name="filters")
 
+
 class BIMSnapProperties(PropertyGroup):
     vertex: BoolProperty(name="Vertex")
     edge: BoolProperty(name="Edge")
     edge_center: BoolProperty(name="Edge Center")
     face: BoolProperty(name="Face")
-    
