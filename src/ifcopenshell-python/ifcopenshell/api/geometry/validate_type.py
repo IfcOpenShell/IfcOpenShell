@@ -45,6 +45,7 @@ def validate_type(
     :return: True if the representation type was set and it is a valid
         combination, or False otherwise.
     """
+
     def is_operand(item):
         return (
             item.is_a("IfcBooleanResult")

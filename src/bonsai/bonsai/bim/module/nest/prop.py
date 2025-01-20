@@ -49,6 +49,7 @@ class BIMObjectNestProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     relating_object: PointerProperty(name="Nest Host", type=bpy.types.Object, update=update_relating_object)
 
+
 def update_nest_decorator(self, context):
     if self.nest_decorator:
         NestDecorator.install(bpy.context)

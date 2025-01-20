@@ -714,7 +714,7 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
         plural_object_type = f"{object_type.lower()}s"
         if merged_data:
             for element_type, element_names in merged_data.items():
-                names = ", ". join([n or "Unnamed" for n in element_names])
+                names = ", ".join([n or "Unnamed" for n in element_names])
                 print(f"- {element_type}: {names}")
         merged = sum(len(v) for v in merged_data.values())
 

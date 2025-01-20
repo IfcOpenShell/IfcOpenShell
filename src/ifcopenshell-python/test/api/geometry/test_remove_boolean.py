@@ -39,7 +39,6 @@ class TestRemoveBoolean(test.bootstrap.IFC4):
         assert set(rep.Items) == {first, second}
         assert not self.file.by_type("IfcBooleanResult")
 
-
     def test_removing_a_top_level_nested_boolean(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         model = ifcopenshell.api.context.add_context(self.file, context_type="Model")

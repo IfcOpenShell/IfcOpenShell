@@ -33,6 +33,7 @@ def transparent_color(color, alpha=0.1):
     color[3] = alpha
     return color
 
+
 def create_bounding_box(objs):
     # Initialize the bounding box coordinates
     min_x, min_y, min_z = float("inf"), float("inf"), float("inf")
@@ -76,6 +77,7 @@ def create_bounding_box(objs):
     edges = [(0, 1), (1, 2), (2, 3), (3, 0), (4, 5), (5, 6), (6, 7), (7, 4), (0, 4), (1, 5), (2, 6), (3, 7)]
 
     return indices, edges
+
 
 class NestDecorator:
     is_installed = False
@@ -206,7 +208,7 @@ class NestDecorator:
             else:
                 self.draw_batch("POINTS", [location], color)
             # if context.scene.BIMNestProperties.in_aggregate_mode:
-                # return
+            # return
             components = ifcopenshell.util.element.get_components(tool.Ifc.get_entity(nest))
             components_objs = [tool.Ifc.get_object(p) for p in components]
             components_objs.append(nest)
@@ -227,12 +229,8 @@ class NestModeDecorator:
         if cls.is_installed:
             cls.uninstall()
         handler = cls()
-        cls.handlers.append(
-            SpaceView3D.draw_handler_add(handler.draw_nest_name, (context,), "WINDOW", "POST_PIXEL")
-        )
-        cls.handlers.append(
-            SpaceView3D.draw_handler_add(handler.draw_nest_empty, (context,), "WINDOW", "POST_VIEW")
-        )
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_nest_name, (context,), "WINDOW", "POST_PIXEL"))
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_nest_empty, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
 
     @classmethod
