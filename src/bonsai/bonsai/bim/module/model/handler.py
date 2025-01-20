@@ -50,6 +50,12 @@ def load_post(*args):
     )
 
     ifcopenshell.api.add_post_listener(
+        "material.add_layer", "Bonsai.DumbSlab.RegenerateFromLayer", slab.DumbSlabPlaner().regenerate_from_layer
+    )
+    ifcopenshell.api.add_post_listener(
+        "material.remove_layer", "Bonsai.DumbSlab.RegenerateFromLayer", slab.DumbSlabPlaner().regenerate_from_layer
+    )
+    ifcopenshell.api.add_post_listener(
         "material.edit_layer", "Bonsai.DumbSlab.RegenerateFromLayer", slab.DumbSlabPlaner().regenerate_from_layer
     )
     ifcopenshell.api.add_post_listener(
