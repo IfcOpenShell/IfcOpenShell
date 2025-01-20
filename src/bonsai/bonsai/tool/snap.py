@@ -496,6 +496,17 @@ class Snap(bonsai.core.tool.Snap):
 
     @classmethod
     def select_snapping_points(cls, context, event, tool_state, detected_snaps):
+        def filter_snapping_points_based_on_settings(snapping_points):
+            options = ["Plane"]
+            props = context.scene.BIMSnapProperties
+            for prop in props.__annotations__.keys():
+                if getattr(props, prop):
+                    options.append(props.rna_type.properties[prop].name)
+                
+            filtered_points = [point for point in snapping_points if point[1] in options]
+            return filtered_points
+
+        
         snapping_points = []
         edges = []  # Get edges to create edge-intersection snap
         for snap_group in detected_snaps:
@@ -550,6 +561,8 @@ class Snap(bonsai.core.tool.Snap):
                     if intersection[1]:
                         snapping_points.insert(0, (intersection[1], "Edge Intersection", None))
 
+        snapping_points = filter_snapping_points_based_on_settings(snapping_points)
+         
         # Make Axis first priority
         if tool_state.lock_axis or tool_state.axis_method in {"X", "Y", "Z"}:
             cls.update_snapping_ref(snapping_points[0][0], snapping_points[0][1])
@@ -566,6 +579,7 @@ class Snap(bonsai.core.tool.Snap):
 
         cls.update_snapping_point(snapping_points[0][0], snapping_points[0][1], snapping_points[0][2])
         return snapping_points
+
 
     @classmethod
     def modify_snapping_point_selection(cls, snapping_points, lock_axis=False):

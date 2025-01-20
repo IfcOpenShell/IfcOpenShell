@@ -1233,3 +1233,26 @@ class BIM_PT_decorators_overlay(Panel):
         row.prop(model_props, "show_wall_axis", text="Wall Axis")
         row = col.row(align=True)
         row.prop(model_props, "show_slab_direction", text="Slab Direction")
+
+class BIM_PT_snappping(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "HEADER"
+    bl_parent_id = "VIEW3D_PT_snapping"
+    bl_label = "Bonsai Snap Target"
+
+    @classmethod
+    def poll(cls, context):
+        return context.mode == "OBJECT"
+
+    def draw(self, context):
+        prop = context.scene.BIMSnapProperties
+        layout = self.layout
+        row = layout.row(align=True)
+        row.prop(prop, "vertex", toggle=True, icon="SNAP_VERTEX")
+        row = layout.row(align=True)
+        row.prop(prop, "edge", toggle=True, icon="SNAP_EDGE")
+        row = layout.row(align=True)
+        row.prop(prop, "edge_center", toggle=True, icon="SNAP_MIDPOINT")
+        row = layout.row(align=True)
+        row.prop(prop, "face", toggle=True, icon="SNAP_FACE")
+
