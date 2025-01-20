@@ -206,7 +206,11 @@ class BIMGeoreferenceProperties(PropertyGroup):
         update=update_should_visualise,
     )
     visualization_scale: FloatProperty(
-        name="Visualization Scale", description="Affects the georeference decorator size", default=1, min=0.1, max=50
+        name="Visualization Scale",
+        description="Affects the georeference decorator size",
+        default=1,
+        soft_min=0.1,
+        soft_max=50,
     )
     grid_north_angle: StringProperty(name="Grid North Angle", update=update_grid_north_angle)
     x_axis_abscissa: StringProperty(name="X Axis Abscissa", update=update_grid_north_vector)
