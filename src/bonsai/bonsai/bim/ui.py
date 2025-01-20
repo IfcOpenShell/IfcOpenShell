@@ -1247,12 +1247,9 @@ class BIM_PT_snappping(Panel):
     def draw(self, context):
         prop = context.scene.BIMSnapProperties
         layout = self.layout
-        row = layout.row(align=True)
-        row.prop(prop, "vertex", toggle=True, icon="SNAP_VERTEX")
-        row = layout.row(align=True)
-        row.prop(prop, "edge", toggle=True, icon="SNAP_EDGE")
-        row = layout.row(align=True)
-        row.prop(prop, "edge_center", toggle=True, icon="SNAP_MIDPOINT")
-        row = layout.row(align=True)
-        row.prop(prop, "face", toggle=True, icon="SNAP_FACE")
+        col = layout.column(align=True)
+        col.prop(prop, "vertex", toggle=True, icon="SNAP_VERTEX")
+        col.prop(prop, "edge", toggle=True, icon="SNAP_EDGE")
+        col.prop(prop, "edge_center", toggle=True, icon="SNAP_MIDPOINT")
+        col.prop(prop, "face", toggle=True, icon="SNAP_FACE")
 
