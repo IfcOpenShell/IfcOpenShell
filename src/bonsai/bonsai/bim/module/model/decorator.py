@@ -579,7 +579,7 @@ class PolylineDecorator:
         padding = 8
         verts = []
         edges = []
-        if snap_prop.snap_type in ["Edge", "Edge-Intersection", "Vertex"]:
+        if snap_prop.snap_type in ["Edge", "Edge Intersection", "Vertex"]:
             p1 = (coords[0] - padding, coords[1] + padding)
             p2 = (coords[0] + padding, coords[1] + padding)
             p3 = (coords[0] + padding, coords[1] - padding)
@@ -587,7 +587,7 @@ class PolylineDecorator:
             verts = [p1, p2, p3, p4]
             if snap_prop.snap_type == "Edge":
                 edges = [[0, 1], [1, 3], [3, 2], [2, 0]]
-            elif snap_prop.snap_type == "Edge-Intersection":
+            elif snap_prop.snap_type == "Edge Intersection":
                 edges = [[0, 2], [1, 3]]
             else:
                 edges = [[0, 1], [1, 2], [2, 3], [3, 0]]

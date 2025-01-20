@@ -548,7 +548,7 @@ class Snap(bonsai.core.tool.Snap):
                 if tool.Cad.are_vectors_equal(e1["point"], e2["point"], tolerance=0.1):
                     intersection = tool.Cad.intersect_edges_v2(e1["edge_verts"], e2["edge_verts"])
                     if intersection[1]:
-                        snapping_points.insert(0, (intersection[1], "Edge-Intersection", None))
+                        snapping_points.insert(0, (intersection[1], "Edge Intersection", None))
 
         # Make Axis first priority
         if tool_state.lock_axis or tool_state.axis_method in {"X", "Y", "Z"}:
