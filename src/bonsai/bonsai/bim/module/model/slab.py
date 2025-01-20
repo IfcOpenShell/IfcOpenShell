@@ -131,9 +131,9 @@ class DumbSlabGenerator:
         matrix_world = Matrix()
         matrix_world.translation = self.location
         if self.container_obj:
-            matrix_world.translation.z = self.container_obj.location.z - self.depth
+            matrix_world.translation.z = self.container_obj.location.z
         else:
-            matrix_world.translation.z -= self.depth
+            matrix_world.translation.z
         obj.matrix_world = Matrix.Rotation(self.x_angle, 4, "X") @ matrix_world
         bpy.context.view_layer.update()
 
@@ -195,6 +195,26 @@ class DumbSlabGenerator:
 
 
 class DumbSlabPlaner:
+    def regenerate_from_layer_set_usage(self, usecase_path, ifc_file, settings):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        obj = bpy.context.active_object
+        element = tool.Ifc.get_entity(obj)
+
+        if tool.Model.get_usage_type(element) != "LAYER3":
+            return
+
+        # Called from materil.add_layer or material.remove_layer
+        material = ifcopenshell.util.element.get_material(element)
+        material_set_usage = tool.Ifc.get().by_id(material.id())
+        layer_set = material_set_usage.ForLayerSet
+
+        total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
+        if not total_thickness:
+            return
+
+        self.change_thickness(element, total_thickness)
+
+
     def regenerate_from_layer(self, usecase_path, ifc_file, settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
@@ -267,20 +287,38 @@ class DumbSlabPlaner:
             self.change_thickness(related_object, new_thickness)
 
     def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float) -> None:
+        layer_params = tool.Model.get_material_layer_parameters(element)
         body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         obj = tool.Ifc.get_object(element)
         if not obj:
             return
 
-        delta_thickness = (thickness * self.unit_scale) - obj.dimensions.z
-        if round(delta_thickness, 2) == 0:
+        if thickness == 0:
             return
 
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if representation:
             extrusion = tool.Model.get_extrusion(representation)
             if extrusion:
+                x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+                offset = layer_params["offset"]
+                offset_vector = Vector((0.0, 0.0, offset / self.unit_scale))
+                if layer_params["direction_sense"] == "POSITIVE":
+                    y = abs(y)
+                    z = abs(z)
+                if layer_params["direction_sense"] == "NEGATIVE":
+                    y = -abs(y)
+                    z = -abs(z)
+                    offset_vector = -offset_vector 
+                extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
                 extrusion.Depth = thickness
+
+                if offset != 0.0 and not extrusion.Position:
+                    tool.Model.add_extrusion_position(extrusion, offset)
+                if extrusion.Position:
+                    extrusion.Position.Location.Coordinates = tuple(offset_vector)
+
+
             else:
                 props = bpy.context.scene.BIMModelProperties
                 x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
@@ -329,8 +367,6 @@ class DumbSlabPlaner:
             is_global=True,
             should_sync_changes_first=False,
         )
-
-        obj.location[2] -= delta_thickness
 
 
 class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
