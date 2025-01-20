@@ -206,6 +206,8 @@ class DumbSlabPlaner:
         # Called from materil.add_layer or material.remove_layer
         material = ifcopenshell.util.element.get_material(element)
         material_set_usage = tool.Ifc.get().by_id(material.id())
+        if not getattr(material_set_usage, "ForLayerSet", False):
+            return
         layer_set = material_set_usage.ForLayerSet
 
         total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
@@ -234,6 +236,8 @@ class DumbSlabPlaner:
                 return
             material = ifcopenshell.util.element.get_material(element)
             material_set_usage = tool.Ifc.get().by_id(material.id())
+            if not getattr(material_set_usage, "ForLayerSet", False):
+                return
             layer_set = material_set_usage.ForLayerSet
 
         total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
