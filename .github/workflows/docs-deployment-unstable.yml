@@ -3,7 +3,7 @@ name: Build and Deploy Unstable Documentation
 on:
   push:
     branches:
-      - main  # Trigger the workflow on pushes to the main branch
+      - v0.8.0  # Trigger the workflow on pushes to the default branch which is currently v0.8.0
 
 jobs:
   build:
