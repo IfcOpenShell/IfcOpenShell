@@ -38,6 +38,7 @@ from bonsai.bim.module.drawing.data import DecoratorData
 from math import pi, ceil, atan, degrees, acos
 from mathutils import geometry, Vector
 from typing import Optional, Self
+from pathlib import Path
 
 
 class External(svgwrite.container.Group):
@@ -98,7 +99,7 @@ class SvgWriter:
             os.makedirs(os.path.dirname(resource_path), exist_ok=True)
             if not os.path.exists(resource_path):
                 resource_basename = os.path.basename(resource_path)
-                ootb_resource = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", resource_basename)
+                ootb_resource = tool.Blender.get_data_dir_path(Path("assets") / resource_basename)
                 print(
                     f"WARNING. Couldn't find {resource} for the drawing by the path: {resource_path}. Default BBIM resource will be copied from {ootb_resource}"
                 )

@@ -856,8 +856,8 @@ class LoadProjectElements(bpy.types.Operator):
         bonsai.bim.schema.reload(self.file.schema_identifier)
         start = time.time()
         logger = logging.getLogger("ImportIFC")
-        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
-        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
+        path_log = tool.Blender.get_data_dir_path("process.log")
+        if not os.access(path_log.parent, os.W_OK):
             path_log = os.path.join(tempfile.mkdtemp(), "process.log")
         logging.basicConfig(
             filename=path_log,
@@ -1374,8 +1374,8 @@ class ExportIFC(bpy.types.Operator):
     def _execute(self, context):
         start = time.time()
         logger = logging.getLogger("ExportIFC")
-        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
-        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
+        path_log = tool.Blender.get_data_dir_path("process.log")
+        if not os.access(path_log.parent, os.W_OK):
             path_log = os.path.join(tempfile.mkdtemp(), "process.log")
         logging.basicConfig(
             filename=path_log,

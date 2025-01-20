@@ -22,6 +22,7 @@ import math
 import bmesh
 import bonsai.tool as tool
 import ifcopenshell.util.element
+from pathlib import Path
 from mathutils import Vector, Matrix
 from typing import Optional
 
@@ -43,7 +44,7 @@ class Annotator:
         font = bpy.data.fonts.get("OpenGost TypeB TT")
         if not font:
             font = bpy.data.fonts.load(
-                os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
+                tool.Blender.get_data_dir_path(Path("fonts") / "OpenGost Type B TT.ttf").__str__()
             )
             font.name = "OpenGost Type B TT"
         obj.data.font = font

@@ -109,19 +109,15 @@ class PsetTemplatesData:
         return [(i, i, "") for i in enum_items]
 
     @classmethod
-    def pset_template_files(cls):
-        results = []
-        pset_dir = os.path.join(bpy.context.scene.BIMProperties.data_dir, "pset")
-        files = os.listdir(pset_dir)
-        for f in files:
-            results.append(
-                (os.path.join(pset_dir, f), os.path.splitext(os.path.basename(f))[0], "Global Pset Template")
-            )
+    def pset_template_files(cls) -> list[tuple[str, str, str]]:
+        results: list[tuple[str, str, str]] = []
+        for f in tool.Blender.get_data_dir_paths("pset", "*.ifc"):
+            results.append((f.__str__(), f.stem, "Global Pset Template"))
 
         pset_dir = tool.Ifc.resolve_uri(bpy.context.scene.BIMProperties.pset_dir)
         if os.path.isdir(pset_dir):
             for path in pathlib.Path(pset_dir).glob("*.ifc"):
-                results.append((str(path), os.path.splitext(os.path.basename(str(path)))[0], "Project Pset Template"))
+                results.append((str(path), path.stem, "Project Pset Template"))
 
         return sorted(results, key=lambda x: x[1])
 

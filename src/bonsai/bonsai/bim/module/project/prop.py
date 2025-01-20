@@ -20,6 +20,7 @@ import os
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import bonsai.tool as tool
 from bonsai.bim.module.project.data import ProjectData
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty, ObjProperty
@@ -60,9 +61,8 @@ def get_library_file(self: "BIMProjectProperties", context: bpy.types.Context) -
 
 def update_library_file(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
     if self.library_file != "0":
-        bpy.ops.bim.select_library_file(
-            filepath=os.path.join(bpy.context.scene.BIMProperties.data_dir, "libraries", self.library_file)
-        )
+        filepath = next(p for p in tool.Blender.get_data_dir_paths("libraries", "*.ifc") if p.name == self.library_file)
+        bpy.ops.bim.select_library_file(filepath=filepath)
 
 
 def update_filter_mode(self: "BIMProjectProperties", context: bpy.types.Context) -> None:

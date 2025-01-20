@@ -266,7 +266,7 @@ class ExecuteIfcClash(bpy.types.Operator):
                 context.scene.render.resolution_x = 480
                 context.scene.render.resolution_y = 270
                 context.scene.render.image_settings.file_format = "PNG"
-                context.scene.render.filepath = os.path.join(context.scene.BIMProperties.data_dir, "snapshot.png")
+                context.scene.render.filepath = tool.Blender.get_data_dir_path("shapshot.png").__str__()
                 bpy.ops.render.opengl(write_still=True)
                 with open(context.scene.render.filepath, "rb") as f:
                     return ("snapshot.png", f.read())

@@ -33,7 +33,7 @@ import importlib
 from mathutils import Vector
 from pathlib import Path
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar
+from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator
 from typing_extensions import assert_never
 
 
@@ -1470,3 +1470,31 @@ class Blender(bonsai.core.tool.Blender):
             return "dm" if rgb_sum > threshold else "lm"
         except Exception:
             return "dm"  # Default to dark mode if an error occurs
+
+    @classmethod
+    def get_default_data_dir(cls) -> Path:
+        return Path(__file__).parent.parent / "bim" / "data"
+
+    @classmethod
+    def get_custom_data_dir(cls) -> Path:
+        return Path(bpy.context.scene.BIMProperties.data_dir)
+
+    @classmethod
+    def get_data_dir_path(cls, relative_path: Union[str, Path]) -> Path:
+        custom_path = cls.get_custom_data_dir() / relative_path
+        if custom_path.exists():
+            return custom_path
+        return cls.get_default_data_dir() / relative_path
+
+    @classmethod
+    def get_data_dir_paths(cls, relative_dir_path: Union[str, Path], glob_pattern: str) -> Generator[Path, None, None]:
+        custom_path = cls.get_custom_data_dir() / relative_dir_path
+        if custom_path.is_dir():
+            for filepath in custom_path.glob(glob_pattern):
+                yield filepath
+
+        default_data_dir = cls.get_default_data_dir()
+        if default_data_dir == custom_path:
+            return
+        for filepath in (default_data_dir / relative_dir_path).glob(glob_pattern):
+            yield filepath

@@ -26,6 +26,7 @@ import urllib.parse
 import xml.etree.ElementTree as ET
 import bonsai.tool as tool
 import ifcopenshell.util.geolocation
+from pathlib import Path
 from xml.dom import minidom
 from mathutils import Vector
 import re
@@ -38,7 +39,6 @@ XLINK = "{http://www.w3.org/1999/xlink}"
 
 class SheetBuilder:
     def __init__(self):
-        self.data_dir = None
         self.scale = "NTS"
 
     def create(self, layout_path: str, titleblock_name: str) -> None:
@@ -49,7 +49,9 @@ class SheetBuilder:
         root.attrib["version"] = "1.1"
 
         sheet_dir = os.path.dirname(layout_path)
-        ootb_titleblock_path = os.path.join(self.data_dir, "templates", "titleblocks", titleblock_name + ".svg")
+        ootb_titleblock_path = tool.Blender.get_data_dir_path(
+            Path("templates") / "titleblock" / (titleblock_name + ".svg")
+        )
         titleblock_path = tool.Ifc.resolve_uri(tool.Drawing.get_default_titleblock_path(titleblock_name))
 
         os.makedirs(sheet_dir, exist_ok=True)
@@ -241,7 +243,7 @@ class SheetBuilder:
         title_path = os.path.join(layout_dir, "assets", "view-title.svg")
         os.makedirs(os.path.dirname(title_path), exist_ok=True)
         if not os.path.exists(title_path):
-            ootb_title = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", "view-title.svg")
+            ootb_title = tool.Blender.get_data_dir_path(Path("assets") / "view-title.svg")
             shutil.copy(ootb_title, title_path)
 
         title_tree = ET.parse(title_path)
@@ -492,7 +494,9 @@ class SheetBuilder:
         return group
 
     def change_titleblock(self, sheet: ifcopenshell.entity_instance, titleblock_name: str) -> None:
-        ootb_titleblock_path = os.path.join(self.data_dir, "templates", "titleblocks", titleblock_name + ".svg")
+        ootb_titleblock_path = tool.Blender.get_data_dir_path(
+            Path("templates") / "titleblocks" / (titleblock_name + ".svg")
+        )
         titleblock_path = tool.Ifc.resolve_uri(tool.Drawing.get_default_titleblock_path(titleblock_name))
         sheet_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
         sheet_dir = os.path.dirname(sheet_path)

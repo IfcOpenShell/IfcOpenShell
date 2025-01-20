@@ -9,6 +9,7 @@ import ifcopenshell.util.cost
 import ifcopenshell.util.unit
 import bonsai.bim.helper
 import json
+from pathlib import Path
 from typing import Optional, Any, Generator, Union, Literal
 
 
@@ -111,7 +112,7 @@ class Cost(bonsai.core.tool.Cost):
 
             device = aud.Device()
             # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
-            sound = aud.Sound(os.path.join(bpy.context.scene.BIMProperties.data_dir, "chaching.mp3"))
+            sound = aud.Sound(tool.Blender.get_data_dir_path(filename="chaching.mp3").__str__())
             handle = device.play(sound)
             sound_buffered = aud.Sound.buffer(sound)
             handle_buffered = device.play(sound_buffered)
@@ -627,7 +628,7 @@ class Cost(bonsai.core.tool.Cost):
         if filepath:
             path = filepath
         else:
-            path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "build", "cost_schedules")
+            path = tool.Blender.get_data_dir_path(Path("build") / "cost_schedules").__str__()
 
         if not os.path.exists(path):
             os.makedirs(path)

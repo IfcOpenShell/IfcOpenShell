@@ -281,7 +281,6 @@ class Drawing(bonsai.core.tool.Drawing):
         import bonsai.bim.module.drawing.sheeter as sheeter
 
         sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
         uri = cls.get_document_uri(document, "LAYOUT")
         sheet_builder.create(uri, titleblock)
         return uri
@@ -291,7 +290,6 @@ class Drawing(bonsai.core.tool.Drawing):
         import bonsai.bim.module.drawing.sheeter as sheeter
 
         sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
         drawing_references = {}
         drawing_names = []
         for reference in cls.get_document_references(sheet):
@@ -1180,8 +1178,8 @@ class Drawing(bonsai.core.tool.Drawing):
         os.makedirs(os.path.dirname(resource_path), exist_ok=True)
         if not os.path.exists(resource_path):
             resource_basename = os.path.basename(resource_path)
-            ootb_resource = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", resource_basename)
-            if os.path.exists(ootb_resource):
+            ootb_resource = tool.Blender.get_data_dir_path(Path("assets") / resource_basename)
+            if ootb_resource.is_file():
                 shutil.copy(ootb_resource, resource_path)
 
     @classmethod
