@@ -36,7 +36,7 @@ import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.core.geometry as geometry
-from math import atan, degrees
+from math import atan, degrees, radians
 from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
@@ -2056,4 +2056,19 @@ class Model(bonsai.core.tool.Model):
         )
 
         extrusion.Position = position
+
+    @classmethod
+    def get_existing_x_angle(cls, extrusion):
+        x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+        # The existing angle result can change when the direction sense in Negative because the DirectionRatios may have negative y and z.
+        # For instance, a 30 degree angled slab, with negative direction will show as -150 degrees. To prevent that we do the following transformations
+        existing_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+        existing_x_angle = (
+            existing_x_angle + radians(180) if existing_x_angle < -radians(90) else existing_x_angle
+        )
+        existing_x_angle = (
+            existing_x_angle - radians(180) if existing_x_angle > radians(90) else existing_x_angle
+        )
+
+        return existing_x_angle
 

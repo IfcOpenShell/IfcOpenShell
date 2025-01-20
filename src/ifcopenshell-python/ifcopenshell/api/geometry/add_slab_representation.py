@@ -93,8 +93,14 @@ class Usecase:
             extrusion_direction = self.file.createIfcDirection(
                 (0.0, sin(self.settings["x_angle"]), cos(self.settings["x_angle"]))
             )
+            if self.settings["direction_sense"] == "NEGATIVE":
+                extrusion_direction = self.file.createIfcDirection(
+                    (0.0, -sin(self.settings["x_angle"]), -cos(self.settings["x_angle"]))
+                )
         else:
             extrusion_direction = self.file.createIfcDirection((0.0, 0.0, 1.0))
+            if self.settings["direction_sense"] == "NEGATIVE":
+                extrusion_direction = self.file.createIfcDirection((0.0, 0.0, -1.0))
 
         position = None
         # default position for IFC2X3 where .Position is not optional

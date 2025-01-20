@@ -30,6 +30,7 @@ import bonsai.core.type
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.tool as tool
+from math import cos, radians
 from mathutils import Vector, Matrix
 from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
@@ -134,7 +135,7 @@ class DumbSlabGenerator:
             matrix_world.translation.z = self.container_obj.location.z
         else:
             matrix_world.translation.z
-        obj.matrix_world = Matrix.Rotation(self.x_angle, 4, "X") @ matrix_world
+        obj.matrix_world = matrix_world @ Matrix.Rotation(self.x_angle, 4, "X")
         bpy.context.view_layer.update()
 
         element = bonsai.core.root.assign_class(
@@ -305,13 +306,15 @@ class DumbSlabPlaner:
             extrusion = tool.Model.get_extrusion(representation)
             if extrusion:
                 x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+                existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
+                perpendicular_depth = thickness * (1 / cos(existing_x_angle))
                 offset = layer_params["offset"]
                 offset_vector = Vector((0.0, 0.0, offset / self.unit_scale))
                 if layer_params["direction_sense"] == "POSITIVE":
-                    y = abs(y)
+                    y = abs(y) if existing_x_angle > 0 else -abs(y)
                     z = abs(z)
-                if layer_params["direction_sense"] == "NEGATIVE":
-                    y = -abs(y)
+                elif layer_params["direction_sense"] == "NEGATIVE":
+                    y = -abs(y) if existing_x_angle > 0 else abs(y)
                     z = -abs(z)
                     offset_vector = -offset_vector 
                 extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
@@ -319,8 +322,12 @@ class DumbSlabPlaner:
 
                 if offset != 0.0 and not extrusion.Position:
                     tool.Model.add_extrusion_position(extrusion, offset)
+
+                # Update the extrusion's location based on its current rotation angle and offset
                 if extrusion.Position:
-                    extrusion.Position.Location.Coordinates = tuple(offset_vector)
+                    rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
+                    rot_offset = offset_vector @ rot_matrix
+                    extrusion.Position.Location.Coordinates = tuple(rot_offset)
 
 
             else:
@@ -371,6 +378,7 @@ class DumbSlabPlaner:
             is_global=True,
             should_sync_changes_first=False,
         )
+
 
 
 class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
