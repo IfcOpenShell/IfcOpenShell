@@ -85,7 +85,7 @@ BLENDER_PLATFORM:=windows-x64
 endif
 
 # Current build commit hash.
-OLD:=463289e
+OLD:=fc9bcb0
 .PHONY: bump
 bump:
 ifndef NEW
