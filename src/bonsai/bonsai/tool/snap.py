@@ -497,7 +497,7 @@ class Snap(bonsai.core.tool.Snap):
     @classmethod
     def select_snapping_points(cls, context, event, tool_state, detected_snaps):
         def filter_snapping_points_based_on_settings(snapping_points):
-            options = ["Plane"]
+            options = ["Plane", "Axis"]
             props = context.scene.BIMSnapProperties
             for prop in props.__annotations__.keys():
                 if getattr(props, prop):
