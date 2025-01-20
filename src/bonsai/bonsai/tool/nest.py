@@ -120,3 +120,4 @@ class Nest(bonsai.core.tool.Nest):
         props.in_nest_mode = False
         props.not_editing_objects.clear()
         props.editing_objects.clear()
+        props.editing_nest = None

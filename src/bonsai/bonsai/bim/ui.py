@@ -361,6 +361,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.prop(context.scene.BIMProperties, "data_dir")
         row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
 
+        row = self.layout.row(align=True)
+        row.prop(context.scene.BIMProperties, "cache_dir")
+        row.operator("bim.select_cache_dir", icon="FILE_FOLDER", text="")
+
     def draw_drawing_settings(self, layout, context):
         layout.prop(context.scene.BIMProperties, "pset_dir")
         layout.prop(context.scene.DocProperties, "sheets_dir")
@@ -1209,8 +1213,9 @@ class BIM_PT_decorators_overlay(Panel):
         view = context.space_data
         overlay = view.overlay
 
-        geo_props = bpy.context.scene.BIMGeoreferenceProperties
-        agg_props = bpy.context.scene.BIMAggregateProperties
+        georeference_props = bpy.context.scene.BIMGeoreferenceProperties
+        aggregate_props = bpy.context.scene.BIMAggregateProperties
+        nest_props = bpy.context.scene.BIMNestProperties
         model_props = bpy.context.scene.BIMModelProperties
         display_all = overlay.show_overlays
 
@@ -1218,10 +1223,12 @@ class BIM_PT_decorators_overlay(Panel):
         col.active = display_all
 
         row = col.row(align=True)
-        row.prop(geo_props, "should_visualise", text="Georeference")
-        row.prop(geo_props, "visualization_scale", text="Size", slider=True)
+        row.prop(georeference_props, "should_visualise", text="Georeference")
+        row.prop(georeference_props, "visualization_scale", text="Size", slider=True)
         row = col.row(align=True)
-        row.prop(agg_props, "aggregate_decorator", text="Aggregate")
+        row.prop(aggregate_props, "aggregate_decorator", text="Aggregate")
+        row = col.row(align=True)
+        row.prop(nest_props, "nest_decorator", text="Nest")
         row = col.row(align=True)
         row.prop(model_props, "show_wall_axis", text="Wall Axis")
         row = col.row(align=True)

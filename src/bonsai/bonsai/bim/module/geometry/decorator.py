@@ -42,7 +42,8 @@ class ItemDecorator:
             if obj := item_obj.obj:
                 objs[obj.name] = cls.get_obj_data(obj)
                 obj_is_selected[obj.name] = obj.select_get()
-                obj_is_boolean[obj.name] = item_obj.is_boolean
+                item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                obj_is_boolean[obj.name] = [i for i in tool.Ifc.get().get_inverse(item) if i.is_a("IfcBooleanResult")]
 
         handler = cls()
         handler.objs = objs

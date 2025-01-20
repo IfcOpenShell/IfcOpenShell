@@ -299,33 +299,40 @@ class BIM_MT_add_representation_item(Menu):
             ItemData.load()
 
         if ItemData.data["representation_type"] in ("Tessellation", "Brep", "AdvancedBrep"):
-            self.layout.operator("bim.add_meshlike_item", icon="MESH_PLANE", text="Mesh Plane").shape = "PLANE"
-            self.layout.operator("bim.add_meshlike_item", icon="MESH_CUBE", text="Mesh Cube").shape = "CUBE"
-            self.layout.operator("bim.add_meshlike_item", icon="MESH_CIRCLE", text="Mesh Circle").shape = "CIRCLE"
-            self.layout.operator("bim.add_meshlike_item", icon="MESH_UVSPHERE", text="Mesh UV Sphere").shape = (
-                "UVSPHERE"
-            )
-            self.layout.operator("bim.add_meshlike_item", icon="MESH_ICOSPHERE", text="Mesh Icosphere").shape = (
-                "ICOSPHERE"
-            )
-            self.layout.operator("bim.add_meshlike_item", icon="MESH_CYLINDER", text="Mesh Cylinder").shape = "CYLINDER"
+            self.draw_meshlike()
             self.layout.separator()
             self.layout.operator("bim.add_half_space_solid_item", icon="ORIENTATION_NORMAL", text="Half Space Solid")
-
-        if ItemData.data["representation_type"] in ("SolidModel", "SweptSolid"):
-            self.layout.operator(
-                "bim.add_swept_area_solid_item", icon="MESH_CUBE", text="Extruded Area Solid Cube"
-            ).shape = "CUBE"
-            self.layout.operator(
-                "bim.add_swept_area_solid_item", icon="MESH_CYLINDER", text="Extruded Area Solid Cylinder"
-            ).shape = "CYLINDER"
+        elif ItemData.data["representation_type"] in ("SolidModel", "SweptSolid"):
+            self.draw_swept_area()
             self.layout.separator()
             self.layout.operator("bim.add_half_space_solid_item", icon="ORIENTATION_NORMAL", text="Half Space Solid")
-
-        if ItemData.data["representation_type"] in ("Annotation2D"):
+        elif ItemData.data["representation_type"] in ("CSG"):
+            # Surprisingly, once something becomes a CSG, you can combine lots of things due to IfcBooleanOperand
+            self.draw_swept_area()
+            self.layout.separator()
+            self.draw_meshlike()
+            self.layout.separator()
+            self.layout.operator("bim.add_half_space_solid_item", icon="ORIENTATION_NORMAL", text="Half Space Solid")
+        elif ItemData.data["representation_type"] in ("Annotation2D"):
             self.layout.operator("bim.add_curvelike_item", icon="IPO_CONSTANT", text="Polycurve").shape = "LINE"
             self.layout.operator("bim.add_curvelike_item", icon="MESH_CIRCLE", text="Circle").shape = "CIRCLE"
             self.layout.operator("bim.add_curvelike_item", icon="MESH_CIRCLE", text="Ellipse").shape = "ELLIPSE"
+
+    def draw_meshlike(self):
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_PLANE", text="Mesh Plane").shape = "PLANE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_CUBE", text="Mesh Cube").shape = "CUBE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_CIRCLE", text="Mesh Circle").shape = "CIRCLE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_UVSPHERE", text="Mesh UV Sphere").shape = "UVSPHERE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_ICOSPHERE", text="Mesh Icosphere").shape = "ICOSPHERE"
+        self.layout.operator("bim.add_meshlike_item", icon="MESH_CYLINDER", text="Mesh Cylinder").shape = "CYLINDER"
+
+    def draw_swept_area(self):
+        self.layout.operator(
+            "bim.add_swept_area_solid_item", icon="MESH_CUBE", text="Extruded Area Solid Cube"
+        ).shape = "CUBE"
+        self.layout.operator(
+            "bim.add_swept_area_solid_item", icon="MESH_CYLINDER", text="Extruded Area Solid Cylinder"
+        ).shape = "CYLINDER"
 
 
 class CreateObjectUI:
@@ -590,6 +597,11 @@ class EditObjectUI:
                 row = cls.layout.row(align=True)
                 op = row.operator("bim.disable_aggregate_mode", text="", icon="X")
                 op = row.operator("bim.toggle_aggregate_mode_local_view", text="", icon="ZOOM_SELECTED")
+            if context.scene.BIMNestProperties.in_nest_mode:
+                layout.label(text=f"Nest Mode", icon="EMPTY_AXIS")
+                row = cls.layout.row(align=True)
+                op = row.operator("bim.disable_nest_mode", text="", icon="X")
+                op = row.operator("bim.toggle_nest_mode_local_view", text="", icon="ZOOM_SELECTED")
 
             text = format_ifc_camel_case(AuthoringData.data["active_class"])
             layout.label(text=f"{text} Edit Tools:", icon="RESTRICT_SELECT_OFF")
@@ -960,14 +972,15 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
 
-        has_only_walls_selected = tool.Blender.get_selected_objects() and all(
-            (e := tool.Ifc.get_entity(o)) and e.is_a("IfcWall") for o in tool.Blender.get_selected_objects()
+        has_only_walls_selected = tool.Blender.get_selected_objects(include_active=False) and all(
+            (e := tool.Ifc.get_entity(o)) and e.is_a("IfcWall")
+            for o in tool.Blender.get_selected_objects(include_active=False)
         )
 
         if tool.Model.get_usage_type(relating_type) == "LAYER3" and has_only_walls_selected:
             return bpy.ops.bim.draw_slab_from_wall("INVOKE_DEFAULT")
         elif (
-            (active_obj := tool.Blender.get_active_object())
+            (active_obj := tool.Blender.get_active_object(is_selected=True))
             and (active_element := tool.Ifc.get_entity(active_obj))
             and active_element.is_a("IfcSlab")
             and tool.Model.get_usage_type(relating_type) == "LAYER2"

@@ -260,13 +260,9 @@ class BIM_UL_styles(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         if item:
             row = layout.row(align=True)
-            material_icon = 0
-            if material := item.blender_material:
-                preview = material.preview_ensure()
-                material_icon = preview.icon_id
-            row.prop(item, "name", text="", emboss=False, icon_value=material_icon)
+            row.prop(item, "name", text="", emboss=False)
             if item.has_surface_colour:
-                row = row.row(align=True)
+                row = row.row(align=item.has_diffuse_colour)
                 row.enabled = False
                 row.prop(item, "surface_colour", text="")
                 if item.has_diffuse_colour:

@@ -85,7 +85,7 @@ BLENDER_PLATFORM:=windows-x64
 endif
 
 # Current build commit hash.
-OLD:=a2538fd
+OLD:=fc9bcb0
 .PHONY: bump
 bump:
 ifndef NEW
@@ -177,6 +177,8 @@ endif
 	# Is not platform specific but has platform specific dependencies.
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download python-socketio[asyncio_client] $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download aiohttp $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	# Required to access platform specific paths
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download platformdirs --dest=./wheels
 	# Required by light module
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytz --dest=./wheels
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download tzfpy $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
@@ -225,9 +227,6 @@ endif
 			packages=['bpypolyskel'], \
 		)" bdist_wheel
 	cp -r build/bpypolyskel-master/dist/*.whl build/wheels/
-
-	# Required for Desktop icon and file association
-	cp -r bonsai/libs/desktop build/bonsai/libs/
 
 	# folder for executable files
 	mkdir -p build/bonsai/libs/bin
@@ -359,6 +358,7 @@ endif
 	rm -rf build/bonsai/bim/
 	rm -rf build/bonsai/core/
 	rm -rf build/bonsai/tool/
+	rm -rf build/bonsai/libs/
 
 ifeq ($(IS_STABLE), TRUE)
 	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION)-$(BLENDER_PLATFORM).zip ./bonsai

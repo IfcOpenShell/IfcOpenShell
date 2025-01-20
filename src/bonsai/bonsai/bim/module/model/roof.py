@@ -184,6 +184,21 @@ def generate_hipped_roof_bmesh(
             tan_angle = tan(angle)
             height = 0.0
 
+        # I think bpypolyskel upstream has a bug which can cause sloped ridges
+        # where it is not necessary to have sloped ridges specifically for
+        # dormers. This seems to work, but I'm not confident because apparently
+        # you need a PhD to understand this. See bug #5319.
+        if not hasattr(bpypolyskel._SLAV, "unpatched_handle_dormer_event"):
+
+            def patched_handle_dormer_event(self, event):
+                result = self.unpatched_handle_dormer_event(event)
+                if result[0]:
+                    result[0][1] = bpypolyskel.Subtree(result[0][1].source, result[0][0].height, result[0][1].sinks)
+                return result
+
+            bpypolyskel._SLAV.unpatched_handle_dormer_event = bpypolyskel._SLAV.handle_dormer_event
+            bpypolyskel._SLAV.handle_dormer_event = patched_handle_dormer_event
+
         faces = bpypolyskel.polygonize(
             verts, start_exterior_index, total_exterior_verts, inner_loops, height, tan_angle, faces, unit_vectors
         )

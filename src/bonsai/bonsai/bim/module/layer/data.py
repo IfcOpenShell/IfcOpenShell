@@ -49,6 +49,8 @@ class LayersData:
             return []
         results = dict()
         shape = tool.Ifc.get().by_id(data.BIMMeshProperties.ifc_definition_id)
-        for inverse in shape.LayerAssignments:
+        for inverse in getattr(shape, "LayerAssignments", []):
+            results[inverse.id()] = inverse.Name or "Unnamed"
+        for inverse in getattr(shape, "LayerAssignment", []):
             results[inverse.id()] = inverse.Name or "Unnamed"
         return results

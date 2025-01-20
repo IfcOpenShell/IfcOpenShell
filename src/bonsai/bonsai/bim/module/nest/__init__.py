@@ -26,6 +26,8 @@ classes = (
     operator.BIM_OT_select_components,
     operator.BIM_OT_select_nest,
     operator.BIM_OT_nest_unassign_object,
+    operator.BIM_OT_disable_nest_mode,
+    operator.BIM_OT_toggle_nest_mode_local_view,
     prop.BIMObjectNestProperties,
     prop.Objects,
     prop.BIMNestProperties,

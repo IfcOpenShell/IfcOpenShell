@@ -659,13 +659,15 @@ class Style(bonsai.core.tool.Style):
         """
 
         ifc_file = tool.Ifc.get()
-        elements = ifc_file.by_type("IfcPresentationStyle")
         i = 0
-        for element in elements:
-            if ifc_file.get_total_inverses(element) != 0:
-                continue
-            bonsai.core.style.remove_style(tool.Ifc, tool.Style, element, reload_styles_ui=False)
-            i += 1
+        if ifc_file.schema in ("IFC2X3", "IFC4"):
+            for element in ifc_file.by_type("IfcPresentationStyleAssignment"):
+                if ifc_file.get_total_inverses(element) == 0:
+                    ifc_file.remove(element)
+        for element in ifc_file.by_type("IfcPresentationStyle"):
+            if ifc_file.get_total_inverses(element) == 0:
+                bonsai.core.style.remove_style(tool.Ifc, tool.Style, element, reload_styles_ui=False)
+                i += 1
         return i
 
     @classmethod

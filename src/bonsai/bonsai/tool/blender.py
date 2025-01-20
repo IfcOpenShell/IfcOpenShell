@@ -21,6 +21,7 @@ import bpy
 import bmesh
 import json
 import os
+import platform
 from ifcopenshell import entity_instance
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -143,17 +144,21 @@ class Blender(bonsai.core.tool.Blender):
         return f"{name} {i}"
 
     @classmethod
-    def get_active_object(cls) -> bpy.types.Object:
-        return getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active
+    def get_active_object(cls, is_selected: bool = False) -> bpy.types.Object:
+        obj = getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active
+        if not is_selected:
+            return obj
+        if obj in cls.get_selected_objects(include_active=False):
+            return obj
 
     @classmethod
-    def get_selected_objects(cls) -> set[bpy.types.Object]:
+    def get_selected_objects(cls, include_active: bool = True) -> set[bpy.types.Object]:
         """Get selected objects including active object."""
         if selected_objects := getattr(bpy.context, "selected_objects", None):
-            if active_obj := cls.get_active_object():
+            if include_active and (active_obj := cls.get_active_object()):
                 return set(selected_objects + [active_obj])
             return set(selected_objects)
-        if active_obj := cls.get_active_object():
+        if include_active and (active_obj := cls.get_active_object()):
             return {active_obj}
         return set()
 
@@ -437,6 +442,16 @@ class Blender(bonsai.core.tool.Blender):
         current_path = os.environ["PATH"]
         if bin_dir not in current_path:
             os.environ["PATH"] = current_path + os.pathsep + bin_dir
+            # files need to be executable
+            if platform.system() != "Windows":
+                for filename in os.listdir(bin_dir):
+                    file_path = os.path.join(bin_dir, filename)
+                    if os.path.isfile(file_path):
+                        current_permissions = os.stat(file_path).st_mode
+                        try:
+                            os.chmod(file_path, current_permissions | 0o100)
+                        except PermissionError:
+                            pass
 
     @classmethod
     def get_default_selection_keypmap(cls) -> tuple:

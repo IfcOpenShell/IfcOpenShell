@@ -47,7 +47,7 @@ class Debug(bonsai.core.tool.Debug):
 
     @classmethod
     def purge_hdf5_cache(cls) -> None:
-        cache_dir = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache")
+        cache_dir = bpy.context.scene.BIMProperties.cache_dir
         filelist = [f for f in os.listdir(cache_dir) if f.endswith(".h5")]
         for f in filelist:
             try:
@@ -131,8 +131,8 @@ class Debug(bonsai.core.tool.Debug):
             # Calculate hashes.
             hash_to_elements: defaultdict[int, list[ifcopenshell.entity_instance]] = defaultdict(list)
             for element in elements:
-                # Ignore unnamed elements as they may be not safe to merge.
-                if not element.Name:
+                # Except for styles, ignore unnamed elements as they may be not safe to merge
+                if object_type != "STYLE" and not element.Name:
                     continue
                 element_hash = get_hash(element)
                 hash_to_elements[element_hash].append(element)
