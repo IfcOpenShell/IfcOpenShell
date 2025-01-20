@@ -76,9 +76,20 @@ class DereferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
 class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_container"
     bl_label = "Assign Container"
-    bl_description = "Assign the selected objects to the selected container"
+    bl_description = "\n".join(
+        (
+            "Assign the selected objects to the selected container.",
+            "This will move objects to the container collection in the outliner.",
+            "ALT + Click to ensure objects are only linked in the container collection",
+        )
+    )
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty(options={"SKIP_SAVE"})
+    remove_from_other_containers: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        self.remove_from_other_containers = event.alt
+        return self.execute(context)
 
     def _execute(self, context):
         props = context.active_object.BIMObjectSpatialProperties
@@ -87,6 +98,9 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
         elif (container_obj := props.container_obj) and (container := tool.Ifc.get_entity(container_obj)):
             pass
         for element_obj in context.selected_objects:
+            if self.remove_from_other_containers:
+                for col in element_obj.users_collection[:]:
+                    col.objects.unlink(element_obj)
             core.assign_container(tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj)
 
 
