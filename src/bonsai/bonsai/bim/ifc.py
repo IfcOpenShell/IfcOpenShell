@@ -404,9 +404,6 @@ class IfcStore:
             obj.BIMStyleProperties.ifc_definition_id = 0
         else:  # bpy.types.Object
             obj.BIMObjectProperties.ifc_definition_id = 0
-        # NOTE: in theory this will also remove listeners added by other addons
-        # though never had a report when this would be a problem.
-        bpy.msgbus.clear_by_owner(obj)
 
     @staticmethod
     def execute_ifc_operator(operator: tool.Ifc.Operator, context: bpy.types.Context, is_invoke=False) -> set[str]:
