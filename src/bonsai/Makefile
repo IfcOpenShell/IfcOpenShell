@@ -177,6 +177,8 @@ endif
 	# Is not platform specific but has platform specific dependencies.
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download python-socketio[asyncio_client] $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download aiohttp $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	# Required to access platform specific paths
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download platformdirs --dest=./wheels
 	# Required by light module
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytz --dest=./wheels
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download tzfpy $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
