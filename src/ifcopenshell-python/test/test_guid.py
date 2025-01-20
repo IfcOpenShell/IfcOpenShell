@@ -56,6 +56,7 @@ ZERO_64 = CHARS_IFC[0]
 
 chars = string.digits + string.ascii_uppercase + string.ascii_lowercase + "_$"
 
+
 def legacy_compress(g: str) -> str:
     bs = [int(g[i : i + 2], 16) for i in range(0, len(g), 2)]
 
@@ -126,7 +127,7 @@ def test_expand_compress_RANDOM(
         (f"{n:02x}", CHARS_IFC[n // 64] + CHARS_IFC[n % 64])
         for n in range(0x100)
     ]
-)
+)  # fmt: skip
 def test_expand_compress_BEHAVIOUR_OF_PADDING(
     # fixtures
     check: TestCase,
