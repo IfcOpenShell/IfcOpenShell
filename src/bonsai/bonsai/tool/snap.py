@@ -355,7 +355,7 @@ class Snap(bonsai.core.tool.Snap):
 
         objs_to_raycast = []
         for obj, bbox_2d in objs_2d_bbox:
-            if obj.type in {"MESH", "EMPTY"} and bbox_2d:
+            if obj.type in {"MESH", "EMPTY", "CURVE"} and bbox_2d:
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d, offset):
                     if obj.visible_in_viewport_get(
                         context.space_data
@@ -406,6 +406,17 @@ class Snap(bonsai.core.tool.Snap):
                                 "points": snap_points,
                             }
                         )
+            if obj.type == "CURVE":
+                new_object = bpy.data.objects.new('new_object', obj.to_mesh().copy())
+                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, new_object)
+                if snap_points:
+                    detected_snaps.append(
+                        {
+                            "group": "Edge-Vertex",
+                            "object": obj,
+                            "points": snap_points,
+                        }
+                    )
             if obj.type == "EMPTY":
                 snap_point = {
                     "points": [{"type": "Vertex", "point": obj.location}],
@@ -485,6 +496,17 @@ class Snap(bonsai.core.tool.Snap):
 
     @classmethod
     def select_snapping_points(cls, context, event, tool_state, detected_snaps):
+        def filter_snapping_points_based_on_settings(snapping_points):
+            options = ["Plane", "Axis"]
+            props = context.scene.BIMSnapProperties
+            for prop in props.__annotations__.keys():
+                if getattr(props, prop):
+                    options.append(props.rna_type.properties[prop].name)
+                
+            filtered_points = [point for point in snapping_points if point[1] in options]
+            return filtered_points
+
+        
         snapping_points = []
         edges = []  # Get edges to create edge-intersection snap
         for snap_group in detected_snaps:
@@ -537,8 +559,10 @@ class Snap(bonsai.core.tool.Snap):
                 if tool.Cad.are_vectors_equal(e1["point"], e2["point"], tolerance=0.1):
                     intersection = tool.Cad.intersect_edges_v2(e1["edge_verts"], e2["edge_verts"])
                     if intersection[1]:
-                        snapping_points.insert(0, (intersection[1], "Edge-Intersection", None))
+                        snapping_points.insert(0, (intersection[1], "Edge Intersection", None))
 
+        snapping_points = filter_snapping_points_based_on_settings(snapping_points)
+         
         # Make Axis first priority
         if tool_state.lock_axis or tool_state.axis_method in {"X", "Y", "Z"}:
             cls.update_snapping_ref(snapping_points[0][0], snapping_points[0][1])
@@ -555,6 +579,7 @@ class Snap(bonsai.core.tool.Snap):
 
         cls.update_snapping_point(snapping_points[0][0], snapping_points[0][1], snapping_points[0][2])
         return snapping_points
+
 
     @classmethod
     def modify_snapping_point_selection(cls, snapping_points, lock_axis=False):

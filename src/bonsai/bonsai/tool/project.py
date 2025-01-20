@@ -40,8 +40,8 @@ class Project(bonsai.core.tool.Project):
     @classmethod
     def append_all_types_from_template(cls, template: str) -> None:
         # TODO refactor
-        filepath = os.path.join(bpy.context.scene.BIMProperties.data_dir, "templates", "projects", template)
-        bpy.ops.bim.select_library_file(filepath=filepath)
+        filepath = tool.Blender.get_data_dir_path(Path("templates") / "projects" / template)
+        bpy.ops.bim.select_library_file(filepath=filepath.__str__())
         if IfcStore.library_file.schema != tool.Ifc.get().schema:
             return
         for element in IfcStore.library_file.by_type("IfcTypeProduct"):

@@ -28,6 +28,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.bim.module.drawing.helper as helper
+from pathlib import Path
 from math import pi, sin, cos, tan, acos, atan, degrees, radians, ceil
 from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
@@ -2022,9 +2023,9 @@ class DecorationsHandler:
             self.decorators[object_type] = self.decorators["FALL"]
         self.decorators["MULTI_SYMBOL"] = self.decorators["SYMBOL"]
         if drawing_font := bpy.context.scene.DocProperties.drawing_font:
-            drawing_font_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", drawing_font)
-            if os.path.exists(drawing_font_path):
-                font_id = blf.load(drawing_font_path)
+            drawing_font_path = tool.Blender.get_data_dir_path(Path("fonts") / drawing_font)
+            if drawing_font_path.is_file():
+                font_id = blf.load(drawing_font_path.__str__())
                 for decorator in self.decorators.values():
                     decorator.font_id = font_id
 

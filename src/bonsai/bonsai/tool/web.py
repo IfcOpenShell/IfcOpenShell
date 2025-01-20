@@ -112,8 +112,8 @@ class Web(bonsai.core.tool.Web):
 
         global ws_process
 
-        webui_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui")
-        ws_path = os.path.join(webui_path, "sioserver.py")
+        webui_path = tool.Blender.get_data_dir_path("webui")
+        ws_path = (webui_path / "sioserver.py").__str__()
 
         py_version = sys.version_info
 
@@ -136,7 +136,7 @@ class Web(bonsai.core.tool.Web):
 
         ws_process = subprocess.Popen(
             [sys.executable, ws_path, "--p", str(port), "--host", "127.0.0.1"],
-            cwd=webui_path,
+            cwd=webui_path.__str__(),
             env=env,
         )
 
@@ -208,8 +208,7 @@ class Web(bonsai.core.tool.Web):
             cls.disconnect_websocket_server()
 
         # sleep(0.5)
-        webui_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui")
-        pid_file = os.path.join(webui_path, "running_pid.json")
+        pid_file = tool.Blender.get_data_dir_path("webui") / "running_pid.json"
         with open(pid_file, "r") as f:
             pids = json.load(f)
 
@@ -246,8 +245,7 @@ class Web(bonsai.core.tool.Web):
         while True:
             if time.time() - start > max_time:
                 return False
-            webui_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui")
-            pid_file = os.path.join(webui_path, "running_pid.json")
+            pid_file = tool.Blender.get_data_dir_path("webui") / "running_pid.json"
             try:
                 with open(pid_file, "r") as f:
                     data = json.load(f)

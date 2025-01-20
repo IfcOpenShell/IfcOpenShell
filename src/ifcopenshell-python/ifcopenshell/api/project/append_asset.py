@@ -143,6 +143,7 @@ class Usecase:
     file: ifcopenshell.file
     settings: dict[str, Any]
     assume_asset_uniqueness_by_name: bool
+    whitelisted_inverse_attributes: dict[str, list[str]]
 
     def execute(self):
         # mapping of old element ids to new elements
@@ -268,7 +269,7 @@ class Usecase:
         existing_element = self.get_existing_element(element)
         if existing_element:
             return existing_element
-        new = self.file.add(element)
+        new = self.file_add(element)
         self.added_elements[element.id()] = new
         self.check_inverses(element)
         subelement_queue = self.settings["library"].traverse(element, max_levels=1)[1:]
@@ -280,7 +281,7 @@ class Usecase:
                 if not self.has_whitelisted_inverses(existing_element):
                     self.check_inverses(subelement)
             else:
-                self.added_elements[subelement.id()] = self.file.add(subelement)
+                self.added_elements[subelement.id()] = self.file_add(subelement)
                 self.check_inverses(subelement)
                 subelement_queue.extend(self.settings["library"].traverse(subelement, max_levels=1)[1:])
         return new
@@ -421,3 +422,56 @@ class Usecase:
             context_type=added_context.ContextType,
             context_identifier=added_context.ContextIdentifier,
         )
+
+    def file_add(self, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        """Reimplementation of `file.add` but taking into account that some elements (profiles, materials)
+        are already existing (checking by their name) and shouldn't be duplicated.
+
+        The problem with `file.add` it's recursively adding element and all it's attributes
+        and there is no control to prevent it from adding certain type of elements.
+        """
+        ifc_file = self.file
+        if not self.assume_asset_uniqueness_by_name:
+            return ifc_file.add(element)
+
+        reuse_identities = self.reuse_identities
+        element_identity = element.wrapped_data.identity()
+        if added_element := reuse_identities.get(element_identity):
+            return added_element
+
+        # Maybe element already exists.
+        if element.is_a("IfcProfileDef"):
+            profile_name = element.ProfileName
+            existing_profile = next(
+                (e for e in ifc_file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None
+            )
+            if existing_profile is not None:
+                reuse_identities[element_identity] = existing_profile
+                return existing_profile
+        elif element.is_a("IfcMaterial"):
+            material_name = element.Name
+            existing_material = next((e for e in ifc_file.by_type("IfcMaterial") if e.Name == material_name), None)
+            if existing_material is not None:
+                reuse_identities[element_identity] = existing_material
+                return existing_material
+
+        attrs = {}
+        for attr_index, attr_value in enumerate(element):
+            # `None` is set by default already.
+            if attr_value is None:
+                continue
+            elif isinstance(attr_value, ifcopenshell.entity_instance):
+                attr_value = self.file_add(attr_value)
+            elif isinstance(attr_value, tuple):
+                # Assume type is consistent across the tuple.
+                if isinstance(attr_value[0], ifcopenshell.entity_instance):
+                    attr_value = tuple(self.file_add(e) for e in attr_value)
+            attrs[attr_index] = attr_value
+
+        # Adding entity at the end just to keep it consistent with `file.add`.
+        new = ifc_file.create_entity(element.is_a())
+        reuse_identities[element_identity] = new
+        for attr_index, attr_value in attrs.items():
+            new[attr_index] = attr_value
+
+        return new

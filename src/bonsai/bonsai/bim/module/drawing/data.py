@@ -82,8 +82,7 @@ class SheetsData:
 
     @classmethod
     def titleblocks(cls):
-        files = Path(os.path.join(bpy.context.scene.BIMProperties.data_dir, "templates", "titleblocks")).glob("*.svg")
-        files = [str(f.stem) for f in files]
+        files = [p.stem for p in tool.Blender.get_data_dir_paths(Path("templates") / "titleblocks", "*.svg")]
 
         if tool.Ifc.get():
             project = tool.Ifc.get().by_type("IfcProject")[0]

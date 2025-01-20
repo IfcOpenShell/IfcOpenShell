@@ -336,5 +336,3 @@ def load_post(scene):
         WallAxisDecorator.install(bpy.context)
     if model_props.show_slab_direction:
         SlabDirectionDecorator.install(bpy.context)
-        
-

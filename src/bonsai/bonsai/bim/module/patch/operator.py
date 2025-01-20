@@ -93,7 +93,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
         args = ifcpatch.ArgumentsDict(
             recipe=props.ifc_patch_recipes,
             arguments=arguments,
-            log=os.path.join(context.scene.BIMProperties.data_dir, "process.log"),
+            log=tool.Blender.get_data_dir_path("process.log").__str__(),
         )
 
         if props.should_load_from_memory and tool.Ifc.get():

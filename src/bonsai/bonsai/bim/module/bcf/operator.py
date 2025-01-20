@@ -616,7 +616,7 @@ class AddBcfViewpoint(bpy.types.Operator):
         old_file_format = blender_render.image_settings.file_format
         blender_render.image_settings.file_format = "PNG"
         old_filepath = blender_render.filepath
-        blender_render.filepath = os.path.join(context.scene.BIMProperties.data_dir, "snapshot.png")
+        blender_render.filepath = tool.Blender.get_data_dir_path("snapshot.png").__str__()
         bpy.ops.render.opengl(write_still=True)
         with open(blender_render.filepath, "rb") as f:
             snapshot = f.read()

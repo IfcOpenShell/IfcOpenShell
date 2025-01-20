@@ -28,6 +28,7 @@ import ifcopenshell.api.style
 import ifcopenshell.api.context
 import ifcopenshell.api.project
 import ifcopenshell.api.material
+import ifcopenshell.api.profile
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import numpy as np
@@ -499,3 +500,36 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         appended_item = self.file.by_type("IfcCostSchedule")[0].Controls[0].RelatedObjects[0]
         assert appended_item.is_a("IfcCostItem")
         assert appended_item.IsNestedBy[0].RelatedObjects[0].is_a("IfcCostItem")
+
+    def test_not_duplicate_profiles_and_materials_based_on_name(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        column_type = ifcopenshell.api.root.create_entity(library, "IfcColumnType")
+        library_profile = ifcopenshell.api.profile.add_parameterized_profile(library, "IfcCircleProfileDef")
+        library_profile.ProfileName = "TestProfile"
+        material_set = ifcopenshell.api.material.add_material_set(library, set_type="IfcMaterialProfileSet")
+        material = ifcopenshell.api.material.add_material(library, "TestMaterial")
+        ifcopenshell.api.material.add_profile(library, material_set, material, library_profile)
+        ifcopenshell.api.material.assign_material(
+            library, [column_type], material=material_set, type="IfcMaterialProfileSet"
+        )
+
+        # Test adding a profile with existing name.
+        profile = ifcopenshell.api.profile.add_parameterized_profile(self.file, "IfcCircleProfileDef")
+        profile.ProfileName = "TestProfile"
+        ifcopenshell.api.project.append_asset(self.file, library, library_profile)
+        profiles = self.file.by_type("IfcProfileDef")
+        assert len(profiles) == 1 and profiles[0].ProfileName == "TestProfile"
+
+        # Test adding a material with existing name.
+        material = ifcopenshell.api.material.add_material(self.file, "TestMaterial")
+        ifcopenshell.api.project.append_asset(self.file, library, library_profile)
+        materials = self.file.by_type("IfcMaterial")
+        assert len(materials) == 1 and materials[0].Name == "TestMaterial"
+
+        # Test implicitly adding profile+material with existing names.
+        ifcopenshell.api.project.append_asset(self.file, library, column_type)
+        assert len(self.file.by_type("IfcColumnType")) == 1
+        profiles = self.file.by_type("IfcProfileDef")
+        assert len(profiles) == 1 and profiles[0].ProfileName == "TestProfile"
+        materials = self.file.by_type("IfcMaterial")
+        assert len(materials) == 1 and materials[0].Name == "TestMaterial"

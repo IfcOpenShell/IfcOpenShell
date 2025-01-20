@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     import ifcopenshell
     import bonsai.tool as tool
 
+
 def enable_editing_nest(nest, obj=None):
     nest.enable_editing(obj)
 

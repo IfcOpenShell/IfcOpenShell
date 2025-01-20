@@ -276,7 +276,6 @@ class CreateDrawing(bpy.types.Operator):
                     self.svg_writer = svgwriter.SvgWriter()
                     self.svg_writer.human_scale = self.human_scale
                     self.svg_writer.scale = self.scale
-                    self.svg_writer.data_dir = context.scene.BIMProperties.data_dir
                     self.svg_writer.camera = self.camera
                     self.svg_writer.camera_width, self.svg_writer.camera_height = self.get_camera_dimensions()
                     self.svg_writer.camera_projection = tuple(
@@ -1667,7 +1666,6 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
         )
         tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
         sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = context.scene.BIMProperties.data_dir
         sheet_builder.add_drawing(reference, drawing, sheet)
 
         tool.Drawing.import_sheets()
@@ -1697,7 +1695,6 @@ class RemoveDrawingFromSheet(bpy.types.Operator, tool.Ifc.Operator):
         sheet = tool.Drawing.get_reference_document(reference)
 
         sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = context.scene.BIMProperties.data_dir
         sheet_builder.remove_drawing(reference, sheet)
 
         tool.Ifc.run("document.remove_reference", reference=reference)
@@ -1760,7 +1757,6 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
 
             name = os.path.splitext(os.path.basename(tool.Drawing.get_document_uri(sheet)))[0]
             sheet_builder = sheeter.SheetBuilder()
-            sheet_builder.data_dir = scene.BIMProperties.data_dir
 
             references = sheet_builder.build(sheet)
             raster_references = [tool.Ifc.get_relative_uri(r) for r in references["RASTER"]]
@@ -2184,7 +2180,7 @@ class ReloadDrawingStyles(bpy.types.Operator):
 
         json_path = Path(tool.Ifc.resolve_uri(rel_path))
         if not json_path.exists():
-            ootb_resource = Path(context.scene.BIMProperties.data_dir) / "assets" / "shading_styles.json"
+            ootb_resource = tool.Blender.get_data_dir_path(Path("assets") / "shading_styles.json")
             print(
                 f"WARNING. Couldn't find shading_styles for the drawing by the path: {json_path}. "
                 f"Default BBIM resource will be copied from {ootb_resource}"
@@ -2582,7 +2578,6 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
         tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
 
         sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = context.scene.BIMProperties.data_dir
         sheet_builder.add_document(reference, schedule, sheet)
 
         tool.Drawing.import_sheets()
@@ -2649,7 +2644,6 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
         tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
 
         sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = context.scene.BIMProperties.data_dir
         sheet_builder.add_document(reference, extref, sheet)
 
         tool.Drawing.import_sheets()
@@ -3079,7 +3073,6 @@ class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
                 attributes={"Location": tool.Drawing.get_default_titleblock_path(titleblock)},
             )
             sheet_builder = sheeter.SheetBuilder()
-            sheet_builder.data_dir = context.scene.BIMProperties.data_dir
             sheet_builder.change_titleblock(sheet, titleblock)
         tool.Drawing.import_sheets()
 

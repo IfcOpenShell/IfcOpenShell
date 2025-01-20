@@ -69,11 +69,8 @@ class ProjectData:
         if not ifc_file:
             return []
         current_schema = tool.Ifc.get().schema_identifier
-        files = (Path(bpy.context.scene.BIMProperties.data_dir) / "libraries").iterdir()
         results = [("0", "Custom Library", "")]
-        for f in files:
-            if not f.suffix.lower().startswith(".ifc"):
-                continue
+        for f in tool.Blender.get_data_dir_paths("libraries", "*.ifc*"):
             if cls.get_file_schema(f) != current_schema:
                 continue
             results.append((f.name, f.stem, "Library"))
@@ -85,10 +82,7 @@ class ProjectData:
         for export_schema in cls.data["export_schema"]:
             template_files[export_schema[0]].append(("0", "Blank Project", ""))
 
-        files = (Path(bpy.context.scene.BIMProperties.data_dir) / "templates" / "projects").iterdir()
-        for f in files:
-            if not f.suffix.lower().startswith(".ifc"):
-                continue
+        for f in tool.Blender.get_data_dir_paths(Path("templates") / "projects", "*.ifc*"):
             current_schema = cls.get_file_schema(f)
             if current_schema not in template_files:
                 continue

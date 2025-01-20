@@ -3052,7 +3052,6 @@ class OverrideMove(bpy.types.Operator):
             obj.select_set(True)
             self.new_active_obj = obj
 
-         
         # Get aggregates
         props = context.scene.BIMAggregateProperties
         not_editing_objs = [o.obj for o in props.not_editing_objects]
@@ -3063,7 +3062,7 @@ class OverrideMove(bpy.types.Operator):
                 obj.select_set(False)
                 continue
             if obj == props.editing_aggregate:
-                continue                
+                continue
             element = tool.Ifc.get_entity(obj)
             if not element or not element.is_a("IfcElement"):
                 continue
@@ -3072,7 +3071,7 @@ class OverrideMove(bpy.types.Operator):
                 aggregates_to_move.append(tool.Ifc.get_object(element))
                 continue
             if not parts and props.in_aggregate_mode:
-                continue                
+                continue
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             if aggregate:
                 aggregates_to_move.append(tool.Ifc.get_object(aggregate))
@@ -3098,7 +3097,7 @@ class OverrideMove(bpy.types.Operator):
                 obj.select_set(False)
                 continue
             if obj == props.editing_nest:
-                continue                
+                continue
             element = tool.Ifc.get_entity(obj)
             if not element or not element.is_a("IfcElement"):
                 continue
@@ -3107,7 +3106,7 @@ class OverrideMove(bpy.types.Operator):
                 nests_to_move.append(tool.Ifc.get_object(element))
                 continue
             if not components and props.in_nest_mode:
-                continue                
+                continue
             nest = ifcopenshell.util.element.get_nest(element)
             if nest:
                 nests_to_move.append(tool.Ifc.get_object(nest))

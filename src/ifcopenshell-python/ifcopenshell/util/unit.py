@@ -404,9 +404,7 @@ def get_named_dimensions(name):
 
 
 def get_unit_assignment(ifc_file: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
-    unit_assignments = ifc_file.by_type("IfcUnitAssignment")
-    if unit_assignments:
-        return unit_assignments[0]
+    return ifc_file.by_type("IfcProject")[0].UnitsInContext
 
 
 def get_project_unit(ifc_file: ifcopenshell.file, unit_type: str) -> Union[ifcopenshell.entity_instance, None]:
@@ -641,9 +639,8 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
     :param unit_type: The type of SI unit, defaults to "LENGTHUNIT"
     :returns: The scale factor
     """
-    if not ifc_file.by_type("IfcUnitAssignment"):
+    if not (units := ifc_file.by_type("IfcProject")[0].UnitsInContext):
         return 1
-    units = ifc_file.by_type("IfcUnitAssignment")[0]
     unit_scale = 1
     for unit in units.Units:
         if not hasattr(unit, "UnitType") or unit.UnitType != unit_type:

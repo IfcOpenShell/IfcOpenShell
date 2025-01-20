@@ -364,7 +364,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMRootProperties
         predefined_type = (
-            props.userdefined_type if props.ifc_predefined_type == "USERDEFINED" else props.ifc_predefined_type
+            props.ifc_userdefined_type if props.ifc_predefined_type == "USERDEFINED" else props.ifc_predefined_type
         )
         representation_template = props.representation_template
         ifc_file = tool.Ifc.get()
