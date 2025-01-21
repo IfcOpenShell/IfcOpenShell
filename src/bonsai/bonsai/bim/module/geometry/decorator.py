@@ -22,8 +22,9 @@ import gpu
 import bmesh
 import ifcopenshell
 import bonsai.tool as tool
+import numpy as np
 from bpy.types import SpaceView3D
-from mathutils import Vector
+from mathutils import Vector, Matrix
 from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
 from typing import Sequence
@@ -35,6 +36,7 @@ class ItemDecorator:
     objs: dict[str, dict[str, list]]
     obj_is_selected: dict[str, bool]
     obj_is_boolean: dict[str, list[ifcopenshell.entity_instance]]
+    obj_matrix: dict[str, Matrix]
 
     @classmethod
     def install(cls, context):
@@ -43,6 +45,7 @@ class ItemDecorator:
         obj_is_selected: dict[str, bool] = {}
         obj_is_boolean: dict[str, list[ifcopenshell.entity_instance]] = {}
         objs: dict[str, dict[str, list]] = {}
+        obj_matrix: dict[str, Matrix] = {}
         for item_obj in context.scene.BIMGeometryProperties.item_objs:
             if obj := item_obj.obj:
                 obj: bpy.types.Object
@@ -50,11 +53,13 @@ class ItemDecorator:
                 obj_is_selected[obj.name] = obj.select_get()
                 item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
                 obj_is_boolean[obj.name] = [i for i in tool.Ifc.get().get_inverse(item) if i.is_a("IfcBooleanResult")]
+                obj_matrix[obj.name] = obj.matrix_world.copy()
 
         handler = cls()
         handler.objs = objs
         handler.obj_is_selected = obj_is_selected
         handler.obj_is_boolean = obj_is_boolean
+        handler.obj_matrix = obj_matrix
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_text, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
@@ -176,7 +181,9 @@ class ItemDecorator:
 
         for obj_name, data in self.objs.items():
             if (obj := bpy.data.objects.get(obj_name)) and obj.hide_get() == False:
-                if self.obj_is_selected[obj_name] != obj.select_get():
+                if self.obj_is_selected[obj_name] != obj.select_get() or not np.allclose(
+                    self.obj_matrix[obj_name], obj.matrix_world
+                ):
                     self.obj_is_selected[obj_name] = obj.select_get()
                     data = ItemDecorator.get_obj_data(obj)
                     self.objs[obj_name] = data
