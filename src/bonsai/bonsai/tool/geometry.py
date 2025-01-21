@@ -979,6 +979,14 @@ class Geometry(bonsai.core.tool.Geometry):
         )
 
     @classmethod
+    def get_active_or_representation_obj(cls) -> bpy.types.Object | None:
+        if obj := tool.Blender.get_active_object():
+            if tool.Ifc.get_entity(obj):
+                return obj
+            elif tool.Geometry.is_representation_item(obj):
+                return bpy.context.scene.BIMGeometryProperties.representation_obj
+
+    @classmethod
     def is_boolean_operand(cls, obj: bpy.types.Object) -> bool:
         return bool(
             (data := obj.data)

@@ -136,8 +136,8 @@ class ShapeAspect(PropertyGroup):
     name: StringProperty(
         name="Name",
         description=(
-            "Note that IfcMaterialConstituent is applied based on shape aspects using the same name as material constituent.\n"
-            "In dropdown suggestions you can see names of existing material constituents."
+            "If applicable, shape aspect names should correlate with names of material constituents.\n"
+            "Click to see autocompletion for constituent names."
         ),
         **({} if bpy.app.version < (3, 3, 0) else {"search": get_material_constituents}),
     )

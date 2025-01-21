@@ -895,8 +895,7 @@ class BIM_PT_tab_representations(Panel):
         return (
             tool.Blender.is_tab(context, "GEOMETRY")
             and tool.Ifc.get()
-            and (obj := context.active_object)
-            and tool.Ifc.get_entity(obj)
+            and tool.Geometry.get_active_or_representation_obj()
         )
 
     def draw(self, context):
@@ -1234,6 +1233,7 @@ class BIM_PT_decorators_overlay(Panel):
         row = col.row(align=True)
         row.prop(model_props, "show_slab_direction", text="Slab Direction")
 
+
 class BIM_PT_snappping(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "HEADER"
@@ -1252,4 +1252,3 @@ class BIM_PT_snappping(Panel):
         col.prop(prop, "edge", toggle=True, icon="SNAP_EDGE")
         col.prop(prop, "edge_center", toggle=True, icon="SNAP_MIDPOINT")
         col.prop(prop, "face", toggle=True, icon="SNAP_FACE")
-

@@ -119,25 +119,18 @@ class BIM_PT_representations(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
-            return False
-        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
-            return False
-        return IfcStore.get_file()
+        return tool.Ifc.get() and (obj := tool.Blender.get_active_object()) and tool.Ifc.get_entity(obj)
 
     def draw(self, context):
         if not RepresentationsData.is_loaded:
             RepresentationsData.load()
 
-        layout = self.layout
-        props = context.active_object.BIMObjectProperties
-
-        row = layout.row(align=True)
+        row = self.layout.row(align=True)
         prop_with_search(row, context.active_object.BIMGeometryProperties, "contexts", text="")
         row.operator("bim.add_representation", icon="ADD", text="")
 
         if not RepresentationsData.data["representations"]:
-            layout.label(text="No Representations Found")
+            self.layout.label(text="No Representations Found")
             return
 
         for representation in RepresentationsData.data["representations"]:
@@ -156,18 +149,16 @@ class BIM_PT_representations(Panel):
             op.ifc_definition_id = representation["id"]
             op.disable_opening_subtractions = False
             row.operator("bim.remove_representation", icon="X", text="").representation_id = representation["id"]
-            if representation["is_active"]:
-                active_representation = representation
 
-        layout.separator()
+        self.layout.separator()
         if not LayersData.is_loaded:
             LayersData.load()
         if LayersData.data["active_layers"]:
-            layout.label(text="Representation Presentation Layers:")
+            self.layout.label(text="Representation Presentation Layers:")
             for layer_name in LayersData.data["active_layers"].values():
-                layout.label(text=layer_name, icon="STICKY_UVS_LOC")
+                self.layout.label(text=layer_name, icon="STICKY_UVS_LOC")
         else:
-            layout.label(text="Representation Has No Presentation Layers", icon="STICKY_UVS_LOC")
+            self.layout.label(text="Representation Has No Presentation Layers", icon="STICKY_UVS_LOC")
 
 
 class BIM_PT_representation_items(Panel):
@@ -181,18 +172,14 @@ class BIM_PT_representation_items(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
-            return False
-        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
-            return False
-        return IfcStore.get_file()
+        return tool.Ifc.get() and tool.Geometry.get_active_or_representation_obj()
 
     def draw(self, context):
         if not RepresentationItemsData.is_loaded:
             RepresentationItemsData.load()
 
-        props = context.active_object.BIMGeometryProperties
-        layout = self.layout
+        obj = context.scene.BIMGeometryProperties.representation_obj or tool.Blender.get_active_object()
+        props = obj.BIMGeometryProperties
 
         row = self.layout.row(align=True)
         row.label(text=f"{RepresentationItemsData.data['total_items']} Items Found")
@@ -240,13 +227,13 @@ class BIM_PT_representation_items(Panel):
                 text = "Has UV mapping"
             else:
                 text = "Has no UV mapping"
-            layout.label(text=text, icon="UV")
+            self.layout.label(text=text, icon="UV")
 
             if "Colour" in active_item.tags:
                 text = "Has colour mapping"
             else:
                 text = "Has no colour mapping"
-            layout.label(text=text, icon="COLOR")
+            self.layout.label(text=text, icon="COLOR")
 
         row = self.layout.row(align=True)
         if props.is_editing_item_shape_aspect:

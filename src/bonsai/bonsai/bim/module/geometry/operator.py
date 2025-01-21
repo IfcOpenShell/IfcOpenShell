@@ -2314,7 +2314,7 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
 
         props = obj.BIMGeometryProperties
         props.is_editing = True
@@ -2326,8 +2326,8 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
                 item.tags += ","
             item.tags += tag
 
-        if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
-            active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
+        if obj.data and hasattr(obj.data, "BIMMeshProperties"):
+            active_representation_id = obj.data.BIMMeshProperties.ifc_definition_id
             element = tool.Ifc.get().by_id(active_representation_id)
             # IfcShapeRepresentation or IfcTopologyRepresentation.
             if not element.is_a("IfcShapeModel"):
@@ -2376,7 +2376,7 @@ class DisableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         obj.BIMGeometryProperties.is_editing = False
 
 
@@ -2388,7 +2388,7 @@ class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        if context.active_object is None or len(context.active_object.BIMGeometryProperties.items) <= 1:
+        if not (obj := tool.Geometry.get_active_or_representation_obj()) or len(obj.BIMGeometryProperties.items) <= 1:
             cls.poll_message_set(
                 "Active object need to have more than 1 representation items to keep representation valid"
             )
@@ -2396,7 +2396,7 @@ class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         ifc_file = tool.Ifc.get()
 
         representation_item = ifc_file.by_id(self.representation_item_id)
@@ -2409,7 +2409,7 @@ class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
 
 
 def poll_editing_representation_item_style(cls, context):
-    if not (obj := getattr(context, "active_object", None)):
+    if not (obj := tool.Geometry.get_active_or_representation_obj()):
         return False
     props = obj.BIMGeometryProperties
     if not props.is_editing:
@@ -2446,7 +2446,8 @@ class EnableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator
         return poll_editing_representation_item_style(cls, context)
 
     def _execute(self, context):
-        props = context.active_object.BIMGeometryProperties
+        obj = tool.Geometry.get_active_or_representation_obj()
+        props = obj.BIMGeometryProperties
         props.is_editing_item_style = True
         ifc_file = tool.Ifc.get()
 
@@ -2464,7 +2465,7 @@ class EditRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         props = obj.BIMGeometryProperties
         props.is_editing_item_style = False
         ifc_file = tool.Ifc.get()
@@ -2486,7 +2487,8 @@ class DisableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operato
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.active_object.BIMGeometryProperties
+        obj = tool.Geometry.get_active_or_representation_obj()
+        props = obj.BIMGeometryProperties
         props.is_editing_item_style = False
 
 
@@ -2501,7 +2503,7 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
         return poll_editing_representation_item_style(cls, context)
 
     def _execute(self, context):
-        active_obj = context.active_object
+        active_obj = tool.Geometry.get_active_or_representation_obj()
         active_props = active_obj.BIMGeometryProperties
         active_props.is_editing_item_style = False
 
@@ -2568,7 +2570,8 @@ class EnableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Op
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.active_object.BIMGeometryProperties
+        obj = tool.Geometry.get_active_or_representation_obj()
+        props = obj.BIMGeometryProperties
         props.is_editing_item_shape_aspect = True
 
         # set dropdown to currently active shape aspect
@@ -2583,7 +2586,7 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMGeometryProperties
         props.is_editing_item_shape_aspect = False
@@ -2639,7 +2642,8 @@ class DisableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.O
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.active_object.BIMGeometryProperties
+        obj = tool.Geometry.get_active_or_representation_obj()
+        props = obj.BIMGeometryProperties
         props.is_editing_item_shape_aspect = False
 
 
@@ -2649,7 +2653,7 @@ class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, tool.Ifc.Opera
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMGeometryProperties
         ifc_file = tool.Ifc.get()
