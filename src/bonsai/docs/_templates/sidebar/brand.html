@@ -31,17 +31,38 @@ Hope your day's going well. :)
   <select class="doc-version-switcher" onchange="switchDocs()">
     <option value="stable">Stable</option>
     <option value="unstable">Unstable</option>
+    <!-- Add more versions here as needed -->
   </select>
 </a>
 
 <script>
+  // Define the mapping of versions to URLs
+  const versionURLs = {
+    stable: 'http://docs.bonsaibim.org/',
+    unstable: 'http://docs-unstable.bonsaibim.org/',
+    // Add more versions here as needed
+  };
+
+  // Set the select box value based on the current URL
+  document.addEventListener('DOMContentLoaded', (event) => {
+    const selectBox = document.querySelector('.doc-version-switcher');
+    const currentURL = window.location.href;
+
+    for (const [version, url] of Object.entries(versionURLs)) {
+      if (currentURL.includes(url)) {
+        selectBox.value = version;
+        break;
+      }
+    }
+  });
+
   function switchDocs() {
-    var selectBox = document.querySelector('.doc-version-switcher');
-    var selectedValue = selectBox.options[selectBox.selectedIndex].value;
-    if (selectedValue === 'unstable') {
-      window.location.href = 'http://docs-unstable.bonsaibim.org/';
-    } else {
-      window.location.href = 'http://docs.bonsaibim.org/';
+    const selectBox = document.querySelector('.doc-version-switcher');
+    const selectedValue = selectBox.value;
+    const currentURL = window.location.href;
+
+    if (!currentURL.includes(versionURLs[selectedValue])) {
+      window.location.href = versionURLs[selectedValue];
     }
   }
 </script>
