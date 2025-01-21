@@ -539,6 +539,14 @@ class BIMObjectProperties(PropertyGroup):
     rotation_checksum: StringProperty(name="Rotation Checksum")
 
 
+def get_profiles(self: "BIMMeshProperties", context: bpy.types.Context):
+    from bonsai.bim.module.model.data import ItemData
+
+    if not ItemData.is_loaded:
+        ItemData.load()
+    return ItemData.data["profiles_enum"]
+
+
 class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     ifc_boolean_id: IntProperty(name="IFC Boolean ID")
@@ -550,6 +558,7 @@ class BIMMeshProperties(PropertyGroup):
     subshape_type: EnumProperty(name="Subshape Type", items=[(i, i, "") for i in ("-", "PROFILE", "AXIS")])
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     item_attributes: CollectionProperty(name="Item Attributes", type=Attribute)
+    item_profile: EnumProperty(name="Item Profile", items=get_profiles)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
     mesh_checksum: StringProperty(name="Mesh Checksum", default="")
     replaced_mesh: PointerProperty(type=bpy.types.Mesh, description="Original mesh to revert section cutaway")

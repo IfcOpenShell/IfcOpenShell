@@ -282,12 +282,22 @@ class EditItemUI:
             return
         obj = context.active_object
         assert obj
+
+        mesh_props = obj.data.BIMMeshProperties
+        if cls.get_item_object_class(obj) == "IfcExtrudedAreaSolid":
+            row = cls.layout.row()
+            row.prop(mesh_props, "item_profile")
+
         for item_attribute in obj.data.BIMMeshProperties.item_attributes:
             row = cls.layout.row()
             draw_attribute(item_attribute, cls.layout)
         if len(obj.data.BIMMeshProperties.item_attributes):
             row = cls.layout.row()
             row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")
+
+    @classmethod
+    def get_item_object_class(cls, obj: bpy.types.Object) -> str:
+        return obj.name.split("/")[1]
 
 
 class BIM_MT_add_representation_item(Menu):

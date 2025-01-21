@@ -27,6 +27,7 @@ import multiprocessing
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.grid
+import ifcopenshell.api.profile
 import ifcopenshell.api.style
 import ifcopenshell.geom
 import ifcopenshell.guid
@@ -50,7 +51,7 @@ from math import radians, pi
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 from bonsai.bim.ifc import IfcStore
-from typing import Union, Iterable, Optional, Literal, Iterator, List, TYPE_CHECKING, get_args, Generator
+from typing import Union, Iterable, Optional, Literal, Iterator, List, TYPE_CHECKING, get_args, Generator, cast
 from typing_extensions import TypeIs
 
 if TYPE_CHECKING:
@@ -1675,12 +1676,37 @@ class Geometry(bonsai.core.tool.Geometry):
 
         bonsai.bim.helper.import_attributes2(item, props.item_attributes, callback=callback)
 
+        profile = None
+        if item.is_a("IfcExtrudedAreaSolid"):
+            profile = item.SweptArea
+        if profile is None or profile.ProfileName is None:
+            item_profile = "-"
+        else:
+            item_profile = str(profile.id())
+        props.item_profile = item_profile
+
     @classmethod
     def update_item_attributes(cls, obj: bpy.types.Object) -> None:
         props = obj.data.BIMMeshProperties
+        ifc_file = tool.Ifc.get()
+
         item = tool.Ifc.get().by_id(props.ifc_definition_id)
         for attribute in props.item_attributes:
             setattr(item, attribute.name, attribute.get_value())
+
+        if item.is_a("IfcSweptAreaSolid"):
+            item_profile = cast(str, props.item_profile)
+            profile = item.SweptArea
+            profile_name: Union[str, None] = profile.ProfileName
+            if item_profile == "-":
+                if profile_name is not None:
+                    profile = ifcopenshell.util.element.copy_deep(ifc_file, profile)
+                    profile.ProfileName = None
+                    item.SweptArea = profile
+            else:
+                if profile_name is None:
+                    ifcopenshell.api.profile.remove_profile(ifc_file, profile)
+                item.SweptArea = ifc_file.by_id(int(item_profile))
 
     @classmethod
     def import_item(cls, obj: bpy.types.Object) -> None:

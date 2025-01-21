@@ -26,6 +26,7 @@ from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import bonsai.tool as tool
 from math import degrees
 from natsort import natsorted
+from typing import Union
 
 
 def refresh():
@@ -617,6 +618,7 @@ class ItemData:
         cls.data = {}
         cls.data["representation_identifier"] = cls.representation_identifier()
         cls.data["representation_type"] = cls.representation_type()
+        cls.data["profiles_enum"] = cls.profiles_enum()
 
     @classmethod
     def representation_identifier(cls):
@@ -629,3 +631,25 @@ class ItemData:
         props = bpy.context.scene.BIMGeometryProperties
         rep = tool.Geometry.get_active_representation(props.representation_obj)
         return rep.RepresentationType
+
+    @classmethod
+    def profiles_enum(cls) -> list[Union[tuple[str, str, str], None]]:
+        ifc_file = tool.Ifc.get()
+        profiles: list[Union[tuple[str, str, str], None]] = []
+        profiles.append(
+            (
+                "-",
+                "Use Unnamed Profile",
+                "If named profile is currently used, replace it with the unnamed version so it can be edited without affecting original profile.",
+            )
+        )
+        profiles.append(None)
+
+        named_profiles: list[tuple[str, str, str]] = []
+        for profile in ifc_file.by_type("IfcProfileDef"):
+            if (profile_name := profile.ProfileName) is None:
+                continue
+            named_profiles.append((str(profile.id()), profile_name, profile.is_a()))
+        named_profiles.sort(key=lambda x: x[1])
+        profiles.extend(named_profiles)
+        return profiles
