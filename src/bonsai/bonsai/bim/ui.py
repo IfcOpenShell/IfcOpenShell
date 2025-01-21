@@ -1251,4 +1251,12 @@ class BIM_PT_snappping(Panel):
         col.prop(prop, "vertex", toggle=True, icon="SNAP_VERTEX")
         col.prop(prop, "edge", toggle=True, icon="SNAP_EDGE")
         col.prop(prop, "edge_center", toggle=True, icon="SNAP_MIDPOINT")
+        col.prop(prop, "edge_intersection", toggle=True, icon="SNAP_GRID")
         col.prop(prop, "face", toggle=True, icon="SNAP_FACE")
+        groups = context.scene.BIMSnapGroups
+        row = layout.row(align=True)
+        row.label(text="Bonsai Target Selection")
+        row = layout.row(align=True)
+        row.prop(groups, "object", toggle=True)
+        row.prop(groups, "polyline", toggle=True)
+        row.prop(groups, "measure", toggle=True)
