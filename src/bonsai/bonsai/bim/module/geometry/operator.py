@@ -2775,6 +2775,41 @@ class UpdateItemAttributes(bpy.types.Operator, tool.Ifc.Operator):
         tool.Root.reload_item_decorator()
 
 
+class NameProfile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.name_profile"
+    bl_label = "Name Profile"
+    bl_description = "Add name to existing unnamed profile"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
+    extrusion_item_obj: bpy.props.StringProperty(name="Extrusion Item Object Name")
+    profile_name: bpy.props.StringProperty(
+        name="Profile Name",
+        options={"SKIP_SAVE"},
+    )
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "profile_name")
+
+    def _execute(self, context):
+        if not self.profile_name:
+            self.report({"INFO"}, "Profile name is not provided")
+            return {"CANCELLED"}
+
+        ifc_file = tool.Ifc.get()
+        extrusion_item_obj = bpy.data.objects[self.extrusion_item_obj]
+        mesh_props = extrusion_item_obj.data.BIMMeshProperties
+        extrusion = ifc_file.by_id(mesh_props.ifc_definition_id)
+        assert extrusion.is_a("IfcSweptAreaSolid")
+        profile = extrusion.SweptArea
+        profile.ProfileName = self.profile_name
+        bonsai.bim.handler.refresh_ui_data()  # Ensure enum is up to date.
+        mesh_props.item_profile = str(profile.id())
+
+
 class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_meshlike_item"
     bl_label = "Add Meshlike Item"

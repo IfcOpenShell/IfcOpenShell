@@ -285,8 +285,11 @@ class EditItemUI:
 
         mesh_props = obj.data.BIMMeshProperties
         if cls.get_item_object_class(obj) == "IfcExtrudedAreaSolid":
-            row = cls.layout.row()
+            row = cls.layout.row(align=True)
             row.prop(mesh_props, "item_profile")
+            if mesh_props.item_profile == "-":
+                op = row.operator("bim.name_profile", text="", icon="TAG")
+                op.extrusion_item_obj = obj.name
 
         for item_attribute in obj.data.BIMMeshProperties.item_attributes:
             row = cls.layout.row()

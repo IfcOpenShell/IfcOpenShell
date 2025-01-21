@@ -42,6 +42,7 @@ classes = (
     operator.FlipObject,
     operator.GetRepresentationIfcParameters,
     operator.ImportRepresentationItems,
+    operator.NameProfile,
     operator.OverrideDelete,
     operator.OverrideDuplicateMove,
     operator.OverrideDuplicateMoveLinked,
