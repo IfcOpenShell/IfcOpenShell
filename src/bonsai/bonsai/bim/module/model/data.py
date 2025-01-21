@@ -81,6 +81,9 @@ class AuthoringData:
         cls.data["active_class"] = cls.active_class()
         cls.data["active_material_usage"] = cls.active_material_usage()
         cls.data["is_representation_item_active"] = cls.is_representation_item_active()
+        # After is_representation_item_active.
+        cls.data["is_representation_item_swept_solid"] = cls.is_representation_item_swept_solid()
+
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
         cls.data["selected_material_usages"] = cls.selected_material_usages()
@@ -245,6 +248,13 @@ class AuthoringData:
         if not (obj := tool.Blender.get_active_object()):
             return False
         return tool.Geometry.is_representation_item(obj)
+
+    @classmethod
+    def is_representation_item_swept_solid(cls) -> bool:
+        if not cls.data["is_representation_item_active"]:
+            return False
+        assert (obj := bpy.context.active_object) and (item := tool.Geometry.get_representation_item(obj))
+        return item.is_a("IfcSweptAreaSolid")
 
     @classmethod
     def active_representation_type(cls):

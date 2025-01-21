@@ -284,7 +284,9 @@ class EditItemUI:
         assert obj
 
         mesh_props = obj.data.BIMMeshProperties
-        if cls.get_item_object_class(obj) == "IfcExtrudedAreaSolid":
+        if AuthoringData.data["is_representation_item_swept_solid"]:
+            # TODO: support EndSweptArea for IfcRevolvedAreaSolidTapered,
+            # will need to add second attribute for this.
             row = cls.layout.row(align=True)
             row.prop(mesh_props, "item_profile")
             if mesh_props.item_profile == "-":
@@ -294,13 +296,9 @@ class EditItemUI:
         for item_attribute in obj.data.BIMMeshProperties.item_attributes:
             row = cls.layout.row()
             draw_attribute(item_attribute, cls.layout)
-        if len(obj.data.BIMMeshProperties.item_attributes):
+        if len(obj.data.BIMMeshProperties.item_attributes) or AuthoringData.data["is_representation_item_swept_solid"]:
             row = cls.layout.row()
             row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")
-
-    @classmethod
-    def get_item_object_class(cls, obj: bpy.types.Object) -> str:
-        return obj.name.split("/")[1]
 
 
 class BIM_MT_add_representation_item(Menu):

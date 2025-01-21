@@ -971,13 +971,19 @@ class Geometry(bonsai.core.tool.Geometry):
         )
 
     @classmethod
-    def is_representation_item(cls, obj: bpy.types.Object) -> bool:
-        return bool(
-            (data := obj.data)
-            and isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES)
+    def get_representation_item(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
+        data = obj.data
+        if (
+            isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES)
             and (ifc_id := data.BIMMeshProperties.ifc_definition_id)
-            and tool.Ifc.get().by_id(ifc_id).is_a("IfcRepresentationItem")
-        )
+            and ((item := tool.Ifc.get().by_id(ifc_id)).is_a("IfcRepresentationItem"))
+        ):
+            return item
+        return None
+
+    @classmethod
+    def is_representation_item(cls, obj: bpy.types.Object) -> bool:
+        return bool(cls.get_representation_item(obj))
 
     @classmethod
     def get_active_or_representation_obj(cls) -> bpy.types.Object | None:
@@ -1677,7 +1683,7 @@ class Geometry(bonsai.core.tool.Geometry):
         bonsai.bim.helper.import_attributes2(item, props.item_attributes, callback=callback)
 
         profile = None
-        if item.is_a("IfcExtrudedAreaSolid"):
+        if item.is_a("IfcSweptAreaSolid"):
             profile = item.SweptArea
         if profile is None or profile.ProfileName is None:
             item_profile = "-"
