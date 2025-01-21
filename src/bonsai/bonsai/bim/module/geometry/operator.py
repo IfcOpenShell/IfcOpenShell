@@ -1984,7 +1984,13 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             self.enable_edit_mode(context)
         elif item.is_a("IfcSweptAreaSolid"):
             tool.Geometry.sync_item_positions()
-            tool.Model.import_profile(item.SweptArea, obj=obj)
+            res = tool.Model.import_profile((profile := item.SweptArea), obj=obj)
+            if res is None:
+                self.report(
+                    {"INFO"},
+                    f"Couldn't import profile, editing it directly is not yet supported. Failing profile: {profile}.",
+                )
+                return
             obj.data.BIMMeshProperties.ifc_definition_id = item.id()
             self.enable_edit_mode(context)
             ProfileDecorator.install(context)

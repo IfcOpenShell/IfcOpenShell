@@ -286,7 +286,7 @@ class Model(bonsai.core.tool.Model):
         profile: ifcopenshell.entity_instance,
         obj: Optional[bpy.types.Object] = None,
         position: Optional[Matrix] = None,
-    ) -> bpy.types.Object:
+    ) -> Union[bpy.types.Object, None]:
         """Creates new profile mesh and assigns it to `obj`,
         if `obj` is `None` then new "Profile" object will be created.
 
@@ -315,6 +315,9 @@ class Model(bonsai.core.tool.Model):
                 cls.convert_curve_to_mesh(obj, position, profile.OuterBoundary)
                 for inner_boundary in profile.InnerBoundaries or []:
                     cls.convert_curve_to_mesh(obj, position, inner_boundary)
+
+        if not cls.vertices or not cls.edges:
+            return None
 
         mesh = bpy.data.meshes.new("Profile")
         mesh.from_pydata(cls.vertices, cls.edges, [])
