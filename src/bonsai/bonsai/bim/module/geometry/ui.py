@@ -253,11 +253,10 @@ class BIM_PT_representation_items(Panel):
             row.prop(props, "representation_item_shape_aspect", icon="SHAPEKEY_DATA", text="")
             row.operator("bim.edit_representation_item_shape_aspect", icon="CHECKMARK", text="")
             row.operator("bim.disable_editing_representation_item_shape_aspect", icon="CANCEL", text="")
-
-            shape_aspect_attrs = props.shape_aspect_attrs
-            self.layout.label(text="Shape Aspect Attributes:")
-            self.layout.prop(shape_aspect_attrs, "name")
-            self.layout.prop(shape_aspect_attrs, "description")
+            if props.representation_item_shape_aspect == "NEW":
+                shape_aspect_attrs = props.shape_aspect_attrs
+                self.layout.prop(shape_aspect_attrs, "name")
+                self.layout.prop(shape_aspect_attrs, "description")
         else:
             row.label(text=shape_aspect or "No Shape Aspect", icon="SHAPEKEY_DATA")
             row.operator("bim.enable_editing_representation_item_shape_aspect", icon="GREASEPENCIL", text="")

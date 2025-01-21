@@ -174,7 +174,7 @@ class RepresentationsData:
                 matching_shape_aspects.append(shape_aspect)
 
         # blender enum items
-        new_shape_aspect = [("NEW", "Create A New Shape Aspect", "")]
+        new_shape_aspect = [("NEW", "New Shape Aspect", "")]
         return new_shape_aspect + [(str(s.id()), s.Name or "Unnamed", "") for s in matching_shape_aspects]
 
 
