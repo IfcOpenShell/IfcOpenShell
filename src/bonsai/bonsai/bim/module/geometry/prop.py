@@ -159,6 +159,11 @@ class BIMObjectGeometryProperties(PropertyGroup):
     )
     shape_aspect_attrs: PointerProperty(type=ShapeAspect)
 
+    @property
+    def active_item(self):
+        if self.active_item_index < len(self.items):
+            return self.items[self.active_item_index]
+
 
 class BIMGeometryProperties(PropertyGroup):
     # Revit workaround

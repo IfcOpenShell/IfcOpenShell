@@ -2395,6 +2395,8 @@ class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
+        if context.scene.BIMGeometryProperties.representation_obj:
+            return False  # Artificial restriction for now to prevent removing when in item mode
         if not (obj := tool.Geometry.get_active_or_representation_obj()) or len(obj.BIMGeometryProperties.items) <= 1:
             cls.poll_message_set(
                 "Active object need to have more than 1 representation items to keep representation valid"
@@ -2415,15 +2417,46 @@ class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.enable_editing_representation_items()
 
 
+class SelectRepresentationItem(bpy.types.Operator):
+    bl_idname = "bim.select_representation_item"
+    bl_label = "Select Representation Item"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.scene.BIMGeometryProperties.representation_obj
+
+    def execute(self, context):
+        obj = tool.Geometry.get_active_or_representation_obj()
+        item = tool.Ifc.get().by_id(obj.BIMGeometryProperties.active_item.ifc_definition_id)
+        item_ids = self.get_nested_item_ids(item)
+
+        props = context.scene.BIMGeometryProperties
+        for item_obj in props.item_objs:
+            if item_obj.obj.data.BIMMeshProperties.ifc_definition_id in item_ids:
+                tool.Blender.select_object(item_obj.obj)
+        return {"FINISHED"}
+
+    def get_nested_item_ids(self, item):
+        results = set()
+        if item.is_a("IfcBooleanResult"):
+            results.update(self.get_nested_item_ids(item.FirstOperand))
+            results.update(self.get_nested_item_ids(item.SecondOperand))
+        elif item.is_a("IfcCsgSolid"):
+            results.update(self.get_nested_item_ids(item.TreeRootExpression))
+        else:
+            results.add(item.id())
+        return results
+
+
 def poll_editing_representation_item_style(cls, context):
     if not (obj := tool.Geometry.get_active_or_representation_obj()):
         return False
     props = obj.BIMGeometryProperties
     if not props.is_editing:
         return False
-    if not 0 <= props.active_item_index < len(props.items):
+    if not (item := props.active_item):
         return False
-    item = props.items[props.active_item_index]
     shape_aspect = item.shape_aspect
     if shape_aspect == "":
         return True
@@ -2459,7 +2492,7 @@ class EnableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator
         ifc_file = tool.Ifc.get()
 
         # set dropdown to currently active style
-        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item_id = props.active_item.ifc_definition_id
         representation_item = ifc_file.by_id(representation_item_id)
         style = tool.Style.get_representation_item_style(representation_item)
         if style:
@@ -2478,7 +2511,7 @@ class EditRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
         ifc_file = tool.Ifc.get()
 
         surface_style = ifc_file.by_id(int(props.representation_item_style))
-        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item_id = props.active_item.ifc_definition_id
         representation_item = ifc_file.by_id(representation_item_id)
 
         tool.Style.assign_style_to_representation_item(representation_item, surface_style)
@@ -2515,7 +2548,7 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
         active_props.is_editing_item_style = False
 
         # Get active representation item
-        active_representation_item_id = active_props.items[active_props.active_item_index].ifc_definition_id
+        active_representation_item_id = active_props.active_item.ifc_definition_id
         active_representation_item = tool.Ifc.get_entity_by_id(active_representation_item_id)
         if not active_representation_item:
             self.report({"ERROR"}, f"Couldn't find representation item by id {active_representation_item_id}.")
@@ -2582,7 +2615,7 @@ class EnableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Op
         props.is_editing_item_shape_aspect = True
 
         # set dropdown to currently active shape aspect
-        shape_aspect_id = props.items[props.active_item_index].shape_aspect_id
+        shape_aspect_id = props.active_item.shape_aspect_id
         if shape_aspect_id != 0:
             props.representation_item_shape_aspect = str(shape_aspect_id)
 
@@ -2599,7 +2632,7 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing_item_shape_aspect = False
         ifc_file = tool.Ifc.get()
 
-        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item_id = props.active_item.ifc_definition_id
         representation_item = ifc_file.by_id(representation_item_id)
 
         if props.representation_item_shape_aspect == "NEW":
@@ -2611,7 +2644,7 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
                 for representation_map in element.RepresentationMaps:
                     if representation_map.MappedRepresentation == active_representation:
                         product_shape = representation_map
-            previous_shape_aspect_id = props.items[props.active_item_index].shape_aspect_id
+            previous_shape_aspect_id = props.active_item.shape_aspect_id
             # will be None if item didn't had a shape aspect
             previous_shape_aspect = tool.Ifc.get_entity_by_id(previous_shape_aspect_id)
             shape_aspect = tool.Geometry.create_shape_aspect(
@@ -2665,9 +2698,9 @@ class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, tool.Ifc.Opera
         props = obj.BIMGeometryProperties
         ifc_file = tool.Ifc.get()
 
-        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item_id = props.active_item.ifc_definition_id
         representation_item = ifc_file.by_id(representation_item_id)
-        shape_aspect = ifc_file.by_id(props.items[props.active_item_index].shape_aspect_id)
+        shape_aspect = ifc_file.by_id(props.active_item.shape_aspect_id)
 
         # unassign items before removing items as removing items
         # might remove shape aspect

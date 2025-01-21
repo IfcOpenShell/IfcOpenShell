@@ -65,6 +65,7 @@ classes = (
     operator.RemoveRepresentationItem,
     operator.RemoveRepresentationItemFromShapeAspect,
     operator.SelectConnection,
+    operator.SelectRepresentationItem,
     operator.SwitchRepresentation,
     operator.UnassignRepresentationItemStyle,
     operator.UpdateItemAttributes,

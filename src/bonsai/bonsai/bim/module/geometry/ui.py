@@ -190,6 +190,13 @@ class BIM_PT_representation_items(Panel):
             row.operator("bim.enable_editing_representation_items", icon="IMPORT", text="")
             return
 
+        if props.active_item:
+            row = self.layout.row(align=True)
+            row.alignment = "RIGHT"
+            op = row.operator("bim.select_representation_item", icon="RESTRICT_SELECT_OFF", text="")
+            op = row.operator("bim.remove_representation_item", icon="X", text="")
+            op.representation_item_id = props.active_item.ifc_definition_id
+
         self.layout.template_list("BIM_UL_representation_items", "", props, "items", props, "active_item_index")
 
         item_is_active = props.active_item_index < len(props.items)
@@ -527,5 +534,3 @@ class BIM_UL_representation_items(UIList):
             row.label(text=item_name, icon=icon)
             if item.layer:
                 row.label(text="", icon="STICKY_UVS_LOC")
-            op = row.operator("bim.remove_representation_item", icon="X", text="")
-            op.representation_item_id = item.ifc_definition_id
