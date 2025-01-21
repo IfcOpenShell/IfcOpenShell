@@ -111,7 +111,7 @@ class WallTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.wall_tool"
     bl_label = "Wall Tool"
-    bl_description = "Create and edit walls"
+    bl_description = "Create and edit solid, movable, parapet, partitioning, plumbing, sheer, standard, polygonal, and elemented walls"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.wall")
     bl_widget = None
     ifc_element_type = "IfcWallType"
@@ -122,10 +122,21 @@ class RailingTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.railing_tool"
     bl_label = "Railing Tool"
-    bl_description = "Create and edit railings"
+    bl_description = "Create and edit handrail, guardrail, and balustrade railings"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.railing")
     bl_widget = None
     ifc_element_type = "IfcRailingType"
+
+
+class CurtainWallTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.curtain_wall_tool"
+    bl_label = "Curtain Wall Tool"
+    bl_description = "Create and edit curtain wall assembolies"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.curtainwall")
+    bl_widget = None
+    ifc_element_type = "IfcCurtainWallType"
 
 
 class SlabTool(BimTool):
@@ -133,7 +144,7 @@ class SlabTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.slab_tool"
     bl_label = "Slab Tool"
-    bl_description = "Create and edit slabs"
+    bl_description = "Create and edit floor, roof, landing, and baseslab slabs"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.slab")
     bl_widget = None
     ifc_element_type = "IfcSlabType"
@@ -144,7 +155,7 @@ class RoofTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.roof_tool"
     bl_label = "Roof Tool"
-    bl_description = "Create and edit roofs"
+    bl_description = "Create and edit flat, shed, gable, hip, hipped gable, gambrel, mansard, barrel, rainbox, butterly, pavilion, dome, and freeform roofs"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.roof")
     bl_widget = None
     ifc_element_type = "IfcRoofType"
@@ -155,7 +166,7 @@ class DoorTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.door_tool"
     bl_label = "Door Tool"
-    bl_description = "Create and edit doors"
+    bl_description = "Create and edit doors, gates, and trap doors"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.door")
     bl_widget = None
     ifc_element_type = "IfcDoorType"
@@ -166,7 +177,7 @@ class WindowTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.window_tool"
     bl_label = "Window Tool"
-    bl_description = "Create and edit windows"
+    bl_description = "Create and edit windows, skylights, and lightdomes"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.window")
     bl_widget = None
     ifc_element_type = "IfcWindowType"
@@ -177,7 +188,7 @@ class StairTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.stair_tool"
     bl_label = "Stair Tool"
-    bl_description = "Create and edit stairs"
+    bl_description = "Create and edit straight run, two straight run, quarter winding, quarter turn, half winding, half turn, two quarter winding, two wuarter turn, spiral, double return, curved run, and two curved run stairs"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.stair")
     bl_widget = None
     ifc_element_type = "IfcStairType"
@@ -188,10 +199,23 @@ class RampTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.ramp_tool"
     bl_label = "Ramp Tool"
-    bl_description = "Create and edit ramps"
+    bl_description = (
+        "Create and edit straight run, two straight run, quarter turn, two wuarter turn, half turn, and spiral ramps"
+    )
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.ramp")
     bl_widget = None
     ifc_element_type = "IfcRampType"
+
+
+class TransportElementTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.transport_element_tool"
+    bl_label = "Transport Element Tool"
+    bl_description = "Create and edit elevators, escalator, moving walkways, and craneways"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.transportelement")
+    bl_widget = None
+    ifc_element_type = "IfcTransportElementType"
 
 
 class FurnitureTool(BimTool):
@@ -199,7 +223,7 @@ class FurnitureTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.furniture_tool"
     bl_label = "Furniture Tool"
-    bl_description = "Create and edit furniture"
+    bl_description = "Create and edit furniture including table, desk, bed, file cabinet, shelve, and sofa"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.furniture")
     bl_widget = None
     ifc_element_type = "IfcFurnitureType"
@@ -210,7 +234,7 @@ class SanitaryTerminalTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.sanitary_terminal_tool"
     bl_label = "Sanitary Terminal Tool"
-    bl_description = "Create and edit sanitary terminals"
+    bl_description = "Create and edit sanitary terminals including bath, bidet, cister, shower, sink, sanitary fountain, toilet pan, urinal, wash hand basin, and wc seat"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.sanitaryterminal")
     bl_widget = None
     ifc_element_type = "IfcSanitaryTerminalType"
@@ -221,7 +245,7 @@ class LightFixtureTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.light_fixture_tool"
     bl_label = "Light Fixture Tool"
-    bl_description = "Create and edit light fixtures"
+    bl_description = "Create and edit point source, direction source, and security lighting"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.lightfixture")
     bl_widget = None
     ifc_element_type = "IfcLightFixtureType"
@@ -232,7 +256,7 @@ class ElectricApplianceTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.electric_appliance_tool"
     bl_label = "Electric Appliance Tool"
-    bl_description = "Create and electric appliances"
+    bl_description = "Create and edit electric appliances, including dishwasher, electric cooker, freezer, fridge freezer, microwave, refrigerator, kitchen machines, vending machines, washing machines, as well as freestanding electric heaters, fans, water heaters, and water coolers."
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.electricappliance")
     bl_widget = None
     ifc_element_type = "IfcElectricApplianceType"
@@ -243,7 +267,7 @@ class ColumnTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.column_tool"
     bl_label = "Column Tool"
-    bl_description = "Create and edit columns"
+    bl_description = "Create and edit columns and pilasters"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.column")
     bl_widget = None
     ifc_element_type = "IfcColumnType"
@@ -254,7 +278,7 @@ class BeamTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.beam_tool"
     bl_label = "Beam Tool"
-    bl_description = "Create and edit beams"
+    bl_description = "Create and edit beams, joists, hollowcores, lintels, spandrels, and  T-beams"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.beam")
     bl_widget = None
     ifc_element_type = "IfcBeamType"
@@ -265,10 +289,21 @@ class MemberTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.member_tool"
     bl_label = "Member Tool"
-    bl_description = "Create and edit members"
+    bl_description = "Create and edit braces, chords, collars, members, mullions, plates, posts, purlins, rafters, stringers, struts, and studs"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.member")
     bl_widget = None
     ifc_element_type = "IfcMemberType"
+
+
+class FootingTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.footing_tool"
+    bl_label = "Footing Tool"
+    bl_description = "Create and edit pad, beam and strip footings, as well as pile caps and caisson foundations"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.footing")
+    bl_widget = None
+    ifc_element_type = "IfcFootingType"
 
 
 class DuctTool(BimTool):
@@ -276,7 +311,7 @@ class DuctTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.duct_tool"
     bl_label = "Duct Tool"
-    bl_description = "Create and edit duct segments"
+    bl_description = "Create and edit rigid and flexible duct segments"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.duct")
     bl_widget = None
     ifc_element_type = "IfcDuctSegmentType"
@@ -287,7 +322,7 @@ class CableCarrierTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.cable_carrier_tool"
     bl_label = "Cable Carrier Tool"
-    bl_description = "Create and edit cable carriers"
+    bl_description = "Create and edit cable ladder, tray, trunking, and conduite segments"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cablecarrier")
     bl_widget = None
     ifc_element_type = "IfcCableCarrierSegmentType"
@@ -298,7 +333,7 @@ class PipeTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.pipe_tool"
     bl_label = "Pipe Tool"
-    bl_description = "Create and edit pipes"
+    bl_description = "Create and edit culvert, flexible, rigid, gutter, and spool pipe segments"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.pipe")
     bl_widget = None
     ifc_element_type = "IfcPipeSegmentType"
@@ -309,7 +344,7 @@ class CableTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.cable_tool"
     bl_label = "Cable Tool"
-    bl_description = "Create and edit cables"
+    bl_description = "Create and edit bus bar, cable, conductor, and core segments"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.cable")
     bl_widget = None
     ifc_element_type = "IfcCableSegmentType"

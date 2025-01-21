@@ -98,6 +98,9 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
         elif self.ifc_element_type == "IfcMemberType":
             props.ifc_predefined_type = "CHORD"
             props.representation_template = "PROFILESET"
+        elif self.ifc_element_type == "IfcFootingType":
+            props.ifc_predefined_type = "FOOTING_BEAM"
+            props.representation_template = "PROFILESET"
         elif self.ifc_element_type == "IfcDuctSegmentType":
             props.ifc_predefined_type = "RIGIDSEGMENT"
             props.representation_template = "FLOW_SEGMENT_RECTANGULAR"
@@ -116,6 +119,9 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
         elif self.ifc_element_type == "IfcRampType":
             props.ifc_predefined_type = "STRAIGHT_RUN_RAMP"
             props.representation_template = "LAYERSET_AXIS3"
+        elif self.ifc_element_type == "IfcTransportElementType":
+            props.ifc_predefined_type = "ELEVATOR"
+            props.representation_template = "MESH"
         elif self.ifc_element_type == "IfcFurnitureType":
             props.ifc_predefined_type = "CHAIR"
             props.representation_template = "MESH"
