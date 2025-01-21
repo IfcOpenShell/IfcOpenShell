@@ -266,6 +266,8 @@ def register():
     import bonsai.tool as tool
 
     tool.Blender.ensure_bin_in_path()
+    # RestrictedContext doesn't allow accessing scene attribute, postpone it for a bit.
+    bpy.app.timers.register(tool.Blender.setup_user_data_dir, first_interval=0.1)
 
 
 def unregister():

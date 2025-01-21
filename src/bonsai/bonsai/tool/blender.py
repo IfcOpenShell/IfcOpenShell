@@ -1472,29 +1472,50 @@ class Blender(bonsai.core.tool.Blender):
             return "dm"  # Default to dark mode if an error occurs
 
     @classmethod
-    def get_default_data_dir(cls) -> Path:
+    def get_internal_data_dir(cls) -> Path:
         return Path(__file__).parent.parent / "bim" / "data"
 
     @classmethod
-    def get_custom_data_dir(cls) -> Path:
+    def get_user_data_dir(cls) -> Path:
         return Path(bpy.context.scene.BIMProperties.data_dir)
 
     @classmethod
     def get_data_dir_path(cls, relative_path: Union[str, Path]) -> Path:
-        custom_path = cls.get_custom_data_dir() / relative_path
+        """Get specified data path in data folder.
+        If this path exists in user folder, it takes the precedence."""
+        custom_path = cls.get_user_data_dir() / relative_path
         if custom_path.exists():
             return custom_path
-        return cls.get_default_data_dir() / relative_path
+        return cls.get_internal_data_dir() / relative_path
 
     @classmethod
     def get_data_dir_paths(cls, relative_dir_path: Union[str, Path], glob_pattern: str) -> Generator[Path, None, None]:
-        custom_path = cls.get_custom_data_dir() / relative_dir_path
+        """Return paths based on glob pattern from the provided path in data folder.
+        Return paths from internal data folder first and then paths from the user data folder (if it exists)."""
+        custom_path = cls.get_user_data_dir() / relative_dir_path
         if custom_path.is_dir():
             for filepath in custom_path.glob(glob_pattern):
                 yield filepath
 
-        default_data_dir = cls.get_default_data_dir()
+        default_data_dir = cls.get_internal_data_dir()
         if default_data_dir == custom_path:
             return
         for filepath in (default_data_dir / relative_dir_path).glob(glob_pattern):
             yield filepath
+
+    @classmethod
+    def setup_user_data_dir(cls) -> None:
+        """Setup empty folders in user data directory to make them more discoverable."""
+        custom_data_dir = cls.get_user_data_dir()
+        # Not all paths from internal data dir are listed here,
+        # only the ones that intended to be used by user.
+        paths_to_create = (
+            custom_data_dir,
+            custom_data_dir / "assets",
+            custom_data_dir / "libraries",
+            custom_data_dir / "pset",  # pset templates.
+            custom_data_dir / "templates" / "projects",
+            custom_data_dir / "templates" / "titleblocks",
+        )
+        for path in paths_to_create:
+            path.mkdir(parents=True, exist_ok=True)
