@@ -20,26 +20,32 @@ import bpy
 import blf
 import gpu
 import bmesh
+import ifcopenshell
 import bonsai.tool as tool
 from bpy.types import SpaceView3D
 from mathutils import Vector
 from gpu_extras.batch import batch_for_shader
 from bpy_extras.view3d_utils import location_3d_to_region_2d
+from typing import Sequence
 
 
 class ItemDecorator:
     is_installed = False
     handlers = []
+    objs: dict[str, dict[str, list]]
+    obj_is_selected: dict[str, bool]
+    obj_is_boolean: dict[str, list[ifcopenshell.entity_instance]]
 
     @classmethod
     def install(cls, context):
         if cls.is_installed:
             cls.uninstall()
-        obj_is_selected = {}
-        obj_is_boolean = {}
-        objs = {}
+        obj_is_selected: dict[str, bool] = {}
+        obj_is_boolean: dict[str, list[ifcopenshell.entity_instance]] = {}
+        objs: dict[str, dict[str, list]] = {}
         for item_obj in context.scene.BIMGeometryProperties.item_objs:
             if obj := item_obj.obj:
+                obj: bpy.types.Object
                 objs[obj.name] = cls.get_obj_data(obj)
                 obj_is_selected[obj.name] = obj.select_get()
                 item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
@@ -54,7 +60,7 @@ class ItemDecorator:
         cls.is_installed = True
 
     @classmethod
-    def get_obj_data(cls, obj):
+    def get_obj_data(cls, obj: bpy.types.Object) -> dict[str, list]:
         verts = []
         edges = []
         tris = []
@@ -145,8 +151,8 @@ class ItemDecorator:
                         blf.draw(font_id, tag)
         blf.disable(font_id, blf.SHADOW)
 
-    def draw(self, context):
-        def transparent_color(color, alpha=0.05):
+    def draw(self, context: bpy.types.Context) -> None:
+        def transparent_color(color: Sequence[float], alpha: float = 0.05) -> list[float]:
             color = [i for i in color]
             color[3] = alpha
             return color

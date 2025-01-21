@@ -33,6 +33,7 @@ import ifcopenshell.api.grid
 import bonsai.core.geometry
 import bonsai.core.geometry as core
 import bonsai.core.aggregate
+import bonsai.core.nest
 import bonsai.core.style
 import bonsai.core.root
 import bonsai.core.drawing
