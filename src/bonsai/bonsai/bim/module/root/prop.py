@@ -48,9 +48,26 @@ def get_representation_template(self, context):
 
 
 def refresh_classes(self, context):
+    old_class = context.scene.BIMRootProperties.ifc_class.split("Type")[0]
+    old_predefined_type = (
+        context.scene.BIMRootProperties.ifc_predefined_type if get_ifc_predefined_types(self, context) else ""
+    )
+
     enum = get_ifc_classes(self, context)
     context.scene.BIMRootProperties.ifc_class = enum[0][0]
     IfcClassData.load()
+
+    # When switching between ElementType and Element, keep the same class and predefined type if possible
+    if context.scene.BIMRootProperties.ifc_product == "IfcElementType":
+        ifc_class = old_class + "Type"
+    elif context.scene.BIMRootProperties.ifc_product == "IfcElement":
+        ifc_class = old_class
+    else:
+        return
+    if ifc_class in [e[0] for e in get_ifc_classes(self, context)]:
+        context.scene.BIMRootProperties.ifc_class = ifc_class
+        if old_predefined_type:
+            context.scene.BIMRootProperties.ifc_predefined_type = old_predefined_type
 
 
 def refresh_predefined_types(self, context):
