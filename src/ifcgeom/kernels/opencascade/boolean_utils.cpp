@@ -503,10 +503,10 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 
 				double u0, u1, v0, v1;
 				prop_a.Bounds(u0, u1, v0, v1);
-				prop_a.Normal((u0 + u1) / 2., (u0 + u1) / 2., p_a, v_a);
+				prop_a.Normal((u0 + u1) / 2., (v0 + v1) / 2., p_a, v_a);
 
 				prop_b.Bounds(u0, u1, v0, v1);
-				prop_b.Normal((u0 + u1) / 2., (u0 + u1) / 2., p_b, v_b);
+				prop_b.Normal((u0 + u1) / 2., (v0 + v1) / 2., p_b, v_b);
 
 				bool all_vertices_behind_f_a = true;
 
@@ -531,7 +531,7 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 				// Check if surface normals are opposite
 				if (v_a.IsOpposite(v_b, 1.e-5)) {
 					// Check if faces are co-planar
-					if ((p_b.XYZ() - p_a.XYZ()).Dot(v_a.XYZ()) <= prec) {
+					if (std::abs((p_b.XYZ() - p_a.XYZ()).Dot(v_a.XYZ())) <= prec) {
 
 						TopTools_IndexedMapOfShape f_b_vertices;
 						TopExp::MapShapes(f_b, TopAbs_VERTEX, f_b_vertices);
