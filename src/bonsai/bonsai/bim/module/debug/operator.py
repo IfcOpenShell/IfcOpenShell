@@ -379,11 +379,9 @@ class InspectFromObject(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         if not context.active_object:
-            if bpy.app.version >= (3, 0, 0):
-                cls.poll_message_set("No Active Object")
+            cls.poll_message_set("No Active Object")
         elif not context.active_object.BIMObjectProperties.ifc_definition_id:
-            if bpy.app.version >= (3, 0, 0):
-                cls.poll_message_set("Active Object doesn't have an IFC definition")
+            cls.poll_message_set("Active Object doesn't have an IFC definition")
         else:
             return True
 

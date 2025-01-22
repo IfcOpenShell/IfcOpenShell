@@ -493,21 +493,12 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
     def create_section_compare_node(self):
         group = bpy.data.node_groups.new("Section Compare", type="ShaderNodeTree")
-        if bpy.app.version >= (4, 0, 0):
-            input_value = group.interface.new_socket(name="Value", in_out="INPUT", socket_type="NodeSocketFloat")
-            input_value.default_value = 1.0  # Mandatory multiplier for the last node group
-            group.interface.new_socket(name="Vector", in_out="INPUT", socket_type="NodeSocketVector")
-            group.interface.new_socket(name="Line Decorator", in_out="INPUT", socket_type="NodeSocketFloat")
-            group.interface.new_socket(name="Value", in_out="OUTPUT", socket_type="NodeSocketFloat")
-            group.interface.new_socket(name="Line Decorator", in_out="OUTPUT", socket_type="NodeSocketFloat")
-        else:
-            group.inputs.new("NodeSocketFloat", "Value")
-            # Mandatory multiplier for the last node group
-            group.inputs["Value"].default_value = 1.0
-            group.inputs.new("NodeSocketVector", "Vector")
-            group.inputs.new("NodeSocketFloat", "Line Decorator")
-            group.outputs.new("NodeSocketFloat", "Value")
-            group.outputs.new("NodeSocketFloat", "Line Decorator")
+        input_value = group.interface.new_socket(name="Value", in_out="INPUT", socket_type="NodeSocketFloat")
+        input_value.default_value = 1.0  # Mandatory multiplier for the last node group
+        group.interface.new_socket(name="Vector", in_out="INPUT", socket_type="NodeSocketVector")
+        group.interface.new_socket(name="Line Decorator", in_out="INPUT", socket_type="NodeSocketFloat")
+        group.interface.new_socket(name="Value", in_out="OUTPUT", socket_type="NodeSocketFloat")
+        group.interface.new_socket(name="Line Decorator", in_out="OUTPUT", socket_type="NodeSocketFloat")
 
         group_input = group.nodes.new(type="NodeGroupInput")
         group_input.location = 0, 50
@@ -556,12 +547,8 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
     def create_section_override_node(self, obj, context):
         group = bpy.data.node_groups.new("Section Override", type="ShaderNodeTree")
-        if bpy.app.version >= (4, 0, 0):
-            group.interface.new_socket(name="Shader", in_out="INPUT", socket_type="NodeSocketShader")
-            group.interface.new_socket(name="Shader", in_out="OUTPUT", socket_type="NodeSocketShader")
-        else:
-            group.inputs.new("NodeSocketShader", "Shader")
-            group.outputs.new("NodeSocketShader", "Shader")
+        group.interface.new_socket(name="Shader", in_out="INPUT", socket_type="NodeSocketShader")
+        group.interface.new_socket(name="Shader", in_out="OUTPUT", socket_type="NodeSocketShader")
         links = group.links
         nodes = group.nodes
 

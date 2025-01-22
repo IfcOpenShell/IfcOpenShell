@@ -142,7 +142,7 @@ class ShapeAspect(PropertyGroup):
             "If applicable, shape aspect names should correlate with names of material constituents.\n"
             "Click to see autocompletion for constituent names."
         ),
-        **({} if bpy.app.version < (3, 3, 0) else {"search": get_material_constituents}),
+        search=get_material_constituents,
     )
     description: StringProperty(
         name="Description",

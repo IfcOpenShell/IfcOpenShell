@@ -54,7 +54,7 @@ OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve, bpy.types.Camera]
 class Blender(bonsai.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
-    TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME" if bpy.app.version >= (4, 1, 0) else "LIGHTPROBE_GRID"
+    TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME"
 
     BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, str], tuple[str, str, str, str, str]]
     """
@@ -331,16 +331,6 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def copy_node_graph(cls, material_to: bpy.types.Material, material_from: bpy.types.Material) -> None:
-        # https://projects.blender.org/blender/blender/issues/108763
-        if bpy.app.version[:2] == (4, 0):
-            print(
-                "WARNING. Copying node graph is not supported on Blender 4.0.x due Blender bug, "
-                f"copying node graph from {material_from.name} to {material_to.name} will be skipped"
-            )
-            return
-
-        use_temp_override = bpy.app.version >= (4, 0, 0)
-
         temp_override = cls.get_shader_editor_context()
         shader_editor = temp_override["space"]
 
@@ -356,19 +346,13 @@ class Blender(bonsai.core.tool.Blender):
         # select all nodes and copy them to clipboard
         for node in material_from.node_tree.nodes:
             node.select = True
-        if use_temp_override:
-            with bpy.context.temp_override(**temp_override):
-                bpy.ops.node.clipboard_copy()
-        else:
-            bpy.ops.node.clipboard_copy(temp_override)
+        with bpy.context.temp_override(**temp_override):
+            bpy.ops.node.clipboard_copy()
 
         # back to original material
         shader_editor.node_tree = material_to.node_tree
-        if use_temp_override:
-            with bpy.context.temp_override(**temp_override):
-                bpy.ops.node.clipboard_paste(offset=(0, 0))
-        else:
-            bpy.ops.node.clipboard_paste(temp_override, offset=(0, 0))
+        with bpy.context.temp_override(**temp_override):
+            bpy.ops.node.clipboard_paste(offset=(0, 0))
 
         # restore shader editor settings
         shader_editor.pin = previous_pin_setting
@@ -1355,13 +1339,6 @@ class Blender(bonsai.core.tool.Blender):
             sun_position = importlib.import_module("sun_position")
         except ImportError:
             sun_position = None
-
-        if sun_position:
-            return sun_position
-
-        # No extensions prior to 4.2.
-        if bpy.app.version < (4, 2, 0):
-            return sun_position
 
         if sun_position:
             return sun_position
