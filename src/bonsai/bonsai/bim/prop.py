@@ -586,11 +586,13 @@ class BIMFacet(PropertyGroup):
 class BIMFilterGroup(PropertyGroup):
     filters: CollectionProperty(type=BIMFacet, name="filters")
 
+
 class BIMSnapGroups(PropertyGroup):
     object: BoolProperty(name="Object")
     polyline: BoolProperty(name="Polyline")
     measure: BoolProperty(name="Measure")
-    
+
+
 class BIMSnapProperties(PropertyGroup):
     vertex: BoolProperty(name="Vertex")
     edge: BoolProperty(name="Edge")

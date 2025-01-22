@@ -84,7 +84,9 @@ def add_layer(
     settings = {"layer_set": layer_set, "material": material}
 
     layers = list(settings["layer_set"].MaterialLayers or [])
-    layer = file.create_entity("IfcMaterialLayer", **{"Material": settings["material"], "LayerThickness": 0.1 / unit_scale})
+    layer = file.create_entity(
+        "IfcMaterialLayer", **{"Material": settings["material"], "LayerThickness": 0.1 / unit_scale}
+    )
     layers.append(layer)
     settings["layer_set"].MaterialLayers = layers
     return layer

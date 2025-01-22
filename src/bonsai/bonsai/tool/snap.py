@@ -514,7 +514,7 @@ class Snap(bonsai.core.tool.Snap):
                     options.append(props.rna_type.properties[prop].name)
             filtered_groups = [group for group in detected_snaps if group["group"] in options]
             return filtered_groups
-            
+
         filtered_snaps = filter_snapping_groups_based_on_settings(detected_snaps)
         snapping_points = []
         edges = []  # Get edges to create edge-intersection snap
@@ -571,7 +571,7 @@ class Snap(bonsai.core.tool.Snap):
                         snapping_points.insert(0, (intersection[1], "Edge Intersection", None))
 
         filtered_snapping_points = filter_snapping_points_based_on_settings(snapping_points)
-        
+
         # Make Axis first priority
         if tool_state.lock_axis or tool_state.axis_method in {"X", "Y", "Z"}:
             cls.update_snapping_ref(filtered_snapping_points[0][0], filtered_snapping_points[0][1])
@@ -586,7 +586,9 @@ class Snap(bonsai.core.tool.Snap):
                     cls.update_snapping_point(point[0], point[1])
                     return filtered_snapping_points
 
-        cls.update_snapping_point(filtered_snapping_points[0][0], filtered_snapping_points[0][1], filtered_snapping_points[0][2])
+        cls.update_snapping_point(
+            filtered_snapping_points[0][0], filtered_snapping_points[0][1], filtered_snapping_points[0][2]
+        )
         return filtered_snapping_points
 
     @classmethod
