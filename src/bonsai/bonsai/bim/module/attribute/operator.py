@@ -198,6 +198,7 @@ class CopyAttributeToSelection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_attribute_to_selection"
     bl_label = "Copy Attribute To Selection"
     name: bpy.props.StringProperty()
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         value = context.active_object.BIMAttributeProperties.attributes.get(self.name).get_value()
