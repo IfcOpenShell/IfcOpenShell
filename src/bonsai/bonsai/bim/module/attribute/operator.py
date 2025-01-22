@@ -125,6 +125,7 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
         props = obj.BIMAttributeProperties
         product = tool.Ifc.get_entity(obj)
         assert product
+        object_name = tool.Loader.get_name(product)
 
         def callback(attributes, prop):
             if prop.name in ("RefLatitude", "RefLongitude"):
@@ -140,8 +141,11 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
         attributes = bonsai.bim.helper.export_attributes(props.attributes, callback=callback)
         ifcopenshell.api.run("attribute.edit_attributes", self.file, product=product, attributes=attributes)
 
-        if (name := tool.Loader.get_name(product)) and obj.name != name:
-            obj.name = name
+        # Ensure Blender doesn't reindex objects if it's not necessary.
+        # Can't rely on obj.name to detect changed name as it may have Blender indices.
+        if tool.Loader.get_name(product) != object_name:
+            tool.Root.set_object_name(obj, product)
+
         bpy.ops.bim.disable_editing_attributes(obj=obj.name)
 
     def _execute(self, context):
