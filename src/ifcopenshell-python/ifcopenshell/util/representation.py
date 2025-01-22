@@ -320,6 +320,22 @@ def resolve_items(
     return results
 
 
+def resolve_base_items(
+    representation: ifcopenshell.entity_instance,
+) -> Generator[ifcopenshell.entity_instance, None, None]:
+    """Resolve representation to it's base items resolving mapped items and boolean results to it's operands."""
+    queue: list[ifcopenshell.entity_instance] = list(representation.Items)
+    while queue:
+        item = queue.pop()
+        if item.is_a("IfcMappedItem"):
+            yield from resolve_base_items(item.MappingSource.MappedRepresentation)
+        elif item.is_a("IfcBooleanResult"):
+            queue.append(item.FirstOperand)
+            queue.append(item.SecondOperand)
+        else:
+            yield item
+
+
 def get_prioritised_contexts(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:
     """Gets a list of contexts ordered from high priority to low priority
 

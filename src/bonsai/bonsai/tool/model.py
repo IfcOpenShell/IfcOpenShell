@@ -657,7 +657,7 @@ class Model(bonsai.core.tool.Model):
                 # so users will be able to at least move IfcRevolvedAreaSolid, until there will be a full support.
                 body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
                 if body and any(
-                    i["item"].is_a("IfcRevolvedAreaSolid") for i in ifcopenshell.util.representation.resolve_items(body)
+                    i.is_a("IfcRevolvedAreaSolid") for i in ifcopenshell.util.representation.resolve_base_items(body)
                 ):
                     return
                 return "PROFILE"
