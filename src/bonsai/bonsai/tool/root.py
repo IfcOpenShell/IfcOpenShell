@@ -397,10 +397,10 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def set_object_name(cls, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
-        # This disables the Blender name event handler
-        obj.BIMObjectProperties.is_renaming = True
-        obj.name = tool.Loader.get_name(element)
-        obj.BIMObjectProperties.is_renaming = False
+        name = tool.Loader.get_name(element)
+        if obj.name != name:
+            obj.BIMObjectProperties.is_renaming = True
+            obj.name = name  # The handler will trigger, and reset is_renaming to False
 
     @classmethod
     def unlink_object(cls, obj: bpy.types.Object) -> None:

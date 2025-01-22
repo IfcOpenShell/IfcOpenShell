@@ -25,9 +25,7 @@ from typing import Any
 
 
 def sync_name(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
-    if usecase_path == "attribute.edit_attributes":
-        element = settings["product"]
-    elif usecase_path == "style.edit_presentation_style":
+    if usecase_path == "style.edit_presentation_style":
         element = settings["style"]
     else:
         raise Exception(f"Unsupported usecase: '{usecase_path}'.")

@@ -141,11 +141,7 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
         attributes = bonsai.bim.helper.export_attributes(props.attributes, callback=callback)
         ifcopenshell.api.run("attribute.edit_attributes", self.file, product=product, attributes=attributes)
 
-        # Ensure Blender doesn't reindex objects if it's not necessary.
-        # Can't rely on obj.name to detect changed name as it may have Blender indices.
-        if tool.Loader.get_name(product) != object_name:
-            tool.Root.set_object_name(obj, product)
-
+        tool.Root.set_object_name(obj, product)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name)
 
     def _execute(self, context):
@@ -208,7 +204,7 @@ class CopyAttributeToSelection(bpy.types.Operator, tool.Ifc.Operator):
         value = context.active_object.BIMAttributeProperties.attributes.get(self.name).get_value()
         i = 0
         for obj in tool.Blender.get_selected_objects():
-            success = core.copy_attribute_to_selection(tool.Ifc, name=self.name, value=value, obj=obj)
+            success = core.copy_attribute_to_selection(tool.Ifc, tool.Root, name=self.name, value=value, obj=obj)
             if success:
                 i += 1
         self.report({"INFO"}, f"Attribute was successfully copied to {i} elements.")
