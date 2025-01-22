@@ -39,7 +39,7 @@ import bonsai.bim.import_ifc as import_ifc
 from pathlib import Path
 from bonsai import get_debug_info, format_debug_info
 from bonsai.bim.ifc import IfcStore
-from typing import get_args
+from typing import get_args, Union
 
 
 class CopyDebugInformation(bpy.types.Operator):
@@ -377,16 +377,29 @@ class InspectFromObject(bpy.types.Operator):
     bl_description = "Inspect the Active Object's attributes and references"
 
     @classmethod
+    def get_active_object_ifc_definition(cls, context: bpy.types.Context) -> Union[int, None]:
+        obj = context.active_object
+        assert obj
+        if ifc_id := obj.BIMObjectProperties.ifc_definition_id:
+            return ifc_id
+        if (
+            (data := obj.data)
+            and tool.Geometry.has_mesh_properties(data)
+            and (ifc_id := data.BIMMeshProperties.ifc_definition_id)
+        ):
+            return ifc_id
+
+    @classmethod
     def poll(cls, context):
         if not context.active_object:
             cls.poll_message_set("No Active Object")
-        elif not context.active_object.BIMObjectProperties.ifc_definition_id:
+        elif not cls.get_active_object_ifc_definition(context):
             cls.poll_message_set("Active Object doesn't have an IFC definition")
         else:
             return True
 
     def execute(self, context):
-        bpy.ops.bim.inspect_from_step_id(step_id=context.active_object.BIMObjectProperties.ifc_definition_id)
+        bpy.ops.bim.inspect_from_step_id(step_id=InspectFromObject.get_active_object_ifc_definition(context))
         return {"FINISHED"}
 
 
