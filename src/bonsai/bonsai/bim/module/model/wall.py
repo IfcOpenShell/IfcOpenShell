@@ -244,10 +244,14 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 if tool.Model.get_usage_type(element) == "LAYER3":
                     # Reset the transformation and returns to the original points with 0 degrees
-                    extrusion.SweptArea.OuterCurve.Points.CoordList = [(p[0], p[1] * (cos(existing_x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList]
-                
+                    extrusion.SweptArea.OuterCurve.Points.CoordList = [
+                        (p[0], p[1] * (cos(existing_x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList
+                    ]
+
                     # Apply the transformation for the new x_angle
-                    extrusion.SweptArea.OuterCurve.Points.CoordList = [(p[0], p[1] * (1 / cos(x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList]
+                    extrusion.SweptArea.OuterCurve.Points.CoordList = [
+                        (p[0], p[1] * (1 / cos(x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList
+                    ]
 
                     # The extrusion direction calculated previously default to the positive direction
                     # Here we set the extrusion direction to negative it that's the case
@@ -271,7 +275,6 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                         rot_offset = offset_vector @ rot_matrix
                         extrusion.Position.Location.Coordinates = tuple(rot_offset)
 
-
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
@@ -284,7 +287,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
 
                 # Object rotation
                 local_rot_mat = obj.rotation_euler.to_matrix()
-                rot_mat = mathutils.Matrix.Rotation(x_angle - existing_x_angle, 4, 'X')
+                rot_mat = mathutils.Matrix.Rotation(x_angle - existing_x_angle, 4, "X")
                 new_rot_mat = local_rot_mat.to_4x4() @ rot_mat
                 new_rot_euler = new_rot_mat.to_euler()
                 obj.rotation_euler = new_rot_euler

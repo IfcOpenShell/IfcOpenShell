@@ -217,7 +217,6 @@ class DumbSlabPlaner:
 
         self.change_thickness(element, total_thickness)
 
-
     def regenerate_from_layer(self, usecase_path, ifc_file, settings):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
@@ -316,7 +315,7 @@ class DumbSlabPlaner:
                 elif layer_params["direction_sense"] == "NEGATIVE":
                     y = -abs(y) if existing_x_angle > 0 else abs(y)
                     z = -abs(z)
-                    offset_vector = -offset_vector 
+                    offset_vector = -offset_vector
                 extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
                 extrusion.Depth = thickness
 
@@ -328,7 +327,6 @@ class DumbSlabPlaner:
                     rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
                     rot_offset = offset_vector @ rot_matrix
                     extrusion.Position.Location.Coordinates = tuple(rot_offset)
-
 
             else:
                 props = bpy.context.scene.BIMModelProperties
@@ -378,7 +376,6 @@ class DumbSlabPlaner:
             is_global=True,
             should_sync_changes_first=False,
         )
-
 
 
 class EnableEditingSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
