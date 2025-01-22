@@ -25,7 +25,9 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def copy_attribute_to_selection(ifc: tool.Ifc, root: tool.Root, name: str, value: Union[str, None], obj: bpy.types.Object) -> bool:
+def copy_attribute_to_selection(
+    ifc: tool.Ifc, root: tool.Root, name: str, value: Union[str, None], obj: bpy.types.Object
+) -> bool:
     if element := ifc.get_entity(obj):
         try:
             ifc.run("attribute.edit_attributes", product=element, attributes={name: value})
