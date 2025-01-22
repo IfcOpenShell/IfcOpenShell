@@ -92,8 +92,6 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
     def add_meshlike_item(self, obj: bpy.types.Object) -> None:
         props = bpy.context.scene.BIMGeometryProperties
         obj.show_in_front = True
-        new = props.item_objs.add()
-        new.obj = obj
         tool.Geometry.lock_object(obj)
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
@@ -116,6 +114,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         representation.Items = list(representation.Items) + [item]
         obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
         obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+        props.add_item_object(obj, item)
 
     def separate_element(self, element):
         # You cannot separate meshes if the representation is mapped.
@@ -1078,8 +1077,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         new_obj.data = temp_data
         new_obj.data.BIMMeshProperties.ifc_definition_id = new_item.id()
         new_obj.name = obj.data.name = f"Item/{new_item.is_a()}/{new_item.id()}"
-        new = props.item_objs.add()
-        new.obj = new_obj
+        props.add_item_object(new_obj, new_item)
 
         for collection in obj.users_collection:
             collection.objects.link(new_obj)
@@ -1652,6 +1650,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
 
     def join_item(self) -> None:
         props = bpy.context.scene.BIMGeometryProperties
+        ifc_file = tool.Ifc.get()
         item = tool.Ifc.get().by_id(self.target.data.BIMMeshProperties.ifc_definition_id)
         if tool.Geometry.is_meshlike_item(item):
             tool.Geometry.dissolve_triangulated_edges(self.target)
@@ -1670,11 +1669,10 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
             for joined_obj in joined_objs:
                 tool.Geometry.delete_ifc_item(joined_obj)
 
-            item_objs = [i.obj for i in props.item_objs if i.obj]
+            items_data = [dict(i) for i in props.item_objs if i.obj]
             props.item_objs.clear()
-            for item_obj in item_objs:
-                new = props.item_objs.add()
-                new.obj = item_obj
+            for item_data in items_data:
+                props.add_item_object(item_data["obj"], ifc_file.by_id(item_data["ifc_definition_id"]))
 
             tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
             bpy.context.view_layer.update()
@@ -2283,8 +2281,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 new_obj.data.BIMMeshProperties.ifc_definition_id = item.id()
                 scene = bpy.context.scene
                 scene.collection.objects.link(new_obj)
-                new = props.item_objs.add()
-                new.obj = new_obj
+                props.add_item_object(obj, item)
                 new_obj.matrix_world = obj.matrix_world
                 tool.Geometry.import_item(new_obj)
 
@@ -2778,9 +2775,7 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
             item_obj.matrix_world = obj.matrix_world
             bpy.context.collection.objects.link(item_obj)
 
-            new = props.item_objs.add()
-            new.obj = item_obj
-
+            props.add_item_object(item_obj, item)
             tool.Geometry.import_item(item_obj)
             tool.Geometry.import_item_attributes(item_obj)
 
@@ -2880,8 +2875,6 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
         mesh.update()
         obj.matrix_world = props.representation_obj.matrix_world
         obj.show_in_front = True
-        new = props.item_objs.add()
-        new.obj = obj
         tool.Geometry.lock_object(obj)
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
@@ -2901,6 +2894,7 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
         elif representation.RepresentationType in ("Tessellation"):
             item = builder.mesh(verts, faces)
 
+        props.add_item_object(obj, item)
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
         obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
@@ -2922,8 +2916,6 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         scene.collection.objects.link(obj)
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
-        new = props.item_objs.add()
-        new.obj = obj
 
         matrix = props.representation_obj.matrix_world.copy()
         matrix.translation = context.scene.cursor.location
@@ -2950,6 +2942,7 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         representation = tool.Geometry.get_active_representation(props.representation_obj)
         representation = ifcopenshell.util.representation.resolve_representation(representation)
 
+        props.add_item_object(obj, item)
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
 
@@ -2984,8 +2977,6 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         scene.collection.objects.link(obj)
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
-        new = props.item_objs.add()
-        new.obj = obj
         tool.Geometry.lock_object(obj)
 
         matrix = props.representation_obj.matrix_world.copy()
@@ -3022,6 +3013,7 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         else:
             assert_never(self.shape)
 
+        props.add_item_object(obj, item)
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
 
@@ -3053,8 +3045,6 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         scene.collection.objects.link(obj)
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
-        new = props.item_objs.add()
-        new.obj = obj
 
         matrix = props.representation_obj.matrix_world.copy()
         matrix.translation = context.scene.cursor.location
@@ -3072,6 +3062,7 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         placement = ifc_file.createIfcAxis2Placement3D(point, local_z, local_x)
         plane = ifc_file.createIfcPlane(placement)
         item = ifc_file.createIfcHalfSpaceSolid(plane, AgreementFlag=False)
+        props.add_item_object(obj, item)
 
         representation = tool.Geometry.get_active_representation(props.representation_obj)
         representation = ifcopenshell.util.representation.resolve_representation(representation)
