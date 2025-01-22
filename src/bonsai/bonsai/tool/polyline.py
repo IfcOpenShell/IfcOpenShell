@@ -19,6 +19,7 @@
 import bpy
 import bmesh
 import math
+import ifcopenshell
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
@@ -416,23 +417,20 @@ class Polyline(bonsai.core.tool.Polyline):
                 dimension = args[i]
                 if len(args) > i + 1:
                     expression = args[i + 1]
-                    return expression(dimension) * factor
+                    return expression(dimension) * unit_scale
                 else:
-                    return dimension * factor
+                    return dimension * unit_scale
 
         try:
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
                 parser = Lark(grammar_imperial)
-                factor = 0.3048
             else:
                 parser = Lark(grammar_metric)
-                factor = 1
-                if bpy.context.scene.unit_settings.length_unit == "MILLIMETERS":
-                    factor = 0.001
 
             if input_type == "A":
                 parser = Lark(grammar_metric)
-                factor = 1
+                unit_scale = 1
 
             parse_tree = parser.parse(input_number)
 
@@ -445,18 +443,14 @@ class Polyline(bonsai.core.tool.Polyline):
 
     @classmethod
     def format_input_ui_units(cls, value: float, is_area: bool = False) -> str:
-        unit_system = tool.Drawing.get_unit_system()
-        if unit_system == "IMPERIAL":
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        if bpy.context.scene.unit_settings.system == "IMPERIAL":
             precision = bpy.context.scene.DocProperties.imperial_precision
-            factor = 3.28084
         else:
             precision = None
-            factor = 1
-            if bpy.context.scene.unit_settings.length_unit == "MILLIMETERS":
-                factor = 1000
 
         return format_distance(
-            value * factor,
+            value / unit_scale,
             precision=precision,
             hide_units=False,
             isArea=is_area,

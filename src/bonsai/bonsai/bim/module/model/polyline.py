@@ -78,18 +78,11 @@ def get_wall_preview_data(context, relating_type):
     elif offset_type == "INTERIOR":
         offset = -thickness
 
-    unit_system = tool.Drawing.get_unit_system()
-    factor = 1
-    if unit_system == "IMPERIAL":
-        factor = 3.28084
-    if unit_system == "METRIC":
-        unit_length = context.scene.unit_settings.length_unit
-        if unit_length == "MILLIMETERS":
-            factor = 1000
 
     # For the model properties, the offset value should just be converted
     # However, for the wall preview logic that follows, offset and thickness must change direction
-    model_props.offset = offset * factor
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    model_props.offset = offset / unit_scale
     thickness *= direction
     offset *= direction
 

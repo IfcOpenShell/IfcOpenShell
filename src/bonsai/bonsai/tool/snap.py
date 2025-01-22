@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.model.decorator import PolylineDecorator
@@ -51,8 +52,9 @@ class Snap(bonsai.core.tool.Snap):
         distances = [3, 5, 15, 30]
 
         unit_system = tool.Drawing.get_unit_system()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         if unit_system == "IMPERIAL":
-            factor = 3.28084
+            factor = unit_scale
             fractions = [24, 12, 6, 2]
             ortho_threshold = [-10.0, -4.75, -2.2, -0.75]
             distances = [3, 6, 10, 20]
@@ -60,29 +62,29 @@ class Snap(bonsai.core.tool.Snap):
         increment = None
         if rv3d.view_perspective == "PERSP":
             if rv3d.view_distance < distances[0]:
-                increment = (1 / fractions[0]) / factor
+                increment = (1 / fractions[0]) * factor
             elif distances[0] < rv3d.view_distance < distances[1]:
-                increment = (1 / fractions[1]) / factor
+                increment = (1 / fractions[1]) * factor
             elif distances[1] < rv3d.view_distance < distances[2]:
-                increment = (1 / fractions[2]) / factor
+                increment = (1 / fractions[2]) * factor
             elif distances[2] < rv3d.view_distance < distances[3]:
-                increment = (1 / fractions[3]) / factor
+                increment = (1 / fractions[3]) * factor
             else:
-                increment = 1 / factor
+                increment = 1 * factor
         if rv3d.view_perspective == "ORTHO" or (
             rv3d.view_perspective == "CAMERA" and context.scene.camera.data.type == "ORTHO"
         ):
             window_scale = rv3d.window_matrix.to_scale()
             if window_scale[1] < ortho_threshold[0]:
-                increment = (1 / fractions[0]) / factor
+                increment = (1 / fractions[0]) * factor
             elif ortho_threshold[0] < window_scale[1] < ortho_threshold[1]:
-                increment = (1 / fractions[1]) / factor
+                increment = (1 / fractions[1]) * factor
             elif ortho_threshold[1] < window_scale[1] < ortho_threshold[2]:
-                increment = (1 / fractions[2]) / factor
+                increment = (1 / fractions[2]) * factor
             elif ortho_threshold[2] < window_scale[1] < ortho_threshold[3]:
-                increment = (1 / fractions[3]) / factor
+                increment = (1 / fractions[3]) * factor
             else:
-                increment = 1 / factor
+                increment = 1 * factor
 
         return increment
 
