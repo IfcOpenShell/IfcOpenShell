@@ -202,5 +202,9 @@ class CopyAttributeToSelection(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         value = context.active_object.BIMAttributeProperties.attributes.get(self.name).get_value()
+        i = 0
         for obj in tool.Blender.get_selected_objects():
-            core.copy_attribute_to_selection(tool.Ifc, name=self.name, value=value, obj=obj)
+            success = core.copy_attribute_to_selection(tool.Ifc, name=self.name, value=value, obj=obj)
+            if success:
+                i += 1
+        self.report({"INFO"}, f"Attribute was successfully copied to {i} elements.")
