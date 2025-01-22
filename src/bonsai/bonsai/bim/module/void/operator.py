@@ -305,7 +305,10 @@ class EnableEditingBooleans(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return bpy.context.scene.BIMGeometryProperties.representation_obj
+        if not bpy.context.scene.BIMGeometryProperties.representation_obj:
+            cls.poll_message_set("To enable editing booleans object should be in item mode.")
+            return False
+        return True
 
     def execute(self, context):
         props = context.scene.BIMBooleanProperties
