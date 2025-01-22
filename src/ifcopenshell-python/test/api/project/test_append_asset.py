@@ -115,6 +115,7 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
 
     def test_append_two_type_products_sharing_the_same_material_indirectly_via_a_material_set(self):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, "IfcProject")
         element1 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
         element2 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
         material = ifcopenshell.api.material.add_material(library, name="Material")
