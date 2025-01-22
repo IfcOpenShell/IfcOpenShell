@@ -431,6 +431,7 @@ class Usecase:
         and there is no control to prevent it from adding certain type of elements.
         """
         ifc_file = self.file
+        return ifc_file.add(element)
         if not self.assume_asset_uniqueness_by_name:
             return ifc_file.add(element)
 
