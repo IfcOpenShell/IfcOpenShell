@@ -65,7 +65,7 @@ def assign_declaration(
 
         # Assign units for our example library
         unit = ifcopenshell.api.unit.add_si_unit(library,
-            unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
+            unit_type="LENGTHUNIT", prefix="MILLI")
         ifcopenshell.api.unit.assign_unit(library, units=[unit])
 
         # Let's create a single asset of a 200mm thick concrete wall
