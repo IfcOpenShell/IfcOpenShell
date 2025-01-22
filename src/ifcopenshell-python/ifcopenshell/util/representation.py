@@ -20,7 +20,7 @@ import numpy as np
 import numpy.typing as npt
 import ifcopenshell
 import ifcopenshell.util.placement
-from typing import Optional, Union, TypedDict, Literal, Iterator, Iterable
+from typing import Optional, Union, TypedDict, Literal, Generator, Sequence
 
 
 CONTEXT_TYPE = Literal["Model", "Plan", "NotDefined"]
@@ -112,7 +112,9 @@ def is_representation_of_context(
     return representation.ContextOfItems.ContextType == context
 
 
-def get_representations_iter(element: ifcopenshell.entity_instance) -> Iterator[ifcopenshell.entity_instance]:
+def get_representations_iter(
+    element: ifcopenshell.entity_instance,
+) -> Generator[ifcopenshell.entity_instance, None, None]:
     """Get an iterator with element's IfcShapeRepresentations.
 
     :param element: An IfcProduct or IfcTypeProduct
@@ -144,7 +146,7 @@ def get_representation(
             return r
 
 
-def guess_type(items: Iterable[ifcopenshell.entity_instance]) -> str | None:
+def guess_type(items: Sequence[ifcopenshell.entity_instance]) -> str | None:
     """Guesses the appropriate RepresentationType attribute based on a list of items
 
     :param items: A list of IfcRepresentationItem, typically in an IfcShapeRepresentation

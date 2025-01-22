@@ -317,7 +317,7 @@ class EnableEditingBooleans(bpy.types.Operator):
         representation = ifcopenshell.util.representation.resolve_representation(representation)
         props.booleans.clear()
 
-        def load_boolean(item, level=0):
+        def load_boolean(item: ifcopenshell.entity_instance, level: int = 0) -> None:
             new = props.booleans.add()
             new.name = f"{item.is_a()}/{item.id()}"
             new.ifc_definition_id = item.id()

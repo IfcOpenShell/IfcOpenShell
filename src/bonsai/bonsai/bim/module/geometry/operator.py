@@ -89,7 +89,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         else:
             self.report({"INFO"}, f"Separating an {item.is_a()} is not supported")
 
-    def add_meshlike_item(self, obj):
+    def add_meshlike_item(self, obj: bpy.types.Object) -> None:
         props = bpy.context.scene.BIMGeometryProperties
         obj.show_in_front = True
         new = props.item_objs.add()
@@ -981,7 +981,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     self.report({"ERROR"}, lock_error_message(obj.name))
                     continue
             elif tool.Geometry.is_representation_item(obj):
-                OverrideDuplicateMove.duplicate_item(self, obj)
+                OverrideDuplicateMove.duplicate_item(obj)
                 continue
 
             tracked_opening_type = tool.Model.get_tracked_opening_type(obj)
@@ -1069,7 +1069,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         return old_to_new
 
     @staticmethod
-    def duplicate_item(self, obj):
+    def duplicate_item(obj: bpy.types.Object) -> None:
         props = bpy.context.scene.BIMGeometryProperties
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         new_item = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)

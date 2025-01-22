@@ -19,6 +19,7 @@
 import bpy
 from bpy.types import PropertyGroup
 from bpy.props import PointerProperty, StringProperty, IntProperty, BoolProperty, CollectionProperty, EnumProperty
+from typing import Union
 
 
 class Boolean(PropertyGroup):
@@ -47,6 +48,6 @@ class BIMBooleanProperties(PropertyGroup):
     )
 
     @property
-    def active_boolean(self):
-        if self.booleans and self.active_boolean_index < len(self.booleans):
+    def active_boolean(self) -> Union[Boolean, None]:
+        if self.booleans and 0 <= self.active_boolean_index < len(self.booleans):
             return self.booleans[self.active_boolean_index]

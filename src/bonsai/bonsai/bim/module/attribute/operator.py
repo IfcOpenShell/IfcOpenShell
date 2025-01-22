@@ -124,6 +124,7 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
     def edit_attributes_on_obj(self, obj):
         props = obj.BIMAttributeProperties
         product = tool.Ifc.get_entity(obj)
+        assert product
 
         def callback(attributes, prop):
             if prop.name in ("RefLatitude", "RefLongitude"):

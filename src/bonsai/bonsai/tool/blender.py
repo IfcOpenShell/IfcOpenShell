@@ -144,7 +144,7 @@ class Blender(bonsai.core.tool.Blender):
         return f"{name} {i}"
 
     @classmethod
-    def get_active_object(cls, is_selected: bool = False) -> bpy.types.Object:
+    def get_active_object(cls, is_selected: bool = False) -> Union[bpy.types.Object, None]:
         obj = getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active
         if not is_selected:
             return obj
@@ -319,7 +319,7 @@ class Blender(bonsai.core.tool.Blender):
             bpy.ops.wm.tool_set_by_id(name=tool_name)
 
     @classmethod
-    def get_shader_editor_context(cls) -> Union[dict, None]:
+    def get_shader_editor_context(cls) -> Union[dict[str, Any], None]:
         for screen in bpy.data.screens:
             for area in screen.areas:
                 if area.type == "NODE_EDITOR":
