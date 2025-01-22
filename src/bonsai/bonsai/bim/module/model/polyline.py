@@ -609,11 +609,16 @@ class PolylineOperator:
     def handle_lock_axis(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         if event.value == "PRESS" and event.type == "A":
             self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
+            if self.tool_state.lock_axis:
+                self.tool_state.snap_angle = self.input_ui.get_number_value("WORLD_ANGLE")
+                # Round to the closest 5
+                self.tool_state.snap_angle = round(self.tool_state.snap_angle / 5) * 5
+
+        if event.shift and event.type in {"WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.tool_state.lock_axis = True
             self.tool_state.snap_angle = self.input_ui.get_number_value("WORLD_ANGLE")
             # Round to the closest 5
             self.tool_state.snap_angle = round(self.tool_state.snap_angle / 5) * 5
-
-        if self.tool_state.lock_axis and event.shift and event.type in {"WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             if event.type in {"WHEELUPMOUSE"}:
                 self.tool_state.snap_angle += 5
             else:
