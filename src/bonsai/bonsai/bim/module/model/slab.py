@@ -926,6 +926,8 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
 
         self.handle_inserting_polyline(context, event)
 
+        self.get_product_preview_data(context, self.relating_type)
+
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
             ProductDecorator.uninstall()

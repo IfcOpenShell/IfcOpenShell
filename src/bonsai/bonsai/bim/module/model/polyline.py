@@ -43,24 +43,23 @@ from bonsai.bim.module.geometry.decorator import ItemDecorator
 from typing import Optional, Union, Literal
 from lark import Lark, Transformer
 
+def create_bmesh_from_vertices(vertices, is_closed=False):
+    bm = bmesh.new()
+
+    new_verts = [bm.verts.new(v) for v in vertices]
+    if is_closed:
+        new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+        new_edges.append(
+            bm.edges.new((new_verts[-1], new_verts[0]))
+        )  # Add an edge between the last an first point to make it closed.
+    else:
+        new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+
+    bm.verts.index_update()
+    bm.edges.index_update()
+    return bm
 
 def get_wall_preview_data(context, relating_type):
-    def create_bmesh_from_vertices(vertices):
-        bm = bmesh.new()
-
-        new_verts = [bm.verts.new(v) for v in polyline_vertices]
-        if is_closed:
-            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-            new_edges.append(
-                bm.edges.new((new_verts[-1], new_verts[0]))
-            )  # Add an edge between the last an first point to make it closed.
-        else:
-            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-
-        bm.verts.index_update()
-        bm.edges.index_update()
-        return bm
-
     # Get properties from object type
     layers = tool.Model.get_material_layer_parameters(relating_type)
     if not layers["thickness"]:
@@ -105,7 +104,7 @@ def get_wall_preview_data(context, relating_type):
         is_closed = True
         polyline_vertices.pop(-1)  # Remove the last point. The edges are going to inform that the shape is closed.
 
-    bm_base = create_bmesh_from_vertices(polyline_vertices)
+    bm_base = create_bmesh_from_vertices(polyline_vertices, is_closed)
     base_vertices = tool.Cad.offset_edges(bm_base, offset)
     offset_base_verts = tool.Cad.offset_edges(bm_base, thickness + offset)
     top_vertices = tool.Cad.offset_edges(bm_base, angle_distortion + offset)
@@ -185,6 +184,55 @@ def get_wall_preview_data(context, relating_type):
 
     return data
 
+def get_slab_preview_data(context, relating_type):
+    props = context.scene.BIMModelProperties
+    x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
+    layers = tool.Model.get_material_layer_parameters(relating_type)
+    if not layers["thickness"]:
+        return
+    thickness = layers["thickness"]
+    data = {}
+    data["verts"] = []
+    # Verts
+    polyline_vertices = []
+    polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+    polyline_points = polyline_data[0].polyline_points if polyline_data else []
+    if len(polyline_points) < 3:
+        data = []
+        return
+    for point in polyline_points:
+        polyline_vertices.append(Vector((point.x, point.y, point.z)))
+    if x_angle:
+        # Get vertices relative to the first polyline point as origin
+        local_vertices = [v - Vector(polyline_vertices[0]) for v in polyline_vertices]
+        # Make the transformation relative to the x_angle
+        transformed_vertices = [Vector((v.x, v.y * (1 / cos(x_angle)), v.z)) for v in local_vertices]
+        # Convert back to world origin
+        polyline_vertices = [v + Vector(polyline_vertices[0]) for v in transformed_vertices]
+    is_closed = True
+    if (
+        polyline_vertices[0].x == polyline_vertices[-1].x
+        and polyline_vertices[0].y == polyline_vertices[-1].y
+        and polyline_vertices[0].z == polyline_vertices[-1].z
+    ):
+        polyline_vertices.pop(-1)  # Remove the last point. The edges are going to inform that the shape is closed.
+    bm = create_bmesh_from_vertices(polyline_vertices, is_closed)
+    bm.verts.ensure_lookup_table()
+    if x_angle:
+        bmesh.ops.rotate(bm, cent=Vector(bm.verts[0].co), verts=bm.verts, matrix=Matrix.Rotation(x_angle, 3, 'X'))
+    new_faces = bmesh.ops.contextual_create(bm, geom=bm.edges)
+    new_faces = bmesh.ops.extrude_face_region(bm, geom=bm.edges[:] + bm.faces[:])
+    new_verts = [e for e in new_faces["geom"] if isinstance(e, bmesh.types.BMVert)]
+    new_faces = bmesh.ops.translate(bm, verts=new_verts, vec=(0.0, 0.0, thickness))
+    bm.verts.index_update()
+    bm.edges.index_update()
+    verts = [tuple(v.co) for v in bm.verts]
+    edges = [[v.index for v in e.verts] for e in bm.edges]
+    tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
+    data["verts"] = verts
+    data["edges"] = edges
+    data["tris"] = tris
+    return data
 
 def get_vertical_profile_preview_data(context, relating_type):
     material = ifcopenshell.util.element.get_material(relating_type)
@@ -428,7 +476,7 @@ def get_horizontal_profile_preview_data(context, relating_type):
     return data
 
 
-def get_product_preview_data(context, relating_type):
+def get_generic_product_preview_data(context, relating_type):
     model_props = context.scene.BIMModelProperties
     if relating_type.is_a("IfcDoorType"):
         rl = float(model_props.rl1)
@@ -820,8 +868,10 @@ class PolylineOperator:
             data = get_vertical_profile_preview_data(context, relating_type)
         elif tool.Model.get_usage_type(relating_type) == "LAYER2":
             data = get_wall_preview_data(context, relating_type)
+        elif tool.Model.get_usage_type(relating_type) == "LAYER3":
+            data = get_slab_preview_data(context, relating_type)
         else:
-            data = get_product_preview_data(context, relating_type)
+            data = get_generic_product_preview_data(context, relating_type)
 
         # Update properties so it can be used by the decorator
         if not data:
