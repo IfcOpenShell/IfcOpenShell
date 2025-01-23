@@ -336,3 +336,9 @@ def load_post(scene):
         WallAxisDecorator.install(bpy.context)
     if model_props.show_slab_direction:
         SlabDirectionDecorator.install(bpy.context)
+
+    if scene := bpy.context.scene:
+        # Snapping is off by default in Blender, but in BIM, it's more useful to be on
+        scene.tool_settings.use_snap = True
+        # Match default Bonsai snaps
+        scene.tool_settings.snap_elements_base = {"EDGE", "EDGE_PERPENDICULAR", "VERTEX", "EDGE_MIDPOINT", "FACE"}

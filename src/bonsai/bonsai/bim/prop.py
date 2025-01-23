@@ -588,14 +588,14 @@ class BIMFilterGroup(PropertyGroup):
 
 
 class BIMSnapGroups(PropertyGroup):
-    object: BoolProperty(name="Object")
-    polyline: BoolProperty(name="Polyline")
-    measure: BoolProperty(name="Measure")
+    object: BoolProperty(name="Object", default=True)
+    polyline: BoolProperty(name="Polyline", default=True)
+    measure: BoolProperty(name="Measure", default=True)
 
 
 class BIMSnapProperties(PropertyGroup):
-    vertex: BoolProperty(name="Vertex")
-    edge: BoolProperty(name="Edge")
-    edge_center: BoolProperty(name="Edge Center")
-    edge_intersection: BoolProperty(name="Edge Intersection")
-    face: BoolProperty(name="Face")
+    vertex: BoolProperty(name="Vertex", default=True)
+    edge: BoolProperty(name="Edge", default=True)
+    edge_center: BoolProperty(name="Edge Center", default=True)
+    edge_intersection: BoolProperty(name="Edge Intersection", default=True)
+    face: BoolProperty(name="Face", default=True)
