@@ -187,10 +187,23 @@ def get_wall_preview_data(context, relating_type):
 def get_slab_preview_data(context, relating_type):
     props = context.scene.BIMModelProperties
     x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
+    model_props = context.scene.BIMModelProperties
+    direction_sense = model_props.direction_sense
+    direction = 1
+    if direction_sense == "NEGATIVE":
+        direction = -1
+
     layers = tool.Model.get_material_layer_parameters(relating_type)
     if not layers["thickness"]:
         return
     thickness = layers["thickness"]
+    thickness *= direction
+
+    offset_type = model_props.offset_type_horizontal
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    offset = model_props.offset * unit_scale
+    offset *= direction
+
     data = {}
     data["verts"] = []
     # Verts
@@ -209,6 +222,8 @@ def get_slab_preview_data(context, relating_type):
         transformed_vertices = [Vector((v.x, v.y * (1 / cos(x_angle)), v.z)) for v in local_vertices]
         # Convert back to world origin
         polyline_vertices = [v + Vector(polyline_vertices[0]) for v in transformed_vertices]
+    if offset != 0:
+        polyline_vertices = [v + Vector((0, 0, offset)) for v in polyline_vertices]
     is_closed = True
     if (
         polyline_vertices[0].x == polyline_vertices[-1].x
@@ -891,6 +906,26 @@ class PolylineOperator:
             t = props.tris.add()
             t.value_3d = tri
 
+    def set_offset(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_instance) -> None:
+        props = bpy.context.scene.BIMModelProperties
+        if tool.Model.get_usage_type(relating_type) == "LAYER2":
+            offset_type = "offset_type_vertical" 
+        elif tool.Model.get_usage_type(relating_type) == "LAYER3":
+            offset_type = "offset_type_horizontal" 
+        else:
+            return
+
+        layers = tool.Model.get_material_layer_parameters(relating_type)
+        thickness = layers["thickness"]
+        self.offset = 0
+        if getattr(props, offset_type) == "CENTER":
+            self.offset = -thickness / 2
+        elif getattr(props, offset_type) in {"INTERIOR", "TOP"}:
+            self.offset = -thickness
+
+        props.offset = self.offset / self.unit_scale
+        tool.Blender.update_viewport()
+        
     def modal(self, context: bpy.types.Context, event: bpy.types.Event) -> Union[set[str], None]:
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()

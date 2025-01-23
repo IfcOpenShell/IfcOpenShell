@@ -30,6 +30,7 @@ import bonsai.core.type
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.tool as tool
+from bonsai.bim.ifc import IfcStore
 from math import cos, radians
 from mathutils import Vector, Matrix
 from bonsai.bim.module.geometry.helper import Helper
@@ -289,6 +290,14 @@ class DumbSlabPlaner:
             material.LayerSetDirection = layer_set_direction
         if material.LayerSetDirection == "AXIS3":
             self.change_thickness(related_object, new_thickness)
+
+    def regenerate_from_occurence(self, element, material_set_usage):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        layer_set = material_set_usage.ForLayerSet
+        total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
+        if not total_thickness:
+            return
+        self.change_thickness(element, total_thickness)
 
     def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float) -> None:
         layer_params = tool.Model.get_material_layer_parameters(element)
@@ -863,7 +872,25 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
         if not self.relating_type:
             return {"FINISHED"}
 
-        DumbSlabGenerator(self.relating_type).generate("POLYLINE")
+        slab = DumbSlabGenerator(self.relating_type).generate("POLYLINE")
+
+        model_props = context.scene.BIMModelProperties
+        direction_sense = model_props.direction_sense
+        offset = model_props.offset
+        model = IfcStore.get_file()
+        element = tool.Ifc.get_entity(slab)
+        material = ifcopenshell.util.element.get_material(element)
+        material_set_usage = model.by_id(material.id())
+        if not getattr(material_set_usage, "ForLayerSet", False):
+            return
+        attributes = {"OffsetFromReferenceLine": offset, "DirectionSense": direction_sense}
+        ifcopenshell.api.run(
+            "material.edit_layer_usage",
+            model,
+            **{"usage": material_set_usage, "attributes": attributes},
+        )
+        DumbSlabPlaner().regenerate_from_occurence(element, material_set_usage)
+
 
     def modal(self, context, event):
         if not self.relating_type:
@@ -881,27 +908,31 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
             self.handle_mouse_move(context, event)
             return {"PASS_THROUGH"}
 
-        # TODO Slab settings
-        # if event.value == "RELEASE" and event.type == "F":
-        #     direction_sense = context.scene.BIMModelProperties.direction_sense
-        #     context.scene.BIMModelProperties.direction_sense = (
-        #         "NEGATIVE" if direction_sense == "POSITIVE" else "POSITIVE"
-        #     )
+        if event.value == "RELEASE" and event.type == "F":
+            direction_sense = context.scene.BIMModelProperties.direction_sense
+            context.scene.BIMModelProperties.direction_sense = (
+                "NEGATIVE" if direction_sense == "POSITIVE" else "POSITIVE"
+            )
 
-        # if event.value == "RELEASE" and event.type == "O":
-        #     offset_type = context.scene.BIMModelProperties.offset_type
-        #     items = ["EXTERIOR", "CENTER", "INTERIOR"]
-        #     index = items.index(offset_type)
-        #     size = len(items)
-        #     context.scene.BIMModelProperties.offset_type = items[((index + 1) % size)]
+        props = bpy.context.scene.BIMModelProperties
+        if event.value == "RELEASE" and event.type == "O":
+            items = ["TOP", "CENTER", "BOTTOM"]
+            index = items.index(props.offset_type_horizontal)
+            size = len(items)
+            props.offset_type_horizontal = items[((index + 1) % size)]
+            self.set_offset(context, self.relating_type)
 
-        # props = bpy.context.scene.BIMModelProperties
-        # slab_config = f"""Direction: {props.direction_sense}
-        # Offset Type: {props.offset_type}
-        # Offset Value: {props.offset}
-        # """
+        custom_instructions = {
+            'Choose Axis': {'icons':True, 'keys': ['EVENT_X', 'EVENT_Y']}
+        }
 
-        self.handle_instructions(context)
+        slab_config = [
+            f"Direction: {props.direction_sense}",
+            f"Offset Type: {props.offset_type_horizontal}",
+            f"Offset Value: {tool.Polyline.format_input_ui_units(props.offset * self.unit_scale)}",
+        ]
+
+        self.handle_instructions(context, custom_instructions, slab_config)
 
         self.handle_mouse_move(context, event, should_round=True)
 
@@ -940,6 +971,7 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
         ProductDecorator.install(context)
         self.tool_state.use_default_container = True
         self.tool_state.plane_method = "XY"
+        self.set_offset(context, self.relating_type)
         return {"RUNNING_MODAL"}
 
 
