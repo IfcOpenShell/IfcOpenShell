@@ -764,6 +764,25 @@ class Loader(bonsai.core.tool.Loader):
         return mesh
 
     @classmethod
+    def create_structural_point_connection_mesh(
+        cls, representation: ifcopenshell.entity_instance
+    ) -> Union[bpy.types.Mesh, None]:
+        item = representation.Items[0]
+        point = item.VertexGeometry
+
+        # TODO implement non cartesian point vertices.
+        if not point.is_a("IfcCartesianPoint"):
+            return
+
+        ifc_file = tool.Ifc.get()
+        co = np.array(point.Coordinates) * ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        mesh_name = tool.Geometry.get_representation_name(representation)
+        mesh = bpy.data.meshes.new(mesh_name)
+        mesh.from_pydata([co], [], [])
+        mesh["ios_verts_item_ids"] = [item.id()]
+        return mesh
+
+    @classmethod
     def create_camera(
         cls,
         element: ifcopenshell.entity_instance,

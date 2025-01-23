@@ -691,24 +691,15 @@ class IfcImporter:
     def create_structural_point_connections(self):
         for product in self.file.by_type("IfcStructuralPointConnection"):
             # TODO: make this based off ifcopenshell. See #1409
+            representation: ifcopenshell.entity_instance = next(
+                rep for rep in product.Representation.Representations if rep.RepresentationType == "Vertex"
+            )
+            mesh = tool.Loader.create_structural_point_connection_mesh(representation)
+            if mesh is None:
+                continue
+            tool.Ifc.link(representation, mesh)
+
             placement_matrix = ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement)
-            vertex = None
-            context = None
-            representation = None
-            for subelement in self.file.traverse(product.Representation):
-                if subelement.is_a("IfcVertex") and subelement.VertexGeometry.is_a("IfcCartesianPoint"):
-                    vertex = list(subelement.VertexGeometry.Coordinates)
-                elif subelement.is_a("IfcGeometricRepresentationContext"):
-                    context = subelement
-                elif subelement.is_a("IfcTopologyRepresentation"):
-                    representation = subelement
-            if not vertex or not context or not representation:
-                continue  # TODO implement non cartesian point vertexes
-
-            mesh_name = tool.Geometry.get_representation_name(representation)
-            mesh = bpy.data.meshes.new(mesh_name)
-            mesh.from_pydata([mathutils.Vector(vertex) * self.unit_scale], [], [])
-
             obj = bpy.data.objects.new(tool.Loader.get_name(product), mesh)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, placement_matrix))
             self.link_element(product, obj)

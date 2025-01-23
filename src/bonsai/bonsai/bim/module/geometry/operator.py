@@ -2754,7 +2754,15 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
         data = obj.data
         assert data
-        item_ids = data["ios_item_ids"] if "ios_item_ids" in data else data["ios_edges_item_ids"]
+        if "ios_item_ids" in data:  # Has faces.
+            item_ids = data["ios_item_ids"]
+        elif "ios_edges_item_ids" in data:  # Has edges.
+            item_ids = data["ios_edges_item_ids"]
+        elif "ios_verts_item_ids" in data:  # Has only verts.
+            item_ids = data["ios_verts_item_ids"]
+        else:
+            assert False, "Unexpected mesh type."
+
         queue = list(set(item_ids))
         processed_ids = set()
         boolean_ids = set()
