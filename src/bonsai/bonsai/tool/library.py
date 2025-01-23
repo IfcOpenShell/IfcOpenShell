@@ -73,8 +73,12 @@ class Library(bonsai.core.tool.Library):
             new.name = reference.Name or "Unnamed"
 
     @classmethod
-    def set_active_library(cls, library: ifcopenshell.entity_instance) -> None:
-        bpy.context.scene.BIMLibraryProperties.active_library_id = library.id()
+    def set_active_library(cls, library: Union[ifcopenshell.entity_instance, None]) -> None:
+        props = bpy.context.scene.BIMLibraryProperties
+        if library is None:
+            props.active_library_id = 0
+        else:
+            props.active_library_id = library.id()
 
     @classmethod
     def set_active_reference(cls, reference: ifcopenshell.entity_instance) -> None:

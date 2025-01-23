@@ -41,6 +41,7 @@ def enable_editing_library_references(library_tool: tool.Library, library: ifcop
 
 def disable_editing_library_references(library: tool.Library) -> None:
     library.clear_editing_mode()
+    library.set_active_library(None)
 
 
 def enable_editing_library(library: tool.Library) -> None:
