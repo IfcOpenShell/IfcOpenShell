@@ -53,6 +53,9 @@ class LoadGroupDecorationData:
             "NOTDEFINED": "N.Def: ",
         }
         models = tool.Ifc.get().by_type("IfcStructuralAnalysisModel")
+        if not models:
+            return ret
+
         m = models[0]
         props = bpy.context.scene.BIMStructuralProperties
         if props.activity_type == "Action":
