@@ -17,43 +17,22 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.group
 import ifcopenshell.api.owner
 import ifcopenshell.guid
+from typing import Union
 
 
 def assign_structural_analysis_model(
     file: ifcopenshell.file,
-    product: ifcopenshell.entity_instance,
+    products: list[ifcopenshell.entity_instance],
     structural_analysis_model: ifcopenshell.entity_instance,
-) -> ifcopenshell.entity_instance:
+) -> Union[ifcopenshell.entity_instance, None]:
     """Assigns a load or structural member to an analysis model
 
-    :param product: The structural element that is part of the analysis.
-    :type product: ifcopenshell.entity_instance
+    :param products: The structural elements that is part of the analysis.
     :param structural_analysis_model: The IfcStructuralAnalysisModel that
         the structural element is related to.
-    :type structural_analysis_model: ifcopenshell.entity_instance
     :return: The IfcRelAssignsToGroup relationship
-    :rtype: ifcopenshell.entity_instance
     """
-    settings = {
-        "product": product,
-        "structural_analysis_model": structural_analysis_model,
-    }
-
-    if not settings["structural_analysis_model"].IsGroupedBy:
-        return file.create_entity(
-            "IfcRelAssignsToGroup",
-            **{
-                "GlobalId": ifcopenshell.guid.new(),
-                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": [settings["product"]],
-                "RelatingGroup": settings["structural_analysis_model"],
-            }
-        )
-    rel = settings["structural_analysis_model"].IsGroupedBy[0]
-    related_objects = set(rel.RelatedObjects) or set()
-    related_objects.add(settings["product"])
-    rel.RelatedObjects = list(related_objects)
-    ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
-    return rel
+    return ifcopenshell.api.group.assign_group(file, products, structural_analysis_model)

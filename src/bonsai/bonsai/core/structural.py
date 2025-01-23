@@ -43,7 +43,7 @@ def assign_structural_analysis_model(
         ifc.run(
             "structural.assign_structural_analysis_model",
             **{
-                "product": ifc.get().by_id(product_.BIMObjectProperties.ifc_definition_id),
+                "products": [ifc.get().by_id(product_.BIMObjectProperties.ifc_definition_id)],
                 "structural_analysis_model": ifc.get().by_id(structural_analysis_model),
             },
         )
@@ -110,7 +110,7 @@ def unassign_structural_analysis_model(
         ifc.run(
             "structural.unassign_structural_analysis_model",
             **{
-                "product": ifc.get().by_id(product_.BIMObjectProperties.ifc_definition_id),
+                "products": [ifc.get().by_id(product_.BIMObjectProperties.ifc_definition_id)],
                 "structural_analysis_model": ifc.get().by_id(structural_analysis_model),
             },
         )
