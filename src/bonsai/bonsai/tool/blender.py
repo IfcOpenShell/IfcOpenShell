@@ -1454,7 +1454,10 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_user_data_dir(cls) -> Path:
-        return Path(bpy.context.scene.BIMProperties.data_dir)
+        try:
+            return Path(bpy.context.scene.BIMProperties.data_dir)
+        except AttributeError:
+            return Path()
 
     @classmethod
     def get_data_dir_path(cls, relative_path: Union[str, Path]) -> Path:
