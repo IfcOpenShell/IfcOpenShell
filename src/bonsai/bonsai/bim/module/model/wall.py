@@ -419,19 +419,23 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
                 "NEGATIVE" if direction_sense == "POSITIVE" else "POSITIVE"
             )
 
-        if event.value == "RELEASE" and event.type == "O":
-            offset_type = context.scene.BIMModelProperties.offset_type
-            items = ["EXTERIOR", "CENTER", "INTERIOR"]
-            index = items.index(offset_type)
-            size = len(items)
-            context.scene.BIMModelProperties.offset_type = items[((index + 1) % size)]
-
         props = bpy.context.scene.BIMModelProperties
-        wall_config = f"""Direction: {props.direction_sense}
-        Offset Type: {props.offset_type}
-        Offset Value: {props.offset}
-        """
-        self.handle_instructions(context, wall_config)
+        if event.value == "RELEASE" and event.type == "O":
+            items = ["EXTERIOR", "CENTER", "INTERIOR"]
+            index = items.index(props.offset_type)
+            size = len(items)
+            props.offset_type = items[((index + 1) % size)]
+
+            layers = tool.Model.get_material_layer_parameters(self.relating_type)
+            thickness = layers["thickness"]
+            offset = 0
+            if props.offset_type  == "CENTER":
+                offset = -thickness / 2
+            elif props.offset_type  == "INTERIOR":
+                offset = -thickness
+            props.offset = offset / self.unit_scale
+
+            tool.Blender.update_viewport()
 
         custom_instructions = {
             'Choose Axis': {'icons':True, 'keys': ['EVENT_X', 'EVENT_Y']}

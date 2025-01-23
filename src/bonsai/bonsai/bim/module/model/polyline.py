@@ -72,17 +72,9 @@ def get_wall_preview_data(context, relating_type):
     if direction_sense == "NEGATIVE":
         direction = -1
     offset_type = model_props.offset_type
-    offset = 0
-    if offset_type == "CENTER":
-        offset = -thickness / 2
-    elif offset_type == "INTERIOR":
-        offset = -thickness
 
-
-    # For the model properties, the offset value should just be converted
-    # However, for the wall preview logic that follows, offset and thickness must change direction
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    model_props.offset = offset / unit_scale
+    offset = model_props.offset * unit_scale
     thickness *= direction
     offset *= direction
 
