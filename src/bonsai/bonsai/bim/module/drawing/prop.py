@@ -403,7 +403,7 @@ class DocProperties(PropertyGroup):
     imperial_precision: StringProperty(default="1/32", name="Imperial Precision")
     tolerance: bpy.props.FloatProperty(default=0.00001, name="A tolerance used when selecting objects")
     classes_to_wireframe: StringProperty(
-        default="IfcVirtualelement",
+        default="IfcVirtualElement",
         name="Classes to Wireframe",
         description="Upon import, these classes will display as wireframe.\nEx: IfcVirtualelement, IfcSpace",
     )

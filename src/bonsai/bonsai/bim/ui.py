@@ -354,14 +354,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
     def draw_directories(self, layout, context):
         row = layout.row(align=True)
-        row.prop(context.scene.BIMProperties, "schema_dir")
-        row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
-
-        row = layout.row(align=True)
         row.prop(context.scene.BIMProperties, "data_dir")
         row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
 
-        row = self.layout.row(align=True)
+        row = layout.row(align=True)
         row.prop(context.scene.BIMProperties, "cache_dir")
         row.operator("bim.select_cache_dir", icon="FILE_FOLDER", text="")
 

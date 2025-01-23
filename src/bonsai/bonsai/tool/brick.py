@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import datetime
 import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.brick
@@ -26,8 +27,8 @@ import ifcopenshell.util.system
 import bonsai.core.brick
 import bonsai.core.tool
 import bonsai.tool as tool
+from pathlib import Path
 from contextlib import contextmanager
-import datetime
 
 try:
     import brickschema
@@ -349,8 +350,7 @@ class Brick(bonsai.core.tool.Brick):
     @classmethod
     def load_brick_file(cls, filepath):
         if not BrickStore.schema:  # important check for running under test cases
-            cwd = os.path.dirname(os.path.realpath(__file__))
-            BrickStore.schema = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
+            BrickStore.schema = tool.Blender.get_data_dir_path(Path('brick', 'Brick.ttl'))
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
         with BrickStore.graph.new_changeset("SCHEMA") as cs:
             cs.load_file(BrickStore.schema)
@@ -366,8 +366,7 @@ class Brick(bonsai.core.tool.Brick):
     @classmethod
     def new_brick_file(cls):
         if not BrickStore.schema:  # important check for running under test cases
-            cwd = os.path.dirname(os.path.realpath(__file__))
-            BrickStore.schema = os.path.join(cwd, "..", "bim", "schema", "Brick.ttl")
+            BrickStore.schema = tool.Blender.get_data_dir_path(Path('brick', 'Brick.ttl'))
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
         with BrickStore.graph.new_changeset("SCHEMA") as cs:
             cs.load_file(BrickStore.schema)
