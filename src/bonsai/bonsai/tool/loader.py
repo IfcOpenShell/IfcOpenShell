@@ -747,13 +747,27 @@ class Loader(bonsai.core.tool.Loader):
     def create_point_cloud_mesh(cls, representation: ifcopenshell.entity_instance) -> Union[bpy.types.Mesh, None]:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         vertex_list = []
+        ios_verts_item_ids = []
+        item: ifcopenshell.entity_instance
         for item in representation.Items:
-            if item.is_a("IfcCartesianPointList3D"):
+            coords = None
+            if item.is_a("IfcCartesianPointList3D"):  # PointCloud.c
+                coords = np.array(item.CoordList)
                 vertex_list.extend(Vector(list(coordinates)) * unit_scale for coordinates in item.CoordList)
+            # Is it ever used? In IFC4+ PointCloud is requiring 3D list, before IFC4 there were no coord lists at all.
             elif item.is_a("IfcCartesianPointList2D"):
                 vertex_list.extend(Vector(list(coordinates)).to_3d() * unit_scale for coordinates in item.CoordList)
-            elif item.is_a("IfcCartesianPoint"):
-                vertex_list.append(Vector(list(item.Coordinates)) * unit_scale)
+            elif item.is_a("IfcPoint"):  # Point
+                if item.is_a("IfcCartesianPoint"):
+                    vertex_list.append(Vector(list(item.Coordinates)) * unit_scale)
+                else:
+                    # TODO: implement non cartesian point vertices.
+                    continue
+            else:
+                assert False
+            assert coords is not None
+            vertex_list.extend((coords * unit_scale).tolist())
+            ios_verts_item_ids.extend([item.id()] * len(coords))
 
         if len(vertex_list) == 0:
             return None
@@ -761,6 +775,7 @@ class Loader(bonsai.core.tool.Loader):
         mesh_name = tool.Geometry.get_representation_name(representation)
         mesh = bpy.data.meshes.new(mesh_name)
         mesh.from_pydata(vertex_list, [], [])
+        mesh["ios_verts_item_ids"] = ios_verts_item_ids
         return mesh
 
     @classmethod
