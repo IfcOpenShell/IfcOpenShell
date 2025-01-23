@@ -474,6 +474,7 @@ class PolylineOperator:
         return context.space_data.type == "VIEW_3D"
 
     def __init__(self):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.mousemove_count = 0
         self.action_count = 0
         self.visible_objs = []
@@ -509,19 +510,21 @@ class PolylineOperator:
         self.is_typing = False
         self.snap_angle = None
         self.snapping_points = []
-        self.instructions = """TAB: Cycle Input
-        D: Distance Input
-        A: Angle Lock
-        M: Modify Snap Point
-        C: Close Polyline
-        BACKSPACE: Remove Point
-        X, Y: Choose Axis
-        """
-        self.snap_info = """
-        Snap: 
-        Axis:
-        Plane: 
-        """
+        self.instructions = {
+            'Cycle Input': {'icons':True, 'keys': ['EVENT_TAB']},
+            'Distance Input': {'icons':True, 'keys': ['EVENT_D']},
+            'Angle Lock': {'icons':True, 'keys': ['EVENT_A']},
+            'Increment Angle': {'icons':True, 'keys': ['EVENT_SHIFT', 'MOUSE_MMB_SCROLL']},
+            'Modify Snap Point': {'icons':True, 'keys': ['EVENT_M']},
+            'Close Polyline': {'icons':True, 'keys': ['EVENT_C']},
+            'Remove Point': {'icons':True, 'keys': ['EVENT_BACKSPACE']},
+        }
+
+        self.info = [ 
+            "Axis: ",
+            "Plane: ",
+            "Snap: ",
+        ]
 
         self.tool_state = tool.Polyline.create_tool_state()
 
@@ -586,23 +589,30 @@ class PolylineOperator:
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
-    def handle_instructions(self, context: bpy.types.Context, custom_instructions: str = "") -> None:
-        self.snap_info = f"""|
-        Axis: {self.tool_state.axis_method}
-        Plane: {self.tool_state.plane_method}
-        Snap: {self.snapping_points[0][1]}
-        """
-        instructions = self.instructions + custom_instructions + self.snap_info
+    def handle_instructions(self, context: bpy.types.Context, custom_instructions: dict = {}, custom_info: str = "") -> None:
+        self.info = [
+            f"Axis: {self.tool_state.axis_method}",
+            f"Plane: {self.tool_state.plane_method}",
+            f"Snap: {self.snapping_points[0][1]}",
+        ]
+        instructions = self.instructions | custom_instructions if custom_instructions else self.instructions
+
+        infos = self.info + custom_info if custom_info else self.info
 
         def draw_instructions(self: bpy.types.Header, context: bpy.types.Context) -> None:
-            for line in instructions.splitlines():
-                line = line.strip()
-                split = line.split(":", 1)
-                if (key := split[0]) not in ("TAB", "D", "A", "M", "C", "E", "BACKSPACE"):
-                    self.layout.label(text=line)
-                    continue
+            for action, settings in instructions.items():
+                if settings["icons"]:
+                    for key in settings["keys"]:
+                        self.layout.label(text="", icon=key)
+                    self.layout.label(text=action)
+                else:
+                    key = settings["keys"][0]
+                    self.layout.label(text=key+action)
 
-                self.layout.label(text=split[1], icon=f"EVENT_{key}")
+            self.layout.label(text="|")
+
+            for info in infos:
+                self.layout.label(text=info)
 
         context.workspace.status_text_set(draw_instructions)
 

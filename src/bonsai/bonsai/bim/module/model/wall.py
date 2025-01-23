@@ -433,6 +433,18 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         """
         self.handle_instructions(context, wall_config)
 
+        custom_instructions = {
+            'Choose Axis': {'icons':True, 'keys': ['EVENT_X', 'EVENT_Y']}
+        }
+
+        wall_config = [
+            f"Direction: {props.direction_sense}",
+            f"Offset Type: {props.offset_type}",
+            f"Offset Value: {tool.Polyline.format_input_ui_units(props.offset * self.unit_scale)}",
+        ]
+
+        self.handle_instructions(context, custom_instructions, wall_config)
+
         self.handle_mouse_move(context, event, should_round=True)
 
         self.choose_axis(event)
