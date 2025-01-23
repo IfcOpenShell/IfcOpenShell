@@ -314,26 +314,32 @@ class DisableEditingStructuralAnalysisModel(bpy.types.Operator):
 class AssignStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_structural_analysis_model"
     bl_label = "Assign Structural Analysis Model"
+    bl_description = "Assign structual analysis model to the selected objects."
     bl_options = {"REGISTER", "UNDO"}
-    product: bpy.props.StringProperty()
     structural_analysis_model: bpy.props.IntProperty()
 
     def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        structural_analysis_model = ifc_file.by_id(self.structural_analysis_model)
+        products = [element for o in tool.Blender.get_selected_objects() if (element := tool.Ifc.get_entity(o))]
         core.assign_structural_analysis_model(
-            tool.Ifc, tool.Structural, product=self.product, structural_analysis_model=self.structural_analysis_model
+            tool.Ifc, products=products, structural_analysis_model=structural_analysis_model
         )
 
 
 class UnassignStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_structural_analysis_model"
     bl_label = "Unassign Structural Analysis Model"
+    bl_description = "Unassign structual analysis model from the selected objects."
     bl_options = {"REGISTER", "UNDO"}
-    product: bpy.props.StringProperty()
     structural_analysis_model: bpy.props.IntProperty()
 
     def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        structural_analysis_model = ifc_file.by_id(self.structural_analysis_model)
+        products = [element for o in tool.Blender.get_selected_objects() if (element := tool.Ifc.get_entity(o))]
         core.unassign_structural_analysis_model(
-            tool.Ifc, tool.Structural, product=self.product, structural_analysis_model=self.structural_analysis_model
+            tool.Ifc, products=products, structural_analysis_model=structural_analysis_model
         )
 
 

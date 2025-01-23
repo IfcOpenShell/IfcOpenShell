@@ -34,19 +34,16 @@ def add_structural_analysis_model(ifc: tool.Ifc, structural: tool.Structural) ->
 
 def assign_structural_analysis_model(
     ifc: tool.Ifc,
-    structural: tool.Structural,
-    product: str,
-    structural_analysis_model: Union[int, None],
+    products: list[ifcopenshell.entity_instance],
+    structural_analysis_model: ifcopenshell.entity_instance,
 ) -> None:
-    product_ = structural.get_product_or_active_object(product)
-    if structural_analysis_model and product:
-        ifc.run(
-            "structural.assign_structural_analysis_model",
-            **{
-                "products": [ifc.get().by_id(product_.BIMObjectProperties.ifc_definition_id)],
-                "structural_analysis_model": ifc.get().by_id(structural_analysis_model),
-            },
-        )
+    ifc.run(
+        "structural.assign_structural_analysis_model",
+        **{
+            "products": products,
+            "structural_analysis_model": structural_analysis_model,
+        },
+    )
 
 
 def disable_editing_structural_analysis_model(structural: tool.Structural) -> None:
@@ -101,16 +98,13 @@ def remove_structural_analysis_model(ifc: tool.Ifc, structural: tool.Structural,
 
 def unassign_structural_analysis_model(
     ifc: tool.Ifc,
-    structural: tool.Structural,
-    product: str,
-    structural_analysis_model: Union[int, None],
+    products: list[ifcopenshell.entity_instance],
+    structural_analysis_model: ifcopenshell.entity_instance,
 ) -> None:
-    product_ = structural.get_product_or_active_object(product)
-    if structural_analysis_model and product:
-        ifc.run(
-            "structural.unassign_structural_analysis_model",
-            **{
-                "products": [ifc.get().by_id(product_.BIMObjectProperties.ifc_definition_id)],
-                "structural_analysis_model": ifc.get().by_id(structural_analysis_model),
-            },
-        )
+    ifc.run(
+        "structural.unassign_structural_analysis_model",
+        **{
+            "products": products,
+            "structural_analysis_model": structural_analysis_model,
+        },
+    )
