@@ -34,7 +34,7 @@ class ShowLoads(bpy.types.Operator):
     """Draw decorations to show strucutural actions in 3d view"""
 
     bl_idname = "bim.show_loads"
-    bl_label = "Show loads in 3D View"
+    bl_label = "Show Loads in 3D View"
 
     def modal(self, context, event):
         if event.type == "F5":

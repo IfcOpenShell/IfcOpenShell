@@ -465,7 +465,7 @@ class BIM_PT_show_structural_activities(Panel):
         row = self.layout.row(align=True)
         row.operator(
             "bim.show_loads",
-            text="Show loads",
+            text="Show Loads",
             icon="HIDE_OFF",
         )
         row = self.layout.row(align=True)
