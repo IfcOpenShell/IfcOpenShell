@@ -16,35 +16,48 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional, Union
 
-def add_structural_analysis_model(ifc, structural):
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import bonsai.tool as tool
+
+
+def add_structural_analysis_model(ifc: tool.Ifc, structural: tool.Structural) -> ifcopenshell.entity_instance:
     result = ifc.run("structural.add_structural_analysis_model")
     structural.load_structural_analysis_models()
     structural.ensure_representation_contexts()
     return result
 
 
-def assign_structural_analysis_model(ifc, structural, product=None, structural_analysis_model=None):
-    product = structural.get_product_or_active_object(product)
+def assign_structural_analysis_model(
+    ifc: tool.Ifc,
+    structural: tool.Structural,
+    product: str,
+    structural_analysis_model: Union[int, None],
+) -> None:
+    product_ = structural.get_product_or_active_object(product)
     if structural_analysis_model and product:
         ifc.run(
             "structural.assign_structural_analysis_model",
             **{
-                "product": ifc.get().by_id(product.BIMObjectProperties.ifc_definition_id),
+                "product": ifc.get().by_id(product_.BIMObjectProperties.ifc_definition_id),
                 "structural_analysis_model": ifc.get().by_id(structural_analysis_model),
             },
         )
 
 
-def disable_editing_structural_analysis_model(structural):
+def disable_editing_structural_analysis_model(structural: tool.Structural) -> None:
     structural.disable_editing_structural_analysis_model()
 
 
-def disable_structural_analysis_model_editing_ui(structural):
+def disable_structural_analysis_model_editing_ui(structural: tool.Structural) -> None:
     structural.disable_structural_analysis_model_editing_ui()
 
 
-def edit_structural_analysis_model(ifc, structural):
+def edit_structural_analysis_model(ifc: tool.Ifc, structural: tool.Structural) -> None:
     attributes = structural.get_structural_analysis_model_attributes()
     ifc.run(
         "structural.edit_structural_analysis_model",
@@ -57,26 +70,28 @@ def edit_structural_analysis_model(ifc, structural):
     structural.disable_editing_structural_analysis_model()
 
 
-def enable_editing_structural_analysis_model(structural, model=None):
+def enable_editing_structural_analysis_model(structural: tool.Structural, model: Union[int, None]) -> None:
     structural.enable_editing_structural_analysis_model(model)
 
 
-def enable_structural_analysis_model_editing_ui(structural):
+def enable_structural_analysis_model_editing_ui(structural: tool.Structural) -> None:
     structural.enable_structural_analysis_model_editing_ui()
 
 
-def load_structural_analysis_model_attributes(structural, model=None):
+def load_structural_analysis_model_attributes(structural: tool.Structural, model: Union[int, None]) -> None:
     data = structural.get_ifc_structural_analysis_model_attributes(model)
+    if data is None:
+        return
     structural.load_structural_analysis_model_attributes(data)
 
 
-def load_structural_analysis_models(structural):
+def load_structural_analysis_models(structural: tool.Structural) -> None:
     structural.load_structural_analysis_models()
     structural.enable_structural_analysis_model_editing_ui()
     # structural.disable_editing_structural_analysis_model()
 
 
-def remove_structural_analysis_model(ifc, structural, model=None):
+def remove_structural_analysis_model(ifc: tool.Ifc, structural: tool.Structural, model: int) -> None:
     ifc.run(
         "structural.remove_structural_analysis_model",
         **{"structural_analysis_model": ifc.get().by_id(model)},
@@ -84,13 +99,18 @@ def remove_structural_analysis_model(ifc, structural, model=None):
     structural.load_structural_analysis_models()
 
 
-def unassign_structural_analysis_model(ifc, structural, product=None, structural_analysis_model=None):
-    product = structural.get_product_or_active_object(product)
+def unassign_structural_analysis_model(
+    ifc: tool.Ifc,
+    structural: tool.Structural,
+    product: str,
+    structural_analysis_model: Union[int, None],
+) -> None:
+    product_ = structural.get_product_or_active_object(product)
     if structural_analysis_model and product:
         ifc.run(
             "structural.unassign_structural_analysis_model",
             **{
-                "product": ifc.get().by_id(product.BIMObjectProperties.ifc_definition_id),
+                "product": ifc.get().by_id(product_.BIMObjectProperties.ifc_definition_id),
                 "structural_analysis_model": ifc.get().by_id(structural_analysis_model),
             },
         )

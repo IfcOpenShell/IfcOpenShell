@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 from bpy.types import Panel
@@ -35,21 +36,23 @@ from bonsai.bim.module.pset.data import (
     WorkSchedulePsetsData,
 )
 from bonsai.bim.module.material.data import ObjectMaterialData
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
+from typing_extensions import assert_never
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.pset.prop import IfcProperty
 
 
-def draw_property(
-    prop: bpy.types.PropertyGroup, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
-) -> None:
+def draw_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_operator: Optional[str] = None) -> None:
     if prop.value_type == "IfcPropertySingleValue":
         draw_single_property(prop, layout, copy_operator)
     elif prop.value_type == "IfcPropertyEnumeratedValue":
         draw_enumerated_property(prop, layout, copy_operator)
+    else:
+        assert_never(prop.value_type)
 
 
-def draw_single_property(
-    prop: bpy.types.PropertyGroup, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
-) -> None:
+def draw_single_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_operator: Optional[str] = None) -> None:
     value_name = prop.metadata.get_value_name(display_only=True)
     if not value_name:
         layout.label(text=prop["Name"])

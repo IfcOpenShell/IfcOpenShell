@@ -38,8 +38,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import Union, Literal
-
+from typing import Union, Literal, TYPE_CHECKING, get_args
 
 psetnames = {}
 qtonames = {}
@@ -231,12 +230,17 @@ class IfcPropertyEnumeratedValue(PropertyGroup):
     enumerated_values: CollectionProperty(type=Attribute)
 
 
+IfcPropertyValueType = Literal["IfcPropertySingleValue", "IfcPropertyEnumeratedValue"]
+
+
 class IfcProperty(PropertyGroup):
     metadata: PointerProperty(type=Attribute)
-    value_type: EnumProperty(
-        items=[(v, v, v) for v in ("IfcPropertySingleValue", "IfcPropertyEnumeratedValue")], name="Value Type"
-    )
+    value_type: EnumProperty(items=[(v, v, v) for v in get_args(IfcPropertyValueType)], name="Value Type")
     enumerated_value: PointerProperty(type=IfcPropertyEnumeratedValue)
+
+    if TYPE_CHECKING:
+        metadata: Attribute
+        value_type: IfcPropertyValueType
 
 
 class PsetProperties(PropertyGroup):

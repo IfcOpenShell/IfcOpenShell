@@ -16,48 +16,51 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import bpy
+import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
+from typing import Literal, Any, Union
 
 
 class Library(bonsai.core.tool.Library):
     @classmethod
-    def clear_editing_mode(cls):
-        bpy.context.scene.BIMLibraryProperties.editing_mode = ""
+    def clear_editing_mode(cls) -> None:
+        bpy.context.scene.BIMLibraryProperties.editing_mode = "-"
 
     @classmethod
-    def export_library_attributes(cls):
+    def export_library_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMLibraryProperties
         return bonsai.bim.helper.export_attributes(props.library_attributes)
 
     @classmethod
-    def export_reference_attributes(cls):
+    def export_reference_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMLibraryProperties
         return bonsai.bim.helper.export_attributes(props.reference_attributes)
 
     @classmethod
-    def get_active_library(cls):
+    def get_active_library(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc.get().by_id(bpy.context.scene.BIMLibraryProperties.active_library_id)
 
     @classmethod
-    def get_active_reference(cls):
+    def get_active_reference(cls) -> ifcopenshell.entity_instance:
         return tool.Ifc.get().by_id(bpy.context.scene.BIMLibraryProperties.active_reference_id)
 
     @classmethod
-    def import_library_attributes(cls, library):
+    def import_library_attributes(cls, library: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMLibraryProperties
         props.library_attributes.clear()
         bonsai.bim.helper.import_attributes2(library, props.library_attributes)
 
     @classmethod
-    def import_reference_attributes(cls, reference):
+    def import_reference_attributes(cls, reference: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMLibraryProperties
         props.reference_attributes.clear()
         bonsai.bim.helper.import_attributes2(reference, props.reference_attributes)
 
     @classmethod
-    def import_references(cls, library):
+    def import_references(cls, library: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMLibraryProperties
         props.references.clear()
         if tool.Ifc.get_schema() == "IFC2X3":
@@ -70,13 +73,13 @@ class Library(bonsai.core.tool.Library):
             new.name = reference.Name or "Unnamed"
 
     @classmethod
-    def set_active_library(cls, library):
+    def set_active_library(cls, library: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMLibraryProperties.active_library_id = library.id()
 
     @classmethod
-    def set_active_reference(cls, reference):
+    def set_active_reference(cls, reference: ifcopenshell.entity_instance) -> None:
         bpy.context.scene.BIMLibraryProperties.active_reference_id = reference.id()
 
     @classmethod
-    def set_editing_mode(cls, mode):
+    def set_editing_mode(cls, mode: Literal["LIBRARY", "REFERENCES", "REFERENCE"]) -> None:
         bpy.context.scene.BIMLibraryProperties.editing_mode = mode
