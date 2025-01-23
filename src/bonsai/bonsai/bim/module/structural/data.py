@@ -39,7 +39,9 @@ class LoadGroupDecorationData:
 
     @classmethod
     def load(cls):
-        cls.data = {"load groups to show": cls.load_groups_to_show()}
+        cls.data = {
+            "load_groups_to_show": cls.load_groups_to_show(),
+        }
         cls.is_loaded = True
 
     @classmethod
