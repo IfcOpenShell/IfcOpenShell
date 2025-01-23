@@ -61,20 +61,21 @@ def create_bmesh_from_vertices(vertices, is_closed=False):
 
 def get_wall_preview_data(context, relating_type):
     # Get properties from object type
-    layers = tool.Model.get_material_layer_parameters(relating_type)
-    if not layers["thickness"]:
-        return
-    thickness = layers["thickness"]
     model_props = context.scene.BIMModelProperties
     direction_sense = model_props.direction_sense
     direction = 1
     if direction_sense == "NEGATIVE":
         direction = -1
-    offset_type = model_props.offset_type
 
+    layers = tool.Model.get_material_layer_parameters(relating_type)
+    if not layers["thickness"]:
+        return
+    thickness = layers["thickness"]
+    thickness *= direction
+
+    offset_type = model_props.offset_type_vertical
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     offset = model_props.offset * unit_scale
-    thickness *= direction
     offset *= direction
 
     height = float(model_props.extrusion_depth)

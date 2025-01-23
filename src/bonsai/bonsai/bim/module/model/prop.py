@@ -200,9 +200,9 @@ class BIMModelProperties(PropertyGroup):
         name="Material Usage Direction Sense",
         default="POSITIVE",
     )
-    offset_type: bpy.props.EnumProperty(
+    offset_type_vertical: bpy.props.EnumProperty(
         items=[("EXTERIOR", "Exterior", ""), ("CENTER", "Center", ""), ("INTERIOR", "Interior", "")],
-        name="Layer Offset Type",
+        name="Vertical Layer Offset Type",
         default="EXTERIOR",
         description="It's a convention that affects the offset to reference line",
     )

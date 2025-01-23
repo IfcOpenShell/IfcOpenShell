@@ -422,20 +422,10 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         props = bpy.context.scene.BIMModelProperties
         if event.value == "RELEASE" and event.type == "O":
             items = ["EXTERIOR", "CENTER", "INTERIOR"]
-            index = items.index(props.offset_type)
+            index = items.index(props.offset_type_vertical)
             size = len(items)
-            props.offset_type = items[((index + 1) % size)]
-
-            layers = tool.Model.get_material_layer_parameters(self.relating_type)
-            thickness = layers["thickness"]
-            offset = 0
-            if props.offset_type  == "CENTER":
-                offset = -thickness / 2
-            elif props.offset_type  == "INTERIOR":
-                offset = -thickness
-            props.offset = offset / self.unit_scale
-
-            tool.Blender.update_viewport()
+            props.offset_type_vertical = items[((index + 1) % size)]
+            self.set_offset(context, self.relating_type)
 
         custom_instructions = {
             'Choose Axis': {'icons':True, 'keys': ['EVENT_X', 'EVENT_Y']}
@@ -443,7 +433,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
 
         wall_config = [
             f"Direction: {props.direction_sense}",
-            f"Offset Type: {props.offset_type}",
+            f"Offset Type: {props.offset_type_vertical}",
             f"Offset Value: {tool.Polyline.format_input_ui_units(props.offset * self.unit_scale)}",
         ]
 
@@ -486,6 +476,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         ProductDecorator.install(context)
         self.tool_state.use_default_container = True
         self.tool_state.plane_method = "XY"
+        self.set_offset(context, self.relating_type)
         return {"RUNNING_MODAL"}
 
 
