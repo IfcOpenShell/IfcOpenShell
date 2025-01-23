@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.api.geometry
 import ifcopenshell.api.type
 import ifcopenshell.api.project
@@ -25,7 +26,9 @@ import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
-from typing import Optional, Any, Union, Literal, get_args
+import ifcopenshell.util.unit
+from typing import Optional, Any, Union, Literal, get_args, Callable
+from functools import partial
 
 
 APPENDABLE_ASSET = Literal[
@@ -425,7 +428,9 @@ class Usecase:
             context_identifier=added_context.ContextIdentifier,
         )
 
-    def file_add(self, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+    def file_add(
+        self, element: ifcopenshell.entity_instance, conversion_factor: Optional[float] = None
+    ) -> ifcopenshell.entity_instance:
         """Reimplementation of `file.add` but taking into account that some elements (profiles, materials)
         are already existing (checking by their name) and shouldn't be duplicated.
 
@@ -433,7 +438,6 @@ class Usecase:
         and there is no control to prevent it from adding certain type of elements.
         """
         ifc_file = self.file
-        return ifc_file.add(element)
         if not self.assume_asset_uniqueness_by_name:
             return ifc_file.add(element)
 
@@ -441,6 +445,24 @@ class Usecase:
         element_identity = element.wrapped_data.identity()
         if added_element := reuse_identities.get(element_identity):
             return added_element
+
+        def get_conversion_factor() -> float:
+            nonlocal conversion_factor
+            if conversion_factor is not None:
+                return conversion_factor
+            library_scale = ifcopenshell.util.unit.calculate_unit_scale(self.settings["library"])
+            current_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+            conversion_factor = library_scale / current_scale
+            return conversion_factor
+
+        attributes_ = None
+
+        def get_attributes() -> tuple[W.attribute, ...]:
+            nonlocal attributes_
+            if attributes_ is not None:
+                return attributes_
+            attributes_ = element.wrapped_data.declaration().as_entity().all_attributes()
+            return attributes_
 
         # Maybe element already exists.
         if element.is_a("IfcProfileDef"):
@@ -460,16 +482,49 @@ class Usecase:
                 return existing_material
 
         attrs = {}
+
+        # Utils method for the loop.
+        def get_tuple_type(tuple_: tuple) -> type:
+            while isinstance(tuple_, tuple):
+                tuple_ = tuple_[0]
+            return type(tuple_)
+
+        def is_length_measure(attribute: W.attribute) -> bool:
+            return "<type IfcLengthMeasure: <real>>" in str(attribute.type_of_attribute())
+
+        def apply_to_array(arr: Any, func: Callable[[Any], Any]) -> Any:
+            if isinstance(arr, tuple):
+                return tuple(apply_to_array(sub, func) for sub in arr)
+            return func(arr)
+
+        file_add_ = partial(self.file_add, conversion_factor=conversion_factor)
+        apply_conversion = partial(lambda x: x * conversion_factor)
+
+        # Migrate attributes to another file.
         for attr_index, attr_value in enumerate(element):
             # `None` is set by default already.
             if attr_value is None:
                 continue
+
             elif isinstance(attr_value, ifcopenshell.entity_instance):
                 attr_value = self.file_add(attr_value)
+
             elif isinstance(attr_value, tuple):
                 # Assume type is consistent across the tuple.
-                if isinstance(attr_value[0], ifcopenshell.entity_instance):
-                    attr_value = tuple(self.file_add(e) for e in attr_value)
+                tuple_type = get_tuple_type(attr_value)
+                if tuple_type == ifcopenshell.entity_instance:
+                    attr_value = apply_to_array(attr_value, file_add_)
+                elif tuple_type == float:
+                    attributes = get_attributes()
+                    if is_length_measure(attributes[attr_index]):
+                        get_conversion_factor()  # Ensure conversion factor is not None.
+                        attr_value = apply_to_array(attr_value, apply_conversion)
+
+            elif isinstance(attr_value, float):
+                attributes = get_attributes()
+                if is_length_measure(attributes[attr_index]):
+                    attr_value *= get_conversion_factor()
+
             attrs[attr_index] = attr_value
 
         # Adding entity at the end just to keep it consistent with `file.add`.

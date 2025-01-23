@@ -29,9 +29,12 @@ import ifcopenshell.api.context
 import ifcopenshell.api.project
 import ifcopenshell.api.material
 import ifcopenshell.api.profile
+import ifcopenshell.api.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 import numpy as np
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
 class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
@@ -114,6 +117,7 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert set(self.file.by_type("IfcWall")) == set()
 
     def test_append_two_type_products_sharing_the_same_material_indirectly_via_a_material_set(self):
+        ifcopenshell.api.root.create_entity(self.file, "IfcProject")
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         ifcopenshell.api.root.create_entity(library, "IfcProject")
         element1 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
@@ -162,7 +166,9 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert self.file.by_type("IfcStyledItem")[0].Item == self.file.by_type("IfcBoundingBox")[0]
 
     def test_append_product_with_styles_to_reuse_styleditems(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
         element_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
         history = library.createIfcOwnerHistory()
         element_type.OwnerHistory = history
@@ -452,6 +458,29 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         pset_data = ifcopenshell.util.element.get_psets(element1_)
         assert "Test" in pset_data
         assert ifcopenshell.util.element.get_psets(element2_) == pset_data
+
+    def test_file_add_to_convert_units(self):
+        library = ifcopenshell.file()
+        builder = ShapeBuilder(library)
+        ifcopenshell.api.root.create_entity(library, "IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(library, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(library, units=[unit])
+        ifc_file = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc_file, "IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="LENGTHUNIT")
+        ifcopenshell.api.unit.assign_unit(ifc_file, units=[unit])
+
+        # Simple floats.
+        profile = ifcopenshell.api.profile.add_parameterized_profile(library, "IfcCircleProfileDef")
+        profile.Radius = 10.0
+        new_profile = ifcopenshell.api.project.append_asset(ifc_file, library, profile)
+        assert new_profile.Radius == 0.01
+
+        # Aggregates of floats.
+        arbitrary_profile = builder.profile(builder.rectangle((1000, 1000)))
+        new_arbitrary_profile = ifcopenshell.api.project.append_asset(ifc_file, library, arbitrary_profile)
+        updated_points = np.array(arbitrary_profile.OuterCurve.Points) * 0.001
+        assert np.allclose(updated_points, new_arbitrary_profile.OuterCurve.Points)
 
 
 class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
