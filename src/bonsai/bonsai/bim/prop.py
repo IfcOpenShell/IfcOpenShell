@@ -275,6 +275,7 @@ def get_display_name(self: "Attribute") -> str:
 
 
 AttributeDataType = Literal["string", "integer", "float", "boolean", "enum", "file"]
+AttributeSpecialType = Literal["", "DATE", "DATETIME", "LENGTH", "AREA", "VOLUME", "FORCE"]
 
 
 class Attribute(PropertyGroup):
@@ -327,6 +328,7 @@ class Attribute(PropertyGroup):
         description: str
         ifc_class: str
         data_type: AttributeDataType
+        special_type: AttributeSpecialType
 
     def get_value(self) -> Union[str, float, int, bool, None]:
         if self.is_optional and self.is_null:

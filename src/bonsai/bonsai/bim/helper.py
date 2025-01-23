@@ -92,7 +92,7 @@ def draw_attribute(
         layout.prop(
             attribute,
             value_name,
-            text=attribute.name,
+            text=attribute.display_name,
         )
 
     if attribute.is_uri:
@@ -178,8 +178,11 @@ def import_attribute(
     elif data_type == "integer":
         new.int_value = 0 if new.is_null else int(data[attribute.name()])
     elif data_type == "float":
-        if attribute.type_of_attribute()._is("IfcLengthMeasure"):
+        attribute_type = attribute.type_of_attribute()
+        if attribute_type._is("IfcLengthMeasure"):
             new.special_type = "LENGTH"
+        elif attribute_type._is("IfcForceMeasure"):
+            new.special_type = "FORCE"
         new.float_value = 0.0 if new.is_null else float(data[attribute.name()])
     elif data_type == "enum":
         enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
