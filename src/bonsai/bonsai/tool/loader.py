@@ -656,6 +656,8 @@ class Loader(bonsai.core.tool.Loader):
             settings.set("apply-default-materials", False)
             settings.set("keep-bounding-boxes", True)
             settings.set("layerset-first", True)
+            # Wire intersection checks is prohibitively slow on advanced breps. See bug #5999.
+            settings.set("no-wire-intersection-check", True)
             # settings.set("triangulation-type", ifcopenshell.ifcopenshell_wrapper.POLYHEDRON_WITHOUT_HOLES)
             if is_gross:
                 settings.set("disable-opening-subtractions", True)
