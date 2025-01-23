@@ -187,6 +187,8 @@ class Usecase:
             return next((e for e in self.file.by_type("IfcMaterial") if e.Name == material_name), None)
         elif element.is_a("IfcProfileDef"):
             profile_name = element.ProfileName
+            if profile_name is None:
+                return None
             return next((e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None)
         else:
             return None
@@ -443,12 +445,13 @@ class Usecase:
         # Maybe element already exists.
         if element.is_a("IfcProfileDef"):
             profile_name = element.ProfileName
-            existing_profile = next(
-                (e for e in ifc_file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None
-            )
-            if existing_profile is not None:
-                reuse_identities[element_identity] = existing_profile
-                return existing_profile
+            if profile_name is not None:
+                existing_profile = next(
+                    (e for e in ifc_file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None
+                )
+                if existing_profile is not None:
+                    reuse_identities[element_identity] = existing_profile
+                    return existing_profile
         elif element.is_a("IfcMaterial"):
             material_name = element.Name
             existing_material = next((e for e in ifc_file.by_type("IfcMaterial") if e.Name == material_name), None)
