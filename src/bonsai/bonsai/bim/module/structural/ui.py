@@ -503,7 +503,7 @@ class BIM_PT_structural_loads(Panel):
                 text="FILTER - OFF" if not self.props.filtered_structural_loads else "FILTER - ON",
                 icon="FILTER",
             )
-            row.operator("bim.disable_structural_load_editing_ui", text="", icon="SCREEN_BACK")
+            row.operator("bim.disable_structural_load_editing_ui", text="", icon="CANCEL")
 
             row = self.layout.row(align=True)
             prop_with_search(row, self.props, "structural_load_types", text="")
@@ -574,7 +574,7 @@ class BIM_PT_boundary_conditions(Panel):
                 text="FILTER - OFF" if not self.props.filtered_boundary_conditions else "FILTER - ON",
                 icon="FILTER",
             )
-            row.operator("bim.disable_boundary_condition_editing_ui", text="", icon="SCREEN_BACK")
+            row.operator("bim.disable_boundary_condition_editing_ui", text="", icon="CANCEL")
 
             row = self.layout.row(align=True)
             prop_with_search(row, self.props, "boundary_condition_types", text="")
