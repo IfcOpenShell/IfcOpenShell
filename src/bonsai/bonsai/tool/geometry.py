@@ -740,10 +740,15 @@ class Geometry(bonsai.core.tool.Geometry):
             return
 
         # Fallback to custom methods as IOS doesn't process points, see #5218.
-        if representation.RepresentationType in ("PointCloud", "Point"):
-            mesh = tool.Loader.create_point_cloud_mesh(representation)
+        representation_type = representation.RepresentationType
+        if representation_type in ("PointCloud", "Point", "Vertex"):
+            if representation_type == "Vertex":
+                mesh = tool.Loader.create_structural_point_connection_mesh(representation)
+            else:
+                mesh = tool.Loader.create_point_cloud_mesh(representation)
+
             if mesh is None:
-                raise Exception(f"Failed to process point cloud representation: {representation}.")
+                raise Exception(f"Failed to process representation with custom method: {representation}.")
 
             tool.Ifc.link(representation, mesh)
             for element in elements | element_types:
