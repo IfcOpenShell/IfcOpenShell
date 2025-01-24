@@ -33,12 +33,9 @@ def assign_layer(
 
     :param items: The list of IfcRepresentationItems to assign to the layer. This
         should be the items from the object's IfcShapeRepresentation.
-    :type items: list[ifcopenshell.entity_instance]
     :param layer: The IfcPresentationLayerAssignment layer to assign the
         item to.
-    :type layer: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
