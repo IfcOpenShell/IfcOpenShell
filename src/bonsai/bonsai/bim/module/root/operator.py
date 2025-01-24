@@ -568,7 +568,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         row = self.layout.row()
         row.prop(props, "description")
         if not self.is_specific_tool:
-            prop_with_search(self.layout, props, "ifc_product", text="Definition", should_click_ok=True)
+            if not self.ifc_product:
+                prop_with_search(self.layout, props, "ifc_product", text="Definition", should_click_ok=True)
             prop_with_search(self.layout, props, "ifc_class", should_click_ok=True)
         ifc_predefined_types = root_prop.get_ifc_predefined_types(context.scene.BIMRootProperties, context)
         if ifc_predefined_types:
