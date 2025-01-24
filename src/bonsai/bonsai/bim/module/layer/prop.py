@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -31,9 +32,31 @@ from bpy.props import (
 )
 
 
+def update_layer_property(self: "Layer", context: bpy.types.Context, *, property: str) -> None:
+    # TODO: make use of those attributes in Bonsai somehow?
+    layer = tool.Ifc.get().by_id(self.ifc_definition_id)
+    setattr(layer, f"Layer{property.capitalize()}", getattr(self, property))
+
+
 class Layer(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+    with_style: BoolProperty(description="Whether it's IfcPresentationLayerWithStyle.", default=False)
+    on: BoolProperty(
+        name="Layer Visibility",
+        description="Currently has no effect in Bonsai.",
+        update=lambda self, context: update_layer_property(self, context, property="on"),
+    )
+    frozen: BoolProperty(
+        name="Layer Frozen",
+        description="Currently has no effect in Bonsai.",
+        update=lambda self, context: update_layer_property(self, context, property="frozen"),
+    )
+    blocked: BoolProperty(
+        name="Layer Blocked",
+        description="Currently has not effect in Bonsai",
+        update=lambda self, context: update_layer_property(self, context, property="blocked"),
+    )
 
 
 class BIMLayerProperties(PropertyGroup):

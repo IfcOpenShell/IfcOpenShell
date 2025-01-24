@@ -85,9 +85,10 @@ class BIM_UL_layers(UIList):
                     op = row.operator("bim.assign_presentation_layer", text="", icon="KEYFRAME", emboss=False)
                     op.layer = item.ifc_definition_id
 
-            # TODO: replace placeholder UI for hiding presentation layers
-            row.operator("bim.disable_editing_layer", text="", icon="HIDE_OFF", emboss=False)
-            row.operator("bim.disable_editing_layer", text="", icon="FREEZE", emboss=False)
+            if item.with_style:
+                row.prop(item, "on", text="", icon="HIDE_OFF" if item.on else "HIDE_ON", emboss=False)
+                row.prop(item, "frozen", text="", icon="FREEZE" if item.frozen else "MESH_PLANE", emboss=False)
+                row.prop(item, "blocked", text="", icon="LOCKED" if item.blocked else "UNLOCKED", emboss=False)
 
             if context.scene.BIMLayerProperties.active_layer_id == item.ifc_definition_id:
                 op = row.operator("bim.select_layer_products", text="", icon="RESTRICT_SELECT_OFF")

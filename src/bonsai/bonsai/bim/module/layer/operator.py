@@ -19,6 +19,7 @@
 import bpy
 import json
 import ifcopenshell.api
+import ifcopenshell.api.layer
 import ifcopenshell.util.element
 import ifcopenshell.util.attribute
 import bonsai.bim.helper
@@ -37,8 +38,15 @@ class LoadLayers(bpy.types.Operator):
         props.layers.clear()
         for layer in tool.Ifc.get().by_type("IfcPresentationLayerAssignment"):
             new = props.layers.add()
-            new.name = layer.Name or "Unnamed"
+            new.name = layer.Name
             new.ifc_definition_id = layer.id()
+            if layer.is_a("IfcPresentationLayerWithStyle"):
+                new.with_style = True
+                # IfcLogical can also be UNKNOWN, not just bool.
+                ifc_logical_is_true = lambda x: x is True
+                new["on"] = ifc_logical_is_true(layer.LayerOn)
+                new["frozen"] = ifc_logical_is_true(layer.LayerFrozen)
+                new["blocked"] = ifc_logical_is_true(layer.LayerBlocked)
         props.is_editing = True
         bpy.ops.bim.disable_editing_layer()
         return {"FINISHED"}
