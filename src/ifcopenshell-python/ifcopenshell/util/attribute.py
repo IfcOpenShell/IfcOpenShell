@@ -47,9 +47,9 @@ def get_primitive_type(
         return "float"
     elif "<number>" in data_type or "<integer>" in data_type:
         return "integer"
-    elif "<boolean>" in data_type or "<logical>" in data_type:
+    elif "<boolean>" in data_type:
         return "boolean"
-    elif "<enumeration" in data_type:
+    elif "<logical>" in data_type or "<enumeration" in data_type:
         return "enum"
     elif "<binary" in data_type:
         return "binary"

@@ -185,11 +185,23 @@ def import_attribute(
             new.special_type = "FORCE"
         new.float_value = 0.0 if new.is_null else float(data[attribute.name()])
     elif data_type == "enum":
-        enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
-        new.enum_items = json.dumps(enum_items)
-        add_attribute_enum_items_descriptions(new, enum_items)
-        if data[new.name]:
-            new.enum_value = data[new.name]
+        attribute_type = attribute.type_of_attribute()
+        is_logical = str(attribute_type) == "<type IfcLogical: <logical>>"
+        enum_value = data[new.name]
+        if is_logical:
+            new.special_type = "LOGICAL"
+            enum_items = ("TRUE", "FALSE", "UNKNOWN")
+            new.enum_items = json.dumps(enum_items)
+            if enum_value is not None and enum_value != "UNKNOWN":
+                # IfcOpenShell returns bool if IfcLogical is True/False.
+                enum_value = "TRUE" if enum_value else "FALSE"
+        else:
+            enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
+            new.enum_items = json.dumps(enum_items)
+            add_attribute_enum_items_descriptions(new, enum_items)
+
+        if enum_value is not None:
+            new.enum_value = enum_value
     add_attribute_description(new, data)
     add_attribute_min_max(attribute, new)
 

@@ -275,7 +275,7 @@ def get_display_name(self: "Attribute") -> str:
 
 
 AttributeDataType = Literal["string", "integer", "float", "boolean", "enum", "file"]
-AttributeSpecialType = Literal["", "DATE", "DATETIME", "LENGTH", "AREA", "VOLUME", "FORCE"]
+AttributeSpecialType = Literal["", "DATE", "DATETIME", "LENGTH", "AREA", "VOLUME", "FORCE", "LOGICAL"]
 
 
 class Attribute(PropertyGroup):
@@ -337,7 +337,11 @@ class Attribute(PropertyGroup):
             return self.string_value.replace("\\n", "\n")
         if self.data_type == "file":
             return [f.name for f in self.filepath_value.file_list]
-        return getattr(self, str(self.get_value_name()), None)
+        value = getattr(self, str(self.get_value_name()), None)
+        if self.special_type == "LOGICAL" and value != "UNKNOWN":
+            # IfcOpenShell expects bool if IfcLogical is True/False.
+            value = value == "TRUE"
+        return value
 
     def get_value_default(self) -> Union[str, float, int, bool]:
         data_type = self.data_type
