@@ -873,7 +873,6 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
         )
         DumbSlabPlaner().regenerate_from_occurence(element, material_set_usage)
 
-
     def modal(self, context, event):
         if not self.relating_type:
             self.report({"WARNING"}, "You need to select a slab type.")
@@ -904,9 +903,7 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
             props.offset_type_horizontal = items[((index + 1) % size)]
             self.set_offset(context, self.relating_type)
 
-        custom_instructions = {
-            'Choose Axis': {'icons':True, 'keys': ['EVENT_X', 'EVENT_Y']}
-        }
+        custom_instructions = {"Choose Axis": {"icons": True, "keys": ["EVENT_X", "EVENT_Y"]}}
 
         slab_config = [
             f"Direction: {props.direction_sense}",

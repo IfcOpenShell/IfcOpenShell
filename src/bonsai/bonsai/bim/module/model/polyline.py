@@ -43,6 +43,7 @@ from bonsai.bim.module.geometry.decorator import ItemDecorator
 from typing import Optional, Union, Literal
 from lark import Lark, Transformer
 
+
 def create_bmesh_from_vertices(vertices, is_closed=False):
     bm = bmesh.new()
 
@@ -58,6 +59,7 @@ def create_bmesh_from_vertices(vertices, is_closed=False):
     bm.verts.index_update()
     bm.edges.index_update()
     return bm
+
 
 def get_wall_preview_data(context, relating_type):
     # Get properties from object type
@@ -185,6 +187,7 @@ def get_wall_preview_data(context, relating_type):
 
     return data
 
+
 def get_slab_preview_data(context, relating_type):
     props = context.scene.BIMModelProperties
     x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
@@ -235,7 +238,7 @@ def get_slab_preview_data(context, relating_type):
     bm = create_bmesh_from_vertices(polyline_vertices, is_closed)
     bm.verts.ensure_lookup_table()
     if x_angle:
-        bmesh.ops.rotate(bm, cent=Vector(bm.verts[0].co), verts=bm.verts, matrix=Matrix.Rotation(x_angle, 3, 'X'))
+        bmesh.ops.rotate(bm, cent=Vector(bm.verts[0].co), verts=bm.verts, matrix=Matrix.Rotation(x_angle, 3, "X"))
     new_faces = bmesh.ops.contextual_create(bm, geom=bm.edges)
     new_faces = bmesh.ops.extrude_face_region(bm, geom=bm.edges[:] + bm.faces[:])
     new_verts = [e for e in new_faces["geom"] if isinstance(e, bmesh.types.BMVert)]
@@ -249,6 +252,7 @@ def get_slab_preview_data(context, relating_type):
     data["edges"] = edges
     data["tris"] = tris
     return data
+
 
 def get_vertical_profile_preview_data(context, relating_type):
     material = ifcopenshell.util.element.get_material(relating_type)
@@ -567,16 +571,16 @@ class PolylineOperator:
         self.snap_angle = None
         self.snapping_points = []
         self.instructions = {
-            'Cycle Input': {'icons':True, 'keys': ['EVENT_TAB']},
-            'Distance Input': {'icons':True, 'keys': ['EVENT_D']},
-            'Angle Lock': {'icons':True, 'keys': ['EVENT_A']},
-            'Increment Angle': {'icons':True, 'keys': ['EVENT_SHIFT', 'MOUSE_MMB_SCROLL']},
-            'Modify Snap Point': {'icons':True, 'keys': ['EVENT_M']},
-            'Close Polyline': {'icons':True, 'keys': ['EVENT_C']},
-            'Remove Point': {'icons':True, 'keys': ['EVENT_BACKSPACE']},
+            "Cycle Input": {"icons": True, "keys": ["EVENT_TAB"]},
+            "Distance Input": {"icons": True, "keys": ["EVENT_D"]},
+            "Angle Lock": {"icons": True, "keys": ["EVENT_A"]},
+            "Increment Angle": {"icons": True, "keys": ["EVENT_SHIFT", "MOUSE_MMB_SCROLL"]},
+            "Modify Snap Point": {"icons": True, "keys": ["EVENT_M"]},
+            "Close Polyline": {"icons": True, "keys": ["EVENT_C"]},
+            "Remove Point": {"icons": True, "keys": ["EVENT_BACKSPACE"]},
         }
 
-        self.info = [ 
+        self.info = [
             "Axis: ",
             "Plane: ",
             "Snap: ",
@@ -645,7 +649,9 @@ class PolylineOperator:
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
-    def handle_instructions(self, context: bpy.types.Context, custom_instructions: dict = {}, custom_info: str = "") -> None:
+    def handle_instructions(
+        self, context: bpy.types.Context, custom_instructions: dict = {}, custom_info: str = ""
+    ) -> None:
         self.info = [
             f"Axis: {self.tool_state.axis_method}",
             f"Plane: {self.tool_state.plane_method}",
@@ -663,7 +669,7 @@ class PolylineOperator:
                     self.layout.label(text=action)
                 else:
                     key = settings["keys"][0]
-                    self.layout.label(text=key+action)
+                    self.layout.label(text=key + action)
 
             self.layout.label(text="|")
 
@@ -910,9 +916,9 @@ class PolylineOperator:
     def set_offset(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMModelProperties
         if tool.Model.get_usage_type(relating_type) == "LAYER2":
-            offset_type = "offset_type_vertical" 
+            offset_type = "offset_type_vertical"
         elif tool.Model.get_usage_type(relating_type) == "LAYER3":
-            offset_type = "offset_type_horizontal" 
+            offset_type = "offset_type_horizontal"
         else:
             return
 
@@ -926,7 +932,7 @@ class PolylineOperator:
 
         props.offset = self.offset / self.unit_scale
         tool.Blender.update_viewport()
-        
+
     def modal(self, context: bpy.types.Context, event: bpy.types.Event) -> Union[set[str], None]:
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()

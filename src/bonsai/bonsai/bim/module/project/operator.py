@@ -2400,8 +2400,8 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
             return {"PASS_THROUGH"}
 
         custom_instructions = {
-            'Choose Axis': {'icons':True, 'keys': ['EVENT_X', 'EVENT_Y', 'EVENT_Z']},
-            'Choose Plane': {'icons':True, 'keys': ['EVENT_SHIFT', 'EVENT_X', 'EVENT_Y', 'EVENT_Z']},
+            "Choose Axis": {"icons": True, "keys": ["EVENT_X", "EVENT_Y", "EVENT_Z"]},
+            "Choose Plane": {"icons": True, "keys": ["EVENT_SHIFT", "EVENT_X", "EVENT_Y", "EVENT_Z"]},
         }
         self.handle_instructions(context, custom_instructions)
 

@@ -427,9 +427,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
             props.offset_type_vertical = items[((index + 1) % size)]
             self.set_offset(context, self.relating_type)
 
-        custom_instructions = {
-            'Choose Axis': {'icons':True, 'keys': ['EVENT_X', 'EVENT_Y']}
-        }
+        custom_instructions = {"Choose Axis": {"icons": True, "keys": ["EVENT_X", "EVENT_Y"]}}
 
         wall_config = [
             f"Direction: {props.direction_sense}",

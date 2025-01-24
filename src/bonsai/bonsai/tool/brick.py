@@ -350,7 +350,7 @@ class Brick(bonsai.core.tool.Brick):
     @classmethod
     def load_brick_file(cls, filepath):
         if not BrickStore.schema:  # important check for running under test cases
-            BrickStore.schema = tool.Blender.get_data_dir_path(Path('brick', 'Brick.ttl'))
+            BrickStore.schema = tool.Blender.get_data_dir_path(Path("brick", "Brick.ttl"))
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
         with BrickStore.graph.new_changeset("SCHEMA") as cs:
             cs.load_file(BrickStore.schema)
@@ -366,7 +366,7 @@ class Brick(bonsai.core.tool.Brick):
     @classmethod
     def new_brick_file(cls):
         if not BrickStore.schema:  # important check for running under test cases
-            BrickStore.schema = tool.Blender.get_data_dir_path(Path('brick', 'Brick.ttl'))
+            BrickStore.schema = tool.Blender.get_data_dir_path(Path("brick", "Brick.ttl"))
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
         with BrickStore.graph.new_changeset("SCHEMA") as cs:
             cs.load_file(BrickStore.schema)
