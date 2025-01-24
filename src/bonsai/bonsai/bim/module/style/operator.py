@@ -848,7 +848,8 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             new_name = attributes_data["Name"]
             if new_name != original_name:
                 material = tool.Ifc.get_object(self.surface_style)
-                material.name = new_name or "Unnamed"
+                assert isinstance(material, bpy.types.Material)
+                tool.Root.set_material_name(material, new_name or "Unnamed")
         else:
             attributes = tool.Style.get_style_ui_props_attributes(self.surface_style.is_a())
             assert attributes

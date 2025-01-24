@@ -403,6 +403,15 @@ class Root(bonsai.core.tool.Root):
             obj.name = name  # The handler will trigger, and reset is_renaming to False
 
     @classmethod
+    def set_material_name(cls, material: bpy.types.Material, name: str) -> None:
+        """Rename material without triggerring name callback and unnecessary writing to IFC."""
+        if material.name == name:
+            return
+        props = material.BIMStyleProperties
+        props.is_renaming = True
+        material.name = name  # The handler will trigger, and reset is_renaming to False.
+
+    @classmethod
     def unlink_object(cls, obj: bpy.types.Object) -> None:
         """Purge all IFC data associated with a Blender object.
 

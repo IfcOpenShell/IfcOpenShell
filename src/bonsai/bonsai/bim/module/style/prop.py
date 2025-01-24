@@ -294,3 +294,4 @@ class BIMStyleProperties(PropertyGroup):
         default="Shading",
         update=update_shading_style,
     )
+    is_renaming: BoolProperty(description="Used to prevent triggering handler callback.", default=False)
