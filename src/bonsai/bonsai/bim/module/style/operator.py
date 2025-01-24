@@ -840,9 +840,15 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             tool.Loader.create_surface_style_with_textures(material, self.rendering_style, texture_style)
         elif self.surface_style.is_a("IfcSurfaceStyle"):
             attributes = self.props.attributes
+            original_name = self.surface_style.Name
+            attributes_data = bonsai.bim.helper.export_attributes(attributes)
             ifcopenshell.api.style.edit_presentation_style(
-                ifc_file, style=self.surface_style, attributes=bonsai.bim.helper.export_attributes(attributes)
+                ifc_file, style=self.surface_style, attributes=attributes_data
             )
+            new_name = attributes_data["Name"]
+            if new_name != original_name:
+                material = tool.Ifc.get_object(self.surface_style)
+                material.name = new_name or "Unnamed"
         else:
             attributes = tool.Style.get_style_ui_props_attributes(self.surface_style.is_a())
             assert attributes

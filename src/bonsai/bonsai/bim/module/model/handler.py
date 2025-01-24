@@ -19,7 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
-from bonsai.bim.module.model import root, product, wall, slab, profile, opening, task
+from bonsai.bim.module.model import product, wall, slab, profile, opening, task
 from bonsai.bim.ifc import IfcStore
 from bpy.app.handlers import persistent
 
@@ -29,8 +29,6 @@ def load_post(*args):
     # TODO: the goal is to slowly remove these API listeners. In hindsight it
     # isn't a good idea because it leads to domino events being triggered. It's
     # less buggy to explicitly code the logic in core.
-    ifcopenshell.api.add_pre_listener("style.edit_presentation_style", "Bonsai.Root.SyncStyleName", root.sync_name)
-
     ifcopenshell.api.add_post_listener(
         "geometry.add_representation", "Bonsai.Product.GenerateBox", product.generate_box
     )
