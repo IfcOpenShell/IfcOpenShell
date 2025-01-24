@@ -19,6 +19,7 @@
 import bpy
 import json
 import ifcopenshell.api
+import ifcopenshell.api.constraint
 import ifcopenshell.util.attribute
 import bonsai.bim.helper
 import bonsai.tool as tool
@@ -96,19 +97,12 @@ class EditObjective(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMConstraintProperties
-        attributes = {}
-        for attribute in props.constraint_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            elif attribute.enum_items:
-                attributes[attribute.name] = attribute.enum_value
-            else:
-                attributes[attribute.name] = attribute.string_value
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "constraint.edit_objective",
-            self.file,
-            **{"objective": self.file.by_id(props.active_constraint_id), "attributes": attributes},
+        attributes = bonsai.bim.helper.export_attributes(props.constraint_attributes)
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.constraint.edit_objective(
+            ifc_file,
+            objective=ifc_file.by_id(props.active_constraint_id),
+            attributes=attributes,
         )
         bpy.ops.bim.load_objectives()
         return {"FINISHED"}

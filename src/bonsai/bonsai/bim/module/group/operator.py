@@ -17,8 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.util.attribute
 import ifcopenshell.api
+import ifcopenshell.api.group
+import ifcopenshell.util.attribute
 import bonsai.bim.helper
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
@@ -114,17 +115,9 @@ class EditGroup(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMGroupProperties
-        attributes = {}
-        for attribute in props.group_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                attributes[attribute.name] = attribute.string_value
-
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "group.edit_group", self.file, **{"group": self.file.by_id(props.active_group_id), "attributes": attributes}
-        )
+        attributes = bonsai.bim.helper.export_attributes(props.group_attributes)
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.group.edit_group(ifc_file, group=ifc_file.by_id(props.active_group_id), attributes=attributes)
         bpy.ops.bim.load_groups()
         return {"FINISHED"}
 

@@ -129,14 +129,12 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
 
         def callback(attributes, prop):
             if prop.name in ("RefLatitude", "RefLongitude"):
-                if prop.is_null:
-                    attributes[prop.name] = None
-                else:
+                if not prop.is_null:
                     try:
                         attributes[prop.name] = json.loads(prop.string_value)
                     except:
                         attributes[prop.name] = None
-                return True
+                    return True
 
         attributes = bonsai.bim.helper.export_attributes(props.attributes, callback=callback)
         ifcopenshell.api.run("attribute.edit_attributes", self.file, product=product, attributes=attributes)

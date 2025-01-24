@@ -103,16 +103,9 @@ class EditPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMLayerProperties
-        attributes = {}
-        for attribute in props.layer_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                attributes[attribute.name] = attribute.string_value
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "layer.edit_layer", self.file, **{"layer": self.file.by_id(props.active_layer_id), "attributes": attributes}
-        )
+        attributes = bonsai.bim.helper.export_attributes(props.layer_attributes)
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.layer.edit_layer(ifc_file, layer=ifc_file.by_id(props.active_layer_id), attributes=attributes)
         bpy.ops.bim.load_layers()
         return {"FINISHED"}
 
