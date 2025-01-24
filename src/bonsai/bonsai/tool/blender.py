@@ -22,6 +22,7 @@ import bmesh
 import json
 import os
 import platform
+import subprocess
 from ifcopenshell import entity_instance
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -833,23 +834,20 @@ class Blender(bonsai.core.tool.Blender):
     operator_invoke_filepath_hotkeys_description = "Hold Shift to open the file, Alt to browse containing directory"
 
     @classmethod
+    def open_file_or_folder(cls, path: str) -> None:
+        if platform.system() == "Windows":
+            os.startfile(path)
+        elif platform.system() == "Darwin":
+            subprocess.Popen(["open", path])
+        else:
+            subprocess.Popen(["xdg-open", path])
+
+    @classmethod
     def operator_invoke_filepath_hotkeys(
         cls, operator: bpy.types.Operator, context: bpy.types.Context, event: bpy.types.Event, filepath: Path
     ) -> Union[set, None]:
         if not event.alt and not event.shift:
             return
-
-        import platform
-        import os
-        import subprocess
-
-        def open_file_or_folder(path):
-            if platform.system() == "Windows":
-                os.startfile(path)
-            elif platform.system() == "Darwin":
-                subprocess.Popen(["open", path])
-            else:
-                subprocess.Popen(["xdg-open", path])
 
         # resolve relative filepaths with .blend path by default
         if not filepath.is_absolute():
@@ -866,14 +864,14 @@ class Blender(bonsai.core.tool.Blender):
             if not filepath.exists():
                 operator.report({"ERROR"}, f'Cannot open non-existing directory: "{filepath.as_posix()}"')
                 return {"CANCELLED"}
-            open_file_or_folder(filepath.as_posix())
+            cls.open_file_or_folder(filepath.as_posix())
             return {"PASS_THROUGH"}
 
         # holding sHIFT - open file
         if not filepath.exists():
             operator.report({"ERROR"}, f'Cannot open non-existing file: "{filepath.as_posix()}"')
             return {"CANCELLED"}
-        open_file_or_folder(filepath.as_posix())
+        cls.open_file_or_folder(filepath.as_posix())
         return {"PASS_THROUGH"}
 
     @classmethod

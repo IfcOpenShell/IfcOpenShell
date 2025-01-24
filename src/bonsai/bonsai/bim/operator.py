@@ -93,6 +93,23 @@ class OpenUri(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class OpenPath(bpy.types.Operator):
+    bl_idname = "bim.open_path"
+    bl_label = "Open Path"
+    path: bpy.props.StringProperty()
+    tooltip: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        if properties.tooltip:
+            return properties.tooltip
+        return f"Open path: '{properties.path}'."
+
+    def execute(self, context):
+        tool.Blender.open_file_or_folder(self.path)
+        return {"FINISHED"}
+
+
 class CloseError(bpy.types.Operator):
     bl_idname = "bim.close_error"
     bl_label = "Close Error"
