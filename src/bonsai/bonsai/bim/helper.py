@@ -54,7 +54,9 @@ def draw_attributes(
     popup_active_attribute: Optional[bonsai.bim.prop.Attribute] = None,
     callback: Optional[Callable[[bonsai.bim.prop.Attribute, bpy.types.UILayout], None]] = None,
 ) -> None:
-    """you can set attribute active in popup with `active_attribute`
+    """Draw editable UI for prop.Attributes.
+
+    You can set attribute active in popup with `active_attribute`
     meaning you will be able to type into attribute's field without having to click
     on it first
     """

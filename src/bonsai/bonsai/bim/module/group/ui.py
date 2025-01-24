@@ -16,8 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 from bpy.types import Panel, UIList
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.group.data import GroupsData, ObjectGroupsData
 
 
@@ -60,12 +62,8 @@ class BIM_PT_groups(Panel):
         if self.props.active_group_id:
             self.draw_editable_ui(context)
 
-    def draw_editable_ui(self, context):
-        for attribute in self.props.group_attributes:
-            row = self.layout.row(align=True)
-            row.prop(attribute, "string_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+    def draw_editable_ui(self, context: bpy.types.Context) -> None:
+        draw_attributes(self.props.group_attributes, self.layout)
 
 
 class BIM_PT_object_groups(Panel):

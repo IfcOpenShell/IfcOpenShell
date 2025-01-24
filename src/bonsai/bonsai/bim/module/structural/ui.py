@@ -59,20 +59,8 @@ def draw_boundary_condition_ui(layout, boundary_condition, connection_id, props)
         draw_boundary_condition_read_only_ui(layout, boundary_condition)
 
 
-def draw_boundary_condition_editable_ui(layout, props):
-    for attribute in props.boundary_condition_attributes:
-        if attribute.data_type == "string":
-            row = layout.row()
-            row.prop(attribute, "string_value", text=attribute["name"])
-        else:
-            row = layout.row(align=True)
-            row.prop(attribute, "enum_value", text=attribute["name"])
-            if attribute.enum_value == "IfcBoolean":
-                row.prop(attribute, "bool_value", text="")
-            else:
-                row.prop(attribute, "float_value", text="")
-        if attribute.is_optional:
-            row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+def draw_boundary_condition_editable_ui(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+    draw_attributes(props.boundary_condition_attributes, layout)
 
 
 def draw_boundary_condition_read_only_ui(layout, boundary_condition):
