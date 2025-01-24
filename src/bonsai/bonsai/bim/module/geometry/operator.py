@@ -2421,7 +2421,10 @@ class SelectRepresentationItem(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.BIMGeometryProperties.representation_obj
+        if not context.scene.BIMGeometryProperties.representation_obj:
+            cls.poll_message_set("No object opened in item mode.")
+            return False
+        return True
 
     def execute(self, context):
         obj = tool.Geometry.get_active_or_representation_obj()
