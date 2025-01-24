@@ -772,10 +772,16 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         self.style = tool.Ifc.get().by_id(self.props.is_editing_style)
 
         style_elements = tool.Style.get_style_elements(self.style)
-        self.surface_style = style_elements.get(self.props.is_editing_class, None)
-        self.shading_style = style_elements.get("IfcSurfaceStyleShading", None)
-        self.rendering_style = style_elements.get("IfcSurfaceStyleRendering", None)
-        self.texture_style = style_elements.get("IfcSurfaceStyleWithTextures", None)
+        # NOTE: currently this operator is used to edit existing (and only existing) IfcSurfaceStyles
+        # or new or existing IfcSurfaceStyle components (shading, etc)
+        # which is kind of confusing.
+        if self.props.is_editing_class == "IfcSurfaceStyle":
+            self.surface_style = self.style
+        else:
+            self.surface_style = style_elements.get(self.props.is_editing_class, None)
+            self.shading_style = style_elements.get("IfcSurfaceStyleShading", None)
+            self.rendering_style = style_elements.get("IfcSurfaceStyleRendering", None)
+            self.texture_style = style_elements.get("IfcSurfaceStyleWithTextures", None)
 
         if self.surface_style:
             result = self.edit_existing_style()
@@ -785,7 +791,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         if result:
             return result
 
-        self.props.is_editing_style = 0
+        tool.Style.disable_editing()
         core.load_styles(tool.Style, style_type=self.props.style_type)
 
         # restore selected style type
@@ -832,8 +838,14 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                 attributes={"Textures": textures},
             )
             tool.Loader.create_surface_style_with_textures(material, self.rendering_style, texture_style)
+        elif self.surface_style.is_a("IfcSurfaceStyle"):
+            attributes = self.props.attributes
+            ifcopenshell.api.style.edit_presentation_style(
+                ifc_file, style=self.surface_style, attributes=bonsai.bim.helper.export_attributes(attributes)
+            )
         else:
             attributes = tool.Style.get_style_ui_props_attributes(self.surface_style.is_a())
+            assert attributes
             ifcopenshell.api.run(
                 "style.edit_surface_style",
                 tool.Ifc.get(),
