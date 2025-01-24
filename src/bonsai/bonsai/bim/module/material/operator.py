@@ -30,6 +30,7 @@ import bonsai.core.material as core
 import bonsai.bim.module.model.profile as model_profile
 from bonsai.bim.ifc import IfcStore
 from typing import Any, Union, TYPE_CHECKING
+from bonsai.bim.module.model import wall, slab
 
 
 class LoadMaterials(bpy.types.Operator):
@@ -361,15 +362,14 @@ class AddLayer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
-        layer = ifcopenshell.api.run(
-            "material.add_layer",
-            self.file,
-            **{
-                "layer_set": self.file.by_id(self.layer_set),
-                "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
-            },
+        layer_set = tool.Ifc.get().by_id(self.layer_set)
+        ifcopenshell.api.material.add_layer(
+            tool.Ifc.get(),
+            layer_set=layer_set,
+            material=tool.Ifc.get().by_id(int(obj.BIMObjectMaterialProperties.material)),
         )
+        slab.DumbSlabPlaner().regenerate_from_layer_set(layer_set)
+        wall.DumbWallPlaner().regenerate_from_layer_set(layer_set)
 
 
 class ReorderMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -405,11 +405,15 @@ class RemoveLayer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         layer = tool.Ifc.get().by_id(self.layer)
+        material_sets = set(layer.ToMaterialLayerSet)
         for material_set in layer.ToMaterialLayerSet:
             if len(material_set.MaterialLayers) == 1:
                 self.report({"ERROR"}, "At least one layer must exist")
                 return {"CANCELLED"}
         ifcopenshell.api.run("material.remove_layer", tool.Ifc.get(), layer=layer)
+        for material_set in material_sets:
+            slab.DumbSlabPlaner().regenerate_from_layer_set(material_set)
+            wall.DumbWallPlaner().regenerate_from_layer_set(material_set)
 
 
 class DuplicateLayer(bpy.types.Operator, tool.Ifc.Operator):
@@ -707,32 +711,28 @@ class EditMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
         attributes = bonsai.bim.helper.export_attributes(props.material_set_item_attributes)
 
         if material.is_a("IfcMaterialConstituentSet"):
-            ifcopenshell.api.run(
-                "material.edit_constituent",
+            ifcopenshell.api.material.edit_constituent(
                 self.file,
-                **{
-                    "constituent": self.file.by_id(self.material_set_item),
-                    "attributes": attributes,
-                    "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material_set_item_material)),
-                },
+                constituent=self.file.by_id(self.material_set_item),
+                attributes=attributes,
+                material=self.file.by_id(int(obj.BIMObjectMaterialProperties.material_set_item_material)),
             )
         elif material.is_a("IfcMaterialLayerSet"):
-            ifcopenshell.api.run(
-                "material.edit_layer",
+            layer = self.file.by_id(self.material_set_item)
+            ifcopenshell.api.material.edit_layer(
                 self.file,
-                **{
-                    "layer": self.file.by_id(self.material_set_item),
-                    "attributes": attributes,
-                    "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material_set_item_material)),
-                },
+                layer=layer,
+                attributes=attributes,
+                material=self.file.by_id(int(obj.BIMObjectMaterialProperties.material_set_item_material)),
             )
+            slab.DumbSlabPlaner().regenerate_from_layer(layer)
+            wall.DumbWallPlaner().regenerate_from_layer(layer)
         elif material.is_a("IfcMaterialProfileSet"):
             profile_def = None
             if mprops.profiles:
                 profile_def = tool.Ifc.get().by_id(int(mprops.profiles))
 
-            ifcopenshell.api.run(
-                "material.edit_profile",
+            ifcopenshell.api.material.edit_profile(
                 self.file,
                 profile=self.file.by_id(self.material_set_item),
                 attributes=attributes,

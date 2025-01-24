@@ -26,6 +26,9 @@ from bpy.app.handlers import persistent
 
 @persistent
 def load_post(*args):
+    # TODO: the goal is to slowly remove these API listeners. In hindsight it
+    # isn't a good idea because it leads to domino events being triggered. It's
+    # less buggy to explicitly code the logic in core.
     ifcopenshell.api.add_pre_listener("style.edit_presentation_style", "Bonsai.Root.SyncStyleName", root.sync_name)
 
     ifcopenshell.api.add_post_listener(
@@ -43,21 +46,9 @@ def load_post(*args):
     )
 
     ifcopenshell.api.add_post_listener(
-        "material.edit_layer", "Bonsai.DumbWall.RegenerateFromLayer", wall.DumbWallPlaner().regenerate_from_layer
-    )
-    ifcopenshell.api.add_post_listener(
         "type.assign_type", "Bonsai.DumbWall.RegenerateFromType", wall.DumbWallPlaner().regenerate_from_type
     )
 
-    ifcopenshell.api.add_post_listener(
-        "material.add_layer", "Bonsai.DumbSlab.RegenerateFromLayer", slab.DumbSlabPlaner().regenerate_from_layer
-    )
-    ifcopenshell.api.add_post_listener(
-        "material.remove_layer", "Bonsai.DumbSlab.RegenerateFromLayer", slab.DumbSlabPlaner().regenerate_from_layer
-    )
-    ifcopenshell.api.add_post_listener(
-        "material.edit_layer", "Bonsai.DumbSlab.RegenerateFromLayer", slab.DumbSlabPlaner().regenerate_from_layer
-    )
     ifcopenshell.api.add_post_listener(
         "material.edit_layer_usage",
         "Bonsai.DumbSlab.RegenerateFromLayerSetUsage",

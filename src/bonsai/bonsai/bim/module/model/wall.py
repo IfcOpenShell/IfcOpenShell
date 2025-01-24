@@ -860,26 +860,26 @@ class DumbWallGenerator:
 
 
 class DumbWallPlaner:
-    def regenerate_from_layer(self, usecase_path, ifc_file, settings):
-        if settings["attributes"].get("LayerThickness") is None:
-            return
-        walls = []
-        layer = settings["layer"]
+    def regenerate_from_layer(self, layer: ifcopenshell.entity_instance) -> None:
         for layer_set in layer.ToMaterialLayerSet:
-            total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
-            if not total_thickness:
+            self.regenerate_from_layer_set(layer_set)
+
+    def regenerate_from_layer_set(self, layer_set: ifcopenshell.entity_instance) -> None:
+        walls = []
+        total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
+        if not total_thickness:
+            return
+        for inverse in tool.Ifc.get().get_inverse(layer_set):
+            if not inverse.is_a("IfcMaterialLayerSetUsage") or inverse.LayerSetDirection != "AXIS2":
                 continue
-            for inverse in ifc_file.get_inverse(layer_set):
-                if not inverse.is_a("IfcMaterialLayerSetUsage") or inverse.LayerSetDirection != "AXIS2":
-                    continue
-                if ifc_file.schema == "IFC2X3":
-                    for rel in ifc_file.get_inverse(inverse):
-                        if not rel.is_a("IfcRelAssociatesMaterial"):
-                            continue
-                        walls.extend([tool.Ifc.get_object(e) for e in rel.RelatedObjects])
-                else:
-                    for rel in inverse.AssociatedTo:
-                        walls.extend([tool.Ifc.get_object(e) for e in rel.RelatedObjects])
+            if tool.Ifc.get().schema == "IFC2X3":
+                for rel in tool.Ifc.get().get_inverse(inverse):
+                    if not rel.is_a("IfcRelAssociatesMaterial"):
+                        continue
+                    walls.extend([tool.Ifc.get_object(e) for e in rel.RelatedObjects])
+            else:
+                for rel in inverse.AssociatedTo:
+                    walls.extend([tool.Ifc.get_object(e) for e in rel.RelatedObjects])
         DumbWallRecalculator().recalculate([w for w in set(walls) if w])
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):

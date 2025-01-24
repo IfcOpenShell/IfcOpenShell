@@ -202,10 +202,7 @@ class DumbSlabPlaner:
         obj = bpy.context.active_object
         element = tool.Ifc.get_entity(obj)
 
-        if tool.Model.get_usage_type(element) != "LAYER3":
-            return
-
-        # Called from materil.add_layer or material.remove_layer
+        # Called from material.add_layer or material.remove_layer
         material = ifcopenshell.util.element.get_material(element)
         material_set_usage = tool.Ifc.get().by_id(material.id())
         if not getattr(material_set_usage, "ForLayerSet", False):
@@ -218,38 +215,21 @@ class DumbSlabPlaner:
 
         self.change_thickness(element, total_thickness)
 
-    def regenerate_from_layer(self, usecase_path, ifc_file, settings):
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+    def regenerate_from_layer(self, layer: ifcopenshell.entity_instance) -> None:
+        for layer_set in layer.ToMaterialLayerSet:
+            self.regenerate_from_layer_set(layer_set)
 
-        try:
-            # Called from materil.edit_layer
-            layer = settings["layer"]
-            thickness = settings["attributes"].get("LayerThickness")
-            if thickness is None:
-                return
-            layer_set = layer.ToMaterialLayerSet[0]
-
-        except:
-            # Called from materil.add_layer or material.remove_layer
-            obj = bpy.context.active_object
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                return
-            material = ifcopenshell.util.element.get_material(element)
-            material_set_usage = tool.Ifc.get().by_id(material.id())
-            if not getattr(material_set_usage, "ForLayerSet", False):
-                return
-            layer_set = material_set_usage.ForLayerSet
-
+    def regenerate_from_layer_set(self, layer_set: ifcopenshell.entity_instance) -> None:
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         total_thickness = sum([l.LayerThickness for l in layer_set.MaterialLayers])
         if not total_thickness:
             return
 
-        for inverse in ifc_file.get_inverse(layer_set):
+        for inverse in tool.Ifc.get().get_inverse(layer_set):
             if not inverse.is_a("IfcMaterialLayerSetUsage") or inverse.LayerSetDirection != "AXIS3":
                 continue
-            if ifc_file.schema == "IFC2X3":
-                for rel in ifc_file.get_inverse(inverse):
+            if tool.Ifc.get().schema == "IFC2X3":
+                for rel in tool.Ifc.get().get_inverse(inverse):
                     if not rel.is_a("IfcRelAssociatesMaterial"):
                         continue
                     for element in rel.RelatedObjects:
@@ -300,6 +280,8 @@ class DumbSlabPlaner:
         self.change_thickness(element, total_thickness)
 
     def change_thickness(self, element: ifcopenshell.entity_instance, thickness: float) -> None:
+        if tool.Model.get_usage_type(element) != "LAYER3":
+            return
         layer_params = tool.Model.get_material_layer_parameters(element)
         body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         obj = tool.Ifc.get_object(element)
