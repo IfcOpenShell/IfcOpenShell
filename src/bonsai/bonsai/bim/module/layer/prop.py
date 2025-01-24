@@ -42,3 +42,12 @@ class BIMLayerProperties(PropertyGroup):
     layers: CollectionProperty(name="Layers", type=Layer)
     active_layer_index: IntProperty(name="Active Layer Index")
     is_editing: BoolProperty(name="Is Editing", default=False)
+    layer_type: EnumProperty(
+        name="Presentation Layer Type",
+        description="Presentation layer type to add",
+        items=(
+            ("IfcPresentationLayerAssignment", "IfcPresentationLayerAssignment", ""),
+            ("IfcPresentationLayerWithStyle", "IfcPresentationLayerWithStyle", ""),
+        ),
+        default="IfcPresentationLayerAssignment",
+    )

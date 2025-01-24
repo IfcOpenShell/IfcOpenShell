@@ -43,12 +43,15 @@ class BIM_PT_layers(Panel):
         self.props = context.scene.BIMLayerProperties
 
         row = self.layout.row(align=True)
-        row.label(text=f"{LayersData.data['total_layers']} Layers Found")
-        if self.props.is_editing:
-            row.operator("bim.add_presentation_layer", text="", icon="ADD")
-            row.operator("bim.disable_layer_editing_ui", text="", icon="CANCEL")
-        else:
+        row.label(text=f"{LayersData.data['total_layers']} Layers Found", icon="STICKY_UVS_LOC")
+        if not self.props.is_editing:
             row.operator("bim.load_layers", text="", icon="GREASEPENCIL")
+            return
+
+        row.operator("bim.disable_layer_editing_ui", text="", icon="CANCEL")
+        row = self.layout.row(align=True)
+        row.prop(self.props, "layer_type", text="")
+        row.operator("bim.add_presentation_layer", text="", icon="ADD")
 
         if self.props.is_editing:
             self.layout.template_list(

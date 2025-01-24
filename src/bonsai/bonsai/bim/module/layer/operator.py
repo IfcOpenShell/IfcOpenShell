@@ -81,12 +81,18 @@ class DisableEditingLayer(bpy.types.Operator):
 class AddPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_presentation_layer"
     bl_label = "Add Layer"
+    bl_description = "Add new presentation layer."
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        result = ifcopenshell.api.run("layer.add_layer", IfcStore.get_file())
+        props = context.scene.BIMLayerProperties
+        ifc_file = tool.Ifc.get()
+        if props.layer_type == "IfcPresentationLayerWithStyle":
+            layer = ifcopenshell.api.layer.add_layer_with_style(ifc_file)
+        else:
+            layer = ifcopenshell.api.layer.add_layer(ifc_file)
         bpy.ops.bim.load_layers()
-        bpy.ops.bim.enable_editing_layer(layer=result.id())
+        bpy.ops.bim.enable_editing_layer(layer=layer.id())
         return {"FINISHED"}
 
 
