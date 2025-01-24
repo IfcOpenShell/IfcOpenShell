@@ -42,9 +42,7 @@ class AddPsetTemplateFile(bpy.types.Operator):
 
     def execute(self, context):
         template = ifcopenshell.file()
-        filepath = next(
-            p for p in tool.Blender.get_data_dir_paths("pset", "*.ifc") if p.stem == self.new_template_filename
-        ).__str__()
+        filepath = (tool.Blender.get_data_dir_path("pset") / self.new_template_filename).with_suffix(".ifc").__str__()
 
         pset_template = ifcopenshell.api.run("pset_template.add_pset_template", template)
         ifcopenshell.api.run("pset_template.add_prop_template", template, pset_template=pset_template)
