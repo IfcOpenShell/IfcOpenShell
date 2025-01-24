@@ -589,6 +589,8 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
                     self.file,
                     **{"usage": material_set_usage, "attributes": attributes},
                 )
+                slab.DumbSlabPlaner().regenerate_from_layer_set(material_set_usage.ForLayerSet)
+                wall.DumbWallPlaner().regenerate_from_layer_set(material_set_usage.ForLayerSet)
             elif material_set_usage.is_a("IfcMaterialProfileSetUsage"):
                 if attributes.get("CardinalPoint", None):
                     attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
