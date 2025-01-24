@@ -889,10 +889,21 @@ class WallAxisDecorator:
             if element.is_a("IfcWall"):
                 layers = tool.Model.get_material_layer_parameters(element)
                 axis = tool.Model.get_wall_axis(obj, layers)
-                verts = [tuple(list(v) + [0.0]) for v in axis["reference"]]
-                self.draw_batch("LINES", verts, selected_elements_color, [(0, 1)])
-                verts = [tuple(list(v) + [0.0]) for v in axis["side"]]
-                self.draw_batch("LINES", verts, unselected_elements_color, [(0, 1)])
+                side = [tuple(list(v) + [0.0]) for v in axis["side"]]
+                self.draw_batch("LINES", side, unselected_elements_color, [(0, 1)])
+                base = [tuple(list(v) + [0.0]) for v in axis["base"]]
+                self.draw_batch("LINES", base, special_elements_color, [(0, 1)])
+                reference = [tuple(list(v) + [0.0]) for v in axis["reference"]]
+                self.draw_batch("LINES", reference, selected_elements_color, [(0, 1)])
+
+                direction = Vector(base[0]) - Vector(side[0])
+                perpendicular = Vector((direction.y, -direction.x, 0))
+                perpendicular = perpendicular.normalized() * 0.1
+                arrow_base = Vector(side[0]) + direction.normalized() * 0.05
+                v3 = arrow_base + perpendicular
+                v4 = arrow_base - perpendicular
+                arrow = [base[0], side[0], v3, v4]
+                self.draw_batch("LINES", arrow, unselected_elements_color, [(0, 1), (1, 2), (1, 3)])
 
 
 class SlabDirectionDecorator:
