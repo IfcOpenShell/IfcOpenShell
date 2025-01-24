@@ -82,8 +82,11 @@ class SwitchTab(bpy.types.Operator):
 class OpenUri(bpy.types.Operator):
     bl_idname = "bim.open_uri"
     bl_label = "Open URI"
-    bl_description = "Open the URL in your Web Browser"
     uri: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        return f"Open the URL in your Web Browser: '{properties.uri}'."
 
     def execute(self, context):
         webbrowser.open(self.uri)
