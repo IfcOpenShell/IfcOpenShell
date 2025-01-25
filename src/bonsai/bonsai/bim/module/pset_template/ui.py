@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bpy.types import Panel
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.pset_template.data import PsetTemplatesData
@@ -45,6 +46,11 @@ class BIM_PT_pset_template(Panel):
         row.operator("bim.add_pset_template_file", icon="ADD", text="")
         if PsetTemplatesData.data["pset_template_files"]:
             row.operator("bim.remove_pset_template_file", icon="X", text="")
+
+        op = row.operator("bim.open_path", icon="FILE_FOLDER", text="")
+        pset_templates_path = tool.Blender.get_data_dir_path("pset").__str__()
+        op.path = pset_templates_path
+        op.tooltip = f"Open user pset templates folder: '{pset_templates_path}'."
 
         row = self.layout.row(align=True)
 

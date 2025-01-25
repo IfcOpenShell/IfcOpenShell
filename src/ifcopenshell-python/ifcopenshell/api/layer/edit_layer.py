@@ -26,11 +26,8 @@ def edit_layer(file: ifcopenshell.file, layer: ifcopenshell.entity_instance, att
     IfcPresentationLayerAssignment, consult the IFC documentation.
 
     :param layer: The IfcPresentationLayerAssignment entity you want to edit
-    :type layer: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 

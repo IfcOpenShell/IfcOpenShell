@@ -22,6 +22,7 @@ import bmesh
 import json
 import os
 import platform
+import subprocess
 from ifcopenshell import entity_instance
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -54,7 +55,7 @@ OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve, bpy.types.Camera]
 class Blender(bonsai.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
-    TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME" if bpy.app.version >= (4, 1, 0) else "LIGHTPROBE_GRID"
+    TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME"
 
     BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, str], tuple[str, str, str, str, str]]
     """
@@ -144,7 +145,7 @@ class Blender(bonsai.core.tool.Blender):
         return f"{name} {i}"
 
     @classmethod
-    def get_active_object(cls, is_selected: bool = False) -> bpy.types.Object:
+    def get_active_object(cls, is_selected: bool = False) -> Union[bpy.types.Object, None]:
         obj = getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active
         if not is_selected:
             return obj
@@ -319,7 +320,7 @@ class Blender(bonsai.core.tool.Blender):
             bpy.ops.wm.tool_set_by_id(name=tool_name)
 
     @classmethod
-    def get_shader_editor_context(cls) -> Union[dict, None]:
+    def get_shader_editor_context(cls) -> Union[dict[str, Any], None]:
         for screen in bpy.data.screens:
             for area in screen.areas:
                 if area.type == "NODE_EDITOR":
@@ -331,16 +332,6 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def copy_node_graph(cls, material_to: bpy.types.Material, material_from: bpy.types.Material) -> None:
-        # https://projects.blender.org/blender/blender/issues/108763
-        if bpy.app.version[:2] == (4, 0):
-            print(
-                "WARNING. Copying node graph is not supported on Blender 4.0.x due Blender bug, "
-                f"copying node graph from {material_from.name} to {material_to.name} will be skipped"
-            )
-            return
-
-        use_temp_override = bpy.app.version >= (4, 0, 0)
-
         temp_override = cls.get_shader_editor_context()
         shader_editor = temp_override["space"]
 
@@ -356,19 +347,13 @@ class Blender(bonsai.core.tool.Blender):
         # select all nodes and copy them to clipboard
         for node in material_from.node_tree.nodes:
             node.select = True
-        if use_temp_override:
-            with bpy.context.temp_override(**temp_override):
-                bpy.ops.node.clipboard_copy()
-        else:
-            bpy.ops.node.clipboard_copy(temp_override)
+        with bpy.context.temp_override(**temp_override):
+            bpy.ops.node.clipboard_copy()
 
         # back to original material
         shader_editor.node_tree = material_to.node_tree
-        if use_temp_override:
-            with bpy.context.temp_override(**temp_override):
-                bpy.ops.node.clipboard_paste(offset=(0, 0))
-        else:
-            bpy.ops.node.clipboard_paste(temp_override, offset=(0, 0))
+        with bpy.context.temp_override(**temp_override):
+            bpy.ops.node.clipboard_paste(offset=(0, 0))
 
         # restore shader editor settings
         shader_editor.pin = previous_pin_setting
@@ -849,23 +834,20 @@ class Blender(bonsai.core.tool.Blender):
     operator_invoke_filepath_hotkeys_description = "Hold Shift to open the file, Alt to browse containing directory"
 
     @classmethod
+    def open_file_or_folder(cls, path: str) -> None:
+        if platform.system() == "Windows":
+            os.startfile(path)
+        elif platform.system() == "Darwin":
+            subprocess.Popen(["open", path])
+        else:
+            subprocess.Popen(["xdg-open", path])
+
+    @classmethod
     def operator_invoke_filepath_hotkeys(
         cls, operator: bpy.types.Operator, context: bpy.types.Context, event: bpy.types.Event, filepath: Path
     ) -> Union[set, None]:
         if not event.alt and not event.shift:
             return
-
-        import platform
-        import os
-        import subprocess
-
-        def open_file_or_folder(path):
-            if platform.system() == "Windows":
-                os.startfile(path)
-            elif platform.system() == "Darwin":
-                subprocess.Popen(["open", path])
-            else:
-                subprocess.Popen(["xdg-open", path])
 
         # resolve relative filepaths with .blend path by default
         if not filepath.is_absolute():
@@ -882,14 +864,14 @@ class Blender(bonsai.core.tool.Blender):
             if not filepath.exists():
                 operator.report({"ERROR"}, f'Cannot open non-existing directory: "{filepath.as_posix()}"')
                 return {"CANCELLED"}
-            open_file_or_folder(filepath.as_posix())
+            cls.open_file_or_folder(filepath.as_posix())
             return {"PASS_THROUGH"}
 
         # holding sHIFT - open file
         if not filepath.exists():
             operator.report({"ERROR"}, f'Cannot open non-existing file: "{filepath.as_posix()}"')
             return {"CANCELLED"}
-        open_file_or_folder(filepath.as_posix())
+        cls.open_file_or_folder(filepath.as_posix())
         return {"PASS_THROUGH"}
 
     @classmethod
@@ -1359,13 +1341,6 @@ class Blender(bonsai.core.tool.Blender):
         if sun_position:
             return sun_position
 
-        # No extensions prior to 4.2.
-        if bpy.app.version < (4, 2, 0):
-            return sun_position
-
-        if sun_position:
-            return sun_position
-
         for package_name in bpy.context.preferences.addons.keys():
             if package_name.endswith(".sun_position"):
                 try:
@@ -1472,29 +1447,53 @@ class Blender(bonsai.core.tool.Blender):
             return "dm"  # Default to dark mode if an error occurs
 
     @classmethod
-    def get_default_data_dir(cls) -> Path:
+    def get_internal_data_dir(cls) -> Path:
         return Path(__file__).parent.parent / "bim" / "data"
 
     @classmethod
-    def get_custom_data_dir(cls) -> Path:
-        return Path(bpy.context.scene.BIMProperties.data_dir)
+    def get_user_data_dir(cls) -> Path:
+        try:
+            return Path(bpy.context.scene.BIMProperties.data_dir)
+        except AttributeError:
+            return Path()
 
     @classmethod
     def get_data_dir_path(cls, relative_path: Union[str, Path]) -> Path:
-        custom_path = cls.get_custom_data_dir() / relative_path
+        """Get specified data path in data folder.
+        If this path exists in user folder, it takes the precedence."""
+        custom_path = cls.get_user_data_dir() / relative_path
         if custom_path.exists():
             return custom_path
-        return cls.get_default_data_dir() / relative_path
+        return cls.get_internal_data_dir() / relative_path
 
     @classmethod
     def get_data_dir_paths(cls, relative_dir_path: Union[str, Path], glob_pattern: str) -> Generator[Path, None, None]:
-        custom_path = cls.get_custom_data_dir() / relative_dir_path
+        """Return paths based on glob pattern from the provided path in data folder.
+        Return paths from internal data folder first and then paths from the user data folder (if it exists)."""
+        custom_path = cls.get_user_data_dir() / relative_dir_path
         if custom_path.is_dir():
             for filepath in custom_path.glob(glob_pattern):
                 yield filepath
 
-        default_data_dir = cls.get_default_data_dir()
+        default_data_dir = cls.get_internal_data_dir()
         if default_data_dir == custom_path:
             return
         for filepath in (default_data_dir / relative_dir_path).glob(glob_pattern):
             yield filepath
+
+    @classmethod
+    def setup_user_data_dir(cls) -> None:
+        """Setup empty folders in user data directory to make them more discoverable."""
+        custom_data_dir = cls.get_user_data_dir()
+        # Not all paths from internal data dir are listed here,
+        # only the ones that intended to be used by user.
+        paths_to_create = (
+            custom_data_dir,
+            custom_data_dir / "assets",
+            custom_data_dir / "libraries",
+            custom_data_dir / "pset",  # pset templates.
+            custom_data_dir / "templates" / "projects",
+            custom_data_dir / "templates" / "titleblocks",
+        )
+        for path in paths_to_create:
+            path.mkdir(parents=True, exist_ok=True)

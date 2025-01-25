@@ -270,6 +270,8 @@ class AggregateModeDecorator:
         blf.color(self.font_id, *color)
         text = aggregate_obj.name
         text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, aggregate_obj.location)
+        if not text_coords:
+            return
         text_length = blf.dimensions(self.font_id, text)
         text_coords[0] -= text_length[0] / 2
         text_coords[1] -= 20

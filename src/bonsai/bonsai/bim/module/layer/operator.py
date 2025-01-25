@@ -19,6 +19,7 @@
 import bpy
 import json
 import ifcopenshell.api
+import ifcopenshell.api.layer
 import ifcopenshell.util.element
 import ifcopenshell.util.attribute
 import bonsai.bim.helper
@@ -37,8 +38,15 @@ class LoadLayers(bpy.types.Operator):
         props.layers.clear()
         for layer in tool.Ifc.get().by_type("IfcPresentationLayerAssignment"):
             new = props.layers.add()
-            new.name = layer.Name or "Unnamed"
+            new.name = layer.Name
             new.ifc_definition_id = layer.id()
+            if layer.is_a("IfcPresentationLayerWithStyle"):
+                new.with_style = True
+                # IfcLogical can also be UNKNOWN, not just bool.
+                ifc_logical_is_true = lambda x: x is True
+                new["on"] = ifc_logical_is_true(layer.LayerOn)
+                new["frozen"] = ifc_logical_is_true(layer.LayerFrozen)
+                new["blocked"] = ifc_logical_is_true(layer.LayerBlocked)
         props.is_editing = True
         bpy.ops.bim.disable_editing_layer()
         return {"FINISHED"}
@@ -81,12 +89,18 @@ class DisableEditingLayer(bpy.types.Operator):
 class AddPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_presentation_layer"
     bl_label = "Add Layer"
+    bl_description = "Add new presentation layer."
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        result = ifcopenshell.api.run("layer.add_layer", IfcStore.get_file())
+        props = context.scene.BIMLayerProperties
+        ifc_file = tool.Ifc.get()
+        if props.layer_type == "IfcPresentationLayerWithStyle":
+            layer = ifcopenshell.api.layer.add_layer_with_style(ifc_file)
+        else:
+            layer = ifcopenshell.api.layer.add_layer(ifc_file)
         bpy.ops.bim.load_layers()
-        bpy.ops.bim.enable_editing_layer(layer=result.id())
+        bpy.ops.bim.enable_editing_layer(layer=layer.id())
         return {"FINISHED"}
 
 
@@ -97,16 +111,9 @@ class EditPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMLayerProperties
-        attributes = {}
-        for attribute in props.layer_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                attributes[attribute.name] = attribute.string_value
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "layer.edit_layer", self.file, **{"layer": self.file.by_id(props.active_layer_id), "attributes": attributes}
-        )
+        attributes = bonsai.bim.helper.export_attributes(props.layer_attributes)
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.layer.edit_layer(ifc_file, layer=ifc_file.by_id(props.active_layer_id), attributes=attributes)
         bpy.ops.bim.load_layers()
         return {"FINISHED"}
 

@@ -275,6 +275,7 @@ def get_display_name(self: "Attribute") -> str:
 
 
 AttributeDataType = Literal["string", "integer", "float", "boolean", "enum", "file"]
+AttributeSpecialType = Literal["", "DATE", "DATETIME", "LENGTH", "AREA", "VOLUME", "FORCE", "LOGICAL"]
 
 
 class Attribute(PropertyGroup):
@@ -327,6 +328,7 @@ class Attribute(PropertyGroup):
         description: str
         ifc_class: str
         data_type: AttributeDataType
+        special_type: AttributeSpecialType
 
     def get_value(self) -> Union[str, float, int, bool, None]:
         if self.is_optional and self.is_null:
@@ -335,7 +337,11 @@ class Attribute(PropertyGroup):
             return self.string_value.replace("\\n", "\n")
         if self.data_type == "file":
             return [f.name for f in self.filepath_value.file_list]
-        return getattr(self, str(self.get_value_name()), None)
+        value = getattr(self, str(self.get_value_name()), None)
+        if self.special_type == "LOGICAL" and value != "UNKNOWN":
+            # IfcOpenShell expects bool if IfcLogical is True/False.
+            value = value == "TRUE"
+        return value
 
     def get_value_default(self) -> Union[str, float, int, bool]:
         data_type = self.data_type
@@ -539,6 +545,14 @@ class BIMObjectProperties(PropertyGroup):
     rotation_checksum: StringProperty(name="Rotation Checksum")
 
 
+def get_profiles(self: "BIMMeshProperties", context: bpy.types.Context):
+    from bonsai.bim.module.model.data import ItemData
+
+    if not ItemData.is_loaded:
+        ItemData.load()
+    return ItemData.data["profiles_enum"]
+
+
 class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     ifc_boolean_id: IntProperty(name="IFC Boolean ID")
@@ -550,6 +564,7 @@ class BIMMeshProperties(PropertyGroup):
     subshape_type: EnumProperty(name="Subshape Type", items=[(i, i, "") for i in ("-", "PROFILE", "AXIS")])
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     item_attributes: CollectionProperty(name="Item Attributes", type=Attribute)
+    item_profile: EnumProperty(name="Item Profile", items=get_profiles)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
     mesh_checksum: StringProperty(name="Mesh Checksum", default="")
     replaced_mesh: PointerProperty(type=bpy.types.Mesh, description="Original mesh to revert section cutaway")
@@ -577,9 +592,16 @@ class BIMFacet(PropertyGroup):
 class BIMFilterGroup(PropertyGroup):
     filters: CollectionProperty(type=BIMFacet, name="filters")
 
+
+class BIMSnapGroups(PropertyGroup):
+    object: BoolProperty(name="Object", default=True)
+    polyline: BoolProperty(name="Polyline", default=True)
+    measure: BoolProperty(name="Measure", default=True)
+
+
 class BIMSnapProperties(PropertyGroup):
-    vertex: BoolProperty(name="Vertex")
-    edge: BoolProperty(name="Edge")
-    edge_center: BoolProperty(name="Edge Center")
-    face: BoolProperty(name="Face")
-    
+    vertex: BoolProperty(name="Vertex", default=True)
+    edge: BoolProperty(name="Edge", default=True)
+    edge_center: BoolProperty(name="Edge Center", default=True)
+    edge_intersection: BoolProperty(name="Edge Intersection", default=True)
+    face: BoolProperty(name="Face", default=True)

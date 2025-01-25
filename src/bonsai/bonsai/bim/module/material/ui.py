@@ -421,7 +421,6 @@ class BIM_UL_materials(UIList):
 
                 row2 = row.row()
                 row2.alignment = "RIGHT"
-                row2.label(text=str(item.total_elements))
-
                 if item.has_style:
                     row2.label(text="", icon="SHADING_RENDERED")
+                row2.label(text=str(item.total_elements))

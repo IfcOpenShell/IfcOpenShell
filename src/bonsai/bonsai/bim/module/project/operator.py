@@ -441,7 +441,7 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         poll = bool(IfcStore.get_file())
-        if bpy.app.version > (3, 0, 0) and not poll:
+        if not poll:
             cls.poll_message_set("Please create or load a project first.")
         return poll
 
@@ -2328,47 +2328,46 @@ class BIM_OT_load_clipping_planes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-if bpy.app.version >= (4, 1, 0):
+class IFCFileHandlerOperator(bpy.types.Operator):
+    bl_idname = "bim.load_project_file_handler"
+    bl_label = "Import .ifc file"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
 
-    class IFCFileHandlerOperator(bpy.types.Operator):
-        bl_idname = "bim.load_project_file_handler"
-        bl_label = "Import .ifc file"
-        bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    directory: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE", "HIDDEN"})
+    files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement, options={"SKIP_SAVE", "HIDDEN"})
 
-        directory: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE", "HIDDEN"})
-        files: bpy.props.CollectionProperty(type=bpy.types.OperatorFileListElement, options={"SKIP_SAVE", "HIDDEN"})
+    def invoke(self, context, event):
+        # Keeping code in .invoke() as we'll probably add some
+        # popup windows later.
 
-        def invoke(self, context, event):
-            # Keeping code in .invoke() as we'll probably add some
-            # popup windows later.
-
-            # `files` contain only .ifc files.
-            filepath = Path(self.directory)
-            # If user is just drag'n'dropping a single file -> load it as a new project,
-            # if they're holding ALT -> link the file/files to the current project.
-            if event.alt:
-                # Passing self.files directly results in TypeError.
-                serialized_files = [{"name": f.name} for f in self.files]
-                return bpy.ops.bim.link_ifc(directory=self.directory, files=serialized_files)
+        # `files` contain only .ifc files.
+        filepath = Path(self.directory)
+        # If user is just drag'n'dropping a single file -> load it as a new project,
+        # if they're holding ALT -> link the file/files to the current project.
+        if event.alt:
+            # Passing self.files directly results in TypeError.
+            serialized_files = [{"name": f.name} for f in self.files]
+            return bpy.ops.bim.link_ifc(directory=self.directory, files=serialized_files)
+        else:
+            if len(self.files) == 1:
+                return bpy.ops.bim.load_project(filepath=(filepath / self.files[0].name).as_posix())
             else:
-                if len(self.files) == 1:
-                    return bpy.ops.bim.load_project(filepath=(filepath / self.files[0].name).as_posix())
-                else:
-                    self.report(
-                        {"INFO"},
-                        "To link multiple IFC files hold ALT while drag'n'dropping them.",
-                    )
-                    return {"FINISHED"}
+                self.report(
+                    {"INFO"},
+                    "To link multiple IFC files hold ALT while drag'n'dropping them.",
+                )
+                return {"FINISHED"}
 
-    class BIM_FH_import_ifc(bpy.types.FileHandler):
-        bl_label = "IFC File Handler"
-        bl_import_operator = IFCFileHandlerOperator.bl_idname
-        bl_file_extensions = ".ifc"
 
-        # FileHandler won't work without poll_drop defined.
-        @classmethod
-        def poll_drop(cls, context):
-            return True
+class BIM_FH_import_ifc(bpy.types.FileHandler):
+    bl_label = "IFC File Handler"
+    bl_import_operator = IFCFileHandlerOperator.bl_idname
+    bl_file_extensions = ".ifc"
+
+    # FileHandler won't work without poll_drop defined.
+    @classmethod
+    def poll_drop(cls, context):
+        return True
 
 
 class MeasureTool(bpy.types.Operator, PolylineOperator):
@@ -2389,17 +2388,6 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
         else:
             self.input_ui = tool.Polyline.create_input_ui(init_z=True)
         self.input_options = ["D", "A", "X", "Y", "Z"]
-        self.instructions = """TAB: Cycle Input
-        D: Distance Input
-        A: Angle Input
-        M: Modify Snap Point
-        C: Close Polyline
-        E: Erase previous polylines
-        BACKSPACE: Remove Point
-        X, Y, Z: Choose Axis
-        S-X, S-Y, S-Z: Choose Plane
-        L: Lock axis
-        """
 
     def modal(self, context, event):
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
@@ -2411,7 +2399,11 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
             self.handle_mouse_move(context, event)
             return {"PASS_THROUGH"}
 
-        self.handle_instructions(context)
+        custom_instructions = {
+            "Choose Axis": {"icons": True, "keys": ["EVENT_X", "EVENT_Y", "EVENT_Z"]},
+            "Choose Plane": {"icons": True, "keys": ["EVENT_SHIFT", "EVENT_X", "EVENT_Y", "EVENT_Z"]},
+        }
+        self.handle_instructions(context, custom_instructions)
 
         self.handle_mouse_move(context, event)
 

@@ -44,53 +44,40 @@ from typing import Optional, Union, Literal
 from lark import Lark, Transformer
 
 
+def create_bmesh_from_vertices(vertices, is_closed=False):
+    bm = bmesh.new()
+
+    new_verts = [bm.verts.new(v) for v in vertices]
+    if is_closed:
+        new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+        new_edges.append(
+            bm.edges.new((new_verts[-1], new_verts[0]))
+        )  # Add an edge between the last an first point to make it closed.
+    else:
+        new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
+
+    bm.verts.index_update()
+    bm.edges.index_update()
+    return bm
+
+
 def get_wall_preview_data(context, relating_type):
-    def create_bmesh_from_vertices(vertices):
-        bm = bmesh.new()
-
-        new_verts = [bm.verts.new(v) for v in polyline_vertices]
-        if is_closed:
-            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-            new_edges.append(
-                bm.edges.new((new_verts[-1], new_verts[0]))
-            )  # Add an edge between the last an first point to make it closed.
-        else:
-            new_edges = [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
-
-        bm.verts.index_update()
-        bm.edges.index_update()
-        return bm
-
     # Get properties from object type
-    layers = tool.Model.get_material_layer_parameters(relating_type)
-    if not layers["thickness"]:
-        return
-    thickness = layers["thickness"]
     model_props = context.scene.BIMModelProperties
     direction_sense = model_props.direction_sense
     direction = 1
     if direction_sense == "NEGATIVE":
         direction = -1
-    offset_type = model_props.offset_type
-    offset = 0
-    if offset_type == "CENTER":
-        offset = -thickness / 2
-    elif offset_type == "INTERIOR":
-        offset = -thickness
 
-    unit_system = tool.Drawing.get_unit_system()
-    factor = 1
-    if unit_system == "IMPERIAL":
-        factor = 3.28084
-    if unit_system == "METRIC":
-        unit_length = context.scene.unit_settings.length_unit
-        if unit_length == "MILLIMETERS":
-            factor = 1000
-
-    # For the model properties, the offset value should just be converted
-    # However, for the wall preview logic that follows, offset and thickness must change direction
-    model_props.offset = offset * factor
+    layers = tool.Model.get_material_layer_parameters(relating_type)
+    if not layers["thickness"]:
+        return
+    thickness = layers["thickness"]
     thickness *= direction
+
+    offset_type = model_props.offset_type_vertical
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    offset = model_props.offset * unit_scale
     offset *= direction
 
     height = float(model_props.extrusion_depth)
@@ -120,7 +107,7 @@ def get_wall_preview_data(context, relating_type):
         is_closed = True
         polyline_vertices.pop(-1)  # Remove the last point. The edges are going to inform that the shape is closed.
 
-    bm_base = create_bmesh_from_vertices(polyline_vertices)
+    bm_base = create_bmesh_from_vertices(polyline_vertices, is_closed)
     base_vertices = tool.Cad.offset_edges(bm_base, offset)
     offset_base_verts = tool.Cad.offset_edges(bm_base, thickness + offset)
     top_vertices = tool.Cad.offset_edges(bm_base, angle_distortion + offset)
@@ -198,6 +185,72 @@ def get_wall_preview_data(context, relating_type):
     data["edges"] = list(set(tuple(e) for e in data["edges"]))
     data["tris"] = list(set(tuple(t) for t in data["tris"]))
 
+    return data
+
+
+def get_slab_preview_data(context, relating_type):
+    props = context.scene.BIMModelProperties
+    x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
+    model_props = context.scene.BIMModelProperties
+    direction_sense = model_props.direction_sense
+    direction = 1
+    if direction_sense == "NEGATIVE":
+        direction = -1
+
+    layers = tool.Model.get_material_layer_parameters(relating_type)
+    if not layers["thickness"]:
+        return
+    thickness = layers["thickness"]
+    thickness *= direction
+
+    offset_type = model_props.offset_type_horizontal
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+    offset = model_props.offset * unit_scale
+    offset *= direction
+
+    data = {}
+    data["verts"] = []
+    # Verts
+    polyline_vertices = []
+    polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+    polyline_points = polyline_data[0].polyline_points if polyline_data else []
+    if len(polyline_points) < 3:
+        data = []
+        return
+    for point in polyline_points:
+        polyline_vertices.append(Vector((point.x, point.y, point.z)))
+    if x_angle:
+        # Get vertices relative to the first polyline point as origin
+        local_vertices = [v - Vector(polyline_vertices[0]) for v in polyline_vertices]
+        # Make the transformation relative to the x_angle
+        transformed_vertices = [Vector((v.x, v.y * (1 / cos(x_angle)), v.z)) for v in local_vertices]
+        # Convert back to world origin
+        polyline_vertices = [v + Vector(polyline_vertices[0]) for v in transformed_vertices]
+    if offset != 0:
+        polyline_vertices = [v + Vector((0, 0, offset)) for v in polyline_vertices]
+    is_closed = True
+    if (
+        polyline_vertices[0].x == polyline_vertices[-1].x
+        and polyline_vertices[0].y == polyline_vertices[-1].y
+        and polyline_vertices[0].z == polyline_vertices[-1].z
+    ):
+        polyline_vertices.pop(-1)  # Remove the last point. The edges are going to inform that the shape is closed.
+    bm = create_bmesh_from_vertices(polyline_vertices, is_closed)
+    bm.verts.ensure_lookup_table()
+    if x_angle:
+        bmesh.ops.rotate(bm, cent=Vector(bm.verts[0].co), verts=bm.verts, matrix=Matrix.Rotation(x_angle, 3, "X"))
+    new_faces = bmesh.ops.contextual_create(bm, geom=bm.edges)
+    new_faces = bmesh.ops.extrude_face_region(bm, geom=bm.edges[:] + bm.faces[:])
+    new_verts = [e for e in new_faces["geom"] if isinstance(e, bmesh.types.BMVert)]
+    new_faces = bmesh.ops.translate(bm, verts=new_verts, vec=(0.0, 0.0, thickness))
+    bm.verts.index_update()
+    bm.edges.index_update()
+    verts = [tuple(v.co) for v in bm.verts]
+    edges = [[v.index for v in e.verts] for e in bm.edges]
+    tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
+    data["verts"] = verts
+    data["edges"] = edges
+    data["tris"] = tris
     return data
 
 
@@ -443,7 +496,7 @@ def get_horizontal_profile_preview_data(context, relating_type):
     return data
 
 
-def get_product_preview_data(context, relating_type):
+def get_generic_product_preview_data(context, relating_type):
     model_props = context.scene.BIMModelProperties
     if relating_type.is_a("IfcDoorType"):
         rl = float(model_props.rl1)
@@ -481,6 +534,7 @@ class PolylineOperator:
         return context.space_data.type == "VIEW_3D"
 
     def __init__(self):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.mousemove_count = 0
         self.action_count = 0
         self.visible_objs = []
@@ -516,19 +570,21 @@ class PolylineOperator:
         self.is_typing = False
         self.snap_angle = None
         self.snapping_points = []
-        self.instructions = """TAB: Cycle Input
-        D: Distance Input
-        A: Angle Lock
-        M: Modify Snap Point
-        C: Close Polyline
-        BACKSPACE: Remove Point
-        X, Y: Choose Axis
-        """
-        self.snap_info = """
-        Snap: 
-        Axis:
-        Plane: 
-        """
+        self.instructions = {
+            "Cycle Input": {"icons": True, "keys": ["EVENT_TAB"]},
+            "Distance Input": {"icons": True, "keys": ["EVENT_D"]},
+            "Angle Lock": {"icons": True, "keys": ["EVENT_A"]},
+            "Increment Angle": {"icons": True, "keys": ["EVENT_SHIFT", "MOUSE_MMB_SCROLL"]},
+            "Modify Snap Point": {"icons": True, "keys": ["EVENT_M"]},
+            "Close Polyline": {"icons": True, "keys": ["EVENT_C"]},
+            "Remove Point": {"icons": True, "keys": ["EVENT_BACKSPACE"]},
+        }
+
+        self.info = [
+            "Axis: ",
+            "Plane: ",
+            "Snap: ",
+        ]
 
         self.tool_state = tool.Polyline.create_tool_state()
 
@@ -593,34 +649,48 @@ class PolylineOperator:
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
-    def handle_instructions(self, context: bpy.types.Context, custom_instructions: str = "") -> None:
-        self.snap_info = f"""|
-        Axis: {self.tool_state.axis_method}
-        Plane: {self.tool_state.plane_method}
-        Snap: {self.snapping_points[0][1]}
-        """
-        instructions = self.instructions + custom_instructions + self.snap_info
+    def handle_instructions(
+        self, context: bpy.types.Context, custom_instructions: dict = {}, custom_info: str = ""
+    ) -> None:
+        self.info = [
+            f"Axis: {self.tool_state.axis_method}",
+            f"Plane: {self.tool_state.plane_method}",
+            f"Snap: {self.snapping_points[0][1]}",
+        ]
+        instructions = self.instructions | custom_instructions if custom_instructions else self.instructions
+
+        infos = self.info + custom_info if custom_info else self.info
 
         def draw_instructions(self: bpy.types.Header, context: bpy.types.Context) -> None:
-            for line in instructions.splitlines():
-                line = line.strip()
-                split = line.split(":", 1)
-                if (key := split[0]) not in ("TAB", "D", "A", "M", "C", "E", "BACKSPACE"):
-                    self.layout.label(text=line)
-                    continue
+            for action, settings in instructions.items():
+                if settings["icons"]:
+                    for key in settings["keys"]:
+                        self.layout.label(text="", icon=key)
+                    self.layout.label(text=action)
+                else:
+                    key = settings["keys"][0]
+                    self.layout.label(text=key + action)
 
-                self.layout.label(text=split[1], icon=f"EVENT_{key}")
+            self.layout.label(text="|")
+
+            for info in infos:
+                self.layout.label(text=info)
 
         context.workspace.status_text_set(draw_instructions)
 
     def handle_lock_axis(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         if event.value == "PRESS" and event.type == "A":
             self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
+            if self.tool_state.lock_axis:
+                self.tool_state.snap_angle = self.input_ui.get_number_value("WORLD_ANGLE")
+                # Round to the closest 5
+                self.tool_state.snap_angle = round(self.tool_state.snap_angle / 5) * 5
+
+        if event.shift and event.type in {"WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.tool_state.lock_axis = True
             self.tool_state.snap_angle = self.input_ui.get_number_value("WORLD_ANGLE")
             # Round to the closest 5
             self.tool_state.snap_angle = round(self.tool_state.snap_angle / 5) * 5
-
-        if self.tool_state.lock_axis and event.shift and event.type in {"WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             if event.type in {"WHEELUPMOUSE"}:
                 self.tool_state.snap_angle += 5
             else:
@@ -820,8 +890,10 @@ class PolylineOperator:
             data = get_vertical_profile_preview_data(context, relating_type)
         elif tool.Model.get_usage_type(relating_type) == "LAYER2":
             data = get_wall_preview_data(context, relating_type)
+        elif tool.Model.get_usage_type(relating_type) == "LAYER3":
+            data = get_slab_preview_data(context, relating_type)
         else:
-            data = get_product_preview_data(context, relating_type)
+            data = get_generic_product_preview_data(context, relating_type)
 
         # Update properties so it can be used by the decorator
         if not data:
@@ -840,6 +912,26 @@ class PolylineOperator:
         for tri in data["tris"]:
             t = props.tris.add()
             t.value_3d = tri
+
+    def set_offset(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_instance) -> None:
+        props = bpy.context.scene.BIMModelProperties
+        if tool.Model.get_usage_type(relating_type) == "LAYER2":
+            offset_type = "offset_type_vertical"
+        elif tool.Model.get_usage_type(relating_type) == "LAYER3":
+            offset_type = "offset_type_horizontal"
+        else:
+            return
+
+        layers = tool.Model.get_material_layer_parameters(relating_type)
+        thickness = layers["thickness"]
+        self.offset = 0
+        if getattr(props, offset_type) == "CENTER":
+            self.offset = -thickness / 2
+        elif getattr(props, offset_type) in {"INTERIOR", "TOP"}:
+            self.offset = -thickness
+
+        props.offset = self.offset / self.unit_scale
+        tool.Blender.update_viewport()
 
     def modal(self, context: bpy.types.Context, event: bpy.types.Event) -> Union[set[str], None]:
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])

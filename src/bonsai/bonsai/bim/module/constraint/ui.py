@@ -45,7 +45,7 @@ class BIM_PT_constraints(Panel):
             row = self.layout.row(align=True)
             row.label(text=f"{ConstraintsData.data['total_objectives']} Objectives Found", icon="LIGHT")
             if self.props.is_editing == "IfcObjective":
-                row.operator("bim.disable_constraint_editing_ui", text="", icon="CHECKMARK")
+                row.operator("bim.disable_constraint_editing_ui", text="", icon="CANCEL")
                 row.operator("bim.add_objective", text="", icon="ADD")
             else:
                 row.operator("bim.load_objectives", text="", icon="GREASEPENCIL")

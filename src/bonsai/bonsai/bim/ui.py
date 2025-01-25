@@ -354,14 +354,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
 
     def draw_directories(self, layout, context):
         row = layout.row(align=True)
-        row.prop(context.scene.BIMProperties, "schema_dir")
-        row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
-
-        row = layout.row(align=True)
         row.prop(context.scene.BIMProperties, "data_dir")
         row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
 
-        row = self.layout.row(align=True)
+        row = layout.row(align=True)
         row.prop(context.scene.BIMProperties, "cache_dir")
         row.operator("bim.select_cache_dir", icon="FILE_FOLDER", text="")
 
@@ -895,8 +891,7 @@ class BIM_PT_tab_representations(Panel):
         return (
             tool.Blender.is_tab(context, "GEOMETRY")
             and tool.Ifc.get()
-            and (obj := context.active_object)
-            and tool.Ifc.get_entity(obj)
+            and tool.Geometry.get_active_or_representation_obj()
         )
 
     def draw(self, context):
@@ -1234,6 +1229,7 @@ class BIM_PT_decorators_overlay(Panel):
         row = col.row(align=True)
         row.prop(model_props, "show_slab_direction", text="Slab Direction")
 
+
 class BIM_PT_snappping(Panel):
     bl_space_type = "VIEW_3D"
     bl_region_type = "HEADER"
@@ -1251,5 +1247,12 @@ class BIM_PT_snappping(Panel):
         col.prop(prop, "vertex", toggle=True, icon="SNAP_VERTEX")
         col.prop(prop, "edge", toggle=True, icon="SNAP_EDGE")
         col.prop(prop, "edge_center", toggle=True, icon="SNAP_MIDPOINT")
+        col.prop(prop, "edge_intersection", toggle=True, icon="SNAP_GRID")
         col.prop(prop, "face", toggle=True, icon="SNAP_FACE")
-
+        groups = context.scene.BIMSnapGroups
+        row = layout.row(align=True)
+        row.label(text="Bonsai Target Selection")
+        row = layout.row(align=True)
+        row.prop(groups, "object", toggle=True)
+        row.prop(groups, "polyline", toggle=True)
+        row.prop(groups, "measure", toggle=True)

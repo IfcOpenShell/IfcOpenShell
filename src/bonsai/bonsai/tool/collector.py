@@ -71,6 +71,9 @@ class Collector(bonsai.core.tool.Collector):
         elif element.is_a("IfcStructuralItem"):
             collection = cls._create_project_child_collection("IfcStructuralItem")
             cls.link_collection_object_safe(collection, obj)
+        elif element.is_a("IfcRelSpaceBoundary"):
+            collection = cls._create_project_child_collection("IfcRelSpaceBoundary")
+            cls.link_collection_object_safe(collection, obj)
         elif element.is_a("IfcLinearPositioningElement"):
             if tool.Geometry.is_locked(element):
                 tool.Geometry.lock_object(obj)

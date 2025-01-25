@@ -59,20 +59,8 @@ def draw_boundary_condition_ui(layout, boundary_condition, connection_id, props)
         draw_boundary_condition_read_only_ui(layout, boundary_condition)
 
 
-def draw_boundary_condition_editable_ui(layout, props):
-    for attribute in props.boundary_condition_attributes:
-        if attribute.data_type == "string":
-            row = layout.row()
-            row.prop(attribute, "string_value", text=attribute["name"])
-        else:
-            row = layout.row(align=True)
-            row.prop(attribute, "enum_value", text=attribute["name"])
-            if attribute.enum_value == "IfcBoolean":
-                row.prop(attribute, "bool_value", text="")
-            else:
-                row.prop(attribute, "float_value", text="")
-        if attribute.is_optional:
-            row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+def draw_boundary_condition_editable_ui(layout: bpy.types.UILayout, props: bpy.types.PropertyGroup) -> None:
+    draw_attributes(props.boundary_condition_attributes, layout)
 
 
 def draw_boundary_condition_read_only_ui(layout, boundary_condition):
@@ -465,7 +453,7 @@ class BIM_PT_show_structural_activities(Panel):
         row = self.layout.row(align=True)
         row.operator(
             "bim.show_loads",
-            text="Show loads",
+            text="Show Loads",
             icon="HIDE_OFF",
         )
         row = self.layout.row(align=True)
@@ -503,7 +491,7 @@ class BIM_PT_structural_loads(Panel):
                 text="FILTER - OFF" if not self.props.filtered_structural_loads else "FILTER - ON",
                 icon="FILTER",
             )
-            row.operator("bim.disable_structural_load_editing_ui", text="", icon="SCREEN_BACK")
+            row.operator("bim.disable_structural_load_editing_ui", text="", icon="CANCEL")
 
             row = self.layout.row(align=True)
             prop_with_search(row, self.props, "structural_load_types", text="")
@@ -574,7 +562,7 @@ class BIM_PT_boundary_conditions(Panel):
                 text="FILTER - OFF" if not self.props.filtered_boundary_conditions else "FILTER - ON",
                 icon="FILTER",
             )
-            row.operator("bim.disable_boundary_condition_editing_ui", text="", icon="SCREEN_BACK")
+            row.operator("bim.disable_boundary_condition_editing_ui", text="", icon="CANCEL")
 
             row = self.layout.row(align=True)
             prop_with_search(row, self.props, "boundary_condition_types", text="")

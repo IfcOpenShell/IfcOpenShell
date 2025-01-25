@@ -33,6 +33,7 @@ import ifcopenshell.api.grid
 import bonsai.core.geometry
 import bonsai.core.geometry as core
 import bonsai.core.aggregate
+import bonsai.core.nest
 import bonsai.core.style
 import bonsai.core.root
 import bonsai.core.drawing
@@ -88,11 +89,9 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         else:
             self.report({"INFO"}, f"Separating an {item.is_a()} is not supported")
 
-    def add_meshlike_item(self, obj):
+    def add_meshlike_item(self, obj: bpy.types.Object) -> None:
         props = bpy.context.scene.BIMGeometryProperties
         obj.show_in_front = True
-        new = props.item_objs.add()
-        new.obj = obj
         tool.Geometry.lock_object(obj)
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
@@ -115,6 +114,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         representation.Items = list(representation.Items) + [item]
         obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
         obj.data.BIMMeshProperties.ifc_definition_id = item.id()
+        props.add_item_object(obj, item)
 
     def separate_element(self, element):
         # You cannot separate meshes if the representation is mapped.
@@ -735,6 +735,11 @@ class OverrideDelete(bpy.types.Operator):
             else:
                 bpy.data.objects.remove(obj)
 
+        for opening in context.scene.BIMModelProperties.openings:
+            if not tool.Ifc.get_entity(opening.obj):
+                bpy.data.objects.remove(opening.obj)
+        tool.Model.purge_scene_openings()
+
         if self.is_batch:
             old_file = tool.Ifc.get()
             old_file.end_transaction()
@@ -980,7 +985,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
                     self.report({"ERROR"}, lock_error_message(obj.name))
                     continue
             elif tool.Geometry.is_representation_item(obj):
-                OverrideDuplicateMove.duplicate_item(self, obj)
+                OverrideDuplicateMove.duplicate_item(obj)
                 continue
 
             tracked_opening_type = tool.Model.get_tracked_opening_type(obj)
@@ -1068,7 +1073,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         return old_to_new
 
     @staticmethod
-    def duplicate_item(self, obj):
+    def duplicate_item(obj: bpy.types.Object) -> None:
         props = bpy.context.scene.BIMGeometryProperties
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         new_item = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)
@@ -1077,8 +1082,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
         new_obj.data = temp_data
         new_obj.data.BIMMeshProperties.ifc_definition_id = new_item.id()
         new_obj.name = obj.data.name = f"Item/{new_item.is_a()}/{new_item.id()}"
-        new = props.item_objs.add()
-        new.obj = new_obj
+        props.add_item_object(new_obj, new_item)
 
         for collection in obj.users_collection:
             collection.objects.link(new_obj)
@@ -1651,6 +1655,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
 
     def join_item(self) -> None:
         props = bpy.context.scene.BIMGeometryProperties
+        ifc_file = tool.Ifc.get()
         item = tool.Ifc.get().by_id(self.target.data.BIMMeshProperties.ifc_definition_id)
         if tool.Geometry.is_meshlike_item(item):
             tool.Geometry.dissolve_triangulated_edges(self.target)
@@ -1669,11 +1674,10 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
             for joined_obj in joined_objs:
                 tool.Geometry.delete_ifc_item(joined_obj)
 
-            item_objs = [i.obj for i in props.item_objs if i.obj]
+            items_data = [dict(i) for i in props.item_objs if i.obj]
             props.item_objs.clear()
-            for item_obj in item_objs:
-                new = props.item_objs.add()
-                new.obj = item_obj
+            for item_data in items_data:
+                props.add_item_object(item_data["obj"], ifc_file.by_id(item_data["ifc_definition_id"]))
 
             tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
             bpy.context.view_layer.update()
@@ -1983,7 +1987,13 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             self.enable_edit_mode(context)
         elif item.is_a("IfcSweptAreaSolid"):
             tool.Geometry.sync_item_positions()
-            tool.Model.import_profile(item.SweptArea, obj=obj)
+            res = tool.Model.import_profile((profile := item.SweptArea), obj=obj)
+            if res is None:
+                self.report(
+                    {"INFO"},
+                    f"Couldn't import profile, editing it directly is not yet supported. Failing profile: {profile}.",
+                )
+                return
             obj.data.BIMMeshProperties.ifc_definition_id = item.id()
             self.enable_edit_mode(context)
             ProfileDecorator.install(context)
@@ -2276,8 +2286,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 new_obj.data.BIMMeshProperties.ifc_definition_id = item.id()
                 scene = bpy.context.scene
                 scene.collection.objects.link(new_obj)
-                new = props.item_objs.add()
-                new.obj = new_obj
+                props.add_item_object(obj, item)
                 new_obj.matrix_world = obj.matrix_world
                 tool.Geometry.import_item(new_obj)
 
@@ -2314,7 +2323,7 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
 
         props = obj.BIMGeometryProperties
         props.is_editing = True
@@ -2326,8 +2335,8 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
                 item.tags += ","
             item.tags += tag
 
-        if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
-            active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
+        if obj.data and hasattr(obj.data, "BIMMeshProperties"):
+            active_representation_id = obj.data.BIMMeshProperties.ifc_definition_id
             element = tool.Ifc.get().by_id(active_representation_id)
             # IfcShapeRepresentation or IfcTopologyRepresentation.
             if not element.is_a("IfcShapeModel"):
@@ -2376,7 +2385,7 @@ class DisableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         obj.BIMGeometryProperties.is_editing = False
 
 
@@ -2388,7 +2397,9 @@ class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        if context.active_object is None or len(context.active_object.BIMGeometryProperties.items) <= 1:
+        if context.scene.BIMGeometryProperties.representation_obj:
+            return False  # Artificial restriction for now to prevent removing when in item mode
+        if not (obj := tool.Geometry.get_active_or_representation_obj()) or len(obj.BIMGeometryProperties.items) <= 1:
             cls.poll_message_set(
                 "Active object need to have more than 1 representation items to keep representation valid"
             )
@@ -2396,7 +2407,7 @@ class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         ifc_file = tool.Ifc.get()
 
         representation_item = ifc_file.by_id(self.representation_item_id)
@@ -2408,15 +2419,49 @@ class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.enable_editing_representation_items()
 
 
+class SelectRepresentationItem(bpy.types.Operator):
+    bl_idname = "bim.select_representation_item"
+    bl_label = "Select Representation Item"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not context.scene.BIMGeometryProperties.representation_obj:
+            cls.poll_message_set("No object opened in item mode.")
+            return False
+        return True
+
+    def execute(self, context):
+        obj = tool.Geometry.get_active_or_representation_obj()
+        item = tool.Ifc.get().by_id(obj.BIMGeometryProperties.active_item.ifc_definition_id)
+        item_ids = self.get_nested_item_ids(item)
+
+        props = context.scene.BIMGeometryProperties
+        for item_obj in props.item_objs:
+            if item_obj.obj.data.BIMMeshProperties.ifc_definition_id in item_ids:
+                tool.Blender.select_object(item_obj.obj)
+        return {"FINISHED"}
+
+    def get_nested_item_ids(self, item):
+        results = set()
+        if item.is_a("IfcBooleanResult"):
+            results.update(self.get_nested_item_ids(item.FirstOperand))
+            results.update(self.get_nested_item_ids(item.SecondOperand))
+        elif item.is_a("IfcCsgSolid"):
+            results.update(self.get_nested_item_ids(item.TreeRootExpression))
+        else:
+            results.add(item.id())
+        return results
+
+
 def poll_editing_representation_item_style(cls, context):
-    if not (obj := getattr(context, "active_object", None)):
+    if not (obj := tool.Geometry.get_active_or_representation_obj()):
         return False
     props = obj.BIMGeometryProperties
     if not props.is_editing:
         return False
-    if not 0 <= props.active_item_index < len(props.items):
+    if not (item := props.active_item):
         return False
-    item = props.items[props.active_item_index]
     shape_aspect = item.shape_aspect
     if shape_aspect == "":
         return True
@@ -2446,12 +2491,13 @@ class EnableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator
         return poll_editing_representation_item_style(cls, context)
 
     def _execute(self, context):
-        props = context.active_object.BIMGeometryProperties
+        obj = tool.Geometry.get_active_or_representation_obj()
+        props = obj.BIMGeometryProperties
         props.is_editing_item_style = True
         ifc_file = tool.Ifc.get()
 
         # set dropdown to currently active style
-        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item_id = props.active_item.ifc_definition_id
         representation_item = ifc_file.by_id(representation_item_id)
         style = tool.Style.get_representation_item_style(representation_item)
         if style:
@@ -2464,13 +2510,13 @@ class EditRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         props = obj.BIMGeometryProperties
         props.is_editing_item_style = False
         ifc_file = tool.Ifc.get()
 
         surface_style = ifc_file.by_id(int(props.representation_item_style))
-        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item_id = props.active_item.ifc_definition_id
         representation_item = ifc_file.by_id(representation_item_id)
 
         tool.Style.assign_style_to_representation_item(representation_item, surface_style)
@@ -2486,7 +2532,8 @@ class DisableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operato
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.active_object.BIMGeometryProperties
+        obj = tool.Geometry.get_active_or_representation_obj()
+        props = obj.BIMGeometryProperties
         props.is_editing_item_style = False
 
 
@@ -2501,12 +2548,12 @@ class UnassignRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
         return poll_editing_representation_item_style(cls, context)
 
     def _execute(self, context):
-        active_obj = context.active_object
+        active_obj = tool.Geometry.get_active_or_representation_obj()
         active_props = active_obj.BIMGeometryProperties
         active_props.is_editing_item_style = False
 
         # Get active representation item
-        active_representation_item_id = active_props.items[active_props.active_item_index].ifc_definition_id
+        active_representation_item_id = active_props.active_item.ifc_definition_id
         active_representation_item = tool.Ifc.get_entity_by_id(active_representation_item_id)
         if not active_representation_item:
             self.report({"ERROR"}, f"Couldn't find representation item by id {active_representation_item_id}.")
@@ -2568,11 +2615,12 @@ class EnableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Op
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.active_object.BIMGeometryProperties
+        obj = tool.Geometry.get_active_or_representation_obj()
+        props = obj.BIMGeometryProperties
         props.is_editing_item_shape_aspect = True
 
         # set dropdown to currently active shape aspect
-        shape_aspect_id = props.items[props.active_item_index].shape_aspect_id
+        shape_aspect_id = props.active_item.shape_aspect_id
         if shape_aspect_id != 0:
             props.representation_item_shape_aspect = str(shape_aspect_id)
 
@@ -2583,13 +2631,13 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMGeometryProperties
         props.is_editing_item_shape_aspect = False
         ifc_file = tool.Ifc.get()
 
-        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item_id = props.active_item.ifc_definition_id
         representation_item = ifc_file.by_id(representation_item_id)
 
         if props.representation_item_shape_aspect == "NEW":
@@ -2601,7 +2649,7 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
                 for representation_map in element.RepresentationMaps:
                     if representation_map.MappedRepresentation == active_representation:
                         product_shape = representation_map
-            previous_shape_aspect_id = props.items[props.active_item_index].shape_aspect_id
+            previous_shape_aspect_id = props.active_item.shape_aspect_id
             # will be None if item didn't had a shape aspect
             previous_shape_aspect = tool.Ifc.get_entity_by_id(previous_shape_aspect_id)
             shape_aspect = tool.Geometry.create_shape_aspect(
@@ -2639,7 +2687,8 @@ class DisableEditingRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.O
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.active_object.BIMGeometryProperties
+        obj = tool.Geometry.get_active_or_representation_obj()
+        props = obj.BIMGeometryProperties
         props.is_editing_item_shape_aspect = False
 
 
@@ -2649,14 +2698,14 @@ class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, tool.Ifc.Opera
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         element = tool.Ifc.get_entity(obj)
         props = obj.BIMGeometryProperties
         ifc_file = tool.Ifc.get()
 
-        representation_item_id = props.items[props.active_item_index].ifc_definition_id
+        representation_item_id = props.active_item.ifc_definition_id
         representation_item = ifc_file.by_id(representation_item_id)
-        shape_aspect = ifc_file.by_id(props.items[props.active_item_index].shape_aspect_id)
+        shape_aspect = ifc_file.by_id(props.active_item.shape_aspect_id)
 
         # unassign items before removing items as removing items
         # might remove shape aspect
@@ -2713,7 +2762,15 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
         data = obj.data
         assert data
-        item_ids = data["ios_item_ids"] if "ios_item_ids" in data else data["ios_edges_item_ids"]
+        if "ios_item_ids" in data:  # Has faces.
+            item_ids = data["ios_item_ids"]
+        elif "ios_edges_item_ids" in data:  # Has edges.
+            item_ids = data["ios_edges_item_ids"]
+        elif "ios_verts_item_ids" in data:  # Has only verts.
+            item_ids = data["ios_verts_item_ids"]
+        else:
+            assert False, "Unexpected mesh type."
+
         queue = list(set(item_ids))
         processed_ids = set()
         boolean_ids = set()
@@ -2734,9 +2791,7 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
             item_obj.matrix_world = obj.matrix_world
             bpy.context.collection.objects.link(item_obj)
 
-            new = props.item_objs.add()
-            new.obj = item_obj
-
+            props.add_item_object(item_obj, item)
             tool.Geometry.import_item(item_obj)
             tool.Geometry.import_item_attributes(item_obj)
 
@@ -2762,6 +2817,41 @@ class UpdateItemAttributes(bpy.types.Operator, tool.Ifc.Operator):
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
         tool.Geometry.import_item(obj)
         tool.Root.reload_item_decorator()
+
+
+class NameProfile(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.name_profile"
+    bl_label = "Name Profile"
+    bl_description = "Add name to existing unnamed profile"
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+
+    extrusion_item_obj: bpy.props.StringProperty(name="Extrusion Item Object Name")
+    profile_name: bpy.props.StringProperty(
+        name="Profile Name",
+        options={"SKIP_SAVE"},
+    )
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.prop(self, "profile_name")
+
+    def _execute(self, context):
+        if not self.profile_name:
+            self.report({"INFO"}, "Profile name is not provided")
+            return {"CANCELLED"}
+
+        ifc_file = tool.Ifc.get()
+        extrusion_item_obj = bpy.data.objects[self.extrusion_item_obj]
+        mesh_props = extrusion_item_obj.data.BIMMeshProperties
+        extrusion = ifc_file.by_id(mesh_props.ifc_definition_id)
+        assert extrusion.is_a("IfcSweptAreaSolid")
+        profile = extrusion.SweptArea
+        profile.ProfileName = self.profile_name
+        bonsai.bim.handler.refresh_ui_data()  # Ensure enum is up to date.
+        mesh_props.item_profile = str(profile.id())
 
 
 class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -2801,8 +2891,6 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
         mesh.update()
         obj.matrix_world = props.representation_obj.matrix_world
         obj.show_in_front = True
-        new = props.item_objs.add()
-        new.obj = obj
         tool.Geometry.lock_object(obj)
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
@@ -2822,6 +2910,7 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
         elif representation.RepresentationType in ("Tessellation"):
             item = builder.mesh(verts, faces)
 
+        props.add_item_object(obj, item)
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
         obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
@@ -2843,8 +2932,6 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         scene.collection.objects.link(obj)
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
-        new = props.item_objs.add()
-        new.obj = obj
 
         matrix = props.representation_obj.matrix_world.copy()
         matrix.translation = context.scene.cursor.location
@@ -2871,6 +2958,7 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         representation = tool.Geometry.get_active_representation(props.representation_obj)
         representation = ifcopenshell.util.representation.resolve_representation(representation)
 
+        props.add_item_object(obj, item)
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
 
@@ -2905,8 +2993,6 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         scene.collection.objects.link(obj)
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
-        new = props.item_objs.add()
-        new.obj = obj
         tool.Geometry.lock_object(obj)
 
         matrix = props.representation_obj.matrix_world.copy()
@@ -2943,6 +3029,7 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         else:
             assert_never(self.shape)
 
+        props.add_item_object(obj, item)
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
 
@@ -2974,8 +3061,6 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         scene.collection.objects.link(obj)
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
-        new = props.item_objs.add()
-        new.obj = obj
 
         matrix = props.representation_obj.matrix_world.copy()
         matrix.translation = context.scene.cursor.location
@@ -2993,6 +3078,7 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         placement = ifc_file.createIfcAxis2Placement3D(point, local_z, local_x)
         plane = ifc_file.createIfcPlane(placement)
         item = ifc_file.createIfcHalfSpaceSolid(plane, AgreementFlag=False)
+        props.add_item_object(obj, item)
 
         representation = tool.Geometry.get_active_representation(props.representation_obj)
         representation = ifcopenshell.util.representation.resolve_representation(representation)

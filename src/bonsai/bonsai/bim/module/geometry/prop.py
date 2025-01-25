@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import bpy
 import bonsai.tool as tool
 from bonsai.bim.prop import StrProperty, Attribute, ObjProperty
@@ -31,6 +32,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import Optional
 
 
 def get_contexts(self, context):
@@ -130,16 +132,17 @@ class RepresentationItem(PropertyGroup):
 class RepresentationItemObject(PropertyGroup):
     name: StringProperty(name="Name")
     obj: PointerProperty(type=bpy.types.Object)
+    ifc_definition_id: IntProperty()
 
 
 class ShapeAspect(PropertyGroup):
     name: StringProperty(
         name="Name",
         description=(
-            "Note that IfcMaterialConstituent is applied based on shape aspects using the same name as material constituent.\n"
-            "In dropdown suggestions you can see names of existing material constituents."
+            "If applicable, shape aspect names should correlate with names of material constituents.\n"
+            "Click to see autocompletion for constituent names."
         ),
-        **({} if bpy.app.version < (3, 3, 0) else {"search": get_material_constituents}),
+        search=get_material_constituents,
     )
     description: StringProperty(
         name="Description",
@@ -159,6 +162,11 @@ class BIMObjectGeometryProperties(PropertyGroup):
     )
     shape_aspect_attrs: PointerProperty(type=ShapeAspect)
 
+    @property
+    def active_item(self):
+        if self.active_item_index < len(self.items):
+            return self.items[self.active_item_index]
+
 
 class BIMGeometryProperties(PropertyGroup):
     # Revit workaround
@@ -173,6 +181,16 @@ class BIMGeometryProperties(PropertyGroup):
         name="Representation Object", type=bpy.types.Object, update=update_representation_obj
     )
     item_objs: CollectionProperty(name="Item Objects", type=RepresentationItemObject)
+
+    def add_item_object(
+        self, obj: bpy.types.Object, item: ifcopenshell.entity_instance, name: Optional[str] = None
+    ) -> RepresentationItemObject:
+        blender_item = self.item_objs.add()
+        blender_item.obj = obj
+        blender_item.ifc_definition_id = item.id()
+        if name is not None:
+            blender_item.name = name
+        return blender_item
 
     def is_object_valid_for_representation_copy(self, obj: bpy.types.Object) -> bool:
         return bool(obj != bpy.context.active_object and obj.data)

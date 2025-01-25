@@ -54,7 +54,9 @@ def draw_attributes(
     popup_active_attribute: Optional[bonsai.bim.prop.Attribute] = None,
     callback: Optional[Callable[[bonsai.bim.prop.Attribute, bpy.types.UILayout], None]] = None,
 ) -> None:
-    """you can set attribute active in popup with `active_attribute`
+    """Draw editable UI for prop.Attributes.
+
+    You can set attribute active in popup with `active_attribute`
     meaning you will be able to type into attribute's field without having to click
     on it first
     """
@@ -92,7 +94,7 @@ def draw_attribute(
         layout.prop(
             attribute,
             value_name,
-            text=attribute.name,
+            text=attribute.display_name,
         )
 
     if attribute.is_uri:
@@ -152,7 +154,7 @@ def import_attribute(
     if isinstance(data_type, tuple) or data_type == "entity":
         callback(attribute.name(), None, data) if callback else None
         return
-    new = props.add()
+    new: bonsai.bim.prop.Attribute = props.add()
     new.name = attribute.name()
     new.is_null = data[attribute.name()] is None
     new.is_optional = attribute.optional()
@@ -178,15 +180,30 @@ def import_attribute(
     elif data_type == "integer":
         new.int_value = 0 if new.is_null else int(data[attribute.name()])
     elif data_type == "float":
-        if attribute.type_of_attribute()._is("IfcLengthMeasure"):
+        attribute_type = attribute.type_of_attribute()
+        if attribute_type._is("IfcLengthMeasure"):
             new.special_type = "LENGTH"
+        elif attribute_type._is("IfcForceMeasure"):
+            new.special_type = "FORCE"
         new.float_value = 0.0 if new.is_null else float(data[attribute.name()])
     elif data_type == "enum":
-        enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
-        new.enum_items = json.dumps(enum_items)
-        add_attribute_enum_items_descriptions(new, enum_items)
-        if data[new.name]:
-            new.enum_value = data[new.name]
+        attribute_type = attribute.type_of_attribute()
+        is_logical = str(attribute_type) == "<type IfcLogical: <logical>>"
+        enum_value = data[new.name]
+        if is_logical:
+            new.special_type = "LOGICAL"
+            enum_items = ("TRUE", "FALSE", "UNKNOWN")
+            new.enum_items = json.dumps(enum_items)
+            if enum_value is not None and enum_value != "UNKNOWN":
+                # IfcOpenShell returns bool if IfcLogical is True/False.
+                enum_value = "TRUE" if enum_value else "FALSE"
+        else:
+            enum_items = ifcopenshell.util.attribute.get_enum_items(attribute)
+            new.enum_items = json.dumps(enum_items)
+            add_attribute_enum_items_descriptions(new, enum_items)
+
+        if enum_value is not None:
+            new.enum_value = enum_value
     add_attribute_description(new, data)
     add_attribute_min_max(attribute, new)
 

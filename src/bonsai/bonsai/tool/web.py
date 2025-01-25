@@ -117,18 +117,13 @@ class Web(bonsai.core.tool.Web):
 
         py_version = sys.version_info
 
-        if bpy.app.version >= (4, 2, 0):
-            bonsai_lib_path = (
-                Path(bpy.utils.user_resource("EXTENSIONS"))
-                / ".local"
-                / "lib"
-                / f"python{py_version.major}.{py_version.minor}"
-                / "site-packages"
-            )
-        else:
-            addon = [a for a in addon_utils.modules() if a.bl_info["name"] == "Bonsai"][0]
-            bonsai_path = os.path.dirname(addon.__file__)
-            bonsai_lib_path = os.path.join(bonsai_path, "libs", "site", "packages")
+        bonsai_lib_path = (
+            Path(bpy.utils.user_resource("EXTENSIONS"))
+            / ".local"
+            / "lib"
+            / f"python{py_version.major}.{py_version.minor}"
+            / "site-packages"
+        )
 
         env = os.environ.copy()
         env["BONSAI_LIB_PATH"] = str(bonsai_lib_path)

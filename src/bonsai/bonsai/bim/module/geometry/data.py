@@ -109,11 +109,12 @@ class RepresentationsData:
     @classmethod
     def representations(cls):
         results = []
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        obj = tool.Geometry.get_active_or_representation_obj()
+        element = tool.Ifc.get_entity(obj)
 
         active_representation_id = None
-        if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
-            active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
+        if obj.data and hasattr(obj.data, "BIMMeshProperties"):
+            active_representation_id = obj.data.BIMMeshProperties.ifc_definition_id
 
         for representation in tool.Geometry.get_representations_iter(element):
             representation_type = representation.RepresentationType
@@ -159,11 +160,12 @@ class RepresentationsData:
         # Ignore objects without representations, e.g. IfcRelSpaceBoundary.
         if not cls.data["representations"]:
             return []
-        obj = bpy.context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         if not obj.data:
             return []
         element = tool.Ifc.get_entity(obj)
-        active_representation_id = obj.data.BIMMeshProperties.ifc_definition_id
+        if not (active_representation_id := obj.data.BIMMeshProperties.ifc_definition_id):
+            return []  # Maybe in profile editing mode
         base_representation = tool.Ifc.get().by_id(active_representation_id)
 
         # shape aspects matching context of the active representation
@@ -174,7 +176,7 @@ class RepresentationsData:
                 matching_shape_aspects.append(shape_aspect)
 
         # blender enum items
-        new_shape_aspect = [("NEW", "Create A New Shape Aspect", "")]
+        new_shape_aspect = [("NEW", "New Shape Aspect", "")]
         return new_shape_aspect + [(str(s.id()), s.Name or "Unnamed", "") for s in matching_shape_aspects]
 
 
@@ -192,7 +194,7 @@ class RepresentationItemsData:
     @classmethod
     def total_items(cls) -> int:
         result = 0
-        obj = bpy.context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         assert obj
         element = tool.Geometry.get_active_representation(obj)
         if element:

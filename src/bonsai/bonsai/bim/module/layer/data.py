@@ -35,22 +35,20 @@ class LayersData:
         cls.is_loaded = True
 
     @classmethod
-    def total_layers(cls):
+    def total_layers(cls) -> int:
         return len(tool.Ifc.get().by_type("IfcPresentationLayerAssignment"))
 
     @classmethod
-    def active_layers(cls):
-        if not bpy.context.active_object:
-            return []
-        data = bpy.context.active_object.data
-        if not data:
-            return []
-        if not isinstance(data, bpy.types.Mesh) or not data.BIMMeshProperties.ifc_definition_id:
-            return []
-        results = dict()
-        shape = tool.Ifc.get().by_id(data.BIMMeshProperties.ifc_definition_id)
-        for inverse in getattr(shape, "LayerAssignments", []):
-            results[inverse.id()] = inverse.Name or "Unnamed"
-        for inverse in getattr(shape, "LayerAssignment", []):
-            results[inverse.id()] = inverse.Name or "Unnamed"
-        return results
+    def active_layers(cls) -> dict[int, str]:
+        results = {}
+        if not (obj := bpy.context.active_object) or not (shape := tool.Geometry.get_active_representation(obj)):
+            return results
+
+        attr_name = None
+        if shape.is_a("IfcShapeModel"):
+            attr_name = "LayerAssignments"
+        elif shape.is_a("IfcRepresentationItem"):
+            attr_name = "LayerAssignment"
+        if attr_name is None:
+            return results
+        return {layer.id(): layer.Name for layer in getattr(shape, attr_name)}

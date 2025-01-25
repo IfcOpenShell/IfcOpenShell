@@ -124,23 +124,22 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
     def edit_attributes_on_obj(self, obj):
         props = obj.BIMAttributeProperties
         product = tool.Ifc.get_entity(obj)
+        assert product
+        object_name = tool.Loader.get_name(product)
 
         def callback(attributes, prop):
             if prop.name in ("RefLatitude", "RefLongitude"):
-                if prop.is_null:
-                    attributes[prop.name] = None
-                else:
+                if not prop.is_null:
                     try:
                         attributes[prop.name] = json.loads(prop.string_value)
                     except:
                         attributes[prop.name] = None
-                return True
+                    return True
 
         attributes = bonsai.bim.helper.export_attributes(props.attributes, callback=callback)
         ifcopenshell.api.run("attribute.edit_attributes", self.file, product=product, attributes=attributes)
 
-        if (name := tool.Loader.get_name(product)) and obj.name != name:
-            obj.name = name
+        tool.Root.set_object_name(obj, product)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name)
 
     def _execute(self, context):
@@ -197,8 +196,13 @@ class CopyAttributeToSelection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_attribute_to_selection"
     bl_label = "Copy Attribute To Selection"
     name: bpy.props.StringProperty()
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         value = context.active_object.BIMAttributeProperties.attributes.get(self.name).get_value()
+        i = 0
         for obj in tool.Blender.get_selected_objects():
-            core.copy_attribute_to_selection(tool.Ifc, name=self.name, value=value, obj=obj)
+            success = core.copy_attribute_to_selection(tool.Ifc, tool.Root, name=self.name, value=value, obj=obj)
+            if success:
+                i += 1
+        self.report({"INFO"}, f"Attribute was successfully copied to {i} elements.")

@@ -1161,26 +1161,7 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
             self.handle_mouse_move(context, event)
             return {"PASS_THROUGH"}
 
-        # Wall axis settings
-        if event.value == "RELEASE" and event.type == "F":
-            direction_sense = context.scene.BIMModelProperties.direction_sense
-            context.scene.BIMModelProperties.direction_sense = (
-                "NEGATIVE" if direction_sense == "POSITIVE" else "POSITIVE"
-            )
-
-        if event.value == "RELEASE" and event.type == "O":
-            offset_type = context.scene.BIMModelProperties.offset_type
-            items = ["EXTERIOR", "CENTER", "INTERIOR"]
-            index = items.index(offset_type)
-            size = len(items)
-            context.scene.BIMModelProperties.offset_type = items[((index + 1) % size)]
-
-        props = bpy.context.scene.BIMModelProperties
-        wall_config = f"""Direction: {props.direction_sense}
-        Offset Type: {props.offset_type}
-        Offset Value: {props.offset}
-        """
-        self.handle_instructions(context, wall_config)
+        self.handle_instructions(context)
 
         self.handle_mouse_move(context, event, should_round=True)
 

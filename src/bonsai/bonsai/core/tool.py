@@ -382,6 +382,10 @@ class Drawing:
 
 
 @interface
+class Feature:
+    def add_feature(cls, featured_obj, featured_objs): pass
+
+@interface
 class Geometry:
     def change_object_data(cls, obj, data, is_global=False): pass
     def clear_cache(cls, element): pass

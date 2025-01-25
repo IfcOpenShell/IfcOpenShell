@@ -88,16 +88,8 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std
 		//    fresult << polyhedron << std::endl;
 		//    fresult.close();
 		return CGAL::Polyhedron_3<Kernel_>();
-	} if (polyhedron.is_closed()) {
-		try {
-			if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
-				CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
-			}
-		} catch (CGAL::Failure_exception& e) {
-			Logger::Message(Logger::LOG_ERROR, e);
-		}
 	}
-
+	
 	//  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
 
 	return polyhedron;
@@ -122,6 +114,15 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(con
 
 CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(std::list<cgal_face_t> &face_list) {
 	CGAL::Polyhedron_3<Kernel_> polyhedron = create_polyhedron(face_list);
+	if (polyhedron.is_closed()) {
+		try {
+			if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+				CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+			}
+		} catch (CGAL::Failure_exception& e) {
+			Logger::Message(Logger::LOG_ERROR, e);
+		}
+	}
 	CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
 	CGAL::Nef_polyhedron_3<Kernel_> nef_polyhedron;
 	try {
@@ -135,6 +136,17 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron) {
 	// @todo needed?
 	polyhedron.normalize_border();
+
+	if (polyhedron.is_closed()) {
+		try {
+			if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+				CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+			}
+		} catch (CGAL::Failure_exception& e) {
+			Logger::Message(Logger::LOG_ERROR, e);
+		}
+	}
+
 	if (polyhedron.is_valid(false, 3) && polyhedron.is_closed()) {
 		// @todo is it necessary to triangulat?
 		CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);

@@ -55,3 +55,8 @@ class BIMGroupProperties(PropertyGroup):
     groups: CollectionProperty(name="Groups", type=Group)
     active_group_index: IntProperty(name="Active Group Index", update=update_active_group_index)
     active_group_id: IntProperty(name="Active Group Id")
+
+    @property
+    def active_group(self):
+        if self.active_group_index < len(self.groups):
+            return self.groups[self.active_group_index]

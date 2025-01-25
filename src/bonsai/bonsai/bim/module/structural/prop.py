@@ -43,7 +43,7 @@ from bpy.props import (
 def get_load_groups_to_show(self, context):
     if not LoadGroupDecorationData.is_loaded:
         LoadGroupDecorationData.load()
-    return LoadGroupDecorationData.data["load groups to show"]
+    return LoadGroupDecorationData.data["load_groups_to_show"]
 
 
 def update_activity_type(self, context):

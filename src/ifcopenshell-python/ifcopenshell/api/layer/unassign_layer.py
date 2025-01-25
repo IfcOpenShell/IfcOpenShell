@@ -31,11 +31,8 @@ def unassign_layer(
     removed to keep IFC valid.
 
     :param items: A list IfcRepresentationItem elements to unassign
-    :type items: list[ifcopenshell.entity_instance]
     :param layer: The IfcPresentationLayerAssignment to unassign from
-    :type layer: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

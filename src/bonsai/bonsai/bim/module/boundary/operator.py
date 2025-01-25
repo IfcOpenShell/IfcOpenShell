@@ -42,16 +42,6 @@ import bonsai.core
 import bonsai.core.geometry
 
 
-def get_boundaries_collection(blender_space):
-    space_collection = blender_space.BIMObjectProperties.collection
-    collection_name = f"Boundaries/{blender_space.BIMObjectProperties.ifc_definition_id}"
-    boundaries_collection = space_collection.children.get(collection_name)
-    if not boundaries_collection:
-        boundaries_collection = bpy.data.collections.new(collection_name)
-        space_collection.children.link(boundaries_collection)
-    return boundaries_collection
-
-
 def disable_editing_boundary_geometry(context):
     ProfileDecorator.uninstall()
     bpy.ops.object.mode_set(mode="OBJECT")
@@ -164,9 +154,8 @@ class Loader:
         mesh = self.create_mesh(boundary)
         obj = bpy.data.objects.new(f"{boundary.is_a()}/{boundary.Name}", mesh)
         obj.matrix_world = blender_space.matrix_world
-        boundaries_collection = get_boundaries_collection(blender_space)
-        boundaries_collection.objects.link(obj)
         tool.Ifc.link(boundary, obj)
+        tool.Collector.assign(obj)
         return obj
 
 
@@ -821,7 +810,6 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                         # Create shape of opening as a dissolved BMesh
                         settings = ifcopenshell.geom.settings()
                         shape = ifcopenshell.geom.create_shape(settings, opening)
-                        m = shape.transformation.matrix
                         mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
                         mat.translation = (0, 0, 0)
                         opening_bm = bmesh.new()
@@ -941,8 +929,6 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         # can use this to check whether or not the opening is relevant to our
         # space.
         exterior_boundary_polygon = shapely.Polygon(gross_boundary_polygon.exterior.coords)
-
-        inner_boundaries = []
 
         for rel in getattr(related_building_element, "HasOpenings", []):
             opening = rel.RelatedOpeningElement

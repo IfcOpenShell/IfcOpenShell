@@ -17,8 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import ifcopenshell.util.attribute
 import ifcopenshell.api
+import ifcopenshell.api.group
+import ifcopenshell.util.attribute
 import bonsai.bim.helper
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
@@ -114,17 +115,9 @@ class EditGroup(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMGroupProperties
-        attributes = {}
-        for attribute in props.group_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                attributes[attribute.name] = attribute.string_value
-
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "group.edit_group", self.file, **{"group": self.file.by_id(props.active_group_id), "attributes": attributes}
-        )
+        attributes = bonsai.bim.helper.export_attributes(props.group_attributes)
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.group.edit_group(ifc_file, group=ifc_file.by_id(props.active_group_id), attributes=attributes)
         bpy.ops.bim.load_groups()
         return {"FINISHED"}
 
@@ -171,82 +164,63 @@ class AssignGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_group"
     bl_label = "Assign Group"
     bl_options = {"REGISTER", "UNDO"}
-    product: bpy.props.StringProperty()
-    group: bpy.props.IntProperty()
+    bl_description = "Assign the selected objects to the selected group\nALT + CLICK to unassign."
+    group: bpy.props.IntProperty(options={"SKIP_SAVE"})
+    is_assigning: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        self.is_assigning = not event.alt
+        return self.execute(context)
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
-        for product in products:
-            if not product.BIMObjectProperties.ifc_definition_id:
-                continue
-            ifcopenshell.api.run(
-                "group.assign_group",
-                self.file,
-                products=[self.file.by_id(product.BIMObjectProperties.ifc_definition_id)],
-                group=self.file.by_id(self.group),
-            )
-        return {"FINISHED"}
+        if not self.is_assigning:
+            return bpy.ops.bim.unassign_group(group=self.group)
+        products = [
+            tool.Ifc.get_entity(o)
+            for o in tool.Blender.get_selected_objects(include_active=False)
+            if tool.Ifc.get_entity(o)
+        ]
+        ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=products, group=tool.Ifc.get().by_id(self.group))
 
 
 class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_group"
     bl_label = "Unassign Group"
     bl_options = {"REGISTER", "UNDO"}
-    product: bpy.props.StringProperty()
-    group: bpy.props.IntProperty()
+    bl_description = "Unassign the selected objects from the selected group"
+    group: bpy.props.IntProperty(options={"SKIP_SAVE"})
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
-        for product in products:
-            if not product.BIMObjectProperties.ifc_definition_id:
-                continue
-            ifcopenshell.api.run(
-                "group.unassign_group",
-                self.file,
-                **{
-                    "products": [self.file.by_id(product.BIMObjectProperties.ifc_definition_id)],
-                    "group": self.file.by_id(self.group),
-                }
-            )
-        return {"FINISHED"}
-
-
-class SelectGroupProducts(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.select_group_products"
-    bl_label = "Select Group Products"
-    bl_options = {"REGISTER", "UNDO"}
-    group: bpy.props.IntProperty()
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        for obj in context.visible_objects:
-            obj.select_set(False)
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            product_groups = [
-                r.RelatingGroup.id()
-                for r in getattr(element, "HasAssignments", []) or []
-                if r.is_a("IfcRelAssignsToGroup")
-            ]
-            if self.group in product_groups:
-                obj.select_set(True)
-        return {"FINISHED"}
+        products = [
+            tool.Ifc.get_entity(o)
+            for o in tool.Blender.get_selected_objects(include_active=False)
+            if tool.Ifc.get_entity(o)
+        ]
+        if not products:
+            return
+        ifcopenshell.api.group.unassign_group(tool.Ifc.get(), products=products, group=tool.Ifc.get().by_id(self.group))
 
 
 class SelectGroupElements(bpy.types.Operator):
     bl_idname = "bim.select_group_elements"
     bl_label = "Select Group elements"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Select objects assigned to the selected group and all nested groups\nALT + CLICK to exclude children"
+    )
     group: bpy.props.IntProperty()
+    is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=True, options={"SKIP_SAVE"})
 
     @classmethod
     def poll(cls, context):
         return bool(tool.Ifc.get() and context.active_object)
 
+    def invoke(self, context, event):
+        self.is_recursive = not event.alt
+        return self.execute(context)
+
     def execute(self, context):
-        elements = tool.Drawing.get_group_elements(tool.Ifc.get().by_id(self.group))
-        tool.Spatial.select_products(elements)
+        tool.Spatial.select_products(
+            ifcopenshell.util.element.get_grouped_by(tool.Ifc.get().by_id(self.group), is_recursive=self.is_recursive)
+        )
         return {"FINISHED"}

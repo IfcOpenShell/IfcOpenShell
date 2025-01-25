@@ -915,7 +915,7 @@ class RemoveBoolean(Operator, tool.Ifc.Operator):
 
 class SelectBoolean(Operator):
     bl_idname = "bim.select_boolean"
-    bl_label = "Remove Boolean"
+    bl_label = "Select Boolean"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Selects operands of the active boolean\nSHIFT-CLICK to select all operands recursively"
     is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=False, options={"SKIP_SAVE"})

@@ -755,6 +755,12 @@ class curve_segment_evaluator {
                 auto csCenterX = csStartX - sign_l * csStartDy * R;
                 auto csCenterY = csStartY + sign_l * csStartDx * R;
 
+                // determine projected length along the x-axis
+                auto subtended_angle = R ? length_ / R : 0.0;
+                auto end_angle = start_angle + subtended_angle;
+                auto csEndX = csCenterX + R * cos(end_angle);
+                projected_length_ = csEndX - csStartX;
+
                 convert_u = [csStartX, csStartY, csCenterX, csCenterY, R, sign_l](double u) {
                     // for vertical, u is measured along the horizonal but we need it to be an arc length
 
@@ -870,6 +876,9 @@ class curve_segment_evaluator {
           // placement for the IfcLine direction
           pcDx = (*curve_segment_placement_)(0, 0);
           pcDy = (*curve_segment_placement_)(1, 0);
+
+          // projected length along the x-axis is the 'i' component of the total length
+          projected_length_ = length_ * pcDx;
        }
 
        if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL || segment_type_ == ST_CANT) {
@@ -920,64 +929,70 @@ class curve_segment_evaluator {
             // This is what the convert_u functor does. For vertical curves, the convert_u functor simply returns x = u.
             std::function<double(double)> convert_u;
 
+            // A numerical method is required to return the x-coordinate that corresponds to a 'u' value (distance along the curve)
+            std::function<double(double)> x_at_dist_along;
+
+
+            // Distance along the curve is  Integral[0,x] (sqrt(f'(x)^2 + 1) dx
+
+            // This functor is the derivative of y(x) => dy/dx = f'(x)
+            auto df = [lu=length_unit_,coeffY](double x) -> double {
+                auto begin = coeffY.begin();
+                auto iter = std::next(begin);
+                auto end = coeffY.end();
+                double value = 0;
+                // y = A0 + A1*x + A2*x^2 + A3*x^3
+                // y' = 0 + 1*A1*x^0 + 2*A2*x^1 + 3*A3*x^2
+                // The units of y are length. y' is unitless
+                // The units of x are length.
+                // A unit conversion of the coefficients is needed
+                // A1 = length^0
+                // A2 = length^-1
+                // A3 = Length^-2
+                for (; iter != end; iter++) {
+                    auto exp = std::distance(begin, iter);
+                    auto coeff = (*iter);
+                    double v = (double)exp * coeff * pow(lu, 1-exp) * pow(x, exp - 1);
+                    value += v;
+                }
+                return value;
+            };
+
+            // This functor computes the curve length
+            // Integral[0,x] (sqrt(f'(x)^2 + 1) dx
+            auto curve_length_fn = [df](double x) -> double {
+                auto fs = [df](double x) -> double {
+                    return sqrt(pow(df(x), 2) + 1);
+                };
+                auto s = boost::math::quadrature::trapezoidal(fs, 0.0, x);
+                return s;
+            };
+            // There isn't a closed form solution to get x that corresponds to a distance along the curve, u
+            // A numerical solution is required.
+            // This functor finds the value of x such that s(x) - u = 0, where u is the input value and s is the
+            // computed curve length.
+            x_at_dist_along = [curve_length_fn](double u) -> double {
+                std::uintmax_t max_iter = 9000;
+                auto tol = [](double a, double b) { return fabs(b - a) < 1.0E-11; };
+                auto x = u; // start by assuming u = x (it's not, but it will be close)
+                try {
+                    // set up the root finding function that evaluates s(x) - u
+                    auto f = [curve_length_fn, u](double x) -> double { return curve_length_fn(x) - u; };
+                    // use a root finder to get x
+                    auto result = boost::math::tools::bracket_and_solve_root(f, x, 2.0, true, tol, max_iter);
+                    x = result.first;
+                } catch (...) {
+                    Logger::Warning("root solver failed");
+                }
+                return x;
+            };
+
             if (segment_type_ == ST_HORIZONTAL) {
-                // Distance along the curve is  Integral[0,x] (sqrt(f'(x)^2 + 1) dx
-
-                // This functor is the derivative of y(x) => dy/dx = f'(x)
-                auto df = [lu=length_unit_,coeffY](double x) -> double {
-                    auto begin = coeffY.begin();
-                    auto iter = std::next(begin);
-                    auto end = coeffY.end();
-                    double value = 0;
-                    // y = A0 + A1*x + A2*x^2 + A3*x^3
-                    // y' = 0 + 1*A1*x^0 + 2*A2*x^1 + 3*A3*x^2
-                    // The units of y are length. y' is unitless
-                    // The units of x are length.
-                    // A unit conversion of the coefficients is needed
-                    // A1 = length^0
-                    // A2 = length^-1
-                    // A3 = Length^-2
-                    for (; iter != end; iter++) {
-                        auto exp = std::distance(begin, iter);
-                        auto coeff = (*iter);
-                        double v = (double)exp * coeff * pow(lu, 1-exp) * pow(x, exp - 1);
-                        value += v;
-                    }
-                    return value;
-                };
-
-                // This functor computes the curve length
-                // Integral[0,x] (sqrt(f'(x)^2 + 1) dx
-                auto curve_length_fn = [df](double x) -> double {
-                    auto fs = [df](double x) -> double {
-                        return sqrt(pow(df(x), 2) + 1);
-                    };
-                    auto s = boost::math::quadrature::trapezoidal(fs, 0.0, x);
-                    return s;
-                };
-
-                // There isn't a closed form solution to get x that corresponds to a distance along the curve, u
-                // A numerical solution is required.
-                // This functor finds the value of x such that s(x) - u = 0, where u is the input value and s is the
-                // computed curve length.
-                convert_u = [curve_length_fn](double u) -> double {
-                    std::uintmax_t max_iter = 5000;
-                    auto tol = [](double a, double b) { return fabs(b - a) < 1.0E-09; };
-                    auto x = u; // start by assuming u = x (it's not, but it will be close)
-                    try {
-                        // set up the root finding function that evaluates s(x) - u
-                        auto f = [curve_length_fn, u](double x) -> double { return curve_length_fn(x) - u; };
-                        // use a root finder to get x
-                        auto result = boost::math::tools::bracket_and_solve_root(f, x, 2.0, true, tol, max_iter);
-                        x = result.first;
-                    } catch (...) {
-                        Logger::Warning("root solver failed");
-                    }
-                    return x;
-                };
+                convert_u = x_at_dist_along;
             } else {
                 // for vertical, u = x
                 convert_u = [](double u) -> double { return u; };
+                projected_length_ = x_at_dist_along(length_);
             }
 
             // This functor evaluates the polynomial at a distance u along the curve

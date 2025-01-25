@@ -25,6 +25,7 @@ classes = (
     operator.AppendLibraryElement,
     operator.AppendLibraryElementByQuery,
     operator.AssignLibraryDeclaration,
+    operator.BIM_FH_import_ifc,
     operator.BIM_OT_load_clipping_planes,
     operator.BIM_OT_save_clipping_planes,
     operator.ChangeLibraryElement,
@@ -38,6 +39,7 @@ classes = (
     operator.EnableEditingHeader,
     operator.ExportIFC,
     operator.FlipClippingPlane,
+    operator.IFCFileHandlerOperator,
     operator.LinkIfc,
     operator.LoadLink,
     operator.LoadLinkedProject,
@@ -81,12 +83,6 @@ classes = (
     ui.BIM_UL_links,
     gizmo.ClippingPlane,
 )
-
-if bpy.app.version >= (4, 1, 0):
-    classes += (
-        operator.IFCFileHandlerOperator,
-        operator.BIM_FH_import_ifc,
-    )
 
 addon_keymaps = []
 

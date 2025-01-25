@@ -18,38 +18,40 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.representation
 import json
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from pprint import pprint
+from typing import Union, Any
 
 
 class Structural(bonsai.core.tool.Structural):
     @classmethod
-    def disable_editing_structural_analysis_model(cls):
+    def disable_editing_structural_analysis_model(cls) -> None:
         bpy.context.scene.BIMStructuralProperties.active_structural_analysis_model_id = 0
 
     @classmethod
-    def disable_structural_analysis_model_editing_ui(cls):
+    def disable_structural_analysis_model_editing_ui(cls) -> None:
         bpy.context.scene.BIMStructuralProperties.is_editing = False
 
     @classmethod
-    def enable_editing_structural_analysis_model(cls, model):
+    def enable_editing_structural_analysis_model(cls, model: Union[int, None]) -> None:
         if model:
             bpy.context.scene.BIMStructuralProperties.active_structural_analysis_model_id = model
 
     @classmethod
-    def enable_structural_analysis_model_editing_ui(cls):
+    def enable_structural_analysis_model_editing_ui(cls) -> None:
         bpy.context.scene.BIMStructuralProperties.is_editing = True
 
     @classmethod
-    def enabled_structural_analysis_model_editing_ui(cls):
+    def enabled_structural_analysis_model_editing_ui(cls) -> bool:
         return bpy.context.scene.BIMStructuralProperties.is_editing
 
     @classmethod
-    def ensure_representation_contexts(cls):
+    def ensure_representation_contexts(cls) -> None:
         model = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model")
         if not model:
             model = tool.Ifc.run(
@@ -70,13 +72,13 @@ class Structural(bonsai.core.tool.Structural):
             )
 
     @classmethod
-    def get_active_structural_analysis_model(cls):
+    def get_active_structural_analysis_model(cls) -> ifcopenshell.entity_instance:
         props = bpy.context.scene.BIMStructuralProperties
         model = tool.Ifc.get().by_id(props.active_structural_analysis_model_id)
         return model
 
     @classmethod
-    def get_ifc_structural_analysis_model_attributes(cls, model):
+    def get_ifc_structural_analysis_model_attributes(cls, model: Union[int, None]) -> Union[dict[str, Any], None]:
         if model:
             ifc_model = tool.Ifc.get().by_id(model)
             data = ifc_model.get_info()
@@ -100,14 +102,14 @@ class Structural(bonsai.core.tool.Structural):
             return data
 
     @classmethod
-    def get_ifc_structural_analysis_models(cls):
+    def get_ifc_structural_analysis_models(cls) -> dict[int, dict[str, Union[str, None]]]:
         models = {}
         for model in tool.Ifc.get().by_type("IfcStructuralAnalysisModel"):
             models[model.id()] = {"Name": model.Name}
         return models
 
     @classmethod
-    def get_product_or_active_object(cls, product):
+    def get_product_or_active_object(cls, product: str) -> Union[bpy.types.Object, None]:
         product = bpy.data.objects.get(product) if product else bpy.context.active_object
         try:
             if product.BIMObjectProperties.ifc_definition_id:
@@ -118,13 +120,13 @@ class Structural(bonsai.core.tool.Structural):
             return None
 
     @classmethod
-    def get_structural_analysis_model_attributes(cls):
+    def get_structural_analysis_model_attributes(cls) -> dict[str, Any]:
         props = bpy.context.scene.BIMStructuralProperties
         attributes = bonsai.bim.helper.export_attributes(props.structural_analysis_model_attributes)
         return attributes
 
     @classmethod
-    def load_structural_analysis_model_attributes(cls, data):
+    def load_structural_analysis_model_attributes(cls, data: dict[str, Any]) -> None:
         props = bpy.context.scene.BIMStructuralProperties
         props.structural_analysis_model_attributes.clear()
         for attribute in IfcStore.get_schema().declaration_by_name("IfcStructuralAnalysisModel").all_attributes():
@@ -145,7 +147,7 @@ class Structural(bonsai.core.tool.Structural):
                 new.data_type = "string"
 
     @classmethod
-    def load_structural_analysis_models(cls):
+    def load_structural_analysis_models(cls) -> None:
         models = tool.Structural.get_ifc_structural_analysis_models()
         props = bpy.context.scene.BIMStructuralProperties
         props.structural_analysis_models.clear()

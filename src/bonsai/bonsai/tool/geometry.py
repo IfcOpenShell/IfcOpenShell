@@ -27,6 +27,7 @@ import multiprocessing
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.grid
+import ifcopenshell.api.profile
 import ifcopenshell.api.style
 import ifcopenshell.geom
 import ifcopenshell.guid
@@ -50,7 +51,7 @@ from math import radians, pi
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 from bonsai.bim.ifc import IfcStore
-from typing import Union, Iterable, Optional, Literal, Iterator, List, TYPE_CHECKING, get_args, Generator
+from typing import Union, Iterable, Optional, Literal, Iterator, List, TYPE_CHECKING, get_args, Generator, cast
 from typing_extensions import TypeIs
 
 if TYPE_CHECKING:
@@ -739,10 +740,15 @@ class Geometry(bonsai.core.tool.Geometry):
             return
 
         # Fallback to custom methods as IOS doesn't process points, see #5218.
-        if representation.RepresentationType in ("PointCloud", "Point"):
-            mesh = tool.Loader.create_point_cloud_mesh(representation)
+        representation_type = representation.RepresentationType
+        if representation_type in ("PointCloud", "Point", "Vertex"):
+            if representation_type == "Vertex":
+                mesh = tool.Loader.create_structural_point_connection_mesh(representation)
+            else:
+                mesh = tool.Loader.create_point_cloud_mesh(representation)
+
             if mesh is None:
-                raise Exception(f"Failed to process point cloud representation: {representation}.")
+                raise Exception(f"Failed to process representation with custom method: {representation}.")
 
             tool.Ifc.link(representation, mesh)
             for element in elements | element_types:
@@ -970,13 +976,27 @@ class Geometry(bonsai.core.tool.Geometry):
         )
 
     @classmethod
-    def is_representation_item(cls, obj: bpy.types.Object) -> bool:
-        return bool(
-            (data := obj.data)
-            and isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES)
+    def get_representation_item(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
+        data = obj.data
+        if (
+            isinstance(data, Geometry.TYPES_WITH_MESH_PROPERTIES)
             and (ifc_id := data.BIMMeshProperties.ifc_definition_id)
-            and tool.Ifc.get().by_id(ifc_id).is_a("IfcRepresentationItem")
-        )
+            and ((item := tool.Ifc.get().by_id(ifc_id)).is_a("IfcRepresentationItem"))
+        ):
+            return item
+        return None
+
+    @classmethod
+    def is_representation_item(cls, obj: bpy.types.Object) -> bool:
+        return bool(cls.get_representation_item(obj))
+
+    @classmethod
+    def get_active_or_representation_obj(cls) -> bpy.types.Object | None:
+        if obj := tool.Blender.get_active_object():
+            if tool.Ifc.get_entity(obj):
+                return obj
+            elif tool.Geometry.is_representation_item(obj):
+                return bpy.context.scene.BIMGeometryProperties.representation_obj
 
     @classmethod
     def is_boolean_operand(cls, obj: bpy.types.Object) -> bool:
@@ -1667,12 +1687,37 @@ class Geometry(bonsai.core.tool.Geometry):
 
         bonsai.bim.helper.import_attributes2(item, props.item_attributes, callback=callback)
 
+        profile = None
+        if item.is_a("IfcSweptAreaSolid"):
+            profile = item.SweptArea
+        if profile is None or profile.ProfileName is None:
+            item_profile = "-"
+        else:
+            item_profile = str(profile.id())
+        props.item_profile = item_profile
+
     @classmethod
     def update_item_attributes(cls, obj: bpy.types.Object) -> None:
         props = obj.data.BIMMeshProperties
+        ifc_file = tool.Ifc.get()
+
         item = tool.Ifc.get().by_id(props.ifc_definition_id)
         for attribute in props.item_attributes:
             setattr(item, attribute.name, attribute.get_value())
+
+        if item.is_a("IfcSweptAreaSolid"):
+            item_profile = cast(str, props.item_profile)
+            profile = item.SweptArea
+            profile_name: Union[str, None] = profile.ProfileName
+            if item_profile == "-":
+                if profile_name is not None:
+                    profile = ifcopenshell.util.element.copy_deep(ifc_file, profile)
+                    profile.ProfileName = None
+                    item.SweptArea = profile
+            else:
+                if profile_name is None:
+                    ifcopenshell.api.profile.remove_profile(ifc_file, profile)
+                item.SweptArea = ifc_file.by_id(int(item_profile))
 
     @classmethod
     def import_item(cls, obj: bpy.types.Object) -> None:

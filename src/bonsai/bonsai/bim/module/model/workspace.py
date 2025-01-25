@@ -282,10 +282,21 @@ class EditItemUI:
             return
         obj = context.active_object
         assert obj
+
+        mesh_props = obj.data.BIMMeshProperties
+        if AuthoringData.data["is_representation_item_swept_solid"]:
+            # TODO: support EndSweptArea for IfcRevolvedAreaSolidTapered,
+            # will need to add second attribute for this.
+            row = cls.layout.row(align=True)
+            row.prop(mesh_props, "item_profile")
+            if mesh_props.item_profile == "-":
+                op = row.operator("bim.name_profile", text="", icon="TAG")
+                op.extrusion_item_obj = obj.name
+
         for item_attribute in obj.data.BIMMeshProperties.item_attributes:
             row = cls.layout.row()
             draw_attribute(item_attribute, cls.layout)
-        if len(obj.data.BIMMeshProperties.item_attributes):
+        if len(obj.data.BIMMeshProperties.item_attributes) or AuthoringData.data["is_representation_item_swept_solid"]:
             row = cls.layout.row()
             row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")
 
@@ -712,11 +723,29 @@ class EditObjectUI:
             )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Rotate 90", "S_R", "Rotate the selected Element by 90 degrees", ui_context)
+            if AuthoringData.data["relating_type_material_usage"] == "LAYER3":
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(
+                    row,
+                    "Add From Closed Loop",
+                    "S_A",
+                    "Generate an element from selected closed walls",
+                    ui_context,
+                )
 
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             if "LAYER2" in AuthoringData.data["selected_material_usages"]:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(cls.layout, "Extend Wall To Slab", "S_E", "", ui_context)
+            if AuthoringData.data["relating_type_material_usage"] == "LAYER2":
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(
+                    row,
+                    "Add From Perimeter",
+                    "S_A",
+                    "Generate elements along the perimeter of the selected element",
+                    ui_context,
+                )
 
         elif AuthoringData.data["active_material_usage"] == "PROFILE":
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row

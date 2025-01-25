@@ -22,7 +22,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc, get_class_suggestions
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from typing import Union
 
 
@@ -58,6 +57,7 @@ class IfcClassData:
         products = [
             "IfcElementType",
             "IfcElement",
+            "IfcFeatureElement",
             "IfcSpatialElement",
             "IfcSpatialElementType",
             "IfcStructuralItem",
@@ -69,6 +69,7 @@ class IfcClassData:
             products = [
                 "IfcElementType",
                 "IfcElement",
+                "IfcFeatureElement",
                 "IfcSpatialStructureElement",
                 "IfcStructuralItem",
                 "IfcAnnotation",
@@ -87,10 +88,11 @@ class IfcClassData:
             if tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
                 names.extend(("IfcDoorStyle", "IfcWindowStyle"))
         if ifc_product == "IfcElement":
-            names.remove("IfcOpeningElement")
-            if tool.Ifc.get_schema() == "IFC4":
-                # Yeah, weird isn't it.
-                names.remove("IfcOpeningStandardCase")
+            feature_elements = ifcopenshell.util.schema.get_subtypes(
+                tool.Ifc.schema().declaration_by_name("IfcFeatureElement")
+            )
+            for feature_element in feature_elements:
+                names.remove(feature_element.name())
         version = tool.Ifc.get_schema()
         return [(c, c, (get_entity_doc(version, c) or {}).get("description", "")) for c in sorted(names)]
 

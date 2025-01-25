@@ -42,7 +42,16 @@ class LibraryReference(PropertyGroup):
 
 
 class BIMLibraryProperties(PropertyGroup):
-    editing_mode: StringProperty(name="Editing Mode")
+    editing_mode: EnumProperty(
+        name="Editing Mode",
+        items=(
+            ("-", "-", ""),
+            ("LIBRARY", "LIBRARY", ""),
+            ("REFERENCES", "REFERENCES", ""),
+            ("REFERENCE", "REFERENCE", ""),
+        ),
+        default="-",
+    )
     library_attributes: CollectionProperty(name="Library Attributes", type=Attribute)
     active_library_id: IntProperty(name="Active Library Id")
     reference_attributes: CollectionProperty(name="Library Attributes", type=Attribute)

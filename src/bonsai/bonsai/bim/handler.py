@@ -56,9 +56,13 @@ def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -
         return
 
     if isinstance(obj, bpy.types.Material):
-        if ifc_definition_id := obj.BIMStyleProperties.ifc_definition_id:
+        props = obj.BIMStyleProperties
+        if ifc_definition_id := props.ifc_definition_id:
+            if props.is_renaming:
+                props.is_renmaing = False
+                return
             IfcStore.get_file().by_id(ifc_definition_id).Name = obj.name
-        refresh_ui_data()
+            refresh_ui_data()
         return
 
     if not obj.BIMObjectProperties.ifc_definition_id:
@@ -336,3 +340,9 @@ def load_post(scene):
         WallAxisDecorator.install(bpy.context)
     if model_props.show_slab_direction:
         SlabDirectionDecorator.install(bpy.context)
+
+    if scene := bpy.context.scene:
+        # Snapping is off by default in Blender, but in BIM, it's more useful to be on
+        scene.tool_settings.use_snap = True
+        # Match default Bonsai snaps
+        scene.tool_settings.snap_elements_base = {"EDGE", "EDGE_PERPENDICULAR", "VERTEX", "EDGE_MIDPOINT", "FACE"}

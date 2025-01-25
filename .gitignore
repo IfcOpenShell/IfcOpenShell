@@ -81,6 +81,12 @@ src/bonsai/test/files/temp
 src/bonsai/test/files/basic.ifc.cache.blend
 src/bonsai/test/files/basic.ifc.cache.sqlite
 
+# bonsai data
+src/bonsai/bonsai/bim/data/build/
+src/bonsai/bonsai/bim/data/gantt/index.html
+src/bonsai/bonsai/bim/data/gantt/jsgantt.js
+src/bonsai/bonsai/bim/data/gantt/jsgantt.css
+
 src/bonsai/drawings
 src/bonsai/layouts
 
@@ -98,5 +104,6 @@ src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 
 # Brickschema
 src/bonsai/bonsai/bim/schema/Brick.ttl
+
 bonsaiDecoratorForLoads.code-workspace
 dev_environment.bat

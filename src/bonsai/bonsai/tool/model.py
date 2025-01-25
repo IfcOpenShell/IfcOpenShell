@@ -36,7 +36,7 @@ import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.core.geometry as geometry
-from math import atan, degrees
+from math import atan, degrees, radians
 from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
@@ -286,7 +286,7 @@ class Model(bonsai.core.tool.Model):
         profile: ifcopenshell.entity_instance,
         obj: Optional[bpy.types.Object] = None,
         position: Optional[Matrix] = None,
-    ) -> bpy.types.Object:
+    ) -> Union[bpy.types.Object, None]:
         """Creates new profile mesh and assigns it to `obj`,
         if `obj` is `None` then new "Profile" object will be created.
 
@@ -315,6 +315,9 @@ class Model(bonsai.core.tool.Model):
                 cls.convert_curve_to_mesh(obj, position, profile.OuterBoundary)
                 for inner_boundary in profile.InnerBoundaries or []:
                     cls.convert_curve_to_mesh(obj, position, inner_boundary)
+
+        if not cls.vertices or not cls.edges:
+            return None
 
         mesh = bpy.data.meshes.new("Profile")
         mesh.from_pydata(cls.vertices, cls.edges, [])
@@ -654,7 +657,7 @@ class Model(bonsai.core.tool.Model):
                 # so users will be able to at least move IfcRevolvedAreaSolid, until there will be a full support.
                 body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
                 if body and any(
-                    i["item"].is_a("IfcRevolvedAreaSolid") for i in ifcopenshell.util.representation.resolve_items(body)
+                    i.is_a("IfcRevolvedAreaSolid") for i in ifcopenshell.util.representation.resolve_base_items(body)
                 ):
                     return
                 return "PROFILE"
@@ -1705,8 +1708,8 @@ class Model(bonsai.core.tool.Model):
             if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
                 v1, v2 = loop[0].verts
                 mid = v1.co.lerp(v2.co, 0.5)
-                mid = (position_i @ (mid / unit_scale)).to_2d()
-                v1 = (position_i @ (v1.co / unit_scale)).to_2d()
+                mid = ((position_i @ mid) / unit_scale).to_2d()
+                v1 = ((position_i @ v1.co) / unit_scale).to_2d()
                 radius = (mid - v1).length
                 curves.append(
                     tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
@@ -1746,7 +1749,7 @@ class Model(bonsai.core.tool.Model):
 
                 if tmp.schema != "IFC2X3" and any([is_in_group(v, "IFCARCINDEX") for v in loop_verts]):
                     # We need to specify segments
-                    coord_list = [list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts]
+                    coord_list = [list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts]
                     points = tmp.createIfcCartesianPointList2D(coord_list)
                     i = 0
                     segments = []
@@ -1772,14 +1775,14 @@ class Model(bonsai.core.tool.Model):
                     curves.append(tmp.createIfcIndexedPolyCurve(points, segments))
                 elif tmp.schema == "IFC2X3":
                     points = [
-                        tmp.createIfcCartesianPoint(list((position_i @ (v.co / unit_scale)).to_2d()))
+                        tmp.createIfcCartesianPoint(list(((position_i @ v.co) / unit_scale).to_2d()))
                         for v in loop_verts
                     ]
                     if is_closed:
                         points.append(points[0])
                     curves.append(tmp.createIfcPolyline(points))
                 else:  # Pure straight polyline, no segments required
-                    coord_list = [list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts]
+                    coord_list = [list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts]
                     if is_closed:
                         coord_list.append(coord_list[0])
                     points = tmp.createIfcCartesianPointList2D(coord_list)
@@ -1923,8 +1926,8 @@ class Model(bonsai.core.tool.Model):
             if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
                 v1, v2 = loop[0].verts
                 mid = v1.co.lerp(v2.co, 0.5)
-                mid = (position_i @ (mid / unit_scale)).to_2d()
-                v1 = (position_i @ (v1.co / unit_scale)).to_2d()
+                mid = ((position_i @ mid) / unit_scale).to_2d()
+                v1 = ((position_i @ v1.co) / unit_scale).to_2d()
                 radius = (mid - v1).length
                 curves.append(
                     tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
@@ -1965,7 +1968,7 @@ class Model(bonsai.core.tool.Model):
                 if tmp.schema != "IFC2X3" and any([is_in_group(v, "IFCARCINDEX") for v in loop_verts]):
                     # We need to specify segments
                     coord_list: list[list[float]] = [
-                        list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts
+                        list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts
                     ]
                     points = tmp.createIfcCartesianPointList2D(coord_list)
                     i = 0
@@ -1992,14 +1995,14 @@ class Model(bonsai.core.tool.Model):
                     curves.append(tmp.createIfcIndexedPolyCurve(points, segments))
                 elif tmp.schema == "IFC2X3":
                     points = [
-                        tmp.createIfcCartesianPoint(list((position_i @ (v.co / unit_scale)).to_2d()))
+                        tmp.createIfcCartesianPoint(list(((position_i @ v.co) / unit_scale).to_2d()))
                         for v in loop_verts
                     ]
                     if is_closed:
                         points.append(points[0])
                     curves.append(tmp.createIfcPolyline(points))
                 else:  # Pure straight polyline, no segments required
-                    coord_list = [list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts]
+                    coord_list = [list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts]
                     if is_closed:
                         coord_list.append(coord_list[0])
                     points = tmp.createIfcCartesianPointList2D(coord_list)
@@ -2041,3 +2044,26 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def add_filled_opening(cls, voided_obj: bpy.types.Object, filling_obj: bpy.types.Object) -> None:
         FilledOpeningGenerator().generate(filling_obj, voided_obj)
+
+    @classmethod
+    def add_extrusion_position(cls, extrusion: ifcopenshell.entity_instance, offset: float) -> None:
+        ifc_file = tool.Ifc.get()
+
+        position = ifc_file.createIfcAxis2Placement3D(
+            ifc_file.createIfcCartesianPoint((0.0, 0.0, offset)),
+            ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
+            ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
+        )
+
+        extrusion.Position = position
+
+    @classmethod
+    def get_existing_x_angle(cls, extrusion):
+        x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+        # The existing angle result can change when the direction sense in Negative because the DirectionRatios may have negative y and z.
+        # For instance, a 30 degree angled slab, with negative direction will show as -150 degrees. To prevent that we do the following transformations
+        existing_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+        existing_x_angle = existing_x_angle + radians(180) if existing_x_angle < -radians(90) else existing_x_angle
+        existing_x_angle = existing_x_angle - radians(180) if existing_x_angle > radians(90) else existing_x_angle
+
+        return existing_x_angle

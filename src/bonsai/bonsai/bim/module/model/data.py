@@ -26,6 +26,7 @@ from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import bonsai.tool as tool
 from math import degrees
 from natsort import natsorted
+from typing import Union
 
 
 def refresh():
@@ -65,6 +66,7 @@ class AuthoringData:
         cls.data["relating_type_id_current"] = cls.relating_type_id_current()
         cls.data["relating_type_name"] = cls.relating_type_name()
         cls.data["relating_type_description"] = cls.relating_type_description()
+        cls.data["relating_type_material_usage"] = cls.relating_type_material_usage()
         cls.data["predefined_type"] = cls.predefined_type()
         # Make sure .type_elements_filtered() was run before next lines
         cls.data["total_types"] = cls.total_types()
@@ -80,6 +82,9 @@ class AuthoringData:
         cls.data["active_class"] = cls.active_class()
         cls.data["active_material_usage"] = cls.active_material_usage()
         cls.data["is_representation_item_active"] = cls.is_representation_item_active()
+        # After is_representation_item_active.
+        cls.data["is_representation_item_swept_solid"] = cls.is_representation_item_swept_solid()
+
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
         cls.data["selected_material_usages"] = cls.selected_material_usages()
@@ -227,23 +232,26 @@ class AuthoringData:
 
     @classmethod
     def active_class(cls):
-        if active_object := tool.Blender.get_active_object():
-            element = tool.Ifc.get_entity(active_object)
-            if element:
-                return element.is_a()
+        if (obj := tool.Blender.get_active_object()) and (element := tool.Ifc.get_entity(obj)):
+            return element.is_a()
 
     @classmethod
     def active_material_usage(cls):
-        if active_object := tool.Blender.get_active_object():
-            element = tool.Ifc.get_entity(active_object)
-            if element:
-                return tool.Model.get_usage_type(element)
+        if (obj := tool.Blender.get_active_object()) and (element := tool.Ifc.get_entity(obj)):
+            return tool.Model.get_usage_type(element)
 
     @classmethod
     def is_representation_item_active(cls) -> bool:
         if not (obj := tool.Blender.get_active_object()):
             return False
         return tool.Geometry.is_representation_item(obj)
+
+    @classmethod
+    def is_representation_item_swept_solid(cls) -> bool:
+        if not cls.data["is_representation_item_active"]:
+            return False
+        assert (obj := bpy.context.active_object) and (item := tool.Geometry.get_representation_item(obj))
+        return item.is_a("IfcSweptAreaSolid")
 
     @classmethod
     def active_representation_type(cls):
@@ -303,6 +311,11 @@ class AuthoringData:
     def relating_type_description(cls):
         if relating_type_id := cls.data["relating_type_id_current"]:
             return tool.Ifc.get().by_id(int(relating_type_id)).Description or "No description"
+
+    @classmethod
+    def relating_type_material_usage(cls):
+        if relating_type_id := cls.data["relating_type_id_current"]:
+            return tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id)))
 
     @classmethod
     def predefined_type(cls):
@@ -617,6 +630,7 @@ class ItemData:
         cls.data = {}
         cls.data["representation_identifier"] = cls.representation_identifier()
         cls.data["representation_type"] = cls.representation_type()
+        cls.data["profiles_enum"] = cls.profiles_enum()
 
     @classmethod
     def representation_identifier(cls):
@@ -629,3 +643,25 @@ class ItemData:
         props = bpy.context.scene.BIMGeometryProperties
         rep = tool.Geometry.get_active_representation(props.representation_obj)
         return rep.RepresentationType
+
+    @classmethod
+    def profiles_enum(cls) -> list[Union[tuple[str, str, str], None]]:
+        ifc_file = tool.Ifc.get()
+        profiles: list[Union[tuple[str, str, str], None]] = []
+        profiles.append(
+            (
+                "-",
+                "Use Unnamed Profile",
+                "If named profile is currently used, replace it with the unnamed version so it can be edited without affecting original profile.",
+            )
+        )
+        profiles.append(None)
+
+        named_profiles: list[tuple[str, str, str]] = []
+        for profile in ifc_file.by_type("IfcProfileDef"):
+            if (profile_name := profile.ProfileName) is None:
+                continue
+            named_profiles.append((str(profile.id()), profile_name, profile.is_a()))
+        named_profiles.sort(key=lambda x: x[1])
+        profiles.extend(named_profiles)
+        return profiles

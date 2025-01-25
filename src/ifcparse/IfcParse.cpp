@@ -1309,7 +1309,13 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 
             parse_context ps;
             tokens->Next();
-            load(current_id, entity_type->as_entity(), ps, -1);
+            try {
+                load(current_id, entity_type->as_entity(), ps, -1);
+            } catch (const IfcInvalidTokenException& e) {
+                good_ = file_open_status::INVALID_SYNTAX;
+                Logger::Error(e);
+                break;
+            }
             instance = schema_->instantiate(entity_type, ps.construct(current_id, references_to_resolve, entity_type, boost::none));
             instance->file_ = this;
             instance->id_ = current_id;
@@ -1390,6 +1396,11 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
     Logger::Status("\rDone scanning file   ");
 
     delete tokens;
+
+    if (good_ != file_open_status::SUCCESS) {
+        references_to_resolve.clear();
+        return;
+    }
 
     for (const auto& p : references_to_resolve) {
         const auto& ref = p.first.name_;

@@ -305,7 +305,10 @@ class EnableEditingBooleans(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return bpy.context.scene.BIMGeometryProperties.representation_obj
+        if not bpy.context.scene.BIMGeometryProperties.representation_obj:
+            cls.poll_message_set("To enable editing booleans object should be in item mode.")
+            return False
+        return True
 
     def execute(self, context):
         props = context.scene.BIMBooleanProperties
@@ -314,7 +317,7 @@ class EnableEditingBooleans(bpy.types.Operator):
         representation = ifcopenshell.util.representation.resolve_representation(representation)
         props.booleans.clear()
 
-        def load_boolean(item, level=0):
+        def load_boolean(item: ifcopenshell.entity_instance, level: int = 0) -> None:
             new = props.booleans.add()
             new.name = f"{item.is_a()}/{item.id()}"
             new.ifc_definition_id = item.id()

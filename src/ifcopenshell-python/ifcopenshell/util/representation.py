@@ -20,7 +20,7 @@ import numpy as np
 import numpy.typing as npt
 import ifcopenshell
 import ifcopenshell.util.placement
-from typing import Optional, Union, TypedDict, Literal, Iterator, Iterable
+from typing import Optional, Union, TypedDict, Literal, Generator, Sequence
 
 
 CONTEXT_TYPE = Literal["Model", "Plan", "NotDefined"]
@@ -112,7 +112,9 @@ def is_representation_of_context(
     return representation.ContextOfItems.ContextType == context
 
 
-def get_representations_iter(element: ifcopenshell.entity_instance) -> Iterator[ifcopenshell.entity_instance]:
+def get_representations_iter(
+    element: ifcopenshell.entity_instance,
+) -> Generator[ifcopenshell.entity_instance, None, None]:
     """Get an iterator with element's IfcShapeRepresentations.
 
     :param element: An IfcProduct or IfcTypeProduct
@@ -144,7 +146,7 @@ def get_representation(
             return r
 
 
-def guess_type(items: Iterable[ifcopenshell.entity_instance]) -> str | None:
+def guess_type(items: Sequence[ifcopenshell.entity_instance]) -> str | None:
     """Guesses the appropriate RepresentationType attribute based on a list of items
 
     :param items: A list of IfcRepresentationItem, typically in an IfcShapeRepresentation
@@ -316,6 +318,22 @@ def resolve_items(
         else:
             results.append(ResolvedItemDict(matrix=matrix.copy(), item=item))
     return results
+
+
+def resolve_base_items(
+    representation: ifcopenshell.entity_instance,
+) -> Generator[ifcopenshell.entity_instance, None, None]:
+    """Resolve representation to it's base items resolving mapped items and boolean results to it's operands."""
+    queue: list[ifcopenshell.entity_instance] = list(representation.Items)
+    while queue:
+        item = queue.pop()
+        if item.is_a("IfcMappedItem"):
+            yield from resolve_base_items(item.MappingSource.MappedRepresentation)
+        elif item.is_a("IfcBooleanResult"):
+            queue.append(item.FirstOperand)
+            queue.append(item.SecondOperand)
+        else:
+            yield item
 
 
 def get_prioritised_contexts(ifc_file: ifcopenshell.file) -> list[ifcopenshell.entity_instance]:

@@ -39,12 +39,14 @@ class LoadGroupDecorationData:
 
     @classmethod
     def load(cls):
-        cls.data = {"load groups to show": cls.load_groups_to_show()}
+        cls.data = {
+            "load_groups_to_show": cls.load_groups_to_show(),
+        }
         cls.is_loaded = True
 
     @classmethod
-    def load_groups_to_show(cls):
-        ret = []
+    def load_groups_to_show(cls) -> list[tuple[str, str, str]]:
+        ret: list[tuple[str, str, str]] = []
         abrv = {
             "LOAD_CASE": "L.Case: ",
             "LOAD_COMBINATION": "L.Comb: ",
@@ -53,6 +55,9 @@ class LoadGroupDecorationData:
             "NOTDEFINED": "N.Def: ",
         }
         models = tool.Ifc.get().by_type("IfcStructuralAnalysisModel")
+        if not models:
+            return ret
+
         m = models[0]
         props = bpy.context.scene.BIMStructuralProperties
         if props.activity_type == "Action":
@@ -64,7 +69,7 @@ class LoadGroupDecorationData:
                     for subgoup in [sg for sg in item if sg.is_a("IfcStructuralLoadGroup")]:
                         ret.append((str(subgoup.id()), ".       " + abrv[subgoup.PredefinedType] + subgoup.Name, ""))
 
-        if props.activity_type == "External Reaction":
+        elif props.activity_type == "External Reaction":
             groups = m.HasResults or []
             for g in groups:
                 result_name = g.ResultForLoadGroup.Name or ""

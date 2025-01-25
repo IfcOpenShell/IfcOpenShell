@@ -175,7 +175,7 @@ class ObjectMaterialData:
 
     @classmethod
     def material_class(cls) -> Union[str, None]:
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        element = tool.Ifc.get_entity(tool.Geometry.get_active_or_representation_obj())
         cls.material = ifcopenshell.util.element.get_material(element)
         if cls.material:
             return cls.material.is_a()
@@ -338,7 +338,7 @@ class ObjectMaterialData:
 
     @classmethod
     def type_material(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        element = tool.Ifc.get_entity(tool.Geometry.get_active_or_representation_obj())
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type and element_type != element:
             material = ifcopenshell.util.element.get_material(element_type)

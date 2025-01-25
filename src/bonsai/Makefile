@@ -85,7 +85,7 @@ BLENDER_PLATFORM:=windows-x64
 endif
 
 # Current build commit hash.
-OLD:=f425794
+OLD:=1d27161
 .PHONY: bump
 bump:
 ifndef NEW
@@ -214,7 +214,7 @@ endif
 	# Brickschema requires pkg_resources which is provided by Blender.
 	# Provides Brickschema functionality
 	# For now lets bundle the latest nightly schema
-	cd build/bonsai/bim/schema && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
+	cd build/bonsai/bim/data/brick/ && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
 
 	# Required for hipped roof generation
 	cd build && wget https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip
