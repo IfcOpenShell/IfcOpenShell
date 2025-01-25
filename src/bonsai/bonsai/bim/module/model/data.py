@@ -66,6 +66,7 @@ class AuthoringData:
         cls.data["relating_type_id_current"] = cls.relating_type_id_current()
         cls.data["relating_type_name"] = cls.relating_type_name()
         cls.data["relating_type_description"] = cls.relating_type_description()
+        cls.data["relating_type_material_usage"] = cls.relating_type_material_usage()
         cls.data["predefined_type"] = cls.predefined_type()
         # Make sure .type_elements_filtered() was run before next lines
         cls.data["total_types"] = cls.total_types()
@@ -231,17 +232,13 @@ class AuthoringData:
 
     @classmethod
     def active_class(cls):
-        if active_object := tool.Blender.get_active_object():
-            element = tool.Ifc.get_entity(active_object)
-            if element:
-                return element.is_a()
+        if (obj := tool.Blender.get_active_object()) and (element := tool.Ifc.get_entity(obj)):
+            return element.is_a()
 
     @classmethod
     def active_material_usage(cls):
-        if active_object := tool.Blender.get_active_object():
-            element = tool.Ifc.get_entity(active_object)
-            if element:
-                return tool.Model.get_usage_type(element)
+        if (obj := tool.Blender.get_active_object()) and (element := tool.Ifc.get_entity(obj)):
+            return tool.Model.get_usage_type(element)
 
     @classmethod
     def is_representation_item_active(cls) -> bool:
@@ -314,6 +311,11 @@ class AuthoringData:
     def relating_type_description(cls):
         if relating_type_id := cls.data["relating_type_id_current"]:
             return tool.Ifc.get().by_id(int(relating_type_id)).Description or "No description"
+
+    @classmethod
+    def relating_type_material_usage(cls):
+        if relating_type_id := cls.data["relating_type_id_current"]:
+            return tool.Model.get_usage_type(tool.Ifc.get().by_id(int(relating_type_id)))
 
     @classmethod
     def predefined_type(cls):

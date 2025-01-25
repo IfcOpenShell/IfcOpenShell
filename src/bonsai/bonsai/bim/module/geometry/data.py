@@ -164,7 +164,8 @@ class RepresentationsData:
         if not obj.data:
             return []
         element = tool.Ifc.get_entity(obj)
-        active_representation_id = obj.data.BIMMeshProperties.ifc_definition_id
+        if not (active_representation_id := obj.data.BIMMeshProperties.ifc_definition_id):
+            return []  # Maybe in profile editing mode
         base_representation = tool.Ifc.get().by_id(active_representation_id)
 
         # shape aspects matching context of the active representation
