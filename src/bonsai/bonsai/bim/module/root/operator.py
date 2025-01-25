@@ -350,8 +350,13 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
 
     def _invoke(self, context, event):
         props = context.scene.BIMRootProperties
-        # For convenience, preselect OBJ representation template if applicable
-        if (obj := context.active_object) and obj.type == "MESH":
+        # For convenience, preselect OBJs if applicable
+        if props.ifc_product == "IfcFeatureElement":
+            if (obj := tool.Blender.get_active_object(is_selected=True)) and obj.type == "MESH":
+                props.featured_obj = obj
+                props.representation_template = "EXTRUSION"
+                props.representation_obj = None
+        elif (obj := tool.Blender.get_active_object(is_selected=True)) and obj.type == "MESH":
             props.representation_template = "OBJ"
             props.representation_obj = obj
         # For convenience, preselect IFC class
@@ -368,6 +373,9 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         )
         representation_template = props.representation_template
         ifc_file = tool.Ifc.get()
+
+        if props.ifc_product == "IfcFeatureElement" and not props.featured_obj:
+            return self.report({"WARNING"}, "A featured element must be nominated.")
 
         ifc_context = None
         if get_enum_items(props, "contexts", context):
@@ -556,6 +564,16 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         elif representation_template == "ROOF":
             with context.temp_override(active_object=obj, selected_objects=[]):
                 bpy.ops.bim.add_roof()
+
+        bpy.context.view_layer.update()  # Ensures obj.matrix_world is correct
+
+        if props.ifc_product == "IfcFeatureElement":
+            tool.Feature.add_feature(props.featured_obj, [obj])
+            new = context.scene.BIMModelProperties.openings.add()
+            new.obj = obj
+            bpy.ops.bim.show_openings()
+            tool.Model.purge_scene_openings()
+
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         tool.Blender.set_active_object(obj)
 
@@ -577,6 +595,9 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             if props.ifc_predefined_type == "USERDEFINED":
                 row = self.layout.row()
                 row.prop(props, "ifc_userdefined_type")
+        if props.ifc_product == "IfcFeatureElement":
+            row = self.layout.row()
+            row.prop(props, "featured_obj", text="Featured Object")
         prop_with_search(self.layout, props, "representation_template", text="Representation", should_click_ok=True)
         if props.representation_template == "OBJ":
             row = self.layout.row()

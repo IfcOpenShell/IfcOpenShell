@@ -57,17 +57,26 @@ def refresh_classes(self, context):
     context.scene.BIMRootProperties.ifc_class = enum[0][0]
     IfcClassData.load()
 
+    if self.ifc_product == "IfcFeatureElement":
+        if (obj := tool.Blender.get_active_object(is_selected=True)) and obj.type == "MESH":
+            self.featured_obj = obj
+            self.representation_template = "EXTRUSION"
+            self.representation_obj = None
+    elif (obj := tool.Blender.get_active_object(is_selected=True)) and obj.type == "MESH":
+        self.representation_template = "OBJ"
+        self.representation_obj = obj
+
     # When switching between ElementType and Element, keep the same class and predefined type if possible
-    if context.scene.BIMRootProperties.ifc_product == "IfcElement":
+    if self.ifc_product == "IfcElement":
         ifc_class = next(iter(ifcopenshell.util.type.get_applicable_entities(old_class)), None)
-    elif context.scene.BIMRootProperties.ifc_product == "IfcElementType":
+    elif self.ifc_product == "IfcElementType":
         ifc_class = next(iter(ifcopenshell.util.type.get_applicable_types(old_class)), None)
     else:
         return
     if ifc_class:
-        context.scene.BIMRootProperties.ifc_class = ifc_class
+        self.ifc_class = ifc_class
         if old_predefined_type:
-            context.scene.BIMRootProperties.ifc_predefined_type = old_predefined_type
+            self.ifc_predefined_type = old_predefined_type
 
 
 def refresh_predefined_types(self, context):
@@ -142,6 +151,10 @@ def poll_representation_obj(self, obj):
     return obj.type == "MESH" and obj.data.polygons
 
 
+def poll_featured_obj(self, obj):
+    return tool.Ifc.get_entity(obj)
+
+
 class BIMRootProperties(PropertyGroup):
     contexts: EnumProperty(items=get_contexts, name="Contexts", options=set())
     name: StringProperty(name="Name")
@@ -150,6 +163,12 @@ class BIMRootProperties(PropertyGroup):
     ifc_class: EnumProperty(items=get_ifc_classes, name="Class", update=refresh_predefined_types)
     ifc_predefined_type: EnumProperty(items=get_ifc_predefined_types, name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
+    featured_obj: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Featured Object",
+        poll=poll_featured_obj,
+        description="The feature will be applied to this object",
+    )
     representation_template: bpy.props.EnumProperty(
         items=get_representation_template, name="Representation Template", default=0
     )
