@@ -1708,8 +1708,8 @@ class Model(bonsai.core.tool.Model):
             if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
                 v1, v2 = loop[0].verts
                 mid = v1.co.lerp(v2.co, 0.5)
-                mid = (position_i @ (mid / unit_scale)).to_2d()
-                v1 = (position_i @ (v1.co / unit_scale)).to_2d()
+                mid = ((position_i @ mid) / unit_scale).to_2d()
+                v1 = ((position_i @ v1.co) / unit_scale).to_2d()
                 radius = (mid - v1).length
                 curves.append(
                     tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
@@ -1749,7 +1749,7 @@ class Model(bonsai.core.tool.Model):
 
                 if tmp.schema != "IFC2X3" and any([is_in_group(v, "IFCARCINDEX") for v in loop_verts]):
                     # We need to specify segments
-                    coord_list = [list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts]
+                    coord_list = [list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts]
                     points = tmp.createIfcCartesianPointList2D(coord_list)
                     i = 0
                     segments = []
@@ -1775,14 +1775,14 @@ class Model(bonsai.core.tool.Model):
                     curves.append(tmp.createIfcIndexedPolyCurve(points, segments))
                 elif tmp.schema == "IFC2X3":
                     points = [
-                        tmp.createIfcCartesianPoint(list((position_i @ (v.co / unit_scale)).to_2d()))
+                        tmp.createIfcCartesianPoint(list(((position_i @ v.co) / unit_scale).to_2d()))
                         for v in loop_verts
                     ]
                     if is_closed:
                         points.append(points[0])
                     curves.append(tmp.createIfcPolyline(points))
                 else:  # Pure straight polyline, no segments required
-                    coord_list = [list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts]
+                    coord_list = [list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts]
                     if is_closed:
                         coord_list.append(coord_list[0])
                     points = tmp.createIfcCartesianPointList2D(coord_list)
@@ -1926,8 +1926,8 @@ class Model(bonsai.core.tool.Model):
             if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
                 v1, v2 = loop[0].verts
                 mid = v1.co.lerp(v2.co, 0.5)
-                mid = (position_i @ (mid / unit_scale)).to_2d()
-                v1 = (position_i @ (v1.co / unit_scale)).to_2d()
+                mid = ((position_i @ mid) / unit_scale).to_2d()
+                v1 = ((position_i @ v1.co) / unit_scale).to_2d()
                 radius = (mid - v1).length
                 curves.append(
                     tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
@@ -1968,7 +1968,7 @@ class Model(bonsai.core.tool.Model):
                 if tmp.schema != "IFC2X3" and any([is_in_group(v, "IFCARCINDEX") for v in loop_verts]):
                     # We need to specify segments
                     coord_list: list[list[float]] = [
-                        list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts
+                        list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts
                     ]
                     points = tmp.createIfcCartesianPointList2D(coord_list)
                     i = 0
@@ -1995,14 +1995,14 @@ class Model(bonsai.core.tool.Model):
                     curves.append(tmp.createIfcIndexedPolyCurve(points, segments))
                 elif tmp.schema == "IFC2X3":
                     points = [
-                        tmp.createIfcCartesianPoint(list((position_i @ (v.co / unit_scale)).to_2d()))
+                        tmp.createIfcCartesianPoint(list(((position_i @ v.co) / unit_scale).to_2d()))
                         for v in loop_verts
                     ]
                     if is_closed:
                         points.append(points[0])
                     curves.append(tmp.createIfcPolyline(points))
                 else:  # Pure straight polyline, no segments required
-                    coord_list = [list((position_i @ (v.co / unit_scale)).to_2d()) for v in loop_verts]
+                    coord_list = [list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts]
                     if is_closed:
                         coord_list.append(coord_list[0])
                     points = tmp.createIfcCartesianPointList2D(coord_list)

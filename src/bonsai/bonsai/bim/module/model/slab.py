@@ -605,7 +605,6 @@ def disable_editing_extrusion_profile(context):
     element = tool.Ifc.get_entity(obj)
     body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
 
-    profile_mesh = obj.data
     bonsai.core.geometry.switch_representation(
         tool.Ifc,
         tool.Geometry,
@@ -705,7 +704,6 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
-        profile_mesh = obj.data
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
