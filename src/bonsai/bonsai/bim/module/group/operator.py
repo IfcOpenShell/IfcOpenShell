@@ -164,52 +164,48 @@ class AssignGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_group"
     bl_label = "Assign Group"
     bl_options = {"REGISTER", "UNDO"}
-    product: bpy.props.StringProperty()
-    group: bpy.props.IntProperty()
+    bl_description = "Assign the selected objects to the selected group\nALT + CLICK to unassign."
+    group: bpy.props.IntProperty(options={"SKIP_SAVE"})
+    is_assigning: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        self.is_assigning = not event.alt
+        return self.execute(context)
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
-        for product in products:
-            if not product.BIMObjectProperties.ifc_definition_id:
-                continue
-            ifcopenshell.api.run(
-                "group.assign_group",
-                self.file,
-                products=[self.file.by_id(product.BIMObjectProperties.ifc_definition_id)],
-                group=self.file.by_id(self.group),
-            )
-        return {"FINISHED"}
+        if not self.is_assigning:
+            return bpy.ops.bim.unassign_group(group=self.group)
+        products = [
+            tool.Ifc.get_entity(o)
+            for o in tool.Blender.get_selected_objects(include_active=False)
+            if tool.Ifc.get_entity(o)
+        ]
+        ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=products, group=tool.Ifc.get().by_id(self.group))
 
 
 class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_group"
     bl_label = "Unassign Group"
     bl_options = {"REGISTER", "UNDO"}
-    product: bpy.props.StringProperty()
-    group: bpy.props.IntProperty()
+    bl_description = "Unassign the selected objects from the selected group"
+    group: bpy.props.IntProperty(options={"SKIP_SAVE"})
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        products = [bpy.data.objects.get(self.product)] if self.product else context.selected_objects
-        for product in products:
-            if not product.BIMObjectProperties.ifc_definition_id:
-                continue
-            ifcopenshell.api.run(
-                "group.unassign_group",
-                self.file,
-                **{
-                    "products": [self.file.by_id(product.BIMObjectProperties.ifc_definition_id)],
-                    "group": self.file.by_id(self.group),
-                }
-            )
-        return {"FINISHED"}
+        products = [
+            tool.Ifc.get_entity(o)
+            for o in tool.Blender.get_selected_objects(include_active=False)
+            if tool.Ifc.get_entity(o)
+        ]
+        if not products:
+            return
+        ifcopenshell.api.group.unassign_group(tool.Ifc.get(), products=products, group=tool.Ifc.get().by_id(self.group))
 
 
 class SelectGroupProducts(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_group_products"
     bl_label = "Select Group Products"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select objects assigned to the selected group"
     group: bpy.props.IntProperty()
 
     def _execute(self, context):

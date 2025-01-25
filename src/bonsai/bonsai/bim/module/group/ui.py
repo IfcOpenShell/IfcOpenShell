@@ -49,21 +49,25 @@ class BIM_PT_groups(Panel):
         else:
             row.operator("bim.load_groups", text="", icon="GREASEPENCIL")
 
-        if self.props.is_editing:
-            self.layout.template_list(
-                "BIM_UL_groups",
-                "",
-                self.props,
-                "groups",
-                self.props,
-                "active_group_index",
-            )
+        if not self.props.is_editing:
+            return
+
+        if (group := self.props.active_group) and (group_id := group.ifc_definition_id):
+            row = self.layout.row(align=True)
+            row.alignment = "RIGHT"
+            row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF").group = group_id
+            row.operator("bim.assign_group", text="", icon="FOLDER_REDIRECT").group = group_id
+            row.operator("bim.enable_editing_group", text="", icon="GREASEPENCIL").group = group_id
+            row.operator("bim.add_group", text="", icon="ADD").group = group_id
+            row.operator("bim.remove_group", text="", icon="X").group = group_id
 
         if self.props.active_group_id:
-            self.draw_editable_ui(context)
+            draw_attributes(self.props.group_attributes, self.layout)
+            row = self.layout.row(align=True)
+            row.operator("bim.edit_group", text="Save Group", icon="CHECKMARK")
+            row.operator("bim.disable_editing_group", text="", icon="CANCEL")
 
-    def draw_editable_ui(self, context: bpy.types.Context) -> None:
-        draw_attributes(self.props.group_attributes, self.layout)
+        self.layout.template_list("BIM_UL_groups", "", self.props, "groups", self.props, "active_group_index")
 
 
 class BIM_PT_object_groups(Panel):
@@ -86,21 +90,6 @@ class BIM_PT_object_groups(Panel):
         if not ObjectGroupsData.is_loaded:
             ObjectGroupsData.load()
         self.props = context.scene.BIMGroupProperties
-        row = self.layout.row(align=True)
-        if self.props.is_editing:
-            row.label(text="Adding Groups", icon="OUTLINER")
-            row.operator("bim.disable_group_editing_ui", text="", icon="CANCEL")
-            self.layout.template_list(
-                "BIM_UL_object_groups",
-                "",
-                self.props,
-                "groups",
-                self.props,
-                "active_group_index",
-            )
-        else:
-            row.label(text=f"{ObjectGroupsData.data['total_groups']} Groups in IFC Project", icon="OUTLINER")
-            row.operator("bim.load_groups", text="", icon="GREASEPENCIL")
 
         for group in ObjectGroupsData.data["groups"]:
             row = self.layout.row(align=True)
@@ -126,51 +115,4 @@ class BIM_UL_groups(UIList):
                 op.ifc_definition_id = item.ifc_definition_id
                 op.index = index
                 op.option = "Collapse" if item.is_expanded else "Expand"
-            else:
-                row.label(text="", icon="BLANK1")
-
             row.label(text=item.name)
-            group_id = item.ifc_definition_id
-            if context.scene.BIMGroupProperties.active_group_id == group_id:
-                op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.group = group_id
-                row.operator("bim.edit_group", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_group", text="", icon="CANCEL")
-            elif context.scene.BIMGroupProperties.active_group_id:
-                op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.group = group_id
-                op = row.operator("bim.add_group", text="", icon="ADD")
-                op.group = group_id
-                op = row.operator("bim.remove_group", text="", icon="X")
-                op.group = group_id
-            else:
-                op = row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.group = group_id
-                op = row.operator("bim.enable_editing_group", text="", icon="GREASEPENCIL")
-                op.group = group_id
-                op = row.operator("bim.add_group", text="", icon="ADD")
-                op.group = group_id
-                op = row.operator("bim.remove_group", text="", icon="X")
-                op.group = group_id
-
-
-class BIM_UL_object_groups(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        if item:
-            row = layout.row(align=True)
-            for i in range(0, item.tree_depth):
-                row.label(text="", icon="BLANK1")
-            if item.has_children:
-                op = row.operator(
-                    "bim.toggle_group", icon="TRIA_DOWN" if item.is_expanded else "TRIA_RIGHT", text="", emboss=False
-                )
-                op.ifc_definition_id = item.ifc_definition_id
-                op.index = index
-                op.option = "Collapse" if item.is_expanded else "Expand"
-            else:
-                row.label(text="", icon="BLANK1")
-            row.label(text=item.name)
-            op = row.operator("bim.remove_group", text="", icon="X")
-            op.group = item.ifc_definition_id
-            op = row.operator("bim.assign_group", text="", icon="ADD")
-            op.group = item.ifc_definition_id
