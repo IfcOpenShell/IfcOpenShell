@@ -1000,7 +1000,9 @@ def get_decomposition(element: ifcopenshell.entity_instance, is_recursive=True) 
     return results
 
 
-def get_grouped_by(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+def get_grouped_by(
+    element: ifcopenshell.entity_instance, is_recursive: bool = True
+) -> list[ifcopenshell.entity_instance]:
     """Retrieves all subelements of an element based on the group.
 
     :param element: IfcGroup entity
@@ -1021,6 +1023,8 @@ def get_grouped_by(element: ifcopenshell.entity_instance) -> list[ifcopenshell.e
             related_objects = rel.RelatedObjects
             queue.extend(related_objects)
             results.extend(related_objects)
+        if not is_recursive:
+            break
     return results
 
 

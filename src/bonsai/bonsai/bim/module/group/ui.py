@@ -55,7 +55,7 @@ class BIM_PT_groups(Panel):
         if (group := self.props.active_group) and (group_id := group.ifc_definition_id):
             row = self.layout.row(align=True)
             row.alignment = "RIGHT"
-            row.operator("bim.select_group_products", text="", icon="RESTRICT_SELECT_OFF").group = group_id
+            row.operator("bim.select_group_elements", text="", icon="RESTRICT_SELECT_OFF").group = group_id
             row.operator("bim.assign_group", text="", icon="FOLDER_REDIRECT").group = group_id
             row.operator("bim.enable_editing_group", text="", icon="GREASEPENCIL").group = group_id
             row.operator("bim.add_group", text="", icon="ADD").group = group_id

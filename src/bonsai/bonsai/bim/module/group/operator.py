@@ -201,41 +201,26 @@ class UnassignGroup(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.group.unassign_group(tool.Ifc.get(), products=products, group=tool.Ifc.get().by_id(self.group))
 
 
-class SelectGroupProducts(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.select_group_products"
-    bl_label = "Select Group Products"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select objects assigned to the selected group"
-    group: bpy.props.IntProperty()
-
-    def _execute(self, context):
-        self.file = IfcStore.get_file()
-        for obj in context.visible_objects:
-            obj.select_set(False)
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            product_groups = [
-                r.RelatingGroup.id()
-                for r in getattr(element, "HasAssignments", []) or []
-                if r.is_a("IfcRelAssignsToGroup")
-            ]
-            if self.group in product_groups:
-                obj.select_set(True)
-        return {"FINISHED"}
-
-
 class SelectGroupElements(bpy.types.Operator):
     bl_idname = "bim.select_group_elements"
     bl_label = "Select Group elements"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = (
+        "Select objects assigned to the selected group and all nested groups\nALT + CLICK to exclude children"
+    )
     group: bpy.props.IntProperty()
+    is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=True, options={"SKIP_SAVE"})
 
     @classmethod
     def poll(cls, context):
         return bool(tool.Ifc.get() and context.active_object)
 
+    def invoke(self, context, event):
+        self.is_recursive = not event.alt
+        return self.execute(context)
+
     def execute(self, context):
-        elements = tool.Drawing.get_group_elements(tool.Ifc.get().by_id(self.group))
-        tool.Spatial.select_products(elements)
+        tool.Spatial.select_products(
+            ifcopenshell.util.element.get_grouped_by(tool.Ifc.get().by_id(self.group), is_recursive=self.is_recursive)
+        )
         return {"FINISHED"}
