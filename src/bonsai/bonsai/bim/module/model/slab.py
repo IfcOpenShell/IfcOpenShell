@@ -306,7 +306,6 @@ class DumbSlabPlaner:
                 elif layer_params["direction_sense"] == "NEGATIVE":
                     y = -abs(y) if existing_x_angle > 0 else abs(y)
                     z = -abs(z)
-                    offset_vector = -offset_vector
                 extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
                 extrusion.Depth = thickness
 
