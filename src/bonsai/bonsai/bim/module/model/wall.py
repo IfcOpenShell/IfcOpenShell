@@ -263,7 +263,6 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     if layer_params["direction_sense"] == "NEGATIVE":
                         y = -abs(y) if x_angle > 0 else abs(y)
                         z = -abs(z)
-                        offset_vector = -offset_vector
                     extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
 
                     if offset != 0.0 and not extrusion.Position:
@@ -418,6 +417,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
             context.scene.BIMModelProperties.direction_sense = (
                 "NEGATIVE" if direction_sense == "POSITIVE" else "POSITIVE"
             )
+            self.set_offset(context, self.relating_type)
 
         props = bpy.context.scene.BIMModelProperties
         if event.value == "RELEASE" and event.type == "O":
@@ -828,6 +828,7 @@ class DumbWallGenerator:
             tool.Ifc.get(),
             context=self.body_context,
             thickness=self.layers["thickness"],
+            direction_sense=self.layers["direction_sense"],
             offset=self.layers["offset"],
             length=self.length,
             height=self.height,
@@ -1391,6 +1392,7 @@ class DumbWallJoiner:
             length=length,
             height=height,
             x_angle=x_angle,
+            direction_sense=layers["direction_sense"],
             offset=layers["offset"],
             thickness=layers["thickness"],
             clippings=self.clippings,

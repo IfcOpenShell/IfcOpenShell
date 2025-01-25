@@ -78,7 +78,6 @@ def get_wall_preview_data(context, relating_type):
     offset_type = model_props.offset_type_vertical
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     offset = model_props.offset * unit_scale
-    offset *= direction
 
     height = float(model_props.extrusion_depth)
     rl = float(model_props.rl1)
@@ -206,7 +205,6 @@ def get_slab_preview_data(context, relating_type):
     offset_type = model_props.offset_type_horizontal
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     offset = model_props.offset * unit_scale
-    offset *= direction
 
     data = {}
     data["verts"] = []
@@ -915,10 +913,13 @@ class PolylineOperator:
 
     def set_offset(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMModelProperties
+        direction_sense = props.direction_sense
         if tool.Model.get_usage_type(relating_type) == "LAYER2":
             offset_type = "offset_type_vertical"
+            direction = 1 if direction_sense == "POSITIVE" else -1
         elif tool.Model.get_usage_type(relating_type) == "LAYER3":
             offset_type = "offset_type_horizontal"
+            direction = 1
         else:
             return
 
@@ -926,9 +927,9 @@ class PolylineOperator:
         thickness = layers["thickness"]
         self.offset = 0
         if getattr(props, offset_type) == "CENTER":
-            self.offset = -thickness / 2
+            self.offset = (-thickness / 2) * direction
         elif getattr(props, offset_type) in {"INTERIOR", "TOP"}:
-            self.offset = -thickness
+            self.offset = -thickness * direction
 
         props.offset = self.offset / self.unit_scale
         tool.Blender.update_viewport()

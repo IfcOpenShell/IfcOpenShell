@@ -28,6 +28,7 @@ def add_wall_representation(
     context: ifcopenshell.entity_instance,
     length: float = 1.0,
     height: float = 3.0,
+    direction_sense: str = "POSITIVE",
     offset: float = 0.0,
     thickness: float = 0.2,
     x_angle: float = 0.0,
@@ -55,6 +56,7 @@ def add_wall_representation(
         "context": context,
         "length": length,
         "height": height,
+        "direction_sense": direction_sense,
         "offset": offset,
         "thickness": thickness,
         "x_angle": x_angle,
@@ -83,6 +85,8 @@ class Usecase:
         length = self.convert_si_to_unit(self.settings["length"])
         thickness = self.convert_si_to_unit(self.settings["thickness"])
         thickness *= 1 / cos(self.settings["x_angle"])
+        if self.settings["direction_sense"] == "NEGATIVE":
+            thickness *= -1
         points = (
             (0.0, 0.0),
             (0.0, thickness),

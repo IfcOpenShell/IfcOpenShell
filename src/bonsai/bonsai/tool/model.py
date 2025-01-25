@@ -536,9 +536,6 @@ class Model(bonsai.core.tool.Model):
                 material = material.ForLayerSet
             if material.is_a("IfcMaterialLayerSet"):
                 thickness = sum([l.LayerThickness for l in material.MaterialLayers]) * unit_scale
-        if direction_sense == "NEGATIVE":
-            thickness *= -1
-            offset *= -1
         return {
             "layer_set_direction": layer_set_direction,
             "thickness": thickness,
@@ -672,14 +669,15 @@ class Model(bonsai.core.tool.Model):
         max_x = max(x_values)
         axes = {}
         if layers:
+            direction = 1 if layers["direction_sense"] == "POSITIVE" else -1
             axes = {
                 "base": [
                     (obj.matrix_world @ Vector((min_x, layers["offset"], 0.0))).to_2d(),
                     (obj.matrix_world @ Vector((max_x, layers["offset"], 0.0))).to_2d(),
                 ],
                 "side": [
-                    (obj.matrix_world @ Vector((min_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
-                    (obj.matrix_world @ Vector((max_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
+                    (obj.matrix_world @ Vector((min_x, layers["offset"] + (layers["thickness"] * direction), 0.0))).to_2d(),
+                    (obj.matrix_world @ Vector((max_x, layers["offset"] + (layers["thickness"] * direction), 0.0))).to_2d(),
                 ],
             }
         axes["reference"] = [
