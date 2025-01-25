@@ -735,6 +735,17 @@ class OverrideDelete(bpy.types.Operator):
             else:
                 bpy.data.objects.remove(obj)
 
+        while True:
+            has_removed_opening = False
+            openings = context.scene.BIMModelProperties.openings
+            for i, opening in enumerate(openings):
+                if not (element := tool.Ifc.get_entity(opening.obj)):
+                    has_removed_opening = True
+                    bpy.data.objects.remove(opening.obj)
+                    context.scene.BIMModelProperties.openings.remove(i)
+            if not has_removed_opening:
+                break
+
         if self.is_batch:
             old_file = tool.Ifc.get()
             old_file.end_transaction()
