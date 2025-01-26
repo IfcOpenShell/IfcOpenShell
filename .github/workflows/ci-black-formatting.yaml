@@ -57,7 +57,7 @@ jobs:
         run: |-
           echo "::group::QA step succeeded with warnings"
           echo "::warning::one or more files contains unformatted code but no syntax errors";
-          echo "::warning::please run the linter before pushing!";
+          echo "::notice::please run the linter before pushing!";
           echo "::endgroup::"
           exit 0;
 
@@ -68,6 +68,6 @@ jobs:
         run: |-
           echo "::group::QA step failed"
           echo "::error::one or more files contains syntax errors";
-          echo "::error::please run the linter and fix syntax errors before pushing!";
+          echo "::notice::please run the linter and fix syntax errors before pushing!";
           echo "::endgroup::"
           exit 1;
