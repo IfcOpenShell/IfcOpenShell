@@ -111,7 +111,7 @@ class WallTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.wall_tool"
     bl_label = "Wall Tool"
-    bl_description = "Create and edit solid, movable, parapet, partitioning, plumbing, sheer, standard, polygonal, and elemented walls"
+    bl_description = "Create and edit walls, including solid, movable, parapet, partitioning, plumbing, sheer, standard, polygonal, and elemented walls"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.wall")
     bl_widget = None
     ifc_element_type = "IfcWallType"
@@ -144,7 +144,7 @@ class SlabTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.slab_tool"
     bl_label = "Slab Tool"
-    bl_description = "Create and edit floor, roof, landing, and baseslab slabs"
+    bl_description = "Create and edit slabs, including floor, roof, landing, and baseslab slabs"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.slab")
     bl_widget = None
     ifc_element_type = "IfcSlabType"
@@ -155,7 +155,7 @@ class RoofTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.roof_tool"
     bl_label = "Roof Tool"
-    bl_description = "Create and edit flat, shed, gable, hip, hipped gable, gambrel, mansard, barrel, rainbox, butterly, pavilion, dome, and freeform roofs"
+    bl_description = "Create and edit roofs, including flat, shed, gable, hip, hipped gable, gambrel, mansard, barrel, rainbox, butterly, pavilion, dome, and freeform roofs"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.roof")
     bl_widget = None
     ifc_element_type = "IfcRoofType"
@@ -188,10 +188,21 @@ class StairTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.stair_tool"
     bl_label = "Stair Tool"
-    bl_description = "Create and edit straight run, two straight run, quarter winding, quarter turn, half winding, half turn, two quarter winding, two wuarter turn, spiral, double return, curved run, and two curved run stairs"
+    bl_description = "Create and edit stairs, including straight, winder, spiral, curved, and freeform stairs"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.stair")
     bl_widget = None
     ifc_element_type = "IfcStairType"
+
+
+class StairFlightTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.stair_flight_tool"
+    bl_label = "Stair Flight Tool"
+    bl_description = "Create and edit stairs, including straight run, two straight run, quarter winding, quarter turn, half winding, half turn, two quarter winding, two wuarter turn, spiral, double return, curved run, and two curved run stairs"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.stairflight")
+    bl_widget = None
+    ifc_element_type = "IfcStairFlightType"
 
 
 class RampTool(BimTool):
@@ -199,23 +210,21 @@ class RampTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.ramp_tool"
     bl_label = "Ramp Tool"
-    bl_description = (
-        "Create and edit straight run, two straight run, quarter turn, two wuarter turn, half turn, and spiral ramps"
-    )
+    bl_description = "Create and edit ramps, including straight run, two straight run, quarter turn, two wuarter turn, half turn, and spiral ramps"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.ramp")
     bl_widget = None
     ifc_element_type = "IfcRampType"
 
 
-class TransportElementTool(BimTool):
+class RampFlightTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
-    bl_idname = "bim.transport_element_tool"
-    bl_label = "Transport Element Tool"
-    bl_description = "Create and edit elevators, escalator, moving walkways, and craneways"
-    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.transportelement")
+    bl_idname = "bim.ramp_flight_tool"
+    bl_label = "Ramp Flight Tool"
+    bl_description = "Create and edit straight and spiral ramps"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.rampflight")
     bl_widget = None
-    ifc_element_type = "IfcTransportElementType"
+    ifc_element_type = "IfcRampFlightType"
 
 
 class FurnitureTool(BimTool):
@@ -223,7 +232,7 @@ class FurnitureTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.furniture_tool"
     bl_label = "Furniture Tool"
-    bl_description = "Create and edit furniture including table, desk, bed, file cabinet, shelve, and sofa"
+    bl_description = "Create and edit furniture, including table, desk, bed, file cabinet, shelve, and sofa"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.furniture")
     bl_widget = None
     ifc_element_type = "IfcFurnitureType"
@@ -234,7 +243,7 @@ class SanitaryTerminalTool(BimTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.sanitary_terminal_tool"
     bl_label = "Sanitary Terminal Tool"
-    bl_description = "Create and edit sanitary terminals including bath, bidet, cister, shower, sink, sanitary fountain, toilet pan, urinal, wash hand basin, and wc seat"
+    bl_description = "Create and edit sanitary terminals, including bath, bidet, cister, shower, sink, sanitary fountain, toilet pan, urinal, wash hand basin, and wc seat"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.sanitaryterminal")
     bl_widget = None
     ifc_element_type = "IfcSanitaryTerminalType"
@@ -295,12 +304,38 @@ class MemberTool(BimTool):
     ifc_element_type = "IfcMemberType"
 
 
+class PlateTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.plate_tool"
+    bl_label = "Plate Tool"
+    bl_description = "Create and edit curtain panel and sheet plates"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.plate")
+    bl_widget = None
+    ifc_element_type = "IfcPlateType"
+
+
+class PileTool(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.pile_tool"
+    bl_label = "Pile Tool"
+    bl_description = (
+        "Create and edit piles, including bored, driven, jet grouting, cohesion, friction, and support piles"
+    )
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.pile")
+    bl_widget = None
+    ifc_element_type = "IfcPileType"
+
+
 class FootingTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
     bl_idname = "bim.footing_tool"
     bl_label = "Footing Tool"
-    bl_description = "Create and edit pad, beam and strip footings, as well as pile caps and caisson foundations"
+    bl_description = (
+        "Create and edit footings, including pad, beam and strip footings, as well as pile caps and caisson foundations"
+    )
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.footing")
     bl_widget = None
     ifc_element_type = "IfcFootingType"
