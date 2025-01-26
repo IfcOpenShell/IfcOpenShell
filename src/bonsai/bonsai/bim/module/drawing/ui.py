@@ -70,9 +70,6 @@ class BIM_PT_camera(Panel):
             row.prop(props, "fill_mode")
             row = self.layout.row()
             row.prop(props, "cut_mode")
-        elif not hasattr(context.scene, "svg_export"):
-            row = self.layout.row()
-            row.label(text="Freestyle SVG Exporter Not Installed", icon="ERROR")
 
         row = self.layout.row()
         row.prop(props, "width")
@@ -94,11 +91,6 @@ class BIM_PT_camera(Panel):
         if props.has_underlay:
             row = self.layout.row()
             row.prop(props, "dpi")
-
-        row = self.layout.row(align=True)
-        row.operator("bim.create_drawing", text="Create Drawing", icon="OUTPUT")
-        op = row.operator("bim.open_drawing", icon="URL", text="")
-        op.view = context.scene.camera.name.split("/")[1]
 
 
 class BIM_PT_element_filters(Panel):
@@ -255,43 +247,29 @@ class BIM_PT_drawings(Panel):
             if self.props.active_drawing_index < len(self.props.drawings):
                 active_drawing = self.props.drawings[self.props.active_drawing_index]
                 row = self.layout.row(align=True)
-                col = row.column()
-                col.alignment = "LEFT"
-                row2 = col.row(align=True)
+                row2 = row.row(align=True)
                 row2.operator("bim.remove_drawing", icon="X", text="").drawing = active_drawing.ifc_definition_id
 
-                row2.operator("bim.duplicate_drawing", icon="COPYDOWN", text="").drawing = (
+                row2.separator(factor=0.5, type="SPACE")
+
+                row2.operator("bim.duplicate_drawing", icon="DUPLICATE", text="").drawing = (
                     active_drawing.ifc_definition_id
                 )
 
-                col = row.column()
-                col.alignment = "RIGHT"
+                row3 = row.row(align=True)
+                row3.alignment = "RIGHT"
 
-                convert_to_dxf = row.row(align=True)
-                op = convert_to_dxf.operator("bim.convert_svg_to_dxf", text="", icon="IMAGE_DATA")
-                op.view = active_drawing.name
-                convert_to_dxf.enabled = active_drawing.ifc_definition_id > 0
+                row3.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="").drawing = (
+                    active_drawing.ifc_definition_id
+                )
+                row3.operator("bim.activate_model", icon="VIEW3D", text="")
 
-                op = row.operator("bim.select_all_drawings", icon="SELECT_SUBTRACT", text="")
+                row3.separator(factor=0.5, type="SPACE")
 
-                open_drawing_button = row.row(align=True)
-                op = open_drawing_button.operator("bim.open_drawing", icon="URL", text="")
-                op.view = active_drawing.name
-                open_drawing_button.enabled = active_drawing.ifc_definition_id > 0
-
-                row.operator("bim.activate_model", icon="VIEW3D", text="")
-
-                drawing_button = row.row(align=True)
-                op = drawing_button.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="")
-                op.drawing = active_drawing.ifc_definition_id
-                drawing_button.enabled = active_drawing.ifc_definition_id > 0
-
-                create_drawing_button = row.row(align=True)
-                create_drawing_button.operator("bim.create_drawing", text="", icon="OUTPUT")
-                create_drawing_button.enabled = active_drawing.ifc_definition_id > 0
-
-                # might need a different icon since the URL icon is already used by the open_drawing
-                row.operator("bim.open_documentation_web_ui", icon="URL", text="")
+                row3.operator("bim.select_all_drawings", icon="CHECKBOX_HLT", text="")
+                row3.operator("bim.create_drawing", text="", icon="OUTPUT")
+                row3.operator("bim.convert_svg_to_dxf", text="", icon="SEQ_PREVIEW").view = active_drawing.name
+                row3.operator("bim.open_drawing", icon="HIDE_OFF", text="").view = active_drawing.name
             self.layout.template_list(
                 "BIM_UL_drawinglist", "", self.props, "drawings", self.props, "active_drawing_index"
             )
@@ -328,7 +306,7 @@ class BIM_PT_schedules(Panel):
 
         if not self.props.is_editing_schedules:
             row = self.layout.row(align=True)
-            row.label(text=f"{DocumentsData.data['total_schedules']} Schedules Found", icon="LONGDISPLAY")
+            row.label(text=f"{DocumentsData.data['total_schedules']} Schedules Found", icon="PRESET")
             row.operator("bim.load_schedules", text="", icon="IMPORT")
             return
 
@@ -378,7 +356,7 @@ class BIM_PT_references(Panel):
 
         if not self.props.is_editing_references:
             row = self.layout.row(align=True)
-            row.label(text=f"{DocumentsData.data['total_references']} References Found", icon="OBJECT_HIDDEN")
+            row.label(text=f"{DocumentsData.data['total_references']} References Found", icon="IMAGE_REFERENCE")
             row.operator("bim.load_references", text="", icon="IMPORT")
             return
 
@@ -432,31 +410,53 @@ class BIM_PT_sheets(Panel):
         if self.props.sheets and self.props.active_sheet_index < len(self.props.sheets):
             active_sheet = self.props.sheets[self.props.active_sheet_index]
             row = self.layout.row(align=True)
-            row.alignment = "RIGHT"
+            row2 = row.row(align=True)
+            if active_sheet.is_sheet:
+                row2.operator("bim.remove_sheet", icon="X", text="").sheet = active_sheet.ifc_definition_id
+            else:
+                row2.operator("bim.remove_drawing_from_sheet", icon="X", text="").reference = (
+                    active_sheet.ifc_definition_id
+                )
+
+            row2.separator(factor=0.5, type="SPACE")
+
+            row2.operator("bim.duplicate_sheet", icon="DUPLICATE", text="").drawing = active_sheet.ifc_definition_id
+            row2.operator("bim.open_documentation_web_ui", icon="URL", text="")
+
+            row3 = row.row(align=True)
+            row3.alignment = "RIGHT"
+
+            op = row3.operator("bim.activate_drawing_from_sheet", icon="OUTLINER_OB_CAMERA", text="")
 
             if active_sheet.reference_type == "DRAWING":
                 drawingnamesvg = active_sheet.name
-                drawingname = drawingnamesvg.split(".")[0]
+                drawingname = drawingnamesvg.split(".svg")[0]
                 ifc_file = tool.Ifc.get()
                 ifc_annotations = ifc_file.by_type("IfcAnnotation")
-                for annotation in ifc_annotations:
-                    if annotation.Name == drawingname:
-                        drawingid = annotation.id()
-                drawing_button = row.row(align=True)
-                op = drawing_button.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="")
-                op.drawing = drawingid
+                drawingid = None
 
-            row.operator("bim.edit_sheet", icon="GREASEPENCIL", text="")
-            row.operator("bim.open_sheet", icon="URL", text="")
-            row.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
-            row.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
-            row.operator("bim.add_reference_to_sheet", icon="IMAGE_REFERENCE", text="")
-            row.operator("bim.create_sheets", icon="FILE_REFRESH", text="")
-            if active_sheet.is_sheet:
-                row.operator("bim.remove_sheet", icon="X", text="").sheet = active_sheet.ifc_definition_id
-            else:
-                op = row.operator("bim.remove_drawing_from_sheet", icon="X", text="")
-                op.reference = active_sheet.ifc_definition_id
+                for annotation in ifc_annotations:
+                    Annotation_Name = annotation.Name.replace(",", "")  # Remove commas
+                    if Annotation_Name == drawingname:
+                        drawingid = annotation.id()
+                        break
+
+                if drawingid is not None:
+                    op.drawing = drawingid
+
+            row3.separator(factor=0.5, type="SPACE")
+
+            row3.operator("bim.edit_sheet", icon="GREASEPENCIL", text="")
+            row3.operator("bim.add_drawing_to_sheet", icon="IMAGE_PLANE", text="")
+            row3.operator("bim.add_schedule_to_sheet", icon="PRESET_NEW", text="")
+            row3.operator("bim.add_reference_to_sheet", icon="IMAGE_REFERENCE", text="")
+            row3.operator("bim.open_layout", icon="CURRENT_FILE", text="")
+
+            row3.separator(factor=0.5, type="SPACE")
+
+            row3.operator("bim.select_all_sheets", icon="CHECKBOX_HLT", text="")
+            row3.operator("bim.create_sheets", icon="OUTPUT", text="")
+            row3.operator("bim.open_sheet", icon="HIDE_OFF", text="")
 
         self.layout.template_list("BIM_UL_sheets", "", self.props, "sheets", self.props, "active_sheet_index")
 
@@ -533,6 +533,8 @@ class BIM_PT_text(Panel):
 
             row = self.layout.row(align=True)
             row.prop(props, "font_size")
+            row = self.layout.row(align=True)
+            row.prop(props, "newline_at")
 
             for i, literal_props in enumerate(props.literals):
                 box = self.layout.box()
@@ -574,6 +576,9 @@ class BIM_PT_text(Panel):
             row = self.layout.row(align=True)
             row.label(text="FontSize")
             row.label(text=str(text_data["FontSize"]))
+            row = self.layout.row(align=True)
+            row.label(text="Newline_At")
+            row.label(text=str(text_data["Newline_At"]))
 
             for literal_data in text_data["Literals"]:
                 box = self.layout.box()
@@ -595,6 +600,13 @@ class BIM_UL_drawinglist(bpy.types.UIList):
             selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
             row.prop(item, "is_selected", text="", icon=selected_icon, emboss=False)
             row.prop(item, "name", text="", emboss=False)
+            self.props = context.scene.DocProperties
+            if (
+                self.props.drawings
+                and self.props.active_drawing_id
+                and item.ifc_definition_id == self.props.active_drawing_id
+            ):
+                row.label(text="", icon="OUTLINER_OB_CAMERA")
         else:
             if item.target_view == "PLAN_VIEW":
                 icon = "UV_FACESEL"
@@ -636,13 +648,16 @@ class BIM_UL_sheets(bpy.types.UIList):
                     item.ifc_definition_id
                 )
 
+            selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
+            row.prop(item, "is_selected", text="", icon=selected_icon, emboss=False)
+
             row.label(text=f"{item.identification} - {item.name}")
         else:
             row.label(text="", icon="BLANK1")
             if item.reference_type == "DRAWING":
                 row.label(text="", icon="IMAGE_DATA")
             elif item.reference_type == "SCHEDULE":
-                row.label(text="", icon="LONGDISPLAY")
+                row.label(text="", icon="PRESET")
             elif item.reference_type == "TITLEBLOCK":
                 row.label(text="", icon="MENU_PANEL")
             elif item.reference_type == "REVISION":

@@ -125,6 +125,8 @@ def update_sun_path(self):
     local_time = timezone.localize(dt, is_dst=None)
     sun_props.use_daylight_savings = bool(local_time.dst())
     sun_props.UTC_zone = local_time.utcoffset().total_seconds() / 3600
+    if sun_props.use_daylight_savings:
+        sun_props.UTC_zone -= 1
     zone = -sun_props.UTC_zone
     if sun_props.use_daylight_savings:
         zone -= 1
@@ -269,9 +271,12 @@ class RadianceExporterProperties(PropertyGroup):
     )
 
     def get_subcategories(self, context):
+        global SUBCATEGORIES_ENUM_ITEMS
         if self.category in spectraldb:
-            return [(k, k, "") for k in spectraldb[self.category].keys()]
-        return []
+            SUBCATEGORIES_ENUM_ITEMS = [(k, k, "") for k in spectraldb[self.category].keys()]
+        else:
+            SUBCATEGORIES_ENUM_ITEMS = []
+        return SUBCATEGORIES_ENUM_ITEMS
 
     subcategory: bpy.props.EnumProperty(
         items=get_subcategories, name="Subcategory", description="Material subcategory", update=update_material_mapping

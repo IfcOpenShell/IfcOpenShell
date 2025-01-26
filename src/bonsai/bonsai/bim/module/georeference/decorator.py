@@ -53,6 +53,8 @@ class GeoreferenceDecorator:
         cls.is_installed = False
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        self.scale = bpy.context.scene.BIMGeoreferenceProperties.visualization_scale
+        content_pos = [v * self.scale for v in content_pos]
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -62,8 +64,11 @@ class GeoreferenceDecorator:
         if not GeoreferenceData.is_loaded:
             GeoreferenceData.load()
 
-        self.calculate_angles(context)
         props = context.scene.BIMGeoreferenceProperties
+        if not props.model_origin:  # If this is empty, no georeferencing data has been loaded.
+            return
+
+        self.calculate_angles(context)
         e, n, h = [round(float(o), 7) for o in props.model_origin.split(",")]
         if (operation := GeoreferenceData.data["coordinate_operation"]) and (scale := operation.get("Scale", None)):
             e *= scale
@@ -154,8 +159,10 @@ class GeoreferenceDecorator:
                 location = location.normalized() * 3
                 text += "\n(Warning: Actual XYZ Not Shown)"
             self.draw_text_at_position(context, text, location)
+        blf.disable(self.font_id, blf.SHADOW)
 
     def draw_text_at_position(self, context, text, position):
+        position = [v * self.scale for v in position]
         coords_2d = location_3d_to_region_2d(context.region, context.region_data, position)
         if not coords_2d:
             return
@@ -169,6 +176,10 @@ class GeoreferenceDecorator:
     def draw_geometry(self, context):
         if not GeoreferenceData.is_loaded:
             GeoreferenceData.load()
+
+        props = context.scene.BIMGeoreferenceProperties
+        if not props.model_origin:  # If this is empty, no georeferencing data has been loaded.
+            return
 
         self.calculate_angles(context)
 
@@ -227,6 +238,7 @@ class GeoreferenceDecorator:
                 pts=[arc_start, arc_mid, arc_end], num_verts=12, make_edges=True
             )
             verts, edges = arc_segments
+            verts = [Vector(v) for v in verts]
             self.draw_batch("LINES", verts, decorator_color_selected, edges)
 
         if GeoreferenceData.data["coordinate_operation"]:
@@ -256,6 +268,7 @@ class GeoreferenceDecorator:
                 pts=[arc_start, arc_mid, arc_end], num_verts=12, make_edges=True
             )
             verts, edges = arc_segments
+            verts = [Vector(v) for v in verts]
             self.draw_batch("LINES", verts, decorator_color_special, edges)
 
         if GeoreferenceData.data["true_north"]:
@@ -285,6 +298,7 @@ class GeoreferenceDecorator:
                 pts=[arc_start, arc_mid, arc_end], num_verts=12, make_edges=True
             )
             verts, edges = arc_segments
+            verts = [Vector(v) for v in verts]
             self.draw_batch("LINES", verts, decorator_color_special, edges)
 
         if (wcs := GeoreferenceData.data["world_coordinate_system"]) and wcs["has_transformation"]:
@@ -300,7 +314,6 @@ class GeoreferenceDecorator:
                 self.draw_batch("LINES", verts, decorator_color_special, edges)
                 self.draw_dashed_line(location * 3, location * 6, decorator_color_error)
 
-        props = context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset:
             location = GeoreferenceData.data["local_origin"]["location"]
             if location.length < 1000:

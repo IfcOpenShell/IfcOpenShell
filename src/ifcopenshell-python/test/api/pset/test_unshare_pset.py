@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import operator
 import test.bootstrap
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
@@ -41,7 +40,7 @@ class TestUnsharePset(test.bootstrap.IFC4):
 
         used_elements = set()
         for pset in psets:
-            pset_elements = ifcopenshell.util.element.get_elements_using_pset(pset)
+            pset_elements = ifcopenshell.util.element.get_elements_by_pset(pset)
             assert len(pset_elements) == 1
             used_elements.update(pset_elements)
 
@@ -68,6 +67,32 @@ class TestUnsharePset(test.bootstrap.IFC4):
             used_psets.add(element_psets[0])
 
         assert used_psets == set(psets)
+
+    def test_unshare_pset_for_all_pset_elements(self):
+        elements = [self.file.create_entity("IfcWall") for _ in range(3)]
+
+        pset = ifcopenshell.api.pset.add_pset(self.file, elements[0], "Foo")
+        pset_id = pset.id()
+        rel = self.file.by_type("IfcRelDefinesByProperties")[0]
+        rel.RelatedObjects = elements
+
+        new_psets = ifcopenshell.api.pset.unshare_pset(self.file, elements, pset)
+        # Original pset still exists and it's not orphaned.
+        pset = self.file.by_id(pset_id)
+
+        assert isinstance(new_psets, list)
+        assert len(new_psets) == 2
+
+        assert len(psets := self.file.by_type("IfcPropertySet")) == 3
+        assert len(self.file.by_type("IfcRelDefinesByProperties")) == 3
+
+        used_elements = set()
+        for pset in psets:
+            pset_elements = ifcopenshell.util.element.get_elements_by_pset(pset)
+            assert len(pset_elements) == 1
+            used_elements.update(pset_elements)
+
+        assert used_elements == set(elements)
 
 
 class TestUnsharePsetIFC2X3(test.bootstrap.IFC2X3, TestUnsharePset):

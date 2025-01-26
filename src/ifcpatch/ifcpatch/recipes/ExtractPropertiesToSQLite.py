@@ -34,7 +34,6 @@ except:
 class Patcher:
     def __init__(
         self,
-        src,
         file,
         logger,
     ):
@@ -50,7 +49,6 @@ class Patcher:
             result = ifcpatch.execute({"input": fn, "file": model, "recipe": "ExtractPropertiesToSQLite"})
             ifcpatch.write(result, "output.sqlite")
         """
-        self.src = src
         self.file = file
         self.logger = logger
 

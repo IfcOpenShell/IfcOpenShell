@@ -58,8 +58,8 @@ HEADER_FIELDS = {
 
 
 class Transaction:
-    def __init__(self, ifc_file):
-        self.file = ifc_file
+    def __init__(self, ifc_file: file):
+        self.file: file = ifc_file
         self.operations = []
         self.is_batched = False
         self.batch_delete_index = 0
@@ -205,6 +205,7 @@ file_dict = {}
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
 UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
+INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
 
 
 class file:
@@ -225,11 +226,12 @@ class file:
 
     wrapped_data: ifcopenshell_wrapper.file
     _units: file_units | None = None
+    history_size: int = 64
 
     def __init__(
         self,
         f: Optional[ifcopenshell_wrapper.file] = None,
-        schema: Optional[str] = None,
+        schema: Optional[ifcopenshell.util.schema.IFC_SCHEMA] = None,
         schema_version: Optional[tuple[int, int, int, int]] = None,
     ):
         """Create a new blank IFC model
@@ -246,7 +248,6 @@ class file:
             or "IFC4X3". These refer to the ISO approved versions of IFC.
             Defaults to "IFC4" if not specified, which is currently recommended
             for all new projects.
-        :type schema: string
         :param schema_version: If you want to specify an exact version of IFC
             that may not be an ISO approved version, use this argument instead
             of ``schema``. IFC versions on technical.buildingsmart.org are
@@ -255,7 +256,6 @@ class file:
             ADD2 TC1, which is the official version approved by ISO when people
             refer to "IFC4". Generally you should not use this argument unless
             you are testing non-ISO IFC releases.
-        :type schema_version: tuple[int, int, int, int]
 
         Example:
 
@@ -288,6 +288,7 @@ class file:
                         SchemaError,
                         "Unsupported schema: %s" % ",".join(f.header.file_schema.schema_identifiers),
                     ),
+                    INVALID_SYNTAX: (Error, "Syntax error during parse, check logs"),
                 }[f.good().value()]
                 raise exc(msg)
             self.wrapped_data = f
@@ -295,7 +296,6 @@ class file:
             args = filter(None, [schema])
             args = map(ifcopenshell_wrapper.schema_by_name, args)
             self.wrapped_data = ifcopenshell_wrapper.file(*args)
-        self.history_size = 64
         self.history = []
         self.future = []
         self.transaction: Optional[Transaction] = None
@@ -565,18 +565,14 @@ class file:
         return [entity_instance(e, self) for e in self.wrapped_data.by_type_excl_subtypes(type)]
 
     def traverse(
-        self, inst: ifcopenshell.entity_instance, max_levels=None, breadth_first=False
+        self, inst: ifcopenshell.entity_instance, max_levels: Optional[int] = None, breadth_first: bool = False
     ) -> list[ifcopenshell.entity_instance]:
         """Get a list of all referenced instances for a particular instance including itself
 
         :param inst: The entity instance to get all sub instances
-        :type inst: ifcopenshell.entity_instance
         :param max_levels: How far deep to recursively fetch sub instances. None or -1 means infinite.
-        :type max_levels: None|int
         :param breadth_first: Whether to use breadth-first search, the default is depth-first.
-        :type max_levels: bool
         :returns: A list of ifcopenshell.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance]
         """
         if max_levels is None:
             max_levels = -1
@@ -663,7 +659,7 @@ class file:
     def __iter__(self) -> Generator[ifcopenshell.entity_instance, None, None]:
         return iter(self[id] for id in self.wrapped_data.entity_names())
 
-    def assign_header_from(self, other):
+    def assign_header_from(self, other: ifcopenshell.file) -> None:
         for k, vs in HEADER_FIELDS.items():
             for v in vs:
                 setattr(getattr(self.header, k), v, getattr(getattr(other.header, k), v))
@@ -706,6 +702,8 @@ class file:
         if format == ".ifcZIP":
             return self.write(path, ".ifc", zipped=True)
         self.wrapped_data.write(str(path))
+        if not path.exists():
+            raise PermissionError(f"Failed to write to '{path}', check folder permissions.")
         if zipped:
             unzipped_path = path.with_suffix(format)
             path.rename(unzipped_path)
@@ -725,6 +723,10 @@ class file:
     @staticmethod
     def from_pointer(v) -> "file":
         return file_dict.get(v)()
+
+    def to_string(self) -> str:
+        return self.wrapped_data.to_string()
+
 
 class file_units:
     """

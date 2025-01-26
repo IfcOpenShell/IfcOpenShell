@@ -19,6 +19,7 @@
 # along with IfcClash.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
 import json
 import time
 import numpy as np
@@ -26,34 +27,83 @@ import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
+from logging import Logger
+from typing import Literal, TypedDict
+from typing_extensions import NotRequired
+
+
+class ClashSource(TypedDict):
+    file: str
+    mode: NotRequired[Literal["a", "e", "i"]]
+    selector: NotRequired[str]
+    # Will be automatically added during clash.
+    ifc: NotRequired[ifcopenshell.file]
+
+
+ClashType = Literal["protrusion", "pierce", "collision", "clearance"]
+
+
+class ClashResult(TypedDict):
+    a_global_id: str
+    b_global_id: str
+    a_ifc_class: str
+    b_ifc_class: str
+    a_name: str
+    b_name: str
+    type: ClashType
+    p1: list[float]
+    p2: list[float]
+    distance: float
+
+
+class ClashSet(TypedDict):
+    name: str
+    a: list[ClashSource]
+    b: NotRequired[list[ClashSource]]
+    mode: Literal["intersection", "collision", "clearance"]
+    # Added during clash.
+    clashes: NotRequired[dict[str, ClashResult]]
+    # intersection, clearance modes.
+    check_all: NotRequired[bool]
+    # inseresection mode.
+    tolerance: NotRequired[float]
+    # collision mode.
+    allow_touching: NotRequired[bool]
+    # clearance mode.
+    clearance: NotRequired[float]
+
+
+class ClashGroup(TypedDict):
+    elements: dict
+    objects: dict
 
 
 class Clasher:
-    def __init__(self, settings):
+    def __init__(self, settings: ClashSettings):
         self.settings = settings
         self.geom_settings = ifcopenshell.geom.settings()
-        self.clash_sets = []
+        self.clash_sets: list[ClashSet] = []
         self.logger = self.settings.logger
-        self.groups = {}
-        self.ifcs = {}
+        self.groups: dict[str, ClashGroup] = {}
+        self.ifcs: dict[str, ifcopenshell.file] = {}
         self.tree = None
 
-    def clash(self):
+    def clash(self) -> None:
         for clash_set in self.clash_sets:
             self.process_clash_set(clash_set)
 
-    def process_clash_set(self, clash_set):
+    def process_clash_set(self, clash_set: ClashSet) -> None:
         self.tree = ifcopenshell.geom.tree()
         self.create_group("a")
         for source in clash_set["a"]:
             source["ifc"] = self.load_ifc(source["file"])
-            self.add_collision_objects("a", source["ifc"], source.get("mode", None), source.get("selector", None))
+            self.add_collision_objects("a", source["ifc"], source)
 
         if "b" in clash_set and clash_set["b"]:
             self.create_group("b")
             for source in clash_set["b"]:
                 source["ifc"] = self.load_ifc(source["file"])
-                self.add_collision_objects("b", source["ifc"], source.get("mode", None), source.get("selector", None))
+                self.add_collision_objects("b", source["ifc"], source)
             b = "b"
         else:
             b = "a"
@@ -79,42 +129,52 @@ class Clasher:
                 clearance=clash_set["clearance"],
                 check_all=clash_set["check_all"],
             )
+        else:
+            assert False, f"Unexpected mode '{mode}'."
 
-        processed_results = {}
+        processed_results: dict[str, ClashResult] = {}
         for result in results:
             element1 = result.a
             element2 = result.b
 
-            processed_results[f"{element1.get_argument(0)}-{element2.get_argument(0)}"] = {
-                "a_global_id": element1.get_argument(0),
-                "b_global_id": element2.get_argument(0),
-                "a_ifc_class": element1.is_a(),
-                "b_ifc_class": element2.is_a(),
-                "a_name": element1.get_argument(2),
-                "b_name": element2.get_argument(2),
-                "type": ["protrusion", "pierce", "collision", "clearance"][result.clash_type],
-                "p1": list(result.p1),
-                "p2": list(result.p2),
-                "distance": result.distance,
-            }
+            processed_results[f"{element1.get_argument(0)}-{element2.get_argument(0)}"] = ClashResult(
+                a_global_id=element1.get_argument(0),
+                b_global_id=element2.get_argument(0),
+                a_ifc_class=element1.is_a(),
+                b_ifc_class=element2.is_a(),
+                a_name=element1.get_argument(2),
+                b_name=element2.get_argument(2),
+                type=["protrusion", "pierce", "collision", "clearance"][result.clash_type],
+                p1=list(result.p1),
+                p2=list(result.p2),
+                distance=result.distance,
+            )
         clash_set["clashes"] = processed_results
         self.logger.info(f"Found clashes: {len(processed_results.keys())}")
 
-    def create_group(self, name):
+    def create_group(self, name: str) -> None:
         self.logger.info(f"Creating group {name}")
         self.groups[name] = {"elements": {}, "objects": {}}
 
-    def load_ifc(self, path):
+    def load_ifc(self, path: str) -> ifcopenshell.file:
         start = time.time()
         self.settings.logger.info(f"Loading IFC {path}")
         ifc = self.ifcs.get(path, None)
         if not ifc:
             ifc = ifcopenshell.open(path)
+            assert isinstance(ifc, ifcopenshell.file)
             self.ifcs[path] = ifc
         self.settings.logger.info(f"Loading finished {time.time() - start}")
         return ifc
 
-    def add_collision_objects(self, name, ifc_file, mode=None, selector=None):
+    def add_collision_objects(
+        self,
+        name: str,
+        ifc_file: ifcopenshell.file,
+        source: ClashSource,
+    ) -> None:
+        mode = source.get("mode")
+        selector = source.get("selector")
         start = time.time()
         self.settings.logger.info("Creating iterator")
         if not mode or mode == "a" or not selector:
@@ -132,7 +192,7 @@ class Clasher:
         self.settings.logger.info(f"Iterator creation finished {time.time() - start}")
 
         start = time.time()
-        self.logger.info(f"Adding objects {name}")
+        self.logger.info(f"Adding objects {name} ({len(elements)} elements)")
         assert iterator.initialize()
         while True:
             self.tree.add_element(iterator.get())
@@ -145,12 +205,12 @@ class Clasher:
         self.logger.info(f"Element metadata finished {time.time() - start}")
         start = time.time()
 
-    def export(self):
+    def export(self) -> None:
         if len(self.settings.output) > 4 and self.settings.output[-4:] == ".bcf":
             return self.export_bcfxml()
         self.export_json()
 
-    def export_bcfxml(self):
+    def export_bcfxml(self) -> None:
         from bcf.v2.bcfxml import BcfXml
 
         for i, clash_set in enumerate(self.clash_sets):
@@ -159,7 +219,7 @@ class Clasher:
                 title = f'{clash["a_ifc_class"]}/{clash["a_name"]} and {clash["b_ifc_class"]}/{clash["b_name"]}'
                 topic = bcfxml.add_topic(title, title, "IfcClash")
                 viewpoint = topic.add_viewpoint_from_point_and_guids(
-                    np.array(clash["position"]),
+                    np.array(clash["p1"]),
                     clash["a_global_id"],
                     clash["b_global_id"],
                 )
@@ -168,14 +228,14 @@ class Clasher:
                     topic.markup.viewpoints[0].snapshot = snapshot[0]
                     viewpoint.snapshot = snapshot[1]
             suffix = f".{i}" if i else ""
-            bcfxml.save_project(f"{self.settings.output}{suffix}")
+            bcfxml.save(f"{self.settings.output}{suffix}")
 
-    def get_viewpoint_snapshot(self, viewpoint):
+    def get_viewpoint_snapshot(self, viewpoint) -> None:
         # Possible to overload this function in a GUI application if used as a library.
         # Should return a tuple of (filename, bytes).
         return None
 
-    def export_json(self):
+    def export_json(self) -> None:
         clash_sets = self.clash_sets.copy()
         for clash_set in clash_sets:
             for source in clash_set["a"]:
@@ -185,7 +245,7 @@ class Clasher:
         with open(self.settings.output, "w", encoding="utf-8") as clashes_file:
             json.dump(clash_sets, clashes_file, indent=4)
 
-    def smart_group_clashes(self, clash_sets, max_clustering_distance):
+    def smart_group_clashes(self, clash_sets: list[ClashSet], max_clustering_distance: float):
         from sklearn.cluster import OPTICS
         from collections import defaultdict
 
@@ -278,5 +338,5 @@ class Clasher:
 
 class ClashSettings:
     def __init__(self):
-        self.logger = None
+        self.logger: Logger = None
         self.output = "clashes.json"

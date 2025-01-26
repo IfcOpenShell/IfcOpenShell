@@ -87,6 +87,9 @@ def create_project(
     project.run_context_add_context(
         context_type="Plan", context_identifier="Annotation", target_view="PLAN_VIEW", parent=plan
     )
+    project.run_context_add_context(
+        context_type="Plan", context_identifier="Annotation", target_view="REFLECTED_PLAN_VIEW", parent=plan
+    )
 
     project.run_root_assign_class(obj=site, ifc_class="IfcSite", context=body)
     project.run_root_assign_class(obj=building, ifc_class="IfcBuilding", context=body)
@@ -107,4 +110,5 @@ def create_project(
     project.load_default_thumbnails()
     project.set_default_context()
     project.set_default_modeling_dimensions()
+    project.run_root_reload_grid_decorator()
     georeference.set_model_origin()

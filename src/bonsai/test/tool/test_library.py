@@ -130,5 +130,5 @@ class TestSetActiveReference(NewFile):
 
 class TestSetEditingMode(NewFile):
     def test_run(self):
-        subject.set_editing_mode("FOO")
-        assert bpy.context.scene.BIMLibraryProperties.editing_mode == "FOO"
+        subject.set_editing_mode("LIBRARY")
+        assert bpy.context.scene.BIMLibraryProperties.editing_mode == "LIBRARY"

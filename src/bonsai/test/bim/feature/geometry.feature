@@ -326,7 +326,19 @@ Scenario: Override duplicate move - with active IFC data
     And the object "IfcWall/Cube.001" exists
     And the object "IfcWall/Cube.001" is an "IfcWall"
     And the object "IfcWall/Cube.001" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
-    And the object "IfcBuildingStorey/My Storey.001" exists
+    And the object "IfcBuildingStorey/My Storey.001" does not exist
+
+Scenario: Override duplicate move - with unlocked elements
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And the object "IfcBuildingStorey/My Storey" is selected
+    And I set "scene.BIMSpatialDecompositionProperties.is_locked" to "False"
+    When I duplicate the selected objects
+    Then the object "IfcBuildingStorey/My Storey.001" exists
     And the object "IfcBuildingStorey/My Storey.001" is an "IfcBuildingStorey"
 
 Scenario: Override duplicate move - copying a coloured representation

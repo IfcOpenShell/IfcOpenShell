@@ -19,7 +19,7 @@
 import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai.bim.helper import prop_with_search
+from bonsai.bim.helper import prop_with_search, draw_attributes
 from bpy.types import Panel, UIList
 from bonsai.bim.module.system.data import SystemData, ZonesData, ActiveObjectZonesData, ObjectSystemData, PortData
 
@@ -113,12 +113,8 @@ class BIM_PT_systems(Panel):
         if self.props.edited_system_id:
             self.draw_editable_ui(context)
 
-    def draw_editable_ui(self, context):
-        for attribute in self.props.system_attributes:
-            row = self.layout.row(align=True)
-            row.prop(attribute, "string_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+    def draw_editable_ui(self, context: bpy.types.Context) -> None:
+        draw_attributes(self.props.system_attributes, self.layout)
 
 
 class BIM_PT_ports(Panel):

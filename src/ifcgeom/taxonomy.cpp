@@ -1,7 +1,7 @@
 #include "../ifcparse/IfcLogger.h"
 #include "taxonomy.h"
 #include "profile_helper.h"
-#include "piecewise_function_impl.h"
+#include "function_item_evaluator.h"
 
 using namespace ifcopenshell::geometry::taxonomy;
 
@@ -163,9 +163,29 @@ namespace {
 		throw std::runtime_error("not implemented");
 	}
 
+    bool compare(const function_item&, const function_item&) {
+        throw std::runtime_error("not implemented");
+    }
+
+    bool compare(const functor_item&, const functor_item&) {
+        throw std::runtime_error("not implemented");
+    }
+
 	bool compare(const piecewise_function&, const piecewise_function&) {
 		throw std::runtime_error("not implemented");
 	}
+
+   bool compare(const gradient_function&, const gradient_function&) {
+        throw std::runtime_error("not implemented");
+   }
+
+   bool compare(const cant_function&, const cant_function&) {
+       throw std::runtime_error("not implemented");
+   }
+
+   bool compare(const offset_function&, const offset_function&) {
+       throw std::runtime_error("not implemented");
+   }
 
 	bool compare(const style& a, const style& b) {
 		const int order[5] = {
@@ -313,7 +333,7 @@ namespace {
 	}
 
 	bool compare(const loft& a, const loft& b) {
-		return compare_collection<face>(a, b);
+		return compare_collection<geom_item>(a, b);
 	}
 
 	bool compare(const collection& a, const collection& b) {
@@ -464,33 +484,59 @@ ifcopenshell::geometry::taxonomy::solid::ptr ifcopenshell::geometry::create_box(
 }
 
 ///////////////////
-piecewise_function::piecewise_function(double start, const spans_t& s, ifcopenshell::geometry::Settings* settings, const IfcUtil::IfcBaseInterface* instance) : implicit_item(instance) {
-    impl_ = new piecewise_function_impl(start, s, settings);
+piecewise_function::piecewise_function(double start, const spans_t& s, const IfcUtil::IfcBaseInterface* instance) : function_item(instance), start_(start), spans_(s) {
 }
 
-piecewise_function::piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, ifcopenshell::geometry::Settings* settings, const IfcUtil::IfcBaseInterface* instance) : implicit_item(instance) {
-    impl_ = new piecewise_function_impl(start, pwfs, settings);
+piecewise_function::piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const IfcUtil::IfcBaseInterface* instance) : function_item(instance), start_(start) {
+    for (auto& pwf : pwfs) {
+        spans_.insert(spans_.end(), pwf->spans().begin(), pwf->spans().end());
+    }
 };
 
-piecewise_function::piecewise_function(const piecewise_function& other) : implicit_item(other) {
-    impl_ = other.impl_->clone_();
+const piecewise_function::spans_t& piecewise_function::spans() const { return spans_; }
+bool piecewise_function::is_empty() const { return spans_.empty(); }
+double piecewise_function::start() const { return start_; }
+double piecewise_function::end() const { return start_ + length(); }
+double piecewise_function::length() const {
+    return std::accumulate(spans_.begin(), spans_.end(), 0.0, [](const auto& v, const auto& s) { return v + s->length(); });
+
+    // this is a secondary option where we only compute length once and cache it.
+    // mutex is needed to prevent interruption of the accumulation if there is multi-threading
+    // skipping this detail for now and just adding up the span lengths every time
+    //if (!length_.has_value()) {
+    //    length_ = std::accumulate(spans_.begin(), spans_.end(), 0.0, [](const auto& v, const auto& s) { return v + s->length(); });
+    //}
+    //return *length_;
 }
 
-piecewise_function::~piecewise_function() {
-    delete impl_;
+
+gradient_function::gradient_function(piecewise_function::const_ptr horizontal, piecewise_function::const_ptr vertical, const IfcUtil::IfcBaseInterface* instance) : 
+	function_item(instance), horizontal_(horizontal), vertical_(vertical) {
 }
+double gradient_function::start() const { return std::max(horizontal_->start(), vertical_->start()); }
+double gradient_function::end() const { return std::min(horizontal_->end(), vertical_->end()); }
+piecewise_function::const_ptr gradient_function::get_horizontal() const { return horizontal_; }
+piecewise_function::const_ptr gradient_function::get_vertical() const { return vertical_; }
 
-const piecewise_function::spans_t& piecewise_function::spans() const { return impl_->spans(); }
-bool piecewise_function::is_empty() const { return impl_->is_empty(); }
-double piecewise_function::start() const { return impl_->start(); }
-double piecewise_function::end() const { return impl_->end(); }
-double piecewise_function::length() const {   return impl_->length(); }
 
-std::vector<double> piecewise_function::evaluation_points() const { return impl_->evaluation_points(); }
-std::vector<double> piecewise_function::evaluation_points(double ustart, double uend, unsigned nsteps) const { return impl_->evaluation_points(ustart, uend, nsteps); }
-item::ptr piecewise_function::evaluate() const { return impl_->evaluate(); }
-item::ptr piecewise_function::evaluate(double ustart, double uend, unsigned nsteps) const { return impl_->evaluate(ustart, uend, nsteps); }
-Eigen::Matrix4d piecewise_function::evaluate(double u) const { return impl_->evaluate(u); }
+cant_function::cant_function(gradient_function::const_ptr gradient, piecewise_function::const_ptr cant, const IfcUtil::IfcBaseInterface* instance) : 
+	function_item(instance), gradient_(gradient), cant_(cant) {
+}
+double cant_function::start() const { return std::max(gradient_->start(), cant_->start()); }
+double cant_function::end() const { return std::min(gradient_->end(), cant_->end()); }
+gradient_function::const_ptr cant_function::get_gradient() const { return gradient_; }
+piecewise_function::const_ptr cant_function::get_cant() const { return cant_; }
+
+
+offset_function::offset_function(function_item::const_ptr basis, piecewise_function::const_ptr offset, const IfcUtil::IfcBaseInterface* instance) : function_item(instance),
+                                                                                                                                                                       basis_(basis),
+                                                                                                                                                                       offset_(offset) {
+}
+double offset_function::start() const { return basis_->start(); }
+double offset_function::end() const { return basis_->end(); }
+function_item::const_ptr offset_function::get_basis() const { return basis_; }
+piecewise_function::const_ptr offset_function::get_offset() const { return offset_; }
+
 
 ifcopenshell::geometry::taxonomy::collection::ptr ifcopenshell::geometry::flatten(const taxonomy::collection::ptr& deep) {
 	auto flat = make<taxonomy::collection>();
@@ -504,7 +550,39 @@ const std::string& ifcopenshell::geometry::taxonomy::kind_to_string(kinds k) {
 	using namespace std::string_literals;
 
 	static std::string values[] = {
-		"matrix4"s, "point3"s, "direction3"s, "line"s, "circle"s, "ellipse"s, "bspline_curve"s, "offset_curve"s, "plane"s, "cylinder"s, "sphere"s, "torus"s, "bspline_surface"s, "edge"s, "loop"s, "face"s, "shell"s, "solid"s, "loft"s, "extrusion"s, "revolve"s, "sweep_along_curve"s, "node"s, "collection"s, "boolean_result"s, "piecewise_function"s, "colour"s, "style"s,
+        "matrix4"s,
+        "point3"s,
+        "direction3"s,
+        "line"s,
+        "circle"s,
+        "ellipse"s,
+        "bspline_curve"s,
+        "offset_curve"s,
+        "plane"s,
+        "cylinder"s,
+        "sphere"s,
+        "torus"s,
+        "bspline_surface"s,
+        "edge"s,
+        "loop"s,
+        "face"s,
+        "shell"s,
+        "solid"s,
+        "loft"s,
+        "extrusion"s,
+        "revolve"s,
+        "sweep_along_curve"s,
+        "node"s,
+        "collection"s,
+        "boolean_result"s,
+        "function_item"s,
+        "functor_item"s,
+        "piecewise_function"s,
+        "gradient_function"s,
+        "cant_function"s,
+        "offset_function"s,
+        "colour"s,
+        "style"s,
 	};
 
 	return values[k];
@@ -598,4 +676,161 @@ void ifcopenshell::geometry::taxonomy::extrusion::print(std::ostream& o, int ind
 	o << std::string(indent, ' ') << "extrusion " << depth << std::endl;
 	direction->print(o, indent + 4);
 	basis->print(o, indent + 4);
+}
+
+boost::optional<face::ptr> ifcopenshell::geometry::taxonomy::loop_to_face_upgrade_impl(ptr item) {
+	boost::optional<face::ptr> face_;
+	auto loop_ = dcast<loop>(item);
+		if (loop_) {
+			loop_->external = true;
+
+			face_ = make<face>();
+			(*face_)->instance = loop_->instance;
+			(*face_)->matrix = loop_->matrix;
+			(*face_)->children = { clone(loop_) };
+		}
+	return face_;
+}
+
+boost::optional<edge::ptr> ifcopenshell::geometry::taxonomy::curve_to_edge_upgrade_impl(ptr item) {
+	boost::optional<edge::ptr> edge_;
+	auto circle_ = dcast<circle>(item);
+	auto ellipse_ = dcast<ellipse>(item);
+	auto line_ = dcast<line>(item);
+	auto bspline_curve_ = dcast<bspline_curve>(item);
+	if (circle_ || ellipse_ || line_ || bspline_curve_) {
+		edge_ = make<edge>();
+		if (circle_) {
+			(*edge_)->basis = circle_;
+			(*edge_)->instance = circle_->instance;
+		} else if (ellipse_) {
+			(*edge_)->basis = ellipse_;
+			(*edge_)->instance = ellipse_->instance;
+		} else if (line_) {
+			(*edge_)->basis = line_;
+			(*edge_)->instance = line_->instance;
+		} else if (bspline_curve_) {
+			(*edge_)->basis = bspline_curve_;
+			(*edge_)->instance = bspline_curve_->instance;
+		}
+
+		if (circle_ || ellipse_) {
+			// @todo
+			(*edge_)->start = 0.;
+			(*edge_)->end = 2 * boost::math::constants::pi<double>();
+		}
+	}
+	return edge_;
+}
+
+boost::optional<loop::ptr> ifcopenshell::geometry::taxonomy::curve_to_loop_upgrade_impl(ptr item) {
+	boost::optional<loop::ptr> loop_;
+	auto circle_ = dcast<circle>(item);
+	auto ellipse_ = dcast<ellipse>(item);
+	auto line_ = dcast<line>(item);
+	auto bspline_curve_ = dcast<bspline_curve>(item);
+	if (circle_ || ellipse_ || line_ || bspline_curve_) {
+		auto edge_ = make<edge>();
+		if (circle_) {
+			edge_->basis = circle_;
+		} else if (ellipse_) {
+			edge_->basis = ellipse_;
+		} else if (line_) {
+			edge_->basis = line_;
+		} else if (bspline_curve_) {
+			edge_->basis = bspline_curve_;
+		}
+
+		if (circle_ || ellipse_) {
+			// @todo
+			edge_->start = 0.;
+			edge_->end = 2 * boost::math::constants::pi<double>();
+		}
+
+		loop_ = make<loop>();
+		(*loop_)->children.push_back(edge_);
+	}
+	return loop_;
+}
+
+boost::optional<loop::ptr> ifcopenshell::geometry::taxonomy::edge_to_loop_upgrade_impl(ptr item) {
+	boost::optional<loop::ptr> loop_;
+	auto edge_ = dcast<edge>(item);
+	if (edge_) {
+		loop_ = make<loop>();
+		(*loop_)->children.push_back(edge_);
+	}
+	return loop_;
+}
+
+boost::optional<face::ptr> ifcopenshell::geometry::taxonomy::curve_to_face_upgrade_impl(ptr item) {
+    boost::optional<face::ptr> face_;
+    auto circle_ = dcast<circle>(item);
+    auto ellipse_ = dcast<ellipse>(item);
+    auto line_ = dcast<line>(item);
+    auto bspline_curve_ = dcast<bspline_curve>(item);
+
+    if (circle_ || ellipse_ || line_ || bspline_curve_) {
+        auto edge_ = make<edge>();
+        if (circle_) {
+            edge_->basis = circle_;
+        } else if (ellipse_) {
+            edge_->basis = ellipse_;
+        } else if (line_) {
+            edge_->basis = line_;
+        } else if (bspline_curve_) {
+            edge_->basis = bspline_curve_;
+        }
+
+        if (circle_ || ellipse_) {
+            // @todo
+            edge_->start = 0.;
+            edge_->end = 2 * boost::math::constants::pi<double>();
+        }
+
+        auto loop_ = make<loop>();
+        loop_->children.push_back(edge_);
+
+        face_ = make<face>();
+        (*face_)->instance = loop_->instance;
+        (*face_)->matrix = loop_->matrix;
+        (*face_)->children = { clone(loop_) };
+    }
+    return face_;
+}
+
+
+boost::optional<piecewise_function::ptr> ifcopenshell::geometry::taxonomy::loop_to_piecewise_function_upgrade_impl(ptr item) {
+	boost::optional<piecewise_function::ptr> pwf_;
+	auto loop_ = dcast<loop>(item);
+	if (loop_) {
+		if (loop_->pwf.is_initialized()) {
+			pwf_ = loop_->pwf;
+		} else {
+			piecewise_function::spans_t spans;
+			spans.reserve(loop_->children.size());
+			for (auto& edge_ : loop_->children) {
+				// the edge could be an arc or trimmed circle in the case of IfcIndexPolyCurve - support for this isn't implemented yet
+				if (edge_->basis) {
+					Logger::Message(Logger::Severity::LOG_NOTICE, "Shape of basis curve ignored - edge is treated as a straight line edge");
+				}
+
+				const auto& s = boost::get<point3::ptr>(edge_->start)->ccomponents();
+				const auto& e = boost::get<point3::ptr>(edge_->end)->ccomponents();
+				Eigen::Vector3d v = e - s;
+				auto l = v.norm(); // the norm of a vector is a measure of its length
+				v.normalize();     // normalize the vector so that it is a unit direction vector
+				std::function<Eigen::Matrix4d(double)> fn = [s, v](double u) {
+					Eigen::Vector3d o(s + u * v), axis(0, 0, 1), refDirection(v);
+					auto Y = axis.cross(refDirection).normalized();
+					axis = refDirection.cross(Y).normalized();
+					return make<matrix4>(o, axis, refDirection)->components();
+				};
+            spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
+			}
+			pwf_ = make<piecewise_function>(0.0,spans);
+			loop_->pwf = pwf_;
+		}
+	}
+	return pwf_;
 }

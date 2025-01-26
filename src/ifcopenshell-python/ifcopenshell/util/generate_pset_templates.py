@@ -153,7 +153,7 @@ class PsetTemplatesGenerator:
         # 2) enumeration
         # 3) property set (also with IFCRELASSOCIATESLIBRARY)
         # 4) property definition (also with IFCRELASSOCIATESLIBRARY)
-        # but in ifc4x3 there is no data for those library refernces
+        # but in ifc4x3 there is no data for those library references
         # TODO: need to add it to .ifc for IFC4X3 too
         # if https://github.com/buildingSMART/IFC4.3.x-development/issues/587 is resolved
 

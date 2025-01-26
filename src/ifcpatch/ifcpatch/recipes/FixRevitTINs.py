@@ -17,8 +17,12 @@
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import ifcopenshell
+import logging
+
+
 class Patcher:
-    def __init__(self, src, file, logger, is_solid=True):
+    def __init__(self, file: None, logger: logging.Logger, filepath: str, is_solid: bool = True):
         """Fix missing or spot-coordinate bugged TINs loading in Revit
 
         TINs exported from 12D or Civil 3D may contain dense or highly obtuse
@@ -56,25 +60,32 @@ class Patcher:
         from civil software. It also requires you to run it using Blender, as
         the geometric modification uses the Blender geometry engine.
 
+        `filepath` argument is required for this recipe, `file` argument is
+        ignored.
+
+        :param filepath: The filepath of the IFC model. This is required to
+            load into Bonsai.
+        :filter_glob filepath: *.ifc;*.ifczip;*.ifcxml
+
         Example:
 
         .. code:: python
 
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "FixRevitTINs", "arguments": []})
+            ifcpatch.execute({"input": "input.ifc", "recipe": "FixRevitTINs", "arguments": []})
         """
-        self.src = src
         self.file = file
+        self.filepath = filepath
         self.logger = logger
         self.is_solid = is_solid
 
-    def patch(self):
+    def patch(self) -> None:
         import bpy
         import bmesh
         import bonsai.tool as tool
         from math import degrees
 
         bpy.context.scene.BIMProjectProperties.should_use_native_meshes = True
-        bpy.ops.bim.load_project(filepath=self.src)
+        bpy.ops.bim.load_project(filepath=self.filepath)
 
         old_history_size = tool.Ifc.get().history_size
         old_undo_steps = bpy.context.preferences.edit.undo_steps

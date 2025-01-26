@@ -18,9 +18,10 @@
 
 import datetime
 import ifcopenshell
+import ifcopenshell.util.schema
 
 
-def create_file(version: str = "IFC4") -> ifcopenshell.file:
+def create_file(version: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4") -> ifcopenshell.file:
     """Create a blank IFC model file object
 
     Create a new IFC file object based on the nominated schema version. The
@@ -34,9 +35,7 @@ def create_file(version: str = "IFC4") -> ifcopenshell.file:
     :param version: The schema version of the IFC file. Choose from
         "IFC2X3", "IFC4", or "IFC4X3". If you have loaded in a custom
         schema, you may specify that schema identifier here too.
-    :type version: str, optional
     :return: The created IFC file object.
-    :rtype: ifcopenshell.file
 
     Example:
 

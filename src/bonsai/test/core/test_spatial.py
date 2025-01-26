@@ -107,8 +107,8 @@ class TestCopyToContainer:
 class TestSelectContainer:
     def test_run(self, ifc, spatial):
         ifc.get_object("container").should_be_called().will_return("container_obj")
-        spatial.set_active_object("container_obj").should_be_called()
-        subject.select_container(ifc, spatial, container="container")
+        spatial.set_active_object("container_obj", selection_mode="ADD").should_be_called()
+        subject.select_container(ifc, spatial, container="container", selection_mode="ADD")
 
 
 class TestSelectSimilarContainer:

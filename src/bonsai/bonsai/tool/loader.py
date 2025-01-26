@@ -19,9 +19,10 @@
 from __future__ import annotations
 import os
 import re
-import math
 import bpy
+import math
 import bmesh
+import logging
 import ifcopenshell.geom
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
@@ -36,7 +37,7 @@ import numpy as np
 import numpy.typing as npt
 from mathutils import Vector, Matrix
 from pathlib import Path
-from typing import Union
+from typing import Union, Any, Optional
 
 
 # Progressively we'll refactor loading elements into Blender objects into this
@@ -57,26 +58,38 @@ class Loader(bonsai.core.tool.Loader):
         cls.unit_scale = unit_scale
 
     @classmethod
+    def load_settings(cls) -> None:
+        logger = logging.getLogger("ImportIFC")
+        cls.settings = bonsai.bim.import_ifc.IfcImportSettings.factory(bpy.context, None, logger)
+        cls.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
+        cls.settings.context_settings = cls.create_settings()
+        cls.settings.gross_context_settings = cls.create_settings(is_gross=True)
+
+    @classmethod
     def set_settings(cls, settings: bonsai.bim.import_ifc.IfcImportSettings) -> None:
         cls.settings = settings
 
     @classmethod
-    def get_mesh_name_from_shape(cls, geometry: ifcopenshell.geom.ShapeType) -> str:
-        representation_id = geometry.id
+    def get_representation_id_from_shape(cls, geometry: ifcopenshell.geom.ShapeType) -> int:
+        representation_id: str = geometry.id
         if "-" in representation_id:
             # Example: 2432-openings-2468, where
             # 2432 is mapped representation id
             # and 2468 is IFCRELVOIDSELEMENT
-            representation_id = int(re.sub(r"\D", "", representation_id.split("-")[0]))
+            representation_id = re.sub(r"\D", "", representation_id.split("-")[0])
         else:
-            representation_id = int(re.sub(r"\D", "", representation_id))
-        representation = tool.Ifc.get().by_id(representation_id)
-        context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
-        return cls.get_mesh_name(context_id, representation_id)
+            representation_id = re.sub(r"\D", "", representation_id)
+        return int(representation_id)
 
     @classmethod
-    def get_mesh_name(cls, context_id: int, representation_id: int) -> str:
-        return "{}/{}".format(context_id, representation_id)
+    def get_mesh_name_from_shape(cls, geometry: ifcopenshell.geom.ShapeType) -> str:
+        representation_id = cls.get_representation_id_from_shape(geometry)
+        return cls.get_mesh_name(tool.Ifc.get().by_id(representation_id))
+
+    @classmethod
+    def get_mesh_name(cls, representation: ifcopenshell.entity_instance) -> str:
+        context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
+        return "{}/{}".format(context_id, representation.id())
 
     @classmethod
     def get_name(cls, element: ifcopenshell.entity_instance) -> str:
@@ -91,14 +104,13 @@ class Loader(bonsai.core.tool.Loader):
         mesh: tool.Geometry.TYPES_WITH_MESH_PROPERTIES,
     ) -> None:
         geometry = shape.geometry if hasattr(shape, "geometry") else shape
-        if "-" in geometry.id:
-            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
-        else:
-            # TODO: See #2002
-            mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.replace(",", ""))
+        mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
 
     @classmethod
-    def create_surface_style_shading(cls, blender_material, surface_style):
+    def create_surface_style_shading(
+        cls, blender_material: bpy.types.Material, surface_style: ifcopenshell.entity_instance
+    ) -> None:
+        # Shading style is simple and use no node graph.
         surface_style = cls.surface_style_to_dict(surface_style)
         alpha = 1.0
         # Transparency was added in IFC4
@@ -108,7 +120,7 @@ class Loader(bonsai.core.tool.Loader):
         blender_material.use_nodes = False
 
     @classmethod
-    def restart_material_node_tree(cls, blender_material):
+    def restart_material_node_tree(cls, blender_material: bpy.types.Material) -> None:
         nodes = blender_material.node_tree.nodes
         links = blender_material.node_tree.links
         for n in nodes[:]:
@@ -120,7 +132,9 @@ class Loader(bonsai.core.tool.Loader):
         links.new(bsdf.outputs["BSDF"], output.inputs["Surface"])
 
     @classmethod
-    def surface_style_to_dict(cls, surface_style):
+    def surface_style_to_dict(
+        cls, surface_style: Union[ifcopenshell.entity_instance, dict[str, Any]]
+    ) -> dict[str, Any]:
         if isinstance(surface_style, dict):
             return surface_style
         surface_style = surface_style.get_info()
@@ -176,8 +190,12 @@ class Loader(bonsai.core.tool.Loader):
         return surface_texture
 
     @classmethod
-    def create_surface_style_rendering(cls, blender_material, surface_style):
+    def create_surface_style_rendering(
+        cls, blender_material: bpy.types.Material, surface_style: ifcopenshell.entity_instance
+    ) -> None:
         surface_style = cls.surface_style_to_dict(surface_style)
+        surface_style: dict[str, Any]
+
         cls.create_surface_style_shading(blender_material, surface_style)
 
         reflectance_method = surface_style["ReflectanceMethod"]
@@ -190,6 +208,7 @@ class Loader(bonsai.core.tool.Loader):
             blender_material.use_nodes = True
             cls.restart_material_node_tree(blender_material)
             bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
+            assert bsdf
 
             if surface_style["DiffuseColour"]:
                 color_type, color_value = surface_style["DiffuseColour"]
@@ -218,7 +237,10 @@ class Loader(bonsai.core.tool.Loader):
 
             output = tool.Blender.get_material_node(blender_material, "OUTPUT_MATERIAL")
             bsdf = tool.Blender.get_material_node(blender_material, "BSDF_PRINCIPLED")
+            assert bsdf
+            assert output
 
+            assert blender_material.node_tree
             mix = blender_material.node_tree.nodes.new(type="ShaderNodeMixShader")
             mix.location = bsdf.location
             blender_material.node_tree.links.new(mix.outputs[0], output.inputs["Surface"])
@@ -266,7 +288,7 @@ class Loader(bonsai.core.tool.Loader):
 
             image_url = None
 
-            def get_image():
+            def get_image() -> Union[bpy.types.Image, None]:
                 # TODO: orphaned textures after shader recreated?
                 if texture["type"] == "IfcImageTexture":
                     original_image_url = texture["URLReference"]
@@ -296,7 +318,6 @@ class Loader(bonsai.core.tool.Loader):
                     value = texture["RasterCode"]
                     image_bytes = int(value, 2).to_bytes(len(value) // 8, "big")
                     pil_image = Image.open(io.BytesIO(image_bytes))
-                    pil_image.save("test_image.png")
                     byte_to_normalized = 1.0 / 255.0
                     bpy_image = bpy.data.images.new("blob_texture", width=pil_image.width, height=pil_image.height)
                     # PIL returns rows ordered from top to bottom, blender from bottom to top
@@ -472,57 +493,138 @@ class Loader(bonsai.core.tool.Loader):
                 blender_material.node_tree.links.new(coord.outputs["UV"], node.inputs["Vector"])
 
     @classmethod
-    def load_indexed_texture_map(cls, coordinates: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
+    def load_indexed_colour_map(
+        cls, representation_or_item: ifcopenshell.entity_instance, mesh: bpy.types.Mesh
+    ) -> None:
+        """Ensure indexed colour map is loaded for representation if it's available.
+
+        Method doesn't support elements with openings, see #5405.
+
+        :param representation: IfcShapeRepresentation or IfcRepresentationItem of any type.
+            Representation may not have an indexed colour map,
+            method will automatically check if it does and will skip it otherwise.
+
+        :raises AssertionError: If mesh doesn't match the representation exactly, which usually occurs
+            if element geometry is altered by openings.
+        """
+
+        is_representation = representation_or_item.is_a("IfcShapeRepresentation")
+
+        if is_representation:
+            if representation_or_item.RepresentationType != "Tessellation":
+                return
+            items = representation_or_item.Items
+        else:
+            items = [representation_or_item]
+
+        colours = []
+        for item in items:
+            if not item.is_a("IfcTessellatedFaceSet"):
+                continue
+            # It's unclear what has priority, styled by item or indexed maps
+            # Given that indexed maps currently are super expensive, I'll prioritise styled by item
+            # May lead to issues if external style is using vertex colors
+            # but probably don't need to worry about until we add a way save vertex colors to indexed map in BBIM.
+            if item.StyledByItem:
+                continue
+            colours.extend(item.HasColours)
+
+        if not colours:
+            return
+
+        for colour in colours:
+            cls.load_indexed_map(colour, mesh)
+
+    @classmethod
+    def load_indexed_map(cls, index_map: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> None:
+        """Add data from index map as blender mesh attribute.
+
+        :param index_map: IfcIndexedTextureMap or IfcIndexedColourMap
+        """
+
+        map_type = "UV" if index_map.is_a("IfcIndexedTextureMap") else "Color"
+
         # Get a BMesh representation
         bm = bmesh.new()
         bm.from_mesh(mesh)
-        # constistent naming with how Blender does it
-        uv_layer = bm.loops.layers.uv.active or bm.loops.layers.uv.new("UVMap")
+        if map_type == "UV":
+            # constistent naming with how Blender does it
+            layer = bm.loops.layers.uv.active or bm.loops.layers.uv.new("UVMap")
+        else:
+            layer = bm.loops.layers.float_color.new("Color")
 
         # remap the faceset CoordList index to the vertices in blender mesh
-        coordinates_remap = []
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        faceset = coordinates.MappedTo
-        for co in faceset.Coordinates.CoordList:
-            co = Vector(co) * si_conversion
-            index = next(v.index for v in bm.verts if (v.co - co).length_squared < 1e-5)
-            coordinates_remap.append(index)
+        faceset = index_map.MappedTo
+
+        bm_verts = np.array([v.co for v in bm.verts])
+        coords_scaled = np.array(faceset.Coordinates.CoordList) * si_conversion
+        coordinates_remap = [np.argmin(np.sum((bm_verts - co) ** 2, axis=1)) for co in coords_scaled]
 
         # ifc indices start with 1
         remap_verts_to_blender = lambda ifc_verts: [coordinates_remap[i - 1] for i in ifc_verts]
 
         # faces_remap - ifc faces described using blender verts indices
         # IFC4.3+
-        if coordinates.is_a("IfcIndexedPolygonalTextureMap"):
+        if index_map.is_a("IfcIndexedPolygonalTextureMap"):
             faces_remap = [
                 remap_verts_to_blender(tex_coord_index.TexCoordsOf.CoordIndex)
-                for tex_coord_index in coordinates.TexCoordIndices
+                for tex_coord_index in index_map.TexCoordIndices
             ]
-            texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in coordinates.TexCoordIndices]
-        else:  # IfcIndexedTriangleTextureMap
+            texture_map = [tex_coord_index.TexCoordIndex for tex_coord_index in index_map.TexCoordIndices]
+        else:  # IfcIndexedTriangleTextureMap or IfcIndexedColourMap
             if faceset.is_a("IfcTriangulatedFaceSet"):
                 faces_remap = [remap_verts_to_blender(triangle_face) for triangle_face in faceset.CoordIndex]
             else:  # IfcPolygonalFaceSet
-                faces_remap = [remap_verts_to_blender(triangle_face.CoordIndex) for triangle_face in faceset.Faces]
-            texture_map = coordinates.TexCoordIndex
+                faces_remap = [remap_verts_to_blender(face.CoordIndex) for face in faceset.Faces]
+            if index_map.is_a("IfcIndexedTriangleTextureMap"):
+                texture_map = index_map.TexCoordIndex
+            else:
+                texture_map = index_map.ColourIndex
 
-        # apply uv to each face
+        if map_type == "UV":
+            data_list = index_map.TexCoords.TexCoordsList
+        else:
+            data_list = index_map.Colours.ColourList
+            opacity = index_map.Opacity
+            opacity = opacity if opacity is not None else 1.0
+            data_list = [d + (opacity,) for d in data_list]
+
+        faces_tex_coord_data = {}
+        for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True):
+            faces_tex_coord_data[frozenset(face_remap)] = (tex_coord_index, face_remap)
+
+        # Apply attribute to each face
         for bface in bm.faces:
-            face = [loop.vert.index for loop in bface.loops]
-            # find the corresponding TexCoordIndex by matching ifc faceset with blender face
-            # remap TexCoordIndex as the loop start may different from blender face
-            texCoordIndex = next(
-                [tex_coord_index[face_remap.index(i)] for i in face]
-                for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True)
-                if all(i in face_remap for i in face)
-            )
+            face = frozenset(loop.vert.index for loop in bface.loops)
+            # Find the corresponding index in data list by matching ifc faceset with blender face.
+            data_index = None
+            if tex_coord_data := faces_tex_coord_data.get(face):
+                tex_coord_index, face_remap = tex_coord_data
+                # Subtract 1 as tex_coord_index starts with 1.
+                if map_type == "UV":
+                    data_index = [tex_coord_index[face_remap.index(i)] - 1 for i in face]
+                else:
+                    data_index = [tex_coord_index - 1 for i in face]
+            else:
+                # This face may be part of another representation item
+                # Or we couldn't match it due to georeferencing.
+                continue
+
             # apply uv to each loop
-            for loop, i in zip(bface.loops, texCoordIndex):
-                loop[uv_layer].uv = coordinates.TexCoords.TexCoordsList[i - 1]
+            for loop, i in zip(bface.loops, data_index):
+                if map_type == "UV":
+                    loop[layer].uv = data_list[i]
+                else:
+                    loop[layer] = data_list[i]
 
         # Finish up, write the bmesh back to the mesh
         bm.to_mesh(mesh)
         bm.free()
+
+        if map_type == "Color":
+            # Couldn't find a way to do it from bmesh.
+            mesh.color_attributes.active_color_index = 0
 
     @classmethod
     def is_point_far_away(
@@ -554,6 +656,9 @@ class Loader(bonsai.core.tool.Loader):
             settings.set("apply-default-materials", False)
             settings.set("keep-bounding-boxes", True)
             settings.set("layerset-first", True)
+            # Wire intersection checks is prohibitively slow on advanced breps. See bug #5999.
+            settings.set("no-wire-intersection-check", True)
+            # settings.set("triangulation-type", ifcopenshell.ifcopenshell_wrapper.POLYHEDRON_WITHOUT_HOLES)
             if is_gross:
                 settings.set("disable-opening-subtractions", True)
             results.append(settings)
@@ -631,9 +736,10 @@ class Loader(bonsai.core.tool.Loader):
         cls, element: ifcopenshell.entity_instance, is_gross: bool = False
     ) -> Union[ifcopenshell.geom.ShapeElementType, None]:
         context_settings = cls.settings.gross_context_settings if is_gross else cls.settings.context_settings
+        geometry_library = bpy.context.scene.BIMProjectProperties.geometry_library
         for settings in context_settings:
             try:
-                result = ifcopenshell.geom.create_shape(settings, element)
+                result = ifcopenshell.geom.create_shape(settings, element, geometry_library=geometry_library)
                 if result:
                     return result
             except:
@@ -643,13 +749,27 @@ class Loader(bonsai.core.tool.Loader):
     def create_point_cloud_mesh(cls, representation: ifcopenshell.entity_instance) -> Union[bpy.types.Mesh, None]:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         vertex_list = []
+        ios_verts_item_ids = []
+        item: ifcopenshell.entity_instance
         for item in representation.Items:
-            if item.is_a("IfcCartesianPointList3D"):
+            coords = None
+            if item.is_a("IfcCartesianPointList3D"):  # PointCloud.c
+                coords = np.array(item.CoordList)
                 vertex_list.extend(Vector(list(coordinates)) * unit_scale for coordinates in item.CoordList)
+            # Is it ever used? In IFC4+ PointCloud is requiring 3D list, before IFC4 there were no coord lists at all.
             elif item.is_a("IfcCartesianPointList2D"):
                 vertex_list.extend(Vector(list(coordinates)).to_3d() * unit_scale for coordinates in item.CoordList)
-            elif item.is_a("IfcCartesianPoint"):
-                vertex_list.append(Vector(list(item.Coordinates)) * unit_scale)
+            elif item.is_a("IfcPoint"):  # Point
+                if item.is_a("IfcCartesianPoint"):
+                    vertex_list.append(Vector(list(item.Coordinates)) * unit_scale)
+                else:
+                    # TODO: implement non cartesian point vertices.
+                    continue
+            else:
+                assert False
+            assert coords is not None
+            vertex_list.extend((coords * unit_scale).tolist())
+            ios_verts_item_ids.extend([item.id()] * len(coords))
 
         if len(vertex_list) == 0:
             return None
@@ -657,6 +777,26 @@ class Loader(bonsai.core.tool.Loader):
         mesh_name = tool.Geometry.get_representation_name(representation)
         mesh = bpy.data.meshes.new(mesh_name)
         mesh.from_pydata(vertex_list, [], [])
+        mesh["ios_verts_item_ids"] = ios_verts_item_ids
+        return mesh
+
+    @classmethod
+    def create_structural_point_connection_mesh(
+        cls, representation: ifcopenshell.entity_instance
+    ) -> Union[bpy.types.Mesh, None]:
+        item = representation.Items[0]
+        point = item.VertexGeometry
+
+        # TODO implement non cartesian point vertices.
+        if not point.is_a("IfcCartesianPoint"):
+            return
+
+        ifc_file = tool.Ifc.get()
+        co = np.array(point.Coordinates) * ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        mesh_name = tool.Geometry.get_representation_name(representation)
+        mesh = bpy.data.meshes.new(mesh_name)
+        mesh.from_pydata([co], [], [])
+        mesh["ios_verts_item_ids"] = [item.id()]
         return mesh
 
     @classmethod
@@ -717,43 +857,33 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def get_offset_point(cls, ifc_file: ifcopenshell.file) -> Union[npt.NDArray[np.float64], None]:
-        elements_checked = 0
-        # If more than these elements aren't far away, the file probably isn't
-        # absolutely positioned. We check more than 1 because sometimes users
-        # try to be clever and put "origin marker" objects.
-        element_checking_threshold = 3
-        elements = ifc_file.by_type("IfcElement")
+        # Check walls first, as they're usually cheap
+        elements = ifc_file.by_type("IfcWall")
+        elements += ifc_file.by_type("IfcElement")
 
         if ifc_file.schema not in ("IFC2X3", "IFC4"):
-            if not elements:
-                elements = ifc_file.by_type("IfcLinearPositioningElement")
-            if not elements:
-                elements = ifc_file.by_type("IfcReferent")
-            if not elements:
-                elements = ifc_file.by_type("IfcGrid")
+            elements += ifc_file.by_type("IfcLinearPositioningElement")
+            elements += ifc_file.by_type("IfcReferent")
+            elements += ifc_file.by_type("IfcGrid")
 
         if ifc_file.schema == "IFC2X3":
-            if not elements:
-                elements = ifc_file.by_type("IfcSpatialStructureElement")
+            elements += ifc_file.by_type("IfcSpatialStructureElement")
         else:
-            if not elements:
-                elements = ifc_file.by_type("IfcSpatialElement")
+            elements += ifc_file.by_type("IfcSpatialElement")
 
         for element in elements:
-            if elements_checked > element_checking_threshold:
-                return
             if not element.Representation:
                 continue
             shape = cls.create_generic_shape(element, is_gross=True)
             if not shape:
                 continue
-            elements_checked += 1
             mat = ifcopenshell.util.shape.get_shape_matrix(shape)
             point = mat @ np.array((shape.geometry.verts[0], shape.geometry.verts[1], shape.geometry.verts[2], 1.0))
             if cls.is_point_far_away(point, is_meters=True):
                 # Arbitrary origins should be to the nearest millimeter.
                 # Anything more precise is just ridiculous from a practical surveying perspective.
                 return [round(float(p), 3) / cls.unit_scale for p in point[:3]]
+            break
 
     @classmethod
     def guess_false_origin_from_elements(cls, ifc_file: ifcopenshell.file) -> None:
@@ -823,3 +953,240 @@ class Loader(bonsai.core.tool.Loader):
                 float(props.blender_x_axis_ordinate),
             )
         return Matrix(matrix.tolist())
+
+    @classmethod
+    def convert_geometry_to_mesh(
+        cls,
+        geometry: ifcopenshell.geom.ShapeType,
+        mesh: bpy.types.Mesh,
+        verts: Optional[list[float]] = None,
+        *,
+        load_indexed_maps=True,
+    ) -> bpy.types.Mesh:
+        if verts is None:
+            verts = geometry.verts
+        if geometry.faces:
+            num_vertices = len(verts) // 3
+
+            # See bug 3546
+            # ios_edges holds true edges that aren't triangulated.
+            #
+            # we do `.tolist()` because Blender can't assign `np.int32` to it's custom attributes
+            mesh["ios_edges"] = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry).tolist()))
+            ios_item_ids = ifcopenshell.util.shape.get_faces_representation_item_ids(geometry).tolist()
+            mesh["ios_item_ids"] = ios_item_ids
+
+            mesh.vertices.add(num_vertices)
+            mesh.vertices.foreach_set("co", verts)
+
+            is_triangulated = True
+            if is_triangulated:
+                total_faces = len(geometry.faces)
+                num_vertex_indices = len(geometry.faces)
+                loop_start = range(0, total_faces, 3)
+                num_loops = total_faces // 3
+                loop_total = [3] * num_loops
+
+                mesh.loops.add(num_vertex_indices)
+                mesh.loops.foreach_set("vertex_index", geometry.faces)
+                mesh.polygons.add(num_loops)
+                mesh.polygons.foreach_set("loop_start", loop_start)
+                mesh.polygons.foreach_set("loop_total", loop_total)
+                mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+            else:
+                faces_array = np.array(geometry.faces, dtype=object)
+                loop_total = tuple(len(face) for face in faces_array)
+                loop_start = np.cumsum((0,) + loop_total)[:-1]
+                vertex_index = np.concatenate(faces_array)
+
+                mesh.loops.add(len(vertex_index))
+                mesh.loops.foreach_set("vertex_index", vertex_index)
+                mesh.polygons.add(len(loop_start))
+                mesh.polygons.foreach_set("loop_start", loop_start)
+                mesh.polygons.foreach_set("loop_total", loop_total)
+                mesh.polygons.foreach_set("use_smooth", [0] * len(geometry.faces))
+
+            mesh.update()
+
+            rep_str: str = geometry.id
+            if load_indexed_maps and "openings" not in rep_str:
+                rep_id = rep_str.split("-", 1)[0]
+                rep = tool.Ifc.get().by_id(int(rep_id))
+                # For now, not necessary to load maps in Item mode
+                if rep.is_a("IfcShapeRepresentation"):
+                    tool.Loader.load_indexed_colour_map(rep, mesh)
+
+            tool.Blender.Attribute.fill_attribute(mesh, "ios_item_ids", "FACE", "INT", ios_item_ids)
+            tool.Blender.Attribute.fill_attribute(mesh, "ios_material_ids", "FACE", "INT", geometry.material_ids)
+        else:
+            e = geometry.edges
+            v = verts
+            vertices = [[v[i], v[i + 1], v[i + 2]] for i in range(0, len(v), 3)]
+            edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+            mesh.from_pydata(vertices, edges, [])
+            # TODO: remove error handling after we update build in Bonsai.
+            try:
+                edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
+            except AttributeError:
+                edges_item_ids = []
+            mesh["ios_edges_item_ids"] = edges_item_ids
+            tool.Blender.Attribute.fill_attribute(mesh, "ios_edges_item_ids", "EDGE", "INT", edges_item_ids)
+            tool.Blender.Attribute.fill_attribute(mesh, "ios_material_ids", "EDGE", "INT", geometry.material_ids)
+
+        mesh["ios_materials"] = [m.instance_id() for m in geometry.materials]
+        mesh["ios_material_ids"] = geometry.material_ids
+        return mesh
+
+    @classmethod
+    def setup_active_bsdd_classification(cls) -> None:
+        ifc_file = tool.Ifc.get()
+        schema = ifc_file.schema
+
+        # In IFC2X3 IfcClassification doesn't have an attribute for uri.
+        if schema == "IFC2X3":
+            classifications = [c for c in ifc_file.by_type("IfcClassification") if c.Name]
+            if not classifications:
+                return
+            pattern = r"^https://identifier\.buildingsmart\.org/uri/([a-zA-Z0-9]+)/([a-zA-Z0-9]+)/([0-9]+\.[0-9]+)"
+
+            # No inverse attribute in IFC2X3...
+            for ref in ifc_file.by_type("IfcClassificationReference"):
+                if (
+                    not (uri := ref.Location)
+                    or not uri.startswith("https://identifier.buildingsmart.org/uri/")
+                    or not (pattern_match := re.match(pattern, uri))
+                    or not (classification := ref.ReferencedSource)
+                    or classification not in classifications
+                    or not classification.is_a("IfcClassification")
+                ):
+                    continue
+                tool.Bsdd.set_active_bsdd(classification.Name, pattern_match.group(0))
+            return
+
+        attr_name = "Specification" if schema == "IFC4X3" else "Location"
+        bsdd_classification, uri, name = None, None, None
+        for c in ifc_file.by_type("IfcClassification"):
+            if (
+                (uri := getattr(c, attr_name))
+                and uri.startswith("https://identifier.buildingsmart.org/uri/")
+                and (name := c.Name)
+            ):
+                bsdd_classification = c
+                break
+        if not bsdd_classification:
+            return
+        assert name and uri
+        tool.Bsdd.set_active_bsdd(name, uri)
+
+    @classmethod
+    def is_native_swept_disk_solid(
+        cls, element: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
+    ) -> bool:
+        items = [i["item"] for i in ifcopenshell.util.representation.resolve_items(representation)]
+        if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
+            if tool.Blender.Modifier.is_railing(element):
+                return False
+            return True
+        elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
+            items[0].is_a("IfcSweptDiskSolid")
+            and len({i.is_a() for i in items}) == 1
+            and len({i.Radius for i in items}) == 1
+        ):
+            if tool.Blender.Modifier.is_railing(element):
+                return False
+            return True
+        return False
+
+    @classmethod
+    def create_native_swept_disk_solid(
+        cls, element: ifcopenshell.entity_instance, mesh_name: str, native_data: dict[str, Any]
+    ) -> tuple[bpy.types.Curve, Union[float, None]]:
+        """Create Blender curve based on element using IfcSweptDiskAreaSolid.
+
+        :return: created curve and it's thickness (suppose to add the thickness to the object
+            using solidify modifier). Returns `None` instead of thickness if disk has no inner radius
+            or if it's invalid.
+        """
+        # TODO: georeferencing?
+        ifc_file = tool.Ifc.get()
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        curve = bpy.data.curves.new(mesh_name, type="CURVE")
+        curve.dimensions = "3D"
+        curve.resolution_u = 2
+
+        rep_items = ifcopenshell.util.representation.resolve_items(native_data["representation"])
+
+        # Find item styles and add them to the curve.
+        material_style = None
+        material = ifcopenshell.util.element.get_material(element)
+        if material:
+            material_style = tool.Material.get_style(material)
+        item_styles: list[Union[bpy.types.Material, None]] = []
+        for item_data in rep_items:
+            item = item_data["item"]
+            item_style = tool.Style.get_representation_item_style(item) or material_style
+            if item_style is not None:
+                item_style = tool.Ifc.get_object(item_style)
+                assert isinstance(item_style, bpy.types.Material)
+            item_styles.append(item_style)
+        item_styles_unique = list(set(item_styles))
+        for item_style in item_styles_unique:
+            curve.materials.append(item_style)
+        use_same_material_index = len(item_styles_unique) < 2
+
+        def new_polyline(item_style: Union[bpy.types.Material, None]) -> bpy.types.Spline:
+            if use_same_material_index:
+                material_index = 0
+            else:
+                material_index = item_styles_unique.index(item_style)
+
+            polyline = curve.splines.new("POLY")
+            polyline.material_index = material_index
+            return polyline
+
+        for item_data, item_style in zip(rep_items, item_styles):
+            item = item_data["item"]
+
+            polyline = new_polyline(item_style)
+            matrix = item_data["matrix"]
+            matrix[0][3] *= unit_scale
+            matrix[1][3] *= unit_scale
+            matrix[2][3] *= unit_scale
+
+            # TODO: start param, and end param
+            geometry = tool.Loader.create_generic_shape(item.Directrix)
+            if not geometry:
+                continue
+            e = geometry.edges
+            v = geometry.verts
+            vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
+            edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
+            v2 = None
+            for edge in edges:
+                v1 = vertices[edge[0]]
+                if v1 != v2:
+                    polyline = new_polyline(item_style)
+                    polyline.points[-1].co = native_data["matrix"] @ Vector(v1)
+                v2 = vertices[edge[1]]
+                polyline.points.add(1)
+                polyline.points[-1].co = native_data["matrix"] @ Vector(v2)
+
+        curve.bevel_depth = unit_scale * item.Radius
+        thickness = None
+        if (inner_radius := item.InnerRadius) and (thickness := max(item.Radius - inner_radius, 0)):
+            thickness *= unit_scale
+            curve.use_fill_caps = False
+            # Shade flat.
+            for spline in curve.splines:
+                spline.use_smooth = False
+        else:
+            curve.use_fill_caps = True
+        return curve, thickness
+
+    @classmethod
+    def setup_native_swept_disk_solid_thickness(cls, obj: bpy.types.Object, thickness: Union[float, None]) -> None:
+        if not thickness:
+            return
+        modifier = obj.modifiers.new("Curve Thickness", type="SOLIDIFY")
+        assert isinstance(modifier, bpy.types.SolidifyModifier)
+        modifier.thickness = thickness

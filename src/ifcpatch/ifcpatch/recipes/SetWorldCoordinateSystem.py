@@ -24,7 +24,6 @@ import typing
 class Patcher:
     def __init__(
         self,
-        src,
         file,
         logger,
         x: typing.Union[str, float] = "0",
@@ -61,7 +60,6 @@ class Patcher:
             # Set the world coordinate system back to 0, 0, 0
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "SetWorldCoordinateSystem", "arguments": [0,0,0,0,0,0]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.x = float(x)

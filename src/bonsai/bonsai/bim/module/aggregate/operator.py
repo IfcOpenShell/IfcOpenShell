@@ -27,10 +27,13 @@ from bonsai.bim.ifc import IfcStore
 
 
 class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
-    """Create aggregation relationship between two ifc elements"""
-
     bl_idname = "bim.aggregate_assign_object"
     bl_label = "Assign Object To Aggregation"
+    bl_description = (
+        "Assign object as an aggregate to the selected IFC elements.\n\n"
+        "If called from Bonsai UI, then either 'Relating Whole' or 'Related Part' must be provided.\n"
+        "If called directly, active object will be considered a relating whole"
+    )
     bl_options = {"REGISTER", "UNDO"}
     relating_object: bpy.props.IntProperty()
     related_object: bpy.props.IntProperty()
@@ -46,8 +49,10 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
         elif context.active_object:
             relating_obj = context.active_object
         if not relating_obj:
+            self.report({"ERROR"}, "No relating object is provided.")
             return
 
+        assert isinstance(relating_obj, bpy.types.Object)
         for obj in tool.Blender.get_selected_objects():
             if obj == relating_obj:
                 continue
@@ -62,6 +67,10 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
                     relating_obj=relating_obj,
                     related_obj=obj,
                 )
+                props = context.scene.BIMAggregateProperties
+                if relating_obj == props.editing_aggregate and props.in_aggregate_mode:
+                    new_editing_obj = props.editing_objects.add()
+                    new_editing_obj.obj = obj
             except core.IncompatibleAggregateError:
                 self.report({"ERROR"}, f"Cannot aggregate {obj.name} to {relating_obj.name}")
             except core.AggregateRepresentationError:
@@ -69,14 +78,14 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class BIM_OT_aggregate_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
-    """Remove aggregation relationship between two ifc elements"""
+    """Remove aggregation relationship for selected IFC elements"""
 
     bl_idname = "bim.aggregate_unassign_object"
     bl_label = "Unassign Object From Aggregation"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        for obj in bpy.context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
@@ -99,26 +108,28 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
                     ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
 
-class BIM_OT_enable_editing_aggregate(bpy.types.Operator, tool.Ifc.Operator):
+class BIM_OT_enable_editing_aggregate(bpy.types.Operator):
     """Enable editing aggregation relationship"""
 
     bl_idname = "bim.enable_editing_aggregate"
     bl_label = "Enable Editing Aggregate"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_aggregate(tool.Aggregate, obj=context.active_object)
+        return {"FINISHED"}
 
 
-class BIM_OT_disable_editing_aggregate(bpy.types.Operator, tool.Ifc.Operator):
+class BIM_OT_disable_editing_aggregate(bpy.types.Operator):
     """Disable editing aggregation relationship"""
 
     bl_idname = "bim.disable_editing_aggregate"
     bl_label = "Disable Editing Aggregate"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_aggregate(tool.Aggregate, obj=context.active_object)
+        return {"FINISHED"}
 
 
 class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
@@ -188,9 +199,6 @@ class BIM_OT_select_parts(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
-        # obj = bpy.data.objects.get(self.obj) or context.active_object
-
         for obj in context.selected_objects:
             parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(obj))
             if parts:
@@ -220,12 +228,6 @@ class BIM_OT_select_aggregate(bpy.types.Operator):
             return "Select Aggregate"
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
-
-        # obj = bpy.data.objects.get(self.obj) or context.active_object
-        # aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get_entity(obj))
-        # aggregate_obj = tool.Ifc.get_object(aggregate)
-
         all_parts = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -306,18 +308,18 @@ class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, tool.Ifc.Operato
             pset = tool.Ifc.get().by_id(pset["id"])
             ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=part, pset=pset)
 
-        linked_aggregate_group = [
+        linked_aggregate_group = next(
             r.RelatingGroup
-            for r in getattr(aggregate, "HasAssignments", []) or []
+            for r in getattr(aggregate, "HasAssignments", [])
             if r.is_a("IfcRelAssignsToGroup")
             if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
-        ]
-        tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], products=[aggregate])
+        )
+        tool.Ifc.run("group.unassign_group", group=linked_aggregate_group, products=[aggregate])
 
         return {"FINISHED"}
 
 
-class BIM_OT_select_linked_aggregates(bpy.types.Operator, tool.Ifc.Operator):
+class BIM_OT_select_linked_aggregates(bpy.types.Operator):
     bl_idname = "bim.select_linked_aggregates"
     bl_label = "Select linked aggregates"
     bl_options = {"REGISTER", "UNDO"}
@@ -330,8 +332,7 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator, tool.Ifc.Operator):
         else:
             return "Select all aggregates"
 
-    def _execute(self, context):
-
+    def execute(self, context):
         for obj in context.selected_objects:
             obj.select_set(False)
             element = tool.Ifc.get_entity(obj)
@@ -341,14 +342,14 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator, tool.Ifc.Operator):
             if not element:
                 continue
 
-            linked_aggregate_group = [
+            linked_aggregate_group = next(
                 r.RelatingGroup
-                for r in getattr(aggregate, "HasAssignments", []) or []
+                for r in getattr(aggregate, "HasAssignments", [])
                 if r.is_a("IfcRelAssignsToGroup")
                 if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
-            ]
+            )
 
-            group_rel = linked_aggregate_group[0].IsGroupedBy or []
+            group_rel = linked_aggregate_group.IsGroupedBy
             for group_link in group_rel:
                 parts = list(group_link.RelatedObjects)
                 if self.select_parts:
@@ -367,5 +368,35 @@ class BIM_OT_select_linked_aggregates(bpy.types.Operator, tool.Ifc.Operator):
                     for element in parts:
                         obj = tool.Ifc.get_object(element)
                         obj.select_set(True)
+
+        return {"FINISHED"}
+
+
+class BIM_OT_disable_aggregate_mode(bpy.types.Operator):
+    bl_idname = "bim.disable_aggregate_mode"
+    bl_label = "Disable Aggregate Mode"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bpy.ops.object.select_all(action="DESELECT")
+        bonsai.core.aggregate.disable_aggregate_mode(tool.Aggregate)
+        return {"FINISHED"}
+
+
+class BIM_OT_toggle_aggregate_mode_local_view(bpy.types.Operator):
+    bl_idname = "bim.toggle_aggregate_mode_local_view"
+    bl_label = "Toggle Aggregate Mode Local View"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMAggregateProperties
+        objs = [o.obj for o in props.editing_objects]
+        if props.in_aggregate_mode:
+            if context.space_data.local_view:
+                bpy.ops.view3d.localview()
+            else:
+                for obj in objs:
+                    obj.select_set(True)
+                bpy.ops.view3d.localview()
 
         return {"FINISHED"}

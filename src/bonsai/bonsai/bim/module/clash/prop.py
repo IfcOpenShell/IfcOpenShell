@@ -86,7 +86,9 @@ class BIMClashProperties(PropertyGroup):
     blender_clash_set_a: CollectionProperty(name="Blender Clash Set A", type=StrProperty)
     blender_clash_set_b: CollectionProperty(name="Blender Clash Set B", type=StrProperty)
     clash_sets: CollectionProperty(name="Clash Sets", type=ClashSet)
-    should_create_clash_snapshots: BoolProperty(name="Create Snapshots", default=False)
+    should_create_clash_snapshots: BoolProperty(
+        name="Create Snapshots", description="Create bcf snapshots", default=False
+    )
     clash_results_path: StringProperty(name="Clash Results Path")
     smart_grouped_clashes_path: StringProperty(name="Smart Grouped Clashes Path")
     active_clash_set_index: IntProperty(name="Active Clash Set Index")
@@ -99,6 +101,11 @@ class BIMClashProperties(PropertyGroup):
     p1: FloatVectorProperty(name="P1", default=(0.0, 0.0, 0.0), subtype="XYZ")
     p2: FloatVectorProperty(name="P2", default=(0.0, 0.0, 0.0), subtype="XYZ")
     active_clash_text: StringProperty(name="Active Clash Text")
+    export_path: StringProperty(
+        name="Export Path",
+        description=".bcf or .json file to export the clash results to",
+        subtype="FILE_PATH",
+    )
 
     @property
     def active_clash_set(self):

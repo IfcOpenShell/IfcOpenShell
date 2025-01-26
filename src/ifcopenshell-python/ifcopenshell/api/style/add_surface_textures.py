@@ -18,7 +18,7 @@
 from __future__ import annotations
 import ifcopenshell
 import ifcopenshell.api
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:
     import bpy
@@ -67,6 +67,9 @@ def add_surface_textures(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         if self.file.schema == "IFC2X3":
             # TODO: research how compatible IFC2X3 and IFC4 textures are

@@ -39,6 +39,7 @@
 #include "../serializers/XmlSerializer.h"
 #include "../serializers/SvgSerializer.h"
 #include "../serializers/USDSerializer.h"
+#include "../serializers/TtlWktSerializer.h"
 
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/Iterator.h"
@@ -132,6 +133,7 @@ void print_usage(bool suggest_help = true)
 #ifdef IFOPSH_WITH_CGAL
 		<< "  .cityjson             City JSON format for geospatial data\n"
 #endif
+		<< "  .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry\n"
 		<< "  .ifc   IFC-SPF        Industry Foundation Classes\n"
 		<< "\n"
         << "If no output filename given, <input>" << IfcUtil::path::from_utf8(DEFAULT_EXTENSION) << " will be used as the output file.\n";
@@ -242,7 +244,6 @@ int main(int argc, char** argv) {
 		("help,h", "display usage information")
 		("version", "display version information")
 		("verbose,v", po::value(&vcounter)->zero_tokens(), "more verbose log messages. Use twice (-vv) for debugging level.")
-		("debug,d", "write boolean operands to file in current directory for debugging purposes")
 		("quiet,q", "less status and progress output")
 #ifdef WITH_HDF5
 		("cache", "cache geometry creation. Use --cache-file to specify cache file path.")
@@ -297,10 +298,6 @@ int main(int argc, char** argv) {
             "Can take several minutes on large models.")
 		("center-model-geometry",
             "Centers the elements by applying the center point of all mesh vertices as an offset.")
-        ("model-offset", po::value<std::string>(&offset_str),
-            "Applies an arbitrary offset of form 'x;y;z' to all placements.")
-		("model-rotation", po::value<std::string>(&rotation_str),
-			"Applies an arbitrary quaternion rotation of form 'x;y;z;w' to all placements.")
 		("include", po::value<inclusion_filter>(&include_filter)->multitoken(),
 			"Specifies that the instances that match a specific filtering criteria are to be included in the geometrical output:\n"
 			"1) 'entities': the following list of types should be included. SVG output defaults "
@@ -451,8 +448,6 @@ int main(int argc, char** argv) {
 
 	const bool center_model = vmap.count("center-model") != 0;
 	const bool center_model_geometry = vmap.count("center-model-geometry") != 0;
-	const bool model_offset = vmap.count("model-offset") != 0;
-	const bool model_rotation = vmap.count("model-rotation") != 0;
 
     if (!quiet || vmap.count("version")) {
 		print_version();
@@ -651,7 +646,8 @@ int main(int argc, char** argv) {
 		IFC = IfcUtil::path::from_utf8(".ifc"),
 		USD = IfcUtil::path::from_utf8(".usd"),
 		USDA = IfcUtil::path::from_utf8(".usda"),
-		USDC = IfcUtil::path::from_utf8(".usdc");
+		USDC = IfcUtil::path::from_utf8(".usdc"),
+		TTL = IfcUtil::path::from_utf8(".ttl");
 
 	// @todo clean up serializer selection
 	// @todo detect program options that conflict with the chosen serializer
@@ -818,6 +814,15 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC) {
+		cerr_ << "[Error] --use-element-hierarchy can be used only with .dae or .usd output.\n";
+		/// @todo Lots of duplicate error-and-exit code.
+		write_log(!quiet);
+		print_usage();
+		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+		return EXIT_FAILURE;
+	}
+
 	if (vmap[ifcopenshell::geometry::settings::WeldVertices::name].defaulted()) {
 		geometry_settings.get<ifcopenshell::geometry::settings::WeldVertices>().value = false;
 	}
@@ -828,6 +833,15 @@ int main(int argc, char** argv) {
 
 	if (output_extension == OBJ || output_extension == STP || output_extension == IGS) {
 		geometry_settings.get<ifcopenshell::geometry::settings::UseWorldCoords>().value = true;
+	}
+
+	if (output_extension == TTL) {
+		geometry_settings.get<ifcopenshell::geometry::settings::TriangulationType>().value = ifcopenshell::geometry::settings::TriangulationMethod::POLYHEDRON_WITH_HOLES;
+	}
+
+	if (output_extension == SVG) {
+		// SVG serialiazation depends on element hierarchy now to look up the parent
+		geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().value = true;
 	}
 
 	boost::shared_ptr<GeometrySerializer> serializer; /**< @todo use std::unique_ptr when possible */
@@ -865,19 +879,12 @@ int main(int argc, char** argv) {
 		serializer = boost::make_shared<HdfSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 #endif
 #endif	
+	} else if (output_extension == TTL) {
+		serializer = boost::make_shared<TtlWktSerializer>(IfcUtil::path::to_utf8(output_temp_filename), geometry_settings, serializer_settings);
 	} else {
         cerr_ << "[Error] Unknown output filename extension '" << output_extension << "'\n";
 		write_log(!quiet);
 		print_usage();
-		return EXIT_FAILURE;
-	}
-
-    if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC) {
-        cerr_ << "[Error] --use-element-hierarchy can be used only with .dae or .usd output.\n";
-        /// @todo Lots of duplicate error-and-exit code.
-		write_log(!quiet);
-		print_usage();
-		IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
 		return EXIT_FAILURE;
 	}
 
@@ -889,7 +896,7 @@ int main(int argc, char** argv) {
         if (geometry_settings.get<ifcopenshell::geometry::settings::GenerateUvs>().get()) {
             Logger::Notice("Generate UVs setting ignored when writing non-tesselated output");
         }
-        if (center_model || center_model_geometry || model_offset) {
+        if (center_model || center_model_geometry) {
             Logger::Notice("Centering/offsetting model setting ignored when writing non-tesselated output");
         }
 
@@ -917,72 +924,44 @@ int main(int argc, char** argv) {
 	} else {
 		Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
 	}
-
-	/*
-	// @todo
-	if (model_rotation) {
-		std::array<double, 4> &rotation = settings.rotation;
-		if (sscanf(rotation_str.c_str(), "%lf;%lf;%lf;%lf", &rotation[0], &rotation[1], &rotation[2], &rotation[3]) != 4) {
-			cerr_ << "[Error] Invalid use of --model-rotation\n";
-			IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
-			print_options(serializer_options);
-			return EXIT_FAILURE;
-		}
-
-		std::stringstream msg;
-		msg << "Using model rotation (" << rotation[0] << "," << rotation[1] << "," << rotation[2] << "," << rotation[3] << ")";
-		Logger::Notice(msg.str());
-	}
 	
-    if (is_tesselated && (center_model || center_model_geometry || model_offset)) {
-		std::array<double, 3> &offset = settings.offset;
-		if (center_model || center_model_geometry) {
-			if (site_local_placement || building_local_placement) {
-				Logger::Error("Cannot use --center-model or --center-model-geometry together with --{site,building}-local-placement");
+    if (is_tesselated && (center_model || center_model_geometry)) {
+		std::vector<double> offset(3);
+
+		IfcGeom::Iterator tmp_context_iterator(geometry_kernel, geometry_settings, ifc_file, filter_funcs, num_threads);
+			
+		time_t start, end;
+		time(&start);
+		if (!quiet) Logger::Status("Computing bounds...");
+
+		if (center_model_geometry) {
+			if (!tmp_context_iterator.initialize()) {
+				/// @todo It would be nice to know and print separate error prints for a case where we found no entities
+				/// and for a case we found no entities that satisfy our filtering criteria.
+				Logger::Notice("No geometrical elements found or none successfully converted");
+				serializer.reset();
+				IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+				write_log(!quiet);
 				return EXIT_FAILURE;
 			}
-
-			IfcGeom::Iterator tmp_context_iterator(geometry_kernel, settings, ifc_file, filter_funcs, num_threads);
-			
-			time_t start, end;
-			time(&start);
-			if (!quiet) Logger::Status("Computing bounds...");
-
-			if (center_model_geometry) {
-				if (!tmp_context_iterator.initialize()) {
-					/// @todo It would be nice to know and print separate error prints for a case where we found no entities
-					/// and for a case we found no entities that satisfy our filtering criteria.
-					Logger::Notice("No geometrical elements found or none successfully converted");
-					serializer.reset();
-					IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
-					write_log(!quiet);
-					return EXIT_FAILURE;
-				}
-			}
+		}
 		
-            tmp_context_iterator.compute_bounds(center_model_geometry);
+        tmp_context_iterator.compute_bounds(center_model_geometry);
 
-			time(&end);
-            if (!quiet) Logger::Status("Done ! Bounds computed in " + format_duration(start, end));
+		time(&end);
+        if (!quiet) Logger::Status("Done ! Bounds computed in " + format_duration(start, end));
 
-            auto center = (tmp_context_iterator.bounds_min().ccomponents() + tmp_context_iterator.bounds_max().ccomponents()) * 0.5;
-            offset[0] = -center(0);
-            offset[1] = -center(1);
-            offset[2] = -center(2);
-        } else {
-            if (sscanf(offset_str.c_str(), "%lf;%lf;%lf", &offset[0], &offset[1], &offset[2]) != 3) {
-                cerr_ << "[Error] Invalid use of --model-offset\n";
-				IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
-                print_options(serializer_options);
-                return EXIT_FAILURE;
-            }
-        }
+        auto center = (tmp_context_iterator.bounds_min().ccomponents() + tmp_context_iterator.bounds_max().ccomponents()) * 0.5;
+        offset[0] = -center(0);
+        offset[1] = -center(1);
+        offset[2] = -center(2);
 
         std::stringstream msg;
         msg << std::setprecision (std::numeric_limits< double >::max_digits10) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
         Logger::Notice(msg.str());
+
+		geometry_settings.get<ifcopenshell::geometry::settings::ModelOffset>().value = offset;
     }
-	*/
 
 	// backwards compatibility
 	if (vmap.count("plan") && vmap.count("model")) {
@@ -1025,6 +1004,7 @@ int main(int argc, char** argv) {
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 	if (output_extension == SVG) {
+		// @todo turn these all into proper settings
 		if (vmap.count("section-height-from-storeys") != 0) {
 			if (vmap.count("section-height")) {
 				static_cast<SvgSerializer*>(serializer.get())->setSectionHeightsFromStoreys(section_height);

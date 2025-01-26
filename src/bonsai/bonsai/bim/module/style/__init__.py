@@ -39,8 +39,11 @@ classes = (
     operator.EnableEditingSurfaceStyle,
     operator.LoadStyles,
     operator.RemoveStyle,
+    operator.RemoveSurfaceStyle,
     operator.SaveUVToStyle,
     operator.SelectByStyle,
+    operator.SelectStyleInStylesUI,
+    operator.SetAssetMaterialToExternalStyle,
     operator.UnlinkStyle,
     operator.UpdateCurrentStyle,
     operator.UpdateStyleColours,
@@ -59,8 +62,10 @@ classes = (
 def register():
     bpy.types.Scene.BIMStylesProperties = bpy.props.PointerProperty(type=prop.BIMStylesProperties)
     bpy.types.Material.BIMStyleProperties = bpy.props.PointerProperty(type=prop.BIMStyleProperties)
+    bpy.types.ASSETBROWSER_MT_context_menu.append(ui.draw_asset_browser_context_menu_append)
 
 
 def unregister():
     del bpy.types.Scene.BIMStylesProperties
     del bpy.types.Material.BIMStyleProperties
+    bpy.types.ASSETBROWSER_MT_context_menu.remove(ui.draw_asset_browser_context_menu_append)

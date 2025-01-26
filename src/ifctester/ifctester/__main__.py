@@ -23,6 +23,7 @@ import argparse
 import ifcopenshell
 from . import ids
 from . import reporter
+from pathlib import Path
 
 parser = argparse.ArgumentParser(description="Uses an IDS to audit an IFC")
 parser.add_argument("ids", type=str, help="Path to an IDS")
@@ -33,29 +34,39 @@ parser.add_argument("--excel-safe", help="Make sure exported ODS is safely expor
 parser.add_argument("-o", "--output", help="Output file (supported for all types of reporting except Console)")
 args = parser.parse_args()
 
-specs = ids.open(args.ids)
+ids_path = Path(args.ids)
+if ids_path.suffix.lower() != ".ids":
+    raise Exception(f"Provided file is not an .ids file: '{ids_path}'.")
+
+ifc_patch = Path(args.ifc)
+if ifc_patch.suffix.lower() != ".ifc":
+    raise Exception(f"Provided file is not an .ifc file: '{ifc_patch}'.")
+
+specs = ids.open(str(ids_path))
 if args.ifc:
     start = time.time()
-    ifc = ifcopenshell.open(args.ifc)
+    ifc = ifcopenshell.open(ifc_patch)
+    assert isinstance(ifc, ifcopenshell.file)
     print("Finished loading:", time.time() - start)
     start = time.time()
     specs.validate(ifc)
     print("Finished validating:", time.time() - start)
 
-if args.reporter == "Console":
-    engine = reporter.Console(specs, use_colour=not args.no_color)
-elif args.reporter == "Txt":
-    engine = reporter.Txt(specs)
-elif args.reporter == "Json":
-    engine = reporter.Json(specs)
-elif args.reporter == "Html":
-    engine = reporter.Html(specs)
-elif args.reporter == "Ods":
-    engine = reporter.Ods(specs, excel_safe=args.excel_safe)
-elif args.reporter == "OdsSummary":
-    engine = reporter.OdsSummary(specs, excel_safe=args.excel_safe)
-elif args.reporter == "Bcf":
-    engine = reporter.Bcf(specs)
+reporter_types = {
+    "Console": lambda: reporter.Console(specs, use_colour=not args.no_color),
+    "Txt": lambda: reporter.Txt(specs),
+    "Json": lambda: reporter.Json(specs),
+    "Html": lambda: reporter.Html(specs),
+    "Ods": lambda: reporter.Ods(specs, excel_safe=args.excel_safe),
+    "OdsSummary": lambda: reporter.OdsSummary(specs, excel_safe=args.excel_safe),
+    "Bcf": lambda: reporter.Bcf(specs),
+}
+
+engine = reporter_types.get(args.reporter)
+if engine is None:
+    raise Exception(f"Expected one one of the following values for reporter: {', '.join(reporter_types)}")
+
+engine = engine()
 
 engine.report()
 

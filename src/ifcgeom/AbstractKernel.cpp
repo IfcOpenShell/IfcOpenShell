@@ -3,6 +3,7 @@
 #include "../ifcgeom/IfcGeomElement.h"
 #include "../ifcgeom/ConversionSettings.h"
 #include "../ifcgeom/abstract_mapping.h"
+#include "../ifcgeom/function_item_evaluator.h"
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 #include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
@@ -21,19 +22,32 @@
 using namespace ifcopenshell::geometry;
 
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::ptr item, IfcGeom::ConversionResults& results) {
-	// std::stringstream ss;
-	// item->print(ss);
-	// auto sss = ss.str();
-	// std::wcout << sss.c_str() << std::endl;
+	auto with_exception_handling = [&](auto fn) {
+		try {
+			return fn();
+		} catch (std::exception& e) {
+			Logger::Error(e, item->instance);
+			return false;
+		} catch (...) {
+			// @todo we can't log OCCT exceptions here, can we do some reraising to solve this?
+			return false;
+		}
+	};
+	auto without_exception_handling = [](auto fn) {
+		return fn();
+	};
+	auto process_with_upgrade = [&]() {
+		try {
+			return dispatch_conversion<0>::dispatch(this, item->kind(), item, results);
+		} catch (const not_implemented_error&) {
+			return dispatch_with_upgrade<0>::dispatch(this, item, results);
+		}
+	};
 
-	try {
-		return dispatch_conversion<0>::dispatch(this, item->kind(), item, results);
-	} catch (std::exception& e) {
-		Logger::Error(e, item->instance);
-		return false;
-	} catch (...) {
-		// @todo we can't log OCCT exceptions here, can we do some reraising to solve this?
-		return false;
+	if (propagate_exceptions) {
+		return without_exception_handling(process_with_upgrade);
+	} else {
+		return with_exception_handling(process_with_upgrade);
 	}
 }
 
@@ -57,6 +71,7 @@ bool is_valid_for_kernel(const ifcopenshell::geometry::kernels::AbstractKernel* 
 		return dynamic_cast<ifcopenshell::geometry::CgalShape*>(shp.Shape().get()) != nullptr;
 	}
 #endif
+    return false;
 }
 
 class HybridKernel : public ifcopenshell::geometry::kernels::AbstractKernel {
@@ -195,6 +210,10 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 			}
 		}
 
+		for (auto it = kernels.begin(); it != kernels.end(); ++it) {
+			(**it).propagate_exceptions = it == kernels.begin();
+		}
+
 		if (!kernels.empty()) {
 			return new HybridKernel(geometry_library, file, conv_settings, kernels);
 		}
@@ -219,8 +238,44 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonom
 	return r.size() > s;
 }
 
-bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs) {
-	auto expl = item->evaluate();
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::function_item::ptr item, IfcGeom::ConversionResults& cs) {
+   function_item_evaluator evaluator(settings(),item);
+   auto expl = evaluator.evaluate();
 	expl->instance = item->instance;
 	return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::functor_item::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::gradient_function::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::cant_function::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::offset_function::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
 }

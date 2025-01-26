@@ -101,20 +101,10 @@ class SelectFilterElements(bpy.types.Operator):
 
     def execute(self, context):
         filter_groups = tool.Search.get_filter_groups(self.module)
-        global_ids = []
-        for obj in context.selected_objects:
-            if element := tool.Ifc.get_entity(obj):
-                if global_id := getattr(element, "GlobalId", None):
-                    global_ids.append(global_id)
-        if len(global_ids) > 50:
-            # Too much to store in a string property
-            name = f"globalid-filter-{ifcopenshell.guid.new()}"
-            text_data = bpy.data.texts.new(name)
-            text_data.from_string(",".join(global_ids))
-            filter_groups[self.group_index].filters[self.index].value = f"bpy.data.texts['{name}']"
+        query = tool.Search.get_query_for_selected_elements()
+        filter_groups[self.group_index].filters[self.index].value = query
+        if query.startswith("bpy.data.texts['"):
             self.report({"INFO"}, f'List of Global Ids was saved to the text file "{name}" in the current .blend file')
-        else:
-            filter_groups[self.group_index].filters[self.index].value = ",".join(global_ids)
         return {"FINISHED"}
 
 
@@ -528,6 +518,7 @@ class SelectIfcClass(Operator):
             if element := tool.Ifc.get_entity(obj):
                 classes.add(element.is_a())
                 predefined_types.add(ifcopenshell.util.element.get_predefined_type(element))
+        result = ""
         for cls in classes:
             for element in tool.Ifc.get().by_type(cls):
                 if (
@@ -537,6 +528,15 @@ class SelectIfcClass(Operator):
                     continue
                 if obj := tool.Ifc.get_object(element):
                     tool.Blender.select_object(obj)
+
+            # copy selection query to clipboard
+            if not result:
+                result = f"{cls}"
+            else:
+                result += f", {cls}"
+            bpy.context.window_manager.clipboard = result
+            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+
         return {"FINISHED"}
 
 
@@ -696,8 +696,18 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_similar"
     bl_label = "Select Similar"
     bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select objects with a similar value\n\n" + "SHIFT+CLICK display the sum of all selected objects"
 
     key: bpy.props.StringProperty()
+    calculate_sum: bpy.props.BoolProperty(
+        name="Calculate Sum of Selected Objects", default=False, options={"SKIP_SAVE"}
+    )
+    calculated_sum: bpy.props.FloatProperty(name="Calculated Sum", default=0.0)
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.calculate_sum = True
+        return self.execute(context)
 
     def _execute(self, context):
         props = context.scene.BIMSearchProperties
@@ -707,9 +717,65 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
         if key == "PredefinedType":
             key = "predefined_type"
         value = ifcopenshell.util.selector.get_element_value(element, key)
-        for obj in context.visible_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            if ifcopenshell.util.selector.get_element_value(element, key) == value:
-                obj.select_set(True)
+        tolerance = bpy.context.scene.DocProperties.tolerance
+
+        # Determine the number of decimal places based on the magnitude of the rounding value
+        if tolerance < 1:
+            decimal_places = max(0, -int(f"{tolerance:.1e}".split("e")[-1]))  # Exponent in scientific notation
+            formatted_tolerance = f"{tolerance:.{decimal_places}f}"
+        else:
+            formatted_tolerance = f"{tolerance:.1f}"  # For values >= 1, one decimal place is enough
+
+        if self.calculate_sum and isinstance(value, (int, float)):
+            total = 0
+            for obj in context.selected_objects:
+                element = tool.Ifc.get_entity(obj)
+                if not element:
+                    continue
+                value = ifcopenshell.util.selector.get_element_value(element, key)
+                if value:
+                    total += value
+            self.calculated_sum = total
+            bpy.context.window_manager.clipboard = str(self.calculated_sum)
+            self.report({"INFO"}, f"({self.calculated_sum}) was copied to the clipboard.")
+        else:
+            self.calculated_sum = 0
+            for obj in context.visible_objects:
+                element = tool.Ifc.get_entity(obj)
+                if not element:
+                    continue
+                obj_value = ifcopenshell.util.selector.get_element_value(element, key)
+                if isinstance(obj_value, (int, float)):
+                    # Check within rounding value
+                    if abs(obj_value - value) <= tolerance:
+                        obj.select_set(True)
+                elif obj_value == value:
+                    obj.select_set(True)
+            if isinstance(value, (int, float)):
+                self.report(
+                    {"INFO"},
+                    f"Selected all objects that share the same ({key}) value--within a ({formatted_tolerance}) tolerance.",
+                )
+            else:
+                self.report({"INFO"}, f"Selected all objects that share the same ({key}) value")
+
+        # copy selection query to clipboard
+        if not self.calculate_sum:
+            result = ""
+            if value == True:
+                value = "TRUE"
+            if value == False:
+                value = "FALSE"
+            if key == "predefined_type":
+                key = "PredefinedType"
+            if isinstance(value, list) and value:
+                for item in value:
+                    sub_result = f'{key} = "{item}"'
+                    if not result:
+                        result = sub_result
+                    else:
+                        result += f", {sub_result}"
+            else:
+                result = f'{key} = "{value}"'
+            bpy.context.window_manager.clipboard = result
+            self.report({"INFO"}, f"({result}) was copied to the clipboard.")

@@ -81,7 +81,7 @@ class DisablePsetEditing(bpy.types.Operator, tool.Ifc.Operator):
                 )
         props.active_pset_id = 0
         props.active_pset_name = ""
-        props.active_pset_type = ""
+        props.active_pset_type = "-"
 
 
 class EditPset(bpy.types.Operator, tool.Ifc.Operator):
@@ -195,7 +195,8 @@ class UnsharePset(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unshare_pset"
     bl_label = "Unshare Pset"
     bl_description = (
-        "Click to copy a pset as linked only to the active object.\n"
+        "Click to copy a pset as linked only to the selected objects. "
+        "If multiple objects are selected, each will get a separate pset copy.\n\n"
         "Otherwise changing a pset shared by multiple elements "
         "will change it's properties for all the elements it's linked to, not just for the active object"
     )
@@ -212,13 +213,7 @@ class UnsharePset(bpy.types.Operator, tool.Ifc.Operator):
         return f"{properties.description_}{cls.bl_description}"
 
     def _execute(self, context):
-        # TODO: move to core
-        ifc_file = tool.Ifc.get()
-        pset = ifc_file.by_id(self.pset_id)
-        element_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type)
-        assert element_id
-        element = ifc_file.by_id(element_id)
-        ifcopenshell.api.pset.unshare_pset(ifc_file, [element], pset)
+        core.unshare_pset(tool.Ifc, tool.Pset, self.obj_type, self.obj, self.pset_id)
 
 
 class AddQto(bpy.types.Operator, tool.Ifc.Operator):
@@ -310,14 +305,11 @@ class BIM_OT_clear_list(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BIM_OT_rename_parameters(bpy.types.Operator):
+class BIM_OT_rename_parameters(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Rename Parameters"
     bl_idname = "bim.rename_parameters"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Rename parameters that are subclasses of IfcElement"
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         props_to_map = context.scene.RenameProperties
@@ -347,14 +339,11 @@ class BIM_OT_rename_parameters(bpy.types.Operator):
                     obj_prop.Name = prop2map.new_property_name
 
 
-class BIM_OT_add_edit_custom_property(bpy.types.Operator):
+class BIM_OT_add_edit_custom_property(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Add or Edit a Custom Property"
     bl_idname = "bim.add_edit_custom_property"
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -404,15 +393,12 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator):
         return prop_enum_value
 
 
-class BIM_OT_bulk_remove_psets(bpy.types.Operator):
+class BIM_OT_bulk_remove_psets(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Bulk Remove Psets from Selected Objects"
     bl_idname = "bim.bulk_remove_psets"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Bulk remove psets from selected objects"
     index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         self.file = IfcStore.get_file()
@@ -447,12 +433,81 @@ class BIM_OT_bulk_remove_psets(bpy.types.Operator):
 class AddProposedProp(bpy.types.Operator):
     bl_idname = "bim.add_proposed_prop"
     bl_label = "Add Proposed Prop"
+    bl_description = (
+        "Add proposed property to the custom property set.\n\n"
+        "Property type will be deduced from the provided value. Possible types:\n"
+        "- provide an integer or a float to create integer/real property\n"
+        "- 'true', 'false' to add a boolean property\n"
+        "- 'null' or '' (empty value) to add a null property\n"
+        "- any other value will be added as a string property"
+    )
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
     prop_name: bpy.props.StringProperty()
     prop_value: bpy.props.StringProperty()
 
+    @classmethod
+    def description(cls, context, properties):
+        description = "Add proposed property to the custom property set.\n\n"
+        props = tool.Pset.get_pset_props(properties.obj, properties.obj_type)
+        if props.active_pset_type == "PSET":
+            description += (
+                "Property type will be deduced from the provided value. Possible types:\n"
+                "- provide an integer or a float to create integer/real property\n"
+                "- 'true', 'false' to add a boolean property\n"
+                "- 'null' or '' (empty value) to add a null property\n"
+                "- any other value will be added as a string property"
+            )
+        else:
+            from ifcopenshell.api.pset.edit_qto import FLOAT_TYPE_KEYWORDS
+
+            description += (
+                "Property type will be deduced from the provided value and property name. Possible types:\n"
+                "- Integer values - Count type\n"
+                "- Float values - will try to match one of the keywords below in prop name, "
+                "otherwise will default to Length type\n\n"
+                "Types and their keywords:\n"
+            )
+            for prop_type, keywords in FLOAT_TYPE_KEYWORDS:
+                description += f"- {prop_type} - {', '.join(keywords)}\n"
+            description = description.rstrip()  # Strip last newline.
+        return description
+
     def execute(self, context):
-        core.add_proposed_prop(tool.Pset, self.obj, self.obj_type, self.prop_name, self.prop_value)
+        res = core.add_proposed_prop(tool.Pset, self.obj, self.obj_type, self.prop_name, self.prop_value)
+        if res:
+            self.report({"ERROR"}, res)
+            return {"CANCELLED"}
         return {"FINISHED"}
+
+
+class SavePsetAsTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator):
+    bl_idname = "bim.save_pset_as_template"
+    bl_label = "Save Pset As Template"
+    bl_description = "Save the provided pset as a pset template"
+    bl_options = {"REGISTER", "UNDO"}
+    pset_id: bpy.props.IntProperty()
+
+    def invoke(self, context, event):
+        props = context.scene.BIMPsetTemplateProperties
+        if tool.Blender.get_enum_safe(props, "pset_template_files") is None:
+            self.report({"ERROR"}, "No template files found. You can create one in Property Set Templates UI.")
+            return {"CANCELLED"}
+        return context.window_manager.invoke_props_dialog(self, width=250)
+
+    def draw(self, context):
+        props = context.scene.BIMPsetTemplateProperties
+        self.layout.prop(props, "pset_template_files", text="Template File")
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        pset = ifc_file.by_id(self.pset_id)
+        template_file = IfcStore.pset_template_file
+        assert template_file
+
+        tool.PsetTemplate.add_pset_as_template(pset, template_file)
+
+        template_file.write(IfcStore.pset_template_path)
+        bonsai.bim.handler.refresh_ui_data()
+        bonsai.bim.schema.reload(ifc_file.schema)

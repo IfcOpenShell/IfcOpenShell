@@ -28,6 +28,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.bim.module.drawing.helper as helper
+from pathlib import Path
 from math import pi, sin, cos, tan, acos, atan, degrees, radians, ceil
 from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
@@ -468,11 +469,11 @@ class BaseDecorator:
 
         blf.rotation(font_id, ang)
         blf.color(font_id, *color)
-        # blf.enable(font_id, blf.SHADOW)
-        # blf.shadow(font_id, 5, 0, 0, 0, 1)
-        # blf.shadow_offset(font_id, 1, -1)
+        blf.enable(font_id, blf.SHADOW)
+        blf.shadow(font_id, 6, 0, 0, 0, 1)
         blf.draw(font_id, text)
         blf.disable(font_id, blf.ROTATION)
+        blf.disable(font_id, blf.SHADOW)
 
     def draw_dimension_text(self, context, get_text, description, dimension_data, **draw_label_kwargs):
         prefix = dimension_data["text_prefix"]
@@ -594,6 +595,7 @@ class BaseDecorator:
             text_data = text_data | props.get_text_edited_data()
         literals_data = text_data["Literals"]
         symbol = text_data["Symbol"]
+        newline_at = text_data["Newline_At"]
         text_scale = 1.0
 
         # draw asterisk symbol to indicate that there is some symbol that's not shown in viewport
@@ -605,8 +607,14 @@ class BaseDecorator:
         font_size_mm = text_data["FontSize"] * text_scale
         for literal_data in literals_data:
             box_alignment = literal_data["BoxAlignment"]
+            text = literal_data["CurrentValue"]
 
-            for line in literal_data["CurrentValue"].split("\n"):
+            if newline_at != 0:
+                text = helper.add_newline_between_words(text, newline_at)
+
+            multiple_lines = text.split("\n")
+
+            for line in multiple_lines:
                 self.draw_label(
                     context,
                     line,
@@ -2015,9 +2023,9 @@ class DecorationsHandler:
             self.decorators[object_type] = self.decorators["FALL"]
         self.decorators["MULTI_SYMBOL"] = self.decorators["SYMBOL"]
         if drawing_font := bpy.context.scene.DocProperties.drawing_font:
-            drawing_font_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", drawing_font)
-            if os.path.exists(drawing_font_path):
-                font_id = blf.load(drawing_font_path)
+            drawing_font_path = tool.Blender.get_data_dir_path(Path("fonts") / drawing_font)
+            if drawing_font_path.is_file():
+                font_id = blf.load(drawing_font_path.__str__())
                 for decorator in self.decorators.values():
                     decorator.font_id = font_id
 

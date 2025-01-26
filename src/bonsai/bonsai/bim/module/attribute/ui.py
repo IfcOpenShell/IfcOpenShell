@@ -20,6 +20,7 @@ import bonsai.bim.helper
 from bpy.types import Panel
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.attribute.data import AttributesData
+import bonsai.tool as tool
 
 
 def draw_ui(context, layout, attributes):
@@ -30,21 +31,18 @@ def draw_ui(context, layout, attributes):
     if props.is_editing_attributes:
         row = layout.row(align=True)
         op = row.operator("bim.edit_attributes", icon="CHECKMARK", text="Save Attributes")
-        op.obj = obj.name
         op = row.operator("bim.disable_editing_attributes", icon="CANCEL", text="")
-        op.obj = obj.name
 
         bonsai.bim.helper.draw_attributes(props.attributes, layout, copy_operator="bim.copy_attribute_to_selection")
     else:
         row = layout.row()
         op = row.operator("bim.enable_editing_attributes", icon="GREASEPENCIL", text="Edit")
-        op.obj = obj.name
 
         for attribute in attributes:
             row = layout.row(align=True)
             row.label(text=attribute["name"])
-            # row.label(text=attribute["value"])
-            op = row.operator("bim.select_similar", text=attribute["value"], icon="NONE", emboss=False)
+            value = bonsai.bim.helper.get_display_value(attribute["value"])
+            op = row.operator("bim.select_similar", text=value, icon="NONE", emboss=False)
             op.key = attribute["name"]
 
     # TODO: reimplement, see #1222
@@ -62,11 +60,7 @@ class BIM_PT_object_attributes(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
-            return False
-        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
-            return False
-        return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
+        return tool.Ifc.get_entity(context.active_object)
 
     def draw(self, context):
         if not AttributesData.is_loaded:

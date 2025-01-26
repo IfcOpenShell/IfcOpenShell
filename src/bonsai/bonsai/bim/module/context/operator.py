@@ -54,23 +54,25 @@ class RemoveContext(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_context(tool.Ifc, context=tool.Ifc.get().by_id(self.context))
 
 
-class EnableEditingContext(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingContext(bpy.types.Operator):
     bl_idname = "bim.enable_editing_context"
     bl_label = "Enable Editing Context"
     bl_options = {"REGISTER", "UNDO"}
     context: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_context(tool.Context, context=tool.Ifc.get().by_id(self.context))
+        return {"FINISHED"}
 
 
-class DisableEditingContext(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingContext(bpy.types.Operator):
     bl_idname = "bim.disable_editing_context"
     bl_label = "Disable Editing Context"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_context(tool.Context)
+        return {"FINISHED"}
 
 
 class EditContext(bpy.types.Operator, tool.Ifc.Operator):

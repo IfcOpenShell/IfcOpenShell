@@ -28,6 +28,7 @@ classes = (
     operator.EditPset,
     operator.EnablePsetEditing,
     operator.RemovePset,
+    operator.SavePsetAsTemplate,
     operator.TogglePsetExpansion,
     operator.UnsharePset,
     operator.BIM_OT_add_property_to_edit,
@@ -46,7 +47,6 @@ classes = (
     ui.BIM_PT_object_psets,
     ui.BIM_PT_object_qtos,
     ui.BIM_PT_material_psets,
-    ui.BIM_PT_material_set_psets,
     ui.BIM_PT_material_set_item_psets,
     ui.BIM_PT_task_qtos,
     ui.BIM_PT_resource_qtos,
@@ -65,7 +65,6 @@ classes = (
 def register():
     bpy.types.Object.PsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Scene.MaterialPsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
-    bpy.types.Object.MaterialSetPsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Object.MaterialSetItemPsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Scene.TaskPsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
     bpy.types.Scene.ResourcePsetProperties = bpy.props.PointerProperty(type=prop.PsetProperties)
@@ -81,7 +80,6 @@ def register():
 def unregister():
     del bpy.types.Object.PsetProperties
     del bpy.types.Scene.MaterialPsetProperties
-    del bpy.types.Object.MaterialSetPsetProperties
     del bpy.types.Object.MaterialSetItemPsetProperties
     del bpy.types.Scene.TaskPsetProperties
     del bpy.types.Scene.ResourcePsetProperties

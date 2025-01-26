@@ -40,25 +40,108 @@ def get_fallback_schema(version: str) -> str:
     return version
 
 
-def is_a(entity: ifcopenshell.entity_instance, ifc_class: str) -> bool:
+def get_declaration(element: ifcopenshell.entity_instance):
+    """Get the schema declaration of an actively used entity instance
+
+    IFC models are made out of instances (e.g. with a STEP ID) of entities
+    (e.g. IfcWall). Those entities are defined through a **Schema
+    Declaration**.
+
+    **Schema Declaration** objects can be used to query information about the
+    IFC schema itself, such as data types, enumeration values, and inheritance.
+
+    :param element: Any instance, typically from a loaded or created IFC model
+
+    Example:
+
+    .. code:: python
+
+        wall = model.createIfcWall()
+        declaration = ifcopenshell.util.schema.get_declaration(wall)
+        print(declaration.name()) # IfcWall
+        print(declaration.is_abstract()) # False
+        print(declaration.supertype().name()) # IfcBuildingElement
+    """
+    return element.wrapped_data.declaration().as_entity()
+
+
+def is_a(declaration: ifcopenshell.ifcopenshell_wrapper.entity, ifc_class: str) -> bool:
+    """Checks if a schema declaration is a class
+
+    :param declaration: The declaration from the schema.
+    :param ifc_class: A case insensitive IFC class name (e.g. IfcRoot)
+    :return: True is the declaration is of that class
+
+    Example:
+
+    .. code:: python
+
+        wall = model.createIfcWall()
+        declaration = ifcopenshell.util.schema.get_declaration(wall)
+        ifcopenshell.util.schema.is_a(declaration, "IfcRoot") # True
+    """
     ifc_class = ifc_class.upper()
-    if entity.name_uc() == ifc_class:
+    if declaration.name_uc() == ifc_class:
         return True
-    if entity.supertype():
-        return is_a(entity.supertype(), ifc_class)
+    if declaration.supertype():
+        return is_a(declaration.supertype(), ifc_class)
     return False
 
 
-def get_subtypes(entity):
-    def get_classes(declaration):
+def get_supertypes(
+    declaration: ifcopenshell.ifcopenshell_wrapper.entity,
+) -> list[ifcopenshell.ifcopenshell_wrapper.entity]:
+    """Gets a list of supertype declarations
+
+    :param declaration: The declaration from the schema, as an entity.
+    :return: A list of supertypes in order from parent to grandparent.
+
+    Example:
+
+    .. code:: python
+
+        wall = model.createIfcWall()
+        results = ifcopenshell.util.schema.get_supertypes(wall.wrapped_data.declaration().as_entity())
+        # [<entity IfcBuildingElement>, <entity IfcElement>, ..., <entity IfcRoot>]
+    """
+    results = []
+    while True:
+        if not (declaration := declaration.supertype()):
+            break
+        results.append(declaration)
+    return results
+
+
+def get_subtypes(
+    declaration: ifcopenshell.ifcopenshell_wrapper.entity,
+) -> list[ifcopenshell.ifcopenshell_wrapper.entity]:
+    """Get a flat list of subtype declarations
+
+    Abstract classes are skipped.
+
+    Inconsistently, the declaration itself is also added to this list. This
+    should be fixed exclude the declaration itself.
+
+    :param declaration: The declaration from the schema, as an entity.
+    :return: A list of subtypes in order from child to grandchild.
+
+    .. code:: python
+
+        schema = ifcopenshell.schema_by_name("IFC4")
+        declaration = schema.declaration_by_name("IfcFlowSegment")
+        print(ifcopenshell.util.schema.get_subtypes(declaration))
+        [<entity IfcFlowSegment>, <entity IfcCableCarrierSegment>, ..., <entity IfcPipeSegment>]
+    """
+
+    def get_classes(decl):
         results = []
-        if not declaration.is_abstract():
-            results.append(declaration)
-        for subtype in declaration.subtypes():
+        if not decl.is_abstract():
+            results.append(decl)
+        for subtype in decl.subtypes():
             results.extend(get_classes(subtype))
         return results
 
-    return get_classes(entity)
+    return get_classes(declaration)
 
 
 def reassign_class(
@@ -163,6 +246,9 @@ class BatchReassignClass:
 
 
 class Migrator:
+    migrated_ids: dict[int, int]
+    attribute_overrides: dict[int, dict[int, str]]
+
     def __init__(self):
         self.migrated_ids = {}
         self.attribute_overrides = {}
@@ -225,7 +311,8 @@ class Migrator:
             "User": None,
         }
 
-    def preprocess(self, old_file: ifcopenshell.file, new_file: ifcopenshell.file):
+    def preprocess(self, old_file: ifcopenshell.file, new_file: ifcopenshell.file) -> None:
+        new_file.assign_header_from(old_file)
         to_delete = set()
 
         if old_file.schema == "IFC2X3" and new_file.schema == "IFC4":
@@ -257,7 +344,12 @@ class Migrator:
         self, element: ifcopenshell.entity_instance, new_file: ifcopenshell.file
     ) -> ifcopenshell.entity_instance:
         if element.id() == 0:
-            return new_file.create_entity(element.is_a(), element.wrappedValue)
+            ifc_class = element.is_a()
+            if ifc_class == "IfcCountMeasure" and new_file.schema == "IFC4X3":
+                value = element.wrappedValue
+                if isinstance(value, float):
+                    ifc_class = "IfcNumericMeasure"
+            return new_file.create_entity(ifc_class, element.wrappedValue)
         try:
             return new_file.by_id(self.migrated_ids[element.id()])
         except:
@@ -276,18 +368,30 @@ class Migrator:
     def migrate_class(
         self, element: ifcopenshell.entity_instance, new_file: ifcopenshell.file
     ) -> ifcopenshell.entity_instance:
+        ifc_class = element.is_a()
+        if ifc_class == "IfcQuantityCount" and new_file.schema == "IFC4X3":
+            # 3 IfcPhysicalSimpleQuantity Value
+            value = element[3]
+            if isinstance(value, float):
+                ifc_class = "IfcQuantityNumber"
         try:
-            new_element = new_file.create_entity(element.is_a())
+            new_element = new_file.create_entity(ifc_class)
         except:
             # The element does not exist in this schema
             # Complex migration is not yet supported (e.g. polygonal face set to faceted brep)
             if new_file.schema == "IFC2X3":
-                new_element = new_file.create_entity(self.class_4_to_2x3[element.is_a()])
+                new_element = new_file.create_entity(self.class_4_to_2x3[ifc_class])
             elif new_file.schema == "IFC4":
-                new_element = new_file.create_entity(self.class_2x3_to_4[element.is_a()])
+                new_element = new_file.create_entity(self.class_2x3_to_4[ifc_class])
         return new_element
 
-    def migrate_attributes(self, element, new_file, new_element, new_element_schema):
+    def migrate_attributes(
+        self,
+        element: ifcopenshell.entity_instance,
+        new_file: ifcopenshell.file,
+        new_element: ifcopenshell.entity_instance,
+        new_element_schema: ifcopenshell_wrapper.declaration,
+    ) -> ifcopenshell.entity_instance:
         for attribute_index, value in self.attribute_overrides.get(element.id(), {}).items():
             new_element[attribute_index] = value
         for i, attribute in enumerate(new_element_schema.all_attributes()):
@@ -305,21 +409,32 @@ class Migrator:
         reverse_mapping: bool = False,
     ) -> Union[Any, None]:
         # print("Searching for an equivalent", element, new_element, attribute.name())
+        ifc_class = new_element.is_a()
+        attr_name = attribute.name()
         try:
             if reverse_mapping:
-                equivalent_map = attributes_mapping[new_element.is_a()]
-                equivalent = list(equivalent_map.keys())[list(equivalent_map.values()).index(attribute.name())]
+                equivalent_map = attributes_mapping[ifc_class]
+                equivalent = list(equivalent_map.keys())[list(equivalent_map.values()).index(attr_name)]
             else:
-                equivalent = attributes_mapping[new_element.is_a()][attribute.name()]
+                equivalent = attributes_mapping[ifc_class][attr_name]
             if hasattr(element, equivalent):
                 # print("Equivalent found", equivalent)
                 return getattr(element, equivalent)
             else:
                 return
         except Exception as e:
+            if (
+                ifc_class == "IfcQuantityNumber"
+                and attr_name == "NumberValue"
+                and new_element.file.schema == "IFC4X3"
+                and element.is_a("IfcQuantityCount")
+            ):
+                # 3 IfcPhysicalSimpleQuantity Value
+                return element[3]
+
             print(
                 "Unable to find equivalent attribute of {} to migrate from {} to {}".format(
-                    attribute.name(), element, new_element
+                    attr_name, element, new_element
                 )
             )
             raise e

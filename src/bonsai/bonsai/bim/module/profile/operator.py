@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.util.element
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.bim.module.model.profile as model_profile
@@ -25,6 +26,7 @@ import bonsai.core.profile as core
 from bonsai.bim.module.model.decorator import ProfileDecorator
 from bonsai.bim.module.profile.prop import generate_thumbnail_for_active_profile
 from bonsai.bim.module.profile.data import refresh
+from bonsai.bim.module.geometry.helper import Helper
 
 
 class LoadProfiles(bpy.types.Operator):
@@ -36,12 +38,19 @@ class LoadProfiles(bpy.types.Operator):
         props = context.scene.BIMProfileProperties
         props.profiles.clear()
 
+        filter_material_profiles = props.is_filtering_material_profiles
+
         for profile in tool.Ifc.get().by_type("IfcProfileDef"):
+            if filter_material_profiles:
+                inverse_references = tool.Ifc.get().get_inverse(profile)
+                related_material_profiles = [ref for ref in inverse_references if ref.is_a("IfcMaterialProfile")]
+                if not related_material_profiles:
+                    continue
             if not profile.ProfileName:
                 continue
             new = props.profiles.add()
             new.ifc_definition_id = profile.id()
-            new.name = profile.ProfileName or "Unnamed"
+            new["name"] = profile.ProfileName or "Unnamed"
             new.ifc_class = profile.is_a()
 
         props.is_editing = True
@@ -97,17 +106,18 @@ class RemoveProfileDef(bpy.types.Operator, tool.Ifc.Operator):
             props.active_profile_index = min(current_index, len(props.profiles) - 1)
 
 
-class EnableEditingProfile(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingProfile(bpy.types.Operator):
     bl_idname = "bim.enable_editing_profile"
     bl_label = "Enable Editing Profile"
     bl_options = {"REGISTER", "UNDO"}
     profile: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         props = context.scene.BIMProfileProperties
         props.profile_attributes.clear()
         bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.profile), props.profile_attributes)
         props.active_profile_id = self.profile
+        return {"FINISHED"}
 
 
 class DisableEditingProfile(bpy.types.Operator):
@@ -145,10 +155,48 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
         props = context.scene.BIMProfileProperties
         profile_class = props.profile_classes
         if profile_class == "IfcArbitraryClosedProfileDef":
-            points = [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1), (0, 0)]
-            profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
+            obj = props.object_to_profile
+            indices = []
+            if obj:
+                if len(obj.data.polygons) == 0:
+                    self.report(
+                        {"WARNING"},
+                        "This mesh is invalid to create a profile. Select a flat mesh with at least one face.",
+                    )
+                    props.object_to_profile = None
+                    return
+                helper = Helper(tool.Ifc.get())
+                indices = helper.auto_detect_arbitrary_profile_with_voids_extruded_area_solid(obj.data)
+                if not indices["inner_curves"]:
+                    indices = helper.auto_detect_arbitrary_closed_profile_extruded_area_solid(obj.data)
+            props.object_to_profile = None
+            if not indices:
+                points = [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1), (0, 0)]
+                profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
+            else:
+                if "inner_curves" not in indices:
+                    points = [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in indices["profile"]]
+                    points.append(points[0])
+                    profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
+                else:
+                    outer_points = [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in indices["profile"]]
+                    outer_points.append(outer_points[0])
+                    inner_points = [
+                        [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in curve]
+                        for curve in indices["inner_curves"]
+                    ]
+                    for curve in inner_points:
+                        curve.append(curve[0])
+                    profile = ifcopenshell.api.run(
+                        "profile.add_arbitrary_profile_with_voids",
+                        tool.Ifc.get(),
+                        outer_profile=outer_points,
+                        inner_profiles=inner_points,
+                    )
+
         else:
             profile = ifcopenshell.api.run("profile.add_parameterized_profile", tool.Ifc.get(), ifc_class=profile_class)
+            tool.Profile.set_default_profile_attrs(profile)
         profile.ProfileName = "New Profile"
         bpy.ops.bim.load_profiles()
 
@@ -174,12 +222,12 @@ class DuplicateProfileDef(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.load_profiles()
 
 
-class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingArbitraryProfile(bpy.types.Operator):
     bl_idname = "bim.enable_editing_arbitrary_profile"
     bl_label = "Enable Editing Arbitrary Profile"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         props = context.scene.BIMProfileProperties
         active_profile = props.profiles[props.active_profile_index]
         profile_id = active_profile.ifc_definition_id
@@ -192,6 +240,7 @@ class EnableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_arbitrary_profile(context))
         tool.Blender.set_viewport_tool("bim.cad_tool")
+        return {"FINISHED"}
 
 
 def disable_editing_arbitrary_profile(context):
@@ -210,13 +259,14 @@ def disable_editing_arbitrary_profile(context):
     refresh()
 
 
-class DisableEditingArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingArbitraryProfile(bpy.types.Operator):
     bl_idname = "bim.disable_editing_arbitrary_profile"
     bl_label = "Disable Editing Arbitrary Profile"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        return disable_editing_arbitrary_profile(context)
+    def execute(self, context):
+        disable_editing_arbitrary_profile(context)
+        return {"FINISHED"}
 
 
 class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -264,16 +314,26 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
 
 
-class PurgeUnusedProfiles(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.purge_unused_profiles"
-    bl_label = "Purge Unused Profiles"
+class SelectProfileInProfilesUI(bpy.types.Operator):
+    bl_idname = "bim.profiles_ui_select"
+    bl_label = "Select Profile In Profiles UI"
     bl_options = {"REGISTER", "UNDO"}
+    profile_id: bpy.props.IntProperty()
 
-    def _execute(self, context):
-        props = context.scene.BIMProfileProperties
-        purged_profiles = core.purge_unused_profiles(tool.Ifc, tool.Profile)
-        self.report({"INFO"}, f"{purged_profiles} profiles were purged.")
+    def execute(self, context):
+        props = bpy.context.scene.BIMProfileProperties
+        ifc_file = tool.Ifc.get()
+        profile = ifc_file.by_id(self.profile_id)
+        bpy.ops.bim.load_profiles()
 
-        if props.is_editing:
-            refresh()
-            bpy.ops.bim.load_profiles()
+        profile_index = next((i for i, m in enumerate(props.profiles) if m.ifc_definition_id == self.profile_id), None)
+        if profile_index is None:
+            self.report({"INFO"}, "Profile not found in Profiles UI. Perhaps it's unnamed?")
+            return {"CANCELLED"}
+
+        props.active_profile_index = profile_index
+        self.report(
+            {"INFO"},
+            f"Profile '{profile.Name or 'Unnamed'}' is selected in Profiles UI.",
+        )
+        return {"FINISHED"}

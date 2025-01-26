@@ -98,6 +98,7 @@ class DiscardUncommitted(bpy.types.Operator):
 
         core.discard_uncommitted(tool.IfcGit, tool.Ifc)
         refresh()
+        tool.IfcGit.decolourise()
         return {"FINISHED"}
 
 
@@ -132,7 +133,7 @@ class CommitChanges(bpy.types.Operator):
 
         repo = IfcGitData.data["repo"]
         core.commit_changes(tool.IfcGit, tool.Ifc, repo)
-        bpy.ops.ifcgit.refresh()
+        core.refresh_revision_list(tool.IfcGit, repo, tool.Ifc)
         refresh()
         return {"FINISHED"}
 
@@ -162,7 +163,7 @@ class AddTag(bpy.types.Operator):
 
         repo = IfcGitData.data["repo"]
         core.add_tag(tool.IfcGit, repo)
-        bpy.ops.ifcgit.refresh()
+        core.refresh_revision_list(tool.IfcGit, repo, tool.Ifc)
         refresh()
         return {"FINISHED"}
 
@@ -179,7 +180,7 @@ class DeleteTag(bpy.types.Operator):
 
         repo = IfcGitData.data["repo"]
         core.delete_tag(tool.IfcGit, repo, self.tag_name)
-        bpy.ops.ifcgit.refresh()
+        core.refresh_revision_list(tool.IfcGit, repo, tool.Ifc)
         refresh()
         return {"FINISHED"}
 
@@ -204,6 +205,7 @@ class RefreshGit(bpy.types.Operator):
         repo = IfcGitData.data["repo"]
         core.refresh_revision_list(tool.IfcGit, repo, tool.Ifc)
         refresh()
+        tool.IfcGit.decolourise()
         return {"FINISHED"}
 
 
@@ -342,7 +344,7 @@ class AddRemote(bpy.types.Operator):
 
         repo = IfcGitData.data["repo"]
         core.add_remote(tool.IfcGit, repo)
-        bpy.ops.ifcgit.refresh()
+        core.refresh_revision_list(tool.IfcGit, repo, tool.Ifc)
         refresh()
         return {"FINISHED"}
 
@@ -358,7 +360,7 @@ class DeleteRemote(bpy.types.Operator):
 
         repo = IfcGitData.data["repo"]
         core.delete_remote(tool.IfcGit, repo)
-        bpy.ops.ifcgit.refresh()
+        core.refresh_revision_list(tool.IfcGit, repo, tool.Ifc)
         refresh()
         return {"FINISHED"}
 
@@ -383,4 +385,26 @@ class ObjectLog(bpy.types.Operator):
 
         step_id = context.active_object.BIMObjectProperties.ifc_definition_id
         core.entity_log(tool.IfcGit, tool.Ifc, step_id, self)
+        return {"FINISHED"}
+
+
+class InstallGit(bpy.types.Operator):
+    """Install Git Version Control System from the
+    Windows Package Manager Community Repository,
+    requires restarting Blender after installation"""
+
+    bl_label = "Install Git"
+    bl_idname = "ifcgit.install_git"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
+        if IfcGitData.data["git_exe"]:
+            return False
+        return True
+
+    def execute(self, context):
+        core.install_git(tool.IfcGit, self)
+        refresh()
         return {"FINISHED"}

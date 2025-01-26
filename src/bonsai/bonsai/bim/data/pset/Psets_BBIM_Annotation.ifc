@@ -1,11 +1,11 @@
 ISO-10303-21;
 HEADER;
-FILE_DESCRIPTION((),'2;1');
-FILE_NAME('Psets_BBIM_Annotation.ifc','2020-01-01T00:00:00',(),(),'Psets_BBIM_Annotation','Psets_BBIM_Annotation',$);
+FILE_DESCRIPTION($,'2;1');
+FILE_NAME('Psets_BBIM_Annotation.ifc','2020-01-01T00:00:00',$,$,'Psets_BBIM_Annotation','Psets_BBIM_Annotation',$);
 FILE_SCHEMA(('IFC4'));
 ENDSEC;
 DATA;
-#1=IFCPROPERTYSETTEMPLATE('3VuPUwdCD2Qx3XDDRs0R1N',$,'EPset_Annotation','',.PSET_TYPEDRIVENOVERRIDE.,'IfcAnnotation,IfcTypeProduct',(#2,#3,#4));
+#1=IFCPROPERTYSETTEMPLATE('3VuPUwdCD2Qx3XDDRs0R1N',$,'EPset_Annotation','',.PSET_TYPEDRIVENOVERRIDE.,'IfcAnnotation,IfcTypeProduct',(#2,#3,#4,#29));
 #2=IFCSIMPLEPROPERTYTEMPLATE('2P7JN79n96Q9pElZ83LKe4',$,'ZIndex','',.P_SINGLEVALUE.,'IfcInteger',$,$,$,$,$,.READWRITE.);
 #3=IFCSIMPLEPROPERTYTEMPLATE('1Wpx_r2xj1_9w5JpI0QRJy',$,'Symbol','',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #4=IFCSIMPLEPROPERTYTEMPLATE('3q0oxMUKP47vZ4jnyG$dDb',$,'Classes','Classes separarated by spaces that end up in classes for this element in svg. Can be used to specify the text font size: small - 1.8mm; regular - 2.5mm; large - 3.5mm; header - 5mm; title - 7mm. By default regular size is used.',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
@@ -33,6 +33,6 @@ DATA;
 #26=IFCSIMPLEPROPERTYTEMPLATE('0SVyOfB0rC2xNfdRYf3XvY',$,'SuppressZeroInches','Suppress 0 inch values in dimension annotation text (for example: 12'' - 0" -> 12'')',.P_SINGLEVALUE.,'IfcBoolean',$,$,$,$,$,.READWRITE.);
 #27=IFCSIMPLEPROPERTYTEMPLATE('2bUmj458PBqPAtUoI3MXsb',$,'TextPrefix','Text to add before annotation measurement value',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #28=IFCSIMPLEPROPERTYTEMPLATE('0bnzttUb9BPuN597uNTXOE',$,'TextSuffix','Text to add after annotation measurement value',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
-
+#29=IFCSIMPLEPROPERTYTEMPLATE('2pJmUDpB50VBdCOib1zcJJ',$,'Newline_At','',.P_SINGLEVALUE.,'IfcInteger',$,$,$,$,$,.READWRITE.);
 ENDSEC;
 END-ISO-10303-21;

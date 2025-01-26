@@ -24,6 +24,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.api
+import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.geometry
 import bonsai.core.type as core
@@ -39,7 +40,9 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
     related_object: bpy.props.StringProperty()
 
     def _execute(self, context):
-        type = tool.Ifc.get().by_id(self.relating_type or int(context.active_object.BIMTypeProperties.relating_type))
+        relating_type = tool.Ifc.get().by_id(
+            self.relating_type or int(context.active_object.BIMTypeProperties.relating_type)
+        )
         related_objects = (
             [bpy.data.objects.get(self.related_object)]
             if self.related_object
@@ -48,19 +51,16 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
         model_props = context.scene.BIMModelProperties
         for obj in related_objects:
             element = tool.Ifc.get_entity(obj)
-            core.assign_type(tool.Ifc, tool.Type, element=element, type=type)
+            core.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
             if model_props.occurrence_name_style == "TYPE":
-                obj.name = tool.Model.generate_occurrence_name(type, element.is_a())
+                obj.name = tool.Model.generate_occurrence_name(relating_type, element.is_a())
 
 
-class UnassignType(bpy.types.Operator):
+class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_type"
     bl_label = "Unassign Type"
     bl_options = {"REGISTER", "UNDO"}
     related_object: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         def exclude_callback(attribute):
@@ -74,11 +74,10 @@ class UnassignType(bpy.types.Operator):
                 continue
             ifcopenshell.api.run("type.unassign_type", self.file, related_objects=[element])
 
-            active_representation = tool.Geometry.get_active_representation(obj)
-            active_context = active_representation.ContextOfItems
-            new_active_representation = None
-
             if element.Representation:
+                new_active_representation = None
+                active_representation = tool.Geometry.get_active_representation(obj)
+                active_context = active_representation.ContextOfItems
                 representations = []
                 for representation in element.Representation.Representations:
                     resolved_representation = ifcopenshell.util.representation.resolve_representation(representation)
@@ -97,16 +96,16 @@ class UnassignType(bpy.types.Operator):
                             new_active_representation = copied_representation
                 element.Representation.Representations = representations
 
-            if new_active_representation:
-                bonsai.core.geometry.switch_representation(
-                    tool.Ifc,
-                    tool.Geometry,
-                    obj=obj,
-                    representation=new_active_representation,
-                    should_reload=False,
-                    is_global=False,
-                    should_sync_changes_first=False,
-                )
+                if new_active_representation:
+                    bonsai.core.geometry.switch_representation(
+                        tool.Ifc,
+                        tool.Geometry,
+                        obj=obj,
+                        representation=new_active_representation,
+                        should_reload=False,
+                        is_global=False,
+                        should_sync_changes_first=False,
+                    )
         return {"FINISHED"}
 
 
@@ -201,12 +200,25 @@ class SelectSimilarType(bpy.types.Operator):
                 continue
             relating_types.add(relating_type)
 
+        result = ""
         for relating_type in relating_types:
             related_objects = ifcopenshell.util.element.get_types(relating_type)
+
             for element in related_objects:
                 obj = tool.Ifc.get_object(element)
                 if obj and obj in context.visible_objects:
                     obj.select_set(True)
+
+            # copy selection query to clipboard
+            related_objects_class = related_objects[0].is_a()
+            relating_type_name = relating_type.Name
+            if not result:
+                result = f'{related_objects_class}, type="{relating_type_name}"'
+            else:
+                result += f' + {related_objects_class}, type="{relating_type_name}"'
+            bpy.context.window_manager.clipboard = result
+            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+
         return {"FINISHED"}
 
 
@@ -230,257 +242,6 @@ class SelectTypeObjects(bpy.types.Operator):
             context.view_layer.objects.active = context.selected_objects[0]
         else:
             self.report({"INFO"}, "Typed objects can't be selected : They may be hidden or in an excluded collection.")
-        return {"FINISHED"}
-
-
-class AddType(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_type"
-    bl_label = "Add Type"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        props = context.scene.BIMModelProperties
-        ifc_class = props.type_class
-        predefined_type = props.type_predefined_type
-        name = props.type_name
-        template = props.type_template
-        ifc_file = tool.Ifc.get()
-        body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        if not body:
-            props.type_class = props.type_class
-            self.report({"ERROR"}, "No Model/Body/MODEL_VIEW context found.")
-            return {"FINISHED"}
-
-        if template == "MESH":
-            location = context.scene.cursor.location
-            if context.active_object and context.selected_objects and context.active_object.data:
-                obj = context.active_object
-                element = tool.Ifc.get_entity(obj)
-                if element:
-                    mesh = obj.data.copy()
-                    mesh.BIMMeshProperties.ifc_definition_id = 0
-                    obj = bpy.data.objects.new(element.Name or name, mesh)
-            else:
-                mesh = bpy.data.meshes.new(name)
-                bm = bmesh.new()
-                bmesh.ops.create_cube(bm, size=1)
-                bm.to_mesh(mesh)
-                bm.free()
-                obj = bpy.data.objects.new(name, mesh)
-            obj.matrix_world.translation = location
-            bonsai.core.root.assign_class(
-                tool.Ifc,
-                tool.Collector,
-                tool.Root,
-                obj=obj,
-                ifc_class=ifc_class,
-                predefined_type=predefined_type,
-                should_add_representation=True,
-                context=body,
-                ifc_representation_class=None,
-            )
-
-        elif template in ("LAYERSET_AXIS2", "LAYERSET_AXIS3"):
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            obj = bpy.data.objects.new(name, None)
-            element = bonsai.core.root.assign_class(
-                tool.Ifc,
-                tool.Collector,
-                tool.Root,
-                obj=obj,
-                ifc_class=ifc_class,
-                predefined_type=predefined_type,
-                should_add_representation=True,
-                context=body,
-                ifc_representation_class=None,
-            )
-            materials = ifc_file.by_type("IfcMaterial")
-            if materials:
-                material = materials[0]  # Arbitrarily pick a material
-            else:
-                material = ifcopenshell.api.run("material.add_material", tool.Ifc.get(), name="Unknown")
-            rel = ifcopenshell.api.run(
-                "material.assign_material", ifc_file, products=[element], type="IfcMaterialLayerSet"
-            )
-            layer_set = rel.RelatingMaterial
-            layer = ifcopenshell.api.run("material.add_layer", ifc_file, layer_set=layer_set, material=material)
-            thickness = 0.1  # Arbitrary metric thickness for now
-            layer.LayerThickness = thickness / unit_scale
-
-            pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="EPset_Parametric")
-            if template == "LAYERSET_AXIS2":
-                axis = "AXIS2"
-            elif template == "LAYERSET_AXIS3":
-                axis = "AXIS3"
-            ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={"LayerSetDirection": axis})
-
-        elif template == "PROFILESET" or template.startswith("FLOW_SEGMENT_"):
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-            obj = bpy.data.objects.new(name, None)
-            element = bonsai.core.root.assign_class(
-                tool.Ifc,
-                tool.Collector,
-                tool.Root,
-                obj=obj,
-                ifc_class=ifc_class,
-                predefined_type=predefined_type,
-                should_add_representation=True,
-                context=body,
-                ifc_representation_class=None,
-            )
-            materials = ifc_file.by_type("IfcMaterial")
-            if materials:
-                material = materials[0]  # Arbitrarily pick a material
-            else:
-                material = ifcopenshell.api.run("material.add_material", tool.Ifc.get(), name="Unknown")
-            if template == "PROFILESET":
-                named_profiles = [p for p in ifc_file.by_type("IfcProfileDef") if p.ProfileName]
-                if named_profiles:
-                    profile = named_profiles[0]
-                else:
-                    size = 0.5 / unit_scale
-                    profile = ifc_file.create_entity(
-                        "IfcRectangleProfileDef", ProfileName="New Profile", ProfileType="AREA", XDim=size, YDim=size
-                    )
-            else:
-                # NOTE: defaults dims are in meters / mm
-                # for now default names are hardcoded to mm
-                if template == "FLOW_SEGMENT_RECTANGULAR":
-                    default_x_dim = 0.4
-                    default_y_dim = 0.2
-                    profile_name = f"{ifc_class}-{default_x_dim*1000}x{default_y_dim*1000}"
-                    profile = ifc_file.create_entity(
-                        "IfcRectangleProfileDef",
-                        ProfileName=profile_name,
-                        ProfileType="AREA",
-                        XDim=default_x_dim / unit_scale,
-                        YDim=default_y_dim / unit_scale,
-                    )
-                elif template == "FLOW_SEGMENT_CIRCULAR":
-                    default_diameter = 0.1
-                    profile_name = f"{ifc_class}-{default_diameter*1000}"
-                    profile = ifc_file.create_entity(
-                        "IfcCircleProfileDef",
-                        ProfileName=profile_name,
-                        ProfileType="AREA",
-                        Radius=(default_diameter / 2) / unit_scale,
-                    )
-                elif template == "FLOW_SEGMENT_CIRCULAR_HOLLOW":
-                    default_diameter = 0.15
-                    default_thickness = 0.005
-                    profile_name = f"{ifc_class}-{default_diameter*1000}x{default_thickness*1000}"
-                    profile = ifc_file.create_entity(
-                        "IfcCircleHollowProfileDef",
-                        ProfileName=profile_name,
-                        ProfileType="AREA",
-                        Radius=(default_diameter / 2) / unit_scale,
-                        WallThickness=default_thickness,
-                    )
-
-            rel = ifcopenshell.api.run(
-                "material.assign_material", ifc_file, products=[element], type="IfcMaterialProfileSet"
-            )
-            profile_set = rel.RelatingMaterial
-            material_profile = ifcopenshell.api.run(
-                "material.add_profile", ifc_file, profile_set=profile_set, material=material
-            )
-            ifcopenshell.api.run(
-                "material.assign_profile", ifc_file, material_profile=material_profile, profile=profile
-            )
-
-        elif template == "EMPTY":
-            obj = bpy.data.objects.new(name, None)
-            bonsai.core.root.assign_class(
-                tool.Ifc,
-                tool.Collector,
-                tool.Root,
-                obj=obj,
-                ifc_class=ifc_class,
-                predefined_type=predefined_type,
-                should_add_representation=True,
-                context=body,
-                ifc_representation_class=None,
-            )
-
-        elif template == "WINDOW":
-            mesh = bpy.data.meshes.new(name)
-            obj = bpy.data.objects.new(name, mesh)
-            element = bonsai.core.root.assign_class(
-                tool.Ifc,
-                tool.Collector,
-                tool.Root,
-                obj=obj,
-                predefined_type=predefined_type if tool.Ifc.get_schema() != "IFC2X3" else None,
-                ifc_class="IfcWindowType" if tool.Ifc.get_schema() != "IFC2X3" else "IfcWindowStyle",
-                should_add_representation=False,
-            )
-            with context.temp_override(active_object=obj):
-                bpy.ops.bim.add_window()
-
-        elif template == "DOOR":
-            mesh = bpy.data.meshes.new(name)
-            obj = bpy.data.objects.new(name, mesh)
-            element = bonsai.core.root.assign_class(
-                tool.Ifc,
-                tool.Collector,
-                tool.Root,
-                obj=obj,
-                predefined_type=predefined_type if tool.Ifc.get_schema() != "IFC2X3" else None,
-                ifc_class="IfcDoorType" if tool.Ifc.get_schema() != "IFC2X3" else "IfcDoorStyle",
-                should_add_representation=False,
-            )
-            with context.temp_override(active_object=obj):
-                bpy.ops.bim.add_door()
-
-        elif template == "STAIR":
-            mesh = bpy.data.meshes.new(name)
-            obj = bpy.data.objects.new(name, mesh)
-            element = bonsai.core.root.assign_class(
-                tool.Ifc,
-                tool.Collector,
-                tool.Root,
-                obj=obj,
-                predefined_type=predefined_type,
-                ifc_class=ifc_class,
-                should_add_representation=False,
-            )
-            with context.temp_override(active_object=obj):
-                bpy.ops.bim.add_stair()
-
-        elif template == "RAILING":
-            mesh = bpy.data.meshes.new(name)
-            obj = bpy.data.objects.new(name, mesh)
-            element = bonsai.core.root.assign_class(
-                tool.Ifc,
-                tool.Collector,
-                tool.Root,
-                obj=obj,
-                predefined_type=predefined_type,
-                ifc_class="IfcRailingType",
-                should_add_representation=True,
-                context=body,
-            )
-            with context.temp_override(active_object=obj):
-                bpy.ops.bim.add_railing()
-
-        elif template == "ROOF":
-            mesh = bpy.data.meshes.new(name)
-            obj = bpy.data.objects.new(name, mesh)
-            element = bonsai.core.root.assign_class(
-                tool.Ifc,
-                tool.Collector,
-                tool.Root,
-                obj=obj,
-                predefined_type=predefined_type,
-                ifc_class="IfcRoofType",
-                should_add_representation=True,
-                context=body,
-            )
-            with context.temp_override(active_object=obj):
-                bpy.ops.bim.add_roof()
-
-        bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class)
-        props.type_class = props.type_class
         return {"FINISHED"}
 
 
@@ -519,12 +280,25 @@ class RenameType(bpy.types.Operator, tool.Ifc.Operator):
         self.layout.prop(self, "name")
 
 
-class AutoRenameOccurrences(bpy.types.Operator, tool.Ifc.Operator):
+class LaunchRenameType(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.launch_rename_type"
+    bl_label = "Launch Rename Type"
+    bl_options = {"REGISTER", "UNDO"}
+    element: bpy.props.IntProperty()
+    name: bpy.props.StringProperty(name="Name")
+
+    def execute(self, context):
+        # This stub operator is needed because operators from menu skip the invoke call
+        bpy.ops.bim.rename_type("INVOKE_DEFAULT", element=self.element, name=self.name)
+        return {"FINISHED"}
+
+
+class AutoRenameOccurrences(bpy.types.Operator):
     bl_idname = "bim.auto_rename_occurrences"
     bl_label = "Auto Rename Occurrences"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         obj = context.active_object
         element_type = tool.Ifc.get_entity(obj)
         if element_type and element_type.is_a("IfcTypeObject"):
@@ -533,6 +307,7 @@ class AutoRenameOccurrences(bpy.types.Operator, tool.Ifc.Operator):
                 occurrence.Name = tool.Model.generate_occurrence_name(element_type, occurrence.is_a())
                 if obj:
                     tool.Root.set_object_name(obj, occurrence)
+        return {"FINISHED"}
 
 
 class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
@@ -556,16 +331,12 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
             tool.Blender.select_and_activate_single_object(context, new_obj)
         else:
             self.report({"INFO"}, "Type object can't be selected : It may be hidden or in an excluded collection.")
-        context.scene.BIMModelProperties.ifc_class = new.is_a()
-        context.scene.BIMModelProperties.relating_type_id = str(new_obj.BIMObjectProperties.ifc_definition_id)
+
+        props = context.scene.BIMModelProperties
+
+        ifc_class = new.is_a()
+        # Set duplicated type as active in current tool.
+        if ifc_class in (i[0] for i in (bonsai.bim.helper.get_enum_items(props, "ifc_class", context) or ()) if i):
+            context.scene.BIMModelProperties.ifc_class = new.is_a()
+            context.scene.BIMModelProperties.relating_type_id = str(new_obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}
-
-
-class PurgeUnusedTypes(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.purge_unused_types"
-    bl_label = "Purge Unused Types"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        purged_types = core.purge_unused_types(tool.Ifc, tool.Type, tool.Geometry)
-        self.report({"INFO"}, f"{purged_types} types were purged.")

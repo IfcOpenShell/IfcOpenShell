@@ -23,7 +23,7 @@ from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, attribute: str = "Tag"):
+    def __init__(self, file: ifcopenshell.file, logger: Logger, attribute: str = "Tag"):
         """Merge duplicate element types via the Tag or another attribute
 
         Revit is notorious for creating many duplicate element types. Element
@@ -60,7 +60,6 @@ class Patcher:
             # Explicitly say we want to merge based on the Name attribute
             ifcpatch.execute({"file": model, "recipe": "MergeDuplicateTypes", "arguments": ["Name"]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.attribute = attribute

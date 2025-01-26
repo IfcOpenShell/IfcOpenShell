@@ -47,17 +47,17 @@ def get_primitive_type(
         return "float"
     elif "<number>" in data_type or "<integer>" in data_type:
         return "integer"
-    elif "<boolean>" in data_type or "<logical>" in data_type:
+    elif "<boolean>" in data_type:
         return "boolean"
-    elif "<enumeration" in data_type:
+    elif "<logical>" in data_type or "<enumeration" in data_type:
         return "enum"
     elif "<binary" in data_type:
         return "binary"
 
 
-def get_enum_items(attribute):
+def get_enum_items(attribute: ifcopenshell_wrapper.attribute) -> tuple[str, ...]:
     return attribute.type_of_attribute().declared_type().enumeration_items()
 
 
-def get_select_items(attribute):
+def get_select_items(attribute: ifcopenshell_wrapper.attribute) -> tuple[ifcopenshell_wrapper.entity, ...]:
     return attribute.type_of_attribute().declared_type().select_list()

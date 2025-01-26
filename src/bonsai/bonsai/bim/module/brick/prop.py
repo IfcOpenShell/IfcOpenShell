@@ -46,25 +46,32 @@ def get_libraries(self, context):
 
 
 def get_namespaces(self, context):
-    return [(uri, f"{alias}: {uri}", "") for alias, uri in BrickStore.namespaces]
+    global NAMESPACES_ENUM_ITEMS
+    NAMESPACES_ENUM_ITEMS = [(uri, f"{alias}: {uri}", "") for alias, uri in BrickStore.namespaces]
+    return NAMESPACES_ENUM_ITEMS
 
 
 def get_brick_entity_classes(self, context):
+    global ENTITY_CLASSES_ENUM_ITEMS
     entity = self.brick_entity_create_type
-    return [(uri, uri.split("#")[-1], "") for uri in BrickStore.entity_classes[entity]]
+    ENTITY_CLASSES_ENUM_ITEMS = [(uri, uri.split("#")[-1], "") for uri in BrickStore.entity_classes[entity]]
+    return ENTITY_CLASSES_ENUM_ITEMS
 
 
 def get_brick_roots(self, context):
-    return [(root, root, "") for root in BrickStore.root_classes]
+    global BRICK_ROOTS_ENUM_ITEMS
+    BRICK_ROOTS_ENUM_ITEMS = [(root, root, "") for root in BrickStore.root_classes]
+    return BRICK_ROOTS_ENUM_ITEMS
 
 
 def get_brick_relations(self, context):
-    relations = [(uri, uri.split("#")[-1], "") for uri in BrickStore.relationships]
+    global BRICK_RELATIONS_ENUM_ITEMS
+    BRICK_RELATIONS_ENUM_ITEMS = [(uri, uri.split("#")[-1], "") for uri in BrickStore.relationships]
     for relation in BrickschemaData.data["active_relations"]:
         if relation["predicate_name"] == "label":
-            return relations
-    relations.append(("http://www.w3.org/2000/01/rdf-schema#label", "label", ""))
-    return relations
+            return BRICK_RELATIONS_ENUM_ITEMS
+    BRICK_RELATIONS_ENUM_ITEMS.append(("http://www.w3.org/2000/01/rdf-schema#label", "label", ""))
+    return BRICK_RELATIONS_ENUM_ITEMS
 
 
 def update_view(self, context):

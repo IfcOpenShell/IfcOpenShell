@@ -26,6 +26,7 @@ import urllib.parse
 import xml.etree.ElementTree as ET
 import bonsai.tool as tool
 import ifcopenshell.util.geolocation
+from pathlib import Path
 from xml.dom import minidom
 from mathutils import Vector
 import re
@@ -38,7 +39,6 @@ XLINK = "{http://www.w3.org/1999/xlink}"
 
 class SheetBuilder:
     def __init__(self):
-        self.data_dir = None
         self.scale = "NTS"
 
     def create(self, layout_path: str, titleblock_name: str) -> None:
@@ -49,7 +49,9 @@ class SheetBuilder:
         root.attrib["version"] = "1.1"
 
         sheet_dir = os.path.dirname(layout_path)
-        ootb_titleblock_path = os.path.join(self.data_dir, "templates", "titleblocks", titleblock_name + ".svg")
+        ootb_titleblock_path = tool.Blender.get_data_dir_path(
+            Path("templates") / "titleblock" / (titleblock_name + ".svg")
+        )
         titleblock_path = tool.Ifc.resolve_uri(tool.Drawing.get_default_titleblock_path(titleblock_name))
 
         os.makedirs(sheet_dir, exist_ok=True)
@@ -153,26 +155,29 @@ class SheetBuilder:
             drawing_path = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_reference(drawing))
             drawing_tree = ET.parse(drawing_path)
             drawing_root = drawing_tree.getroot()
-            view_width = self.convert_to_mm(drawing_root.attrib.get("width"))
-            view_height = self.convert_to_mm(drawing_root.attrib.get("height"))
+            view_width = round(self.convert_to_mm(drawing_root.attrib.get("width")), 2)
+            view_height = round(self.convert_to_mm(drawing_root.attrib.get("height")), 2)
 
             foreground = drawing_view.find(f'.//{SVG}image[@data-type="foreground"]')
-            height = float(foreground.attrib["height"])
-            width = float(foreground.attrib["width"])
-            readjust = Vector((width - view_width, height - view_height)) / 2
+            current_width = round(float(foreground.attrib["width"]), 2)
+            current_height = round(float(foreground.attrib["height"]), 2)
 
-            for image in drawing_view.findall(f"{SVG}image"):
-                x = float(image.attrib["x"])
-                y = float(image.attrib["y"])
-                if image.attrib["data-type"] == "view-title":
-                    image.attrib["x"] = str(x + readjust.x)
-                    # negate y offset because view-title comes AFTER foreground
-                    image.attrib["y"] = str(y - readjust.y)
-                else:
-                    image.attrib["x"] = str(x + readjust.x)
-                    image.attrib["y"] = str(y + readjust.y)
-                    image.attrib["width"] = str(view_width)
-                    image.attrib["height"] = str(view_height)
+            # Check if the dimensions have changed
+            if current_width != view_width or current_height != view_height:
+                readjust = Vector((current_width - view_width, current_height - view_height)) / 2
+
+                for image in drawing_view.findall(f"{SVG}image"):
+                    x = float(image.attrib["x"])
+                    y = float(image.attrib["y"])
+                    if image.attrib["data-type"] == "view-title":
+                        image.attrib["x"] = str(x + readjust.x)
+                        # negate y offset because view-title comes AFTER foreground
+                        image.attrib["y"] = str(y - readjust.y)
+                    else:
+                        image.attrib["x"] = str(x + readjust.x)
+                        image.attrib["y"] = str(y + readjust.y)
+                        image.attrib["width"] = str(view_width)
+                        image.attrib["height"] = str(view_height)
 
         layout_tree.write(layout_path)
 
@@ -238,7 +243,7 @@ class SheetBuilder:
         title_path = os.path.join(layout_dir, "assets", "view-title.svg")
         os.makedirs(os.path.dirname(title_path), exist_ok=True)
         if not os.path.exists(title_path):
-            ootb_title = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", "view-title.svg")
+            ootb_title = tool.Blender.get_data_dir_path(Path("assets") / "view-title.svg")
             shutil.copy(ootb_title, title_path)
 
         title_tree = ET.parse(title_path)
@@ -394,7 +399,19 @@ class SheetBuilder:
                 data.update({"Sheet" + k: v for k, v in sheet.get_info().items()})
                 if not data["Name"]:
                     data["Name"] = ntpath.basename(foreground_path)[0:-4]
-                data["Scale"] = tool.Drawing.get_drawing_human_scale(drawing)
+
+                # If a perspective drawing, don't add scale to view title
+                try:
+                    is_perspective = (
+                        drawing.Representation.Representations[0]
+                        .Items[0]
+                        .TreeRootExpression.FirstOperand.is_a("IfcRectangularPyramid")
+                    )
+                except AttributeError:
+                    is_perspective = False
+
+                if not is_perspective:
+                    data["Scale"] = tool.Drawing.get_drawing_human_scale(drawing)
                 view.append(self.parse_embedded_svg(view_title, data))
 
             for image in images:
@@ -477,8 +494,10 @@ class SheetBuilder:
         return group
 
     def change_titleblock(self, sheet: ifcopenshell.entity_instance, titleblock_name: str) -> None:
-        ootb_titleblock_path = os.path.join(self.data_dir, "templates", "titleblocks", titleblock_name + ".svg")
-        titleblock_path = tool.Drawing.get_default_titleblock_path(titleblock_name)
+        ootb_titleblock_path = tool.Blender.get_data_dir_path(
+            Path("templates") / "titleblocks" / (titleblock_name + ".svg")
+        )
+        titleblock_path = tool.Ifc.resolve_uri(tool.Drawing.get_default_titleblock_path(titleblock_name))
         sheet_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
         sheet_dir = os.path.dirname(sheet_path)
 

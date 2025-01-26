@@ -20,6 +20,7 @@ import bpy
 import json
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.classification
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import bonsai.tool as tool
@@ -253,19 +254,18 @@ class EditClassification(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMClassificationProperties
-        attributes = {}
-        for attribute in props.classification_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            elif attribute.name == "ReferenceTokens":
-                attributes[attribute.name] = json.loads(attribute.string_value)
-            else:
-                attributes[attribute.name] = attribute.string_value
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "classification.edit_classification",
-            self.file,
-            **{"classification": self.file.by_id(props.active_classification_id), "attributes": attributes},
+
+        def callback(attributes, prop):
+            if prop.name == "ReferenceTokens":
+                attributes[prop.name] = json.loads(prop.string_value)
+                return True
+
+        attributes = bonsai.bim.helper.export_attributes(props.classification_attributes, callback=callback)
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.classification.edit_classification(
+            ifc_file,
+            classification=ifc_file.by_id(props.active_classification_id),
+            attributes=attributes,
         )
         bpy.ops.bim.disable_editing_classification()
 
@@ -346,17 +346,11 @@ class EditClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMClassificationReferenceProperties
-        attributes = {}
-        for attribute in props.reference_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                attributes[attribute.name] = attribute.string_value
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "classification.edit_reference",
-            self.file,
-            reference=self.file.by_id(props.active_reference_id),
+        attributes = bonsai.bim.helper.export_attributes(props.reference_attributes)
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.classification.edit_reference(
+            ifc_file,
+            reference=ifc_file.by_id(props.active_reference_id),
             attributes=attributes,
         )
         bpy.ops.bim.disable_editing_classification_reference()
@@ -404,6 +398,10 @@ class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
 class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_classification_reference_from_bsdd"
     bl_label = "Add Classification Reference From bSDD"
+    bl_description = (
+        "Add classification reference from BSDD to the selected objects. "
+        "If class properties are loaded, they also will be assigned as psets/qsets"
+    )
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
@@ -418,6 +416,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
             objects = [self.obj]
         props = context.scene.BIMClassificationProperties
         bprops = context.scene.BIMBSDDProperties
+        use_only_ifc_properties: bool = bprops.use_only_ifc_properties
 
         bsdd_classification = bprops.classifications[bprops.active_classification_index]
 
@@ -451,6 +450,23 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
             reference.Location = bsdd_classification.uri
 
             for classification_pset in bprops.classification_psets:
+                properties = {}
+
+                blender_properties = classification_pset.properties
+                if use_only_ifc_properties:
+                    blender_properties = [p for p in blender_properties if p.metadata == "IFC"]
+
+                for prop in blender_properties:
+                    properties[prop.name] = prop.get_value()
+
+                if classification_pset.name == "undefined_set":
+                    if "ObjectType" in properties:
+                        if hasattr(element, "ObjectType"):
+                            element.ObjectType = properties["ObjectType"]
+                        del properties["ObjectType"]
+                if not properties:
+                    continue
+
                 is_pset = not classification_pset.name.startswith("Qto_")
 
                 if is_pset:
@@ -468,10 +484,6 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
                     pset = ifcopenshell.api.run(
                         "pset.add_qto", tool.Ifc.get(), product=element, name=classification_pset.name
                     )
-
-                properties = {}
-                for prop in classification_pset.properties:
-                    properties[prop.name] = prop.get_value()
 
                 if is_pset:
                     ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties=properties)

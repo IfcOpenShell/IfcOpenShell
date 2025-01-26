@@ -23,7 +23,7 @@ Metric (m) Project**. This will begin a blank IFC4 project.
 
 In the :menuselection:`Properties --> Project Overview --> Spatial
 Decomposition` panel, you will see a hierarchy of spaces that has been
-automatically created for you. This hierarchy is known is the **Spatial Tree**.
+automatically created for you. This hierarchy is known as the **Spatial Tree**.
 
 .. image:: images/default-spatial-tree.png
 

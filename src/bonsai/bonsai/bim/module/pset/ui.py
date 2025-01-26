@@ -16,16 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 from bpy.types import Panel
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.helper import prop_with_search
+from bonsai.bim.helper import prop_with_search, get_display_value
 from bonsai.bim.module.pset.data import (
     ObjectPsetsData,
     ObjectQtosData,
     MaterialPsetsData,
-    MaterialSetPsetsData,
     MaterialSetItemPsetsData,
     TaskQtosData,
     ResourceQtosData,
@@ -35,21 +35,24 @@ from bonsai.bim.module.pset.data import (
     ProfilePsetsData,
     WorkSchedulePsetsData,
 )
-from typing import Any, Optional
+from bonsai.bim.module.material.data import ObjectMaterialData
+from typing import Any, Optional, TYPE_CHECKING
+from typing_extensions import assert_never
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.pset.prop import IfcProperty
 
 
-def draw_property(
-    prop: bpy.types.PropertyGroup, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
-) -> None:
+def draw_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_operator: Optional[str] = None) -> None:
     if prop.value_type == "IfcPropertySingleValue":
         draw_single_property(prop, layout, copy_operator)
     elif prop.value_type == "IfcPropertyEnumeratedValue":
         draw_enumerated_property(prop, layout, copy_operator)
+    else:
+        assert_never(prop.value_type)
 
 
-def draw_single_property(
-    prop: bpy.types.PropertyGroup, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
-) -> None:
+def draw_single_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_operator: Optional[str] = None) -> None:
     value_name = prop.metadata.get_value_name(display_only=True)
     if not value_name:
         layout.label(text=prop["Name"])
@@ -87,7 +90,7 @@ def draw_enumerated_property(
 
 
 def get_active_pset_obj_name(context: bpy.types.Context, obj_type: tool.Ifc.OBJECT_TYPE) -> str:
-    if obj_type in ("Object", "MaterialSet", "MaterialSetItem"):
+    if obj_type in ("Object", "MaterialSetItem"):
         return context.active_object.name
     return ""
 
@@ -102,6 +105,9 @@ def draw_psetqto_ui(
     allow_removing: bool = True,
     filter_keyword: str = "",
 ) -> None:
+
+    active_operator = context.active_operator
+
     filter_keyword = filter_keyword.lower()
     box = layout.box()
     row = box.row(align=True)
@@ -135,6 +141,11 @@ def draw_psetqto_ui(
         op.pset_id = pset_id
         op.obj = obj_name
         op.obj_type = obj_type
+        if pset["has_template"]:
+            row.label(text="", icon="ASSET_MANAGER")
+        else:
+            op = row.operator("bim.save_pset_as_template", icon="ASSET_MANAGER", text="")
+            op.pset_id = pset_id
         remove_pset_row = row.row(align=True)
         op = remove_pset_row.operator("bim.remove_pset", icon="X", text="")
         op.pset_id = pset_id
@@ -151,10 +162,17 @@ def draw_psetqto_ui(
         remove_pset_row.enabled = allow_removing
     if pset["is_expanded"]:
         if props.active_pset_id == pset_id:
+            is_parametric_pset = props.active_pset_name in tool.Model.BBIM_PARAMETRIC_PSETS
+            if is_parametric_pset:
+                box_ = box.box()
+                box_.alert = True
+                box_.label(text="Warning! This pset should not be edited directly", icon="ERROR")
+                box_.label(text="and should be edited from Parametric Geometry UI.")
+
             for prop in props.properties:
                 draw_psetqto_editable_ui(box, props, prop)
 
-            if not props.active_pset_has_template:
+            if not props.active_pset_has_template and not is_parametric_pset:
                 row = box.row(align=True)
                 row.prop(props, "prop_name", text="")
                 row.prop(props, "prop_value", text="")
@@ -181,9 +199,20 @@ def draw_psetqto_ui(
                 row = box.row(align=True)
                 row.scale_y = 0.8
                 row.label(text=prop["Name"])
-                op = row.operator("bim.select_similar", text=nominal_value, icon="NONE", emboss=False)
+                op = row.operator(
+                    "bim.select_similar", text=get_display_value(nominal_value), icon="NONE", emboss=False
+                )
                 op.key = '"' + pset["Name"].replace('"', '\\"') + '"."' + prop["Name"].replace('"', '\\"') + '"'
-
+                # calculate sum of all selected objects
+                if active_operator:
+                    if active_operator.bl_idname == "BIM_OT_select_similar":
+                        calculated_sum = getattr(active_operator, "calculated_sum", 0.0)
+                        if (
+                            op.key == active_operator.key
+                            and calculated_sum != 0
+                            and isinstance(float(nominal_value), (int, float))
+                        ):
+                            row.label(text=f"(Sum: {calculated_sum})")
             if not has_props_displayed:
                 row = box.row()
                 row.scale_y = 0.8
@@ -351,6 +380,14 @@ class BIM_PT_object_qtos(Panel):
                     allow_removing=False,
                     filter_keyword=context.scene.GlobalPsetProperties.qto_filter,
                 )
+        layout = self.layout
+        qtoprops = context.scene.BIMQtoProperties
+        row = layout.row(align=True)
+        row.prop(qtoprops, "qto_rule", text="")
+        # A bit confusing as we typically use this icon for is_null.
+        row.prop(qtoprops, "fallback", text="", icon="RADIOBUT_ON" if qtoprops.fallback else "RADIOBUT_OFF")
+        row = layout.row()
+        row.operator("bim.perform_quantity_take_off")
 
 
 class BIM_PT_material_psets(Panel):
@@ -367,10 +404,8 @@ class BIM_PT_material_psets(Panel):
         if not ifc_file or ifc_file.schema == "IFC2X3":
             return False  # We don't support material psets in IFC2X3 because they suck
         props = context.scene.BIMMaterialProperties
-        if props.materials and props.active_material_index < len(props.materials):
-            material = props.materials[props.active_material_index]
-            if material.ifc_definition_id:
-                return True
+        if props.is_editing and (material := props.active_material) and material.ifc_definition_id:
+            return True
         return False
 
     def draw(self, context):
@@ -397,43 +432,6 @@ class BIM_PT_material_psets(Panel):
             draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "Material")
 
 
-class BIM_PT_material_set_psets(Panel):
-    bl_label = "Material Set Property Sets"
-    bl_idname = "BIM_PT_material_set_psets"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "object"
-    bl_parent_id = "BIM_PT_object_material"
-
-    @classmethod
-    def poll(cls, context):
-        if not context.active_object:
-            return False
-        if not tool.Ifc.get() or tool.Ifc.get().schema == "IFC2X3":
-            return False  # We don't support material psets in IFC2X3 because they suck
-        if not tool.Ifc.get_entity(context.active_object):
-            return False
-        return True
-
-    def draw(self, context):
-        if not MaterialSetPsetsData.is_loaded:
-            MaterialSetPsetsData.load()
-
-        props = context.active_object.MaterialSetPsetProperties
-        row = self.layout.row(align=True)
-        prop_with_search(row, props, "pset_name", text="")
-        op = row.operator("bim.add_pset", icon="ADD", text="")
-        op.obj = context.active_object.name
-        op.obj_type = "MaterialSet"
-
-        if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
-            draw_psetqto_ui(context, 0, {}, props, self.layout, "MaterialSet")
-
-        for pset in MaterialSetPsetsData.data["psets"]:
-            draw_psetqto_ui(context, pset["id"], pset, props, self.layout, "MaterialSet")
-
-
 class BIM_PT_material_set_item_psets(Panel):
     bl_label = "Material Set Item Property Sets"
     bl_idname = "BIM_PT_material_set_item_psets"
@@ -451,17 +449,26 @@ class BIM_PT_material_set_item_psets(Panel):
             return False  # We don't support material psets in IFC2X3 because they suck
         if not tool.Ifc.get_entity(context.active_object):
             return False
-        return True
+        if not ObjectMaterialData.is_loaded:
+            ObjectMaterialData.load()
+        ifc_class = ObjectMaterialData.data["material_class"]
+        return bool(ifc_class and "Set" in ifc_class)
 
     def draw(self, context):
         if not MaterialSetItemPsetsData.is_loaded:
             MaterialSetItemPsetsData.load()
 
-        props = context.active_object.MaterialSetItemPsetProperties
+        obj = context.active_object
+        assert obj
+        if not obj.BIMObjectMaterialProperties.active_material_set_item_id:
+            self.layout.label(text="No Material Set Item Edited.")
+            return
+
+        props = obj.MaterialSetItemPsetProperties
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
         op = row.operator("bim.add_pset", icon="ADD", text="")
-        op.obj = context.active_object.name
+        op.obj = obj.name
         op.obj_type = "MaterialSetItem"
 
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
@@ -664,7 +671,15 @@ class BIM_PT_profile_psets(Panel):
         return False
 
     def draw(self, context):
-        if not ProfilePsetsData.is_loaded:
+        active_profile = tool.Profile.get_active_profile_ui()
+
+        if not active_profile:
+            return
+
+        if (
+            not ProfilePsetsData.is_loaded
+            or active_profile.ifc_definition_id != ProfilePsetsData.data["ifc_definition_id"]
+        ):
             ProfilePsetsData.load()
 
         props = context.scene.ProfilePsetProperties

@@ -27,6 +27,45 @@ import bonsai.tool as tool
 from math import degrees
 from mathutils import Vector, Matrix
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.module.structural.decorator import LoadsDecorator
+
+
+class ShowLoads(bpy.types.Operator):
+    """Draw decorations to show strucutural actions in 3d view"""
+
+    bl_idname = "bim.show_loads"
+    bl_label = "Show Loads in 3D View"
+
+    def modal(self, context, event):
+        if event.type == "F5":
+            LoadsDecorator.update()
+            for area in context.screen.areas:
+                if area.type == "VIEW_3D":
+                    area.tag_redraw()
+        if event.type == "ESC":
+            LoadsDecorator.uninstall()
+            for area in context.screen.areas:
+                if area.type == "VIEW_3D":
+                    area.tag_redraw()
+            return {"FINISHED"}
+        return {"PASS_THROUGH"}
+
+    def invoke(self, context, event):
+        collection = bpy.data.collections["IfcStructuralItem"]
+        collection.hide_viewport = False
+        context.window.cursor_modal_set("WAIT")
+        try:
+            LoadsDecorator.install(context)
+        except Exception as exc:
+            context.window.cursor_modal_restore()
+            raise exc
+        context.window.cursor_modal_restore()
+        context.window_manager.modal_handler_add(self)
+        for area in context.screen.areas:
+            if area.type == "VIEW_3D":
+                area.tag_redraw()
+
+        return {"RUNNING_MODAL"}
 
 
 class AddStructuralMemberConnection(bpy.types.Operator, tool.Ifc.Operator):
@@ -200,22 +239,24 @@ class DisableEditingStructuralBoundaryCondition(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadStructuralAnalysisModels(bpy.types.Operator, tool.Ifc.Operator):
+class LoadStructuralAnalysisModels(bpy.types.Operator):
     bl_idname = "bim.load_structural_analysis_models"
     bl_label = "Load Structural Analysis Models"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.load_structural_analysis_models(tool.Structural)
+        return {"FINISHED"}
 
 
-class DisableStructuralAnalysisModelEditingUI(bpy.types.Operator, tool.Ifc.Operator):
+class DisableStructuralAnalysisModelEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_structural_analysis_model_editing_ui"
     bl_label = "Disable Structural Analysis Model Editing UI"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_structural_analysis_model_editing_ui(tool.Structural)
+        return {"FINISHED"}
 
 
 class AddStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
@@ -248,49 +289,57 @@ class RemoveStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_structural_analysis_model(tool.Ifc, tool.Structural, model=self.structural_analysis_model)
 
 
-class EnableEditingStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingStructuralAnalysisModel(bpy.types.Operator):
     bl_idname = "bim.enable_editing_structural_analysis_model"
     bl_label = "Enable Editing Structural Analysis Model"
     bl_options = {"REGISTER", "UNDO"}
     structural_analysis_model: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.load_structural_analysis_model_attributes(tool.Structural, model=self.structural_analysis_model)
         core.enable_editing_structural_analysis_model(tool.Structural, model=self.structural_analysis_model)
+        return {"FINISHED"}
 
 
-class DisableEditingStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingStructuralAnalysisModel(bpy.types.Operator):
     bl_idname = "bim.disable_editing_structural_analysis_model"
     bl_label = "Disable Editing Structural Analysis Model"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_structural_analysis_model(tool.Structural)
+        return {"FINISHED"}
 
 
 class AssignStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_structural_analysis_model"
     bl_label = "Assign Structural Analysis Model"
+    bl_description = "Assign structual analysis model to the selected objects."
     bl_options = {"REGISTER", "UNDO"}
-    product: bpy.props.StringProperty()
     structural_analysis_model: bpy.props.IntProperty()
 
     def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        structural_analysis_model = ifc_file.by_id(self.structural_analysis_model)
+        products = [element for o in tool.Blender.get_selected_objects() if (element := tool.Ifc.get_entity(o))]
         core.assign_structural_analysis_model(
-            tool.Ifc, tool.Structural, product=self.product, structural_analysis_model=self.structural_analysis_model
+            tool.Ifc, products=products, structural_analysis_model=structural_analysis_model
         )
 
 
 class UnassignStructuralAnalysisModel(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_structural_analysis_model"
     bl_label = "Unassign Structural Analysis Model"
+    bl_description = "Unassign structual analysis model from the selected objects."
     bl_options = {"REGISTER", "UNDO"}
-    product: bpy.props.StringProperty()
     structural_analysis_model: bpy.props.IntProperty()
 
     def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        structural_analysis_model = ifc_file.by_id(self.structural_analysis_model)
+        products = [element for o in tool.Blender.get_selected_objects() if (element := tool.Ifc.get_entity(o))]
         core.unassign_structural_analysis_model(
-            tool.Ifc, tool.Structural, product=self.product, structural_analysis_model=self.structural_analysis_model
+            tool.Ifc, products=products, structural_analysis_model=structural_analysis_model
         )
 
 
@@ -570,13 +619,13 @@ class DisableEditingStructuralLoadCase(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingStructuralLoadCaseGroups(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingStructuralLoadCaseGroups(bpy.types.Operator):
     bl_idname = "bim.enable_editing_structural_load_case_groups"
     bl_label = "Enable Editing Structural Load Case Groups"
     bl_options = {"REGISTER", "UNDO"}
     load_case: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         self.props = context.scene.BIMStructuralProperties
         self.props.active_load_case_id = self.load_case
         self.props.load_case_editing_type = "GROUPS"
@@ -686,12 +735,12 @@ class AddStructuralActivity(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class LoadStructuralLoads(bpy.types.Operator, tool.Ifc.Operator):
+class LoadStructuralLoads(bpy.types.Operator):
     bl_idname = "bim.load_structural_loads"
     bl_label = "Load Structural Loads"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         self.file = IfcStore.get_file()
         props = context.scene.BIMStructuralProperties
         props.structural_loads.clear()

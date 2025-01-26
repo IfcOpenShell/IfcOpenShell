@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+# pyright: reportUnnecessaryTypeIgnoreComment=error
+
 import os
 import bpy
 import json
@@ -31,6 +33,8 @@ from datetime import datetime
 from dateutil import parser, relativedelta
 from bonsai.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
+from typing import get_args, TYPE_CHECKING
+from typing_extensions import assert_never
 
 
 class EnableStatusFilters(bpy.types.Operator):
@@ -155,32 +159,34 @@ class RemoveWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_work_plan(tool.Ifc, work_plan=tool.Ifc.get().by_id(self.work_plan))
 
 
-class EnableEditingWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingWorkPlan(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_plan"
     bl_label = "Enable Editing Work Plan"
     bl_options = {"REGISTER", "UNDO"}
     work_plan: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_work_plan(tool.Sequence, work_plan=tool.Ifc.get().by_id(self.work_plan))
+        return {"FINISHED"}
 
 
-class DisableEditingWorkPlan(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingWorkPlan(bpy.types.Operator):
     bl_idname = "bim.disable_editing_work_plan"
     bl_options = {"REGISTER", "UNDO"}
     bl_label = "Disable Editing Work Plan"
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_work_plan(tool.Sequence)
+        return {"FINISHED"}
 
 
-class EnableEditingWorkPlanSchedules(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingWorkPlanSchedules(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_plan_schedules"
     bl_label = "Enable Editing Work Plan Schedules"
     bl_options = {"REGISTER", "UNDO"}
     work_plan: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_work_plan_schedules(tool.Sequence, work_plan=tool.Ifc.get().by_id(self.work_plan))
         return {"FINISHED"}
 
@@ -269,14 +275,15 @@ class EnableEditingWorkSchedule(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingWorkScheduleTasks(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingWorkScheduleTasks(bpy.types.Operator):
     bl_idname = "bim.enable_editing_work_schedule_tasks"
     bl_label = "Enable Editing Work Schedule Tasks"
     bl_options = {"REGISTER", "UNDO"}
     work_schedule: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_work_schedule_tasks(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
+        return {"FINISHED"}
 
 
 class LoadTaskProperties(bpy.types.Operator):
@@ -352,6 +359,8 @@ class RemoveTask(bpy.types.Operator, tool.Ifc.Operator):
 
 
 class EnableEditingTaskTime(bpy.types.Operator, tool.Ifc.Operator):
+    # IFC operator is needed because operator is adding a new task time to IFC
+    # if it doesn't exist.
     bl_idname = "bim.enable_editing_task_time"
     bl_label = "Enable Editing Task Time"
     bl_options = {"REGISTER", "UNDO"}
@@ -502,8 +511,17 @@ class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Assign Process"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
-    related_object_type: bpy.props.StringProperty()
+    related_object_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+        items=[(i, i, "") for i in get_args(tool.Sequence.RELATED_OBJECT_TYPE)],
+    )
     related_object: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        related_object_type: tool.Sequence.RELATED_OBJECT_TYPE
+
+    @classmethod
+    def description(cls, context, properties):
+        return f"Assign selected {properties.related_object_type} to the selected task"
 
     def _execute(self, context):
         if self.related_object_type == "RESOURCE":
@@ -520,20 +538,28 @@ class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 core.assign_input_products(tool.Ifc, tool.Sequence, tool.Spatial, task=tool.Ifc.get().by_id(self.task))
         elif self.related_object_type == "CONTROL":
-            pass  # TODO
+            self.report({"ERROR"}, "Assigning process control is not yet supported")  # TODO
+        else:
+            assert_never(self.related_object_type)
 
 
-class UnassignProcess(bpy.types.Operator):
+class UnassignProcess(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_process"
     bl_label = "Unassign Process"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
-    related_object_type: bpy.props.StringProperty()
+    related_object_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+        items=[(i, i, "") for i in get_args(tool.Sequence.RELATED_OBJECT_TYPE)],
+    )
     related_object: bpy.props.IntProperty()
     resource: bpy.props.IntProperty()
 
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
+    if TYPE_CHECKING:
+        related_object_type: tool.Sequence.RELATED_OBJECT_TYPE
+
+    @classmethod
+    def description(cls, context, properties):
+        return f"Unassign selected {properties.related_object_type} from the selected task"
 
     def _execute(self, context):
         if self.related_object_type == "RESOURCE":
@@ -560,6 +586,9 @@ class UnassignProcess(bpy.types.Operator):
                 )
         elif self.related_object_type == "CONTROL":
             pass  # TODO
+            self.report({"INFO"}, "Unassigning process control is not yet supported.")
+        else:
+            assert_never(self.related_object_type)
         return {"FINISHED"}
 
 
@@ -635,10 +664,13 @@ class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.csv4d2ifc import Csv2Ifc
 
         self.file = tool.Ifc.get()
@@ -647,11 +679,10 @@ class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         csv2ifc.csv = self.filepath
         csv2ifc.file = self.file
         csv2ifc.execute()
-        print("Imported in %s seconds" % (time.time() - start))
-        return {"FINISHED"}
+        self.report({"INFO"}, "Imported in %s seconds" % (time.time() - start))
 
 
-class ImportP6(bpy.types.Operator, ImportHelper):
+class ImportP6(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_p6"
     bl_label = "Import P6"
     bl_options = {"REGISTER", "UNDO"}
@@ -660,10 +691,13 @@ class ImportP6(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.p62ifc import P62Ifc
 
         self.file = IfcStore.get_file()
@@ -673,11 +707,10 @@ class ImportP6(bpy.types.Operator, ImportHelper):
         p62ifc.file = self.file
         p62ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         p62ifc.execute()
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
-        return {"FINISHED"}
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
 
 
-class ImportP6XER(bpy.types.Operator, ImportHelper):
+class ImportP6XER(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_p6xer"
     bl_label = "Import P6 XER"
     bl_options = {"REGISTER", "UNDO"}
@@ -686,10 +719,13 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.p6xer2ifc import P6XER2Ifc
 
         self.file = IfcStore.get_file()
@@ -699,11 +735,10 @@ class ImportP6XER(bpy.types.Operator, ImportHelper):
         p6xer2ifc.file = self.file
         p6xer2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         p6xer2ifc.execute()
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
-        return {"FINISHED"}
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
 
 
-class ImportPP(bpy.types.Operator, ImportHelper):
+class ImportPP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_pp"
     bl_label = "Import Powerproject .pp"
     bl_options = {"REGISTER", "UNDO"}
@@ -712,10 +747,13 @@ class ImportPP(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.pp2ifc import PP2Ifc
 
         self.file = IfcStore.get_file()
@@ -725,11 +763,10 @@ class ImportPP(bpy.types.Operator, ImportHelper):
         pp2ifc.file = self.file
         pp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         pp2ifc.execute()
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
-        return {"FINISHED"}
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
 
 
-class ImportMSP(bpy.types.Operator, ImportHelper):
+class ImportMSP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_msp"
     bl_label = "Import MSP"
     bl_options = {"REGISTER", "UNDO"}
@@ -738,10 +775,13 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
-    def execute(self, context):
+    def _execute(self, context):
         from ifc4d.msp2ifc import MSP2Ifc
 
         self.file = IfcStore.get_file()
@@ -751,8 +791,7 @@ class ImportMSP(bpy.types.Operator, ImportHelper):
         msp2ifc.file = self.file
         msp2ifc.work_plan = self.file.by_type("IfcWorkPlan")[0] if self.file.by_type("IfcWorkPlan") else None
         msp2ifc.execute()
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
-        return {"FINISHED"}
+        self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
 
 
 class ExportMSP(bpy.types.Operator, ImportHelper):
@@ -766,8 +805,11 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         from ifc4d.ifc2msp import Ifc2Msp
@@ -781,7 +823,7 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
         ifc2msp.holiday_start_date = parser.parse(self.holiday_start_date).date()
         ifc2msp.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
         ifc2msp.execute()
-        print("Export finished in {:.2f} seconds".format(time.time() - start))
+        self.report({"INFO"}, "Export finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
 
@@ -796,8 +838,11 @@ class ExportP6(bpy.types.Operator, ImportHelper):
 
     @classmethod
     def poll(cls, context):
-        ifc_file = IfcStore.get_file()
-        return ifc_file is not None
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
 
     def execute(self, context):
         from ifc4d.ifc2p6 import Ifc2P6
@@ -810,7 +855,7 @@ class ExportP6(bpy.types.Operator, ImportHelper):
         ifc2p6.holiday_start_date = parser.parse(self.holiday_start_date).date()
         ifc2p6.holiday_finish_date = parser.parse(self.holiday_finish_date).date()
         ifc2p6.execute()
-        print("Export finished in {:.2f} seconds".format(time.time() - start))
+        self.report({"INFO"}, "Export finished in {:.2f} seconds".format(time.time() - start))
         return {"FINISHED"}
 
 
@@ -877,15 +922,12 @@ class RemoveWorkTime(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class AssignRecurrencePattern(bpy.types.Operator):
+class AssignRecurrencePattern(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_recurrence_pattern"
     bl_label = "Assign Recurrence Pattern"
     bl_options = {"REGISTER", "UNDO"}
     work_time: bpy.props.IntProperty()
     recurrence_type: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         core.assign_recurrence_pattern(
@@ -894,14 +936,11 @@ class AssignRecurrencePattern(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class UnassignRecurrencePattern(bpy.types.Operator):
+class UnassignRecurrencePattern(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_recurrence_pattern"
     bl_label = "Unassign Recurrence Pattern"
     bl_options = {"REGISTER", "UNDO"}
     recurrence_pattern: bpy.props.IntProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         core.unassign_recurrence_pattern(tool.Ifc, recurrence_pattern=tool.Ifc.get().by_id(self.recurrence_pattern))
@@ -1139,43 +1178,71 @@ class Bonsai_DatePicker(bpy.types.Operator):
     bl_label = "Date Picker"
     bl_idname = "bim.datepicker"
     bl_options = {"REGISTER", "UNDO"}
-    display_date: bpy.props.StringProperty(name="Display Date")
     target_prop: bpy.props.StringProperty(name="Target date prop to set")
+    # TODO: base it on property type.
+    include_time: bpy.props.BoolProperty(name="Include Time", default=True)
+
+    if TYPE_CHECKING:
+        target_prop: str
+        include_time: bool
 
     def execute(self, context):
+        selected_date = context.scene.DatePickerProperties.selected_date
         try:
-            value = parser.parse(context.scene.DatePickerProperties.selected_date, dayfirst=True, fuzzy=True)
-            self.set_scene_prop(self.target_prop, helper.canonicalise_time(value))
-        except:
-            pass
-        return {"FINISHED"}
+            # Just to make sure the date is valid.
+            tool.Sequence.parse_isodate_datetime(selected_date, self.include_time)
+            self.set_scene_prop(self.target_prop, selected_date)
+            return {"FINISHED"}
+        except Exception as e:
+            self.report({"ERROR"}, f"Provided date is invalid: '{selected_date}'. Exception: {str(e)}.")
+            return {"CANCELLED"}
 
     def draw(self, context):
-        current_date = parser.parse(context.scene.DatePickerProperties.display_date, dayfirst=True, fuzzy=True)
-        current_month = (current_date.year, current_date.month)
+        props = context.scene.DatePickerProperties
+        display_date = tool.Sequence.parse_isodate_datetime(props.display_date, False)
+        current_month = (display_date.year, display_date.month)
         lines = calendar.monthcalendar(*current_month)
         month_title, week_titles = calendar.month(*current_month).splitlines()[:2]
 
         layout = self.layout
         row = layout.row()
-        row.prop(context.scene.DatePickerProperties, "selected_date")
+        row.prop(props, "selected_date", text="Date")
 
+        # Time.
+        if self.include_time:
+            row = layout.row()
+            row.label(text="Time:")
+            row.prop(props, "selected_hour", text="H")
+            row.prop(props, "selected_min", text="M")
+            row.prop(props, "selected_sec", text="S")
+
+        # Month.
+        month_delta = relativedelta.relativedelta(months=1)
         split = layout.split()
         col = split.row()
-        op = col.operator("bim.redraw_datepicker", icon="TRIA_LEFT", text="")
-        op.action = "previous"
+        op = col.operator("wm.context_set_string", icon="TRIA_LEFT", text="")
+        op.data_path = "scene.DatePickerProperties.display_date"
+        op.value = tool.Sequence.isodate_datetime(display_date - month_delta, False)
+
         col = split.row()
         col.label(text=month_title.strip())
+
         col = split.row()
         col.alignment = "RIGHT"
-        op = col.operator("bim.redraw_datepicker", icon="TRIA_RIGHT", text="")
-        op.action = "next"
+        op = col.operator("wm.context_set_string", icon="TRIA_RIGHT", text="")
+        op.data_path = "scene.DatePickerProperties.display_date"
+        op.value = tool.Sequence.isodate_datetime(display_date + month_delta, False)
 
+        # Day of week.
         row = layout.row(align=True)
         for title in week_titles.split():
             col = row.column(align=True)
             col.alignment = "CENTER"
             col.label(text=title.strip())
+
+        # Days calendar.
+        current_selected_date = tool.Sequence.parse_isodate_datetime(props.selected_date, self.include_time)
+        current_selected_date = current_selected_date.replace(hour=0, minute=0, second=0)
 
         for line in lines:
             row = layout.row(align=True)
@@ -1184,58 +1251,42 @@ class Bonsai_DatePicker(bpy.types.Operator):
                 if i == 0:
                     col.label(text="  ")
                 else:
-                    op = col.operator("bim.datepicker_setdate", text="{:2d}".format(i))
-                    selected_date = "{}/{}/{}".format(i, current_date.month, current_date.year)
-                    selected_date = parser.parse(selected_date, dayfirst=True, fuzzy=True)
-                    op.selected_date = helper.canonicalise_time(selected_date)
+                    selected_date = datetime(year=display_date.year, month=display_date.month, day=i)
+                    is_current_date = current_selected_date == selected_date
+                    op = col.operator("wm.context_set_string", text="{:2d}".format(i), depress=is_current_date)
+                    if self.include_time:
+                        selected_date = selected_date.replace(
+                            hour=props.selected_hour, minute=props.selected_min, second=props.selected_sec
+                        )
+                    op.data_path = "scene.DatePickerProperties.selected_date"
+                    op.value = tool.Sequence.isodate_datetime(selected_date, self.include_time)
 
     def invoke(self, context, event):
-        self.display_date = self.get_scene_prop(self.target_prop) or helper.canonicalise_time(datetime.now())
-        context.scene.DatePickerProperties.display_date = self.display_date
-        context.scene.DatePickerProperties.selected_date = self.display_date
+        props = context.scene.DatePickerProperties
+        current_date_str = self.get_scene_prop(self.target_prop)
+        if current_date_str:
+            current_date = tool.Sequence.parse_isodate_datetime(current_date_str, self.include_time)
+        else:
+            current_date = datetime.now()
+            # Seconds of the moment when datepicker opened will probably only annoy users.
+            current_date = current_date.replace(second=0)
+
+        if self.include_time:
+            props["selected_hour"] = current_date.hour
+            props["selected_min"] = current_date.minute
+            props["selected_sec"] = current_date.second
+
+        props.display_date = tool.Sequence.isodate_datetime(current_date.replace(day=1), False)
+        props.selected_date = tool.Sequence.isodate_datetime(current_date, self.include_time)
         return context.window_manager.invoke_props_dialog(self)
 
-    def get_scene_prop(self, prop_path):
-        prop = bpy.context.scene.get(prop_path.split(".")[0])
-        for part in prop_path.split(".")[1:]:
-            if part:
-                prop = prop.get(part)
-        return prop
+    def get_scene_prop(self, prop_path: str) -> str:
+        scene = bpy.context.scene
+        return scene.path_resolve(prop_path)
 
-    def set_scene_prop(self, prop_path, value):
-        parent = self.get_scene_prop(prop_path[: prop_path.rfind(".")])
-        prop = prop_path.split(".")[-1]
-        parent[prop] = value
-
-
-class Bonsai_DatePickerSetDate(bpy.types.Operator):
-    bl_label = "Set Date"
-    bl_idname = "bim.datepicker_setdate"
-    bl_options = {"REGISTER", "UNDO"}
-    selected_date: bpy.props.StringProperty()
-
-    def invoke(self, context, event):
-        context.scene.DatePickerProperties.selected_date = self.selected_date
-        return {"FINISHED"}
-
-
-class Bonsai_RedrawDatePicker(bpy.types.Operator):
-    bl_label = "Redraw Datepicker Window"
-    bl_idname = "bim.redraw_datepicker"
-    bl_options = {"REGISTER", "UNDO"}
-    action: bpy.props.StringProperty()
-
-    def invoke(self, context, event):
-        current_date = parser.parse(context.scene.DatePickerProperties.display_date, dayfirst=True, fuzzy=True)
-
-        if self.action == "previous":
-            date_to_set = current_date - relativedelta.relativedelta(months=1)
-        elif self.action == "next":
-            date_to_set = current_date + relativedelta.relativedelta(months=1)
-
-        context.scene.DatePickerProperties.display_date = helper.canonicalise_time(date_to_set)
-
-        return {"FINISHED"}
+    def set_scene_prop(self, prop_path: str, value: str) -> None:
+        scene = bpy.context.scene
+        tool.Blender.set_prop_from_path(scene, prop_path, value)
 
 
 class RecalculateSchedule(bpy.types.Operator, tool.Ifc.Operator):

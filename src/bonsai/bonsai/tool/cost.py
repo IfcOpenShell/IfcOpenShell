@@ -9,6 +9,7 @@ import ifcopenshell.util.cost
 import ifcopenshell.util.unit
 import bonsai.bim.helper
 import json
+from pathlib import Path
 from typing import Optional, Any, Generator, Union, Literal
 
 
@@ -111,7 +112,7 @@ class Cost(bonsai.core.tool.Cost):
 
             device = aud.Device()
             # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
-            sound = aud.Sound(os.path.join(bpy.context.scene.BIMProperties.data_dir, "chaching.mp3"))
+            sound = aud.Sound(tool.Blender.get_data_dir_path(filename="chaching.mp3").__str__())
             handle = device.play(sound)
             sound_buffered = aud.Sound.buffer(sound)
             handle_buffered = device.play(sound_buffered)
@@ -246,7 +247,9 @@ class Cost(bonsai.core.tool.Cost):
     def load_cost_item_quantity_assignments(
         cls, cost_item: ifcopenshell.entity_instance, related_object_type: RELATED_OBJECT_TYPE
     ) -> None:
-        def create_list_items(collection, cost_item, is_deep):
+        def create_list_items(
+            collection: bpy.types.bpy_prop_collection, cost_item: ifcopenshell.entity_instance, is_deep: bool
+        ) -> None:
             products = cls.get_cost_item_assignments(cost_item, filter_by_type=related_object_type, is_deep=False)
             for product in products:
                 new = collection.add()
@@ -285,15 +288,26 @@ class Cost(bonsai.core.tool.Cost):
         cls, cost_item: ifcopenshell.entity_instance, product: ifcopenshell.entity_instance
     ) -> tuple[list[ifcopenshell.entity_instance], Union[str, None]]:
         selected_quantitites = []
-        unit = ""
+        unit = None
+        cost_quantities = cost_item.CostQuantities
+        if not cost_quantities:
+            return selected_quantitites, unit
+
+        cost_quantities = set(cost_quantities)
         for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values():
             for qto in tool.Ifc.get().by_id(quantities["id"]).Quantities or []:
-                for quantity in cost_item.CostQuantities:
-                    if quantity == qto:
-                        selected_quantitites.append(quantity)
-                        if not unit:
-                            unit = cls.get_quantity_unit_symbol(quantity)
+                if qto in cost_quantities:
+                    selected_quantitites.append(qto)
+        unit = next((symbol for q in cost_quantities if (symbol := cls.get_quantity_unit_symbol(q))), None)
         return selected_quantitites, unit
+
+    @classmethod
+    def get_assigned_product(cls, cost_item, quantity):
+        assigned_products = cls.get_cost_item_assignments(cost_item, filter_by_type="PRODUCT", is_deep=False)
+        for product in assigned_products:
+            assigned_quantities, _ = cls.get_assigned_quantities(cost_item, product)
+            if quantity in assigned_quantities:
+                return product
 
     @classmethod
     def get_products(cls, related_object_type: RELATED_OBJECT_TYPE) -> list[ifcopenshell.entity_instance]:
@@ -539,6 +553,14 @@ class Cost(bonsai.core.tool.Cost):
         props.columns.remove(props.columns.find(name))
 
     @classmethod
+    def get_active_schedule_of_rates(cls) -> Union[ifcopenshell.entity_instance, None]:
+        props = bpy.context.scene.BIMCostProperties
+        schedule_id = tool.Blender.get_enum_safe(props, "schedule_of_rates")
+        if schedule_id is None:
+            return
+        return tool.Ifc.get().by_id(int(schedule_id))
+
+    @classmethod
     def expand_cost_item_rate(cls, cost_item: ifcopenshell.entity_instance) -> None:
         props = bpy.context.scene.BIMCostProperties
         contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
@@ -556,7 +578,11 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def create_new_cost_item_li(
-        cls, props_collection, cost_item: ifcopenshell.entity_instance, level_index: int, type: str = "cost_rate"
+        cls,
+        props_collection,
+        cost_item: ifcopenshell.entity_instance,
+        level_index: int,
+        type: Literal["cost", "cost_rate"] = "cost_rate",
     ) -> None:
         new = props_collection.add()
         new.ifc_definition_id = cost_item.id()
@@ -602,7 +628,7 @@ class Cost(bonsai.core.tool.Cost):
         if filepath:
             path = filepath
         else:
-            path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "build", "cost_schedules")
+            path = tool.Blender.get_data_dir_path(Path("build") / "cost_schedules").__str__()
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -659,11 +685,7 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def get_cost_schedule(cls, cost_item: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        for rel in cost_item.HasAssignments or []:
-            if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcCostSchedule"):
-                return rel.RelatingControl
-        for rel in cost_item.Nests or []:
-            return cls.get_cost_schedule(rel.RelatingObject)
+        return ifcopenshell.util.cost.get_cost_schedule(cost_item)
 
     @classmethod
     def is_cost_schedule_active(cls, cost_schedule: ifcopenshell.entity_instance) -> bool:
@@ -811,6 +833,7 @@ class Cost(bonsai.core.tool.Cost):
     @classmethod
     def create_cost_schedule_json(cls, cost_schedule: ifcopenshell.entity_instance) -> dict:
         from bonsai.bim.module.cost.data import CostSchedulesData
+
         CostSchedulesData.load()
         cost_items = CostSchedulesData.data["cost_items"]
         data = []
@@ -832,7 +855,7 @@ class Cost(bonsai.core.tool.Cost):
             return None
         for rel in cost_item.IsNestedBy or []:
             for sub_cost_item in rel.RelatedObjects or []:
-                cls.create_cost_item_json(sub_cost_item, cost_items,cost_item_data["is_nested_by"])
+                cls.create_cost_item_json(sub_cost_item, cost_items, cost_item_data["is_nested_by"])
 
     @classmethod
     def is_cost_item_sum(cls, cost_item: ifcopenshell.entity_instance) -> bool:
@@ -853,7 +876,32 @@ class Cost(bonsai.core.tool.Cost):
             return {"id": unit.id(), "name": unit.Currency}
 
     @classmethod
-    def generate_cost_schedule_browser(cls, cost_schedule_data: list[dict[str, Any]]) -> None:
+    def generate_cost_schedule_browser(cls, cost_chedule) -> None:
         if not bpy.context.scene.WebProperties.is_connected:
             bpy.ops.bim.connect_websocket_server(page="costing")
-        tool.Web.send_webui_data(data=cost_schedule_data, data_key="cost_items", event="cost_items")
+        tool.Web.load_cost_schedule_web_ui(cost_chedule)
+
+    @classmethod
+    def get_cost_quantities(cls, cost_item: ifcopenshell.entity_instance) -> dict:
+        results = {
+            "quantities": [],
+            "unit_symbol": None,
+        }
+        if not cost_item:
+            return results
+        results["quantity_type"] = cost_item.CostQuantities[0].is_a() if cost_item.CostQuantities else None
+        unit = (
+            ifcopenshell.util.unit.get_property_unit(cost_item.CostQuantities[0], tool.Ifc.get())
+            if cost_item.CostQuantities
+            else None
+        )
+        if unit:
+            results["unit_symbol"] = ifcopenshell.util.unit.get_unit_symbol(unit)
+        for quantity in cost_item.CostQuantities or []:
+            assigned_product = cls.get_assigned_product(cost_item, quantity)
+            info = quantity.get_info()
+            info["fromProduct"] = assigned_product.get_info(recursive=True) if assigned_product else None
+            results["quantities"].append(info)
+        if results["quantity_type"] == "IfcQuantityCount":
+            results["unit_symbol"] = "U"
+        return results

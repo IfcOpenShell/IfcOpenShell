@@ -43,7 +43,7 @@ class TestAddRepresentation:
         # Add representation
         geometry.get_object_data("obj").should_be_called().will_return("data")
         geometry.is_data_supported_for_adding_representation("data").should_be_called().will_return(True)
-        geometry.get_cartesian_point_coordinate_offset("obj").should_be_called().will_return("coordinate_offset")
+        geometry.get_cartesian_point_offset("obj").should_be_called().will_return("coordinate_offset")
         geometry.get_total_representation_items("obj").should_be_called().will_return(1)
         geometry.should_force_faceted_brep().should_be_called().will_return(False)
         geometry.should_force_triangulation().should_be_called().will_return(True)
@@ -110,7 +110,7 @@ class TestAddRepresentation:
         # Add representation
         geometry.get_object_data("obj").should_be_called().will_return("data")
         geometry.is_data_supported_for_adding_representation("data").should_be_called().will_return(True)
-        geometry.get_cartesian_point_coordinate_offset("obj").should_be_called().will_return("coordinate_offset")
+        geometry.get_cartesian_point_offset("obj").should_be_called().will_return("coordinate_offset")
         geometry.get_total_representation_items("obj").should_be_called().will_return(1)
         geometry.should_force_faceted_brep().should_be_called().will_return(False)
         geometry.should_force_triangulation().should_be_called().will_return(True)
@@ -194,23 +194,10 @@ class TestAddRepresentation:
 
 
 class TestSwitchRepresentation:
-    def test_switching_to_a_freshly_loaded_representation(self, ifc, geometry):
-        geometry.is_edited("obj").should_be_called().will_return(False)
+    def test_switching_to_a_representation(self, ifc, geometry):
+        ifc.is_edited("obj").should_be_called().will_return(False)
         geometry.get_object_data("obj").should_be_called().will_return("current_obj_data")
-        geometry.should_use_immediate_representation("element", True).should_be_called().will_return(False)
-        geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
-        geometry.get_representation_data("representation").should_be_called().will_return(None)
-        geometry.import_representation("obj", "representation", apply_openings=True).should_be_called().will_return(
-            "new_data"
-        )
-        geometry.get_representation_name("representation").should_be_called().will_return("name")
-        geometry.rename_object("new_data", "name").should_be_called()
-        geometry.link("representation", "new_data").should_be_called()
-        geometry.change_object_data("obj", "new_data", is_global=True).should_be_called()
-        geometry.record_object_materials("obj").should_be_called()
-        geometry.clear_modifiers("obj").should_be_called()
-        ifc.get_entity("obj").should_be_called().will_return("element")
-        geometry.clear_cache("element").should_be_called()
+        geometry.reimport_element_representations("obj", "mapped_rep", apply_openings=True).should_be_called()
         subject.switch_representation(
             ifc,
             geometry,
@@ -220,95 +207,16 @@ class TestSwitchRepresentation:
             is_global=True,
             should_sync_changes_first=True,
             apply_openings=True,
-        )
-
-    def test_switching_to_a_reloaded_representation_and_deleting_the_existing_data(self, ifc, geometry):
-        geometry.is_edited("obj").should_be_called().will_return(False)
-        geometry.get_object_data("obj").should_be_called().will_return("current_obj_data")
-        geometry.should_use_immediate_representation("element", True).should_be_called().will_return(False)
-        geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
-        geometry.get_representation_data("representation").should_be_called().will_return("existing_data")
-        geometry.import_representation("obj", "representation", apply_openings=True).should_be_called().will_return(
-            "new_data"
-        )
-        geometry.get_representation_name("representation").should_be_called().will_return("name")
-        geometry.rename_object("new_data", "name").should_be_called()
-        geometry.link("representation", "new_data").should_be_called()
-        geometry.change_object_data("obj", "new_data", is_global=True).should_be_called()
-        geometry.record_object_materials("obj").should_be_called()
-        geometry.has_data_users("existing_data").should_be_called().will_return(False)
-        geometry.delete_data("existing_data").should_be_called()
-        geometry.clear_modifiers("obj").should_be_called()
-        ifc.get_entity("obj").should_be_called().will_return("element")
-        geometry.clear_cache("element").should_be_called()
-        subject.switch_representation(
-            ifc,
-            geometry,
-            obj="obj",
-            representation="mapped_rep",
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=True,
-            apply_openings=True,
-        )
-
-    def test_switching_to_an_existing_representation(self, ifc, geometry):
-        geometry.is_edited("obj").should_be_called().will_return(False)
-        ifc.get_entity("obj").should_be_called().will_return("element")
-        geometry.get_object_data("obj").should_be_called().will_return("current_obj_data")
-        geometry.should_use_immediate_representation("element", True).should_be_called().will_return(False)
-        geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
-        geometry.get_representation_data("representation").should_be_called().will_return("data")
-        geometry.change_object_data("obj", "data", is_global=True).should_be_called()
-        geometry.record_object_materials("obj").should_be_called()
-        geometry.clear_modifiers("obj").should_be_called()
-        geometry.clear_cache("element").should_be_called()
-        subject.switch_representation(
-            ifc,
-            geometry,
-            obj="obj",
-            representation="mapped_rep",
-            should_reload=False,
-            is_global=True,
-            should_sync_changes_first=True,
-        )
-
-    def test_switching_to_an_existing_representation_reuse_representation(self, ifc, geometry):
-        geometry.is_edited("obj").should_be_called().will_return(False)
-        ifc.get_entity("obj").should_be_called().will_return("element")
-        geometry.get_object_data("obj").should_be_called().will_return("current_obj_data")
-        geometry.should_use_immediate_representation("element", True).should_be_called().will_return(True)
-        geometry.unresolve_type_representation("mapped_rep", "element").should_be_called().will_return("representation")
-        geometry.get_representation_data("representation").should_be_called().will_return("data")
-        geometry.change_object_data("obj", "data", is_global=False).should_be_called()
-        geometry.record_object_materials("obj").should_be_called()
-        geometry.clear_modifiers("obj").should_be_called()
-        geometry.clear_cache("element").should_be_called()
-        subject.switch_representation(
-            ifc,
-            geometry,
-            obj="obj",
-            representation="mapped_rep",
-            should_reload=False,
-            is_global=True,
-            should_sync_changes_first=True,
         )
 
     def test_updating_a_representation_if_the_blender_object_has_been_edited_prior_to_switching(self, ifc, geometry):
-        geometry.is_edited("obj").should_be_called().will_return(True)
+        ifc.is_edited("obj").should_be_called().will_return(True)
         geometry.is_box_representation("mapped_rep").should_be_called().will_return(False)
         geometry.get_representation_id("mapped_rep").should_be_called().will_return("representation_id")
         geometry.run_geometry_update_representation(obj="obj").should_be_called()
         geometry.does_representation_id_exist("representation_id").should_be_called().will_return(True)
         geometry.get_object_data("obj").should_be_called().will_return("current_obj_data")
-        geometry.should_use_immediate_representation("element", True).should_be_called().will_return(False)
-        geometry.resolve_mapped_representation("mapped_rep").should_be_called().will_return("representation")
-        geometry.get_representation_data("representation").should_be_called().will_return("data")
-        geometry.change_object_data("obj", "data", is_global=False).should_be_called()
-        geometry.record_object_materials("obj").should_be_called()
-        geometry.clear_modifiers("obj").should_be_called()
-        ifc.get_entity("obj").should_be_called().will_return("element")
-        geometry.clear_cache("element").should_be_called()
+        geometry.reimport_element_representations("obj", "mapped_rep", apply_openings=True).should_be_called()
         subject.switch_representation(
             ifc,
             geometry,
@@ -319,8 +227,8 @@ class TestSwitchRepresentation:
             should_sync_changes_first=True,
         )
 
-    def test_not_switching_if_an_updated_representation_is_the_same_one_we_were_going_to_switch_to(self, geometry):
-        geometry.is_edited("obj").should_be_called().will_return(True)
+    def test_not_switching_if_an_updated_representation_is_the_same_one_we_were_going_to_switch_to(self, ifc, geometry):
+        ifc.is_edited("obj").should_be_called().will_return(True)
         geometry.is_box_representation("mapped_rep").should_be_called().will_return(False)
         geometry.get_representation_id("mapped_rep").should_be_called().will_return("representation_id")
         geometry.run_geometry_update_representation(obj="obj").should_be_called()

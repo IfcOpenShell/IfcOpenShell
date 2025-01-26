@@ -74,6 +74,11 @@ class Material(bonsai.core.tool.Material):
         return None
 
     @classmethod
+    def get_material_category(cls, material: ifcopenshell.entity_instance) -> str:
+        # IfcMaterial has Category since IFC4.
+        return getattr(material, "Category", None) or "Uncategorised"
+
+    @classmethod
     def import_material_definitions(cls, material_type: str) -> None:
         props = bpy.context.scene.BIMMaterialProperties
 
@@ -99,13 +104,12 @@ class Material(bonsai.core.tool.Material):
 
             for m in materials:
                 # IfcMaterial has Category since IFC4.
-                category = getattr(m, "Category", None)
-                category = category or "Uncategorised"
+                category = cls.get_material_category(m)
                 categories[category].append(m)
 
             for category, mats in categories.items():
                 cat = props.materials.add()
-                cat.name = category
+                cat["name"] = category
                 cat.is_category = True
                 cat.is_expanded = cat.name in expanded_categories
 
@@ -114,8 +118,7 @@ class Material(bonsai.core.tool.Material):
 
                 for material in mats if cat.is_expanded else []:
                     new = props.materials.add()
-                    # Assign name before assigning ifc_definition_id to avoid triggering IFC update.
-                    new.name = get_name(material)
+                    new["name"] = get_name(material)
                     new.ifc_definition_id = material.id()
                     new.total_elements = len(
                         ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material)
@@ -124,13 +127,16 @@ class Material(bonsai.core.tool.Material):
 
             if category_index_to_reselect is not None:
                 props.active_material_index = category_index_to_reselect
-            return
-        for material in materials:
-            new = props.materials.add()
-            # Assign name before assigning ifc_definition_id to avoid triggering IFC update.
-            new.name = get_name(material)
-            new.ifc_definition_id = material.id()
-            new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+        else:
+            for material in materials:
+                new = props.materials.add()
+                new["name"] = get_name(material)
+                new.ifc_definition_id = material.id()
+                new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+
+        from bonsai.bim.module.material.data import MaterialsData
+
+        MaterialsData.data["material_styles_data"] = MaterialsData.material_styles_data()
 
     @classmethod
     def is_editing_materials(cls) -> bool:
@@ -388,3 +394,53 @@ class Material(bonsai.core.tool.Material):
             material.Materials = [default_material]
         else:
             assert False, f"Invalid material type found: {material_type}."
+
+    @classmethod
+    def purge_unused_materials(cls) -> int:
+        ifc_file = tool.Ifc.get()
+        is_ifc2x3 = ifc_file.schema == "IFC2X3"
+        ifc_class = "IfcMaterial" if is_ifc2x3 else "IfcMaterialDefinition"
+
+        skip_inverses = {
+            "IfcMaterialDefinitionRepresentation",
+            "IfcMaterialProperties",
+        }
+
+        def is_safe_to_purge(material: ifcopenshell.entity_instance) -> bool:
+            for i in ifc_file.get_inverse(material):
+                if i.is_a() not in skip_inverses:
+                    return False
+            return True
+
+        materials = ifc_file.by_type(ifc_class)
+        # Not IfcMaterialDefinition...
+        materials += ifc_file.by_type("IfcMaterialList")
+        # In IFC2X3 materials don't have a common class.
+        if is_ifc2x3:
+            materials += ifc_file.by_type("IfcMaterialLayer")
+            materials += ifc_file.by_type("IfcMaterialLayerSet")
+            materials += ifc_file.by_type("IfcMaterialLayerSetUsage")
+
+        i = 0
+        for material in materials:
+            if ifc_file.get_total_inverses(material) != 0 and not is_safe_to_purge(material):
+                continue
+            ifcopenshell.api.material.remove_material(ifc_file, material)
+            i += 1
+
+        if i == 0:
+            return 0
+
+        i += cls.purge_unused_materials()
+        return i
+
+    @classmethod
+    def get_material_name(cls, material: ifcopenshell.entity_instance) -> Union[str, None]:
+        ifc_class = material.is_a()
+        if ifc_class == "IfcMaterialList":
+            return None
+        elif ifc_class == "IfcMaterialLayerSet":
+            # Optional IfcLabel.
+            return material.LayerSetName
+        # Optional IfcLabel except for IfcMaterial.
+        return material.Name

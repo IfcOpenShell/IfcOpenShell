@@ -21,6 +21,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
+import bonsai.core.style
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
@@ -69,11 +70,20 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def disable_editing(cls) -> None:
-        bpy.context.scene.BIMStylesProperties.is_editing_style = 0
+        props = bpy.context.scene.BIMStylesProperties
+        props.is_editing_style = 0
+        props.is_editing_class = ""
+        props.attributes.clear()
+        props.external_style_attributes.clear()
+        props.refraction_style_attributes.clear()
+        props.lighting_style_colours.clear()
+        props.textures.clear()
 
     @classmethod
     def disable_editing_styles(cls) -> None:
-        bpy.context.scene.BIMStylesProperties.is_editing = False
+        props = bpy.context.scene.BIMStylesProperties
+        props.is_editing = False
+        props.styles.clear()
 
     @classmethod
     def duplicate_style(cls, style: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
@@ -106,9 +116,7 @@ class Style(bonsai.core.tool.Style):
     @classmethod
     def get_active_style_in_ui(cls) -> Union[bpy.types.PropertyGroup, None]:
         props = bpy.context.scene.BIMStylesProperties
-        if len(props.styles) > props.active_style_index >= 0:
-            return props.styles[props.active_style_index]
-        return None
+        return props.active_style
 
     @classmethod
     def get_active_style_type(cls) -> str:
@@ -133,18 +141,6 @@ class Style(bonsai.core.tool.Style):
         obj = tool.Ifc.get_object(style)
         assert isinstance(obj, bpy.types.Material)
         return obj
-
-    @classmethod
-    def get_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
-        """Get linked IFC style based on material's BIMStyleProperties.ifc_definition_id.
-
-        Return None if material is not linked to IFC or it's linked to non-existent element.
-        """
-        if ifc_definition_id := obj.BIMStyleProperties.ifc_definition_id:
-            try:
-                return tool.Ifc.get().by_id(ifc_definition_id)
-            except:
-                return
 
     @classmethod
     def get_style_elements(
@@ -524,7 +520,8 @@ class Style(bonsai.core.tool.Style):
         for style in styles:
             new = props.styles.add()
             new.ifc_definition_id = style.id()
-            new.name = style.Name or "Unnamed"
+            new.blender_material = tool.Ifc.get_object(style)
+            new["name"] = style.Name or "Unnamed"  # Avoid writing to IFC through callback.
             new.ifc_class = style.is_a()
             for surface_style in getattr(style, "Styles", []) or []:
                 new2 = new.style_classes.add()
@@ -552,6 +549,10 @@ class Style(bonsai.core.tool.Style):
     @classmethod
     def is_editing_styles(cls) -> bool:
         return bpy.context.scene.BIMStylesProperties.is_editing
+
+    @classmethod
+    def is_editing_style(cls) -> bool:
+        return bpy.context.scene.BIMStylesProperties.is_editing_style
 
     @classmethod
     def select_elements(cls, elements: list[ifcopenshell.entity_instance]) -> None:
@@ -593,55 +594,9 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def assign_style_to_representation_item(
-        cls, representation_item: ifcopenshell.entity_instance, style: Optional[ifcopenshell.entity_instance] = None
+        cls, item: ifcopenshell.entity_instance, style: Optional[ifcopenshell.entity_instance] = None
     ) -> None:
-        """Assign specified style to a representation item and unassign all previously assigned styles."""
-        ifc_file = representation_item.file
-        if not (styled_item := next(iter(representation_item.StyledByItem), None)):
-            if style is None:
-                return
-            if ifc_file.schema == "IFC2X3":
-                style = ifc_file.create_entity("IfcPresentationStyleAssignment", (style,))
-            ifc_file.create_entity("IfcStyledItem", representation_item, (style,))
-            return
-
-        styled_item_styles = styled_item.Styles
-        if style and styled_item_styles == (style,):
-            return
-
-        if ifc_file.schema == "IFC4X3":
-            if style is None:
-                ifc_file.remove(styled_item)
-                return
-            styled_item.Styles = (style,)
-            return
-
-        # < IFC4X3
-        # Can't just remove a styled item or assign a style
-        # since we need to remove/change the possible style assignments.
-        assignment = None
-        for style_ in styled_item_styles:
-            if not style_.is_a("IfcPresentationStyleAssignment"):
-                continue
-            # Remove second assignment.
-            if style is None or assignment:
-                ifc_file.remove(style_)
-            else:
-                assignment = style_
-                if assignment.Styles != (style,):
-                    assignment.Styles = (style,)
-
-        if style is None:
-            ifc_file.remove(styled_item)
-            return
-
-        if assignment:
-            if styled_item_styles == (assignment,):
-                return
-            styled_item.Styles = (assignment,)
-            return
-
-        styled_item.Styles = (style,)
+        return ifcopenshell.api.style.assign_item_style(tool.Ifc.get(), item=item, style=style)
 
     @classmethod
     def get_representation_item_style(
@@ -695,3 +650,36 @@ class Style(bonsai.core.tool.Style):
         blender_material = tool.Ifc.get_object(style)
         # Will implicitly update the style name using handler.
         blender_material.name = name
+
+    @classmethod
+    def purge_unused_styles(cls) -> int:
+        """Purge unused styles (and related Blender materials).
+
+        Note that Styles UI should be updated manually after using this method.
+        """
+
+        ifc_file = tool.Ifc.get()
+        i = 0
+        if ifc_file.schema in ("IFC2X3", "IFC4"):
+            for element in ifc_file.by_type("IfcPresentationStyleAssignment"):
+                if ifc_file.get_total_inverses(element) == 0:
+                    ifc_file.remove(element)
+        for element in ifc_file.by_type("IfcPresentationStyle"):
+            if ifc_file.get_total_inverses(element) == 0:
+                bonsai.core.style.remove_style(tool.Ifc, tool.Style, element, reload_styles_ui=False)
+                i += 1
+        return i
+
+    @classmethod
+    def is_style_side_attribute_edited(
+        cls, style: ifcopenshell.entity_instance, new_attributes: dict[str, Any]
+    ) -> bool:
+        old_value, new_value = style.Side, new_attributes["Side"]
+        # Only need to reload if there it was change from/become NEGATIVE.
+        return old_value != new_value and "NEGATIVE" in (old_value, new_value)
+
+    @classmethod
+    def reload_repersentations(cls, style: ifcopenshell.entity_instance) -> None:
+        elements = ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style)
+        objects = [tool.Ifc.get_object(e) for e in elements]
+        tool.Geometry.reload_representation(objects)

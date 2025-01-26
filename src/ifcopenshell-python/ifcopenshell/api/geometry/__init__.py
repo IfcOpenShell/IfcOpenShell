@@ -62,6 +62,7 @@ from .map_representation import map_representation
 from .remove_boolean import remove_boolean
 from .remove_representation import remove_representation
 from .unassign_representation import unassign_representation
+from .validate_type import validate_type
 
 wrap_usecases(__path__, __name__)
 
@@ -88,4 +89,5 @@ __all__ = [
     "remove_boolean",
     "remove_representation",
     "unassign_representation",
+    "validate_type",
 ]

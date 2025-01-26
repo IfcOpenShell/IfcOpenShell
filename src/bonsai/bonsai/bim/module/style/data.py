@@ -36,22 +36,11 @@ class StylesData:
     @classmethod
     def load(cls):
         cls.data = {
-            "styles_to_blender_material_names": cls.styles_to_blender_material_names(),
             "style_types": cls.style_types(),
             "total_styles": cls.total_styles(),
             "reflectance_methods": cls.reflectance_methods(),
         }
         cls.is_loaded = True
-
-    @classmethod
-    def styles_to_blender_material_names(cls) -> dict[bpy.types.PropertyGroup, Union[str, None]]:
-        ifc_file = tool.Ifc.get()
-        props = bpy.context.scene.BIMStylesProperties
-        materials: dict[bpy.types.PropertyGroup, Union[str, None]] = {}
-        for style in props.styles:
-            material = tool.Ifc.get_object(ifc_file.by_id(style.ifc_definition_id))
-            materials[style] = material.name if material is not None else None
-        return materials
 
     @classmethod
     def reflectance_methods(cls):
@@ -68,8 +57,17 @@ class StylesData:
         ]
 
     @classmethod
-    def total_styles(cls):
-        return len(tool.Ifc.get().by_type("IfcPresentationStyle"))
+    def total_styles(cls) -> dict[str, int]:
+        total: dict[str, int] = {}
+        ifc_file = tool.Ifc.get()
+        for decl in cls.get_presentation_style_declarations():
+            total[decl.name()] = len(ifc_file.by_type(decl.name()))
+        return total
+
+    @classmethod
+    def get_presentation_style_declarations(cls):
+        declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle")
+        return ifcopenshell.util.schema.get_subtypes(declaration)
 
 
 class BlenderMaterialStyleData:

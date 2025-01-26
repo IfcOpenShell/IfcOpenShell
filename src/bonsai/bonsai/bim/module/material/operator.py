@@ -28,47 +28,61 @@ import bonsai.tool as tool
 import bonsai.core.style
 import bonsai.core.material as core
 import bonsai.bim.module.model.profile as model_profile
-from bonsai.bim.module.material.prop import purge as material_prop_purge
 from bonsai.bim.ifc import IfcStore
+from typing import Any, Union, TYPE_CHECKING
+from bonsai.bim.module.model import wall, slab
 
 
-class LoadMaterials(bpy.types.Operator, tool.Ifc.Operator):
+class LoadMaterials(bpy.types.Operator):
     bl_idname = "bim.load_materials"
     bl_label = "Load Materials"
     bl_description = "Display list of named materials"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.load_materials(tool.Material, context.scene.BIMMaterialProperties.material_type)
+        return {"FINISHED"}
 
 
-class DisableEditingMaterials(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingMaterials(bpy.types.Operator):
     bl_idname = "bim.disable_editing_materials"
     bl_label = "Disable Editing Materials"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_materials(tool.Material)
+        return {"FINISHED"}
 
 
-class SelectByMaterial(bpy.types.Operator, tool.Ifc.Operator):
+class SelectByMaterial(bpy.types.Operator):
     bl_idname = "bim.select_by_material"
     bl_label = "Select By Material"
+    bl_description = "Select objects using the provided material"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
 
-    def _execute(self, context):
-        core.select_by_material(tool.Material, tool.Spatial, material=tool.Ifc.get().by_id(self.material))
+    def execute(self, context):
+        material = tool.Ifc.get().by_id(self.material)
+        core.select_by_material(tool.Material, tool.Spatial, material=material)
+
+        # copy selection query to clipboard
+        material_name = material.Name
+        result = f'material="{material_name}"'
+        bpy.context.window_manager.clipboard = result
+        self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+
+        return {"FINISHED"}
 
 
-class EnableEditingMaterial(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingMaterial(bpy.types.Operator):
     bl_idname = "bim.enable_editing_material"
     bl_label = "Enable Editing Material"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_material(tool.Material, material=tool.Ifc.get().by_id(self.material))
+        return {"FINISHED"}
 
 
 class EditMaterial(bpy.types.Operator, tool.Ifc.Operator):
@@ -81,14 +95,15 @@ class EditMaterial(bpy.types.Operator, tool.Ifc.Operator):
         core.edit_material(tool.Ifc, tool.Material, material=tool.Ifc.get().by_id(self.material))
 
 
-class DisableEditingMaterial(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingMaterial(bpy.types.Operator):
     bl_idname = "bim.disable_editing_material"
     bl_label = "Disable Editing Material"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_material(tool.Material)
+        return {"FINISHED"}
 
 
 class AssignParameterizedProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -137,19 +152,17 @@ class AddMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.add_material(tool.Ifc, tool.Material, name=self.name, category=self.category, description=self.description)
-        material_prop_purge()
 
 
 class DuplicateMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.duplicate_material"
-    bl_label = "Diplicate Material"
+    bl_label = "Duplicate Material"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty(name="Material ID")
 
     def _execute(self, context):
         material = tool.Ifc.get().by_id(self.material)
         tool.Material.duplicate_material(material)
-        material_prop_purge()
         bpy.ops.bim.load_materials()
 
 
@@ -162,7 +175,6 @@ class AddMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.add_material_set(tool.Ifc, tool.Material, set_type=self.set_type)
-        material_prop_purge()
 
 
 class RemoveMaterial(bpy.types.Operator, tool.Ifc.Operator):
@@ -191,9 +203,17 @@ class RemoveMaterialSet(bpy.types.Operator, tool.Ifc.Operator):
 class AssignMaterialToSelected(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_material_to_selected"
     bl_label = "Assign Material To Selected"
-    bl_description = "Assign currently selected material in Materials UI to the selected objects"
+    bl_description = (
+        "Assign currently selected material in Materials UI to the selected objects.\n\n"
+        "ALT+CLICK to assign material as a usage."
+    )
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty(name="Material IFC ID")
+    assign_as_usage: bpy.props.BoolProperty(
+        name="Assign Material As A Usage",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
 
     @classmethod
     def poll(cls, context):
@@ -202,13 +222,25 @@ class AssignMaterialToSelected(bpy.types.Operator, tool.Ifc.Operator):
             return False
         return True
 
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            material_class = tool.Ifc.get().by_id(self.material).is_a()
+            if material_class not in ("IfcMaterialProfileSet", "IfcMaterialLayerSet"):
+                self.report({"ERROR"}, f"{material_class} cannot be assigned as a usage.")
+                return {"CANCELLED"}
+            self.assign_as_usage = True
+        return self.execute(context)
+
     def _execute(self, context):
         material = tool.Ifc.get().by_id(self.material)
         objects = tool.Blender.get_selected_objects()
+        material_type = material.is_a()
+        if self.assign_as_usage:
+            material_type += "Usage"
         core.assign_material(
             tool.Ifc,
             tool.Material,
-            material_type=tool.Material.get_active_material_type(),
+            material_type=material_type,
             objects=objects,
             material=material,
         )
@@ -330,19 +362,14 @@ class AddLayer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
-        layer = ifcopenshell.api.run(
-            "material.add_layer",
-            self.file,
-            **{
-                "layer_set": self.file.by_id(self.layer_set),
-                "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
-            },
+        layer_set = tool.Ifc.get().by_id(self.layer_set)
+        ifcopenshell.api.material.add_layer(
+            tool.Ifc.get(),
+            layer_set=layer_set,
+            material=tool.Ifc.get().by_id(int(obj.BIMObjectMaterialProperties.material)),
         )
-
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        thickness = 0.1  # Arbitrary metric thickness for now
-        layer.LayerThickness = thickness / unit_scale
+        slab.DumbSlabPlaner().regenerate_from_layer_set(layer_set)
+        wall.DumbWallPlaner().regenerate_from_layer_set(layer_set)
 
 
 class ReorderMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
@@ -378,11 +405,15 @@ class RemoveLayer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         layer = tool.Ifc.get().by_id(self.layer)
+        material_sets = set(layer.ToMaterialLayerSet)
         for material_set in layer.ToMaterialLayerSet:
             if len(material_set.MaterialLayers) == 1:
                 self.report({"ERROR"}, "At least one layer must exist")
                 return {"CANCELLED"}
         ifcopenshell.api.run("material.remove_layer", tool.Ifc.get(), layer=layer)
+        for material_set in material_sets:
+            slab.DumbSlabPlaner().regenerate_from_layer_set(material_set)
+            wall.DumbWallPlaner().regenerate_from_layer_set(material_set)
 
 
 class DuplicateLayer(bpy.types.Operator, tool.Ifc.Operator):
@@ -558,6 +589,8 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
                     self.file,
                     **{"usage": material_set_usage, "attributes": attributes},
                 )
+                slab.DumbSlabPlaner().regenerate_from_layer_set(material_set_usage.ForLayerSet)
+                wall.DumbWallPlaner().regenerate_from_layer_set(material_set_usage.ForLayerSet)
             elif material_set_usage.is_a("IfcMaterialProfileSetUsage"):
                 if attributes.get("CardinalPoint", None):
                     attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
@@ -680,32 +713,28 @@ class EditMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
         attributes = bonsai.bim.helper.export_attributes(props.material_set_item_attributes)
 
         if material.is_a("IfcMaterialConstituentSet"):
-            ifcopenshell.api.run(
-                "material.edit_constituent",
+            ifcopenshell.api.material.edit_constituent(
                 self.file,
-                **{
-                    "constituent": self.file.by_id(self.material_set_item),
-                    "attributes": attributes,
-                    "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material_set_item_material)),
-                },
+                constituent=self.file.by_id(self.material_set_item),
+                attributes=attributes,
+                material=self.file.by_id(int(obj.BIMObjectMaterialProperties.material_set_item_material)),
             )
         elif material.is_a("IfcMaterialLayerSet"):
-            ifcopenshell.api.run(
-                "material.edit_layer",
+            layer = self.file.by_id(self.material_set_item)
+            ifcopenshell.api.material.edit_layer(
                 self.file,
-                **{
-                    "layer": self.file.by_id(self.material_set_item),
-                    "attributes": attributes,
-                    "material": self.file.by_id(int(obj.BIMObjectMaterialProperties.material_set_item_material)),
-                },
+                layer=layer,
+                attributes=attributes,
+                material=self.file.by_id(int(obj.BIMObjectMaterialProperties.material_set_item_material)),
             )
+            slab.DumbSlabPlaner().regenerate_from_layer(layer)
+            wall.DumbWallPlaner().regenerate_from_layer(layer)
         elif material.is_a("IfcMaterialProfileSet"):
             profile_def = None
             if mprops.profiles:
                 profile_def = tool.Ifc.get().by_id(int(mprops.profiles))
 
-            ifcopenshell.api.run(
-                "material.edit_profile",
+            ifcopenshell.api.material.edit_profile(
                 self.file,
                 profile=self.file.by_id(self.material_set_item),
                 attributes=attributes,
@@ -735,11 +764,11 @@ class ExpandMaterialCategory(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
-        for index, category in [
+        for index, category in (
             (i, c)
             for i, c in enumerate(props.materials)
             if c.is_category and (self.expand_all or c.name == self.category)
-        ]:
+        ):
             category.is_expanded = True
             if category.name == self.category:
                 props.active_material_index = index
@@ -764,11 +793,11 @@ class ContractMaterialCategory(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMMaterialProperties
-        for index, category in [
+        for index, category in (
             (i, c)
             for i, c in enumerate(props.materials)
             if c.is_category and (self.contract_all or c.name == self.category)
-        ]:
+        ):
             category.is_expanded = False
             if category.name == self.category:
                 props.active_material_index = index
@@ -776,30 +805,36 @@ class ContractMaterialCategory(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EnableEditingMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingMaterialStyle(bpy.types.Operator):
     bl_idname = "bim.enable_editing_material_style"
     bl_label = "Enable Editing Material Style"
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         props = bpy.context.scene.BIMMaterialProperties
         props.active_material_id = self.material
         props.editing_material_type = "STYLE"
 
         # set already applied style and context if possible
         if not 0 <= props.active_material_index < len(props.materials):
-            return
+            return {"FINISHED"}
 
-        material = tool.Ifc.get().by_id(props.materials[props.active_material_index].ifc_definition_id)
+        ifc_file = tool.Ifc.get()
+        material = ifc_file.by_id(props.materials[props.active_material_index].ifc_definition_id)
         if not material.HasRepresentation:
-            return
+            # MODEL_VIEW is probably the one that's used with the styles most frequently.
+            context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+            if context:
+                props.contexts = str(context.id())
+            return {"FINISHED"}
 
         rep = material.HasRepresentation[0].Representations[0]  # IfcStyledRepresentation
         props.contexts = str(rep.ContextOfItems.id())
         style = rep.Items[0].Styles[0]
         if style.Name:  # props.styles only has named styles
             props.styles = str(rep.Items[0].Styles[0].id())
+        return {"FINISHED"}
 
 
 class EditMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
@@ -841,3 +876,53 @@ class UnassignMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
         )
         core.load_materials(tool.Material, props.material_type)
         tool.Material.update_elements_using_material(material)
+
+
+class SelectMaterialInMaterialsUI(bpy.types.Operator):
+    bl_idname = "bim.material_ui_select"
+    bl_label = "Select Material In Materials UI"
+    bl_options = {"REGISTER", "UNDO"}
+    material_id: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        material_id: int
+
+    def execute(self, context):
+        props = bpy.context.scene.BIMMaterialProperties
+        ifc_file = tool.Ifc.get()
+        material_id = self.material_id
+        material = ifc_file.by_id(material_id)
+        material_class = material.is_a()
+
+        # Current we do not support editing usaged not on instance,
+        # so fallback to the material set it's referring to.
+        if material_class.endswith("Usage"):
+            material_class = material_class.removesuffix("Usage")
+            if material_class == "IfcMaterialProfileSet":
+                material = material.ForProfileSet
+            else:  # IfcMaterialLayerSet
+                material = material.ForLayerSet
+            material_id = material.id()
+
+        core.load_materials(tool.Material, material_class)
+
+        def get_material_item() -> Union[tuple[int, bpy.types.PropertyGroup], None]:
+            return next(((i, m) for i, m in enumerate(props.materials) if m.ifc_definition_id == material_id), None)
+
+        material_item = get_material_item()
+
+        # Material category is contracted, won't occur for non-IfcMaterials.
+        if material_item is None:
+            material_category = tool.Material.get_material_category(material)
+            bpy.ops.bim.expand_material_category(category=material_category)
+            material_item = get_material_item()
+            assert material_item
+
+        item_index, _ = material_item
+        props.active_material_index = item_index
+
+        self.report(
+            {"INFO"},
+            f"Material '{tool.Material.get_material_name(material) or 'Unnamed'}' is selected in Materials UI.",
+        )
+        return {"FINISHED"}

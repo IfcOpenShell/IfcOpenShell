@@ -19,31 +19,38 @@
 import bpy
 import json
 import bmesh
+import shapely
 import collections
 import collections.abc
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
+import ifcopenshell.geom
 import ifcopenshell.util.element
-import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape
+import ifcopenshell.util.unit
 import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.core.geometry as geometry
-from math import atan, degrees
+from math import atan, degrees, radians
 from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
 from bonsai.bim import import_ifc
+
+# TODO: This line is somehow keeping the world from falling apart with a circular import error.
 from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
-from ifcopenshell.util.shape_builder import V, ShapeBuilder
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from typing import Optional, Union, TypeVar, Any, Iterable, Literal
 
 T = TypeVar("T")
+V_ = tool.Blender.V_
 
 
 class Model(bonsai.core.tool.Model):
@@ -86,7 +93,9 @@ class Model(bonsai.core.tool.Model):
         return data
 
     @classmethod
-    def export_curve(cls, position: Matrix, edge_indices: list[tuple[int, int]]) -> ifcopenshell.entity_instance:
+    def convert_mesh_to_curve(
+        cls, position: Matrix, edge_indices: list[tuple[int, int]]
+    ) -> ifcopenshell.entity_instance:
         position_i = position.inverted()
         ifc_file = tool.Ifc.get()
         if len(edge_indices) == 2:
@@ -123,43 +132,36 @@ class Model(bonsai.core.tool.Model):
         return tool.Ifc.get().createIfcCartesianPointList2D(points)
 
     @classmethod
+    def export_annotation_fill_area(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance | None:
+        result = cls.auto_detect_annotation_fill_area(obj, obj.data)
+        if isinstance(result, dict) and result["annotation_fill_area"]:
+            return tool.Ifc.get().add(result["annotation_fill_area"])
+
+    @classmethod
     def export_profile(
         cls, obj: bpy.types.Object, position: Optional[Matrix] = None
-    ) -> Union[ifcopenshell.entity_instance, None]:
+    ) -> ifcopenshell.entity_instance | None:
         """Returns `None` in case if profile was invalid."""
         if position is None:
             position = Matrix()
 
-        cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        result = cls.auto_detect_profiles(obj, obj.data, position)
+        if isinstance(result, dict) and result["profile_def"]:
+            return tool.Ifc.get().add(result["profile_def"])
 
-        helper = Helper(tool.Ifc.get())
-        indices = helper.auto_detect_arbitrary_profile_with_voids(obj, obj.data)
+    @classmethod
+    def export_curves(
+        cls, obj: bpy.types.Object, position: Optional[Matrix] = None
+    ) -> list[ifcopenshell.entity_instance] | None:
+        if position is None:
+            position = Matrix()
 
-        if isinstance(indices, tuple) and indices[0] is False:  # Ugly
-            return
-
-        cls.bm = bmesh.new()
-        cls.bm.from_mesh(obj.data)
-        cls.bm.verts.ensure_lookup_table()
-        cls.bm.edges.ensure_lookup_table()
-
-        if indices["inner_curves"]:
-            profile = tool.Ifc.get().createIfcArbitraryProfileDefWithVoids("AREA")
-        else:
-            profile = tool.Ifc.get().createIfcArbitraryClosedProfileDef("AREA")
-
-        if tool.Ifc.get().schema != "IFC2X3":
-            cls.points = cls.export_points(position, indices["points"])
-
-        profile.OuterCurve = cls.export_curve(position, indices["profile"])
-        if indices["inner_curves"]:
-            results = []
-            for inner_curve in indices["inner_curves"]:
-                results.append(cls.export_curve(position, inner_curve))
-            profile.InnerCurves = results
-
-        cls.bm.free()
-        return profile
+        results = []
+        result = cls.auto_detect_curves(obj, obj.data, position)
+        if isinstance(result, dict) and result["curves"]:
+            for curve in result["curves"]:
+                results.append(tool.Ifc.get().add(curve))
+        return results
 
     @classmethod
     def export_surface(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
@@ -181,11 +183,14 @@ class Model(bonsai.core.tool.Model):
 
         cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-        helper = Helper(tool.Ifc.get())
-        indices = helper.auto_detect_arbitrary_profile_with_voids(obj, obj.data)
+        result = cls.auto_detect_profiles(obj, obj.data, position)
 
-        if isinstance(indices, tuple) and indices[0] is False:  # Ugly
+        if not isinstance(result, dict):  # Ugly
             return
+
+        profile_def = result["profile_def"]
+        if profile_def.is_a("IfcCompositeProfileDef"):
+            profile_def = profile_def.Profiles[0]
 
         cls.bm = bmesh.new()
         cls.bm.from_mesh(obj.data)
@@ -201,14 +206,10 @@ class Model(bonsai.core.tool.Model):
             )
         )
 
-        if tool.Ifc.get().schema != "IFC2X3":
-            cls.points = cls.export_points(position, indices["points"])
-
-        surface.OuterBoundary = cls.export_curve(position, indices["profile"])
-        results = []
-        for inner_curve in indices["inner_curves"]:
-            results.append(cls.export_curve(position, inner_curve))
+        surface.OuterBoundary = tool.Ifc.get().add(profile_def.OuterCurve)
         surface.InnerBoundaries = results
+        if profile_def.is_a("IfcArbitraryProfileDefWithVoids"):
+            surface.InnerBoundaries = [tool.Ifc.get().add(c) for c in profile_def.InnerCurves]
 
         cls.bm.free()
         return surface
@@ -260,7 +261,7 @@ class Model(bonsai.core.tool.Model):
             )
             cls.edges.append([0, 1])
         else:
-            cls.import_curve(obj, position, axis)
+            cls.convert_curve_to_mesh(obj, position, axis)
 
         mesh = bpy.data.meshes.new("Axis")
         mesh.from_pydata(cls.vertices, cls.edges, [])
@@ -274,7 +275,18 @@ class Model(bonsai.core.tool.Model):
         return obj
 
     @classmethod
-    def import_profile(cls, profile, obj=None, position=None):
+    def import_annotation_fill_area(
+        cls, annotation_fill_area: ifcopenshell.entity_instance, obj: Optional[bpy.types.Object] = None
+    ) -> bpy.types.Object:
+        return cls.import_profile(annotation_fill_area, obj)
+
+    @classmethod
+    def import_profile(
+        cls,
+        profile: ifcopenshell.entity_instance,
+        obj: Optional[bpy.types.Object] = None,
+        position: Optional[Matrix] = None,
+    ) -> Union[bpy.types.Object, None]:
         """Creates new profile mesh and assigns it to `obj`,
         if `obj` is `None` then new "Profile" object will be created.
 
@@ -290,13 +302,22 @@ class Model(bonsai.core.tool.Model):
         cls.arcs = []
         cls.circles = []
 
-        if profile.is_a("IfcArbitraryClosedProfileDef"):
-            cls.import_curve(obj, position, profile.OuterCurve)
-            if profile.is_a("IfcArbitraryProfileDefWithVoids"):
-                for inner_curve in profile.InnerCurves:
-                    cls.import_curve(obj, position, inner_curve)
-        elif profile.is_a() == "IfcRectangleProfileDef":
-            cls.import_rectangle(obj, position, profile)
+        profiles = profile.Profiles if profile.is_a("IfcCompositeProfileDef") else [profile]
+        for profile in profiles:
+            if profile.is_a("IfcArbitraryClosedProfileDef"):
+                cls.convert_curve_to_mesh(obj, position, profile.OuterCurve)
+                if profile.is_a("IfcArbitraryProfileDefWithVoids"):
+                    for inner_curve in profile.InnerCurves:
+                        cls.convert_curve_to_mesh(obj, position, inner_curve)
+            elif profile.is_a() == "IfcRectangleProfileDef":
+                cls.import_rectangle(obj, position, profile)
+            elif profile.is_a() == "IfcAnnotationFillArea":
+                cls.convert_curve_to_mesh(obj, position, profile.OuterBoundary)
+                for inner_boundary in profile.InnerBoundaries or []:
+                    cls.convert_curve_to_mesh(obj, position, inner_boundary)
+
+        if not cls.vertices or not cls.edges:
+            return None
 
         mesh = bpy.data.meshes.new("Profile")
         mesh.from_pydata(cls.vertices, cls.edges, [])
@@ -305,7 +326,10 @@ class Model(bonsai.core.tool.Model):
         if obj is None:
             obj = bpy.data.objects.new("Profile", mesh)
         else:
+            old_data = obj.data
             obj.data = mesh
+            if old_data and not old_data.users:
+                bpy.data.meshes.remove(old_data)
 
         for arc in cls.arcs:
             group = obj.vertex_groups.new(name="IFCARCINDEX")
@@ -318,7 +342,51 @@ class Model(bonsai.core.tool.Model):
         return obj
 
     @classmethod
-    def import_surface(cls, surface, obj=None):
+    def import_curve(
+        cls,
+        curve: ifcopenshell.entity_instance,
+        obj: Optional[bpy.types.Object] = None,
+        position: Optional[Matrix] = None,
+    ) -> bpy.types.Object:
+        cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        if position is None:
+            position = Matrix()
+
+        cls.vertices = []
+        cls.edges = []
+        cls.arcs = []
+        cls.circles = []
+
+        if tool.Geometry.is_curvelike_item(curve):
+            cls.convert_curve_to_mesh(obj, position, curve)
+
+        mesh = bpy.data.meshes.new("Curve")
+        mesh.from_pydata(cls.vertices, cls.edges, [])
+        mesh.BIMMeshProperties.subshape_type = "PROFILE"
+
+        if obj is None:
+            obj = bpy.data.objects.new("Curve", mesh)
+        else:
+            old_data = obj.data
+            obj.data = mesh
+            if old_data and not old_data.users:
+                bpy.data.meshes.remove(old_data)
+
+        for arc in cls.arcs:
+            group = obj.vertex_groups.new(name="IFCARCINDEX")
+            group.add(arc, 1, "REPLACE")
+
+        for circle in cls.circles:
+            group = obj.vertex_groups.new(name="IFCCIRCLE")
+            group.add(circle, 1, "REPLACE")
+
+        return obj
+
+    @classmethod
+    def import_surface(
+        cls, surface: ifcopenshell.entity_instance, obj: Optional[bpy.types.Object] = None
+    ) -> bpy.types.Object:
         cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         cls.vertices = []
@@ -330,9 +398,9 @@ class Model(bonsai.core.tool.Model):
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position).tolist())
             position.translation *= cls.unit_scale
 
-            cls.import_curve(obj, position, surface.OuterBoundary)
+            cls.convert_curve_to_mesh(obj, position, surface.OuterBoundary)
             for inner_boundary in surface.InnerBoundaries:
-                cls.import_curve(obj, position, inner_boundary)
+                cls.convert_curve_to_mesh(obj, position, inner_boundary)
 
         mesh = bpy.data.meshes.new("Surface")
         mesh.from_pydata(cls.vertices, cls.edges, [])
@@ -354,7 +422,9 @@ class Model(bonsai.core.tool.Model):
         return obj
 
     @classmethod
-    def import_curve(cls, obj, position, curve):
+    def convert_curve_to_mesh(
+        cls, obj: bpy.types.Object, position: Matrix, curve: ifcopenshell.entity_instance
+    ) -> None:
         offset = len(cls.vertices)
 
         if curve.is_a("IfcPolyline"):
@@ -370,60 +440,43 @@ class Model(bonsai.core.tool.Model):
         elif curve.is_a("IfcCompositeCurve"):
             # This is a first pass incomplete implementation only for simple polylines, and misses many details.
             for segment in curve.Segments:
-                cls.import_curve(obj, position, segment.ParentCurve)
+                cls.convert_curve_to_mesh(obj, position, segment.ParentCurve)
         elif curve.is_a("IfcIndexedPolyCurve"):
-            is_arc = False
-            is_closed = False
+            for local_point in curve.Points.CoordList:
+                global_point = position @ Vector(cls.convert_unit_to_si(local_point)).to_3d()
+                cls.vertices.append(global_point)
             if curve.Segments:
                 for segment in curve.Segments:
                     if segment.is_a("IfcArcIndex"):
-                        is_arc = True
-                        local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment[0][0] - 1])
-                        global_point = position @ Vector(local_point).to_3d()
-                        cls.vertices.append(global_point)
-                        local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment[0][1] - 1])
-                        global_point = position @ Vector(local_point).to_3d()
-                        cls.vertices.append(global_point)
-                        cls.arcs.append([len(cls.vertices) - 2, len(cls.vertices) - 1])
+                        cls.arcs.append([i - 1 + offset for i in segment[0]])
+                        cls.edges.append([i - 1 + offset for i in segment[0][:2]])
+                        cls.edges.append([i - 1 + offset for i in segment[0][1:]])
                     else:
-                        for segment_index in segment[0][0:-1]:
-                            local_point = cls.convert_unit_to_si(curve.Points.CoordList[segment_index - 1])
-                            global_point = position @ Vector(local_point).to_3d()
-                            cls.vertices.append(global_point)
-                            if is_arc:
-                                cls.arcs[-1].append(len(cls.vertices) - 1)
-                                is_arc = False
-
-                if curve.Segments[0][0][0] == curve.Segments[-1][0][-1]:
-                    is_closed = True
+                        segment = [i - 1 + offset for i in segment[0]]
+                        cls.edges.extend(zip(segment, segment[1:]))
             else:
-                for local_point in curve.Points.CoordList:
-                    global_point = position @ Vector(cls.convert_unit_to_si(local_point)).to_3d()
-                    cls.vertices.append(global_point)
-
+                is_closed = False
                 if cls.vertices[offset] == cls.vertices[-1]:
                     is_closed = True
                     del cls.vertices[-1]
-
-            cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices) - 1)])
-            if is_closed:
-                cls.edges.append([len(cls.vertices) - 1, offset])  # Close the loop
+                cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices) - 1)])
+                if is_closed:
+                    cls.edges.append([len(cls.vertices) - 1, offset])  # Close the loop
         elif curve.is_a("IfcCircle"):
-            center = cls.convert_unit_to_si(
-                Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist()).translation
-            )
+            circle_position = Matrix(ifcopenshell.util.placement.get_axis2placement(curve.Position).tolist())
+            circle_position.translation *= cls.unit_scale
             radius = cls.convert_unit_to_si(curve.Radius)
             cls.vertices.extend(
                 [
-                    position @ Vector((center[0], center[1] - radius, 0.0)),
-                    position @ Vector((center[0], center[1] + radius, 0.0)),
+                    position @ circle_position @ Vector((0, 0 - radius, 0.0)),
+                    position @ circle_position @ Vector((0, 0 + radius, 0.0)),
                 ]
             )
             cls.circles.append([offset, offset + 1])
             cls.edges.append((offset, offset + 1))
 
     @classmethod
-    def import_rectangle(cls, obj, position, profile):
+    def import_rectangle(cls, obj: bpy.types.Object, position: Matrix, profile: ifcopenshell.entity_instance) -> None:
         if profile.Position:
             p_position = Matrix(ifcopenshell.util.placement.get_axis2placement(profile.Position).tolist())
             p_position.translation *= cls.unit_scale
@@ -445,7 +498,7 @@ class Model(bonsai.core.tool.Model):
         cls.edges[-1] = (len(cls.vertices) - 1, 0)  # Close the loop
 
     @classmethod
-    def load_openings(cls, openings):
+    def load_openings(cls, openings: list[ifcopenshell.entity_instance]) -> Iterable[bpy.types.Object]:
         if not openings:
             return []
         ifc_import_settings = import_ifc.IfcImportSettings.factory()
@@ -460,15 +513,12 @@ class Model(bonsai.core.tool.Model):
         return ifc_importer.added_data.values()
 
     @classmethod
-    def clear_scene_openings(cls) -> None:
-        props = bpy.context.scene.BIMModelProperties
-        has_deleted_opening = True
-        while has_deleted_opening:
-            has_deleted_opening = False
-            for i, opening in enumerate(props.openings):
-                if not opening.obj:
-                    props.openings.remove(i)
-                    has_deleted_opening = True
+    def purge_scene_openings(cls) -> None:
+        """Purge removed scene openings."""
+        openings = bpy.context.scene.BIMModelProperties.openings
+        for i in range(len(openings) - 1, -1, -1):
+            if not openings[i].obj:
+                openings.remove(i)
 
     @classmethod
     def get_material_layer_parameters(cls, element: ifcopenshell.entity_instance) -> dict[str, Any]:
@@ -486,9 +536,6 @@ class Model(bonsai.core.tool.Model):
                 material = material.ForLayerSet
             if material.is_a("IfcMaterialLayerSet"):
                 thickness = sum([l.LayerThickness for l in material.MaterialLayers]) * unit_scale
-        if direction_sense == "NEGATIVE":
-            thickness *= -1
-            offset *= -1
         return {
             "layer_set_direction": layer_set_direction,
             "thickness": thickness,
@@ -497,7 +544,11 @@ class Model(bonsai.core.tool.Model):
         }
 
     @classmethod
-    def get_booleans(cls, element=None, representation=None) -> list[ifcopenshell.entity_instance]:
+    def get_booleans(
+        cls,
+        element: Optional[ifcopenshell.entity_instance] = None,
+        representation: Optional[ifcopenshell.entity_instance] = None,
+    ) -> list[ifcopenshell.entity_instance]:
         if representation is None:
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
@@ -512,7 +563,9 @@ class Model(bonsai.core.tool.Model):
         return booleans
 
     @classmethod
-    def get_manual_booleans(cls, element, representation=None) -> list[ifcopenshell.entity_instance]:
+    def get_manual_booleans(
+        cls, element: ifcopenshell.entity_instance, representation: Optional[ifcopenshell.entity_instance] = None
+    ) -> list[ifcopenshell.entity_instance]:
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
         if not pset:
             return []
@@ -542,7 +595,7 @@ class Model(bonsai.core.tool.Model):
         ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
 
     @classmethod
-    def unmark_manual_booleans(cls, element, boolean_ids):
+    def unmark_manual_booleans(cls, element: ifcopenshell.entity_instance, boolean_ids: list[int]) -> None:
         # NOTE: we use use boolean_ids instead of boolean entities
         # so it will be possible to unmark manual booleans after they already was deleted
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
@@ -559,12 +612,14 @@ class Model(bonsai.core.tool.Model):
             ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
 
     @classmethod
-    def get_flow_segment_axis(cls, obj):
+    def get_flow_segment_axis(cls, obj: bpy.types.Object) -> tuple[Vector, Vector]:
         z_values = [v[2] for v in obj.bound_box]
         return (obj.matrix_world @ Vector((0, 0, min(z_values))), obj.matrix_world @ Vector((0, 0, max(z_values))))
 
     @classmethod
-    def get_flow_segment_profile(cls, element):
+    def get_flow_segment_profile(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
         if material and material.is_a("IfcMaterialProfileSet") and len(material.MaterialProfiles) == 1:
             return material.MaterialProfiles[0].Profile
@@ -577,24 +632,52 @@ class Model(bonsai.core.tool.Model):
         if material:
             if material.is_a("IfcMaterialLayerSetUsage"):
                 return f"LAYER{material.LayerSetDirection[-1]}"
+            elif material.is_a("IfcMaterialLayerSet"):
+                axis = ifcopenshell.util.element.get_pset(element, "EPset_Parametric", "LayerSetDirection")
+                if axis is None:
+                    if element.is_a() in [
+                        "IfcSlabType",
+                        "IfcRoofType",
+                        "IfcRampType",
+                        "IfcPlateType",
+                        "IfcCovering",
+                        "IfcFurniture",
+                    ]:
+                        axis = "AXIS3"
+                    else:
+                        axis = "AXIS2"
+                return f"LAYER{axis[-1]}"
             elif material.is_a("IfcMaterialProfileSetUsage"):
+                # TODO: remove after we support editing profile usages with IfcRevolvedAreaSolid.
+                # Revolved area check should happen inside bim.enable_editing_extrusion_axis
+                # but keep it here to trigger import_representation_items,
+                # so users will be able to at least move IfcRevolvedAreaSolid, until there will be a full support.
+                body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+                if body and any(
+                    i.is_a("IfcRevolvedAreaSolid") for i in ifcopenshell.util.representation.resolve_base_items(body)
+                ):
+                    return
+                return "PROFILE"
+            elif material.is_a("IfcMaterialProfileSet"):
                 return "PROFILE"
 
     @classmethod
-    def get_wall_axis(cls, obj, layers=None):
+    def get_wall_axis(cls, obj: bpy.types.Object, layers: Optional[dict[str, Any]] = None) -> dict[str, list[Vector]]:
+        """Each item of a resulting dictionary is a list of 2 2D vectors."""
         x_values = [v[0] for v in obj.bound_box]
         min_x = min(x_values)
         max_x = max(x_values)
         axes = {}
         if layers:
+            direction = 1 if layers["direction_sense"] == "POSITIVE" else -1
             axes = {
                 "base": [
                     (obj.matrix_world @ Vector((min_x, layers["offset"], 0.0))).to_2d(),
                     (obj.matrix_world @ Vector((max_x, layers["offset"], 0.0))).to_2d(),
                 ],
                 "side": [
-                    (obj.matrix_world @ Vector((min_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
-                    (obj.matrix_world @ Vector((max_x, layers["offset"] + layers["thickness"], 0.0))).to_2d(),
+                    (obj.matrix_world @ Vector((min_x, layers["offset"] + (layers["thickness"] * direction), 0.0))).to_2d(),
+                    (obj.matrix_world @ Vector((max_x, layers["offset"] + (layers["thickness"] * direction), 0.0))).to_2d(),
                 ],
             }
         axes["reference"] = [
@@ -604,7 +687,78 @@ class Model(bonsai.core.tool.Model):
         return axes
 
     @classmethod
-    def handle_array_on_copied_element(cls, element, array_data=None):
+    def get_connected_walls(cls, walls: list[bpy.types.Object]) -> list[bpy.types.Object]:
+        """
+        Loop through walls by retrieving the next connected wall using the connection path.
+        If the function encounters the first wall again, it will return the list of connected walls.
+        """
+
+        first_wall = tool.Ifc.get_entity(walls[0])
+        previous_wall = None
+        current_wall = first_wall
+        ordered_walls = [first_wall]
+
+        for i in range(len(walls)):
+            paths = []
+            paths.extend([path for path in current_wall.ConnectedTo])
+            paths.extend([path for path in current_wall.ConnectedFrom])
+
+            if len(paths) <= 1:
+                return []
+
+            for path in paths:
+                next_wall = path.RelatedElement if path.RelatedElement != current_wall else path.RelatingElement
+                if next_wall == previous_wall:
+                    continue
+
+                if next_wall != current_wall and next_wall != first_wall and next_wall not in ordered_walls:
+                    ordered_walls.append(next_wall)
+                    previous_wall = current_wall
+                    current_wall = next_wall
+                    break
+
+                if next_wall == first_wall:
+                    return [tool.Ifc.get_object(wall) for wall in ordered_walls]
+        return []
+
+    @classmethod
+    def get_polygons_from_wall_axis(cls, walls: list[bpy.types.Object]) -> list[shapely.Polygon]:
+        """
+        Get the polygons formed by the intersection of the wall axis reference and side.
+        The polygon with the larger area will be considered the external polygon.
+        This function only works with closed loops.
+        """
+        points1 = []
+        points2 = []
+        for w1, w2 in zip(walls, walls[1:] + [walls[0]]):
+            layers1 = tool.Model.get_material_layer_parameters(tool.Ifc.get_entity(w1))
+            layers2 = tool.Model.get_material_layer_parameters(tool.Ifc.get_entity(w2))
+            axis1 = tool.Model.get_wall_axis(w1, layers1)
+            axis2 = tool.Model.get_wall_axis(w2, layers2)
+            intersection1 = tool.Cad.intersect_edges_v2(axis1["reference"], axis2["reference"])
+            intersection2 = tool.Cad.intersect_edges_v2(axis1["side"], axis2["side"])
+            if intersection1[0] is None or intersection2[0] is None:
+                for v1 in axis1["reference"]:
+                    for v2 in axis2["reference"]:
+                        if tool.Cad.are_vectors_equal(v1, v2, 1e-5):
+                            intersection1 = [v1]
+                for v1 in axis1["side"]:
+                    for v2 in axis2["side"]:
+                        if tool.Cad.are_vectors_equal(v1, v2, 1e-5):
+                            intersection2 = [v1]
+
+            points1.append(intersection1[0])
+            points2.append(intersection2[0])
+
+        poly1 = shapely.Polygon(points1)
+        poly2 = shapely.Polygon(points2)
+
+        return poly1 if poly1.area > poly2.area else poly2
+
+    @classmethod
+    def handle_array_on_copied_element(
+        cls, element: ifcopenshell.entity_instance, array_data: Optional[dict[str, Any]] = None
+    ) -> None:
         """if no `array_data` is provided then an array will be removed from the element"""
 
         if array_data is None:
@@ -612,19 +766,23 @@ class Model(bonsai.core.tool.Model):
             if not array_pset:
                 return
 
-            array_pset_data = array_pset["Data"]
+            # TODO: Non-strictness is temporary. It was added due
+            # to a bug infecting ifc models since it occurred,
+            # can be reverted later.
+            array_pset_data = array_pset.get("Data", None)
             array_pset = tool.Ifc.get().by_id(array_pset["id"])
             ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=array_pset)
 
             # remove constraints
             obj = tool.Ifc.get_object(element)
+            assert isinstance(obj, bpy.types.Object)
             if not array_pset_data:  # skip array parents
                 constraint = next((c for c in obj.constraints if c.type == "CHILD_OF"), None)
                 if constraint:
                     matrix = obj.matrix_world.copy()
                     obj.constraints.remove(constraint)
-                    # keep the matrix before the constraint
-                    # otherwise object will jump to some previous position
+                    # Keep the matrix before removing the constraint,
+                    # otherwise object will jump to some previous position.
                     obj.matrix_world = matrix
                 tool.Blender.lock_transform(obj, False)
 
@@ -649,7 +807,9 @@ class Model(bonsai.core.tool.Model):
             tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
     @classmethod
-    def regenerate_array(cls, parent_obj, data, array_layers_to_apply=tuple()):
+    def regenerate_array(
+        cls, parent_obj: bpy.types.Object, data: list[dict[str, Any]], array_layers_to_apply: Iterable[int] = tuple()
+    ) -> None:
         """`array_layers_to_apply` - list of array layer indices to apply"""
         tool.Blender.Modifier.Array.remove_constraints(tool.Ifc.get_entity(parent_obj))
 
@@ -704,11 +864,11 @@ class Model(bonsai.core.tool.Model):
                     # add child pset
                     child_pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")
                     if child_pset:
-                        ifcopenshell.api.run(
-                            "pset.edit_pset",
+                        ifcopenshell.api.pset.edit_pset(
                             tool.Ifc.get(),
                             pset=child_pset,
                             properties={"Data": None},
+                            should_purge=False,
                         )
 
                     # set child object position
@@ -746,7 +906,12 @@ class Model(bonsai.core.tool.Model):
             bpy.context.view_layer.update()
 
     @classmethod
-    def replace_object_ifc_representation(cls, ifc_context, obj, new_representation):
+    def replace_object_ifc_representation(
+        cls,
+        ifc_context: ifcopenshell.entity_instance,
+        obj: bpy.types.Object,
+        new_representation: ifcopenshell.entity_instance,
+    ) -> None:
         ifc_file = tool.Ifc.get()
         ifc_element = tool.Ifc.get_entity(obj)
         old_representation = ifcopenshell.util.representation.get_representation(
@@ -773,7 +938,7 @@ class Model(bonsai.core.tool.Model):
         )
 
     @classmethod
-    def update_thumbnail_for_element(cls, element, refresh=False):
+    def update_thumbnail_for_element(cls, element: ifcopenshell.entity_instance, refresh: bool = False) -> None:
         if bpy.app.background:
             return
 
@@ -870,8 +1035,16 @@ class Model(bonsai.core.tool.Model):
 
         AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
 
+    BBIM_PARAMETRIC_PSETS = (
+        "BBIM_Window",
+        "BBIM_Door",
+        "BBIM_Roof",
+        "BBIM_Railing",
+        "BBIM_Stair",
+    )
+
     @classmethod
-    def get_modeling_bbim_pset_data(cls, object, pset_name):
+    def get_modeling_bbim_pset_data(cls, object: bpy.types.Object, pset_name: str) -> Union[dict[str, Any], None]:
         """get modelling BBIM pset data (eg, BBIM_Roof) and loads it's `Data` as json to `data_dict`"""
         element = tool.Ifc.get_entity(object)
         if not element:
@@ -884,7 +1057,7 @@ class Model(bonsai.core.tool.Model):
         return pset_data
 
     @classmethod
-    def edit_element_placement(cls, element, matrix):
+    def edit_element_placement(cls, element: ifcopenshell.entity_instance, matrix: Matrix) -> None:
         """Useful for moving objects like ports or openings -
         the method will ensure it will be moved in blender scene too if it exists"""
         obj = tool.Ifc.get_object(element)
@@ -894,13 +1067,13 @@ class Model(bonsai.core.tool.Model):
         tool.Ifc.run("geometry.edit_object_placement", product=element, matrix=matrix, is_si=True)
 
     @classmethod
-    def sync_object_ifc_position(cls, obj):
+    def sync_object_ifc_position(cls, obj: bpy.types.Object) -> None:
         """make sure IFC position will be in sync with the Blender object position, if object was moved in Blender"""
         if tool.Ifc.is_moved(obj):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
     @classmethod
-    def get_element_matrix(cls, element, keep_local=False):
+    def get_element_matrix(cls, element: ifcopenshell.entity_instance, keep_local: bool = False) -> Matrix:
         placement = element.ObjectPlacement
         if keep_local:
             placement = ifcopenshell.util.placement.get_axis2placement(placement.RelativePlacement)
@@ -941,23 +1114,23 @@ class Model(bonsai.core.tool.Model):
             )
 
     @classmethod
-    def is_parametric_roof_active(cls):
-        return (RoofData.is_loaded or not RoofData.load()) and RoofData.data["pset_data"]
+    def is_parametric_roof_active(cls) -> bool:
+        return bool((RoofData.is_loaded or not RoofData.load()) and RoofData.data["pset_data"])
 
     @classmethod
-    def is_parametric_railing_active(cls):
-        return (RailingData.is_loaded or not RailingData.load()) and RailingData.data["pset_data"]
+    def is_parametric_railing_active(cls) -> bool:
+        return bool((RailingData.is_loaded or not RailingData.load()) and RailingData.data["pset_data"])
 
     @classmethod
-    def is_parametric_window_active(cls):
-        return (WindowData.is_loaded or not WindowData.load()) and WindowData.data["pset_data"]
+    def is_parametric_window_active(cls) -> bool:
+        return bool((WindowData.is_loaded or not WindowData.load()) and WindowData.data["pset_data"])
 
     @classmethod
-    def is_parametric_door_active(cls):
-        return (DoorData.is_loaded or not DoorData.load()) and DoorData.data["pset_data"]
+    def is_parametric_door_active(cls) -> bool:
+        return bool((DoorData.is_loaded or not DoorData.load()) and DoorData.data["pset_data"])
 
     @classmethod
-    def get_active_stair_calculated_params(cls, pset_data=None):
+    def get_active_stair_calculated_params(cls, pset_data: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         props = bpy.context.active_object.BIMStairProperties
 
         if props.is_editing:
@@ -1037,7 +1210,7 @@ class Model(bonsai.core.tool.Model):
         custom_tread_run = any(run != 0 for run in custom_first_last_tread_run)
         nosing_overlap = max(nosing_length, 0)
         nosing_tread_gap = -min(nosing_length, 0)
-        nosing_overlap_offset = -V(nosing_overlap, 0)
+        nosing_overlap_offset = -V_(nosing_overlap, 0)
 
         def define_generic_stair_treads():
             vertices.append(Vector([0, 0]))
@@ -1049,16 +1222,16 @@ class Model(bonsai.core.tool.Model):
             default_tread_edges = np.array(((0, 1), (1, 2)))
             # horizontal tread line
             if nosing_overlap == 0:
-                default_tread_verts = (V(0, tread_rise), V(tread_run, tread_rise))
+                default_tread_verts = (V_(0, tread_rise), V_(tread_run, tread_rise))
             elif nosing_depth == 0:
-                default_tread_verts = (V(-nosing_overlap, tread_rise), V(tread_run, tread_rise))
+                default_tread_verts = (V_(-nosing_overlap, tread_rise), V_(tread_run, tread_rise))
             else:  # nosing_overlap > 0 nosing_depth > 0
                 # kind of L shape
                 default_tread_verts = (
-                    V(0, tread_rise - nosing_depth),
-                    V(-nosing_overlap, tread_rise - nosing_depth),
-                    V(-nosing_overlap, tread_rise),
-                    V(tread_run, tread_rise),
+                    V_(0, tread_rise - nosing_depth),
+                    V_(-nosing_overlap, tread_rise - nosing_depth),
+                    V_(-nosing_overlap, tread_rise),
+                    V_(tread_run, tread_rise),
                 )
                 add_edges = ((2, 3), (3, 4))
                 default_tread_edges = np.concatenate((default_tread_edges, add_edges))
@@ -1081,7 +1254,7 @@ class Model(bonsai.core.tool.Model):
                 return default_tread_offset, default_tread_verts
 
             # treads
-            current_offset = V(0, 0)
+            current_offset = V_(0, 0)
             for i in range(number_of_risers):
                 last_vert_i = len(vertices) - 1
                 tread_offset, tread_verts = get_tread_data(i)
@@ -1092,10 +1265,14 @@ class Model(bonsai.core.tool.Model):
 
         if stair_type == "WOOD/STEEL":
             builder = ShapeBuilder(None)
+
             # full tread rectangle
-            get_tread_verts = partial(builder.get_rectangle_coords, position=V(0, -(tread_depth - tread_rise)))
-            default_tread_verts = get_tread_verts(size=V(tread_run + nosing_overlap, tread_depth))
-            default_tread_offset = V(tread_run + nosing_tread_gap, tread_rise)
+            def get_tread_verts(*args, **kwargs):
+                fn = partial(builder.get_rectangle_coords, position=V_(0, -(tread_depth - tread_rise)))
+                return [Vector(x) for x in fn(*args, **kwargs)]
+
+            default_tread_verts = get_tread_verts(size=V_(tread_run + nosing_overlap, tread_depth))
+            default_tread_offset = V_(tread_run + nosing_tread_gap, tread_rise)
 
             def get_tread_data(i):
                 if custom_tread_run:
@@ -1108,12 +1285,12 @@ class Model(bonsai.core.tool.Model):
                     if current_tread_run:
                         tread_offset = default_tread_offset.copy()
                         tread_offset.x = current_tread_run + nosing_tread_gap
-                        tread_verts = get_tread_verts(size=V(current_tread_run + nosing_overlap, tread_depth))
+                        tread_verts = get_tread_verts(size=V_(current_tread_run + nosing_overlap, tread_depth))
                         return tread_offset, tread_verts
                 return default_tread_offset, default_tread_verts
 
             # each tread is a separate shape
-            cur_offset = V(0, 0)
+            cur_offset = V_(0, 0)
             for i in range(number_of_risers):
                 tread_offset, tread_verts = get_tread_data(i)
                 cur_trade_shape = [v + cur_offset + nosing_overlap_offset for v in tread_verts]
@@ -1134,7 +1311,7 @@ class Model(bonsai.core.tool.Model):
 
             # close the shape
             last_vert_i = len(vertices)
-            vertices.append(vertices[-1] * V(1, 0))
+            vertices.append(vertices[-1] * V_(1, 0))
             edges.extend([(last_vert_i - 1, last_vert_i), (last_vert_i, 0)])
 
             # flip edges direction for ccw polygon winding order
@@ -1148,15 +1325,15 @@ class Model(bonsai.core.tool.Model):
             # from the tread diagonal line
             # we're going it define that line, sample it and abrupt it in case it meets a slab
             # graph: https://www.desmos.com/calculator/bilmnti3cp
-            tread_diagonal_dir = V(tread_run, tread_rise).normalized()
+            tread_diagonal_dir = V_(tread_run, tread_rise).normalized()
             # td_vector is clockwise orthogonal vector
-            td_vector = tread_diagonal_dir.yx * V(1, -1) * tread_depth
+            td_vector = tread_diagonal_dir.yx * V_(1, -1) * tread_depth
 
             stair_tan = tread_rise / tread_run
             # s0 is just a sampled point from the bottom line
             # we stick to the third point as the first point
             # is affected by customized tread run
-            s0 = V(custom_first_last_tread_run[0] or tread_run, tread_rise) + td_vector
+            s0 = V_(custom_first_last_tread_run[0] or tread_run, tread_rise) + td_vector
             # comes from y = stair_tan * x + b
             b = s0.y - stair_tan * s0.x
 
@@ -1165,7 +1342,7 @@ class Model(bonsai.core.tool.Model):
                     y = stair_tan * x + b
                 elif x is None:
                     x = (y - b) / stair_tan
-                return V(x, y)
+                return V_(x, y)
 
             # top nib
             last_vert = vertices[-1]
@@ -1399,3 +1576,492 @@ class Model(bonsai.core.tool.Model):
             mesh.materials.pop(index=i1)
         else:
             mesh.materials[i1] = mbstyle2
+
+    @classmethod
+    def add_body_representation(cls, obj: bpy.types.Object) -> None:
+        ifc_file = tool.Ifc.get()
+        body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        representation = ifcopenshell.api.run(
+            "geometry.add_representation",
+            ifc_file,
+            context=body,
+            blender_object=obj,
+            geometry=obj.data,
+            coordinate_offset=tool.Geometry.get_cartesian_point_offset(obj),
+            total_items=tool.Geometry.get_total_representation_items(obj),
+            should_force_faceted_brep=tool.Geometry.should_force_faceted_brep(),
+            should_force_triangulation=tool.Geometry.should_force_triangulation(),
+            should_generate_uvs=tool.Geometry.should_generate_uvs(obj),
+            ifc_representation_class=None,
+            profile_set_usage=None,
+        )
+        tool.Model.replace_object_ifc_representation(body, obj, representation)
+
+    @classmethod
+    def auto_detect_annotation_fill_area(cls, obj: bpy.types.Object, mesh: bpy.types.Mesh) -> dict | None:
+        result = cls.auto_detect_profiles(obj, mesh)
+        fill_area = None
+        if isinstance(result, dict) and (profile_def := result["profile_def"]):
+            if profile_def.is_a("IfcArbitraryClosedProfileDef"):
+                fill_area = result["ifc_file"].createIfcAnnotationFillArea(profile_def.OuterCurve)
+            elif profile_def.is_a("IfcArbitraryProfileDefWithVoids"):
+                fill_area = result["ifc_file"].createIfcAnnotationFillArea(
+                    profile_def.OuterCurve, profile_def.InnerCurves
+                )
+            if fill_area:
+                return {"ifc_file": result["ifc_file"], "annotation_fill_area": fill_area}
+
+    @classmethod
+    def auto_detect_profiles(
+        cls, obj: bpy.types.Object, mesh: bpy.types.Mesh, position: Matrix | None = None
+    ) -> Union[tuple, dict]:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        if position is None:
+            position = Matrix()
+        position_i = position.inverted()
+
+        groups = {"IFCARCINDEX": [], "IFCCIRCLE": []}
+        for i, group in enumerate(obj.vertex_groups):
+            if "IFCARCINDEX" in group.name:
+                groups["IFCARCINDEX"].append(i)
+            elif "IFCCIRCLE" in group.name:
+                groups["IFCCIRCLE"].append(i)
+
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bmesh.ops.delete(bm, geom=bm.faces, context="FACES_ONLY")
+
+        # https://docs.blender.org/api/blender_python_api_2_63_8/bmesh.html#CustomDataAccess
+        # This is how we access vertex groups via bmesh, apparently, it's not very intuitive
+        deform_layer = bm.verts.layers.deform.active
+
+        # Sanity check
+        group_verts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
+        if deform_layer:
+            for vert in bm.verts:
+                vert_group_indices = tool.Blender.bmesh_get_vertex_groups(vert, deform_layer)
+                is_circle = False
+                for group_index in vert_group_indices:
+                    group_type = "IFCARCINDEX" if group_index in groups["IFCARCINDEX"] else "IFCCIRCLE"
+                    group_verts[group_type].setdefault(group_index, 0)
+                    group_verts[group_type][group_index] += 1
+                    if group_type == "IFCCIRCLE":
+                        is_circle = True
+                if is_circle:
+                    pass  # Circles are allowed to be unclosed
+                elif len(vert.link_edges) != 2:  # Unclosed loop or forked loop
+                    return (False, "UNCLOSED_LOOP")
+
+        for group_type, group_counts in group_verts.items():
+            if group_type == "IFCARCINDEX":
+                for group_count in group_counts.values():
+                    if group_count != 3:  # Each arc needs 3 verts
+                        return (False, "3POINT_ARC")
+            elif group_type == "IFCCIRCLE":
+                for group_count in group_counts.values():
+                    if group_count != 2:  # Each circle needs 2 verts
+                        return (False, "CIRCLE")
+
+        loop_edges = list(bm.edges)
+
+        # Create loops from edges
+        loops = []
+        while loop_edges:
+            edge = loop_edges.pop()
+            loop = [edge]
+            has_found_connected_edge = True
+            while has_found_connected_edge:
+                has_found_connected_edge = False
+                for edge in loop_edges.copy():
+                    edge_verts = set(edge.verts)
+                    if edge_verts & set(loop[0].verts):
+                        loop.insert(0, edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+                    elif edge_verts & set(loop[-1].verts):
+                        loop.append(edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+            loops.append(loop)
+
+        tmp = ifcopenshell.file(schema=tool.Ifc.get().schema)
+
+        def is_in_group(v, group_name):
+            for group_index in groups[group_name]:
+                if group_index in v[deform_layer]:
+                    return True
+            return False
+
+        def get_group_index(v, group_name):
+            for group_index in groups[group_name]:
+                if group_index in v[deform_layer]:
+                    return group_index
+
+        # Convert all loops into IFC curves
+        curves = []
+        for loop in loops:
+
+            if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
+                v1, v2 = loop[0].verts
+                mid = v1.co.lerp(v2.co, 0.5)
+                mid = ((position_i @ mid) / unit_scale).to_2d()
+                v1 = ((position_i @ v1.co) / unit_scale).to_2d()
+                radius = (mid - v1).length
+                curves.append(
+                    tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
+                )
+            else:
+                loop_verts = []
+                for i, edge in enumerate(loop):
+                    if i == 0 and len(loop) == 1:
+                        loop_verts.append(edge.verts[0])
+                        loop_verts.append(edge.verts[1])
+                    elif i == 0:
+                        if edge.verts[0] in loop[i + 1].verts:
+                            loop_verts.append(edge.verts[1])
+                            loop_verts.append(edge.verts[0])
+                        elif edge.verts[1] in loop[i + 1].verts:
+                            loop_verts.append(edge.verts[0])
+                            loop_verts.append(edge.verts[1])
+                    else:
+                        loop_verts.append(edge.other_vert(loop_verts[-1]))
+
+                if is_closed := loop_verts[0] == loop_verts[-1]:
+                    loop_verts.pop()
+
+                    # Handle loop_verts possibly starting halfway through an arc
+                    if deform_layer:
+                        if gi := tool.Blender.bmesh_get_vertex_groups(loop_verts[0], deform_layer):
+                            if not (gi2 := tool.Blender.bmesh_get_vertex_groups(loop_verts[1], deform_layer)):
+                                loop_verts.insert(0, loop_verts.pop())
+                                loop_verts.insert(0, loop_verts.pop())
+                            elif not (set(gi) & set(gi2)):
+                                loop_verts.insert(0, loop_verts.pop())
+                                loop_verts.insert(0, loop_verts.pop())
+                            elif not (gi2 := tool.Blender.bmesh_get_vertex_groups(loop_verts[2], deform_layer)):
+                                loop_verts.insert(0, loop_verts.pop())
+                            elif not (set(gi) & set(gi2)):
+                                loop_verts.insert(0, loop_verts.pop())
+
+                if tmp.schema != "IFC2X3" and any([is_in_group(v, "IFCARCINDEX") for v in loop_verts]):
+                    # We need to specify segments
+                    coord_list = [list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts]
+                    points = tmp.createIfcCartesianPointList2D(coord_list)
+                    i = 0
+                    segments = []
+                    total_verts = len(loop_verts)
+                    while i < total_verts:
+                        v = loop_verts[i]
+                        if (
+                            (i + 1 != total_verts)
+                            and (gi := tool.Blender.bmesh_get_vertex_groups(v, deform_layer))
+                            and (gi2 := tool.Blender.bmesh_get_vertex_groups(loop_verts[i + 1], deform_layer))
+                            and (set(gi) & set(gi2))
+                        ):
+                            segments.append(tmp.createIfcArcIndex([i + 1, i + 2, i + 3]))
+                            i += 2
+                        else:
+                            segments.append(tmp.createIfcLineIndex([i + 1, i + 2]))
+                            i += 1
+                    if is_closed:
+                        # Close the loop
+                        last_segment_indices = list(segments[-1][0])
+                        last_segment_indices[-1] = 1
+                        segments[-1][0] = last_segment_indices
+                    curves.append(tmp.createIfcIndexedPolyCurve(points, segments))
+                elif tmp.schema == "IFC2X3":
+                    points = [
+                        tmp.createIfcCartesianPoint(list(((position_i @ v.co) / unit_scale).to_2d()))
+                        for v in loop_verts
+                    ]
+                    if is_closed:
+                        points.append(points[0])
+                    curves.append(tmp.createIfcPolyline(points))
+                else:  # Pure straight polyline, no segments required
+                    coord_list = [list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts]
+                    if is_closed:
+                        coord_list.append(coord_list[0])
+                    points = tmp.createIfcCartesianPointList2D(coord_list)
+                    curves.append(tmp.createIfcIndexedPolyCurve(points))
+
+        # Sort IFC curves into either closed, or closed with void profile defs
+        profile_defs = []
+        settings = ifcopenshell.geom.settings()
+        settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+
+        # First convert to Shapely
+        polygons = {}
+        for curve in curves:
+            geometry = ifcopenshell.geom.create_shape(settings, curve)
+            v = ifcopenshell.util.shape.get_vertices(geometry, is_2d=True)
+            v = np.round(v, 4)  # Round to nearest 0.1mm, otherwise things like circles don't polygonise reliably
+            edges = ifcopenshell.util.shape.get_edges(geometry)
+            boundary_lines = [shapely.LineString([v[e[0]], v[e[1]]]) for e in edges]
+            unioned_boundaries = shapely.union_all(shapely.GeometryCollection(boundary_lines))
+            closed_polygons = shapely.polygonize(unioned_boundaries.geoms)
+            for polygon in closed_polygons.geoms:
+                polygons[curve] = polygon
+                break
+
+        # Check for contains properly (IFC doesn't allow common boundary points)
+        outer_inner = {}
+        inner_outer = {}
+        for curve, polygon in polygons.items():
+            for curve2, polygon2 in polygons.items():
+                if curve == curve2:
+                    continue
+                if polygon.contains_properly(polygon2):
+                    outer_inner.setdefault(curve, []).append(curve2)
+                    inner_outer.setdefault(curve2, []).append(curve)
+
+        # Odd-even rule for nested curves
+        nested_level = {c: len(inner_outer[c]) if c in inner_outer else 0 for c in curves}
+        for curve in sorted(curves, key=lambda c: nested_level[c]):
+            level = nested_level[curve]
+            if level % 2 == 0:
+                if curve in outer_inner:
+                    inners = [c for c in outer_inner[curve] if nested_level[c] == level + 1]
+                    profile_defs.append(tmp.createIfcArbitraryProfileDefWithVoids("AREA", None, curve, inners))
+                else:
+                    profile_defs.append(tmp.createIfcArbitraryClosedProfileDef("AREA", None, curve))
+
+        if len(profile_defs) == 1:
+            profile_def = profile_defs[0]
+        else:
+            profile_def = tmp.createIfcCompositeProfileDef("AREA", None, profile_defs)
+        return {"ifc_file": tmp, "profile_def": profile_def}
+
+    @classmethod
+    def auto_detect_curves(
+        cls, obj: bpy.types.Object, mesh: bpy.types.Mesh, position: Matrix | None = None
+    ) -> Union[tuple, dict]:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        if position is None:
+            position = Matrix()
+        position_i = position.inverted()
+        assert isinstance(position_i, Matrix)
+
+        groups = {"IFCARCINDEX": [], "IFCCIRCLE": []}
+        for i, group in enumerate(obj.vertex_groups):
+            if "IFCARCINDEX" in group.name:
+                groups["IFCARCINDEX"].append(i)
+            elif "IFCCIRCLE" in group.name:
+                groups["IFCCIRCLE"].append(i)
+
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
+        bmesh.ops.delete(bm, geom=bm.faces, context="FACES_ONLY")
+
+        # https://docs.blender.org/api/blender_python_api_2_63_8/bmesh.html#CustomDataAccess
+        # This is how we access vertex groups via bmesh, apparently, it's not very intuitive
+        deform_layer = bm.verts.layers.deform.active
+
+        # Sanity check
+        group_verts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
+        if deform_layer:
+            for vert in bm.verts:
+                vert_group_indices = tool.Blender.bmesh_get_vertex_groups(vert, deform_layer)
+                for group_index in vert_group_indices:
+                    group_type = "IFCARCINDEX" if group_index in groups["IFCARCINDEX"] else "IFCCIRCLE"
+                    group_verts[group_type].setdefault(group_index, 0)
+                    group_verts[group_type][group_index] += 1
+                if len(vert.link_edges) > 2:  # Forked loop
+                    return (False, "FORKED_LOOP")
+
+        for group_type, group_counts in group_verts.items():
+            if group_type == "IFCARCINDEX":
+                for group_count in group_counts.values():
+                    if group_count != 3:  # Each arc needs 3 verts
+                        return (False, "3POINT_ARC")
+            elif group_type == "IFCCIRCLE":
+                for group_count in group_counts.values():
+                    if group_count != 2:  # Each circle needs 2 verts
+                        return (False, "CIRCLE")
+
+        loop_edges = list(bm.edges)
+
+        # Create loops from edges
+        loops: list[list[bmesh.types.BMEdge]] = []
+        while loop_edges:
+            edge = loop_edges.pop()
+            loop = [edge]
+            has_found_connected_edge = True
+            while has_found_connected_edge:
+                has_found_connected_edge = False
+                for edge in loop_edges.copy():
+                    edge_verts = set(edge.verts)
+                    if edge_verts & set(loop[0].verts):
+                        loop.insert(0, edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+                    elif edge_verts & set(loop[-1].verts):
+                        loop.append(edge)
+                        loop_edges.remove(edge)
+                        has_found_connected_edge = True
+            loops.append(loop)
+
+        tmp = ifcopenshell.file(schema=tool.Ifc.get().schema)
+
+        def is_in_group(v: bmesh.types.BMVert, group_name: str) -> bool:
+            for group_index in groups[group_name]:
+                if group_index in v[deform_layer]:
+                    return True
+            return False
+
+        def get_group_index(v, group_name):
+            for group_index in groups[group_name]:
+                if group_index in v[deform_layer]:
+                    return group_index
+
+        # Convert all loops into IFC curves
+        curves = []
+        for loop in loops:
+
+            if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
+                v1, v2 = loop[0].verts
+                mid = v1.co.lerp(v2.co, 0.5)
+                mid = ((position_i @ mid) / unit_scale).to_2d()
+                v1 = ((position_i @ v1.co) / unit_scale).to_2d()
+                radius = (mid - v1).length
+                curves.append(
+                    tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
+                )
+            else:
+                loop_verts: list[bmesh.types.BMVert] = []
+                for i, edge in enumerate(loop):
+                    if i == 0 and len(loop) == 1:
+                        loop_verts.append(edge.verts[0])
+                        loop_verts.append(edge.verts[1])
+                    elif i == 0:
+                        if edge.verts[0] in loop[i + 1].verts:
+                            loop_verts.append(edge.verts[1])
+                            loop_verts.append(edge.verts[0])
+                        elif edge.verts[1] in loop[i + 1].verts:
+                            loop_verts.append(edge.verts[0])
+                            loop_verts.append(edge.verts[1])
+                    else:
+                        loop_verts.append(edge.other_vert(loop_verts[-1]))
+
+                if is_closed := loop_verts[0] == loop_verts[-1]:
+                    loop_verts.pop()
+
+                    # Handle loop_verts possibly starting halfway through an arc
+                    if deform_layer:
+                        if gi := tool.Blender.bmesh_get_vertex_groups(loop_verts[0], deform_layer):
+                            if not (gi2 := tool.Blender.bmesh_get_vertex_groups(loop_verts[1], deform_layer)):
+                                loop_verts.insert(0, loop_verts.pop())
+                                loop_verts.insert(0, loop_verts.pop())
+                            elif not (set(gi) & set(gi2)):
+                                loop_verts.insert(0, loop_verts.pop())
+                                loop_verts.insert(0, loop_verts.pop())
+                            elif not (gi2 := tool.Blender.bmesh_get_vertex_groups(loop_verts[2], deform_layer)):
+                                loop_verts.insert(0, loop_verts.pop())
+                            elif not (set(gi) & set(gi2)):
+                                loop_verts.insert(0, loop_verts.pop())
+
+                if tmp.schema != "IFC2X3" and any([is_in_group(v, "IFCARCINDEX") for v in loop_verts]):
+                    # We need to specify segments
+                    coord_list: list[list[float]] = [
+                        list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts
+                    ]
+                    points = tmp.createIfcCartesianPointList2D(coord_list)
+                    i = 0
+                    segments = []
+                    total_verts = len(loop_verts)
+                    while i < total_verts:
+                        v = loop_verts[i]
+                        if (
+                            (i + 1 != total_verts)
+                            and (gi := tool.Blender.bmesh_get_vertex_groups(v, deform_layer))
+                            and (gi2 := tool.Blender.bmesh_get_vertex_groups(loop_verts[i + 1], deform_layer))
+                            and (set(gi) & set(gi2))
+                        ):
+                            segments.append(tmp.createIfcArcIndex([i + 1, i + 2, i + 3]))
+                            i += 2
+                        else:
+                            segments.append(tmp.createIfcLineIndex([i + 1, i + 2]))
+                            i += 1
+                    if is_closed:
+                        # Close the loop
+                        last_segment_indices = list(segments[-1][0])
+                        last_segment_indices[-1] = 1
+                        segments[-1][0] = last_segment_indices
+                    curves.append(tmp.createIfcIndexedPolyCurve(points, segments))
+                elif tmp.schema == "IFC2X3":
+                    points = [
+                        tmp.createIfcCartesianPoint(list(((position_i @ v.co) / unit_scale).to_2d()))
+                        for v in loop_verts
+                    ]
+                    if is_closed:
+                        points.append(points[0])
+                    curves.append(tmp.createIfcPolyline(points))
+                else:  # Pure straight polyline, no segments required
+                    coord_list = [list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts]
+                    if is_closed:
+                        coord_list.append(coord_list[0])
+                    points = tmp.createIfcCartesianPointList2D(coord_list)
+                    curves.append(tmp.createIfcIndexedPolyCurve(points))
+
+        return {"ifc_file": tmp, "curves": curves}
+
+    @classmethod
+    def get_booleaned_obj(cls, obj: bpy.types.Object) -> Union[bpy.types.Object, None]:
+        """Get boolean obj, return `None` if either it's not a tracked boolean
+        or it's not referring to an object (e.g. potential boolean object)."""
+        if obj.type != "MESH":
+            return
+        return obj.data.BIMMeshProperties.obj
+
+    @classmethod
+    def get_tracked_opening_type(cls, obj: bpy.types.Object) -> Union[Literal["OPENING", "BOOLEAN"], None]:
+        """Get tracked opening type, return `None` if object is not a tracked opening."""
+        for opening in bpy.context.scene.BIMModelProperties.openings:
+            if opening.obj == obj:
+                return opening.name
+        return None
+
+    @classmethod
+    def bm_sort_out_geom(
+        cls, geom_data: list[Union[bmesh.types.BMVert, bmesh.types.BMEdge, bmesh.types.BMFace]]
+    ) -> dict[str, Any]:
+        geom_dict = {"verts": [], "edges": [], "faces": []}
+
+        for el in geom_data:
+            if isinstance(el, bmesh.types.BMVert):
+                geom_dict["verts"].append(el)
+            elif isinstance(el, bmesh.types.BMFace):
+                geom_dict["faces"].append(el)
+            else:
+                geom_dict["edges"].append(el)
+        return geom_dict
+
+    @classmethod
+    def add_filled_opening(cls, voided_obj: bpy.types.Object, filling_obj: bpy.types.Object) -> None:
+        FilledOpeningGenerator().generate(filling_obj, voided_obj)
+
+    @classmethod
+    def add_extrusion_position(cls, extrusion: ifcopenshell.entity_instance, offset: float) -> None:
+        ifc_file = tool.Ifc.get()
+
+        position = ifc_file.createIfcAxis2Placement3D(
+            ifc_file.createIfcCartesianPoint((0.0, 0.0, offset)),
+            ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
+            ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
+        )
+
+        extrusion.Position = position
+
+    @classmethod
+    def get_existing_x_angle(cls, extrusion):
+        x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+        # The existing angle result can change when the direction sense in Negative because the DirectionRatios may have negative y and z.
+        # For instance, a 30 degree angled slab, with negative direction will show as -150 degrees. To prevent that we do the following transformations
+        existing_x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+        existing_x_angle = existing_x_angle + radians(180) if existing_x_angle < -radians(90) else existing_x_angle
+        existing_x_angle = existing_x_angle - radians(180) if existing_x_angle > radians(90) else existing_x_angle
+
+        return existing_x_angle

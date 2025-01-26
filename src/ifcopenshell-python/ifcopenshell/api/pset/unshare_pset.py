@@ -45,18 +45,34 @@ def unshare_pset(
         ifcopenshell.api.pset.assign_pset(self.file, [element1, element2], pset)
 
         # Pset is now shared by 2 elements.
-        assert ifcopenshell.util.element.get_elements_using_pset(pset) == {element1, element2}
+        assert ifcopenshell.util.element.get_elements_by_pset(pset) == {element1, element2}
 
         new_psets = ifcopenshell.api.pset.unshare_pset(self.file, [element2], pset)
 
         # element2 was unassigned from the original pset.
-        assert ifcopenshell.util.element.get_elements_using_pset(pset) == {element1}
+        assert ifcopenshell.util.element.get_elements_by_pset(pset) == {element1}
         new_pset = new_psets[0]
 
         # New pset was created and was assigned to element2.
         assert new_pset != pset
-        assert ifcopenshell.util.element.get_elements_using_pset(new_pset) == {element2}
+        assert ifcopenshell.util.element.get_elements_by_pset(new_pset) == {element2}
     """
+
+    if not products:
+        raise Exception("No products provided.")
+
+    # If pset has no other elements besides the provided products,
+    # then we skip the first product, so it won't get additional pset copy
+    # leaving the original pset orphaned.
+    pset_elements = ifcopenshell.util.element.get_elements_by_pset(pset)
+    products_original = products
+
+    if set(products) == pset_elements:
+        products = products[1:]
+
+    if not products:
+        raise Exception(f"Provided product is the only element to which pset is assigned: {products_original[0]}.")
+
     products_occurrences: set[ifcopenshell.entity_instance] = set()
     products_types: set[ifcopenshell.entity_instance] = set()
     for product in products:
@@ -69,7 +85,10 @@ def unshare_pset(
 
     pset_copies: list[ifcopenshell.entity_instance] = []
     for product in products:
-        pset_copy = ifcopenshell.util.element.copy_deep(file, pset)
+        # No need to consider about profile/material properties since
+        # they are assigned to 1 element directly and therefore cannot be shared.
+        # Don't copy_deep to keep it light - edit_pset supports unsharing shared props.
+        pset_copy = ifcopenshell.util.element.copy(file, pset)
         pset_copies.append(pset_copy)
         ifcopenshell.api.pset.assign_pset(file, [product], pset_copy)
 

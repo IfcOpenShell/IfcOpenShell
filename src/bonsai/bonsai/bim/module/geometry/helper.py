@@ -18,13 +18,18 @@
 
 import bpy
 import bmesh
+import shapely
 import mathutils
+import numpy as np
 import ifcopenshell
 import ifcopenshell.util.unit
+import ifcopenshell.util.shape
 import bonsai.tool as tool
 from math import pi, pow
 from mathutils import Vector, Matrix, geometry
-from typing import Union
+from typing import Union, Any, TypeVar, Optional
+
+T = TypeVar("T")
 
 
 class Helper:
@@ -36,7 +41,7 @@ class Helper:
     # edge that shares a single vertex only with that face to find the extrusion
     # edge. A face with the normal facing down is prioritised. A limited
     # dissolve ensure that faces are quads and not tris.
-    def auto_detect_rectangle_profile_extruded_area_solid(self, mesh: bpy.types.Mesh) -> dict:
+    def auto_detect_rectangle_profile_extruded_area_solid(self, mesh: bpy.types.Mesh) -> dict[str, Any]:
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
@@ -60,7 +65,7 @@ class Helper:
     # only ngon (this assumes the circle has at least a facetation of > 4 edges.
     # The extrusion direction is any edge that only shares a single vertex with
     # the profile. We prioritise the profile that has a downwards normal.
-    def auto_detect_circle_profile_extruded_area_solid(self, mesh):
+    def auto_detect_circle_profile_extruded_area_solid(self, mesh: bpy.types.Mesh) -> dict[str, Any]:
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
@@ -88,7 +93,7 @@ class Helper:
     # Failing that, it is equivalent to a rectangular profile. The extrusion
     # direction is any edge that only shares a single vertex with the profile.
     # We prioritise the profile that has a downwards normal.
-    def auto_detect_arbitrary_closed_profile_extruded_area_solid(self, mesh):
+    def auto_detect_arbitrary_closed_profile_extruded_area_solid(self, mesh: bpy.types.Mesh) -> dict[str, Any]:
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
@@ -117,173 +122,6 @@ class Helper:
 
         return {"profile": profile, "extrusion": extrusion}
 
-    def auto_detect_arbitrary_profile_with_voids(
-        self, obj: bpy.types.Object, mesh: bpy.types.Mesh
-    ) -> Union[tuple, dict]:
-        groups = {"IFCARCINDEX": [], "IFCCIRCLE": []}
-        for i, group in enumerate(obj.vertex_groups):
-            if "IFCARCINDEX" in group.name:
-                groups["IFCARCINDEX"].append(i)
-            elif "IFCCIRCLE" in group.name:
-                groups["IFCCIRCLE"].append(i)
-
-        bm = bmesh.new()
-        bm.from_mesh(mesh)
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-5)
-        bmesh.ops.delete(bm, geom=bm.faces, context="FACES_ONLY")
-
-        # https://docs.blender.org/api/blender_python_api_2_63_8/bmesh.html#CustomDataAccess
-        # This is how we access vertex groups via bmesh, apparently, it's not very intuitive
-        deform_layer = bm.verts.layers.deform.active
-
-        # Sanity check
-        group_verts = {"IFCARCINDEX": {}, "IFCCIRCLE": {}}
-        for vert in bm.verts:
-            total_groups = 0
-            is_circle = False
-            for group_type, group_indices in groups.items():
-                if not group_indices:
-                    continue
-                is_special, group_index = tool.Blender.bmesh_check_vertex_in_groups(vert, deform_layer, group_indices)
-                if not is_special:
-                    continue
-                if group_type == "IFCCIRCLE":
-                    is_circle = True
-                group_verts[group_type].setdefault(group_index, 0)
-                group_verts[group_type][group_index] += 1
-                total_groups += 0
-            if total_groups > 1:  # A vert can only belong to one group
-                return (False, "AMBIGUOUS_SPECIAL_VERTEX")
-            elif is_circle:
-                pass  # Circles are allowed to be unclosed
-            elif total_groups == 0 and len(vert.link_edges) != 2:  # Unclosed loop or forked loop
-                return (False, "UNCLOSED_LOOP")
-
-        for group_type, group_counts in group_verts.items():
-            if group_type == "IFCARCINDEX":
-                for group_count in group_counts.values():
-                    if group_count != 3:  # Each arc needs 3 verts
-                        return (False, "3POINT_ARC")
-            elif group_type == "IFCCIRCLE":
-                for group_count in group_counts.values():
-                    if group_count != 2:  # Each circle needs 2 verts
-                        return (False, "CIRCLE")
-
-        loop_edges = set(bm.edges)
-
-        # Create loops from edges
-        loops = []
-        while loop_edges:
-            edge = loop_edges.pop()
-            loop = [edge]
-            has_found_connected_edge = True
-            while has_found_connected_edge:
-                has_found_connected_edge = False
-                for edge in loop_edges.copy():
-                    edge_verts = set(edge.verts)
-                    if edge_verts & set(loop[0].verts):
-                        loop.insert(0, edge)
-                        loop_edges.remove(edge)
-                        has_found_connected_edge = True
-                    elif edge_verts & set(loop[-1].verts):
-                        loop.append(edge)
-                        loop_edges.remove(edge)
-                        has_found_connected_edge = True
-            loops.append(loop)
-
-        # Determine outer loop
-        max_area = 0
-        outer_loop = None
-        inner_loops = []
-
-        for loop in loops:
-            loop_vertices = []
-            total_edges = len(loop)
-
-            if total_edges == 1:
-                loop_vertices = [loop[0].verts[0], loop[0].verts[1]]
-            else:
-                for i, edge in enumerate(loop):
-                    if i + 1 == total_edges and edge.verts[0] in loop[i - 1].verts:
-                        loop_vertices.append(edge.verts[0])
-                    elif i + 1 == total_edges and edge.verts[1] in loop[i - 1].verts:
-                        loop_vertices.append(edge.verts[1])
-                    elif edge.verts[0] in loop[i + 1].verts:
-                        loop_vertices.append(edge.verts[1])
-                    elif edge.verts[1] in loop[i + 1].verts:
-                        loop_vertices.append(edge.verts[0])
-
-            if len(loop_vertices) == 2:
-                # Unofficial convention right now that a loop of 2 verts always is a circle
-                radius = (loop_vertices[0].co - loop_vertices[1].co).length / 2
-                face_area = pi * pow(radius, 2)
-            else:
-                loop_bm = bmesh.new()
-                for vert in loop_vertices:
-                    loop_bm.verts.new(vert.co)
-                face = loop_bm.faces.new(loop_bm.verts)
-                face_area = face.calc_area()
-                loop_bm.free()
-
-            loop_vertex_indices = []
-            active_arc_id = None
-            arc_stack = []
-            last_index = len(loop_vertices) - 1
-
-            # It is possible to loop through loop_vertices halfway through an arc.
-            # If that is the case, we store it in incomplete_arc
-            incomplete_arc = []
-            for i, v in enumerate(loop_vertices):
-                if len(arc_stack) == 3:
-                    loop_vertex_indices.append(arc_stack)
-                    loop_vertex_indices.append((arc_stack[-1], v.index))
-                    arc_stack = []
-                    active_arc_id = None
-
-                is_arc = False
-                for group_index in groups["IFCARCINDEX"]:
-                    if group_index in v[deform_layer]:
-                        if active_arc_id is not None and active_arc_id != group_index:
-                            incomplete_arc = arc_stack
-                            arc_stack = []
-                        active_arc_id = group_index
-                        is_arc = True
-                        break
-
-                if i == last_index and not is_arc:
-                    continue
-
-                if is_arc:
-                    arc_stack.append(v.index)
-                else:
-                    if active_arc_id is not None:
-                        incomplete_arc = arc_stack
-                        active_arc_id = None
-                        arc_stack = []
-                    loop_vertex_indices.append((v.index, loop_vertices[i + 1].index))
-
-            if active_arc_id is not None:
-                arc_stack.extend(incomplete_arc)
-                loop_vertex_indices.append(arc_stack)
-
-            loop_vertex_indices.append((loop_vertex_indices[-1][-1], loop_vertex_indices[0][0]))
-
-            if face_area > max_area:
-                max_area = face_area
-                outer_loop = loop_vertex_indices
-            inner_loops.append(loop_vertex_indices)
-
-        inner_loops.remove(outer_loop)
-
-        # Copy vectors to prevent random data mangling after bmesh is freed.
-        points = [v.co.copy() for v in bm.verts]
-
-        bm.to_mesh(mesh)
-        mesh.update()
-        bm.free()
-
-        return {"points": points, "profile": outer_loop, "inner_curves": inner_loops}
-
     # An arbitrary closed profile with voids is similar to one without voids.
     # We start the same way with any ngon (no tri), but instead of being the entire
     # profile, it is only one of the possible faces that make up the end of our
@@ -295,7 +133,7 @@ class Helper:
     # set of edges. Then, connected edges (i.e. sharing a vertex) are joined to
     # form distinct loops.  Finally, the outer loop is distinguished by being
     # the loop with the greatest area.
-    def auto_detect_arbitrary_profile_with_voids_extruded_area_solid(self, mesh):
+    def auto_detect_arbitrary_profile_with_voids_extruded_area_solid(self, mesh: bpy.types.Mesh) -> dict[str, Any]:
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
@@ -392,7 +230,7 @@ class Helper:
     # Before we begin we check that all faces are coplanar instead of finding suitable face.
     # Then we process the same way.
     # Only 2 parameters are returned as there is no extrusion.
-    def auto_detect_curve_bounded_plane(self, mesh, tolerance=0.001):
+    def auto_detect_curve_bounded_plane(self, mesh: bpy.types.Mesh, tolerance: float = 0.001) -> dict[str, Any]:
         bm = bmesh.new()
         bm.from_mesh(mesh)
         bmesh.ops.dissolve_limit(bm, angle_limit=pi / 180 * 1, verts=bm.verts, edges=bm.edges)
@@ -480,9 +318,8 @@ class Helper:
 
     # An extrusion edge is an edge that shares a single vertex with a profile
     # face and is not on the plane of the face.
-    def detect_extrusion_edge(self, bm, profile_face):
+    def detect_extrusion_edge(self, bm: bmesh.types.BMesh, profile_face: bmesh.types.BMFace) -> Union[list[int], None]:
         bm.edges.ensure_lookup_table()
-        extrusion = None
         face_verts_set = set(profile_face.verts)
         for edge in bm.edges:
             unshared_verts = set(edge.verts) - face_verts_set
@@ -500,7 +337,9 @@ class Helper:
                         return [edge.verts[0].index, edge.verts[1].index]
                     return [edge.verts[1].index, edge.verts[0].index]
 
-    def create_extruded_area_solid(self, mesh, extrusion_indices, profile_def):
+    def create_extruded_area_solid(
+        self, mesh: bpy.types.Mesh, extrusion_indices: list[int], profile_def: dict[str, Any]
+    ) -> ifcopenshell.entity_instance:
         position = self.create_ifc_axis_2_placement_3d(
             profile_def["curve_ucs"]["center"], profile_def["curve_ucs"]["z_axis"], profile_def["curve_ucs"]["x_axis"]
         )
@@ -513,13 +352,15 @@ class Helper:
             self.convert_si_to_unit(direction.length),
         )
 
-    def create_arbitrary_closed_profile_def(self, mesh, profile_indices):
+    def create_arbitrary_closed_profile_def(self, mesh: bpy.types.Mesh, profile_indices: list[int]) -> dict[str, Any]:
         curve_ucs = self.get_curve_profile_coordinate_system(mesh, profile_indices)
         outer_curve = self.create_polyline_from_loop(mesh, profile_indices, curve_ucs)
         curve = self.file.createIfcArbitraryClosedProfileDef("AREA", None, outer_curve)
         return {"curve_ucs": curve_ucs, "curve": curve}
 
-    def create_arbitrary_profile_def_with_voids(self, mesh, profile_indices, inner_curve_indices):
+    def create_arbitrary_profile_def_with_voids(
+        self, mesh: bpy.types.Mesh, profile_indices: list[int], inner_curve_indices: list[int]
+    ) -> dict[str, Any]:
         curve_ucs = self.get_curve_profile_coordinate_system(mesh, profile_indices)
         outer_curve = self.create_polyline_from_loop(mesh, profile_indices, curve_ucs)
         inner_curves = [
@@ -528,7 +369,7 @@ class Helper:
         curve = self.file.createIfcArbitraryProfileDefWithVoids("AREA", None, outer_curve, inner_curves)
         return {"curve_ucs": curve_ucs, "curve": curve}
 
-    def create_rectangle_profile_def(self, mesh, profile_indices):
+    def create_rectangle_profile_def(self, mesh: bpy.types.Mesh, profile_indices: list[int]) -> dict[str, Any]:
         curve_ucs = self.get_curve_profile_coordinate_system(mesh, profile_indices)
         xdim = self.convert_si_to_unit(
             (mesh.vertices[profile_indices[0]].co - mesh.vertices[profile_indices[1]].co).length
@@ -542,7 +383,7 @@ class Helper:
         curve = self.file.createIfcRectangleProfileDef("AREA", None, position, xdim, ydim)
         return {"curve_ucs": curve_ucs, "curve": curve}
 
-    def create_circle_profile_def(self, mesh, profile_indices):
+    def create_circle_profile_def(self, mesh: bpy.types.Mesh, profile_indices: list[int]) -> dict[str, Any]:
         curve_ucs = self.get_curve_profile_coordinate_system(mesh, profile_indices)
         radius = self.convert_si_to_unit(
             abs(
@@ -559,13 +400,13 @@ class Helper:
         return {"curve_ucs": curve_ucs, "curve": curve}
 
     # Not used anywhere, but probably useful in the future
-    def get_loop_from_v_indices(self, obj, indices):
+    def get_loop_from_v_indices(self, obj: bpy.types.Object, indices: list[int]) -> list[int]:
         edges = self.get_edges_in_v_indices(obj, indices)
         loop = self.get_loop_from_edges(edges)
         loop.pop(-1)
         return loop
 
-    def get_loop_from_edges(self, edges):
+    def get_loop_from_edges(self, edges: list[bpy.types.MeshEdge]) -> list[int]:
         while edges:
             currentEdge = edges.pop()
             startVert = currentEdge.vertices[0]
@@ -600,10 +441,10 @@ class Helper:
                         del edges[i]
             return polyLine
 
-    def get_edges_in_v_indices(self, obj, indices):
+    def get_edges_in_v_indices(self, obj: bpy.types.Object, indices: list[int]) -> list[bpy.types.MeshEdge]:
         return [e for e in obj.data.edges if (e.vertices[0] in indices and e.vertices[1] in indices)]
 
-    def get_curve_profile_coordinate_system(self, mesh, loop):
+    def get_curve_profile_coordinate_system(self, mesh: bpy.types.Mesh, loop: list[int]) -> dict[str, Any]:
         profile_face = bpy.data.meshes.new("profile_face")
         profile_verts = [(mesh.vertices[p].co.x, mesh.vertices[p].co.y, mesh.vertices[p].co.z) for p in loop]
         profile_faces = [tuple(range(0, len(profile_verts)))]
@@ -613,7 +454,7 @@ class Helper:
             x_axis = (mesh.vertices[loop[0]].co - center).normalized()
         else:
             x_axis = (mesh.vertices[loop[1]].co - mesh.vertices[loop[0]].co).normalized()
-        z_axis = profile_face.polygons[0].normal.normalized()
+        z_axis = profile_face.polygons[0].normal.normalized() * -1
         y_axis = z_axis.cross(x_axis).normalized()
         matrix = Matrix((x_axis, y_axis, z_axis))
         matrix.normalize()
@@ -625,10 +466,12 @@ class Helper:
             "matrix": matrix.to_4x4() @ Matrix.Translation(-center),
         }
 
-    def convert_si_to_unit(self, co):
+    def convert_si_to_unit(self, co: T) -> T:
         return co / self.unit_scale
 
-    def create_polyline_from_loop(self, mesh, loop, curve_ucs):
+    def create_polyline_from_loop(
+        self, mesh: bpy.types.Mesh, loop: list[int], curve_ucs: dict[str, Any]
+    ) -> ifcopenshell.entity_instance:
         points = []
         for point in loop:
             transformed_point = curve_ucs["matrix"] @ mesh.vertices[point].co
@@ -636,7 +479,7 @@ class Helper:
         points.append(points[0])
         return self.file.createIfcPolyline(points)
 
-    def create_cartesian_point(self, x, y, z=None):
+    def create_cartesian_point(self, x: float, y: float, z: Optional[float] = None) -> ifcopenshell.entity_instance:
         x = self.convert_si_to_unit(x)
         y = self.convert_si_to_unit(y)
         if z is None:
@@ -644,22 +487,28 @@ class Helper:
         z = self.convert_si_to_unit(z)
         return self.file.createIfcCartesianPoint((x, y, z))
 
-    def get_extrusion_direction(self, mesh, extrusion_indices, curve_ucs):
+    def get_extrusion_direction(
+        self, mesh: bpy.types.Mesh, extrusion_indices: list[int], curve_ucs: dict[str, Any]
+    ) -> Vector:
         return curve_ucs["matrix"] @ (
             curve_ucs["center"] + (mesh.vertices[extrusion_indices[1]].co - mesh.vertices[extrusion_indices[0]].co)
         )
 
-    def get_start_and_end_of_extrusion(self, profile_points, extrusion_edge):
+    def get_start_and_end_of_extrusion(
+        self, profile_points: list[int], extrusion_edge: bpy.types.MeshEdge
+    ) -> tuple[int, int]:
         if extrusion_edge.vertices[0] in profile_points:
             return (extrusion_edge.vertices[0], extrusion_edge.vertices[1])
         return (extrusion_edge.vertices[1], extrusion_edge.vertices[0])
 
-    def create_ifc_axis_2_placement_2d(self, point, forward):
+    def create_ifc_axis_2_placement_2d(self, point: Vector, forward: Vector) -> ifcopenshell.entity_instance:
         return self.file.createIfcAxis2Placement2D(
             self.create_cartesian_point(point.x, point.y), self.file.createIfcDirection((forward.x, forward.y))
         )
 
-    def create_ifc_axis_2_placement_3d(self, point, up, forward):
+    def create_ifc_axis_2_placement_3d(
+        self, point: Vector, up: Vector, forward: Vector
+    ) -> ifcopenshell.entity_instance:
         return self.file.createIfcAxis2Placement3D(
             self.create_cartesian_point(point.x, point.y, point.z),
             self.file.createIfcDirection((up.x, up.y, up.z)),

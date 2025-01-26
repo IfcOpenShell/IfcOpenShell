@@ -19,7 +19,11 @@
 import os
 import bpy
 import bonsai.tool as tool
+import ifcopenshell.util.file
 from bonsai.bim.ifc import IfcStore
+from pathlib import Path
+from collections import defaultdict
+from typing import Union
 
 
 def refresh():
@@ -30,16 +34,30 @@ def refresh():
 class ProjectData:
     data = {}
     is_loaded = False
+    filepath_schema_cache: dict[Path, Union[str, None]] = {}
 
     @classmethod
     def load(cls):
         cls.data = {
             "export_schema": cls.get_export_schema(),
             "library_file": cls.library_file(),
-            "template_file": cls.template_file(),
             "last_saved": cls.last_saved(),
+            "total_elements": cls.total_elements(),
         }
+        # After export_schema.
+        cls.data["template_file"] = cls.template_file()
         cls.is_loaded = True
+
+    @classmethod
+    def get_file_schema(cls, filepath: Path) -> Union[str, None]:
+        # Let's assume that filepath won't be changing schema during current Blender session
+        # to avoid reading header from the library files on every UI update.
+        # If it will be an issue, we can also consider last modified time.
+        if filepath not in cls.filepath_schema_cache:
+            extractor = ifcopenshell.util.file.IfcHeaderExtractor(str(filepath))
+            schema_name = extractor.extract().get("schema_name")
+            cls.filepath_schema_cache[filepath] = schema_name
+        return cls.filepath_schema_cache[filepath]
 
     @classmethod
     def get_export_schema(cls):
@@ -47,17 +65,29 @@ class ProjectData:
 
     @classmethod
     def library_file(cls):
-        files = os.listdir(os.path.join(bpy.context.scene.BIMProperties.data_dir, "libraries"))
+        ifc_file = tool.Ifc.get()
+        if not ifc_file:
+            return []
+        current_schema = tool.Ifc.get().schema_identifier
         results = [("0", "Custom Library", "")]
-        results.extend([(f, os.path.splitext(f)[0], "") for f in files if ".ifc" in f])
+        for f in tool.Blender.get_data_dir_paths("libraries", "*.ifc*"):
+            if cls.get_file_schema(f) != current_schema:
+                continue
+            results.append((f.name, f.stem, "Library"))
         return results
 
     @classmethod
-    def template_file(cls):
-        files = os.listdir(os.path.join(bpy.context.scene.BIMProperties.data_dir, "templates", "projects"))
-        results = [("0", "Blank Project", "")]
-        results.extend([(f, os.path.splitext(f)[0], "") for f in files if ".ifc" in f])
-        return results
+    def template_file(cls) -> dict[str, list[tuple[str, str, str]]]:
+        template_files: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
+        for export_schema in cls.data["export_schema"]:
+            template_files[export_schema[0]].append(("0", "Blank Project", ""))
+
+        for f in tool.Blender.get_data_dir_paths(Path("templates") / "projects", "*.ifc*"):
+            current_schema = cls.get_file_schema(f)
+            if current_schema not in template_files:
+                continue
+            template_files[current_schema].append((f.name, f.stem, "Template"))
+        return template_files
 
     @classmethod
     def last_saved(cls):
@@ -70,6 +100,12 @@ class ProjectData:
             return f"{save_date} {':'.join(save_time.split(':')[0:2])}"
         except:
             return ""
+
+    @classmethod
+    def total_elements(cls):
+        if ifc := tool.Ifc.get():
+            return len(ifc.by_type("IfcElement"))
+        return 0
 
 
 class LinksData:

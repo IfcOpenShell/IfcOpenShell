@@ -22,7 +22,7 @@ from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger):
+    def __init__(self, file: ifcopenshell.file, logger: Logger):
         """Purge IFC properties, relationships, and other data
 
         In some rare cases (i.e. "resetting" a model or for security purposes)
@@ -51,7 +51,6 @@ class Patcher:
             # Watch the world burn
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "PurgeData", "arguments": []})
         """
-        self.src = src
         self.file = file
         self.logger = logger
 

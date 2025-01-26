@@ -294,15 +294,11 @@ unit_symbols = {
     "SECOND": "s",
     "SQUARE_METRE": "m2",
     "METRE": "m",
-    # non si units
-    "cubic inch": "in3",
-    "cubic foot": "ft3",
-    "cubic yard": "yd3",
-    "square inch": "in2",
-    "square foot": "ft2",
-    "square yard": "yd2",
-    "square mile": "mi2",
+    "NEWTON": "N",
+    "PASCAL": "Pa",
     # conversion based units
+    "pound-force": "lbf",
+    "pound-force per square inch": "psi",
     "thou": "th",
     "inch": "in",
     "foot": "ft",
@@ -413,9 +409,7 @@ def get_named_dimensions(name):
 
 
 def get_unit_assignment(ifc_file: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
-    unit_assignments = ifc_file.by_type("IfcUnitAssignment")
-    if unit_assignments:
-        return unit_assignments[0]
+    return ifc_file.by_type("IfcProject")[0].UnitsInContext
 
 
 def get_project_unit(ifc_file: ifcopenshell.file, unit_type: str) -> Union[ifcopenshell.entity_instance, None]:
@@ -678,9 +672,9 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
     :param unit_type: The type of SI unit, defaults to "LENGTHUNIT"
     :returns: The scale factor
     """
-    if not ifc_file.by_type("IfcUnitAssignment"):
+    # Currently we assume that all ifc projects must have IfcProject.
+    if not (units := ifc_file.by_type("IfcProject")[0].UnitsInContext):
         return 1
-    units = ifc_file.by_type("IfcUnitAssignment")[0]
     unit_scale = 1
     for unit in units.Units:
         if not hasattr(unit, "UnitType") or unit.UnitType != unit_type:
@@ -758,9 +752,14 @@ def format_length(
 
 
 def is_attr_type(
-    content_type: ifcopenshell_wrapper.parameter_type, ifc_unit_type_name: str, include_select_types: bool = True
+    content_type: ifcopenshell_wrapper.parameter_type,
+    ifc_unit_type_name: str,
+    include_select_types: bool = True,
 ) -> Union[ifcopenshell_wrapper.type_declaration, None]:
     cur_decl = content_type
+
+    if hasattr(cur_decl, "name") and cur_decl.name() == ifc_unit_type_name:
+        return cur_decl
 
     if include_select_types:
         if hasattr(cur_decl, "select_list"):
@@ -768,17 +767,8 @@ def is_attr_type(
                 if is_attr_type(select_item, ifc_unit_type_name):
                     return select_item
 
-    while hasattr(cur_decl, "declared_type") is True:
-        cur_decl = cur_decl.declared_type()
-        if include_select_types:
-            if hasattr(cur_decl, "select_list"):
-                for select_item in cur_decl.select_list():
-                    if is_attr_type(select_item, ifc_unit_type_name):
-                        return select_item
-        if hasattr(cur_decl, "name") is False:
-            continue
-        if cur_decl.name() == ifc_unit_type_name:
-            return cur_decl
+    if hasattr(cur_decl, "declared_type"):
+        return is_attr_type(cur_decl.declared_type(), ifc_unit_type_name, include_select_types)
 
     if isinstance(cur_decl, ifcopenshell_wrapper.aggregation_type):
         # support aggregate of aggregates, as in IfcCartesianPointList3D.CoordList
@@ -789,14 +779,7 @@ def is_attr_type(
             return get_declared_type_from_aggregate(cur_decl)
 
         cur_decl = get_declared_type_from_aggregate(cur_decl)
-        if hasattr(cur_decl, "name") and cur_decl.name() == ifc_unit_type_name:
-            return cur_decl
-        while hasattr(cur_decl, "declared_type") is True:
-            cur_decl = cur_decl.declared_type()
-            if hasattr(cur_decl, "name") is False:
-                continue
-            if cur_decl.name() == ifc_unit_type_name:
-                return cur_decl
+        return is_attr_type(cur_decl, ifc_unit_type_name, include_select_types)
 
     return None
 
@@ -832,6 +815,7 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
     """Converts all units in an IFC file to the specified target units. Returns a new file."""
     import ifcopenshell.util.element
     import ifcopenshell.util.geolocation
+    import ifcopenshell.api.georeference
 
     prefix = get_prefix(target_units)
     si_unit = get_unit_name(target_units)

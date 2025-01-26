@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bonsai.bim.prop import StrProperty, Attribute
+from bonsai.bim.prop import ObjProperty
 from bonsai.bim.module.spatial.data import SpatialDecompositionData
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -31,8 +31,11 @@ from bpy.props import (
     CollectionProperty,
 )
 import bonsai.tool as tool
+import bonsai.bim.handler
+import bonsai.core.geometry
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.unit
 
 
 def get_subelement_class(self, context):
@@ -42,59 +45,99 @@ def get_subelement_class(self, context):
 
 
 def update_elevation(self, context):
+    try:
+        elevation = float(self.elevation)
+        if self.elevation != str(elevation):
+            self.elevation = str(elevation)
+            return
+    except:
+        elevation = 0
     if ifc_definition_id := self.ifc_definition_id:
         entity = tool.Ifc.get().by_id(ifc_definition_id)
-        obj = tool.Ifc.get_object(entity)
-        if not obj:
-            return
-        obj.location.z = self.elevation
+        if obj := tool.Ifc.get_object(entity):
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            obj.matrix_world[2][3] = elevation * unit_scale
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj)
 
 
-def update_name(self, context):
+def update_name(self: "BIMContainer", context: bpy.types.Context) -> None:
     if ifc_definition_id := self.ifc_definition_id:
-        tool.Spatial.edit_container_name(tool.Ifc.get().by_id(ifc_definition_id), self.name)
+        tool.Ifc.get_object(tool.Ifc.get().by_id(ifc_definition_id)).name = self.name
 
 
-def update_active_container_index(self, context):
+def update_active_container_index(self: "BIMSpatialDecompositionProperties", context: bpy.types.Context) -> None:
     SpatialDecompositionData.data["subelement_class"] = SpatialDecompositionData.subelement_class()
+    if tool.Blender.get_enum_safe(self, "subelement_class") is None:
+        self.subelement_class = SpatialDecompositionData.data["subelement_class"][0][0]
     tool.Spatial.load_contained_elements()
 
 
-def update_should_include_children(self, context):
+def update_should_include_children(self: "BIMSpatialDecompositionProperties", context: bpy.types.Context) -> None:
     tool.Spatial.load_contained_elements()
 
 
-def update_element_mode(self, context):
+def update_element_mode(self: "BIMSpatialDecompositionProperties", context: bpy.types.Context) -> None:
     tool.Spatial.load_contained_elements()
 
 
-def update_container_obj(self, context):
-    if self.container_obj is None or not (obj := context.active_object):
+def update_grid_is_locked(self, context):
+    if not tool.Ifc.get():
         return
-    if not (element := tool.Ifc.get_entity(self.container_obj)):
-        self.container_obj = None
+    if tool.Ifc.get().schema in ("IFC2X3", "IFC4"):
+        elements = tool.Ifc.get().by_type("IfcGrid") + tool.Ifc.get().by_type("IfcGridAxis")
+    else:
+        elements = tool.Ifc.get().by_type("IfcPositioningElement")
+    for element in elements:
+        if obj := tool.Ifc.get_object(element):
+            if self.is_locked:
+                tool.Geometry.lock_object(obj)
+            else:
+                tool.Geometry.unlock_object(obj)
+    # Need to update ViewportData.mode.
+    bonsai.bim.handler.refresh_ui_data()
+
+
+def update_spatial_is_locked(self, context):
+    if not tool.Ifc.get():
         return
-    if tool.Spatial.can_contain(element, obj):
-        return
+    if tool.Ifc.get().schema == "IFC2X3":
+        elements = tool.Ifc.get().by_type("IfcSpatialStructureElement")
+    else:
+        elements = tool.Ifc.get().by_type("IfcSpatialElement")
+    for element in elements:
+        if obj := tool.Ifc.get_object(element):
+            if self.is_locked:
+                tool.Geometry.lock_object(obj)
+                obj.hide_select = True
+            else:
+                tool.Geometry.unlock_object(obj)
+                obj.hide_select = False
+    # Need to update ViewportData.mode.
+    bonsai.bim.handler.refresh_ui_data()
+
+
+def update_spatial_is_visible(self: "BIMSpatialDecompositionProperties", context: bpy.types.Context) -> None:
+    bpy.ops.bim.toggle_spatial_elements(is_visible=self.is_visible)
+
+
+def update_grid_is_visible(self: "BIMGridProperties", context: bpy.types.Context) -> None:
+    bpy.ops.bim.toggle_grids(is_visible=self.is_visible)
+
+
+def poll_container_obj(self: "BIMObjectSpatialProperties", container_obj: bpy.types.Object) -> bool:
+    obj = self.id_data
     if (
-        (container := ifcopenshell.util.element.get_container(element))
-        and (container_obj := tool.Ifc.get_object(container))
+        (container := tool.Ifc.get_entity(container_obj))
+        and (tool.Ifc.get_entity(obj))
         and tool.Spatial.can_contain(container, obj)
     ):
-        self.container_obj = container_obj
-        return
-    self.container_obj = None
-
-
-def poll_container_obj(self, obj):
-    return obj is None or tool.Ifc.get_entity(obj)
+        return True
+    return False
 
 
 class BIMObjectSpatialProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
-    container_obj: PointerProperty(
-        type=bpy.types.Object, name="Container", update=update_container_obj, poll=poll_container_obj
-    )
+    container_obj: PointerProperty(type=bpy.types.Object, name="Container", poll=poll_container_obj)
 
 
 class BIMContainer(PropertyGroup):
@@ -102,7 +145,7 @@ class BIMContainer(PropertyGroup):
     ifc_class: StringProperty(name="IFC Class")
     description: StringProperty(name="Description")
     long_name: StringProperty(name="Long Name")
-    elevation: FloatProperty(name="Elevation", subtype="DISTANCE", update=update_elevation)
+    elevation: StringProperty(name="Elevation", update=update_elevation)
     level_index: IntProperty(name="Level Index")
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
@@ -133,6 +176,18 @@ class Element(PropertyGroup):
 
 
 class BIMSpatialDecompositionProperties(PropertyGroup):
+    is_locked: BoolProperty(
+        name="Is Locked",
+        description="Prevent all spatial elements from being edited, removed, duplicated",
+        default=True,
+        update=update_spatial_is_locked,
+    )
+    is_visible: BoolProperty(
+        name="Is Visible",
+        description="Show or hide spatial elements, such as buildings, sites, etc",
+        default=True,
+        update=update_spatial_is_visible,
+    )
     container_filter: StringProperty(name="Container Filter", default="", options={"TEXTEDIT_UPDATE"})
     containers: CollectionProperty(name="Containers", type=BIMContainer)
     contracted_containers: StringProperty(name="Contracted containers", default="[]")
@@ -166,3 +221,19 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
     def active_element(self):
         if self.elements and self.active_element_index < len(self.elements):
             return self.elements[self.active_element_index]
+
+
+class BIMGridProperties(PropertyGroup):
+    is_locked: BoolProperty(
+        name="Is Locked",
+        description="Prevent all grids and grid axes from being edited, removed, duplicated",
+        default=True,
+        update=update_grid_is_locked,
+    )
+    is_visible: BoolProperty(
+        name="Is Visible",
+        description="Show or hide grids and grid axes",
+        default=True,
+        update=update_grid_is_visible,
+    )
+    grid_axes: CollectionProperty(name="Grid Axes", type=ObjProperty)

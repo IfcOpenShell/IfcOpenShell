@@ -1,12 +1,62 @@
-from xerparser.reader import Reader
+from __future__ import annotations
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
 from datetime import datetime, timedelta, date
+from typing import Union, Any, TypedDict
+from typing_extensions import NotRequired
+
+
+class WorkSlot(TypedDict):
+    DayOfWeek: str
+    WorkTimes: list[dict[str, Any]]
+    ifc: Union[ifcopenshell.entity_instance, None]
+
+
+class ExceptionDict(TypedDict):
+    WorkTime: list[int]
+    FullDay: list[int]
+
+
+ExceptionsDict = dict[int, dict[int, ExceptionDict]]
+
+
+class Calendar(TypedDict):
+    Name: str
+    Type: str
+    HoursPerDay: int
+    StandardWorkWeek: list[WorkSlot]
+    HolidayOrExceptions: NotRequired[ExceptionsDict]
+    ifc: NotRequired[ifcopenshell.entity_instance]
+
+
+class Activity(TypedDict):
+    Name: str
+    Identification: int
+    StartDate: datetime
+    FinishDate: datetime
+    PlannedDuration: float
+    Status: str
+    CalendarObjectId: str
+    ifc: Union[ifcopenshell.entity_instance, None]
+
+
+class WBSEntry(TypedDict):
+    """Work Breakdown Strcture Entry"""
+
+    Name: str
+    Code: int
+    ParentObjectId: Union[int, None]
+    ifc: Union[ifcopenshell.entity_instance, None]
+    rel: Union[ifcopenshell.entity_instance, None]
+    activities: list[int]
 
 
 class ScheduleIfcGenerator:
-    def __init__(self, file, output, settings):
+    file: Union[ifcopenshell.file, None]
+    calendars: dict[int, Calendar]
+
+    def __init__(self, file: Union[ifcopenshell.file, None], output, settings):
         self.file = file
         self.work_plan = settings["work_plan"]
         self.project = settings["project"]
@@ -27,7 +77,7 @@ class ScheduleIfcGenerator:
             "Sunday": 7,
         }
 
-    def create_ifc(self):
+    def create_ifc(self) -> None:
         if not self.file:
             self.file = self.create_boilerplate_ifc()
         if not self.work_plan:
@@ -40,18 +90,19 @@ class ScheduleIfcGenerator:
         if self.output:
             self.file.write(self.output)
 
-    def create_work_schedule(self):
+    def create_work_schedule(self) -> ifcopenshell.entity_instance:
         return ifcopenshell.api.run(
             "sequence.add_work_schedule", self.file, name=self.project["Name"], work_plan=self.work_plan
         )
 
-    def create_calendars(self):
-        for calendar in self.calendars.values():
+    def create_calendars(self) -> None:
+        for calendar_id, calendar in self.calendars.items():
             calendar["ifc"] = ifcopenshell.api.run("sequence.add_work_calendar", self.file, name=calendar["Name"])
+            calendar["ifc"].Identification = str(calendar_id)
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
             self.process_exceptions(calendar.get("HolidayOrExceptions"), calendar["ifc"])
 
-    def process_working_week(self, week, calendar):
+    def process_working_week(self, week: list[WorkSlot], calendar: ifcopenshell.entity_instance) -> None:
         for day in week:
             if day["ifc"] or not day.get("WorkTimes"):
                 continue
@@ -94,7 +145,9 @@ class ScheduleIfcGenerator:
                     end_time=work_time["Finish"],
                 )
 
-    def process_exceptions(self, exceptions, calendar):
+    def process_exceptions(
+        self, exceptions: Union[ExceptionsDict, None], calendar: ifcopenshell.entity_instance
+    ) -> None:
         if exceptions:
             for year, year_data in exceptions.items():
                 for month, month_data in year_data.items():
@@ -103,7 +156,9 @@ class ScheduleIfcGenerator:
                     if month_data["WorkTime"]:
                         self.process_work_time_exceptions(year, month, month_data, calendar)
 
-    def process_full_day_exceptions(self, year, month, month_data, calendar):
+    def process_full_day_exceptions(
+        self, year: int, month: int, month_data: dict[str, Any], calendar: ifcopenshell.entity_instance
+    ):
         work_time = ifcopenshell.api.run(
             "sequence.add_work_time", self.file, work_calendar=calendar, time_type="ExceptionTimes"
         )
@@ -130,7 +185,9 @@ class ScheduleIfcGenerator:
             attributes={"DayComponent": month_data["FullDay"], "MonthComponent": [month]},
         )
 
-    def process_work_time_exceptions(self, year, month, month_data, calendar):
+    def process_work_time_exceptions(
+        self, year: int, month: int, month_data: dict[str, Any], calendar: ifcopenshell.entity_instance
+    ) -> None:
         for day in month_data["WorkTime"]:
             if day["ifc"]:
                 continue
@@ -179,13 +236,13 @@ class ScheduleIfcGenerator:
                     end_time=work_time["Finish"],
                 )
 
-    def create_tasks(self, work_schedule):
+    def create_tasks(self, work_schedule: ifcopenshell.entity_instance) -> None:
         for wbs in self.wbs.values():
             self.create_task_from_wbs(wbs, work_schedule)
         for activity_id in self.root_activites:
             self.create_task_from_activity(self.activities[activity_id], None, work_schedule)
 
-    def create_task_from_wbs(self, wbs, work_schedule):
+    def create_task_from_wbs(self, wbs: WBSEntry, work_schedule: ifcopenshell.entity_instance) -> None:
         if not self.wbs.get(wbs["ParentObjectId"]):
             wbs["ParentObjectId"] = None
         wbs["ifc"] = ifcopenshell.api.run(
@@ -207,7 +264,12 @@ class ScheduleIfcGenerator:
         for activity_id in wbs["activities"]:
             self.create_task_from_activity(self.activities[activity_id], wbs, None)
 
-    def create_task_from_activity(self, activity, wbs, work_schedule):
+    def create_task_from_activity(
+        self,
+        activity: Activity,
+        wbs: Union[WBSEntry, None],
+        work_schedule: Union[ifcopenshell.entity_instance, None],
+    ) -> None:
         activity["ifc"] = ifcopenshell.api.run(
             "sequence.add_task",
             self.file,
@@ -228,7 +290,6 @@ class ScheduleIfcGenerator:
         )
         task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=activity["ifc"])
         calendar = self.calendars[activity["CalendarObjectId"]]
-        # print(calendar, self.calendars)
         # Seems intermittently crashy - can we investigate for larger files?
         ifcopenshell.api.run(
             "control.assign_control",
@@ -254,7 +315,7 @@ class ScheduleIfcGenerator:
             },
         )
 
-    def create_rel_sequences(self):
+    def create_rel_sequences(self) -> None:
         self.sequence_type_map = {
             "Start to Start": "START_START",
             "Start to Finish": "START_FINISH",
@@ -285,8 +346,7 @@ class ScheduleIfcGenerator:
                     duration_type="WORKTIME",
                 )
 
-    def create_resources(self):
-        # print("Resources", self.resources)
+    def create_resources(self) -> None:
         if self.resources:
             for id, resource in self.resources.items():
 
@@ -312,8 +372,7 @@ class ScheduleIfcGenerator:
                     resource["ifc"] = ifcopenshell.api.run(
                         "resource.add_resource", self.file, **{"ifc_class": "IfcCrewResource", "name": resource["Name"]}
                     )
-            print(self.resources)
 
-    def create_boilerplate_ifc(self):
+    def create_boilerplate_ifc(self) -> None:
         self.file = ifcopenshell.file(schema="IFC4")
         self.work_plan = self.file.create_entity("IfcWorkPlan")

@@ -21,6 +21,7 @@ import bpy
 import time
 import json
 import logging
+import traceback
 import mathutils
 import numpy as np
 import multiprocessing
@@ -36,45 +37,43 @@ import bonsai.tool as tool
 from itertools import chain, accumulate
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from bonsai.tool.loader import OBJECT_DATA_TYPE
-from typing import Dict, Union, Optional, Any
+from typing import Dict, Union, Optional, Any, cast
 
 
 class MaterialCreator:
+    mesh: bpy.types.Mesh
+    obj: bpy.types.Object
+
     def __init__(self, ifc_import_settings: IfcImportSettings, ifc_importer: IfcImporter):
-        self.mesh: bpy.types.Mesh = None
-        self.obj: bpy.types.Object = None
         self.styles: Dict[int, bpy.types.Material] = {}
         self.parsed_meshes: set[str] = set()
         self.ifc_import_settings = ifc_import_settings
         self.ifc_importer = ifc_importer
 
-    def create(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, mesh: OBJECT_DATA_TYPE) -> None:
-        self.mesh = mesh
-        # as ifcopenshell triangulates the mesh, we need to merge it to quads again
-        self.obj = obj
-        if (hasattr(element, "Representation") and not element.Representation) or (
-            hasattr(element, "RepresentationMaps") and not element.RepresentationMaps
+    def create(
+        self,
+        element: ifcopenshell.entity_instance,
+        obj: bpy.types.Object,
+        mesh: Union[OBJECT_DATA_TYPE, None],
+        shape_has_openings: bool,
+    ) -> None:
+        if ((rep := getattr(element, "Representation", ...) is not ...) and not rep) or (
+            (rep := getattr(element, "RepresentationMaps", ...) is not ...) and not rep
         ):
             return
-        if not self.mesh or self.mesh.name in self.parsed_meshes:
+
+        if not mesh or mesh.name in self.parsed_meshes:
             return
 
         # We don't support curve styles yet.
         if isinstance(mesh, bpy.types.Curve):
             return
 
-        # mesh["ios_materials"] can contain:
-        # - ifc style id if style assigned to the representation items directly
-        # or through material with a style;
-        # - ifc material id if both true:
-        #   - element has a material without a style;
-        #   - there are parts of the geometry that has no other style assigned to them;
-        # - -1 in case if there is no material;
-        # - 0 in case if there are default materials used.
-        # Though 0 value will not occur as we don't use default materials in IfcImporter.
-
+        self.mesh = mesh
+        self.obj = obj
         self.parsed_meshes.add(self.mesh.name)
-        self.load_texture_maps()
+        if not self.ifc_import_settings.load_indexed_maps:
+            self.load_texture_maps(shape_has_openings)
         self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
         del self.mesh["ios_materials"]
@@ -100,14 +99,16 @@ class MaterialCreator:
                     print(f"WARNING. IfcTextureMap texture coordinates is not supported.")
                     return
 
-    def load_texture_maps(self) -> None:
+    def load_texture_maps(self, shape_has_openings: bool) -> None:
         for style_or_material_id in self.mesh["ios_materials"]:
             if not (material := self.styles.get(style_or_material_id)):
                 continue
 
             material = self.styles[style_or_material_id]
             if coords := self.get_ifc_coordinate(material):
-                tool.Loader.load_indexed_texture_map(coords, self.mesh)
+                if shape_has_openings and coords.is_a("IfcIndexedTextureMap"):
+                    continue
+                tool.Loader.load_indexed_map(coords, self.mesh)
 
     def assign_material_slots_to_faces(self) -> None:
         if not self.mesh["ios_materials"]:
@@ -195,14 +196,16 @@ class IfcImporter:
         self.meshes: dict[str, OBJECT_DATA_TYPE] = {}
         self.mesh_shapes = {}
         self.time = 0
-        self.unit_scale = 1
+        self.unit_scale = 1.0
         # ifc definition ids to blender elements mapping
         self.added_data: dict[int, IFC_CONNECTED_TYPE] = {}
-        self.native_elements = set()
-        self.native_data = {}
+        self.native_elements: set[ifcopenshell.entity_instance] = set()
+        self.native_data: dict[str, Any] = {}
         self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
+        classes_to_wireframe_str = bpy.context.scene.DocProperties.classes_to_wireframe
+        self.classes_to_wireframe_list = [word.strip() for word in classes_to_wireframe_str.split(",")]
 
     def profile_code(self, message: str) -> None:
         if not self.time:
@@ -227,8 +230,6 @@ class IfcImporter:
         self.profile_code("Process context filter")
         self.calculate_model_offset()
         self.profile_code("Calculate model offset")
-        self.predict_dense_mesh()
-        self.profile_code("Predict dense mesh")
         self.set_units()
         self.profile_code("Set units")
         self.create_project()
@@ -255,6 +256,10 @@ class IfcImporter:
         self.profile_code("Create element types")
         self.place_objects_in_collections()
         self.profile_code("Place objects in collections")
+        self.setup_arrays()
+        self.profile_code("Setup arrays")
+        tool.Project.load_linked_models_from_ifc()
+        self.profile_code("Load linked models")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
@@ -267,11 +272,10 @@ class IfcImporter:
         self.profile_code("Setting default context")
         if self.ifc_import_settings.should_setup_viewport_camera:
             self.setup_viewport_camera()
-        self.setup_arrays()
-        self.profile_code("Setup arrays")
         tool.Spatial.run_spatial_import_spatial_decomposition()
         if default_container := tool.Spatial.guess_default_container():
             tool.Spatial.set_default_container(default_container)
+        tool.Loader.setup_active_bsdd_classification()
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
@@ -281,9 +285,6 @@ class IfcImporter:
         tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
 
     def process_element_filter(self) -> None:
-        offset = self.ifc_import_settings.element_offset
-        offset_limit = offset + self.ifc_import_settings.element_limit
-
         if self.ifc_import_settings.has_filter:
             self.elements = self.ifc_import_settings.elements
             if isinstance(self.elements, set):
@@ -304,9 +305,14 @@ class IfcImporter:
         self.annotations -= drawing_annotations
 
         self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
-        self.elements = set(self.elements[offset:offset_limit])
+        if self.ifc_import_settings.element_limit_mode == "UNLIMITED":
+            self.elements = set(self.elements)
+        else:
+            offset = self.ifc_import_settings.element_offset
+            offset_limit = offset + self.ifc_import_settings.element_limit
+            self.elements = set(self.elements[offset:offset_limit])
 
-        if self.ifc_import_settings.has_filter or offset or offset_limit < len(self.elements):
+        if self.ifc_import_settings.has_filter or self.ifc_import_settings.element_limit_mode != "UNLIMITED":
             self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
         else:
             self.element_types = set(self.file.by_type("IfcTypeProduct"))
@@ -329,7 +335,7 @@ class IfcImporter:
         if self.gross_elements:
             print("Warning! Excessive voids were found and skipped for the following elements:")
             for element in self.gross_elements:
-                print(element)
+                print(f"{element} - {len(getattr(element, 'HasOpenings', []))} openings")
 
     def get_spatial_elements_filtered_by_elements(
         self, elements: set[ifcopenshell.entity_instance]
@@ -346,6 +352,8 @@ class IfcImporter:
 
     def parse_native_elements(self) -> None:
         if not self.ifc_import_settings.should_load_geometry:
+            return
+        if not self.file.by_type("IfcSweptDiskSolid"):
             return
         for element in self.elements:
             if self.is_native(element):
@@ -400,7 +408,7 @@ class IfcImporter:
         matrix[2][3] *= self.unit_scale
 
         # Single swept disk solids (e.g. rebar) are better natively represented as beveled curves
-        if self.is_native_swept_disk_solid(element, resolved_representation):
+        if tool.Loader.is_native_swept_disk_solid(element, resolved_representation):
             self.native_data[element.GlobalId] = {
                 "matrix": matrix,
                 "context": context,
@@ -409,98 +417,7 @@ class IfcImporter:
                 "type": "IfcSweptDiskSolid",
             }
             return True
-
-        if not self.ifc_import_settings.should_use_native_meshes:
-            return False  # Performance improvements only occur on edge cases currently
-
-        # FacetedBreps (without voids) are meshes. See #841.
-        if self.is_native_faceted_brep(resolved_representation):
-            self.native_data[element.GlobalId] = {
-                "matrix": matrix,
-                "context": context,
-                "geometry_id": representation_id,
-                "representation": resolved_representation,
-                "type": "IfcFacetedBrep",
-            }
-            return True
-
-        if self.is_native_face_based_surface_model(resolved_representation):
-            self.native_data[element.GlobalId] = {
-                "matrix": matrix,
-                "context": context,
-                "geometry_id": representation_id,
-                "representation": resolved_representation,
-                "type": "IfcFaceBasedSurfaceModel",
-            }
-            return True
         return False
-
-    def is_native_swept_disk_solid(
-        self, element: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
-    ) -> bool:
-        items = [i["item"] for i in ifcopenshell.util.representation.resolve_items(representation)]
-        if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
-            if tool.Blender.Modifier.is_railing(element):
-                return False
-            return True
-        elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
-            items[0].is_a("IfcSweptDiskSolid")
-            and len({i.is_a() for i in items}) == 1
-            and len({i.Radius for i in items}) == 1
-        ):
-            if tool.Blender.Modifier.is_railing(element):
-                return False
-            return True
-        return False
-
-    def is_native_faceted_brep(self, representation: ifcopenshell.entity_instance) -> bool:
-        # TODO handle mapped items
-        for i in representation.Items:
-            if i.is_a() != "IfcFacetedBrep":
-                return False
-        return True
-
-    def is_native_face_based_surface_model(self, representation: ifcopenshell.entity_instance) -> bool:
-        for i in representation.Items:
-            if i.is_a() != "IfcFaceBasedSurfaceModel":
-                return False
-        return True
-
-    def get_products_from_shape_representation(self, element: ifcopenshell.entity_instance) -> None:
-        products = [pr.ShapeOfProduct[0] for pr in element.OfProductRepresentation]
-        for rep_map in element.RepresentationMap:
-            for usage in rep_map.MapUsage:
-                for inverse_element in self.file.get_inverse(usage):
-                    if inverse_element.is_a("IfcShapeRepresentation"):
-                        products.extend(self.get_products_from_shape_representation(inverse_element))
-        return products
-
-    def predict_dense_mesh(self) -> None:
-        if self.ifc_import_settings.should_use_native_meshes:
-            return
-
-        threshold = 10000  # Just from experience.
-
-        # The check for CfsFaces/Faces/CoordIndex accommodates invalid data from Cadwork
-        # 0 IfcClosedShell.CfsFaces
-        faces = [len(faces) for e in self.file.by_type("IfcClosedShell") if (faces := e[0])]
-        if faces and max(faces) > threshold:
-            self.ifc_import_settings.should_use_native_meshes = True
-            return
-
-        if self.file.schema == "IFC2X3":
-            return
-
-        # 2 IfcPolygonalFaceSet.Faces
-        faces = [len(faces) for e in self.file.by_type("IfcPolygonalFaceSet") if (faces := e[2])]
-        if faces and max(faces) > threshold:
-            self.ifc_import_settings.should_use_native_meshes = True
-            return
-
-        # 3 IfcTriangulatedFaceSet.CoordIndex
-        faces = [len(index) for e in self.file.by_type("IfcTriangulatedFaceSet") if (index := e[3])]
-        if faces and max(faces) > threshold:
-            self.ifc_import_settings.should_use_native_meshes = True
 
     def calculate_model_offset(self) -> None:
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -539,9 +456,6 @@ class IfcImporter:
                 shape = tool.Loader.create_generic_shape(grid)
             grid_obj = self.create_product(grid, shape)
             grid_placement = self.get_element_matrix(grid)
-            if tool.Blender.get_addon_preferences().lock_grids_on_import:
-                grid_obj.lock_location = (True, True, True)
-                grid_obj.lock_rotation = (True, True, True)
             self.create_grid_axes(grid.UAxes, grid_obj, grid_placement)
             self.create_grid_axes(grid.VAxes, grid_obj, grid_placement)
             if grid.WAxes:
@@ -552,9 +466,7 @@ class IfcImporter:
             shape = tool.Loader.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(tool.Loader.get_name(axis), mesh)
-            if tool.Blender.get_addon_preferences().lock_grids_on_import:
-                obj.lock_location = (True, True, True)
-                obj.lock_rotation = (True, True, True)
+            obj.show_in_front = True
             self.link_element(axis, obj)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement.copy()))
 
@@ -576,7 +488,10 @@ class IfcImporter:
                 mesh = self.meshes.get(mesh_name)
                 if mesh is None:
                     shape = tool.Loader.create_generic_shape(representation)
-                    if shape:
+                    # Skip elements without geometry - e.g. annotations with IfcTextLiterals.
+                    if shape and not shape.verts_buffer:
+                        pass
+                    elif shape:
                         mesh = self.create_mesh(element, shape)
                         tool.Loader.link_mesh(shape, mesh)
                         self.meshes[mesh_name] = mesh
@@ -585,7 +500,7 @@ class IfcImporter:
                 break
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
-        self.material_creator.create(element, obj, mesh)
+        self.material_creator.create(element, obj, mesh, False)
         self.type_products[element.GlobalId] = obj
 
     def create_native_elements(self):
@@ -607,17 +522,17 @@ class IfcImporter:
             native_data = self.native_data[element.GlobalId]
             mesh_name = f"{native_data['context'].id()}/{native_data['geometry_id']}"
             mesh = self.meshes.get(mesh_name)
+
+            curve_thickness = None
             if mesh is None:
                 if native_data["type"] == "IfcSweptDiskSolid":
-                    mesh = self.create_native_swept_disk_solid(element, mesh_name, native_data)
-                elif native_data["type"] == "IfcFacetedBrep":
-                    mesh = self.create_native_faceted_brep(element, mesh_name, native_data)
-                elif native_data["type"] == "IfcFaceBasedSurfaceModel":
-                    mesh = self.create_native_faceted_brep(element, mesh_name, native_data)
+                    mesh, curve_thickness = tool.Loader.create_native_swept_disk_solid(element, mesh_name, native_data)
                 tool.Ifc.link(tool.Ifc.get().by_id(native_data["geometry_id"]), mesh)
                 mesh.name = mesh_name
                 self.meshes[mesh_name] = mesh
-            self.create_product(element, mesh=mesh)
+            obj = self.create_product(element, mesh=mesh)
+            tool.Loader.setup_native_swept_disk_solid_thickness(obj, curve_thickness)
+
         print("Done creating geometry")
 
     def create_spatial_elements(self) -> None:
@@ -711,9 +626,15 @@ class IfcImporter:
         products: set[ifcopenshell.entity_instance],
         settings: Optional[ifcopenshell.geom.main.settings] = None,
     ) -> set[ifcopenshell.entity_instance]:
+        checkpoint = time.time()
         results = set()
         if not products:
             return results
+
+        # For efficiency (iterator.initialize takes time), return early if there are no representations
+        if not any(product.Representation for product in products):
+            return results
+
         if tool.Loader.settings.should_use_cpu_multiprocessing:
             iterator = ifcopenshell.geom.iterator(
                 settings,
@@ -733,7 +654,6 @@ class IfcImporter:
         valid_file = iterator.initialize()
         if not valid_file:
             return results
-        checkpoint = time.time()
         progress = 0
         total = len(products)
         start_progress = self.progress
@@ -771,24 +691,15 @@ class IfcImporter:
     def create_structural_point_connections(self):
         for product in self.file.by_type("IfcStructuralPointConnection"):
             # TODO: make this based off ifcopenshell. See #1409
+            representation: ifcopenshell.entity_instance = next(
+                rep for rep in product.Representation.Representations if rep.RepresentationType == "Vertex"
+            )
+            mesh = tool.Loader.create_structural_point_connection_mesh(representation)
+            if mesh is None:
+                continue
+            tool.Ifc.link(representation, mesh)
+
             placement_matrix = ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement)
-            vertex = None
-            context = None
-            representation = None
-            for subelement in self.file.traverse(product.Representation):
-                if subelement.is_a("IfcVertex") and subelement.VertexGeometry.is_a("IfcCartesianPoint"):
-                    vertex = list(subelement.VertexGeometry.Coordinates)
-                elif subelement.is_a("IfcGeometricRepresentationContext"):
-                    context = subelement
-                elif subelement.is_a("IfcTopologyRepresentation"):
-                    representation = subelement
-            if not vertex or not context or not representation:
-                continue  # TODO implement non cartesian point vertexes
-
-            mesh_name = tool.Geometry.get_representation_name(representation)
-            mesh = bpy.data.meshes.new(mesh_name)
-            mesh.from_pydata([mathutils.Vector(vertex) * self.unit_scale], [], [])
-
             obj = bpy.data.objects.new(tool.Loader.get_name(product), mesh)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, placement_matrix))
             self.link_element(product, obj)
@@ -849,7 +760,7 @@ class IfcImporter:
     def create_product(
         self,
         element: ifcopenshell.entity_instance,
-        shape: Optional[Any] = None,
+        shape: Optional[Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType]] = None,
         mesh: Optional[OBJECT_DATA_TYPE] = None,
     ) -> Union[bpy.types.Object, None]:
         if element is None:
@@ -862,6 +773,10 @@ class IfcImporter:
 
         self.ifc_import_settings.logger.info("Creating object %s", element)
 
+        # Skip material creation if mesh already exists (e.g., when during drawing activation
+        # importing annotations that reuse their type meshes).
+        materials_updated = False
+
         if mesh:
             pass
         elif element.is_a("IfcAnnotation") and self.is_curve_annotation(element) and shape:
@@ -870,6 +785,7 @@ class IfcImporter:
         elif shape:
             mesh_name = tool.Loader.get_mesh_name_from_shape(shape.geometry)
             mesh = self.meshes.get(mesh_name)
+            materials_updated = bool(mesh)
             if mesh is None:
                 mesh = self.create_mesh(element, shape)
                 tool.Loader.link_mesh(shape, mesh)
@@ -880,17 +796,22 @@ class IfcImporter:
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
 
+        for ifcclass in self.classes_to_wireframe_list:
+            if element.is_a(ifcclass):
+                obj.display_type = "WIRE"
+
         if shape:
             # We use numpy here because Blender mathutils.Matrix is not accurate enough
             mat = np.array(shape.transformation.matrix).reshape((4, 4), order="F")
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, mat))
             assert mesh  # Type checker.
-            self.material_creator.create(element, obj, mesh)
-        elif mesh:
+            if not materials_updated:
+                self.material_creator.create(element, obj, mesh, tool.Geometry.does_shape_has_openings(shape))
+        elif mesh:  # When does this occur?
             self.set_matrix_world(
                 obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
             )
-            self.material_creator.create(element, obj, mesh)
+            self.material_creator.create(element, obj, mesh, False)
         elif hasattr(element, "ObjectPlacement"):
             self.set_matrix_world(
                 obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, self.get_element_matrix(element))
@@ -900,213 +821,6 @@ class IfcImporter:
 
     def load_existing_meshes(self) -> None:
         self.meshes.update({m.name: m for m in bpy.data.meshes})
-
-    def get_representation_item_material_name(self, item):
-        if not item.StyledByItem:
-            return
-        styles = list(item.StyledByItem[0].Styles)
-        while styles:
-            style = styles.pop()
-            if style.is_a("IfcSurfaceStyle"):
-                return style.id()
-            elif style.is_a("IfcPresentationStyleAssignment"):
-                styles.extend(style.Styles)
-
-    def create_native_faceted_brep(self, element, mesh_name, native_data):
-        # co [x y z x y z x y z ...]
-        # vertex_index [i i i i i ...]
-        # loop_start [0 3 6 9 ...] (for tris)
-        # loop_total [3 3 3 3 ...] (for tris)
-        self.mesh_data = {
-            "co": [],
-            "vertex_index": [],
-            "loop_start": [],
-            "loop_total": [],
-            "total_verts": 0,
-            "total_polygons": 0,
-            "materials": [],
-            "material_ids": [],
-        }
-
-        for item in native_data["representation"].Items:
-            if item.is_a() == "IfcFacetedBrep":
-                self.convert_representation_item_faceted_brep(item)
-            elif item.is_a() == "IfcFaceBasedSurfaceModel":
-                self.convert_representation_item_face_based_surface_model(item)
-
-        mesh = bpy.data.meshes.new("Native")
-
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        if props.has_blender_offset and tool.Loader.is_point_far_away(self.mesh_data["co"][0:3], is_meters=False):
-            verts_array = np.array(self.mesh_data["co"])
-            verts_array *= self.unit_scale
-            offset_x, offset_y, offset_z = verts_array[0:3]
-            offset = np.array([-offset_x, -offset_y, -offset_z])
-            offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
-
-            if np.allclose(native_data["matrix"], np.identity(4), atol=1e-8):
-                verts = offset_verts.tolist()
-            else:
-                verts = self.apply_matrix_to_flat_coords(offset_verts, native_data["matrix"])
-
-            mesh["has_cartesian_point_offset"] = True
-            mesh["cartesian_point_offset"] = f"{offset_x},{offset_y},{offset_z}"
-        else:
-            verts_array = np.array(self.mesh_data["co"])
-            verts_array *= self.unit_scale
-            if np.allclose(native_data["matrix"], np.identity(4), atol=1e-8):
-                verts = verts_array.tolist()
-            else:
-                verts = self.apply_matrix_to_flat_coords(verts_array, native_data["matrix"])
-            mesh["has_cartesian_point_offset"] = False
-
-        mesh.vertices.add(self.mesh_data["total_verts"])
-        mesh.vertices.foreach_set("co", verts)
-        mesh.loops.add(len(self.mesh_data["vertex_index"]))
-        mesh.loops.foreach_set("vertex_index", self.mesh_data["vertex_index"])
-        mesh.polygons.add(self.mesh_data["total_polygons"])
-        mesh.polygons.foreach_set("loop_start", self.mesh_data["loop_start"])
-        mesh.polygons.foreach_set("loop_total", self.mesh_data["loop_total"])
-        mesh.polygons.foreach_set("use_smooth", [0] * self.mesh_data["total_polygons"])
-        mesh.update()
-
-        mesh["ios_materials"] = self.mesh_data["materials"]
-        mesh["ios_material_ids"] = self.mesh_data["material_ids"]
-        return mesh
-
-    def apply_matrix_to_flat_coords(self, coords, matrix):
-        coords_array = np.array(coords).reshape(-1, 3)
-        ones = np.ones((coords_array.shape[0], 1))
-        homogeneous_coords = np.hstack([coords_array, ones])
-        transformed_coords = homogeneous_coords @ matrix.T
-        return transformed_coords[:, :3].flatten().tolist()
-
-    def convert_representation_item_face_based_surface_model(self, item):
-        mesh = item.get_info_2(recursive=True)
-        for face_set in mesh["FbsmFaces"]:
-            self.convert_representation_item_face_set(item, face_set)
-
-    def convert_representation_item_faceted_brep(self, item):
-        mesh = item.get_info_2(recursive=True)
-        return self.convert_representation_item_face_set(item, mesh["Outer"])
-
-    def convert_representation_item_face_set(self, item, mesh):
-        # On a few occasions, we flatten a list. This seems to be the most efficient way to do it.
-        # https://stackoverflow.com/questions/20112776/how-do-i-flatten-a-list-of-lists-nested-lists
-
-        # For huge face sets it might be better to do a "flatmap" instead of sum()
-        # bounds = sum((f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1), ())
-        bounds = tuple(chain.from_iterable(f["Bounds"] for f in mesh["CfsFaces"] if len(f["Bounds"]) == 1))
-        # Here are some untested alternatives, are they faster?
-        # bounds = tuple((f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1))[0]
-        # bounds = chain.from_iterable(f["Bounds"] for f in mesh["Outer"]["CfsFaces"] if len(f["Bounds"]) == 1)
-
-        polygons = [[(p["id"], p["Coordinates"]) for p in b["Bound"]["Polygon"]] for b in bounds]
-
-        for face in mesh["CfsFaces"]:
-            # Blender cannot handle faces with holes.
-            if len(face["Bounds"]) > 1:
-                inner_bounds = []
-                inner_bound_point_ids = []
-                for bound in face["Bounds"]:
-                    if bound["type"] == "IfcFaceOuterBound":
-                        outer_bound = [[p["Coordinates"] for p in bound["Bound"]["Polygon"]]]
-                        outer_bound_point_ids = [[p["id"] for p in bound["Bound"]["Polygon"]]]
-                    else:
-                        inner_bounds.append([p["Coordinates"] for p in bound["Bound"]["Polygon"]])
-                        inner_bound_point_ids.append([p["id"] for p in bound["Bound"]["Polygon"]])
-                points = outer_bound[0].copy()
-                [points.extend(p) for p in inner_bounds]
-                point_ids = outer_bound_point_ids[0].copy()
-                [point_ids.extend(p) for p in inner_bound_point_ids]
-
-                tessellated_polygons = mathutils.geometry.tessellate_polygon(outer_bound + inner_bounds)
-                polygons.extend([[(point_ids[pi], points[pi]) for pi in t] for t in tessellated_polygons])
-
-        # Clever vertex welding algorithm by Thomas Krijnen. See #841.
-
-        # by id
-        di0 = {}
-        # by coords
-        di1 = {}
-
-        vertex_index_offset = self.mesh_data["total_verts"]
-
-        def lookup(id_coords):
-            idx = di0.get(id_coords[0])
-            if idx is None:
-                idx = di1.get(id_coords[1])
-                if idx is None:
-                    l = len(di0)
-                    di0[id_coords[0]] = l
-                    di1[id_coords[1]] = l
-                    return l + vertex_index_offset
-                else:
-                    return idx + vertex_index_offset
-            else:
-                return idx + vertex_index_offset
-
-        mapped_polygons = [list(map(lookup, p)) for p in polygons]
-
-        self.mesh_data["vertex_index"].extend(chain.from_iterable(mapped_polygons))
-
-        # Flattened vertex coords
-        self.mesh_data["co"].extend(chain.from_iterable(di1.keys()))
-        self.mesh_data["total_verts"] += len(di1.keys())
-        loop_total = [len(p) for p in mapped_polygons]
-        total_polygons = len(mapped_polygons)
-        self.mesh_data["total_polygons"] += total_polygons
-
-        self.mesh_data["materials"].append(self.get_representation_item_material_name(item) or "NULLMAT")
-        material_index = len(self.mesh_data["materials"]) - 1
-        if self.mesh_data["materials"][material_index] == "NULLMAT":
-            # Magic number -1 represents no material, until this has a better approach
-            self.mesh_data["material_ids"] += [-1] * total_polygons
-        else:
-            self.mesh_data["material_ids"] += [material_index] * total_polygons
-
-        if self.mesh_data["loop_start"]:
-            loop_start_offset = self.mesh_data["loop_start"][-1] + self.mesh_data["loop_total"][-1]
-        else:
-            loop_start_offset = 0
-
-        loop_start = [loop_start_offset] + [loop_start_offset + i for i in list(accumulate(loop_total[0:-1]))]
-        self.mesh_data["loop_total"].extend(loop_total)
-        self.mesh_data["loop_start"].extend(loop_start)
-        # list(di1.keys())
-
-    def create_native_swept_disk_solid(self, element, mesh_name, native_data):
-        # TODO: georeferencing?
-        curve = bpy.data.curves.new(mesh_name, type="CURVE")
-        curve.dimensions = "3D"
-        curve.resolution_u = 2
-        polyline = curve.splines.new("POLY")
-
-        for item_data in ifcopenshell.util.representation.resolve_items(native_data["representation"]):
-            item = item_data["item"]
-            matrix = item_data["matrix"]
-            matrix[0][3] *= self.unit_scale
-            matrix[1][3] *= self.unit_scale
-            matrix[2][3] *= self.unit_scale
-            # TODO: support inner radius, start param, and end param
-            geometry = tool.Loader.create_generic_shape(item.Directrix)
-            e = geometry.edges
-            v = geometry.verts
-            vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
-            edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
-            v2 = None
-            for edge in edges:
-                v1 = vertices[edge[0]]
-                if v1 != v2:
-                    polyline = curve.splines.new("POLY")
-                    polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v1)
-                v2 = vertices[edge[1]]
-                polyline.points.add(1)
-                polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v2)
-
-        curve.bevel_depth = self.unit_scale * item.Radius
-        curve.use_fill_caps = True
-        return curve
 
     def merge_materials_by_colour(self):
         cleaned_materials = {}
@@ -1170,8 +884,9 @@ class IfcImporter:
         tool.Loader.set_unit_scale(self.unit_scale)
 
     def set_units(self):
-        units = self.file.by_type("IfcUnitAssignment")[0]
-        for unit in units.Units:
+        if not (assignment := self.file.by_type("IfcProject")[0].UnitsInContext):
+            return  # Geometry is optional in IFC
+        for unit in assignment.Units:
             if unit.is_a("IfcNamedUnit") and unit.UnitType == "LENGTHUNIT":
                 if unit.is_a("IfcSIUnit"):
                     bpy.context.scene.unit_settings.system = "METRIC"
@@ -1267,38 +982,6 @@ class IfcImporter:
         result[2][3] *= self.unit_scale
         return result
 
-    def scale_matrix(self, matrix: np.array) -> np.array:
-        matrix[0][3] *= self.unit_scale
-        matrix[1][3] *= self.unit_scale
-        matrix[2][3] *= self.unit_scale
-        return matrix
-
-    def get_representation_id(self, element):
-        if not element.Representation:
-            return None
-        for representation in element.Representation.Representations:
-            if not representation.is_a("IfcShapeRepresentation"):
-                continue
-            if (
-                representation.RepresentationIdentifier == "Body"
-                and representation.RepresentationType != "MappedRepresentation"
-            ):
-                return representation.id()
-            elif representation.RepresentationIdentifier == "Body":
-                return representation.Items[0].MappingSource.MappedRepresentation.id()
-
-    def get_representation_cartesian_transformation(self, element):
-        if not element.Representation:
-            return None
-        for representation in element.Representation.Representations:
-            if not representation.is_a("IfcShapeRepresentation"):
-                continue
-            if (
-                representation.RepresentationIdentifier == "Body"
-                and representation.RepresentationType == "MappedRepresentation"
-            ):
-                return representation.Items[0].MappingTarget
-
     def create_curve(
         self,
         element: ifcopenshell.entity_instance,
@@ -1326,12 +1009,15 @@ class IfcImporter:
             v2 = vertices[edge[1]]
             polyline.points.add(1)
             polyline.points[-1].co = mathutils.Vector(v2)
+        edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
+        curve["ios_edges_item_ids"] = edges_item_ids
         return curve
 
     def create_mesh(
         self,
         element: ifcopenshell.entity_instance,
         shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        cartesian_point_offset=None,
     ) -> bpy.types.Mesh:
         try:
             if hasattr(shape, "geometry"):
@@ -1340,9 +1026,27 @@ class IfcImporter:
             else:
                 geometry = shape
 
-            mesh = bpy.data.meshes.new(tool.Loader.get_mesh_name_from_shape(geometry))
+            # Mesh may already exists (e.g. during representation reimport)
+            # and we assign some suffix to it to prevent Blender from adding '.001' suffix to the new mesh.
+            mesh_name = tool.Loader.get_mesh_name_from_shape(geometry)
+            if old_mesh := bpy.data.meshes.get(mesh_name):
+                old_mesh.name = mesh_name + ".old"
+            mesh = bpy.data.meshes.new(mesh_name)
 
-            if geometry.verts and tool.Loader.is_point_far_away(
+            if cartesian_point_offset is False:
+                verts = geometry.verts
+                mesh["has_cartesian_point_offset"] = False
+            elif cartesian_point_offset is not None:
+                verts_array = np.array(geometry.verts)
+                offset = np.array([-cartesian_point_offset[0], -cartesian_point_offset[1], -cartesian_point_offset[2]])
+                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
+                verts = offset_verts.tolist()
+
+                mesh["has_cartesian_point_offset"] = True
+                mesh["cartesian_point_offset"] = (
+                    f"{cartesian_point_offset[0]},{cartesian_point_offset[1]},{cartesian_point_offset[2]}"
+                )
+            elif geometry.verts and tool.Loader.is_point_far_away(
                 (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
             ):
                 # Shift geometry close to the origin based off that first vert it found
@@ -1357,81 +1061,17 @@ class IfcImporter:
                 verts = geometry.verts
                 mesh["has_cartesian_point_offset"] = False
 
-            if geometry.faces:
-                num_vertices = len(verts) // 3
-                total_faces = len(geometry.faces)
-                loop_start = range(0, total_faces, 3)
-                num_loops = total_faces // 3
-                loop_total = [3] * num_loops
-                num_vertex_indices = len(geometry.faces)
-
-                # See bug 3546
-                # ios_edges holds true edges that aren't triangulated.
-                #
-                # we do `.tolist()` because Blender can't assign `np.int32` to it's custom attributes
-                mesh["ios_edges"] = list(set(tuple(e) for e in ifcopenshell.util.shape.get_edges(geometry).tolist()))
-                mesh["ios_item_ids"] = ifcopenshell.util.shape.get_representation_item_ids(geometry).tolist()
-
-                mesh.vertices.add(num_vertices)
-                mesh.vertices.foreach_set("co", verts)
-                mesh.loops.add(num_vertex_indices)
-                mesh.loops.foreach_set("vertex_index", geometry.faces)
-                mesh.polygons.add(num_loops)
-                mesh.polygons.foreach_set("loop_start", loop_start)
-                mesh.polygons.foreach_set("loop_total", loop_total)
-                mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
-                mesh.update()
-            else:
-                e = geometry.edges
-                v = verts
-                vertices = [[v[i], v[i + 1], v[i + 2]] for i in range(0, len(v), 3)]
-                edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
-                mesh.from_pydata(vertices, edges, [])
-
-            mesh["ios_materials"] = [m.instance_id() for m in geometry.materials]
-            mesh["ios_material_ids"] = geometry.material_ids
-            return mesh
+            return tool.Loader.convert_geometry_to_mesh(
+                geometry,
+                mesh,
+                verts=verts,
+                load_indexed_maps=self.ifc_import_settings.load_indexed_maps,
+            )
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
             import traceback
 
             print(traceback.format_exc())
-
-    def a2p(self, o: mathutils.Vector, z: mathutils.Vector, x: mathutils.Vector) -> mathutils.Matrix:
-        y = z.cross(x)
-        r = mathutils.Matrix((x, y, z, o))
-        r.resize_4x4()
-        r.transpose()
-        return r
-
-    def get_axis2placement(self, plc: ifcopenshell.entity_instance) -> mathutils.Matrix:
-        if plc.is_a("IfcAxis2Placement3D"):
-            z = mathutils.Vector(plc.Axis.DirectionRatios if plc.Axis else (0, 0, 1))
-            x = mathutils.Vector(plc.RefDirection.DirectionRatios if plc.RefDirection else (1, 0, 0))
-            o = plc.Location.Coordinates
-        else:
-            z = mathutils.Vector((0, 0, 1))
-            if plc.RefDirection:
-                x = mathutils.Vector(list(plc.RefDirection.DirectionRatios) + [0])
-            else:
-                x = mathutils.Vector((1, 0, 0))
-            o = list(plc.Location.Coordinates) + [0]
-        return self.a2p(o, z, x)
-
-    def get_cartesiantransformationoperator(self, plc):
-        x = mathutils.Vector(plc.Axis1.DirectionRatios if plc.Axis1 else (1, 0, 0))
-        z = x.cross(mathutils.Vector(plc.Axis2.DirectionRatios if plc.Axis2 else (0, 1, 0)))
-        o = plc.LocalOrigin.Coordinates
-        return self.a2p(o, z, x)
-
-    def get_local_placement(self, plc: Optional[ifcopenshell.entity_instance] = None) -> mathutils.Matrix:
-        if plc is None:
-            return mathutils.Matrix()
-        if plc.PlacementRelTo is None:
-            parent = mathutils.Matrix()
-        else:
-            parent = self.get_local_placement(plc.PlacementRelTo)
-        return parent @ self.get_axis2placement(plc.RelativePlacement)
 
     def set_default_context(self):
         for subcontext in self.file.by_type("IfcGeometricRepresentationSubContext"):
@@ -1455,13 +1095,17 @@ class IfcImporter:
             bpy.ops.object.select_all(action="DESELECT")
 
     def setup_arrays(self):
-        for element in self.file.by_type("IfcElement"):
-            pset_data = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
-            if not pset_data or not pset_data.get("Data", None):  # skip array children
+        for pset in self.file.by_type("IfcPropertySet"):
+            if pset.Name != "BBIM_Array":
                 continue
-            for i in range(len(json.loads(pset_data["Data"]))):
-                tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
-                tool.Blender.Modifier.Array.constrain_children_to_parent(element)
+            if not (data := ifcopenshell.util.element.get_property_definition(pset, "Data")):
+                continue
+            data = json.loads(data)
+            for rel in pset.DefinesOccurrence:
+                for element in rel.RelatedObjects:
+                    for i in range(len(data)):
+                        tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
+                        tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
 
 class IfcImportSettings:
@@ -1473,7 +1117,6 @@ class IfcImportSettings:
         self.should_use_cpu_multiprocessing = True
         self.should_merge_materials_by_colour = False
         self.should_load_geometry = True
-        self.should_use_native_meshes = False
         self.should_clean_mesh = False
         self.should_cache = True
         self.deflection_tolerance = 0.001
@@ -1485,15 +1128,17 @@ class IfcImportSettings:
         self.false_origin_mode = "AUTOMATIC"
         self.false_origin = None
         self.project_north = None
+        self.element_limit_mode = "UNLIMITED"
         self.element_offset = 0
         self.element_limit = 30000
         self.has_filter = None
         self.should_filter_spatial_elements = True
         self.should_setup_viewport_camera = True
-        self.contexts = []
+        self.contexts: list[ifcopenshell.entity_instance] = []
         self.context_settings: list[ifcopenshell.geom.main.settings] = []
         self.gross_context_settings: list[ifcopenshell.geom.main.settings] = []
         self.elements: set[ifcopenshell.entity_instance] = set()
+        self.load_indexed_maps = False
 
     @staticmethod
     def factory(context=None, input_file=None, logger=None):
@@ -1509,7 +1154,6 @@ class IfcImportSettings:
         settings.should_use_cpu_multiprocessing = props.should_use_cpu_multiprocessing
         settings.should_merge_materials_by_colour = props.should_merge_materials_by_colour
         settings.should_load_geometry = props.should_load_geometry
-        settings.should_use_native_meshes = props.should_use_native_meshes
         settings.should_clean_mesh = props.should_clean_mesh
         settings.should_cache = props.should_cache
         settings.deflection_tolerance = props.deflection_tolerance
@@ -1519,12 +1163,22 @@ class IfcImportSettings:
         settings.false_origin_mode = props.false_origin_mode
         try:
             settings.false_origin = [float(o) for o in props.false_origin.split(",")[:3]]
-        except:
-            settings.false_origin = [0, 0, 0]
+        except Exception as e:
+            print(traceback.format_exc())
+            raise Exception(
+                f"Failed to set false origin from string '{props.false_origin}'.\n"
+                f"Error: {str(e)}.\nSee above for the details."
+            )
         try:
             settings.project_north = float(props.project_north)
-        except:
-            settings.project_north = 0
+        except Exception as e:
+            print(traceback.format_exc())
+            raise Exception(
+                f"Failed to set project north from string '{props.project_north}'.\n"
+                f"Error: {str(e)}.\nSee above for the details."
+            )
+        settings.element_limit_mode = props.element_limit_mode
         settings.element_offset = props.element_offset
         settings.element_limit = props.element_limit
+        settings.load_indexed_maps = props.load_indexed_maps
         return settings

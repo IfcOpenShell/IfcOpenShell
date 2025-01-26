@@ -32,7 +32,6 @@ $(document).ready(function () {
 function connectSocket() {
   const url = "ws://localhost:" + SOCKET_PORT + "/web";
   socket = io(url);
-  console.log("socket: ", socket);
 
   // Register socket event handlers
   socket.on("blender_connect", handleBlenderConnect);
@@ -52,7 +51,6 @@ function handleWebConnect() {
 
 // Function to handle 'blender_connect' event
 function handleBlenderConnect(blenderId) {
-  console.log("blender connected: ", blenderId);
   if (!connectedClients.hasOwnProperty(blenderId)) {
     connectedClients[blenderId] = {
       shown: false,
@@ -68,7 +66,6 @@ function handleBlenderConnect(blenderId) {
 
 // Function to handle 'blender_disconnect' event
 function handleBlenderDisconnect(blenderId) {
-  console.log("blender disconnected: ", blenderId);
   if (connectedClients.hasOwnProperty(blenderId)) {
     delete connectedClients[blenderId];
     removeWorkScheduleInfo(blenderId);
@@ -92,8 +89,6 @@ function handleConnectedClients(data) {
 }
 
 function handleThemeData(themeData) {
-  // console.log(themeData);
-
   function arrayToRgbString(arr) {
     const [r, g, b, a] = arr.map((num) => Math.round(num * 255));
     if (a !== undefined) {
@@ -131,9 +126,12 @@ function handleWorkScheduleData(data) {
   const workSchedules = data["data"]["work_schedule_info"];
 
   workSchedules.forEach((workSchedule) => {
-    const mainContainer = CostUI.text(new Date(workSchedule.CreationDate).toLocaleDateString());
+    const mainContainer = CostUI.Text(
+      "Created On: " + new Date(workSchedule.CreationDate).toLocaleDateString(),
+      "fa-solid fa-pen-nib"
+    );
     const callback = () => loadWorkSchedule(workSchedule.id);
-    const card = CostUI.createCard(workSchedule.Name,mainContainer, callback);
+    const card = CostUI.createCard(workSchedule.id, workSchedule.Name,mainContainer, callback);
     workSchedulesDiv.append(card);
   });
 }
@@ -448,7 +446,6 @@ function editValue(list, task, event, cell, column) {
       value: event.target.value,
     },
   };
-  console.log("web operator: " + msg);
   socket.emit("web_operator", msg);
 }
 

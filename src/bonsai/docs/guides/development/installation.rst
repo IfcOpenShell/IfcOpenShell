@@ -102,10 +102,16 @@ that they are typically updated every day. To install the **Unstable** version:
    .. image:: images/unstable-restart.png
 
 If you wish to install an **Unstable** version offline, you can download a
-daily build from the `GitHub releases page
+daily or previous build from the `GitHub releases page
 <https://github.com/IfcOpenShell/IfcOpenShell/releases?q=bonsai&expanded=true>`__,
 then go to :menuselection:`Topbar --> Edit --> Preferences --> Get Extensions
 --> "V" Icon (top right) --> Install from Disk`.
+
+.. tip::
+
+   Installing a previous build is a great way to roll back to previous versions. Uninstall the current version, 
+   then install the previous version from your disk. Make the install directory into the repo folder, and you can still 
+   update by the click of a button, when you are ready for the latest build.
 
 Bundling for Blender
 --------------------
@@ -153,7 +159,7 @@ our Blender installation (you will need to restart Blender to see changes).
 
 For Linux or Mac:
 
-.. literalinclude:: ../../scripts/installation/dev_environment.sh
+.. literalinclude:: ../../../scripts/installation/dev_environment.sh
    :language: bash
    :caption: dev_environment.sh
 
@@ -161,17 +167,23 @@ Or, if you're on Windows, you can use the batch script below. You need to run
 it as an administrator. Before running it follow the instructions descibed
 in the `rem` tags.
 
-.. literalinclude:: ../../scripts/installation/dev_environment.bat
+.. literalinclude:: ../../../scripts/installation/dev_environment.bat
    :language: bat
    :caption: dev_environment.bat
 
 After you modify your code in the Git repository, you will need to restart
 Blender for the changes to take effect.
 
+If there are changes to the IfcOpenShell binaries, you may replace the two
+``*ifcopenshell_wrapper*`` files with new ones downloaded from the automated
+`IfcOpenShell builds directory <https://builds.ifcopenshell.org/>`__.
+
 The downside with this approach is that if a new dependency is added, or a
-compiled dependency version requirement has changed, or the build system
-changes, you'll need to fix your setup manually. But this is relatively rare.
-Reviewing the Makefile history, `here <https://github.com/IfcOpenShell/IfcOpenShell/commits/v0.8.0/src/bonsai/Makefile>`__, is one quick way to see if a dependency has changed.  
+compiled dependency has changed (that is not available via the build
+directory), or the build system changes, you'll need to fix your setup
+manually. But this is relatively rare. Reviewing the Makefile history, `here
+<https://github.com/IfcOpenShell/IfcOpenShell/commits/v0.8.0/src/bonsai/Makefile>`__,
+is one quick way to see if a dependency has changed.
 
 .. seealso::
 

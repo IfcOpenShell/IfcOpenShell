@@ -6,11 +6,12 @@ With **IfcTester**, you can author and read **Information Delivery Specification
 
 ### Command line use
 
-.. code-block:: bash
 
-    # run console reporter
-    python -m ifctester example.ids example.ifc
-    python -m ifctester example.ids example.ifc -r Html -o report.html
+```bash
+# run console reporter
+python -m ifctester example.ids example.ifc
+python -m ifctester example.ids example.ifc -r Html -o report.html
+```
 
 Available flags:
 
@@ -55,3 +56,8 @@ my_ids.validate(my_ifc)
 # show results:
 reporter.Console(my_ids).report()
 ```
+
+
+### ifctester web app
+
+Can be started by `cd webapp && python app.py`.

@@ -57,17 +57,19 @@ classes = (
     product.AddConstrTypeInstance,
     product.AddDefaultType,
     product.AddEmptyType,
+    product.AddOccurrence,
     product.AlignProduct,
     product.ChangeTypePage,
-    product.DisableAddType,
-    product.EnableAddType,
     product.LoadTypeThumbnails,
     product.MirrorElements,
+    product.SetActiveType,
     workspace.Hotkey,
+    workspace.BIM_MT_add_representation_item,
     wall.AlignWall,
     wall.ChangeExtrusionDepth,
     wall.ChangeExtrusionXAngle,
     wall.ChangeLayerLength,
+    wall.AddWallsFromSlab,
     wall.DrawPolylineWall,
     wall.FlipWall,
     wall.MergeWall,
@@ -75,21 +77,23 @@ classes = (
     wall.SplitWall,
     wall.UnjoinWalls,
     opening.AddBoolean,
-    opening.AddFilledOpening,
     opening.AddPotentialHalfSpaceSolid,
     opening.AddPotentialOpening,
-    opening.EditOpenings,
     opening.CloneOpening,
+    opening.EditOpenings,
     opening.FlipFill,
-    opening.HideBooleans,
+    opening.HideAllOpenings,
     opening.HideOpenings,
+    opening.PurgeUnusedOpenings,
     opening.RecalculateFill,
-    opening.RemoveBooleans,
-    opening.ShowBooleans,
+    opening.RemoveBoolean,
+    opening.SelectBoolean,
     opening.ShowOpenings,
+    opening.UpdateOpeningsFocus,
     profile.ChangeCardinalPoint,
     profile.ChangeProfileDepth,
     profile.DisableEditingExtrusionAxis,
+    profile.DrawPolylineProfile,
     profile.EditExtrusionAxis,
     profile.EnableEditingExtrusionAxis,
     profile.ExtendProfile,
@@ -99,10 +103,13 @@ classes = (
     roof.GenerateHippedRoof,
     slab.DisableEditingExtrusionProfile,
     slab.DisableEditingSketchExtrusionProfile,
+    slab.AddSlabFromWall,
+    slab.DrawPolylineSlab,
     slab.EditExtrusionProfile,
     slab.EditSketchExtrusionProfile,
     slab.EnableEditingExtrusionProfile,
     slab.EnableEditingSketchExtrusionProfile,
+    slab.RecalculateSlab,
     slab.ResetVertex,
     slab.SetArcIndex,
     space.GenerateSpace,
@@ -118,7 +125,8 @@ classes = (
     mep.RegenerateDistributionElement,
     prop.SnapMousePoint,
     prop.PolylinePoint,
-    prop.PolylineMeasurement,
+    prop.Polyline,
+    prop.ProductPreviewItem,
     prop.BIMModelProperties,
     prop.BIMArrayProperties,
     prop.BIMStairProperties,
@@ -127,6 +135,8 @@ classes = (
     prop.BIMDoorProperties,
     prop.BIMRailingProperties,
     prop.BIMRoofProperties,
+    prop.BIMPolylineProperties,
+    prop.BIMProductPreviewProperties,
     ui.BIM_PT_array,
     ui.BIM_PT_stair,
     ui.BIM_PT_sverchok,
@@ -134,9 +144,11 @@ classes = (
     ui.BIM_PT_door,
     ui.BIM_PT_railing,
     ui.BIM_PT_roof,
+    ui.BIM_MT_type_manager_menu,
+    ui.BIM_MT_type_menu,
+    ui.LaunchTypeMenu,
     ui.LaunchTypeManager,
-    ui.BIM_MT_model,
-    ui.BIM_PT_Grids,
+    ui.BIM_MT_elements,
     grid.BIM_OT_add_object,
     stair.BIM_OT_add_stair,
     stair.AddStair,
@@ -162,6 +174,7 @@ classes = (
     door.EnableEditingDoor,
     door.RemoveDoor,
     railing.BIM_OT_add_railing,
+    railing.CopyRailingParameters,
     railing.AddRailing,
     railing.CancelEditingRailing,
     railing.FinishEditingRailing,
@@ -174,6 +187,7 @@ classes = (
     roof.BIM_OT_add_roof,
     roof.AddRoof,
     roof.CancelEditingRoof,
+    roof.CopyRoofParameters,
     roof.FinishEditingRoof,
     roof.EnableEditingRoof,
     roof.CancelEditingRoofPath,
@@ -204,6 +218,8 @@ def register():
         bpy.utils.register_tool(workspace.CableTool, after={"bim.cable_carrier_tool"}, separator=False, group=False)
 
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
+    bpy.types.Scene.BIMPolylineProperties = bpy.props.PointerProperty(type=prop.BIMPolylineProperties)
+    bpy.types.Scene.BIMProductPreviewProperties = bpy.props.PointerProperty(type=prop.BIMProductPreviewProperties)
     bpy.types.Object.BIMArrayProperties = bpy.props.PointerProperty(type=prop.BIMArrayProperties)
     bpy.types.Object.BIMStairProperties = bpy.props.PointerProperty(type=prop.BIMStairProperties)
     bpy.types.Object.BIMSverchokProperties = bpy.props.PointerProperty(type=prop.BIMSverchokProperties)
@@ -212,11 +228,11 @@ def register():
     bpy.types.Object.BIMRailingProperties = bpy.props.PointerProperty(type=prop.BIMRailingProperties)
     bpy.types.Object.BIMRoofProperties = bpy.props.PointerProperty(type=prop.BIMRoofProperties)
 
-    bpy.types.VIEW3D_MT_mesh_add.append(ui.add_mesh_object_menu)
-    bpy.types.VIEW3D_MT_add.append(ui.add_menu)
+    bpy.types.VIEW3D_MT_add.prepend(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
 
     workspace.load_custom_icons()
+
 
 def unregister():
     if not bpy.app.background:
@@ -231,8 +247,10 @@ def unregister():
         bpy.utils.unregister_tool(workspace.CableCarrierTool)
         bpy.utils.unregister_tool(workspace.CableTool)
         bpy.utils.unregister_tool(workspace.BimTool)
-        
+
     del bpy.types.Scene.BIMModelProperties
+    del bpy.types.Scene.BIMPolylineProperties
+    del bpy.types.Scene.BIMProductPreviewProperties
     del bpy.types.Object.BIMArrayProperties
     del bpy.types.Object.BIMStairProperties
     del bpy.types.Object.BIMSverchokProperties
@@ -242,7 +260,6 @@ def unregister():
     del bpy.types.Object.BIMRoofProperties
 
     bpy.app.handlers.load_post.remove(handler.load_post)
-    bpy.types.VIEW3D_MT_mesh_add.remove(ui.add_mesh_object_menu)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)
 
     workspace.unload_custom_icons()

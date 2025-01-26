@@ -26,14 +26,18 @@ import bonsai.core.tool
 import bonsai.core.aggregate
 import bonsai.core.geometry
 import bonsai.tool as tool
-from typing import Union, Optional, Any
+from typing import Union, Optional, Any, Literal
+from bonsai.bim.module.spatial.decorator import GridDecorator
+from bonsai.bim.module.geometry.decorator import ItemDecorator
 
 
 class Root(bonsai.core.tool.Root):
     @classmethod
-    def add_tracked_opening(cls, obj: bpy.types.Object) -> None:
+    def add_tracked_opening(cls, obj: bpy.types.Object, opening_type: Literal["OPENING", "BOOLEAN"]) -> None:
+        """Add tracked opening or boolean object."""
         new = bpy.context.scene.BIMModelProperties.openings.add()
         new.obj = obj
+        new.name = opening_type
 
     @classmethod
     def assign_body_styles(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
@@ -53,28 +57,38 @@ class Root(bonsai.core.tool.Root):
             )
 
     @classmethod
-    def copy_representation(cls, source: ifcopenshell.entity_instance, dest: ifcopenshell.entity_instance) -> None:
+    def copy_representation(
+        cls, source: ifcopenshell.entity_instance, dest: ifcopenshell.entity_instance
+    ) -> dict[int, ifcopenshell.entity_instance]:
         def exclude_callback(attribute):
             return attribute.is_a("IfcProfileDef") and attribute.ProfileName
 
+        copied_entities: dict[int, ifcopenshell.entity_instance] = {}
+
         if dest.is_a("IfcProduct"):
             if not source.Representation:
-                return
+                return copied_entities
             dest.Representation = ifcopenshell.util.element.copy_deep(
                 tool.Ifc.get(),
                 source.Representation,
                 exclude=["IfcGeometricRepresentationContext"],
                 exclude_callback=exclude_callback,
+                copied_entities=copied_entities,
             )
         elif dest.is_a("IfcTypeProduct"):
             if not source.RepresentationMaps:
-                return
+                return copied_entities
             dest.RepresentationMaps = [
                 ifcopenshell.util.element.copy_deep(
-                    tool.Ifc.get(), m, exclude=["IfcGeometricRepresentationContext"], exclude_callback=exclude_callback
+                    tool.Ifc.get(),
+                    m,
+                    exclude=["IfcGeometricRepresentationContext"],
+                    exclude_callback=exclude_callback,
+                    copied_entities=copied_entities,
                 )
                 for m in source.RepresentationMaps
             ]
+        return copied_entities
 
     @classmethod
     def does_type_have_representations(cls, element: ifcopenshell.entity_instance) -> bool:
@@ -198,6 +212,37 @@ class Root(bonsai.core.tool.Root):
         if tool.Ifc.get().schema == "IFC2X3":
             return element.is_a("IfcSpatialStructureElement")
         return element.is_a("IfcSpatialElement")
+
+    @classmethod
+    def is_grid_axis(cls, element: ifcopenshell.entity_instance) -> bool:
+        return element.is_a("IfcGridAxis")
+
+    @classmethod
+    def is_in_aggregate_mode(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        props = bpy.context.scene.BIMAggregateProperties
+        if props.editing_aggregate and props.in_aggregate_mode:
+            return tool.Ifc.get_entity(props.editing_aggregate)
+
+    @classmethod
+    def is_in_nest_mode(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        props = bpy.context.scene.BIMNestProperties
+        if props.editing_nest and props.in_nest_mode:
+            return tool.Ifc.get_entity(props.editing_nest)
+
+    @classmethod
+    def reload_grid_decorator(cls) -> None:
+        axes = bpy.context.scene.BIMGridProperties.grid_axes
+        axes.clear()
+        for axis in tool.Ifc.get().by_type("IfcGridAxis"):
+            if obj := tool.Ifc.get_object(axis):
+                new = axes.add()
+                new.obj = obj
+        GridDecorator.install(bpy.context)
+
+    @classmethod
+    def reload_item_decorator(cls) -> None:
+        bpy.context.view_layer.update()
+        ItemDecorator.install(bpy.context)
 
     @classmethod
     def link_object_data(cls, source_obj: bpy.types.Object, destination_obj: bpy.types.Object) -> None:
@@ -329,6 +374,8 @@ class Root(bonsai.core.tool.Root):
                             related_obj=tool.Ifc.get_object(tool.Ifc.get_entity(obj)),
                         )
 
+        tool.Blender.select_and_activate_single_object(bpy.context, tool.Ifc.get_object(new_aggregate[0]))
+
     @classmethod
     def run_geometry_add_representation(
         cls,
@@ -350,11 +397,19 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def set_object_name(cls, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
-        # This disables the Blender name event handler
-        obj.BIMObjectProperties.is_renaming = True
-        name = getattr(element, "Name", getattr(element, "AxisTag", None))
-        obj.name = "{}/{}".format(element.is_a(), name or "Unnamed")
-        obj.BIMObjectProperties.is_renaming = False
+        name = tool.Loader.get_name(element)
+        if obj.name != name:
+            obj.BIMObjectProperties.is_renaming = True
+            obj.name = name  # The handler will trigger, and reset is_renaming to False
+
+    @classmethod
+    def set_material_name(cls, material: bpy.types.Material, name: str) -> None:
+        """Rename material without triggerring name callback and unnecessary writing to IFC."""
+        if material.name == name:
+            return
+        props = material.BIMStyleProperties
+        props.is_renaming = True
+        material.name = name  # The handler will trigger, and reset is_renaming to False.
 
     @classmethod
     def unlink_object(cls, obj: bpy.types.Object) -> None:

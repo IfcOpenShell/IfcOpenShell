@@ -41,10 +41,42 @@ def get_ifc_predefined_types(self, context):
     return IfcClassData.data["ifc_predefined_types"]
 
 
+def get_representation_template(self, context):
+    if not IfcClassData.is_loaded:
+        IfcClassData.load()
+    return IfcClassData.data["representation_template"]
+
+
 def refresh_classes(self, context):
+    old_class = context.scene.BIMRootProperties.ifc_class
+    old_predefined_type = (
+        context.scene.BIMRootProperties.ifc_predefined_type if get_ifc_predefined_types(self, context) else ""
+    )
+
     enum = get_ifc_classes(self, context)
     context.scene.BIMRootProperties.ifc_class = enum[0][0]
     IfcClassData.load()
+
+    if self.ifc_product == "IfcFeatureElement":
+        if (obj := tool.Blender.get_active_object(is_selected=True)) and obj.type == "MESH":
+            self.featured_obj = obj
+            self.representation_template = "EXTRUSION"
+            self.representation_obj = None
+    elif (obj := tool.Blender.get_active_object(is_selected=True)) and obj.type == "MESH":
+        self.representation_template = "OBJ"
+        self.representation_obj = obj
+
+    # When switching between ElementType and Element, keep the same class and predefined type if possible
+    if self.ifc_product == "IfcElement":
+        ifc_class = next(iter(ifcopenshell.util.type.get_applicable_entities(old_class)), None)
+    elif self.ifc_product == "IfcElementType":
+        ifc_class = next(iter(ifcopenshell.util.type.get_applicable_types(old_class)), None)
+    else:
+        return
+    if ifc_class:
+        self.ifc_class = ifc_class
+        if old_predefined_type:
+            self.ifc_predefined_type = old_predefined_type
 
 
 def refresh_predefined_types(self, context):
@@ -82,6 +114,12 @@ def get_contexts(self, context):
     return IfcClassData.data["contexts"]
 
 
+def get_profile(self, context):
+    if not IfcClassData.is_loaded:
+        IfcClassData.load()
+    return IfcClassData.data["profile"]
+
+
 def update_relating_class_from_object(self, context):
     if self.relating_class_object is None:
         return
@@ -109,12 +147,38 @@ def is_object_class_applicable(self, obj):
     return element.is_a("IfcTypeObject") == active_element.is_a("IfcTypeObject")
 
 
+def poll_representation_obj(self, obj):
+    return obj.type == "MESH" and obj.data.polygons
+
+
+def poll_featured_obj(self, obj):
+    return tool.Ifc.get_entity(obj)
+
+
 class BIMRootProperties(PropertyGroup):
-    contexts: EnumProperty(items=get_contexts, name="Contexts")
+    contexts: EnumProperty(items=get_contexts, name="Contexts", options=set())
+    name: StringProperty(name="Name")
+    description: StringProperty(name="Description")
     ifc_product: EnumProperty(items=get_ifc_products, name="Products", update=refresh_classes)
     ifc_class: EnumProperty(items=get_ifc_classes, name="Class", update=refresh_predefined_types)
     ifc_predefined_type: EnumProperty(items=get_ifc_predefined_types, name="Predefined Type", default=None)
     ifc_userdefined_type: StringProperty(name="Userdefined Type")
+    featured_obj: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Featured Object",
+        poll=poll_featured_obj,
+        description="The feature will be applied to this object",
+    )
+    representation_template: bpy.props.EnumProperty(
+        items=get_representation_template, name="Representation Template", default=0
+    )
+    representation_obj: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Representation Object",
+        poll=poll_representation_obj,
+        description="The representation will be a tessellation of the selected object",
+    )
+    profile: EnumProperty(name="Profile for profile type object", items=get_profile)
     relating_class_object: PointerProperty(
         type=bpy.types.Object,
         name="Copy Class",

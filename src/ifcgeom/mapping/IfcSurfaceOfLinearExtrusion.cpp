@@ -22,7 +22,6 @@
 using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceOfLinearExtrusion* inst) {
-	return nullptr;
 	taxonomy::matrix4::ptr matrix;
 	bool has_position = true;
 #ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
@@ -34,7 +33,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceOfLinearExtrusion* in
 
 	return taxonomy::make<taxonomy::extrusion>(
 		matrix,
-		taxonomy::cast<taxonomy::loop>(map(inst->SweptCurve())),
+		map(inst->SweptCurve()),
 		taxonomy::cast<taxonomy::direction3>(map(inst->ExtrudedDirection())),
 		std::numeric_limits<double>::infinity()
 	);

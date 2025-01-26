@@ -22,6 +22,7 @@ import bpy
 import string
 import svgwrite
 import openpyxl
+import bonsai.tool as tool
 
 from bonsai.bim.module.drawing.svgwriter import SvgWriter
 from odf.opendocument import load as load_ods
@@ -77,7 +78,7 @@ class Scheduler:
             ifc_file_path = os.path.dirname(IfcStore.path)
             stylesheet_path = ifc_file_path + "\\" + stylesheet_rel_path
             if not os.path.exists(stylesheet_path):
-                stylesheet_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", "schedule.css")
+                stylesheet_path = tool.Blender.get_data_dir_path(Path("assets") / "schedule.css")
         with open(stylesheet_path, "r") as stylesheet:
             css = stylesheet.read()
 
@@ -554,6 +555,8 @@ class Scheduler:
             text_params["font-style"] = "italic"
         if text_color:
             text_params["fill"] = text_color
+
+        text_params["class_"] = "schedule"
 
         if len(text_lines) == 1 and not wrap_text:
             text_params.update(box_alignment_params)

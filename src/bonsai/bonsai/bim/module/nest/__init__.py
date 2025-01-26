@@ -26,14 +26,20 @@ classes = (
     operator.BIM_OT_select_components,
     operator.BIM_OT_select_nest,
     operator.BIM_OT_nest_unassign_object,
+    operator.BIM_OT_disable_nest_mode,
+    operator.BIM_OT_toggle_nest_mode_local_view,
     prop.BIMObjectNestProperties,
+    prop.Objects,
+    prop.BIMNestProperties,
     ui.BIM_PT_nest,
 )
 
 
 def register():
     bpy.types.Object.BIMObjectNestProperties = bpy.props.PointerProperty(type=prop.BIMObjectNestProperties)
+    bpy.types.Scene.BIMNestProperties = bpy.props.PointerProperty(type=prop.BIMNestProperties)
 
 
 def unregister():
     del bpy.types.Object.BIMObjectNestProperties
+    del bpy.types.Scene.BIMNestProperties

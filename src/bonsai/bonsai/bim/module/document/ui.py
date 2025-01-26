@@ -155,6 +155,7 @@ class BIM_UL_documents(UIList):
                 row.label(text="", icon="FILE_HIDDEN")
 
             split1 = row.split(factor=0.1)
-            split1.label(text=item.identification)
+            # split1.label(text=item.identification)
+            split1.prop(item, "identification", text="", emboss=False)
             split2 = split1.split(factor=0.9)
-            split2.label(text=item.name)
+            split2.prop(item, "name", text="", emboss=False)

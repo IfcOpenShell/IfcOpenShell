@@ -103,6 +103,21 @@ class TestAssignRepresentationStyles(test.bootstrap.IFC4):
         assert item.StyledByItem[0].Styles[0].Styles == (style2, style3)
         assert len(self.file.by_type("IfcStyledItem")) == 1
 
+    def test_assign_style_to_topology_representation(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        product_shape = self.file.create_entity("IfcProductDefinitionShape")
+        element.Representation = product_shape
+
+        representation = self.file.create_entity("IfcTopologyRepresentation")
+        item = self.file.create_entity("IfcFace")
+        representation.Items = [item]
+
+        style = self.file.create_entity("IfcSurfaceStyle")
+        ifcopenshell.api.style.assign_representation_styles(
+            self.file, styles=[style], shape_representation=representation
+        )
+        assert item.StyledByItem[0].Styles == (style,)
+
 
 class TestAssignRepresentationStylesIFC2X3(test.bootstrap.IFC2X3):
     def test_run(self):

@@ -6,10 +6,11 @@ using namespace ifcopenshell::geometry;
 
 ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& s)
 	: geometry_library_(boost::to_lower_copy(geometry_library))
-	, settings_(s)
 {
-	mapping_ = impl::mapping_implementations().construct(file, settings_);
+	mapping_ = impl::mapping_implementations().construct(file, s);
 	kernel_ = kernels::construct(file, geometry_library, mapping_->settings());
+	// Mapping reads unit information and applies to settings
+	settings_ = mapping_->settings();
 }
 
 namespace {
@@ -208,28 +209,36 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 			Logger::Message(Logger::LOG_ERROR, "Error processing openings for:", product);
 		}
 
-		if (caught_error && opened_shapes.size() < shapes.size()) {
-			opened_shapes = shapes;
-		}
-
-		if (settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().get()) {
-			for (auto it = opened_shapes.begin(); it != opened_shapes.end(); ++it) {
-				it->prepend(place);
+		if (!(caught_error && opened_shapes.size() < shapes.size())) {
+			if (settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().get()) {
+				for (auto it = opened_shapes.begin(); it != opened_shapes.end(); ++it) {
+					it->prepend(place);
+				}
+				place = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
+				representation_id_builder << "-world-coords";
 			}
-			place = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
-			representation_id_builder << "-world-coords";
+			shapes = opened_shapes;
 		}
-		shape = new IfcGeom::Representation::BRep(settings_, product_type, representation_id_builder.str(), opened_shapes);
 	} else if (settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().get()) {
 		for (auto it = shapes.begin(); it != shapes.end(); ++it) {
 			it->prepend(place);
 		}
 		place = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
 		representation_id_builder << "-world-coords";
-		shape = new IfcGeom::Representation::BRep(settings_, product_type, representation_id_builder.str(), shapes);
-	} else {
-		shape = new IfcGeom::Representation::BRep(settings_, product_type, representation_id_builder.str(), shapes);
 	}
+
+	if (settings_.get<ifcopenshell::geometry::settings::UnifyShapes>().get()) {
+		IfcGeom::ConversionResults unified_shapes;
+		try {
+			if (kernel_->unify_shapes(shapes, unified_shapes)) {
+				std::swap(shapes, unified_shapes);
+			}
+		} catch (std::exception& e) {
+			Logger::Error(e);
+		}
+	}
+
+	shape = new IfcGeom::Representation::BRep(settings_, product_type, representation_id_builder.str(), shapes);
 
 	std::string context_string = "";
 

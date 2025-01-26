@@ -23,10 +23,12 @@
 using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcAxis1Placement* inst) {
-	Eigen::Vector3d P, axis(0, 0, 1), ref;
-	{
+	Eigen::Vector3d P(0, 0, 0), axis(0, 0, 1), ref;
+	try {
 		taxonomy::point3::ptr v = taxonomy::cast<taxonomy::point3>(map(inst->Location()));
 		P = *v->components_;
+	} catch (const std::runtime_error&) {
+		Logger::Warning("Placement with invalid Location:", inst);
 	}
 	const bool hasAxis = inst->Axis();
 	if (hasAxis) {

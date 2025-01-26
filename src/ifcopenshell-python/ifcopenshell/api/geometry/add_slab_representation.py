@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from ifcopenshell.util.data import Clipping
 from math import sin, cos
@@ -23,30 +24,53 @@ from typing import Any, Optional, Union
 
 
 def add_slab_representation(
-    file,
-    # IfcGeometricRepresentationContext
+    file: ifcopenshell.file,
     context: ifcopenshell.entity_instance,
-    # in meters
     depth: float = 0.2,
-    # in radians
+    direction_sense: str = "POSITIVE",
+    offset: float = 0.0,
     x_angle: float = 0.0,
-    # A list of planes that define clipping half space solids
-    # Planes are defined either by Clipping objects
-    # or by dictionaries of arguments for `Clipping.parse`
     clippings: Optional[list[Union[Clipping, dict[str, Any]]]] = None,
+    polyline: Optional[list[tuple[float, float]]] = None,
 ) -> ifcopenshell.entity_instance:
+    """
+    Add a geometric representation for a slab.
+
+    :param context: The IfcGeometricRepresentationContext for the representation,
+        only Model/Body/MODEL_VIEW type of representations are currently supported.
+    :param depth: The slab depth, in meters.
+    :param x_angle: The slope angle along the slab's X-axis, in radians.
+    :param clippings: List of planes that define clipping half space solids.
+        Clippings can be `Clipping` objects or dictionaries of arguments for `Clipping.parse`.
+    :return: IfcShapeRepresentation.
+
+    Example:
+
+    .. code:: python
+
+        context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        clippings = [ifcopenshell.util.data.Clipping(location=(0.0, 0.0, 0.1), normal=(0.0, 0.0, 1.0),)]
+        representation = ifcopenshell.api.geometry.add_slab_representation(ifc_file, context, depth=0.2, clippings=clippings)
+        ifcopenshell.api.geometry.assign_representation(ifc_file, product=element, representation=representation)
+    """
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {
         "context": context,
         "depth": depth,
+        "direction_sense": direction_sense,
+        "offset": offset,
         "x_angle": x_angle,
         "clippings": clippings if clippings is not None else [],
+        "polyline": polyline,
     }
     return usecase.execute()
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         return self.file.createIfcShapeRepresentation(
@@ -59,6 +83,11 @@ class Usecase:
     def create_item(self):
         size = self.convert_si_to_unit(1)
         points = ((0.0, 0.0), (size, 0.0), (size, size), (0.0, size), (0.0, 0.0))
+        if self.settings["polyline"]:
+            points = [
+                (self.convert_si_to_unit(p[0]), self.convert_si_to_unit(p[1] * (1 / cos(self.settings["x_angle"]))))
+                for p in self.settings["polyline"]
+            ]
         if self.file.schema == "IFC2X3":
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
@@ -67,14 +96,20 @@ class Usecase:
             extrusion_direction = self.file.createIfcDirection(
                 (0.0, sin(self.settings["x_angle"]), cos(self.settings["x_angle"]))
             )
+            if self.settings["direction_sense"] == "NEGATIVE":
+                extrusion_direction = self.file.createIfcDirection(
+                    (0.0, -sin(self.settings["x_angle"]), -cos(self.settings["x_angle"]))
+                )
         else:
             extrusion_direction = self.file.createIfcDirection((0.0, 0.0, 1.0))
+            if self.settings["direction_sense"] == "NEGATIVE":
+                extrusion_direction = self.file.createIfcDirection((0.0, 0.0, -1.0))
 
         position = None
         # default position for IFC2X3 where .Position is not optional
-        if self.file.schema == "IFC2X3":
+        if self.file.schema == "IFC2X3" or self.settings["offset"] != 0:
             position = self.file.createIfcAxis2Placement3D(
-                self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
+                self.file.createIfcCartesianPoint((0.0, 0.0, self.convert_si_to_unit(self.settings["offset"]))),
                 self.file.createIfcDirection((0.0, 0.0, 1.0)),
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             )

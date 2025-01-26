@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union, assert_never
 
 if TYPE_CHECKING:
     import bpy
@@ -101,8 +101,10 @@ def copy_to_container(
     return result_objs
 
 
-def select_container(ifc: tool.Ifc, spatial: tool.Spatial, container: ifcopenshell.entity_instance) -> None:
-    spatial.set_active_object(ifc.get_object(container))
+def select_container(
+    ifc: tool.Ifc, spatial: tool.Spatial, container: ifcopenshell.entity_instance, selection_mode: str = "ADD"
+) -> None:
+    spatial.set_active_object(ifc.get_object(container), selection_mode=selection_mode)
 
 
 def select_similar_container(ifc: tool.Ifc, spatial: tool.Spatial, obj: bpy.types.Object) -> None:
@@ -150,9 +152,14 @@ def select_decomposed_element(ifc: tool.Ifc, spatial: tool.Spatial, element: ifc
     spatial.set_active_object(ifc.get_object(element))
 
 
-def generate_space(ifc: tool.Ifc, model: tool.Model, root: tool.Root, spatial: tool.Spatial, type: tool.Type) -> None:
+def generate_space(
+    ifc: tool.Ifc, model: tool.Model, root: tool.Root, spatial: tool.Spatial, type: tool.Type
+) -> Union[None, str]:
+    """
+    :return: None if successful, error message string if not.
+    """
     if not root.get_default_container():
-        raise NoDefaultContainer()
+        raise SpaceGenerationError("Please set a default container to create the space in.")
 
     active_obj = spatial.get_active_obj()
     selected_objects = spatial.get_selected_objects()
@@ -173,10 +180,19 @@ def generate_space(ifc: tool.Ifc, model: tool.Model, root: tool.Root, spatial: t
 
     space_polygon = spatial.get_space_polygon_from_context_visible_objects(x, y)
 
-    if not space_polygon:
-        return
+    if isinstance(space_polygon, str):
+        if space_polygon == "NO POLYGONS FOUND":
+            raise SpaceGenerationError(
+                "Couldn't find any polygons to form the space shape. Perhaps, RL value need to be adjusted."
+            )
+        elif space_polygon == "NO POLYGON FOR POINT":
+            raise SpaceGenerationError(
+                f"Couldn't find any polygons containing the position ({x}, {y}). Perhaps, RL value need to be adjusted."
+            )
+        else:
+            assert space_polygon
 
-    bm = spatial.get_bmesh_from_polygon(space_polygon, h=h)
+    bm = spatial.get_bmesh_from_polygon(space_polygon, h=h, polygon_is_si=True)
 
     mesh = spatial.get_named_mesh_from_bmesh(name="Space", bmesh=bm)
 
@@ -242,5 +258,5 @@ def set_default_container(spatial: tool.Spatial, container: ifcopenshell.entity_
     spatial.set_default_container(container)
 
 
-class NoDefaultContainer(Exception):
+class SpaceGenerationError(Exception):
     pass

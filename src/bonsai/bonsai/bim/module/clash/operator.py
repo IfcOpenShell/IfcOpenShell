@@ -205,17 +205,12 @@ class ExecuteIfcClash(bpy.types.Operator):
     bl_label = "Execute IFC Clash"
     bl_description = "Execute clash detection and save the information to a .bcf or .json file"
     filter_glob: bpy.props.StringProperty(default="*.bcf;*.json", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
-        _, extension = os.path.splitext(self.filepath)
-        if extension != ".bcf":
-            self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        # TODO Temporarily until BCF support comes back
-        # if extension != ".json":
-        #     self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".bcf")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
+        if self.filepath:
+            return self.execute(context)
+        context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
     def execute(self, context):
@@ -230,6 +225,7 @@ class ExecuteIfcClash(bpy.types.Operator):
         if extension != ".json":
             self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
 
+        self.props.export_path = self.filepath
         settings = ifcclash.ClashSettings()
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
@@ -270,7 +266,7 @@ class ExecuteIfcClash(bpy.types.Operator):
                 context.scene.render.resolution_x = 480
                 context.scene.render.resolution_y = 270
                 context.scene.render.image_settings.file_format = "PNG"
-                context.scene.render.filepath = os.path.join(context.scene.BIMProperties.data_dir, "snapshot.png")
+                context.scene.render.filepath = tool.Blender.get_data_dir_path("shapshot.png").__str__()
                 bpy.ops.render.opengl(write_still=True)
                 with open(context.scene.render.filepath, "rb") as f:
                     return ("snapshot.png", f.read())
@@ -284,6 +280,7 @@ class ExecuteIfcClash(bpy.types.Operator):
         if extension == ".json":
             tool.Clash.load_clash_sets(self.filepath)
             tool.Clash.import_active_clashes()
+        self.report({"INFO"}, "Finished IFC clash.")
         return {"FINISHED"}
 
 

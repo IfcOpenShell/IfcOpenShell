@@ -66,6 +66,21 @@ class BIMProfileProperties(PropertyGroup):
     active_arbitrary_profile_id: IntProperty(name="Active Arbitrary Profile Id")
     profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
     profile_classes: EnumProperty(items=get_profile_classes, name="Profile Classes")
+    is_filtering_material_profiles: bpy.props.BoolProperty(
+        name="Filter Material Profiles",
+        default=False,
+        description="Check to only show IfcProfileDefs attached to IfcMaterialProfiles",
+        update=lambda self, context: bpy.ops.bim.load_profiles(),
+    )
+    object_to_profile: PointerProperty(
+        name="Object to profile",
+        type=bpy.types.Object,
+        description=(
+            "Optional mesh object to use as a source for a new arbitrary profile.\n"
+            "Object must be a closed mesh and have at least 1 face"
+        ),
+        poll=lambda self, obj: obj.type == "MESH",
+    )
 
 
 def generate_thumbnail_for_active_profile():
@@ -81,14 +96,24 @@ def generate_thumbnail_for_active_profile():
     if not props.profiles:
         bpy.ops.bim.load_profiles()
 
-    profile_id = props.profiles[props.active_profile_index].ifc_definition_id
+    active_profile = tool.Profile.get_active_profile_ui()
+    assert active_profile
+    profile_id = active_profile.ifc_definition_id
     profile = ifc_file.by_id(profile_id)
 
     # generate image
     size = 128
     img = Image.new("RGBA", (size, size))
     draw = ImageDraw.Draw(img)
-    tool.Profile.draw_image_for_ifc_profile(draw, profile, size)
+
+    try:
+        tool.Profile.draw_image_for_ifc_profile(draw, profile, size)
+    except RuntimeError as e:
+        print(f"Failed to generate preview image for profile '{profile}': '{e}'.")
+        ProfileData.failed_previews.add(profile_id)
+        return
+
+    ProfileData.failed_previews.discard(profile_id)
     pixels = [item for sublist in img.getdata() for item in sublist]
 
     # save generated image to preview collection

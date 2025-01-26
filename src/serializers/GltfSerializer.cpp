@@ -97,16 +97,16 @@ int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style:
 
 	std::array<double, 4> base;
 	base.fill(1.0);
-	if (style->diffuse) {
+	if (style->get_color()) {
 		for (int i = 0; i < 3; ++i) {
-			base[i] = style->diffuse.ccomponents()(i);
+			base[i] = style->get_color().ccomponents()(i);
 		}
 	}
 	if (style->transparency == style->transparency) {
 		base[3] = 1. - style->transparency;
 	}
 
-	json_["materials"].push_back({ {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}} });
+	json_["materials"].push_back({ {"name", style->name}, {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}}});
 	
 	if (style->transparency == style->transparency && style->transparency > 1.e-9) {
 		json_["materials"].back()["alphaMode"] = "BLEND";

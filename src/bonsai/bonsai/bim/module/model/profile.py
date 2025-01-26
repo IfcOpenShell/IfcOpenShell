@@ -32,11 +32,13 @@ import bonsai.core.type
 import bonsai.core.geometry
 import bonsai.core.material
 import bonsai.core.root
-from math import pi, degrees, inf
+from math import pi, degrees, inf, atan2
 from mathutils import Vector, Matrix, Quaternion
 from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.wall import DumbWallRecalculator
-from bonsai.bim.module.model.decorator import ProfileDecorator
+from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
+from bonsai.bim.module.model.polyline import PolylineOperator
+from typing import Union, Any, Optional
 
 
 class DumbProfileGenerator:
@@ -44,7 +46,7 @@ class DumbProfileGenerator:
         self.relating_type = relating_type
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-    def generate(self):
+    def generate(self, insertion_type="CURSOR"):
         self.file = tool.Ifc.get()
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         material = ifcopenshell.util.element.get_material(self.relating_type)
@@ -67,7 +69,28 @@ class DumbProfileGenerator:
         self.rotation = 0
         self.location = Vector((0, 0, 0))
         self.cardinal_point = int(bpy.context.scene.BIMModelProperties.cardinal_point)
-        return self.derive_from_cursor()
+        if insertion_type == "POLYLINE":
+            return self.derive_from_polyline()
+        elif insertion_type == "CURSOR":
+            return self.derive_from_cursor()
+
+    def derive_from_polyline(self) -> tuple[list[Union[dict[str, Any], None]], bool]:
+        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
+        is_polyline_closed = False
+        if len(polyline_points) > 3:
+            first_vec = Vector((polyline_points[0].x, polyline_points[0].y, polyline_points[0].z))
+            last_vec = Vector((polyline_points[-1].x, polyline_points[-1].y, polyline_points[-1].z))
+            if first_vec == last_vec:
+                is_polyline_closed = True
+
+        profiles = []
+        for i in range(len(polyline_points) - 1):
+            vec1 = Vector((polyline_points[i].x, polyline_points[i].y, polyline_points[i].z))
+            vec2 = Vector((polyline_points[i + 1].x, polyline_points[i + 1].y, polyline_points[i + 1].z))
+            coords = (vec1, vec2)
+            profiles.append(self.create_profile_from_2_points(coords))
+        return profiles, is_polyline_closed
 
     def derive_from_cursor(self):
         self.location = bpy.context.scene.cursor.location
@@ -82,10 +105,13 @@ class DumbProfileGenerator:
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
 
         matrix_world = Matrix()
-        if self.relating_type.is_a() in ["IfcBeamType", "IfcMemberType"] or self.relating_type.is_a(
+        if self.relating_type.is_a() in ["IfcBeamType", "IfcCoveringType", "IfcMemberType"] or self.relating_type.is_a(
             "IfcFlowSegmentType"
         ):
             matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
+
+            matrix_world = Matrix.Rotation(self.rotation, 4, "Z") @ matrix_world
+
         matrix_world.translation = self.location
         if self.container_obj:
             matrix_world.translation.z = self.container_obj.location.z
@@ -138,7 +164,6 @@ class DumbProfileGenerator:
             is_global=True,
             should_sync_changes_first=False,
         )
-        tool.Blender.remove_data_block(mesh)
 
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbProfile"})
@@ -146,6 +171,25 @@ class DumbProfileGenerator:
         obj.select_set(True)
 
         return obj
+
+    def create_profile_from_2_points(self, coords, should_round=False) -> Union[dict[str, Any], None]:
+        direction = coords[1] - coords[0]
+        length = direction.length
+        if round(length, 4) < 0.1:
+            return
+        data = {"coords": coords}
+
+        self.depth = length
+        self.rotation = atan2(direction[1], direction[0])
+        if should_round:
+            # Round to nearest 50mm (yes, metric for now)
+            self.length = 0.05 * round(length / 0.05)
+            # Round to nearest 5 degrees
+            nearest_degree = (math.pi / 180) * 5
+            self.rotation = nearest_degree * round(self.rotation / nearest_degree)
+        self.location = coords[0]
+        data["obj"] = self.create_profile()
+        return data
 
 
 class DumbProfileRegenerator:
@@ -273,7 +317,7 @@ class DumbProfileJoiner:
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
 
-    def unjoin(self, profile1):
+    def unjoin(self, profile1: bpy.types.Object) -> None:
         element1 = tool.Ifc.get_entity(profile1)
         if not element1:
             return
@@ -286,7 +330,7 @@ class DumbProfileJoiner:
         body = copy.deepcopy(axis1)
         self.recreate_profile(element1, profile1, axis, body)
 
-    def join_E(self, profile1, target, connection=None):
+    def join_E(self, profile1: bpy.types.Object, target: Vector, connection: Optional[str] = None) -> None:
         """`connection` = `ATEND` / `ATSTART` to explicitly define the reference point for the join.
 
         For example if profile 1m long and `target` is at (0, 0, 0.1) and `connection` = `None`
@@ -310,7 +354,7 @@ class DumbProfileJoiner:
         body[1 if connection == "ATEND" else 0] = intersect
         self.recreate_profile(element1, profile1, axis, body)
 
-    def set_depth(self, profile1, si_length):
+    def set_depth(self, profile1: bpy.types.Object, si_length: float) -> None:
         element1 = tool.Ifc.get_entity(profile1)
         if not element1:
             return
@@ -325,7 +369,7 @@ class DumbProfileJoiner:
         body[1] = end
         self.recreate_profile(element1, profile1, axis, body)
 
-    def join_T(self, profile1, profile2):
+    def join_T(self, profile1: bpy.types.Object, profile2: bpy.types.Object) -> None:
         element1 = tool.Ifc.get_entity(profile1)
         element2 = tool.Ifc.get_entity(profile2)
         axis1 = self.get_profile_axis(profile1)
@@ -349,7 +393,7 @@ class DumbProfileJoiner:
 
         self.recreate_profile(element1, profile1, axis1, axis1)
 
-    def join_V(self, profile1, profile2):
+    def join_V(self, profile1: bpy.types.Object, profile2: bpy.types.Object) -> None:
         element1 = tool.Ifc.get_entity(profile1)
         element2 = tool.Ifc.get_entity(profile2)
         axis1 = self.get_profile_axis(profile1)
@@ -375,7 +419,7 @@ class DumbProfileJoiner:
         self.recreate_profile(element1, profile1, axis1, axis1)
         self.recreate_profile(element2, profile2, axis2, axis2)
 
-    def join_L(self, profile1, profile2):
+    def join_L(self, profile1: bpy.types.Object, profile2: bpy.types.Object) -> None:
         element1 = tool.Ifc.get_entity(profile1)
         element2 = tool.Ifc.get_entity(profile2)
         axis1 = self.get_profile_axis(profile1)
@@ -401,7 +445,7 @@ class DumbProfileJoiner:
         self.recreate_profile(element1, profile1, axis1, axis1)
         self.recreate_profile(element2, profile2, axis2, axis2)
 
-    def recreate_profile(self, element, obj, axis=None, body=None):
+    def recreate_profile(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, axis=None, body=None):
         if axis is None or body is None:
             axis = body = self.get_profile_axis(obj)
         self.axis = copy.deepcopy(axis)
@@ -792,10 +836,10 @@ class DumbProfileJoiner:
                 z_axis = obj.matrix_world.to_quaternion() @ Vector((-1, 0, 0))
         return self.create_matrix(p, x_axis, y_axis, z_axis)
 
-    def create_matrix(self, p, x, y, z):
+    def create_matrix(self, p: Vector, x: Vector, y: Vector, z: Vector) -> Matrix:
         return Matrix([x, y, z, p]).to_4x4().transposed()
 
-    def get_profile_axis(self, obj):
+    def get_profile_axis(self, obj: bpy.types.Object) -> list[Vector]:
         z_values = [v[2] for v in obj.bound_box]
         return [
             (obj.matrix_world @ Vector((0.0, 0.0, min(z_values)))),
@@ -844,7 +888,8 @@ class DumbProfileRecalculator:
 
 class ChangeProfileDepth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_profile_depth"
-    bl_label = "Change Profile Length"
+    bl_label = "Update"
+    bl_description = "Update Profile Length"
     bl_options = {"REGISTER", "UNDO"}
     depth: bpy.props.FloatProperty(subtype="DISTANCE")
 
@@ -861,7 +906,8 @@ class ChangeProfileDepth(bpy.types.Operator, tool.Ifc.Operator):
 
 class ChangeCardinalPoint(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_cardinal_point"
-    bl_label = "Change Cardinal Point"
+    bl_label = "Update"
+    bl_description = "Update Cardinal Point"
     bl_options = {"REGISTER", "UNDO"}
     cardinal_point: bpy.props.IntProperty()
 
@@ -1063,3 +1109,95 @@ class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         joiner = DumbProfileJoiner()
         joiner.set_depth(obj, depth)
         return {"FINISHED"}
+
+
+class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
+    bl_idname = "bim.draw_polyline_profile"
+    bl_label = "Draw Polyline Profile"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == "VIEW_3D"
+
+    def __init__(self):
+        super().__init__()
+        self.relating_type = None
+        props = bpy.context.scene.BIMModelProperties
+        relating_type_id = props.relating_type_id
+        if relating_type_id:
+            self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
+
+    def create_profiles_from_polyline(self, context: bpy.types.Context) -> Union[set[str], None]:
+        if not self.relating_type:
+            return {"FINISHED"}
+
+        model_props = context.scene.BIMModelProperties
+        direction_sense = model_props.direction_sense
+        offset = model_props.offset
+
+        profiles, is_polyline_closed = DumbProfileGenerator(self.relating_type).generate("POLYLINE")
+        if profiles:
+            if is_polyline_closed:
+                for profile1, profile2 in zip(profiles, profiles[1:] + [profiles[0]]):
+                    DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
+            else:
+                for profile1, profile2 in zip(profiles[:-1], profiles[1:]):
+                    DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
+
+    def modal(self, context, event):
+        if not self.relating_type:
+            self.report({"WARNING"}, "You need to select a profile type.")
+            PolylineDecorator.uninstall()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+
+        self.handle_lock_axis(context, event)  # Must come before "PASS_TRHOUGH"
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        self.handle_instructions(context)
+
+        self.handle_mouse_move(context, event, should_round=True)
+
+        self.choose_axis(event)
+
+        self.handle_snap_selection(context, event)
+
+        if (
+            not self.tool_state.is_input_on
+            and event.value == "RELEASE"
+            and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
+        ):
+            self.create_profiles_from_polyline(context)
+            context.workspace.status_text_set(text=None)
+            ProductDecorator.uninstall()
+            PolylineDecorator.uninstall()
+            tool.Polyline.clear_polyline()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+        self.handle_keyboard_input(context, event)
+
+        self.handle_inserting_polyline(context, event)
+
+        self.get_product_preview_data(context, self.relating_type)
+
+        cancel = self.handle_cancelation(context, event)
+        if cancel is not None:
+            ProductDecorator.uninstall()
+            return cancel
+
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+        super().invoke(context, event)
+        ProductDecorator.install(context)
+        self.tool_state.use_default_container = True
+        self.tool_state.plane_method = "XY"
+        return {"RUNNING_MODAL"}

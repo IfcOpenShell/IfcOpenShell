@@ -66,7 +66,11 @@ BLENDER_PLATFORM:=linux-x64
 endif
 
 ifeq ($(PLATFORM), macos)
+ifeq ($(PYVERSION), py311)
 PYPI_PLATFORM:=--platform macosx_10_10_x86_64
+else
+PYPI_PLATFORM:=--platform macosx_10_13_x86_64
+endif
 BLENDER_PLATFORM:=macos-x64
 endif
 
@@ -81,9 +85,12 @@ BLENDER_PLATFORM:=windows-x64
 endif
 
 # Current build commit hash.
-OLD:=03935a9
+OLD:=1d27161
 .PHONY: bump
 bump:
+ifndef NEW
+	$(error ERROR: 'NEW' variable is not set (should be set with new commmit hash). Example use for 'bump' command: 'make bump NEW=0123456'.)
+endif
 	cd . && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
 	cd ../ifcopenshell-python/ && $(SED) -b "s/$(OLD)/$(NEW)/" Makefile
 
@@ -170,6 +177,8 @@ endif
 	# Is not platform specific but has platform specific dependencies.
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download python-socketio[asyncio_client] $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download aiohttp $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	# Required to access platform specific paths
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download platformdirs --dest=./wheels
 	# Required by light module
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytz --dest=./wheels
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download tzfpy $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
@@ -205,7 +214,7 @@ endif
 	# Brickschema requires pkg_resources which is provided by Blender.
 	# Provides Brickschema functionality
 	# For now lets bundle the latest nightly schema
-	cd build/bonsai/bim/schema && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
+	cd build/bonsai/bim/data/brick/ && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
 
 	# Required for hipped roof generation
 	cd build && wget https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip
@@ -219,8 +228,16 @@ endif
 		)" bdist_wheel
 	cp -r build/bpypolyskel-master/dist/*.whl build/wheels/
 
-	# Required for Desktop icon and file association
-	cp -r bonsai/libs/desktop build/bonsai/libs/
+	# folder for executable files
+	mkdir -p build/bonsai/libs/bin
+
+	# required for three-way git merging
+ifeq ($(PLATFORM), win)
+	cd build/bonsai/libs/bin && wget https://github.com/brunopostle/ifcmerge/releases/download/2024-06-24/ifcmerge.zip
+	cd build/bonsai/libs/bin && unzip ifcmerge.zip && rm ifcmerge.zip
+else
+	cd build/bonsai/libs/bin && wget https://raw.githubusercontent.com/brunopostle/ifcmerge/main/ifcmerge && chmod +x ifcmerge
+endif
 
 	# Generate translations module for Bonsai build
 	git clone https://github.com/IfcOpenShell/bonsai-translations.git build/working
@@ -268,35 +285,44 @@ endif
 
 ifeq ($(PLATFORM), macosm1)
 	# Has universal and x86_64 builds.
-	prev_whl_name=$$(find build/bonsai/wheels/MarkupSafe-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	# Has universal and x86_64 builds.
 	prev_whl_name=$$(find build/bonsai/wheels/lxml-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
 	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2/macosx_10_12_arm64/"); \
+	whl_name=$$(echo $$prev_whl_name | sed -E "s/macosx_10_([0-9]+)_x86_64\.macosx_11_0_arm64\.macosx_10_\1_universal2/macosx_10_\1_arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
 	# Has only universal build.
 	prev_whl_name=$$(find build/bonsai/wheels/greenlet-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
+
+	# has universal and x86_64 builds.
+	prev_whl_name=$$(find build/bonsai/wheels/fonttools-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
+	# Has only universal build.
+	prev_whl_name=$$(find build/bonsai/wheels/charset_normalizer-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
 endif
 ifeq ($(PLATFORM), macos)
+	# Has universal and arm64 builds.
+	prev_whl_name=$$(find build/bonsai/wheels/MarkupSafe-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
+	mv "$$prev_whl_name" "$$whl_name";
+
 	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/macosx_10_9_x86_64.macosx_11_0_arm64.macosx_10_9_universal2/macosx_10_9_x86_64/"); \
+	whl_name=$$(echo $$prev_whl_name | sed -E "s/macosx_10_([0-9]+)_x86_64\.macosx_11_0_arm64\.macosx_10_\1_universal2/macosx_10_\1_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
 	prev_whl_name=$$(find build/bonsai/wheels/greenlet-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 
-	# has universal and amr64 builds.
-	prev_whl_name=$$(find build/bonsai/wheels/fonttools-*.whl); \
+	prev_whl_name=$$(find build/bonsai/wheels/charset_normalizer-*.whl); \
 	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
 	mv "$$prev_whl_name" "$$whl_name";
 endif
@@ -309,6 +335,12 @@ endif
 		echo "Error: universal2 wheel files are not supported by Blender!"; \
 		exit 1; \
 	fi
+
+	# Temporary workaround for Blender not handling non-3.11 wheels #5743.
+	# Use '-n' as on macos x86-64 doesn't have a binary wheel and it autoincludes 'cp311'.
+	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
+	whl_name=$$(echo $$prev_whl_name | sed "s/-cp39-/-cp$(PYNUMBER)-/"); \
+	mv --update=none "$$prev_whl_name" "$$whl_name";
 
 ifneq ($(PLATFORM), linux)
 	# Safeguard: in case one of `pip download` will break,
@@ -326,6 +358,7 @@ endif
 	rm -rf build/bonsai/bim/
 	rm -rf build/bonsai/core/
 	rm -rf build/bonsai/tool/
+	rm -rf build/bonsai/libs/
 
 ifeq ($(IS_STABLE), TRUE)
 	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION)-$(BLENDER_PLATFORM).zip ./bonsai

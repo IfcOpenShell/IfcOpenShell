@@ -26,13 +26,24 @@ if TYPE_CHECKING:
 
 
 def edit_object_placement(
-    ifc: tool.Ifc, geometry: tool.Geometry, surveyor: tool.Surveyor, obj: Optional[bpy.types.Object] = None
+    ifc: tool.Ifc,
+    geometry: tool.Geometry,
+    surveyor: tool.Surveyor,
+    obj: Optional[bpy.types.Object] = None,
+    apply_scale: bool = True,
 ) -> None:
+    """Sync current object placement.
+
+    - apply and clear object scale;
+    - write current object position to IFC;
+    - update position checksums;
+    """
     element = ifc.get_entity(obj)
     if not element:
         return
     geometry.clear_cache(element)
-    geometry.clear_scale(obj)
+    if apply_scale:
+        geometry.clear_scale(obj)
     geometry.get_blender_offset_type(obj)
     ifc.run("geometry.edit_object_placement", product=element, matrix=surveyor.get_absolute_matrix(obj))
     geometry.record_object_position(obj)
@@ -64,7 +75,7 @@ def add_representation(
         context=context,
         blender_object=obj,
         geometry=data,
-        coordinate_offset=geometry.get_cartesian_point_coordinate_offset(obj),
+        coordinate_offset=geometry.get_cartesian_point_offset(obj),
         total_items=geometry.get_total_representation_items(obj),
         should_force_faceted_brep=geometry.should_force_faceted_brep(),
         should_force_triangulation=geometry.should_force_triangulation(),
@@ -115,50 +126,16 @@ def switch_representation(
     :param is_global: replace mesh data for all users of `obj.data`, not just `obj`
 
     """
-    if should_sync_changes_first and geometry.is_edited(obj) and not geometry.is_box_representation(representation):
+    if should_sync_changes_first and ifc.is_edited(obj) and not geometry.is_box_representation(representation):
         representation_id = geometry.get_representation_id(representation)
         geometry.run_geometry_update_representation(obj=obj)
         if not geometry.does_representation_id_exist(representation_id):
             return
 
-    entity = ifc.get_entity(obj)
-    assert entity
-    current_obj_data = geometry.get_object_data(obj)
-
-    if not current_obj_data and geometry.is_text_literal(representation):
+    if not geometry.get_object_data(obj) and geometry.is_text_literal(representation):
         return
 
-    use_immediate_repr = geometry.should_use_immediate_representation(entity, apply_openings)
-    if use_immediate_repr:
-        # if it has openings make sure to switch to element's mapped representation
-        representation = geometry.unresolve_type_representation(representation, entity)
-    else:
-        # doesn't resolve mapped representations in case if it's going to have openings
-        # otherwise we would also add openings to the type and other occurences mesh data
-        representation = geometry.resolve_mapped_representation(representation)
-
-    old_repr_data = geometry.get_representation_data(representation)
-    if should_reload or not old_repr_data:
-        new_repr_data = geometry.import_representation(obj, representation, apply_openings=apply_openings)
-        geometry.rename_object(new_repr_data, geometry.get_representation_name(representation))
-        geometry.link(representation, new_repr_data)
-    else:
-        new_repr_data = old_repr_data
-
-    geometry.change_object_data(obj, new_repr_data, is_global=is_global and not use_immediate_repr)
-    geometry.record_object_materials(obj)
-
-    # we assume that all the occurences and the type have the same representation context active
-    # so geometry.delete_data cannot remove the data that's still used by some other object
-    if should_reload and old_repr_data:
-        # if current object was using some temporary mesh (like during profile edit mode) instead of `old_repr_data`
-        # then `change_object_data` won't switch the mesh for all the occurences and we need to do it explicitly
-        if current_obj_data != old_repr_data and geometry.has_data_users(old_repr_data):
-            geometry.replace_object_data_globally(old_repr_data, new_repr_data)
-        geometry.delete_data(old_repr_data)
-
-    geometry.clear_modifiers(obj)
-    geometry.clear_cache(entity)
+    geometry.reimport_element_representations(obj, representation, apply_openings=apply_openings)
 
 
 def get_representation_ifc_parameters(

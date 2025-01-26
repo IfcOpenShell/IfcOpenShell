@@ -29,6 +29,7 @@ def refresh():
 
 class ProfileData:
     data = {}
+    failed_previews: set[int] = set()
     preview_collection = bpy.utils.previews.new()
     is_loaded = False
 
@@ -40,6 +41,7 @@ class ProfileData:
             "profile_classes": cls.profile_classes(),
             "is_arbitrary_profile": cls.is_arbitrary_profile(),
             "is_editing_arbitrary_profile": cls.is_editing_arbitrary_profile(),
+            "profile_def_classes_enum": cls.profile_def_classes_enum(),
         }
         cls.is_loaded = True
 
@@ -69,6 +71,14 @@ class ProfileData:
         return [
             (c, c, ifcopenshell.util.doc.get_entity_doc(schema_identifier, c)["description"] or "")
             for c in sorted(classes)
+        ]
+
+    @classmethod
+    def profile_def_classes_enum(cls) -> list[tuple[str, str, str]]:
+        version = tool.Ifc.get_schema()
+        return [
+            (t.name(), t.name(), ifcopenshell.util.doc.get_entity_doc(version, t.name()).get("description", ""))
+            for t in tool.Ifc.schema().declaration_by_name("IfcProfileDef").subtypes()
         ]
 
     @classmethod

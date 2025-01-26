@@ -189,21 +189,15 @@
 	}
 
 	template <typename T>
-	PyObject* pythonize_vector(const std::vector<T>& v) {
+	PyObject* pythonize_vector(const T& v) {
 		const size_t size = v.size();
 		PyObject* pyobj = PyTuple_New(size);
 		for (size_t i = 0; i < size; ++i) {
-			PyTuple_SetItem(pyobj, i, pythonize(v[i]));
-		}
-		return pyobj;
-	}
-
-	template <typename T>
-	PyObject* pythonize_vector2(const std::vector< std::vector<T> >& v) {
-		const size_t size = v.size();
-		PyObject* pyobj = PyTuple_New(size);
-		for (size_t i = 0; i < size; ++i) {
-			PyTuple_SetItem(pyobj, i, pythonize_vector(v[i]));
+			if constexpr (is_std_vector_v<typename T::value_type>) {
+				PyTuple_SetItem(pyobj, i, pythonize_vector(v[i]));
+			} else {
+				PyTuple_SetItem(pyobj, i, pythonize(v[i]));
+			}
 		}
 		return pyobj;
 	}
@@ -228,6 +222,8 @@
 			} else if constexpr (std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, std::set<std::string>>) {
                 std::vector<std::string> vs(t.begin(), t.end());
                 return pythonize_vector(vs);
+            } else if constexpr (std::is_same_v<std::remove_cv_t<std::remove_reference_t<T>>, std::vector<double>>) {
+                return pythonize_vector(t);
             } else {
 				return pythonize(t);
 			}
@@ -265,7 +261,12 @@ PyObject* item_to_pyobject(const ifcopenshell::geometry::taxonomy::item::ptr& i)
 	else if (kind == MATRIX4) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<matrix4>(std::static_pointer_cast<matrix4>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__matrix4_t, 0 | SWIG_POINTER_OWN); }
 	else if (kind == NODE) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<node>(std::static_pointer_cast<node>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__node_t, 0 | SWIG_POINTER_OWN); }
 	else if (kind == OFFSET_CURVE) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<offset_curve>(std::static_pointer_cast<offset_curve>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__offset_curve_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == FUNCTION_ITEM) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<function_item>(std::static_pointer_cast<function_item>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__function_item_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == FUNCTOR_ITEM) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<functor_item>(std::static_pointer_cast<functor_item>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__functor_item_t, 0 | SWIG_POINTER_OWN); }
 	else if (kind == PIECEWISE_FUNCTION) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<piecewise_function>(std::static_pointer_cast<piecewise_function>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__piecewise_function_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == GRADIENT_FUNCTION) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<gradient_function>(std::static_pointer_cast<gradient_function>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__gradient_function_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == CANT_FUNCTION) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<cant_function>(std::static_pointer_cast<cant_function>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__cant_function_t, 0 | SWIG_POINTER_OWN); }
+	else if (kind == OFFSET_FUNCTION) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<offset_function>(std::static_pointer_cast<offset_function>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__offset_function_t, 0 | SWIG_POINTER_OWN); }
 	else if (kind == PLANE) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<plane>(std::static_pointer_cast<plane>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__plane_t, 0 | SWIG_POINTER_OWN); }
 	else if (kind == POINT3) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<point3>(std::static_pointer_cast<point3>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__point3_t, 0 | SWIG_POINTER_OWN); }
 	else if (kind == REVOLVE) { return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<revolve>(std::static_pointer_cast<revolve>(i))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__revolve_t, 0 | SWIG_POINTER_OWN); }

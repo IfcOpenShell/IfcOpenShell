@@ -1,0 +1,38 @@
+name: Build and Deploy Unstable Documentation
+
+on:
+  push:
+    branches:
+      - v0.8.0  # Trigger the workflow on pushes to the default branch which is currently v0.8.0
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          cd src/bonsai/docs  # Navigate to the docs directory
+          pip install -r requirements.txt  # Install dependencies from requirements.txt
+
+      - name: Build documentation
+        run: |
+          cd src/bonsai/docs  # Navigate to the docs directory
+          make html  # Build the documentation
+
+      - name: Deploy to GitHub Pages (Unstable)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}  # SSH key for deployment
+          external_repository: IfcOpenShell/bonsaibim_org_docs_unstable  # Target repository
+          publish_branch: main  # Branch to deploy to
+          cname: docs-unstable.bonsaibim.org  # Custom domain for unstable docs
+          publish_dir: src/bonsai/docs/_build/html  # Directory containing built docs

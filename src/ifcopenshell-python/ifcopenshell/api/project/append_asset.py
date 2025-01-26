@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.api.geometry
 import ifcopenshell.api.type
 import ifcopenshell.api.project
@@ -25,7 +26,9 @@ import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.placement
-from typing import Optional, Any, Union, Literal, get_args
+import ifcopenshell.util.unit
+from typing import Optional, Any, Union, Literal, get_args, Callable
+from functools import partial
 
 
 APPENDABLE_ASSET = Literal[
@@ -44,6 +47,7 @@ def append_asset(
     library: ifcopenshell.file,
     element: ifcopenshell.entity_instance,
     reuse_identities: Optional[dict[int, ifcopenshell.entity_instance]] = None,
+    assume_asset_uniqueness_by_name: bool = True,
 ) -> ifcopenshell.entity_instance:
     """Appends an asset from a library into the active project
 
@@ -61,18 +65,16 @@ def append_asset(
     Do not mix units.
 
     :param library: The file object containing the asset.
-    :type library: ifcopenshell.file
     :param element: An element in the library file of the asset. It may be
         an IfcTypeProduct, IfcProduct, IfcMaterial, IfcCostSchedule, or
         IfcProfileDef.
-    :type element: ifcopenshell.entity_instance
     :param reuse_identities: Optional dictionary of mapped entities' identities to the
         already created elements. It will be used to avoid creating
         duplicated inverse elements during multiple `project.append_asset` calls. If you want
         to add just 1 asset or if added assets won't have any shared elements, then it can be left empty.
-    :type reuse_identities: dict[int, ifcopenshell.entity_instance]
+    :param assume_asset_uniqueness_by_name: If True, checks if elements (profiles, materials, styles)
+        with the same name already exist in the project and reuses them instead of appending new ones.
     :return: The appended element
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -87,7 +89,7 @@ def append_asset(
 
         # Assign units for our example library
         unit = ifcopenshell.api.unit.add_si_unit(library,
-            unit_type="LENGTHUNIT", name="METRE", prefix="MILLI")
+            unit_type="LENGTHUNIT", prefix="MILLI")
         ifcopenshell.api.unit.assign_unit(library, units=[unit])
 
         # Let's create a single asset of a 200mm thick concrete wall
@@ -135,6 +137,7 @@ def append_asset(
         "library": library,
         "element": element,
         "reuse_identities": {} if reuse_identities is None else reuse_identities,
+        "assume_asset_uniqueness_by_name": assume_asset_uniqueness_by_name,
     }
     return usecase.execute()
 
@@ -142,6 +145,8 @@ def append_asset(
 class Usecase:
     file: ifcopenshell.file
     settings: dict[str, Any]
+    assume_asset_uniqueness_by_name: bool
+    whitelisted_inverse_attributes: dict[str, list[str]]
 
     def execute(self):
         # mapping of old element ids to new elements
@@ -149,6 +154,7 @@ class Usecase:
         self.reuse_identities: dict[int, ifcopenshell.entity_instance] = self.settings["reuse_identities"]
         self.whitelisted_inverse_attributes = {}
         self.base_material_class = "IfcMaterial" if self.file.schema == "IFC2X3" else "IfcMaterialDefinition"
+        self.assume_asset_uniqueness_by_name = self.settings["assume_asset_uniqueness_by_name"]
 
         if self.settings["element"].is_a("IfcTypeProduct"):
             self.target_class = "IfcTypeProduct"
@@ -169,18 +175,26 @@ class Usecase:
             self.target_class = "IfcPresentationStyle"
             return self.append_presentation_style()
 
-    def get_existing_element(self, element):
+    def get_existing_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         if element.id() in self.added_elements:
             return self.added_elements[element.id()]
-        try:
-            if element.is_a("IfcRoot"):
+        if element.is_a("IfcRoot"):
+            try:
                 return self.file.by_guid(element.GlobalId)
-            elif element.is_a("IfcMaterial"):
-                return [e for e in self.file.by_type("IfcMaterial") if e.Name == element.Name][0]
-            elif element.is_a("IfcProfileDef"):
-                return [e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == element.ProfileName][0]
-        except:
-            return False
+            except RuntimeError:
+                return None
+        elif not self.assume_asset_uniqueness_by_name:
+            return None
+        elif element.is_a("IfcMaterial"):
+            material_name = element.Name
+            return next((e for e in self.file.by_type("IfcMaterial") if e.Name == material_name), None)
+        elif element.is_a("IfcProfileDef"):
+            profile_name = element.ProfileName
+            if profile_name is None:
+                return None
+            return next((e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None)
+        else:
+            return None
 
     def append_material(self):
         self.whitelisted_inverse_attributes = {
@@ -260,7 +274,7 @@ class Usecase:
         existing_element = self.get_existing_element(element)
         if existing_element:
             return existing_element
-        new = self.file.add(element)
+        new = self.file_add(element)
         self.added_elements[element.id()] = new
         self.check_inverses(element)
         subelement_queue = self.settings["library"].traverse(element, max_levels=1)[1:]
@@ -272,7 +286,7 @@ class Usecase:
                 if not self.has_whitelisted_inverses(existing_element):
                     self.check_inverses(subelement)
             else:
-                self.added_elements[subelement.id()] = self.file.add(subelement)
+                self.added_elements[subelement.id()] = self.file_add(subelement)
                 self.check_inverses(subelement)
                 subelement_queue.extend(self.settings["library"].traverse(subelement, max_levels=1)[1:])
         return new
@@ -315,12 +329,16 @@ class Usecase:
 
         element_identity = element.wrapped_data.identity()
 
-        # check if inverse element were created before
-        if self.reuse_identities.get(element_identity) is not None:
-            return
-
-        new = self.file.create_entity(element.is_a())
-        self.reuse_identities[element_identity] = new
+        # Check if inverse element was created before.
+        # Still need to recreate it again - e.g. it could be some rel
+        # that now needs it's RelatingObjects to be extended by the current asset.
+        if (new := self.reuse_identities.get(element_identity)) is not None:
+            # Currently known cases requiring attributes reassignment are rels.
+            if not new.is_a("IfcRelationship"):
+                return
+        else:
+            new = self.file.create_entity(element.is_a())
+            self.reuse_identities[element_identity] = new
 
         for i, attribute in enumerate(element):
             new_attribute = None
@@ -338,10 +356,20 @@ class Usecase:
                 new[i] = new_attribute
 
     def is_another_asset(self, element: ifcopenshell.entity_instance) -> bool:
+        """Is IFC entity from inverse attribute is another asset to append that should be skipped."""
+
+        def by_guid(guid: str) -> Union[ifcopenshell.entity_instance, None]:
+            try:
+                return self.file.by_guid(guid)
+            except RuntimeError:
+                return None
+
         if element == self.settings["element"]:
             return False
         elif element.is_a("IfcFeatureElement"):
             # Feature elements match the target class but aren't considered "assets"
+            return False
+        elif element.is_a("IfcRoot") and by_guid(element.GlobalId) is not None:
             return False
         elif element.is_a(self.target_class):
             return True
@@ -399,3 +427,110 @@ class Usecase:
             context_type=added_context.ContextType,
             context_identifier=added_context.ContextIdentifier,
         )
+
+    def file_add(
+        self, element: ifcopenshell.entity_instance, conversion_factor: Optional[float] = None
+    ) -> ifcopenshell.entity_instance:
+        """Reimplementation of `file.add` but taking into account that some elements (profiles, materials)
+        are already existing (checking by their name) and shouldn't be duplicated.
+
+        The problem with `file.add` it's recursively adding element and all it's attributes
+        and there is no control to prevent it from adding certain type of elements.
+        """
+        ifc_file = self.file
+        if not self.assume_asset_uniqueness_by_name:
+            return ifc_file.add(element)
+
+        reuse_identities = self.reuse_identities
+        element_identity = element.wrapped_data.identity()
+        if added_element := reuse_identities.get(element_identity):
+            return added_element
+
+        def get_conversion_factor() -> float:
+            nonlocal conversion_factor
+            if conversion_factor is not None:
+                return conversion_factor
+            library_scale = ifcopenshell.util.unit.calculate_unit_scale(self.settings["library"])
+            current_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+            conversion_factor = library_scale / current_scale
+            return conversion_factor
+
+        attributes_ = None
+
+        def get_attributes() -> tuple[W.attribute, ...]:
+            nonlocal attributes_
+            if attributes_ is not None:
+                return attributes_
+            attributes_ = element.wrapped_data.declaration().as_entity().all_attributes()
+            return attributes_
+
+        # Maybe element already exists.
+        if element.is_a("IfcProfileDef"):
+            profile_name = element.ProfileName
+            if profile_name is not None:
+                existing_profile = next(
+                    (e for e in ifc_file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None
+                )
+                if existing_profile is not None:
+                    reuse_identities[element_identity] = existing_profile
+                    return existing_profile
+        elif element.is_a("IfcMaterial"):
+            material_name = element.Name
+            existing_material = next((e for e in ifc_file.by_type("IfcMaterial") if e.Name == material_name), None)
+            if existing_material is not None:
+                reuse_identities[element_identity] = existing_material
+                return existing_material
+
+        attrs = {}
+
+        # Utils method for the loop.
+        def get_tuple_type(tuple_: tuple) -> type:
+            while isinstance(tuple_, tuple):
+                tuple_ = tuple_[0]
+            return type(tuple_)
+
+        def is_length_measure(attribute: W.attribute) -> bool:
+            return "<type IfcLengthMeasure: <real>>" in str(attribute.type_of_attribute())
+
+        def apply_to_array(arr: Any, func: Callable[[Any], Any]) -> Any:
+            if isinstance(arr, tuple):
+                return tuple(apply_to_array(sub, func) for sub in arr)
+            return func(arr)
+
+        file_add_ = partial(self.file_add, conversion_factor=conversion_factor)
+        apply_conversion = partial(lambda x: x * conversion_factor)
+
+        # Migrate attributes to another file.
+        for attr_index, attr_value in enumerate(element):
+            # `None` is set by default already.
+            if attr_value is None:
+                continue
+
+            elif isinstance(attr_value, ifcopenshell.entity_instance):
+                attr_value = self.file_add(attr_value)
+
+            elif isinstance(attr_value, tuple):
+                # Assume type is consistent across the tuple.
+                tuple_type = get_tuple_type(attr_value)
+                if tuple_type == ifcopenshell.entity_instance:
+                    attr_value = apply_to_array(attr_value, file_add_)
+                elif tuple_type == float:
+                    attributes = get_attributes()
+                    if is_length_measure(attributes[attr_index]):
+                        get_conversion_factor()  # Ensure conversion factor is not None.
+                        attr_value = apply_to_array(attr_value, apply_conversion)
+
+            elif isinstance(attr_value, float):
+                attributes = get_attributes()
+                if is_length_measure(attributes[attr_index]):
+                    attr_value *= get_conversion_factor()
+
+            attrs[attr_index] = attr_value
+
+        # Adding entity at the end just to keep it consistent with `file.add`.
+        new = ifc_file.create_entity(element.is_a())
+        reuse_identities[element_identity] = new
+        for attr_index, attr_value in attrs.items():
+            new[attr_index] = attr_value
+
+        return new

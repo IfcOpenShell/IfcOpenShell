@@ -40,14 +40,18 @@ classes = (
     operator.SetContainerVisibility,
     operator.SetDefaultContainer,
     operator.ToggleContainerElement,
+    operator.ToggleGrids,
+    operator.ToggleSpatialElements,
     prop.Element,
     prop.BIMObjectSpatialProperties,
     prop.BIMContainer,
     prop.BIMSpatialDecompositionProperties,
+    prop.BIMGridProperties,
     ui.BIM_PT_spatial,
     ui.BIM_UL_containers_manager,
     ui.BIM_UL_elements,
     ui.BIM_PT_spatial_decomposition,
+    ui.BIM_PT_grids,
     workspace.Hotkey,
 )
 
@@ -59,6 +63,7 @@ def register():
     bpy.types.Scene.BIMSpatialDecompositionProperties = bpy.props.PointerProperty(
         type=prop.BIMSpatialDecompositionProperties
     )
+    bpy.types.Scene.BIMGridProperties = bpy.props.PointerProperty(type=prop.BIMGridProperties)
 
 
 def unregister():
@@ -66,3 +71,4 @@ def unregister():
         bpy.utils.unregister_tool(workspace.SpatialTool)
     del bpy.types.Object.BIMObjectSpatialProperties
     del bpy.types.Scene.BIMSpatialDecompositionProperties
+    del bpy.types.Scene.BIMGridProperties

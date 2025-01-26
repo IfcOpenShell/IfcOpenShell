@@ -18,6 +18,7 @@
 
 import bpy
 import json
+import math
 import ifcopenshell
 import bonsai.bim.helper
 import bonsai.core.tool
@@ -115,9 +116,9 @@ class Unit(bonsai.core.tool.Unit):
         for unit_class in ["IfcDerivedUnit", "IfcMonetaryUnit", "IfcNamedUnit"]:
             units += tool.Ifc.get().by_type(unit_class)
 
-        assigned_units = tool.Ifc.get().by_type("IfcUnitAssignment")
-        if assigned_units:
-            assigned_units = assigned_units[0].Units
+        assigned_units = []
+        if assignment := tool.Ifc.get().by_type("IfcProject")[0].UnitsInContext:
+            assigned_units = assignment.Units
 
         for unit in units:
             name = ""
@@ -161,8 +162,7 @@ class Unit(bonsai.core.tool.Unit):
 
     @classmethod
     def get_project_currency_unit(cls) -> Union[ifcopenshell.entity_instance, None]:
-        unit_assignments = tool.Ifc.get().by_type("IfcUnitAssignment")
-        for assignment in unit_assignments:
+        if assignment := tool.Ifc.get().by_type("IfcProject")[0].UnitsInContext:
             for unit in assignment.Units:
                 if unit.is_a("IfcMonetaryUnit"):
                     return unit
@@ -182,3 +182,13 @@ class Unit(bonsai.core.tool.Unit):
             precision=4,
             split_unit=bpy.context.scene.unit_settings.system == "IMPERIAL",
         )
+
+    @classmethod
+    def format_value(cls, value: float) -> str:
+        precision = tool.Ifc.get().by_type("IfcGeometricRepresentationContext")[0].Precision
+        if precision:
+            decimal_places = math.ceil(math.log10(1 / precision))
+        else:
+            precision = 1e-5
+            decimal_places = 5
+        return str(round(precision * round(value / precision), decimal_places))

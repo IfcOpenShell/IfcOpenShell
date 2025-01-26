@@ -21,7 +21,6 @@ import isodate
 import ifcopenshell.api
 import ifcopenshell.util.attribute
 import ifcopenshell.util.date
-from ifcopenshell.util.doc import get_predefined_type_doc
 import bonsai.tool as tool
 import bonsai.core.sequence as core
 from bonsai.bim.ifc import IfcStore
@@ -42,51 +41,29 @@ from bpy.props import (
     CollectionProperty,
 )
 
-taskcolumns_enum = []
-tasktimecolumns_enum = []
-
-
-def purge():
-    global taskcolumns_enum
-    global tasktimecolumns_enum
-    taskcolumns_enum = []
-    tasktimecolumns_enum = []
-
 
 def getTaskColumns(self, context):
-    global taskcolumns_enum
-    if not len(taskcolumns_enum) and IfcStore.get_schema():
-        taskcolumns_enum.extend(
-            [
-                (a.name() + "/" + ifcopenshell.util.attribute.get_primitive_type(a), a.name(), "")
-                for a in IfcStore.get_schema().declaration_by_name("IfcTask").all_attributes()
-                if ifcopenshell.util.attribute.get_primitive_type(a)
-                in ["string", "float", "integer", "boolean", "enum"]
-            ]
-        )
-    return taskcolumns_enum
+    if not SequenceData.is_loaded:
+        SequenceData.load()
+    return SequenceData.data["task_columns_enum"]
 
 
 def getTaskTimeColumns(self, context):
-    global tasktimecolumns_enum
-    if not len(tasktimecolumns_enum) and IfcStore.get_schema():
-        tasktimecolumns_enum.extend(
-            [
-                (a.name() + "/" + ifcopenshell.util.attribute.get_primitive_type(a), a.name(), "")
-                for a in IfcStore.get_schema().declaration_by_name("IfcTaskTime").all_attributes()
-                if ifcopenshell.util.attribute.get_primitive_type(a)
-                in ["string", "float", "integer", "boolean", "enum"]
-            ]
-        )
-    return tasktimecolumns_enum
+    if not SequenceData.is_loaded:
+        SequenceData.load()
+    return SequenceData.data["task_time_columns_enum"]
 
 
 def getWorkSchedules(self, context):
-    return [(str(k), v["Name"], "") for k, v in SequenceData.data["work_schedules"].items()]
+    if not SequenceData.is_loaded:
+        SequenceData.load()
+    return SequenceData.data["work_schedules_enum"]
 
 
 def getWorkCalendars(self, context):
-    return [(str(k), v["Name"], "") for k, v in SequenceData.data["work_calendars"].items()]
+    if not SequenceData.is_loaded:
+        SequenceData.load()
+    return SequenceData.data["work_calendars_enum"]
 
 
 def update_active_task_index(self, context):
@@ -230,20 +207,9 @@ def updateTaskDuration(self, context):
 
 
 def get_schedule_predefined_types(self, context):
-    results = []
-    declaration = tool.Ifc().schema().declaration_by_name("IfcWorkSchedule")
-    version = tool.Ifc.get_schema()
-    for attribute in declaration.attributes():
-        if attribute.name() == "PredefinedType":
-            results.extend(
-                [
-                    (e, e, get_predefined_type_doc(version, "IfcWorkSchedule", e))
-                    for e in attribute.type_of_attribute().declared_type().enumeration_items()
-                    if e != "BASELINE"
-                ]
-            )
-            break
-    return results
+    if not SequenceData.is_loaded:
+        SequenceData.load()
+    return SequenceData.data["schedule_predefined_types_enum"]
 
 
 def update_visualisation_start(self, context):
@@ -554,9 +520,23 @@ class BIMWorkCalendarProperties(PropertyGroup):
     end_time: StringProperty(name="End Time")
 
 
+def update_selected_date(self: "DatePickerProperties", context: bpy.types.Context) -> None:
+    # `include_time` is `True`, otherwise time props are not displayed in UI.
+    include_time = True
+    selected_date = tool.Sequence.parse_isodate_datetime(self.selected_date, include_time)
+    selected_date = selected_date.replace(hour=self.selected_hour, minute=self.selected_min, second=self.selected_sec)
+    self.selected_date = tool.Sequence.isodate_datetime(selected_date, include_time)
+
+
 class DatePickerProperties(PropertyGroup):
-    display_date: StringProperty(name="Display Date")
+    display_date: StringProperty(
+        name="Display Date",
+        description="Needed to keep track of what month is currently opened in date picker without affecting the currently selected date.",
+    )
     selected_date: StringProperty(name="Selected Date")
+    selected_hour: IntProperty(min=0, max=23, update=update_selected_date)
+    selected_min: IntProperty(min=0, max=59, update=update_selected_date)
+    selected_sec: IntProperty(min=0, max=59, update=update_selected_date)
 
 
 class BIMDateTextProperties(PropertyGroup):

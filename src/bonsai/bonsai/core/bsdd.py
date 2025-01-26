@@ -47,7 +47,7 @@ def load_bsdd(client: bsdd.Client, bsdd: tool.Bsdd) -> None:
 
 def search_class(keyword: str, client: bsdd.Client, bsdd: tool.Bsdd) -> int:
     bsdd.clear_classes()
-    related_entities = bsdd.get_related_ifc_entities(keyword)
+    related_entities = bsdd.get_related_ifc_entities()
     active_dictionary_uri = bsdd.get_active_dictionary_uri()
     classes = bsdd.search_class(client, keyword, [active_dictionary_uri], related_entities)
     bsdd.create_classes(classes)

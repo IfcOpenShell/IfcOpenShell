@@ -503,10 +503,10 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 
 				double u0, u1, v0, v1;
 				prop_a.Bounds(u0, u1, v0, v1);
-				prop_a.Normal((u0 + u1) / 2., (u0 + u1) / 2., p_a, v_a);
+				prop_a.Normal((u0 + u1) / 2., (v0 + v1) / 2., p_a, v_a);
 
 				prop_b.Bounds(u0, u1, v0, v1);
-				prop_b.Normal((u0 + u1) / 2., (u0 + u1) / 2., p_b, v_b);
+				prop_b.Normal((u0 + u1) / 2., (v0 + v1) / 2., p_b, v_b);
 
 				bool all_vertices_behind_f_a = true;
 
@@ -531,7 +531,7 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 				// Check if surface normals are opposite
 				if (v_a.IsOpposite(v_b, 1.e-5)) {
 					// Check if faces are co-planar
-					if ((p_b.XYZ() - p_a.XYZ()).Dot(v_a.XYZ()) <= prec) {
+					if (std::abs((p_b.XYZ() - p_a.XYZ()).Dot(v_a.XYZ())) <= prec) {
 
 						TopTools_IndexedMapOfShape f_b_vertices;
 						TopExp::MapShapes(f_b, TopAbs_VERTEX, f_b_vertices);
@@ -978,7 +978,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		return true;
 	}
 
-	if (Logger::LOG_NOTICE >= Logger::Verbosity()) {
+	if (!is_2d && Logger::LOG_NOTICE >= Logger::Verbosity()) {
 		PERF("preliminary manifoldness check");
 
 		if (!a.IsNull()) {
@@ -1029,6 +1029,9 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 
 	Logger::Notice("Used fuzziness: " + std::to_string(fuzz));
 
+	const double new_fuzziness = fuzziness * 10.;
+	const bool allow_retry = new_fuzziness - 1e-15 <= settings.precision * 10000. && new_fuzziness < min_length_orig;
+
 	TopTools_ListOfShape s1s;
 	s1s.Append(copy_operand(a));
 
@@ -1076,7 +1079,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 				if (is_extrusion_b) {
 					Logger::Notice("Operand B " + std::to_string(nb) + "/" + std::to_string(b.Extent()) + " is an extrusion");
 
-					if (b_interval.first < a_interval.first + fuzz && b_interval.second > a_interval.second - fuzz) {
+					if (b_interval.first < a_interval.first + (fuzz * 100.) && b_interval.second > a_interval.second - (fuzz * 100.)) {
 						Logger::Notice("Operand B creates a through hole");
 
 						// Align b with a operand
@@ -1152,9 +1155,20 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		builder->Build();
 	}
 	if (builder->IsDone()) {
-		if (builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
+		if (false && builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
 			Logger::Notice("Builder reports self-intersection in output");
 			success = false;
+
+			/*
+			const auto& ws = builder->DSFiller()->GetReport()->GetAlerts(Message_Warning);
+			for (const auto& w : ws) {
+				if (w->DynamicType() == STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection)) {
+					const auto& x = Handle(BOPAlgo_AlertAcquiredSelfIntersection)::DownCast(w)->GetShape();
+					BRepTools::Write(x, "debug_x.brep");
+					BRepTools::Write(*builder, "debug_r.brep");
+				}
+			}
+			*/
 		} else if(builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertBadPositioning)) && !TopoDS_Iterator(*builder).More()) {
 			Logger::Notice("Builder reports bad positioning and result is empty");
 			success = false;
@@ -1414,8 +1428,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	}
 	delete builder;
 	if (!success) {
-		const double new_fuzziness = fuzziness * 10.;
-		if (new_fuzziness - 1e-15 <= settings.precision * 10000. && new_fuzziness < min_length_orig) {
+		if (allow_retry) {
 			return boolean_operation(settings, a, b, op, result, new_fuzziness);
 		} else {
 			Logger::Notice("No longer attempting boolean operation with higher fuzziness");

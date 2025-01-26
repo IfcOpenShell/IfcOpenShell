@@ -16,8 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 from bpy.types import Panel, UIList, Mesh
 from bonsai.bim.ifc import IfcStore
+from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.layer.data import LayersData
 
 
@@ -41,12 +43,15 @@ class BIM_PT_layers(Panel):
         self.props = context.scene.BIMLayerProperties
 
         row = self.layout.row(align=True)
-        row.label(text=f"{LayersData.data['total_layers']} Layers Found")
-        if self.props.is_editing:
-            row.operator("bim.add_presentation_layer", text="", icon="ADD")
-            row.operator("bim.disable_layer_editing_ui", text="", icon="CANCEL")
-        else:
+        row.label(text=f"{LayersData.data['total_layers']} Layers Found", icon="STICKY_UVS_LOC")
+        if not self.props.is_editing:
             row.operator("bim.load_layers", text="", icon="GREASEPENCIL")
+            return
+
+        row.operator("bim.disable_layer_editing_ui", text="", icon="CANCEL")
+        row = self.layout.row(align=True)
+        row.prop(self.props, "layer_type", text="")
+        row.operator("bim.add_presentation_layer", text="", icon="ADD")
 
         if self.props.is_editing:
             self.layout.template_list(
@@ -61,12 +66,8 @@ class BIM_PT_layers(Panel):
         if self.props.active_layer_id:
             self.draw_editable_ui(context)
 
-    def draw_editable_ui(self, context):
-        for attribute in self.props.layer_attributes:
-            row = self.layout.row(align=True)
-            row.prop(attribute, "string_value", text=attribute.name)
-            if attribute.is_optional:
-                row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+    def draw_editable_ui(self, context: bpy.types.Context) -> None:
+        draw_attributes(self.props.layer_attributes, self.layout)
 
 
 class BIM_UL_layers(UIList):
@@ -84,9 +85,10 @@ class BIM_UL_layers(UIList):
                     op = row.operator("bim.assign_presentation_layer", text="", icon="KEYFRAME", emboss=False)
                     op.layer = item.ifc_definition_id
 
-            # TODO: replace placeholder UI for hiding presentation layers
-            row.operator("bim.disable_editing_layer", text="", icon="HIDE_OFF", emboss=False)
-            row.operator("bim.disable_editing_layer", text="", icon="FREEZE", emboss=False)
+            if item.with_style:
+                row.prop(item, "on", text="", icon="HIDE_OFF" if item.on else "HIDE_ON", emboss=False)
+                row.prop(item, "frozen", text="", icon="FREEZE" if item.frozen else "MESH_PLANE", emboss=False)
+                row.prop(item, "blocked", text="", icon="LOCKED" if item.blocked else "UNLOCKED", emboss=False)
 
             if context.scene.BIMLayerProperties.active_layer_id == item.ifc_definition_id:
                 op = row.operator("bim.select_layer_products", text="", icon="RESTRICT_SELECT_OFF")

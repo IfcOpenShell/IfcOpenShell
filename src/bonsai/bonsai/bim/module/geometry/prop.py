@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import bpy
 import bonsai.tool as tool
-from bonsai.bim.prop import StrProperty, Attribute
+from bonsai.bim.prop import StrProperty, Attribute, ObjProperty
 from bonsai.bim.module.geometry.data import RepresentationsData, ViewportData
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -31,6 +32,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import Optional
 
 
 def get_contexts(self, context):
@@ -42,10 +44,36 @@ def get_contexts(self, context):
 def update_mode(self, context):
     if self.is_changing_mode:
         return
-    if self.mode == "OBJECT":
-        bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
-    elif self.mode == "EDIT":
-        bpy.ops.bim.override_mode_set_edit("INVOKE_DEFAULT")
+    if context.mode.startswith("EDIT"):
+        if self.mode == "OBJECT":
+            bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
+            tool.Geometry.disable_item_mode()
+        elif self.mode == "ITEM":
+            bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT")
+        elif self.mode == "EDIT":
+            pass
+    else:
+        if self.mode == "OBJECT":
+            tool.Geometry.disable_item_mode()
+        elif self.mode == "ITEM":
+            if not self.representation_obj:
+                bpy.ops.bim.import_representation_items()
+        elif self.mode == "EDIT":
+            bpy.ops.bim.override_mode_set_edit("INVOKE_DEFAULT")
+
+
+def update_representation_obj(self, context):
+    for item_obj in self.item_objs:
+        if item_obj.obj:
+            data = item_obj.obj.data
+            bpy.data.objects.remove(item_obj.obj)
+            if data and not data.users:
+                bpy.data.meshes.remove(data)
+    self.item_objs.clear()
+    if not self.representation_obj and self.mode != "OBJECT":
+        self.is_changing_mode = True
+        self.mode = "OBJECT"
+        self.is_changing_mode = False
 
 
 def get_mode(self, context):
@@ -93,6 +121,7 @@ def update_shape_aspect(self, context):
 class RepresentationItem(PropertyGroup):
     name: StringProperty(name="Name")
     surface_style: StringProperty(name="Surface Style")
+    surface_style_id: IntProperty(name="Surface Style ID")
     layer: StringProperty(name="Layer")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     shape_aspect: StringProperty(name="Shape Aspect")
@@ -100,14 +129,20 @@ class RepresentationItem(PropertyGroup):
     tags: StringProperty(name="Tags")
 
 
+class RepresentationItemObject(PropertyGroup):
+    name: StringProperty(name="Name")
+    obj: PointerProperty(type=bpy.types.Object)
+    ifc_definition_id: IntProperty()
+
+
 class ShapeAspect(PropertyGroup):
     name: StringProperty(
         name="Name",
         description=(
-            "Note that IfcMaterialConstituent is applied based on shape aspects using the same name as material constituent.\n"
-            "In dropdown suggestions you can see names of existing material constituents."
+            "If applicable, shape aspect names should correlate with names of material constituents.\n"
+            "Click to see autocompletion for constituent names."
         ),
-        **({} if bpy.app.version < (3, 3, 0) else {"search": get_material_constituents}),
+        search=get_material_constituents,
     )
     description: StringProperty(
         name="Description",
@@ -127,6 +162,11 @@ class BIMObjectGeometryProperties(PropertyGroup):
     )
     shape_aspect_attrs: PointerProperty(type=ShapeAspect)
 
+    @property
+    def active_item(self):
+        if self.active_item_index < len(self.items):
+            return self.items[self.active_item_index]
+
 
 class BIMGeometryProperties(PropertyGroup):
     # Revit workaround
@@ -137,6 +177,20 @@ class BIMGeometryProperties(PropertyGroup):
     should_force_triangulation: BoolProperty(name="Force Triangulation", default=False)
     is_changing_mode: BoolProperty(name="Is Changing Mode", default=False)
     mode: EnumProperty(items=get_mode, name="IFC Interaction Mode", update=update_mode)
+    representation_obj: PointerProperty(
+        name="Representation Object", type=bpy.types.Object, update=update_representation_obj
+    )
+    item_objs: CollectionProperty(name="Item Objects", type=RepresentationItemObject)
+
+    def add_item_object(
+        self, obj: bpy.types.Object, item: ifcopenshell.entity_instance, name: Optional[str] = None
+    ) -> RepresentationItemObject:
+        blender_item = self.item_objs.add()
+        blender_item.obj = obj
+        blender_item.ifc_definition_id = item.id()
+        if name is not None:
+            blender_item.name = name
+        return blender_item
 
     def is_object_valid_for_representation_copy(self, obj: bpy.types.Object) -> bool:
         return bool(obj != bpy.context.active_object and obj.data)

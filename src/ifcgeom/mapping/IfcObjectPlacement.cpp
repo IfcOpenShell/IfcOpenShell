@@ -65,16 +65,26 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
 		}
 	}
 
-	taxonomy::ptr result;
+	taxonomy::matrix4::ptr result;
 	if (!parent_placement_ignored && relative_to) {
         result = taxonomy::make<taxonomy::matrix4>(
+			// @nb this is a bit silly, in 0.7 we didn't have a recursive function
+			// but a while loop to apply the hierarchical placements, so after the
+			// loop we could apply the global offset. Since we have a recursive
+			// function now we need to undo the global offset when recursing.
+			offset_and_rotation_.inverse() *
 			taxonomy::cast<taxonomy::matrix4>(map(relative_to))->ccomponents() *
 			taxonomy::cast<taxonomy::matrix4>(map(transform))->ccomponents()
 		);
 	} else {
 		// The parent placement of the current is a placement for a type that is
 		// being ignored (Site or Building) or it is the host element of an opening.
-		result = map(transform);
+		
+		// Create a new copy around `result` so that it's cached copy is not altered
+		// @todo immutability
+		result = taxonomy::make<taxonomy::matrix4>(
+			taxonomy::cast<taxonomy::matrix4>(map(transform))->ccomponents()
+		);
 	}
 
 	if (fallback) {
@@ -84,10 +94,15 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcObjectPlacement* inst) {
         }
     }
 
-	return result;
+	result->components() = offset_and_rotation_ * result->ccomponents();
 
-	// @todo
-	// m4->components() = offset_and_rotation_ * m4->components();
+	auto abs_det = std::abs(result->ccomponents().determinant());
+	if (abs_det < 1.e-7) {
+		Logger::Warning("Ignoring singular matrix:", inst);
+		return nullptr;
+	}
+
+	return result;
 }
 
 /*

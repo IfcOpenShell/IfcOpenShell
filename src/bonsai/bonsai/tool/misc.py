@@ -19,28 +19,33 @@
 import bpy
 import bmesh
 import ifcopenshell
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.core.root
 import bonsai.tool as tool
 from mathutils import Vector, Matrix
-from bonsai.bim.ifc import IfcStore
+from typing import Union
 
 
 class Misc(bonsai.core.tool.Misc):
     @classmethod
-    def get_object_storey(cls, obj):
-        storey = ifcopenshell.util.element.get_container(tool.Ifc.get_entity(obj))
+    def get_object_storey(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        storey = ifcopenshell.util.element.get_container(element)
         if storey and storey.is_a("IfcBuildingStorey"):
             return storey
 
     @classmethod
-    def get_storey_elevation_in_si(cls, storey):
+    def get_storey_elevation_in_si(cls, storey: ifcopenshell.entity_instance) -> float:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         elevation = ifcopenshell.util.placement.get_storey_elevation(storey)
         return elevation * unit_scale
 
     @classmethod
-    def get_storey_height_in_si(cls, storey, total_storeys):
+    def get_storey_height_in_si(cls, storey: ifcopenshell.entity_instance, total_storeys: int) -> Union[float, None]:
         building = ifcopenshell.util.element.get_aggregate(storey)
         related_objects = []
         for rel in building.IsDecomposedBy:
@@ -60,11 +65,12 @@ class Misc(bonsai.core.tool.Misc):
             return (next_storey_elevation - storey_elevation) * unit_scale
 
     @classmethod
-    def set_object_origin_to_bottom(cls, obj):
+    def set_object_origin_to_bottom(cls, obj: bpy.types.Object) -> None:
         absolute_bound_box = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
         min_z = min([c[2] for c in absolute_bound_box])
         new_origin = obj.matrix_world.translation.copy()
         new_origin[2] = min_z
+        assert isinstance(obj.data, bpy.types.Mesh)
         obj.data.transform(
             Matrix.Translation(
                 (obj.matrix_world.inverted().to_quaternion() @ (obj.matrix_world.translation - new_origin))
@@ -73,15 +79,15 @@ class Misc(bonsai.core.tool.Misc):
         obj.matrix_world.translation = new_origin
 
     @classmethod
-    def move_object_to_elevation(cls, obj, elevation):
+    def move_object_to_elevation(cls, obj: bpy.types.Object, elevation: float) -> None:
         obj.matrix_world.translation[2] = elevation
 
     @classmethod
-    def run_root_copy_class(cls, obj=None):
+    def run_root_copy_class(cls, obj: bpy.types.Object) -> ifcopenshell.entity_instance:
         return bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
 
     @classmethod
-    def scale_object_to_height(cls, obj, height):
+    def scale_object_to_height(cls, obj: bpy.types.Object, height: float) -> None:
         absolute_bound_box = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
         max_z = max([c[2] for c in absolute_bound_box])
         min_z = min([c[2] for c in absolute_bound_box])
@@ -93,14 +99,11 @@ class Misc(bonsai.core.tool.Misc):
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
     @classmethod
-    def mark_object_as_edited(cls, obj: bpy.types.Object) -> None:
-        tool.Ifc.edit(obj)
-
-    @classmethod
     def split_objects_with_cutter(
         cls, objs: list[bpy.types.Object], cutter: bpy.types.Object
     ) -> list[bpy.types.Object]:
         cutter_mesh = cutter.data
+        assert isinstance(cutter_mesh, bpy.types.Mesh)
 
         bm = bmesh.new()
         bm.from_mesh(cutter_mesh)
@@ -119,6 +122,7 @@ class Misc(bonsai.core.tool.Misc):
                 collection.objects.link(new_obj)
 
             mod = new_obj.modifiers.new(type="BOOLEAN", name="Boolean")
+            assert isinstance(mod, bpy.types.BooleanModifier)
             mod.object = cutter
             with bpy.context.temp_override(object=new_obj):
                 bpy.ops.object.modifier_apply(modifier="Boolean")
@@ -126,6 +130,7 @@ class Misc(bonsai.core.tool.Misc):
             bm_flipped.to_mesh(cutter_mesh)
 
             mod = obj.modifiers.new(type="BOOLEAN", name="Boolean")
+            assert isinstance(mod, bpy.types.BooleanModifier)
             mod.object = cutter
             with bpy.context.temp_override(object=obj):
                 bpy.ops.object.modifier_apply(modifier="Boolean")

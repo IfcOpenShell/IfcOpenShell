@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.attribute
 import ifcopenshell.util.doc
 import ifcopenshell.util.element
 import bonsai.tool as tool
@@ -32,7 +33,6 @@ def refresh():
     ObjectPsetsData.is_loaded = False
     ObjectQtosData.is_loaded = False
     MaterialPsetsData.is_loaded = False
-    MaterialSetPsetsData.is_loaded = False
     MaterialSetItemPsetsData.is_loaded = False
     TaskQtosData.is_loaded = False
     ResourceQtosData.is_loaded = False
@@ -54,7 +54,8 @@ class Data:
         )
         for name, data in sorted(psetqtos.items()):
             pset = ifc_file.by_id(data["id"])
-            pset_uses = ifcopenshell.util.element.get_elements_using_pset(pset)
+            pset_uses = ifcopenshell.util.element.get_elements_by_pset(pset)
+            has_template = bool(tool.Pset.get_pset_template(name))
             results.append(
                 {
                     "id": data["id"],
@@ -62,6 +63,7 @@ class Data:
                     "is_expanded": is_expanded.get(data["id"], True),
                     "Properties": [{"Name": k, "NominalValue": v} for k, v in sorted(data.items()) if k != "id"],
                     "shared_pset_uses": len(pset_uses),
+                    "has_template": has_template,
                 }
             )
         return sorted(results, key=lambda v: v["Name"])
@@ -182,29 +184,13 @@ class MaterialPsetsData(Data):
             if material.ifc_definition_id:
                 material = tool.Ifc.get().by_id(material.ifc_definition_id)
                 category = getattr(material, "Category", None) or None
-                psets = bonsai.bim.schema.ifc.psetqto.get_applicable("IfcMaterial", category, pset_only=True)
+                psets = bonsai.bim.schema.ifc.psetqto.get_applicable(props.material_type, category, pset_only=True)
                 psetnames = cls.format_pset_enum(psets)
                 assigned_names = ifcopenshell.util.element.get_psets(
                     material, psets_only=True, should_inherit=False
                 ).keys()
                 return [p for p in psetnames if p[0] not in assigned_names]
         return []
-
-
-class MaterialSetPsetsData(Data):
-    data = {}
-    is_loaded = False
-
-    @classmethod
-    def load(cls):
-        psets = {}
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
-            if material and "Set" in material.is_a():
-                psets = cls.psetqtos(material)
-        cls.data = {"psets": psets}
-        cls.is_loaded = True
 
 
 class MaterialSetItemPsetsData(Data):
@@ -290,9 +276,18 @@ class ProfilePsetsData(Data):
 
     @classmethod
     def load(cls):
-        pprops = bpy.context.scene.BIMProfileProperties
-        ifc_definition_id = pprops.profiles[pprops.active_profile_index].ifc_definition_id
-        cls.data = {"psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)}
+        active_profile = tool.Profile.get_active_profile_ui()
+        if active_profile:
+            ifc_definition_id = active_profile.ifc_definition_id
+            psets_data = cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)
+        else:
+            ifc_definition_id = 0
+            psets_data = []
+
+        cls.data = {
+            "ifc_definition_id": ifc_definition_id,
+            "psets": psets_data,
+        }
         cls.is_loaded = True
 
 
@@ -318,9 +313,15 @@ class AddEditCustomPropertiesData:
 
     @classmethod
     def primary_measure_type(cls):
+        SIMPLE_TYPES = {"string", "integer", "float", "boolean"}
         schema = tool.Ifc.schema()
         version = tool.Ifc.get_schema()
+        # Skip non-simple types as they're currently not supported (e.g. IfcBinary and lists/arrays/sets of types).
+        declarations = [
+            d.name()
+            for d in schema.declarations()
+            if hasattr(d, "declared_type") and ifcopenshell.util.attribute.get_primitive_type(d) in SIMPLE_TYPES
+        ]
         return [
-            (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description", ""))
-            for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])
+            (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description", "")) for t in sorted(declarations)
         ]

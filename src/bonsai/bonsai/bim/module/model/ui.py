@@ -40,11 +40,51 @@ from bonsai.bim.helper import prop_with_search
 from collections.abc import Iterable
 
 
+class BIM_MT_type_manager_menu(bpy.types.Menu):
+    bl_label = "Type Manager Menu"
+    bl_idname = "BIM_MT_type_manager_menu"
+
+    def draw(self, context):
+        layout = self.layout
+        layout.operator("bim.purge_unused_objects", text="Purge Unused Types", icon="TRASH").object_type = "TYPE"
+
+
+class BIM_MT_type_menu(bpy.types.Menu):
+    bl_label = "Type Menu"
+    bl_idname = "BIM_MT_type_menu"
+    relating_type_id: bpy.props.IntProperty(name="Relating Type Id")
+
+    def draw(self, context):
+        props = context.scene.BIMModelProperties
+        layout = self.layout
+        op = layout.operator("bim.launch_rename_type", icon="GREASEPENCIL", text="Rename Type")
+        op.element = props.menu_relating_type_id
+        op = layout.operator("bim.select_type", icon="OBJECT_DATA")
+        op.relating_type = props.menu_relating_type_id
+        op = layout.operator("bim.duplicate_type", icon="DUPLICATE")
+        op.element = props.menu_relating_type_id
+        layout.separator()
+        op = layout.operator("bim.remove_type", icon="X")
+        op.element = props.menu_relating_type_id
+
+
+class LaunchTypeMenu(bpy.types.Operator):
+    bl_idname = "bim.launch_type_menu"
+    bl_label = "Launch Type Menu"
+    relating_type_id: bpy.props.IntProperty(name="Relating Type Id")
+
+    def execute(self, context):
+        props = context.scene.BIMModelProperties
+        props.menu_relating_type_id = self.relating_type_id
+        bpy.ops.wm.call_menu(name="BIM_MT_type_menu")
+        return {"FINISHED"}
+
+
 class LaunchTypeManager(bpy.types.Operator):
     bl_idname = "bim.launch_type_manager"
     bl_label = "Launch Type Manager"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Display all available Construction Types to add new instances"
+    bl_description = "Browse, Edit and Manage Types"
 
     def execute(self, context):
         return {"FINISHED"}
@@ -53,58 +93,54 @@ class LaunchTypeManager(bpy.types.Operator):
         props = context.scene.BIMModelProperties
         props.type_page = 1
         if get_ifc_class(None, context):
-            ifc_class = props.ifc_class or AuthoringData.data["ifc_element_type"]
+            ifc_class = AuthoringData.data["ifc_class_current"] or AuthoringData.data["ifc_element_type"]
         else:
             ifc_class = AuthoringData.data["ifc_element_type"]
 
         # will be None if project has no types
         if ifc_class is not None:
-            props.type_class = ifc_class
             bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
-        return context.window_manager.invoke_popup(self, width=550)
+        return context.window_manager.invoke_props_dialog(self, width=550, title="Type Manager", confirm_text="Close")
 
     def draw(self, context):
         props = context.scene.BIMModelProperties
+        row = self.layout.row(align=True)
+        text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type'] or 'Types'}"
+        if AuthoringData.data["total_types"] > 1:
+            text += "s"
+        row.label(text=text, icon="FILE_VOLUME")
+        row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
 
         row = self.layout.row(align=True)
-        prop_with_search(row, props, "type_class", text="")
-        row.operator("bim.purge_unused_types", icon="TRASH", text="")
+        op = row.operator(
+            "bim.add_element", text=f"Create New {AuthoringData.data['ifc_element_type'] or 'Type'}", icon="ADD"
+        )
+        op.is_specific_tool = bool(AuthoringData.data["ifc_element_type"])
+        op.ifc_product = "IfcElementType"
+        op.ifc_class = AuthoringData.data["ifc_element_type"] or props.ifc_class or ""
+
+        if AuthoringData.data["total_types"]:
+            row = self.layout.row(align=True)
+            row.prop(props, "search_name", icon="FILTER", text="")
 
         columns = self.layout.column_flow(columns=3)
-        row = columns.row()
-        row.alignment = "LEFT"
-        row.label(text=f"{AuthoringData.data['total_types']} Types", icon="FILE_VOLUME")
+        if AuthoringData.data["total_pages"] > 0:
+            row = columns.row(align=True)
+            row.alignment = "RIGHT"
+            row2 = row.row(align=True)
+            row2.label(text="Page")
+            row2.prop(props, "type_page", text="", emboss=False)
+            row2.label(text=f"/{AuthoringData.data['total_pages']} ")
 
-        row = columns.row(align=True)
-        row.alignment = "CENTER"
-        # In case you want something here in the future
+            prev_page_op = row.row(align=True)
+            op = prev_page_op.operator("bim.change_type_page", icon="TRIA_LEFT", text="")
+            op.page = AuthoringData.data["prev_page"] or 0
+            prev_page_op.enabled = op.page > 0
 
-        row = columns.row(align=True)
-        row.alignment = "RIGHT"
-        if AuthoringData.data["total_pages"] > 1:
-            row.label(text=f"Page {props.type_page}/{AuthoringData.data['total_pages']} ")
-        if AuthoringData.data["prev_page"]:
-            op = row.operator("bim.change_type_page", icon="TRIA_LEFT", text="")
-            op.page = AuthoringData.data["prev_page"]
-        if AuthoringData.data["next_page"]:
-            op = row.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
-            op.page = AuthoringData.data["next_page"]
-
-        if props.is_adding_type:
-            row = self.layout.row()
-            box = row.box()
-            row = box.row()
-            row.prop(props, "type_predefined_type")
-            row = box.row()
-            row.prop(props, "type_template")
-            row = box.row()
-            row.prop(props, "type_name")
-            row = box.row(align=True)
-            row.operator("bim.add_type", icon="CHECKMARK", text="Save New Type")
-            row.operator("bim.disable_add_type", icon="CANCEL", text="")
-        else:
-            row = self.layout.row()
-            row.operator("bim.enable_add_type", icon="ADD", text="Create New Type")
+            next_page_op = row.row(align=True)
+            op = next_page_op.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
+            op.page = AuthoringData.data["next_page"] or 0
+            next_page_op.enabled = op.page > 0
 
         flow = self.layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
 
@@ -113,35 +149,44 @@ class LaunchTypeManager(bpy.types.Operator):
             box = outer_col.box()
 
             row = box.row()
-            row.alignment = "CENTER"
-            row.label(text=relating_type["name"], icon="FILE_3D")
+            op = row.operator("bim.set_active_type", text=relating_type["name"], icon="BLANK1", emboss=False)
+            op.relating_type = relating_type["id"]
 
-            row = box.row()
-            row.alignment = "CENTER"
-            row.label(text=relating_type["description"])
-
-            row = box.row()
-            if relating_type["icon_id"]:
-                row.template_icon(icon_value=relating_type["icon_id"], scale=4)
-            else:
-                op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
-                op.ifc_class = props.type_class
-
-            row = box.row(align=True)
-
-            text = f"Add {relating_type['predefined_type']}" if relating_type["predefined_type"] else "Add"
-            op = row.operator("bim.add_constr_type_instance", icon="ADD", text=text)
-            op.from_invoke = True
+            op = row.operator("bim.launch_type_menu", icon="PREFERENCES", text="", emboss=True)
             op.relating_type_id = relating_type["id"]
 
-            op = row.operator("bim.rename_type", icon="GREASEPENCIL", text="")
-            op.element = relating_type["id"]
-            op = row.operator("bim.select_type", icon="OBJECT_DATA", text="")
+            row = box.row()
+            row.alignment = "CENTER"
+            op = row.operator("bim.set_active_type", text=relating_type["description"], emboss=False)
             op.relating_type = relating_type["id"]
-            op = row.operator("bim.duplicate_type", icon="DUPLICATE", text="")
-            op.element = relating_type["id"]
-            op = row.operator("bim.remove_type", icon="X", text="")
-            op.element = relating_type["id"]
+
+            if relating_type["icon_id"]:
+                # Yep, that's EXACTLY how it's done. And I'm proud of it.
+                row1 = box.row()
+                row1.ui_units_y = 0.01
+                row1.template_icon(icon_value=relating_type["icon_id"], scale=4)
+                row2 = box.column(align=True)
+                row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
+                row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
+                row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
+                is_current_relating_type = str(relating_type["id"]) == str(
+                    AuthoringData.data["relating_type_id_current"]
+                )
+                if is_current_relating_type:
+                    active_row = row2.row()
+                    active_row.alignment = "CENTER"
+                    active_row.label(text="Active", icon="CHECKMARK")
+                else:
+                    row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
+            else:
+                row = box.row()
+                op = box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH", emboss=False)
+                op.ifc_class = AuthoringData.data["ifc_class_current"]
+
+            row = box.row()
+            row.alignment = "CENTER"
+            op = row.operator("bim.set_active_type", text=relating_type["predefined_type"], emboss=False)
+            op.relating_type = relating_type["id"]
 
 
 class BIM_PT_authoring(Panel):
@@ -158,19 +203,6 @@ class BIM_PT_authoring(Panel):
         row.operator("bim.generate_spaces_from_walls")
         row = self.layout.row(align=True)
         row.operator("bim.toggle_space_visibility")
-
-
-class BIM_PT_Grids(Panel):
-    bl_label = "Grids"
-    bl_idname = "BIM_PT_Grids"
-    bl_options = {"DEFAULT_CLOSED"}
-    bl_space_type = "PROPERTIES"
-    bl_region_type = "WINDOW"
-    bl_context = "scene"
-    bl_parent_id = "BIM_PT_tab_project_setup"
-
-    def draw(self, context):
-        self.layout.row().operator("mesh.add_grid", icon="ADD", text="Add Grids")
 
 
 class BIM_PT_array(bpy.types.Panel):
@@ -262,7 +294,9 @@ class BIM_PT_stair(bpy.types.Panel):
         if not StairData.is_loaded:
             StairData.load()
 
-        props = context.active_object.BIMStairProperties
+        obj = context.active_object
+        assert obj
+        props = obj.BIMStairProperties
 
         if StairData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -282,7 +316,16 @@ class BIM_PT_stair(bpy.types.Panel):
                         self.layout.prop(props, prop_name, text="")
                     else:
                         self.layout.prop(props, prop_name)
-                regenerate_stair_mesh(context)
+                    if prop_name == "height":  # Weak but we just want to insert this inside props drawing
+                        row_length = self.layout.row(align=True)
+                        row_length.prop(props, "total_length_target")
+                        row_length.prop(
+                            props,
+                            "total_length_lock",
+                            text="",
+                            icon="LOCKED" if props.total_length_lock else "UNLOCKED",
+                        )
+                regenerate_stair_mesh(obj)
             else:
                 calculated_params = StairData.data["calculated_params"]
                 row.operator("bim.enable_editing_stair", icon="GREASEPENCIL", text="")
@@ -455,7 +498,7 @@ class BIM_PT_window(bpy.types.Panel):
         else:
             row = self.layout.row()
             row.label(text="No Window Found")
-            row.operator("bim.add_window", icon="ADD", text="").obj = ""
+            row.operator("bim.add_window", icon="ADD", text="")
 
 
 class BIM_PT_door(bpy.types.Panel):
@@ -528,7 +571,7 @@ class BIM_PT_door(bpy.types.Panel):
         else:
             row = self.layout.row()
             row.label(text="No Door Found")
-            row.operator("bim.add_door", icon="ADD", text="").obj = ""
+            row.operator("bim.add_door", icon="ADD", text="")
 
 
 class BIM_PT_railing(bpy.types.Panel):
@@ -576,6 +619,7 @@ class BIM_PT_railing(bpy.types.Panel):
 
             else:
                 row.operator("bim.enable_editing_railing", icon="GREASEPENCIL", text="")
+                row.operator("bim.copy_railing_parameters", icon="COPYDOWN", text="")
                 row.operator("bim.enable_editing_railing_path", icon="ANIM", text="")
                 # TODO: good for preview but probably should move to .is_editing == True
                 # since it's writing to ifc
@@ -610,7 +654,9 @@ class BIM_PT_roof(bpy.types.Panel):
         if not RoofData.is_loaded:
             RoofData.load()
 
-        props = context.active_object.BIMRoofProperties
+        obj = context.active_object
+        assert obj
+        props = obj.BIMRoofProperties
 
         if RoofData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -625,14 +671,13 @@ class BIM_PT_roof(bpy.types.Panel):
                 for prop in general_props:
                     self.layout.prop(props, prop)
 
-                update_roof_modifier_bmesh(context)
-
+                update_roof_modifier_bmesh(obj)
             elif props.is_editing_path:
                 row.operator("bim.finish_editing_roof_path", icon="CHECKMARK", text="")
                 row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
-
             else:
                 row.operator("bim.enable_editing_roof", icon="GREASEPENCIL", text="")
+                row.operator("bim.copy_roof_parameters", icon="COPYDOWN", text="")
                 row.operator("bim.enable_editing_roof_path", icon="ANIM", text="")
                 row.operator("bim.remove_roof", icon="X", text="")
 
@@ -647,27 +692,17 @@ class BIM_PT_roof(bpy.types.Panel):
             row.operator("bim.add_roof", icon="ADD", text="")
 
 
-class BIM_MT_model(Menu):
-    bl_idname = "BIM_MT_model"
-    bl_label = "Objects"
+class BIM_MT_elements(Menu):
+    bl_idname = "BIM_MT_elements"
+    bl_label = "IFC Elements"
 
     def draw(self, context):
-        layout = self.layout
-        layout.operator("bim.add_empty_type", text="Empty Type", icon="EMPTY_AXIS")
-        layout.operator("bim.add_potential_half_space_solid", text="Half Space Proxy", icon="ORIENTATION_NORMAL")
-        layout.operator("bim.add_potential_opening", text="Opening Proxy", icon="CUBE")
+        # TODO consolidate in Item mode UI then remove
+        self.layout.operator("bim.add_potential_half_space_solid", text="Half Space", icon="ORIENTATION_NORMAL")
+        self.layout.operator("bim.add_potential_opening", text="Opening", icon="CUBE")
 
 
 def add_menu(self, context):
-    self.layout.menu("BIM_MT_model", icon="FILE_3D")
-
-
-def add_mesh_object_menu(self, context):
-    if context.mode == "OBJECT":
-        self.layout.separator()
-        self.layout.operator("mesh.add_grid", icon_value=bonsai.bim.icons["IFC"].icon_id)
-        self.layout.operator("mesh.add_stair", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Stair (Untyped)")
-        self.layout.operator("mesh.add_window", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Window (Untyped)")
-        self.layout.operator("mesh.add_door", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Door (Untyped)")
-        self.layout.operator("mesh.add_railing", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Railing (Untyped)")
-        self.layout.operator("mesh.add_roof", icon_value=bonsai.bim.icons["IFC"].icon_id, text="Roof (Untyped)")
+    self.layout.operator("bim.launch_add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")
+    self.layout.menu("BIM_MT_elements", icon_value=bonsai.bim.icons["IFC"].icon_id)
+    self.layout.separator()

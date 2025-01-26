@@ -20,6 +20,7 @@ import os
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import bonsai.tool as tool
 from bonsai.bim.module.project.data import ProjectData
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty, ObjProperty
@@ -35,32 +36,36 @@ from bpy.props import (
 )
 
 
-def get_export_schema(self, context):
+def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not ProjectData.is_loaded:
         ProjectData.load()
     return ProjectData.data["export_schema"]
 
 
-def get_template_file(self, context):
+def update_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
+    # Avoid breaking empty enum.
+    self["template_file"] = 0
+
+
+def get_template_file(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not ProjectData.is_loaded:
         ProjectData.load()
-    return ProjectData.data["template_file"]
+    return ProjectData.data["template_file"][self.export_schema]
 
 
-def get_library_file(self, context):
+def get_library_file(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not ProjectData.is_loaded:
         ProjectData.load()
     return ProjectData.data["library_file"]
 
 
-def update_library_file(self, context):
+def update_library_file(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
     if self.library_file != "0":
-        bpy.ops.bim.select_library_file(
-            filepath=os.path.join(bpy.context.scene.BIMProperties.data_dir, "libraries", self.library_file)
-        )
+        filepath = next(p for p in tool.Blender.get_data_dir_paths("libraries", "*.ifc") if p.name == self.library_file)
+        bpy.ops.bim.select_library_file(filepath=filepath.__str__())
 
 
-def update_filter_mode(self, context):
+def update_filter_mode(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
     self.filter_categories.clear()
     if self.filter_mode == "NONE":
         return
@@ -106,11 +111,23 @@ class FilterCategory(PropertyGroup):
 
 
 class Link(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(
+        name="Name",
+        description="Filepath to linked .ifc file, stored in posix format (could be relative to .blend file, not to .ifc)",
+    )
     is_loaded: BoolProperty(name="Is Loaded", default=False)
     is_selectable: BoolProperty(name="Is Selectable", default=True)
     is_wireframe: BoolProperty(name="Is Wireframe", default=False)
     is_hidden: BoolProperty(name="Is Hidden", default=False)
+    empty_handle: PointerProperty(
+        name="Empty Object Handle",
+        description="We use empty object handle to allow simple manipulations with a linked model (moving, scaling, rotating)",
+        type=bpy.types.Object,
+    )
+
+
+class EditedObj(PropertyGroup):
+    obj: PointerProperty(type=bpy.types.Object)
 
 
 class BIMProjectProperties(PropertyGroup):
@@ -151,17 +168,21 @@ class BIMProjectProperties(PropertyGroup):
             ("hybrid-cgal-simple-opencascade", "Hybrid CGAL-OCC", "First CGAL then fallback to OCC"),
         ],
         name="Geometry Library",
+        default="hybrid-cgal-simple-opencascade",
     )
     should_use_cpu_multiprocessing: BoolProperty(name="CPU Multiprocessing", default=True)
     should_merge_materials_by_colour: BoolProperty(name="Merge Materials by Colour", default=False)
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
     should_load_geometry: BoolProperty(name="Load Geometry", default=True)
-    should_use_native_meshes: BoolProperty(name="Native Meshes", default=False)
     should_clean_mesh: BoolProperty(name="Clean Meshes", default=False)
     should_cache: BoolProperty(name="Cache", default=False)
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
-    void_limit: IntProperty(name="Void Limit", default=30)
+    void_limit: IntProperty(
+        name="Void Limit",
+        default=30,
+        description="Maxium number of openings that object can have. If object has more openings, it will be loaded without openings",
+    )
     distance_limit: FloatProperty(name="Distance Limit", default=1000, subtype="DISTANCE")
     false_origin_mode: bpy.props.EnumProperty(
         items=[
@@ -186,20 +207,35 @@ class BIMProjectProperties(PropertyGroup):
         description="The angle (postive is anticlockwise) pointing to grid north relative to project north",
         default="0",
     )
+    element_limit_mode: bpy.props.EnumProperty(
+        items=[
+            ("UNLIMITED", "Load Everything", "Load all elements"),
+            ("RANGE", "Load Subset of Elements", "Only load the first N elements"),
+        ],
+        name="Element limit",
+        default="UNLIMITED",
+    )
     element_offset: IntProperty(name="Element Offset", default=0)
     element_limit: IntProperty(name="Element Offset", default=30000)
+    load_indexed_maps: BoolProperty(
+        name="Load Indexed Maps",
+        description="Load indexed maps (UV and color maps)",
+        default=True,
+    )
     should_disable_undo_on_save: BoolProperty(
         name="Disable Undo When Saving (Faster saves, no undo for you!)", default=False
     )
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
-    export_schema: EnumProperty(items=get_export_schema, name="IFC Schema")
+    export_schema: EnumProperty(items=get_export_schema, name="IFC Schema", update=update_export_schema)
     template_file: EnumProperty(items=get_template_file, name="Template File")
     library_file: EnumProperty(items=get_library_file, name="Library File", update=update_library_file)
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
+    queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
     clipping_planes: bpy.props.CollectionProperty(type=ObjProperty)
     clipping_planes_active: bpy.props.IntProperty(min=0, default=0, max=5)
+    edited_objs: bpy.props.CollectionProperty(type=EditedObj)
 
     @property
     def clipping_planes_objs(self):
@@ -207,3 +243,13 @@ class BIMProjectProperties(PropertyGroup):
 
     def get_library_element_index(self, lib_element):
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))
+
+
+class MeasureToolSettings(PropertyGroup):
+    measurement_type_items = [
+        ("SINGLE", "SINGLE", "Single", "FIXED_SIZE", 1),
+        ("POLYLINE", "POLYLINE", "Polyline", "DRIVER_ROTATIONAL_DIFFERENCE", 2),
+        ("AREA", "AREA", "Area", "OUTLINER_DATA_LIGHTPROBE", 3),
+    ]
+
+    measurement_type: bpy.props.EnumProperty(items=measurement_type_items, default="POLYLINE")

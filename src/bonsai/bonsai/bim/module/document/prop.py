@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -31,10 +32,29 @@ from bpy.props import (
 )
 
 
+def update_document_name(self: "Document", context: bpy.types.Context) -> None:
+    if not self.ifc_definition_id:
+        return
+    tool.Ifc.get().by_id(self.ifc_definition_id).Name = self.name
+
+
+def update_document_identification(self: "Document", context: bpy.types.Context) -> None:
+    if not self.ifc_definition_id:
+        return
+    document = tool.Ifc.get().by_id(self.ifc_definition_id)
+    if document.is_a("IfcDocumentInformation"):
+        tool.Document.set_document_information_id(document, self.identification)
+    else:
+        tool.Document.set_external_reference_id(document, self.identification)
+
+
 class Document(PropertyGroup):
-    name: StringProperty(name="Name")
-    identification: StringProperty(name="Identification")
-    is_information: BoolProperty(name="Is Information")
+    name: StringProperty(name="Name", update=update_document_name)
+    identification: StringProperty(name="Identification", update=update_document_identification)
+    is_information: BoolProperty(
+        name="Is Information",
+        description="Whether element is IfcDocumentInformation, otherwise it's IfcDocumentReference.",
+    )
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 

@@ -47,7 +47,7 @@ void MAKE_INIT_FN(MappingImplementation)(ifcopenshell::geometry::impl::MappingFa
 
 #define mapping POSTFIX_SCHEMA(mapping)
 
-IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchema::IfcRepresentation* representation, bool only_direct) {
+IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchema::IfcRepresentation* representation, IfcSchema::IfcRepresentationMap*& rmap, bool only_direct) {
     IfcSchema::IfcProduct::list::ptr products(new IfcSchema::IfcProduct::list);
 
     IfcSchema::IfcProductRepresentation::list::ptr prodreps = representation->OfProductRepresentation();
@@ -68,7 +68,10 @@ IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchem
 
     IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
     if (maps->size() == 1) {
-        IfcSchema::IfcRepresentationMap* rmap = *maps->begin();
+        rmap = *maps->begin();
+        if (not_reusable_maps_.find(rmap) != not_reusable_maps_.end()) {
+            return products;
+        }
         taxonomy::matrix4::ptr origin = taxonomy::cast<taxonomy::matrix4>(map(rmap->MappingOrigin()));
         if (origin->is_identity()) {
             IfcSchema::IfcMappedItem::list::ptr items = rmap->MapUsage();
@@ -76,7 +79,13 @@ IfcSchema::IfcProduct::list::ptr mapping::products_represented_by(const IfcSchem
                 IfcSchema::IfcMappedItem* item = *it;
                 if (item->StyledByItem()->size() != 0) continue;
 
-                taxonomy::matrix4::ptr target = taxonomy::cast<taxonomy::matrix4>(map(item->MappingTarget()));
+                taxonomy::matrix4::ptr target;
+                try {
+                    target = taxonomy::cast<taxonomy::matrix4>(map(item->MappingTarget()));
+                } catch (const std::exception& e) {
+                    Logger::Error(e);
+                    continue;
+                }
                 if (!target->is_identity()) {
                     continue;
                 }
@@ -158,17 +167,16 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
     if (auto rep = inst->as<IfcSchema::IfcRepresentation>()) {
         // @todo this is essentially only for hybrid kernel trying to guess
         // when not to use a simple kernel.
-        auto prods = products_represented_by(rep, true);
+        IfcSchema::IfcRepresentationMap* rmap;
+        auto prods = products_represented_by(rep, rmap, true);
         for (auto& p : *prods) {
             openings->push(find_openings(p));
         }
         return openings;
     }
 
-    auto product = inst->as<IfcSchema::IfcProduct>();
-
-    if (product->as<IfcSchema::IfcElement>() && !product->as<IfcSchema::IfcFeatureElementSubtraction>()) {
-        const IfcSchema::IfcElement* element = product->as<IfcSchema::IfcElement>();
+    if (inst->as<IfcSchema::IfcElement>() && !inst->as<IfcSchema::IfcFeatureElementSubtraction>()) {
+        const IfcSchema::IfcElement* element = inst->as<IfcSchema::IfcElement>();
         auto rels = element->HasOpenings();
         for (auto& rel : *rels) {
             openings->push(rel->RelatedOpeningElement());
@@ -176,20 +184,31 @@ aggregate_of_instance::ptr mapping::find_openings(const IfcUtil::IfcBaseEntity* 
     }
 
     // Is the IfcElement a decomposition of an IfcElement with any IfcOpeningElements?
-    const IfcSchema::IfcObjectDefinition* obdef = product->as<IfcSchema::IfcObjectDefinition>();
-    for (;;) {
-        auto decomposes = obdef->Decomposes()->generalize();
-        if (decomposes->size() != 1) break;
-        IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
-        if (rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
-            IfcSchema::IfcElement* element = rel_obdef->as<IfcSchema::IfcElement>();
-            auto rels = element->HasOpenings();
-            for (auto& rel : *rels) {
-                openings->push(rel->RelatedOpeningElement());
+    const IfcSchema::IfcObjectDefinition* obdef = inst->as<IfcSchema::IfcObjectDefinition>();
+    if (obdef != nullptr) {
+        for (;;) {
+            auto decomposes = obdef->Decomposes()->generalize();
+            if (decomposes->size() != 1) {
+                // If we have multiple decompositions, not allowed by schema,
+                // openings associated to relating decompositions are not
+                // considered;
+                break;
             }
-        }
+            if ((*decomposes->begin())->as<IfcSchema::IfcRelAggregates>() == nullptr) {
+                // Only aggregation, not nesting is considered.
+                break;
+            }
+            IfcSchema::IfcObjectDefinition* rel_obdef = (*decomposes->begin())->as<IfcSchema::IfcRelAggregates>()->RelatingObject();
+            if (rel_obdef->as<IfcSchema::IfcElement>() && !rel_obdef->as<IfcSchema::IfcFeatureElementSubtraction>()) {
+                IfcSchema::IfcElement* element = rel_obdef->as<IfcSchema::IfcElement>();
+                auto rels = element->HasOpenings();
+                for (auto& rel : *rels) {
+                    openings->push(rel->RelatedOpeningElement());
+                }
+            }
 
-        obdef = rel_obdef;
+            obdef = rel_obdef;
+        }
     }
 
     return openings;
@@ -210,13 +229,17 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
     int task_index = 0;
     
     for (auto representation : *representations) {
-        IfcSchema::IfcProduct::list::ptr ifcproducts = filter_products(products_represented_by(representation, false), filters);
+        IfcSchema::IfcRepresentationMap* rmap = nullptr;
+        IfcSchema::IfcProduct::list::ptr ifcproducts = filter_products(products_represented_by(representation, rmap, false), filters);
         
         if (ifcproducts->size() == 0) {
             continue;
         }
 
         auto geometry_reuse_ok_for_current_representation_ = reuse_ok_(ifcproducts);
+        if (!geometry_reuse_ok_for_current_representation_ && rmap != nullptr) {
+            not_reusable_maps_.insert(rmap);
+        }
 
         IfcSchema::IfcRepresentationMap::list::ptr maps = representation->RepresentationMap();
 
@@ -238,7 +261,7 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
         IfcSchema::IfcRepresentation* representation_mapped_to_result = representation_mapped_to(representation);
         if (representation_mapped_to_result) {
             representation_processed_as_mapped_item = geometry_reuse_ok_for_current_representation_ && (
-                ok_mapped_representations->contains(representation_mapped_to_result) || reuse_ok_(products_represented_by(representation_mapped_to_result)));
+                ok_mapped_representations->contains(representation_mapped_to_result) || reuse_ok_(products_represented_by(representation_mapped_to_result, rmap)));
         }
 
         if (representation_processed_as_mapped_item) {
@@ -246,13 +269,24 @@ void mapping::get_representations(std::vector<geometry_conversion_task>& tasks, 
             continue;
         }
 
-        // @todo, fix this properly by considering the mapped geometry types in the representation.
-        geometry_conversion_task task;
-        task.index = task_index++;
-        task.representation = representation;
-        task.products = ifcproducts->generalize();
-
-        tasks.emplace_back(task);
+        if (!geometry_reuse_ok_for_current_representation_ && ifcproducts->size() > 1) {
+            // reuse_ok is taken into account in products_represented_by(), but not when
+            // the same IfcRepresentation is directly assigned to multiple products.
+            for (auto& p : *ifcproducts) {
+                geometry_conversion_task task;
+                task.index = task_index++;
+                task.representation = representation;
+                task.products = aggregate_of_instance::ptr(new aggregate_of_instance);
+                task.products->push(p);
+                tasks.emplace_back(task);
+            }
+        } else {
+            geometry_conversion_task task;
+            task.index = task_index++;
+            task.representation = representation;
+            task.products = ifcproducts->generalize();
+            tasks.emplace_back(task);
+        }
     }
 }
 
@@ -352,8 +386,13 @@ IfcSchema::IfcRepresentation* mapping::representation_mapped_to(const IfcSchema:
         if (item->declaration().is(IfcSchema::IfcMappedItem::Class())) {
             if (item->StyledByItem()->size() == 0) {
                 IfcSchema::IfcMappedItem* mapped_item = item->as<IfcSchema::IfcMappedItem>();
-                taxonomy::matrix4::ptr target = taxonomy::cast<taxonomy::matrix4>(map(mapped_item->MappingTarget()));
-                if (target->is_identity()) {
+                taxonomy::matrix4::ptr target;
+                try {
+                    target = taxonomy::cast<taxonomy::matrix4>(map(mapped_item->MappingTarget()));
+                } catch (const std::exception& e) {
+                    Logger::Error(e);
+                }
+                if (target && target->is_identity()) {
                     IfcSchema::IfcRepresentationMap* rmap = mapped_item->MappingSource();
                     taxonomy::matrix4::ptr origin = taxonomy::cast<taxonomy::matrix4>(map(rmap->MappingOrigin()));
                     if (origin->is_identity()) {
@@ -430,11 +469,11 @@ namespace {
         }
 #endif
 
-        IfcSchema::IfcSurfaceStyle *surface_style = nullptr;
+        IfcSchema::IfcSurfaceStyle *surface_style_ = nullptr;
         for (auto& style : prs_styles) {
-            if (style->declaration().is(IfcSchema::IfcSurfaceStyle::Class())) {
-                surface_style = (IfcSchema::IfcSurfaceStyle*)style;
+            if (auto surface_style = style->as<IfcSchema::IfcSurfaceStyle>()) {
                 if (surface_style->Side() != IfcSchema::IfcSurfaceSide::IfcSurfaceSide_NEGATIVE) {
+                    surface_style_ = surface_style;
                     auto styles_elements = surface_style->Styles();
                     for (auto mt = styles_elements->begin(); mt != styles_elements->end(); ++mt) {
                         if ((*mt)->template as<T>()) {
@@ -444,7 +483,7 @@ namespace {
                 }
             }
         }
-        return std::make_pair(surface_style, nullptr);
+        return std::make_pair(surface_style_, nullptr);
     }
 
     bool process_colour(IfcSchema::IfcColourRgb* colour, double* rgb) {
@@ -546,6 +585,18 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
         return nullptr;
     }
 
+    // map and not map_impl otherwise no caching
+    return map(style);
+}
+
+taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceStyle* style) {
+    auto styles = style->Styles();
+    IfcSchema::IfcSurfaceStyleShading* shading = nullptr;
+    for (auto& s : *styles) {
+        if (shading = s->as<IfcSchema::IfcSurfaceStyleShading>()) {
+            break;
+        }
+    }
     taxonomy::style::ptr surface_style = taxonomy::make<taxonomy::style>();
     surface_style->instance = style;
     if (settings_.get<settings::UseMaterialNames>().get() && style->Name()) {
@@ -565,11 +616,14 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
         return surface_style;
     }
 
-    static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
-    double rgb[3];
-    if (process_colour(shading->SurfaceColour(), rgb)) {
-        surface_style->diffuse.components() << rgb[0], rgb[1], rgb[2];
-    }
+	surface_style->use_surface_color = settings_.get<settings::SurfaceColour>().get();
+
+	static taxonomy::colour white = taxonomy::colour(1., 1., 1.);
+	double rgb[3];
+	if (process_colour(shading->SurfaceColour(), rgb)) {
+		surface_style->surface.components() << rgb[0], rgb[1], rgb[2];
+        surface_style->diffuse = surface_style->surface;
+	}
 
     if (auto rendering_style = shading->as<IfcSchema::IfcSurfaceStyleRendering>()) {
         if (rendering_style->DiffuseColour() && process_colour(rendering_style->DiffuseColour(), rgb)) {
@@ -607,7 +661,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcStyledItem* inst) {
     
     return surface_style;
 }
-
 
 taxonomy::ptr mapping::map(const IfcBaseInterface* inst) {
     auto iden = inst->as<IfcUtil::IfcBaseClass>()->identity();
@@ -806,6 +859,28 @@ void mapping::initialize_units_() {
     }
     if (settings_.get<settings::SiteLocalPlacement>().get()) {
         placement_rel_to_type_ = file_->schema()->declaration_by_name("IfcSite");
+    }
+
+    // Translation is applied first, then rotation.
+    if (settings_.get<ModelOffset>().has()) {
+        auto vs = settings_.get<ModelOffset>().get();
+        if (vs.size() == 3) {
+            offset_and_rotation_ *= Eigen::Affine3d(Eigen::Translation3d(vs[0], vs[1], vs[2])).matrix();
+        } else {
+            Logger::Error("Expected 3 values for model-offset setting");
+        }
+    }
+
+    if (settings_.get<ModelRotation>().has()) {
+        auto vs = settings_.get<ModelRotation>().get();
+        if (vs.size() == 4) {
+            auto m3 = Eigen::Quaterniond(vs[0], vs[1], vs[2], vs[3]).matrix();
+            Eigen::Matrix4d m4 = Eigen::Matrix4d::Identity();
+            m4 << m3;
+            offset_and_rotation_ *= m4;
+        } else {
+            Logger::Error("Expected 4 values for model-rotation setting");
+        }
     }
 }
 

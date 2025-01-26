@@ -34,7 +34,7 @@ class LoadBSDDDomains(bpy.types.Operator):
 
 class SetActiveBSDDDictionary(bpy.types.Operator):
     bl_idname = "bim.set_active_bsdd_domain"
-    bl_label = "Load bSDD Dictionary"
+    bl_label = "Set bSDD Dictionary as active"
     bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
     uri: bpy.props.StringProperty()
@@ -50,6 +50,14 @@ class SearchBSDDClass(bpy.types.Operator):
     bl_description = "Search for bSDD classes by the provided keyword"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        # Requirement by buildingSMART bSDD api.
+        if len(context.scene.BIMBSDDProperties.keyword) < 3:
+            cls.poll_message_set("Search query has to be at least 3 characters long.")
+            return False
+        return True
+
     def execute(self, context):
         keyword = context.scene.BIMBSDDProperties.keyword
         classes_found = core.search_class(keyword, bsdd.Client(), tool.Bsdd)
@@ -60,9 +68,7 @@ class SearchBSDDClass(bpy.types.Operator):
 class GetBSDDClassificationProperties(bpy.types.Operator):
     bl_idname = "bim.get_bsdd_classification_properties"
     bl_label = "Search bSDD Class Properties"
-    bl_description = (
-        "Search for bSDD class properties for the currently selected class. All non-IFC properties are skipped"
-    )
+    bl_description = "Search for bSDD class properties for the currently selected class"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):

@@ -40,7 +40,7 @@ from mathutils import Vector, Matrix, Euler
 from math import radians
 from pathlib import Path
 from collections import namedtuple
-from typing import List
+from typing import List, Iterable, Union
 
 
 class SetTab(bpy.types.Operator):
@@ -48,7 +48,7 @@ class SetTab(bpy.types.Operator):
     # NOTE: bl_label is set to empty string intentionally
     # to avoid showing the operator's name in the tooltips, see #3704
     bl_label = ""
-    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    bl_options = {"INTERNAL"}
     tab: bpy.props.StringProperty()
 
     @classmethod
@@ -67,7 +67,7 @@ class SetTab(bpy.types.Operator):
 class SwitchTab(bpy.types.Operator):
     bl_idname = "bim.switch_tab"
     bl_label = "Switch Tab"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options = set()
     bl_description = "Switches to the last used tab"
 
     def execute(self, context):
@@ -82,11 +82,31 @@ class SwitchTab(bpy.types.Operator):
 class OpenUri(bpy.types.Operator):
     bl_idname = "bim.open_uri"
     bl_label = "Open URI"
-    bl_description = "Open the URL in your Web Browser"
     uri: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        return f"Open the URL in your Web Browser: '{properties.uri}'."
 
     def execute(self, context):
         webbrowser.open(self.uri)
+        return {"FINISHED"}
+
+
+class OpenPath(bpy.types.Operator):
+    bl_idname = "bim.open_path"
+    bl_label = "Open Path"
+    path: bpy.props.StringProperty()
+    tooltip: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        if properties.tooltip:
+            return properties.tooltip
+        return f"Open path: '{properties.path}'."
+
+    def execute(self, context):
+        tool.Blender.open_file_or_folder(self.path)
         return {"FINISHED"}
 
 
@@ -171,7 +191,7 @@ class BIM_OT_multiple_file_selector(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return getattr(context, "file_props", None) is not None
 
     def execute(self, context):
@@ -220,6 +240,22 @@ class SelectDataDir(bpy.types.Operator):
 
     def execute(self, context):
         context.scene.BIMProperties.data_dir = os.path.dirname(self.filepath)
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+
+class SelectCacheDir(bpy.types.Operator):
+    bl_idname = "bim.select_cache_dir"
+    bl_label = "Select Cache Directory"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Select the directory that contains HDF5 cache files"
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        context.scene.BIMProperties.cache_dir = os.path.dirname(self.filepath)
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -477,21 +513,12 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
     def create_section_compare_node(self):
         group = bpy.data.node_groups.new("Section Compare", type="ShaderNodeTree")
-        if bpy.app.version >= (4, 0, 0):
-            input_value = group.interface.new_socket(name="Value", in_out="INPUT", socket_type="NodeSocketFloat")
-            input_value.default_value = 1.0  # Mandatory multiplier for the last node group
-            group.interface.new_socket(name="Vector", in_out="INPUT", socket_type="NodeSocketVector")
-            group.interface.new_socket(name="Line Decorator", in_out="INPUT", socket_type="NodeSocketFloat")
-            group.interface.new_socket(name="Value", in_out="OUTPUT", socket_type="NodeSocketFloat")
-            group.interface.new_socket(name="Line Decorator", in_out="OUTPUT", socket_type="NodeSocketFloat")
-        else:
-            group.inputs.new("NodeSocketFloat", "Value")
-            # Mandatory multiplier for the last node group
-            group.inputs["Value"].default_value = 1.0
-            group.inputs.new("NodeSocketVector", "Vector")
-            group.inputs.new("NodeSocketFloat", "Line Decorator")
-            group.outputs.new("NodeSocketFloat", "Value")
-            group.outputs.new("NodeSocketFloat", "Line Decorator")
+        input_value = group.interface.new_socket(name="Value", in_out="INPUT", socket_type="NodeSocketFloat")
+        input_value.default_value = 1.0  # Mandatory multiplier for the last node group
+        group.interface.new_socket(name="Vector", in_out="INPUT", socket_type="NodeSocketVector")
+        group.interface.new_socket(name="Line Decorator", in_out="INPUT", socket_type="NodeSocketFloat")
+        group.interface.new_socket(name="Value", in_out="OUTPUT", socket_type="NodeSocketFloat")
+        group.interface.new_socket(name="Line Decorator", in_out="OUTPUT", socket_type="NodeSocketFloat")
 
         group_input = group.nodes.new(type="NodeGroupInput")
         group_input.location = 0, 50
@@ -540,12 +567,8 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
     def create_section_override_node(self, obj, context):
         group = bpy.data.node_groups.new("Section Override", type="ShaderNodeTree")
-        if bpy.app.version >= (4, 0, 0):
-            group.interface.new_socket(name="Shader", in_out="INPUT", socket_type="NodeSocketShader")
-            group.interface.new_socket(name="Shader", in_out="OUTPUT", socket_type="NodeSocketShader")
-        else:
-            group.inputs.new("NodeSocketShader", "Shader")
-            group.outputs.new("NodeSocketShader", "Shader")
+        group.interface.new_socket(name="Shader", in_out="INPUT", socket_type="NodeSocketShader")
+        group.interface.new_socket(name="Shader", in_out="OUTPUT", socket_type="NodeSocketShader")
         links = group.links
         nodes = group.nodes
 
@@ -796,8 +819,8 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
 
         start = time.time()
         logger = logging.getLogger("ImportIFC")
-        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
-        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
+        path_log = tool.Blender.get_data_dir_path("process.log")
+        if not os.access(path_log.parent, os.W_OK):
             path_log = os.path.join(tempfile.mkdtemp(), "process.log")
         logging.basicConfig(
             filename=path_log,
@@ -868,7 +891,8 @@ def update_enum_property_search_prop(self, context):
             if self.first_launch:
                 self.first_launch = False
             else:
-                context.window.screen = context.window.screen
+                if not self.should_click_ok:
+                    context.window.screen = context.window.screen
             if predefined_type:
                 try:
                     setattr(context.data, "ifc_predefined_type", predefined_type)
@@ -879,7 +903,8 @@ def update_enum_property_search_prop(self, context):
 
 class BIM_OT_enum_property_search(bpy.types.Operator):
     bl_idname = "bim.enum_property_search"
-    bl_label = "Search For Property"
+    bl_label = "Search"
+    bl_description = "Search For Property"
     bl_options = {"REGISTER", "UNDO"}
     first_launch: bpy.props.BoolProperty(default=True, options={"SKIP_SAVE"})
     dummy_name: bpy.props.StringProperty(name="Property", update=update_enum_property_search_prop)
@@ -887,11 +912,15 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
     collection_predefined_types: bpy.props.CollectionProperty(type=StrProperty)
     prop_name: bpy.props.StringProperty()
+    should_click_ok: bpy.props.BoolProperty(default=False)
+    original_operator_path: bpy.props.StringProperty(name="Original Operator Path", default="", options={"SKIP_SAVE"})
+
+    identifiers: list[str]
 
     def invoke(self, context, event):
         self.clear_collections()
         self.data = context.data
-        items = get_enum_items(self.data, self.prop_name, context)
+        items = get_enum_items(self.data, self.prop_name, context, original_operator_path=self.original_operator_path)
         if items is None:
             return {"FINISHED"}
         self.add_items_regular(items)
@@ -906,7 +935,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     def execute(self, context):
         return {"FINISHED"}
 
-    def clear_collections(self):
+    def clear_collections(self) -> None:
         self.collection_names.clear()
         self.collection_identifiers.clear()
 
@@ -915,17 +944,21 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
         self.collection_names.add().name = name
         self.collection_predefined_types.add().name = predefined_type
 
-    def add_items_regular(self, items):
+    def add_items_regular(
+        self,
+        items: Iterable[Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int], None]],
+    ) -> None:
         self.identifiers = []
+        current_value = getattr(self.data, self.prop_name)
         for item in items:
             if item is None:  # Used as a separator
                 continue
             self.identifiers.append(item[0])
             self.add_item(identifier=item[0], name=item[1])
-            if item[0] == getattr(self.data, self.prop_name):
+            if item[0] == current_value:
                 self.dummy_name = item[1]  # We found the current enum name
 
-    def add_items_suggestions(self):
+    def add_items_suggestions(self) -> None:
         getter_suggestions = getattr(self.data, "getter_enum_suggestions", None)
         if getter_suggestions is not None:
             mapping = getter_suggestions.get(self.prop_name)
@@ -943,6 +976,32 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                             name=f"{key} > {name if name else predefined_type }",
                             predefined_type=predefined_type,
                         )
+
+
+class BIM_OT_select_entity(bpy.types.Operator):
+    bl_idname = "bim.select_entity"
+    bl_label = "Select Entity"
+    bl_options = {"REGISTER", "UNDO"}
+    ifc_id: bpy.props.IntProperty()
+    tooltip: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        return properties.tooltip
+
+    def execute(self, context):
+        element = tool.Ifc.get_entity_by_id(self.ifc_id)
+        if not element:
+            self.report({"ERROR"}, f"No IFC element found with id #{self.ifc_id}.")
+            return {"CANCELLED"}
+
+        obj = tool.Ifc.get_object(element)
+        if not isinstance(obj, bpy.types.Object):
+            self.report({"ERROR"}, f"The following element is not present in the scene as Blender object: '{element}'.")
+            return {"CANCELLED"}
+
+        tool.Blender.set_objects_selection(context, obj, [obj], clear_previous_selection=True)
+        return {"FINISHED"}
 
 
 class BIM_OT_select_object(bpy.types.Operator):
@@ -1133,3 +1192,19 @@ class RevertClippingPlaneCut(bpy.types.Operator):
         if replaced_mesh:
             obj.data = replaced_mesh
             tool.Blender.remove_data_block(mesh, do_unlink=False)
+
+
+class CopyTextToClipboard(bpy.types.Operator):
+    bl_idname = "bim.copy_text_to_clipboard"
+    bl_label = "Copy Text To Clipboard"
+    bl_options = set()
+
+    text: bpy.props.StringProperty(options={"SKIP_SAVE"})
+
+    @classmethod
+    def description(cls, context, properties):
+        return f"Copy text to clipboard: '{properties.text}'."
+
+    def execute(self, context):
+        context.window_manager.clipboard = self.text
+        return {"FINISHED"}

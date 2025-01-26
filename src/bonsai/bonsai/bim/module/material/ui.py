@@ -45,6 +45,8 @@ class BIM_PT_materials(Panel):
             MaterialsData.load()
 
         self.props = context.scene.BIMMaterialProperties
+        material = tool.Material.get_active_material_item()
+        material_id = material.ifc_definition_id if material else None
 
         row = self.layout.row(align=True)
         if self.props.is_editing:
@@ -61,47 +63,44 @@ class BIM_PT_materials(Panel):
 
         if self.props.material_type == "IfcMaterial":
             row.operator("bim.add_material", text="", icon="ADD")
-            if self.props.materials and self.props.active_material_index < len(self.props.materials):
-                material = self.props.materials[self.props.active_material_index]
-                if material.ifc_definition_id:
-                    op = row.operator("bim.duplicate_material", text="", icon="DUPLICATE")
-                    op.material = material.ifc_definition_id
-                    op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
-                    op.material = material.ifc_definition_id
-                    op = row.operator("bim.assign_material_to_selected", text="", icon="BRUSH_DATA")
-                    op.material = material.ifc_definition_id
-                    op = row.operator("bim.enable_editing_material", text="", icon="GREASEPENCIL")
-                    op.material = material.ifc_definition_id
-                    op = row.operator("bim.enable_editing_material_style", text="", icon="SHADING_RENDERED")
-                    op.material = material.ifc_definition_id
-                    row.operator("bim.remove_material", text="", icon="X").material = material.ifc_definition_id
+            if material_id:
+                op = row.operator("bim.duplicate_material", text="", icon="DUPLICATE")
+                op.material = material_id
+                op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
+                op.material = material_id
+                op = row.operator("bim.assign_material_to_selected", text="", icon="BRUSH_DATA")
+                op.material = material_id
+                op = row.operator("bim.enable_editing_material", text="", icon="GREASEPENCIL")
+                op.material = material_id
+                op = row.operator("bim.enable_editing_material_style", text="", icon="SHADING_RENDERED")
+                op.material = material_id
+                row.operator("bim.remove_material", text="", icon="X").material = material_id
 
             self.draw_editing_ui()
         else:
             row.operator("bim.add_material_set", text="", icon="ADD").set_type = self.props.material_type
-            if self.props.materials and self.props.active_material_index < len(self.props.materials):
-                material = self.props.materials[self.props.active_material_index]
-                if material.ifc_definition_id:
-                    op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
-                    op.material = material.ifc_definition_id
-                    op = row.operator("bim.assign_material_to_selected", text="", icon="BRUSH_DATA")
-                    op.material = material.ifc_definition_id
-                    row.operator("bim.remove_material_set", text="", icon="X").material = material.ifc_definition_id
+            if material_id:
+                op = row.operator("bim.select_by_material", text="", icon="RESTRICT_SELECT_OFF")
+                op.material = material_id
+                op = row.operator("bim.assign_material_to_selected", text="", icon="BRUSH_DATA")
+                op.material = material_id
+                row.operator("bim.remove_material_set", text="", icon="X").material = material_id
 
         self.layout.template_list("BIM_UL_materials", "", self.props, "materials", self.props, "active_material_index")
 
-        # TODO: data.py is not updated on changing active_material_index
-        # so the active material styles go out of sync with the active material
-        for style in MaterialsData.data["active_styles"]:
-            row = self.layout.row(align=True)
-            row.label(text="", icon="SHADING_RENDERED")
-            row.label(text=style["context_type"])
-            row.label(text=style["context_identifier"])
-            row.label(text=style["target_view"])
-            row.label(text=style["name"])
-            op = row.operator("bim.unassign_material_style", text="", icon="X")
-            op.style = style["id"]
-            op.context = style["context_id"]
+        if material_id:
+            for style in MaterialsData.data["material_styles_data"][material_id]:
+                row = self.layout.row(align=True)
+                row.label(text="", icon="SHADING_RENDERED")
+                row.label(text=style["context_type"])
+                row.label(text=style["context_identifier"])
+                row.label(text=style["target_view"])
+                row.label(text=style["name"])
+                op = row.operator("bim.styles_ui_select", icon="ZOOM_SELECTED", text="")
+                op.style_id = style["id"]
+                op = row.operator("bim.unassign_material_style", text="", icon="X")
+                op.style = style["id"]
+                op.context = style["context_id"]
 
     def draw_editing_ui(self):
         if not self.props.active_material_id:
@@ -189,6 +188,8 @@ class BIM_PT_object_material(Panel):
                 op.material_set_usage = ObjectMaterialData.data["material_id"]
             row.operator("bim.disable_editing_assigned_material", icon="CANCEL", text="")
         else:
+            op = row.operator("bim.material_ui_select", icon="ZOOM_SELECTED", text="")
+            op.material_id = ObjectMaterialData.data["material_id"]
             row.operator("bim.enable_editing_assigned_material", icon="GREASEPENCIL", text="")
             row.operator("bim.unassign_material", icon="X", text="")
 
@@ -206,9 +207,15 @@ class BIM_PT_object_material(Panel):
         prop_with_search(self.layout, self.props, "material", text="")
 
     def draw_read_only_single_ui(self):
-        row = self.layout.row(align=True)
+        material_id = ObjectMaterialData.data["material_id"]
+        layout = self.layout
+        box = layout.box()
+        row = box.row()
         row.label(text="Name")
-        row.label(text=ObjectMaterialData.data["material_name"])
+        op = row.operator(
+            "bim.select_by_material", text=ObjectMaterialData.data["material_name"], icon="NONE", emboss=False
+        )
+        op.material = material_id
 
     def draw_set_ui(self):
         if self.props.is_editing:
@@ -224,6 +231,9 @@ class BIM_PT_object_material(Panel):
             row.label(text="No Profiles Available")
             row.operator("bim.add_profile_def", icon="ADD", text="")
         else:
+            layout = self.layout
+            layout.separator()
+            layout.separator()
             row = self.layout.row(align=True)
             if ObjectMaterialData.data["set_item_name"] == "profile":
                 prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="")
@@ -232,31 +242,36 @@ class BIM_PT_object_material(Panel):
             setattr(op, f"{ObjectMaterialData.data['set_item_name']}_set", ObjectMaterialData.data["set"]["id"])
 
         total_items = len(ObjectMaterialData.data["set_items"])
-        row = self.layout.row(align=True)
-        row.label(text="----- Exterior -----")
+
+        layout = self.layout
+        box = layout.box()
+        active_object = bpy.context.active_object
+        self.layerset_bounds(box, active_object, location="Top_Exterior")
+
         for index, set_item in enumerate(ObjectMaterialData.data["set_items"]):
             if (
                 len(self.props.material_set_item_profile_attributes)
                 and self.props.active_material_set_item_id == set_item["id"]
             ):
-                self.draw_editable_set_item_profile_ui(set_item)
+                self.draw_editable_set_item_profile_ui(box, set_item)
             elif self.props.active_material_set_item_id == set_item["id"]:
-                self.draw_editable_set_item_ui(set_item)
+                self.draw_editable_set_item_ui(box, set_item)
             else:
-                self.draw_read_only_set_item_ui(set_item, index, is_first=index == 0, is_last=index == total_items - 1)
-        row = self.layout.row(align=True)
-        row.label(text="----- Interior -----")
+                self.draw_read_only_set_item_ui(
+                    box, set_item, index, is_first=index == 0, is_last=index == total_items - 1
+                )
 
-    def draw_editable_set_item_profile_ui(self, set_item):
-        box = self.layout.box()
+        self.layerset_bounds(box, active_object, location="Bottom_Interior")
+
+    def draw_editable_set_item_profile_ui(self, box, set_item):
+        # box = self.layout.box()
         row = box.row(align=True)
         op = row.operator("bim.edit_material_set_item_profile", icon="CHECKMARK", text="Save Changes")
         op.material_set_item = set_item["id"]
         row.operator("bim.disable_editing_material_set_item_profile", icon="CANCEL", text="")
         draw_attributes(self.props.material_set_item_profile_attributes, box)
 
-    def draw_editable_set_item_ui(self, set_item):
-        box = self.layout.box()
+    def draw_editable_set_item_ui(self, box, set_item):
         row = box.row(align=True)
         op = row.operator("bim.edit_material_set_item", icon="CHECKMARK", text="Save Changes")
         op.material_set_item = set_item["id"]
@@ -271,13 +286,13 @@ class BIM_PT_object_material(Panel):
             row = box.row()
             prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="Profile")
 
-    def draw_read_only_set_item_ui(self, set_item, index, is_first=False, is_last=False):
+    def draw_read_only_set_item_ui(self, box, set_item, index, is_first=False, is_last=False):
         if ObjectMaterialData.data["material_class"] == "IfcMaterialList":
-            row = self.layout.row(align=True)
+            row = box.row(align=True)
             row.label(text="IfcMaterial", icon="LAYER_ACTIVE")
             row.label(text=set_item["name"], icon="MATERIAL")
         else:
-            row = self.layout.row(align=True)
+            row = box.row(align=True)
             row.label(text=set_item["name"], icon=set_item["icon"])
             row.label(text=set_item["material"], icon="MATERIAL")
 
@@ -296,6 +311,8 @@ class BIM_PT_object_material(Panel):
             and ObjectMaterialData.data["material_class"] != "IfcMaterialList"
         ):
             if "Profile" in ObjectMaterialData.data["material_class"]:
+                op = row.operator("bim.profiles_ui_select", icon="ZOOM_SELECTED", text="")
+                op.profile_id = set_item["id"]
                 op = row.operator("bim.enable_editing_material_set_item_profile", icon="ITALIC", text="")
                 op.material_set_item = set_item["id"]
             op = row.operator("bim.enable_editing_material_set_item", icon="GREASEPENCIL", text="")
@@ -312,29 +329,19 @@ class BIM_PT_object_material(Panel):
     def draw_read_only_set_ui(self):
         if ObjectMaterialData.data["material_class"] != "IfcMaterialList":
             row = self.layout.row(align=True)
-            row.label(text="Name")
-            row.label(text=ObjectMaterialData.data["set"]["name"])
+            set_name = ObjectMaterialData.data["set"]["name"]
+            row.label(text=f"     Name: {set_name}")
 
         if ObjectMaterialData.data["set"]["description"]:
+            set_description = ObjectMaterialData.data["set"]["description"]
             row = self.layout.row(align=True)
-            row.label(text="Description")
-            row.label(text=ObjectMaterialData.data["set"]["description"])
+            row.label(text=f"     Description: {set_description}")
 
         if ObjectMaterialData.data["material_class"] == "IfcMaterialProfileSetUsage":
             if ObjectMaterialData.data["set_usage"].get("cardinal_point"):
+                cardinal_point = ObjectMaterialData.data["set_usage"]["cardinal_point"]
                 row = self.layout.row(align=True)
-                row.label(text="CardinalPoint")
-                row.label(text=ObjectMaterialData.data["set_usage"]["cardinal_point"])
-
-        for set_item in ObjectMaterialData.data["set_items"]:
-            if ObjectMaterialData.data["material_class"] == "IfcMaterialList":
-                row = self.layout.row(align=True)
-                row.label(text="IfcMaterial", icon="LAYER_ACTIVE")
-                row.label(text=set_item["name"], icon="MATERIAL")
-            else:
-                row = self.layout.row(align=True)
-                row.label(text=set_item["name"], icon=set_item["icon"])
-                row.label(text=set_item["material"], icon="MATERIAL")
+                row.label(text=f"     Cardinal Point: {cardinal_point}")
 
         if ObjectMaterialData.data["total_thickness"]:
             total_thickness = ObjectMaterialData.data["total_thickness"]
@@ -348,7 +355,43 @@ class BIM_PT_object_material(Panel):
                 total_thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True
             )
             row = self.layout.row(align=True)
-            row.label(text=f"Total Thickness: {formatted_thickness}")
+            row.label(text=f"     Total Thickness: {formatted_thickness}")
+
+        layout = self.layout
+        box = layout.box()
+        active_object = bpy.context.active_object
+        self.layerset_bounds(box, active_object, location="Top_Exterior")
+
+        for set_item in ObjectMaterialData.data["set_items"]:
+            material_name = set_item["material"]
+            material_id = set_item["material_id"]
+            if ObjectMaterialData.data["material_class"] == "IfcMaterialList":
+                row = box.row()
+                row.label(text="IfcMaterial", icon="LAYER_ACTIVE")
+                op = row.operator("bim.select_by_material", text=material_name, emboss=False)
+                op.material = material_id
+            else:
+                row = box.row()
+                row.label(text=set_item["name"], icon=set_item["icon"])
+                op = row.operator("bim.select_by_material", text=material_name, emboss=False)
+                op.material = material_id
+
+        self.layerset_bounds(box, active_object, location="Bottom_Interior")
+
+    def layerset_bounds(self, box, obj, location="Top_Exterior"):
+        set_usage = ObjectMaterialData.data.get("set_usage", {})
+        layer_set_direction = set_usage.get("layer_set_direction")
+        if layer_set_direction:
+            if location == "Top_Exterior":
+                if layer_set_direction == "AXIS3":
+                    box.label(text="----- Top -----")
+                else:
+                    box.label(text="----- Exterior -----")
+            if location == "Bottom_Interior":
+                if layer_set_direction == "AXIS3":
+                    box.label(text="----- Bottom -----")
+                else:
+                    box.label(text="----- Interior -----")
 
 
 class BIM_UL_materials(UIList):
@@ -378,7 +421,6 @@ class BIM_UL_materials(UIList):
 
                 row2 = row.row()
                 row2.alignment = "RIGHT"
-                row2.label(text=str(item.total_elements))
-
                 if item.has_style:
                     row2.label(text="", icon="SHADING_RENDERED")
+                row2.label(text=str(item.total_elements))

@@ -30,7 +30,6 @@ from typing import Union
 class Patcher:
     def __init__(
         self,
-        src: str,
         file: ifcopenshell.file,
         logger: Logger,
         query: str = "IfcBeam",
@@ -58,7 +57,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "TessellateElements", "arguments": ["IfcBeam", False]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.query = query
@@ -92,7 +90,7 @@ class Patcher:
         ) -> None:
             geometry = getattr(shape, "geometry", shape)
             v = [[x.tolist() for x in ifcopenshell.util.shape.get_vertices(geometry)]]
-            f = [ifcopenshell.util.shape.get_faces(geometry)]
+            f = [ifcopenshell.util.shape.get_faces(geometry).tolist()]
             replacements[element] = (v, f)
 
         iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=products)
@@ -112,6 +110,8 @@ class Patcher:
         # Do the replacements outside the iterator to prevent messing up iterator state.
         for element, geometry in replacements.items():
             v, f = geometry
+            if not v or not f:
+                continue
             mesh = ifcopenshell.api.run(
                 "geometry.add_mesh_representation",
                 self.file,

@@ -18,9 +18,14 @@
 
 import bpy
 from . import ui, prop, operator
+from bpy.app.handlers import persistent
 
 classes = (
+    operator.AddCurvelikeItem,
+    operator.AddHalfSpaceSolidItem,
+    operator.AddMeshlikeItem,
     operator.AddRepresentation,
+    operator.AddSweptAreaSolidItem,
     operator.CopyRepresentation,
     operator.DisableEditingRepresentationItemShapeAspect,
     operator.DisableEditingRepresentationItemStyle,
@@ -36,15 +41,20 @@ classes = (
     operator.EnableEditingRepresentationItems,
     operator.FlipObject,
     operator.GetRepresentationIfcParameters,
+    operator.ImportRepresentationItems,
+    operator.NameProfile,
     operator.OverrideDelete,
     operator.OverrideDuplicateMove,
     operator.OverrideDuplicateMoveLinked,
     operator.OverrideDuplicateMoveLinkedMacro,
     operator.OverrideDuplicateMoveMacro,
+    operator.OverrideEscape,
     operator.OverrideJoin,
     operator.OverrideMeshSeparate,
     operator.OverrideModeSetEdit,
     operator.OverrideModeSetObject,
+    operator.OverrideMove,
+    operator.OverrideMoveMacro,
     operator.OverrideOriginSet,
     operator.OverrideOutlinerDelete,
     operator.OverridePasteBuffer,
@@ -55,11 +65,14 @@ classes = (
     operator.RemoveRepresentationItem,
     operator.RemoveRepresentationItemFromShapeAspect,
     operator.SelectConnection,
+    operator.SelectRepresentationItem,
     operator.SwitchRepresentation,
     operator.UnassignRepresentationItemStyle,
+    operator.UpdateItemAttributes,
     operator.UpdateParametricRepresentation,
     operator.UpdateRepresentation,
     prop.RepresentationItem,
+    prop.RepresentationItemObject,
     prop.ShapeAspect,
     prop.BIMObjectGeometryProperties,
     prop.BIMGeometryProperties,
@@ -80,13 +93,28 @@ classes = (
 addon_keymaps = []
 
 
+@persistent
+def block_scale(scene):
+    if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
+        if isinstance(obj, bpy.types.Object) and obj.BIMObjectProperties.ifc_definition_id:
+            if obj.scale != (1, 1, 1):
+                obj.scale = (1, 1, 1)
+        elif isinstance(obj, bpy.types.Mesh) and obj.BIMMeshProperties.ifc_definition_id:
+            if obj.scale != (1, 1, 1):
+                obj.scale = (1, 1, 1)
+
+
 def register():
+    bpy.app.handlers.depsgraph_update_pre.append(block_scale)
+
     operator.OverrideDuplicateMoveMacro.define("BIM_OT_override_object_duplicate_move")
     operator.OverrideDuplicateMoveMacro.define("TRANSFORM_OT_translate")
     operator.OverrideDuplicateMoveLinkedMacro.define("BIM_OT_override_object_duplicate_move_linked")
     operator.OverrideDuplicateMoveLinkedMacro.define("TRANSFORM_OT_translate")
     operator.DuplicateMoveLinkedAggregateMacro.define("BIM_OT_object_duplicate_move_linked_aggregate")
     operator.DuplicateMoveLinkedAggregateMacro.define("TRANSFORM_OT_translate")
+    operator.OverrideMoveMacro.define("BIM_OT_override_move")
+    operator.OverrideMoveMacro.define("TRANSFORM_OT_translate")
 
     bpy.types.Object.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMObjectGeometryProperties)
     bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
@@ -95,6 +123,7 @@ def register():
     bpy.types.VIEW3D_MT_object_context_menu.append(ui.object_menu)
     bpy.types.VIEW3D_MT_edit_mesh.append(ui.edit_mesh_menu)
     bpy.types.VIEW3D_HT_header.append(ui.mode_menu)
+
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
         km = wm.keyconfigs.addon.keymaps.new(name="Object Mode", space_type="EMPTY")
@@ -107,6 +136,8 @@ def register():
         kmi = km.keymap_items.new(
             "bim.object_duplicate_move_linked_aggregate_macro", "D", "PRESS", ctrl=True, shift=True
         )
+        addon_keymaps.append((km, kmi))
+        kmi = km.keymap_items.new("bim.override_move_macro", "G", "PRESS")
         addon_keymaps.append((km, kmi))
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
@@ -130,6 +161,10 @@ def register():
         kmi = km.keymap_items.new("bim.override_mode_set_object", "TAB", "PRESS")
         addon_keymaps.append((km, kmi))
 
+        km = wm.keyconfigs.addon.keymaps.new(name="3D View", space_type="VIEW_3D")
+        kmi = km.keymap_items.new("bim.override_escape", "ESC", "PRESS")
+        addon_keymaps.append((km, kmi))
+
         km = wm.keyconfigs.addon.keymaps.new(name="Outliner", space_type="OUTLINER")
         kmi = km.keymap_items.new("bim.override_paste_buffer", "V", "PRESS", ctrl=True)
         addon_keymaps.append((km, kmi))
@@ -140,6 +175,8 @@ def register():
 
 
 def unregister():
+    bpy.app.handlers.depsgraph_update_pre.remove(block_scale)
+
     bpy.types.VIEW3D_MT_object.remove(ui.object_menu)
     bpy.types.OUTLINER_MT_object.remove(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.remove(ui.outliner_menu)

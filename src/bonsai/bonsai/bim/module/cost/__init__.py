@@ -67,7 +67,6 @@ classes = (
     operator.LoadCostItemTaskQuantities,
     operator.LoadCostItemTypes,
     operator.LoadProductCostItems,
-    operator.LoadScheduleOfRates,
     operator.RemoveCostColumn,
     operator.RemoveCostItem,
     operator.RemoveCostItemQuantity,

@@ -19,6 +19,8 @@
 import os
 import bpy
 import ifcopenshell
+import ifcopenshell.api.style
+import ifcopenshell.util.schema
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -53,7 +55,7 @@ class TestLoadExpress(NewFile):
 
 class TestPurgeHdf5Cache(NewFile):
     def test_run(self):
-        cache_dir = Path(bpy.context.scene.BIMProperties.data_dir) / "cache"
+        cache_dir = Path(bpy.context.scene.BIMProperties.cache_dir)
         test_file = cache_dir / "test.h5"
         test_file.parent.mkdir(parents=True, exist_ok=True)
         test_file.touch()
@@ -66,3 +68,39 @@ class TestPurgeHdf5Cache(NewFile):
         # On Unix loaded files are not locked.
         paths = [loaded_file_path] if os.name == "nt" else []
         assert [f for f in cache_dir.iterdir() if f.suffix == ".h5"] == paths
+
+
+class TestMergeIdenticalObject(NewFile):
+    def test_merge_identical_styles(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        declaration = tool.Ifc.schema().declaration_by_name("IfcPresentationStyle")
+        style_types = [d.name() for d in ifcopenshell.util.schema.get_subtypes(declaration)]
+        for style_type in style_types:
+            ifc.create_entity(style_type, Name=style_type)
+            ifc.create_entity(style_type, Name=style_type)
+            ifc.create_entity(style_type, Name="NotToMerge")
+            if style_type == "IfcSurfaceStyle":
+                for style in ifc.by_type(style_type):
+                    style.Styles = (ifc.create_entity("IfcSurfaceStyleShading"),)
+            elif style_type == "IfcFillAreaStyle":
+                for style in ifc.by_type(style_type):
+                    style.FillStyles = (ifc.create_entity("IfcFillAreaStyleHatching"),)
+
+        merge_data = subject.merge_identical_objects("STYLE")
+        assert merge_data == {style_type: [style_type] for style_type in style_types}
+
+    def test_merge_identical_materials(self):
+        tool.Ifc.set(ifc := ifcopenshell.file())
+        context = ifc.create_entity("IfcGeometricRepresentationContext")
+        style = ifc.create_entity("IfcSurfaceStyle")
+        element_types = ["IfcMaterial"]
+        for element_type in element_types:
+            ifc.create_entity(element_type, Name=element_type, Category="Category")
+            ifc.create_entity(element_type, Name=element_type, Category="Category")
+            ifc.create_entity(element_type, Name="NotToMerge", Category="Category")
+
+            for material in ifc.by_type(element_type):
+                ifcopenshell.api.style.assign_material_style(ifc, material, style, context)
+
+        merge_data = subject.merge_identical_objects("MATERIAL")
+        assert merge_data == {element_type: [element_type] for element_type in element_types}

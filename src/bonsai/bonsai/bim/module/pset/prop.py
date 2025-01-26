@@ -25,6 +25,7 @@ import ifcopenshell.util.element
 import bonsai.tool as tool
 from bonsai.bim.prop import Attribute, StrProperty
 from bonsai.bim.module.pset.data import AddEditCustomPropertiesData, ObjectPsetsData, MaterialPsetsData
+from bonsai.bim.module.material.data import ObjectMaterialData
 from bonsai.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -37,7 +38,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-
+from typing import Union, Literal, TYPE_CHECKING, get_args
 
 psetnames = {}
 qtonames = {}
@@ -50,7 +51,7 @@ def purge():
     qtonames = {}
 
 
-def blender_formatted_enum_from_psets(psets):
+def blender_formatted_enum_from_psets(psets: list[ifcopenshell.entity_instance]) -> list[tuple[str, str, str]]:
     enum_items = []
     version = tool.Ifc.get_schema()
     for pset in psets:
@@ -59,6 +60,7 @@ def blender_formatted_enum_from_psets(psets):
     return enum_items
 
 
+# TODO: unsafe?
 def get_pset_name(self, context):
     pset_type = repr(self)
     prop_type = pset_type.split(".")[-1]
@@ -97,13 +99,11 @@ def get_material_pset_names(self, context):
 
 def get_material_set_pset_names(self, context):
     global psetnames
-    element = tool.Ifc.get_entity(context.active_object)
-    if not element:
+    if not ObjectMaterialData.is_loaded:
+        ObjectMaterialData.load()
+    ifc_class = ObjectMaterialData.data["material_class"]
+    if not ifc_class or "Set" not in ifc_class:
         return []
-    material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
-    if not material or "Set" not in material.is_a():
-        return []
-    ifc_class = material.is_a()
     if ifc_class not in psetnames:
         psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
@@ -190,6 +190,7 @@ def get_work_schedule_pset_names(self, context):
     return psetnames[ifc_class]
 
 
+# TODO: unsafe?
 def get_qto_name(self, context):
     pset_type = repr(self)
     prop_type = pset_type.split(".")[-1]
@@ -211,12 +212,14 @@ def get_object_qto_name(self, context):
     return ObjectPsetsData.data["qto_name"]
 
 
+# TODO: unsafe?
 def get_template_type(self, context):
     version = tool.Ifc.get_schema()
     for t in ("IfcPropertySingleValue", "IfcPropertyEnumeratedValue"):
         yield (t, t, ifcopenshell.util.doc.get_entity_doc(version, t).get("description", ""))
 
 
+# TODO: unsafe?
 def get_primary_measure_type(self, context):
     if not AddEditCustomPropertiesData.is_loaded:
         AddEditCustomPropertiesData.load()
@@ -227,22 +230,32 @@ class IfcPropertyEnumeratedValue(PropertyGroup):
     enumerated_values: CollectionProperty(type=Attribute)
 
 
+IfcPropertyValueType = Literal["IfcPropertySingleValue", "IfcPropertyEnumeratedValue"]
+
+
 class IfcProperty(PropertyGroup):
     metadata: PointerProperty(type=Attribute)
-    value_type: EnumProperty(
-        items=[(v, v, v) for v in ("IfcPropertySingleValue", "IfcPropertyEnumeratedValue")], name="Value Type"
-    )
+    value_type: EnumProperty(items=[(v, v, v) for v in get_args(IfcPropertyValueType)], name="Value Type")
     enumerated_value: PointerProperty(type=IfcPropertyEnumeratedValue)
+
+    if TYPE_CHECKING:
+        metadata: Attribute
+        value_type: IfcPropertyValueType
 
 
 class PsetProperties(PropertyGroup):
     active_pset_id: IntProperty(name="Active Pset ID")
     active_pset_has_template: BoolProperty(name="Active Pset Has Template")
     active_pset_name: StringProperty(name="Pset Name")
-    active_pset_type: StringProperty(name="Active Pset Type")
+    active_pset_type: EnumProperty(
+        name="Active Pset Type",
+        items=[(i, i, "") for i in ("-", "PSET", "QTO")],
+        default="-",
+    )
     properties: CollectionProperty(name="Properties", type=IfcProperty)
     pset_name: EnumProperty(items=get_pset_name, name="Pset Name")
     qto_name: EnumProperty(items=get_qto_name, name="Qto Name")
+    # Proposed property.
     prop_name: StringProperty(name="Property Name", default="MyProperty")
     prop_value: StringProperty(name="Property Value", default="Some Value")
 
@@ -264,7 +277,7 @@ class AddEditProperties(PropertyGroup):
     template_type: EnumProperty(items=get_template_type, name="Template Type")
     enum_values: CollectionProperty(name="Enum Values", type=Attribute)
 
-    def get_value_name(self):
+    def get_value_name(self) -> Union[Literal["string_value", "bool_value", "int_value", "float_value"], None]:
         ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)
         data_type = ifcopenshell.util.attribute.get_primitive_type(ifc_data_type)
         if data_type == "string":

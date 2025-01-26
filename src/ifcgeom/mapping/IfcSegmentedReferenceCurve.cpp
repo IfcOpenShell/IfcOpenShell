@@ -21,6 +21,8 @@
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
+#include "../function_item_evaluator.h"
+
 #ifdef SCHEMA_HAS_IfcSegmentedReferenceCurve
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* inst) {
@@ -29,14 +31,16 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
 		  
 	auto segments = inst->Segments();
 
-    std::vector<taxonomy::piecewise_function::ptr> pwfs;
+	taxonomy::piecewise_function::spans_t spans;
     for (auto& segment : *segments) {
 		if (segment->as<IfcSchema::IfcCurveSegment>()) {
 			// @todo check that we don't get a mixture of implicit and explicit definitions
 			auto crv = map(segment->as<IfcSchema::IfcCurveSegment>());
-			if (crv && crv->kind() == taxonomy::PIECEWISE_FUNCTION) {
-				pwfs.push_back(taxonomy::cast<taxonomy::piecewise_function>(crv));
-			} else {
+        if (auto fi = taxonomy::dcast<taxonomy::function_item>(crv); crv && fi /*crv->kind() == taxonomy::FUNCTION_ITEM*/) {
+            // crv->kind() is polymorphic and the kind of the actual function_item is returned. PWF can have spans of any FUNCTION_ITEM
+            // for this reason, a dynamic cast is used and if crv is a function_item it is added to the span
+            spans.push_back(fi);
+        } else {
 				Logger::Error("Unsupported");
 				return nullptr;
 			}
@@ -53,40 +57,15 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSegmentedReferenceCurve* ins
     const Eigen::Matrix4d& m = p->ccomponents();
     double cant_start = m(0, 3); // start of cant curve
 
-   auto cant = taxonomy::make<taxonomy::piecewise_function>(cant_start,pwfs,&settings_);
+   auto cant = taxonomy::make<taxonomy::piecewise_function>(cant_start,spans);
+   auto gradient = taxonomy::cast<taxonomy::gradient_function>(map(inst->BaseCurve()));
 
-    // Determine the valid domain of the PWF... the valid domain is where 
-    // horizontal, gradient and cant curves are defined
-    auto gradient = taxonomy::cast<taxonomy::piecewise_function>(map(inst->BaseCurve()));
-    auto horizontal = taxonomy::cast<taxonomy::piecewise_function>(map(inst->BaseCurve()->as<IfcSchema::IfcGradientCurve>()->BaseCurve()));
-    double start = std::max(std::max(cant->start(), gradient->start()), horizontal->start());
-    double end = std::min(std::min(cant->end(), gradient->end()), horizontal->end());
-    double length = end - start;
-
-    if (!(0 < length)) {
-        Logger::Error("IfcSegmentedReferenceCurve does not have a common domain with BaseCurve");
-    }
-
-    // define the callback function for the segmented reference curve
-	auto composition = [gradient, cant](double u)->Eigen::Matrix4d {
-      // u is distance from start of cant curve
-      // add cant->start() to u to get the distance from start of gradient curve
-		auto g = gradient->evaluate(u+cant->start());
-		auto c = cant->evaluate(u);
-
-      c.col(3)(0) = 0.0;        // x is distance along. zero it out so it doesn't add to the x from gradient curve
-      c.col(1).swap(c.col(2));  // c is 2D in distance along - y plane, swap y and z so elevations become z
-      c.row(1).swap(c.row(2));
-
-      Eigen::Matrix4d m;
-      m = g * c;
-      return m;
-	};
-
-	taxonomy::piecewise_function::spans_t spans;
-   spans.emplace_back(length, composition);
-   auto pwf = taxonomy::make<taxonomy::piecewise_function>(start, spans, &settings_, inst);
-   return pwf;
+   auto cant_function = taxonomy::make<taxonomy::cant_function>(gradient, cant, inst);
+   if (!(0 < cant_function->length())) {
+       Logger::Error("IfcSegmentedReferenceCurve does not have a common domain with BaseCurve");
+       cant_function = nullptr;
+   }
+   return cant_function;
 }
 
 #endif

@@ -30,16 +30,20 @@ from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.owner.prop import get_user_person, get_user_organisation
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MAP
+from bonsai.bim.module.aggregate.decorator import AggregateDecorator
+from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
+from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
+from bonsai.bim.module.nest.decorator import NestDecorator
 from mathutils import Vector
 from math import cos, degrees
-from typing import Union
+from typing import Union, Callable
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 global_subscription_owner = object()
 
 
-def name_callback(obj, data):
+def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -> None:
     try:
         obj.name
     except:
@@ -52,9 +56,13 @@ def name_callback(obj, data):
         return
 
     if isinstance(obj, bpy.types.Material):
-        if ifc_definition_id := obj.BIMStyleProperties.ifc_definition_id:
+        props = obj.BIMStyleProperties
+        if ifc_definition_id := props.ifc_definition_id:
+            if props.is_renaming:
+                props.is_renmaing = False
+                return
             IfcStore.get_file().by_id(ifc_definition_id).Name = obj.name
-        refresh_ui_data()
+            refresh_ui_data()
         return
 
     if not obj.BIMObjectProperties.ifc_definition_id:
@@ -88,6 +96,7 @@ def name_callback(obj, data):
 def active_object_callback():
     refresh_ui_data()
     update_bim_tool_props()
+    tool.Geometry.sync_item_positions()
 
 
 def update_bim_tool_props():
@@ -133,7 +142,7 @@ def update_bim_tool_props():
     if AuthoringData.data["active_material_usage"] == "LAYER2":
         x_angle = get_x_angle(extrusion)
         axis = tool.Model.get_wall_axis(obj)["reference"]
-        props.extrusion_depth = extrusion.Depth * si_conversion * cos(x_angle)
+        props.extrusion_depth = abs(extrusion.Depth * si_conversion * cos(x_angle))
         props.length = (axis[1] - axis[0]).length
         props.x_angle = x_angle
 
@@ -146,10 +155,14 @@ def update_bim_tool_props():
 
 
 def active_material_index_callback(obj, data):
-    refresh_ui_data()
+    from bonsai.bim.module.style.data import BlenderMaterialStyleData
+
+    # Simple UI for showing whether blender material is linked to IFC style,
+    # no need to update the entire UI.
+    BlenderMaterialStyleData.is_loaded = False
 
 
-def subscribe_to(obj, data_path, callback):
+def subscribe_to(obj: bpy.types.ID, data_path: str, callback: Callable[[bpy.types.ID, str], None]):
     try:
         subscribe_to = obj.path_resolve(data_path, False)
     except:
@@ -258,15 +271,8 @@ def viewport_shading_changed_callback(area):
         bpy.context.scene.BIMStylesProperties.active_style_type = "External"
 
 
-@persistent
-def load_post(scene):
-    global global_subscription_owner
-    active_object_key = bpy.types.LayerObjects, "active"
-    bpy.msgbus.subscribe_rna(
-        key=active_object_key, owner=global_subscription_owner, args=(), notify=active_object_callback
-    )
-
-    # subscribe to changes in viewport shading mode
+def subscribe_to_viewport_shading_changes():
+    """Subscribe to changes in viewport shading mode"""
     # NOTE: couldn't find a way to make it work for new areas too
     # it starts working for them after blender restart though
     for screen in bpy.data.screens:
@@ -279,6 +285,15 @@ def load_post(scene):
             bpy.msgbus.subscribe_rna(
                 key=key, owner=global_subscription_owner, args=(area,), notify=viewport_shading_changed_callback
             )
+
+
+@persistent
+def load_post(scene):
+    global global_subscription_owner
+    active_object_key = bpy.types.LayerObjects, "active"
+    bpy.msgbus.subscribe_rna(
+        key=active_object_key, owner=global_subscription_owner, args=(), notify=active_object_callback
+    )
 
     ifcopenshell.api.owner.settings.get_user = get_user
     ifcopenshell.api.owner.settings.get_application = get_application
@@ -295,6 +310,9 @@ def load_post(scene):
         else:
             bpy.ops.workspace.append_activate(idname="BIM", filepath=os.path.join(cwd, "data", "workspace.blend"))
 
+    # After appending the workspace to ensure BIM viewport is affected.
+    subscribe_to_viewport_shading_changes()
+
     # To improve usability for new users, we hijack the scene properties
     # tab. We override default scene properties panels with our own poll
     # to hide them unless the user has chosen to view Blender properties.
@@ -306,3 +324,25 @@ def load_post(scene):
 
     if tool.Ifc.get() and bpy.data.is_saved:
         bpy.context.scene.BIMProperties.has_blend_warning = True
+
+    # Bonsai overlays
+    georeference_props = bpy.context.scene.BIMGeoreferenceProperties
+    aggregate_props = bpy.context.scene.BIMAggregateProperties
+    nest_props = bpy.context.scene.BIMNestProperties
+    model_props = bpy.context.scene.BIMModelProperties
+    if georeference_props.should_visualise:
+        GeoreferenceDecorator.install(bpy.context)
+    if aggregate_props.aggregate_decorator:
+        AggregateDecorator.install(bpy.context)
+    if nest_props.nest_decorator:
+        NestDecorator.install(bpy.context)
+    if model_props.show_wall_axis:
+        WallAxisDecorator.install(bpy.context)
+    if model_props.show_slab_direction:
+        SlabDirectionDecorator.install(bpy.context)
+
+    if scene := bpy.context.scene:
+        # Snapping is off by default in Blender, but in BIM, it's more useful to be on
+        scene.tool_settings.use_snap = True
+        # Match default Bonsai snaps
+        scene.tool_settings.snap_elements_base = {"EDGE", "EDGE_PERPENDICULAR", "VERTEX", "EDGE_MIDPOINT", "FACE"}

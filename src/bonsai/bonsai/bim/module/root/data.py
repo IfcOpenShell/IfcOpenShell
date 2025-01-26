@@ -22,7 +22,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc, get_class_suggestions
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from typing import Union
 
 
@@ -42,6 +41,7 @@ class IfcClassData:
         cls.data["ifc_products"] = cls.ifc_products()
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["ifc_classes_suggestions"] = cls.ifc_classes_suggestions()  # Call AFTER cls.ifc_classes()
+        cls.data["representation_template"] = cls.representation_template()
         cls.data["contexts"] = cls.contexts()
 
         cls.data["has_entity"] = cls.has_entity()
@@ -50,17 +50,17 @@ class IfcClassData:
         cls.data["ifc_class"] = cls.ifc_class()
         cls.data["ifc_predefined_types"] = cls.ifc_predefined_types()
         cls.data["can_reassign_class"] = cls.can_reassign_class()
+        cls.data["profile"] = cls.profile()
 
     @classmethod
     def ifc_products(cls):
         products = [
             "IfcElementType",
             "IfcElement",
+            "IfcFeatureElement",
             "IfcSpatialElement",
             "IfcSpatialElementType",
-            "IfcGroup",
             "IfcStructuralItem",
-            "IfcContext",
             "IfcAnnotation",
             "IfcRelSpaceBoundary",
         ]
@@ -69,8 +69,8 @@ class IfcClassData:
             products = [
                 "IfcElementType",
                 "IfcElement",
+                "IfcFeatureElement",
                 "IfcSpatialStructureElement",
-                "IfcGroup",
                 "IfcStructuralItem",
                 "IfcAnnotation",
                 "IfcRelSpaceBoundary",
@@ -88,10 +88,11 @@ class IfcClassData:
             if tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
                 names.extend(("IfcDoorStyle", "IfcWindowStyle"))
         if ifc_product == "IfcElement":
-            names.remove("IfcOpeningElement")
-            if tool.Ifc.get_schema() == "IFC4":
-                # Yeah, weird isn't it.
-                names.remove("IfcOpeningStandardCase")
+            feature_elements = ifcopenshell.util.schema.get_subtypes(
+                tool.Ifc.schema().declaration_by_name("IfcFeatureElement")
+            )
+            for feature_element in feature_elements:
+                names.remove(feature_element.name())
         version = tool.Ifc.get_schema()
         return [(c, c, (get_entity_doc(version, c) or {}).get("description", "")) for c in sorted(names)]
 
@@ -129,6 +130,87 @@ class IfcClassData:
             for suggestion_dict in class_suggestions:
                 suggestions[ifc_class].append(suggestion_dict)
         return suggestions
+
+    @classmethod
+    def representation_template(cls):
+        ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
+        templates = [
+            ("EMPTY", "No Geometry", "Start with an empty object"),
+            None,
+        ]
+        templates.extend(
+            [
+                (
+                    "OBJ",
+                    "Tessellation From Object",
+                    "Use an object as a template to create a new tessellation",
+                ),
+                (
+                    "MESH",
+                    "Custom Tessellation",
+                    "Create a basic tessellated or faceted cube",
+                ),
+                (
+                    "EXTRUSION",
+                    "Custom Extruded Solid",
+                    "An extrusion from an arbitrary profile",
+                ),
+            ]
+        )
+        if ifc_class.endswith("Type") or ifc_class.endswith("Style"):
+            templates.extend(
+                [
+                    None,
+                    (
+                        "LAYERSET_AXIS2",
+                        "Vertical Layers",
+                        "For objects similar to walls, will automatically add IfcMaterialLayerSet",
+                    ),
+                    (
+                        "LAYERSET_AXIS3",
+                        "Horizontal Layers",
+                        "For objects similar to slabs, will automatically add IfcMaterialLayerSet",
+                    ),
+                    (
+                        "PROFILESET",
+                        "Extruded Profile",
+                        "Create profile type object, automatically defines IfcMaterialProfileSet with the first profile from library",
+                    ),
+                ]
+            )
+        if ifc_class in ("IfcWindowType", "IfcWindowStyle", "IfcWindow"):
+            templates.extend([None, ("WINDOW", "Window", "Parametric window")])
+        elif ifc_class in ("IfcDoorType", "IfcDoorStyle", "IfcDoor"):
+            templates.extend([None, ("DOOR", "Door", "Parametric door")])
+        elif ifc_class in ("IfcStairType", "IfcStairFlightType", "IfcStair", "IfcStairFlight"):
+            templates.extend([None, ("STAIR", "Stair", "Parametric stair")])
+        elif ifc_class in ("IfcRailingType", "IfcRailing"):
+            templates.extend([None, ("RAILING", "Railing", "Parametric railing")])
+        elif ifc_class in ("IfcRoofType", "IfcRoof"):
+            templates.extend([None, ("ROOF", "Roof", "Parametric roof with a constant pitch")])
+        elif ifc_class and "Segment" in ifc_class:
+            templates.extend(
+                (
+                    None,
+                    (
+                        "FLOW_SEGMENT_RECTANGULAR",
+                        "Rectangular Distribution Segment",
+                        "Works similarly to Profile, has distribution ports",
+                    ),
+                    (
+                        "FLOW_SEGMENT_CIRCULAR",
+                        "Circular Distribution Segment",
+                        "Works similarly to Profile, has distribution ports",
+                    ),
+                    (
+                        "FLOW_SEGMENT_CIRCULAR_HOLLOW",
+                        "Circular Hollow Distribution Segment",
+                        "Works similarly to Profile, has distribution ports",
+                    ),
+                )
+            )
+
+        return templates
 
     @classmethod
     def contexts(cls):
@@ -210,3 +292,13 @@ class IfcClassData:
                 if element.is_a(product[0]):
                     return True
         return False
+
+    @classmethod
+    def profile(cls) -> list[tuple[str, str, str]]:
+        items = [("-", "-", "")]
+        ifc_file = tool.Ifc.get()
+        for profile in ifc_file.by_type("IfcProfileDef"):
+            if not (profile_name := profile.ProfileName):
+                continue
+            items.append((str(profile.id()), profile_name, profile.is_a()))
+        return items

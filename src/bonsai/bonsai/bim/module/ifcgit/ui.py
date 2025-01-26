@@ -1,5 +1,8 @@
 import bpy
 import time
+import os
+import platform
+
 from bonsai.bim.module.ifcgit.data import IfcGitData
 
 
@@ -24,6 +27,12 @@ class IFCGIT_PT_panel(bpy.types.Panel):
         if not IfcGitData.data["git_exe"]:
             row = layout.row()
             row.label(text="Git is not installed", icon="ERROR")
+            if platform.system() == "Windows":
+                row.operator(
+                    "ifcgit.install_git",
+                    text="Install Git",
+                    icon="PACKAGE",
+                )
             return
 
         props = context.scene.IfcGitProperties
@@ -32,7 +41,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
 
         row = layout.row()
         if path_ifc:
-            if IfcGitData.data["repo"]:
+            if IfcGitData.data["repo"] and os.path.exists(IfcGitData.data["repo"].git_dir):
                 name_ifc = IfcGitData.data["name_ifc"]
                 row.label(text=IfcGitData.data["working_dir"], icon="SYSTEM")
                 if name_ifc in IfcGitData.data["untracked_files"]:
@@ -44,6 +53,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
                 else:
                     row.label(text=name_ifc, icon="FILE")
             else:
+                IfcGitData.load()
                 row.operator(
                     "ifcgit.createrepo",
                     text="Create '" + IfcGitData.data["dir_name"] + "' repository",
@@ -193,7 +203,10 @@ class COMMIT_UL_List(bpy.types.UIList):
 
         # TODO Figure how this "item" can be acesse in "data.py"
         # so it's possible to move the ".commit"
-        commit = IfcGitData.data["repo"].commit(rev=item.hexsha)
+        try:
+            commit = IfcGitData.data["repo"].commit(rev=item.hexsha)
+        except ValueError:
+            return
 
         lookup = IfcGitData.data["branches_by_hexsha"]
         refs = ""

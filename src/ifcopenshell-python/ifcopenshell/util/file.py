@@ -23,6 +23,7 @@ from typing_extensions import NotRequired
 
 class HeaderMetadata(TypedDict):
     name: NotRequired[str]
+    # FILE_DESCRIPTION, not the description from FILE_NAME.
     description: NotRequired[str]
     implementation_level: NotRequired[str]
     time_stamp: NotRequired[str]

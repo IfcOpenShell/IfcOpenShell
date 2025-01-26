@@ -110,9 +110,16 @@ Scenario: Copy a wall
     And I duplicate the selected objects
     Then the object "IfcWall/Cube" and "IfcWall/Cube.001" are different elements
 
-Scenario: Copy a storey
+Scenario: Copy a storey - when locked
     Given an empty IFC project
     And the object "IfcBuildingStorey/My Storey" is selected
+    When I duplicate the selected objects
+    Then the object "IfcBuildingStorey/My Storey.001" does not exist
+
+Scenario: Copy a storey - when unlocked
+    Given an empty IFC project
+    And the object "IfcBuildingStorey/My Storey" is selected
+    And I set "scene.BIMSpatialDecompositionProperties.is_locked" to "False"
     When I duplicate the selected objects
     Then the object "IfcBuildingStorey/My Storey" and "IfcBuildingStorey/My Storey.001" are different elements
     And the object "IfcBuildingStorey/My Storey" is in the collection "IfcBuildingStorey/My Storey"

@@ -39,6 +39,7 @@ def disable_editing_text(drawing: tool.Drawing, obj: bpy.types.Object) -> None:
 def edit_text(drawing: tool.Drawing, obj: bpy.types.Object) -> None:
     drawing.synchronise_ifc_and_text_attributes(obj)
     drawing.update_text_size_pset(obj)
+    drawing.update_newline_at(obj)
     drawing.update_text_value(obj)
     drawing.disable_editing_text(obj)
 
@@ -56,13 +57,15 @@ def edit_assigned_product(
     ifc: tool.Ifc, drawing: tool.Drawing, obj: bpy.types.Object, product: Optional[ifcopenshell.entity_instance] = None
 ) -> None:
     element = ifc.get_entity(obj)
+    assert element
     existing_product = drawing.get_assigned_product(element)
     if existing_product != product:
         if existing_product:
             ifc.run("drawing.unassign_product", relating_product=existing_product, related_object=element)
         if product:
             ifc.run("drawing.assign_product", relating_product=product, related_object=element)
-        drawing.update_text_value(obj)
+        if drawing.is_annotation_object_type(element, ("TEXT", "TEXT_LEADER")):
+            drawing.update_text_value(obj)
 
     drawing.disable_editing_assigned_product(obj)
 
@@ -113,7 +116,7 @@ def regenerate_sheet(drawing: tool.Drawing, sheet: ifcopenshell.entity_instance)
             drawing.delete_file(path_layout)
 
 
-def open_sheet(drawing: tool.Drawing, sheet: ifcopenshell.entity_instance) -> None:
+def open_layout(drawing: tool.Drawing, sheet: ifcopenshell.entity_instance) -> None:
     drawing.open_layout_svg(drawing.get_document_uri(sheet, "LAYOUT"))
 
 
@@ -362,7 +365,7 @@ def remove_drawing(ifc: tool.Ifc, drawing_tool: tool.Drawing, drawing: ifcopensh
 
 
 def update_drawing_name(
-    ifc: tool.Ifc, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance, name=None
+    ifc: tool.Ifc, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance, name: str
 ) -> None:
     if drawing_tool.get_name(drawing) != name:
         ifc.run("attribute.edit_attributes", product=drawing, attributes={"Name": name})
@@ -403,7 +406,9 @@ def add_annotation(
     drawing_tool: tool.Drawing,
     drawing: ifcopenshell.entity_instance,
     object_type: str,
-) -> None:
+    relating_type: ifcopenshell.entity_instance,
+    enable_editing: bool = False,
+) -> bpy.types.Object:
     target_view = drawing_tool.get_drawing_target_view(drawing)
     context = drawing_tool.get_annotation_context(target_view, object_type)
     if not context:
@@ -413,17 +418,24 @@ def add_annotation(
     obj = drawing_tool.create_annotation_object(drawing, object_type)
     element = ifc.get_entity(obj)
     if not element:
+        relating_type_rep = drawing_tool.get_annotation_representation(relating_type) if relating_type else None
         element = drawing_tool.run_root_assign_class(
             obj=obj,
             ifc_class="IfcAnnotation",
             predefined_type=object_type,
-            should_add_representation=True,
+            should_add_representation=not relating_type_rep,
             context=context,
             ifc_representation_class=drawing_tool.get_ifc_representation_class(object_type),
         )
+        if relating_type:
+            drawing_tool.run_type_assign_type(element=element, relating_type=relating_type)
         ifc.run("group.assign_group", group=drawing_tool.get_drawing_group(drawing), products=[element])
-    collector.assign(obj)
-    drawing_tool.enable_editing(obj)
+    if representation := drawing_tool.get_representation(element, context):
+        drawing_tool.reload_representation(obj=obj, representation=representation)
+    collector.assign(obj, should_clean_users_collection=True)
+    if not relating_type_rep and object_type != "IMAGE" and enable_editing:
+        drawing_tool.enable_editing(obj)
+    return obj
 
 
 def build_schedule(drawing: tool.Drawing, schedule: ifcopenshell.entity_instance) -> None:

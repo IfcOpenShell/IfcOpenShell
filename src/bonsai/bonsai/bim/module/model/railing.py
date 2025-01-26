@@ -23,23 +23,22 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
-from ifcopenshell.util.shape_builder import V
 import bonsai.core.root
 import bonsai.core.geometry
 import bonsai.tool as tool
-from bonsai.bim.module.model.door import bm_sort_out_geom
 from bonsai.bim.module.model.data import RailingData, refresh
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 from mathutils import Vector
 import json
+from typing import Any
 
 # reference:
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailing.htm
 # https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRailingType.htm
 
 
-def bm_split_edge_at_offset(edge, offset):
+def bm_split_edge_at_offset(edge: bmesh.types.BMEdge, offset: float) -> dict[str, Any]:
     v0, v1 = edge.verts
 
     offset = offset / 2
@@ -47,11 +46,11 @@ def bm_split_edge_at_offset(edge, offset):
 
     split_output_0 = bmesh.utils.edge_split(edge, v0, offset / edge_len)
     split_output_1 = bmesh.utils.edge_split(edge, v1, offset / (edge_len - offset))
-    new_geometry = bm_sort_out_geom(split_output_0 + split_output_1)
+    new_geometry = tool.Model.bm_sort_out_geom(split_output_0 + split_output_1)
     return new_geometry
 
 
-def update_railing_modifier_ifc_data(context):
+def update_railing_modifier_ifc_data(context: bpy.types.Context) -> None:
     """should be called after new geometry settled
     since it's going to update ifc representation
     """
@@ -106,14 +105,11 @@ def update_railing_modifier_ifc_data(context):
         )
         tool.Model.replace_object_ifc_representation(body, obj, model_representation)
 
-        # hacky way to ensure tha ifc representation won't get tessellated at project save
-        tool.Ifc.finish_edit(obj)
-
     elif props.railing_type == "FRAMELESS_PANEL":
-        tool.Ifc.edit(obj)
+        tool.Model.add_body_representation(obj)
 
 
-def update_bbim_railing_pset(element, railing_data):
+def update_bbim_railing_pset(element: ifcopenshell.entity_instance, railing_data: dict[str, Any]) -> None:
     pset = tool.Pset.get_element_pset(element, "BBIM_Railing")
     if not pset:
         pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Railing")
@@ -121,12 +117,13 @@ def update_bbim_railing_pset(element, railing_data):
     ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": railing_data})
 
 
-def update_railing_modifier_bmesh(context):
+def update_railing_modifier_bmesh(context: bpy.types.Context) -> None:
     """before using should make sure that Data contains up-to-date information.
     If BBIM Pset just changed should call refresh() before updating bmesh
     """
     obj = context.active_object
     props = obj.BIMRailingProperties
+    V_ = tool.Blender.V_
 
     # NOTE: using Data since bmesh update will hapen very often
     if not RailingData.is_loaded:
@@ -153,7 +150,7 @@ def update_railing_modifier_bmesh(context):
     if props.railing_type != "FRAMELESS_PANEL":
         return
 
-    def generate_frameless_panel_railing():
+    def generate_frameless_panel_railing() -> None:
         # generating FRAMELESS_PANEL railing
         height = props.height
         thickness = props.thickness
@@ -173,15 +170,15 @@ def update_railing_modifier_bmesh(context):
             v0, v1 = main_edge.verts
             edge_dissolving_verts.extend([v0, v1])
 
-            edge_dir = ((v1.co - v0.co) * V(1, 1, 0)).normalized()
-            ortho_vector = edge_dir.cross(V(0, 0, 1))
+            edge_dir = ((v1.co - v0.co) * V_(1, 1, 0)).normalized()
+            ortho_vector = edge_dir.cross(V_(0, 0, 1))
 
             extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])["geom"]
-            extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
+            extruded_verts = tool.Model.bm_sort_out_geom(extruded_geom)["verts"]
             bmesh.ops.translate(bm, vec=ortho_vector * (-thickness / 2), verts=extruded_verts)
 
             extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=[main_edge])["geom"]
-            extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
+            extruded_verts = tool.Model.bm_sort_out_geom(extruded_geom)["verts"]
             bmesh.ops.translate(bm, vec=ortho_vector * (thickness / 2), verts=extruded_verts)
 
             # dissolve middle edge
@@ -189,7 +186,7 @@ def update_railing_modifier_bmesh(context):
 
         # height
         extruded_geom = bmesh.ops.extrude_face_region(bm, geom=bm.faces)["geom"]
-        extruded_verts = bm_sort_out_geom(extruded_geom)["verts"]
+        extruded_verts = tool.Model.bm_sort_out_geom(extruded_geom)["verts"]
         extrusion_vector = Vector((0, 0, 1)) * height
         bmesh.ops.translate(bm, vec=extrusion_vector, verts=extruded_verts)
 
@@ -214,7 +211,7 @@ def update_railing_modifier_bmesh(context):
     generate_frameless_panel_railing()
 
 
-def get_path_data(obj):
+def get_path_data(obj: bpy.types.Object) -> dict[str, Any]:
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     bm = tool.Blender.get_bmesh_for_mesh(obj.data)
@@ -326,7 +323,7 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_railing"
     bl_label = "Add Railing"
     bl_description = "Add Bonsai parametric railing to the active IFC element"
-    bl_options = {"REGISTER"}
+    bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         obj = context.active_object
@@ -353,6 +350,44 @@ class AddRailing(bpy.types.Operator, tool.Ifc.Operator):
         refresh()
         update_railing_modifier_bmesh(context)
         update_railing_modifier_ifc_data(context)
+        tool.Model.add_body_representation(obj)
+
+
+class CopyRailingParameters(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.copy_railing_parameters"
+    bl_label = "Copy Railing Parameters from Active to Selected"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not context.active_object or len(context.selected_objects) < 1:
+            cls.poll_message_set("At least 2 objects must be selected.")
+            return False
+        return True
+
+    def _execute(self, context):
+        source_obj = context.active_object
+        source_props = source_obj.BIMRailingProperties
+        railing_data = source_props.get_general_kwargs(convert_to_project_units=True)
+
+        for target_obj in context.selected_objects:
+            if target_obj == source_obj:
+                continue
+            context.view_layer.objects.active = target_obj
+            RailingData.load()
+            if not "path_data" in RailingData.data:
+                continue
+            railing_data["path_data"] = RailingData.data["path_data"]
+            target_element = tool.Ifc.get_entity(target_obj)
+            target_props = target_obj.BIMRailingProperties
+
+            target_props.set_props_kwargs_from_ifc_data(railing_data)
+            update_bbim_railing_pset(target_element, railing_data)
+            refresh()
+            update_railing_modifier_bmesh(context)
+            update_railing_modifier_ifc_data(context)
+
+        context.view_layer.objects.active = source_obj
         return {"FINISHED"}
 
 
@@ -446,7 +481,8 @@ class FlipRailingPathOrder(bpy.types.Operator, tool.Ifc.Operator):
 
 class EnableEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_railing_path"
-    bl_label = "Enable Editing Railing Path"
+    bl_label = "Edit Railing"
+    bl_description = "Enable Editing Railing Path"
     bl_options = {"REGISTER"}
 
     def _execute(self, context):
@@ -467,7 +503,7 @@ class EnableEditingRailingPath(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-def cancel_editing_railing_path(context):
+def cancel_editing_railing_path(context: bpy.types.Context) -> set[str]:
     obj = context.active_object
     props = obj.BIMRailingProperties
 

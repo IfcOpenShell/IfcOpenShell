@@ -73,3 +73,76 @@ class Aggregate(bonsai.core.tool.Aggregate):
         for rel in related_element.Decomposes:
             if rel.is_a("IfcRelAggregates"):
                 return rel.RelatingObject
+
+    @classmethod
+    def get_parts_recursively(cls, element: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+        """Get elements parts recursively, resulting set includes `element`."""
+        parts = set()
+        queue = {element}
+        while queue:
+            element = queue.pop()
+            queue.update(new_parts := set(ifcopenshell.util.element.get_parts(element)))
+            parts.update(new_parts)
+        return parts
+
+    @classmethod
+    def get_aggregate_mode(cls):
+        return bpy.context.scene.BIMAggregateProperties.in_aggregate_mode
+
+    @classmethod
+    def enable_aggregate_mode(cls, active_object: bpy.types.Object):
+        context = bpy.context
+        props = context.scene.BIMAggregateProperties
+
+        element = tool.Ifc.get_entity(active_object)
+        if not element:
+            return {"FINISHED"}
+        aggregate = ifcopenshell.util.element.get_aggregate(element)
+        parts = ifcopenshell.util.element.get_parts(element)
+        if not aggregate and not parts:
+            return {"FINISHED"}
+        if not parts:
+            parts = ifcopenshell.util.element.get_parts(aggregate)
+        if parts:
+            props.editing_aggregate = tool.Ifc.get_object(aggregate) if aggregate else tool.Ifc.get_object(element)
+            parts_objs = [tool.Ifc.get_object(part) for part in parts]
+            objs = []
+            visible_objects = tool.Raycast.get_visible_objects(context)
+            for obj in visible_objects:
+                if obj.visible_in_viewport_get(context.space_data):
+                    objs.append(obj.original)
+            for obj in objs:
+                if obj.original not in parts_objs:
+                    if obj == props.editing_aggregate:
+                        continue
+                    not_editing_obj = props.not_editing_objects.add()
+                    not_editing_obj.obj = obj.original
+                    not_editing_obj.previous_display_type = obj.original.display_type
+                    obj.original.display_type = "WIRE"
+                else:
+                    editing_obj = props.editing_objects.add()
+                    editing_obj.obj = obj.original
+
+        props.in_aggregate_mode = True
+        return {"FINISHED"}
+
+    @classmethod
+    def disable_aggregate_mode(cls):
+        context = bpy.context
+        props = context.scene.BIMAggregateProperties
+        for obj_prop in props.not_editing_objects:
+            obj = obj_prop.obj
+            obj.original.display_type = obj_prop.previous_display_type
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+        parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(props.editing_aggregate))
+        objs = [tool.Ifc.get_object(part) for part in parts]
+        if context.space_data.local_view:
+            bpy.ops.view3d.localview()
+
+        props.in_aggregate_mode = False
+        props.not_editing_objects.clear()
+        props.editing_objects.clear()
+        props.editing_aggregate = None

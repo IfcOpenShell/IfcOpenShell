@@ -44,19 +44,19 @@ def assign_pset(
         element = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
         ifcopenshell.api.pset.assign_pset(model, [element], pset)
         # Pset is now assigned.
-        assert ifcopenshell.util.element.get_elements_using_pset(pset) == {element}
+        assert ifcopenshell.util.element.get_elements_by_pset(pset) == {element}
 
         element1 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
         element2 = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
         ifcopenshell.api.pset.assign_pset(model, [element1, element2], pset)
         # Pset is now shared by multiple elements.
-        assert ifcopenshell.util.element.get_elements_using_pset(pset) == {element, element1, element2}
+        assert ifcopenshell.util.element.get_elements_by_pset(pset) == {element, element1, element2}
 
         # Same for element types.
         element_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType")
         ifcopenshell.api.pset.assign_pset(model, [element_type], type_pset)
         # Pset is now assigned to the type.
-        assert ifcopenshell.util.element.get_elements_using_pset(type_pset) == {element_type}
+        assert ifcopenshell.util.element.get_elements_by_pset(type_pset) == {element_type}
     """
     is_ifc2x3 = file.schema == "IFC2X3"
 

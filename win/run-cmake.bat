@@ -80,7 +80,7 @@ IF NOT EXIST ..\%BUILD_DIR%. mkdir ..\%BUILD_DIR%
 pushd ..\%BUILD_DIR%
 
 :: tfk: todo remove duplication
-set BOOST_VERSION=1.79.0
+set BOOST_VERSION=1.86.0
 set BOOST_VER=%BOOST_VERSION:.=_%
 
 set BOOST_ROOT=%DEPS_DIR%\boost_%BOOST_VER%

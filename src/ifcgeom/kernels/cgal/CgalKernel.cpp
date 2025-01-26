@@ -88,16 +88,8 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std
 		//    fresult << polyhedron << std::endl;
 		//    fresult.close();
 		return CGAL::Polyhedron_3<Kernel_>();
-	} if (polyhedron.is_closed()) {
-		try {
-			if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
-				CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
-			}
-		} catch (CGAL::Failure_exception& e) {
-			Logger::Message(Logger::LOG_ERROR, e);
-		}
 	}
-
+	
 	//  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
 
 	return polyhedron;
@@ -122,6 +114,15 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(con
 
 CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(std::list<cgal_face_t> &face_list) {
 	CGAL::Polyhedron_3<Kernel_> polyhedron = create_polyhedron(face_list);
+	if (polyhedron.is_closed()) {
+		try {
+			if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+				CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+			}
+		} catch (CGAL::Failure_exception& e) {
+			Logger::Message(Logger::LOG_ERROR, e);
+		}
+	}
 	CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
 	CGAL::Nef_polyhedron_3<Kernel_> nef_polyhedron;
 	try {
@@ -135,6 +136,17 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron) {
 	// @todo needed?
 	polyhedron.normalize_border();
+
+	if (polyhedron.is_closed()) {
+		try {
+			if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+				CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+			}
+		} catch (CGAL::Failure_exception& e) {
+			Logger::Message(Logger::LOG_ERROR, e);
+		}
+	}
+
 	if (polyhedron.is_valid(false, 3) && polyhedron.is_closed()) {
 		// @todo is it necessary to triangulat?
 		CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
@@ -153,6 +165,20 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 #endif
 
 bool CgalKernel::convert(const taxonomy::shell::ptr l, cgal_shape_t& shape) {
+	for (auto& f : l->children) {
+		if (f->basis && f->basis->kind() != taxonomy::PLANE) {
+			Logger::Error("CGAL Kernel: Non-planar faces not supported at the moment");
+			throw not_supported_error();
+		}
+		for (auto& w : f->children) {
+			for (auto& e : w->children) {
+				if (e->basis && e->basis->kind() == taxonomy::BSPLINE_CURVE) {
+					Logger::Error("CGAL Kernel: B-spline edge curves not supported at the moment");
+					throw not_supported_error();
+				}
+			}
+		}
+	}
 	if (false && l->children.size() > 100) {
 		static double inf = 1.e9; //  std::numeric_limits<double>::infinity();
 		std::pair<Eigen::Vector3d, Eigen::Vector3d> minmax(
@@ -784,12 +810,16 @@ bool CgalKernel::convert_impl(const taxonomy::shell::ptr shell, ConversionResult
 }
 
 bool CgalKernel::convert_impl(const taxonomy::solid::ptr solid, ConversionResults& results) {
+	if (solid->children.size() > 1) {
+		Logger::Error("Multiple shells in solid not supported at the moment");
+		return false;
+	}
 	cgal_shape_t shape;
 	if (solid->children.empty()) {
 		return false;
 	}
 	// @todo
-	if (!convert((taxonomy::shell::ptr)solid->children[0], shape)) {
+	if (!convert(solid->children[0], shape)) {
 		return false;
 	}
 	if (shape.size_of_facets() == 0) {
@@ -1297,7 +1327,11 @@ bool CgalKernel::preprocess_boolean_operand(const IfcUtil::IfcBaseClass* log_ref
 	if (proc == PP_SNAP_POINTS_TO_FIRST_OPERAND) {
 		static int NN = 0;
 		typedef CGAL::AABB_face_graph_triangle_primitive<cgal_shape_t>                AABB_face_graph_primitive;
-		typedef CGAL::AABB_traits<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+#if CGAL_VERSION_NR >= 1060000000
+	    typedef CGAL::AABB_traits_3<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+#else
+	    typedef CGAL::AABB_traits<Kernel_, AABB_face_graph_primitive>               AABB_face_graph_traits;
+#endif
 
 		CGAL::AABB_tree<AABB_face_graph_traits> tree;
 
@@ -1908,6 +1942,17 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 				if (!convert(face, fs) || fs.size() != 1) {
 					return false;
 				}
+				
+				auto& w = fs.front().outer;
+				CGAL::Polygon_2<Kernel_> ps;
+				for (auto& p : w) {
+					ps.push_back({ p.x(), p.y() });
+				}
+				if (!ps.is_simple()) {
+					Logger::Warning("Polygonal boundary not simple", face->children[0]->instance);
+					continue;
+				}
+
 				// static 
 				auto z = taxonomy::make<taxonomy::direction3>(0, 0, 1);
 				cgal_shape_t poly;

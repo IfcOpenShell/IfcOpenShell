@@ -30,10 +30,11 @@ from bonsai.bim.module.model.opening import FilledOpeningGenerator
 
 class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_opening"
-    bl_label = "Add Opening"
+    bl_label = "Apply Opening"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
-        "Adds an opening to an element.\n" "Need to select two elements, order of selection is not important"
+        "Apply an Opening object on an Element. "
+        "The Element and the Opening to be applied should be selected. The order of selection is not important"
     )
 
     @classmethod
@@ -75,7 +76,9 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 obj1, obj2 = obj2, obj1
                 element1, element2 = element2, element1
 
-            # element1 - voided element, element2 - opening.
+            voided_element, opening_element = element1, element2
+            voided_obj_main, opening_obj = obj1, obj2
+
             if element1.is_a("IfcOpeningElement"):
                 self.report({"INFO"}, "You can't add an opening to another opening.")
                 continue
@@ -84,6 +87,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 self.report({"INFO"}, f"An {element1.is_a()} is not allowed to have an opening.")
                 continue
 
+            # Sync placement before void.add_opening.
             if tool.Ifc.is_moved(obj1):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj1)
 
@@ -93,6 +97,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                     has_visible_openings = True
                     break
 
+            element_had_openings = tool.Geometry.has_openings(voided_element)
             body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
             if not element2:
                 element2 = bonsai.core.root.assign_class(
@@ -110,13 +115,30 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
 
             voided_objs = [obj1]
-            for subelement in ifcopenshell.util.element.get_decomposition(element1):
+            for subelement in tool.Aggregate.get_parts_recursively(voided_element):
                 subobj = tool.Ifc.get_object(subelement)
                 if subobj:
                     voided_objs.append(subobj)
 
             for voided_obj in voided_objs:
                 if voided_obj.data:
+                    if tool.Ifc.is_edited(voided_obj):
+                        voided_element_ = tool.Ifc.get_entity(voided_obj)
+                        if element_had_openings or (voided_element_ != voided_element and voided_element_.HasOpenings):
+                            self.report(
+                                {"INFO"},
+                                f"Object {voided_obj.name} has been edited. It's representation will be reset to add an opening.",
+                            )
+                            voided_obj.scale = (1.0, 1.0, 1.0)
+                            tool.Ifc.finish_edit(voided_obj)
+                        else:
+                            bpy.ops.bim.update_representation(obj=voided_obj.name)
+
+                    if tool.Ifc.is_moved(voided_obj):
+                        bonsai.core.geometry.edit_object_placement(
+                            tool.Ifc, tool.Geometry, tool.Surveyor, obj=voided_obj
+                        )
+
                     representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
                     bonsai.core.geometry.switch_representation(
                         tool.Ifc,
@@ -125,13 +147,17 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                         representation=representation,
                         should_reload=True,
                         is_global=True,
+                        # Don't sync changes because object has an opening,
+                        # therefore bim.update_representaiton wouldn't work either way.
                         should_sync_changes_first=False,
                     )
+                tool.Geometry.lock_scale(voided_obj)
 
             if not has_visible_openings:
                 tool.Ifc.unlink(element=element2)
                 bpy.data.objects.remove(obj2)
 
+        tool.Model.purge_scene_openings()
         context.view_layer.objects.active = obj1
         return {"FINISHED"}
 
@@ -154,13 +180,14 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
 
         ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
 
-        decomposed_building_elements = set([element])
-        decomposed_building_elements.update(ifcopenshell.util.element.get_decomposition(element))
+        decomposed_building_elements = {element}
+        decomposed_building_elements.update(tool.Aggregate.get_parts_recursively(element))
 
         for building_element in decomposed_building_elements:
             building_obj = tool.Ifc.get_object(building_element)
             if building_obj and building_obj.data:
                 representation = tool.Geometry.get_active_representation(building_obj)
+                assert representation
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc,
                     tool.Geometry,
@@ -170,20 +197,17 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
                     is_global=True,
                     should_sync_changes_first=False,
                 )
-
+        tool.Geometry.unlock_scale_object_with_openings(obj)
         tool.Geometry.clear_cache(element)
         return {"FINISHED"}
 
 
-class AddFilling(bpy.types.Operator):
+class AddFilling(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_filling"
     bl_label = "Add Filling"
     bl_options = {"REGISTER", "UNDO"}
     opening: bpy.props.StringProperty()
     obj: bpy.props.StringProperty()
-
-    def execute(self, context):
-        return IfcStore.execute_ifc_operator(self, context)
 
     def _execute(self, context):
         obj = context.scene.objects.get(self.obj, context.active_object)
@@ -222,7 +246,7 @@ class SelectDecomposition(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        for obj in context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
@@ -233,7 +257,7 @@ class SelectDecomposition(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BooleansMarkAsManual(bpy.types.Operator):
+class BooleansMarkAsManual(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.booleans_mark_as_manual"
     bl_label = "Mark Booleans as Manual"
     bl_options = {"REGISTER", "UNDO"}
@@ -256,7 +280,7 @@ class BooleansMarkAsManual(bpy.types.Operator):
         cls.poll_message_set("Need to select IFC element with representation")
         return False
 
-    def execute(self, context):
+    def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
@@ -271,4 +295,53 @@ class BooleansMarkAsManual(bpy.types.Operator):
             {"INFO"}, f"{len(booleans)} booleans were marked as {'manual' if self.mark_as_manual else 'automatic'}"
         )
         bonsai.bim.handler.refresh_ui_data()
+
+
+class EnableEditingBooleans(bpy.types.Operator):
+    bl_idname = "bim.enable_editing_booleans"
+    bl_label = "Enable Editing Booleans"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Manage a hierarchy of boolean operations"
+
+    @classmethod
+    def poll(cls, context):
+        if not bpy.context.scene.BIMGeometryProperties.representation_obj:
+            cls.poll_message_set("To enable editing booleans object should be in item mode.")
+            return False
+        return True
+
+    def execute(self, context):
+        props = context.scene.BIMBooleanProperties
+        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        representation = tool.Geometry.get_active_representation(rep_obj)
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+        props.booleans.clear()
+
+        def load_boolean(item: ifcopenshell.entity_instance, level: int = 0) -> None:
+            new = props.booleans.add()
+            new.name = f"{item.is_a()}/{item.id()}"
+            new.ifc_definition_id = item.id()
+            new.level = level
+            if item.is_a("IfcBooleanResult"):
+                new.name += f"/{item.Operator}"
+                new.operator = item.Operator
+                load_boolean(item.FirstOperand, level + 1)
+                load_boolean(item.SecondOperand, level + 1)
+
+        for item in representation.Items:
+            if item.is_a("IfcBooleanResult"):
+                load_boolean(item)
+
+        props.is_editing = True
+        return {"FINISHED"}
+
+
+class DisableEditingBooleans(bpy.types.Operator):
+    bl_idname = "bim.disable_editing_booleans"
+    bl_label = "Disable Editing Booleans"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = context.scene.BIMBooleanProperties
+        props.is_editing = False
         return {"FINISHED"}

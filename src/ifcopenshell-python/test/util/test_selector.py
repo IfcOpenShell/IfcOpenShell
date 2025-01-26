@@ -28,6 +28,8 @@ import ifcopenshell.api.material
 import ifcopenshell.api.geometry
 import ifcopenshell.api.aggregate
 import ifcopenshell.api.group
+import ifcopenshell.api.sequence
+import ifcopenshell.util.element
 import ifcopenshell.util.selector as subject
 import ifcopenshell.util.placement
 import ifcopenshell.util.pset
@@ -53,6 +55,8 @@ class TestFormat:
     def test_number_formatting(self):
         assert subject.format("round(123, 5)") == "125"
         assert subject.format('round("123", 5)') == "125"
+        assert subject.format("int(123.123)") == "123"
+        assert subject.format("int(123)") == "123"
         assert subject.format("number(123)") == "123"
         assert subject.format("number(1234.56)") == "1,234.56"
         assert subject.format('number(123, ".")') == "123"
@@ -154,6 +158,14 @@ class TestFilterElements(test.bootstrap.IFC4):
         element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
         assert subject.filter_elements(self.file, "IfcWall") == {element}
         assert subject.filter_elements(self.file, "IfcElement, ! IfcWall") == {element2}
+
+    def test_select_without_elements_token(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element.Name = "Foo"
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element2.Name = "Bar"
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
+        assert subject.filter_elements(self.file, "Name=Foo") == {element}
 
     def test_selecting_by_attribute(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
@@ -352,3 +364,72 @@ class TestSetElementValue(test.bootstrap.IFC4):
         layer.Material = material
         subject.set_element_value(self.file, layer, "Material.Name", "Foo")
         assert material.Name == "Foo"
+
+
+class TestSetElementValuePredefinedType(test.bootstrap.IFC4):
+    def test_setting_an_element_predefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        subject.set_element_value(self.file, element, "predefined_type", "LIGHTDOME")
+        assert element.PredefinedType == "LIGHTDOME"
+        assert element.ObjectType == None
+
+    def test_setting_an_element_predefined_type_to_none(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        subject.set_element_value(self.file, element, "predefined_type", None)
+        assert element.PredefinedType == None
+        assert element.ObjectType == None
+
+    def test_setting_an_element_userdefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        subject.set_element_value(self.file, element, "predefined_type", "FOOBAR")
+        assert element.PredefinedType == "USERDEFINED"
+        assert element.ObjectType == "FOOBAR"
+
+    def test_setting_an_element_inherited_predefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindowType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        subject.set_element_value(self.file, element, "predefined_type", "LIGHTDOME")
+        assert element_type.PredefinedType == "LIGHTDOME"
+        assert element_type.ElementType == None
+        assert element.PredefinedType == None
+        assert element.ObjectType == None
+
+    def test_setting_an_element_inherited_predefined_type_to_none(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindowType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        subject.set_element_value(self.file, element, "predefined_type", None)
+        assert element_type.PredefinedType == "NOTDEFINED"
+        assert element_type.ElementType == None
+        assert element.PredefinedType == None
+        assert element.ObjectType == None
+
+    def test_setting_an_element_inherited_userdefined_type(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindowType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        subject.set_element_value(self.file, element, "predefined_type", "FOOBAR")
+        assert element_type.PredefinedType == "USERDEFINED"
+        assert element_type.ElementType == "FOOBAR"
+        assert element.PredefinedType == None
+        assert element.ObjectType == None
+
+
+class TestSetElementValueEnum(test.bootstrap.IFC4):
+    def test_setting_an_element_enum(self):
+        element = self.file.create_entity("IfcWindow")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Status": ("NEW",)})
+        subject.set_element_value(self.file, element, "Pset_WallCommon.Status", "DEMOLISH, OTHER")
+
+        pset_data = ifcopenshell.util.element.get_pset(element, "Pset_WallCommon")
+        assert pset_data["Status"] == ["DEMOLISH", "OTHER"]
+
+        # Wrong value for enum.
+        with pytest.raises(Exception):
+            subject.set_element_value(self.file, element, "Pset_WallCommon.Status", "NON_EXISTENT_VALUE")
+
+        # String is using wrong concatenations tring and it should be identified as non-existent value.
+        with pytest.raises(Exception):
+            subject.set_element_value(self.file, element, "Pset_WallCommon.Status", "DEMOLISH,OTHER")

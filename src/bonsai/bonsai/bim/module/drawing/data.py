@@ -82,8 +82,7 @@ class SheetsData:
 
     @classmethod
     def titleblocks(cls):
-        files = Path(os.path.join(bpy.context.scene.BIMProperties.data_dir, "templates", "titleblocks")).glob("*.svg")
-        files = [str(f.stem) for f in files]
+        files = [p.stem for p in tool.Blender.get_data_dir_paths(Path("templates") / "titleblocks", "*.svg")]
 
         if tool.Ifc.get():
             project = tool.Ifc.get().by_type("IfcProject")[0]
@@ -321,6 +320,9 @@ class DecoratorData:
         # get symbol
         symbol = tool.Drawing.get_annotation_symbol(element)
 
+        # get newline_at
+        newline_at = pset_data.get("Newline_At", 0)
+
         # other attributes
         props_literals = props.literals
         props_literals_n = len(props.literals)
@@ -338,7 +340,7 @@ class DecoratorData:
 
             literals_data.append(literal_data)
 
-        text_data = {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol}
+        text_data = {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol, "Newline_At": newline_at}
         cls.data[obj.name] = text_data
         return text_data
 

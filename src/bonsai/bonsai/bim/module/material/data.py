@@ -24,6 +24,7 @@ import ifcopenshell.util.doc
 import ifcopenshell.util.schema
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
+from typing import Any, Union
 
 
 def refresh():
@@ -43,7 +44,7 @@ class MaterialsData:
         cls.data["profiles"] = cls.profiles()
         cls.data["styles"] = cls.styles()
         cls.data["contexts"] = cls.contexts()
-        cls.data["active_styles"] = cls.active_styles()
+        cls.data["material_styles_data"] = cls.material_styles_data()
 
     @classmethod
     def total_materials(cls):
@@ -91,27 +92,36 @@ class MaterialsData:
         return results
 
     @classmethod
-    def styles(cls):
-        return [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcSurfaceStyle") if s.Name]
+    def styles(cls) -> list[tuple[str, str, str]]:
+        return [
+            (str(s.id()), style_name or "Unnamed", "")
+            for s in tool.Ifc.get().by_type("IfcPresentationStyle")
+            if (style_name := s.Name)
+        ]
 
     @classmethod
-    def active_styles(cls):
+    def material_styles_data(cls) -> dict[int, list[dict[str, Any]]]:
         props = bpy.context.scene.BIMMaterialProperties
-        results = []
-        if not props.materials or props.active_material_index >= len(props.materials):
-            return results
+        material_styles_data: dict[int, list[dict[str, Any]]] = {}
 
-        material = props.materials[props.active_material_index].ifc_definition_id
-        if not material:
-            return results
+        for material_item in props.materials:
+            if not (material_id := material_item.ifc_definition_id):  # Category.
+                continue
 
-        material = tool.Ifc.get_entity_by_id(material)
+            material = tool.Ifc.get_entity_by_id(material_id)
+            # NOTE: it's possible that data will be refreshed during material removal
+            # (when it will try to fetch active material type and will reach for material_types)
+            # and props.materials[i].ifc_definition_id will contain already removed id
+            if not material or not material.is_a("IfcMaterial"):
+                results = []
+            else:
+                results = cls.get_styles_data(material)
+            material_styles_data[material_id] = results
+        return material_styles_data
 
-        # NOTE: it's possible that data will be refreshed during material removal
-        # (when it will try to fetch active material type and will reach for material_types)
-        # and props.materials[i].ifc_definition_id will contain already removed id
-        if not material or not material.is_a("IfcMaterial"):
-            return results
+    @classmethod
+    def get_styles_data(cls, material: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
 
         for definition in material.HasRepresentation:
             for representation in definition.Representations:
@@ -121,18 +131,22 @@ class MaterialsData:
                 for item in representation.Items:
                     if not item.is_a("IfcStyledItem"):
                         continue
-                    for style in item.Styles:
-                        if style.is_a("IfcSurfaceStyle"):
-                            results.append(
-                                {
-                                    "context_type": context.ContextType,
-                                    "context_identifier": getattr(context, "ContextIdentifier", ""),
-                                    "target_view": getattr(context, "TargetView", ""),
-                                    "name": style.Name or "Unnamed",
-                                    "id": style.id(),
-                                    "context_id": context.id(),
-                                }
-                            )
+                    current_styles: list[ifcopenshell.entity_instance] = list(item.Styles)
+                    while current_styles:
+                        style = current_styles.pop()
+                        if style.is_a("IfcPresentationStyleAssignment"):
+                            current_styles.extend(style.Styles)
+                            continue
+                        results.append(
+                            {
+                                "context_type": context.ContextType,
+                                "context_identifier": getattr(context, "ContextIdentifier", ""),
+                                "target_view": getattr(context, "TargetView", ""),
+                                "name": style.Name or "Unnamed",
+                                "id": style.id(),
+                                "context_id": context.id(),
+                            }
+                        )
         return results
 
 
@@ -160,8 +174,8 @@ class ObjectMaterialData:
         cls.is_loaded = True
 
     @classmethod
-    def material_class(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+    def material_class(cls) -> Union[str, None]:
+        element = tool.Ifc.get_entity(tool.Geometry.get_active_or_representation_obj())
         cls.material = ifcopenshell.util.element.get_material(element)
         if cls.material:
             return cls.material.is_a()
@@ -216,6 +230,10 @@ class ObjectMaterialData:
             if cls.material.is_a("IfcMaterialProfileSetUsage"):
                 if cls.material.CardinalPoint:
                     results["cardinal_point"] = cardinal_point_map[cls.material.CardinalPoint]
+            if cls.material.is_a("IfcMaterialLayerSetUsage"):
+                if cls.material.LayerSetDirection:
+                    results["layer_set_direction"] = cls.material.LayerSetDirection
+
         return results
 
     @classmethod
@@ -245,7 +263,16 @@ class ObjectMaterialData:
                 icon = "POINTCLOUD_DATA"
 
             for item in items or []:
-                data = {"id": item.id(), "name": getattr(item, "Name", None) or "Unnamed", "icon": icon}
+                if item.is_a("IfcMaterial"):
+                    material_id = item.id()
+                else:
+                    material_id = item.Material.id()
+                data = {
+                    "id": item.id(),
+                    "name": getattr(item, "Name", None) or "Unnamed",
+                    "icon": icon,
+                    "material_id": material_id,
+                }
                 if item.is_a("IfcMaterialProfile") and not item.Name:
                     if item.Profile:
                         data["name"] = item.Profile.ProfileName or "Unnamed"
@@ -280,20 +307,20 @@ class ObjectMaterialData:
             return sum([l.LayerThickness for l in layers or []])
 
     @classmethod
-    def set_item_name(cls):
-        results = []
+    def set_item_name(cls) -> Union[str, None]:
         if cls.material:
-            if "Constituent" in cls.material.is_a():
+            material_class = cls.material.is_a()
+            if "Constituent" in material_class:
                 return "constituent"
-            elif "Layer" in cls.material.is_a():
+            elif "Layer" in material_class:
                 return "layer"
-            elif "Profile" in cls.material.is_a():
+            elif "Profile" in material_class:
                 return "profile"
-            elif "List" in cls.material.is_a():
+            elif "List" in material_class:
                 return "list_item"
 
     @classmethod
-    def material_name(cls):
+    def material_name(cls) -> Union[str, None]:
         material = cls.material
         if material:
             return getattr(material, "Name", None) or "Unnamed"
@@ -311,7 +338,7 @@ class ObjectMaterialData:
 
     @classmethod
     def type_material(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        element = tool.Ifc.get_entity(tool.Geometry.get_active_or_representation_obj())
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type and element_type != element:
             material = ifcopenshell.util.element.get_material(element_type)

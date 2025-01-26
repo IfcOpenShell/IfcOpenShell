@@ -151,7 +151,7 @@ namespace {
 			// It's a bit more convenient to use high level BRepPrimAPI calls that operate on
 			// topology. On a single edge that will create a Geom_TrimmedCurve for us.
 			auto crv_or_wire = kernel->convert_curve(i);
-			if (crv_or_wire.which() == 1) {
+			if (crv_or_wire.which() == 2) {
 				const auto& w = boost::get<TopoDS_Wire>(crv_or_wire);
 				return w;
 			} else {
@@ -163,8 +163,10 @@ namespace {
 			// @todo unify with trimmed curve handling
 			auto crv_or_wire = kernel->convert_curve(i);
 			if (crv_or_wire.which() == 0) {
+				throw std::runtime_error("Failed to obtain curve");
+			} else if (crv_or_wire.which() == 1) {
 				return boost::get<Handle(Geom_Curve)>(crv_or_wire);
-			} else {
+			} else if (crv_or_wire.which() == 2) {
 				// @todo
 				const double precision_ = 1.e-5;
 				Logger::Warning("Approximating BasisCurve due to possible discontinuities", i->instance);
@@ -183,16 +185,41 @@ namespace {
 
 		Handle(Geom_Surface) operator()(const taxonomy::extrusion::ptr& e) {
 			auto crv = get_curve(e->basis);
-			return result = Handle(Geom_Surface)(new Geom_SurfaceOfLinearExtrusion(
+
+			gp_Trsf tr;
+			if (e->matrix && !e->matrix->is_identity()) {
+				const auto& m = e->matrix->ccomponents();
+				tr.SetValues(
+					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+					m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+					m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+				);
+			}
+
+			result = Handle(Geom_Surface)(new Geom_SurfaceOfLinearExtrusion(
 				crv,
 				OpenCascadeKernel::convert_xyz<gp_Dir>(*e->direction)
 			));
+
+			result->Transform(tr);
+
+			return result;
 		}
 
 		Handle(Geom_Surface) operator()(const taxonomy::revolve::ptr& e) {
 			gp_Ax1 ax(
 				OpenCascadeKernel::convert_xyz<gp_Pnt>(*e->axis_origin),
 				OpenCascadeKernel::convert_xyz<gp_Dir>(*e->direction));
+
+			gp_Trsf tr;
+			if (e->matrix && !e->matrix->is_identity()) {
+				const auto& m = e->matrix->ccomponents();
+				tr.SetValues(
+					m(0, 0), m(0, 1), m(0, 2), m(0, 3),
+					m(1, 0), m(1, 1), m(1, 2), m(1, 3),
+					m(2, 0), m(2, 1), m(2, 2), m(2, 3)
+				);
+			}
 
 			if (e->basis && (e->basis->kind() == taxonomy::EDGE || (e->basis->kind() == taxonomy::LOOP && taxonomy::cast<taxonomy::loop>(e->basis)->children.size() == 1))) {
 				auto e_basis = e->basis;
@@ -213,9 +240,13 @@ namespace {
 			}
 
 			auto crv = get_curve(e->basis);
-			return result = Handle(Geom_Surface)(new Geom_SurfaceOfRevolution(
+			result = Handle(Geom_Surface)(new Geom_SurfaceOfRevolution(
 				crv, ax	
 			));
+
+			result->Transform(tr);
+
+			return result;
 		}
 	};
 }
@@ -293,6 +324,19 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 
 			if (!same_sense) {
 				wire.Reverse();
+			}
+
+			// @todo does wire intersection handling respect/preserve orientation?
+			wire_tolerance_settings settings{
+				!settings_.get<settings::NoWireIntersectionCheck>().get(),
+				!settings_.get<settings::NoWireIntersectionTolerance>().get(),
+				0.,
+				settings_.get<settings::Precision>().get()
+			};
+			TopTools_ListOfShape results;
+			if (settings.use_wire_intersection_check && util::wire_intersections(wire, results, settings)) {
+				Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+				util::select_largest(results, wire);
 			}
 
 			wire_senses.Bind(wire.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
@@ -398,7 +442,38 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 					mf.Add(*it);
 				}
 
-				face_list.Append(mf.Face());
+				ShapeFix_Shape sfs(mf.Face());
+				Handle(ShapeExtend_MsgRegistrator) msg;
+				msg = new ShapeExtend_MsgRegistrator;
+				sfs.SetMsgRegistrator(msg);
+				sfs.Perform();
+
+				ShapeExtend_DataMapIteratorOfDataMapOfShapeListOfMsg jt(msg->MapShape());
+				for (; jt.More(); jt.Next()) {
+					Message_ListIteratorOfListOfMsg kt(jt.Value());
+					for (; kt.More(); kt.Next()) {
+						char* c = new char[kt.Value().Original().LengthOfCString() + 1];
+						kt.Value().Original().ToUTF8CString(c);
+						std::string message = c;
+						delete[] c;
+						Logger::Warning(message, face->instance);
+					}
+				}
+
+				if (sfs.Shape().ShapeType() == TopAbs_FACE) {
+					face_list.Append(sfs.Shape());
+				} else if (sfs.Shape().ShapeType() == TopAbs_COMPOUND) {
+					TopoDS_Iterator it(sfs.Shape());
+					for (; it.More(); it.Next()) {
+						if (it.Value().ShapeType() == TopAbs_FACE) {
+							face_list.Append(it.Value());
+						} else {
+							Logger::Error("Unsupported output from face healing");
+						}
+					}
+				} else {
+					Logger::Error("Unsupported output from face healing");
+				}
 			} else {
 				face_list.Append(f);
 			}
@@ -442,7 +517,7 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 						kt.Value().Original().ToUTF8CString(c);
 						std::string message = c;
 						delete[] c;
-#if OCC_VERSION_MAJOR==7 && OCC_VERSION_MINOR == 7
+#if OCC_VERSION_MAJOR==7 && OCC_VERSION_MINOR >= 7
 						if (!reversed_surface && !fd.surface().IsNull() && fd.surface()->IsUPeriodic() && message == "Unknown message invoked with the keyword FixAdvFace.FixOrientation.MSG0") {
 							Logger::Notice("Detected reversed wire, reattempting with reversed basis surface");
 							TopoDS_Face reversed_result;

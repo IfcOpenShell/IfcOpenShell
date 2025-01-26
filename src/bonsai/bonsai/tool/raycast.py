@@ -18,6 +18,7 @@
 
 import bmesh
 import bpy
+import copy
 from bpy_extras import view3d_utils
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -56,11 +57,12 @@ class Raycast(bonsai.core.tool.Raycast):
         region = context.region
         borders = (region.width, region.height)
         for i, axis in enumerate(zip(*transposed_bbox)):
-            if all(ax < 0 or ax > borders[i] for ax in axis):  # Filter only objects in viewport
-                return (obj, None)
             min_point = min(axis)
             max_point = max(axis)
-            bbox_2d.extend([min_point, max_point])
+            if min_point < borders[i] and max_point > 0:
+                bbox_2d.extend([min_point, max_point])
+            else:
+                return (obj, None)
 
         return (obj, bbox_2d)
 
@@ -70,7 +72,7 @@ class Raycast(bonsai.core.tool.Raycast):
         xmin, xmax, ymin, ymax = bbox
 
         # extends bbox boundaries to improve snap
-        if offset: 
+        if offset:
             xmin -= offset
             xmax += offset
             ymin -= offset
@@ -85,6 +87,12 @@ class Raycast(bonsai.core.tool.Raycast):
     def get_viewport_ray_data(cls, context, event, mouse_pos=None):
         region = context.region
         rv3d = context.region_data
+        original_perspective = rv3d.view_perspective
+
+        # TODO The raycast was working for orthographic view, but not when you are inside a camera view. This solution feels hacky,
+        # but it temporarily switches the perspective_matrix from camera to the perspective_matrix from ortho view.
+        if original_perspective == "CAMERA":
+            rv3d.view_perspective = "ORTHO"
         if not mouse_pos:
             mouse_pos = event.mouse_region_x, event.mouse_region_y
 
@@ -92,6 +100,9 @@ class Raycast(bonsai.core.tool.Raycast):
         ray_origin = view3d_utils.region_2d_to_origin_3d(region, rv3d, mouse_pos)
         ray_target = ray_origin + view_vector
         ray_direction = ray_target - ray_origin
+
+        if original_perspective == "CAMERA":
+            rv3d.view_perspective = "CAMERA"
 
         return ray_origin, ray_target, ray_direction
 
@@ -123,7 +134,7 @@ class Raycast(bonsai.core.tool.Raycast):
             return None, None, None
 
     @classmethod
-    def ray_cast_by_proximity(cls, context, event, obj, face=None):
+    def ray_cast_by_proximity(cls, context, event, obj, face=None, custom_bmesh=None):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
@@ -131,7 +142,8 @@ class Raycast(bonsai.core.tool.Raycast):
         points = []
 
         # Makes the snapping point more or less sticky then others
-        # It changes the distance and affects how the snapping point is sorted
+        # It changes the distance and affects how the snapping point are sorted
+        reference = 0.2
         stick_factor = 0.02
 
         try:
@@ -139,44 +151,65 @@ class Raycast(bonsai.core.tool.Raycast):
         except:
             loc = Vector((0, 0, 0))
 
-        bm = bmesh.new()
-        if face is None:  # Object with faces
-            bm.from_mesh(obj.data)
-        else:  # Object without faces
-            verts = [bm.verts.new(obj.data.vertices[i].co) for i in face.vertices]
-            bm.faces.new(verts)
+        if not custom_bmesh:
+            bm = bmesh.new()
+            if face is None:  # Object without faces
+                bm.from_mesh(obj.data)
+            else:  # Object with faces
+                verts = [bm.verts.new(obj.data.vertices[i].co) for i in face.vertices]
+                bm.faces.new(verts)
+        else:
+            # Measure polylines
+            bm = custom_bmesh
 
         for vertex in bm.verts:
-            world_vertex = obj.matrix_world.copy() @ vertex.co
-            intersection = tool.Cad.point_on_edge(world_vertex, (ray_target, loc))
-            distance = (world_vertex - intersection).length
+            v = vertex.co
+            if obj:
+                v = obj.matrix_world.copy() @ v
+            intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
+            distance = (v - intersection).length
             if distance < 0.2:
-                points.append([distance - stick_factor, (world_vertex, "Vertex")])
+                snap_point = {
+                    "type": "Vertex",
+                    "point": v,
+                }
+                points.append([(distance - stick_factor), snap_point])
 
         for edge in bm.edges:
             v1 = edge.verts[0].co
             v2 = edge.verts[1].co
-            world_v1 = obj.matrix_world.copy() @ v1
-            world_v2 = obj.matrix_world.copy() @ v2
-            division_point = (world_v1 + world_v2) / 2  # TODO Make it work for different divisions
+            if obj:
+                v1 = obj.matrix_world.copy() @ v1
+                v2 = obj.matrix_world.copy() @ v2
+            division_point = (v1 + v2) / 2  # TODO Make it work for different divisions
 
             intersection = tool.Cad.point_on_edge(division_point, (ray_target, loc))
             distance = (division_point - intersection).length
             if distance < 0.2:
-                points.append([distance, (division_point, "Edge Center")])
+                snap_point = {
+                    "type": "Edge Center",
+                    "point": division_point,
+                }
+                points.append([distance, snap_point])
 
-            intersection = tool.Cad.intersect_edges_v2((ray_target, loc), (world_v1, world_v2))
-            if intersection:
-                if tool.Cad.is_point_on_edge(intersection[1], (world_v1, world_v2)):
+            intersection = tool.Cad.intersect_edges_v2((ray_target, loc), (v1, v2))
+            if intersection[0]:
+                if tool.Cad.is_point_on_edge(intersection[1], (v1, v2)):
                     distance = (intersection[1] - intersection[0]).length
-                    if distance < 0.8:
-                        points.append([distance + 4 * stick_factor, (intersection[1], "Edge")])
+                    if distance < 0.2:
+                        snap_point = {
+                            "type": "Edge",
+                            "point": intersection[1],
+                            "edge_verts": (v1, v2),
+                        }
+                        points.append([(distance + 2 * stick_factor), snap_point])
 
         bm.free()
         snapping_points = []
-        sorted_points = sorted(points)
+        sorted_points = sorted(points, key=lambda x: x[0])
         for p in sorted_points:
-            snapping_points.append(p[1])
+            point = copy.deepcopy(p)
+            snapping_points.append(point[1])
 
         return snapping_points
 
@@ -192,18 +225,42 @@ class Raycast(bonsai.core.tool.Raycast):
         except:
             loc = Vector((0, 0, 0))
 
-        polyline_data = bpy.context.scene.BIMModelProperties.polyline_point
-        polyline_data = polyline_data[: len(polyline_data) - 1] # It doesn't make sense to snap to the last point created
-        polyline_points = []
-        for point_data in polyline_data:
-            point = Vector((point_data.x, point_data.y, point_data.z))
+        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline[0]
+        polyline_points = polyline_data.polyline_points
+        polyline_points = polyline_points[
+            : len(polyline_points) - 1
+        ]  # It doesn't make sense to snap to the last point created
+        polyline_verts = []
+        for point_data in polyline_points:
+            vertex = Vector((point_data.x, point_data.y, point_data.z))
 
-            intersection, _ = mathutils.geometry.intersect_point_line(point, ray_target, loc)
-            distance = (point - intersection).length
+            intersection, _ = mathutils.geometry.intersect_point_line(vertex, ray_target, loc)
+            distance = (vertex - intersection).length
             if distance < 0.2:
-                polyline_points.append((point, "Vertex"))
+                snap_point = {
+                    "type": "Vertex",
+                    "point": vertex,
+                }
+                polyline_verts.append(snap_point)
 
-        return polyline_points
+        return polyline_verts
+
+    @classmethod
+    def ray_cast_to_measure(cls, context, event, points):
+        bm = bmesh.new()
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        indices = list(range(len(points) - 1))
+        edges = [(i, i + 1) for i in range(len(points) - 1)]
+        new_verts = [bm.verts.new(Vector((point.x, point.y, point.z))) for point in points]
+        new_edges = [bm.edges.new((new_verts[e[0]], new_verts[e[1]])) for e in edges]
+        bm.verts.index_update()
+        bm.edges.index_update()
+
+        snapping_points = cls.ray_cast_by_proximity(context, event, None, custom_bmesh=bm)
+        bm.free()
+        return snapping_points
 
     @classmethod
     def ray_cast_to_plane(cls, context, event, plane_origin, plane_normal):

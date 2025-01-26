@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import bonsai.bim.helper
 import bonsai.bim.module.cost.prop as CostProp
 from bpy.types import Panel, UIList
@@ -73,8 +74,12 @@ class BIM_PT_cost_schedules(Panel):
             row1.label(text="Schedule tools")
             row1 = col.row(align=True)
             row1.alignment = "RIGHT"
-            row1.operator("bim.export_cost_schedules", text="Export spreadsheet", icon="EXPORT").cost_schedule = cost_schedule["id"]
-            row1.operator("bim.generate_cost_schedule_browser", text="Generate spreadsheet browsser", icon="URL").cost_schedule = cost_schedule["id"]
+            row1.operator("bim.export_cost_schedules", text="Export spreadsheet", icon="EXPORT").cost_schedule = (
+                cost_schedule["id"]
+            )
+            row1.operator(
+                "bim.generate_cost_schedule_browser", text="Generate spreadsheet browser", icon="URL"
+            ).cost_schedule = cost_schedule["id"]
             row2 = col.row(align=True)
             row2.alignment = "RIGHT"
             op = row2.operator("bim.select_cost_schedule_products", icon="RESTRICT_SELECT_OFF", text="Assigned")
@@ -91,7 +96,7 @@ class BIM_PT_cost_schedules(Panel):
             row1.prop(self.props, "should_show_column_ui", text="Schedule Columns", icon="SHORTDISPLAY")
             if self.props.is_editing == "COST_SCHEDULE_ATTRIBUTES":
                 row.operator("bim.edit_cost_schedule", text="", icon="CHECKMARK")
-            row.operator("bim.disable_editing_cost_schedule", text="Disable Editing", icon="CANCEL")
+            row.operator("bim.disable_editing_cost_schedule", text="", icon="CANCEL")
         else:
             row.label(
                 text="{}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]), icon="LINENUMBERS_ON"
@@ -171,6 +176,8 @@ class BIM_PT_cost_schedules(Panel):
                 else:
                     op = row.operator("bim.enable_editing_cost_item_attributes", text="", icon="GREASEPENCIL")
                     op.cost_item = ifc_definition_id
+
+        BIM_UL_cost_items_trait.draw_header(self.layout)
         self.layout.template_list(
             "BIM_UL_cost_items",
             "",
@@ -583,6 +590,26 @@ class BIM_PT_cost_item_rates(Panel):
 
 
 class BIM_UL_cost_items_trait:
+    @classmethod
+    def draw_header(cls, layout: bpy.types.UILayout):
+        row = layout.row(align=True)
+
+        split1 = row.split(factor=0.1)
+        split1.label(text="ID")
+
+        split2 = split1.split(factor=0.5)
+        split2.alignment = "RIGHT"
+        split2.label(text="Name")
+        if CostSchedulesData.data["is_editing_rates"]:
+            split2.label(text="Unit")
+        else:
+            split2.label(text="Quantity")
+        split2.label(text="Value")
+
+        for column in bpy.context.scene.BIMCostProperties.columns:
+            split2.label(text=column.name)
+        split2.label(text="Total Cost")
+
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             self.props = context.scene.BIMCostProperties

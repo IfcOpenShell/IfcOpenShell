@@ -28,17 +28,15 @@ classes = (
     operator.EnableEditingGroup,
     operator.LoadGroups,
     operator.RemoveGroup,
-    operator.SelectGroupProducts,
+    operator.SelectGroupElements,
     operator.ToggleGroup,
     operator.UnassignGroup,
-    operator.SelectGroupElements,
     prop.ExpandedGroups,
     prop.Group,
     prop.BIMGroupProperties,
     ui.BIM_PT_groups,
     ui.BIM_PT_object_groups,
     ui.BIM_UL_groups,
-    ui.BIM_UL_object_groups,
 )
 
 

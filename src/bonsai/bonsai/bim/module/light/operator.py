@@ -54,8 +54,15 @@ class ExportOBJ(bpy.types.Operator):
     bl_label = "Export"
     bl_description = "Export the IFC to OBJ"
 
-    def execute(self, context):
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.radiance_exporter_properties
+        if not props.should_load_from_memory and not props.ifc_file:
+            cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
+            return False
+        return True
 
+    def execute(self, context):
         # Get the output directory
         should_load_from_memory = context.scene.radiance_exporter_properties.should_load_from_memory
         output_dir = context.scene.radiance_exporter_properties.output_dir

@@ -19,6 +19,9 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.material
+import ifcopenshell.api.pset
+import ifcopenshell.api.style
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -183,3 +186,19 @@ class TestEnsureNewMaterialSetIsValid(NewFile):
         material_set = ifc.create_entity("IfcMaterialList")
         subject.ensure_new_material_set_is_valid(material_set)
         assert len(material_set.Materials) == 1
+
+
+class TestPurgeUnusedMaterials(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        material = ifcopenshell.api.material.add_material(ifc)
+        # Add pset.
+        ifcopenshell.api.pset.add_pset(ifc, material, "Foo")
+        # Add style.
+        style = ifcopenshell.api.style.add_style(ifc)
+        context = ifc.create_entity("IfcRepresentationContext")
+        ifcopenshell.api.style.assign_material_style(ifc, material, style, context)
+
+        assert subject.purge_unused_materials() == 1
+        assert not ifc.by_type("IfcMaterial")

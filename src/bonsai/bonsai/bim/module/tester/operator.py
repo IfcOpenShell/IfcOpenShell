@@ -21,6 +21,7 @@ import bpy
 import time
 import tempfile
 import webbrowser
+import traceback
 import ifctester
 import ifctester.ids
 import ifctester.reporter
@@ -28,16 +29,22 @@ import ifcopenshell
 import bonsai.tool as tool
 import bonsai.bim.handler
 from pathlib import Path
+from typing import Union
 
 
-class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
+class ExecuteIfcTester(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_tester"
     bl_label = "Execute IfcTester"
 
     @classmethod
     def poll(cls, context):
         props = context.scene.IfcTesterProperties
-        return (props.ifc_files.single_file or props.should_load_from_memory) and props.specs
+        if not props.should_load_from_memory and not props.ifc_files.single_file:
+            cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
+            return False
+        if not props.specs:
+            return False
+        return True
 
     def execute(self, context):
         props = context.scene.IfcTesterProperties
@@ -60,14 +67,28 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
-    def execute_tester(self, ifc_data, ifc_path, specs_path):
+    def execute_tester(self, ifc_data: ifcopenshell.file, ifc_path: str, specs_path: str) -> Union[set[str], None]:
         props = bpy.context.scene.IfcTesterProperties
 
-        with tempfile.TemporaryDirectory() as dirpath:
+        # No need for if-statement, just postponing lots of diffs.
+        if True:
+            dirpath = tempfile.mkdtemp()
             start = time.time()
-            output = Path(os.path.join(dirpath, "{}_{}.html".format(ifc_path, os.path.basename(specs_path))))
+            output = Path(os.path.join(dirpath, "{}_{}.html".format(Path(ifc_path).name, Path(specs_path).name)))
 
-            specs = ifctester.ids.open(specs_path)
+            try:
+                specs = ifctester.ids.open(specs_path)
+            except ifctester.ids.IdsXmlValidationError as e:
+                traceback.print_exc()
+                YELLOW = "\033[93m"
+                RESET = "\033[0m"
+                print("------------------\n" * 3)
+                print(f"{YELLOW}Validation error details:\n\n{str(e.xml_error)}{RESET}")
+                print("------------------\n" * 3)
+                self.report(
+                    {"ERROR"}, "Provided IDS file appears to be invalid. Open system console to see the details."
+                )
+                return {"CANCELLED"}
             print("Finished loading:", time.time() - start)
             start = time.time()
             specs.validate(ifc_data, filepath=ifc_path)
@@ -95,7 +116,6 @@ class ExecuteIfcTester(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Tester.report = report
 
             for spec in report:
-                print(spec)
                 new_spec = props.specifications.add()
                 new_spec.name = spec["name"]
                 new_spec.description = spec["description"]
@@ -160,21 +180,7 @@ class SelectFailedEntities(bpy.types.Operator):
             else:
                 obj.select_set(False)
 
-        return {"FINISHED"}
-
-
-class SelectEntity(bpy.types.Operator):
-    bl_idname = "bim.select_entity"
-    bl_label = "Select Entity"
-    bl_options = {"REGISTER", "UNDO"}
-    ifc_id: bpy.props.IntProperty()
-
-    def execute(self, context):
-        bpy.ops.object.select_all(action="DESELECT")
-        for obj in context.scene.objects:
-            if obj.BIMObjectProperties.ifc_definition_id == self.ifc_id:
-                obj.select_set(True)
-                bpy.context.view_layer.objects.active = obj
+        self.report({"INFO"}, f"{len(failed_ids)} failed entities found, {len(context.selected_objects)} selected.")
         return {"FINISHED"}
 
 

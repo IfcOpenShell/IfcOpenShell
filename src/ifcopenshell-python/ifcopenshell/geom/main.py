@@ -28,7 +28,7 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
-from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload, TYPE_CHECKING
+from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload, TYPE_CHECKING, Iterable, cast
 
 if TYPE_CHECKING:
     from OCC.Core import TopoDS
@@ -78,6 +78,7 @@ SETTING = Literal[
     "boolean-attempt-2d",
     "weld-vertices",
     "use-world-coords",
+    "unify-shapes",
     "use-material-names",
     "convert-back-units",
     "context-ids",
@@ -101,8 +102,13 @@ SETTING = Literal[
     "piecewise-step-param",
     "use-python-opencascade",
     "no-parallel-mapping",
+    "triangulation-type",
+    "model-rotation",
+    "model-offset",
+    "surface-colour",
 ]
 SERIALIZER_SETTING = Literal[
+    "base-uri",
     "use-element-names",
     "use-element-guids",
     "use-element-step-ids",
@@ -110,6 +116,7 @@ SERIALIZER_SETTING = Literal[
     "y-up",
     "ecef",
     "digits",
+    "wkt-use-section",
 ]
 
 # NOTE: hybrid-cgal-simple-opencascade is added just as an example
@@ -255,6 +262,8 @@ class iterator(ifcopenshell_wrapper.Iterator):
             include_or_exclude_type = set(x.__class__.__name__ for x in include_or_exclude)
 
             if include_or_exclude_type == {"entity_instance"}:
+                include_or_exclude = cast(set[entity_instance], include_or_exclude)
+
                 if not all(inst.is_a("IfcProduct") for inst in include_or_exclude):
                     raise ValueError("include and exclude need to be an aggregate of IfcProduct")
 
@@ -343,15 +352,29 @@ class tree(ifcopenshell_wrapper.tree):
             args.append(kwargs.get("extend", -1.0e-5))
         return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select_box(*args)]
 
-    def clash_intersection_many(self, set_a, set_b, tolerance=0.002, check_all=True):
+    def clash_intersection_many(
+        self,
+        set_a: Iterable[entity_instance],
+        set_b: Iterable[entity_instance],
+        tolerance: float = 0.002,
+        check_all: bool = True,
+    ):
         args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], tolerance, check_all]
         return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
 
-    def clash_collision_many(self, set_a, set_b, allow_touching=False):
+    def clash_collision_many(
+        self, set_a: Iterable[entity_instance], set_b: Iterable[entity_instance], allow_touching=False
+    ):
         args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], allow_touching]
         return ifcopenshell_wrapper.tree.clash_collision_many(*args)
 
-    def clash_clearance_many(self, set_a, set_b, clearance=0.05, check_all=False):
+    def clash_clearance_many(
+        self,
+        set_a: Iterable[entity_instance],
+        set_b: Iterable[entity_instance],
+        clearance: float = 0.05,
+        check_all: bool = False,
+    ):
         args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], clearance, check_all]
         return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
 
@@ -365,7 +388,7 @@ def create_shape(
     """
     Return a geometric representation from STEP-based IFCREPRESENTATIONSHAPE
     or
-    Return an OpenCASCADE BRep if settings.USE_PYTHON_OPENCASCADE == True
+    Return an OpenCASCADE BRep if 'use-python-opencascade' is True
 
     Note that in Python, you must store a reference to the element returned by this function to prevent garbage
     collection when you access its children. See #1124.
@@ -391,7 +414,7 @@ def create_shape(
     .. code:: python
 
         settings = ifcopenshell.geom.settings()
-        settings.set(settings.USE_PYTHON_OPENCASCADE, True)
+        settings.set("use-python-opencascade", True)
 
         ifc_file = ifcopenshell.open(file_path)
         products = ifc_file.by_type("IfcProduct")
@@ -446,6 +469,7 @@ def iterate(
     num_threads: int = 1,
     include: Optional[Union[list[entity_instance], list[str]]] = None,
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    *,
     with_progress: Literal[False] = False,
     cache: Optional[str] = None,
     serializer_settings: Optional[serializer_settings] = None,
@@ -458,6 +482,7 @@ def iterate(
     num_threads: int = 1,
     include: Optional[Union[list[entity_instance], list[str]]] = None,
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    *,
     with_progress: Literal[True] = True,
     cache: Optional[str] = None,
     serializer_settings: Optional[serializer_settings] = None,
@@ -470,6 +495,7 @@ def iterate(
     num_threads: int = 1,
     include: Optional[Union[list[entity_instance], list[str]]] = None,
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    *,
     with_progress: bool = False,
     cache: Optional[str] = None,
     serializer_settings: Optional[serializer_settings] = None,
@@ -481,6 +507,7 @@ def iterate(
     num_threads: int = 1,
     include: Optional[Union[list[entity_instance], list[str]]] = None,
     exclude: Optional[Union[list[entity_instance], list[str]]] = None,
+    *,
     with_progress: bool = False,
     cache: Optional[str] = None,
     serializer_settings: Optional[serializer_settings] = None,
@@ -563,3 +590,14 @@ class serializers:
         hdf5 = ifcopenshell_wrapper.HdfSerializer
     except:
         pass
+
+    # ttl is always available since it doesn't depend on any C++ libraries,
+    # just people might be using an outdated binary
+    if hasattr(ifcopenshell_wrapper, "TtlWktSerializer"):
+
+        @staticmethod
+        def ttl(
+            out_filename: Union[str, serializers.buffer], geometry_settings: settings, settings: serializer_settings
+        ) -> ifcopenshell_wrapper.SvgSerializer:
+            out_filename = transform_string(out_filename)
+            return ifcopenshell_wrapper.TtlWktSerializer(out_filename, geometry_settings, settings)

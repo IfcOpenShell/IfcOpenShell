@@ -25,6 +25,8 @@ import logging
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
+import ifcopenshell.api.void
 import ifcopenshell.geom
 import ifcopenshell.util.shape
 import ifcopenshell.util.element
@@ -35,6 +37,7 @@ import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.core.geometry
 import bonsai.bim.import_ifc as import_ifc
+from collections import defaultdict
 from bonsai.bim.ifc import IfcStore
 from math import pi, radians
 from mathutils import Vector, Matrix
@@ -43,37 +46,27 @@ from bpy.types import SpaceView3D
 from bpy.props import FloatProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from gpu_extras.batch import batch_for_shader
-from typing import Union, Optional, Any
-
-
-class AddFilledOpening(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_filled_opening"
-    bl_label = "Add Filled Opening"
-    bl_options = {"REGISTER", "UNDO"}
-    voided_obj: bpy.props.StringProperty()
-    filling_obj: bpy.props.StringProperty()
-
-    def _execute(self, context):
-        FilledOpeningGenerator().generate(bpy.data.objects.get(self.filling_obj), bpy.data.objects.get(self.voided_obj))
-        return {"FINISHED"}
+from typing import Union, Optional, Any, cast, Sequence
 
 
 class FilledOpeningGenerator:
     def generate(
         self,
-        filling_obj: Union[bpy.types.Object, None],
-        voided_obj: Union[bpy.types.Object, None],
+        filling_obj: bpy.types.Object,
+        voided_obj: bpy.types.Object,
         target: Optional[Vector] = None,
-    ) -> None:
+    ) -> Union[None, str]:
+        """
+        :param target: Target opening position. If ommited, cursor position is used.
+        :return: None if there was no errors, otherwise returns a string with error message.
+        """
         props = bpy.context.scene.BIMModelProperties
         opening_thickness_si = 0.0
 
         filling = tool.Ifc.get_entity(filling_obj)
         element = tool.Ifc.get_entity(voided_obj)
 
-        if not voided_obj or not filling_obj:
-            return
-
+        assert filling and element
         if filling.FillsVoids:
             ifcopenshell.api.run(
                 "void.remove_opening", tool.Ifc.get(), opening=filling.FillsVoids[0].RelatingOpeningElement
@@ -92,7 +85,7 @@ class FilledOpeningGenerator:
                 target = filling_obj.matrix_world.translation.copy()
                 raycast = voided_obj.closest_point_on_mesh(voided_obj.matrix_world.inverted() @ target, distance=0.5)
                 if not raycast[0]:
-                    return
+                    return "TARGET is too far away from the voided object's mesh."
 
             # In this prototype, we assume openings are only added to axis-based elements
             layers = tool.Model.get_material_layer_parameters(element)
@@ -119,6 +112,8 @@ class FilledOpeningGenerator:
                 new_matrix.translation.xyz = voided_obj.matrix_world @ local_position_on_voided_obj
                 rotation_matrix = Matrix.Rotation(radians(-90), 4, "X")
                 new_matrix @= rotation_matrix
+            else:
+                assert False, f"Unexpected layer set direction: {layers['layer_set_direction']}"
 
             filling_obj.matrix_world = new_matrix
             bpy.context.view_layer.update()
@@ -147,6 +142,7 @@ class FilledOpeningGenerator:
             representation = ifcopenshell.util.representation.get_representation(
                 existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
             )
+            assert representation
             representation = ifcopenshell.util.representation.resolve_representation(representation)
         else:
             representation = self.generate_opening_from_filling(
@@ -165,7 +161,7 @@ class FilledOpeningGenerator:
 
         voided_objs = [voided_obj]
         # Openings affect all subelements of an aggregate
-        for subelement in ifcopenshell.util.element.get_decomposition(element):
+        for subelement in tool.Aggregate.get_parts_recursively(element):
             subobj = tool.Ifc.get_object(subelement)
             if subobj:
                 voided_objs.append(subobj)
@@ -173,8 +169,10 @@ class FilledOpeningGenerator:
         for voided_obj in voided_objs:
             if voided_obj.data:
                 voided_element = tool.Ifc.get_entity(voided_obj)
+                assert voided_element
                 context = tool.Geometry.get_active_representation_context(voided_obj)
                 representation = tool.Geometry.get_representation_by_context(voided_element, context)
+                assert representation
 
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc,
@@ -223,7 +221,7 @@ class FilledOpeningGenerator:
             opening_obj = tool.Ifc.get_object(opening)
             if opening_obj:
                 tool.Ifc.unlink(element=opening)
-                bpy.data.objects.remove(opening_obj)
+                tool.Blender.remove_data_blocks([opening_obj], remove_unused_data=True)
 
             filling_obj = tool.Ifc.get_object(filling)
             representation = self.generate_opening_from_filling(filling, filling_obj)
@@ -271,11 +269,12 @@ class FilledOpeningGenerator:
             )
             filling_obj = tool.Ifc.get_object(filling_type)
         context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        assert context
 
         if profile:
             profile = ifcopenshell.util.representation.resolve_representation(profile)
 
-            def get_curve_2d_from_3d(profile):
+            def get_curve_2d_from_3d(profile: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
                 if len(profile.Items) == 1:
                     curve_3d = profile.Items[0]
                     if tool.Ifc.get_schema() == "IFC2X3":
@@ -306,11 +305,23 @@ class FilledOpeningGenerator:
                 get_curve_2d_from_3d(profile),
                 magnitude=thickness / unit_scale,
                 position=Vector([0.0, -thickness * 0.5 / unit_scale, 0.0]),
-                **shape_builder.extrude_kwargs("Y")
+                **shape_builder.extrude_kwargs("Y"),
             )
             return shape_builder.get_representation(context, [extrusion])
 
-        x, y, z = filling_obj.dimensions
+        if (
+            filling_rep := tool.Geometry.get_active_representation(filling_obj)
+        ) and filling_rep.ContextOfItems == context:
+            x, y, z = filling_obj.dimensions
+        else:
+            # The filling_obj's mesh data is not the body geometry.
+            settings = ifcopenshell.geom.settings()
+            filling_element = tool.Ifc.get_entity(filling_obj)
+            filling_body = ifcopenshell.util.representation.get_representation(filling_element, context)
+            filling_geometry = ifcopenshell.geom.create_shape(settings, filling_body)
+            x = ifcopenshell.util.shape.get_x(filling_geometry)
+            y = ifcopenshell.util.shape.get_y(filling_geometry)
+            z = ifcopenshell.util.shape.get_z(filling_geometry)
         opening_position = Vector([0.0, -thickness * 0.5 / unit_scale, 0.0])
         opening_size = Vector([x, z]) / unit_scale
 
@@ -339,13 +350,13 @@ class FilledOpeningGenerator:
             shape_builder.rectangle(size=opening_size),
             magnitude=thickness / unit_scale,
             position=opening_position,
-            **shape_builder.extrude_kwargs("Y")
+            **shape_builder.extrude_kwargs("Y"),
         )
 
         return shape_builder.get_representation(context, [extrusion])
 
     def has_visible_openings(self, element):
-        for opening in [r.RelatedOpeningElement for r in element.HasOpenings]:
+        for opening in [r.RelatedOpeningElement for r in tool.Geometry.get_openings(element)]:
             if tool.Ifc.get_object(opening):
                 return True
         return False
@@ -431,19 +442,12 @@ class FlipFill(bpy.types.Operator, tool.Ifc.Operator):
 
 class AddPotentialOpening(Operator, AddObjectHelper):
     bl_idname = "bim.add_potential_opening"
-    bl_label = "Add Potential Opening"
+    bl_label = "Add Opening"
+    bl_description = "Add an Opening object which can be applied on an Element"
     bl_options = {"REGISTER", "UNDO"}
-    x: FloatProperty(name="X", default=0.5)
-    y: FloatProperty(name="Y", default=0.5)
-    z: FloatProperty(name="Z", default=0.5)
-
-    def draw_settings(context, layout, tool):
-        row = self.layout.row()
-        row.prop(data=self, property="x", label="Size X")
-        row = self.layout.row()
-        row.prop(data=self, property="y")
-        row = self.layout.row()
-        row.prop(data=self, property="z")
+    x: FloatProperty(name="Size X", default=0.5, subtype="DISTANCE")
+    y: FloatProperty(name="Y", default=0.5, subtype="DISTANCE")
+    z: FloatProperty(name="Z", default=0.5, subtype="DISTANCE")
 
     def execute(self, context):
         props = context.scene.BIMModelProperties
@@ -483,10 +487,8 @@ class AddPotentialOpening(Operator, AddObjectHelper):
         if new_matrix:
             obj.matrix_world = new_matrix
 
-        tool.Model.clear_scene_openings()
-
-        new = props.openings.add()
-        new.obj = obj
+        tool.Model.purge_scene_openings()
+        tool.Root.add_tracked_opening(obj, "OPENING")
 
         DecorationsHandler.install(context)
         return {"FINISHED"}
@@ -498,7 +500,6 @@ class AddPotentialHalfSpaceSolid(Operator, AddObjectHelper):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMModelProperties
         bm = bmesh.new()
         bmesh.ops.create_grid(bm, size=0.5)
         bm.verts.ensure_lookup_table()
@@ -510,10 +511,8 @@ class AddPotentialHalfSpaceSolid(Operator, AddObjectHelper):
         obj = object_data_add(context, mesh, operator=self)
         obj.name = "HalfSpaceSolid"
 
-        tool.Model.clear_scene_openings()
-
-        new = props.openings.add()
-        new.obj = obj
+        tool.Model.purge_scene_openings()
+        tool.Root.add_tracked_opening(obj, "BOOLEAN")
 
         DecorationsHandler.install(context)
         return {"FINISHED"}
@@ -527,301 +526,256 @@ class AddBoolean(Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not len(context.selected_objects) == 2:
-            cls.poll_message_set("Exactly 2 objects need to be selected.")
+        if not len(context.selected_objects) >= 2:
+            cls.poll_message_set("At least 2 objects need to be selected.")
             return False
         return True
 
     def _execute(self, context):
-        props = context.scene.BIMModelProperties
-        obj1, obj2 = context.selected_objects
-        element1 = tool.Ifc.get_entity(obj1)
-        element2 = tool.Ifc.get_entity(obj2)
-        if not (bool(element1) ^ bool(element2)):
-            self.report({"INFO"}, "One of the selected objects should be blender object and another IFC object.")
-            return {"FINISHED"}
+        first_obj = tool.Blender.get_active_object()
+        if not first_obj or not tool.Geometry.is_boolean_operand(first_obj):
+            self.report({"INFO"}, "At least two valid objects must be selected to add a boolean.")
+            return {"CANCELLED"}
+        second_objs = [
+            o for o in tool.Blender.get_selected_objects() if o != first_obj and tool.Geometry.is_boolean_operand(o)
+        ]
+        if not second_objs:
+            self.report({"INFO"}, "At least two representation items must be selected to add a boolean.")
+            return {"CANCELLED"}
 
-        # element1 - IFC object, element2 - blender object.
-        if element2 and not element1:
-            obj1, obj2 = obj2, obj1
-            element1, element2 = element2, element1
+        props = context.scene.BIMBooleanProperties
 
-        representation = tool.Geometry.get_active_representation(obj1)
-        if not representation:
-            self.report({"INFO"}, "No representation found for the selected IFC object.")
-            return {"FINISHED"}
+        first_item = tool.Ifc.get().by_id(first_obj.data.BIMMeshProperties.ifc_definition_id)
+        second_items = [tool.Ifc.get().by_id(o.data.BIMMeshProperties.ifc_definition_id) for o in second_objs]
+        booleans = ifcopenshell.api.geometry.add_boolean(tool.Ifc.get(), first_item, second_items, props.operator)
 
-        if not obj2.data or len(obj2.data.polygons) <= 4:  # It takes 4 faces to create a closed solid
-            mesh_data = {"type": "IfcHalfSpaceSolid", "matrix": obj1.matrix_world.inverted() @ obj2.matrix_world}
-        else:
-            mesh_data = {"type": "Mesh", "blender_obj": obj1, "blender_void": obj2}
-
-        booleans = ifcopenshell.api.run(
-            "geometry.add_boolean", tool.Ifc.get(), representation=representation, operator="DIFFERENCE", **mesh_data
-        )
-
-        tool.Model.mark_manual_booleans(element1, booleans)
-        tool.Model.clear_scene_openings()
-
-        bonsai.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj1,
-            representation=representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
-
-        bpy.data.objects.remove(obj2)
-        return {"FINISHED"}
-
-
-class ShowBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
-    bl_idname = "bim.show_booleans"
-    bl_label = "Show Booleans"
-    bl_options = {"REGISTER", "UNDO"}
-
-    @classmethod
-    def poll(cls, context):
-        obj = context.active_object
-        return (
-            obj is not None
-            and obj.data
-            and hasattr(obj.data, "BIMMeshProperties")
-            and obj.data.BIMMeshProperties.ifc_definition_id
-        )
-
-    def _execute(self, context):
-        obj = context.active_object
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-        booleans = []
-        for item in representation.Items:
-            booleans.extend(self.get_booleans(item))
-
-        props = bpy.context.scene.BIMModelProperties
-        tool.Model.clear_scene_openings()
-
-        for boolean in booleans:
-            boolean_obj = None
-
-            if boolean.is_a() == "IfcHalfSpaceSolid":
-                if boolean.BaseSurface.is_a("IfcPlane"):
-                    boolean_obj = self.create_half_space_solid()
-                    position = boolean.BaseSurface.Position
-                    position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
-                    position.translation *= unit_scale
-                    boolean_obj.matrix_world = obj.matrix_world @ position
-            else:
-                settings = ifcopenshell.geom.settings()
-                logger = logging.getLogger("ImportIFC")
-                ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
-                shape = ifcopenshell.geom.create_shape(settings, boolean)
-                if shape:
-                    ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
-                    ifc_importer.file = tool.Ifc.get()
-                    mesh = ifc_importer.create_mesh(boolean, shape)
-                else:
-                    mesh = None
-                boolean_obj = object_data_add(bpy.context, mesh, operator=self)
-                boolean_obj.name = "BooleanMesh"
-                boolean_obj.matrix_world = obj.matrix_world
-
-            if boolean_obj:
-                boolean_obj.data.BIMMeshProperties.ifc_boolean_id = boolean.id()
-                boolean_obj.data.BIMMeshProperties.obj = obj
-                new = props.openings.add()
-                new.obj = boolean_obj
-
-        if booleans:
-            DecorationsHandler.install(bpy.context)
-        return {"FINISHED"}
-
-    def get_booleans(self, item):
-        results = []
-        if item.is_a("IfcBooleanResult"):
-            results.extend(self.get_booleans(item.FirstOperand))
-            results.append(item.SecondOperand)
-        return results
-
-    def create_half_space_solid(self):
-        bm = bmesh.new()
-        bmesh.ops.create_grid(bm, size=0.5)
-        bm.verts.ensure_lookup_table()
-        bm.edges.ensure_lookup_table()
-        bm.faces.ensure_lookup_table()
-        mesh = bpy.data.meshes.new(name="Dumb Opening")
-        bm.to_mesh(mesh)
-        bm.free()
-        obj = object_data_add(bpy.context, mesh, operator=self)
-        obj.name = "HalfSpaceSolid"
-        return obj
-
-
-class HideBooleans(Operator, tool.Ifc.Operator):
-    bl_idname = "bim.hide_booleans"
-    bl_label = "Hide Booleans"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        props = bpy.context.scene.BIMModelProperties
-        for opening in props.openings:
-            obj = opening.obj
-            if obj and obj.data.BIMMeshProperties.ifc_boolean_id:
-                bpy.data.objects.remove(obj)
-        return {"FINISHED"}
-
-
-class RemoveBooleans(Operator, tool.Ifc.Operator, AddObjectHelper):
-    bl_idname = "bim.remove_booleans"
-    bl_label = "Remove Booleans"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def _execute(self, context):
-        upstream_obj = None
-        bbim_boolean_updates = {}
-        for obj in context.selected_objects:
-            if (
-                not obj.data
-                or not hasattr(obj.data, "BIMMeshProperties")
-                or not obj.data.BIMMeshProperties.ifc_boolean_id
-            ):
-                continue
-            try:
-                item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_boolean_id)
-            except:
-                continue
-
-            boolean_id = None
-            for inverse in tool.Ifc.get().get_inverse(item):
-                if inverse.is_a("IfcBooleanResult"):
-                    boolean_id = inverse.id()
-                    break
-            ifcopenshell.api.run("geometry.remove_boolean", tool.Ifc.get(), item=item)
-
-            if obj.data.BIMMeshProperties.obj:
-                upstream_obj = obj.data.BIMMeshProperties.obj
-                element = tool.Ifc.get_entity(upstream_obj)
-                bbim_boolean_updates.setdefault(element, []).append(boolean_id)
-                body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-                if body:
-                    bonsai.core.geometry.switch_representation(
-                        tool.Ifc,
-                        tool.Geometry,
-                        obj=upstream_obj,
-                        representation=body,
-                        should_reload=True,
-                        is_global=True,
-                        should_sync_changes_first=False,
-                    )
-            bpy.data.objects.remove(obj)
-
-        for element, boolean_ids in bbim_boolean_updates.items():
-            tool.Model.unmark_manual_booleans(element, boolean_ids)
-
-        tool.Blender.set_active_object(upstream_obj)
-        return {"FINISHED"}
+        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        rep_element = tool.Ifc.get_entity(rep_obj)
+        tool.Model.mark_manual_booleans(rep_element, booleans)
+        tool.Geometry.reload_representation(rep_obj)
+        if props.is_editing:
+            bpy.ops.bim.enable_editing_booleans()
+        tool.Root.reload_item_decorator()
 
 
 class ShowOpenings(Operator, tool.Ifc.Operator):
     bl_idname = "bim.show_openings"
-    bl_label = "Show Openings"
+    bl_label = "Show"
+    bl_description = "Show Openings"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMModelProperties
-        for obj in context.selected_objects:
+        objs = list(context.selected_objects)
+        # If several parts of an aggregation are selected, the aggregate openings may be queried more than once
+        objects_element_map = set()
+        while objs:
+            obj = objs.pop(0)
             element = tool.Ifc.get_entity(obj)
-            if not element or not getattr(element, "HasOpenings", None):
-                continue
-            if tool.Ifc.is_moved(obj):
-                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-            openings = tool.Model.load_openings(
-                [
-                    r.RelatedOpeningElement
-                    for r in element.HasOpenings
-                    if not tool.Ifc.get_object(r.RelatedOpeningElement)
-                ],
-            )
-            for opening in openings:
-                new = props.openings.add()
-                new.obj = opening
+            if element:
+                if getattr(element, "Decomposes", None):
+                    # Select aggregate recursively
+                    if element.Decomposes and (aggregate := element.Decomposes[0].RelatingObject):
+                        aggregate_obj = tool.Ifc.get_object(aggregate)
+                        objs.append(aggregate_obj)
+                objects_element_map.add((obj, element))
+
+        for obj, element in objects_element_map:
+            self.show_object_openings(obj, element)
         DecorationsHandler.install(bpy.context)
+        bpy.ops.bim.update_openings_focus()
+        return {"FINISHED"}
+
+    def show_object_openings(self, obj, element):
+        openings_elements = [rel.RelatedOpeningElement for rel in tool.Geometry.get_openings(element)]
+        if not openings_elements:
+            return
+        if tool.Ifc.is_moved(obj):
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+        openings_elements_to_load = [o for o in openings_elements if not tool.Ifc.get_object(o)]
+        openings_objects = tool.Model.load_openings(openings_elements_to_load)
+        for opening in openings_objects:
+            self.on_new_opening_obj(opening)
+
+    def on_new_opening_obj(self, opening_obj: bpy.types.Object) -> None:
+        tool.Root.add_tracked_opening(opening_obj, "OPENING")
+        opening_obj.display_type = "WIRE"
+
+
+class UpdateOpeningsFocus(Operator):
+    bl_idname = "bim.update_openings_focus"
+    bl_label = "Update Openings Focus"
+    bl_description = "Show objects that are not part of the object or its openings as transparent"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        preferences = tool.Blender.get_addon_preferences()
+        if preferences.opening_focus_opacity == 100:
+            return {"FINISHED"}
+        openings = set()
+        building_objects = set()
+        for opening in context.scene.BIMModelProperties.openings:
+            if opening.obj:
+                openings.add(opening.obj)
+                opening_element = tool.Ifc.get_entity(opening.obj)
+                if opening_element is None:  # Most likely an opening created with bim.add_potential_opening
+                    continue
+                building_element = opening_element.VoidsElements[0].RelatingBuildingElement
+                building_objects.add(tool.Ifc.get_object(building_element))
+
+        for obj in context.scene.objects:
+            obj.color = [
+                obj.color[0],
+                obj.color[1],
+                obj.color[2],
+                (
+                    1
+                    if not context.scene.BIMModelProperties.openings
+                    or not building_objects
+                    or obj in openings
+                    or obj in building_objects
+                    or obj in context.selected_objects
+                    else preferences.opening_focus_opacity / 100
+                ),
+            ]
+        return {"FINISHED"}
+
+
+def hide_openings(context: bpy.types.Context, objects: Sequence[bpy.types.Object]) -> None:
+    objects_to_remove = set()
+    for opening_prop in context.scene.BIMModelProperties.openings:
+        opening_obj = opening_prop.obj
+        if not opening_obj:
+            continue
+        opening_element = tool.Ifc.get_entity(opening_obj)
+        if opening_element:
+            if not opening_element.is_a("IfcOpeningElement"):
+                # This opening has been assigned to another ifc class. Remove it from the openings pool. See #3854
+                opening_prop.obj = None
+                continue
+            building_element = opening_element.VoidsElements[0].RelatingBuildingElement
+            if building_element:
+                building_obj = tool.Ifc.get_object(building_element)
+                if building_obj in objects:
+                    tool.Ifc.unlink(element=opening_element)
+                    objects_to_remove.add(opening_obj)
+        if opening_obj in objects:
+            objects_to_remove.add(opening_obj)
+
+    tool.Blender.remove_data_blocks(objects_to_remove, remove_unused_data=True)
+    tool.Model.purge_scene_openings()
+    bpy.ops.bim.update_openings_focus()
+
+
+class HideAllOpenings(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.hide_all_openings"
+    bl_label = "Hide All Openings"
+    bl_description = "Hide every single opening"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        hide_openings(context, context.scene.objects[:])
         return {"FINISHED"}
 
 
 class HideOpenings(Operator, tool.Ifc.Operator):
     bl_idname = "bim.hide_openings"
-    bl_label = "Hide Openings"
+    bl_label = "Hide"
+    bl_description = "Hide Openings"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        to_delete = set()
-        for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            if element.is_a("IfcOpeningElement"):
-                element = element.VoidsElements[0].RelatingBuildingElement
-                obj = tool.Ifc.get_object(element)
-            openings = [r.RelatedOpeningElement for r in element.HasOpenings]
-            for opening in openings:
-                opening_obj = tool.Ifc.get_object(opening)
-                if opening_obj:
-                    to_delete.add((opening, opening_obj))
-        for opening, opening_obj in to_delete:
-            tool.Ifc.unlink(element=opening)
-            bpy.data.objects.remove(opening_obj)
-        tool.Model.clear_scene_openings()
+        hide_openings(context, context.selected_objects[:])
         return {"FINISHED"}
 
 
 class EditOpenings(Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_openings"
-    bl_label = "Edit Openings"
+    bl_label = "Edit"
+    bl_description = "Edit Openings"
     bl_options = {"REGISTER", "UNDO"}
+    apply_all: bpy.props.BoolProperty(default=False)
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMModelProperties
-        building_objs = set()
+        building_objs, opening_elements = self.get_buildings_and_openings(context)
+        self.edit_openings(building_objs, opening_elements)
 
-        for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-            if element.is_a("IfcOpeningElement"):
-                element = element.VoidsElements[0].RelatingBuildingElement
-                obj = tool.Ifc.get_object(element)
-            openings = [r.RelatedOpeningElement for r in element.HasOpenings]
-            for opening in openings:
-                opening_obj = tool.Ifc.get_object(opening)
-                building_objs.add(obj)
-
-                similar_openings = bonsai.core.geometry.get_similar_openings(tool.Ifc, opening)
-                similar_openings_building_objs = bonsai.core.geometry.get_similar_openings_building_objs(
-                    tool.Ifc, similar_openings
-                )
-                building_objs.update(similar_openings_building_objs)
-
-                if opening_obj:
-                    if tool.Ifc.is_edited(opening_obj):
-                        tool.Geometry.run_geometry_update_representation(obj=opening_obj)
-                        bonsai.core.geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
-                    elif tool.Ifc.is_moved(opening_obj):
-                        bonsai.core.geometry.edit_object_placement(
-                            tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj
-                        )
-                        bonsai.core.geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
-
-                    building_objs.update(
-                        self.get_all_building_objects_of_similar_openings(opening)
-                    )  # NB this has nothing to do with clone similar_opening
-                    tool.Ifc.unlink(element=opening)
-                    bpy.data.objects.remove(opening_obj)
-
+        tool.Model.purge_scene_openings()
         tool.Model.reload_body_representation(building_objs)
+        bpy.ops.bim.update_openings_focus()
         return {"FINISHED"}
+
+    def get_buildings_and_openings(
+        self, context: bpy.types.Context
+    ) -> tuple[set[bpy.types.Object], set[ifcopenshell.entity_instance]]:
+        props = context.scene.BIMModelProperties
+        building_objs: set[bpy.types.Object] = set()
+        opening_elements: set[ifcopenshell.entity_instance] = set()
+        objects_to_remove = set()
+        if self.apply_all:
+            for opening_prop in props.openings:
+                opening_obj = opening_prop.obj
+                if opening_obj is None:
+                    continue
+                opening_element = tool.Ifc.get_entity(opening_obj)
+                if opening_element is None:
+                    objects_to_remove.add(opening_obj)
+                    continue
+                opening_elements.add(opening_element)
+                building_element = opening_element.VoidsElements[0].RelatingBuildingElement
+                building_objs.add(tool.Ifc.get_object(building_element))
+        else:
+            for obj in context.selected_objects:
+                element = tool.Ifc.get_entity(obj)
+                if element.is_a("IfcOpeningElement"):
+                    opening_element = element
+                    opening_elements.add(opening_element)
+                    if opening_element.VoidsElements:
+                        building_element = opening_element.VoidsElements[0].RelatingBuildingElement
+                        building_obj = tool.Ifc.get_object(building_element)
+                        if building_obj:
+                            building_objs.add(building_obj)
+                else:
+                    for relation in tool.Geometry.get_openings(element):
+                        opening_element = relation.RelatedOpeningElement
+                        if tool.Ifc.get_object(opening_element):
+                            opening_elements.add(opening_element)
+                        building_objs.add(obj)
+        tool.Blender.remove_data_blocks(objects_to_remove, remove_unused_data=True)
+        return building_objs, opening_elements
+
+    def edit_openings(
+        self, building_objs: set[bpy.types.Object], opening_elements: set[ifcopenshell.entity_instance]
+    ) -> None:
+        objects_to_remove: set[bpy.types.Object] = set()
+        for opening_element in opening_elements:
+            opening_obj = tool.Ifc.get_object(opening_element)
+
+            similar_openings = bonsai.core.geometry.get_similar_openings(tool.Ifc, opening_element)
+            similar_openings_building_objs = bonsai.core.geometry.get_similar_openings_building_objs(
+                tool.Ifc, similar_openings
+            )
+            building_objs.update(similar_openings_building_objs)
+
+            if opening_obj:
+                if tool.Ifc.is_edited(opening_obj):
+                    tool.Geometry.run_geometry_update_representation(obj=opening_obj)
+                    bonsai.core.geometry.edit_similar_opening_placement(
+                        tool.Geometry, opening_element, similar_openings
+                    )
+                elif tool.Ifc.is_moved(opening_obj):
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=opening_obj)
+                    bonsai.core.geometry.edit_similar_opening_placement(
+                        tool.Geometry, opening_element, similar_openings
+                    )
+
+                building_objs.update(
+                    self.get_all_building_objects_of_similar_openings(opening_element)
+                )  # NB this has nothing to do with clone similar_opening
+                tool.Ifc.unlink(element=opening_element)
+                if bpy.context.scene.BIMGeometryProperties.representation_obj == opening_obj:
+                    bpy.context.scene.BIMGeometryProperties.representation_obj = None
+                objects_to_remove.add(opening_obj)
+        tool.Blender.remove_data_blocks(objects_to_remove, remove_unused_data=True)
 
     def get_all_building_objects_of_similar_openings(self, opening):
         if not opening.is_a("IfcOpeningElement") or not opening.HasFillings:
@@ -843,20 +797,28 @@ class EditOpenings(Operator, tool.Ifc.Operator):
 class CloneOpening(Operator, tool.Ifc.Operator):
     bl_idname = "bim.clone_opening"
     bl_label = "Clone Opening"
+    bl_description = "Clone the active Opening object and assign to the selected Element"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Create and assign to the selected element the selected opening and assign to it the same representation and object placement"
+
+    @classmethod
+    def poll(cls, context):
+        if len(context.selected_objects) != 2:
+            cls.poll_message_set("Exactly 2 objects must be selected.")
+            return False
+        return True
 
     def _execute(self, context):
+        # NOTE: Operator displayed in UI only with IfcOpeningElement being active.
+        ifc_file = tool.Ifc.get()
         objects = bpy.context.selected_objects
+        opening_obj = context.active_object
+        assert opening_obj
+        opening = tool.Ifc.get_entity(opening_obj)
+        assert opening and opening.is_a("IfcOpeningElement")
 
-        for obj in objects:
-            entity = tool.Ifc.get_entity(obj)
-            if entity.is_a() == "IfcWall":
-                wall = entity
-                continue
-            if entity.is_a() == "IfcOpeningElement":
-                opening = entity
-                continue
+        voided_obj = next(o for o in objects if o != opening_obj)
+        voided_element = tool.Ifc.get_entity(voided_obj)
+        assert voided_element
 
         opening_placement = opening.ObjectPlacement
         opening_representation = opening.Representation
@@ -864,8 +826,127 @@ class CloneOpening(Operator, tool.Ifc.Operator):
         new_opening = ifcopenshell.api.run("root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement")
         new_opening.Representation = opening_representation
 
-        ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=new_opening, element=wall)
+        ifcopenshell.api.void.add_opening(ifc_file, opening=new_opening, element=voided_element)
         new_opening.ObjectPlacement = opening_placement
+
+        # Update affected representations.
+        elements_to_update = tool.Aggregate.get_parts_recursively(voided_element)
+        for element in elements_to_update:
+            obj = tool.Ifc.get_object(element)
+            if not isinstance(obj, bpy.types.Object) or not isinstance(obj.data, bpy.types.Mesh):
+                continue
+            representation = tool.Geometry.get_active_representation(obj)
+            assert representation
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+            )
+
+        return {"FINISHED"}
+
+
+class PurgeUnusedOpenings(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.purge_unused_openings"
+    bl_label = "Purge Unused Openings"
+    bl_description = "Purge Openings that do not intersect with their related building element"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        return any(
+            [tool.Geometry.has_openings(element)]
+            for element in [tool.Ifc.get_entity(obj) for obj in context.selected_objects]
+            if element
+        )
+
+    def _execute(self, context):
+        bpy.ops.bim.show_openings()
+        objects = context.selected_objects[:]
+        [o.select_set(False) for o in objects]
+        active_object = context.active_object
+        purged = 0
+        for obj in objects:
+            element = tool.Ifc.get_entity(obj)
+            if not element or not tool.Geometry.has_openings(element):
+                continue
+            obj_bvh_tree = tool.Geometry.get_bvh_tree(obj)
+            for opening_rel in tool.Geometry.get_openings(element):
+                opening_elt = opening_rel.RelatedOpeningElement
+                opening_obj = tool.Ifc.get_object(opening_elt)
+                opening_bvh_tree = tool.Geometry.get_bvh_tree(opening_obj)
+                if not opening_bvh_tree.overlap(obj_bvh_tree):
+                    opening_obj.select_set(True)
+                    purged += 1
+        if context.selected_objects:
+            bpy.ops.bim.override_object_delete(is_batch=False)
+        bpy.ops.bim.edit_openings(apply_all=True)
+        [o.select_set(True) for o in objects]
+        context.view_layer.objects.active = active_object
+        self.report({"INFO"}, f"{purged} unused openings were purged.")
+        return {"FINISHED"}
+
+
+class RemoveBoolean(Operator, tool.Ifc.Operator):
+    bl_idname = "bim.remove_boolean"
+    bl_label = "Remove Boolean"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Removes the actively selected boolean"
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMBooleanProperties
+        return props.active_boolean
+
+    def _execute(self, context):
+        props = context.scene.BIMBooleanProperties
+        ifcopenshell.api.geometry.remove_boolean(
+            tool.Ifc.get(), tool.Ifc.get().by_id(props.active_boolean.ifc_definition_id)
+        )
+        bpy.ops.bim.enable_editing_booleans()
+        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        tool.Geometry.reload_representation(rep_obj)
+        tool.Root.reload_item_decorator()
+
+
+class SelectBoolean(Operator):
+    bl_idname = "bim.select_boolean"
+    bl_label = "Select Boolean"
+    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Selects operands of the active boolean\nSHIFT-CLICK to select all operands recursively"
+    is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        props = context.scene.BIMBooleanProperties
+        return props.active_boolean
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.is_recursive = True
+        return self.execute(context)
+
+    def execute(self, context):
+        props = context.scene.BIMBooleanProperties
+        queue = [tool.Ifc.get().by_id(props.active_boolean.ifc_definition_id)]
+        items = {i.ifc_definition_id: i.obj for i in context.scene.BIMGeometryProperties.item_objs}
+        while queue:
+            item = queue.pop()
+            if item.is_a("IfcBooleanResult"):
+                if self.is_recursive:
+                    queue.append(item.FirstOperand)
+                    queue.append(item.SecondOperand)
+                else:
+                    if obj := items.get(item.FirstOperand.id()):
+                        tool.Blender.select_object(obj)
+                    if obj := items.get(item.SecondOperand.id()):
+                        tool.Blender.select_object(obj)
+            elif obj := items.get(item.id()):
+                tool.Blender.select_object(obj)
         return {"FINISHED"}
 
 
@@ -895,6 +976,8 @@ class DecorationsHandler:
         batch.draw(shader)
 
     def __call__(self, context):
+        if not context.scene.BIMModelProperties.openings:
+            return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
         unselected_elements_color = self.addon_prefs.decorator_color_unselected
@@ -910,6 +993,12 @@ class DecorationsHandler:
 
         for opening in context.scene.BIMModelProperties.openings:
             obj = opening.obj
+            if context.scene.BIMGeometryProperties.representation_obj == obj:
+                # We are editing the representation of the opening :
+                for item in context.scene.BIMGeometryProperties.item_objs:
+                    if item.obj.mode == "EDIT":
+                        obj = item.obj
+                        break
             if not obj:
                 continue
 
@@ -960,9 +1049,14 @@ class DecorationsHandler:
                 bm.from_mesh(obj.data)
 
                 verts = [tuple(obj.matrix_world @ v.co) for v in bm.verts]
-                edges = [tuple([v.index for v in e.verts]) for e in bm.edges]
+                if ios_edges_attribute := obj.data.attributes.get("ios_edges"):
+                    edges = [e for i, e in enumerate(bm.edges) if ios_edges_attribute.data[i].value]
+                else:
+                    edges = bm.edges
+                edges_indices = [tuple([v.index for v in e.verts]) for e in edges]
+
                 color = selected_elements_color if obj in context.selected_objects else special_elements_color
-                self.draw_batch("LINES", verts, color, edges)
+                self.draw_batch("LINES", verts, color, edges_indices)
 
             obj.data.calc_loop_triangles()
             tris = [tuple(t.vertices) for t in obj.data.loop_triangles]
