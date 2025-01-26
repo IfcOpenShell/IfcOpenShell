@@ -412,7 +412,19 @@ def get_unit_assignment(ifc_file: ifcopenshell.file) -> Union[ifcopenshell.entit
     return ifc_file.by_type("IfcProject")[0].UnitsInContext
 
 
-def get_project_unit(ifc_file: ifcopenshell.file, unit_type: str) -> Union[ifcopenshell.entity_instance, None]:
+def cache_units(ifc_file: ifcopenshell.file) -> None:
+    ifc_file.units = {}
+    if assignment := get_unit_assignment(ifc_file):
+        ifc_file.units = {u.UnitType: u for u in assignment.Units if getattr(u, "UnitType", None)}
+
+
+def clear_unit_cache(ifc_file: ifcopenshell.file) -> None:
+    ifc_file.units = {}
+
+
+def get_project_unit(
+    ifc_file: ifcopenshell.file, unit_type: str, use_cache: bool = False
+) -> Union[ifcopenshell.entity_instance, None]:
     """Get the default project unit of a particular unit type
 
     :param ifc_file: The IFC file.
@@ -421,6 +433,10 @@ def get_project_unit(ifc_file: ifcopenshell.file, unit_type: str) -> Union[ifcop
     :return: The IFC unit entity, or nothing if there is no default project
         unit defined.
     """
+    if use_cache and not ifc_file.units:
+        cache_units(ifc_file)
+    if units := ifc_file.units:
+        return units.get(unit_type, None)
     if unit_assignment := get_unit_assignment(ifc_file):
         for unit in unit_assignment.Units or []:
             if getattr(unit, "UnitType", None) == unit_type:
@@ -428,8 +444,7 @@ def get_project_unit(ifc_file: ifcopenshell.file, unit_type: str) -> Union[ifcop
 
 
 def get_property_unit(
-    prop: ifcopenshell.entity_instance,
-    ifc_file: ifcopenshell.file
+    prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file, use_cache: bool = False
 ) -> Union[ifcopenshell.entity_instance, None]:
     """Gets the unit definition of a property or quantity
 
@@ -437,53 +452,43 @@ def get_property_unit(
     This unit may be defined at the property itself explicitly, or if not
     specified, fallback to the project default.
 
-    :param prop: The property instance. You can fetch this via the instance ID
-        if doing :func:`ifcopenshell.util.element.get_psets` with
+    :param prop: The IfcProperty instance. You can fetch this via the instance
+        ID if doing :func:`ifcopenshell.util.element.get_psets` with
         ``verbose=True``.
     :param ifc_file: The IFC file being used. This is necessary to check
         default project units.
     :return: The IFC unit entity, or nothing if there is no default project
         unit defined.
     """
-    unit = prop.Unit
-    if isinstance(unit, ifcopenshell.entity_instance):
+    if unit := getattr(prop, "Unit", None):
         return unit
 
     value = None
     measure_class = None
 
-    # DEV-NOTE: Using .is_a() is wrong, as it tells us nothing about super class membership
     if prop.is_a("IfcPhysicalSimpleQuantity"):
-        # get underlying object
         entity = prop.wrapped_data.declaration().as_entity()
-        # extract measure class
         measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
-
     elif prop.is_a("IfcPropertySingleValue"):
-        value = prop.NominalValue
-
+        measure_class = prop.NominalValue.is_a()
     elif prop.is_a("IfcPropertyEnumeratedValue"):
-        unit = prop.EnumerationReference.Unit
-        value = next(iter(prop.EnumerationValues or ()), None)
-
+        if unit := prop.EnumerationReference.Unit:
+            return unit
+        if value := next(iter(prop.EnumerationValues or ()), None):
+            measure_class = value.is_a()
     elif prop.is_a("IfcPropertyListValue"):
-        value = next(iter(prop.ListValues or ()), None)
-
+        if value := next(iter(prop.ListValues or ()), None):
+            measure_class = value.is_a()
     elif prop.is_a("IfcPropertyBoundedValue"):
-        value = prop.UpperBoundValue or prop.LowerBoundValue or prop.SetPointValue
+        if value := (prop.UpperBoundValue or prop.LowerBoundValue or prop.SetPointValue):
+            measure_class = value.is_a()
 
-    unit = _auxiliary_method_compute_unit(
-        ifc_file,
-        unit=unit,
-        value=value,
-        measure_class=measure_class,
-    )
-    return unit
+    if measure_class and (unit_type := get_measure_unit_type(measure_class)):
+        return get_project_unit(ifc_file, unit_type)
 
 
 def get_property_table_unit(
-    prop: ifcopenshell.entity_instance,
-    ifc_file: ifcopenshell.file
+    prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file, use_cache: bool = False
 ) -> Dict[str, Union[ifcopenshell.entity_instance, None]]:
     """
     Gets the unit definition of a property table
@@ -503,25 +508,24 @@ def get_property_table_unit(
         If a unit-entity is missing,
         the value associated to the key is `null`.
     """
-    if prop.is_a("IfcPropertyTableValue"):
-        unit = prop.DefiningUnit
-        value = next(iter(prop.DefiningValues or ()), None)
-        unit_defining = _auxiliary_method_compute_unit(ifc_file, unit=unit, value=value)
+    defining_unit = None
+    if unit := prop.DefiningUnit:
+        defining_unit = unit
+    elif value := next(iter(prop.DefiningValues or ()), None):
+        if unit_type := get_measure_unit_type(value.is_a()):
+            defining_unit = get_project_unit(ifc_file, unit_type)
 
-        unit = prop.DefinedUnit
-        value = next(iter(prop.DefinedValues or ()), None)
-        unit_defined = _auxiliary_method_compute_unit(ifc_file, unit=unit, value=value)
+    defined_unit = None
+    if unit := prop.DefinedUnit:
+        defined_unit = unit
+    elif value := next(iter(prop.DefinedValues or ()), None):
+        if unit_type := get_measure_unit_type(value.is_a()):
+            defining_unit = get_project_unit(ifc_file, unit_type)
 
-        units = {
-            "DefiningUnit": unit_defining,
-            "DefinedUnit": unit_defined,
-        }
-
-    # currently no other case
-    else:
-        units = {}
-
-    return units
+    return {
+        "DefiningUnit": defining_unit,
+        "DefinedUnit": defined_unit,
+    }
 
 
 def get_unit_measure_class(unit_type: str) -> MEASURE_CLASS:
@@ -876,27 +880,3 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
         ifcopenshell.util.element.remove_deep2(file_patched, old_length)
 
     return file_patched
-
-# ----------------------------------------------------------------
-# AUXILIARY METHODS
-# ----------------------------------------------------------------
-
-def _auxiliary_method_compute_unit(
-    ifc_file: ifcopenshell.file,
-    /,
-    *,
-    unit: ifcopenshell.entity_instance | None = None,
-    value: ifcopenshell.entity_instance | None = None,
-    measure_class: str | None = None,
-) -> ifcopenshell.entity_instance | None:
-    """
-    Helper method to obtain unit-entity either directly
-    or indirectly via measure class.
-    """
-    if isinstance(unit, ifcopenshell.entity_instance):
-        return unit
-
-    if isinstance(value, ifcopenshell.entity_instance):
-        measure_class = measure_class or value.is_a()
-
-    return ifc_file.unit_by_measure_class(measure_class)

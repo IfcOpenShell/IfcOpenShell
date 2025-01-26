@@ -33,7 +33,6 @@ from typing import Union
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
-from .util.unit import get_measure_unit_type
 
 if TYPE_CHECKING:
     import ifcopenshell.util.schema
@@ -223,7 +222,7 @@ class file:
     """
 
     wrapped_data: ifcopenshell_wrapper.file
-    _units: file_units | None = None
+    units: dict[str: ifcopenshell.entity_instance] = None
     history_size: int = 64
 
     def __init__(
@@ -462,28 +461,6 @@ class file:
             number = re.search(prefix + r"(\d)", schema)
             version.append(int(number.group(1)) if number else 0)
         return tuple(version)
-
-    @property
-    def units(self) -> file_units:
-        """
-        A class which dynamically stores unit information
-        and provides methods to compute unit-entities associated to types.
-        """
-        if self._units is None:
-            self._units = file_units(self)
-        return self._units
-
-    def unit_by_measure_class(
-        self,
-        measure_class: str | None = None,
-        /,
-    ) -> ifcopenshell.entity_instance | None:
-        """
-        Helper method to obtain unit-entity either directly
-        or indirectly via measure class.
-        """
-        if measure_class is not None:
-            return self.units.by_measure_type(measure_class)
 
     def __getattr__(self, attr) -> Union[Any, Callable[..., ifcopenshell.entity_instance]]:
         if attr[0:6] == "create":
@@ -724,39 +701,3 @@ class file:
 
     def to_string(self) -> str:
         return self.wrapped_data.to_string()
-
-
-class file_units:
-    """
-    A class which provides methods to compute unit-entities associated to types.
-    """
-
-    _unit_assignment: dict[str, entity_instance] = {}
-
-    def __init__(self, ifc_file: file):
-        self._load_unit_assignment(ifc_file)
-
-    def _load_unit_assignment(self, ifc_file: file, /):
-        """
-        A mapping as dictionary which associates
-        to basic UnitTypes a unit-entity in the IFC file.
-        """
-        entities = self.by_type("IfcUnitAssignment")
-        base = next(iter(entities), None)
-        units = getattr(base, "Units", None) or ()
-        units_and_types = [(u, getattr(u, "UnitType", None)) for u in units if isinstance(u, entity_instance)]
-        self._unit_assignment = {t: u for u, t in units_and_types if isinstance(t, str)}
-        return
-
-    def by_type(self, t: str, /) -> entity_instance | None:
-        """
-        Returns the unit entity associated to a basic type
-        """
-        return self._unit_assignment.get(t, None)
-
-    def by_measure_type(self, t: str, /) -> entity_instance | None:
-        """
-        Returns the unit entity associated to a measure type
-        """
-        t = get_measure_unit_type(t)
-        return self.by_type(t)
