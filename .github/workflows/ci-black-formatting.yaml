@@ -1,0 +1,73 @@
+name: ci-black-formatting
+
+on:
+  push:
+  pull_request:
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Action - checkout repository
+        uses: actions/checkout@v4.2.2
+
+      - name: Action - install python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: "${{ env.PYTHON_VERSION }}"
+
+      - name: Step 1 - install dependencies
+        shell: bash
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install 'black>=24.10.0'
+
+      # NOTE: This would suffice, however it is less informative in terms of the 3 possible outcomes
+      # - name: QA Step - check linting
+      #   shell: bash
+      #   id: linting
+      #   run: |
+      #     python3 -m black .
+
+      # QA STEP
+      - name: QA Step - check linting
+        shell: bash
+        id: linting
+        run: |
+          python3 -m black --check . \
+          && exit 0 \
+          || (echo "exit_code=$?" >> "$GITHUB_OUTPUT" && exit 1);
+        continue-on-error: true
+
+      # OUTCOME 1 of QA STEP
+      - name: QA Step - no linting errors
+        if: steps.linting.outcome == 'success'
+        shell: bash
+        run: |-
+          echo "::notice::QA step linting succeeded"
+          exit 0;
+
+      # OUTCOME 2i of QA STEP
+      - name: QA Step - unprettified code with no syntax errors
+        if: steps.linting.outputs.exit_code == 1
+        shell: bash
+        run: |-
+          echo "::group::QA step succeeded with warnings"
+          echo "::warning::one or more files contains unformatted code but no syntax errors";
+          echo "::notice::please run the linter before pushing!";
+          echo "::endgroup::"
+          exit 0;
+
+      # OUTCOME 2ii of QA STEP
+      - name: QA Step - code contains syntax errors
+        if: steps.linting.outputs.exit_code == 123
+        shell: bash
+        run: |-
+          echo "::group::QA step failed"
+          echo "::error::one or more files contains syntax errors";
+          echo "::notice::please run the linter and fix syntax errors before pushing!";
+          echo "::endgroup::"
+          exit 1;
