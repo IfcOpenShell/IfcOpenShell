@@ -33,8 +33,6 @@ from typing import Union
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
-# from .util.constants import IFC_TYPES
-from .util.constants import IFC_UNIT_ASSIGNMENT
 from .util.unit import get_measure_unit_type
 
 if TYPE_CHECKING:
@@ -743,14 +741,10 @@ class file_units:
         A mapping as dictionary which associates
         to basic UnitTypes a unit-entity in the IFC file.
         """
-        entities = self.by_type(IFC_UNIT_ASSIGNMENT)
+        entities = self.by_type("IfcUnitAssignment")
         base = next(iter(entities), None)
         units = getattr(base, "Units", None) or ()
-        units_and_types = [
-            (u, getattr(u, "UnitType", None))
-            for u in units
-            if isinstance(u, entity_instance)
-        ]
+        units_and_types = [(u, getattr(u, "UnitType", None)) for u in units if isinstance(u, entity_instance)]
         self._unit_assignment = {t: u for u, t in units_and_types if isinstance(t, str)}
         return
 
