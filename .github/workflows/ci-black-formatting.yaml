@@ -14,10 +14,6 @@ jobs:
       - name: Action - checkout repository
         uses: actions/checkout@v4.2.2
 
-      # NOTE: This fails if anything changes via the prettifier as opposed to just on linting errors!
-      # - name: QA Step - run linter
-      #   uses: psf/black@24.10.0
-
       - name: Action - install python
         uses: actions/setup-python@v5.3.0
         with:
@@ -29,6 +25,14 @@ jobs:
           python3 -m pip install --upgrade pip
           python3 -m pip install 'black>=24.10.0'
 
+      # NOTE: This would suffice, however it is less informative in terms of the 3 possible outcomes
+      # - name: QA Step - check linting
+      #   shell: bash
+      #   id: linting
+      #   run: |
+      #     python3 -m black .
+
+      # QA STEP
       - name: QA Step - check linting
         shell: bash
         id: linting
@@ -38,7 +42,7 @@ jobs:
           || (echo "exit_code=$?" >> "$GITHUB_OUTPUT" && exit 1);
         continue-on-error: true
 
-      # LINTING HAS ALREADY BEEN RUN
+      # OUTCOME 1 of QA STEP
       - name: QA Step - no linting errors
         if: steps.linting.outcome == 'success'
         shell: bash
@@ -46,22 +50,24 @@ jobs:
           echo "::notice::QA step linting succeeded"
           exit 0;
 
-      # LINTING HAS NOT BEEN RUN BUT CONTAINS NO ERRORS
-      - name: QA Step - no linting errors but needs linting
+      # OUTCOME 2i of QA STEP
+      - name: QA Step - unprettified code with no syntax errors
         if: steps.linting.outputs.exit_code == 1
         shell: bash
         run: |-
-          echo "::group::QA step linting succeeded with warnings"
+          echo "::group::QA step succeeded with warnings"
+          echo "::warning::one or more files contains unformatted code but no syntax errors";
           echo "::warning::please run the linter before pushing!";
           echo "::endgroup::"
           exit 0;
 
-      # LINTING FAILED
-      - name: QA Step - linting errors
+      # OUTCOME 2ii of QA STEP
+      - name: QA Step - code contains syntax errors
         if: steps.linting.outputs.exit_code == 123
         shell: bash
         run: |-
-          echo "::group::QA step linting failed"
+          echo "::group::QA step failed"
+          echo "::error::one or more files contains syntax errors";
           echo "::error::please run the linter and fix syntax errors before pushing!";
           echo "::endgroup::"
           exit 1;
