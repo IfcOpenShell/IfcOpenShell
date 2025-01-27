@@ -260,6 +260,9 @@ class BIM_UL_styles(UIList):
     def draw_item(self, context, layout: bpy.types.UILayout, data, item, icon, active_data, active_property):
         if item:
             row = layout.row(align=True)
+            props = context.scene.BIMStylesProperties
+            if item.ifc_definition_id == props.is_editing_style:
+                row.label(text="", icon="GREASEPENCIL")
             row.prop(item, "name", text="", emboss=False)
             if item.has_surface_colour:
                 row = row.row(align=item.has_diffuse_colour)
