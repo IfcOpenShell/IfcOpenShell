@@ -576,6 +576,8 @@ class PolylineDecorator:
             pass
 
         coords = view3d_utils.location_3d_to_region_2d(region, rv3d, mouse_point)
+        if not coords:
+            return
         padding = 8
         verts = []
         edges = []
