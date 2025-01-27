@@ -42,9 +42,7 @@ def assign_unit(
     :param units: A list of units to assign as project defaults. See
         ifcopenshell.api.unit.add_si_unit, unit.add_conversion_based_unit,
         and unit.add_monetary_unit for information on how to create units.
-    :type units: list[ifcopenshell.entity_instance],optional
     :return: The IfcUnitAssignment element
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -95,22 +93,22 @@ class Usecase:
         return unit_assignment
 
     def get_unit_assignment(self) -> ifcopenshell.entity_instance:
-        unit_assignment = self.file.by_type("IfcUnitAssignment")
-        if unit_assignment:
-            unit_assignment = unit_assignment[0]
-            # TODO: handle unit rewriting, which is complicated
-        else:
+        if not (unit_assignment := ifcopenshell.util.unit.get_unit_assignment(self.file)):
             unit_assignment = self.file.createIfcUnitAssignment()
-            if self.file.schema == "IFC2X3":
-                self.file.by_type("IfcProject")[0].UnitsInContext = unit_assignment
-            else:
-                self.file.by_type("IfcContext")[0].UnitsInContext = unit_assignment
+            self.file.by_type("IfcProject")[0].UnitsInContext = unit_assignment
         return unit_assignment
 
     def assign_units(
         self, unit_assignment: ifcopenshell.entity_instance, new_units: list[ifcopenshell.entity_instance]
     ) -> None:
-        units = set(unit_assignment.Units or [])
+        new_unit_types = [u.UnitType if not u.is_a("IfcMonetaryUnit") else u.is_a() for u in new_units]
+        units = set(
+            [
+                u
+                for u in (unit_assignment.Units or [])
+                if u.is_a() not in new_unit_types and getattr(u, "UnitType", None) not in new_unit_types
+            ]
+        )
         for unit in new_units:
             units.add(unit)
         unit_assignment.Units = list(units)
