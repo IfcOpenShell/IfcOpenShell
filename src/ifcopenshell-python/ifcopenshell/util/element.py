@@ -808,6 +808,35 @@ def get_elements_by_representation(
     return results
 
 
+def get_elements_by_profile(profile: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    """Get all elements using provided IfcProfileDef.
+
+    Skip elements that have the profile in IfcMaterialProfileSet
+    but not actually use it in their representations.
+
+    :param profile: IfcProfileDef:
+    :return: The elements using the profile.
+    """
+    ifc_file = profile.file
+    queue = ifc_file.get_inverse(profile)
+    processed: set[ifcopenshell.entity_instance] = set()
+    representations: set[ifcopenshell.entity_instance] = set()
+    while queue:
+        item = queue.pop()
+        if item.is_a("IfcRepresentationItem"):
+            queue.update(i for i in ifc_file.get_inverse(item) if i not in processed)
+        elif item.is_a("IfcShapeRepresentation"):
+            representations.add(item)
+        else:
+            pass
+        processed.add(item)
+
+    elements = set()
+    for representation in representations:
+        elements.update(get_elements_by_representation(ifc_file, representation))
+    return elements
+
+
 def get_elements_by_layer(
     ifc_file: ifcopenshell.file, layer: ifcopenshell.entity_instance
 ) -> set[ifcopenshell.entity_instance]:

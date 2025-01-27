@@ -38,6 +38,7 @@ import ifcopenshell.api.aggregate
 import ifcopenshell.api.group
 import ifcopenshell.guid
 import ifcopenshell.util.element as subject
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
 class TestGetPsetIFC4(test.bootstrap.IFC4):
@@ -706,6 +707,18 @@ class TestGetElementsByRepresentation(test.bootstrap.IFC4):
         representation = self.file.createIfcShapeRepresentation()
         element.RepresentationMaps = [self.file.createIfcRepresentationMap(MappedRepresentation=representation)]
         assert subject.get_elements_by_representation(self.file, representation) == {element}
+
+
+class TestGetElementsByProfile(test.bootstrap.IFC4):
+    def test_getting_elements_by_profile(self):
+        builder = ShapeBuilder(self.file)
+        self.file.create_entity("IfcProject")  # add_context.
+        element = self.file.create_entity("IfcWall")
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        extrusion = builder.extrude(profile := builder.profile(builder.rectangle()))
+        representation = builder.get_representation(model, items=[extrusion])
+        ifcopenshell.api.geometry.assign_representation(self.file, element, representation)
+        assert subject.get_elements_by_profile(profile) == {element}
 
 
 class TestGetElementsByLayer(test.bootstrap.IFC4):
