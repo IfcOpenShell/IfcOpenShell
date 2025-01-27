@@ -889,11 +889,11 @@ class WallAxisDecorator:
             if element.is_a("IfcWall"):
                 layers = tool.Model.get_material_layer_parameters(element)
                 axis = tool.Model.get_wall_axis(obj, layers)
-                side = [tuple(list(v) + [0.0]) for v in axis["side"]]
+                side = [tuple(list(v) + [obj.location.z]) for v in axis["side"]]
                 self.draw_batch("LINES", side, unselected_elements_color, [(0, 1)])
-                base = [tuple(list(v) + [0.0]) for v in axis["base"]]
+                base = [tuple(list(v) + [obj.location.z]) for v in axis["base"]]
                 self.draw_batch("LINES", base, special_elements_color, [(0, 1)])
-                reference = [tuple(list(v) + [0.0]) for v in axis["reference"]]
+                reference = [tuple(list(v) + [obj.location.z]) for v in axis["reference"]]
                 self.draw_batch("LINES", reference, selected_elements_color, [(0, 1)])
 
                 direction = Vector(base[0]) - Vector(side[0])
