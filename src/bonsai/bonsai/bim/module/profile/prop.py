@@ -35,6 +35,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING
 
 
 def get_profile_classes(self, context):
@@ -52,6 +53,11 @@ class Profile(PropertyGroup):
     name: StringProperty(name="Name", update=update_profile_name)
     ifc_class: StringProperty(name="IFC Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+    if TYPE_CHECKING:
+        name: str
+        ifc_class: str
+        ifc_definition_id: int
 
 
 def update_active_profile_index(self, context):

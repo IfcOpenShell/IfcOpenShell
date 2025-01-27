@@ -257,7 +257,7 @@ class BIM_PT_styles(Panel):
 
 
 class BIM_UL_styles(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(self, context, layout: bpy.types.UILayout, data, item, icon, active_data, active_property):
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", text="", emboss=False)

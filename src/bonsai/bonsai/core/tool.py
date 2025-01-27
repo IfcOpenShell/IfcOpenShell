@@ -489,6 +489,11 @@ class Ifc:
 
 
 @interface
+class Layer:
+    pass
+
+
+@interface
 class Library:
     def clear_editing_mode(cls): pass
     def export_library_attributes(cls): pass

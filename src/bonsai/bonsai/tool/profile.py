@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcopenshell.api.profile
@@ -28,7 +29,10 @@ import bonsai.core.tool
 import bonsai.tool as tool
 import PIL.ImageDraw
 from bonsai.bim.module.model.decorator import ProfileDecorator
-from typing import Union
+from typing import Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import bonsai.bim.module.profile.prop
 
 
 class Profile(bonsai.core.tool.Profile):
@@ -111,7 +115,7 @@ class Profile(bonsai.core.tool.Profile):
         return new_profile
 
     @classmethod
-    def get_active_profile_ui(cls) -> Union[bpy.types.PropertyGroup, None]:
+    def get_active_profile_ui(cls) -> Union[bonsai.bim.module.profile.prop.Profile, None]:
         props = bpy.context.scene.BIMProfileProperties
         index = props.active_profile_index
         if len(props.profiles) > index >= 0:

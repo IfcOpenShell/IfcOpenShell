@@ -24,12 +24,13 @@ import zipfile
 import functools
 import ifcopenshell
 from pathlib import Path
-from typing import Any
 from typing import Callable
 from typing import Generator
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Union
+from typing import overload
+from typing import Literal
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
@@ -558,9 +559,33 @@ class file:
 
         return [entity_instance(e, self) for e in fn(inst.wrapped_data, max_levels)]
 
+    @overload
     def get_inverse(
-        self, inst: ifcopenshell.entity_instance, allow_duplicate: bool = False, with_attribute_indices: bool = False
-    ) -> list[ifcopenshell.entity_instance]:
+        self,
+        inst: ifcopenshell.entity_instance,
+        allow_duplicate: Literal[False] = False,
+        with_attribute_indices: bool = False,
+    ) -> set[ifcopenshell.entity_instance]: ...
+    @overload
+    def get_inverse(
+        self,
+        inst: ifcopenshell.entity_instance,
+        allow_duplicate: Literal[True],
+        with_attribute_indices: bool = False,
+    ) -> list[ifcopenshell.entity_instance]: ...
+    @overload
+    def get_inverse(
+        self,
+        inst: ifcopenshell.entity_instance,
+        allow_duplicate: bool,
+        with_attribute_indices: bool = False,
+    ) -> Union[list[ifcopenshell.entity_instance], set[ifcopenshell.entity_instance]]: ...
+    def get_inverse(
+        self,
+        inst: ifcopenshell.entity_instance,
+        allow_duplicate: bool = False,
+        with_attribute_indices: bool = False,
+    ) -> Union[list[ifcopenshell.entity_instance], set[ifcopenshell.entity_instance]]:
         """Return a list of entities that reference this entity
 
         Warning: this is a slow function, especially when there is a large
@@ -569,12 +594,10 @@ class file:
         consider using :func:`get_total_inverses`.
 
         :param inst: The entity instance to get inverse relationships
-        :type inst: ifcopenshell.entity_instance
         :param allow_duplicate: Returns a `list` when True, `set` when False
         :param with_attribute_indices: Returns pairs of <i, idx>
            where i[idx] is inst or contains inst. Requires allow_duplicate=True
-        :returns: A list of ifcopenshell.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance]
+        :returns: A list or set of ifcopenshell.entity_instance objects.
         """
         if with_attribute_indices and not allow_duplicate:
             raise ValueError("with_attribute_indices requires allow_duplicate to be True")
@@ -584,6 +607,7 @@ class file:
         if allow_duplicate:
             if with_attribute_indices:
                 idxs = self.wrapped_data.get_inverse_indices(inst.wrapped_data)
+                # TODO: include in typing.
                 return list(zip(inverses, idxs))
             else:
                 return inverses

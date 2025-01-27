@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bmesh
 import struct
@@ -56,9 +57,14 @@ from typing_extensions import TypeIs
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import Attribute
+    from bonsai.bim.module.geometry.prop import BIMObjectGeometryProperties
 
 
 class Geometry(bonsai.core.tool.Geometry):
+    @classmethod
+    def get_object_geometry_props(cls, object: bpy.types.Object) -> BIMObjectGeometryProperties:
+        return object.BIMGeometryProperties
+
     @classmethod
     def change_object_data(cls, obj: bpy.types.Object, data: bpy.types.ID, is_global: bool = False) -> None:
         if is_global:

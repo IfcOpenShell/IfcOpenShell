@@ -18,7 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.util.representation
-from typing import Optional
+from typing import Optional, Any
 
 
 def add_context(
@@ -191,6 +191,9 @@ def add_context(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         if not self.settings["parent"]:
             if self.settings["context_type"] == "Plan":

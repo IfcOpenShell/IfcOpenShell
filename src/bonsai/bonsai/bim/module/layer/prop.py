@@ -30,6 +30,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING
 
 
 def update_layer_property(self: "Layer", context: bpy.types.Context, *, property: str) -> None:
@@ -74,3 +75,11 @@ class BIMLayerProperties(PropertyGroup):
         ),
         default="IfcPresentationLayerAssignment",
     )
+
+    if TYPE_CHECKING:
+        layer_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        active_layer_id: int
+        layers: bpy.types.bpy_prop_collection_idprop[Layer]
+        active_layer_index: int
+        is_editing: bool
+        layer_type: str

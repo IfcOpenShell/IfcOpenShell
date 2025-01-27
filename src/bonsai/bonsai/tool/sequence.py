@@ -38,7 +38,7 @@ import bonsai.bim.helper
 from dateutil import parser
 from datetime import datetime
 from datetime import time as datetime_time
-from typing import Optional, Any, Union, Literal, TYPE_CHECKING
+from typing import Optional, Any, Union, Literal, TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:
     import bonsai.bim.prop
@@ -705,14 +705,14 @@ class Sequence(bonsai.core.tool.Sequence):
         return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.lag_time_attributes)
 
     @classmethod
-    def select_products(cls, products):
+    def select_products(cls, products: Iterable[ifcopenshell.entity_instance]) -> None:
         [obj.select_set(False) for obj in bpy.context.selected_objects]
         for product in products:
             obj = tool.Ifc.get_object(product)
             obj.select_set(True) if obj else None
 
     @classmethod
-    def add_task_column(cls, column_type: str, name: str, data_type: str):
+    def add_task_column(cls, column_type: str, name: str, data_type: str) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         new = props.columns.add()
         new.name = f"{column_type}.{name}"
