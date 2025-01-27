@@ -1789,7 +1789,7 @@ class Model(bonsai.core.tool.Model):
                 else:  # Pure straight polyline, no segments required
                     coord_list = [list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts]
                     if x_angle:
-                        coord_list = [(c[0], c[1] / cos(x_angle)**2) for c in  coord_list]
+                        coord_list = [(c[0], c[1] / cos(x_angle)) for c in  coord_list]
                     if is_closed:
                         coord_list.append(coord_list[0])
                     points = tmp.createIfcCartesianPointList2D(coord_list)
