@@ -211,10 +211,6 @@ class SelectGroupElements(bpy.types.Operator):
     group: bpy.props.IntProperty()
     is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=True, options={"SKIP_SAVE"})
 
-    @classmethod
-    def poll(cls, context):
-        return bool(tool.Ifc.get() and context.active_object)
-
     def invoke(self, context, event):
         self.is_recursive = not event.alt
         return self.execute(context)
@@ -223,4 +219,43 @@ class SelectGroupElements(bpy.types.Operator):
         tool.Spatial.select_products(
             ifcopenshell.util.element.get_grouped_by(tool.Ifc.get().by_id(self.group), is_recursive=self.is_recursive)
         )
+        return {"FINISHED"}
+
+
+class SetGroupVisibility(bpy.types.Operator):
+    bl_idname = "bim.set_group_visibility"
+    bl_label = "Set Group Visibility"
+    bl_options = {"REGISTER", "UNDO"}
+    group: bpy.props.IntProperty()
+    should_include_children: bpy.props.BoolProperty(name="Should Include Children", default=True, options={"SKIP_SAVE"})
+    mode: bpy.props.StringProperty(name="Mode")
+
+    @classmethod
+    def description(cls, context, operator):
+        if operator.mode == "HIDE":
+            return "Hides the selected group and all children.\n" + "ALT+CLICK to ignore children"
+        elif operator.mode == "SHOW":
+            return "Shows the selected group and all children.\n" + "ALT+CLICK to ignore children"
+        return "Isolate the selected group and all children.\n" + "ALT+CLICK to ignore children"
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.should_include_children = False
+        return self.execute(context)
+
+    def execute(self, context):
+        if self.mode == "ISOLATE":
+            context_override = tool.Blender.get_viewport_context()
+            with context.temp_override(**context_override):
+                bpy.ops.object.hide_view_set(unselected=True)
+                bpy.ops.object.hide_view_set(unselected=False)
+            should_hide = False
+        else:
+            should_hide = self.mode == "HIDE"
+
+        group = tool.Ifc.get().by_id(self.group)
+        elements = ifcopenshell.util.element.get_grouped_by(group, is_recursive=self.should_include_children)
+        for element in elements:
+            if obj := tool.Ifc.get_object(element):
+                obj.hide_set(should_hide)
         return {"FINISHED"}

@@ -29,6 +29,7 @@ classes = (
     operator.LoadGroups,
     operator.RemoveGroup,
     operator.SelectGroupElements,
+    operator.SetGroupVisibility,
     operator.ToggleGroup,
     operator.UnassignGroup,
     prop.ExpandedGroups,
