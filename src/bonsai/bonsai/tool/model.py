@@ -36,7 +36,7 @@ import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.core.geometry as geometry
-from math import atan, degrees, radians
+from math import atan, cos, degrees, radians
 from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
@@ -139,13 +139,13 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def export_profile(
-        cls, obj: bpy.types.Object, position: Optional[Matrix] = None
+        cls, obj: bpy.types.Object, position: Optional[Matrix] = None, x_angle: Optional[float] = None
     ) -> ifcopenshell.entity_instance | None:
         """Returns `None` in case if profile was invalid."""
         if position is None:
             position = Matrix()
 
-        result = cls.auto_detect_profiles(obj, obj.data, position)
+        result = cls.auto_detect_profiles(obj, obj.data, position, x_angle)
         if isinstance(result, dict) and result["profile_def"]:
             return tool.Ifc.get().add(result["profile_def"])
 
@@ -286,6 +286,7 @@ class Model(bonsai.core.tool.Model):
         profile: ifcopenshell.entity_instance,
         obj: Optional[bpy.types.Object] = None,
         position: Optional[Matrix] = None,
+        x_angle: Optional[float] = None,
     ) -> Union[bpy.types.Object, None]:
         """Creates new profile mesh and assigns it to `obj`,
         if `obj` is `None` then new "Profile" object will be created.
@@ -305,10 +306,10 @@ class Model(bonsai.core.tool.Model):
         profiles = profile.Profiles if profile.is_a("IfcCompositeProfileDef") else [profile]
         for profile in profiles:
             if profile.is_a("IfcArbitraryClosedProfileDef"):
-                cls.convert_curve_to_mesh(obj, position, profile.OuterCurve)
+                cls.convert_curve_to_mesh(obj, position, profile.OuterCurve, x_angle=x_angle)
                 if profile.is_a("IfcArbitraryProfileDefWithVoids"):
                     for inner_curve in profile.InnerCurves:
-                        cls.convert_curve_to_mesh(obj, position, inner_curve)
+                        cls.convert_curve_to_mesh(obj, position, inner_curve, x_angle=x_angle)
             elif profile.is_a() == "IfcRectangleProfileDef":
                 cls.import_rectangle(obj, position, profile)
             elif profile.is_a() == "IfcAnnotationFillArea":
@@ -423,7 +424,7 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def convert_curve_to_mesh(
-        cls, obj: bpy.types.Object, position: Matrix, curve: ifcopenshell.entity_instance
+        cls, obj: bpy.types.Object, position: Matrix, curve: ifcopenshell.entity_instance, x_angle: Optional[float] = None,
     ) -> None:
         offset = len(cls.vertices)
 
@@ -444,6 +445,8 @@ class Model(bonsai.core.tool.Model):
         elif curve.is_a("IfcIndexedPolyCurve"):
             for local_point in curve.Points.CoordList:
                 global_point = position @ Vector(cls.convert_unit_to_si(local_point)).to_3d()
+                if x_angle:
+                    global_point = Vector((global_point[0], global_point[1] * cos(x_angle), global_point[2]))
                 cls.vertices.append(global_point)
             if curve.Segments:
                 for segment in curve.Segments:
@@ -1617,7 +1620,7 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def auto_detect_profiles(
-        cls, obj: bpy.types.Object, mesh: bpy.types.Mesh, position: Matrix | None = None
+        cls, obj: bpy.types.Object, mesh: bpy.types.Mesh, position: Matrix | None = None, x_angle: Optional[float] = None,
     ) -> Union[tuple, dict]:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
@@ -1785,6 +1788,8 @@ class Model(bonsai.core.tool.Model):
                     curves.append(tmp.createIfcPolyline(points))
                 else:  # Pure straight polyline, no segments required
                     coord_list = [list(((position_i @ v.co) / unit_scale).to_2d()) for v in loop_verts]
+                    if x_angle:
+                        coord_list = [(c[0], c[1] / cos(x_angle)**2) for c in  coord_list]
                     if is_closed:
                         coord_list.append(coord_list[0])
                     points = tmp.createIfcCartesianPointList2D(coord_list)

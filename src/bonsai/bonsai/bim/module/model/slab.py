@@ -646,14 +646,31 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         body = ifcopenshell.util.representation.resolve_representation(body)
         extrusion = tool.Model.get_extrusion(body)
+        existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
+        layer_params = tool.Model.get_material_layer_parameters(element)
 
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
             position.translation *= self.unit_scale
+
+            # Restore the position to before it was changed by the offset and x_angle
+            rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
+            offset = Vector((0.0, 0.0, -layer_params["offset"]))
+            rot_offset = offset @ rot_matrix
+            tranlation_matrix = Matrix.Translation(rot_offset)
+            position = position @ tranlation_matrix
+
+            # Restore Object rotation to zero
+            local_rot_mat = obj.rotation_euler.to_matrix()
+            rot_mat = Matrix.Rotation(-existing_x_angle, 4, "X")
+            new_rot_mat = local_rot_mat.to_4x4() @ rot_mat
+            new_rot_euler = new_rot_mat.to_euler()
+            obj.rotation_euler = new_rot_euler
+            
         else:
             position = Matrix()
 
-        tool.Model.import_profile(extrusion.SweptArea, obj=obj, position=position)
+        tool.Model.import_profile(extrusion.SweptArea, obj=obj, position=position, x_angle=existing_x_angle)
 
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_extrusion_profile(context))
@@ -678,13 +695,30 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         body = ifcopenshell.util.representation.resolve_representation(body)
         extrusion = tool.Model.get_extrusion(body)
+        existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
+        layer_params = tool.Model.get_material_layer_parameters(element)
         if extrusion.Position:
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(extrusion.Position).tolist())
             position.translation *= self.unit_scale
+
+            # Restore the position to after it was changed by the offset and x_angle
+            rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
+            offset = Vector((0.0, 0.0, -layer_params["offset"]))
+            rot_offset = offset @ rot_matrix
+            tranlation_matrix = Matrix.Translation(rot_offset)
+            position = position @ tranlation_matrix
+
+            # Restore Object rotation to x_angle
+            local_rot_mat = obj.rotation_euler.to_matrix()
+            rot_mat = Matrix.Rotation(existing_x_angle, 4, "X")
+            new_rot_mat = local_rot_mat.to_4x4() @ rot_mat
+            new_rot_euler = new_rot_mat.to_euler()
+            obj.rotation_euler = new_rot_euler
+
         else:
             position = Matrix()
 
-        profile = tool.Model.export_profile(obj, position=position)
+        profile = tool.Model.export_profile(obj, position=position, x_angle=existing_x_angle)
 
         if not profile:
 
