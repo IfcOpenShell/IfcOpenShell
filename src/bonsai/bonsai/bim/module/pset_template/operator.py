@@ -119,24 +119,7 @@ class EnableEditingPropTemplate(bpy.types.Operator):
     prop_template: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMPsetTemplateProperties
-        props.active_prop_template_id = self.prop_template
-        template = IfcStore.pset_template_file.by_id(props.active_prop_template_id)
-        props.active_prop_template.name = template.Name or ""
-        props.active_prop_template.description = template.Description or ""
-        props.active_prop_template.primary_measure_type = template.PrimaryMeasureType or "-"
-        props.active_prop_template.template_type = template.TemplateType
-        props.active_prop_template.enum_values.clear()
-
-        if template.Enumerators:
-            props.active_prop_template.enum_values.clear()
-            data_type = props.active_prop_template.get_value_name()
-            for e in template.Enumerators.EnumerationValues:
-                new = props.active_prop_template.enum_values.add()
-                setattr(new, data_type, e.wrappedValue)
-
-        # Disable because of the intersecting enums in data.py.
-        props.active_pset_template_id = 0
+        tool.PsetTemplate.enable_editing_prop_template(tool.Ifc.get().by_id(self.prop_template))
         return {"FINISHED"}
 
 
@@ -245,7 +228,7 @@ class AddPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator
     def _execute(self, context):
         props = context.scene.BIMPsetTemplateProperties
         pset_template_id = props.active_pset_template_id or int(props.pset_templates)
-        ifcopenshell.api.run(
+        prop_template = ifcopenshell.api.run(
             "pset_template.add_prop_template",
             IfcStore.pset_template_file,
             pset_template=IfcStore.pset_template_file.by_id(pset_template_id),
@@ -254,6 +237,7 @@ class AddPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
         bonsai.bim.schema.reload(tool.Ifc.get().schema)
+        tool.PsetTemplate.enable_editing_prop_template(prop_template)
 
 
 class RemovePropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator):

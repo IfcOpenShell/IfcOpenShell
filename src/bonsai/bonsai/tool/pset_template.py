@@ -95,3 +95,27 @@ class PsetTemplate(bonsai.core.tool.PsetTemplate):
 
         # Disable because of the intersecting enums in data.py.
         props.active_prop_template_id = 0
+
+    @classmethod
+    def enable_editing_prop_template(cls, prop_template: ifcopenshell.entity_instance) -> None:
+        props = tool.PsetTemplate.get_pset_template_props()
+        props.active_prop_template_id = prop_template.id()
+
+        pset_template_file = IfcStore.pset_template_file
+        assert pset_template_file
+        template = pset_template_file.by_id(props.active_prop_template_id)
+        props.active_prop_template.name = template.Name or ""
+        props.active_prop_template.description = template.Description or ""
+        props.active_prop_template.primary_measure_type = template.PrimaryMeasureType or "-"
+        props.active_prop_template.template_type = template.TemplateType
+        props.active_prop_template.enum_values.clear()
+
+        if template.Enumerators:
+            props.active_prop_template.enum_values.clear()
+            data_type = props.active_prop_template.get_value_name()
+            for e in template.Enumerators.EnumerationValues:
+                new = props.active_prop_template.enum_values.add()
+                setattr(new, data_type, e.wrappedValue)
+
+        # Disable because of the intersecting enums in data.py.
+        props.active_pset_template_id = 0

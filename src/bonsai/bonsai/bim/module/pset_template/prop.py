@@ -196,6 +196,14 @@ class PropTemplate(PropertyGroup):
         else:
             assert False, "Unknown data type"
 
+    if TYPE_CHECKING:
+        global_id: str
+        name: str
+        description: str
+        primary_measure_type: str
+        template_type: str
+        enum_values: bpy.types.bpy_prop_collection_idprop[EnumerationValues]
+
 
 class BIMPsetTemplateProperties(PropertyGroup):
     pset_template_files: EnumProperty(
