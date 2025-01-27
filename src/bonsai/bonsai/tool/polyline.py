@@ -312,7 +312,6 @@ class Polyline(bonsai.core.tool.Polyline):
     @classmethod
     def validate_input(cls, input_number: str, input_type: InputType) -> tuple[bool, str]:
         """
-
         :return: Tuple with a boolean indicating if the input is valid
             and the final string output.
             Distance units converted to meters, angles input/output is in degrees.
@@ -558,6 +557,8 @@ class Polyline(bonsai.core.tool.Polyline):
         measurement_data = bpy.context.scene.BIMPolylineProperties.measurement_polyline.add()
         measurement_type = bpy.context.scene.MeasureToolSettings.measurement_type
         measurement_data.measurement_type = measurement_type
+        if measurement_type == "AREA" and len(polyline_points) < 3:
+            return
         for point in polyline_points:
             measurement_point = measurement_data.polyline_points.add()
             measurement_point.x = point.x
