@@ -23,6 +23,7 @@ import logging
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
+import ifcopenshell.api.layer
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -2325,7 +2326,7 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = tool.Geometry.get_active_or_representation_obj()
 
-        props = obj.BIMGeometryProperties
+        props = tool.Geometry.get_object_geometry_props(obj)
         props.is_editing = True
 
         props.items.clear()
@@ -3208,4 +3209,52 @@ class OverrideMove(bpy.types.Operator):
                 self.new_active_obj = obj
             return {"FINISHED"}
 
+        return {"FINISHED"}
+
+
+class EditRepresentationItemLayer(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.edit_representation_item_layer"
+    bl_label = "Edit Representation Item Layer"
+    bl_description = "Edit presentation layer for the active representation item."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        obj = context.active_object
+        assert obj
+        props = tool.Geometry.get_object_geometry_props(obj)
+        new_layer = ifc_file.by_id(int(props.representation_item_layer))
+
+        item = ifc_file.by_id(int(props.active_item.ifc_definition_id))
+        item_layer = next(iter(item.LayerAssignment), None)
+
+        # We assume just 1 layer can be assigned to representation item.
+        if item_layer:
+            # Same layer is already assigned.
+            if item_layer == new_layer:
+                props.is_editing_item_layer = False
+                return {"FINISHED"}
+            ifcopenshell.api.layer.unassign_layer(ifc_file, [item], item_layer)
+
+        ifcopenshell.api.layer.assign_layer(ifc_file, [item], new_layer)
+        props.is_editing_item_layer = False
+        bpy.ops.bim.enable_editing_representation_items()
+        return {"FINISHED"}
+
+
+class UnassignRepresentationItemLayer(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.unassign_representation_item_layer"
+    bl_label = "Unassign Representation Item Layer"
+    bl_description = "Unassign presentation layer from the active representation item."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        obj = context.active_object
+        assert obj
+        props = tool.Geometry.get_object_geometry_props(obj)
+        item = ifc_file.by_id(props.active_item.ifc_definition_id)
+        layer = item.LayerAssignment[0]  # If there is no layer, then button is not visible in UI.
+        ifcopenshell.api.layer.unassign_layer(ifc_file, [item], layer)
+        bpy.ops.bim.enable_editing_representation_items()
         return {"FINISHED"}

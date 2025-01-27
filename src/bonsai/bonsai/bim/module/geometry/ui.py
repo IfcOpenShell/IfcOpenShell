@@ -179,7 +179,7 @@ class BIM_PT_representation_items(Panel):
             RepresentationItemsData.load()
 
         obj = context.scene.BIMGeometryProperties.representation_obj or tool.Blender.get_active_object()
-        props = obj.BIMGeometryProperties
+        props = tool.Geometry.get_object_geometry_props(obj)
 
         row = self.layout.row(align=True)
         row.label(text=f"{RepresentationItemsData.data['total_items']} Items Found")
@@ -207,7 +207,9 @@ class BIM_PT_representation_items(Panel):
         surface_style = active_item.surface_style
         surface_style_id = active_item.surface_style_id
         shape_aspect = active_item.shape_aspect
+        layer = active_item.layer
 
+        # Style.
         row = self.layout.row(align=True)
         if props.is_editing_item_style:
             # NOTE: we currently support 1 item having just 1 style
@@ -226,9 +228,19 @@ class BIM_PT_representation_items(Panel):
             if surface_style:
                 row.operator("bim.unassign_representation_item_style", icon="X", text="")
 
-        row = self.layout.row()
-        row.label(text=active_item.layer or "No Presentation Layer", icon="STICKY_UVS_LOC")
+        # Presentation layer.
+        row = self.layout.row(align=True)
+        if props.is_editing_item_layer:
+            prop_with_search(row, props, "representation_item_layer", icon="STICKY_UVS_LOC", text="")
+            row.operator("bim.edit_representation_item_layer", icon="CHECKMARK", text="")
+            row.prop(props, "is_editing_item_layer", icon="CANCEL", text="")
+        else:
+            row.label(text=layer or "No Presentation Layer", icon="STICKY_UVS_LOC")
+            row.prop(props, "is_editing_item_layer", icon="GREASEPENCIL", text="")
+            if layer:
+                row.operator("bim.unassign_representation_item_layer", icon="X", text="")
 
+        # Mappings.
         if active_item.name.endswith("FaceSet"):
             if "UV" in active_item.tags:
                 text = "Has UV mapping"
@@ -242,6 +254,7 @@ class BIM_PT_representation_items(Panel):
                 text = "Has no colour mapping"
             self.layout.label(text=text, icon="COLOR")
 
+        # Shape aspect.
         row = self.layout.row(align=True)
         if props.is_editing_item_shape_aspect:
             row.prop(props, "representation_item_shape_aspect", icon="SHAPEKEY_DATA", text="")

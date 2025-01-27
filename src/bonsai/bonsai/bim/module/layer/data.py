@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import bonsai.tool as tool
+from typing import Any
 
 
 def refresh():
@@ -31,12 +32,31 @@ class LayersData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_layers": cls.total_layers(), "active_layers": cls.active_layers()}
+        cls.data = {
+            "active_layers": cls.active_layers(),
+            "layers": cls.layers(),
+        }
+        # After .layers().
+        cls.data["total_layers"] = cls.total_layers()
+        cls.data["layers_enum"] = cls.layers_enum()
+
         cls.is_loaded = True
 
     @classmethod
     def total_layers(cls) -> int:
-        return len(tool.Ifc.get().by_type("IfcPresentationLayerAssignment"))
+        return len(cls.data["layers"])
+
+    @classmethod
+    def layers(cls) -> dict[int, dict[str, Any]]:
+        results = dict()
+        KEEP_ATTRS = set(("id", "Name", "Description"))
+        for layer in tool.Ifc.get().by_type("IfcPresentationLayerAssignment"):
+            results[layer.id()] = {k: v for k, v in layer.get_info().items() if k in KEEP_ATTRS}
+        return results
+
+    @classmethod
+    def layers_enum(cls) -> list[tuple[str, str, str]]:
+        return list((str(data["id"]), data["Name"], data["Description"] or "") for data in cls.data["layers"].values())
 
     @classmethod
     def active_layers(cls) -> dict[int, str]:

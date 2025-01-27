@@ -32,7 +32,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 
 def get_contexts(self, context):
@@ -105,6 +105,14 @@ def get_material_constituents(self, context, edit_text):
     return ObjectMaterialData.data["active_material_constituents"]
 
 
+def get_layers(self, context):
+    from bonsai.bim.module.layer.data import LayersData
+
+    if not LayersData.is_loaded:
+        LayersData.load()
+    return LayersData.data["layers_enum"]
+
+
 def update_shape_aspect(self, context):
     shape_aspect_id = self.representation_item_shape_aspect
     attrs = self.shape_aspect_attrs
@@ -128,6 +136,16 @@ class RepresentationItem(PropertyGroup):
     shape_aspect_id: IntProperty(name="Shape Aspect IFC ID")
     tags: StringProperty(name="Tags")
 
+    if TYPE_CHECKING:
+        name: str
+        surface_style: str
+        surface_style_id: int
+        layer: str
+        ifc_definition_id: int
+        shape_aspect: str
+        shape_aspect_id: int
+        tags: str
+
 
 class RepresentationItemObject(PropertyGroup):
     name: StringProperty(name="Name")
@@ -149,6 +167,20 @@ class ShapeAspect(PropertyGroup):
     )
 
 
+def update_is_editing_item_layer(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
+    if self.is_editing_item_layer:
+        ifc_file = tool.Ifc.get()
+        active_ui_item = self.active_item
+        assert active_ui_item
+        item = ifc_file.by_id(active_ui_item.ifc_definition_id)
+        if layer := next(iter(item.LayerAssignment), None):
+            self.representation_item_layer = str(layer.id())
+        return
+
+    if "representation_item_layer" in self:
+        del self["representation_item_layer"]
+
+
 class BIMObjectGeometryProperties(PropertyGroup):
     contexts: EnumProperty(items=get_contexts, name="Contexts")
     is_editing: BoolProperty(name="Is Editing", default=False)
@@ -161,11 +193,31 @@ class BIMObjectGeometryProperties(PropertyGroup):
         items=get_shape_aspects, name="Representation Item Shape Aspect", update=update_shape_aspect
     )
     shape_aspect_attrs: PointerProperty(type=ShapeAspect)
+    is_editing_item_layer: BoolProperty(
+        name="Is Editing Item's Presentation Layer",
+        description="Toggle editing presentation layer for the item.",
+        default=False,
+        update=update_is_editing_item_layer,
+    )
+    representation_item_layer: EnumProperty(items=get_layers, name="Representation Item's Layer")
 
     @property
     def active_item(self):
-        if self.active_item_index < len(self.items):
+        if 0 <= self.active_item_index < len(self.items):
             return self.items[self.active_item_index]
+
+    if TYPE_CHECKING:
+        contexts: str
+        is_editing: bool
+        items: bpy.types.bpy_prop_collection_idprop[RepresentationItem]
+        active_item_index: int
+        is_editing_item_style: bool
+        representation_item_style: str
+        is_editing_item_shape_aspect: bool
+        representation_item_shape_aspect: str
+        shape_aspect_attrs: ShapeAspect
+        is_editing_item_layer: bool
+        representation_item_layer: str
 
 
 class BIMGeometryProperties(PropertyGroup):
