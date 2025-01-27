@@ -413,12 +413,24 @@ def get_unit_assignment(ifc_file: ifcopenshell.file) -> Union[ifcopenshell.entit
 
 
 def cache_units(ifc_file: ifcopenshell.file) -> None:
+    """Cache the default units for performance
+
+    Repetitively fetching project units (such as for determining the unit of a
+    property) can be costly. This enables a cache to make it faster. If the
+    project units change, you can update the cache by rerunning this function.
+
+    :param ifc_file: The IFC file.
+    """
     ifc_file.units = {}
     if assignment := get_unit_assignment(ifc_file):
         ifc_file.units = {u.UnitType: u for u in assignment.Units if getattr(u, "UnitType", None)}
 
 
 def clear_unit_cache(ifc_file: ifcopenshell.file) -> None:
+    """Clears the unit cache of the project
+
+    :param ifc_file: The IFC file.
+    """
     ifc_file.units = {}
 
 
@@ -472,8 +484,11 @@ def get_property_unit(
     elif prop.is_a("IfcPropertySingleValue"):
         measure_class = prop.NominalValue.is_a()
     elif prop.is_a("IfcPropertyEnumeratedValue"):
-        if unit := prop.EnumerationReference.Unit:
-            return unit
+        if prop.EnumerationReference:
+            if unit := prop.EnumerationReference.Unit:
+                return unit
+            if value := next(iter(prop.EnumerationReference.EnumerationValues or ()), None):
+                measure_class = value.is_a()
         if value := next(iter(prop.EnumerationValues or ()), None):
             measure_class = value.is_a()
     elif prop.is_a("IfcPropertyListValue"):
@@ -484,7 +499,7 @@ def get_property_unit(
             measure_class = value.is_a()
 
     if measure_class and (unit_type := get_measure_unit_type(measure_class)):
-        return get_project_unit(ifc_file, unit_type)
+        return get_project_unit(ifc_file, unit_type, use_cache=use_cache)
 
 
 def get_property_table_unit(
@@ -513,14 +528,14 @@ def get_property_table_unit(
         defining_unit = unit
     elif value := next(iter(prop.DefiningValues or ()), None):
         if unit_type := get_measure_unit_type(value.is_a()):
-            defining_unit = get_project_unit(ifc_file, unit_type)
+            defining_unit = get_project_unit(ifc_file, unit_type, use_cache=use_cache)
 
     defined_unit = None
     if unit := prop.DefinedUnit:
         defined_unit = unit
     elif value := next(iter(prop.DefinedValues or ()), None):
         if unit_type := get_measure_unit_type(value.is_a()):
-            defining_unit = get_project_unit(ifc_file, unit_type)
+            defining_unit = get_project_unit(ifc_file, unit_type, use_cache=use_cache)
 
     return {
         "DefiningUnit": defining_unit,

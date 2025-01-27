@@ -25,6 +25,133 @@ import ifcopenshell.util.unit as subject
 from math import pi
 
 
+class TestCacheUnits(test.bootstrap.IFC4):
+    def test_run(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length, area])
+        assert self.file.units == {}
+        subject.cache_units(self.file)
+        assert self.file.units == {"LENGTHUNIT": length, "AREAUNIT": area}
+
+
+class TestClearUnitCache(test.bootstrap.IFC4):
+    def test_run(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length, area])
+        subject.cache_units(self.file)
+        subject.clear_unit_cache(self.file)
+        assert self.file.units == {}
+
+
+class TestGetProjectUnit(test.bootstrap.IFC4):
+    def test_run(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length, area])
+        assert subject.get_project_unit(self.file, "LENGTHUNIT") == length
+        assert subject.get_project_unit(self.file, "AREAUNIT") == area
+
+    def test_using_a_cache(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        length2 = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="CENTI")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length, area])
+        assert self.file.units == {}
+        assert subject.get_project_unit(self.file, "LENGTHUNIT", use_cache=True) == length
+        assert self.file.units == {"LENGTHUNIT": length, "AREAUNIT": area}
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length2])
+        assert subject.get_project_unit(self.file, "LENGTHUNIT", use_cache=True) == length
+        subject.clear_unit_cache(self.file)
+        assert subject.get_project_unit(self.file, "LENGTHUNIT", use_cache=True) == length2
+        assert self.file.units == {"LENGTHUNIT": length2, "AREAUNIT": area}
+
+
+class TestGetPropertyUnit(test.bootstrap.IFC4):
+    def test_no_unit(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        prop = self.file.createIfcQuantityLength(Name="Foo", LengthValue=42.0)
+        assert subject.get_property_unit(prop, self.file) is None
+
+    def test_simple_quantity(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        length2 = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="CENTI")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length, area])
+        prop = self.file.createIfcQuantityLength(Name="Foo", LengthValue=42.0)
+        assert subject.get_property_unit(prop, self.file) == length
+        prop.Unit = length2
+        assert subject.get_property_unit(prop, self.file) == length2
+
+    def test_single_value(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        length2 = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="CENTI")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length, area])
+        prop = self.file.createIfcPropertySingleValue(Name="Foo", NominalValue=self.file.createIfcLengthMeasure(42.0))
+        assert subject.get_property_unit(prop, self.file) == length
+        prop.Unit = length2
+        assert subject.get_property_unit(prop, self.file) == length2
+
+    def test_enumerated_value(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        length2 = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="CENTI")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length, area])
+        prop = self.file.createIfcPropertyEnumeratedValue(Name="Foo", EnumerationValues=[self.file.createIfcLengthMeasure(42.0)])
+        assert subject.get_property_unit(prop, self.file) == length
+        prop.EnumerationValues = []
+        prop.EnumerationReference = self.file.createIfcPropertyEnumeration("Foo", [self.file.createIfcAreaMeasure(42.0)])
+        assert subject.get_property_unit(prop, self.file) == area
+        prop.EnumerationReference = self.file.createIfcPropertyEnumeration("Foo", [self.file.createIfcAreaMeasure(42.0)], Unit=length2)
+        assert subject.get_property_unit(prop, self.file) == length2
+        prop.EnumerationValues = [self.file.createIfcAreaMeasure(42.0)]
+        assert subject.get_property_unit(prop, self.file) == length2
+        prop.EnumerationReference.Unit = None
+        assert subject.get_property_unit(prop, self.file) == area
+
+    def test_list_value(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        length2 = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="CENTI")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length, area])
+        prop = self.file.createIfcPropertyListValue(Name="Foo", ListValues=[self.file.createIfcLengthMeasure(42.0)])
+        assert subject.get_property_unit(prop, self.file) == length
+        prop.Unit = length2
+        assert subject.get_property_unit(prop, self.file) == length2
+        prop.Unit = None
+        prop.ListValues = []
+        assert subject.get_property_unit(prop, self.file) is None
+
+    def test_bounded_value(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        length = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        length2 = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="CENTI")
+        area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[length, area])
+        prop = self.file.createIfcPropertyBoundedValue(Name="Foo")
+        assert subject.get_property_unit(prop, self.file) is None
+        prop.UpperBoundValue = self.file.createIfcLengthMeasure(42.0)
+        assert subject.get_property_unit(prop, self.file) == length
+        prop.UpperBoundValue = None
+        prop.LowerBoundValue = self.file.createIfcLengthMeasure(42.0)
+        assert subject.get_property_unit(prop, self.file) == length
+        prop.LowerBoundValue = None
+        prop.SetPointValue = self.file.createIfcLengthMeasure(42.0)
+        assert subject.get_property_unit(prop, self.file) == length
+        prop.Unit = length2
+        assert subject.get_property_unit(prop, self.file) == length2
+
+
 class TestConvert(test.bootstrap.IFC4):
     def test_run(self):
         assert subject.convert(1, None, "METRE", None, "METRE") == 1

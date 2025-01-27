@@ -222,7 +222,7 @@ class file:
     """
 
     wrapped_data: ifcopenshell_wrapper.file
-    units: dict[str: ifcopenshell.entity_instance] = None
+    units: dict[str, entity_instance] = {}
     history_size: int = 64
 
     def __init__(
@@ -358,7 +358,6 @@ class file:
         :param args: The positional arguments of the IFC class
         :param kwargs: The keyword arguments of the IFC class
         :returns: An entity instance
-        :rtype: ifcopenshell.entity_instance
 
         Example:
 
