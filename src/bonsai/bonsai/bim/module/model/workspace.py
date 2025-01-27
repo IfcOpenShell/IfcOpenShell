@@ -183,17 +183,6 @@ class WindowTool(BimTool):
     ifc_element_type = "IfcWindowType"
 
 
-class StairTool(BimTool):
-    bl_space_type = "VIEW_3D"
-    bl_context_mode = "OBJECT"
-    bl_idname = "bim.stair_tool"
-    bl_label = "Stair Tool"
-    bl_description = "Create and edit stairs, including straight, winder, spiral, curved, and freeform stairs"
-    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.stair")
-    bl_widget = None
-    ifc_element_type = "IfcStairType"
-
-
 class StairFlightTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
@@ -203,17 +192,6 @@ class StairFlightTool(BimTool):
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.stairflight")
     bl_widget = None
     ifc_element_type = "IfcStairFlightType"
-
-
-class RampTool(BimTool):
-    bl_space_type = "VIEW_3D"
-    bl_context_mode = "OBJECT"
-    bl_idname = "bim.ramp_tool"
-    bl_label = "Ramp Tool"
-    bl_description = "Create and edit ramps, including straight run, two straight run, quarter turn, two wuarter turn, half turn, and spiral ramps"
-    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.ramp")
-    bl_widget = None
-    ifc_element_type = "IfcRampType"
 
 
 class RampFlightTool(BimTool):

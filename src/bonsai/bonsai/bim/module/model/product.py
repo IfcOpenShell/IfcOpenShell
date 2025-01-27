@@ -131,16 +131,6 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
             props.ifc_predefined_type = "STRAIGHT"
             props.representation_template = "LAYERSET_AXIS3"
 
-        elif self.ifc_element_type == "IfcStairType":
-            props.ifc_predefined_type = "STRAIGHT_RUN_STAIR"
-            props.representation_template = "STAIR"
-        elif self.ifc_element_type == "IfcRampType":
-            props.ifc_predefined_type = "STRAIGHT_RUN_RAMP"
-            props.representation_template = "LAYERSET_AXIS3"
-        elif self.ifc_element_type == "IfcTransportElementType":
-            props.ifc_predefined_type = "ELEVATOR"
-            props.representation_template = "MESH"
-
         elif self.ifc_element_type == "IfcFurnitureType":
             props.ifc_predefined_type = "CHAIR"
             props.representation_template = "MESH"
