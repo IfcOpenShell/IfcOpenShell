@@ -736,7 +736,7 @@ class OverrideDelete(bpy.types.Operator):
                 bpy.data.objects.remove(obj)
 
         for opening in context.scene.BIMModelProperties.openings:
-            if not tool.Ifc.get_entity(opening.obj):
+            if opening.obj is not None and not tool.Ifc.get_entity(opening.obj):
                 bpy.data.objects.remove(opening.obj)
         tool.Model.purge_scene_openings()
 
