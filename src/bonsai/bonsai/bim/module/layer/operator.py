@@ -190,3 +190,22 @@ class SelectLayerProducts(bpy.types.Operator):
             if element and element in elements:
                 obj.select_set(True)
         return {"FINISHED"}
+
+
+class SelectLayerInLayerUI(bpy.types.Operator):
+    bl_idname = "bim.layer_ui_select"
+    bl_label = "Select Layer In Layers UI"
+    bl_options = {"REGISTER", "UNDO"}
+    layer_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = tool.Layer.get_layer_props()
+        ifc_file = tool.Ifc.get()
+        layer = ifc_file.by_id(self.layer_id)
+        bpy.ops.bim.load_layers()
+        props.active_layer_index = next((i for i, m in enumerate(props.layers) if m.ifc_definition_id == self.layer_id))
+        self.report(
+            {"INFO"},
+            f"Layer '{layer.Name or 'Unnamed'}' is selected in Layers UI.",
+        )
+        return {"FINISHED"}

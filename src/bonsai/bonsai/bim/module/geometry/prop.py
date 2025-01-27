@@ -131,6 +131,7 @@ class RepresentationItem(PropertyGroup):
     surface_style: StringProperty(name="Surface Style")
     surface_style_id: IntProperty(name="Surface Style ID")
     layer: StringProperty(name="Layer")
+    layer_id: IntProperty(name="Layer ID")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     shape_aspect: StringProperty(name="Shape Aspect")
     shape_aspect_id: IntProperty(name="Shape Aspect IFC ID")
@@ -141,6 +142,7 @@ class RepresentationItem(PropertyGroup):
         surface_style: str
         surface_style_id: int
         layer: str
+        layer_id: int
         ifc_definition_id: int
         shape_aspect: str
         shape_aspect_id: int

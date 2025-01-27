@@ -2364,6 +2364,7 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
                                     new.surface_style_id = style.id()
                         elif inverse.is_a("IfcPresentationLayerAssignment"):
                             new.layer = inverse.Name or "Unnamed"
+                            new.layer_id = inverse.id()
                         elif inverse.is_a("IfcShapeRepresentation"):
                             if inverse.OfShapeAspect:
                                 shape_aspect = inverse.OfShapeAspect[0]

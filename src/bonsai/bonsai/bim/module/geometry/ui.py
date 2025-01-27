@@ -236,6 +236,9 @@ class BIM_PT_representation_items(Panel):
             row.prop(props, "is_editing_item_layer", icon="CANCEL", text="")
         else:
             row.label(text=layer or "No Presentation Layer", icon="STICKY_UVS_LOC")
+            if layer:
+                op = row.operator("bim.layer_ui_select", icon="ZOOM_SELECTED", text="")
+                op.layer_id = active_item.layer_id
             row.prop(props, "is_editing_item_layer", icon="GREASEPENCIL", text="")
             if layer:
                 row.operator("bim.unassign_representation_item_layer", icon="X", text="")
