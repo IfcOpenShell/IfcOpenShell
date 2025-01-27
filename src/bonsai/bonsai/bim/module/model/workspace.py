@@ -128,17 +128,6 @@ class RailingTool(BimTool):
     ifc_element_type = "IfcRailingType"
 
 
-class CurtainWallTool(BimTool):
-    bl_space_type = "VIEW_3D"
-    bl_context_mode = "OBJECT"
-    bl_idname = "bim.curtain_wall_tool"
-    bl_label = "Curtain Wall Tool"
-    bl_description = "Create and edit curtain wall assembolies"
-    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.curtainwall")
-    bl_widget = None
-    ifc_element_type = "IfcCurtainWallType"
-
-
 class SlabTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"

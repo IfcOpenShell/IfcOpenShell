@@ -236,7 +236,6 @@ def register():
         bpy.utils.register_tool(workspace.RampFlightTool, after={"bim.stair_flight_tool"}, separator=False, group=False)
         bpy.utils.register_tool(workspace.WallTool, after={"bim.explore_tool"}, separator=True, group=True)
         bpy.utils.register_tool(workspace.RailingTool, after={"bim.wall_tool"}, separator=False, group=False)
-        bpy.utils.register_tool(workspace.CurtainWallTool, after={"bim.railing_tool"}, separator=False, group=False)
 
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.Scene.BIMPolylineProperties = bpy.props.PointerProperty(type=prop.BIMPolylineProperties)
@@ -259,7 +258,6 @@ def unregister():
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.WallTool)
         bpy.utils.unregister_tool(workspace.RailingTool)
-        bpy.utils.unregister_tool(workspace.CurtainWallTool)
         bpy.utils.unregister_tool(workspace.SlabTool)
         bpy.utils.unregister_tool(workspace.RoofTool)
         bpy.utils.unregister_tool(workspace.DoorTool)
@@ -268,9 +266,6 @@ def unregister():
         bpy.utils.unregister_tool(workspace.BeamTool)
         bpy.utils.unregister_tool(workspace.MemberTool)
         bpy.utils.unregister_tool(workspace.FootingTool)
-        bpy.utils.unregister_tool(workspace.StairTool)
-        bpy.utils.unregister_tool(workspace.RampTool)
-        bpy.utils.unregister_tool(workspace.TransportElementTool)
         bpy.utils.unregister_tool(workspace.FurnitureTool)
         bpy.utils.unregister_tool(workspace.SanitaryTerminalTool)
         bpy.utils.unregister_tool(workspace.LightFixtureTool)

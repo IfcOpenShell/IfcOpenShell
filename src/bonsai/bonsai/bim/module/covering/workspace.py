@@ -31,7 +31,7 @@ class CoveringTool(WorkSpaceTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.covering_tool"
     bl_label = "Covering Tool"
-    bl_description = "Create and edit coverings"
+    bl_description = "Create and edit coverings, including ceiling, flooring, cladding, roofing, moulding, skirtingboard, insulation, membrane, sleeving, and wrapping coverings"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.covering")
     bl_widget = None
     ifc_element_type = "IfcCoveringType"

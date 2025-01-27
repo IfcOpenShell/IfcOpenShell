@@ -80,6 +80,9 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 props.ifc_predefined_type = "SOLIDWALL"
             props.representation_template = "LAYERSET_AXIS2"
+        elif self.ifc_element_type == "IfcRailingType":
+            props.ifc_predefined_type = "BALUSTRADE"
+            props.representation_template = "RAILING"
 
         elif self.ifc_element_type == "IfcRoofType":
             props.ifc_predefined_type = "HIP_ROOF"
@@ -120,9 +123,6 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
         elif self.ifc_element_type == "IfcPipeSegmentType":
             props.ifc_predefined_type = "RIGIDSEGMENT"
             props.representation_template = "FLOW_SEGMENT_CIRCULAR"
-        elif self.ifc_element_type == "IfcRailingType":
-            props.ifc_predefined_type = "BALUSTRADE"
-            props.representation_template = "RAILING"
 
         elif self.ifc_element_type == "IfcStairFlightType":
             props.ifc_predefined_type = "STRAIGHT"
