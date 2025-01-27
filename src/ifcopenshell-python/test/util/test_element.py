@@ -535,6 +535,7 @@ class TestGetElementsByMaterial(test.bootstrap.IFC4):
         assert subject.get_elements_by_material(self.file, material) == {element}
 
     def test_getting_elements_of_a_material_layer_set(self):
+        self.file.create_entity("IfcProject")  # add_layer.
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
