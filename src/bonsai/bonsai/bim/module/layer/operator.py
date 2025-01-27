@@ -38,7 +38,7 @@ class LoadLayers(bpy.types.Operator):
         props.layers.clear()
         for layer in tool.Ifc.get().by_type("IfcPresentationLayerAssignment"):
             new = props.layers.add()
-            new.name = layer.Name
+            new.name = layer.Name or "Unnamed"
             new.ifc_definition_id = layer.id()
             if layer.is_a("IfcPresentationLayerWithStyle"):
                 new.with_style = True
