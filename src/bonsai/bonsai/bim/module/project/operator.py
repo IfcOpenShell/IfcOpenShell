@@ -1030,7 +1030,7 @@ class LinkIfc(bpy.types.Operator):
 
 class UnlinkIfc(bpy.types.Operator):
     bl_idname = "bim.unlink_ifc"
-    bl_label = "UnLink IFC"
+    bl_label = "Unlink IFC"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Remove the selected file from the link list"
     filepath: bpy.props.StringProperty()
@@ -1056,13 +1056,9 @@ class UnloadLink(bpy.types.Operator):
         if filepath.suffix.lower() == ".ifc":
             filepath = filepath.with_suffix(".ifc.cache.blend")
 
-        for collection in context.scene.collection.children[:]:
-            if collection.library and Path(collection.library.filepath) == filepath:
-                bpy.data.collections.remove(collection)
-
-        for scene in bpy.data.scenes[:]:
-            if scene.library and Path(scene.library.filepath) == filepath:
-                bpy.data.scenes.remove(scene)
+        for library in list(bpy.data.libraries):
+            if tool.Blender.ensure_blender_path_is_abs(Path(library.filepath)) == filepath:
+                bpy.data.libraries.remove(library)
 
         links = context.scene.BIMProjectProperties.links
         link = links.get(self.filepath)
