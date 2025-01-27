@@ -208,16 +208,17 @@ class DuplicateProfileDef(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMProfileProperties
-        if len(props.profiles) > props.active_profile_index:
+        active_profile = tool.Profile.get_active_profile_ui()
+        if active_profile is not None:
             return True
         cls.poll_message_set("No profile selected to duplicate.")
         return False
 
     def _execute(self, context):
-        props = context.scene.BIMProfileProperties
         ifc_file = tool.Ifc.get()
-        profile = ifc_file.by_id(props.profiles[props.active_profile_index].ifc_definition_id)
+        profile_item = tool.Profile.get_active_profile_ui()
+        assert profile_item
+        profile = ifc_file.by_id(profile_item.ifc_definition_id)
         tool.Profile.duplicate_profile(profile)
         bpy.ops.bim.load_profiles()
 
@@ -335,5 +336,34 @@ class SelectProfileInProfilesUI(bpy.types.Operator):
         self.report(
             {"INFO"},
             f"Profile '{profile.Name or 'Unnamed'}' is selected in Profiles UI.",
+        )
+        return {"FINISHED"}
+
+
+class SelectByProfile(bpy.types.Operator):
+    bl_idname = "bim.select_by_profile"
+    bl_label = "Select by Profile"
+    bl_description = "Select objects using the provided profile."
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        active_profile = tool.Profile.get_active_profile_ui()
+        if active_profile is not None:
+            return True
+        cls.poll_message_set("No profile selected to select elements.")
+        return False
+
+    def execute(self, context):
+        ifc_file = tool.Ifc.get()
+        profile_item = tool.Profile.get_active_profile_ui()
+        assert profile_item
+        profile = ifc_file.by_id(profile_item.ifc_definition_id)
+        elements = ifcopenshell.util.element.get_elements_by_profile(profile)
+        objects = [o for e in elements if (o := tool.Ifc.get_object(e))]
+        if objects:
+            tool.Spatial.select_products(elements)
+        self.report(
+            {"INFO"}, f"{len(elements)} elements were found using profile, {len(objects)} objects were selected."
         )
         return {"FINISHED"}

@@ -81,6 +81,7 @@ class BIM_PT_profiles(Panel):
             row.prop(self.props, "profile_classes", text="")
         row.operator("bim.add_profile_def", text="", icon="ADD")
         row.operator("bim.duplicate_profile_def", icon="DUPLICATE", text="")
+        row.operator("bim.select_by_profile", icon="RESTRICT_SELECT_OFF", text="")
 
         self.layout.template_list(
             "BIM_UL_profiles",
