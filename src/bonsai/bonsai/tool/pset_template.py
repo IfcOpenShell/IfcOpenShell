@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcopenshell.api.pset_template
@@ -24,8 +25,11 @@ import ifcopenshell.util.element
 import bonsai.core.tool
 import bonsai.tool as tool
 from typing import Union, Literal, Any, final
-from typing_extensions import assert_never
+from typing_extensions import assert_never, TYPE_CHECKING
 from bonsai.bim.ifc import IfcStore
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.pset_template.prop import BIMPsetTemplateProperties
 
 
 class PsetTemplate(bonsai.core.tool.PsetTemplate):
@@ -70,3 +74,24 @@ class PsetTemplate(bonsai.core.tool.PsetTemplate):
                 primary_measure_type=property.NominalValue.is_a(),
             )
         return pset_template
+
+    @classmethod
+    def get_pset_template_props(cls) -> BIMPsetTemplateProperties:
+        return bpy.context.scene.BIMPsetTemplateProperties
+
+    @classmethod
+    def enable_editing_pset_template(cls) -> None:
+        props = cls.get_pset_template_props()
+        props.active_pset_template_id = int(props.pset_templates)
+
+        pset_template_file = IfcStore.pset_template_file
+        assert pset_template_file
+        template = pset_template_file.by_id(props.active_pset_template_id)
+        props.active_pset_template.global_id = template.GlobalId
+        props.active_pset_template.name = template.Name or ""
+        props.active_pset_template.description = template.Description or ""
+        props.active_pset_template.template_type = template.TemplateType
+        props.active_pset_template.applicable_entity = template.ApplicableEntity or ""
+
+        # Disable because of the intersecting enums in data.py.
+        props.active_prop_template_id = 0

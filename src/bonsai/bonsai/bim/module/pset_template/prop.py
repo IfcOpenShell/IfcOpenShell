@@ -35,6 +35,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING
 
 
 def updatePsetTemplateFiles(self, context):
@@ -147,6 +148,13 @@ class PsetTemplate(PropertyGroup):
         description=get_attribute_doc("IFC4", "IfcPropertySetTemplate", "ApplicableEntity"),
     )
 
+    if TYPE_CHECKING:
+        global_id: str
+        name: str
+        description: str
+        template_type: str
+        applicable_entity: str
+
 
 class EnumerationValues(PropertyGroup):
     string_value: StringProperty(name="Value")
@@ -206,3 +214,11 @@ class BIMPsetTemplateProperties(PropertyGroup):
     active_prop_template_id: IntProperty(name="Active Prop Template Id")
     active_pset_template: PointerProperty(type=PsetTemplate)
     active_prop_template: PointerProperty(type=PropTemplate)
+
+    if TYPE_CHECKING:
+        pset_template_files: str
+        pset_templates: str
+        active_pset_template_id: int
+        active_prop_template_id: int
+        active_pset_template: PsetTemplate
+        active_prop_template: PropTemplate

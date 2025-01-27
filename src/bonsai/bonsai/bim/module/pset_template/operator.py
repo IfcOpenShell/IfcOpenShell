@@ -50,6 +50,7 @@ class AddPsetTemplateFile(bpy.types.Operator):
         bonsai.bim.handler.refresh_ui_data()
         bonsai.bim.schema.reload(tool.Ifc.get().schema)
         context.scene.BIMPsetTemplateProperties.pset_template_files = filepath
+        tool.PsetTemplate.enable_editing_pset_template()
         return {"FINISHED"}
 
 
@@ -96,16 +97,7 @@ class EnableEditingPsetTemplate(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMPsetTemplateProperties
-        props.active_pset_template_id = int(props.pset_templates)
-        template = IfcStore.pset_template_file.by_id(props.active_pset_template_id)
-        props.active_pset_template.global_id = template.GlobalId
-        props.active_pset_template.name = template.Name or ""
-        props.active_pset_template.description = template.Description or ""
-        props.active_pset_template.template_type = template.TemplateType
-        props.active_pset_template.applicable_entity = template.ApplicableEntity or ""
-        # Disable because of the intersecting enums in data.py.
-        props.active_prop_template_id = 0
+        tool.PsetTemplate.enable_editing_pset_template()
         return {"FINISHED"}
 
 
