@@ -692,7 +692,7 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
     :returns: The scale factor
     """
     # Currently we assume that all ifc projects must have IfcProject.
-    if not (units := ifc_file.by_type("IfcProject")[0].UnitsInContext):
+    if not (projects := ifc_file.by_type("IfcProject")) or not (units := projects[0].UnitsInContext):
         return 1
     unit_scale = 1
     for unit in units.Units:
