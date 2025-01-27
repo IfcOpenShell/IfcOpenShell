@@ -106,12 +106,18 @@ class TestGetPropertyUnit(test.bootstrap.IFC4):
         length2 = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="CENTI")
         area = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="AREAUNIT")
         ifcopenshell.api.unit.assign_unit(self.file, units=[length, area])
-        prop = self.file.createIfcPropertyEnumeratedValue(Name="Foo", EnumerationValues=[self.file.createIfcLengthMeasure(42.0)])
+        prop = self.file.createIfcPropertyEnumeratedValue(
+            Name="Foo", EnumerationValues=[self.file.createIfcLengthMeasure(42.0)]
+        )
         assert subject.get_property_unit(prop, self.file) == length
         prop.EnumerationValues = []
-        prop.EnumerationReference = self.file.createIfcPropertyEnumeration("Foo", [self.file.createIfcAreaMeasure(42.0)])
+        prop.EnumerationReference = self.file.createIfcPropertyEnumeration(
+            "Foo", [self.file.createIfcAreaMeasure(42.0)]
+        )
         assert subject.get_property_unit(prop, self.file) == area
-        prop.EnumerationReference = self.file.createIfcPropertyEnumeration("Foo", [self.file.createIfcAreaMeasure(42.0)], Unit=length2)
+        prop.EnumerationReference = self.file.createIfcPropertyEnumeration(
+            "Foo", [self.file.createIfcAreaMeasure(42.0)], Unit=length2
+        )
         assert subject.get_property_unit(prop, self.file) == length2
         prop.EnumerationValues = [self.file.createIfcAreaMeasure(42.0)]
         assert subject.get_property_unit(prop, self.file) == length2

@@ -676,8 +676,12 @@ class Model(bonsai.core.tool.Model):
                     (obj.matrix_world @ Vector((max_x, layers["offset"], 0.0))).to_2d(),
                 ],
                 "side": [
-                    (obj.matrix_world @ Vector((min_x, layers["offset"] + (layers["thickness"] * direction), 0.0))).to_2d(),
-                    (obj.matrix_world @ Vector((max_x, layers["offset"] + (layers["thickness"] * direction), 0.0))).to_2d(),
+                    (
+                        obj.matrix_world @ Vector((min_x, layers["offset"] + (layers["thickness"] * direction), 0.0))
+                    ).to_2d(),
+                    (
+                        obj.matrix_world @ Vector((max_x, layers["offset"] + (layers["thickness"] * direction), 0.0))
+                    ).to_2d(),
                 ],
             }
         axes["reference"] = [
