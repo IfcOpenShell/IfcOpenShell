@@ -21,7 +21,6 @@
 import bpy
 import copy
 import math
-import bmesh
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.unit
@@ -42,7 +41,6 @@ from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from typing import Optional, assert_never, TYPE_CHECKING, get_args, Literal, Union, Any
-from lark import Lark, Transformer
 
 
 class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
@@ -237,7 +235,13 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
             x, y, z = extrusion.ExtrudedDirection.DirectionRatios
             existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
             perpendicular_depth = extrusion.Depth / (1 / cos(existing_x_angle))
-            extrusion.Depth = perpendicular_depth * (1 / cos(x_angle))
+            if tool.Model.get_usage_type(element) == "LAYER2":
+                extrusion.Depth = abs(perpendicular_depth * (1 / cos(x_angle)))
+            if tool.Model.get_usage_type(element) == "LAYER3":
+                # TODO support angles between 91 and 179
+                if x_angle > radians(90) or x_angle < -radians(90):
+                    return
+                extrusion.Depth = perpendicular_depth * (1 / cos(x_angle))
             extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
             if tool.Model.get_usage_type(element) == "LAYER2":
                 layer2_objs.append(obj)
@@ -254,7 +258,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     ]
 
                     # The extrusion direction calculated previously default to the positive direction
-                    # Here we set the extrusion direction to negative it that's the case
+                    # Here we set the extrusion direction to negative if that's the case
                     x, y, z = extrusion.ExtrudedDirection.DirectionRatios
                     layer_params = tool.Model.get_material_layer_parameters(element)
                     offset = layer_params["offset"]

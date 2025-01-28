@@ -35,7 +35,7 @@ import bonsai.core.geometry
 import bonsai.core.model as core
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import pi, sin, cos, degrees, tan
+from math import pi, sin, cos, degrees, tan, radians
 from mathutils import Vector, Matrix, Quaternion
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator
@@ -82,7 +82,9 @@ def get_wall_preview_data(context, relating_type):
     height = float(model_props.extrusion_depth)
     rl = float(model_props.rl1)
     x_angle = float(model_props.x_angle)
-    angle_distortion = height * tan(x_angle)
+    if x_angle > radians(90) or x_angle < radians(-90):
+        height *= -1
+    angle_distance = height * tan(x_angle)
 
     data = {}
     data["verts"] = []
@@ -109,8 +111,8 @@ def get_wall_preview_data(context, relating_type):
     bm_base = create_bmesh_from_vertices(polyline_vertices, is_closed)
     base_vertices = tool.Cad.offset_edges(bm_base, offset)
     offset_base_verts = tool.Cad.offset_edges(bm_base, thickness + offset)
-    top_vertices = tool.Cad.offset_edges(bm_base, angle_distortion + offset)
-    offset_top_verts = tool.Cad.offset_edges(bm_base, angle_distortion + thickness + offset)
+    top_vertices = tool.Cad.offset_edges(bm_base, angle_distance + offset)
+    offset_top_verts = tool.Cad.offset_edges(bm_base, angle_distance + thickness + offset)
     if is_closed:
         base_vertices.append(base_vertices[0])
         offset_base_verts.append(offset_base_verts[0])
