@@ -226,6 +226,9 @@ class file:
     units: dict[str, entity_instance] = {}
     history_size: int = 64
 
+    to_delete: Union[set[ifcopenshell.entity_instance], None] = None
+    """Entities for batch removal."""
+
     def __init__(
         self,
         f: Optional[ifcopenshell_wrapper.file] = None,

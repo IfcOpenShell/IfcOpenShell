@@ -1416,6 +1416,7 @@ def unbatch_remove_deep2(ifc_file: ifcopenshell.file) -> ifcopenshell.file:
     :param ifc_file: The IFC file object
     :return: A newly loaded file with the elements removed.
     """
+    assert ifc_file.to_delete is not None
     ifc_string = ifc_file.to_string()
     lines = iter(ifc_string.split("\n"))
     ids_to_delete = iter(sorted([e.id() for e in ifc_file.to_delete]))
@@ -1517,7 +1518,7 @@ def remove_deep2(
                 if isinstance(attribute, tuple) and len(attribute) > 10:
                     subelement[i] = []
 
-    if getattr(ifc_file, "to_delete", None) is not None:
+    if ifc_file.to_delete is not None:
         ifc_file.to_delete.update(to_delete)
         return
 

@@ -22,7 +22,7 @@ import ifcopenshell.api.owner
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 NPArrayOfFloats = npt.NDArray[np.float64]
 
@@ -46,6 +46,9 @@ def edit_object_placement(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         if not hasattr(self.settings["product"], "ObjectPlacement"):
             return

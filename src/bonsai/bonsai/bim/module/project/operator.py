@@ -1948,6 +1948,7 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
         queried_obj = context.scene.BIMProjectProperties.queried_obj
 
         ifc_file = tool.Ifc.get()
+        linked_ifc_file: ifcopenshell.file
         linked_ifc_file = ifcopenshell.open(queried_obj["ifc_filepath"])
         if ifc_file.schema_identifier != linked_ifc_file.schema_identifier:
             self.report(
