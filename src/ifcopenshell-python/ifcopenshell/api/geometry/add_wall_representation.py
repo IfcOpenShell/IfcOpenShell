@@ -84,6 +84,7 @@ class Usecase:
     def create_item(self) -> ifcopenshell.entity_instance:
         length = self.convert_si_to_unit(self.settings["length"])
         thickness = self.convert_si_to_unit(self.settings["thickness"])
+        thickness *= 1 / cos(self.settings["x_angle"])
         if self.settings["direction_sense"] == "NEGATIVE":
             thickness *= -1
         points = (
