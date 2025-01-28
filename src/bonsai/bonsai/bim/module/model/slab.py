@@ -666,7 +666,7 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
             new_rot_mat = local_rot_mat.to_4x4() @ rot_mat
             new_rot_euler = new_rot_mat.to_euler()
             obj.rotation_euler = new_rot_euler
-            
+
         else:
             position = Matrix()
 
