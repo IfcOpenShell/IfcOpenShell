@@ -40,13 +40,13 @@ class Feature(bonsai.core.tool.Feature):
         for feature_obj in feature_objs:
             feature_element = tool.Ifc.get_entity(feature_obj)
 
-            # Sync placement before void.add_opening.
+            # Sync placement before feature.add_feature.
             if tool.Ifc.is_moved(featured_obj):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=featured_obj)
 
             element_had_openings = tool.Geometry.has_openings(featured_element)
             body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body")
-            ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=feature_element, element=featured_element)
+            ifcopenshell.api.run("feature.add_feature", tool.Ifc.get(), feature=feature_element, element=featured_element)
 
             if tool.Ifc.is_moved(feature_obj):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=feature_obj)

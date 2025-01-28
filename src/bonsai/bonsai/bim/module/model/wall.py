@@ -984,7 +984,7 @@ class DumbWallJoiner:
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position > cut_percentage:
                 # The opening should be removed from element1.
-                ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
+                ifcopenshell.api.run("feature.remove_feature", tool.Ifc.get(), feature=opening)
 
         # Now let's check element2.
         for opening in [
@@ -996,7 +996,7 @@ class DumbWallJoiner:
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position < cut_percentage:
                 # The opening should be removed from element2.
-                ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
+                ifcopenshell.api.run("feature.remove_feature", tool.Ifc.get(), feature=opening)
 
         # During the duplication process, filled voids are not copied. So we
         # only need to check fillings on the original element1.

@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api.void
+import ifcopenshell.api.feature
 import ifcopenshell.api.root
 
 
@@ -25,14 +25,14 @@ class TestAddFilling(test.bootstrap.IFC4):
     def test_adding_a_filling(self):
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
         door = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
-        ifcopenshell.api.void.add_filling(self.file, opening=opening, element=door)
+        ifcopenshell.api.feature.add_filling(self.file, opening=opening, element=door)
         assert door.FillsVoids[0].RelatingOpeningElement == opening
 
     def test_adding_a_filling_twice(self):
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
         door = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
-        ifcopenshell.api.void.add_filling(self.file, opening=opening, element=door)
-        ifcopenshell.api.void.add_filling(self.file, opening=opening, element=door)
+        ifcopenshell.api.feature.add_filling(self.file, opening=opening, element=door)
+        ifcopenshell.api.feature.add_filling(self.file, opening=opening, element=door)
         assert door.FillsVoids[0].RelatingOpeningElement == opening
         assert len(opening.HasFillings) == 1
 
@@ -40,8 +40,8 @@ class TestAddFilling(test.bootstrap.IFC4):
         door = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
         opening1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
         opening2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.add_filling(self.file, opening=opening1, element=door)
-        ifcopenshell.api.void.add_filling(self.file, opening=opening2, element=door)
+        ifcopenshell.api.feature.add_filling(self.file, opening=opening1, element=door)
+        ifcopenshell.api.feature.add_filling(self.file, opening=opening2, element=door)
         assert not opening1.HasFillings
         assert opening2.HasFillings[0].RelatedBuildingElement == door
 

@@ -74,8 +74,8 @@ class TestGetDecompositionRelationships(NewFile):
         element = ifc.createIfcWall()
         opening = ifc.createIfcOpeningElement()
         fill = ifc.createIfcWindow()
-        ifcopenshell.api.run("void.add_opening", ifc, opening=opening, element=element)
-        ifcopenshell.api.run("void.add_filling", ifc, opening=opening, element=fill)
+        ifcopenshell.api.run("feature.add_feature", ifc, feature=opening, element=element)
+        ifcopenshell.api.run("feature.add_filling", ifc, opening=opening, element=fill)
 
         obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(fill, obj)

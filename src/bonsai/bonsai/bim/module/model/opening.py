@@ -26,7 +26,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
-import ifcopenshell.api.void
+import ifcopenshell.api.feature
 import ifcopenshell.geom
 import ifcopenshell.util.shape
 import ifcopenshell.util.element
@@ -69,7 +69,7 @@ class FilledOpeningGenerator:
         assert filling and element
         if filling.FillsVoids:
             ifcopenshell.api.run(
-                "void.remove_opening", tool.Ifc.get(), opening=filling.FillsVoids[0].RelatingOpeningElement
+                "feature.remove_feature", tool.Ifc.get(), feature=filling.FillsVoids[0].RelatingOpeningElement
             )
 
         if target is None:
@@ -156,8 +156,8 @@ class FilledOpeningGenerator:
             "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
         )
 
-        ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=opening, element=element)
-        ifcopenshell.api.run("void.add_filling", tool.Ifc.get(), opening=opening, element=filling)
+        ifcopenshell.api.run("feature.add_feature", tool.Ifc.get(), feature=opening, element=element)
+        ifcopenshell.api.run("feature.add_filling", tool.Ifc.get(), opening=opening, element=filling)
 
         voided_objs = [voided_obj]
         # Openings affect all subelements of an aggregate
@@ -826,7 +826,7 @@ class CloneOpening(Operator, tool.Ifc.Operator):
         new_opening = ifcopenshell.api.run("root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement")
         new_opening.Representation = opening_representation
 
-        ifcopenshell.api.void.add_opening(ifc_file, opening=new_opening, element=voided_element)
+        ifcopenshell.api.feature.add_feature(ifc_file, feature=new_opening, element=voided_element)
         new_opening.ObjectPlacement = opening_placement
 
         # Update affected representations.

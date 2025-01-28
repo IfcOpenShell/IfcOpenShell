@@ -17,21 +17,21 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api.void
+import ifcopenshell.api.feature
 import ifcopenshell.api.root
 
 
-class TestRemoveOpening(test.bootstrap.IFC4):
-    def test_removing_a_simple_opening(self):
-        opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.remove_opening(self.file, opening=opening)
+class TestRemoveFeature(test.bootstrap.IFC4):
+    def test_removing_a_simple_feature(self):
+        feature = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
+        ifcopenshell.api.feature.remove_feature(self.file, feature=feature)
         assert len(list(self.file)) == 0
 
     def test_removing_an_opening_voiding_a_wall(self):
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=wall)
-        ifcopenshell.api.void.remove_opening(self.file, opening=opening)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
+        ifcopenshell.api.feature.remove_feature(self.file, feature=opening)
         assert len(self.file.by_type("IfcOpeningElement")) == 0
         assert len(self.file.by_type("IfcRelVoidsElement")) == 0
         assert wall
@@ -40,9 +40,9 @@ class TestRemoveOpening(test.bootstrap.IFC4):
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
         door = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=wall)
-        ifcopenshell.api.void.add_filling(self.file, opening=opening, element=door)
-        ifcopenshell.api.void.remove_opening(self.file, opening=opening)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
+        ifcopenshell.api.feature.add_filling(self.file, opening=opening, element=door)
+        ifcopenshell.api.feature.remove_feature(self.file, feature=opening)
         assert len(self.file.by_type("IfcOpeningElement")) == 0
         assert len(self.file.by_type("IfcRelVoidsElement")) == 0
         assert len(self.file.by_type("IfcRelFillsElement")) == 0
@@ -50,5 +50,5 @@ class TestRemoveOpening(test.bootstrap.IFC4):
         assert door
 
 
-class TestRemoveOpeningIFC2X3(test.bootstrap.IFC2X3, TestRemoveOpening):
+class TestRemoveFeatureIFC2X3(test.bootstrap.IFC2X3, TestRemoveFeature):
     pass

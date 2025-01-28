@@ -17,44 +17,50 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api.root
+import ifcopenshell.api.aggregate
 import ifcopenshell.util.element
 
 
-def remove_opening(file: ifcopenshell.file, opening: ifcopenshell.entity_instance) -> None:
-    """Remove an opening
+def remove_feature(file: ifcopenshell.file, feature: ifcopenshell.entity_instance) -> None:
+    """Remove a feature
 
-    Fillings are retained as orphans. Voided elements remain. Openings
-    cannot exist by themselves, so not only is the opening relationship
-    removed, the opening is also removed.
+    Fillings are retained as orphans. Featured elements remain. Features
+    cannot exist by themselves, so not only is the relationship removed, the
+    feature is also removed.
 
-    :param opening: The IfcOpeningElement to remove.
-    :type opening: ifcopenshell.entity_instance
-    :return: None
-    :rtype: None
+    :param feature: The IfcFeatureElement to remove.
 
     Example:
 
     .. code:: python
 
-        # Create an oprhaned opening. Note that an orphaned opening is
+        # Create an orphaned opening. Note that an orphaned opening is
         # invalid, as an opening can only exist when voiding another
         # element.
-        opening = ifcopenshell.api.root.create_entity(model, ifc_class="IfcOpeningElement")
+        feature = ifcopenshell.api.root.create_entity(model, ifc_class="IfcOpeningElement")
 
         # Remove it. This brings us back to a valid model.
-        ifcopenshell.api.void.remove_opening(model, opening=opening)
+        ifcopenshell.api.feature.remove_feature(model, feature=feature)
     """
-    settings = {"opening": opening}
-
-    for rel in settings["opening"].VoidsElements:
+    if feature.is_a("IfcFeatureElementSubtraction"):
+        rels = feature.VoidsElements
+    elif feature.is_a("IfcFeatureElementAddition"):
+        rels = feature.ProjectsElements
+    elif feature.is_a("IfcSurfaceFeature"):
+        if file.schema == "IFC4":
+            ifcopenshell.api.aggregate.unassign_object(file, products=[feature])
+            rels = []
+        else:
+            rels = feature.ProjectsElements
+    for rel in rels:
         history = rel.OwnerHistory
         file.remove(rel)
         if history:
             ifcopenshell.util.element.remove_deep2(file, history)
-    if settings["opening"].is_a("IfcOpeningElement"):
-        for rel in settings["opening"].HasFillings:
+    if feature.is_a("IfcOpeningElement"):
+        for rel in feature.HasFillings:
             history = rel.OwnerHistory
             file.remove(rel)
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
-    ifcopenshell.api.root.remove_product(file, product=settings["opening"])
+    ifcopenshell.api.root.remove_product(file, product=feature)

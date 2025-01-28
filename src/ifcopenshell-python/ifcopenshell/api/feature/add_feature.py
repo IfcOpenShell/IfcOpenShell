@@ -19,19 +19,24 @@
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.api.geometry
+import ifcopenshell.api.aggregate
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 
 
-def add_opening(
-    file: ifcopenshell.file, opening: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance
+def add_feature(
+    file: ifcopenshell.file, feature: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance
 ) -> ifcopenshell.entity_instance:
-    """Create an opening in an element
+    """Create a projecting, voiding, or surface feature in an element
 
-    It is often necessary to cut out openings in elements like walls and
-    slabs to make space to insert doors, windows, and other services that go
-    through these penetrations.
+    There are three main types of features: those that add, remove, or
+    influence geometry of a parent object.
+
+    The most common of these is an opening. For example, it is often necessary
+    to cut out openings in elements like walls and slabs to make space to
+    insert doors, windows, and other services that go through these
+    penetrations.
 
     Whereas it is possible to simply draw the wall as a rectangle with a
     hole in it for the opening, often these openings have specific meanings.
@@ -51,9 +56,9 @@ def add_opening(
     distinct opening object) or non-semantic (i.e. should simply be
     booleaned or be part of the shape of the object).
 
-    :param opening: The IfcOpeningElement to cut out the element.
-    :type opening: ifcopenshell.entity_instance
-    :param element: The IfcElement to insert the opening into.
+    :param feature: The IfcFeatureElement to affect the element.
+    :type feature: ifcopenshell.entity_instance
+    :param element: The IfcElement to add the feature to.
     :type element: ifcopenshell.entity_instance
     :return: The new IfcRelVoidsElement relationship
     :rtype: ifcopenshell.entity_instance
@@ -101,36 +106,46 @@ def add_opening(
         ifcopenshell.api.geometry.edit_object_placement(model, product=opening, matrix=matrix)
 
         # The opening will now void the wall.
-        ifcopenshell.api.void.add_opening(model, opening=opening, element=wall)
+        ifcopenshell.api.feature.add_feature(model, feature=opening, element=wall)
     """
-    settings = {"opening": opening, "element": element}
+    if feature.is_a("IfcFeatureElementSubtraction"):
+        rels = feature.VoidsElements
+        ifc_class = "IfcRelVoidsElement"
+    elif feature.is_a("IfcFeatureElementAddition"):
+        rels = feature.ProjectsElements
+        ifc_class = "IfcRelProjectsElement"
+    elif feature.is_a("IfcSurfaceFeature"):
+        if file.schema == "IFC4":
+            return ifcopenshell.api.aggregate.assign_object(file, [feature], element)
+        rels = feature.AdheresToElement
+        ifc_class = "IfcRelAdheresToElement"
 
-    voids_elements = settings["opening"].VoidsElements
-
-    if voids_elements:
-        if voids_elements[0].RelatingBuildingElement == settings["element"]:
-            return voids_elements[0]
-        history = voids_elements[0].OwnerHistory
-        file.remove(voids_elements[0])
-        if history:
-            ifcopenshell.util.element.remove_deep2(file, history)
+    if rels:
+        if rels[0][4] == element:
+            return rels[0]
+        elif ifc_class == "IfcRelAdheresToElement" and len(rels[0].RelatedSurfaceFeatures) != 1:
+            rels[0].RelatedSurfaceFeatures = list(set(rels[0].RelatedSurfaceFeatures) - {feature})
+        else:
+            history = rels[0].OwnerHistory
+            file.remove(rels[0])
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
 
     rel = file.create_entity(
-        "IfcRelVoidsElement",
-        **{
-            "GlobalId": ifcopenshell.guid.new(),
-            "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-            "RelatingBuildingElement": settings["element"],
-            "RelatedOpeningElement": settings["opening"],
-        }
+        ifc_class,
+        ifcopenshell.guid.new(),
+        ifcopenshell.api.owner.create_owner_history(file),
+        None,
+        None,
+        element,
+        [feature] if ifc_class == "IfcRelAdheresToElement" else feature,
     )
 
-    placement = getattr(settings["opening"], "ObjectPlacement", None)
-    if placement and placement.is_a("IfcLocalPlacement"):
+    if (placement := feature.ObjectPlacement) and placement.is_a("IfcLocalPlacement"):
         ifcopenshell.api.geometry.edit_object_placement(
             file,
-            product=settings["opening"],
-            matrix=ifcopenshell.util.placement.get_local_placement(settings["opening"].ObjectPlacement),
+            product=feature,
+            matrix=ifcopenshell.util.placement.get_local_placement(placement),
             is_si=False,
         )
 

@@ -290,8 +290,8 @@ class Root(bonsai.core.tool.Root):
                         product=opening,
                         representation=mapped_representation,
                     )
-                    ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=opening, element=element)
-                    ifcopenshell.api.run("void.add_filling", tool.Ifc.get(), opening=opening, element=filling)
+                    ifcopenshell.api.run("feature.add_feature", tool.Ifc.get(), feature=opening, element=element)
+                    ifcopenshell.api.run("feature.add_filling", tool.Ifc.get(), opening=opening, element=filling)
 
                     voided_objs = [voided_obj]
                     # Openings affect all subelements of an aggregate

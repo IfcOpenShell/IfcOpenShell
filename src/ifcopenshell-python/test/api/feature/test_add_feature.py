@@ -18,24 +18,44 @@
 
 import numpy
 import test.bootstrap
-import ifcopenshell.api.void
+import ifcopenshell.api.feature
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.api.geometry
 
 
-class TestAddOpening(test.bootstrap.IFC4):
+class TestAddFeature(test.bootstrap.IFC4X3):
+    def test_adding_a_surface_feature(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        feature = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSurfaceFeature")
+        ifcopenshell.api.feature.add_feature(self.file, feature=feature, element=wall)
+        assert wall.HasSurfaceFeatures[0].RelatedSurfaceFeatures == (feature,)
+
+
+class TestAddFeature(test.bootstrap.IFC4):
     def test_adding_an_opening(self):
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=wall)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
         assert wall.HasOpenings[0].RelatedOpeningElement == opening
+
+    def test_adding_a_projection(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        projection = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProjectionElement")
+        ifcopenshell.api.feature.add_feature(self.file, feature=projection, element=wall)
+        assert wall.HasProjections[0].RelatedFeatureElement == projection
+
+    def test_adding_a_surface_feature(self):
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        feature = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSurfaceFeature")
+        ifcopenshell.api.feature.add_feature(self.file, feature=feature, element=wall)
+        assert wall.IsDecomposedBy[0].RelatedObjects == (feature,)
 
     def test_adding_an_opening_twice(self):
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=wall)
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=wall)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
         assert wall.HasOpenings[0].RelatedOpeningElement == opening
         assert len(wall.HasOpenings) == 1
 
@@ -43,8 +63,8 @@ class TestAddOpening(test.bootstrap.IFC4):
         slab = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSlab")
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=slab)
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=wall)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=slab)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
         assert not slab.HasOpenings
         assert wall.HasOpenings[0].RelatedOpeningElement == opening
 
@@ -63,7 +83,7 @@ class TestAddOpening(test.bootstrap.IFC4):
         )
         ifcopenshell.api.geometry.edit_object_placement(self.file, product=wall, matrix=matrix1.copy(), is_si=False)
         ifcopenshell.api.geometry.edit_object_placement(self.file, product=opening, matrix=matrix1.copy(), is_si=False)
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=wall)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
         assert opening.ObjectPlacement.PlacementRelTo.PlacesObject[0] == wall
         assert numpy.array_equal(ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement), matrix1)
 
@@ -74,9 +94,10 @@ class TestAddOpening(test.bootstrap.IFC4):
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
         placement = self.file.createIfcGridPlacement()
         opening.ObjectPlacement = placement
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=wall)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
         assert opening.ObjectPlacement == placement
 
 
-class TestAddOpeningIFC2X3(test.bootstrap.IFC2X3, TestAddOpening):
-    pass
+class TestAddFeatureIFC2X3(test.bootstrap.IFC2X3, TestAddFeature):
+    def test_adding_a_surface_feature(self):
+        pass

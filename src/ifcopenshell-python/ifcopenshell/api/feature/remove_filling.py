@@ -47,10 +47,10 @@ def remove_filling(file: ifcopenshell.file, element: ifcopenshell.entity_instanc
         door = ifcopenshell.api.root.create_entity(model, ifc_class="IfcDoor")
 
         # The door will now fill the opening.
-        ifcopenshell.api.void.add_filling(model, opening=opening, element=door)
+        ifcopenshell.api.feature.add_filling(model, opening=opening, element=door)
 
         # Not anymore!
-        ifcopenshell.api.void.remove_filling(model, element=door)
+        ifcopenshell.api.feature.remove_filling(model, element=door)
     """
     settings = {"element": element}
 

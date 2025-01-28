@@ -82,7 +82,7 @@ def add_filling(
         ifcopenshell.api.geometry.edit_object_placement(model, product=opening, matrix=matrix)
 
         # The opening will now void the wall.
-        ifcopenshell.api.void.add_opening(model, opening=opening, element=wall)
+        ifcopenshell.api.feature.add_feature(model, feature=opening, element=wall)
 
         # Create a door
         door = ifcopenshell.api.root.create_entity(model, ifc_class="IfcDoor")
@@ -100,7 +100,7 @@ def add_filling(
         ifcopenshell.api.geometry.edit_object_placement(model, product=door, matrix=matrix)
 
         # The door will now fill the opening.
-        ifcopenshell.api.void.add_filling(model, opening=opening, element=door)
+        ifcopenshell.api.feature.add_filling(model, opening=opening, element=door)
     """
     settings = {"opening": opening, "element": element}
 

@@ -18,7 +18,7 @@
 
 import ifcopenshell.api.type
 import ifcopenshell.api.grid
-import ifcopenshell.api.void
+import ifcopenshell.api.feature
 import ifcopenshell.api.root
 import ifcopenshell.api.pset
 import ifcopenshell.api.boundary
@@ -94,7 +94,7 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
         )
         ifcopenshell.api.geometry.remove_representation(file, **{"representation": representation})
     for opening in getattr(settings["product"], "HasOpenings", []) or []:
-        ifcopenshell.api.void.remove_opening(file, opening=opening.RelatedOpeningElement)
+        ifcopenshell.api.feature.remove_feature(file, feature=opening.RelatedOpeningElement)
 
     if settings["product"].is_a("IfcGrid"):
         for axis in settings["product"].UAxes + settings["product"].VAxes + (settings["product"].WAxes or ()):

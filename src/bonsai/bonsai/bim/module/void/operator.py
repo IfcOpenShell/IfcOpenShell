@@ -87,7 +87,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                 self.report({"INFO"}, f"An {element1.is_a()} is not allowed to have an opening.")
                 continue
 
-            # Sync placement before void.add_opening.
+            # Sync placement before feature.add_feature.
             if tool.Ifc.is_moved(obj1):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj1)
 
@@ -109,7 +109,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                     should_add_representation=True,
                     context=body_context,
                 )
-            ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=element2, element=element1)
+            ifcopenshell.api.run("feature.add_feature", tool.Ifc.get(), feature=element2, element=element1)
 
             if tool.Ifc.is_moved(obj2):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
@@ -178,7 +178,7 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
             opening_obj.name = "/".join(opening_obj.name.split("/")[1:])
             tool.Ifc.unlink(element=opening)
 
-        ifcopenshell.api.run("void.remove_opening", tool.Ifc.get(), opening=opening)
+        ifcopenshell.api.run("feature.remove_feature", tool.Ifc.get(), feature=opening)
 
         decomposed_building_elements = {element}
         decomposed_building_elements.update(tool.Aggregate.get_parts_recursively(element))
@@ -220,7 +220,7 @@ class AddFilling(bpy.types.Operator, tool.Ifc.Operator):
         if not element_id or not opening_id or element_id == opening_id:
             return {"FINISHED"}
         ifcopenshell.api.run(
-            "void.add_filling", self.file, opening=self.file.by_id(opening_id), element=self.file.by_id(element_id)
+            "feature.add_filling", self.file, opening=self.file.by_id(opening_id), element=self.file.by_id(element_id)
         )
         return {"FINISHED"}
 
@@ -233,10 +233,9 @@ class RemoveFilling(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         filling = tool.Ifc.get().by_id(self.filling)
-        filling_obj = tool.Ifc.get_object(filling)
         for rel in filling.FillsVoids:
             bpy.ops.bim.remove_opening(opening_id=rel.RelatingOpeningElement.id())
-        ifcopenshell.api.run("void.remove_filling", tool.Ifc.get(), element=filling)
+        ifcopenshell.api.run("feature.remove_filling", tool.Ifc.get(), element=filling)
         return {"FINISHED"}
 
 

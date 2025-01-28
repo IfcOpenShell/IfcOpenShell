@@ -19,7 +19,7 @@
 import ifcopenshell.api.profile
 import pytest
 import test.bootstrap
-import ifcopenshell.api.void
+import ifcopenshell.api.feature
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.type
@@ -841,8 +841,8 @@ class TestGetDecompositionIFC4(test.bootstrap.IFC4):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
         subsubelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
-        ifcopenshell.api.void.add_opening(self.file, element=element, opening=subelement)
-        ifcopenshell.api.void.add_filling(self.file, element=subsubelement, opening=subelement)
+        ifcopenshell.api.feature.add_feature(self.file, element=element, feature=subelement)
+        ifcopenshell.api.feature.add_filling(self.file, element=subsubelement, opening=subelement)
         results = subject.get_decomposition(element)
         assert subelement in results
         assert subsubelement in results

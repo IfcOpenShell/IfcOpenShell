@@ -19,7 +19,7 @@
 import numpy
 import pytest
 import test.bootstrap
-import ifcopenshell.api.void
+import ifcopenshell.api.feature
 import ifcopenshell.api.root
 import ifcopenshell.api.unit
 import ifcopenshell.api.system
@@ -303,7 +303,7 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
                 (0.0, 0.0, 0.0, 1.0),
             )
         )
-        ifcopenshell.api.void.add_opening(self.file, opening=subelement, element=element)
+        ifcopenshell.api.feature.add_feature(self.file, feature=subelement, element=element)
         ifcopenshell.api.geometry.edit_object_placement(self.file, product=element, matrix=matrix.copy(), is_si=False)
         ifcopenshell.api.geometry.edit_object_placement(
             self.file, product=subelement, matrix=submatrix.copy(), is_si=False
@@ -337,8 +337,8 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
                 (0.0, 0.0, 0.0, 1.0),
             )
         )
-        ifcopenshell.api.void.add_opening(self.file, opening=element, element=wall)
-        ifcopenshell.api.void.add_filling(self.file, element=subelement, opening=element)
+        ifcopenshell.api.feature.add_feature(self.file, feature=element, element=wall)
+        ifcopenshell.api.feature.add_filling(self.file, element=subelement, opening=element)
         ifcopenshell.api.geometry.edit_object_placement(self.file, product=site, matrix=numpy.eye(4), is_si=False)
         ifcopenshell.api.geometry.edit_object_placement(self.file, product=wall, matrix=numpy.eye(4), is_si=False)
         ifcopenshell.api.geometry.edit_object_placement(self.file, product=element, matrix=matrix.copy(), is_si=False)
@@ -564,8 +564,8 @@ class TestEditObjectPlacement(test.bootstrap.IFC4):
         shifted_submatrix = numpy.eye(4)
         shifted_submatrix[:3, 3] = (1, 3, 5)
 
-        ifcopenshell.api.void.add_opening(self.file, opening=subelement, element=element)
-        ifcopenshell.api.void.add_filling(self.file, opening=subelement, element=subsubelement)
+        ifcopenshell.api.feature.add_feature(self.file, feature=subelement, element=element)
+        ifcopenshell.api.feature.add_filling(self.file, opening=subelement, element=subsubelement)
         previous_placement_id = ifcopenshell.api.geometry.edit_object_placement(
             self.file, product=element, matrix=matrix.copy(), is_si=False
         ).id()
