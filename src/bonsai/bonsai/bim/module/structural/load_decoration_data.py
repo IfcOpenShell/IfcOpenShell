@@ -83,7 +83,7 @@ class ShaderInfo:
         self.point_members = {}
         self.surface_members = {}
         self.get_force_units()
-        self.get_strucutural_elements_and_activities()
+        self.get_structural_elements_and_activities()
         self.get_linear_loads()
         self.get_point_loads()
         self.get_planar_loads()
@@ -213,7 +213,7 @@ class ShaderInfo:
                 second = ifcunit.get_unit_symbol(e.Unit)
         self.planar_force_unit = first + "/" + second
 
-    def get_strucutural_elements_and_activities(self) -> None:
+    def get_structural_elements_and_activities(self) -> None:
         """fills self.point_members, self.curve_members and self.surface_members dictionaries"""
 
         def populate_members_dict(
@@ -224,7 +224,7 @@ class ShaderInfo:
         ) -> None:
             """
             fills self.point_members, self.curve_members and self.surface_members dictionaries
-            thoses dicts will contain the strucutural member global id as key and a second dict as value
+            thoses dicts will contain the structural member global id as key and a second dict as value
             the second dict contais two keys, as follow:
             {
                 "member": the strucutral member itself

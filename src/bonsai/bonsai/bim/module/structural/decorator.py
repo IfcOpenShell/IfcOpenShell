@@ -28,7 +28,7 @@ from bonsai.bim.module.structural.load_decoration_data import ShaderInfo
 
 
 class LoadsDecorator:
-    """Decorator to show strucutural loads in 3D"""
+    """Decorator to show structural loads in 3D"""
 
     is_installed = False
     handlers = []
