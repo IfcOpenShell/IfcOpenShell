@@ -3259,3 +3259,52 @@ class UnassignRepresentationItemLayer(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.layer.unassign_layer(ifc_file, [item], layer)
         bpy.ops.bim.enable_editing_representation_items()
         return {"FINISHED"}
+
+
+class AssignRepresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.assign_representation_layer"
+    bl_label = "Assign Representation Layer"
+    bl_description = "Assign presentation layer to the active representation."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        obj = context.active_object
+        assert obj
+        props = tool.Geometry.get_object_geometry_props(obj)
+        new_layer = ifc_file.by_id(int(props.representation_layer))
+
+        representation = tool.Geometry.get_active_representation(obj)
+        assert representation
+        item_layers = representation.LayerAssignments
+
+        # On practice enum doesn't display already assigned layers
+        # but let's double check.
+        if new_layer in item_layers:
+            props.is_adding_representation_layer = False
+            return {"FINISHED"}
+
+        ifcopenshell.api.layer.assign_layer(ifc_file, [representation], new_layer)
+        props.is_adding_representation_layer = False
+        return {"FINISHED"}
+
+
+class UnassignRepresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.unassign_representation_layer"
+    bl_label = "Unassign Representation Layer"
+    bl_description = "Unassign presentation layer from the active representation."
+    bl_options = {"REGISTER", "UNDO"}
+
+    layer_id: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        obj = context.active_object
+        assert obj
+
+        representation = tool.Geometry.get_active_representation(obj)
+        assert representation
+
+        layer = ifc_file.by_id(self.layer_id)
+        ifcopenshell.api.layer.unassign_layer(ifc_file, [representation], layer)
+        return {"FINISHED"}

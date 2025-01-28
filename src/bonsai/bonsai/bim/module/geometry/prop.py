@@ -113,6 +113,14 @@ def get_layers(self, context):
     return LayersData.data["layers_enum"]
 
 
+def get_layers_no_active(self, context):
+    from bonsai.bim.module.layer.data import LayersData
+
+    if not LayersData.is_loaded:
+        LayersData.load()
+    return LayersData.data["layers_enum_no_active"]
+
+
 def update_shape_aspect(self, context):
     shape_aspect_id = self.representation_item_shape_aspect
     attrs = self.shape_aspect_attrs
@@ -169,6 +177,15 @@ class ShapeAspect(PropertyGroup):
     )
 
 
+def update_is_editing_representation_layer(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
+    if self.is_adding_representation_layer:
+        return
+
+    if "representation_layer" in self:
+        del self["representation_layer"]
+        del self["is_adding_representation_layer"]
+
+
 def update_is_editing_item_layer(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
     if self.is_editing_item_layer:
         ifc_file = tool.Ifc.get()
@@ -181,10 +198,25 @@ def update_is_editing_item_layer(self: "BIMObjectGeometryProperties", context: b
 
     if "representation_item_layer" in self:
         del self["representation_item_layer"]
+        del self["is_editing_item_layer"]
 
 
 class BIMObjectGeometryProperties(PropertyGroup):
+    # Representations UI.
     contexts: EnumProperty(items=get_contexts, name="Contexts")
+    is_adding_representation_layer: BoolProperty(
+        name="Is Adding Representation's Layer",
+        description="Toggle adding presentation layer for the representation.",
+        default=False,
+    )
+    representation_layer: EnumProperty(
+        items=get_layers_no_active,
+        name="Representation's Presentation Layer",
+        description="Presentation layer to add.",
+        update=update_is_editing_representation_layer,
+    )
+
+    # Representation items UI.
     is_editing: BoolProperty(name="Is Editing", default=False)
     items: CollectionProperty(name="Representation Items", type=RepresentationItem)
     active_item_index: IntProperty(name="Active Representation Item Index")
@@ -210,6 +242,8 @@ class BIMObjectGeometryProperties(PropertyGroup):
 
     if TYPE_CHECKING:
         contexts: str
+        is_adding_representation_layer: bool
+        representation_layer: str
         is_editing: bool
         items: bpy.types.bpy_prop_collection_idprop[RepresentationItem]
         active_item_index: int

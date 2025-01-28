@@ -122,11 +122,16 @@ class BIM_PT_representations(Panel):
         return tool.Ifc.get() and (obj := tool.Blender.get_active_object()) and tool.Ifc.get_entity(obj)
 
     def draw(self, context):
+        layout = self.layout
         if not RepresentationsData.is_loaded:
             RepresentationsData.load()
 
+        obj = context.active_object
+        assert obj
+        props = tool.Geometry.get_object_geometry_props(obj)
+
         row = self.layout.row(align=True)
-        prop_with_search(row, context.active_object.BIMGeometryProperties, "contexts", text="")
+        prop_with_search(row, props, "contexts", text="")
         row.operator("bim.add_representation", icon="ADD", text="")
 
         if not RepresentationsData.data["representations"]:
@@ -150,15 +155,38 @@ class BIM_PT_representations(Panel):
             op.disable_opening_subtractions = False
             row.operator("bim.remove_representation", icon="X", text="").representation_id = representation["id"]
 
+        # Presentation layers.
         self.layout.separator()
         if not LayersData.is_loaded:
             LayersData.load()
-        if LayersData.data["active_layers"]:
-            self.layout.label(text="Representation Presentation Layers:")
-            for layer_name in LayersData.data["active_layers"].values():
-                self.layout.label(text=layer_name, icon="STICKY_UVS_LOC")
+
+        if active_layers := LayersData.data["active_layers"]:
+            row = layout.row(align=True)
+            row.label(text="Representation Presentation Layers:")
+            if props.is_adding_representation_layer:
+                row = layout.row(align=True)
+                row.prop(props, "representation_layer", text="")
+                op = row.operator("bim.assign_representation_layer", icon="CHECKMARK", text="")
+                row.prop(props, "is_adding_representation_layer", icon="CANCEL", text="")
+            else:
+                row.prop(props, "is_adding_representation_layer", icon="ADD", text="")
+
+            for layer_id, layer_name in active_layers.items():
+                row = layout.row(align=True)
+                row.label(text=layer_name, icon="STICKY_UVS_LOC")
+                op = row.operator("bim.layer_ui_select", icon="ZOOM_SELECTED", text="")
+                op.layer_id = layer_id
+                op = row.operator("bim.unassign_representation_layer", icon="X", text="")
+                op.layer_id = layer_id
         else:
-            self.layout.label(text="Representation Has No Presentation Layers", icon="STICKY_UVS_LOC")
+            row = layout.row(align=True)
+            if props.is_adding_representation_layer:
+                row.prop(props, "representation_layer", text="")
+                op = row.operator("bim.assign_representation_layer", icon="CHECKMARK", text="")
+                row.prop(props, "is_adding_representation_layer", icon="CANCEL", text="")
+            else:
+                row.label(text="Representation Has No Presentation Layers", icon="STICKY_UVS_LOC")
+                row.prop(props, "is_adding_representation_layer", icon="GREASEPENCIL", text="")
 
 
 class BIM_PT_representation_items(Panel):

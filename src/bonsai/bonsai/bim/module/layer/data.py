@@ -38,7 +38,9 @@ class LayersData:
         }
         # After .layers().
         cls.data["total_layers"] = cls.total_layers()
+        # After .layers() and .active_layers().
         cls.data["layers_enum"] = cls.layers_enum()
+        cls.data["layers_enum_no_active"] = cls.layers_enum(skip_active=True)
 
         cls.is_loaded = True
 
@@ -55,8 +57,13 @@ class LayersData:
         return results
 
     @classmethod
-    def layers_enum(cls) -> list[tuple[str, str, str]]:
-        return list((str(data["id"]), data["Name"], data["Description"] or "") for data in cls.data["layers"].values())
+    def layers_enum(cls, skip_active: bool = False) -> list[tuple[str, str, str]]:
+        active_layers = cls.data["active_layers"]
+        return list(
+            (str(data["id"]), data["Name"], data["Description"] or "")
+            for data in cls.data["layers"].values()
+            if not skip_active or (data["id"] not in active_layers)
+        )
 
     @classmethod
     def active_layers(cls) -> dict[int, str]:
@@ -71,4 +78,4 @@ class LayersData:
             attr_name = "LayerAssignment"
         if attr_name is None:
             return results
-        return {layer.id(): layer.Name for layer in getattr(shape, attr_name)}
+        return {layer.id(): layer.Name or "Unnamed" for layer in getattr(shape, attr_name)}
