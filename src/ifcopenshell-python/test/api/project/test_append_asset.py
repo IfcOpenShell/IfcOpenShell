@@ -459,6 +459,22 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert "Test" in pset_data
         assert ifcopenshell.util.element.get_psets(element2_) == pset_data
 
+    def test_reuse_identities_to_avoid_removed_entities_and_possible_crashes(self):
+        self.file.create_entity("IfcProject")
+        context = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        library.create_entity("IfcProject")
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        item = library.create_entity("IfcBoundingBox")
+        lib_context = ifcopenshell.api.context.add_context(library, context_type="Model")
+        representation = library.create_entity("IfcShapeRepresentation", Items=[item], ContextOfItems=lib_context)
+        element.Representation = library.create_entity("IfcProductDefinitionShape", Representations=[representation])
+        reuse_identities: dict[int, ifcopenshell.entity_instance] = {}
+        ifcopenshell.api.project.append_asset(
+            self.file, library=library, element=element, reuse_identities=reuse_identities
+        )
+        str(reuse_identities)  # Will trigger crash if there are no removed entities.
+
     def test_file_add_to_convert_units(self):
         library = ifcopenshell.file()
         builder = ShapeBuilder(library)

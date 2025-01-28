@@ -142,6 +142,37 @@ def append_asset(
     return usecase.execute()
 
 
+class SafeRemovalContext:
+    file: ifcopenshell.file
+    reuse_identities: dict[int, ifcopenshell.entity_instance]
+
+    def __init__(self, ifc_file: ifcopenshell.file, reuse_identities: dict[int, ifcopenshell.entity_instance]):
+        self.file = ifc_file
+        self.reuse_identities = reuse_identities
+
+    def __enter__(self):
+        ifcopenshell.util.element.batch_remove_deep2(self.file)
+
+    def __exit__(self, *args):
+        original_identities: dict[ifcopenshell.entity_instance, int] = {}
+        assert self.file.to_delete is not None
+        elements = self.file.to_delete
+        for identity, element in self.reuse_identities.items():
+            if element in elements:
+                original_identities[element] = identity
+        assert len(original_identities) == len(elements)
+
+        # Actually remove elements.
+        for element in self.file.to_delete:
+            if element in self.file.to_delete:
+                self.file.remove(element)
+        self.file.to_delete = None
+
+        # Clean up dead identities.
+        for identity in original_identities.values():
+            del self.reuse_identities[identity]
+
+
 class Usecase:
     file: ifcopenshell.file
     settings: dict[str, Any]
@@ -246,7 +277,8 @@ class Usecase:
             matrix = ifcopenshell.util.placement.get_local_placement(placement)
             matrix = ifcopenshell.util.geolocation.auto_local2global(self.settings["library"], matrix)
             matrix = ifcopenshell.util.geolocation.auto_global2local(self.file, matrix)
-            ifcopenshell.api.geometry.edit_object_placement(self.file, element, matrix, is_si=False)
+            with SafeRemovalContext(self.file, self.reuse_identities):
+                ifcopenshell.api.geometry.edit_object_placement(self.file, element, matrix, is_si=False)
 
         element_type = ifcopenshell.util.element.get_type(self.settings["element"])
         if element_type:
@@ -388,8 +420,10 @@ class Usecase:
                 equivalent_existing_context = self.create_equivalent_context(added_context)
             for inverse in self.file.get_inverse(added_context):
                 ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
-        for added_context in added_contexts:
-            ifcopenshell.util.element.remove_deep2(self.file, added_context)
+
+        with SafeRemovalContext(self.file, self.reuse_identities):
+            for added_context in added_contexts:
+                ifcopenshell.util.element.remove_deep2(self.file, added_context)
 
     def get_equivalent_existing_context(
         self, added_context: ifcopenshell.entity_instance
