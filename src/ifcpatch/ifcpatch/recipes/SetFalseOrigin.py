@@ -37,16 +37,29 @@ class Patcher:
         gn_angle: typing.Union[str, float] = "0",
         rotate_angle: typing.Union[str, float] = "0",
     ):
-        """Sets a false origin with a map conversion in a model
+        """Sets local coordinates XYZ as a (false) origin that correlates to map coordinates ENH
+
+        The recommended workflow is to specify a projected CRS name (e.g.
+        EPSG:1234). The local XYZ coordinate will become the new local origin
+        in IFC (we call this the false origin). A map conversion will be added
+        that correlates that origin to eastings, northings, and orthogonal
+        height.
 
         On IFC2X3 models, a EPset_MapConversion is used.
 
-        :param x: The local X coordinate which will become the new false origin.
-        :param y: The local Y coordinate which will become the new false origin.
-        :param z: The local Z coordinate which will become the new false origin.
-        :param e: The easting which the false origin correlates to.
-        :param n: The northing which the false origin correlates to.
-        :param h: The height which the false origin correlates to.
+        If the map projected CRS name is left blank, it merely transforms the
+        model such that the current point XYZ now becomes the point ENH (still
+        in local coordinates). The Grid North angle is ignored. Any existing
+        georeferencing is purged. This workflow not recommended, but may be is
+        relevant for BIM software that does not properly support map
+        coordinates.
+
+        :param x: The local X coordinate in project units which will become the new false origin.
+        :param y: The local Y coordinate in project units which will become the new false origin.
+        :param z: The local Z coordinate in project units which will become the new false origin.
+        :param e: The easting in project units which the false origin correlates to.
+        :param n: The northing in project units which the false origin correlates to.
+        :param h: The height in project units which the false origin correlates to.
         :param gn_angle: The anticlockwise angle to grid north.
         :param rotate_angle: An anticlockwise angle to rotate the model by if
             necessary (pivoted by the false origin).
@@ -72,27 +85,47 @@ class Patcher:
 
     def patch(self):
         SetWorldCoordinateSystem.Patcher(self.file, self.logger, x=0, y=0, z=0, ax=0, ay=0, az=0).patch()
-        coordinate_operation = {
-            "Eastings": self.e,
-            "Northings": self.n,
-            "OrthogonalHeight": self.h,
-        }
-        if self.gn_angle:
-            a, o = ifcopenshell.util.geolocation.angle2xaxis(self.gn_angle)
-            coordinate_operation.update({"XAxisAbscissa": a, "XAxisOrdinate": o})
-        ifc_class = "IfcMapConversionScaled"
-        if self.file.schema in ("IFC4", "IFC2X3"):
-            ifc_class = "IfcMapConversion"
-        ifcopenshell.api.georeference.add_georeferencing(self.file, ifc_class=ifc_class)
-        ifcopenshell.api.georeference.edit_georeferencing(
-            self.file, projected_crs={"Name": self.name}, coordinate_operation=coordinate_operation
-        )
-        OffsetObjectPlacements.Patcher(
-            self.file,
-            self.logger,
-            x=-self.x,
-            y=-self.y,
-            z=self.z,
-            should_rotate_first=False,
-            ax=self.rotate_angle or None,
-        ).patch()
+        if self.name:
+            coordinate_operation = {
+                "Eastings": self.e,
+                "Northings": self.n,
+                "OrthogonalHeight": self.h,
+            }
+            if self.gn_angle:
+                a, o = ifcopenshell.util.geolocation.angle2xaxis(self.gn_angle)
+                coordinate_operation.update({"XAxisAbscissa": a, "XAxisOrdinate": o})
+            ifc_class = "IfcMapConversionScaled"
+            if self.file.schema in ("IFC4", "IFC2X3"):
+                ifc_class = "IfcMapConversion"
+            ifcopenshell.api.georeference.add_georeferencing(self.file, ifc_class=ifc_class)
+            ifcopenshell.api.georeference.edit_georeferencing(
+                self.file, projected_crs={"Name": self.name, "MapUnit": None}, coordinate_operation=coordinate_operation
+            )
+            OffsetObjectPlacements.Patcher(
+                self.file,
+                self.logger,
+                x=-self.x,
+                y=-self.y,
+                z=-self.z,
+                should_rotate_first=False,
+                ax=self.rotate_angle or None,
+            ).patch()
+        else:
+            ifcopenshell.api.georeference.remove_georeferencing(self.file)
+            OffsetObjectPlacements.Patcher(
+                self.file,
+                self.logger,
+                x=-self.x,
+                y=-self.y,
+                z=-self.z,
+                should_rotate_first=False,
+                ax=self.rotate_angle or None,
+            ).patch()
+            OffsetObjectPlacements.Patcher(
+                self.file,
+                self.logger,
+                x=self.e,
+                y=self.n,
+                z=self.h,
+                should_rotate_first=False,
+            ).patch()
