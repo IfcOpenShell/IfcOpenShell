@@ -406,7 +406,7 @@ class BIM_PT_links(Panel):
         if not LinksData.linked_data or not self.props.links:
             if self.props.links:
                 row = self.layout.row(align=True)
-                row.label(text="No Object Selected", icon="QUESTION")
+                row.label(text="No Object Queried with Explore Tool", icon="QUESTION")
             return
 
         row = self.layout.row(align=True)
