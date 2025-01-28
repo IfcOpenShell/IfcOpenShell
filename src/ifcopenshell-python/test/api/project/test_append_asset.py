@@ -23,7 +23,7 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.type
 import ifcopenshell.api.cost
-import ifcopenshell.api.void
+import ifcopenshell.api.feature
 import ifcopenshell.api.style
 import ifcopenshell.api.context
 import ifcopenshell.api.project
@@ -378,7 +378,7 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
         opening = ifcopenshell.api.root.create_entity(library, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.add_opening(library, opening=opening, element=element)
+        ifcopenshell.api.feature.add_feature(library, feature=opening, element=element)
         ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
         assert self.file.by_type("IfcWall")[0].HasOpenings[0].RelatedOpeningElement.is_a("IfcOpeningElement")
 

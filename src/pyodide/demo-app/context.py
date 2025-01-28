@@ -1,4 +1,5 @@
 import ifcopenshell
+import ifcopenshell.api.feature
 import ifcopenshell.geom
 import ifcopenshell.api
 import ifcopenshell.util.unit
@@ -290,12 +291,8 @@ class Context:
             ]
         )
 
-        ifcopenshell.api.run(
-            "void.add_opening", self.model, opening=opening, element=wall
-        )
-        ifcopenshell.api.run(
-            "void.add_filling", self.model, opening=opening, element=door
-        )
+        ifcopenshell.api.feature.add_feature(self.model, feature=opening, element=wall)
+        ifcopenshell.api.feature.add_filling(self.model, opening=opening, element=door)
 
         z_offsets = {
             'door': 0,
