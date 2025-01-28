@@ -23,14 +23,13 @@ import ifcopenshell.util.element
 def unassign_layer(
     file: ifcopenshell.file, items: list[ifcopenshell.entity_instance], layer: ifcopenshell.entity_instance
 ) -> None:
-    """Unassigns representation items from a layer
+    """Unassigns representation items or representations from a layer
 
-    If the representation item isn't assigned to the layer, nothing will
-    happen.
+    If the element isn't assigned to the layer, nothing will happen.
     If after unassignment layer won't have any assigned items it will be
     removed to keep IFC valid.
 
-    :param items: A list IfcRepresentationItem elements to unassign
+    :param items: A list IfcRepresentationItem / IfcRepresentation elements to unassign
     :param layer: The IfcPresentationLayerAssignment to unassign from
     :return: None
 

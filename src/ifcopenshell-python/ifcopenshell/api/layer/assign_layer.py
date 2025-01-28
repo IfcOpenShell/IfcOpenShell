@@ -22,7 +22,7 @@ import ifcopenshell
 def assign_layer(
     file: ifcopenshell.file, items: list[ifcopenshell.entity_instance], layer: ifcopenshell.entity_instance
 ) -> None:
-    """Assigns representation items to a layer
+    """Assigns representation items or representations to a layer
 
     In IFC, instead of objects being assigned to layers, representation
     items are assigned to layers. Representation items are portions of the
@@ -31,7 +31,7 @@ def assign_layer(
     its frame) assigned to one layer, and another portion (e.g. the glazing
     panels) assigned to another layer.
 
-    :param items: The list of IfcRepresentationItems to assign to the layer. This
+    :param items: The list of IfcRepresentationItems / IfcRepresentations to assign to the layer. This
         should be the items from the object's IfcShapeRepresentation.
     :param layer: The IfcPresentationLayerAssignment layer to assign the
         item to.
