@@ -267,9 +267,9 @@ typedef item const* ptr;
 			struct matrix4 : public item, public eigen_base<Eigen::Matrix4d> {
 			private:
 				void init(const Eigen::Vector3d& o, const Eigen::Vector3d& z, const Eigen::Vector3d& x) {
-					auto X = x.normalized();
-					auto Y = z.cross(x).normalized();
 					auto Z = z.normalized();
+					auto Y = Z.cross(x).normalized();
+					auto X = Y.cross(Z);
 					components_ = new Eigen::Matrix4d;
 					(*components_) <<
 						X(0), Y(0), Z(0), o(0),
