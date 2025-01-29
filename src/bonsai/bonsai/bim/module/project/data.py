@@ -116,6 +116,8 @@ class ProjectLibraryData:
     def load(cls):
         cls.data = {}
         cls.data["project_libraries"] = cls.project_libraries()
+        # After .project_libraries().
+        cls.data["project_libraries_enum"] = cls.project_libraries_enum()
         cls.is_loaded = True
 
     @classmethod
@@ -127,6 +129,16 @@ class ProjectLibraryData:
         KEEP_ATTRS = set(("id", "Name", "Description"))
         for l in library_file.by_type("IfcProjectLibrary"):
             results[l.id()] = {k: v for k, v in l.get_info().items() if k in KEEP_ATTRS}
+        return results
+
+    @classmethod
+    def project_libraries_enum(cls) -> list[tuple[str, str, str]]:
+        results = [
+            ("*", "All Libraries", "Show all elements"),
+            ("-", "No Library", "Show elements without library assigned"),
+        ]
+        for data in cls.data["project_libraries"].values():
+            results.append((str(data["id"]), data["Name"] or "", data["Description"] or ""))
         return results
 
 

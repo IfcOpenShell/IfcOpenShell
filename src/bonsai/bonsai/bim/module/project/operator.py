@@ -214,10 +214,15 @@ class RefreshLibrary(bpy.types.Operator):
 
         self.props.active_library_element = ""
 
+        library_file = IfcStore.library_file
+        assert library_file
+
+        condition = tool.Project.get_filter_for_active_library()
         for importable_type in sorted(tool.Project.get_appendable_asset_types()):
-            if IfcStore.library_file.by_type(importable_type):
+            if (elements := library_file.by_type(importable_type)) and next(condition(elements), None):
                 new = self.props.library_elements.add()
                 new.name = importable_type
+
         return {"FINISHED"}
 
 
@@ -225,7 +230,7 @@ class ChangeLibraryElement(bpy.types.Operator):
     bl_idname = "bim.change_library_element"
     bl_label = "Change Library Element"
     bl_options = {"REGISTER", "UNDO"}
-    element_name: bpy.props.StringProperty()
+    element_name: bpy.props.StringProperty(description="IFC class to select")
 
     if TYPE_CHECKING:
         element_name: str
@@ -242,7 +247,9 @@ class ChangeLibraryElement(bpy.types.Operator):
         crumb = self.props.library_breadcrumb.add()
         crumb.name = self.element_name
 
+        filter_elements = tool.Project.get_filter_for_active_library()
         elements = self.library_file.by_type(self.element_name)
+        elements = list(filter_elements(elements))
         [ifc_classes.add(e.is_a()) for e in elements]
 
         self.props.library_elements.clear()

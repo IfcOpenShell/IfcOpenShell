@@ -34,7 +34,7 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
 from pathlib import Path
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING, Generator, Callable
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties
@@ -294,3 +294,42 @@ class Project(bonsai.core.tool.Project):
         if references_to_remove:
             for reference in references_to_remove:
                 ifcopenshell.api.document.remove_reference(ifc_file, reference)
+
+    @classmethod
+    def get_filter_for_active_library(
+        cls,
+    ) -> Callable[[list[ifcopenshell.entity_instance]], Generator[ifcopenshell.entity_instance, None, None]]:
+        props = cls.get_project_props()
+        library_file = IfcStore.library_file
+        assert library_file
+
+        if props.selected_project_library == "*":
+
+            def condition(elements: list[ifcopenshell.entity_instance]):
+                yield from elements
+
+        elif props.selected_project_library == "-":
+
+            def condition(elements: list[ifcopenshell.entity_instance]):
+                for element in elements:
+                    if not getattr(element, "HasContext", False):
+                        yield element
+
+        else:
+            project_library = library_file.by_id(int(props.selected_project_library))
+            project_library_rels = set(project_library.Declares)
+            if project_library_rels:
+
+                def condition(elements: list[ifcopenshell.entity_instance]):
+                    for element in elements:
+                        for rel in getattr(element, "HasContext", ()):
+                            if rel in project_library_rels:
+                                yield element
+                                break
+
+            else:
+
+                def condition(elements: list[ifcopenshell.entity_instance]):
+                    pass
+
+        return condition

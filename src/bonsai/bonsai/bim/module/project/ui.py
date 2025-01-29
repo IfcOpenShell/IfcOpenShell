@@ -367,6 +367,7 @@ class BIM_PT_project_library(Panel):
             row = self.layout.row()
             row.label(text="No Assets Found", icon="ERROR")
             return
+        self.layout.prop(self.props, "selected_project_library", text="")
         row = self.layout.row(align=True)
         row.label(text=self.props.active_library_element or "Top Level Assets")
         if self.props.active_library_element:

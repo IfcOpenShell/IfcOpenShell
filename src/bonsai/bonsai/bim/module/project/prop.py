@@ -21,7 +21,7 @@ import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import bonsai.tool as tool
-from bonsai.bim.module.project.data import ProjectData
+from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty, ObjProperty
 from bpy.types import PropertyGroup
@@ -64,6 +64,16 @@ def update_library_file(self: "BIMProjectProperties", context: bpy.types.Context
     if self.library_file != "0":
         filepath = next(p for p in tool.Blender.get_data_dir_paths("libraries", "*.ifc") if p.name == self.library_file)
         bpy.ops.bim.select_library_file(filepath=filepath.__str__())
+
+
+def update_selected_project_library(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
+    bpy.ops.bim.refresh_library()
+
+
+def get_project_libaries(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    if not ProjectLibraryData.is_loaded:
+        ProjectLibraryData.load()
+    return ProjectLibraryData.data["project_libraries_enum"]
 
 
 def update_filter_mode(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
@@ -260,7 +270,16 @@ class BIMProjectProperties(PropertyGroup):
     active_link_index: IntProperty(name="Active Link Index")
     export_schema: EnumProperty(items=get_export_schema, name="IFC Schema", update=update_export_schema)
     template_file: EnumProperty(items=get_template_file, name="Template File")
+
+    # Project library UI.
     library_file: EnumProperty(items=get_library_file, name="Library File", update=update_library_file)
+    selected_project_library: EnumProperty(
+        items=get_project_libaries,
+        name="Project Library",
+        description="Project library to display elements from",
+        update=update_selected_project_library,
+    )
+
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
     queried_obj_root: bpy.props.PointerProperty(type=bpy.types.Object)
@@ -317,7 +336,10 @@ class BIMProjectProperties(PropertyGroup):
         active_link_index: int
         export_schema: str
         template_file: str
+
         library_file: str
+        selected_project_library: Union[Literal["*", "-"], str]
+
         use_relative_project_path: bool
         queried_obj: Union[bpy.types.Object, None]
         queried_obj_root: Union[bpy.types.Object, None]
