@@ -271,10 +271,21 @@ class ChangeLibraryElement(bpy.types.Operator):
         new.name = name
         new.ifc_definition_id = ifc_definition_id
         element = self.library_file.by_id(ifc_definition_id)
-        if self.library_file.schema == "IFC2X3" or not self.library_file.by_type("IfcProjectLibrary"):
+
+        # is_declarable.
+        project_libraries_exist = bool(
+            self.library_file.schema != "IFC2X3" and self.library_file.by_type("IfcProjectLibrary")
+        )
+        is_declarable = project_libraries_exist and element.is_a("IfcObjectDefinition")
+        new.is_declarable = is_declarable
+
+        # is_declared.
+        if not is_declarable:
             new.is_declared = False
-        elif getattr(element, "HasContext", None) and element.HasContext[0].RelatingContext.is_a("IfcProjectLibrary"):
+        elif (has_context := element.HasContext) and has_context[0].RelatingContext.is_a("IfcProjectLibrary"):
             new.is_declared = True
+
+        # is_appended.
         try:
             if element.is_a("IfcMaterial"):
                 next(e for e in self.file.by_type("IfcMaterial") if e.Name == name)

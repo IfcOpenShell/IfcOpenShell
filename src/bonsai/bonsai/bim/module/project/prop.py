@@ -103,12 +103,18 @@ class LibraryElement(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_declared: BoolProperty(name="Is Declared", default=False)
     is_appended: BoolProperty(name="Is Appended", default=False)
+    is_declarable: BoolProperty(
+        name="Is Declarable",
+        description="Whether element support being declared as part of IfcProjectLibrary",
+        default=False,
+    )
 
     if TYPE_CHECKING:
         name: str
         ifc_definition_id: int
         is_declared: bool
         is_appended: bool
+        is_declarable: bool
 
 
 class FilterCategory(PropertyGroup):
