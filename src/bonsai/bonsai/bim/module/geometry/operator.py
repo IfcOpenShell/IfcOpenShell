@@ -1931,14 +1931,8 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         elif element:
             if not obj.data:
                 self.report({"INFO"}, "No geometry to edit")
-            elif (usage := tool.Model.get_usage_type(element)) and usage in ("LAYER1", "LAYER2"):
-                self.report({"INFO"}, f"Parametric {usage} elements cannot be edited directly")
             elif tool.Geometry.is_locked(element):
                 self.report({"ERROR"}, lock_error_message(obj.name))
-            elif usage == "PROFILE":
-                bpy.ops.bim.hotkey(hotkey="A_E")
-            elif usage == "LAYER3":
-                bpy.ops.bim.hotkey(hotkey="S_E")
             elif obj.data and tool.Geometry.is_profile_based(obj.data):
                 bpy.ops.bim.hotkey(hotkey="S_E")
             elif element.is_a("IfcRelSpaceBoundary"):
@@ -1981,11 +1975,18 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
 
     def enable_editing_representation_item(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        element = tool.Ifc.get_entity(context.scene.BIMGeometryProperties.representation_obj)
         if tool.Geometry.is_meshlike_item(item):
             tool.Geometry.dissolve_triangulated_edges(obj)
             tool.Blender.select_and_activate_single_object(context, obj)
             obj.data.BIMMeshProperties.mesh_checksum = tool.Geometry.get_mesh_checksum(obj.data)
             self.enable_edit_mode(context)
+        elif (
+            item.is_a("IfcSweptAreaSolid")
+            and (usage := tool.Model.get_usage_type(element))
+            and usage in ("LAYER1", "LAYER2")
+        ):
+            self.report({"INFO"}, f"Parametric {usage} elements cannot be edited directly")
         elif item.is_a("IfcSweptAreaSolid"):
             tool.Geometry.sync_item_positions()
             res = tool.Model.import_profile((profile := item.SweptArea), obj=obj)

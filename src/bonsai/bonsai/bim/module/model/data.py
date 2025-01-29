@@ -630,6 +630,7 @@ class ItemData:
         cls.data = {}
         cls.data["representation_identifier"] = cls.representation_identifier()
         cls.data["representation_type"] = cls.representation_type()
+        cls.data["representation_usage"] = cls.representation_usage()
         cls.data["profiles_enum"] = cls.profiles_enum()
 
     @classmethod
@@ -643,6 +644,11 @@ class ItemData:
         props = bpy.context.scene.BIMGeometryProperties
         rep = tool.Geometry.get_active_representation(props.representation_obj)
         return rep.RepresentationType
+
+    @classmethod
+    def representation_usage(cls):
+        props = bpy.context.scene.BIMGeometryProperties
+        return tool.Model.get_usage_type(tool.Ifc.get_entity(props.representation_obj))
 
     @classmethod
     def profiles_enum(cls) -> list[Union[tuple[str, str, str], None]]:

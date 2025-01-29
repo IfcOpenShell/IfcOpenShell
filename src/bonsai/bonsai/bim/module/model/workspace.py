@@ -309,7 +309,9 @@ class BIM_MT_add_representation_item(Menu):
         if not ItemData.is_loaded:
             ItemData.load()
 
-        if ItemData.data["representation_type"] in ("Tessellation", "Brep", "AdvancedBrep"):
+        if ItemData.data["representation_usage"]:
+            self.layout.operator("bim.add_half_space_solid_item", icon="ORIENTATION_NORMAL", text="Half Space Solid")
+        elif ItemData.data["representation_type"] in ("Tessellation", "Brep", "AdvancedBrep"):
             self.draw_meshlike()
             self.layout.separator()
             self.layout.operator("bim.add_half_space_solid_item", icon="ORIENTATION_NORMAL", text="Half Space Solid")

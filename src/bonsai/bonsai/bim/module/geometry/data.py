@@ -64,14 +64,8 @@ class ViewportData:
         if obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
             pass
         elif element:
-            if (usage := tool.Model.get_usage_type(element)) and usage in ("LAYER1", "LAYER2"):
+            if tool.Geometry.is_locked(element):
                 pass
-            elif tool.Geometry.is_locked(element):
-                pass
-            elif usage == "PROFILE":
-                modes.append(edit_mode)
-            elif usage == "LAYER3":
-                modes.append(edit_mode)
             elif obj.data and tool.Geometry.is_profile_based(obj.data):
                 modes.append(edit_mode)
             elif element.is_a("IfcRelSpaceBoundary"):
