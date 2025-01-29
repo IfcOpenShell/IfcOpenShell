@@ -24,7 +24,7 @@ import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search
 from bpy.types import Panel, Menu, UIList
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.project.data import ProjectData, LinksData
+from bonsai.bim.module.project.data import ProjectData, LinksData, ProjectLibraryData
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -463,11 +463,9 @@ class BIM_UL_library(UIList):
                 op = row.operator("bim.change_library_element", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
                 op.element_name = item.name
             row.label(text=item.name)
-            if (
-                item.ifc_definition_id
-                and IfcStore.library_file.schema != "IFC2X3"
-                and IfcStore.library_file.by_type("IfcProjectLibrary")
-            ):
+            if not ProjectLibraryData.is_loaded:
+                ProjectLibraryData.load()
+            if item.ifc_definition_id and ProjectLibraryData.data["project_libraries"]:
                 if item.is_declared:
                     op = row.operator("bim.unassign_library_declaration", text="", icon="KEYFRAME_HLT", emboss=False)
                     op.definition = item.ifc_definition_id

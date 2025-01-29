@@ -23,7 +23,7 @@ import ifcopenshell.util.file
 from bonsai.bim.ifc import IfcStore
 from pathlib import Path
 from collections import defaultdict
-from typing import Union
+from typing import Union, Any
 
 
 def refresh():
@@ -106,6 +106,28 @@ class ProjectData:
         if ifc := tool.Ifc.get():
             return len(ifc.by_type("IfcElement"))
         return 0
+
+
+class ProjectLibraryData:
+    data: dict[str, Any] = {}
+    is_loaded: bool = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {}
+        cls.data["project_libraries"] = cls.project_libraries()
+        cls.is_loaded = True
+
+    @classmethod
+    def project_libraries(cls) -> dict[int, dict[str, Any]]:
+        results = {}
+        library_file = IfcStore.library_file
+        if library_file is None or library_file.schema == "IFC2X3":
+            return results
+        KEEP_ATTRS = set(("id", "Name", "Description"))
+        for l in library_file.by_type("IfcProjectLibrary"):
+            results[l.id()] = {k: v for k, v in l.get_info().items() if k in KEEP_ATTRS}
+        return results
 
 
 class LinksData:
