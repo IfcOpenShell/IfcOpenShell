@@ -307,7 +307,7 @@ class DumbSlabPlaner:
                     y = -abs(y) if existing_x_angle > 0 else abs(y)
                     z = -abs(z)
                 extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
-                extrusion.Depth = thickness
+                extrusion.Depth = perpendicular_depth
 
                 if offset != 0.0 and not extrusion.Position:
                     tool.Model.add_extrusion_position(extrusion, offset)
