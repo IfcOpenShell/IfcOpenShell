@@ -50,7 +50,7 @@ class SheetBuilder:
 
         sheet_dir = os.path.dirname(layout_path)
         ootb_titleblock_path = tool.Blender.get_data_dir_path(
-            Path("templates") / "titleblock" / (titleblock_name + ".svg")
+            Path("templates") / "titleblocks" / (titleblock_name + ".svg")
         )
         titleblock_path = tool.Ifc.resolve_uri(tool.Drawing.get_default_titleblock_path(titleblock_name))
 
