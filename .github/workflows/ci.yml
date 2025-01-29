@@ -24,7 +24,7 @@ on:
 
 jobs:
   activate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell' &&
       !contains(github.event.head_commit.message, 'skip ci')
@@ -32,7 +32,7 @@ jobs:
       - run: echo ok go
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: activate
     steps:
       - uses: actions/checkout@v4
