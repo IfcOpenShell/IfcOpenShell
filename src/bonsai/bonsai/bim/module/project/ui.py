@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+import bpy
 import os
 import bonsai.bim
 import bonsai.tool as tool
@@ -23,6 +25,10 @@ from bonsai.bim.helper import prop_with_search
 from bpy.types import Panel, Menu, UIList
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.project.data import ProjectData, LinksData
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.project.prop import LibraryElement, BIMProjectProperties
 
 
 def file_import_menu(self, context):
@@ -441,7 +447,16 @@ class BIM_PT_links(Panel):
 
 
 class BIM_UL_library(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMProjectProperties,
+        item: LibraryElement,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
             if not item.ifc_definition_id:

@@ -111,6 +111,14 @@ class Material(PropertyGroup):
     has_style: BoolProperty(name="Has Style", default=True)
     total_elements: IntProperty(name="Total Elements")
 
+    if TYPE_CHECKING:
+        name: str
+        ifc_definition_id: int
+        is_category: bool
+        is_expanded: bool
+        has_style: bool
+        total_elements: int
+
 
 class BIMMaterialProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
@@ -126,8 +134,20 @@ class BIMMaterialProperties(PropertyGroup):
 
     @property
     def active_material(self):
-        if self.active_material_index < len(self.materials):
+        if 0 <= self.active_material_index < len(self.materials):
             return self.materials[self.active_material_index]
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        material_type: str
+        materials: bpy.types.bpy_prop_collection_idprop[Material]
+        active_material_index: int
+        profiles: str
+        active_material_id: int
+        material_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        editing_material_type: str
+        styles: str
+        contexts: str
 
 
 class BIMObjectMaterialProperties(PropertyGroup):
@@ -146,3 +166,16 @@ class BIMObjectMaterialProperties(PropertyGroup):
     parameterized_profile_classes: EnumProperty(
         items=get_parameterized_profile_classes, name="Parameterized Profile Classes"
     )
+
+    if TYPE_CHECKING:
+        material_type: str
+        material: str
+        is_editing: bool
+        material_set_usage_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        material_set_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        active_material_set_item_id: int
+        material_set_item_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        material_set_item_profile_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        material_set_item_material: str
+        profile_classes: str
+        parameterized_profile_classes: str

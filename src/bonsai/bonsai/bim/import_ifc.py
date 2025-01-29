@@ -1143,7 +1143,7 @@ class IfcImportSettings:
     @staticmethod
     def factory(context=None, input_file=None, logger=None):
         scene_diff = bpy.context.scene.DiffProperties
-        props = bpy.context.scene.BIMProjectProperties
+        props = tool.Project.get_project_props()
         settings = IfcImportSettings()
         settings.input_file = input_file
         if logger is None:

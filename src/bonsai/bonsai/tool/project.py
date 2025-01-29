@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import bpy
 import ifcopenshell
@@ -33,10 +34,17 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.project.prop import BIMProjectProperties
 
 
 class Project(bonsai.core.tool.Project):
+    @classmethod
+    def get_project_props(cls) -> BIMProjectProperties:
+        return bpy.context.scene.BIMProjectProperties
+
     @classmethod
     def append_all_types_from_template(cls, template: str) -> None:
         # TODO refactor

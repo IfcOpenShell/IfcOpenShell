@@ -207,7 +207,7 @@ class RefreshLibrary(bpy.types.Operator):
     bl_label = "Refresh Library"
 
     def execute(self, context):
-        self.props = context.scene.BIMProjectProperties
+        self.props = tool.Project.get_project_props()
 
         self.props.library_elements.clear()
         self.props.library_breadcrumb.clear()
@@ -227,11 +227,16 @@ class ChangeLibraryElement(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     element_name: bpy.props.StringProperty()
 
+    if TYPE_CHECKING:
+        element_name: str
+
     def execute(self, context):
-        self.props = context.scene.BIMProjectProperties
-        self.file = IfcStore.get_file()
-        self.library_file = IfcStore.library_file
-        ifc_classes = set()
+        self.props = tool.Project.get_project_props()
+        self.file = tool.Ifc.get()
+        library_file = IfcStore.library_file
+        assert library_file
+        self.library_file = library_file
+        ifc_classes: set[str] = set()
         self.props.active_library_element = self.element_name
 
         crumb = self.props.library_breadcrumb.add()

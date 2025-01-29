@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bpy
@@ -25,6 +26,10 @@ from bonsai.bim.helper import draw_attributes
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
 from bonsai.bim.module.drawing.helper import format_distance
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.material.prop import Material
 
 
 class BIM_PT_materials(Panel):
@@ -395,7 +400,9 @@ class BIM_PT_object_material(Panel):
 
 
 class BIM_UL_materials(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: Material, icon, active_data, active_propname
+    ) -> None:
         mprops = context.scene.BIMMaterialProperties
         material_type = mprops.material_type
 

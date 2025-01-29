@@ -34,6 +34,7 @@ from bpy.props import (
     IntProperty,
     StringProperty,
 )
+from typing import TYPE_CHECKING, Literal, Union
 
 
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -97,10 +98,17 @@ def update_filter_mode(self: "BIMProjectProperties", context: bpy.types.Context)
 
 
 class LibraryElement(PropertyGroup):
+    # For IFC class groups only name is filled, for assets - all fields.
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_declared: BoolProperty(name="Is Declared", default=False)
     is_appended: BoolProperty(name="Is Appended", default=False)
+
+    if TYPE_CHECKING:
+        name: str
+        ifc_definition_id: int
+        is_declared: bool
+        is_appended: bool
 
 
 class FilterCategory(PropertyGroup):
@@ -108,6 +116,12 @@ class FilterCategory(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_selected: BoolProperty(name="Is Selected", default=False)
     total_elements: IntProperty(name="Total Elements")
+
+    if TYPE_CHECKING:
+        name: str
+        ifc_definition_id: int
+        is_selected: bool
+        total_elements: int
 
 
 class Link(PropertyGroup):
@@ -125,9 +139,20 @@ class Link(PropertyGroup):
         type=bpy.types.Object,
     )
 
+    if TYPE_CHECKING:
+        name: str
+        is_loaded: bool
+        is_selectable: bool
+        is_wireframe: bool
+        is_hidden: bool
+        empty_handle: Union[bpy.types.Object, None]
+
 
 class EditedObj(PropertyGroup):
     obj: PointerProperty(type=bpy.types.Object)
+
+    if TYPE_CHECKING:
+        obj: Union[bpy.types.Object, None]
 
 
 class BIMProjectProperties(PropertyGroup):
@@ -238,11 +263,61 @@ class BIMProjectProperties(PropertyGroup):
     edited_objs: bpy.props.CollectionProperty(type=EditedObj)
 
     @property
-    def clipping_planes_objs(self):
+    def clipping_planes_objs(self) -> list[bpy.types.Object]:
         return list({cp.obj for cp in self.clipping_planes if cp.obj})
 
-    def get_library_element_index(self, lib_element):
+    def get_library_element_index(self, lib_element: LibraryElement) -> int:
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        is_loading: bool
+        mvd: str
+        author_name: str
+        author_email: str
+        organisation_name: str
+        organisation_email: str
+        authorisation: str
+        active_library_element: str
+        library_breadcrumb: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        library_elements: bpy.types.bpy_prop_collection_idprop[LibraryElement]
+        active_library_element_index: int
+        filter_mode: Literal["NONE", "DECOMPOSITION", "IFC_CLASS", "IFC_TYPE", "WHITELIST", "BLACKLIST"]
+        total_elements: int
+        filter_categories: bpy.types.bpy_prop_collection_idprop[FilterCategory]
+        active_filter_category_index: int
+        filter_query: str
+        should_filter_spatial_elements: bool
+        geometry_library: Literal["opencascade", "cgal", "cgal-simple", "hybrid-cgal-simple-opencascade"]
+        should_use_cpu_multiprocessing: bool
+        should_merge_materials_by_colour: bool
+        should_stream: bool
+        should_load_geometry: bool
+        should_clean_mesh: bool
+        should_cache: bool
+        deflection_tolerance: float
+        angular_tolerance: float
+        void_limit: int
+        distance_limit: float
+        false_origin_mode: Literal["AUTOMATIC", "MANUAL", "DISABLED"]
+        false_origin: str
+        project_north: str
+        element_limit_mode: Literal["UNLIMITED", "RANGE"]
+        element_offset: int
+        element_limit: int
+        load_indexed_maps: bool
+        should_disable_undo_on_save: bool
+        links: bpy.types.bpy_prop_collection_idprop[Link]
+        active_link_index: int
+        export_schema: str
+        template_file: str
+        library_file: str
+        use_relative_project_path: bool
+        queried_obj: Union[bpy.types.Object, None]
+        queried_obj_root: Union[bpy.types.Object, None]
+        clipping_planes: bpy.types.bpy_prop_collection_idprop[ObjProperty]
+        clipping_planes_active: int
+        edited_objs: bpy.types.bpy_prop_collection_idprop[EditedObj]
 
 
 class MeasureToolSettings(PropertyGroup):
@@ -253,3 +328,6 @@ class MeasureToolSettings(PropertyGroup):
     ]
 
     measurement_type: bpy.props.EnumProperty(items=measurement_type_items, default="POLYLINE")
+
+    if TYPE_CHECKING:
+        measurement_type: Literal["SINGLE", "POLYLINE", "AREA"]
