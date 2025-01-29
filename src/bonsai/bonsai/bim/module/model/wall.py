@@ -262,6 +262,11 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     x, y, z = extrusion.ExtrudedDirection.DirectionRatios
                     layer_params = tool.Model.get_material_layer_parameters(element)
                     offset = layer_params["offset"]
+
+                    # Change offset to keep the position in relation to the top face of the slab
+                    # The x_angle changes the slab vertical depth, so we have to adapt the offset accordingly
+                    offset -= (extrusion.Depth - perpendicular_depth) * unit_scale
+
                     offset_vector = Vector((0.0, 0.0, offset / unit_scale))
 
                     if layer_params["direction_sense"] == "NEGATIVE":
