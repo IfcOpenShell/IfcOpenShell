@@ -66,7 +66,7 @@ def remove_representation(file: ifcopenshell.file, representation: ifcopenshell.
     for colour in colours:
         ifcopenshell.util.element.remove_deep2(file, colour)
 
-    to_delete = getattr(file, "to_delete", ())
+    to_delete = file.to_delete or set()
     for element in styled_items:
         if not element.Item or element.Item in to_delete:
             file.remove(element)
