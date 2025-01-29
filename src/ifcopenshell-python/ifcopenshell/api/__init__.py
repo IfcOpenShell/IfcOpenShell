@@ -82,6 +82,7 @@ def run(
     should_run_listeners: bool = True,
     **settings: Any,
 ) -> Any:
+    """This is deprecated and will be removed in a future version. Do not use this function."""
     usecase_function = CACHED_USECASES.get(usecase_path)
     if not usecase_function:
         importlib.import_module(f"ifcopenshell.api.{usecase_path}")
