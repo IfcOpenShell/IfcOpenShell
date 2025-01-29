@@ -535,8 +535,6 @@ class UpdateOpeningsFocus(Operator):
             if opening.obj:
                 openings.add(opening.obj)
                 opening_element = tool.Ifc.get_entity(opening.obj)
-                if opening_element is None:  # Most likely an opening created with bim.add_potential_opening
-                    continue
                 building_element = opening_element.VoidsElements[0].RelatingBuildingElement
                 building_objects.add(tool.Ifc.get_object(building_element))
 
