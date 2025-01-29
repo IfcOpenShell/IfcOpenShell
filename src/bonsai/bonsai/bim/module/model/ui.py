@@ -692,17 +692,6 @@ class BIM_PT_roof(bpy.types.Panel):
             row.operator("bim.add_roof", icon="ADD", text="")
 
 
-class BIM_MT_elements(Menu):
-    bl_idname = "BIM_MT_elements"
-    bl_label = "IFC Elements"
-
-    def draw(self, context):
-        # TODO consolidate in Item mode UI then remove
-        self.layout.operator("bim.add_potential_half_space_solid", text="Half Space", icon="ORIENTATION_NORMAL")
-        self.layout.operator("bim.add_potential_opening", text="Opening", icon="CUBE")
-
-
 def add_menu(self, context):
     self.layout.operator("bim.launch_add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")
-    self.layout.menu("BIM_MT_elements", icon_value=bonsai.bim.icons["IFC"].icon_id)
     self.layout.separator()
