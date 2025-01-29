@@ -80,27 +80,70 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 props.ifc_predefined_type = "SOLIDWALL"
             props.representation_template = "LAYERSET_AXIS2"
+        elif self.ifc_element_type == "IfcRailingType":
+            props.ifc_predefined_type = "BALUSTRADE"
+            props.representation_template = "RAILING"
+
+        elif self.ifc_element_type == "IfcRoofType":
+            props.ifc_predefined_type = "HIP_ROOF"
+            props.representation_template = "ROOF"
         elif self.ifc_element_type == "IfcSlabType":
             props.ifc_predefined_type = "FLOOR"
             props.representation_template = "LAYERSET_AXIS3"
+
         elif self.ifc_element_type == "IfcDoorType":
             props.ifc_predefined_type = "DOOR"
             props.representation_template = "DOOR"
         elif self.ifc_element_type == "IfcWindowType":
             props.ifc_predefined_type = "WINDOW"
             props.representation_template = "WINDOW"
+
         elif self.ifc_element_type == "IfcColumnType":
             props.ifc_predefined_type = "COLUMN"
             props.representation_template = "PROFILESET"
         elif self.ifc_element_type == "IfcBeamType":
             props.ifc_predefined_type = "BEAM"
             props.representation_template = "PROFILESET"
+        elif self.ifc_element_type == "IfcMemberType":
+            props.ifc_predefined_type = "CHORD"
+            props.representation_template = "PROFILESET"
+        elif self.ifc_element_type == "IfcPlateType":
+            props.ifc_predefined_type = "SHEET"
+            props.representation_template = "LAYERSET_AXIS3"
+        elif self.ifc_element_type == "IfcFootingType":
+            props.ifc_predefined_type = "FOOTING_BEAM"
+            props.representation_template = "PROFILESET"
+        elif self.ifc_element_type == "IfcPileType":
+            props.ifc_predefined_type = "BORED"
+            props.representation_template = "PROFILESET"
+
         elif self.ifc_element_type == "IfcDuctSegmentType":
             props.ifc_predefined_type = "RIGIDSEGMENT"
             props.representation_template = "FLOW_SEGMENT_RECTANGULAR"
         elif self.ifc_element_type == "IfcPipeSegmentType":
             props.ifc_predefined_type = "RIGIDSEGMENT"
             props.representation_template = "FLOW_SEGMENT_CIRCULAR"
+
+        elif self.ifc_element_type == "IfcStairFlightType":
+            props.ifc_predefined_type = "STRAIGHT"
+            props.representation_template = "STAIR"
+        elif self.ifc_element_type == "IfcRampFlightType":
+            props.ifc_predefined_type = "STRAIGHT"
+            props.representation_template = "LAYERSET_AXIS3"
+
+        elif self.ifc_element_type == "IfcFurnitureType":
+            props.ifc_predefined_type = "CHAIR"
+            props.representation_template = "MESH"
+        elif self.ifc_element_type == "IfcSanitaryTerminalType":
+            props.ifc_predefined_type = "TOILETPAN"
+            props.representation_template = "MESH"
+        elif self.ifc_element_type == "IfcLightFixtureType":
+            props.ifc_predefined_type = "DIRECTIONSOURCE"
+            props.representation_template = "MESH"
+        elif self.ifc_element_type == "IfcElectricApplianceType":
+            props.ifc_predefined_type = "WASHINGMACHINE"
+            props.representation_template = "MESH"
+
         bpy.ops.bim.add_element()
 
 

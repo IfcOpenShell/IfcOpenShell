@@ -202,17 +202,35 @@ addon_keymaps = []
 
 def register():
     if not bpy.app.background:
-        bpy.utils.register_tool(workspace.WallTool, after={"bim.explore_tool"}, separator=True, group=False)
-        bpy.utils.register_tool(workspace.SlabTool, after={"bim.wall_tool"}, separator=False, group=False)
-        bpy.utils.register_tool(workspace.DoorTool, after={"bim.slab_tool"}, separator=False, group=False)
-        bpy.utils.register_tool(workspace.WindowTool, after={"bim.door_tool"}, separator=False, group=False)
-        bpy.utils.register_tool(workspace.ColumnTool, after={"bim.window_tool"}, separator=False, group=False)
-        bpy.utils.register_tool(workspace.BeamTool, after={"bim.column_tool"}, separator=False, group=False)
-        bpy.utils.register_tool(workspace.BimTool, after={"bim.beam_tool"}, separator=False, group=False)
-        bpy.utils.register_tool(workspace.DuctTool, after={"bim.beam_tool"}, separator=False, group=True)
+        bpy.utils.register_tool(workspace.BimTool, after={"bim.explore_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.DuctTool, after={"bim.explore_tool"}, separator=False, group=True)
         bpy.utils.register_tool(workspace.PipeTool, after={"bim.duct_tool"}, separator=False, group=False)
         bpy.utils.register_tool(workspace.CableCarrierTool, after={"bim.pipe_tool"}, separator=False, group=False)
         bpy.utils.register_tool(workspace.CableTool, after={"bim.cable_carrier_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.FurnitureTool, after={"bim.explore_tool"}, separator=False, group=True)
+        bpy.utils.register_tool(
+            workspace.SanitaryTerminalTool, after={"bim.furniture_tool"}, separator=False, group=False
+        )
+        bpy.utils.register_tool(
+            workspace.LightFixtureTool, after={"bim.sanitary_terminal_tool"}, separator=False, group=False
+        )
+        bpy.utils.register_tool(
+            workspace.ElectricApplianceTool, after={"bim.light_fixture_tool"}, separator=False, group=False
+        )
+        bpy.utils.register_tool(workspace.ColumnTool, after={"bim.explore_tool"}, separator=False, group=True)
+        bpy.utils.register_tool(workspace.BeamTool, after={"bim.column_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.MemberTool, after={"bim.beam_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.PlateTool, after={"bim.member_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.FootingTool, after={"bim.plate_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.PileTool, after={"bim.footing_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.DoorTool, after={"bim.explore_tool"}, separator=False, group=True)
+        bpy.utils.register_tool(workspace.WindowTool, after={"bim.door_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.SlabTool, after={"bim.explore_tool"}, separator=False, group=True)
+        bpy.utils.register_tool(workspace.RoofTool, after={"bim.slab_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.StairFlightTool, after={"bim.roof_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.RampFlightTool, after={"bim.stair_flight_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.WallTool, after={"bim.explore_tool"}, separator=True, group=True)
+        bpy.utils.register_tool(workspace.RailingTool, after={"bim.wall_tool"}, separator=False, group=False)
 
     bpy.types.Scene.BIMModelProperties = bpy.props.PointerProperty(type=prop.BIMModelProperties)
     bpy.types.Scene.BIMPolylineProperties = bpy.props.PointerProperty(type=prop.BIMPolylineProperties)
@@ -234,11 +252,19 @@ def register():
 def unregister():
     if not bpy.app.background:
         bpy.utils.unregister_tool(workspace.WallTool)
+        bpy.utils.unregister_tool(workspace.RailingTool)
         bpy.utils.unregister_tool(workspace.SlabTool)
+        bpy.utils.unregister_tool(workspace.RoofTool)
         bpy.utils.unregister_tool(workspace.DoorTool)
         bpy.utils.unregister_tool(workspace.WindowTool)
         bpy.utils.unregister_tool(workspace.ColumnTool)
         bpy.utils.unregister_tool(workspace.BeamTool)
+        bpy.utils.unregister_tool(workspace.MemberTool)
+        bpy.utils.unregister_tool(workspace.FootingTool)
+        bpy.utils.unregister_tool(workspace.FurnitureTool)
+        bpy.utils.unregister_tool(workspace.SanitaryTerminalTool)
+        bpy.utils.unregister_tool(workspace.LightFixtureTool)
+        bpy.utils.unregister_tool(workspace.ElectricApplianceTool)
         bpy.utils.unregister_tool(workspace.DuctTool)
         bpy.utils.unregister_tool(workspace.PipeTool)
         bpy.utils.unregister_tool(workspace.CableCarrierTool)
