@@ -65,6 +65,7 @@ class Collector(bonsai.core.tool.Collector):
         elif element.is_a("IfcOpeningElement"):
             collection = cls._create_project_child_collection("IfcOpeningElement")
             cls.link_collection_object_safe(collection, obj)
+            obj.display_type = "WIRE"
         elif element.is_a("IfcSpace"):
             collection = cls._create_project_child_collection("IfcSpace")
             cls.link_collection_object_safe(collection, obj)

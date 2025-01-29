@@ -593,12 +593,8 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         openings_elements_to_load = [o for o in openings_elements if not tool.Ifc.get_object(o)]
         openings_objects = tool.Model.load_openings(openings_elements_to_load)
-        for opening in openings_objects:
-            self.on_new_opening_obj(opening)
-
-    def on_new_opening_obj(self, opening_obj: bpy.types.Object) -> None:
-        tool.Root.add_tracked_opening(opening_obj, "OPENING")
-        opening_obj.display_type = "WIRE"
+        for obj in openings_objects:
+            tool.Root.add_tracked_opening(obj, "OPENING")
 
 
 class UpdateOpeningsFocus(Operator):
