@@ -418,7 +418,11 @@ class BIM_UL_materials(UIList):
                     row.operator(
                         "bim.expand_material_category", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
                     ).category = item.name
-                row.label(text=item.name)
+                ifc_file = tool.Ifc.get()
+                if ifc_file.schema == "IFC2X3":
+                    row.label(text=item.name)
+                else:
+                    row.prop(item, "name", text="", emboss=False)
             else:
                 row.label(text="", icon="BLANK1")
                 if material_type == "IfcMaterialList":

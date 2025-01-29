@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import bpy
 from ifcopenshell.util.doc import get_entity_doc
 import bonsai.tool as tool
@@ -34,6 +35,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING
 
 
 def get_profile_classes(self, context):
@@ -89,10 +91,8 @@ def get_contexts(self, context):
 
 
 def update_material_name(self: "Material", context: bpy.types.Context) -> None:
-    # No need to update anything if it's either category
-    # or ifc_definition_id is not yet set
-    # (which occurs when Material still in the process of creation).
-    if self.is_category or not self.ifc_definition_id:
+    # No need to update anything if it's category (handled in the setter).
+    if self.is_category:
         return
     ifc_file = tool.Ifc.get()
     name = self.name
@@ -103,8 +103,45 @@ def update_material_name(self: "Material", context: bpy.types.Context) -> None:
         material.Name = name
 
 
+def set_material_name(self: "Material", new_category_name: str) -> None:
+    if not self.is_category:
+        self["name"] = new_category_name
+        return
+
+    # Handle category name in setter as we also need name before change
+    # to identify materials to update.
+    # Ignore IFC4+ requirement as then category name won't be editable from UI.
+    ifc_file = tool.Ifc.get()
+    previous_category_name = self["name"]
+
+    # Change affected materials.
+    for material in ifc_file.by_type("IfcMaterial"):
+        material_category = tool.Material.get_material_category(material)
+        if material_category == previous_category_name:
+            material.Category = new_category_name
+
+    # Reload UI elements if necessary.
+    props: "BIMMaterialProperties" = self.id_data.BIMMaterialProperties
+    new_category_name_already_in_use = bool(
+        next((m for m in props.materials if m.is_category and m.name == new_category_name), None)
+    )
+    self["name"] = new_category_name
+    # If it's not in use then it's fine to just update UI name.
+    if new_category_name_already_in_use:
+        bpy.ops.bim.load_materials()
+
+
+def get_material_name(self: "Material") -> str:
+    return self.get("name", "")
+
+
 class Material(PropertyGroup):
-    name: StringProperty(name="Name", update=update_material_name)
+    name: StringProperty(
+        name="Name",
+        update=update_material_name,
+        set=set_material_name,
+        get=get_material_name,
+    )
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_category: BoolProperty(name="Is Category", default=False)
     is_expanded: BoolProperty(name="Is Expanded", default=False)
