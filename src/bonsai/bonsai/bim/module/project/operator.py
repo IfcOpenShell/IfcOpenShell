@@ -50,6 +50,7 @@ from bonsai.bim import export_ifc
 from collections import defaultdict
 from math import radians
 from pathlib import Path
+from collections import defaultdict
 from mathutils import Vector, Matrix
 from bpy.app.handlers import persistent
 from ifcopenshell.geom import ShapeElementType
@@ -219,9 +220,8 @@ class RefreshLibrary(bpy.types.Operator):
 
         condition = tool.Project.get_filter_for_active_library()
         for importable_type in sorted(tool.Project.get_appendable_asset_types()):
-            if (elements := library_file.by_type(importable_type)) and next(condition(elements), None):
-                new = self.props.library_elements.add()
-                new.name = importable_type
+            if (elements := library_file.by_type(importable_type)) and (elements := list(condition(elements))):
+                elements = self.props.add_library_asset_group(importable_type, len(elements))
 
         return {"FINISHED"}
 
@@ -241,7 +241,6 @@ class ChangeLibraryElement(bpy.types.Operator):
         library_file = IfcStore.library_file
         assert library_file
         self.library_file = library_file
-        ifc_classes: set[str] = set()
         self.props.active_library_element = self.element_name
 
         crumb = self.props.library_breadcrumb.add()
@@ -250,22 +249,25 @@ class ChangeLibraryElement(bpy.types.Operator):
         filter_elements = tool.Project.get_filter_for_active_library()
         elements = self.library_file.by_type(self.element_name)
         elements = list(filter_elements(elements))
-        [ifc_classes.add(e.is_a()) for e in elements]
+        ifc_classes_elements: dict[str, list[ifcopenshell.entity_instance]] = defaultdict(list)
+        for element in elements:
+            ifc_classes_elements[element.is_a()].append(element)
 
         self.props.library_elements.clear()
 
-        if len(ifc_classes) == 1 and list(ifc_classes)[0] == self.element_name:
-            for name, ifc_definition_id in sorted([(self.get_name(e), e.id()) for e in elements]):
+        if len(ifc_classes_elements) == 1 and list(ifc_classes_elements)[0] == self.element_name:
+            for name, ifc_definition_id in sorted(
+                [(self.get_name(e), e.id()) for e in ifc_classes_elements[self.element_name]]
+            ):
                 self.add_library_asset(name, ifc_definition_id)
         else:
-            for ifc_class in sorted(ifc_classes):
+            for ifc_class in sorted(ifc_classes_elements):
                 if ifc_class == self.element_name:
                     continue
-                new = self.props.library_elements.add()
-                new.name = ifc_class
-            for name, ifc_definition_id, ifc_class in sorted([(self.get_name(e), e.id(), e.is_a()) for e in elements]):
-                if ifc_class == self.element_name:
-                    self.add_library_asset(name, ifc_definition_id)
+                self.props.add_library_asset_group(ifc_class, len(ifc_classes_elements[ifc_class]))
+            elements_ = ifc_classes_elements[self.element_name]
+            for name, ifc_definition_id, ifc_class in sorted([(self.get_name(e), e.id(), e.is_a()) for e in elements_]):
+                self.add_library_asset(name, ifc_definition_id)
         return {"FINISHED"}
 
     def get_name(self, element: ifcopenshell.entity_instance) -> str:

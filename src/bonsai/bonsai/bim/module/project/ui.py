@@ -478,6 +478,10 @@ class BIM_UL_library(UIList):
                     op = row.operator("bim.append_library_element", text="", icon="APPEND_BLEND")
                     op.definition = item.ifc_definition_id
                     op.prop_index = data.get_library_element_index(item)
+            else:
+                row_ = row.row()
+                row_.alignment = "RIGHT"
+                row_.label(text=str(item.asset_count))
 
 
 class BIM_UL_filter_categories(UIList):

@@ -108,8 +108,10 @@ def update_filter_mode(self: "BIMProjectProperties", context: bpy.types.Context)
 
 
 class LibraryElement(PropertyGroup):
-    # For IFC class groups only name is filled, for assets - all fields.
     name: StringProperty(name="Name")
+    # Asset group.
+    asset_count: IntProperty(name="Asset Count")
+    # Asset.
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_declared: BoolProperty(name="Is Declared", default=False)
     is_appended: BoolProperty(name="Is Appended", default=False)
@@ -121,6 +123,7 @@ class LibraryElement(PropertyGroup):
 
     if TYPE_CHECKING:
         name: str
+        asset_count: int
         ifc_definition_id: int
         is_declared: bool
         is_appended: bool
@@ -290,6 +293,12 @@ class BIMProjectProperties(PropertyGroup):
     @property
     def clipping_planes_objs(self) -> list[bpy.types.Object]:
         return list({cp.obj for cp in self.clipping_planes if cp.obj})
+
+    def add_library_asset_group(self, name: str, asset_count: int) -> LibraryElement:
+        new = self.library_elements.add()
+        new.name = name
+        new.asset_count = asset_count
+        return new
 
     def get_library_element_index(self, lib_element: LibraryElement) -> int:
         return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))
