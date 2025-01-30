@@ -177,8 +177,15 @@ class ShapeAspect(PropertyGroup):
     )
 
 
-def update_is_editing_representation_layer(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
+def update_is_adding_representation_layer(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
     if self.is_adding_representation_layer:
+        ifc_file = tool.Ifc.get()
+        if not ifc_file.by_type("IfcPresentationLayerAssignment"):
+            tool.Blender.show_info_message(
+                "Cannot edit presentation layer - no presentation layers found in the project."
+            )
+            del self["is_adding_representation_layer"]
+            return
         return
 
     if "representation_layer" in self:
@@ -189,12 +196,19 @@ def update_is_editing_representation_layer(self: "BIMObjectGeometryProperties", 
 def update_is_editing_item_layer(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
     if self.is_editing_item_layer:
         ifc_file = tool.Ifc.get()
+
+        if not ifc_file.by_type("IfcPresentationLayerAssignment"):
+            tool.Blender.show_info_message(
+                "Cannot edit presentation layer - no presentation layers found in the project."
+            )
+            del self["is_editing_item_layer"]
+            return
+
         active_ui_item = self.active_item
         assert active_ui_item
         item = ifc_file.by_id(active_ui_item.ifc_definition_id)
         if layer := next(iter(item.LayerAssignment), None):
             self.representation_item_layer = str(layer.id())
-        return
 
     if "representation_item_layer" in self:
         del self["representation_item_layer"]
@@ -208,12 +222,12 @@ class BIMObjectGeometryProperties(PropertyGroup):
         name="Is Adding Representation's Layer",
         description="Toggle adding presentation layer for the representation.",
         default=False,
+        update=update_is_adding_representation_layer,
     )
     representation_layer: EnumProperty(
         items=get_layers_no_active,
         name="Representation's Presentation Layer",
         description="Presentation layer to add.",
-        update=update_is_editing_representation_layer,
     )
 
     # Representation items UI.
