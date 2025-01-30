@@ -65,7 +65,14 @@ def update_name(self: "BIMContainer", context: bpy.types.Context) -> None:
         element = tool.Ifc.get().by_id(ifc_definition_id)
         tool.Spatial.edit_container_name(element, self.name)
         if obj := tool.Ifc.get_object(element):
-            obj.name = tool.Loader.get_name(element)
+            tool.Root.set_object_name(obj, element)
+        bonsai.bim.handler.refresh_ui_data()
+
+
+def update_long_name(self: "BIMContainer", context: bpy.types.Context) -> None:
+    if ifc_definition_id := self.ifc_definition_id:
+        element = tool.Ifc.get().by_id(ifc_definition_id)
+        tool.Ifc.run("attribute.edit_attributes", product=element, attributes={"LongName": self.long_name})
         bonsai.bim.handler.refresh_ui_data()
 
 
@@ -148,7 +155,7 @@ class BIMContainer(PropertyGroup):
     name: StringProperty(name="Name", update=update_name)
     ifc_class: StringProperty(name="IFC Class")
     description: StringProperty(name="Description")
-    long_name: StringProperty(name="Long Name")
+    long_name: StringProperty(name="Long Name", update=update_long_name)
     elevation: StringProperty(name="Elevation", update=update_elevation)
     level_index: IntProperty(name="Level Index")
     has_children: BoolProperty(name="Has Children")

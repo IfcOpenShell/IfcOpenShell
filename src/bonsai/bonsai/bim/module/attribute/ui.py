@@ -25,13 +25,12 @@ import bonsai.tool as tool
 
 def draw_ui(context, layout, attributes):
     obj = context.active_object
-    oprops = obj.BIMObjectProperties
     props = obj.BIMAttributeProperties
 
     if props.is_editing_attributes:
         row = layout.row(align=True)
-        op = row.operator("bim.edit_attributes", icon="CHECKMARK", text="Save Attributes")
-        op = row.operator("bim.disable_editing_attributes", icon="CANCEL", text="")
+        row.operator("bim.edit_attributes", icon="CHECKMARK", text="Save Attributes")
+        row.operator("bim.disable_editing_attributes", icon="CANCEL", text="")
 
         bonsai.bim.helper.draw_attributes(props.attributes, layout, copy_operator="bim.copy_attribute_to_selection")
     else:
