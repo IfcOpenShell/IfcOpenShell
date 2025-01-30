@@ -99,7 +99,7 @@ class FilledOpeningGenerator:
 
                 if should_set_z_level:
                     if filling.is_a("IfcDoor"):
-                        new_matrix.translation.z = voided_obj.matrix_world.translation.z
+                        new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl1
                     else:
                         new_matrix.translation.z = voided_obj.matrix_world.translation.z + props.rl2
                 else:
