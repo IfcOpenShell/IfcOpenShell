@@ -532,7 +532,7 @@ class Usecase:
             return func(arr)
 
         file_add_ = partial(self.file_add, conversion_factor=conversion_factor)
-        apply_conversion = partial(lambda x: x * conversion_factor)
+        apply_conversion = lambda x: x * conversion_factor
 
         # Migrate attributes to another file.
         for attr_index, attr_value in enumerate(element):
