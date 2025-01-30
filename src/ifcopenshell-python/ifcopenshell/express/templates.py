@@ -136,12 +136,16 @@ simpletype_impl_cast_templated = (
 )
 simpletype_impl_declaration = "return *((IfcParse::type_declaration*)%(schema_name_upper)s_types[%(index_in_schema)d]);"
 
-select = """%(documentation)s
+select_virtual = """%(documentation)s
 class IFC_PARSE_API %(name)s : public virtual IfcUtil::IfcBaseInterface {
 public:
     static const IfcParse::select_type& Class();
     typedef aggregate_of< %(name)s > list;
 };
+"""
+
+select_plain = """%(documentation)s
+typedef IfcUtil::IfcBaseClass %(name)s;
 """
 
 enumeration = """class IFC_PARSE_API %(name)s : public IfcUtil::IfcBaseType {

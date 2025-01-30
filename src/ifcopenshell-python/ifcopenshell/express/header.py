@@ -26,6 +26,7 @@ import documentation
 
 from collections import defaultdict
 
+USE_VIRTUAL_INHERITANCE = True
 
 class Header(codegen.Base):
     def __init__(self, mapping):
@@ -50,7 +51,7 @@ class Header(codegen.Base):
         for name, type in mapping.schema.selects.items():
             for nm in type.values:
                 select_super_types[str(nm).lower()].append(name)
-            write(templates.select, name=name)
+            write(templates.select_virtual if USE_VIRTUAL_INHERITANCE else templates.select_plain, name=name)
 
         def get_select_super_types(nm, bases=[]):
             x = list(select_super_types[nm.lower()])
@@ -82,7 +83,9 @@ class Header(codegen.Base):
                         superclass = mapping.simple_type_parent(superclass)
                 else:
                     superclasses.append("IfcUtil::IfcBaseType")
-                superclasses.extend(get_select_super_types(name, bases=all_superclasses))
+
+                if USE_VIRTUAL_INHERITANCE:
+                    superclasses.extend(get_select_super_types(name, bases=all_superclasses))
 
                 is_emitted = (
                     lambda nm: nm == "IfcUtil::IfcBaseType"
@@ -155,8 +158,8 @@ class Header(codegen.Base):
                         tt = mapping.schema.entities[tt.supertypes[0]]
 
                     supertypes = list(type.supertypes) if len(type.supertypes) else ["IfcUtil::IfcBaseEntity"]
-                    direct_superclass = supertypes[0]
-                    supertypes.extend(get_select_super_types(name, bases=all_supertypes))
+                    if USE_VIRTUAL_INHERITANCE:
+                        supertypes.extend(get_select_super_types(name, bases=all_supertypes))
                     supertypes = list(map(case_normalize, supertypes))
                     superclass = create_supertype_statement(supertypes)
 

@@ -122,6 +122,8 @@ public:
     uint32_t id() const { return id_; }
 
     void toString(std::ostream&, bool upper = false) const;
+
+    typedef aggregate_of_instance list;
 };
 
 class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
