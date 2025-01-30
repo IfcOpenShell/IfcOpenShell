@@ -41,14 +41,13 @@ class IfcSchema:
         self.load_pset_templates()
 
     def load_pset_templates(self):
-        property_paths = tool.Blender.get_data_dir_path("pset").glob("*.ifc")
         self.psetqto = ifcopenshell.util.pset.get_template(self.schema_identifier)
         # Keep only the first template, which is the official buildingSMART one
         self.psetqto.templates = self.psetqto.templates[0:1]
         self.psetqto.get_applicable.cache_clear()
         self.psetqto.get_applicable_names.cache_clear()
         self.psetqto.get_by_name.cache_clear()
-        for path in property_paths:
+        for path in tool.Blender.get_data_dir_paths("pset", "*.ifc"):
             self.psetqto.templates.append(ifcopenshell.open(path))
 
 
