@@ -419,28 +419,21 @@ class SetContainerVisibility(bpy.types.Operator):
 
     def execute(self, context):
         if self.mode == "ISOLATE":
-            if tool.Ifc.get_schema() == "IFC2X3":
-                containers = tool.Ifc.get().by_type("IfcSpatialStructureElement")
-            else:
-                containers = set(tool.Ifc.get().by_type("IfcSpatialElement"))
-                containers -= set(tool.Ifc.get().by_type("IfcSpatialZone"))
-            for container in containers:
-                if obj := tool.Ifc.get_object(container):
-                    if collection := obj.BIMObjectProperties.collection:
-                        collection.hide_viewport = True
+            context_override = tool.Blender.get_viewport_context()
+            with context.temp_override(**context_override):
+                bpy.ops.object.hide_view_set(unselected=True)
+                bpy.ops.object.hide_view_set(unselected=False)
             should_hide = False
         else:
             should_hide = self.mode == "HIDE"
 
         container = tool.Ifc.get().by_id(self.container)
-        queue = [container]
-        while queue:
-            container = queue.pop()
-            if obj := tool.Ifc.get_object(container):
-                if collection := obj.BIMObjectProperties.collection:
-                    collection.hide_viewport = should_hide
-            if self.should_include_children:
-                queue.extend(ifcopenshell.util.element.get_parts(container))
+        elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=self.should_include_children)
+        for element in elements:
+            if obj := tool.Ifc.get_object(element):
+                obj.hide_set(should_hide)
+                for collection in obj.users_collection:
+                    collection.hide_viewport = False
         return {"FINISHED"}
 
 
