@@ -128,7 +128,7 @@ Alternatively, you may choose to retrieve an OpenCASCADE BRep:
     element = ifc_file.by_type('IfcWall')[0]
 
     settings = ifcopenshell.geom.settings()
-    settings.set(settings.USE_PYTHON_OPENCASCADE, True)
+    settings.set("use-python-opencascade", True)
 
     try:
         shape = geom.create_shape(settings, element)
@@ -301,6 +301,9 @@ Here is a typical example to serialising to glTF / glb. Example settings to
 serialise to other formats are shown commented out. Different serialisations
 may require different settings.
 
+In addition to geometry settings, serialisation has its own set of
+:doc:`../ifcopenshell/serialiser_settings`.
+
 .. code-block:: python
 
     import ifcopenshell
@@ -310,25 +313,23 @@ may require different settings.
     settings = ifcopenshell.geom.settings()
 
     # Settings for glTF / glb
-    settings.set(settings.STRICT_TOLERANCE, True)
-    settings.set(settings.INCLUDE_CURVES, True)
-    # Setting element GUIDs is optional, but useful to uniquely identify objects in non-semantic formats.
-    settings.set(settings.USE_ELEMENT_GUIDS, True)
+    settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
     # Note that applying default materials is required in glTF serialisation.
-    settings.set(settings.APPLY_DEFAULT_MATERIALS, True)
+    settings.set("apply-default-materials", True)
 
     # Settings for obj
-    # settings.set(settings.STRICT_TOLERANCE, True)
-    # settings.set(settings.INCLUDE_CURVES, True)
-    # settings.set(settings.USE_ELEMENT_GUIDS, True)
-    # settings.set(settings.APPLY_DEFAULT_MATERIALS, True)
-    # settings.set(settings.USE_WORLD_COORDS, True)
+    # settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
+    # settings.set("apply-default-materials", True)
+    # settings.set("use-world-coords", True)
 
     # Serialise to glTF / glb
     serialiser = ifcopenshell.geom.serializers.gltf("output.glb", settings)
+    self.serialiser_settings = ifcopenshell.geom.serializer_settings()
+    # Setting element GUIDs is optional, but useful to uniquely identify objects in non-semantic formats.
+    serialiser_settings.set("use-element-guids", True)
 
     # Serialise to obj
-    # serialiser = ifcopenshell.geom.serializers.obj('output.obj', 'output.mtl', settings)
+    # serialiser = ifcopenshell.geom.serializers.obj('output.obj', 'output.mtl', settings, serialiser_settings)
 
     serialiser.setFile(self.file)
     serialiser.setUnitNameAndMagnitude("METER", 1.0)
