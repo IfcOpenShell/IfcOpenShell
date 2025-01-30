@@ -22,6 +22,8 @@ import templates
 
 from schema import OrderedCaseInsensitiveDict
 
+from header import USE_VIRTUAL_INHERITANCE
+
 
 class Implementation(codegen.Base):
     def __init__(self, mapping):
@@ -68,14 +70,15 @@ class Implementation(codegen.Base):
                 ),
             )
             
-        for name, enum in mapping.schema.selects.items():
-            write(
-                templates.select_function,
-                name=name,
-                schema_name=schema_name,
-                schema_name_upper=schema_name_upper,
-                index_in_schema=self.names.index(str(name)),
-            )
+        if USE_VIRTUAL_INHERITANCE:
+            for name, enum in mapping.schema.selects.items():
+                write(
+                    templates.select_function,
+                    name=name,
+                    schema_name=schema_name,
+                    schema_name_upper=schema_name_upper,
+                    index_in_schema=self.names.index(str(name)),
+                )
 
         write = lambda str, **kwargs: entity_implementations.append(str % kwargs)
 
@@ -98,6 +101,7 @@ class Implementation(codegen.Base):
 
                     def find_template(arg):
                         simple = mapping.schema.is_simpletype(arg["list_instance_type"])
+                        select = arg["list_instance_type"] == "IfcUtil::IfcBaseClass"
                         express = (
                             mapping.flatten_type_string(arg["list_instance_type"]) in mapping.express_to_cpp_typemapping
                         )
@@ -105,7 +109,7 @@ class Implementation(codegen.Base):
                             return templates.get_attr_stmt_enum
                         elif arg["is_nested"] and arg["is_templated_list"]:
                             return templates.get_attr_stmt_nested_array
-                        elif arg["is_templated_list"] and not (simple or express):
+                        elif arg["is_templated_list"] and not (select or simple or express):
                             return templates.get_attr_stmt_array
                         elif arg["non_optional_type"].endswith("*"):
                             return templates.get_attr_stmt_entity
