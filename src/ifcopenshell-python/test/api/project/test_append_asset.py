@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
+import ifcopenshell.api.layer
 import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
 import ifcopenshell.api.pset
@@ -526,6 +527,40 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
             ifcopenshell.util.element.get_pset(new_annotation, "Pset_AnnotationLineOfSight", "RoadVisibleDistanceLeft")
             == 0.01
         )
+
+    def test_append_presentation_layer_for_representation_item(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        builder = ShapeBuilder(library)
+        model = ifcopenshell.api.context.add_context(library, context_type="Model")
+        item = builder.extrude(builder.profile(builder.rectangle((1, 1))))
+        representation = builder.get_representation(model, item)
+        ifcopenshell.api.geometry.assign_representation(library, element, representation)
+        layer = ifcopenshell.api.layer.add_layer(library, name="TestLayer")
+        ifcopenshell.api.layer.assign_layer(library, items=[item], layer=layer)
+
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+        extrusions = tuple(self.file.by_type("IfcExtrudedAreaSolid"))
+        assert self.file.by_type("IfcPresentationLayerAssignment")[0].AssignedItems == extrusions
+
+    def test_append_presentation_layer_for_representation(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        builder = ShapeBuilder(library)
+        model = ifcopenshell.api.context.add_context(library, context_type="Model")
+        item = builder.extrude(builder.profile(builder.rectangle((1, 1))))
+        representation = builder.get_representation(model, item)
+        ifcopenshell.api.geometry.assign_representation(library, element, representation)
+        layer = ifcopenshell.api.layer.add_layer(library, name="TestLayer")
+        ifcopenshell.api.layer.assign_layer(library, items=[representation], layer=layer)
+
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+        representations = tuple(self.file.by_type("IfcRepresentation"))
+        assert self.file.by_type("IfcPresentationLayerAssignment")[0].AssignedItems == representations
 
 
 class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
