@@ -110,8 +110,7 @@ def draw_attribute(
 
     if attribute.name == "GlobalId":
         layout.operator("bim.generate_global_id", icon="FILE_REFRESH", text="")
-
-    if copy_operator:
+    elif copy_operator:
         op = layout.operator(f"{copy_operator}", text="", icon="COPYDOWN")
         op.name = attribute.name
 
