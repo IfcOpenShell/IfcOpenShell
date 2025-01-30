@@ -471,14 +471,6 @@ class Usecase:
         The problem with `file.add` it's recursively adding element and all it's attributes
         and there is no control to prevent it from adding certain type of elements.
         """
-        ifc_file = self.file
-        if not self.assume_asset_uniqueness_by_name:
-            return ifc_file.add(element)
-
-        reuse_identities = self.reuse_identities
-        element_identity = element.wrapped_data.identity()
-        if added_element := reuse_identities.get(element_identity):
-            return added_element
 
         def get_conversion_factor() -> float:
             nonlocal conversion_factor
@@ -488,6 +480,18 @@ class Usecase:
             current_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
             conversion_factor = library_scale / current_scale
             return conversion_factor
+
+        ifc_file = self.file
+        if not self.assume_asset_uniqueness_by_name or element.id() == 0:
+            # file.add doesn't convert units for IfcLengthMeasure entities.
+            if element.is_a("IfcLengthMeasure"):
+                return ifc_file.create_entity(element.is_a(), element.wrappedValue * get_conversion_factor())
+            return ifc_file.add(element)
+
+        reuse_identities = self.reuse_identities
+        element_identity = element.wrapped_data.identity()
+        if added_element := reuse_identities.get(element_identity):
+            return added_element
 
         attributes_ = None
 
@@ -541,7 +545,7 @@ class Usecase:
                 continue
 
             elif isinstance(attr_value, ifcopenshell.entity_instance):
-                attr_value = self.file_add(attr_value)
+                attr_value = file_add_(attr_value)
 
             elif isinstance(attr_value, tuple):
                 # Assume type is consistent across the tuple.

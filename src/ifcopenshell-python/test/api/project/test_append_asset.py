@@ -498,6 +498,17 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         updated_points = np.array(arbitrary_profile.OuterCurve.Points) * 0.001
         assert np.allclose(updated_points, new_arbitrary_profile.OuterCurve.Points)
 
+        # Entities without ids.
+        annotation = ifcopenshell.api.root.create_entity(library, "IfcAnnotation")
+        annotation.ObjectType = "LineOfSight"
+        pset = ifcopenshell.api.pset.add_pset(library, annotation, "Pset_AnnotationLineOfSight")
+        ifcopenshell.api.pset.edit_pset(library, pset, properties={"RoadVisibleDistanceLeft": 10})
+        new_annotation = ifcopenshell.api.project.append_asset(ifc_file, library, annotation)
+        assert (
+            ifcopenshell.util.element.get_pset(new_annotation, "Pset_AnnotationLineOfSight", "RoadVisibleDistanceLeft")
+            == 0.01
+        )
+
 
 class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
     # NOTE: breaks in IFC2X3 since IfcProfileDef doesn't have "HasProperties" inverse in ifc2x3
