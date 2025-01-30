@@ -62,7 +62,11 @@ def update_elevation(self, context):
 
 def update_name(self: "BIMContainer", context: bpy.types.Context) -> None:
     if ifc_definition_id := self.ifc_definition_id:
-        tool.Ifc.get_object(tool.Ifc.get().by_id(ifc_definition_id)).name = self.name
+        element = tool.Ifc.get().by_id(ifc_definition_id)
+        tool.Spatial.edit_container_name(element, self.name)
+        if obj := tool.Ifc.get_object(element):
+            obj.name = tool.Loader.get_name(element)
+        bonsai.bim.handler.refresh_ui_data()
 
 
 def update_active_container_index(self: "BIMSpatialDecompositionProperties", context: bpy.types.Context) -> None:
