@@ -62,10 +62,6 @@ class Collector(bonsai.core.tool.Collector):
         elif element.is_a("IfcTypeProduct"):
             collection = cls._create_project_child_collection("IfcTypeProduct")
             cls.link_collection_object_safe(collection, obj)
-        elif element.is_a("IfcOpeningElement"):
-            collection = cls._create_project_child_collection("IfcOpeningElement")
-            cls.link_collection_object_safe(collection, obj)
-            obj.display_type = "WIRE"
         elif element.is_a("IfcSpace"):
             collection = cls._create_project_child_collection("IfcSpace")
             cls.link_collection_object_safe(collection, obj)
@@ -121,6 +117,9 @@ class Collector(bonsai.core.tool.Collector):
         else:
             collection = cls._create_project_child_collection("Unsorted")
             cls.link_collection_object_safe(collection, obj)
+
+        if element.is_a("IfcFeatureElementSubtraction"):
+            obj.display_type = "WIRE"
 
     @classmethod
     def _create_project_child_collection(cls, name: str) -> bpy.types.Collection:

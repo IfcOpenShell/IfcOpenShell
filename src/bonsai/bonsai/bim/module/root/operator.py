@@ -573,6 +573,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             new.obj = obj
             bpy.ops.bim.show_openings()
             tool.Model.purge_scene_openings()
+            tool.Collector.assign(obj)
 
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
         tool.Blender.set_active_object(obj)

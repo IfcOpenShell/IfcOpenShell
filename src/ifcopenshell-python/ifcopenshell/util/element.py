@@ -926,23 +926,16 @@ def get_container(
                 return container
             if container.is_a(ifc_class):
                 return container
-    else:
-        aggregate = get_aggregate(element)
-        if aggregate:
-            return get_container(aggregate, should_get_direct)
-        nest = get_nest(element)
-        if nest:
-            return get_container(nest, should_get_direct)
-        if (
-            contained_in_structure := getattr(element, "ContainedInStructure", None)
-        ) is not None and contained_in_structure:
-            container = contained_in_structure[0].RelatingStructure
-            if not ifc_class:
+    elif contained_in_structure := getattr(element, "ContainedInStructure", None):
+        container = contained_in_structure[0].RelatingStructure
+        if not ifc_class:
+            return container
+        while container:
+            if container.is_a(ifc_class):
                 return container
-            while container:
-                if container.is_a(ifc_class):
-                    return container
-                container = get_aggregate(container)
+            container = get_aggregate(container)
+    elif parent := get_parent(element):
+        return get_container(parent, should_get_direct)
 
 
 def get_referenced_structures(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
