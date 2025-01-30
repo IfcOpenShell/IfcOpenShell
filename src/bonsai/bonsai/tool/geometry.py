@@ -1636,11 +1636,11 @@ class Geometry(bonsai.core.tool.Geometry):
             if not (obj := item_obj.obj) or not tool.Ifc.is_moved(obj):
                 continue
             item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
-            if is_swept_area := item.is_a("IfcSweptAreaSolid"):
+            if item.is_a("IfcSweptAreaSolid"):
                 has_changed = True
                 old_position = item.Position
 
-                if is_swept_area and np.allclose(np.array(rep_matrix), np.array(obj.matrix_world), atol=1e-4):
+                if np.allclose(np.array(rep_matrix), np.array(obj.matrix_world), atol=1e-4):
                     if old_position:
                         item.Position = None
                         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
@@ -1651,7 +1651,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 item.Position = builder.create_axis2_placement_3d_from_matrix(position)
                 if old_position:
                     ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_position)
-            if item.is_a("IfcHalfSpaceSolid"):
+            elif item.is_a("IfcHalfSpaceSolid"):
                 has_changed = True
                 surface = item.BaseSurface
                 if surface.is_a("IfcPlane"):

@@ -3073,14 +3073,10 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         obj.matrix_world = matrix
         tool.Geometry.record_object_position(obj)
 
-        ifc_file = tool.Ifc.get()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
-        local_z = ifc_file.createIfcDirection((0.0, 0.0, 1.0))
-        local_x = ifc_file.createIfcDirection((1.0, 0.0, 0.0))
-        point = ifc_file.createIfcCartesianPoint((np.array(local_matrix.translation) / unit_scale).tolist())
-        placement = ifc_file.createIfcAxis2Placement3D(point, local_z, local_x)
-        plane = ifc_file.createIfcPlane(placement)
-        item = ifc_file.createIfcHalfSpaceSolid(plane, AgreementFlag=False)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+        location = np.array(local_matrix.translation) / unit_scale
+        item = builder.half_space_solid(builder.plane(location=location))
         props.add_item_object(obj, item)
 
         representation = tool.Geometry.get_active_representation(props.representation_obj)

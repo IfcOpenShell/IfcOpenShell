@@ -912,6 +912,16 @@ class ShapeBuilder:
         """
         return self.file.createIfcBlock(self.create_axis2_placement_3d(position), x_length, y_length, z_length)
 
+    def half_space_solid(
+        self, plane: ifcopenshell.entity_instance, agreement_flag: bool = False
+    ) -> ifcopenshell.entity_instance:
+        """
+        :param plane: The IfcPlane representing the half space.
+        :param agreement_flag: False if +Z represents the void
+        :return: IfcHalfSpaceSolid
+        """
+        return self.file.createIfcHalfSpaceSolid(plane, AgreementFlag=agreement_flag)
+
     def extrude(
         self,
         profile_or_curve: ifcopenshell.entity_instance,
