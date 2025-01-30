@@ -269,13 +269,7 @@ function addTableElement(blenderId, csvData, filename) {
     },
   });
 
-  var downloadCsv = $('<a><i class="fa-solid fa-file-csv"></i></a>')
-    .css("margin-left", "10px")
-    .css("cursor", "pointer");
-  tableTitle.append(downloadCsv);
-  downloadCsv.on("click", function () {
-    table.download("csv", "data.csv");
-  });
+  createDownloadIcon(blenderId);
 
   table.on("rowSelected", function (row) {
     var index = row.getIndex(); // the guid of the object
@@ -298,6 +292,18 @@ function addTableElement(blenderId, csvData, filename) {
       },
     };
     socket.emit("web_operator", msg);
+  });
+}
+
+function createDownloadIcon(blenderId) {
+  const table = Tabulator.findTable("#table-" + blenderId)[0];
+  const tableTitle = $("#title-" + blenderId);
+  var downloadCsv = $('<a><i class="fa-solid fa-file-csv"></i></a>')
+    .css("margin-left", "10px")
+    .css("cursor", "pointer");
+  tableTitle.append(downloadCsv);
+  downloadCsv.on("click", function () {
+    table.download("csv", "data.csv");
   });
 }
 
@@ -329,6 +335,7 @@ function updateTableElement(blenderId, csvData, filename) {
       }
     }
     $("#title-" + blenderId).text(filename);
+    createDownloadIcon(blenderId);
   }
 }
 
