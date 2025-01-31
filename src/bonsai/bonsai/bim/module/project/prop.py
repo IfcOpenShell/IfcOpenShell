@@ -21,9 +21,10 @@ import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import bonsai.tool as tool
+import bonsai.bim.helper
 from bonsai.bim.module.project.data import ProjectData, ProjectLibraryData
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.prop import StrProperty, ObjProperty
+from bonsai.bim.prop import StrProperty, ObjProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -86,6 +87,22 @@ def filter_by_library_update(self: "BIMProjectProperties", context: bpy.types.Co
         # Filter is toggled from OFF to ON, so it was showing all elements previously either way.
         return
     bpy.ops.bim.refresh_library()
+
+
+def is_editing_project_library_update(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
+    if self.is_editing_project_library:
+        library_file = IfcStore.library_file
+        assert library_file
+        self.editing_project_library_id = int(self.selected_project_library)
+        project_library = library_file.by_id(int(self.selected_project_library))
+        bonsai.bim.helper.import_attributes2(project_library, self.project_library_attributes)
+        ProjectLibraryData.load()  # Show edit icon in enum.
+        return
+
+    del self["is_editing_project_library"]
+    del self["editing_project_library_id"]
+    self.project_library_attributes.clear()
+    ProjectLibraryData.load()  # Hide edit icon in enum.
 
 
 def update_filter_mode(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
@@ -300,6 +317,15 @@ class BIMProjectProperties(PropertyGroup):
         default=True,
         update=filter_by_library_update,
     )
+    is_editing_project_library: BoolProperty(
+        name="Is Editing Project Library",
+        description="Toggle editing for currently selected project library",
+        update=is_editing_project_library_update,
+    )
+    editing_project_library_id: IntProperty(
+        description="Needed to keep track of currently edited library when user changes currently selected library in dropdown."
+    )
+    project_library_attributes: CollectionProperty(name="Project Library Attributes", type=Attribute)
 
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
@@ -367,6 +393,9 @@ class BIMProjectProperties(PropertyGroup):
         library_file: str
         selected_project_library: Union[Literal["*", "-"], str]
         filter_by_library: bool
+        is_editing_project_library: bool
+        editing_project_library_id: int
+        project_library_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
 
         use_relative_project_path: bool
         queried_obj: Union[bpy.types.Object, None]

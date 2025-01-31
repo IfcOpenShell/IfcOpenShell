@@ -132,13 +132,15 @@ class ProjectLibraryData:
         return results
 
     @classmethod
-    def project_libraries_enum(cls) -> list[tuple[str, str, str]]:
+    def project_libraries_enum(cls) -> list[tuple[str, str, str, str, int]]:
         results = [
-            ("*", "All Libraries", "Show all elements"),
-            ("-", "No Library", "Show elements without library assigned"),
+            ("*", "All Libraries", "Show all elements", "", 0),
+            ("-", "No Library", "Show elements without library assigned", "", 1),
         ]
-        for data in cls.data["project_libraries"].values():
-            results.append((str(data["id"]), data["Name"] or "", data["Description"] or ""))
+        props = tool.Project.get_project_props()
+        for i, data in enumerate(cls.data["project_libraries"].values(), len(results)):
+            icon = "GREASEPENCIL" if props.editing_project_library_id == data["id"] else ""
+            results.append((str(data["id"]), data["Name"] or "", data["Description"] or "", icon, i))
         return results
 
 

@@ -25,6 +25,7 @@ import tempfile
 import traceback
 import subprocess
 import datetime
+import ifcopenshell.api.attribute
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
@@ -602,6 +603,40 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         for element in self.file.traverse(material.HasRepresentation[0]):
             if element.is_a("IfcSurfaceStyle") and not IfcStore.get_element(element.id()):
                 ifc_importer.create_style(element)
+
+
+class EditProjectLibrary(bpy.types.Operator):
+    bl_idname = "bim.edit_project_library"
+    bl_label = "Edit Project Library"
+    bl_description = "Apply changes for currently edited library."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        IfcStore.begin_transaction(self)
+        library_file = IfcStore.library_file
+        assert library_file
+        library_file.begin_transaction()
+        result = self._execute(context)
+        library_file.end_transaction()
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
+        props = tool.Project.get_project_props()
+        library_file = IfcStore.library_file
+        assert library_file
+        project_library = library_file.by_id(props.editing_project_library_id)
+        attributes = bonsai.bim.helper.export_attributes(props.project_library_attributes)
+        ifcopenshell.api.attribute.edit_attributes(library_file, project_library, attributes)
+        props.is_editing_project_library = False
+        return {"FINISHED"}
+
+    def rollback(self, data):
+        IfcStore.library_file.undo()
+
+    def commit(self, data):
+        IfcStore.library_file.redo()
 
 
 class EnableEditingHeader(bpy.types.Operator):

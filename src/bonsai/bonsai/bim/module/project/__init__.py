@@ -35,6 +35,7 @@ classes = (
     operator.DisableCulling,
     operator.DisableEditingHeader,
     operator.EditHeader,
+    operator.EditProjectLibrary,
     operator.EnableCulling,
     operator.EnableEditingHeader,
     operator.ExportIFC,

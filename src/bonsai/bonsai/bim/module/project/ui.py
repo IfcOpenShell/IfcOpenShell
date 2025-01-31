@@ -21,7 +21,7 @@ import bpy
 import os
 import bonsai.bim
 import bonsai.tool as tool
-from bonsai.bim.helper import prop_with_search
+from bonsai.bim.helper import prop_with_search, draw_attributes
 from bpy.types import Panel, Menu, UIList
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.project.data import ProjectData, LinksData
@@ -344,7 +344,7 @@ class BIM_PT_project_library(Panel):
     def draw(self, context):
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
-        self.props = context.scene.BIMProjectProperties
+        self.props = tool.Project.get_project_props()
         row = self.layout.row(align=True)
         row.prop(self.props, "library_file", text="")
         if self.props.library_file == "0":
@@ -364,15 +364,28 @@ class BIM_PT_project_library(Panel):
 
     def draw_library_ul(self):
         layout = self.layout
+        props = self.props
 
         if not self.props.library_elements:
             row = self.layout.row()
             row.label(text="No Assets Found", icon="ERROR")
             return
 
+        library_is_selected = props.selected_project_library not in ("*", "-")
         row = layout.row(align=True)
         row.prop(self.props, "selected_project_library", text="")
+
+        if library_is_selected and not props.is_editing_project_library:
+            row.prop(props, "is_editing_project_library", text="", icon="GREASEPENCIL")
+
         row.prop(self.props, "filter_by_library", text="", icon="FILTER")
+
+        if props.is_editing_project_library:
+            row = layout.row(align=True)
+            row.operator("bim.edit_project_library", text="Save Attributes", icon="GREASEPENCIL")
+            row.prop(props, "is_editing_project_library", text="", icon="CANCEL")
+            draw_attributes(props.project_library_attributes, layout)
+            layout.separator()
 
         row = self.layout.row(align=True)
         row.label(text=self.props.active_library_element or "Top Level Assets")
