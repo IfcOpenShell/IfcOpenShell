@@ -366,14 +366,15 @@ class BIM_PT_project_library(Panel):
         layout = self.layout
         props = self.props
 
-        if not self.props.library_elements:
-            row = self.layout.row()
-            row.label(text="No Assets Found", icon="ERROR")
-            return
-
+        library_file = IfcStore.library_file
+        assert library_file
         library_is_selected = props.selected_project_library not in ("*", "-")
+
         row = layout.row(align=True)
         row.prop(self.props, "selected_project_library", text="")
+
+        if library_file.schema != "IFC2X3":
+            row.operator("bim.add_project_library", text="", icon="ADD")
 
         if library_is_selected and not props.is_editing_project_library:
             row.prop(props, "is_editing_project_library", text="", icon="GREASEPENCIL")
@@ -386,6 +387,11 @@ class BIM_PT_project_library(Panel):
             row.prop(props, "is_editing_project_library", text="", icon="CANCEL")
             draw_attributes(props.project_library_attributes, layout)
             layout.separator()
+
+        if not self.props.library_elements:
+            row = self.layout.row()
+            row.label(text="No Assets Found", icon="ERROR")
+            return
 
         row = self.layout.row(align=True)
         row.label(text=self.props.active_library_element or "Top Level Assets")

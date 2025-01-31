@@ -30,6 +30,7 @@ import numpy as np
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.project
+import ifcopenshell.api.root
 import ifcopenshell.geom
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.file
@@ -55,7 +56,7 @@ from collections import defaultdict
 from mathutils import Vector, Matrix
 from bpy.app.handlers import persistent
 from ifcopenshell.geom import ShapeElementType
-from bonsai.bim.module.project.data import LinksData
+from bonsai.bim.module.project.data import LinksData, ProjectLibraryData
 from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator, MeasureDecorator
 from bonsai.bim.module.model.decorator import PolylineDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
@@ -630,6 +631,42 @@ class EditProjectLibrary(bpy.types.Operator):
         attributes = bonsai.bim.helper.export_attributes(props.project_library_attributes)
         ifcopenshell.api.attribute.edit_attributes(library_file, project_library, attributes)
         props.is_editing_project_library = False
+        return {"FINISHED"}
+
+    def rollback(self, data):
+        IfcStore.library_file.undo()
+
+    def commit(self, data):
+        IfcStore.library_file.redo()
+
+
+class AddProjectLibrary(bpy.types.Operator):
+    bl_idname = "bim.add_project_library"
+    bl_label = "Add Project Library"
+    bl_description = "Add new IfcProjectLibrary to the currently selected library."
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        IfcStore.begin_transaction(self)
+        library_file = IfcStore.library_file
+        assert library_file
+        library_file.begin_transaction()
+        result = self._execute(context)
+        library_file.end_transaction()
+        IfcStore.add_transaction_operation(self)
+        IfcStore.end_transaction(self)
+        return result
+
+    def _execute(self, context):
+        props = tool.Project.get_project_props()
+        library_file = IfcStore.library_file
+        assert library_file
+        project = library_file.by_type("IfcProject")[0]
+        project_library = ifcopenshell.api.root.create_entity(library_file, "IfcProjectLibrary")
+        ifcopenshell.api.project.assign_declaration(library_file, [project_library], project)
+        ProjectLibraryData.load()  # Update enum.
+        props.selected_project_library = str(project_library.id())
+        props.is_editing_project_library = True
         return {"FINISHED"}
 
     def rollback(self, data):

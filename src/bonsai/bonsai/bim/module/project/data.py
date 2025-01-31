@@ -138,9 +138,12 @@ class ProjectLibraryData:
             ("-", "No Library", "Show elements without library assigned", "", 1),
         ]
         props = tool.Project.get_project_props()
+        libs = []
         for i, data in enumerate(cls.data["project_libraries"].values(), len(results)):
             icon = "GREASEPENCIL" if props.editing_project_library_id == data["id"] else ""
-            results.append((str(data["id"]), data["Name"] or "", data["Description"] or "", icon, i))
+            libs.append((str(data["id"]), data["Name"] or "Unnamed", data["Description"] or "", icon, i))
+        libs.sort(key=lambda x: x[1])
+        results += libs
         return results
 
 

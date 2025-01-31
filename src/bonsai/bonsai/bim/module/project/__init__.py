@@ -20,6 +20,7 @@ import bpy
 from . import ui, prop, operator, workspace, gizmo, decorator
 
 classes = (
+    operator.AddProjectLibrary,
     operator.AppendEntireLibrary,
     operator.AppendInspectedLinkedElement,
     operator.AppendLibraryElement,

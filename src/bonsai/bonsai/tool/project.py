@@ -332,7 +332,9 @@ class Project(bonsai.core.tool.Project):
             else:
 
                 def condition(elements: list[ifcopenshell.entity_instance]):
-                    pass
+                    # Hacky way to create empty generator.
+                    return
+                    yield
 
         return condition
 
