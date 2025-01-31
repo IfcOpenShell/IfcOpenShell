@@ -66,6 +66,8 @@ def update_library_file(self: "BIMProjectProperties", context: bpy.types.Context
         filepath = next(p for p in tool.Blender.get_data_dir_paths("libraries", "*.ifc") if p.name == self.library_file)
         bpy.ops.bim.select_library_file(filepath=filepath.__str__())
         ProjectLibraryData.load()
+        props = tool.Project.get_project_props()
+        props.selected_project_library = "*"
 
 
 def update_selected_project_library(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
