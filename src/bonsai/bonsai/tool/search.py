@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-
+from __future__ import annotations
 import bpy
 import json
 import lark
@@ -26,7 +26,10 @@ import ifcopenshell.guid
 import ifcopenshell.util.selector
 from itertools import cycle
 from bonsai.bim.prop import BIMFacet
-from typing import Union, Literal
+from typing import Union, Literal, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import BIMFilterGroup
 
 
 class Search(bonsai.core.tool.Search):
@@ -35,7 +38,7 @@ class Search(bonsai.core.tool.Search):
         return json.loads(group.Description)["query"]
 
     @classmethod
-    def get_filter_groups(cls, module: str) -> bpy.types.bpy_prop_collection:
+    def get_filter_groups(cls, module: str) -> bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]:
         if module == "search":
             return bpy.context.scene.BIMSearchProperties.filter_groups
         elif module == "csv":
@@ -54,13 +57,15 @@ class Search(bonsai.core.tool.Search):
         assert False, f"Unsupported module: {module}"
 
     @classmethod
-    def import_filter_query(cls, query: str, filter_groups: bpy.types.bpy_prop_collection) -> None:
+    def import_filter_query(
+        cls, query: str, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
+    ) -> None:
         filter_groups.clear()
         transformer = ImportFilterQueryTransformer(filter_groups)
         transformer.transform(ifcopenshell.util.selector.filter_elements_grammar.parse(query))
 
     @classmethod
-    def export_filter_query(cls, filter_groups: bpy.types.bpy_prop_collection) -> str:
+    def export_filter_query(cls, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]) -> str:
         query = []
         for filter_group in filter_groups:
             filter_group_query = []
@@ -300,7 +305,7 @@ class Search(bonsai.core.tool.Search):
 
 
 class ImportFilterQueryTransformer(lark.Transformer):
-    def __init__(self, filter_groups):
+    def __init__(self, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]):
         self.filter_groups = filter_groups
 
     def get_results(self):

@@ -35,6 +35,7 @@ from typing import Optional, Callable, Any, Union, Iterable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import bonsai.bim.prop
+    from bonsai.bim.prop import Attribute
 
     # ImportCallback return values:
     # - None  - property should be imported by default workflow
@@ -48,7 +49,7 @@ if TYPE_CHECKING:
 
 
 def draw_attributes(
-    props: list[bonsai.bim.prop.Attribute],
+    props: bpy.types.bpy_prop_collection_idprop[Attribute],
     layout: bpy.types.UILayout,
     copy_operator: Optional[str] = None,
     popup_active_attribute: Optional[bonsai.bim.prop.Attribute] = None,
@@ -117,7 +118,7 @@ def draw_attribute(
 
 def import_attributes(
     ifc_class: str,
-    props: bpy.types.bpy_prop_collection,
+    props: bpy.types.bpy_prop_collection_idprop[Attribute],
     data: dict[str, Any],
     callback: Optional[ImportCallback] = None,
 ) -> None:
@@ -128,7 +129,7 @@ def import_attributes(
 # A more elegant attribute importer signature, intended to supersede import_attributes
 def import_attributes2(
     element: Union[str, ifcopenshell.entity_instance],
-    props: bpy.types.bpy_prop_collection,
+    props: bpy.types.bpy_prop_collection_idprop[Attribute],
     callback: Optional[ImportCallback] = None,
 ) -> None:
     if isinstance(element, str):
@@ -144,7 +145,7 @@ def import_attributes2(
 
 def import_attribute(
     attribute: W.attribute,
-    props: bpy.types.bpy_prop_collection,
+    props: bpy.types.bpy_prop_collection_idprop[Attribute],
     data: dict[str, Any],
     callback: Optional[ImportCallback] = None,
 ) -> None:
@@ -258,7 +259,7 @@ def add_attribute_description(attribute_blender: bonsai.bim.prop.Attribute, attr
 
 
 def export_attributes(
-    props: bpy.types.bpy_prop_collection,
+    props: bpy.types.bpy_prop_collection_idprop[Attribute],
     callback: Optional[ExportCallback] = None,
 ) -> dict[str, Any]:
     attributes: dict[str, Any] = {}

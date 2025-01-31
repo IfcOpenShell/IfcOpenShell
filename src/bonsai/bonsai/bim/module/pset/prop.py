@@ -38,7 +38,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import Union, Literal, TYPE_CHECKING, get_args
+from typing import Union, Literal, TYPE_CHECKING, get_args, Literal
 
 psetnames = {}
 qtonames = {}
@@ -258,6 +258,17 @@ class PsetProperties(PropertyGroup):
     # Proposed property.
     prop_name: StringProperty(name="Property Name", default="MyProperty")
     prop_value: StringProperty(name="Property Value", default="Some Value")
+
+    if TYPE_CHECKING:
+        active_pset_id: int
+        active_pset_has_template: bool
+        active_pset_name: str
+        active_pset_type: Literal["-", "PSET", "QTO"]
+        properties: bpy.types.bpy_prop_collection_idprop[IfcProperty]
+        pset_name: str
+        qto_name: str
+        prop_name: str
+        prop_value: str
 
 
 class RenameProperties(PropertyGroup):

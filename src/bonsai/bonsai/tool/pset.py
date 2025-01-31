@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcopenshell.api.pset
@@ -24,8 +25,12 @@ import ifcopenshell.util.element
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.schema
-from typing import Union, Literal, Any
+from typing import Union, Literal, Any, TYPE_CHECKING
 from typing_extensions import assert_never
+
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.pset.prop import PsetProperties
 
 
 class Pset(bonsai.core.tool.Pset):
@@ -40,7 +45,7 @@ class Pset(bonsai.core.tool.Pset):
             return tool.Ifc.get().by_id(pset["id"])
 
     @classmethod
-    def get_pset_props(cls, obj: str, obj_type: tool.Ifc.OBJECT_TYPE) -> bpy.types.PropertyGroup:
+    def get_pset_props(cls, obj: str, obj_type: tool.Ifc.OBJECT_TYPE) -> PsetProperties:
         if obj_type == "Object":
             return bpy.data.objects.get(obj).PsetProperties
         elif obj_type == "Material":

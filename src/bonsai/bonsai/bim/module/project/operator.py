@@ -313,7 +313,7 @@ class RewindLibrary(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        self.props = context.scene.BIMProjectProperties
+        self.props = tool.Project.get_project_props()
         total_breadcrumbs = len(self.props.library_breadcrumb)
         if total_breadcrumbs < 2:
             bpy.ops.bim.refresh_library()
