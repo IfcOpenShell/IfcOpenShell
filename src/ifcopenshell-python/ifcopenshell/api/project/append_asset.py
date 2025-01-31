@@ -206,14 +206,17 @@ class Usecase:
             self.target_class = "IfcPresentationStyle"
             return self.append_presentation_style()
 
+    def by_guid(self, guid: str) -> Union[ifcopenshell.entity_instance, None]:
+        try:
+            return self.file.by_guid(guid)
+        except RuntimeError:
+            return None
+
     def get_existing_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         if element.id() in self.added_elements:
             return self.added_elements[element.id()]
         if element.is_a("IfcRoot"):
-            try:
-                return self.file.by_guid(element.GlobalId)
-            except RuntimeError:
-                return None
+            return self.by_guid(element.GlobalId)
         elif not self.assume_asset_uniqueness_by_name:
             return None
         elif element.is_a("IfcMaterial"):
@@ -364,10 +367,13 @@ class Usecase:
         # Check if inverse element was created before.
         # Still need to recreate it again - e.g. it could be some rel
         # that now needs it's RelatingObjects to be extended by the current asset.
+        existing_rel = None
         if (new := self.reuse_identities.get(element_identity)) is not None:
             # Currently known cases requiring attributes reassignment are rels.
             if not new.is_a("IfcRelationship"):
                 return
+        elif element.is_a("IfcRelationship") and (existing_rel := self.by_guid(element.GlobalId)):
+            new = existing_rel
         else:
             new = self.file.create_entity(element.is_a())
             self.reuse_identities[element_identity] = new
@@ -382,6 +388,11 @@ class Usecase:
                 for item in attribute:
                     if not self.is_another_asset(item):
                         new_attribute.append(self.add_element(item))
+                # If rel exists we need to make sure previously assigned elements are untouched
+                # e.g. not to assign a material or a pset from element.
+                if existing_rel:
+                    new_attribute.extend(existing_rel[i])
+                    new_attribute = list(set(new_attribute))
             else:
                 new_attribute = attribute
             if new_attribute is not None:
@@ -389,19 +400,12 @@ class Usecase:
 
     def is_another_asset(self, element: ifcopenshell.entity_instance) -> bool:
         """Is IFC entity from inverse attribute is another asset to append that should be skipped."""
-
-        def by_guid(guid: str) -> Union[ifcopenshell.entity_instance, None]:
-            try:
-                return self.file.by_guid(guid)
-            except RuntimeError:
-                return None
-
         if element == self.settings["element"]:
             return False
         elif element.is_a("IfcFeatureElement"):
             # Feature elements match the target class but aren't considered "assets"
             return False
-        elif element.is_a("IfcRoot") and by_guid(element.GlobalId) is not None:
+        elif element.is_a("IfcRoot") and self.by_guid(element.GlobalId) is not None:
             return False
         elif element.is_a(self.target_class):
             return True

@@ -459,6 +459,24 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert "Test" in pset_data
         assert ifcopenshell.util.element.get_psets(element2_) == pset_data
 
+    def test_update_rels_appending_subsequent_assets_identifying_rels_by_guids(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element1 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(library, product=element1, name="Test")
+        element2 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        pset_rel = ifcopenshell.api.pset.assign_pset(library, pset=pset, products=[element2])
+        assert pset_rel
+        pset_rel_guid: str = pset_rel.GlobalId
+
+        element1_ = ifcopenshell.api.project.append_asset(self.file, library, element1)
+        element2_ = ifcopenshell.api.project.append_asset(self.file, library, element2)
+        pset_data = ifcopenshell.util.element.get_psets(element1_)
+
+        appended_rels = [e for e in self.file.by_type("IfcRelDefinesByProperties") if e.GlobalId == pset_rel_guid]
+        assert len(appended_rels) == 1
+        assert set(appended_rels[0].RelatedObjects) == {element1_, element2_}
+        assert ifcopenshell.util.element.get_psets(element2_) == pset_data
+
     def test_reuse_identities_to_avoid_removed_entities_and_possible_crashes(self):
         self.file.create_entity("IfcProject")
         context = ifcopenshell.api.context.add_context(self.file, context_type="Model")
