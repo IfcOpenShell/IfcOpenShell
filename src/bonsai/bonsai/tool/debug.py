@@ -19,10 +19,9 @@
 import os
 import json
 import bpy
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.api.material
 import ifcopenshell.express
-import ifcopenshell.express.schema
-import ifcopenshell.express.schema_class
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 import bonsai.core.style
@@ -36,14 +35,14 @@ from typing import Iterable, Literal
 
 class Debug(bonsai.core.tool.Debug):
     @classmethod
-    def add_schema_identifier(cls, schema: ifcopenshell.express.schema_class.SchemaClass) -> None:
-        IfcStore.schema_identifiers.append(schema.schema_name)
+    def add_schema_identifier(cls, schema: W.schema_definition) -> None:
+        IfcStore.schema_identifiers.append(schema.name())
 
     @classmethod
-    def load_express(cls, filename: str) -> ifcopenshell.express.schema_class.SchemaClass:
+    def load_express(cls, filename: str) -> W.schema_definition:
         schema = ifcopenshell.express.parse(filename)
         ifcopenshell.register_schema(schema)
-        return schema
+        return schema.schema
 
     @classmethod
     def purge_hdf5_cache(cls) -> None:
