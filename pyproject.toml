@@ -28,6 +28,7 @@ extend-exclude = '''
     src/ifcopenshell-python/ifcopenshell/express/*
     |src/ifcopenshell-python/ifcopenshell/mvd/*
     |src/ifc2ca/templates/*
+    |src/ifcconvert/cityjson/*
 '''
 
 [tool.pyright]
