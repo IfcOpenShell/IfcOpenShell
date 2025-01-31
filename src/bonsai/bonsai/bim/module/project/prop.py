@@ -67,13 +67,24 @@ def update_library_file(self: "BIMProjectProperties", context: bpy.types.Context
 
 
 def update_selected_project_library(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
-    bpy.ops.bim.refresh_library()
+    if self.filter_by_library:
+        bpy.ops.bim.refresh_library()
+    else:
+        # Ensure `.is_declared` up to date.
+        tool.Project.update_current_library_page()
 
 
 def get_project_libaries(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not ProjectLibraryData.is_loaded:
         ProjectLibraryData.load()
     return ProjectLibraryData.data["project_libraries_enum"]
+
+
+def filter_by_library_update(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
+    if self.filter_by_library and self.selected_project_library == "*":
+        # Filter is toggled from OFF to ON, so it was showing all elements previously either way.
+        return
+    bpy.ops.bim.refresh_library()
 
 
 def update_filter_mode(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
@@ -282,6 +293,12 @@ class BIMProjectProperties(PropertyGroup):
         description="Project library to display elements from",
         update=update_selected_project_library,
     )
+    filter_by_library: BoolProperty(
+        name="Filter by Library",
+        description="Filter library elements based on selected library. If unselected can be used to assign selected library to library elements.",
+        default=True,
+        update=filter_by_library_update,
+    )
 
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
@@ -348,6 +365,7 @@ class BIMProjectProperties(PropertyGroup):
 
         library_file: str
         selected_project_library: Union[Literal["*", "-"], str]
+        filter_by_library: bool
 
         use_relative_project_path: bool
         queried_obj: Union[bpy.types.Object, None]

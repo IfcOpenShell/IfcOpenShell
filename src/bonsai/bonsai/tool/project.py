@@ -303,12 +303,14 @@ class Project(bonsai.core.tool.Project):
         library_file = IfcStore.library_file
         assert library_file
 
-        if props.selected_project_library == "*":
+        selected_project_library = props.selected_project_library if props.filter_by_library else "*"
+
+        if selected_project_library == "*":
 
             def condition(elements: list[ifcopenshell.entity_instance]):
                 yield from elements
 
-        elif props.selected_project_library == "-":
+        elif selected_project_library == "-":
 
             def condition(elements: list[ifcopenshell.entity_instance]):
                 for element in elements:
@@ -316,7 +318,7 @@ class Project(bonsai.core.tool.Project):
                         yield element
 
         else:
-            project_library = library_file.by_id(int(props.selected_project_library))
+            project_library = library_file.by_id(int(selected_project_library))
             project_library_rels = set(project_library.Declares)
             if project_library_rels:
 
@@ -333,3 +335,10 @@ class Project(bonsai.core.tool.Project):
                     pass
 
         return condition
+
+    @classmethod
+    def update_current_library_page(cls):
+        props = cls.get_project_props()
+        element_name = props.active_library_element
+        bpy.ops.bim.rewind_library()
+        bpy.ops.bim.change_library_element(element_name=element_name)

@@ -363,11 +363,17 @@ class BIM_PT_project_library(Panel):
             row.label(text="No Library Loaded", icon="ASSET_MANAGER")
 
     def draw_library_ul(self):
+        layout = self.layout
+
         if not self.props.library_elements:
             row = self.layout.row()
             row.label(text="No Assets Found", icon="ERROR")
             return
-        self.layout.prop(self.props, "selected_project_library", text="")
+
+        row = layout.row(align=True)
+        row.prop(self.props, "selected_project_library", text="")
+        row.prop(self.props, "filter_by_library", text="", icon="FILTER")
+
         row = self.layout.row(align=True)
         row.label(text=self.props.active_library_element or "Top Level Assets")
         if self.props.active_library_element:

@@ -288,11 +288,17 @@ class ChangeLibraryElement(bpy.types.Operator):
         is_declarable = project_libraries_exist and element.is_a("IfcObjectDefinition")
         new.is_declarable = is_declarable
 
+        selected_library = self.props.selected_project_library
         # is_declared.
         if not is_declarable:
             new.is_declared = False
-        elif (has_context := element.HasContext) and has_context[0].RelatingContext.is_a("IfcProjectLibrary"):
-            new.is_declared = True
+        elif has_context := element.HasContext:
+            relating_context: ifcopenshell.entity_instance
+            relating_context = has_context[0].RelatingContext
+            if selected_library in ("-", "*"):
+                new.is_declared = relating_context.is_a("IfcProjectLibrary")
+            else:
+                new.is_declared = relating_context == self.library_file.by_id(int(selected_library))
 
         # is_appended.
         try:
@@ -328,8 +334,12 @@ class RewindLibrary(bpy.types.Operator):
 class AssignLibraryDeclaration(bpy.types.Operator):
     bl_idname = "bim.assign_library_declaration"
     bl_label = "Assign Library Declaration"
+    bl_description = "Assign element to the active library. If no specific library selected, will assign it to the first library in the file."
     bl_options = {"REGISTER", "UNDO"}
     definition: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        definition: int
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
@@ -341,17 +351,22 @@ class AssignLibraryDeclaration(bpy.types.Operator):
         return result
 
     def _execute(self, context):
-        self.props = context.scene.BIMProjectProperties
-        self.file = IfcStore.library_file
-        ifcopenshell.api.run(
-            "project.assign_declaration",
-            self.file,
-            definitions=[self.file.by_id(self.definition)],
-            relating_context=self.file.by_type("IfcProjectLibrary")[0],
+        props = tool.Project.get_project_props()
+        library_file = IfcStore.library_file
+        assert library_file
+
+        if props.selected_project_library in ("*", "-"):
+            project_library = library_file.by_type("IfcProjectLibrary")[0]
+        else:
+            project_library = library_file.by_id(int(props.selected_project_library))
+
+        ifcopenshell.api.project.assign_declaration(
+            library_file,
+            definitions=[library_file.by_id(self.definition)],
+            relating_context=project_library,
         )
-        element_name = self.props.active_library_element
-        bpy.ops.bim.rewind_library()
-        bpy.ops.bim.change_library_element(element_name=element_name)
+
+        tool.Project.update_current_library_page()
         return {"FINISHED"}
 
     def rollback(self, data):
@@ -367,6 +382,9 @@ class UnassignLibraryDeclaration(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     definition: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        definition: int
+
     def execute(self, context):
         IfcStore.begin_transaction(self)
         IfcStore.library_file.begin_transaction()
@@ -377,17 +395,18 @@ class UnassignLibraryDeclaration(bpy.types.Operator):
         return result
 
     def _execute(self, context):
-        self.props = context.scene.BIMProjectProperties
-        self.file = IfcStore.library_file
-        ifcopenshell.api.run(
-            "project.unassign_declaration",
-            self.file,
-            definitions=[self.file.by_id(self.definition)],
-            relating_context=self.file.by_type("IfcProjectLibrary")[0],
+        props = tool.Project.get_project_props()
+        library_file = IfcStore.library_file
+        assert library_file
+
+        element = library_file.by_id(self.definition)
+        ifcopenshell.api.project.unassign_declaration(
+            library_file,
+            definitions=[library_file.by_id(self.definition)],
+            relating_context=element.HasContext[0].RelatingContext,
         )
-        element_name = self.props.active_library_element
-        bpy.ops.bim.rewind_library()
-        bpy.ops.bim.change_library_element(element_name=element_name)
+
+        tool.Project.update_current_library_page()
         return {"FINISHED"}
 
     def rollback(self, data):
