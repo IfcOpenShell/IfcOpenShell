@@ -180,15 +180,16 @@ class RemovePset(bpy.types.Operator, tool.Ifc.Operator):
                 )
 
 
-class AddPset(bpy.types.Operator, tool.Ifc.Operator):
+class AddPset(bpy.types.Operator):
     bl_idname = "bim.add_pset"
     bl_label = "Add Pset"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.add_pset(tool.Ifc, tool.Pset, tool.Blender, obj_name=self.obj, obj_type=self.obj_type)
+        return {"FINISHED"}
 
 
 class UnsharePset(bpy.types.Operator, tool.Ifc.Operator):
