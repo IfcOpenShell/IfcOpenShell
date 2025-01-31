@@ -110,7 +110,7 @@ def append_asset(
         model = ifcopenshell.api.project.create_file()
         project = ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject", name="Test")
 
-        # Now we can easily append our wall type from our libary
+        # Now we can easily append our wall type from our library
         wall_type = ifcopenshell.api.project.append_asset(model, library=library, element=wall_type)
 
     Example of adding multiple assets and avoiding duplicated inverses:
