@@ -207,7 +207,6 @@ class Model(bonsai.core.tool.Model):
         )
 
         surface.OuterBoundary = tool.Ifc.get().add(profile_def.OuterCurve)
-        surface.InnerBoundaries = results
         if profile_def.is_a("IfcArbitraryProfileDefWithVoids"):
             surface.InnerBoundaries = [tool.Ifc.get().add(c) for c in profile_def.InnerCurves]
 
