@@ -405,6 +405,11 @@ class BIM_PT_tabs(Panel):
     def draw(self, context):
         is_ifc_project = bool(tool.Ifc.get())
         aprops = tool.Blender.get_area_props(context)
+        icon_display_mode = tool.Blender.detect_icon_color_mode()
+        ifc_icon = f"{icon_display_mode}_ifc"
+        theme = bpy.context.preferences.themes[0].user_interface
+        original_text_sel = theme.wcol_regular.text_sel  # Store original color
+        theme.wcol_regular.text_sel = theme.wcol_regular.text  # Override the text_sel color
 
         row = self.layout.row()
         row.alignment = "CENTER"
@@ -413,7 +418,7 @@ class BIM_PT_tabs(Panel):
             text="",
             emboss=aprops.tab == "PROJECT",
             depress=True,
-            icon_value=bonsai.bim.icons["IFC"].icon_id,
+            icon_value=bonsai.bim.icons[ifc_icon].icon_id,
         ).tab = "PROJECT"
         self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
         self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
@@ -424,6 +429,7 @@ class BIM_PT_tabs(Panel):
         self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
         self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
         row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
+        theme.wcol_regular.text_sel = original_text_sel  # Restore original tex_sel color
 
         # Yes, that's right.
         row = self.layout.row()
