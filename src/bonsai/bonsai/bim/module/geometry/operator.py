@@ -2671,12 +2671,13 @@ class EditRepresentationItemShapeAspect(bpy.types.Operator, tool.Ifc.Operator):
             shape_aspect, representation_item
         )
         styles = tool.Geometry.get_shape_aspect_styles(element, shape_aspect, representation_item)
+        # TODO this looks wrong to me. In theory styles can be > 1 (e.g. curve
+        # styles) and then the usecase will assign the wrong style.
         tool.Ifc.run(
             "style.assign_representation_styles",
             shape_representation=shape_aspect_representation,
             styles=styles,
         )
-        tool.Geometry.get_shape_aspect_styles(element, shape_aspect, representation_item)
         tool.Geometry.reload_representation(obj)
 
         # reload items ui
