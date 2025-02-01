@@ -562,8 +562,8 @@ def get_shape_aspects(element: ifcopenshell.entity_instance) -> list[ifcopenshel
 
     # IfcTypeProduct
     shape_aspects = []
-    for repersentation_map in element.RepresentationMaps:
-        shape_aspects += repersentation_map.HasShapeAspects
+    for representation_map in element.RepresentationMaps or []:
+        shape_aspects += representation_map.HasShapeAspects
     return shape_aspects
 
 
