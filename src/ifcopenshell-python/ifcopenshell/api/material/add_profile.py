@@ -24,6 +24,7 @@ def add_profile(
     profile_set: ifcopenshell.entity_instance,
     material: Optional[ifcopenshell.entity_instance] = None,
     profile: Optional[ifcopenshell.entity_instance] = None,
+    name: Optional[str] = None,
 ) -> ifcopenshell.entity_instance:
     """Add a new profile item to a profile set
 
@@ -48,14 +49,12 @@ def add_profile(
         profile set represents a group of profile items. See
         ifcopenshell.api.material.add_material_set for more information on
         how to add a profile set.
-    :type profile_set: ifcopenshell.entity_instance
     :param material: The IfcMaterial that the profile item is made out of.
-    :type material: ifcopenshell.entity_instance, optional
     :param profile: The IfcProfileDef that represents the 2D cross section
         of the the profile item.
-    :type profile: ifcopenshell.entity_instance, optional
+    :param name: An optional name of the material profile (not the geometric
+        profile).
     :return: The newly created IfcMaterialProfile
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -90,14 +89,12 @@ def add_profile(
         # Great! Let's assign our material set to our beam type.
         ifcopenshell.api.material.assign_material(model, products=[beam_type], material=material_set)
     """
-    settings = {"profile_set": profile_set, "material": material, "profile": profile}
-
-    profiles = list(settings["profile_set"].MaterialProfiles or [])
-    profile = file.create_entity("IfcMaterialProfile")
-    if settings["material"]:
-        profile.Material = settings["material"]
-    if settings["profile"]:
-        profile.Profile = settings["profile"]
-    profiles.append(profile)
-    settings["profile_set"].MaterialProfiles = profiles
-    return profile
+    profiles = list(profile_set.MaterialProfiles or [])
+    mat_profile = file.create_entity("IfcMaterialProfile", Name=name)
+    if material:
+        mat_profile.Material = material
+    if profile:
+        mat_profile.Profile = profile
+    profiles.append(mat_profile)
+    profile_set.MaterialProfiles = profiles
+    return mat_profile

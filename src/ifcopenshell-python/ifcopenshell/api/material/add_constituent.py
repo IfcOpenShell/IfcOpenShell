@@ -16,10 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
+from typing import Optional
 
 
 def add_constituent(
-    file: ifcopenshell.file, constituent_set: ifcopenshell.entity_instance, material: ifcopenshell.entity_instance
+    file: ifcopenshell.file,
+    constituent_set: ifcopenshell.entity_instance,
+    material: ifcopenshell.entity_instance,
+    name: Optional[str] = None,
 ) -> ifcopenshell.entity_instance:
     """Adds a new constituent to a constituent set
 
@@ -40,11 +44,9 @@ def add_constituent(
         constituent is part of. The constituent set represents a group of
         constituents. See ifcopenshell.api.material.add_material_set for
         information on how to add a constituent set.
-    :type constituent_set: ifcopenshell.entity_instance
     :param material: The IfcMaterial that the constituent is made out of.
-    :type material: ifcopenshell.entity_instance
+    :param name: An optional name of the constituent.
     :return: The newly created IfcMaterialConstituent
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -71,9 +73,9 @@ def add_constituent(
 
         # Now let's use those materials as two constituents in our set.
         ifcopenshell.api.material.add_constituent(model,
-            constituent_set=material_set, material=aluminium)
+            constituent_set=material_set, material=aluminium, name="Framing")
         ifcopenshell.api.material.add_constituent(model,
-            constituent_set=material_set, material=glass)
+            constituent_set=material_set, material=glass, name="Glazing")
 
         # Great! Let's assign our material set to our window type.
         # We're technically not done here, we might want to add geometry to
@@ -82,10 +84,8 @@ def add_constituent(
         # aluminium and glass.
         ifcopenshell.api.material.assign_material(model, products=[window_type], material=material_set)
     """
-    settings = {"constituent_set": constituent_set, "material": material}
-
-    constituents = list(settings["constituent_set"].MaterialConstituents or [])
-    constituent = file.create_entity("IfcMaterialConstituent", **{"Material": settings["material"]})
+    constituents = list(constituent_set.MaterialConstituents or [])
+    constituent = file.create_entity("IfcMaterialConstituent", Material=material, Name=name)
     constituents.append(constituent)
-    settings["constituent_set"].MaterialConstituents = constituents
+    constituent_set.MaterialConstituents = constituents
     return constituent
