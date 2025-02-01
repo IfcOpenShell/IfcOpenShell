@@ -417,3 +417,60 @@ def get_prioritised_contexts(ifc_file: ifcopenshell.file) -> list[ifcopenshell.e
         key=sort_context,
         reverse=True,
     )
+
+
+def get_part_of_product(
+    element: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Gets the product definition or representation map of an element
+
+    This is typically used for setting shape aspects. Note that this will
+    return None for IFC2X3 element types.
+
+    :param element: An IfcProduct or IfcTypeProduct
+    :param context: A IfcGeometricRepresentationContext
+    :return: IfcProductRepresentationSelect
+    """
+    if element.is_a("IfcProduct"):
+        return element.Representation
+    elif element.is_a("IfcTypeProduct") and element.file.schema != "IFX2X3":
+        if maps := [r for r in element.RepresentationMaps if r.MappedRepresentation.ContextOfItems == context]:
+            return maps[0]
+
+
+def get_item_shape_aspect(
+    representation: ifcopenshell.entity_instance, item: ifcopenshell.entity_instance
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Gets the shape aspect relating to an item
+
+    :param representation: The IfcShapeRepresentation that the item is part of
+    :param item: The IfcRepresentationItem you want to get the shape aspect of
+    :return: IfcShapeAspect, or None if none exists
+    """
+    for inverse in item.file.get_inverse(item):
+        if (
+            inverse.is_a("IfcShapeRepresentation")
+            and inverse.ContextOfItems == representation.ContextOfItems
+            and (of_shape_aspect := inverse.OfShapeAspect)
+        ):
+            return of_shape_aspect[0]
+
+
+def get_material_style(
+    material: ifcopenshell.entity_instance, context: ifcopenshell.entity_instance, ifc_class: str = "IfcSurfaceStyle"
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Get a presentation style associated with a material
+
+    :param material: the IfcMaterial
+    :param context: IfcGeometricRepresentationContext that the style belongs to
+    :param ifc_class: The class name of the type of style you need, typically
+        IfcSurfaceStyle for 3D styling.
+    :return: IfcPresentationStyle
+    """
+    if definition_representation := material.HasRepresentation:
+        for styled_rep in definition_representation[0].Representations:
+            if styled_rep.ContextOfItems == context:
+                for item in styled_rep.Items:
+                    for style in item.Styles:
+                        if style.is_a(ifc_class):
+                            return style
