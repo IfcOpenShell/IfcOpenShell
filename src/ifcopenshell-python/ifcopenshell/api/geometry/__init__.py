@@ -44,6 +44,7 @@ try:
     from .add_representation import add_representation
 except ModuleNotFoundError as e:
     print(f"Note: API not available due to missing dependencies: geometry.add_representation - {e}")
+from .add_shape_aspect import add_shape_aspect
 from .add_slab_representation import add_slab_representation
 from .add_wall_representation import add_wall_representation
 
@@ -75,6 +76,7 @@ __all__ = [
     "add_profile_representation",
     "add_railing_representation",
     "add_representation",
+    "add_shape_aspect",
     "add_slab_representation",
     "add_wall_representation",
     "add_window_representation",

@@ -222,6 +222,7 @@ def add_door_representation(
     operation_type: DOOR_TYPE = "SINGLE_SWING_LEFT",
     lining_properties: Optional[Union[DoorLiningProperties, dict[str, Any]]] = None,
     panel_properties: Optional[Union[DoorPanelProperties, dict[str, Any]]] = None,
+    part_of_product: Optional[ifcopenshell.entity_instance] = None,
     unit_scale: Optional[float] = None,
 ) -> Union[ifcopenshell.entity_instance, None]:
     """Add a geometric representation for a door.
@@ -272,6 +273,7 @@ def add_door_representation(
             "operation_type": operation_type,
             "lining_properties": lining_properties,
             "panel_properties": panel_properties,
+            "part_of_product": part_of_product,
         }
     )
     usecase.settings = settings
@@ -640,6 +642,29 @@ class Usecase:
         output_items = lining_offset_items + threshold_items + casing_items
 
         representation = builder.get_representation(self.settings["context"], output_items)
+        if self.settings["part_of_product"]:
+            ifcopenshell.api.geometry.add_shape_aspect(
+                self.file,
+                "Lining",
+                items=lining_items + window_lining_items + threshold_items + casing_items,
+                representation=representation,
+                part_of_product=self.settings["part_of_product"],
+            )
+            ifcopenshell.api.geometry.add_shape_aspect(
+                self.file,
+                "Framing",
+                items=door_items + frame_items,
+                representation=representation,
+                part_of_product=self.settings["part_of_product"],
+            )
+            if glass_items:
+                ifcopenshell.api.geometry.add_shape_aspect(
+                    self.file,
+                    "Glazing",
+                    items=glass_items,
+                    representation=representation,
+                    part_of_product=self.settings["part_of_product"],
+                )
         return representation
 
     @overload
