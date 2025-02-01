@@ -534,14 +534,19 @@ class BIM_PT_door(bpy.types.Panel):
                     self.layout.prop(props, prop)
 
                 lining_props = props.get_lining_kwargs()
-                self.layout.label(text="Lining properties")
+                self.layout.label(text="Lining Properties")
                 for prop in lining_props:
                     self.layout.prop(props, prop)
 
                 panel_props = props.get_panel_kwargs()
-                self.layout.label(text="Panel properties")
+                self.layout.label(text="Panel Properties")
                 for prop in panel_props:
                     self.layout.prop(props, prop)
+
+                self.layout.use_property_split = True
+                self.layout.label(text="Material Properties")
+                self.layout.prop(props, "lining_material")
+                self.layout.prop(props, "panel_material")
 
                 update_door_modifier_bmesh(context)
 

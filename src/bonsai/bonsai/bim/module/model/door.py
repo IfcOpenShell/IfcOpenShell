@@ -88,7 +88,49 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
     # (Model/Body defined only BEFORE Plan/Body to prevent #2744)
     body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
     representation_data["context"] = body
+    representation_data["part_of_product"] = ifcopenshell.util.representation.get_part_of_product(element, body)
     model_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
+    representation_data["part_of_product"] = None
+    if fallback_material := (int(props.lining_material) or int(props.panel_material)):
+        lining_material = tool.Ifc.get().by_id(int(props.lining_material) or fallback_material)
+        panel_material = tool.Ifc.get().by_id(int(props.panel_material) or fallback_material)
+        should_create_new_material_set = False
+        if material := ifcopenshell.util.element.get_material(element):
+            if (
+                material.is_a("IfcMaterialConstituent")
+                and len(names := [c.Name for c in material.MaterialConstituents]) == 2
+                and set(names) == {"Lining", "Framing"}
+            ):
+                should_create_new_material_set = False
+            else:
+                should_create_new_material_set = True
+                ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+                if not material.is_a("IfcMaterial") and not ifc_file.get_total_inverses(material):
+                    ifcopenshell.api.material.remove_material_set(ifc_file, material=material)
+        else:
+            should_create_new_material_set = True
+        if should_create_new_material_set:
+            material_set = ifcopenshell.api.material.add_material_set(ifc_file, set_type="IfcMaterialConstituentSet")
+            ifcopenshell.api.material.add_constituent(
+                ifc_file, constituent_set=material_set, material=lining_material, name="Lining"
+            )
+            ifcopenshell.api.material.add_constituent(
+                ifc_file, constituent_set=material_set, material=panel_material, name="Framing"
+            )
+            ifcopenshell.api.material.assign_material(ifc_file, products=[element], material=material_set)
+
+        styles = {
+            "Lining": ifcopenshell.util.representation.get_material_style(lining_material, body),
+            "Framing": ifcopenshell.util.representation.get_material_style(panel_material, body),
+        }
+        for item in model_representation.Items:
+            if aspect := ifcopenshell.util.representation.get_item_shape_aspect(model_representation, item):
+                if style := styles.get(aspect.Name, None):
+                    ifcopenshell.api.style.assign_item_style(ifc_file, item=item, style=style)
+    elif material := ifcopenshell.util.element.get_material(element):
+        ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+        if not material.is_a("IfcMaterial") and not ifc_file.get_total_inverses(material):
+            ifcopenshell.api.material.remove_material_set(ifc_file, material=material)
     tool.Model.replace_object_ifc_representation(body, obj, model_representation)
 
     # Body/PLAN_VIEW representation

@@ -76,6 +76,7 @@ class AuthoringData:
         cls.data["paginated_relating_types"] = cls.paginated_relating_types()
 
         cls.data["type_thumbnail"] = cls.type_thumbnail()  # Only after .relating_type_id_current()
+        cls.data["materials"] = cls.materials()
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
         cls.data["has_visible_boundaries"] = cls.has_visible_boundaries()
@@ -113,6 +114,12 @@ class AuthoringData:
     @classmethod
     def type_thumbnail(cls):
         return cls.type_thumbnails.get(int(cls.data["relating_type_id_current"] or 0), 0)
+
+    @classmethod
+    def materials(cls):
+        results = [("0", "None", "No material")]
+        results.extend([(str(m.id()), m.Name or "Unnamed", "") for m in tool.Ifc.get().by_type("IfcMaterial")])
+        return results
 
     @classmethod
     def total_types(cls):

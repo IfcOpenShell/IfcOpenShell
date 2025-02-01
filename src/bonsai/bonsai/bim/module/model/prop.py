@@ -49,6 +49,12 @@ def get_relating_type_id(self, context):
     return AuthoringData.data["relating_type_id"]
 
 
+def get_materials(self, context):
+    if not AuthoringData.is_loaded:
+        AuthoringData.load()
+    return AuthoringData.data["materials"]
+
+
 def update_ifc_class(self, context):
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
@@ -620,6 +626,10 @@ class BIMDoorProperties(PropertyGroup):
     )
     frame_thickness: bpy.props.FloatProperty(name="Window Frame Thickness", default=0.035, subtype="DISTANCE")
     frame_depth: bpy.props.FloatProperty(name="Window Frame Depth", default=0.035, subtype="DISTANCE")
+
+    # Material properties
+    panel_material: bpy.props.EnumProperty(name="Panel Material", items=get_materials, options=set())
+    lining_material: bpy.props.EnumProperty(name="Lining Material", items=get_materials, options=set())
 
     def get_general_kwargs(self, convert_to_project_units=False):
         kwargs = {
