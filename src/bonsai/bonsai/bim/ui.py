@@ -403,10 +403,11 @@ class BIM_PT_tabs(Panel):
     bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
+        if not UIData.is_loaded:
+            UIData.load()
         is_ifc_project = bool(tool.Ifc.get())
         aprops = tool.Blender.get_area_props(context)
-        icon_display_mode = tool.Blender.detect_icon_color_mode()
-        ifc_icon = f"{icon_display_mode}_ifc"
+        ifc_icon = f"{UIData.data['icon_color_mode']}_ifc"
         theme = bpy.context.preferences.themes[0].user_interface
         original_text_sel = theme.wcol_regular.text_sel  # Store original color
         theme.wcol_regular.text_sel = theme.wcol_regular.text  # Override the text_sel color
@@ -1118,12 +1119,16 @@ class UIData:
 
     @classmethod
     def load(cls):
-        cls.data = {"version": cls.version()}
+        cls.data = {"version": cls.version(), "icon_color_mode": cls.icon_color_mode()}
         cls.is_loaded = True
 
     @classmethod
     def version(cls):
         return tool.Blender.get_bonsai_version()
+
+    @classmethod
+    def icon_color_mode(cls):
+        return tool.Blender.detect_icon_color_mode()
 
 
 def draw_statusbar(self, context):
