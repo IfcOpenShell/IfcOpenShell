@@ -217,6 +217,9 @@ def register():
         bpy.utils.register_tool(
             workspace.ElectricApplianceTool, after={"bim.light_fixture_tool"}, separator=False, group=False
         )
+        bpy.utils.register_tool(
+            workspace.GeographicElement, after={"bim.electric_appliance_tool"}, separator=False, group=False
+        )
         bpy.utils.register_tool(workspace.ColumnTool, after={"bim.explore_tool"}, separator=False, group=True)
         bpy.utils.register_tool(workspace.BeamTool, after={"bim.column_tool"}, separator=False, group=False)
         bpy.utils.register_tool(workspace.MemberTool, after={"bim.beam_tool"}, separator=False, group=False)
@@ -265,6 +268,7 @@ def unregister():
         bpy.utils.unregister_tool(workspace.SanitaryTerminalTool)
         bpy.utils.unregister_tool(workspace.LightFixtureTool)
         bpy.utils.unregister_tool(workspace.ElectricApplianceTool)
+        bpy.utils.unregister_tool(workspace.GeographicElement)
         bpy.utils.unregister_tool(workspace.DuctTool)
         bpy.utils.unregister_tool(workspace.PipeTool)
         bpy.utils.unregister_tool(workspace.CableCarrierTool)

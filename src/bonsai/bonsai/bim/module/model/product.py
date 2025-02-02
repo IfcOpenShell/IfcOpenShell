@@ -114,7 +114,7 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
             props.ifc_predefined_type = "FOOTING_BEAM"
             props.representation_template = "PROFILESET"
         elif self.ifc_element_type == "IfcPileType":
-            props.ifc_predefined_type = "BORED"
+            props.ifc_predefined_type = "COHESION"
             props.representation_template = "PROFILESET"
 
         elif self.ifc_element_type == "IfcDuctSegmentType":
@@ -142,6 +142,13 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
             props.representation_template = "MESH"
         elif self.ifc_element_type == "IfcElectricApplianceType":
             props.ifc_predefined_type = "WASHINGMACHINE"
+            props.representation_template = "MESH"
+        elif self.ifc_element_type == "IfcGeographicElementType":
+            if tool.Ifc.get().schema == "IFC4":
+                props.ifc_predefined_type = "USERDEFINED"
+                props.ifc_userdefined_type = "VEGETATION"
+            elif tool.Ifc.get().schema == "IFC4X3":
+                props.ifc_predefined_type = "VEGETATION"
             props.representation_template = "MESH"
 
         bpy.ops.bim.add_element()
