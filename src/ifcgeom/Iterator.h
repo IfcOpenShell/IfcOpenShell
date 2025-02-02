@@ -61,7 +61,6 @@
 #include "../ifcparse/IfcFile.h"
 
 #include "../ifcgeom/IfcGeomElement.h"
-#include "../ifcgeom/IteratorSettings.h"
 #include "../ifcgeom/ConversionResult.h"
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/taxonomy.h"
