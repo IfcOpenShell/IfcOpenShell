@@ -249,7 +249,6 @@ namespace {
 %include "../ifcgeom/ifc_geom_api.h"
 %include "../ifcgeom/Converter.h"
 %include "../ifcgeom/ConversionResult.h"
-%include "../ifcgeom/IteratorSettings.h"
 %include "../ifcgeom/ConversionSettings.h"
 %include "../ifcgeom/IfcGeomElement.h"
 %include "../ifcgeom/IfcGeomRepresentation.h"
