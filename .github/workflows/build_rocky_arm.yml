@@ -44,7 +44,7 @@ jobs:
       - name: Unpack Dependencies
         run: |
           install_root=$(find ./build -maxdepth 4 -name install)
-          find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \;
+          [ -n "$install_root" ] && find "$install_root" -type f -name 'cache-*.tar.gz' -maxdepth 1 -exec tar -xzf {} -C "$install_root" \;
 
       # Not supported on docker
       # - name: ccache
