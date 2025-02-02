@@ -28,7 +28,6 @@
 #include "../ifcparse/IfcLogger.h"
 
 #include "../ifcgeom/IfcGeomRepresentation.h"
-#include "../ifcgeom/IteratorSettings.h"
 #include "../ifcgeom/ifc_geom_api.h"
 
 namespace IfcGeom {
