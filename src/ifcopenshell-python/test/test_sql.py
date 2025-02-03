@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import pytest
+import tempfile
 import test.bootstrap
 import ifcopenshell
 import ifcpatch
@@ -29,8 +30,9 @@ SQLITE_PATH = None
 def get_ifc_sqlite() -> ifcopenshell.sqlite:
     global SQLITE_PATH
     if SQLITE_PATH is None:
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".ifcsqlite")
         SQLITE_PATH = ifcpatch.execute(
-            {"file": ifcopenshell.open(TEST_FILE), "recipe": "Ifc2Sql", "arguments": ["sqlite"]}
+            {"file": ifcopenshell.open(TEST_FILE), "recipe": "Ifc2Sql", "arguments": ["sqlite", None, None, None, tmp.name]}
         )
         assert isinstance(SQLITE_PATH, str)
     ifc_sqlite = ifcopenshell.open(SQLITE_PATH)
