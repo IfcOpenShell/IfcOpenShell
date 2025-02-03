@@ -27,6 +27,7 @@ include = '''
 extend-exclude = '''
     src/ifcopenshell-python/ifcopenshell/express/*
     |src/ifcopenshell-python/ifcopenshell/mvd/*
+    |src/ifcopenshell-python/ifcopenshell/simple_spf/*
     |src/ifc2ca/templates/*
     |src/ifcconvert/cityjson/*
 '''
