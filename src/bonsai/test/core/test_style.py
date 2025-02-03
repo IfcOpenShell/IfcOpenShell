@@ -208,7 +208,7 @@ class TestEditStyle:
         style.import_presentation_styles("style_type").should_be_called()
         style.enable_editing_styles().should_be_called()
 
-        style.reload_repersentations("style_element").should_be_called()
+        style.reload_representations("style_element").should_be_called()
 
         subject.edit_style(ifc, style)
 

@@ -679,7 +679,7 @@ class Style(bonsai.core.tool.Style):
         return old_value != new_value and "NEGATIVE" in (old_value, new_value)
 
     @classmethod
-    def reload_repersentations(cls, style: ifcopenshell.entity_instance) -> None:
+    def reload_representations(cls, style: ifcopenshell.entity_instance) -> None:
         elements = ifcopenshell.util.element.get_elements_by_style(tool.Ifc.get(), style)
         objects = [tool.Ifc.get_object(e) for e in elements]
         tool.Geometry.reload_representation(objects)

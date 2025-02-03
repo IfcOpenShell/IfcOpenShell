@@ -161,7 +161,7 @@ def edit_style(ifc: tool.Ifc, style: tool.Style) -> None:
     style.disable_editing()
     load_styles(style, style.get_active_style_type())
     if is_style_side_attribute_edited:
-        style.reload_repersentations(style_element)
+        style.reload_representations(style_element)
 
 
 def load_styles(style: tool.Style, style_type: str) -> None:
