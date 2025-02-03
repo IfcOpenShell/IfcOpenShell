@@ -32,7 +32,11 @@ def get_ifc_sqlite() -> ifcopenshell.sqlite:
     if SQLITE_PATH is None:
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".ifcsqlite")
         SQLITE_PATH = ifcpatch.execute(
-            {"file": ifcopenshell.open(TEST_FILE), "recipe": "Ifc2Sql", "arguments": ["sqlite", None, None, None, tmp.name]}
+            {
+                "file": ifcopenshell.open(TEST_FILE),
+                "recipe": "Ifc2Sql",
+                "arguments": ["sqlite", None, None, None, tmp.name],
+            }
         )
         assert isinstance(SQLITE_PATH, str)
     ifc_sqlite = ifcopenshell.open(SQLITE_PATH)
