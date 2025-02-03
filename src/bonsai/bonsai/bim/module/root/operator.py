@@ -157,7 +157,7 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
             reassigned_elements.add(element)
 
         for obj in objects_to_update:
-            obj.name = tool.Loader.get_name(tool.Ifc.get_entity(obj))
+            tool.Root.set_object_name(obj, tool.Ifc.get_entity(obj))
             tool.Collector.assign(obj)
         return {"FINISHED"}
 
