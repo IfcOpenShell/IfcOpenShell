@@ -16,11 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from pathlib import Path
 import os
 import bpy
 import json
-import importlib
 import platformdirs
 import ifcopenshell
 import ifcopenshell.util.pset
@@ -36,7 +34,6 @@ import bonsai.bim
 import bonsai.bim.schema
 import bonsai.bim.handler
 import bonsai.tool as tool
-from collections import defaultdict
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,

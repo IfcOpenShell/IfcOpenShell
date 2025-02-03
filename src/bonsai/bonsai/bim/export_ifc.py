@@ -20,7 +20,6 @@ from __future__ import annotations
 import os
 import bpy
 import json
-import numpy as np
 import datetime
 import zipfile
 import tempfile
