@@ -1282,7 +1282,20 @@ except Exception as e:
             t = time.time()
             with tempfile.NamedTemporaryFile(mode="w", suffix=".py", delete=False) as temp_file:
                 temp_file.write(code)
-            run = subprocess.run([bpy.app.binary_path, "-b", "--python", temp_file.name, "--python-exit-code", "1"])
+            run = subprocess.run(
+                [
+                    bpy.app.binary_path,
+                    "-b",
+                    # Explicitly ask to enable Bonsai for this Blender instance
+                    # as Bonsai may be just enabled and user preferences are not saved.
+                    "--addons",
+                    tool.Blender.get_blender_addon_package_name(),
+                    "--python",
+                    temp_file.name,
+                    "--python-exit-code",
+                    "1",
+                ]
+            )
             if run.returncode == 1:
                 print("An error occurred while processing your IFC.")
                 if not blend_filepath.exists() or blend_filepath.stat().st_mtime < t:
