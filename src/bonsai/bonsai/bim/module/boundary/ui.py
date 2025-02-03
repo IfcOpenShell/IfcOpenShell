@@ -67,7 +67,7 @@ class BIM_PT_Boundary(Panel):
         props = context.active_object.BIMObjectProperties
         ifc_file = tool.Ifc.get()
         boundary = ifc_file.by_id(props.ifc_definition_id)
-        self.bprops = context.active_object.bim_boundary_properties
+        self.bprops = context.active_object.BIMBoundaryProperties
         if self.bprops.is_editing:
             row = self.layout.row(align=True)
             row.operator("bim.edit_boundary_attributes", icon="CHECKMARK", text="Save Attributes")

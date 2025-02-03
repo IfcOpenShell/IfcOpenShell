@@ -49,9 +49,9 @@ classes = (
 
 def register():
     bpy.types.Scene.BIMBoundaryProperties = bpy.props.PointerProperty(type=prop.BIMBoundaryProperties)
-    bpy.types.Object.bim_boundary_properties = bpy.props.PointerProperty(type=prop.BIMObjectBoundaryProperties)
+    bpy.types.Object.BIMBoundaryProperties = bpy.props.PointerProperty(type=prop.BIMObjectBoundaryProperties)
 
 
 def unregister():
     del bpy.types.Scene.BIMBoundaryProperties
-    del bpy.types.Object.bim_boundary_properties
+    del bpy.types.Object.BIMBoundaryProperties

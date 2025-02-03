@@ -354,7 +354,7 @@ class EnableEditingBoundary(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bprops = context.active_object.bim_boundary_properties
+        bprops = context.active_object.BIMBoundaryProperties
         bprops.is_editing = True
         boundary = tool.Ifc.get_entity(context.active_object)
         for ifc_attribute, blender_property in EDITABLE_ATTRIBUTES.items():
@@ -373,7 +373,7 @@ class DisableEditingBoundary(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bprops = context.active_object.bim_boundary_properties
+        bprops = context.active_object.BIMBoundaryProperties
         bprops.is_editing = False
         for ifc_attribute, blender_property in EDITABLE_ATTRIBUTES.items():
             setattr(bprops, blender_property, None)
@@ -386,7 +386,7 @@ class EditBoundaryAttributes(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        bprops = context.active_object.bim_boundary_properties
+        bprops = context.active_object.BIMBoundaryProperties
         boundary = tool.Ifc.get_entity(context.active_object)
         attributes = dict()
         for ifc_attribute, blender_property in EDITABLE_ATTRIBUTES.items():
