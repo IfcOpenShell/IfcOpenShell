@@ -36,6 +36,7 @@ import bonsai.core.tool
 import bonsai.core.geometry
 import bonsai.tool as tool
 import ifcopenshell.api
+import ifcopenshell.api.document
 import ifcopenshell.geom
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
@@ -2252,3 +2253,16 @@ class Drawing(bonsai.core.tool.Drawing):
                         msp.add_line(*points)
 
         finalize_dxf()
+
+    @classmethod
+    def remove_drawing_from_sheet(cls, reference: ifcopenshell.entity_instance) -> None:
+        import bonsai.bim.module.drawing.sheeter as sheeter
+
+        sheet = tool.Drawing.get_reference_document(reference)
+
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.remove_drawing(reference, sheet)
+
+        ifcopenshell.api.document.remove_reference(tool.Ifc.get(), reference=reference)
+
+        tool.Drawing.import_sheets()
