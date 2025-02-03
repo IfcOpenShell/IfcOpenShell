@@ -152,13 +152,20 @@ class System(bonsai.core.tool.System):
     def load_ports(cls, element: ifcopenshell.entity_instance, ports: list[ifcopenshell.entity_instance]) -> None:
         if not ports:
             return
+
+        ports_to_create = ports.copy()
+        for port in ports:
+            if tool.Ifc.get_object(port):
+                ports_to_create.remove(port)
+
         obj = tool.Ifc.get_object(element)
+        assert isinstance(obj, bpy.types.Object)
         ifc_import_settings = import_ifc.IfcImportSettings.factory()
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
-        ifc_importer.create_generic_elements(set(ports))
+        ifc_importer.create_generic_elements(set(ports_to_create))
 
         container = ifcopenshell.util.element.get_container(element)
         if container:
@@ -167,6 +174,7 @@ class System(bonsai.core.tool.System):
         ifc_importer.place_objects_in_collections()
 
         for port_obj in ifc_importer.added_data.values():
+            assert isinstance(port_obj, bpy.types.Object)
             port_obj.parent = obj
             port_obj.matrix_parent_inverse = obj.matrix_world.inverted()
 
