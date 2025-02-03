@@ -123,7 +123,9 @@ class CadTool(WorkSpaceTool):
             add_layout_hotkey_operator(row, "Reset Vertex", "S_X", bpy.ops.bim.reset_vertex.__doc__, ui_context)
 
         elif hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "AXIS":
-            add_header_apply_button(layout, "Edit Axis", "bim.set_arc_index", "bim.set_arc_index", ui_context)
+            add_header_apply_button(
+                layout, "Edit Axis", "bim.edit_extrusion_axis", "bim.disable_editing_extrusion_axis", ui_context
+            )
             row = layout.row(align=True)
             add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
