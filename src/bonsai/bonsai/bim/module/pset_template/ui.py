@@ -36,7 +36,7 @@ class BIM_PT_pset_template(Panel):
         if not PsetTemplatesData.is_loaded:
             PsetTemplatesData.load()
 
-        self.props = context.scene.BIMPsetTemplateProperties
+        self.props = tool.PsetTemplate.get_pset_template_props()
 
         row = self.layout.row(align=True)
         if PsetTemplatesData.data["pset_template_files"]:

@@ -194,9 +194,8 @@ class Blender(bonsai.core.tool.Blender):
         elif obj_type == "MaterialSetItem":
             return bpy.data.objects.get(obj).BIMObjectMaterialProperties.active_material_set_item_id
         elif obj_type == "Task":
-            return context.scene.BIMTaskTreeProperties.tasks[
-                context.scene.BIMWorkScheduleProperties.active_task_index
-            ].ifc_definition_id
+            tprops = tool.Sequence.get_task_tree_props()
+            return tprops.tasks[context.scene.BIMWorkScheduleProperties.active_task_index].ifc_definition_id
         elif obj_type == "Cost":
             return context.scene.BIMCostProperties.cost_items[
                 context.scene.BIMCostProperties.active_cost_item_index

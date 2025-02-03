@@ -30,23 +30,24 @@ from bpy.props import (
     CollectionProperty,
 )
 import bonsai.tool as tool
+from typing import TYPE_CHECKING, Union
 
 
-def space_filter(self, object):
+def space_filter(self: "BIMObjectBoundaryProperties", object: bpy.types.Object) -> bool:
     entity = tool.Ifc.get_entity(object)
     if entity:
         return entity.is_a("IfcSpace") or entity.is_a("IfcExternalSpatialElement")
     return False
 
 
-def boundary_filter(self, object):
+def boundary_filter(self: "BIMObjectBoundaryProperties", object: bpy.types.Object) -> bool:
     entity = tool.Ifc.get_entity(object)
     if entity:
         return entity.is_a("IfcRelSpaceBoundary")
     return False
 
 
-def element_filter(self, object):
+def element_filter(self: "BIMObjectBoundaryProperties", object: bpy.types.Object) -> bool:
     entity = tool.Ifc.get_entity(object)
     if entity:
         return entity.is_a("IfcElement")
@@ -60,6 +61,16 @@ class BIMObjectBoundaryProperties(PropertyGroup):
     parent_boundary: PointerProperty(name="ParentBoundary", type=bpy.types.Object, poll=boundary_filter)
     corresponding_boundary: PointerProperty(name="CorrespondingBoundary", type=bpy.types.Object, poll=boundary_filter)
 
+    if TYPE_CHECKING:
+        is_editing: bool
+        relating_space: Union[bpy.types.Object, None]
+        related_building_element: Union[bpy.types.Object, None]
+        parent_boundary: Union[bpy.types.Object, None]
+        corresponding_boundary: Union[bpy.types.Object, None]
+
 
 class BIMBoundaryProperties(PropertyGroup):
     boundaries: bpy.props.CollectionProperty(type=ObjProperty)
+
+    if TYPE_CHECKING:
+        boundaries: bpy.types.bpy_prop_collection_idprop[ObjProperty]

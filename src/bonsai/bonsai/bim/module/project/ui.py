@@ -128,7 +128,7 @@ class BIM_PT_project(Panel):
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
         props = context.scene.BIMProperties
-        pprops = context.scene.BIMProjectProperties
+        pprops = self.props = tool.Project.get_project_props()
         self.file = IfcStore.get_file()
         if pprops.is_loading:
             self.draw_advanced_loading_ui(context)
@@ -148,7 +148,7 @@ class BIM_PT_project(Panel):
                 self.draw_unsaved_project_ui(context)
 
     def draw_advanced_loading_ui(self, context):
-        pprops = context.scene.BIMProjectProperties
+        pprops = self.props
         prop_with_search(self.layout, pprops, "filter_mode")
         if pprops.filter_mode in ["DECOMPOSITION", "IFC_CLASS", "IFC_TYPE"]:
             row = self.layout.row(align=True)
@@ -222,7 +222,7 @@ class BIM_PT_project(Panel):
         row.operator("bim.load_project_elements")
 
     def draw_editing_buttons(self, context, row):
-        pprops = context.scene.BIMProjectProperties
+        pprops = self.props
         if IfcStore.get_file():
             if pprops.is_editing:
                 row.operator("bim.edit_header", icon="CHECKMARK", text="")
@@ -231,7 +231,7 @@ class BIM_PT_project(Panel):
                 row.operator("bim.enable_editing_header", icon="GREASEPENCIL", text="")
 
     def draw_editable_file_info(self, context):
-        pprops = context.scene.BIMProjectProperties
+        pprops = self.props
 
         if IfcStore.get_file():
             row = self.layout.row(align=True)
@@ -316,7 +316,7 @@ class BIM_PT_new_project_wizard(Panel):
         self.layout.use_property_split = True
 
         props = context.scene.BIMProperties
-        pprops = context.scene.BIMProjectProperties
+        pprops = tool.Project.get_project_props()
         prop_with_search(self.layout, pprops, "export_schema")
         row = self.layout.row()
         row.prop(context.scene.unit_settings, "system")
@@ -418,7 +418,7 @@ class BIM_PT_links(Panel):
     bl_parent_id = "BIM_PT_tab_project_setup"
 
     def draw(self, context):
-        self.props = context.scene.BIMProjectProperties
+        self.props = tool.Project.get_project_props()
         row = self.layout.row(align=True)
         row.operator("bim.link_ifc")
         if self.props.links:

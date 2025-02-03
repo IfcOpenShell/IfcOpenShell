@@ -422,7 +422,7 @@ class CreateDrawing(bpy.types.Operator):
         self.svg_writer.create_blank_svg(svg_path).draw_underlay(context.scene.render.filepath).save()
         return svg_path
 
-    def get_linework_contexts(self, ifc, target_view) -> LineworkContexts:
+    def get_linework_contexts(self, ifc: ifcopenshell.file, target_view: str) -> LineworkContexts:
         plan_body_target_contexts = []
         plan_body_model_contexts = []
         model_body_target_contexts = []

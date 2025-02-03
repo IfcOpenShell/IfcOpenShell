@@ -352,7 +352,8 @@ def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
 
 @when("I load a new pset template file")
 def i_load_a_new_pset_template_file():
-    IfcStore.pset_template_path = bpy.context.scene.BIMPsetTemplateProperties.pset_template_files
+    props = tool.PsetTemplate.get_pset_template_props()
+    IfcStore.pset_template_path = props.pset_template_files
     IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
 
 

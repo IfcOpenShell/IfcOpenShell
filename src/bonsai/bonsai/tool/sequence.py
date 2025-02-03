@@ -42,11 +42,16 @@ from typing import Optional, Any, Union, Literal, TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:
     import bonsai.bim.prop
+    from bonsai.bim.module.sequence.prop import BIMTaskTreeProperties
 
 
 class Sequence(bonsai.core.tool.Sequence):
 
     RELATED_OBJECT_TYPE = Literal["RESOURCE", "PRODUCT", "CONTROL"]
+
+    @classmethod
+    def get_task_tree_props(cls) -> BIMTaskTreeProperties:
+        return bpy.context.scene.BIMTaskTreeProperties
 
     @classmethod
     def get_work_plan_attributes(cls) -> dict[str, Any]:
@@ -146,7 +151,8 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def load_task_tree(cls, work_schedule: ifcopenshell.entity_instance) -> None:
-        bpy.context.scene.BIMTaskTreeProperties.tasks.clear()
+        props = cls.get_task_tree_props()
+        props.tasks.clear()
         props = bpy.context.scene.BIMWorkScheduleProperties
         cls.contracted_tasks = json.loads(props.contracted_tasks)
 
@@ -185,7 +191,8 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def create_new_task_li(cls, related_object_id: int, level_index: int) -> None:
         task = tool.Ifc.get().by_id(related_object_id)
-        new = bpy.context.scene.BIMTaskTreeProperties.tasks.add()
+        props = cls.get_task_tree_props()
+        new = props.tasks.add()
         new.ifc_definition_id = related_object_id
         new.is_expanded = related_object_id not in cls.contracted_tasks
         new.level_index = level_index
@@ -199,7 +206,7 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def load_task_properties(cls, task: Optional[ifcopenshell.entity_instance] = None) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
-        task_props = bpy.context.scene.BIMTaskTreeProperties
+        task_props = cls.get_task_tree_props()
         tasks_with_visual_bar = cls.get_task_bar_list()
         props.is_task_update_enabled = False
 
@@ -281,8 +288,9 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def contract_all_tasks(cls) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
+        tprops = cls.get_task_tree_props()
         contracted_tasks = json.loads(props.contracted_tasks)
-        for task_item in bpy.context.scene.BIMTaskTreeProperties.tasks:
+        for task_item in tprops.tasks:
             if task_item.is_expanded:
                 contracted_tasks.append(task_item.ifc_definition_id)
         props.contracted_tasks = json.dumps(contracted_tasks)
@@ -302,7 +310,7 @@ class Sequence(bonsai.core.tool.Sequence):
     def disable_selecting_deleted_task(cls) -> None:
         props = bpy.context.scene.BIMWorkScheduleProperties
         if props.active_task_id not in [
-            task.ifc_definition_id for task in bpy.context.scene.BIMTaskTreeProperties.tasks
+            task.ifc_definition_id for task in cls.get_task_tree_props().tasks
         ]:  # Task was deleted
             bpy.context.scene.BIMWorkScheduleProperties.active_task_id = 0
             bpy.context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
@@ -310,9 +318,7 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def get_checked_tasks(cls) -> list[ifcopenshell.entity_instance]:
         return [
-            tool.Ifc.get().by_id(task.ifc_definition_id)
-            for task in bpy.context.scene.BIMTaskTreeProperties.tasks
-            if task.is_selected
+            tool.Ifc.get().by_id(task.ifc_definition_id) for task in cls.get_task_tree_props().tasks if task.is_selected
         ] or []
 
     @classmethod
@@ -486,7 +492,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def get_highlighted_task(cls) -> Union[ifcopenshell.entity_instance, None]:
-        tasks = bpy.context.scene.BIMTaskTreeProperties.tasks
+        tasks = cls.get_task_tree_props().tasks
         if len(tasks) and len(tasks) > bpy.context.scene.BIMWorkScheduleProperties.active_task_index:
             return tool.Ifc.get().by_id(
                 tasks[bpy.context.scene.BIMWorkScheduleProperties.active_task_index].ifc_definition_id
@@ -789,7 +795,7 @@ class Sequence(bonsai.core.tool.Sequence):
         cls.load_task_tree(work_schedule)
         cls.load_task_properties()
 
-        task_props = bpy.context.scene.BIMTaskTreeProperties
+        task_props = cls.get_task_tree_props()
         expanded_tasks = [item.ifc_definition_id for item in task_props.tasks]
         bpy.context.scene.BIMWorkScheduleProperties.active_task_index = expanded_tasks.index(task.id()) or 0
 

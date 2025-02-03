@@ -21,6 +21,7 @@ import ifcopenshell.api.owner
 import ifcopenshell.api.geometry
 import ifcopenshell.guid
 import ifcopenshell.util.placement
+from typing import Any
 
 
 def assign_port(
@@ -68,6 +69,9 @@ def assign_port(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         if self.file.schema == "IFC2X3":
             return self.execute_ifc2x3()

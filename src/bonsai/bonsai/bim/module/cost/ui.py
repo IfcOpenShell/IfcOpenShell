@@ -19,6 +19,7 @@
 import bpy
 import bonsai.bim.helper
 import bonsai.bim.module.cost.prop as CostProp
+import bonsai.tool as tool
 from bpy.types import Panel, UIList
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.cost.data import CostSchedulesData
@@ -461,7 +462,7 @@ class BIM_PT_cost_item_quantities(Panel):
         total_cost_item_processes = len(self.props.cost_item_processes)
         row2.label(text="Tasks ({})".format(total_cost_item_processes))
 
-        tprops = context.scene.BIMTaskTreeProperties
+        tprops = tool.Sequence.get_task_tree_props()
         wprops = context.scene.BIMWorkScheduleProperties
         if tprops.tasks and wprops.active_task_index < len(tprops.tasks):
             if has_quantity_names:

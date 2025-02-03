@@ -42,6 +42,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 import bonsai.bim.handler
+import bonsai.bim.helper
 import bonsai.bim.schema
 import bonsai.tool as tool
 import bonsai.core.project as core

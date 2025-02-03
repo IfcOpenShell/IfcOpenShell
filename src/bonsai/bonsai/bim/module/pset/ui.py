@@ -40,7 +40,7 @@ from typing import Any, Optional, TYPE_CHECKING
 from typing_extensions import assert_never
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.pset.prop import IfcProperty
+    from bonsai.bim.module.pset.prop import IfcProperty, PsetProperties
 
 
 def draw_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_operator: Optional[str] = None) -> None:
@@ -73,7 +73,7 @@ def draw_single_property(prop: IfcProperty, layout: bpy.types.UILayout, copy_ope
 
 
 def draw_enumerated_property(
-    prop: bpy.types.PropertyGroup, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
+    prop: IfcProperty, layout: bpy.types.UILayout, copy_operator: Optional[str] = None
 ) -> None:
     value_name = prop.metadata.get_value_name()
     if not value_name:
@@ -99,7 +99,7 @@ def draw_psetqto_ui(
     context: bpy.types.Context,
     pset_id: int,
     pset: dict[str, Any],
-    props: bpy.types.PropertyGroup,
+    props: PsetProperties,
     layout: bpy.types.UILayout,
     obj_type: tool.Ifc.OBJECT_TYPE,
     allow_removing: bool = True,
@@ -219,9 +219,7 @@ def draw_psetqto_ui(
                 row.label(text="No Properties")
 
 
-def draw_psetqto_editable_ui(
-    box: bpy.types.UILayout, props: bpy.types.PropertyGroup, prop: bpy.types.PropertyGroup
-) -> None:
+def draw_psetqto_editable_ui(box: bpy.types.UILayout, props: PsetProperties, prop: IfcProperty) -> None:
     row = box.row(align=True)
     draw_property(prop, row, copy_operator="bim.copy_property_to_selection")
 
@@ -493,7 +491,8 @@ class BIM_PT_task_qtos(Panel):
         props = context.scene.BIMWorkScheduleProperties
         if not props.active_work_schedule_id:
             return False
-        total_tasks = len(context.scene.BIMTaskTreeProperties.tasks)
+        tprops = tool.Sequence.get_task_tree_props()
+        total_tasks = len(tprops.tasks)
         if total_tasks > 0 and props.active_task_index < total_tasks:
             return True
         return False

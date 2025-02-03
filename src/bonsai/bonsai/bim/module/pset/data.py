@@ -55,7 +55,11 @@ class Data:
         for name, data in sorted(psetqtos.items()):
             pset = ifc_file.by_id(data["id"])
             pset_uses = ifcopenshell.util.element.get_elements_by_pset(pset)
-            has_template = bool(tool.Pset.get_pset_template(name))
+            pset_template = tool.Pset.get_pset_template(name)
+            if has_template := bool(pset_template):
+                template_available_in_ui = pset_template
+            else:
+                template_available_in_ui = False
             results.append(
                 {
                     "id": data["id"],
@@ -214,7 +218,7 @@ class TaskQtosData(Data):
     @classmethod
     def load(cls):
         wprops = bpy.context.scene.BIMWorkScheduleProperties
-        tprops = bpy.context.scene.BIMTaskTreeProperties
+        tprops = tool.Sequence.get_task_tree_props()
         ifc_definition_id = tprops.tasks[wprops.active_task_index].ifc_definition_id
         cls.data = {"qtos": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), qtos_only=True)}
         cls.is_loaded = True

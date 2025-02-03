@@ -16,15 +16,27 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import mathutils
 import bonsai.core.tool
 import bonsai.tool as tool
 from mathutils import Matrix, Vector
-from typing import Any, Sequence
+from typing import Any, Sequence, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.boundary.prop import BIMBoundaryProperties, BIMObjectBoundaryProperties
 
 
 class Boundary(bonsai.core.tool.Boundary):
+    @classmethod
+    def get_boundary_props(cls) -> BIMBoundaryProperties:
+        return bpy.context.scene.BIMBoundaryProperties
+
+    @classmethod
+    def get_object_boundary_props(cls, obj: bpy.types.Object) -> BIMObjectBoundaryProperties:
+        return obj.BIMBoundaryProperties
+
     @classmethod
     def get_assign_connection_geometry_settings(cls, obj: bpy.types.Object) -> dict[str, Any]:
         from bonsai.bim.module.geometry.helper import Helper
@@ -76,7 +88,8 @@ class Boundary(bonsai.core.tool.Boundary):
 
     @classmethod
     def decorate_boundary(cls, obj: bpy.types.Object) -> None:
-        new = bpy.context.scene.BIMBoundaryProperties.boundaries.add()
+        props = cls.get_boundary_props()
+        new = props.boundaries.add()
         new.obj = obj
         obj.show_in_front = True
 

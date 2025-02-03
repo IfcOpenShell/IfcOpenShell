@@ -156,7 +156,7 @@ class BIM_PT_work_schedules(Panel):
         if not WorkScheduleData.is_loaded:
             WorkScheduleData.load()
         self.props = context.scene.BIMWorkScheduleProperties
-        self.tprops = context.scene.BIMTaskTreeProperties
+        self.tprops = tool.Sequence.get_task_tree_props()
 
         if not self.props.active_work_schedule_id:
             row = self.layout.row(align=True)
@@ -649,7 +649,8 @@ class BIM_PT_task_icom(Panel):
         props = context.scene.BIMWorkScheduleProperties
         if not props.active_work_schedule_id:
             return False
-        total_tasks = len(context.scene.BIMTaskTreeProperties.tasks)
+        tprops = tool.Sequence.get_task_tree_props()
+        total_tasks = len(tprops.tasks)
         if total_tasks > 0 and props.active_task_index < total_tasks:
             return True
         return False
@@ -659,7 +660,7 @@ class BIM_PT_task_icom(Panel):
             TaskICOMData.load()
 
         self.props = context.scene.BIMWorkScheduleProperties
-        self.tprops = context.scene.BIMTaskTreeProperties
+        self.tprops = tool.Sequence.get_task_tree_props()
         task = self.tprops.tasks[self.props.active_task_index]
 
         grid = self.layout.grid_flow(columns=3, even_columns=True)

@@ -169,6 +169,9 @@ class StrProperty(PropertyGroup):
 class ObjProperty(PropertyGroup):
     obj: bpy.props.PointerProperty(type=bpy.types.Object)
 
+    if TYPE_CHECKING:
+        obj: Union[bpy.types.Object, None]
+
 
 def update_single_file(self: "MultipleFileSelect", context: bpy.types.Context) -> None:
     self.file_list.clear()
@@ -179,6 +182,10 @@ def update_single_file(self: "MultipleFileSelect", context: bpy.types.Context) -
 class MultipleFileSelect(PropertyGroup):
     single_file: bpy.props.StringProperty(name="Single File Path", description="", update=update_single_file)
     file_list: bpy.props.CollectionProperty(type=StrProperty)
+
+    if TYPE_CHECKING:
+        single_file: str
+        file_list: bpy.types.bpy_prop_collection_idprop[StrProperty]
 
     def set_file_list(self, dirname: str, files: list[str]) -> None:
         self.file_list.clear()

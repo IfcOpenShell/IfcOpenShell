@@ -135,7 +135,7 @@ class Pset(bonsai.core.tool.Pset):
         return special_type
 
     @classmethod
-    def import_pset_from_existing(cls, pset: ifcopenshell.entity_instance, props: bpy.types.PropertyGroup) -> None:
+    def import_pset_from_existing(cls, pset: ifcopenshell.entity_instance, props: PsetProperties) -> None:
         pset_props = []
         if pset.is_a("IfcElementQuantity"):
             pset_props = pset.Quantities

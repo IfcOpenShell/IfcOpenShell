@@ -1133,23 +1133,27 @@ class Spatial(bonsai.core.tool.Spatial):
     @classmethod
     def toggle_spaces_visibility_wired_and_textured(cls, spaces: list[ifcopenshell.entity_instance]) -> None:
         first_obj = tool.Ifc.get_object(spaces[0])
-        if bpy.data.objects[first_obj.name].display_type == "TEXTURED":
+        assert isinstance(first_obj, bpy.types.Object)
+        obj: bpy.types.Object
+        if first_obj.display_type == "TEXTURED":
             for space in spaces:
                 obj = tool.Ifc.get_object(space)
-                bpy.data.objects[obj.name].show_wire = True
-                bpy.data.objects[obj.name].display_type = "WIRE"
+                obj.show_wire = True
+                obj.display_type = "WIRE"
             return
 
-        elif bpy.data.objects[first_obj.name].display_type == "WIRE":
+        elif first_obj.display_type == "WIRE":
             for space in spaces:
                 obj = tool.Ifc.get_object(space)
-                bpy.data.objects[obj.name].show_wire = False
-                bpy.data.objects[obj.name].display_type = "TEXTURED"
+                obj.show_wire = False
+                obj.display_type = "TEXTURED"
             return
 
     @classmethod
     def toggle_hide_spaces(cls, spaces: list[ifcopenshell.entity_instance]) -> None:
         first_obj = tool.Ifc.get_object(spaces[0])
+        assert isinstance(first_obj, bpy.types.Object)
+        obj: bpy.types.Object
         if first_obj.hide_get() == False:
             for space in spaces:
                 obj = tool.Ifc.get_object(space)

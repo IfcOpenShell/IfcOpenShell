@@ -40,6 +40,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING
 
 
 def getTaskColumns(self, context):
@@ -343,6 +344,26 @@ class Task(PropertyGroup):
     is_predecessor: BoolProperty(name="Is Predecessor")
     is_successor: BoolProperty(name="Is Successor")
 
+    if TYPE_CHECKING:
+        name: str
+        identification: str
+        ifc_definition_id: int
+        has_children: bool
+        is_selected: bool
+        is_expanded: bool
+        has_bar_visual: bool
+        level_index: int
+        duration: str
+        start: str
+        finish: str
+        calendar: str
+        derived_start: str
+        derived_finish: str
+        derived_duration: str
+        derived_calendar: str
+        is_predecessor: bool
+        is_successor: bool
+
 
 class WorkPlan(PropertyGroup):
     name: StringProperty(name="Name")
@@ -478,6 +499,9 @@ class BIMTaskTreeProperties(PropertyGroup):
     # This belongs by itself for performance reasons. https://developer.blender.org/T87737
     # In Blender if you add many collection items it makes other property access in the same group really slow.
     tasks: CollectionProperty(name="Tasks", type=Task)
+
+    if TYPE_CHECKING:
+        tasks: bpy.types.bpy_prop_collection_idprop[Task]
 
 
 class WorkCalendar(PropertyGroup):

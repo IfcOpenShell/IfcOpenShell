@@ -64,10 +64,12 @@ class BIM_PT_Boundary(Panel):
         return entity.is_a("IfcRelSpaceBoundary")
 
     def draw(self, context):
-        props = context.active_object.BIMObjectProperties
+        obj = context.active_object
+        assert obj
+        props = obj.BIMObjectProperties
         ifc_file = tool.Ifc.get()
         boundary = ifc_file.by_id(props.ifc_definition_id)
-        self.bprops = context.active_object.BIMBoundaryProperties
+        self.bprops = tool.Boundary.get_object_boundary_props(obj)
         if self.bprops.is_editing:
             row = self.layout.row(align=True)
             row.operator("bim.edit_boundary_attributes", icon="CHECKMARK", text="Save Attributes")

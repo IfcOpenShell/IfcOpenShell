@@ -49,7 +49,8 @@ class AddPsetTemplateFile(bpy.types.Operator):
         template.write(filepath)
         bonsai.bim.handler.refresh_ui_data()
         bonsai.bim.schema.reload(tool.Ifc.get().schema)
-        context.scene.BIMPsetTemplateProperties.pset_template_files = filepath
+        props = tool.PsetTemplate.get_pset_template_props()
+        props.pset_template_files = filepath
         tool.PsetTemplate.enable_editing_pset_template()
         return {"FINISHED"}
 
@@ -67,7 +68,8 @@ class AddPsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator
         self.template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
         bonsai.bim.schema.reload(tool.Ifc.get().schema)
-        context.scene.BIMPsetTemplateProperties.pset_templates = str(template.id())
+        props = tool.PsetTemplate.get_pset_template_props()
+        props.pset_templates = str(template.id())
 
 
 class RemovePsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator):
@@ -76,7 +78,7 @@ class RemovePsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOpera
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMPsetTemplateProperties
+        props = tool.PsetTemplate.get_pset_template_props()
         current_pset_template_id = int(props.pset_templates)
         if props.active_pset_template_id == current_pset_template_id:
             bpy.ops.bim.disable_editing_pset_template()
@@ -107,7 +109,7 @@ class DisableEditingPsetTemplate(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMPsetTemplateProperties
+        props = tool.PsetTemplate.get_pset_template_props()
         props.active_pset_template_id = 0
         return {"FINISHED"}
 
@@ -130,7 +132,8 @@ class DeletePropEnum(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        active_prop = context.scene.BIMPsetTemplateProperties.active_prop_template
+        props = tool.PsetTemplate.get_pset_template_props()
+        active_prop = props.active_prop_template
         active_prop.enum_values.remove(self.index)
         return {"FINISHED"}
 
@@ -142,7 +145,8 @@ class AddPropEnum(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        active_prop = context.scene.BIMPsetTemplateProperties.active_prop_template
+        props = tool.PsetTemplate.get_pset_template_props()
+        active_prop = props.active_prop_template
         active_prop.enum_values.add()
         return {"FINISHED"}
 
@@ -153,7 +157,7 @@ class DisableEditingPropTemplate(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMPsetTemplateProperties
+        props = tool.PsetTemplate.get_pset_template_props()
         props.active_prop_template_id = 0
         return {"FINISHED"}
 
@@ -164,7 +168,7 @@ class EditPsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperato
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMPsetTemplateProperties
+        props = tool.PsetTemplate.get_pset_template_props()
         ifcopenshell.api.run(
             "pset_template.edit_pset_template",
             IfcStore.pset_template_file,
@@ -209,7 +213,7 @@ class RemovePsetTemplateFile(bpy.types.Operator):
         bonsai.bim.schema.reload(tool.Ifc.get().schema)
 
         # Ensure enum is valid after deletion.
-        self.props = context.scene.BIMPsetTemplateProperties
+        self.props = tool.PsetTemplate.get_pset_template_props()
         if not tool.Blender.ensure_enum_is_valid(self.props, "pset_template_files"):
             self.update_template_files_prop(context)
         return {"FINISHED"}
@@ -226,7 +230,7 @@ class AddPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperator
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMPsetTemplateProperties
+        props = tool.PsetTemplate.get_pset_template_props()
         pset_template_id = props.active_pset_template_id or int(props.pset_templates)
         prop_template = ifcopenshell.api.run(
             "pset_template.add_prop_template",
@@ -264,7 +268,7 @@ class EditPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperato
 
     def _execute(self, context):
         assert IfcStore.pset_template_file
-        props = context.scene.BIMPsetTemplateProperties
+        props = tool.PsetTemplate.get_pset_template_props()
         active_prop_template = props.active_prop_template
         if props.active_prop_template.template_type == "P_ENUMERATEDVALUE":
             data_type = props.active_prop_template.get_value_name()

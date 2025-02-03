@@ -126,13 +126,14 @@ class PsetTemplatesData:
         if not cls.data["pset_template_files"]:
             return []
         if not IfcStore.pset_template_file:
-            IfcStore.pset_template_path = bpy.context.scene.BIMPsetTemplateProperties.pset_template_files
+            props = tool.PsetTemplate.get_pset_template_props()
+            IfcStore.pset_template_path = props.pset_template_files
             IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
         return [(str(t.id()), t.Name, "") for t in IfcStore.pset_template_file.by_type("IfcPropertySetTemplate")]
 
     @classmethod
     def pset_template(cls) -> dict[str, Any]:
-        props = bpy.context.scene.BIMPsetTemplateProperties
+        props = tool.PsetTemplate.get_pset_template_props()
         template_id = props.pset_templates
         if not template_id:
             return {}
@@ -145,7 +146,7 @@ class PsetTemplatesData:
 
     @classmethod
     def prop_templates(cls) -> list[dict[str, Any]]:
-        props = bpy.context.scene.BIMPsetTemplateProperties
+        props = tool.PsetTemplate.get_pset_template_props()
         template_id = props.pset_templates
         if not template_id:
             return []

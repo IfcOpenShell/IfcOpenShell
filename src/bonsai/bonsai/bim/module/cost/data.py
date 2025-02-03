@@ -325,10 +325,11 @@ class CostItemQuantitiesData:
     @classmethod
     def process_quantity_names(cls):
         active_task_index = bpy.context.scene.BIMWorkScheduleProperties.active_task_index
-        total_tasks = len(bpy.context.scene.BIMTaskTreeProperties.tasks)
+        tprops = tool.Sequence.get_task_tree_props()
+        total_tasks = len(tprops.tasks)
         if not total_tasks or active_task_index >= total_tasks:
             return []
-        ifc_definition_id = bpy.context.scene.BIMTaskTreeProperties.tasks[active_task_index].ifc_definition_id
+        ifc_definition_id = tprops.tasks[active_task_index].ifc_definition_id
         element = tool.Ifc.get().by_id(ifc_definition_id)
         names = set()
         qtos = ifcopenshell.util.element.get_psets(element, qtos_only=True)

@@ -491,14 +491,14 @@ class SavePsetAsTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOpera
     pset_id: bpy.props.IntProperty()
 
     def invoke(self, context, event):
-        props = context.scene.BIMPsetTemplateProperties
+        props = tool.PsetTemplate.get_pset_template_props()
         if tool.Blender.get_enum_safe(props, "pset_template_files") is None:
             self.report({"ERROR"}, "No template files found. You can create one in Property Set Templates UI.")
             return {"CANCELLED"}
         return context.window_manager.invoke_props_dialog(self, width=250)
 
     def draw(self, context):
-        props = context.scene.BIMPsetTemplateProperties
+        props = tool.PsetTemplate.get_pset_template_props()
         self.layout.prop(props, "pset_template_files", text="Template File")
 
     def _execute(self, context):

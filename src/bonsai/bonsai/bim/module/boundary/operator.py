@@ -354,7 +354,9 @@ class EnableEditingBoundary(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bprops = context.active_object.BIMBoundaryProperties
+        obj = context.active_object
+        assert obj
+        bprops = tool.Boundary.get_object_boundary_props(obj)
         bprops.is_editing = True
         boundary = tool.Ifc.get_entity(context.active_object)
         for ifc_attribute, blender_property in EDITABLE_ATTRIBUTES.items():
@@ -373,7 +375,9 @@ class DisableEditingBoundary(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        bprops = context.active_object.BIMBoundaryProperties
+        obj = context.active_object
+        assert obj
+        bprops = tool.Boundary.get_object_boundary_props(obj)
         bprops.is_editing = False
         for ifc_attribute, blender_property in EDITABLE_ATTRIBUTES.items():
             setattr(bprops, blender_property, None)
@@ -386,8 +390,10 @@ class EditBoundaryAttributes(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        bprops = context.active_object.BIMBoundaryProperties
-        boundary = tool.Ifc.get_entity(context.active_object)
+        obj = context.active_object
+        assert obj
+        bprops = tool.Boundary.get_object_boundary_props(obj)
+        boundary = tool.Ifc.get_entity(obj)
         attributes = dict()
         for ifc_attribute, blender_property in EDITABLE_ATTRIBUTES.items():
             obj = getattr(bprops, blender_property, None)
@@ -519,6 +525,7 @@ class HideBoundaries(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Boundary.get_boundary_props()
         to_delete = set()
         spaces = set()
         for obj in context.selected_objects:
@@ -538,7 +545,7 @@ class HideBoundaries(bpy.types.Operator, tool.Ifc.Operator):
         for boundary, boundary_obj in to_delete:
             tool.Ifc.unlink(element=boundary)
             bpy.data.objects.remove(boundary_obj)
-        context.scene.BIMBoundaryProperties.boundaries.clear()
+        props.boundaries.clear()
         return {"FINISHED"}
 
 
@@ -549,7 +556,7 @@ class DecorateBoundaries(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMBoundaryProperties
+        props = tool.Boundary.get_boundary_props()
         # filter not decorated boundaries and add decorations for them
         decorated_boundaries = set([i.obj for i in props.boundaries])
         active_boundaries = set()

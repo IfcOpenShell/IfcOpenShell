@@ -78,7 +78,8 @@ class BoundaryDecorator:
         unselected_edges = []
         unselected_tris = []
 
-        for boundary in context.scene.BIMBoundaryProperties.boundaries:
+        props = tool.Boundary.get_boundary_props()
+        for boundary in props.boundaries:
             obj = boundary.obj
             if not obj or not obj.data:  # A boundary may not have data if it has no connection geometry
                 continue
