@@ -408,9 +408,6 @@ class BIM_PT_tabs(Panel):
         is_ifc_project = bool(tool.Ifc.get())
         aprops = tool.Blender.get_area_props(context)
         ifc_icon = f"{UIData.data['icon_color_mode']}_ifc"
-        theme = bpy.context.preferences.themes[0].user_interface
-        original_text_sel = theme.wcol_regular.text_sel  # Store original color
-        theme.wcol_regular.text_sel = theme.wcol_regular.text  # Override the text_sel color
 
         row = self.layout.row()
         row.alignment = "CENTER"
@@ -418,7 +415,6 @@ class BIM_PT_tabs(Panel):
             "bim.set_tab",
             text="",
             emboss=aprops.tab == "PROJECT",
-            depress=True,
             icon_value=bonsai.bim.icons[ifc_icon].icon_id,
         ).tab = "PROJECT"
         self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
@@ -430,7 +426,6 @@ class BIM_PT_tabs(Panel):
         self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
         self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
         row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
-        theme.wcol_regular.text_sel = original_text_sel  # Restore original tex_sel color
 
         # Yes, that's right.
         row = self.layout.row()
@@ -512,9 +507,9 @@ class BIM_PT_tabs(Panel):
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
 
-    def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=False):
+    def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=True):
         tab_entry = row.row(align=True)
-        tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon=icon, depress=True).tab = tab_name
+        tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon=icon).tab = tab_name
         tab_entry.enabled = enabled
 
 
@@ -1111,6 +1106,10 @@ class BIM_PT_tab_operations(Panel):
 
     def draw(self, context):
         pass
+
+
+def refresh():
+    UIData.is_loaded = False
 
 
 class UIData:

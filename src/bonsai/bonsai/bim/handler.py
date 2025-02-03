@@ -188,6 +188,9 @@ def refresh_ui_data():
     and it need to be refreshed manually if needed.
     """
     from bonsai.bim import modules
+    import bonsai.bim.ui
+
+    bonsai.bim.ui.refresh()
 
     for name, value in modules.items():
         try:
