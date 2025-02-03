@@ -18,7 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.util.element
-from ifcopenshell.util.unit import calculate_unit_scale
+import ifcopenshell.util.unit
 from logging import Logger
 from collections import defaultdict
 from typing import List, Dict, Tuple, Optional
@@ -50,41 +50,42 @@ class Patcher:
     - IfcMaterialConstituent: https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmaterialresource/lexical/ifcmaterialconstituent.htm
     """
 
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, *args):
-        self.src = src
+    def __init__(self, file: ifcopenshell.file, logger: Logger, *args):
         self.file = file
         self.logger = logger
 
     def patch(self):
         """Execute the patch to assign fractions to material constituents."""
-        unit_scale = calculate_unit_scale(self.file)
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         
-        # Get length unit from file for display
-        length_unit = "model units"
-        for unit in self.file.by_type("IfcSIUnit"):
-            if unit.UnitType == "LENGTHUNIT":
-                prefix = getattr(unit, "Prefix", None)
-                length_unit = f"{prefix if prefix else ''}{unit.Name}"
-                break
-
+        # Get length unit from project
+        length_unit = ifcopenshell.util.unit.get_project_unit(self.file, "LENGTHUNIT")
+        
         for constituent_set in self.file.by_type('IfcMaterialConstituentSet'):
-            constituents = constituent_set.MaterialConstituents or []
-            if not constituents:
-                continue  # Skip if no constituents found
-
-            # Find elements associated with this constituent set
-            associated_elements = set(ifcopenshell.util.element.get_elements_by_material(self.file, constituent_set))
-            if not associated_elements:
+            if not (constituents := constituent_set.MaterialConstituents):
                 continue
 
-            # Calculate widths for constituents
+            # Find elements associated with this constituent set
+            if not (elements := set(ifcopenshell.util.element.get_elements_by_material(self.file, constituent_set))):
+                continue
+
+            # Sort elements by GlobalId to ensure consistent order
+            elements_sorted = sorted(elements, key=lambda x: x.GlobalId)
+            for element in elements_sorted:
+                quantities = self.get_element_quantities(element)
+                if quantities:
+                    element_quantities = quantities
+                    break
+
+            if not element_quantities:
+                continue
+
+            # Calculate constituent widths and total width
             constituent_widths, total_width = self.calculate_constituent_widths(
-                constituents, associated_elements, unit_scale
+                constituents, elements, unit_scale
             )
 
-            if total_width == 0.0:
-                constituent_set_name = constituent_set.Name or "Unnamed Constituent Set"
-                self.logger.warning(f"No widths found for constituents in set '{constituent_set_name}'. Skipping.")
+            if not constituent_widths:
                 continue
 
             # Assign fractions based on widths
@@ -99,53 +100,50 @@ class Patcher:
 
     def get_element_quantities(self, element: ifcopenshell.entity_instance) -> Dict[str, float]:
         """Get width quantities for an element."""
-        quantities = {}
-        
-        # Get quantities from IfcPhysicalComplexQuantity
-        for rel in getattr(element, 'IsDefinedBy', []):
-            if not rel.is_a('IfcRelDefinesByProperties'):
-                continue
-            definition = rel.RelatingPropertyDefinition
-            if not definition.is_a('IfcElementQuantity'):
-                continue
-            for quantity in definition.Quantities:
-                if not quantity.is_a('IfcPhysicalComplexQuantity'):
-                    continue
-                if quantity.Discrimination.lower() != 'layer':
-                    continue
-                for sub_quantity in quantity.HasQuantities:
-                    if not sub_quantity.is_a('IfcQuantityLength'):
-                        continue
-                    if sub_quantity.Name.lower() != 'width':
-                        continue
-                    quantities[quantity.Name.lower()] = float(sub_quantity.LengthValue)
-                
-        return quantities
+        qtos = [v for k,v in ifcopenshell.util.element.get_psets(element, qtos_only=True).items() 
+               if k.endswith("BaseQuantities")]
+        if qtos:
+            return {k:v["properties"]["Width"] for k,v in qtos[0].items() 
+                   if isinstance(v,dict) and 
+                   (v.get("Discrimination") or "").lower() == "layer" and 
+                   v.get("properties",{}).get("Width", "") is not None}
+        return {}
 
     def calculate_constituent_widths(
-        self,
-        constituents: List[ifcopenshell.entity_instance],
-        elements: set[ifcopenshell.entity_instance],
-        unit_scale: float
-    ) -> Tuple[Dict[ifcopenshell.entity_instance, float], float]:
+            self,
+            constituents: List[ifcopenshell.entity_instance],
+            elements: set[ifcopenshell.entity_instance],
+            unit_scale: float
+        ) -> Tuple[Dict[ifcopenshell.entity_instance, float], float]:
         """Calculate the widths of constituents based on associated quantities."""
-        constituents_by_name = defaultdict(list)
-        for constituent in constituents:
-            constituent_name = (constituent.Name or "Unnamed Constituent").strip().lower()
-            constituents_by_name[constituent_name].append(constituent)
-
-        # Collect all quantities from all elements
+        if not elements:
+            return {}, 0.0
+        
+        # Get quantities from all elements and use the first valid one
         element_quantities = {}
         for element in elements:
-            element_quantities.update(self.get_element_quantities(element))
-
+            quantities = self.get_element_quantities(element)
+            if quantities:  # If we found valid quantities, use them
+                element_quantities = quantities
+                self.logger.debug(f"Using quantities from element: {element.GlobalId}")
+                break
+            
+        if not element_quantities:
+            self.logger.warning("No valid quantities found in any element")
+            return {}, 0.0
+        
         constituent_widths = {}
         total_width = 0.0
-
-        for constituent_name, constituents_list in constituents_by_name.items():
-            width = element_quantities.get(constituent_name, 0.0)
-            for constituent in constituents_list:
-                constituent_widths[constituent] = width
-                total_width += width
+        
+        for constituent in constituents:
+            if not constituent.Name:  # Skip unnamed constituents as per RV MVD
+                continue
+            
+            constituent_name = constituent.Name.strip()
+            if width := element_quantities.get(constituent_name):
+                constituent_widths[constituent] = width * unit_scale
+                total_width += width * unit_scale
+            else:
+                self.logger.debug(f"No width found for constituent: {constituent_name}")
 
         return constituent_widths, total_width
