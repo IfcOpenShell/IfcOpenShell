@@ -19,7 +19,6 @@
 import os
 import bpy
 import bmesh
-import json
 import time
 import logging
 import textwrap
@@ -32,11 +31,10 @@ import ifcopenshell
 import bonsai.bim
 import bonsai.tool as tool
 from bonsai.bim import import_ifc
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty
 from bonsai.bim.ui import IFCFileSelector
 from bonsai.bim.helper import get_enum_items
-from mathutils import Vector, Matrix, Euler
+from mathutils import Vector, Euler
 from math import radians
 from pathlib import Path
 from collections import namedtuple

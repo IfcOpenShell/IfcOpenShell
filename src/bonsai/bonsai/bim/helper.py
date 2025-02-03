@@ -20,15 +20,12 @@ from __future__ import annotations
 import importlib
 import bpy
 import json
-import math
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
-from mathutils import geometry
-from mathutils import Vector
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from typing import Optional, Callable, Any, Union, Iterable, TYPE_CHECKING

@@ -20,8 +20,7 @@ import os
 import bpy
 import bpy.utils.previews
 import importlib
-from pathlib import Path
-from . import handler, ui, prop, operator, helper
+from . import handler, ui, prop, operator
 from typing import Callable, Union
 
 try:
