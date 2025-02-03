@@ -238,6 +238,17 @@ class ElectricApplianceTool(BimTool):
     ifc_element_type = "IfcElectricApplianceType"
 
 
+class GeographicElement(BimTool):
+    bl_space_type = "VIEW_3D"
+    bl_context_mode = "OBJECT"
+    bl_idname = "bim.geographic_element_tool"
+    bl_label = "Geographic Element Tool"
+    bl_description = "Create and edit terrain and vegetation landscape geographic elements"
+    bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.geographicelement")
+    bl_widget = None
+    ifc_element_type = "IfcGeographicElementType"
+
+
 class ColumnTool(BimTool):
     bl_space_type = "VIEW_3D"
     bl_context_mode = "OBJECT"
