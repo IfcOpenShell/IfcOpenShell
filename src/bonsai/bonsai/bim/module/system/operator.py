@@ -26,22 +26,24 @@ from bonsai.bim.module.system.data import PortData
 from mathutils import Matrix
 
 
-class LoadSystems(bpy.types.Operator, tool.Ifc.Operator):
+class LoadSystems(bpy.types.Operator):
     bl_idname = "bim.load_systems"
     bl_label = "Load Systems"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.load_systems(tool.System)
+        return {"FINISHED"}
 
 
-class DisableSystemEditingUI(bpy.types.Operator, tool.Ifc.Operator):
+class DisableSystemEditingUI(bpy.types.Operator):
     bl_idname = "bim.disable_system_editing_ui"
     bl_label = "Disable System Editing UI"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_system_editing_ui(tool.System)
+        return {"FINISHED"}
 
 
 class AddSystem(bpy.types.Operator, tool.Ifc.Operator):
@@ -74,23 +76,25 @@ class RemoveSystem(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_system(tool.Ifc, tool.System, system=tool.Ifc.get().by_id(self.system))
 
 
-class EnableEditingSystem(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingSystem(bpy.types.Operator):
     bl_idname = "bim.enable_editing_system"
     bl_label = "Enable Editing System"
     bl_options = {"REGISTER", "UNDO"}
     system: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_system(tool.System, system=tool.Ifc.get().by_id(self.system))
+        return {"FINISHED"}
 
 
-class DisableEditingSystem(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingSystem(bpy.types.Operator):
     bl_idname = "bim.disable_editing_system"
     bl_label = "Disable Editing System"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
         core.disable_editing_system(tool.System)
+        return {"FINISHED"}
 
 
 class AssignSystem(bpy.types.Operator, tool.Ifc.Operator):
@@ -119,14 +123,15 @@ class UnassignSystem(bpy.types.Operator, tool.Ifc.Operator):
                 core.unassign_system(tool.Ifc, system=tool.Ifc.get().by_id(self.system), product=element)
 
 
-class SelectSystemProducts(bpy.types.Operator, tool.Ifc.Operator):
+class SelectSystemProducts(bpy.types.Operator):
     bl_idname = "bim.select_system_products"
     bl_label = "Select System Products"
     bl_options = {"REGISTER", "UNDO"}
     system: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.select_system_products(tool.System, system=tool.Ifc.get().by_id(self.system))
+        return {"FINISHED"}
 
 
 class ShowPorts(bpy.types.Operator, tool.Ifc.Operator):
@@ -144,6 +149,7 @@ class ShowPorts(bpy.types.Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
+        # Ifc.Operator - as operator will sync object's position with IFC.
         core.show_ports(tool.Ifc, tool.System, tool.Spatial, element=tool.Ifc.get_entity(context.active_object))
 
 
@@ -157,6 +163,7 @@ class HidePorts(bpy.types.Operator, tool.Ifc.Operator):
         return ShowPorts.poll(context)
 
     def _execute(self, context):
+        # Ifc.Operator - as operator will sync object and ports positions with IFC.
         core.hide_ports(tool.Ifc, tool.System, element=tool.Ifc.get_entity(context.active_object))
 
 
@@ -324,7 +331,7 @@ class SetFlowDirection(bpy.types.Operator, tool.Ifc.Operator):
         return {"CANCELLED"}
 
 
-class LoadZones(bpy.types.Operator, tool.Ifc.Operator):
+class LoadZones(bpy.types.Operator):
     bl_idname = "bim.load_zones"
     bl_label = "Load Zones"
     bl_options = {"REGISTER", "UNDO"}
@@ -338,9 +345,10 @@ class LoadZones(bpy.types.Operator, tool.Ifc.Operator):
             new.name = zone.Name or "Unnamed"
         props.is_loaded = True
         props.is_editing = 0
+        return {"FINISHED"}
 
 
-class UnloadZones(bpy.types.Operator, tool.Ifc.Operator):
+class UnloadZones(bpy.types.Operator):
     bl_idname = "bim.unload_zones"
     bl_label = "Unload Zones"
     bl_options = {"REGISTER", "UNDO"}
@@ -348,6 +356,7 @@ class UnloadZones(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = bpy.context.scene.BIMZoneProperties
         props.is_loaded = False
+        return {"FINISHED"}
 
 
 class AddZone(bpy.types.Operator, tool.Ifc.Operator):
@@ -370,17 +379,18 @@ class AddZone(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.load_zones()
 
 
-class EnableEditingZone(bpy.types.Operator, tool.Ifc.Operator):
+class EnableEditingZone(bpy.types.Operator):
     bl_idname = "bim.enable_editing_zone"
     bl_label = "Enable Editing Zone"
     bl_options = {"REGISTER", "UNDO"}
     zone: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         props = bpy.context.scene.BIMZoneProperties
         props.attributes.clear()
         bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.zone), props.attributes)
         props.is_editing = self.zone
+        return {"FINISHED"}
 
 
 class DisableEditingZone(bpy.types.Operator, tool.Ifc.Operator):
@@ -388,9 +398,10 @@ class DisableEditingZone(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Disable Editing Zone"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         props = bpy.context.scene.BIMZoneProperties
         props.is_editing = 0
+        return {"FINISHED"}
 
 
 class EditZone(bpy.types.Operator, tool.Ifc.Operator):
