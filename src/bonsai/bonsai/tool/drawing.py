@@ -1321,6 +1321,8 @@ class Drawing(bonsai.core.tool.Drawing):
             context=context,
             ifc_representation_class=None,
         )
+        bpy.data.curves.remove(data)
+
         assert element
         representation = ifcopenshell.util.representation.get_representation(element, context)
         assert representation
