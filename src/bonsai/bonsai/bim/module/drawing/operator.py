@@ -41,6 +41,7 @@ import bonsai.core.geometry
 import bonsai.core.drawing as core
 import bonsai.bim.module.drawing.svgwriter as svgwriter
 import bonsai.bim.module.drawing.annotation as annotation
+import bonsai.bim.module.drawing.sheeter as sheeter
 import bonsai.bim.export_ifc
 from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
