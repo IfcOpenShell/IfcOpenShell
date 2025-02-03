@@ -337,7 +337,7 @@ class LoadZones(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMZoneProperties
+        props = tool.System.get_zone_props()
         props.zones.clear()
         for zone in tool.Ifc.get().by_type("IfcZone"):
             new = props.zones.add()
@@ -354,7 +354,7 @@ class UnloadZones(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMZoneProperties
+        props = tool.System.get_zone_props()
         props.is_loaded = False
         return {"FINISHED"}
 
@@ -386,7 +386,7 @@ class EnableEditingZone(bpy.types.Operator):
     zone: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = bpy.context.scene.BIMZoneProperties
+        props = tool.System.get_zone_props()
         props.attributes.clear()
         bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.zone), props.attributes)
         props.is_editing = self.zone
@@ -399,7 +399,7 @@ class DisableEditingZone(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = bpy.context.scene.BIMZoneProperties
+        props = tool.System.get_zone_props()
         props.is_editing = 0
         return {"FINISHED"}
 
@@ -410,7 +410,7 @@ class EditZone(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMZoneProperties
+        props = tool.System.get_zone_props()
         zone = tool.Ifc.get().by_id(props.is_editing)
         attributes = bonsai.bim.helper.export_attributes(props.attributes)
         ifcopenshell.api.run("system.edit_system", tool.Ifc.get(), system=zone, attributes=attributes)

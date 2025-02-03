@@ -1686,7 +1686,7 @@ class RemoveDrawingFromSheet(bpy.types.Operator, tool.Ifc.Operator):
             return False
 
         if active_item.reference_type == "TITLEBLOCK":
-            cls.poll_message_set("No effect deleting this.")
+            cls.poll_message_set("No effect deleting titleblock reference.")
             return False
         return True
 

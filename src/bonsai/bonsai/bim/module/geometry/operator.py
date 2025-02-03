@@ -1075,7 +1075,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
     @staticmethod
     def duplicate_item(obj: bpy.types.Object) -> None:
-        props = bpy.context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         new_item = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)
         new_obj = obj.copy()
@@ -2750,17 +2750,17 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         assert obj
-        props = context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         if previous_obj := props.representation_obj:
             previous_obj.hide_set(False)
         props.representation_obj = obj
         obj.hide_set(True)
         tool.Geometry.lock_object(obj)
 
-        context.scene.BIMGeometryProperties.is_changing_mode = True
-        if context.scene.BIMGeometryProperties.mode != "ITEM":
-            context.scene.BIMGeometryProperties.mode = "ITEM"
-        context.scene.BIMGeometryProperties.is_changing_mode = False
+        props.is_changing_mode = True
+        if props.mode != "ITEM":
+            props.mode = "ITEM"
+        props.is_changing_mode = False
 
         tool.Loader.load_settings()
 

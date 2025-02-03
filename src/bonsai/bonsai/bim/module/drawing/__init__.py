@@ -100,7 +100,7 @@ classes = (
     prop.Sheet,
     prop.DocProperties,
     prop.BIMCameraProperties,
-    prop.Literal,
+    prop.LiteralProps,
     prop.BIMTextProperties,
     prop.BIMAssignedProductProperties,
     prop.BIMAnnotationProperties,

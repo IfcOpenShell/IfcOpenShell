@@ -31,6 +31,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING
 
 
 def get_system_class(self, context):
@@ -71,6 +72,17 @@ class BIMSystemProperties(PropertyGroup):
         name="Should Draw Decorations", description="Toggle system decorations", update=toggle_decorations
     )
 
+    if TYPE_CHECKING:
+        system_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        is_editing: bool
+        is_adding: bool
+        systems: bpy.types.bpy_prop_collection_idprop[System]
+        active_system_index: int
+        active_system_id: int
+        edited_system_id: int
+        system_class: str
+        should_draw_decorations: bool
+
 
 class BIMZoneProperties(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=Attribute)
@@ -78,3 +90,10 @@ class BIMZoneProperties(PropertyGroup):
     is_editing: IntProperty(name="Is Editing", default=0)
     zones: CollectionProperty(name="Zones", type=Zone)
     active_zone_index: IntProperty(name="Active Zone Index")
+
+    if TYPE_CHECKING:
+        attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        is_loaded: bool
+        is_editing: int
+        zones: bpy.types.bpy_prop_collection_idprop[Zone]
+        active_zone_index: int

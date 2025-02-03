@@ -350,7 +350,7 @@ class BIM_PT_zones(Panel):
     def draw(self, context):
         if not ZonesData.is_loaded:
             ZonesData.load()
-        self.props = context.scene.BIMZoneProperties
+        self.props = tool.System.get_zone_props()
 
         row = self.layout.row(align=True)
         row.label(text="{} Zones Found".format(ZonesData.data["total_zones"]), icon="SEQ_STRIP_META")
@@ -394,7 +394,7 @@ class BIM_PT_active_object_zones(Panel):
     def draw(self, context):
         if not ActiveObjectZonesData.is_loaded:
             ActiveObjectZonesData.load()
-        self.props = context.scene.BIMZoneProperties
+        self.props = tool.System.get_zone_props()
 
         for zone in ActiveObjectZonesData.data["zones"]:
             row = self.layout.row()

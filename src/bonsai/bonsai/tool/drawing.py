@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import re
 import collections
@@ -34,6 +35,7 @@ import subprocess
 import numpy as np
 import bonsai.core.tool
 import bonsai.core.geometry
+import bonsai.core.type
 import bonsai.tool as tool
 import ifcopenshell.api
 import ifcopenshell.api.document
@@ -49,8 +51,12 @@ from shapely.ops import unary_union
 from lxml import etree
 from mathutils import Vector, Matrix
 from fractions import Fraction
-from typing import Optional, Union, Iterable, Any, Literal, Sequence
+from typing import Optional, Union, Iterable, Any, Literal, Sequence, TYPE_CHECKING
 from pathlib import Path
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.drawing.prop import DocProperties, Sheet
+    from bonsai.bim.module.drawing.prop import Drawing as DrawingProperties
 
 
 class Drawing(bonsai.core.tool.Drawing):
@@ -80,6 +86,10 @@ class Drawing(bonsai.core.tool.Drawing):
         "IMAGE":         ("Image",            "Add reference image attached to the drawing", "TEXTURE", "mesh"),
     }
     # fmt: on
+
+    @classmethod
+    def get_document_props(cls) -> DocProperties:
+        return bpy.context.scene.DocProperties
 
     @classmethod
     def canonicalise_class_name(cls, name: str) -> str:
@@ -820,7 +830,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def import_documents(cls, document_type: DOCUMENT_TYPE) -> None:
-        dprops = bpy.context.scene.DocProperties
+        dprops = cls.get_document_props()
         if document_type == "SCHEDULE":
             documents_collection = dprops.schedules
         elif document_type == "REFERENCE":
@@ -839,7 +849,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def import_sheets(cls) -> None:
-        props = bpy.context.scene.DocProperties
+        props = cls.get_document_props()
         expanded_sheets = {s.ifc_definition_id for s in props.sheets if s.is_expanded}
         if not hasattr(cls, "sheet_selected_states"):
             cls.sheet_selected_states = {}
@@ -879,13 +889,13 @@ class Drawing(bonsai.core.tool.Drawing):
                 new.reference_type = reference_description
 
     @classmethod
-    def get_active_sheet(cls, context: bpy.types.Context) -> bpy.types.PropertyGroup:
-        props = context.scene.DocProperties
+    def get_active_sheet(cls, context: bpy.types.Context) -> Sheet:
+        props = cls.get_document_props()
         return next(s for s in props.sheets[: props.active_sheet_index + 1][::-1] if s.is_sheet)
 
     @classmethod
-    def get_active_drawing_item(cls) -> Union[bpy.types.PropertyGroup, None]:
-        props = bpy.context.scene.DocProperties
+    def get_active_drawing_item(cls) -> Union[DrawingProperties, None]:
+        props = cls.get_document_props()
         drawing_index = props.active_drawing_index
         if len(props.drawings) > drawing_index >= 0:
             item = props.drawings[drawing_index]
@@ -893,10 +903,8 @@ class Drawing(bonsai.core.tool.Drawing):
                 return item
 
     @classmethod
-    def get_active_sheet_item(
-        cls, *, is_sheet: bool = False, reference_type: str = ""
-    ) -> Union[bpy.types.PropertyGroup, None]:
-        props = bpy.context.scene.DocProperties
+    def get_active_sheet_item(cls, *, is_sheet: bool = False, reference_type: str = "") -> Union[Sheet, None]:
+        props = cls.get_document_props()
         sheet_index = props.active_sheet_index
         if len(props.sheets) > sheet_index >= 0:
             item = props.sheets[sheet_index]

@@ -1243,7 +1243,7 @@ class LoadLink(bpy.types.Operator):
             os.remove(blend_filepath)
 
         if not blend_filepath.exists():
-            pprops = bpy.context.scene.BIMProjectProperties
+            pprops = tool.Project.get_project_props()
             gprops = bpy.context.scene.BIMGeoreferenceProperties
 
             code = f"""

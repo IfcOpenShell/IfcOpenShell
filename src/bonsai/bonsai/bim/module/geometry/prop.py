@@ -32,7 +32,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Union
 
 
 def get_contexts(self, context):
@@ -302,3 +302,13 @@ class BIMGeometryProperties(PropertyGroup):
         type=bpy.types.Object,
         poll=is_object_valid_for_representation_copy,
     )
+
+    if TYPE_CHECKING:
+        should_use_presentation_style_assignment: bool
+        should_force_faceted_brep: bool
+        should_force_triangulation: bool
+        is_changing_mode: bool
+        mode: str
+        representation_obj: Union[bpy.types.Object, None]
+        item_objs: bpy.types.bpy_prop_collection_idprop[RepresentationItemObject]
+        representation_from_object: Union[bpy.types.Object, None]

@@ -44,6 +44,7 @@ from bpy.props import (
     CollectionProperty,
     BoolVectorProperty,
 )
+from typing import TYPE_CHECKING, Literal
 
 
 diagram_scales_enum = []
@@ -294,11 +295,24 @@ class Drawing(PropertyGroup):
     is_drawing: BoolProperty(name="Is Drawing", default=False)
     is_expanded: BoolProperty(name="Is Expanded", default=True)
 
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+        name: str
+        target_view: str
+        is_selected: bool
+        is_drawing: bool
+        is_expanded: bool
+
 
 class Document(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     name: StringProperty(name="Name", update=update_document_name)
     identification: StringProperty(name="Identification")
+
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+        name: str
+        identification: str
 
 
 class Sheet(PropertyGroup):
@@ -309,6 +323,15 @@ class Sheet(PropertyGroup):
     is_selected: BoolProperty(name="Is Selected", default=True)
     reference_type: StringProperty(name="Reference Type")
     is_expanded: BoolProperty(name="Is Expanded", default=False)
+
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+        identification: str
+        name: str
+        is_sheet: bool
+        is_selected: bool
+        reference_type: str
+        is_expanded: bool
 
 
 class DrawingStyle(PropertyGroup):
@@ -408,6 +431,47 @@ class DocProperties(PropertyGroup):
         description="Upon import, these classes will display as wireframe.\nEx: IfcVirtualelement, IfcSpace",
     )
 
+    if TYPE_CHECKING:
+        should_use_underlay_cache: bool
+        should_use_linework_cache: bool
+        should_use_annotation_cache: bool
+        is_editing_drawings: bool
+        is_editing_schedules: bool
+        is_editing_references: bool
+        target_view: Literal["PLAN_VIEW", "ELEVATION_VIEW", "SECTION_VIEW", "REFLECTED_PLAN_VIEW", "MODEL_VIEW"]
+        location_hint: str
+        drawings: bpy.types.bpy_prop_collection_idprop[Drawing]
+        active_drawing_id: int
+        active_drawing_index: int
+        current_drawing_index: int
+        schedules: bpy.types.bpy_prop_collection_idprop[Document]
+        active_schedule_index: int
+        references: bpy.types.bpy_prop_collection_idprop[Document]
+        active_reference_index: int
+        titleblock: str
+        is_editing_sheets: bool
+        sheets: bpy.types.bpy_prop_collection_idprop[Sheet]
+        active_sheet_index: int
+        ifc_files: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        drawing_styles: bpy.types.bpy_prop_collection_idprop[DrawingStyle]
+        should_draw_decorations: bool
+        sheets_dir: str
+        layouts_dir: str
+        titleblocks_dir: str
+        drawings_dir: str
+        stylesheet_path: str
+        schedules_stylesheet_path: str
+        markers_path: str
+        symbols_path: str
+        patterns_path: str
+        shadingstyles_path: str
+        shadingstyle_default: str
+        drawing_font: str
+        magic_font_scale: float
+        imperial_precision: str
+        tolerance: float
+        classes_to_wireframe: str
+
 
 class BIMCameraProperties(PropertyGroup):
     linework_mode: EnumProperty(
@@ -490,7 +554,7 @@ BOX_ALIGNMENT_POSITIONS = [
 ]
 
 
-class Literal(PropertyGroup):
+class LiteralProps(PropertyGroup):
     def set_box_alignment(self, new_value):
         markers = new_value.count(True)
         if not markers:
@@ -535,7 +599,7 @@ class Literal(PropertyGroup):
 
 class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
-    literals: CollectionProperty(name="Literals", type=Literal)
+    literals: CollectionProperty(name="Literals", type=LiteralProps)
     font_size: EnumProperty(
         items=[
             ("1.8", "1.8 - Small", ""),

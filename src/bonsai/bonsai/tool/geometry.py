@@ -57,10 +57,14 @@ from typing_extensions import TypeIs
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import Attribute
-    from bonsai.bim.module.geometry.prop import BIMObjectGeometryProperties
+    from bonsai.bim.module.geometry.prop import BIMObjectGeometryProperties, BIMGeometryProperties
 
 
 class Geometry(bonsai.core.tool.Geometry):
+    @classmethod
+    def get_geometry_props(cls) -> BIMGeometryProperties:
+        return bpy.context.scene.BIMGeometryProperties
+
     @classmethod
     def get_object_geometry_props(cls, object: bpy.types.Object) -> BIMObjectGeometryProperties:
         return object.BIMGeometryProperties
