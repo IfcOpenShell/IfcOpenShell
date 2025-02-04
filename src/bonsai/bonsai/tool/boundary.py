@@ -96,3 +96,8 @@ class Boundary(bonsai.core.tool.Boundary):
     @classmethod
     def undecorate_boundary(cls, obj: bpy.types.Object) -> None:
         obj.show_in_front = False
+        props = cls.get_boundary_props()
+        for i in reversed(range(len(props.boundaries))):
+            if props.boundaries[i].obj == obj:
+                props.boundaries.remove(i)
+                break

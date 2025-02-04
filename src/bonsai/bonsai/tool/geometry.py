@@ -195,6 +195,7 @@ class Geometry(bonsai.core.tool.Geometry):
             return bonsai.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
         elif element.is_a("IfcRelSpaceBoundary"):
             ifcopenshell.api.run("boundary.remove_boundary", tool.Ifc.get(), boundary=element)
+            tool.Boundary.undecorate_boundary(obj)
             return bpy.data.objects.remove(obj)
         elif element.is_a("IfcGridAxis"):
             is_last_axis = False

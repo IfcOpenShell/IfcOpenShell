@@ -70,7 +70,7 @@ class BIMObjectBoundaryProperties(PropertyGroup):
 
 
 class BIMBoundaryProperties(PropertyGroup):
-    boundaries: bpy.props.CollectionProperty(type=ObjProperty)
+    boundaries: bpy.props.CollectionProperty(type=ObjProperty, description="Decorated boundaries")
 
     if TYPE_CHECKING:
         boundaries: bpy.types.bpy_prop_collection_idprop[ObjProperty]
