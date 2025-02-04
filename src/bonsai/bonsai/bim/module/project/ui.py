@@ -54,16 +54,19 @@ class BIM_MT_recent_projects(Menu):
     bl_label = "Open Recent IFC Project"
 
     def draw(self, context):
+        layout = self.layout
         paths = tool.Project.get_recent_ifc_projects()
         if not paths:
             self.layout.label(text="No Recent IFC Projects")
             return
 
         for path in paths:
-            op = self.layout.operator("bim.load_project", text=path.name, icon_value=bonsai.bim.icons["IFC"].icon_id)
+            row = layout.row()
+            op = row.operator("bim.load_project", text=path.name, icon_value=bonsai.bim.icons["IFC"].icon_id)
             op.filepath = str(path)
             op.should_start_fresh_session = True
             op.use_detailed_tooltip = True
+            row.enabled = path.is_file()
 
         self.layout.separator()
         self.layout.operator("bim.clear_recent_ifc_projects", icon="TRASH")
