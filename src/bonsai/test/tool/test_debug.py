@@ -49,7 +49,7 @@ class TestLoadExpress(NewFile):
         cwd = os.path.dirname(os.path.realpath(__file__))
         schema_path = os.path.join(cwd, "..", "files", "test.exp")
         schema = subject.load_express(schema_path)
-        assert schema.schema_name == "IFCROGUE"
+        assert schema.name() == "IFCROGUE"
         os.remove(schema_path + ".cache.dat")
 
 

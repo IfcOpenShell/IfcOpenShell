@@ -52,7 +52,7 @@ class TestImportAttributes(test.bim.bootstrap.NewFile):
         assert props.context_attributes.get("ContextIdentifier").string_value == "ContextIdentifier"
         assert props.context_attributes.get("ContextType").string_value == "ContextType"
         assert props.context_attributes.get("CoordinateSpaceDimension").int_value == 1
-        assert props.context_attributes.get("Precision").float_value == 1
+        assert props.context_attributes.get("Precision").string_value == "1.0"
 
     def test_importing_a_subcontext(self):
         ifc = ifcopenshell.file()

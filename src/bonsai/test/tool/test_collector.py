@@ -37,8 +37,7 @@ class TestAssign(NewIfc):
         wall_element = tool.Ifc.get().createIfcWall()
         tool.Ifc.link(wall_element, wall_obj)
         bpy.context.scene.collection.objects.link(wall_obj)
-        ifcopenshell.api.run(
-            "spatial.assign_container",
+        ifcopenshell.api.spatial.assign_container(
             tool.Ifc.get(),
             products=[wall_element],
             relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
@@ -57,36 +56,48 @@ class TestAssign(NewIfc):
         assert "Unsorted" in wall_obj.users_collection[0].name
 
     def test_spatial_structure_elements_are_placed_in_a_collection_of_the_same_name(self):
+        building_obj = bpy.data.objects.new("IfcBuilding/Name", None)
+        building_element = tool.Ifc.get().createIfcBuilding()
+        tool.Ifc.link(building_element, building_obj)
+        bpy.context.scene.collection.objects.link(building_obj)
+        ifcopenshell.api.aggregate.assign_object(
+            tool.Ifc.get(),
+            relating_object=tool.Ifc.get().by_type("IfcSite")[0],
+            products=[building_element],
+        )
+        subject.assign(building_obj)
+        assert len(building_obj.users_collection) == 2
+        assert building_obj.users_collection[0].name == building_obj.name
+
+    def test_spaces_are_special_and_are_placed_in_a_spaces_collection(self):
         space_obj = bpy.data.objects.new("IfcSpace/Name", None)
         space_element = tool.Ifc.get().createIfcSpace()
         tool.Ifc.link(space_element, space_obj)
         bpy.context.scene.collection.objects.link(space_obj)
-        ifcopenshell.api.run(
-            "aggregate.assign_object",
+        ifcopenshell.api.aggregate.assign_object(
             tool.Ifc.get(),
             relating_object=tool.Ifc.get().by_type("IfcSite")[0],
             products=[space_element],
         )
         subject.assign(space_obj)
         assert len(space_obj.users_collection) == 2
-        assert space_obj.users_collection[0].name == space_obj.name
+        assert space_obj.users_collection[0].name == "IfcSpace"
 
     def test_multiple_assigns_do_not_create_duplicate_spatial_structure_collections(self):
         space_obj = bpy.data.objects.new("IfcSpace/Name", None)
         space_element = tool.Ifc.get().createIfcSpace()
         tool.Ifc.link(space_element, space_obj)
         bpy.context.scene.collection.objects.link(space_obj)
-        ifcopenshell.api.run(
-            "aggregate.assign_object",
+        ifcopenshell.api.aggregate.assign_object(
             tool.Ifc.get(),
             relating_object=tool.Ifc.get().by_type("IfcSite")[0],
             products=[space_element],
         )
         subject.assign(space_obj)
         subject.assign(space_obj)
-        assert bpy.data.collections.get("IfcSpace/Name")
+        assert bpy.data.collections.get("IfcSpace")
         assert bpy.data.collections.get("IfcSite/My Site")
-        assert not bpy.data.collections.get("IfcSpace/Name.001")
+        assert not bpy.data.collections.get("IfcSpace.001")
         assert not bpy.data.collections.get("IfcSite/My Site.001")
 
     def test_spatial_zone_elements_are_not_placed_in_a_collection_of_the_same_name(self):
@@ -94,8 +105,7 @@ class TestAssign(NewIfc):
         space_element = tool.Ifc.get().createIfcSpatialZone()
         tool.Ifc.link(space_element, space_obj)
         bpy.context.scene.collection.objects.link(space_obj)
-        ifcopenshell.api.run(
-            "aggregate.assign_object",
+        ifcopenshell.api.aggregate.assign_object(
             tool.Ifc.get(),
             relating_object=tool.Ifc.get().by_type("IfcSite")[0],
             products=[space_element],
@@ -113,14 +123,12 @@ class TestAssign(NewIfc):
         tool.Ifc.link(subelement, subelement_obj)
         bpy.context.scene.collection.objects.link(element_obj)
         bpy.context.scene.collection.objects.link(subelement_obj)
-        ifcopenshell.api.run(
-            "aggregate.assign_object",
+        ifcopenshell.api.aggregate.assign_object(
             tool.Ifc.get(),
             relating_object=element,
             products=[subelement],
         )
-        ifcopenshell.api.run(
-            "spatial.assign_container",
+        ifcopenshell.api.spatial.assign_container(
             tool.Ifc.get(),
             products=[element],
             relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
@@ -154,26 +162,25 @@ class TestAssign(NewIfc):
         assert not bpy.data.collections.get("IfcProject/Name.001")
 
     def test_own_collections_are_retained_and_name_synced(self):
-        space_obj = bpy.data.objects.new("IfcSpace/Name", None)
-        space_element = tool.Ifc.get().createIfcSpace()
-        tool.Ifc.link(space_element, space_obj)
-        space_collection = bpy.data.collections.new("Foobar")
-        bpy.context.scene.collection.children.link(space_collection)
-        space_obj.BIMObjectProperties.collection = space_collection
-        space_collection.objects.link(space_obj)
-        ifcopenshell.api.run(
-            "aggregate.assign_object",
+        building_obj = bpy.data.objects.new("IfcBuilding/Name", None)
+        building_element = tool.Ifc.get().createIfcBuilding()
+        tool.Ifc.link(building_element, building_obj)
+        building_collection = bpy.data.collections.new("Foobar")
+        bpy.context.scene.collection.children.link(building_collection)
+        building_obj.BIMObjectProperties.collection = building_collection
+        building_collection.objects.link(building_obj)
+        ifcopenshell.api.aggregate.assign_object(
             tool.Ifc.get(),
             relating_object=tool.Ifc.get().by_type("IfcSite")[0],
-            products=[space_element],
+            products=[building_element],
         )
-        subject.assign(space_obj)
-        assert bpy.context.scene.collection.children.find(space_collection.name) != -1
-        assert bpy.data.collections.get("IfcSite/My Site").children.find(space_collection.name) == -1
-        assert bpy.data.collections.get("IfcProject/My Project").children.find(space_collection.name) == -1
-        assert bpy.context.scene.collection.children.find(space_collection.name) != -1
-        assert space_collection.objects.find(space_obj.name) != -1
-        assert space_collection.name == "IfcSpace/Name"
+        subject.assign(building_obj)
+        assert bpy.context.scene.collection.children.find(building_collection.name) != -1
+        assert bpy.data.collections.get("IfcSite/My Site").children.find(building_collection.name) == -1
+        assert bpy.data.collections.get("IfcProject/My Project").children.find(building_collection.name) == -1
+        assert bpy.context.scene.collection.children.find(building_collection.name) != -1
+        assert building_collection.objects.find(building_obj.name) != -1
+        assert building_collection.name == "IfcBuilding/Name"
 
     def test_types_are_placed_in_the_types_collection(self):
         element_obj = bpy.data.objects.new("IfcWallType/Name", None)
@@ -184,21 +191,27 @@ class TestAssign(NewIfc):
         assert element_obj.users_collection[0].name == "IfcTypeProduct"
         assert bpy.data.collections.get("IfcProject/My Project").children.get("IfcTypeProduct")
 
-    def test_openings_are_placed_in_the_openings_collection(self):
+    def test_openings_are_placed_in_their_voided_elements_container(self):
         element_obj = bpy.data.objects.new("IfcOpeningElement/Name", None)
         element = tool.Ifc.get().createIfcOpeningElement()
         tool.Ifc.link(element, element_obj)
+        wall_obj = bpy.data.objects.new("IfcWall/Name", None)
+        wall = tool.Ifc.get().createIfcWall()
+        tool.Ifc.link(wall, wall_obj)
+        ifcopenshell.api.spatial.assign_container(
+            tool.Ifc.get(), products=[wall], relating_structure=tool.Ifc.get().by_type("IfcSite")[0]
+        )
+        ifcopenshell.api.feature.add_feature(tool.Ifc.get(), element, wall)
         bpy.context.scene.collection.objects.link(element_obj)
+        subject.assign(wall_obj)
         subject.assign(element_obj)
-        assert element_obj.users_collection[0].name == "IfcOpeningElement"
-        assert bpy.data.collections.get("IfcProject/My Project").children.get("IfcOpeningElement")
+        assert element_obj.users_collection[0].name == "IfcSite/My Site"
 
     def test_grids_are_placed_in_their_container(self):
         element_obj = bpy.data.objects.new("IfcGrid/Name", None)
         element = tool.Ifc.get().createIfcGrid()
         tool.Ifc.link(element, element_obj)
-        ifcopenshell.api.run(
-            "spatial.assign_container",
+        ifcopenshell.api.spatial.assign_container(
             tool.Ifc.get(),
             products=[element],
             relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
@@ -214,8 +227,7 @@ class TestAssign(NewIfc):
         element = tool.Ifc.get().createIfcGrid(UAxes=[axis])
         tool.Ifc.link(element, element_obj)
         tool.Ifc.link(axis, axis_obj)
-        ifcopenshell.api.run(
-            "spatial.assign_container",
+        ifcopenshell.api.spatial.assign_container(
             tool.Ifc.get(),
             products=[element],
             relating_structure=tool.Ifc.get().by_type("IfcSite")[0],
@@ -230,9 +242,9 @@ class TestAssign(NewIfc):
         element = tool.Ifc.get().createIfcAnnotation(ObjectType="DRAWING")
         tool.Ifc.link(element, element_obj)
 
-        group = ifcopenshell.api.run("group.add_group", tool.Ifc.get())
+        group = ifcopenshell.api.group.add_group(tool.Ifc.get())
         group.ObjectType = "DRAWING"
-        ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=[element], group=group)
+        ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=[element], group=group)
 
         subject.assign(element_obj)
         assert element_obj.users_collection[0].name == "IfcAnnotation/DRAWING"
@@ -247,7 +259,7 @@ class TestAssign(NewIfc):
         tool.Ifc.link(element, element_obj)
 
         group = ifc_file.by_type("IfcGroup")[0]
-        ifcopenshell.api.run("group.assign_group", ifc_file, products=[element], group=group)
+        ifcopenshell.api.group.assign_group(ifc_file, products=[element], group=group)
 
         subject.assign(element_obj)
         assert element_obj.users_collection[0].name == "IfcAnnotation/DRAWING"
