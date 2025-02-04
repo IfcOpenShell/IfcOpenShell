@@ -300,3 +300,38 @@ class EditPropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperato
         bonsai.bim.handler.refresh_ui_data()
         if tool.Ifc.get():
             bonsai.bim.schema.reload(tool.Ifc.get().schema)
+
+
+class SelectPsetTemplatesInUI(bpy.types.Operator):
+    bl_idname = "bim.pset_templates_ui_select"
+    bl_label = "Select Pset Template in UI"
+    bl_description = "Select pset template for the provided pset in Pset Template UI."
+    bl_options = {"REGISTER", "UNDO"}
+    pset_id: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = tool.PsetTemplate.get_pset_template_props()
+        ifc_file = tool.Ifc.get()
+        pset = ifc_file.by_id(self.pset_id)
+
+        pset_template_file: ifcopenshell.file
+        pset_template = None
+        path = None
+        for path, _ in tool.PsetTemplate.get_pset_template_files():
+            pset_template_file = ifcopenshell.open(path)
+            for pset_template in pset_template_file.by_type("IfcPropertySetTemplate"):
+                if pset_template.Name == pset.Name:
+                    break
+
+        if pset_template is None or path is None:
+            self.report({"INFO"}, f"Couldn't find pset template for the provided pset: '{pset.Name}'.")
+            return {"CANCELLED"}
+
+        props.pset_template_files = str(path)
+        props.pset_templates = str(pset_template.id())
+
+        self.report(
+            {"INFO"},
+            f"Pset Template '{pset.Name}' is selected in Pset Templates UI. See Property Set Templates in Project tab.",
+        )
+        return {"FINISHED"}

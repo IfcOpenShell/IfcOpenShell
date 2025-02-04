@@ -24,6 +24,7 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import bonsai.core.tool
 import bonsai.tool as tool
+from pathlib import Path
 from typing import Union, Literal, Any, final
 from typing_extensions import assert_never, TYPE_CHECKING
 from bonsai.bim.ifc import IfcStore
@@ -119,3 +120,21 @@ class PsetTemplate(bonsai.core.tool.PsetTemplate):
 
         # Disable because of the intersecting enums in data.py.
         props.active_pset_template_id = 0
+
+    PSET_TEMPLATE_LOCATION = Literal["Global Pset Template", "Project Pset Template"]
+
+    @classmethod
+    def get_pset_template_files(cls) -> list[tuple[Path, "PSET_TEMPLATE_LOCATION"]]:
+        """
+        :return: List of pset template files. Each template file is represented
+            by a tuple of the filepath and pset template location source.
+        """
+        paths: list[tuple[Path, tool.PsetTemplate.PSET_TEMPLATE_LOCATION]] = []
+        for f in tool.Blender.get_data_dir_paths("pset", "*.ifc"):
+            paths.append((f, "Global Pset Template"))
+
+        pset_dir = Path(tool.Ifc.resolve_uri(bpy.context.scene.BIMProperties.pset_dir))
+        if pset_dir.is_dir():
+            for path in Path(pset_dir).glob("*.ifc"):
+                paths.append((path, "Project Pset Template"))
+        return paths

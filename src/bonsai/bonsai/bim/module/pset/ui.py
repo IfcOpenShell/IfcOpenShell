@@ -143,6 +143,8 @@ def draw_psetqto_ui(
         op.obj_type = obj_type
         if pset["has_template"]:
             row.label(text="", icon="ASSET_MANAGER")
+            op = row.operator("bim.pset_templates_ui_select", text="", icon="ZOOM_SELECTED")
+            op.pset_id = pset_id
         else:
             op = row.operator("bim.save_pset_as_template", icon="ASSET_MANAGER", text="")
             op.pset_id = pset_id

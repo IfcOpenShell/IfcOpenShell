@@ -111,14 +111,8 @@ class PsetTemplatesData:
     @classmethod
     def pset_template_files(cls) -> list[tuple[str, str, str]]:
         results: list[tuple[str, str, str]] = []
-        for f in tool.Blender.get_data_dir_paths("pset", "*.ifc"):
-            results.append((f.__str__(), f.stem, "Global Pset Template"))
-
-        pset_dir = tool.Ifc.resolve_uri(bpy.context.scene.BIMProperties.pset_dir)
-        if os.path.isdir(pset_dir):
-            for path in pathlib.Path(pset_dir).glob("*.ifc"):
-                results.append((str(path), path.stem, "Project Pset Template"))
-
+        for path, pset_location in tool.PsetTemplate.get_pset_template_files():
+            results.append((str(path), path.stem, pset_location))
         return sorted(results, key=lambda x: x[1])
 
     @classmethod
