@@ -118,6 +118,7 @@ class ProjectLibraryData:
         cls.data["project_libraries"] = cls.project_libraries()
         # After .project_libraries().
         cls.data["project_libraries_enum"] = cls.project_libraries_enum()
+        cls.data["parent_libraries_enum"] = cls.parent_libraries_enum()
         cls.is_loaded = True
 
     @classmethod
@@ -144,6 +145,18 @@ class ProjectLibraryData:
             libs.append((str(data["id"]), data["Name"] or "Unnamed", data["Description"] or "", icon, i))
         libs.sort(key=lambda x: x[1])
         results += libs
+        return results
+
+    @classmethod
+    def parent_libraries_enum(cls) -> list[tuple[str, str, str]]:
+        results: list[tuple[str, str, str]] = []
+        library_file = IfcStore.library_file
+        if library_file is None or library_file.schema == "IFC2X3":
+            return results
+        project = library_file.by_type("IfcProject")[0]
+        results.append((str(project.id()), f"IfcProject {project.Name or 'Unnamed'}", project.Description or ""))
+        for library_id, data in cls.data["project_libraries"].items():
+            results.append((str(library_id), data["Name"] or "Unnamed", data["Description"] or ""))
         return results
 
 

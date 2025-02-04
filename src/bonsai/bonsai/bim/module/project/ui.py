@@ -389,6 +389,8 @@ class BIM_PT_project_library(Panel):
             row.operator("bim.edit_project_library", text="Save Attributes", icon="GREASEPENCIL")
             row.prop(props, "is_editing_project_library", text="", icon="CANCEL")
             draw_attributes(props.project_library_attributes, layout)
+            row = layout.row()
+            row.prop(props, "parent_library", text="Parent Library")
             layout.separator()
 
         if not self.props.library_elements:

@@ -98,13 +98,24 @@ def is_editing_project_library_update(self: "BIMProjectProperties", context: bpy
         self.editing_project_library_id = int(self.selected_project_library)
         project_library = library_file.by_id(int(self.selected_project_library))
         bonsai.bim.helper.import_attributes2(project_library, self.project_library_attributes)
+        self.parent_library = str(tool.Project.get_parent_library(project_library).id())
         ProjectLibraryData.load()  # Show edit icon in enum.
         return
 
     del self["is_editing_project_library"]
     del self["editing_project_library_id"]
     self.project_library_attributes.clear()
+    del self["parent_library"]
     ProjectLibraryData.load()  # Hide edit icon in enum.
+
+
+def get_parent_libaries(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    if not ProjectLibraryData.is_loaded:
+        ProjectLibraryData.load()
+    edited_library = str(self.editing_project_library_id)
+    # Prevent assigning library to itself.
+    enum_items = [i for i in ProjectLibraryData.data["parent_libraries_enum"] if i[0] != edited_library]
+    return enum_items
 
 
 def update_filter_mode(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
@@ -328,6 +339,11 @@ class BIMProjectProperties(PropertyGroup):
         description="Needed to keep track of currently edited library when user changes currently selected library in dropdown."
     )
     project_library_attributes: CollectionProperty(name="Project Library Attributes", type=Attribute)
+    parent_library: EnumProperty(
+        name="Parent Library",
+        description="Parent library that library is assigned to (either IfcProject or IfcProjectLibrary).",
+        items=get_parent_libaries,
+    )
 
     use_relative_project_path: BoolProperty(name="Use Relative Project Path", default=False)
     queried_obj: bpy.props.PointerProperty(type=bpy.types.Object)
@@ -398,6 +414,7 @@ class BIMProjectProperties(PropertyGroup):
         is_editing_project_library: bool
         editing_project_library_id: int
         project_library_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        parent_library: str
 
         use_relative_project_path: bool
         queried_obj: Union[bpy.types.Object, None]

@@ -344,3 +344,11 @@ class Project(bonsai.core.tool.Project):
         element_name = props.active_library_element
         bpy.ops.bim.rewind_library()
         bpy.ops.bim.change_library_element(element_name=element_name)
+
+    @classmethod
+    def get_parent_library(cls, project_library: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        if nests := project_library.Nests:
+            # IfcProjectLibrary.
+            return nests[0].RelatingObject
+        # IfcProject.
+        return project_library.HasContext[0].RelatingContext

@@ -29,6 +29,7 @@ import ifcopenshell.api.attribute
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.nest
 import ifcopenshell.api.project
 import ifcopenshell.api.root
 import ifcopenshell.geom
@@ -631,6 +632,20 @@ class EditProjectLibrary(bpy.types.Operator):
         project_library = library_file.by_id(props.editing_project_library_id)
         attributes = bonsai.bim.helper.export_attributes(props.project_library_attributes)
         ifcopenshell.api.attribute.edit_attributes(library_file, project_library, attributes)
+
+        # Update parent library.
+        previous_parent_library = tool.Project.get_parent_library(project_library)
+        new_parent_library = library_file.by_id(int(props.parent_library))
+        if previous_parent_library != new_parent_library:
+            if previous_parent_library.is_a("IfcProject"):
+                # Then new one is IfcProjectLibrary.
+                ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
+            else:  # Previous is IfcProjectLibrary.
+                ifcopenshell.api.nest.unassign_object(library_file, [project_library])
+                # If new one is IfcProject, then it's already assigned by default.
+                if new_parent_library.is_a("IfcProjectLibrary"):
+                    ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
+
         props.is_editing_project_library = False
         return {"FINISHED"}
 
