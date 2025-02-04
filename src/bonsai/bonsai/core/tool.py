@@ -90,7 +90,7 @@ class Blender:
     def get_name(cls, ifc_class, name): pass
     def get_obj_ifc_definition_id(cls, obj=None, obj_type=None, context=None): pass
     def get_object_bounding_box(cls, obj): pass
-    def get_selected_objects(cls): pass
+    def get_selected_objects(cls, include_active=False): pass
     def get_viewport_context(cls): pass
     def is_ifc_class_active(cls, ifc_class): pass
     def is_ifc_object(cls, obj): pass
@@ -183,7 +183,7 @@ class Classification:
 
 @interface
 class Collector:
-    def assign(cls, obj): pass
+    def assign(cls, obj, should_clean_users_collection=False): pass
 
 
 @interface
@@ -323,8 +323,10 @@ class Drawing:
     def export_text_literal_attributes(cls, obj): pass
     def generate_drawing_matrix(cls, target_view, location_hint): pass
     def generate_drawing_name(cls, target_view, location_hint): pass
+    def generate_reference_attributes(cls, reference, **attributes): pass
     def generate_sheet_identification(cls): pass
     def get_annotation_context(cls, target_view, object_type=None): pass
+    def get_annotation_representation(cls, element_type): pass
     def get_assigned_product(cls, element): pass
     def get_body_context(cls): pass
     def get_default_drawing_path(cls, name): pass
@@ -345,10 +347,10 @@ class Drawing:
     def get_name(cls, element): pass
     def get_path_filename(cls, uri): pass
     def get_reference_description(cls, reference): pass
-    def generate_reference_attributes(cls, reference, **attributes): pass
     def get_reference_document(cls, reference): pass
     def get_reference_location(cls, reference): pass
     def get_references_with_location(cls, location): pass
+    def get_representation(cls, element, context): pass
     def get_text_literal(cls, obj): pass
     def get_unit_system(cls): pass
     def import_assigned_product(cls, obj): pass
@@ -365,9 +367,11 @@ class Drawing:
     def open_layout_svg(cls, uri): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
+    def reload_representation(cls, obj, representation): pass
     def remove_literal_from_annotation(cls, obj, literal): pass
     def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
+    def run_type_assign_type(cls, element=None, relating_type=None): pass
     def select_assigned_product(cls, drawing): pass
     def set_drawing_collection_name(cls, drawing, collection): pass
     def set_name(cls, element, name): pass
@@ -377,6 +381,7 @@ class Drawing:
     def sync_object_placement(cls, obj): pass
     def synchronise_ifc_and_text_attributes(cls, obj): pass
     def update_embedded_svg_location(cls, uri, old_location, new_location): pass
+    def update_newline_at(cls, obj): pass
     def update_text_size_pset(cls, obj): pass
     def update_text_value(cls, obj): pass
 
@@ -756,6 +761,8 @@ class Root:
     def is_containable(cls, element): pass
     def is_drawing_annotation(cls, element): pass
     def is_element_a(cls, element, ifc_class): pass
+    def is_in_aggregate_mode(cls, element): pass
+    def is_in_nest_mode(cls, element): pass
     def is_spatial_element(cls, element): pass
     def link_object_data(cls, source_obj, destination_obj): pass
     def recreate_decompositions(cls, relationships, old_to_new): pass

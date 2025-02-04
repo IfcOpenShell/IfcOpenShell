@@ -257,13 +257,10 @@ class Prophecy:
             call = {"name": attr, "args": args, "kwargs": kwargs}
             # Ensure that signature is valid
             getattr(self.subject, attr)(*args, **kwargs)
-            try:
-                key = json.dumps(call, sort_keys=True)
-                self.calls.append(call)
-                if key in self.return_values:
-                    return self.return_values[key]
-            except:
-                pass
+            key = json.dumps(call, sort_keys=True)
+            self.calls.append(call)
+            if key in self.return_values:
+                return self.return_values[key]
             return self
 
         return decorate
