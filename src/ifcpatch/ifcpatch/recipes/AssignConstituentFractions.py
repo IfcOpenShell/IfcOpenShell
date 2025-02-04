@@ -23,28 +23,29 @@ from logging import Logger
 from collections import defaultdict
 from typing import List, Dict, Tuple, Optional
 
+
 class Patcher:
     """
     Assigns fractions to material constituents based on their "width".
-    
-    In Reference View MVD, material layer information is exchanged through 
-    IfcMaterialConstituentSet and IfcPhysicalComplexQuantity instead of IfcMaterialLayerSet. 
-    The layer thicknesses are stored as IfcQuantityLength within IfcPhysicalComplexQuantity 
+
+    In Reference View MVD, material layer information is exchanged through
+    IfcMaterialConstituentSet and IfcPhysicalComplexQuantity instead of IfcMaterialLayerSet.
+    The layer thicknesses are stored as IfcQuantityLength within IfcPhysicalComplexQuantity
     with a Discrimination of 'layer'.
-    
-    While the Fraction attribute in IfcMaterialConstituent is optional, it's valuable for 
-    downstream applications as it indicates the relative proportion of each constituent in 
-    the total material composition in a more straightforward way. 
+
+    While the Fraction attribute in IfcMaterialConstituent is optional, it's valuable for
+    downstream applications as it indicates the relative proportion of each constituent in
+    the total material composition in a more straightforward way.
     However, authoring applications often export material constituents without setting this attribute.
-    
+
     This patcher helps maintain proper material information in Reference View exports by:
     1. Finding width quantities from IfcPhysicalComplexQuantity with 'layer' discrimination
     2. Using these widths to calculate relative proportions
     3. Setting the optional but valuable Fraction attribute
-    
-    For example, if a wall has constituents with widths of 0.1m and 0.2m, their fractions 
+
+    For example, if a wall has constituents with widths of 0.1m and 0.2m, their fractions
     would be set to 0.333 and 0.667 respectively.
-    
+
     References:
     - IFC4 Reference View MVD: https://standards.buildingsmart.org/MVD/RELEASE/IFC4/ADD2_TC1/RV1_2/HTML/
     - IfcMaterialConstituent: https://standards.buildingsmart.org/IFC/RELEASE/IFC4/ADD2_TC1/HTML/schema/ifcmaterialresource/lexical/ifcmaterialconstituent.htm
@@ -57,11 +58,11 @@ class Patcher:
     def patch(self):
         """Execute the patch to assign fractions to material constituents."""
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        
+
         # Get length unit from project
         length_unit = ifcopenshell.util.unit.get_project_unit(self.file, "LENGTHUNIT")
-        
-        for constituent_set in self.file.by_type('IfcMaterialConstituentSet'):
+
+        for constituent_set in self.file.by_type("IfcMaterialConstituentSet"):
             if not (constituents := constituent_set.MaterialConstituents):
                 continue
 
@@ -81,9 +82,7 @@ class Patcher:
                 continue
 
             # Calculate constituent widths and total width
-            constituent_widths, total_width = self.calculate_constituent_widths(
-                constituents, elements, unit_scale
-            )
+            constituent_widths, total_width = self.calculate_constituent_widths(constituents, elements, unit_scale)
 
             if not constituent_widths:
                 continue
@@ -100,25 +99,31 @@ class Patcher:
 
     def get_element_quantities(self, element: ifcopenshell.entity_instance) -> Dict[str, float]:
         """Get width quantities for an element."""
-        qtos = [v for k,v in ifcopenshell.util.element.get_psets(element, qtos_only=True).items() 
-               if k.endswith("BaseQuantities")]
+        qtos = [
+            v
+            for k, v in ifcopenshell.util.element.get_psets(element, qtos_only=True).items()
+            if k.endswith("BaseQuantities")
+        ]
         if qtos:
-            return {k:v["properties"]["Width"] for k,v in qtos[0].items() 
-                   if isinstance(v,dict) and 
-                   (v.get("Discrimination") or "").lower() == "layer" and 
-                   v.get("properties",{}).get("Width", "") is not None}
+            return {
+                k: v["properties"]["Width"]
+                for k, v in qtos[0].items()
+                if isinstance(v, dict)
+                and (v.get("Discrimination") or "").lower() == "layer"
+                and v.get("properties", {}).get("Width", "") is not None
+            }
         return {}
 
     def calculate_constituent_widths(
-            self,
-            constituents: List[ifcopenshell.entity_instance],
-            elements: set[ifcopenshell.entity_instance],
-            unit_scale: float
-        ) -> Tuple[Dict[ifcopenshell.entity_instance, float], float]:
+        self,
+        constituents: List[ifcopenshell.entity_instance],
+        elements: set[ifcopenshell.entity_instance],
+        unit_scale: float,
+    ) -> Tuple[Dict[ifcopenshell.entity_instance, float], float]:
         """Calculate the widths of constituents based on associated quantities."""
         if not elements:
             return {}, 0.0
-        
+
         # Get quantities from all elements and use the first valid one
         element_quantities = {}
         for element in elements:
@@ -127,18 +132,18 @@ class Patcher:
                 element_quantities = quantities
                 self.logger.debug(f"Using quantities from element: {element.GlobalId}")
                 break
-            
+
         if not element_quantities:
             self.logger.warning("No valid quantities found in any element")
             return {}, 0.0
-        
+
         constituent_widths = {}
         total_width = 0.0
-        
+
         for constituent in constituents:
             if not constituent.Name:  # Skip unnamed constituents as per RV MVD
                 continue
-            
+
             constituent_name = constituent.Name.strip()
             if width := element_quantities.get(constituent_name):
                 constituent_widths[constituent] = width * unit_scale
