@@ -94,7 +94,7 @@ class GenerateSpacesFromWalls(bpy.types.Operator, tool.Ifc.Operator):
         core.generate_spaces_from_walls(tool.Ifc, tool.Spatial, tool.Collector)
 
 
-class ToggleSpaceVisibility(bpy.types.Operator, tool.Ifc.Operator):
+class ToggleSpaceVisibility(bpy.types.Operator):
     bl_idname = "bim.toggle_space_visibility"
     bl_label = "Toggle Space Visibility"
     bl_description = "Toggle spaces visilibility types between WIRED and TEXTURED."
@@ -105,7 +105,7 @@ class ToggleSpaceVisibility(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class ToggleHideSpaces(bpy.types.Operator, tool.Ifc.Operator):
+class ToggleHideSpaces(bpy.types.Operator):
     bl_idname = "bim.toggle_hide_spaces"
     bl_label = "Toggle Hide Spaces"
     bl_options = {"REGISTER"}
