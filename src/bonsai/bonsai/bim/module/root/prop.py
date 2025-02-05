@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
+import ifcopenshell.util.type
 import bonsai.tool as tool
 from bonsai.bim.module.root.data import IfcClassData
 from bpy.types import PropertyGroup

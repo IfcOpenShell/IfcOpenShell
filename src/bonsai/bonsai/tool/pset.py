@@ -22,6 +22,7 @@ import ifcopenshell
 import ifcopenshell.api.pset
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
+import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.schema
