@@ -135,4 +135,5 @@ jobs:
           pip install deepdiff
           cd ../ifcdiff && make test
           cd ../ifcpatch && make test
+          pip install -e ../ifctester --no-deps
           cd ../ifctester && make test
