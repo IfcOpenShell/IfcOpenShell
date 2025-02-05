@@ -535,7 +535,7 @@ def get_property_table_unit(
         defined_unit = unit
     elif value := next(iter(prop.DefinedValues or ()), None):
         if unit_type := get_measure_unit_type(value.is_a()):
-            defining_unit = get_project_unit(ifc_file, unit_type, use_cache=use_cache)
+            defined_unit = get_project_unit(ifc_file, unit_type, use_cache=use_cache)
 
     return {
         "DefiningUnit": defining_unit,
