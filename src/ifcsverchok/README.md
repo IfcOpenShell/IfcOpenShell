@@ -79,7 +79,7 @@ In this example model, we have created both storeys and a building, but it's not
 ![Alt text](./assets/exporting_ifc.png?raw=true)
 
 #### Opening The Created IFC Model
-Now we can open the created IFC model with any IFC viewer or program. Here it is opened with BlenderBIM.
+Now we can open the created IFC model with any IFC viewer or program. Here it is opened with Bonsai.
 ![Alt text](./assets/imported_ifc.png?raw=true)
 
 ### Other examples

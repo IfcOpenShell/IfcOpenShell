@@ -4,7 +4,7 @@ Installation
 There are different methods of installation, depending on your situation. If
 you aren't sure which to choose, if you're a programmer, go for **PyPI** if you
 use Pip, otherwise go for the **ZIP packages**. If you aren't a programmer, go
-for the **BlenderBIM Add-on**.
+for **Bonsai**.
 
 1. **PyPI** is recommended for developers using Pip.
 2. **ZIP packages** is recommended for users doing a manual installation.
@@ -13,7 +13,7 @@ for the **BlenderBIM Add-on**.
 5. **AWS Lambda** is recommended for developers using AWS Lambda functions.
 6. **Google Colab** is recommended for developers using Google Colab.
 7. **Web Assembly** is recommended for developers experimenting with IfcOpenShell on the web.
-8. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a graphical interface.
+8. **Using Bonsai** is recommended for non-developers wanting a graphical interface.
 9. **From source with precompiled binaries** is recommended for developers actively working with the Python code.
 10. **Compiling from source** is recommended for developers actively working with the C++ core.
 
@@ -181,30 +181,29 @@ you full access to the entire IfcOpenShell API.
 `Click here <https://github.com/IfcOpenShell/wasm-preview>`__ to learn how to
 use WASM.
 
-Using the BlenderBIM Add-on
----------------------------
+Using Bonsai
+------------
 
-The BlenderBIM Add-on is a Blender based graphical interface to IfcOpenShell.
-Other than providing a graphical IFC authoring platform, it also comes with
-IfcOpenShell, its utilities, and a Python shell built-in. This means you don't
-need to install Python first, and you also can compare your IfcOpenShell
-scripting to what you see with a visual model viewer, or use a graphical
-interface to access the IfcOpenShell utilities.
+Bonsai is a Blender based graphical interface to IfcOpenShell.  Other than
+providing a graphical IFC authoring platform, it also comes with IfcOpenShell,
+its utilities, and a Python shell built-in. This means you don't need to
+install Python first, and you also can compare your IfcOpenShell scripting to
+what you see with a visual model viewer, or use a graphical interface to access
+the IfcOpenShell utilities.
 
-The BlenderBIM Add-on is available either as a stable build or a daily build.
+Bonsai is available either as a stable build or a daily build.
 
-1. Install the BlenderBIM Add-on by following the `BlenderBIM Add-on
-   installation documentation
+1. Install Bonsai by following the `Bonsai installation documentation
    <https://docs.bonsaibim.org/guides/installation.html>`_.
 
 2. Launch Blender. On the top left of the Viewport panel, click the **Editor
    Type** icon to change the viewport into a **Python Console**.
 
-   .. image:: blenderbim-python-console-1.png
+   .. image:: bonsai-python-console-1.png
 
 3. Make sure you can import IfcOpenShell successfully with the following script.
 
-   .. image:: blenderbim-python-console-2.png
+   .. image:: bonsai-python-console-2.png
 
 .. tip::
 
@@ -215,13 +214,13 @@ The BlenderBIM Add-on is available either as a stable build or a daily build.
 Blender also comes with a text editor so you can write longer scripts.  Instead
 of choosing the **Python Console**, choose the **Text Editor**.
 
-.. image:: blenderbim-text-editor-1.png
+.. image:: bonsai-text-editor-1.png
 
 You can now create a new text file for your script by clicking ``Text > New``,
 and run your script using the **Text > Run Script** menu or by clicking on the
 **Play Icon**.
 
-.. image:: blenderbim-text-editor-2.png
+.. image:: bonsai-text-editor-2.png
 
 .. seealso::
 
