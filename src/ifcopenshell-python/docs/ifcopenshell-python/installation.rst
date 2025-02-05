@@ -6,16 +6,17 @@ you aren't sure which to choose, if you're a programmer, go for **PyPI** if you
 use Pip, otherwise go for the **ZIP packages**. If you aren't a programmer, go
 for **Bonsai**.
 
-1. **PyPI** is recommended for developers using Pip.
-2. **ZIP packages** is recommended for users doing a manual installation.
-3. **Conda** is recommended for developers using Anaconda.
-4. **Docker** is recommended for developers using Docker.
-5. **AWS Lambda** is recommended for developers using AWS Lambda functions.
-6. **Google Colab** is recommended for developers using Google Colab.
-7. **Web Assembly** is recommended for developers experimenting with IfcOpenShell on the web.
-8. **Using Bonsai** is recommended for non-developers wanting a graphical interface.
-9. **From source with precompiled binaries** is recommended for developers actively working with the Python code.
-10. **Compiling from source** is recommended for developers actively working with the C++ core.
+1. :ref:`ifcopenshell-python/installation:pypi` is recommended for developers using Pip.
+2. :ref:`ifcopenshell-python/installation:zip packages` is recommended for users doing a manual installation.
+3. :ref:`ifcopenshell-python/installation:conda` is recommended for developers using Anaconda.
+4. :ref:`ifcopenshell-python/installation:docker` is recommended for developers using Docker.
+5. :ref:`ifcopenshell-python/installation:aws lambda` is recommended for developers using AWS Lambda functions.
+6. :ref:`ifcopenshell-python/installation:google colab` is recommended for developers using Google Colab.
+7. :ref:`ifcopenshell-python/installation:web assembly` is recommended for developers experimenting with IfcOpenShell on the web.
+8. :ref:`ifcopenshell-python/installation:using bonsai` is recommended for non-developers wanting a graphical interface.
+9. :ref:`ifcopenshell-python/installation:From source with precompiled binaries` is recommended for developers actively working with the Python code.
+10. :ref:`ifcopenshell-python/installation:Compiling from source` is recommended for developers actively working with the C++ core.
+11. :ref:`ifcopenshell-python/installation:Linux distribution packages` are available by the community.
 
 PyPI
 ----
@@ -238,7 +239,8 @@ From source with precompiled binaries
 
 2. Place ``src/ifcopenshell-python/ifcopenshell/`` in your Python path.
 
-3. Download the relevant pre-built package, and copy over the two files with
+3. Download the relevant pre-built package from the `IfcOpenShell Build Service
+   <https://builds.ifcopenshell.org>`_, and copy over the two files with
    ``ifcopenshell_wrapper`` in their filename to
    ``src/ifcopenshell-python/ifcopenshell/``.
 
@@ -249,11 +251,20 @@ Advanced developers may want to compile IfcOpenShell. Refer to the
 :doc:`IfcOpenShell installation guide <../ifcopenshell/installation>` for
 instructions.
 
+Linux distribution packages
+---------------------------
+
+- `Arch Linux <https://aur.archlinux.org/packages/ifcopenshell>`_
+- `Arch Linux (Git) <https://aur.archlinux.org/packages/ifcopenshell-git>`_
+- `Fedora <https://copr.fedorainfracloud.org/coprs/bpostle/IfcOpenShell/>`_
+- `Ubuntu (outdated) <https://launchpad.net/~freecad-community/+archive/ubuntu/ppa>`_
+
 Legacy versions
 ---------------
 
 It is not recommended to use older versions of IfcOpenShell, but for historic
 reasons you may find them here:
 
+- `Builds for IfcOpenShell v0.7.0 <https://builds.ifcopenshell.org/>`_
 - `Builds for IfcOpenShell v0.6.0 <https://github.com/IfcOpenBot/IfcOpenShell/commit/721fe4729aa5302efe1602971aae2558934ad098#comments>`_
 - `Builds for IfcOpenShell v0.5.0 <https://github.com/IfcOpenShell/IfcOpenShell/releases/tag/v0.5.0-preview2>`_

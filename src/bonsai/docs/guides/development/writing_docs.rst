@@ -52,13 +52,13 @@ sections on the same page, like
 
 .. code-block:: restructuredtext
 
-  :ref:`contribute/writing_docs:Writing technical documentation`
+  :ref:`guides/development/writing_docs:Writing technical documentation`
   
 or with
 
 .. code-block:: restructuredtext
 
-  :ref:`custom text<contribute/writing_docs:writing technical documentation>`.
+  :ref:`custom text<guides/development/writing_docs:writing technical documentation>`.
   
 Traditional references like 
   
@@ -70,13 +70,13 @@ work too but are discouraged. You can link to other pages, like this:
 
 .. code-block:: restructuredtext
 
-  :doc:`Hello World<hello_world>`
+  :doc:`Hello World<guides/development/writing_docs>`
 
 or sections within other pages, like this:
 
 .. code-block:: restructuredtext
 
-  :ref:`devs/installation:unstable installation`
+  :ref:`guides/development/installation:unstable installation`
 
 We have ``autosectionlabel`` enabled so it is not necessary to manually create labels. The depth of sections
 with automatic labels is set to 2, so the third level of titles
