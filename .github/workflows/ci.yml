@@ -31,7 +31,7 @@ jobs:
     steps:
       - run: echo ok go
 
-  build:
+  compile-and-test:
     runs-on: ubuntu-22.04
     needs: activate
     steps:
