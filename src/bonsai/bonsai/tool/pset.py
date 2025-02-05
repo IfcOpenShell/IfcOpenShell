@@ -300,7 +300,10 @@ class Pset(bonsai.core.tool.Pset):
         # to prevent data loss and error casting data.
         # Property will be added later by import_pset_from_existing.
         for prop_template in sorted(pset_template.HasPropertyTemplates, key=lambda p: p.Name):
-            if not prop_template.is_a("IfcSimplePropertyTemplate"):
+            if (
+                not prop_template.is_a("IfcSimplePropertyTemplate")
+                or prop_template.PrimaryMeasureType == "IfcComplexNumber"
+            ):
                 continue  # Other types not yet supported
             prop_data = data.get(prop_template.Name)
             if prop_template.TemplateType == "P_SINGLEVALUE":
