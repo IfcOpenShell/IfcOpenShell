@@ -797,7 +797,7 @@ class Property(Facet):
                         props[pset_name][prop_entity.Name] = values
                     elif prop_entity.is_a("IfcPropertyTableValue"):
                         values = []
-                        units = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        units = ifcopenshell.util.unit.get_property_table_unit(prop_entity, inst.wrapped_data.file)
                         for attribute in ["Defining", "Defined"]:
                             column_values = props[pset_name][prop_entity.Name][f"{attribute}Values"]
                             if not column_values:
