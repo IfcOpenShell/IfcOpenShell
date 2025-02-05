@@ -43,7 +43,7 @@ class EnableReassignClass(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         ifc_class = obj.name.split("/")[0]
         context.active_object.BIMObjectProperties.is_reassigning_class = True
         ifc_products = [
@@ -93,7 +93,7 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
             objects = [bpy.data.objects.get(self.obj)]
         else:
             objects = set(context.selected_objects + [context.active_object])
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         root_props = context.scene.BIMRootProperties
         ifc_product: str = root_props.ifc_product
         ifc_class: str = root_props.ifc_class

@@ -241,6 +241,7 @@ class IfcProperty(PropertyGroup):
     if TYPE_CHECKING:
         metadata: Attribute
         value_type: IfcPropertyValueType
+        enumerated_value: IfcPropertyEnumeratedValue
 
 
 class PsetProperties(PropertyGroup):
