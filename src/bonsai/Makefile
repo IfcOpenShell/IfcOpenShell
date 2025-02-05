@@ -402,6 +402,12 @@ else
 	pytest test/tool/test_$(MODULE).py
 endif
 
+# Reregistering test is not added to the standard test suite because during unregister
+# Blender removes all Bonsai dependencies breaking dev-environment symlinks.
+.PHONY: test-reregister
+test-reregister:
+	blender --python scripts/reregister_bonsai.py
+
 .PHONY: qa
 qa:
 	black .
