@@ -26,6 +26,7 @@ import ifcopenshell.util.schema
 import bonsai.core.tool
 import bonsai.bim.handler
 import bonsai.tool as tool
+from pathlib import Path
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from typing import Optional, Union, Any, final, Literal
 
@@ -247,13 +248,17 @@ class Ifc(bonsai.core.tool.Ifc):
         return (uri if not uri else os.path.join(ifc_path, uri)).replace("\\", "/")
 
     @classmethod
-    def get_relative_uri(cls, uri: str) -> str:
-        if not os.path.isabs(uri):
-            return uri
-        ifc_path = cls.get_path()
+    def get_uri(cls, uri: str | Path, use_relative_path: bool = False) -> str:
+        if not use_relative_path:
+            return Path(uri).absolute().resolve().as_posix()
+        uri = Path(uri)
+        if not os.path.isabs(uri) or not (ifc_path := cls.get_path()):
+            return uri.as_posix().replace("\\", "/")
+        if Path(uri).drive != Path(ifc_path).drive:
+            return uri.as_posix().replace("\\", "/")
         if os.path.isfile(ifc_path):
             ifc_path = os.path.dirname(ifc_path)
-        return os.path.relpath(uri, ifc_path).replace("\\", "/")
+        return Path(os.path.relpath(uri, ifc_path)).as_posix().replace("\\", "/")
 
     @classmethod
     def unlink(

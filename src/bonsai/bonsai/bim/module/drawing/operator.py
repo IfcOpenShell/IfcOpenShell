@@ -694,8 +694,8 @@ class CreateDrawing(bpy.types.Operator):
                 invalidated_elements = exporter.sync_all_objects()
                 invalidated_elements += exporter.sync_edited_objects()
                 invalidated_guids = [e.GlobalId for e in invalidated_elements if hasattr(e, "GlobalId")]
-                cache = IfcStore.get_cache()
-                [cache.remove(guid) for guid in invalidated_guids]
+                if cache := IfcStore.get_cache():
+                    [cache.remove(guid) for guid in invalidated_guids]
 
         # If we have already calculated it in the SVG in the past, don't recalculate
         edited_guids = set()
@@ -1752,7 +1752,7 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
             sheet_builder = sheeter.SheetBuilder()
 
             references = sheet_builder.build(sheet)
-            raster_references = [tool.Ifc.get_relative_uri(r) for r in references["RASTER"]]
+            raster_references = [tool.Ifc.get_uri(r, use_relative_path=True) for r in references["RASTER"]]
 
             # These variables will be made available to the evaluated commands
             svg = references["SHEET"]
@@ -1783,7 +1783,7 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
                     "document.edit_reference",
                     reference=reference,
                     attributes=tool.Drawing.generate_reference_attributes(
-                        reference, Location=tool.Ifc.get_relative_uri(svg), Description="SHEET"
+                        reference, Location=tool.Ifc.get_uri(svg, use_relative_path=True), Description="SHEET"
                     ),
                 )
 
@@ -1793,7 +1793,9 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
                     "document.edit_reference",
                     reference=reference,
                     attributes=tool.Drawing.generate_reference_attributes(
-                        reference, Location=tool.Ifc.get_relative_uri(raster_reference), Description="RASTER"
+                        reference,
+                        Location=tool.Ifc.get_uri(raster_reference, use_relative_path=True),
+                        Description="RASTER",
                     ),
                 )
 
@@ -2455,21 +2457,8 @@ class AddSchedule(bpy.types.Operator, tool.Ifc.Operator):
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
 
     def _execute(self, context):
-        filepath = self.filepath
-        if self.use_relative_path:
-            ifc_path = tool.Ifc.get_path()
-            if os.path.isfile(ifc_path):
-                ifc_path = os.path.dirname(ifc_path)
-
-            # taking into account different drives on windows
-            if Path(filepath).drive == Path(ifc_path).drive:
-                filepath = os.path.relpath(filepath, ifc_path)
-        core.add_document(
-            tool.Ifc,
-            tool.Drawing,
-            "SCHEDULE",
-            uri=filepath,
-        )
+        filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
+        core.add_document(tool.Ifc, tool.Drawing, "SCHEDULE", uri=filepath)
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
@@ -2653,21 +2642,8 @@ class AddReference(bpy.types.Operator, tool.Ifc.Operator):
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
 
     def _execute(self, context):
-        filepath = self.filepath
-        if self.use_relative_path:
-            ifc_path = tool.Ifc.get_path()
-            if os.path.isfile(ifc_path):
-                ifc_path = os.path.dirname(ifc_path)
-
-            # taking into account different drives on windows
-            if Path(filepath).drive == Path(ifc_path).drive:
-                filepath = os.path.relpath(filepath, ifc_path)
-        core.add_document(
-            tool.Ifc,
-            tool.Drawing,
-            "REFERENCE",
-            uri=filepath,
-        )
+        filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
+        core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=filepath)
 
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
@@ -3301,11 +3277,8 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator):
         return {"RUNNING_MODAL"}
 
     def _execute(self, context):
-        abs_path = Path(self.filepath)
-        if self.use_relative_path:
-            image_filepath = abs_path.relative_to(Path(tool.Ifc.get_path()).parent)
-        else:
-            image_filepath = abs_path
+        abs_path = Path(self.filepath).absolute().resolve()
+        image_filepath = Path(tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path))
         ifc_file = tool.Ifc.get()
 
         if self.override_existing_image:

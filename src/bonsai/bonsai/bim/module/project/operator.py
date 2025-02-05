@@ -1135,17 +1135,12 @@ class LinkIfc(bpy.types.Operator):
                 self.report({"INFO"}, "Can't link the current .blend file")
                 continue
             new = context.scene.BIMProjectProperties.links.add()
-            if self.use_relative_path and (ifc_filepath := tool.Ifc.get_path()):
-                try:
-                    filepath = filepath.relative_to(Path(ifc_filepath).parent)
-                except:
-                    pass  # Perhaps on another drive or something
-            # Store link paths as posix for cross-platform.
-            new.name = filepath.as_posix()
-            status = bpy.ops.bim.load_link(filepath=filepath.as_posix(), use_cache=self.use_cache)
+            filepath = tool.Ifc.get_uri(filepath, use_relative_path=self.use_relative_path)
+            new.name = filepath
+            status = bpy.ops.bim.load_link(filepath=filepath, use_cache=self.use_cache)
             if status == {"CANCELLED"}:
                 error_msg = (
-                    f'Error processing IFC file "{filepath.as_posix()}" '
+                    f'Error processing IFC file "{filepath}" '
                     "was critical and blend file either wasn't saved or wasn't updated. "
                     "See logs above in system console for details."
                 )

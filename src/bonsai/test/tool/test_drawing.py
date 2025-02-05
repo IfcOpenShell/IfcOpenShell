@@ -724,8 +724,8 @@ class TestDrawingMaintainingSheetPosition(NewFile):
 
         # check drawing position on the sheet
         drawing_data = self.get_sheet_drawing_data(sheet_path)
-        assert drawing_data["foreground"] == (155.0, 155.0, 250.0, 250.0)
-        assert drawing_data["view-title"] == (155.0, 410.0, 50.22, 10.0)
+        assert drawing_data["foreground"] == (30.0, 30.0, 500.0, 500.0)
+        assert drawing_data["view-title"] == (30.0, 535.0, 50.22, 10.0)
 
 
 class TestUpdateTextValue(NewFile):
@@ -835,6 +835,9 @@ class TestDrawingStyles(NewFile):
         bpy.ops.bim.add_drawing()
         ifc = tool.Ifc.get()
         drawing = ifc.by_type("IfcAnnotation")[0]
+        bpy.ops.bim.expand_target_view(target_view="PLAN_VIEW")
+        props = bpy.context.scene.DocProperties
+        props.active_drawing_index = 2
         bpy.ops.bim.activate_drawing(drawing=drawing.id())
         self.drawing_styles = bpy.context.scene.DocProperties.drawing_styles
 
@@ -857,7 +860,8 @@ class TestAddReferenceImage(NewFile):
     def test_run(self):
         bpy.context.scene.BIMProjectProperties.template_file = "0"
         bpy.ops.bim.create_project()
-        ifc_file = tool.Ifc.get()
+        ifc_path = Path("test/files/temp/test.ifc").absolute()
+        bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
 
         filepath = Path("test/files/image.jpg").absolute()
         bpy.ops.bim.add_reference_image(filepath=str(filepath))
@@ -870,6 +874,7 @@ class TestAddReferenceImage(NewFile):
         assert material.name == "image"
         assert material.BIMStyleProperties.ifc_definition_id != 0
 
+        ifc_file = tool.Ifc.get()
         style = ifc_file.by_id(material.BIMStyleProperties.ifc_definition_id)
         styled_items = set(tool.Style.get_styled_items(style))
         representation_items = set(tool.Geometry.get_active_representation(obj).Items)

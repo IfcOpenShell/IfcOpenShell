@@ -298,6 +298,7 @@ class Loader(bonsai.core.tool.Loader):
                     if is_relative:
                         ifc_path = Path(tool.Ifc.get_path())
                         image_url = ifc_path.parent / image_url
+                    image_url = image_url.absolute().resolve()
 
                     if not image_url.exists():
                         print(f"WARNING. Couldn't find texture by path {image_url}, it will be skipped.")

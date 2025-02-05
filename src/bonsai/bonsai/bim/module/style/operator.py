@@ -387,12 +387,7 @@ class BrowseExternalStyle(bpy.types.Operator):
 
         bpy.data.materials.remove(db["data_block"])
 
-        if self.use_relative_path:
-            filepath = os.path.relpath(self.filepath, Path(tool.Ifc.get_path()).parent)
-        else:
-            filepath = self.filepath
-        filepath = Path(filepath).as_posix()
-
+        filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
         attributes = context.scene.BIMStylesProperties.external_style_attributes
         attributes["Location"].string_value = filepath
         attributes["Identification"].string_value = f"{self.data_block_type}/{self.data_block}"
@@ -565,19 +560,9 @@ class ChooseTextureMapPath(bpy.types.Operator):
             self.report({"ERROR"}, "Provide a texture map index")
             return {"CANCELLED"}
 
-        abs_path = Path(self.filepath)
-        if self.use_relative_path:
-            parent = Path(tool.Ifc.get_path()).parent
-            if abs_path.is_relative_to(parent):
-                image_filepath = abs_path.relative_to(parent)
-            else:
-                self.report({"INFO"}, "Path is not relative to the .ifc file, it will be saved as absolute.")
-                image_filepath = abs_path
-        else:
-            image_filepath = abs_path
-
+        filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
         texture = context.scene.BIMStylesProperties.textures[self.texture_map_index]
-        texture.path = image_filepath.as_posix()
+        texture.path = filepath
         return {"FINISHED"}
 
 

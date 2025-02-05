@@ -166,10 +166,7 @@ class SelectURIAttribute(bpy.types.Operator):
                     # Do you know a better way?
                     pass
         if attribute:
-            filepath = self.filepath
-            if self.use_relative_path:
-                filepath = os.path.relpath(filepath, os.path.dirname(tool.Ifc.get_path()))
-            attribute.string_value = filepath
+            attribute.string_value = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
         return {"FINISHED"}
 
     def invoke(self, context, event):
