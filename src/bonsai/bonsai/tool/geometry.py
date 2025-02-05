@@ -1842,6 +1842,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
         tool.Blender.select_and_activate_single_object(bpy.context, dup_obj)
 
+        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True, properties=False)
         bpy.ops.object.mode_set(mode="EDIT")
         bpy.ops.mesh.select_all(action="SELECT")
         bpy.ops.mesh.separate(type="LOOSE")

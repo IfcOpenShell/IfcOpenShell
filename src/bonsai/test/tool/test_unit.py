@@ -237,7 +237,7 @@ class TestImportUnitAttributes(NewFile):
 
 class TestImportUnits(NewFile):
     def test_importing_multiple_units(self):
-        ifc = ifcopenshell.file()
+        ifc = ifcopenshell.api.project.create_file()
         tool.Ifc.set(ifc)
         unit1 = ifc.createIfcDerivedUnit(UnitType="ANGULARVELOCITYUNIT")
         unit2 = ifc.createIfcMonetaryUnit(Currency="Currency")
@@ -245,7 +245,8 @@ class TestImportUnits(NewFile):
         unit4 = ifc.createIfcConversionBasedUnit(Name="Name", UnitType="ABSORBEDDOSEUNIT")
         unit5 = ifc.createIfcSIUnit(Name="AMPERE", Prefix="MILLI", UnitType="ABSORBEDDOSEUNIT")
         unit6 = ifc.createIfcSIUnit(Name="CUBIC_METRE", Prefix="CENTI", UnitType="ABSORBEDDOSEUNIT")
-        ifc.createIfcUnitAssignment(Units=[unit2])
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.unit.assign_unit(ifc, units=[unit2])
         subject.import_units()
         props = bpy.context.scene.BIMUnitProperties
         assert len(props.units) == 6

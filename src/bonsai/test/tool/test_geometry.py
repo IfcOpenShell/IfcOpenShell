@@ -174,21 +174,21 @@ class TestGetCartesianPointCoordinateOffset(NewFile):
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
         obj.BIMObjectProperties.cartesian_point_offset = "1,2,3"
-        assert subject.get_cartesian_point_coordinate_offset(obj) == Vector((1.0, 2.0, 3.0))
+        assert np.allclose(subject.get_cartesian_point_offset(obj), np.array((1., 2., 3.)))
 
     def test_get_null_if_not_a_cartesian_point_offset_type(self):
         obj = bpy.data.objects.new("Object", None)
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
         obj.BIMObjectProperties.cartesian_point_offset = "1,2,3"
-        assert subject.get_cartesian_point_coordinate_offset(obj) is None
+        assert subject.get_cartesian_point_offset(obj) is None
 
     def test_get_null_if_no_blender_offset(self):
         obj = bpy.data.objects.new("Object", None)
         obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = False
-        assert subject.get_cartesian_point_coordinate_offset(obj) is None
+        assert subject.get_cartesian_point_offset(obj) is None
 
 
 class TestGetElementType(NewFile):
@@ -227,33 +227,6 @@ class TestHasDataUsers(NewFile):
         assert subject.has_data_users(data) is False
         bpy.data.objects.new("Object", data)
         assert subject.has_data_users(data) is True
-
-
-class TestImportRepresentation(NewFile):
-    def test_importing_a_normal_shape(self):
-        ifc = ifcopenshell.open("test/files/basic.ifc")
-        tool.Ifc.set(ifc)
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        material = bpy.data.materials.new("Material")
-        material.BIMStyleProperties.ifc_definition_id = 101
-        element = ifc.by_type("IfcWall")[0]
-        tool.Ifc.link(element, obj)
-        representation = element.Representation.Representations[1]
-        mesh = subject.import_representation(obj, representation)
-        assert isinstance(mesh, bpy.types.Mesh)
-        assert len(mesh.polygons) == 12
-        assert mesh.materials[0] == material
-
-    def test_importing_non_body_curves(self):
-        ifc = ifcopenshell.open("test/files/annotation.ifc")
-        tool.Ifc.set(ifc)
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        element = ifc.by_type("IfcWall")[0]
-        tool.Ifc.link(element, obj)
-        representation = element.Representation.Representations[0]
-        mesh = subject.import_representation(obj, representation)
-        assert len(mesh.polygons) == 0
-        assert len(mesh.edges) == 4
 
 
 class TestImportRepresentationParameters(NewFile):

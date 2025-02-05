@@ -417,12 +417,10 @@ class Geometry:
     def get_total_representation_items(cls, obj): pass
     def has_data_users(cls, data): pass
     def has_material_style_override(cls, obj): pass
-    def import_representation(cls, obj, representation, apply_openings=True): pass
     def import_representation_parameters(cls, data): pass
     def is_body_representation(cls, representation): pass
     def is_box_representation(cls, representation): pass
     def is_data_supported_for_adding_representation(cls, data): pass
-    def is_edited(cls, obj): pass
     def is_mapped_representation(cls, representation): pass
     def is_type_product(cls, element): pass
     def link(cls, element, obj): pass

@@ -211,31 +211,23 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 )
                 continue
 
-            should_add_representation = self.should_add_representation
-            export_mesh_to_tesselation = False
             if self.should_add_representation and isinstance(obj.data, bpy.types.Mesh) and obj.data.polygons:
-                should_add_representation = False
-                export_mesh_to_tesselation = True
-
+                bpy.ops.object.transform_apply(location=False, rotation=False, scale=True, properties=False)
                 if tool.Geometry.mesh_has_loose_geometry(obj.data):
                     self.report(
                         {"WARNING"},
                         f"Mesh '{obj.data.name}' has loose geometry, loose geometry will be ignored to save mesh to IFC as a tessellation.",
                     )
 
-            element = core.assign_class(
-                tool.Ifc,
-                tool.Collector,
-                tool.Root,
-                obj=obj,
-                ifc_class=ifc_class,
-                predefined_type=predefined_type,
-                should_add_representation=should_add_representation,
-                context=ifc_context,
-                ifc_representation_class=self.ifc_representation_class,
-            )
-
-            if export_mesh_to_tesselation:
+                element = core.assign_class(
+                    tool.Ifc,
+                    tool.Collector,
+                    tool.Root,
+                    obj=obj,
+                    ifc_class=ifc_class,
+                    predefined_type=predefined_type,
+                    should_add_representation=False,
+                )
                 representation = tool.Geometry.export_mesh_to_tessellation(obj, ifc_context)
                 ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
                 bonsai.core.geometry.switch_representation(
@@ -246,6 +238,18 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     should_reload=True,
                     is_global=True,
                     should_sync_changes_first=False,
+                )
+            else:
+                element = core.assign_class(
+                    tool.Ifc,
+                    tool.Collector,
+                    tool.Root,
+                    obj=obj,
+                    ifc_class=ifc_class,
+                    predefined_type=predefined_type,
+                    should_add_representation=self.should_add_representation,
+                    context=ifc_context,
+                    ifc_representation_class=self.ifc_representation_class,
                 )
 
         context.view_layer.objects.active = active_object
@@ -412,7 +416,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         if representation_template == "EMTPY" or not ifc_context:
             pass
         elif representation_template == "OBJ" and props.representation_obj:
-            obj.matrix_world = props.representation_obj.matrix_world
+            obj.matrix_world = props.representation_obj.matrix_world.copy()
+            obj.scale = (1, 1, 1)
             representation = tool.Geometry.export_mesh_to_tessellation(props.representation_obj, ifc_context)
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
             bonsai.core.geometry.switch_representation(
