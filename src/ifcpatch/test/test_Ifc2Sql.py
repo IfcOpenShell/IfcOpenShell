@@ -36,7 +36,11 @@ class TestIfc2Sql:
         TEST_FILE = Path(__file__).parent / "files" / "basic.ifc"
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".ifcsqlite")
         sqlite_path = ifcpatch.execute(
-            {"file": ifcopenshell.open(TEST_FILE), "recipe": "Ifc2Sql", "arguments": ["sqlite", None, None, None, tmp.name]}
+            {
+                "file": ifcopenshell.open(TEST_FILE),
+                "recipe": "Ifc2Sql",
+                "arguments": ["sqlite", None, None, None, tmp.name],
+            }
         )
         assert isinstance(sqlite_path, str)
         assert sqlite_path.endswith(".ifcsqlite")

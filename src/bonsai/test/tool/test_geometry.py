@@ -174,7 +174,7 @@ class TestGetCartesianPointCoordinateOffset(NewFile):
         props = bpy.context.scene.BIMGeoreferenceProperties
         props.has_blender_offset = True
         obj.BIMObjectProperties.cartesian_point_offset = "1,2,3"
-        assert np.allclose(subject.get_cartesian_point_offset(obj), np.array((1., 2., 3.)))
+        assert np.allclose(subject.get_cartesian_point_offset(obj), np.array((1.0, 2.0, 3.0)))
 
     def test_get_null_if_not_a_cartesian_point_offset_type(self):
         obj = bpy.data.objects.new("Object", None)
