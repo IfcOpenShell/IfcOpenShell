@@ -90,7 +90,7 @@ def edit_georeferencing(
                         v = file.createIfcText(v)
                     elif k == "Name":
                         v = file.createIfcLabel(v)
-                    else:
+                    elif v is not None:
                         v = file.createIfcIdentifier(v)
                 ifcopenshell.api.pset.edit_pset(file, crs, properties=projected_crs)
         if coordinate_operation:
