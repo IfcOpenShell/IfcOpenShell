@@ -92,12 +92,18 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
-        props = context.active_object.BIMObjectSpatialProperties
         if self.container:
             container = tool.Ifc.get().by_id(self.container)
-        elif (container_obj := props.container_obj) and (container := tool.Ifc.get_entity(container_obj)):
+        elif (
+            (obj := tool.Blender.get_active_object())
+            and (props := obj.BIMObjectSpatialProperties)
+            and (container_obj := props.container_obj)
+            and (container := tool.Ifc.get_entity(container_obj))
+        ):
             pass
-        for element_obj in context.selected_objects:
+        else:
+            return
+        for element_obj in tool.Blender.get_selected_objects():
             if self.remove_from_other_containers:
                 for col in element_obj.users_collection[:]:
                     col.objects.unlink(element_obj)
