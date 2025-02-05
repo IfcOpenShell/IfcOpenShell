@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import tempfile
 import ifcpatch
 import ifcopenshell
 import ifcopenshell.api.context
@@ -27,15 +28,15 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
-import test.bootstrap
 from pathlib import Path
 
 
 class TestIfc2Sql:
     def test_run(self):
         TEST_FILE = Path(__file__).parent / "files" / "basic.ifc"
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".ifcsqlite")
         sqlite_path = ifcpatch.execute(
-            {"file": ifcopenshell.open(TEST_FILE), "recipe": "Ifc2Sql", "arguments": ["sqlite"]}
+            {"file": ifcopenshell.open(TEST_FILE), "recipe": "Ifc2Sql", "arguments": ["sqlite", None, None, None, tmp.name]}
         )
         assert isinstance(sqlite_path, str)
         assert sqlite_path.endswith(".ifcsqlite")

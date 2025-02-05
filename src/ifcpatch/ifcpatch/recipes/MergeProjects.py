@@ -91,15 +91,28 @@ class Patcher:
             model_rotation = (model_rotation * -1) - 360
 
         if not np.allclose(existing_origin, other_origin) or not np.isclose(existing_angle, other_angle):
+            if self.file.schema != "IFC2X3" and (crs := self.file.by_type("IfcProjectedCRS")):
+                name = crs[0].Name
+            elif (
+                self.file.schema == "IFC2X3"
+                and (project := self.file.by_type("IfcProject")[0])
+                and (pset := ifcopenshell.util.element.get_pset(project, "ePSet_ProjectedCRS"))
+            ):
+                name = pset.get("Name", "Unknown") or "Unknown"
+            else:
+                # I'm not entirely sure about this. If existing_origin !=
+                # other_origin there are two possibilities: either there is a
+                # projected CRS, or there is a WCS. If I had to choose between
+                # using a WCS and an "unnamed" CRS, I'd choose the latter.
+                name = "Unknown"
             x, y, z = ifcopenshell.util.geolocation.auto_enh2xyz(
                 other, *existing_origin, is_specified_in_map_units=False
             )
             e, n, h = existing_origin
             SetFalseOrigin(
-                "",
                 other,
                 self.logger,
-                name="",
+                name=name,
                 x=x,
                 y=y,
                 z=z,
