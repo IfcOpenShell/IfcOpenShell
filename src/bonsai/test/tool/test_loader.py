@@ -39,6 +39,8 @@ class TestCreatingStyles(NewFile):
     def test_create_surface_style_with_textures_from_data(self):
         # this case occurs when we edit shader properties without saving them to IFC
         bpy.ops.bim.create_project()
+        ifc_path = Path("test/files/temp/test.ifc").absolute()
+        bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
 
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
@@ -59,7 +61,7 @@ class TestCreatingStyles(NewFile):
         texture_data = [
             {
                 "Mode": "DIFFUSE",
-                "URLReference": "bonsai/test/files/image.jpg",
+                "URLReference": "../image.jpg",
                 "type": "IfcImageTexture",
                 "uv_mode": "Generated",
             },
@@ -85,13 +87,15 @@ class TestCreatingStyles(NewFile):
         assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"
         assert image_node.inputs["Vector"].links[0].from_socket.name == "Generated"
 
-        original_path = Path(tool.Ifc.get_path()).parent / Path(texture_data[0]["URLReference"])
+        original_path = (Path(tool.Ifc.get_path()).parent / Path(texture_data[0]["URLReference"])).absolute().resolve()
         loaded_filepath = Path(image_node.image.filepath)
-        assert original_path == loaded_filepath
+        assert original_path.absolute() == loaded_filepath
 
     def test_create_surface_style_with_textures_from_ifc(self):
         # this case occurs when we edit shader properties without saving them to IFC
         bpy.ops.bim.create_project()
+        ifc_path = Path("test/files/temp/test.ifc").absolute()
+        bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
 
         style = tool.Ifc.run("style.add_style", name="test")
         material = bpy.data.materials.new(style.Name)
@@ -114,7 +118,7 @@ class TestCreatingStyles(NewFile):
 
         textures = [
             {
-                "URLReference": "bonsai/test/files/image.jpg",
+                "URLReference": "../image.jpg",
                 "Mode": "DIFFUSE",
                 "RepeatS": True,
                 "RepeatT": True,
@@ -149,7 +153,7 @@ class TestCreatingStyles(NewFile):
         image_node = tool.Blender.get_material_node(material, "TEX_IMAGE")
         assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"
         assert image_node.inputs["Vector"].links[0].from_socket.name == "Generated"
-        original_path = Path(tool.Ifc.get_path()).parent / Path(textures[0].URLReference)
+        original_path = (Path(tool.Ifc.get_path()).parent / Path(textures[0].URLReference)).absolute().resolve()
         loaded_filepath = Path(image_node.image.filepath)
         assert original_path == loaded_filepath
 

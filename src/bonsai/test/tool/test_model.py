@@ -68,14 +68,16 @@ class TestGetBooleans(NewFile):
         context = ifc.createIfcGeometricRepresentationContext()
         element = ifc.createIfcWall()
 
-        items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
+        items = [ifc.createIfcExtrudedAreaSolid()]
         representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
         tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
 
-        bool1 = set(tool.Ifc.run("geometry.add_boolean", representation=representation, matrix=np.eye(4)))
-        bool2 = set(tool.Ifc.run("geometry.add_boolean", representation=representation, matrix=np.eye(4)))
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc)
+        cut1 = builder.half_space_solid(builder.plane())
+        cut2 = builder.half_space_solid(builder.plane())
+        bools = ifcopenshell.api.geometry.add_boolean(ifc, first_item=items[0], second_items=[cut1, cut2])
 
-        assert set(subject.get_booleans(element, representation)) == bool1 | bool2
+        assert set(subject.get_booleans(element, representation)) == set(bools)
 
 
 class TestGetManualBooleans(NewFile):
@@ -86,18 +88,23 @@ class TestGetManualBooleans(NewFile):
         context = ifc.createIfcGeometricRepresentationContext()
         element = ifc.createIfcWall()
 
-        items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
+        items = [ifc.createIfcExtrudedAreaSolid()]
         representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
         tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
 
-        bool1 = set(tool.Ifc.run("geometry.add_boolean", representation=representation, matrix=np.eye(4)))
-        bool2 = set(tool.Ifc.run("geometry.add_boolean", representation=representation, matrix=np.eye(4)))
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc)
+        cut1 = builder.half_space_solid(builder.plane())
+        cut2 = builder.half_space_solid(builder.plane())
+        bools = ifcopenshell.api.geometry.add_boolean(ifc, first_item=items[0], second_items=[cut1, cut2])
 
-        assert set(subject.get_booleans(element, representation)) == bool1 | bool2
+        assert set(subject.get_booleans(element, representation)) == set(bools)
         assert len(subject.get_manual_booleans(element, representation)) == 0
 
-        subject.mark_manual_booleans(element, bool1)
-        assert set(subject.get_manual_booleans(element, representation)) == bool1
+        bool1 = list(bools)[0]
+        print(bools, bool1)
+
+        subject.mark_manual_booleans(element, [bool1])
+        assert set(subject.get_manual_booleans(element, representation)) == {bool1}
 
 
 class TestMarkManualBooleans(NewFile):
@@ -184,7 +191,7 @@ class TestGenerateStair2DProfile(NewFile):
         assert np.all(edges == np.array(edges_gen))
         assert faces == tuple(tuple(face) for face in faces_gen)
         for vert, vert_gen in zip(verts, verts_gen, strict=True):
-            assert tool.Cad.are_vectors_equal(vert, vert_gen, 0.01)
+            assert np.allclose(vert, V(vert_gen), atol=0.01)
 
     def test_create_concrete_stair(self):
         kwargs = {
@@ -510,11 +517,9 @@ class TestApplyIfcMaterialChanges(NewFile):
         bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
         with_opening = bpy.context.active_object
         with_opening.name = "With Opening"
-        bpy.ops.bim.add_potential_opening()
-        tool.Blender.set_objects_selection(
-            bpy.context, active_object=with_opening, selected_objects=[with_opening, bpy.data.objects["Opening"]]
-        )
-        bpy.ops.bim.add_opening()
+        props = bpy.context.scene.BIMRootProperties
+        props.representation_obj = with_opening
+        bpy.ops.bim.add_element(ifc_product="IfcFeatureElement", ifc_class="IfcOpeningElement")
 
         # Occurrence with a material override.
         bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)

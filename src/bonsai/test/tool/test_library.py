@@ -32,9 +32,9 @@ class TestImplementsTool(NewFile):
 class TestClearEditingMode(NewFile):
     def test_run(self):
         props = bpy.context.scene.BIMLibraryProperties
-        props.editing_mode = "foo"
+        props.editing_mode = "LIBRARY"
         subject.clear_editing_mode()
-        assert props.editing_mode == ""
+        assert props.editing_mode == "NONE"
 
 
 class TestExportLibraryAttributes(NewFile):

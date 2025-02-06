@@ -593,11 +593,11 @@ class Loader(bonsai.core.tool.Loader):
 
         faces_tex_coord_data = {}
         for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True):
-            faces_tex_coord_data[frozenset(face_remap)] = (tex_coord_index, face_remap)
+            faces_tex_coord_data[tuple(face_remap)] = (tex_coord_index, face_remap)
 
         # Apply attribute to each face
         for bface in bm.faces:
-            face = frozenset(loop.vert.index for loop in bface.loops)
+            face = tuple(loop.vert.index for loop in bface.loops)
             # Find the corresponding index in data list by matching ifc faceset with blender face.
             data_index = None
             if tex_coord_data := faces_tex_coord_data.get(face):

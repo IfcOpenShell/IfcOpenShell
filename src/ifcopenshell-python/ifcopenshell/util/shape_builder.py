@@ -49,7 +49,7 @@ else:
 SequenceOfVectors = Union[Sequence[VectorType], np.ndarray]
 
 
-def V(*args: Union[float, VectorType, SequenceOfVectors]) -> npt.NDArray[np.float64]:
+def V(*args: Union[float, int, VectorType, SequenceOfVectors]) -> npt.NDArray[np.float64]:
     """Convert floats / vector / sequence of vectors to numpy array.
 
     Note that `float` argument type also allows passing ints,

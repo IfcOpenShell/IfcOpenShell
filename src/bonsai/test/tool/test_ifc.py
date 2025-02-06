@@ -91,7 +91,7 @@ class TestIsMoved(test.bim.bootstrap.NewFile):
         tool.Geometry.record_object_position(obj)
         assert subject.is_moved(obj) is False
 
-        obj.matrix_world[0][2] += 1
+        obj.matrix_world[0][3] += 1
         assert subject.is_moved(obj) is True
 
     def test_that_a_type_or_project_never_moves_but_a_grid_axis_does(self):

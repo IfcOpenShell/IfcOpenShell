@@ -27,7 +27,7 @@ from typing import Literal, Any, Union
 class Library(bonsai.core.tool.Library):
     @classmethod
     def clear_editing_mode(cls) -> None:
-        bpy.context.scene.BIMLibraryProperties.editing_mode = "-"
+        bpy.context.scene.BIMLibraryProperties.editing_mode = "NONE"
 
     @classmethod
     def export_library_attributes(cls) -> dict[str, Any]:
