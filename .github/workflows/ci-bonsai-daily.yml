@@ -112,6 +112,13 @@ jobs:
           export PATH="$PATH:$BLENDER_PATH"
           blender --version
 
+          # Setup unstable repo to get Bonsai build.
+          cd bonsai_unstable_repo
+          pip install -r requirements.txt
+          python setup_extensions_repo.py --last-tag
+          cd ..
+          bonsai_zip="$(pwd)/$(ls bonsai_unstable_repo/bonsai_py311*-linux-x64.zip)"
+
           # Install Bonsai.
           blender --command extension install-file -r user_default -e $bonsai_zip
           blender --command extension list
@@ -148,8 +155,6 @@ jobs:
           blender --version
 
           cd bonsai_unstable_repo
-          pip install -r requirements.txt
-          python setup_extensions_repo.py --last-tag
           git config --global user.name 'IfcOpenBot'
           git config --global user.email 'IfcOpenBot@users.noreply.github.com'
           git add index.json
@@ -162,7 +167,6 @@ jobs:
           set -x -e
           BLENDER_PATH=$(find blender-*/ -maxdepth 0 -exec readlink -f {} \;)
           export PATH="$PATH:$BLENDER_PATH"
-          bonsai_zip="$(pwd)/$(ls bonsai_unstable_repo/bonsai_py311*-linux-x64.zip)"
           blender --version
 
           # Install Sun Position extension.
