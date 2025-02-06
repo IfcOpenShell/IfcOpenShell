@@ -278,64 +278,6 @@ endif
 	fi
 	mv build/wheels/*.whl build/bonsai/wheels/
 
-	# Ugly patch to accomodate MacOS universal builds not being recognized by Blender.
-	# Blender doesn't look into the wheel contents, it just checks the name.
-	# So this hack works without working out some way to repack those wheels.
-	# See: https://projects.blender.org/blender/blender/issues/125091
-
-ifeq ($(PLATFORM), macosm1)
-	# Has universal and x86_64 builds.
-	prev_whl_name=$$(find build/bonsai/wheels/lxml-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed -E "s/macosx_10_([0-9]+)_x86_64\.macosx_11_0_arm64\.macosx_10_\1_universal2/macosx_10_\1_arm64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	# Has only universal build.
-	prev_whl_name=$$(find build/bonsai/wheels/greenlet-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	# has universal and x86_64 builds.
-	prev_whl_name=$$(find build/bonsai/wheels/fonttools-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/arm64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	# Has only universal build.
-	prev_whl_name=$$(find build/bonsai/wheels/charset_normalizer-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-endif
-ifeq ($(PLATFORM), macos)
-	# Has universal and arm64 builds.
-	prev_whl_name=$$(find build/bonsai/wheels/MarkupSafe-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed -E "s/macosx_10_([0-9]+)_x86_64\.macosx_11_0_arm64\.macosx_10_\1_universal2/macosx_10_\1_x86_64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	prev_whl_name=$$(find build/bonsai/wheels/greenlet-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	prev_whl_name=$$(find build/bonsai/wheels/charset_normalizer-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-endif
-
-	# Safeguard for unhandled universal files.
-	wheels=$$(find build/bonsai/wheels/*universal2*.whl); \
-	if [ -n "$$wheels" ]; then \
-		echo "Found universal2 wheel files:"; \
-		echo "$$wheels"; \
-		echo "Error: universal2 wheel files are not supported by Blender!"; \
-		exit 1; \
-	fi
-
 	# Temporary workaround for Blender not handling non-3.11 wheels #5743.
 	# Use '-n' as on macos x86-64 doesn't have a binary wheel and it autoincludes 'cp311'.
 	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
