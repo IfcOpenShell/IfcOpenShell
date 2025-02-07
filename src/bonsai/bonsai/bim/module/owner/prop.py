@@ -65,16 +65,16 @@ def update_actor_class(self, context):
     ActorData.data["actors"] = ActorData.actors()
 
 
-def get_actor_class_enum(self, context):
+def get_actor_class(self, context):
     if not ActorData.is_loaded:
         ActorData.load()
-    return ActorData.data["actor_class_enum"]
+    return ActorData.data["actor_class"]
 
 
-def get_actor_type_enum(self, context):
+def get_actor_type(self, context):
     if not ActorData.is_loaded:
         ActorData.load()
-    return ActorData.data["actor_type_enum"]
+    return ActorData.data["actor_type"]
 
 
 class BIMOwnerProperties(PropertyGroup):
@@ -106,12 +106,12 @@ class BIMOwnerProperties(PropertyGroup):
     active_actor_id: IntProperty(name="Active Actor Id")
     actor_attributes: CollectionProperty(name="Actor Attributes", type=Attribute)
     actor_class: EnumProperty(
-        items=get_actor_class_enum,
+        items=get_actor_class,
         name="Actor Type",
         update=update_actor_class,
     )
     actor_type: EnumProperty(
-        items=get_actor_type_enum,
+        items=get_actor_type,
         name="Actor Type",
         update=update_actor_type,
     )

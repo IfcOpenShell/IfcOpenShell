@@ -217,17 +217,16 @@ class ActorData:
 
     @classmethod
     def load(cls):
-        cls.data = {
-            "the_actor": cls.the_actor(),
-            "actors": cls.actors(),
-            "actor_class_enum": cls.actor_class_enum(),
-            "get_actor_type_enum": cls.get_actor_type_enum(),
-        }
         cls.is_loaded = True
+        cls.data["actor_class"] = cls.actor_class()
+        cls.data["actor_type"] = cls.actor_type()
+        cls.data["the_actor"] = cls.the_actor()
+        cls.data["actors"] = cls.actors()
 
     @classmethod
     def the_actor(cls):
-        ifc_class = bpy.context.scene.BIMOwnerProperties.actor_type
+        if not (ifc_class := bpy.context.scene.BIMOwnerProperties.actor_type):
+            ifc_class = cls.actor_type()[0][0]
         return [(str(p.id()), p[0] or "Unnamed", "") for p in tool.Ifc.get().by_type(ifc_class)]
 
     @classmethod
@@ -249,7 +248,7 @@ class ActorData:
         return actors
 
     @classmethod
-    def actor_class_enum(cls) -> list[tuple[str, str, str]]:
+    def actor_class(cls) -> list[tuple[str, str, str]]:
         version = tool.Ifc.get_schema()
         return [
             ("IfcActor", "Actor", get_entity_doc(version, "IfcActor").get("description", "")),
@@ -257,7 +256,7 @@ class ActorData:
         ]
 
     @classmethod
-    def get_actor_type_enum(cls) -> list[tuple[str, str, str]]:
+    def actor_type(cls) -> list[tuple[str, str, str]]:
         version = tool.Ifc.get_schema()
         return [
             ("IfcPerson", "Person", get_entity_doc(version, "IfcPerson").get("description", "")),
