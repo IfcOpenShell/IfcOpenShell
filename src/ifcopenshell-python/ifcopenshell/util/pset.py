@@ -19,11 +19,12 @@
 import re
 import pathlib
 import ifcopenshell
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.schema
 import ifcopenshell.util.type
 from ifcopenshell.entity_instance import entity_instance
 from functools import lru_cache
-from typing import List, Optional, Literal
+from typing import Optional, Literal
 
 templates: dict[str, "PsetQto"] = {}
 
@@ -62,10 +63,16 @@ class PsetQto:
 
     @lru_cache()
     def get_applicable(
-        self, ifc_class="", predefined_type="", pset_only=False, qto_only=False
-    ) -> List[entity_instance]:
+        self,
+        ifc_class="",
+        predefined_type="",
+        pset_only=False,
+        qto_only=False,
+        schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4",
+    ) -> list[entity_instance]:
         any_class = not ifc_class
         if not any_class:
+            entity: W.entity
             entity = self.schema.declaration_by_name(ifc_class)
         result = []
         for template in self.templates:
@@ -77,18 +84,32 @@ class PsetQto:
                     if prop_set.TemplateType and prop_set.TemplateType.startswith("PSET_"):
                         continue
                 if any_class or self.is_applicable(
-                    entity, prop_set.ApplicableEntity or "IfcRoot", predefined_type, prop_set.TemplateType
+                    entity, prop_set.ApplicableEntity or "IfcRoot", predefined_type, prop_set.TemplateType, schema
                 ):
                     result.append(prop_set)
         return result
 
     @lru_cache()
-    def get_applicable_names(self, ifc_class: str, predefined_type="", pset_only=False, qto_only=False) -> List[str]:
+    def get_applicable_names(
+        self,
+        ifc_class: str,
+        predefined_type: str = "",
+        pset_only: bool = False,
+        qto_only: bool = False,
+        schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4",
+    ) -> list[str]:
         """Return names instead of objects for other use eg. enum"""
-        return [prop_set.Name for prop_set in self.get_applicable(ifc_class, predefined_type, pset_only, qto_only)]
+        return [
+            prop_set.Name for prop_set in self.get_applicable(ifc_class, predefined_type, pset_only, qto_only, schema)
+        ]
 
     def is_applicable(
-        self, entity: entity_instance, applicables: str, predefined_type="", template_type="NOTDEFINED"
+        self,
+        entity: W.entity,
+        applicables: str,
+        predefined_type: str = "",
+        template_type: str = "NOTDEFINED",
+        schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4",
     ) -> bool:
         """applicables can have multiple possible patterns :
         IfcBoilerType                               (IfcClass)
@@ -118,7 +139,7 @@ class PsetQto:
             # This will be fixed in IFC4.3
             template_type = template_type or ""
             if "TYPE" in template_type and ifcopenshell.util.schema.is_a(entity, "IfcTypeObject"):
-                types = ifcopenshell.util.type.get_applicable_types(applicable_class, "IFC4")
+                types = ifcopenshell.util.type.get_applicable_types(applicable_class, schema)
                 if not types:
                     # Abstract classes will not have an "applicable type" but
                     # the implementer agreement still applies to them.

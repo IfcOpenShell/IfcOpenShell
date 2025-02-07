@@ -24,7 +24,7 @@ from ifcopenshell import util
 class TestPsetQto:
     @classmethod
     def setup_class(cls):
-        cls.pset_qto = util.pset.PsetQto("IFC4")
+        cls.pset_qto = pset.PsetQto("IFC4")
 
     def test_get_applicables(self):
         for i in range(1000):

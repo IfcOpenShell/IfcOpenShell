@@ -97,7 +97,7 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
         root_props = context.scene.BIMRootProperties
         ifc_product: str = root_props.ifc_product
         ifc_class: str = root_props.ifc_class
-        type_ifc_class = next(iter(ifcopenshell.util.type.get_applicable_types(ifc_class)), None)
+        type_ifc_class = next(iter(ifcopenshell.util.type.get_applicable_types(ifc_class, self.file.schema)), None)
 
         predefined_type = root_props.ifc_predefined_type
         if predefined_type == "USERDEFINED":

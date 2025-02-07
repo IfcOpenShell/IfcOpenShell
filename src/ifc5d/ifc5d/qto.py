@@ -61,7 +61,7 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
         calculator = calculators[calculator]
         for ifc_class, qtos in queries.items():
             filtered_elements = set()
-            ifc_classes = [ifc_class] + ifcopenshell.util.type.get_applicable_types(ifc_class)
+            ifc_classes = [ifc_class] + ifcopenshell.util.type.get_applicable_types(ifc_class, ifc_file.schema)
             for ifc_class in ifc_classes:
                 if ifc_class not in elements_by_classes:
                     continue

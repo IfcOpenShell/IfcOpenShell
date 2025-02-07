@@ -67,11 +67,12 @@ def refresh_classes(self, context):
         self.representation_template = "OBJ"
         self.representation_obj = obj
 
+    ifc_file = tool.Ifc.get()
     # When switching between ElementType and Element, keep the same class and predefined type if possible
     if self.ifc_product == "IfcElement":
-        ifc_class = next(iter(ifcopenshell.util.type.get_applicable_entities(old_class)), None)
+        ifc_class = next(iter(ifcopenshell.util.type.get_applicable_entities(old_class, ifc_file.schema)), None)
     elif self.ifc_product == "IfcElementType":
-        ifc_class = next(iter(ifcopenshell.util.type.get_applicable_types(old_class)), None)
+        ifc_class = next(iter(ifcopenshell.util.type.get_applicable_types(old_class, ifc_file.schema)), None)
     else:
         return
     if ifc_class:

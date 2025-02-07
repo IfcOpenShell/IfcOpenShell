@@ -105,7 +105,7 @@ def get_material_set_pset_names(self, context):
     if not ifc_class or "Set" not in ifc_class:
         return []
     if ifc_class not in psetnames:
-        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
     return psetnames[ifc_class]
 
@@ -117,7 +117,7 @@ def get_material_set_item_pset_names(self, context):
         return []
     ifc_class = tool.Ifc.get().by_id(ifc_definition_id).is_a()
     if ifc_class not in psetnames:
-        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
     return psetnames[ifc_class]
 
@@ -126,7 +126,7 @@ def get_task_qto_names(self, context):
     global qtonames
     ifc_class = "IfcTask"
     if ifc_class not in qtonames:
-        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True)
+        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True, schema=tool.Ifc.get_schema())
         qtonames[ifc_class] = blender_formatted_enum_from_psets(psets)
     return qtonames[ifc_class]
 
@@ -137,7 +137,7 @@ def get_resource_pset_names(self, context):
     rtprops = context.scene.BIMResourceTreeProperties
     ifc_class = IfcStore.get_file().by_id(rtprops.resources[rprops.active_resource_index].ifc_definition_id).is_a()
     if ifc_class not in psetnames:
-        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
     return psetnames[ifc_class]
 
@@ -148,7 +148,7 @@ def get_resource_qto_names(self, context):
     rtprops = context.scene.BIMResourceTreeProperties
     ifc_class = IfcStore.get_file().by_id(rtprops.resources[rprops.active_resource_index].ifc_definition_id).is_a()
     if ifc_class not in qtonames:
-        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True)
+        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True, schema=tool.Ifc.get_schema())
         qtonames[ifc_class] = blender_formatted_enum_from_psets(psets)
     return qtonames[ifc_class]
 
@@ -157,7 +157,7 @@ def get_group_pset_names(self, context):
     global psetnames
     ifc_class = "IfcGroup"
     if ifc_class not in psetnames:
-        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
     return psetnames[ifc_class]
 
@@ -166,7 +166,7 @@ def get_group_qto_names(self, context):
     global qtonames
     ifc_class = "IfcGroup"
     if ifc_class not in qtonames:
-        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True)
+        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True, schema=tool.Ifc.get_schema())
         qtonames[ifc_class] = blender_formatted_enum_from_psets(psets)
     return qtonames[ifc_class]
 
@@ -176,7 +176,7 @@ def get_profile_pset_names(self, context):
     pprops = context.scene.BIMProfileProperties
     ifc_class = IfcStore.get_file().by_id(pprops.profiles[pprops.active_profile_index].ifc_definition_id).is_a()
     if ifc_class not in psetnames:
-        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
     return psetnames[ifc_class]
 
@@ -185,7 +185,7 @@ def get_work_schedule_pset_names(self, context):
     global psetnames
     ifc_class = "IfcWorkSchedule"
     if ifc_class not in psetnames:
-        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True)
+        psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
     return psetnames[ifc_class]
 

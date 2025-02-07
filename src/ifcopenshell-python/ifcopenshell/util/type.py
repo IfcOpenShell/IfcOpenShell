@@ -51,7 +51,7 @@ for schema in mapped_schemas:
                 type_to_entity_map[schema][element_type] = [e for e in elements if guessed_element in e]
 
 
-def get_applicable_types(ifc_class: str, schema="IFC4") -> list[str]:
+def get_applicable_types(ifc_class: str, schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4") -> list[str]:
     """Get applicable types IFC classes for the occurrence IFC class.
 
     E.g. "IfcWindow" -> ["IfcWindowType"].
@@ -60,7 +60,7 @@ def get_applicable_types(ifc_class: str, schema="IFC4") -> list[str]:
     return entity_to_type_map[schema].get(ifc_class, [])
 
 
-def get_applicable_entities(ifc_type_class: str, schema="IFC4") -> list[str]:
+def get_applicable_entities(ifc_type_class: str, schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4") -> list[str]:
     """Get applicable occurrence IFC classes for the type IFC class.
 
     E.g. "IfcWindowType" -> ["IfcWindow"].
