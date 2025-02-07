@@ -479,6 +479,7 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         if tool.Ifc.is_moved(obj) or tool.Geometry.is_scaled(obj):
             core.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
+        old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         if material and material.is_a() in ["IfcMaterialProfileSet", "IfcMaterialLayerSet"]:
             if self.ifc_representation_class == "IfcTessellatedFaceSet":
                 # We are explicitly casting to a tessellation, so remove all parametric materials.
@@ -490,9 +491,14 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Material.ensure_material_unassigned([product])
             else:
                 # These objects are parametrically based on an axis and should not be modified as a mesh
-                return
+                if extrusion := tool.Model.get_extrusion(old_representation):
+                    self.report(
+                        {"INFO"},
+                        f"Representation for '{obj.name}' wasn't updated because "
+                        "it has material set and extrusion that probably was defined parametrically.",
+                    )
+                    return
 
-        old_representation = self.file.by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         context_of_items = old_representation.ContextOfItems
 
         # TODO: remove this code a bit later
