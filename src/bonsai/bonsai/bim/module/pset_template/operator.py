@@ -121,7 +121,7 @@ class EnableEditingPropTemplate(bpy.types.Operator):
     prop_template: bpy.props.IntProperty()
 
     def execute(self, context):
-        tool.PsetTemplate.enable_editing_prop_template(tool.Ifc.get().by_id(self.prop_template))
+        tool.PsetTemplate.enable_editing_prop_template(IfcStore.pset_template_file.by_id(self.prop_template))
         return {"FINISHED"}
 
 
