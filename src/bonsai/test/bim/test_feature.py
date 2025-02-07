@@ -733,8 +733,9 @@ def the_object_name_has_a_representation_type_of_context(name, type, context):
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     context, subcontext, target_view = context.split("/")
     rep = ifcopenshell.util.representation.get_representation(element, context, subcontext or None, target_view or None)
+    rep =ifcopenshell.util.representation.resolve_representation(rep)
     assert rep
-    assert rep.RepresentationType == type
+    assert rep.RepresentationType == type, f"The object {name} does not have a {type} representation"
 
 
 @given(parsers.parse('the object "{name}" data is a "{type}" representation of "{context}"'))
@@ -744,7 +745,7 @@ def the_object_name_data_is_a_type_representation_of_context(name, type, context
     context, subcontext, target_view = context.split("/")
     rep = ifc.by_id(the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id)
     assert rep
-    assert rep.RepresentationType == type
+    assert rep.RepresentationType == type, f"The object {name} is not a {type} representation"
     assert rep.ContextOfItems.ContextType == context
     assert rep.ContextOfItems.ContextIdentifier == subcontext
     assert rep.ContextOfItems.TargetView == target_view

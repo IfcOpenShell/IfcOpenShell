@@ -326,6 +326,12 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
         material = ifcopenshell.util.element.get_material(relating_type)
 
+        existing_context = None
+        for existing_occurrence in ifcopenshell.util.element.get_types(relating_type):
+            if existing_obj := tool.Ifc.get_object(existing_occurrence):
+                existing_context = tool.Geometry.get_active_representation_context(existing_obj)
+                break
+
         if material and material.is_a("IfcMaterialProfileSet"):
             if obj := profile.DumbProfileGenerator(relating_type).generate():
                 tool.Blender.select_and_activate_single_object(context, obj)
@@ -415,7 +421,10 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
-        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if existing_context:
+            representation = ifcopenshell.util.representation.get_representation(element, existing_context)
+        else:
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if not representation and element.Representation:
             representation = element.Representation.Representations[0]
 
