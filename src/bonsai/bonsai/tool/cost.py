@@ -248,9 +248,7 @@ class Cost(bonsai.core.tool.Cost):
         cls, cost_item: ifcopenshell.entity_instance, related_object_type: RELATED_OBJECT_TYPE
     ) -> None:
         def create_list_items(
-            collection: bpy.types.bpy_prop_collection_idprop[bonsai.bim.helper.Attribute],
-            cost_item: ifcopenshell.entity_instance,
-            is_deep: bool,
+            collection: bpy.types.CollectionProperty, cost_item: ifcopenshell.entity_instance, is_deep: bool
         ) -> None:
             products = cls.get_cost_item_assignments(cost_item, filter_by_type=related_object_type, is_deep=False)
             for product in products:

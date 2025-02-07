@@ -70,7 +70,7 @@ class PanelSpy:
         return self
 
     def __call__(self, *args, **kwargs):
-        if self.spied_attr in ("row", "column", "box"):
+        if self.spied_attr in ("row", "column", "box", "separator"):
             return self
         elif self.spied_attr == "template_list":
             listtype_name, list_id, dataptr, propname, active_dataptr, active_propname = args
@@ -334,6 +334,7 @@ def the_name_list_has_total_items(name, total):
     assert False, f"List {name} not found in {panel_spy.spied_lists}"
 
 
+@given(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 @when(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
     panel_spy.refresh_spy()
@@ -511,6 +512,7 @@ def i_evaluate_expression(expression):
     exec(expression)
 
 
+@given("I duplicate the selected objects")
 @when("I duplicate the selected objects")
 def i_duplicate_the_selected_objects():
     bpy.ops.bim.override_object_duplicate_move()
@@ -635,6 +637,7 @@ def i_am_on_frame_number(number):
     bpy.context.scene.frame_set(int(number))
 
 
+@given("I delete the selected objects")
 @when("I delete the selected objects")
 def i_delete_the_selected_objects():
     bpy.ops.bim.override_object_delete()
@@ -1349,7 +1352,6 @@ def run_test_code():
 @then(parsers.parse("I save sample test files"))
 def saving_sample_test_files(and_open_in_blender=None):
     filepath = f"{variables['cwd']}/test/files/temp/sample_test_file"
-    blend_filepath = f"{filepath}.blend"
     bpy.ops.bim.save_project(filepath=f"{filepath}.ifc", should_save_as=True)
     bpy.ops.wm.save_as_mainfile(filepath=f"{filepath}.blend")
 
