@@ -930,7 +930,7 @@ class EditObjectUI:
                 row.operator(
                     "bim.mep_add_obstruction",
                     text="Add Obstruction" if ui_context != "TOOL_HEADER" else "",
-                    icon_value=custom_icon_previews["IFC"].icon_id,
+                    icon_value=custom_icon_previews["ADD_OBSTRUCTION"].icon_id,
                 )
                 row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
                 row.label(text="", icon="BLANK1") if ui_context != "TOOL_HEADER" else row
