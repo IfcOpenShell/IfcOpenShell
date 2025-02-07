@@ -220,13 +220,16 @@ class Usecase:
         elif not self.assume_asset_uniqueness_by_name:
             return None
         elif element.is_a("IfcMaterial"):
-            material_name = element.Name
-            return next((e for e in self.file.by_type("IfcMaterial") if e.Name == material_name), None)
+            name = element.Name
+            return next((e for e in self.file.by_type("IfcMaterial") if e.Name == name), None)
         elif element.is_a("IfcProfileDef"):
             profile_name = element.ProfileName
             if profile_name is None:
                 return None
             return next((e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None)
+        elif element.is_a("IfcPresentationStyle"):
+            name = element.Name
+            return next((e for e in self.file.by_type("IfcPresentationStyle") if e.Name == name), None)
         else:
             return None
 

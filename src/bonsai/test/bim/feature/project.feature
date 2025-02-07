@@ -802,10 +802,10 @@ Scenario: Toggle link visibility - visible mode
     And I press "bim.link_ifc(filepath='{cwd}/test/files/basic.ifc')"
     When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.ifc', mode='VISIBLE')"
     Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_hidden" is "True"
-    And the collection "IfcProject/basic.ifc" exclude status is "True"
+    And the object "IfcProject/basic.ifc" is not visible
     When I press "bim.toggle_link_visibility(link='{cwd}/test/files/basic.ifc', mode='VISIBLE')"
     Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_hidden" is "False"
-    And the collection "IfcProject/basic.ifc" exclude status is "False"
+    And the object "IfcProject/basic.ifc" is visible
 
 Scenario: Unload link
     Given an empty Blender session
@@ -820,7 +820,7 @@ Scenario: Load link
     And I press "bim.unload_link(filepath='{cwd}/test/files/basic.ifc')"
     When I press "bim.load_link(filepath='{cwd}/test/files/basic.ifc')"
     Then "scene.BIMProjectProperties.links['{cwd}/test/files/basic.ifc'].is_loaded" is "True"
-    And the collection "IfcProject/basic.ifc" exists in viewlayer
+    And the object "IfcProject/basic.ifc" exists
 
 Scenario: Unlink IFC
     Given an empty Blender session
@@ -867,12 +867,13 @@ Scenario: Export IFC - with basic contents and saving as a relative path
     Given an empty Blender session
     And I press "bim.load_project(filepath='{cwd}/test/files/basic.ifc')"
     When I press "wm.save_mainfile(filepath='{cwd}/test/files/temp/export.blend')"
-    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc', use_relative_path=True, save_as_invoked=True)"
+    And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc', use_relative_path=True, should_save_as=True)"
     Then "scene.BIMProperties.ifc_file" is "export.ifc"
 
 Scenario: Export IFC - with deleted objects synchronised
     Given an empty IFC project
     When the object "IfcBuildingStorey/My Storey" is selected
+    And I set "scene.BIMSpatialDecompositionProperties.is_locked" to "False"
     And I delete the selected objects
     And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
@@ -896,7 +897,7 @@ Scenario: Export IFC - with moved grid axis location synchronised
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
     Then the object "IfcGridAxis/01" bottom left corner is at "1,-2,0"
 
-Scenario: Export IFC - with changed object scale synchronised
+Scenario: Export IFC - with changed object scale ignored
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
@@ -908,4 +909,4 @@ Scenario: Export IFC - with changed object scale synchronised
     And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
     And an empty Blender session is started
     And I press "bim.load_project(filepath='{cwd}/test/files/temp/export.ifc')"
-    Then the object "IfcWall/Cube" dimensions are "4,4,4"
+    Then the object "IfcWall/Cube" dimensions are "2,2,2"
