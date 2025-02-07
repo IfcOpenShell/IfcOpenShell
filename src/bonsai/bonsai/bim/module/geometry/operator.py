@@ -402,6 +402,7 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Update Representation"
     bl_description = (
         "Write selected objects representations to IFC.\n"
+        "Converting to tesellation will also unassign material layer/profile sets.\n"
         "A star in the operator name indicates that active object representation in IFC is not yet synced with Blender.\n"
         "ALT+CLICK to apply openings to the mesh"
     )
