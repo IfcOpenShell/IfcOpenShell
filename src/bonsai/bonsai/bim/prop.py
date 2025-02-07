@@ -406,11 +406,16 @@ class Attribute(PropertyGroup):
 def get_tab(
     self: "Union[BIMAreaProperties, BIMTabProperties]", context: bpy.types.Context
 ) -> list[tuple[str, str, str, str, int]]:
-    # Items are not very dynamic, but can't make them completely static
-    # because icons are not yet available during prop registration.
+
+    UIData = bonsai.bim.ui.UIData
+    if not UIData.is_loaded:
+        UIData.load()
+
+    icon_key = f"{UIData.data['menu_icon_color_mode']}_ifc"
+
     if not hasattr(get_tab, "enum_items"):
         get_tab.enum_items = [
-            ("PROJECT", "Project Overview", "", bonsai.bim.icons["IFC"].icon_id, 0),
+            ("PROJECT", "Project Overview", "", bonsai.bim.icons[icon_key].icon_id, 0),
             ("OBJECT", "Object Information", "", "FILE_3D", 1),
             ("GEOMETRY", "Geometry and Materials", "", "MATERIAL", 2),
             ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 3),
