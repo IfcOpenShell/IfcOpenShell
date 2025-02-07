@@ -663,7 +663,10 @@ class file:
     def assign_header_from(self, other: ifcopenshell.file) -> None:
         for k, vs in HEADER_FIELDS.items():
             for v in vs:
-                setattr(getattr(self.header, k), v, getattr(getattr(other.header, k), v))
+                try:
+                    setattr(getattr(self.header, k), v, getattr(getattr(other.header, k), v))
+                except:
+                    pass  # Header is invalid
 
     def write(self, path: "os.PathLike | str", format: Optional[str] = None, zipped: bool = False) -> None:
         """Write ifc model to file.
