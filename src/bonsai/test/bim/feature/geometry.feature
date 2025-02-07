@@ -55,7 +55,7 @@ Scenario: Add representation - add a representation with a scale factor applied
     Then the object "IfcWall/Cube" has no scale
     And the object "IfcWall/Cube" dimensions are "4,4,4"
 
-Scenario: Add representation - add a representation with a scale factor removed due to multiple users
+Scenario: Add representation - add a representation with a scale factor still applied regardless of multiple users
     Given an empty IFC project
     And I add a cube
     And I press "object.duplicate_move_linked"
@@ -65,7 +65,7 @@ Scenario: Add representation - add a representation with a scale factor removed 
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     Then the object "IfcWall/Cube" has no scale
-    And the object "IfcWall/Cube" dimensions are "2,2,2"
+    And the object "IfcWall/Cube" dimensions are "4,4,4"
 
 Scenario: Switch representation
     Given an empty IFC project

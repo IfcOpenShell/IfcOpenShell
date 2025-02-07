@@ -212,7 +212,12 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 continue
 
             if self.should_add_representation and isinstance(obj.data, bpy.types.Mesh) and obj.data.polygons:
-                bpy.ops.object.transform_apply(location=False, rotation=False, scale=True, properties=False)
+                if obj.scale != (1, 1, 1):
+                    if obj.data.users > 1:
+                        bpy.ops.object.make_single_user(
+                            object=True, obdata=True, material=False, animation=False, obdata_animation=False
+                        )
+                    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True, properties=False)
                 if tool.Geometry.mesh_has_loose_geometry(obj.data):
                     self.report(
                         {"WARNING"},
