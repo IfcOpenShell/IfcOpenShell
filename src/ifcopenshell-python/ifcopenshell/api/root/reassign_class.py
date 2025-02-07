@@ -176,12 +176,12 @@ class Usecase:
         element = self.reassign_class(element, ifc_class, predefined_type)
         if element.is_a("IfcTypeProduct"):
             for occurrence in ifcopenshell.util.element.get_types(element):
-                ifc_class_ = ifcopenshell.util.type.get_applicable_entities(ifc_class)[0]
+                ifc_class_ = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
                 self.reassign_class(occurrence, ifc_class_, predefined_type)
         else:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
-                ifc_class_ = next(iter(ifcopenshell.util.type.get_applicable_types(ifc_class)))
+                ifc_class_ = next(iter(ifcopenshell.util.type.get_applicable_types(ifc_class, self.file.schema)))
                 element_type = self.reassign_class(element_type, ifc_class_, predefined_type)
                 ifc_class = element.is_a()
                 for occurrence in ifcopenshell.util.element.get_types(element_type):

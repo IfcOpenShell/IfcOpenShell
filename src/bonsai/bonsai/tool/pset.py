@@ -81,7 +81,9 @@ class Pset(bonsai.core.tool.Pset):
             predefined_type = ifcopenshell.util.element.get_predefined_type(element)
         return bool(
             pset_name
-            in bonsai.bim.schema.ifc.psetqto.get_applicable_names(element.is_a(), predefined_type, pset_only=True)
+            in bonsai.bim.schema.ifc.psetqto.get_applicable_names(
+                element.is_a(), predefined_type, pset_only=True, schema=tool.Ifc.get_schema()
+            )
         )
 
     @classmethod

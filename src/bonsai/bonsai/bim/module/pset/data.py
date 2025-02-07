@@ -117,7 +117,10 @@ class ObjectPsetsData(Data):
         if not element:
             return []
         psets = bonsai.bim.schema.ifc.psetqto.get_applicable(
-            element.is_a(), ifcopenshell.util.element.get_predefined_type(element), pset_only=True
+            element.is_a(),
+            ifcopenshell.util.element.get_predefined_type(element),
+            pset_only=True,
+            schema=tool.Ifc.get_schema(),
         )
         psetnames = cls.format_pset_enum(psets)
         assigned_names = ifcopenshell.util.element.get_psets(element, psets_only=True, should_inherit=False).keys()
@@ -130,7 +133,10 @@ class ObjectPsetsData(Data):
         if not element:
             return []
         qtos = bonsai.bim.schema.ifc.psetqto.get_applicable(
-            element.is_a(), ifcopenshell.util.element.get_predefined_type(element), qto_only=True
+            element.is_a(),
+            ifcopenshell.util.element.get_predefined_type(element),
+            qto_only=True,
+            schema=tool.Ifc.get_schema(),
         )
         return cls.format_pset_enum(qtos)
 
@@ -188,7 +194,9 @@ class MaterialPsetsData(Data):
             if material.ifc_definition_id:
                 material = tool.Ifc.get().by_id(material.ifc_definition_id)
                 category = getattr(material, "Category", None) or None
-                psets = bonsai.bim.schema.ifc.psetqto.get_applicable(props.material_type, category, pset_only=True)
+                psets = bonsai.bim.schema.ifc.psetqto.get_applicable(
+                    props.material_type, category, pset_only=True, schema=tool.Ifc.get_schema()
+                )
                 psetnames = cls.format_pset_enum(psets)
                 assigned_names = ifcopenshell.util.element.get_psets(
                     material, psets_only=True, should_inherit=False

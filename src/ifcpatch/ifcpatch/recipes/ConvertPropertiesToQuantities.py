@@ -112,5 +112,7 @@ class Patcher:
 
     def get_qto_templates(self, ifc_class: str) -> list[ifcopenshell.entity_instance]:
         if ifc_class not in self.qto_template_cache:
-            self.qto_template_cache[ifc_class] = self.psetqto.get_applicable(ifc_class, qto_only=True)
+            self.qto_template_cache[ifc_class] = self.psetqto.get_applicable(
+                ifc_class, qto_only=True, schema=self.file.schema
+            )
         return self.qto_template_cache[ifc_class]
