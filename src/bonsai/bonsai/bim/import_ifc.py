@@ -34,10 +34,9 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import bonsai.tool as tool
-from itertools import chain, accumulate
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from bonsai.tool.loader import OBJECT_DATA_TYPE
-from typing import Dict, Union, Optional, Any, cast
+from typing import Dict, Union, Optional, Any
 
 
 class MaterialCreator:
@@ -71,6 +70,8 @@ class MaterialCreator:
 
         self.mesh = mesh
         self.obj = obj
+        if element.is_a("IfcTypeProduct"):
+            self.parse_element_type_material_styles(element)
         self.parsed_meshes.add(self.mesh.name)
         if not self.ifc_import_settings.load_indexed_maps:
             self.load_texture_maps(shape_has_openings)
@@ -82,6 +83,18 @@ class MaterialCreator:
         for material in bpy.data.materials:
             if ifc_definition_id := material.BIMStyleProperties.ifc_definition_id:
                 self.styles[ifc_definition_id] = material
+
+    def parse_element_type_material_styles(self, element: ifcopenshell.entity_instance) -> None:
+        if self.mesh["ios_materials"]:
+            return # Already has materials assign to the representation itself
+        # Otherwise, we need to check for material styles on the element, since
+        # create_shape on types only works on representations.
+        context = tool.Ifc.get().by_id(self.mesh.BIMMeshProperties.ifc_definition_id).ContextOfItems
+        for material in ifcopenshell.util.element.get_materials(element):
+            if style := ifcopenshell.util.representation.get_material_style(material, context):
+                self.mesh["ios_materials"] = (style.id(),)
+                self.mesh["ios_material_ids"] = [0] * len(self.mesh.polygons)
+                break
 
     def get_ifc_coordinate(self, material: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
         """Get IfcTextureCoordinate"""
@@ -96,7 +109,7 @@ class MaterialCreator:
                     return coords
                 # TODO: support IfcTextureMap
                 if coords.is_a("IfcTextureMap"):
-                    print(f"WARNING. IfcTextureMap texture coordinates is not supported.")
+                    print("WARNING. IfcTextureMap texture coordinates is not supported.")
                     return
 
     def load_texture_maps(self, shape_has_openings: bool) -> None:
