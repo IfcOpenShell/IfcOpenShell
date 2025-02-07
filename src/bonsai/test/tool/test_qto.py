@@ -201,7 +201,6 @@ class TestGetRelatedCostItemQuantities(test.bim.bootstrap.NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         wall = ifc.createIfcWall()
-        product = tool.Ifc.get_entity(wall)
         schedule = ifcopenshell.api.run("cost.add_cost_schedule", ifc)
         item = ifcopenshell.api.run("cost.add_cost_item", ifc, cost_schedule=schedule)
         ifcopenshell.api.run("cost.edit_cost_item", ifc, cost_item=item, attributes={"Name": "Foo"})

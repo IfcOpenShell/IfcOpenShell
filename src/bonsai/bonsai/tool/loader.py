@@ -95,7 +95,7 @@ class Loader(bonsai.core.tool.Loader):
     def get_name(cls, element: ifcopenshell.entity_instance) -> str:
         if element.is_a("IfcGridAxis"):
             return "{}/{}".format(element.is_a(), element.AxisTag)
-        return "{}/{}".format(element.is_a(), getattr(element, "Name", "None"))
+        return "{}/{}".format(element.is_a(), getattr(element, "Name", "Unnamed") or "Unnamed")
 
     @classmethod
     def link_mesh(

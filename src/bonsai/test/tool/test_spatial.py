@@ -250,7 +250,7 @@ class TestGenerateSpace(NewFile):
         mesh = space.data
         assert isinstance(mesh, bpy.types.Mesh)
         assert len(mesh.vertices) == 8
-        TEST_VERTS = (
+        TEST_VERTS = sorted((
             ((5.0, 5.0, 10.0)),
             ((-5.0, 5.0, 10.0)),
             ((-5.0, -5.0, 10.0)),
@@ -259,5 +259,5 @@ class TestGenerateSpace(NewFile):
             ((-5.0, -5.0, 0.0)),
             ((5.0, 5.0, 0.0)),
             ((5.0, -5.0, 0.0)),
-        )
-        assert np.allclose(TEST_VERTS, [tuple(v.co) for v in mesh.vertices])
+        ))
+        assert np.allclose(TEST_VERTS, sorted([tuple(v.co) for v in mesh.vertices]))

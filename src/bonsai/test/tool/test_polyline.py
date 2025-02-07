@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import bpy
 import ifcopenshell
 import bonsai.core.tool
@@ -32,14 +31,21 @@ class TestImplementsTool(NewFile):
 
 class TestValidateInput(NewFile):
     def test_simple_units(self):
+        ifc = ifcopenshell.api.project.create_file()
+        tool.Ifc.set(ifc)
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(ifc, unit_type="LENGTHUNIT", prefix=None)
+        ifcopenshell.api.unit.assign_unit(ifc, [unit])
         unit_settings = bpy.context.scene.unit_settings
         unit_settings.system = "METRIC"
-        unit_settings.length_unit = "METERS"
         assert subject.validate_input("25", "D") == (True, "25.0")
+        unit.Prefix = "MILLI"
         unit_settings.length_unit = "MILLIMETERS"
         assert subject.validate_input("25", "D") == (True, "0.025")
 
         unit_settings.system = "IMPERIAL"
+        unit = ifcopenshell.api.unit.add_conversion_based_unit(ifc, name="foot")
+        ifcopenshell.api.unit.assign_unit(ifc, [unit])
         assert subject.validate_input("25", "D") == (True, "7.62")
         assert subject.validate_input("25'", "D") == (True, "7.62")
         assert subject.validate_input('25"', "D") == (True, "0.635")

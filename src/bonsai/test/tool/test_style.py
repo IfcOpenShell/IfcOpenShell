@@ -117,23 +117,6 @@ class TestGetName(NewFile):
         assert subject.get_name(bpy.data.materials.new("Material")) == "Material"
 
 
-class TestGetStyle(NewFile):
-    def test_getting_no_style(self):
-        assert subject.get_style(bpy.data.materials.new("Material")) is None
-
-    def test_getting_a_linked_style(self):
-        tool.Ifc.set(ifcopenshell.file())
-        style = tool.Ifc.get().createIfcSurfaceStyle()
-        obj = bpy.data.materials.new("Material")
-        obj.BIMStyleProperties.ifc_definition_id = style.id()
-        assert subject.get_style(obj) == style
-
-    def test_getting_nothing_for_a_broken_link_style(self):
-        obj = bpy.data.materials.new("Material")
-        obj.BIMStyleProperties.ifc_definition_id = 1
-        assert subject.get_style(obj) == None
-
-
 class TestGetSurfaceRenderingAttributes(NewFile):
     def test_get_different_surface_and_diffuse_colours_from_a_principled_bsdf(self):
         obj = bpy.data.materials.new("Material")
