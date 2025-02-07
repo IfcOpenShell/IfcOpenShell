@@ -408,7 +408,7 @@ class BIM_PT_tabs(Panel):
             UIData.load()
         is_ifc_project = bool(tool.Ifc.get())
         aprops = tool.Blender.get_area_props(context)
-        ifc_icon = f"{UIData.data['icon_color_mode']}_ifc"
+        ifc_icon = f"{UIData.data['tabs_icon_color_mode']}_ifc"
 
         row = self.layout.row()
         row.alignment = "CENTER"
@@ -1119,7 +1119,11 @@ class UIData:
 
     @classmethod
     def load(cls):
-        cls.data = {"version": cls.version(), "icon_color_mode": cls.icon_color_mode()}
+        cls.data = {
+            "version": cls.version(),
+            "tabs_icon_color_mode": cls.icon_color_mode("user_interface.wcol_regular.text"),
+            "menu_icon_color_mode": cls.icon_color_mode("user_interface.wcol_menu.text"),
+        }
         cls.is_loaded = True
 
     @classmethod
@@ -1127,8 +1131,8 @@ class UIData:
         return tool.Blender.get_bonsai_version()
 
     @classmethod
-    def icon_color_mode(cls):
-        return tool.Blender.detect_icon_color_mode()
+    def icon_color_mode(cls, color_path):
+        return tool.Blender.detect_icon_color_mode(color_path)
 
 
 def draw_statusbar(self, context):
