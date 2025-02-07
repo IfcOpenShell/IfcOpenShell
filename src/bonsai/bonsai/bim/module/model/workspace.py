@@ -1053,7 +1053,7 @@ class EditObjectUI:
         row.label(text="Mode") if ui_context != "TOOL_HEADER" else row
 
         if AuthoringData.data["active_material_usage"] == "LAYER3":
-            if len(context.selected_objects) == 1:
+            if len(context.selected_objects) == 1 and AuthoringData.data["has_extrusion"]:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(row, "Edit Profile", "S_E", "", ui_context)
         elif (
@@ -1242,7 +1242,11 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
             if self.active_material_usage == "LAYER3":
                 # Edit LAYER3 profile
-                if bpy.context.active_object and bpy.context.active_object.mode == "OBJECT":
+                if (
+                    active_object.mode == "OBJECT"
+                    and (representation := tool.Geometry.get_active_representation(active_object))
+                    and tool.Model.get_extrusion(representation)
+                ):
                     bpy.ops.bim.enable_editing_extrusion_profile()
             elif self.active_material_usage == "LAYER2":
                 # Extend LAYER2 to cursor

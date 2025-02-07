@@ -484,7 +484,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def get_active_representation(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
-        """< IfcShapeRepresentation or None"""
+        """:return: IfcRepresentation/IfcRepresentationItem or None"""
         if obj.data and hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.ifc_definition_id:
             return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
 

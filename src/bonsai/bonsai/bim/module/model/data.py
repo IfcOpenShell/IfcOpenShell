@@ -82,6 +82,7 @@ class AuthoringData:
         cls.data["has_visible_boundaries"] = cls.has_visible_boundaries()
         cls.data["active_class"] = cls.active_class()
         cls.data["active_material_usage"] = cls.active_material_usage()
+        cls.data["has_extrusion"] = cls.has_extrusion()
         cls.data["is_representation_item_active"] = cls.is_representation_item_active()
         # After is_representation_item_active.
         cls.data["is_representation_item_swept_solid"] = cls.is_representation_item_swept_solid()
@@ -246,6 +247,19 @@ class AuthoringData:
     def active_material_usage(cls):
         if (obj := tool.Blender.get_active_object()) and (element := tool.Ifc.get_entity(obj)):
             return tool.Model.get_usage_type(element)
+
+    @classmethod
+    def has_extrusion(cls) -> bool:
+        if not (obj := tool.Blender.get_active_object()) or not (
+            representation := tool.Geometry.get_active_representation(obj)
+        ):
+            return False
+
+        # Skip representation items.
+        if not representation.is_a("IfcShapeRepresentation"):
+            return False
+
+        return bool(tool.Model.get_extrusion(representation))
 
     @classmethod
     def is_representation_item_active(cls) -> bool:
