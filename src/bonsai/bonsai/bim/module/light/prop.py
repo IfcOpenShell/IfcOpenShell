@@ -113,6 +113,7 @@ def update_sun_path(self):
     sun_props.sun_distance = self.sun_path_size
     sun_props.latitude = self.latitude
     sun_props.longitude = self.longitude
+    sun_props.year = self.year
     sun_props.month = self.month
     sun_props.day = self.day
     sun_props.time = self.hour + (self.minute / 60)
@@ -382,6 +383,7 @@ class BIMSolarProperties(PropertyGroup):
     longitude: FloatProperty(name="Longitude", min=-180, max=180, update=update_latlong)
     timezone: StringProperty(name="Timezone", default="Etc/GMT")
     true_north: FloatProperty(name="True North", min=-180, max=180, update=update_true_north)
+    year: IntProperty(name="Year", min=1, max=9999, default=2025, update=update_date)
     month: IntProperty(name="Month", min=1, max=12, default=1, update=update_date)
     day: IntProperty(name="Date", min=1, max=31, default=1, update=update_date)
     hour: IntProperty(name="Hour", min=0, max=23, default=12, update=update_hourminute)

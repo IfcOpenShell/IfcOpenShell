@@ -172,6 +172,8 @@ class BIM_PT_solar(bpy.types.Panel):
         if SolarData.data["true_north"] is not None:
             row.operator("bim.import_true_north", icon="IMPORT", text="")
 
+        row = self.layout.row()
+        row.prop(props, "year")
         row = self.layout.row(align=True)
         row.prop(
             props,

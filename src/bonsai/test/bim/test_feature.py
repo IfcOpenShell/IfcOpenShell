@@ -274,8 +274,8 @@ def i_see_the_prop_property(prop):
 @then(parsers.parse('I don\'t see the "{prop}" property'))
 def i_dont_see_the_prop_property(prop):
     panel_spy.refresh_spy()
-    assert [
-        p for p in panel_spy.spied_props if prop not in (p["name"], p["text"], p["icon"])
+    assert not [
+        p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
     ], f"Property {prop} not found in {panel_spy.spied_props}"
 
 
