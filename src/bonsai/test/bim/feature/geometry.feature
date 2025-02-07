@@ -78,39 +78,6 @@ Scenario: Switch representation
     And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation})"
     Then nothing happens
 
-Scenario: Switch representation - current edited representation is updated prior to switch
-    Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    And the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.ContextType == 'Plan' and c.ContextIdentifier=='Annotation'][0].id()"
-    And I set "active_object.BIMGeometryProperties.contexts" to "{context}"
-    And I press "bim.add_representation"
-    When the object "IfcWall/Cube" is scaled to "2"
-    And the variable "representation" is "[r for r in {ifc}.by_type('IfcShapeRepresentation') if r.RepresentationType=='Tessellation'][0].id()"
-    And I press "bim.switch_representation(ifc_definition_id={representation}, should_reload=True)"
-    And the variable "representation" is "[r for r in {ifc}.by_type('IfcShapeRepresentation') if r.RepresentationType=='Annotation2D'][0].id()"
-    And I press "bim.switch_representation(ifc_definition_id={representation}, should_reload=True)"
-    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
-    Then the object "IfcWall/Cube" dimensions are "4,4,0"
-
-Scenario: Switch representation - current edited representation is discarded if switching to a box
-    Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    When the object "IfcWall/Cube" is scaled to "2"
-    And the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[-1].id()"
-    And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
-    And the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
-    And I press "bim.switch_representation(obj='IfcWall/Cube', ifc_definition_id={representation}, should_reload=True)"
-    When I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"
-    Then the object "IfcWall/Cube" dimensions are "2,2,2"
-
 Scenario: Switch representation - existing Blender modifiers must be purged
     Given an empty IFC project
     And I add a cube
@@ -132,9 +99,7 @@ Scenario: Remove representation - remove an active representation
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
     When the variable "representation_body" is "{ifc}.by_type('IfcShapeRepresentation')[0].id()"
-    And the variable "representation_bbox" is "{ifc}.by_type('IfcShapeRepresentation')[1].id()"
     And I press "bim.remove_representation(representation_id={representation_body})"
-    And I press "bim.remove_representation(representation_id={representation_bbox})"
     Then the object "IfcWall/Cube" has no data
 
 Scenario: Remove representation - remove an unloaded representation
@@ -145,6 +110,9 @@ Scenario: Remove representation - remove an unloaded representation
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
     And I press "bim.assign_class"
+    When the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.ContextType == 'Plan' and c.ContextIdentifier == 'Body' and c.TargetView == 'PLAN_VIEW'][0].id()"
+    And I set "active_object.BIMGeometryProperties.contexts" to "{context}"
+    And I press "bim.add_representation"
     When the variable "representation" is "{ifc}.by_type('IfcShapeRepresentation')[1].id()"
     And I press "bim.remove_representation(representation_id={representation})"
     Then the object "IfcWall/Cube" has data which is an IFC representation
@@ -162,10 +130,8 @@ Scenario: Remove representation - remove an instanced representation from an act
     And I press "bim.add_constr_type_instance"
     And I press "bim.add_constr_type_instance"
     And the object "IfcWallType/Cube" is selected
-    When the variable "representation_body" is "{ifc}.by_type('IfcWallType')[0].RepresentationMaps[1].MappedRepresentation.id()"
-    And the variable "representation_bbox" is "{ifc}.by_type('IfcWallType')[0].RepresentationMaps[0].MappedRepresentation.id()"
+    When the variable "representation_body" is "{ifc}.by_type('IfcWallType')[0].RepresentationMaps[0].MappedRepresentation.id()"
     And I press "bim.remove_representation(representation_id={representation_body})"
-    And I press "bim.remove_representation(representation_id={representation_bbox})"
     Then the object "IfcWallType/Cube" has no data
     Then the object "IfcWall/Wall" has no data
     Then the object "IfcWall/Wall.001" has no data
@@ -183,10 +149,8 @@ Scenario: Remove representation - remove an instanced representation from an act
     And I press "bim.add_constr_type_instance"
     And I press "bim.add_constr_type_instance"
     And the object "IfcWall/Wall" is selected
-    When the variable "representation_body" is "{ifc}.by_type('IfcWall')[0].Representation.Representations[1].id()"
-    And the variable "representation_bbox" is "{ifc}.by_type('IfcWall')[0].Representation.Representations[0].id()"
+    When the variable "representation_body" is "{ifc}.by_type('IfcWall')[0].Representation.Representations[0].id()"
     And I press "bim.remove_representation(representation_id={representation_body})"
-    And I press "bim.remove_representation(representation_id={representation_bbox})"
     Then the object "IfcWallType/Cube" has no data
     Then the object "IfcWall/Wall" has no data
     Then the object "IfcWall/Wall.001" has no data
@@ -320,6 +284,7 @@ Scenario: Override duplicate move - with active IFC data
     And I press "bim.assign_class"
     And the object "IfcWall/Cube" is selected
     And additionally the object "IfcBuildingStorey/My Storey" is selected
+    And I set "scene.BIMSpatialDecompositionProperties.is_locked" to "False"
     When I duplicate the selected objects
     Then the object "IfcWall/Cube" exists
     And the object "IfcWall/Cube" is an "IfcWall"
