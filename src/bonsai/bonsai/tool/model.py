@@ -1455,71 +1455,20 @@ class Model(bonsai.core.tool.Model):
         `assigned_material` argument is there just to indicate whether we apply material changes
         after material assignment or material unassignment.
         """
-
-        if assigned_material:
-            # NOTE: currently only IfcMaterials are supported
-            # for anyone else we just switch representation.
-            if not assigned_material.is_a("IfcMaterial"):
-                tool.Geometry.reload_representation([tool.Ifc.get_object(e) for e in elements])
-                return
-
-        # Since different elements can share meshes (e.g. occurrences without openings)
-        # we need to make sure not to process them multiple times.
-        meshes_users: dict[bpy.types.Mesh, set[bpy.types.Object]] = dict()
-        for obj in bpy.data.objects:
-            if not obj.data:
-                continue
-            meshes_users.setdefault(obj.data, set()).add(obj)
-
-        objects: set[bpy.types.Object] = set()
         for element in elements:
-            obj: bpy.types.Object = tool.Ifc.get_object(element)
-            if not obj or not obj.data:
+            if not (obj := tool.Ifc.get_object(element)) or not obj.data:
                 continue
-            objects.add(obj)
-
-        meshes: set[bpy.types.Mesh] = {obj.data for obj in objects}
-
-        for mesh in meshes:
-            mesh_users = meshes_users[mesh]
-
-            if not mesh_users.issubset(objects):
-                # It's unsafe to make changes to the mesh
-                # as it's used by objects unrelated to the current change.
-                # E.g. material with a style was assigned to a particular occurrence
-                # and this change shouldn't be applied to other occurrences and type.
-                objs_to_reload = mesh_users.intersection(objects)
-                for obj in objs_to_reload:
-                    tool.Geometry._reload_representation(obj)
-                continue
-
-            obj = next(iter(mesh_users))
-            element = tool.Ifc.get_entity(obj)
-            assert element  # Type checker.
-            own_material = next(iter(ifcopenshell.util.element.get_materials(element, should_inherit=False)), None)
-            inherited_mstyle = tool.Geometry.get_inherited_material_style(element)
-
-            if assigned_material:
-                if own_material:
-                    ms2 = tool.Material.get_style(own_material)
-                    ms1 = inherited_mstyle
-                else:
-                    ms1 = None
-                    ms2 = inherited_mstyle
-
-                cls.replace_material_style(mesh, obj, ms1, ms2)
-                tool.Geometry.record_object_materials(obj)
-
-            else:  # Material unnassignment.
-                if not tool.Geometry.has_geometry_without_styles(mesh):
-                    tool.Geometry._reload_representation(obj)
-                    continue
-
-                if not inherited_mstyle:
-                    continue
-
-                cls.replace_material_style(mesh, obj, None, inherited_mstyle)
-                tool.Geometry.record_object_materials(obj)
+            representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+                apply_openings=True,
+            )
 
     @classmethod
     def get_occurrences_without_material_override(
@@ -1531,61 +1480,6 @@ class Model(bonsai.core.tool.Model):
             if not tool.Geometry.has_material_style_override(e)
         ]
         return occurrences
-
-    @classmethod
-    def replace_material_style(
-        cls,
-        mesh: bpy.types.Mesh,
-        obj: bpy.types.Object,
-        mstyle1: Union[ifcopenshell.entity_instance, None],
-        mstyle2: Union[ifcopenshell.entity_instance, None],
-    ) -> None:
-        if mstyle1 == mstyle2:
-            return
-
-        # Get Blender materials.
-        mbstyle1, mbstyle2 = None, None
-        if mstyle1:
-            mbstyle1 = tool.Ifc.get_object(mstyle1)
-            assert isinstance(mbstyle1, bpy.types.Material)
-        if mstyle2:
-            mbstyle2 = tool.Ifc.get_object(mstyle2)
-            assert isinstance(mbstyle2, bpy.types.Material)
-
-        # Copy data to the list as mesh.materials doesn't allow to search for None.
-        materials: list[Union[bpy.types.Material, None]] = mesh.materials[:]
-        # Material style is overridden by representation item, nothing to change.
-        if mesh.materials and mbstyle1 not in materials:
-            return
-
-        i1 = None
-        if mbstyle1 is None:
-            if not materials:
-                mesh.materials.append(None)
-                i1 = 0
-            else:
-                i1 = materials.index(None)
-        else:
-            rep = tool.Geometry.get_active_representation(obj)
-            assert rep  # Type checker.
-            rep_styles = tool.Geometry.get_representation_styles(rep)
-            if mbstyle1 in rep_styles:
-                tool.Geometry._reload_representation(obj)
-                return
-            else:
-                i1 = materials.index(mbstyle1)
-
-        if mbstyle2 in materials:
-            i2 = materials.index(mbstyle2)
-            # Reassign faces.
-            buffer = np.empty(len(mesh.polygons), dtype=np.int32)
-            mesh.polygons.foreach_get("material_index", buffer)
-            buffer[buffer == i1] = i2
-            mesh.polygons.foreach_set("material_index", buffer)
-
-            mesh.materials.pop(index=i1)
-        else:
-            mesh.materials[i1] = mbstyle2
 
     @classmethod
     def add_body_representation(cls, obj: bpy.types.Object) -> None:

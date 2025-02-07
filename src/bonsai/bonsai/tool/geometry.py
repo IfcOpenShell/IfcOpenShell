@@ -847,13 +847,13 @@ class Geometry(bonsai.core.tool.Geometry):
                         representation = tool.Ifc.get().by_id(int(geometry.id.split("-")[0]))
                         if geometry:
                             mesh = ifc_importer.create_mesh(element, geometry)
+                            tool.Loader.link_mesh(geometry, mesh)
                             ifc_importer.material_creator.load_existing_materials()
                             shape_has_openings = False
                             ifc_importer.material_creator.create(element, obj, mesh, shape_has_openings)
                             mesh.BIMMeshProperties.has_openings_applied = apply_openings
                             if not shape_has_openings:
                                 tool.Loader.load_indexed_colour_map(representation, mesh)
-                        tool.Loader.link_mesh(geometry, mesh)
                         meshes[mesh_name] = mesh
 
                     change_data(obj, element, mesh)

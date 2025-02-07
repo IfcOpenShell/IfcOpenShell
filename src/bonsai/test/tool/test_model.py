@@ -101,7 +101,6 @@ class TestGetManualBooleans(NewFile):
         assert len(subject.get_manual_booleans(element, representation)) == 0
 
         bool1 = list(bools)[0]
-        print(bools, bool1)
 
         subject.mark_manual_booleans(element, [bool1])
         assert set(subject.get_manual_booleans(element, representation)) == {bool1}
@@ -638,6 +637,7 @@ class TestApplyIfcMaterialChanges(NewFile):
 
         ifcopenshell.api.material.assign_material(ifc_file, products=[element], material=red_material)
         tool.Material.ensure_material_assigned([element], material=red_material)
+        mesh = self.get_mesh(obj)
         assert mesh.materials[:] == [bpy.data.materials["Red"]]
         # All polygons are just reassigned to the existing material.
         assert set(get_material_indices(mesh)) == {mesh.materials.find("Red")}
