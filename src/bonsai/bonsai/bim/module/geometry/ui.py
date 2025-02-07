@@ -32,13 +32,30 @@ from bonsai.bim.module.geometry.data import (
 from bonsai.bim.module.layer.data import LayersData
 
 
+class UIData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"menu_icon_color_mode": cls.icon_color_mode("user_interface.wcol_menu.text")}
+        cls.is_loaded = True
+
+    @classmethod
+    def icon_color_mode(cls, color_path):
+        return tool.Blender.detect_icon_color_mode(color_path)
+
+
 def mode_menu(self, context):
     if not tool.Ifc.get():
         return
+    if not UIData.is_loaded:
+        UIData.load()
+    ifc_icon = f"{UIData.data['menu_icon_color_mode']}_ifc"
     row = self.layout.row(align=True)
     if context.scene.BIMGeometryProperties.mode == "EDIT":
         row.operator("bim.override_mode_set_object", icon="CANCEL", text="Discard Changes").should_save = False
-    row.prop(context.scene.BIMGeometryProperties, "mode", text="", icon_value=bonsai.bim.icons["IFC"].icon_id)
+    row.prop(context.scene.BIMGeometryProperties, "mode", text="", icon_value=bonsai.bim.icons[ifc_icon].icon_id)
 
 
 def object_menu(self, context):
