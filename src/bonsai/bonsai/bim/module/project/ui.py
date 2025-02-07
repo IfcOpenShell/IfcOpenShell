@@ -37,6 +37,24 @@ def file_import_menu(self, context):
     op.should_start_fresh_session = False
 
 
+def refresh():
+    UIData.is_loaded = False
+
+
+class UIData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"menu_item_icon_color_mode": cls.icon_color_mode("user_interface.wcol_menu_item.text")}
+        cls.is_loaded = True
+
+    @classmethod
+    def icon_color_mode(cls, color_path):
+        return tool.Blender.detect_icon_color_mode(color_path)
+
+
 class BIM_MT_project(Menu):
     bl_idname = "BIM_MT_project"
     bl_label = "New IFC Project"
@@ -54,6 +72,9 @@ class BIM_MT_recent_projects(Menu):
     bl_label = "Open Recent IFC Project"
 
     def draw(self, context):
+        if not UIData.is_loaded:
+            UIData.load()
+        ifc_icon = f"{UIData.data['menu_item_icon_color_mode']}_ifc"
         layout = self.layout
         paths = tool.Project.get_recent_ifc_projects()
         if not paths:
@@ -62,7 +83,7 @@ class BIM_MT_recent_projects(Menu):
 
         for path in paths:
             row = layout.row()
-            op = row.operator("bim.load_project", text=path.name, icon_value=bonsai.bim.icons["IFC"].icon_id)
+            op = row.operator("bim.load_project", text=path.name, icon_value=bonsai.bim.icons[ifc_icon].icon_id)
             op.filepath = str(path)
             op.should_start_fresh_session = True
             op.use_detailed_tooltip = True
