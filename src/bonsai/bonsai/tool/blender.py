@@ -1323,6 +1323,10 @@ class Blender(bonsai.core.tool.Blender):
         return importlib.import_module(name)
 
     @classmethod
+    def is_addon_enabled(cls) -> bool:
+        return cls.get_blender_addon_package_name() in bpy.context.preferences.addons
+
+    @classmethod
     def get_addon_preferences(cls) -> bonsai.bim.ui.BIM_ADDON_preferences:
         blender_package_name = cls.get_blender_addon_package_name()
         return bpy.context.preferences.addons[blender_package_name].preferences

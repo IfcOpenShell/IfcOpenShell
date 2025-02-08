@@ -55,6 +55,8 @@ class GridDecorator:
         batch.draw(shader)
 
     def draw_text(self, context):
+        if not tool.Blender.is_addon_enabled():
+            return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
         unselected_elements_color = self.addon_prefs.decorator_color_unselected
@@ -94,6 +96,8 @@ class GridDecorator:
         blf.disable(font_id, blf.SHADOW)
 
     def draw(self, context):
+        if not tool.Blender.is_addon_enabled():
+            return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
         unselected_elements_color = self.addon_prefs.decorator_color_unselected
