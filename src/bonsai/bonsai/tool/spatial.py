@@ -212,7 +212,9 @@ class Spatial(bonsai.core.tool.Spatial):
         if props.should_include_children:
             elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
         else:
-            elements = ifcopenshell.util.element.get_contained(container)
+            elements = set(ifcopenshell.util.element.get_contained(container))
+            for e in elements:
+                elements.update(ifcopenshell.util.element.get_decomposition(e))
         flat_results: dict[str, Any] = {}
         reference_names: dict[str, str] = {}
         for element in elements:
@@ -257,14 +259,20 @@ class Spatial(bonsai.core.tool.Spatial):
         if props.should_include_children:
             elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
         else:
-            elements = ifcopenshell.util.element.get_contained(container)
+            elements = set(ifcopenshell.util.element.get_contained(container))
+            for e in elements:
+                elements.update(ifcopenshell.util.element.get_decomposition(e))
         for element in elements:
             if element.is_a("IfcOpeningElement") or tool.Root.is_spatial_element(element):
                 continue
             element_type = ifcopenshell.util.element.get_type(element)
             ifc_class = element.is_a()
             ifc_definition_id = element_type.id() if element_type else 0
-            type_name = element_type.Name or "Unnamed" if element_type else f"Untyped {element.is_a()}"
+            type_name = (
+                element_type.is_a() + "/" + element_type.Name or "Unnamed"
+                if element_type
+                else f"Untyped {element.is_a()}"
+            )
             class_data = results.setdefault(ifc_class, {})
             type_data = class_data.setdefault(ifc_definition_id, {"type_name": type_name, "elements": []})
             type_data["elements"].append(element)
@@ -348,6 +356,8 @@ class Spatial(bonsai.core.tool.Spatial):
 
         def add_elements(elements, level=0):
             for element in sorted(elements, key=lambda x: f"{x.is_a()}/{x.Name or 'Unnamed'}"):
+                if not props.should_include_children and tool.Root.is_spatial_element(element):
+                    continue
                 ifc_definition_id = element.id()
                 new = props.elements.add()
                 new.name = f"{element.is_a()}/{element.Name or 'Unnamed'}"
@@ -406,7 +416,7 @@ class Spatial(bonsai.core.tool.Spatial):
     @classmethod
     def filter_elements(
         cls,
-        elements: List[ifcopenshell.entity_instance],
+        elements: Iterable[ifcopenshell.entity_instance],
         ifc_class: str | None,
         relating_type: ifcopenshell.entity_instance | None,
         is_untyped: bool,
@@ -1232,3 +1242,117 @@ class Spatial(bonsai.core.tool.Spatial):
         ):
             props = bpy.context.active_object.BIMObjectSpatialProperties
             props.container_obj = obj
+
+    @classmethod
+    def get_filtered_elements(cls, should_filter: bool = True) -> Iterable[ifcopenshell.entity_instance]:
+        ifc_file = tool.Ifc.get()
+        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        container = ifc_file.by_id(props.active_container.ifc_definition_id)
+        element_filter = props.element_filter
+        active_element = props.active_element
+
+        if not should_filter:
+            if props.should_include_children:
+                elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
+            else:
+                elements = set(ifcopenshell.util.element.get_contained(container))
+                for e in elements:
+                    elements.update(ifcopenshell.util.element.get_decomposition(e))
+            if not element_filter:
+                return elements
+
+            keyword = element_filter.lower()
+            if props.element_mode == "TYPE":
+                filtered_occurrences = set()
+                filtered_classes = set()
+                filtered_types = set()
+                for item in props.elements:
+                    if item.type == "CLASS" and not item.is_expanded and keyword in item.name.lower():
+                        filtered_classes.add(item.name)
+                    elif item.type == "TYPE" and not item.is_expanded and keyword in item.name.lower():
+                        if item.ifc_definition_id:
+                            filtered_types.add(ifc_file.by_id(item.ifc_definition_id))
+                        else:
+                            filtered_types.add(item.name.split(" ")[1])
+                    elif item.type == "OCCURRENCE" and keyword in item.name.lower():
+                        filtered_occurrences.add(ifc_file.by_id(item.ifc_definition_id))
+                return {
+                    e
+                    for e in elements
+                    if e.is_a() in filtered_classes
+                    or ((e_type := ifcopenshell.util.element.get_type(e)) and e_type in filtered_types)
+                    or (not e_type and e.is_a() in filtered_types)
+                } | filtered_occurrences
+            elif props.element_mode == "DECOMPOSITION":
+                return [ifc_file.by_id(i.ifc_definition_id) for i in props.elements if keyword in i.name.lower()]
+            elif props.element_mode == "CLASSIFICATION":
+                filtered_classifications = set()
+                filtered_occurrences = set()
+                for item in props.elements:
+                    if item.type == "CLASSIFICATION" and not item.is_expanded and keyword in item.name.lower():
+                        filtered_classifications.add(item.identification)
+                    elif item.type == "OCCURRENCE" and keyword in item.name.lower():
+                        filtered_occurrences.add(ifc_file.by_id(item.ifc_definition_id))
+                for element in elements:
+                    if refs := ifcopenshell.util.classification.get_references(element):
+                        for ref in refs:
+                            for filtered_classification in filtered_classifications:
+                                if ref[1].startswith(filtered_classification):
+                                    filtered_occurrences.add(element)
+                    elif "Unclassified" in filtered_classifications:
+                        filtered_occurrences.add(element)
+                return filtered_occurrences
+            return elements
+
+        if not active_element:
+            return []
+
+        if props.element_mode == "TYPE":
+            if active_element.type == "OCCURRENCE":
+                return {ifc_file.by_id(active_element.ifc_definition_id)}
+
+            ifc_class = relating_type = None
+            is_untyped = False
+
+            if active_element.type == "CLASS":
+                ifc_class = active_element.name
+            elif active_element.type == "TYPE":
+                ifc_class = active_element.ifc_class
+                if ifc_id := active_element.ifc_definition_id:
+                    relating_type = ifc_file.by_id(ifc_id)
+
+            if props.should_include_children:
+                elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
+            else:
+                elements = set(ifcopenshell.util.element.get_contained(container))
+                for e in elements:
+                    elements.update(ifcopenshell.util.element.get_decomposition(e))
+            return cls.filter_elements(elements, ifc_class, relating_type, is_untyped, element_filter)
+        elif props.element_mode == "DECOMPOSITION":
+            occurrence = ifc_file.by_id(active_element.ifc_definition_id)
+            elements = ifcopenshell.util.element.get_decomposition(occurrence, is_recursive=True)
+            elements.add(occurrence)
+            return elements
+        elif props.element_mode == "CLASSIFICATION":
+            if active_element.type == "OCCURRENCE":
+                return {ifc_file.by_id(active_element.ifc_definition_id)}
+
+            if active_element.type == "CLASSIFICATION":
+                identification = active_element.identification
+                if props.should_include_children:
+                    elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
+                else:
+                    elements = set(ifcopenshell.util.element.get_contained(container))
+                    for e in elements:
+                        elements.update(ifcopenshell.util.element.get_decomposition(e))
+
+                def filter_element(element: ifcopenshell.entity_instance) -> bool:
+                    references = ifcopenshell.util.classification.get_references(element)
+                    if identification == "Unclassified":
+                        if not references:
+                            return True
+                    elif any([r for r in references if r[1].startswith(identification)]):
+                        return True
+                    return False
+
+                return filter(filter_element, elements)

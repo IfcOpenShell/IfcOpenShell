@@ -143,24 +143,6 @@ class BIM_PT_spatial_decomposition(Panel):
             op = col.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
             op.container = ifc_definition_id
 
-            col = row.column(align=True)
-            col.enabled = non_ifc_project_active
-            op = col.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="Isolate")
-            op.mode = "ISOLATE"
-            op.container = ifc_definition_id
-
-            col = row.column(align=True)
-            col.enabled = non_ifc_project_active
-            op = col.operator("bim.set_container_visibility", icon="HIDE_OFF", text="")
-            op.mode = "SHOW"
-            op.container = ifc_definition_id
-
-            col = row.column(align=True)
-            col.enabled = non_ifc_project_active
-            op = col.operator("bim.set_container_visibility", icon="HIDE_ON", text="")
-            op.mode = "HIDE"
-            op.container = ifc_definition_id
-
             # The only operator that's enabled for IfcProject.
             col = row.column(align=True)
             col.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
@@ -193,11 +175,26 @@ class BIM_PT_spatial_decomposition(Panel):
             row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
             return
 
-        row = self.layout.row(align=True)
+        row = self.layout.row()
         row.label(
             text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Elements",
             icon="FILE_3D",
         )
+
+        row = self.layout.row(align=True)
+
+        op = row.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="Isolate")
+        op.mode = "ISOLATE"
+        op.container = ifc_definition_id
+
+        op = row.operator("bim.set_container_visibility", icon="HIDE_OFF", text="")
+        op.mode = "SHOW"
+        op.container = ifc_definition_id
+
+        op = row.operator("bim.set_container_visibility", icon="HIDE_ON", text="")
+        op.mode = "HIDE"
+        op.container = ifc_definition_id
+
         row.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
         op = row.operator("bim.select_decomposed_element", icon="OBJECT_DATA", text="")
         if active_element := self.props.active_element:

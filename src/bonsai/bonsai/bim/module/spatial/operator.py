@@ -317,14 +317,14 @@ class SelectDecomposedElement(bpy.types.Operator):
 
 class SelectDecomposedElements(bpy.types.Operator):
     bl_idname = "bim.select_decomposed_elements"
-    bl_label = "Select Children"
+    bl_label = "Select Elements"
     bl_options = {"REGISTER", "UNDO"}
     should_filter: bpy.props.BoolProperty(name="Should Filter", default=True, options={"SKIP_SAVE"})
     container: bpy.props.IntProperty()
 
     @classmethod
     def description(cls, context, operator):
-        return "Select all contained elements filtered by this type" + "\nALT+CLICK to select all contained elements"
+        return "Select elements in the viewport based on the active item in the list" + "\nALT+CLICK to select all listed elements"
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.alt:
@@ -332,61 +332,7 @@ class SelectDecomposedElements(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
-        ifc_file = tool.Ifc.get()
-        container = ifc_file.by_id(self.container)
-        props = context.scene.BIMSpatialDecompositionProperties
-        element_filter = props.element_filter
-        active_element = props.active_element
-
-        if not self.should_filter and not element_filter:
-            tool.Spatial.select_products(tool.Spatial.get_decomposed_elements(container))
-            return {"CANCELLED"}
-
-        if props.element_mode == "TYPE":
-            if active_element.type == "OCCURRENCE":
-                if obj := tool.Ifc.get_object(ifc_file.by_id(active_element.ifc_definition_id)):
-                    tool.Blender.set_active_object(obj)
-                return {"CANCELLED"}
-
-            ifc_class = relating_type = None
-            is_untyped = False
-
-            if self.should_filter:
-                if active_element.type == "CLASS":
-                    ifc_class = active_element.name
-                elif active_element.type == "TYPE":
-                    ifc_class = active_element.ifc_class
-                    if ifc_id := active_element.ifc_definition_id:
-                        relating_type = ifc_file.by_id(ifc_id)
-
-            elements = tool.Spatial.get_decomposed_elements(container)
-            elements = tool.Spatial.filter_elements(elements, ifc_class, relating_type, is_untyped, element_filter)
-            tool.Spatial.select_products(elements)
-        elif props.element_mode == "DECOMPOSITION":
-            occurrence = ifc_file.by_id(active_element.ifc_definition_id)
-            elements = ifcopenshell.util.element.get_decomposition(occurrence)
-            elements.add(occurrence)
-            tool.Spatial.select_products(elements)
-        elif props.element_mode == "CLASSIFICATION":
-            if active_element.type == "OCCURRENCE":
-                if obj := tool.Ifc.get_object(ifc_file.by_id(active_element.ifc_definition_id)):
-                    tool.Blender.set_active_object(obj)
-                return {"CANCELLED"}
-
-            if active_element.type == "CLASSIFICATION":
-                identification = active_element.identification
-                elements = tool.Spatial.get_decomposed_elements(container)
-
-                def filter_element(element: ifcopenshell.entity_instance) -> bool:
-                    references = ifcopenshell.util.classification.get_references(element)
-                    if identification == "Unclassified":
-                        if not references:
-                            return True
-                    elif any([r for r in references if r[1].startswith(identification)]):
-                        return True
-                    return False
-
-                tool.Spatial.select_products(filter(filter_element, elements))
+        tool.Spatial.select_products(tool.Spatial.get_filtered_elements(self.should_filter))
         return {"FINISHED"}
 
 
@@ -407,7 +353,7 @@ class SetContainerVisibility(bpy.types.Operator):
     bl_label = "Set Container Visibility"
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty()
-    should_include_children: bpy.props.BoolProperty(name="Should Include Children", default=True, options={"SKIP_SAVE"})
+    should_filter: bpy.props.BoolProperty(name="Should Filter", default=True, options={"SKIP_SAVE"})
     mode: bpy.props.StringProperty(name="Mode")
 
     @classmethod
@@ -420,7 +366,7 @@ class SetContainerVisibility(bpy.types.Operator):
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.alt:
-            self.should_include_children = False
+            self.should_filter = False
         return self.execute(context)
 
     def execute(self, context):
@@ -433,9 +379,7 @@ class SetContainerVisibility(bpy.types.Operator):
         else:
             should_hide = self.mode == "HIDE"
 
-        container = tool.Ifc.get().by_id(self.container)
-        elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=self.should_include_children)
-        for element in elements:
+        for element in tool.Spatial.get_filtered_elements(self.should_filter):
             if obj := tool.Ifc.get_object(element):
                 obj.hide_set(should_hide)
                 for collection in obj.users_collection:
