@@ -51,5 +51,5 @@ ln -s "${PWD}/src/ifcfm/ifcfm" "${PACKAGE_PATH}/ifcfm"
 cd "${PACKAGE_PATH}/bonsai/bim/data/gantt"
 wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
 wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
-cd "${PACKAGE_PATH}/bonsai/bim/schema"
+cd "${PACKAGE_PATH}/bonsai/bim/data/brick"
 wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl

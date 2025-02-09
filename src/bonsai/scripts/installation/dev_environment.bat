@@ -67,6 +67,6 @@ mklink /D "%PACKAGE_PATH%\ifcfm" "%CD%\src\ifcfm\ifcfm"
 echo Manually downloading some third party dependencies...
 curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -o "%PACKAGE_PATH%\bonsai\bim\data\gantt\jsgantt.js"
 curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -o "%PACKAGE_PATH%\bonsai\bim\data\gantt\jsgantt.css"
-curl -L https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o "%PACKAGE_PATH%\bonsai\bim\schema\Brick.ttl"
+curl -L https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o "%PACKAGE_PATH%\bonsai\bim\data\brick\Brick.ttl"
 
 pause
