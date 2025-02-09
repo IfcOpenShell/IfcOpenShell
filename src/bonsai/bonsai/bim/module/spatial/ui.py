@@ -183,15 +183,15 @@ class BIM_PT_spatial_decomposition(Panel):
 
         row = self.layout.row(align=True)
 
-        op = row.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="Isolate")
+        op = row.operator("bim.set_element_visibility", icon="FULLSCREEN_EXIT", text="Isolate")
         op.mode = "ISOLATE"
         op.container = ifc_definition_id
 
-        op = row.operator("bim.set_container_visibility", icon="HIDE_OFF", text="")
+        op = row.operator("bim.set_element_visibility", icon="HIDE_OFF", text="")
         op.mode = "SHOW"
         op.container = ifc_definition_id
 
-        op = row.operator("bim.set_container_visibility", icon="HIDE_ON", text="")
+        op = row.operator("bim.set_element_visibility", icon="HIDE_ON", text="")
         op.mode = "HIDE"
         op.container = ifc_definition_id
 

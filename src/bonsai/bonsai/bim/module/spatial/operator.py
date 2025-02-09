@@ -324,7 +324,7 @@ class SelectDecomposedElements(bpy.types.Operator):
 
     @classmethod
     def description(cls, context, operator):
-        return "Select elements in the viewport based on the active item in the list" + "\nALT+CLICK to select all listed elements"
+        return "Select the active item" + "\nALT+CLICK to select all listed elements"
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.alt:
@@ -348,9 +348,9 @@ class SetDefaultContainer(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SetContainerVisibility(bpy.types.Operator):
-    bl_idname = "bim.set_container_visibility"
-    bl_label = "Set Container Visibility"
+class SetElementVisibility(bpy.types.Operator):
+    bl_idname = "bim.set_element_visibility"
+    bl_label = "Set Element Visibility"
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty()
     should_filter: bpy.props.BoolProperty(name="Should Filter", default=True, options={"SKIP_SAVE"})
@@ -359,10 +359,10 @@ class SetContainerVisibility(bpy.types.Operator):
     @classmethod
     def description(cls, context, operator):
         if operator.mode == "HIDE":
-            return "Hides the selected container and all children.\n" + "ALT+CLICK to ignore children"
+            return "Hides the active item\n" + "ALT+CLICK to hide all listed items"
         elif operator.mode == "SHOW":
-            return "Shows the selected container and all children.\n" + "ALT+CLICK to ignore children"
-        return "Isolate the selected container and all children.\n" + "ALT+CLICK to ignore children"
+            return "Shows the active item\n" + "ALT+CLICK to show all listed items"
+        return "Isolate the active item\n" + "ALT+CLICK to isolate all listed items"
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.alt:
