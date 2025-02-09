@@ -25,10 +25,6 @@ jobs:
             short_name: win64,
           }
           - {
-            name: "Windows 32bit",
-            short_name: win32,
-          }
-          - {
             name: "Linux 64bit",
             short_name: linux64
           }
