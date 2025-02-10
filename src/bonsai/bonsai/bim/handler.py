@@ -113,10 +113,6 @@ def update_bim_tool_props():
     if not element:
         return
 
-    representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-    if not representation:
-        return
-
     props = tool.Model.get_model_props()
     aprops = tool.Drawing.get_annotation_props()
     TOOLS_TO_CLASSES_MAP = tool.Blender.get_tools_to_classes_map()
@@ -138,6 +134,10 @@ def update_bim_tool_props():
                 props.relating_type_id = str(element_type.id())
 
     if is_annotation_tool:
+        return
+
+    representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+    if not representation:
         return
 
     extrusion = tool.Model.get_extrusion(representation)
