@@ -241,16 +241,21 @@ class Drawing(bonsai.core.tool.Drawing):
         if element_type == "IfcAnnotation" and element.ObjectType in object_types:
             return True
 
-        if (
-            element_type == "IfcTypeProduct"
-            and element.ApplicableOccurrence
-            and element.ApplicableOccurrence.startswith("IfcAnnotation/")
+        if element_type == "IfcTypeProduct" and (
+            applicable_object_type := cls.get_annotation_type_object_type(element)
         ):
-            applicable_object_type = element.ApplicableOccurrence.split("/")[1]
             if applicable_object_type in object_types:
                 return True
 
         return False
+
+    @classmethod
+    def get_annotation_type_object_type(cls, element_type: ifcopenshell.entity_instance) -> Union[str, None]:
+        applicable_occurrence: Union[str, None]
+        applicable_occurrence = element_type.ApplicableOccurrence
+        if not applicable_occurrence or not applicable_occurrence.startswith("IfcAnnotation/"):
+            return
+        return applicable_occurrence.split("/", 1)[1]
 
     @classmethod
     def get_annotation_representation(

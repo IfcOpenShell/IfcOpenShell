@@ -33,6 +33,7 @@ import types
 import importlib
 from mathutils import Vector
 from pathlib import Path
+from functools import lru_cache
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
 from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator
 from typing_extensions import assert_never
@@ -1501,3 +1502,19 @@ class Blender(bonsai.core.tool.Blender):
         )
         for path in paths_to_create:
             path.mkdir(parents=True, exist_ok=True)
+
+    @classmethod
+    @lru_cache
+    def get_list_of_tools(cls) -> tuple[str, ...]:
+        from bonsai.bim.module.model.workspace import BimTool
+        from bonsai.bim.module.drawing.workspace import AnnotationTool
+
+        return tuple(cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool, AnnotationTool]))
+
+    @classmethod
+    @lru_cache
+    def get_tools_to_classes_map(cls) -> types.MappingProxyType[str, str]:
+        from bonsai.bim.module.model.workspace import BimTool
+
+        dct = {cls.bl_idname: cls.ifc_element_type for cls in (BimTool.__subclasses__())}
+        return types.MappingProxyType(dct)

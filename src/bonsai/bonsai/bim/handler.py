@@ -29,7 +29,6 @@ from bpy.app.handlers import persistent
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.owner.prop import get_user_person, get_user_organisation
 from bonsai.bim.module.model.data import AuthoringData
-from bonsai.bim.module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MAP
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
 from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
@@ -108,24 +107,39 @@ def update_bim_tool_props():
         return
     mode = bpy.context.mode
     current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode)
-    if not current_tool or current_tool.idname not in LIST_OF_TOOLS:
+    if not current_tool or current_tool.idname not in tool.Blender.get_list_of_tools():
         return
     element = tool.Ifc.get_entity(obj)
     if not element:
         return
+
     representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
     if not representation:
         return
 
     props = tool.Model.get_model_props()
-    if element.is_a("IfcElementType") or element.is_a("IfcElement"):
+    aprops = tool.Drawing.get_annotation_props()
+    TOOLS_TO_CLASSES_MAP = tool.Blender.get_tools_to_classes_map()
+    is_annotation_tool = current_tool.idname == "bim.annotation_tool"
+    if element.is_a("IfcTypeProduct") or element.is_a("IfcProduct"):
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type:
             is_bim_tool = current_tool.idname == "bim.bim_tool"
+
+            if is_annotation_tool and (object_type := tool.Drawing.get_annotation_type_object_type(element_type)):
+                aprops.object_type = object_type
+                aprops.relating_type_id = str(element_type.id())
+                return
+
             if is_bim_tool:
                 props.ifc_class = element_type.is_a()
+
             if is_bim_tool or TOOLS_TO_CLASSES_MAP.get(current_tool.idname) == element_type.is_a():
                 props.relating_type_id = str(element_type.id())
+
+    if is_annotation_tool:
+        return
+
     extrusion = tool.Model.get_extrusion(representation)
     if not extrusion:
         return

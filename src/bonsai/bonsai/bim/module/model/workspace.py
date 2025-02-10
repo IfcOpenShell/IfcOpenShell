@@ -1440,8 +1440,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 custom_icon_previews = None
 display_mode = None
 
-LIST_OF_TOOLS = [cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool])]
-TOOLS_TO_CLASSES_MAP = {cls.bl_idname: cls.ifc_element_type for cls in BimTool.__subclasses__()}
 MODIFIERS = {
     "A": ("EVENT_ALT", "OPTION" if sys.platform == "Darwin" else "ALT"),
     "C": ("EVENT_CTRL", "CTRL"),
