@@ -84,7 +84,7 @@ class AddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMAnnotationProperties
+        props = tool.Drawing.get_annotation_props()
         object_type = props.object_type
         has_representation = props.create_representation_for_type
         drawing = tool.Ifc.get_entity(bpy.context.scene.camera)
@@ -115,7 +115,7 @@ class EnableAddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        bpy.context.scene.BIMAnnotationProperties.is_adding_type = True
+        tool.Drawing.get_annotation_props().is_adding_type = True
 
 
 class DisableAddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
@@ -124,7 +124,7 @@ class DisableAddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        bpy.context.scene.BIMAnnotationProperties.is_adding_type = False
+        tool.Drawing.get_annotation_props().is_adding_type = False
 
 
 class AddDrawing(bpy.types.Operator, tool.Ifc.Operator):
@@ -1433,7 +1433,7 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
         return operator.description or ""
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMAnnotationProperties
+        props = tool.Drawing.get_annotation_props()
         if not (drawing := tool.Ifc.get_entity(context.scene.camera)):
             self.report({"WARNING"}, "Not a BIM camera")
             return
@@ -2725,7 +2725,9 @@ class EditTextPopup(bpy.types.Operator):
         # need to keep them in sync or move to some common function
         # NOTE: that `popup_active_attribute` is used here when it's not used in `BIM_PT_text.draw()`
 
-        props = context.active_object.BIMTextProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Drawing.get_text_props(obj)
 
         row = self.layout.row(align=True)
         row.operator("bim.add_text_literal", icon="ADD", text="Add Literal")
@@ -2826,9 +2828,11 @@ class AddTextLiteral(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
+        assert obj
 
         # similar to `tool.Drawing.import_text_attributes`
-        literal_props = obj.BIMTextProperties.literals.add()
+        props = tool.Drawing.get_text_props(obj)
+        literal_props = props.literals.add()
         literal_attributes = literal_props.attributes
         literal_attr_values = {
             "Literal": "Literal",
@@ -2865,7 +2869,9 @@ class RemoveTextLiteral(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        obj.BIMTextProperties.literals.remove(self.literal_prop_id)
+        assert obj
+        props = tool.Drawing.get_text_props(obj)
+        props.literals.remove(self.literal_prop_id)
         return {"FINISHED"}
 
 
@@ -2880,7 +2886,9 @@ class OrderTextLiteralUp(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        obj.BIMTextProperties.literals.move(self.literal_prop_id, self.literal_prop_id - 1)
+        assert obj
+        props = tool.Drawing.get_text_props(obj)
+        props.literals.move(self.literal_prop_id, self.literal_prop_id - 1)
         return {"FINISHED"}
 
 
@@ -2895,7 +2903,9 @@ class OrderTextLiteralDown(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        obj.BIMTextProperties.literals.move(self.literal_prop_id, self.literal_prop_id + 1)
+        assert obj
+        props = tool.Drawing.get_text_props(obj)
+        props.literals.move(self.literal_prop_id, self.literal_prop_id + 1)
         return {"FINISHED"}
 
 

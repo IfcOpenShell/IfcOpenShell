@@ -360,7 +360,7 @@ def i_load_a_new_pset_template_file():
 
 @given("I create default MEP types")
 def i_create_default_mep_types():
-    model_props = bpy.context.scene.BIMModelProperties
+    model_props = tool.Model.get_model_props()
 
     # add couple segments types
     model_props.type_class = "IfcDuctSegmentType"
@@ -1244,13 +1244,13 @@ def i_display_the_construction_type_browser():
 @given("I add the construction type")
 @when("I add the construction type")
 def i_add_the_active_construction_type():
-    props = bpy.context.scene.BIMModelProperties
+    props = tool.Model.get_model_props()
     bpy.ops.bim.add_constr_type_instance(relating_type_id=int(props.relating_type_id))
 
 
 @then(parsers.parse("construction type is {relating_type_name}"))
 def construction_type(relating_type_name):
-    props = bpy.context.scene.BIMModelProperties
+    props = tool.Model.get_model_props()
     relating_type = AuthoringData.relating_type_name_by_id(props.ifc_class, props.relating_type_id)
     assert relating_type == relating_type_name, f"Construction Type is a {relating_type}, not a {relating_type_name}"
 
@@ -1333,7 +1333,8 @@ def the_obj_layer_lenght_is_set_to(value):
 
     print(50 * "@", bpy.context.selected_objects)
 
-    bpy.context.scene.BIMModelProperties.length = value
+    props = tool.Model.get_model_props()
+    props.length = value
     bpy.ops.bim.change_layer_length(length=value)
 
 

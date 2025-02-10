@@ -660,6 +660,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             obj.select_set(True)
 
     def auto_generate_boundaries(self, space, space_obj):
+        props = tool.Model.get_model_props()
         # Identify all potential building elements
         # TODO: don't select everything, use AABB culling in Blender
         building_elements = (
@@ -775,9 +776,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                     # we cheat by using the exterior boundary to mean "gross".
                     exterior_boundary_polygon = shapely.Polygon(gross_boundary_polygon.exterior.coords)
 
-                    parent_boundary = tool.Ifc.run(
-                        "root.create_entity", ifc_class=bpy.context.scene.BIMModelProperties.boundary_class
-                    )
+                    parent_boundary = tool.Ifc.run("root.create_entity", ifc_class=props.boundary_class)
                     if building_element.is_a("IfcVirtualElement"):
                         parent_boundary.PhysicalOrVirtualBoundary = "VIRTUAL"
                     else:
@@ -854,9 +853,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                         if opening_polygon.intersection(exterior_boundary_polygon).area == 0:
                             continue
 
-                        boundary = tool.Ifc.run(
-                            "root.create_entity", ifc_class=bpy.context.scene.BIMModelProperties.boundary_class
-                        )
+                        boundary = tool.Ifc.run("root.create_entity", ifc_class=props.boundary_class)
                         boundary.RelatingSpace = space
                         boundary.RelatedBuildingElement = filling or opening
                         boundary.ConnectionGeometry = self.create_connection_geometry_from_polygon(
@@ -877,6 +874,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         if not relating_space or not related_building_element:
             return
 
+        props = tool.Model.get_model_props()
         # Find which face on space should be bounded to related building element
         # TODO: Handle round wall where multiple faces need to be bound to the same related building element
         bm = bmesh.new()
@@ -924,7 +922,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         ):
             return
 
-        parent_boundary = tool.Ifc.run("root.create_entity", ifc_class=context.scene.BIMModelProperties.boundary_class)
+        parent_boundary = tool.Ifc.run("root.create_entity", ifc_class=props.boundary_class)
         parent_boundary.PhysicalOrVirtualBoundary = "PHYSICAL"
         # Set to EXTERNAL by default and turn later to internal if there is a corresponding boundary relating to an
         # internal space
@@ -959,7 +957,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                 continue
 
             connection_geometry = self.create_connection_geometry_from_polygon(opening_polygon, target_face_matrix)
-            boundary = tool.Ifc.run("root.create_entity", ifc_class=context.scene.BIMModelProperties.boundary_class)
+            boundary = tool.Ifc.run("root.create_entity", ifc_class=props.boundary_class)
             boundary.RelatingSpace = relating_space
             boundary.RelatedBuildingElement = filling
             boundary.ConnectionGeometry = connection_geometry

@@ -45,7 +45,7 @@ class LaunchAnnotationTypeManager(bpy.types.Operator):
         if not AnnotationData.is_loaded:
             AnnotationData.load()
 
-        props = context.scene.BIMAnnotationProperties
+        props = tool.Drawing.get_annotation_props()
 
         columns = self.layout.column_flow(columns=3)
         row = columns.row()
@@ -155,7 +155,7 @@ def add_layout_hotkey_operator(
 
 # TODO: move to operator
 def create_annotation_occurrence(context):
-    props = context.scene.BIMAnnotationProperties
+    props = tool.Drawing.get_annotation_props()
     relating_type = tool.Ifc.get().by_id(int(props.relating_type_id))
     object_type = props.object_type
 
@@ -200,7 +200,7 @@ class AnnotationToolUI:
     @classmethod
     def draw(cls, context, layout):
         cls.layout = layout
-        cls.props = context.scene.BIMAnnotationProperties
+        cls.props = tool.Drawing.get_annotation_props()
 
         row = cls.layout.row(align=True)
         if not tool.Ifc.get():
@@ -279,19 +279,19 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "No drawing active for annotation hotkeys.")
             return {"CANCELLED"}
 
-        self.props = context.scene.BIMAnnotationProperties
+        self.props = tool.Drawing.get_annotation_props()
         getattr(self, f"hotkey_{self.hotkey}")()
 
     def invoke(self, context, event):
         # https://blender.stackexchange.com/questions/276035/how-do-i-make-operators-remember-their-property-values-when-called-from-a-hotkey
-        self.props = context.scene.BIMAnnotationProperties
+        self.props = tool.Drawing.get_annotation_props()
         return self.execute(context)
 
     def draw(self, context):
         pass
 
     def hotkey_S_T(self):
-        props = bpy.context.scene.BIMAnnotationProperties
+        props = tool.Drawing.get_annotation_props()
         object_type = props.object_type
 
         if object_type not in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:

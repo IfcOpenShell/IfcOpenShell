@@ -200,7 +200,7 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
 
     def modal(self, context, event):
         # Ensure state of BIM tool props is valid
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = tool.Blender.get_enum_safe(props, "relating_type_id")
         relating_type_id_data = AuthoringData.data["relating_type_id"]
         if not relating_type_id and relating_type_id_data:
@@ -284,7 +284,7 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
     )
 
     def invoke(self, context, event):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = self.relating_type_id or props.relating_type_id
         if (
             relating_type_id
@@ -303,7 +303,7 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
         row.prop(self, "representation_template", text="")
 
     def _execute(self, context):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = self.relating_type_id or props.relating_type_id
 
         if not relating_type_id:
@@ -507,7 +507,8 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
 
     def set_flow_segment_rl(self, obj):
         if self.container_obj:
-            obj.location[2] = self.container_obj.location[2] + bpy.context.scene.BIMModelProperties.rl2
+            props = tool.Model.get_model_props()
+            obj.location[2] = self.container_obj.location[2] + props.rl2
 
     @staticmethod
     def generate_layered_element(ifc_class: str, relating_type: ifcopenshell.entity_instance) -> bool:
@@ -535,7 +536,7 @@ class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
     page: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         bpy.ops.bim.load_type_thumbnails(ifc_class=props.ifc_class, offset=9 * (self.page - 1), limit=9)
         props.type_page = self.page
         return {"FINISHED"}
@@ -548,7 +549,7 @@ class SetActiveType(bpy.types.Operator, tool.Ifc.Operator):
     relating_type: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         props.relating_type_id = str(self.relating_type)
 
 
@@ -623,7 +624,7 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
         if bpy.app.background:
             return
 
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         # Only process at most one paginated class at a time.
         # Large projects have hundreds of types which can lead to unnecessary lag.
         if not AuthoringData.is_loaded:

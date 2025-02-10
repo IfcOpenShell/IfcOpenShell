@@ -35,7 +35,8 @@ class Root(bonsai.core.tool.Root):
     @classmethod
     def add_tracked_opening(cls, obj: bpy.types.Object, opening_type: Literal["OPENING", "BOOLEAN"]) -> None:
         """Add tracked opening or boolean object."""
-        new = bpy.context.scene.BIMModelProperties.openings.add()
+        props = tool.Model.get_model_props()
+        new = props.openings.add()
         new.obj = obj
         new.name = opening_type
 

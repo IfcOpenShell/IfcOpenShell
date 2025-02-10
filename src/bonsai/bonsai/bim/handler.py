@@ -117,7 +117,7 @@ def update_bim_tool_props():
     if not representation:
         return
 
-    props = bpy.context.scene.BIMModelProperties
+    props = tool.Model.get_model_props()
     if element.is_a("IfcElementType") or element.is_a("IfcElement"):
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type:
@@ -130,7 +130,7 @@ def update_bim_tool_props():
     if not extrusion:
         return
 
-    def get_x_angle(extrusion):
+    def get_x_angle(extrusion: ifcopenshell.entity_instance) -> float:
         x, y, z = extrusion.ExtrudedDirection.DirectionRatios
         x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
         return x_angle
@@ -332,7 +332,7 @@ def load_post(scene):
     georeference_props = bpy.context.scene.BIMGeoreferenceProperties
     aggregate_props = bpy.context.scene.BIMAggregateProperties
     nest_props = bpy.context.scene.BIMNestProperties
-    model_props = bpy.context.scene.BIMModelProperties
+    model_props = tool.Model.get_model_props()
     if georeference_props.should_visualise:
         GeoreferenceDecorator.install(bpy.context)
     if aggregate_props.aggregate_decorator:

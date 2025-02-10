@@ -44,7 +44,7 @@ from bpy.props import (
     CollectionProperty,
     BoolVectorProperty,
 )
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Any
 
 
 diagram_scales_enum = []
@@ -613,7 +613,13 @@ class BIMTextProperties(PropertyGroup):
     )
     newline_at: IntProperty(name="Newline At")
 
-    def get_text_edited_data(self):
+    if TYPE_CHECKING:
+        is_editing: bool
+        literals: bpy.types.bpy_prop_collection_idprop[LiteralProps]
+        font_size: str
+        newline_at: int
+
+    def get_text_edited_data(self) -> dict[str, Any]:
         """should be called only if `is_editing`
         otherwise should use `DecoratorData.get_ifc_text_data(obj)` instead
         because this data could be out of date
@@ -676,3 +682,10 @@ class BIMAnnotationProperties(PropertyGroup):
     )
     is_adding_type: bpy.props.BoolProperty(default=False)
     type_name: bpy.props.StringProperty(name="Name", default="TYPEX")
+
+    if TYPE_CHECKING:
+        object_type: str
+        relating_type_id: str
+        create_representation_for_type: bool
+        is_adding_type: bool
+        type_name: str

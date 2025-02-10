@@ -62,7 +62,7 @@ class DumbSlabGenerator:
             tool.Ifc.get(), "Plan", "FootPrint", "SKETCH_VIEW"
         )
 
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
 
         self.polyline = None
         self.container = None
@@ -319,7 +319,7 @@ class DumbSlabPlaner:
                     extrusion.Position.Location.Coordinates = tuple(rot_offset)
 
             else:
-                props = bpy.context.scene.BIMModelProperties
+                props = tool.Model.get_model_props()
                 x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
                 new_rep = ifcopenshell.api.run(
                     "geometry.add_slab_representation",
@@ -344,7 +344,7 @@ class DumbSlabPlaner:
                 )
                 return
         else:
-            props = bpy.context.scene.BIMModelProperties
+            props = tool.Model.get_model_props()
             x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
             representation = ifcopenshell.api.run(
                 "geometry.add_slab_representation",
@@ -844,7 +844,7 @@ class AddSlabFromWall(bpy.types.Operator, tool.Ifc.Operator):
 
     def __init__(self):
         self.relating_type = None
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
         if relating_type_id:
             self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
@@ -876,7 +876,7 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
     def __init__(self):
         super().__init__()
         self.relating_type = None
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
         if relating_type_id:
             self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
@@ -887,7 +887,7 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
 
         slab = DumbSlabGenerator(self.relating_type).generate("POLYLINE")
 
-        model_props = context.scene.BIMModelProperties
+        model_props = tool.Model.get_model_props()
         direction_sense = model_props.direction_sense
         offset = model_props.offset
         model = IfcStore.get_file()
@@ -920,13 +920,11 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
             self.handle_mouse_move(context, event)
             return {"PASS_THROUGH"}
 
+        props = tool.Model.get_model_props()
         if event.value == "RELEASE" and event.type == "F":
-            direction_sense = context.scene.BIMModelProperties.direction_sense
-            context.scene.BIMModelProperties.direction_sense = (
-                "NEGATIVE" if direction_sense == "POSITIVE" else "POSITIVE"
-            )
+            direction_sense = props.direction_sense
+            props.direction_sense = "NEGATIVE" if direction_sense == "POSITIVE" else "POSITIVE"
 
-        props = bpy.context.scene.BIMModelProperties
         if event.value == "RELEASE" and event.type == "O":
             items = ["TOP", "CENTER", "BOTTOM"]
             index = items.index(props.offset_type_horizontal)

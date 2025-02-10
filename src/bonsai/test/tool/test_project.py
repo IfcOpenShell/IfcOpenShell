@@ -125,7 +125,7 @@ class TestSetDefaultModelingDimensions(NewFile):
         ifc.createIfcProject()
         ifcopenshell.api.run("unit.assign_unit", ifc)
         subject.set_default_modeling_dimensions()
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         assert props.extrusion_depth == 3
         assert props.length == 1
         assert props.rl1 == 0

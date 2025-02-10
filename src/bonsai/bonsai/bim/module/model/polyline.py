@@ -23,6 +23,7 @@ import math
 import bmesh
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.geom
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -40,7 +41,7 @@ from mathutils import Vector, Matrix, Quaternion
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator
 from bonsai.bim.module.geometry.decorator import ItemDecorator
-from typing import Optional, Union, Literal
+from typing import Optional, Union, Literal, Any
 from lark import Lark, Transformer
 
 
@@ -63,7 +64,7 @@ def create_bmesh_from_vertices(vertices, is_closed=False):
 
 def get_wall_preview_data(context, relating_type):
     # Get properties from object type
-    model_props = context.scene.BIMModelProperties
+    model_props = tool.Model.get_model_props()
     direction_sense = model_props.direction_sense
     direction = 1
     if direction_sense == "NEGATIVE":
@@ -190,9 +191,8 @@ def get_wall_preview_data(context, relating_type):
 
 
 def get_slab_preview_data(context, relating_type):
-    props = context.scene.BIMModelProperties
-    x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
-    model_props = context.scene.BIMModelProperties
+    model_props = tool.Model.get_model_props()
+    x_angle = 0 if tool.Cad.is_x(model_props.x_angle, 0, tolerance=0.001) else model_props.x_angle
     direction_sense = model_props.direction_sense
     direction = 1
     if direction_sense == "NEGATIVE":
@@ -254,14 +254,16 @@ def get_slab_preview_data(context, relating_type):
     return data
 
 
-def get_vertical_profile_preview_data(context, relating_type):
+def get_vertical_profile_preview_data(
+    context: bpy.types.Context, relating_type: ifcopenshell.entity_instance
+) -> dict[str, Any]:
     material = ifcopenshell.util.element.get_material(relating_type)
     try:
         profile = material.MaterialProfiles[0].Profile
     except:
         return {}
 
-    model_props = context.scene.BIMModelProperties
+    model_props = tool.Model.get_model_props()
     extrusion_depth = model_props.extrusion_depth
     cardinal_point = model_props.cardinal_point
     rot_mat = Quaternion()
@@ -373,7 +375,7 @@ def get_horizontal_profile_preview_data(context, relating_type):
     except:
         return {}
 
-    model_props = context.scene.BIMModelProperties
+    model_props = tool.Model.get_model_props()
     cardinal_point = model_props.cardinal_point
 
     polyline_verts = []
@@ -497,7 +499,7 @@ def get_horizontal_profile_preview_data(context, relating_type):
 
 
 def get_generic_product_preview_data(context, relating_type):
-    model_props = context.scene.BIMModelProperties
+    props = tool.Model.get_model_props()
     if relating_type.is_a("IfcDoorType"):
         rl = float(model_props.rl1)
     elif relating_type.is_a("IfcWindowType"):
@@ -914,7 +916,7 @@ class PolylineOperator:
             t.value_3d = tri
 
     def set_offset(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         direction_sense = props.direction_sense
         if tool.Model.get_usage_type(relating_type) == "LAYER2":
             offset_type = "offset_type_vertical"

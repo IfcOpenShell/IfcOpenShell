@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import json
 import bmesh
@@ -47,13 +48,24 @@ from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from typing import Optional, Union, TypeVar, Any, Iterable, Literal
+from typing import Optional, Union, TypeVar, Any, Iterable, Literal, TYPE_CHECKING
 
 T = TypeVar("T")
 V_ = tool.Blender.V_
 
+if TYPE_CHECKING:
+    from bonsai.bim.module.model.prop import BIMModelProperties, BIMDoorProperties
+
 
 class Model(bonsai.core.tool.Model):
+    @classmethod
+    def get_model_props(cls) -> BIMModelProperties:
+        return bpy.context.scene.BIMModelProperties
+
+    @classmethod
+    def get_door_props(cls, obj: bpy.types.Object) -> BIMDoorProperties:
+        return obj.BIMDoorProperties
+
     @classmethod
     def convert_si_to_unit(cls, value: T) -> T:
         if isinstance(value, (tuple, list)):
@@ -215,7 +227,7 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def generate_occurrence_name(cls, element_type: ifcopenshell.entity_instance, ifc_class: str) -> str:
-        props = bpy.context.scene.BIMModelProperties
+        props = cls.get_model_props()
         if props.occurrence_name_style == "CLASS":
             return ifc_class[3:]
         elif props.occurrence_name_style == "TYPE":
@@ -521,7 +533,8 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def purge_scene_openings(cls) -> None:
         """Purge removed scene openings."""
-        openings = bpy.context.scene.BIMModelProperties.openings
+        props = cls.get_model_props()
+        openings = props.openings
         for i in range(len(openings) - 1, -1, -1):
             if not openings[i].obj:
                 openings.remove(i)
@@ -1929,7 +1942,8 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_tracked_opening_type(cls, obj: bpy.types.Object) -> Union[Literal["OPENING", "BOOLEAN"], None]:
         """Get tracked opening type, return `None` if object is not a tracked opening."""
-        for opening in bpy.context.scene.BIMModelProperties.openings:
+        props = cls.get_model_props()
+        for opening in props.openings:
             if opening.obj == obj:
                 return opening.name
         return None

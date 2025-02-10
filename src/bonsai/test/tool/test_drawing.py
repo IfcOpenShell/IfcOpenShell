@@ -22,6 +22,7 @@ import bpy
 import mathutils
 import ifcopenshell
 import ifcopenshell.guid
+import ifcopenshell.util.element
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -107,7 +108,7 @@ class TestDeleteDrawingElements(NewFile):
             assert False
         except:
             pass
-        assert not bpy.data.objects.get("Object")
+        assert not bpy.data.objects["Object"]
 
 
 class TestDisableEditingDrawings(NewFile):
@@ -141,9 +142,10 @@ class TestDisableEditingSheets(NewFile):
 class TestDisableEditingText(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMTextProperties.is_editing = True
+        props = tool.Drawing.get_text_props(obj)
+        props.is_editing = True
         subject.disable_editing_text(obj)
-        assert obj.BIMTextProperties.is_editing == False
+        assert props.is_editing == False
 
 
 class TestDisableEditingAssignedProduct(NewFile):
@@ -194,7 +196,8 @@ class TestEnableEditingText(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
         subject.enable_editing_text(obj)
-        assert obj.BIMTextProperties.is_editing == True
+        props = tool.Drawing.get_text_props(obj)
+        assert props.is_editing == True
 
 
 class TestEnableEditingAssignedProduct(NewFile):
@@ -238,7 +241,7 @@ class TestEnsureUniqueIdentification(NewFile):
 class TestExportTextLiteralAttributes(NewFile):
     def test_run(self):
         TestImportTextAttributes().test_run()
-        assert subject.export_text_literal_attributes(bpy.data.objects.get("Object")) == [
+        assert subject.export_text_literal_attributes(bpy.data.objects["Object"]) == [
             {
                 "Literal": "Literal",
                 "Path": "RIGHT",
@@ -584,7 +587,8 @@ class TestImportTextAttributes(NewFile):
         element.ObjectType = "TEXT"  # TODO: double check if it's valid to set this
         tool.Ifc.link(element, obj)
         subject.import_text_attributes(obj)
-        literal_props = obj.BIMTextProperties.literals[0]
+        props = tool.Drawing.get_text_props(obj)
+        literal_props = props.literals[0]
         assert literal_props.attributes.get("Literal").string_value == "Literal"
         assert literal_props.attributes.get("Path").enum_value == "RIGHT"
         assert literal_props.attributes.get("BoxAlignment").string_value == "bottom-left"
@@ -733,11 +737,12 @@ class TestUpdateTextValue(NewFile):
         TestGetTextLiteral().test_run()
         ifc = tool.Ifc.get()
 
-        obj = bpy.data.objects.get("Object")
+        obj = bpy.data.objects["Object"]
         subject.update_text_value(obj)
-        literal = obj.BIMTextProperties.literals[0]
+        props = tool.Drawing.get_text_props(obj)
+        literal = props.literals[0]
 
-        assert obj.BIMTextProperties.font_size == "2.5"
+        assert props.font_size == "2.5"
         assert literal.value == "Literal"
         assert literal.box_alignment[:] == tuple([False] * 6 + [True] + [False] * 2)
         assert literal.ifc_definition_id == ifc.by_type("IfcTextLiteralWithExtent")[0].id()
@@ -745,7 +750,7 @@ class TestUpdateTextValue(NewFile):
     def test_using_attribute_variables(self):
         TestGetTextLiteral().test_run()
 
-        obj = bpy.data.objects.get("Object")
+        obj = bpy.data.objects["Object"]
         ifc = tool.Ifc.get()
         wall = ifc.createIfcWall(Name="Baz")
         label = ifc.by_type("IfcAnnotation")[0]
@@ -754,12 +759,13 @@ class TestUpdateTextValue(NewFile):
         ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Name}} Bar"
 
         subject.update_text_value(obj)
-        assert obj.BIMTextProperties.literals[0].value == "Foo Baz Bar"
+        props = tool.Drawing.get_text_props(obj)
+        assert props.literals[0].value == "Foo Baz Bar"
 
     def test_using_property_variables(self):
         TestGetTextLiteral().test_run()
 
-        obj = bpy.data.objects.get("Object")
+        obj = bpy.data.objects["Object"]
         ifc = tool.Ifc.get()
         wall = ifc.createIfcWall()
         pset = ifcopenshell.api.run("pset.add_pset", ifc, name="Custom_Pset", product=wall)
@@ -770,14 +776,16 @@ class TestUpdateTextValue(NewFile):
         ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Custom_Pset.Key}} Bar"
 
         subject.update_text_value(obj)
-        assert obj.BIMTextProperties.literals[0].value == "Foo Baz Bar"
+        props = tool.Drawing.get_text_props(obj)
+        assert props.literals[0].value == "Foo Baz Bar"
 
     def test_update_text_font_size(self):
         TestGetTextLiteral().test_run()
-        obj = bpy.data.objects.get("Object")
+        obj = bpy.data.objects["Object"]
         with bpy.context.temp_override(active_object=obj):
             bpy.ops.bim.enable_editing_text()
-            obj.BIMTextProperties.font_size = "7.0"
+            props = tool.Drawing.get_text_props(obj)
+            props.font_size = "7.0"
             bpy.ops.bim.edit_text()
         annotation_classes = ifcopenshell.util.element.get_pset(tool.Ifc.get_entity(obj), "EPset_Annotation", "Classes")
         assert "title" in annotation_classes
@@ -786,11 +794,12 @@ class TestUpdateTextValue(NewFile):
     def test_add_second_literal(self, setup=True):
         if setup:
             TestGetTextLiteral().test_run()
-        obj = bpy.data.objects.get("Object")
+        obj = bpy.data.objects["Object"]
         with bpy.context.temp_override(active_object=obj):
             bpy.ops.bim.enable_editing_text()
             bpy.ops.bim.add_text_literal()
-            literal = obj.BIMTextProperties.literals[1]
+            props = tool.Drawing.get_text_props(obj)
+            literal = props.literals[1]
             literal.attributes["Literal"].string_value = "test_value"
             bpy.ops.bim.edit_text()
 
@@ -802,8 +811,8 @@ class TestUpdateTextValue(NewFile):
         self.test_update_text_font_size()  # sets font size to "7.0"
         self.test_add_second_literal(setup=False)
 
-        obj = bpy.data.objects.get("Object")
-        props = obj.BIMTextProperties
+        obj = bpy.data.objects["Object"]
+        props = tool.Drawing.get_text_props(obj)
         assert obj is not None, obj
         with bpy.context.temp_override(active_object=obj):
             bpy.ops.bim.enable_editing_text()

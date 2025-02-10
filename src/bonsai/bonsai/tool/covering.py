@@ -66,7 +66,7 @@ class Covering(bonsai.core.tool.Covering):
     ) -> bool:
         if not tool.Ifc.get():
             return False
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = tool.Blender.get_enum_safe(props, "relating_type_id")
         if relating_type_id is not None:
             relating_type = ifcopenshell.util.element.get_predefined_type(tool.Ifc.get().by_id(int(relating_type_id)))

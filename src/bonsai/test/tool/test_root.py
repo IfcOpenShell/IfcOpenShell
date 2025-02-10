@@ -34,7 +34,7 @@ class TestAddTrackedOpening(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
         subject.add_tracked_opening(obj, "OPENING")
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         assert props.openings[0].obj == obj
         assert props.openings[0].name == "OPENING"
 

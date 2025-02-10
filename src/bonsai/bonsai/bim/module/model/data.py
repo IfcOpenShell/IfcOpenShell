@@ -51,7 +51,7 @@ class AuthoringData:
     @classmethod
     def load(cls, ifc_element_type=None):
         cls.is_loaded = True
-        cls.props = bpy.context.scene.BIMModelProperties
+        cls.props = tool.Model.get_model_props()
         if ifc_element_type:
             cls.ifc_element_type = None if ifc_element_type == "all" else ifc_element_type
         cls.data["default_container"] = cls.default_container()
@@ -535,7 +535,9 @@ class DoorData:
 
     @classmethod
     def general_params(cls):
-        props = bpy.context.active_object.BIMDoorProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_door_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_general_kwargs()
@@ -546,7 +548,9 @@ class DoorData:
 
     @classmethod
     def lining_params(cls):
-        props = bpy.context.active_object.BIMDoorProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_door_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         lining_data = data["lining_properties"]
         lining_params = {}
@@ -558,7 +562,9 @@ class DoorData:
 
     @classmethod
     def panel_params(cls):
-        props = bpy.context.active_object.BIMDoorProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_door_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         panel_data = cls.data["pset_data"]["data_dict"]["panel_properties"]
         panel_params = {}

@@ -54,7 +54,7 @@ class CoveringToolUI:
     @classmethod
     def draw(cls, context, layout, ifc_element_type=None):
         cls.layout = layout
-        cls.props = context.scene.BIMModelProperties
+        cls.props = tool.Model.get_model_props()
         cls.covering_props = context.scene.BIMCoveringProperties
 
         row = cls.layout.row(align=True)

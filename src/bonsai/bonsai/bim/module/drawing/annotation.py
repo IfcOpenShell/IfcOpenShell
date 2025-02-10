@@ -37,7 +37,7 @@ class Annotator:
         if related_element is None:
             location, _, _, _ = Annotator.get_placeholder_coords(bpy.context)
         else:
-            obj.data.BIMAssignedProductProperties.related_element = related_element
+            curve.BIMAssignedProductProperties.related_element = related_element
             location = related_element.location
         obj.location = location
         obj.hide_render = True
@@ -47,8 +47,9 @@ class Annotator:
                 tool.Blender.get_data_dir_path(Path("fonts") / "OpenGost Type B TT.ttf").__str__()
             )
             font.name = "OpenGost Type B TT"
-        obj.data.font = font
-        obj.data.BIMTextProperties.font_size = "2.5"
+        curve.font = font
+        props = tool.Drawing.get_text_props(obj)
+        props.font_size = "2.5"
         collection = bpy.context.scene.camera.BIMObjectProperties.collection
         collection.objects.link(obj)
         Annotator.resize_text(obj)
@@ -66,7 +67,8 @@ class Annotator:
             return
         # This is a magic number for OpenGost
         font_size = 1.6 / 1000
-        font_size *= float(text_obj.data.BIMTextProperties.font_size)
+        props = tool.Drawing.get_text_props(text_obj)
+        font_size *= float(props.font_size)
 
         font_size /= tool.Drawing.get_scale_ratio(tool.Drawing.get_diagram_scale(camera)["Scale"])
 

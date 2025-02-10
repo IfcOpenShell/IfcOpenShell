@@ -579,7 +579,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
 
         if props.ifc_product == "IfcFeatureElement":
             tool.Feature.add_feature(props.featured_obj, [obj])
-            new = context.scene.BIMModelProperties.openings.add()
+            new = tool.Model.get_model_props().openings.add()
             new.obj = obj
             bpy.ops.bim.show_openings()
             tool.Model.purge_scene_openings()

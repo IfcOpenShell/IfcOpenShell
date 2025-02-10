@@ -58,7 +58,7 @@ class SpatialToolUI:
     @classmethod
     def draw(cls, context, layout):
         cls.layout = layout
-        cls.model_props = context.scene.BIMModelProperties
+        cls.model_props = tool.Model.get_model_props()
 
         row = cls.layout.row(align=True)
         if not tool.Ifc.get():

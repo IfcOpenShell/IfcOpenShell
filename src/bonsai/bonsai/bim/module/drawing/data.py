@@ -303,7 +303,7 @@ class DecoratorData:
         if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
             return None
 
-        props = obj.BIMTextProperties
+        props = tool.Drawing.get_text_props(obj)
         # getting font size
         pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Annotation") or {}
         # use `regular` as default
@@ -399,7 +399,7 @@ class AnnotationData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.props = bpy.context.scene.BIMAnnotationProperties
+        cls.props = tool.Drawing.get_annotation_props()
         cls.data["relating_type_id"] = cls.relating_type_id()
         cls.data["relating_types"] = cls.relating_types()
 

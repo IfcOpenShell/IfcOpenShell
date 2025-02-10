@@ -55,7 +55,7 @@ class BIM_MT_type_menu(bpy.types.Menu):
     relating_type_id: bpy.props.IntProperty(name="Relating Type Id")
 
     def draw(self, context):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         layout = self.layout
         op = layout.operator("bim.launch_rename_type", icon="GREASEPENCIL", text="Rename Type")
         op.element = props.menu_relating_type_id
@@ -74,7 +74,7 @@ class LaunchTypeMenu(bpy.types.Operator):
     relating_type_id: bpy.props.IntProperty(name="Relating Type Id")
 
     def execute(self, context):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         props.menu_relating_type_id = self.relating_type_id
         bpy.ops.wm.call_menu(name="BIM_MT_type_menu")
         return {"FINISHED"}
@@ -90,7 +90,7 @@ class LaunchTypeManager(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         props.type_page = 1
         if get_ifc_class(None, context):
             ifc_class = AuthoringData.data["ifc_class_current"] or AuthoringData.data["ifc_element_type"]
@@ -103,7 +103,7 @@ class LaunchTypeManager(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self, width=550, title="Type Manager", confirm_text="Close")
 
     def draw(self, context):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         row = self.layout.row(align=True)
         text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type'] or 'Types'}"
         if AuthoringData.data["total_types"] > 1:
@@ -518,7 +518,9 @@ class BIM_PT_door(bpy.types.Panel):
         if not DoorData.is_loaded:
             DoorData.load()
 
-        props = context.active_object.BIMDoorProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Model.get_door_props(obj)
 
         if DoorData.data["pset_data"]:
             row = self.layout.row(align=True)

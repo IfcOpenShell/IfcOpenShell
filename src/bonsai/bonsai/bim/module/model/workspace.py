@@ -503,7 +503,7 @@ class CreateObjectUI:
         cls, context: bpy.types.Context, layout: bpy.types.UILayout, ifc_element_type: Optional[str] = None
     ) -> None:
         cls.layout = layout
-        cls.props = context.scene.BIMModelProperties
+        cls.props = tool.Model.get_model_props()
 
         row = cls.layout.row(align=True)
         if not tool.Ifc.get():
@@ -733,7 +733,7 @@ class EditObjectUI:
         cls, context: bpy.types.Context, layout: bpy.types.UILayout, ifc_element_type: Optional[str] = None
     ) -> None:
         cls.layout = layout
-        cls.props = context.scene.BIMModelProperties
+        cls.props = tool.Model.get_model_props()
 
         row = cls.layout.row(align=True)
         row.separator()
@@ -1099,7 +1099,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         return operator.description or ""
 
     def _execute(self, context):
-        self.props = context.scene.BIMModelProperties
+        self.props = tool.Model.get_model_props()
         self.has_ifc_class = True
 
         self.active_class = None
@@ -1118,7 +1118,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
     def invoke(self, context, event):
         # https://blender.stackexchange.com/questions/276035/how-do-i-make-operators-remember-their-property-values-when-called-from-a-hotkey
-        self.props = context.scene.BIMModelProperties
+        self.props = tool.Model.get_model_props()
         self.x = self.props.x
         self.y = self.props.y
         self.z = self.props.z
@@ -1138,7 +1138,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.wm.call_menu(name="BIM_MT_add_representation_item")
             return
 
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_class = AuthoringData.data["ifc_class_current"]
         if not (relating_type_id := tool.Blender.get_enum_safe(props, "relating_type_id")):
             self.report({"ERROR"}, "No relating type selected")
@@ -1431,7 +1431,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.enable_editing_extrusion_axis()
 
     def hotkey_A_O(self):
-        if bpy.context.scene.BIMModelProperties.openings:
+        if tool.Model.get_model_props().openings:
             bpy.ops.bim.edit_openings(apply_all=True)
         else:
             bpy.ops.bim.show_openings()

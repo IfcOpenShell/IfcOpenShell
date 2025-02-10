@@ -41,7 +41,7 @@ V_ = tool.Blender.V_
 
 
 def update_door_modifier_representation(obj: bpy.types.Object) -> None:
-    props = obj.BIMDoorProperties
+    props = tool.Model.get_door_props(obj)
     element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
     sliding_door = "SLIDING" in props.door_type
@@ -338,7 +338,8 @@ def create_bm_door_lining(
 
 def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
     obj = context.active_object
-    props = obj.BIMDoorProperties
+    assert obj
+    props = tool.Model.get_door_props(obj)
 
     overall_width = props.overall_width
     overall_height = props.overall_height
@@ -572,9 +573,10 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Add a Parametric Door to the Selected IFC Door Elements"
     bl_options = {"REGISTER", "UNDO"}
 
-    def add_door_on_object(self, obj):
+    def add_door_on_object(self, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMDoorProperties
+        assert element
+        props = tool.Model.get_door_props(obj)
 
         door_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
@@ -608,11 +610,12 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Cancel Editing Door on Selected Objects"
     bl_options = {"REGISTER", "UNDO"}
 
-    def cancel_editing_door_on_object(self, obj):
+    def cancel_editing_door_on_object(self, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
+        assert element
         if not tool.Blender.Modifier.is_door(element):
             return
-        props = obj.BIMDoorProperties
+        props = tool.Model.get_door_props(obj)
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
@@ -646,9 +649,10 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
     def finish_editing_door_on_object(self, obj):
         element = tool.Ifc.get_entity(obj)
+        assert element
         if not tool.Blender.Modifier.is_door(element):
             return
-        props = obj.BIMDoorProperties
+        props = tool.Model.get_door_props(obj)
 
         door_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
@@ -678,9 +682,10 @@ class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
     def edit_door_on_obj(self, obj):
         element = tool.Ifc.get_entity(obj)
+        assert element
         if not tool.Blender.Modifier.is_door(element):
             return
-        props = obj.BIMDoorProperties
+        props = tool.Model.get_door_props(obj)
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
@@ -702,9 +707,11 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
 
     def remove_door_on_object(self, obj):
         element = tool.Ifc.get_entity(obj)
+        assert element
         if not tool.Blender.Modifier.is_door(element):
             return
-        obj.BIMDoorProperties.is_editing = False
+        props = tool.Model.get_door_props(obj)
+        props.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)

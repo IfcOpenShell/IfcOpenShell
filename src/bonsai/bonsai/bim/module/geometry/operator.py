@@ -743,7 +743,7 @@ class OverrideDelete(bpy.types.Operator):
             else:
                 bpy.data.objects.remove(obj)
 
-        for opening in context.scene.BIMModelProperties.openings:
+        for opening in tool.Model.get_model_props().openings:
             if opening.obj is not None and not tool.Ifc.get_entity(opening.obj):
                 bpy.data.objects.remove(opening.obj)
         tool.Model.purge_scene_openings()
@@ -1874,7 +1874,7 @@ class OverrideEscape(bpy.types.Operator):
         elif context.scene.BIMGeometryProperties.mode == "EDIT":
             bpy.ops.bim.override_mode_set_object("INVOKE_DEFAULT", should_save=False)
             tool.Geometry.disable_item_mode()
-        elif context.scene.BIMModelProperties.openings:
+        elif tool.Model.get_model_props().openings:
             bpy.ops.bim.hide_all_openings()
         elif context.scene.BIMAggregateProperties.in_aggregate_mode:
             bpy.ops.bim.disable_aggregate_mode()

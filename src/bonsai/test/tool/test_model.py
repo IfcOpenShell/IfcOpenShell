@@ -41,13 +41,15 @@ class TestGenerateOccurrenceName(NewFile):
     def test_generating_based_on_class(self):
         ifc = ifcopenshell.file()
         element_type = ifc.createIfcWallType(Name="Foobar")
-        bpy.context.scene.BIMModelProperties.occurrence_name_style = "CLASS"
+        props = tool.Model.get_model_props()
+        props.occurrence_name_style = "CLASS"
         assert subject.generate_occurrence_name(element_type, "IfcWall") == "Wall"
 
     def test_generating_based_on_type_name(self):
         ifc = ifcopenshell.file()
         element_type = ifc.createIfcWallType()
-        bpy.context.scene.BIMModelProperties.occurrence_name_style = "TYPE"
+        props = tool.Model.get_model_props()
+        props.occurrence_name_style = "TYPE"
         assert subject.generate_occurrence_name(element_type, "IfcWall") == "Unnamed"
         element_type.Name = "Foobar"
         assert subject.generate_occurrence_name(element_type, "IfcWall") == "Foobar"
@@ -55,8 +57,9 @@ class TestGenerateOccurrenceName(NewFile):
     def test_generating_based_on_a_custom_function(self):
         ifc = ifcopenshell.file()
         element_type = ifc.createIfcWallType()
-        bpy.context.scene.BIMModelProperties.occurrence_name_style = "CUSTOM"
-        bpy.context.scene.BIMModelProperties.occurrence_name_function = '"Foobar"'
+        props = tool.Model.get_model_props()
+        props.occurrence_name_style = "CUSTOM"
+        props.occurrence_name_function = '"Foobar"'
         assert subject.generate_occurrence_name(element_type, "IfcWall") == "Foobar"
 
 

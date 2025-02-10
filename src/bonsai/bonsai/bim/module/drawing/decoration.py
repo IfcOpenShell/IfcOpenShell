@@ -589,7 +589,7 @@ class BaseDecorator:
         text_dir = self.get_annotation_direction(context, obj)
 
         pos = location_3d_to_region_2d(region, region3d, text_world_position)
-        props = obj.BIMTextProperties
+        props = tool.Drawing.get_text_props(obj)
         text_data = DecoratorData.get_ifc_text_data(obj)
         if props.is_editing:
             text_data = text_data | props.get_text_edited_data()

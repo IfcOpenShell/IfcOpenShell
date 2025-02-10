@@ -334,7 +334,7 @@ class AddWallsFromSlab(bpy.types.Operator, tool.Ifc.Operator):
 
     def __init__(self):
         self.relating_type = None
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
         if relating_type_id:
             self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
@@ -368,7 +368,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
     def __init__(self):
         super().__init__()
         self.relating_type = None
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
         if relating_type_id:
             self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
@@ -377,7 +377,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         if not self.relating_type:
             return {"FINISHED"}
 
-        model_props = context.scene.BIMModelProperties
+        model_props = tool.Model.get_model_props()
         direction_sense = model_props.direction_sense
         offset = model_props.offset
 
@@ -420,17 +420,15 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
             self.handle_mouse_move(context, event)
             return {"PASS_THROUGH"}
 
+        props = tool.Model.get_model_props()
         # Wall axis settings
         if event.value == "RELEASE" and event.type == "F":
-            direction_sense = context.scene.BIMModelProperties.direction_sense
-            context.scene.BIMModelProperties.direction_sense = (
-                "NEGATIVE" if direction_sense == "POSITIVE" else "POSITIVE"
-            )
+            direction_sense = props.direction_sense
+            props.direction_sense = "NEGATIVE" if direction_sense == "POSITIVE" else "POSITIVE"
             self.set_offset(context, self.relating_type)
 
-        props = bpy.context.scene.BIMModelProperties
         if event.value == "RELEASE" and event.type == "O":
-            items = ["EXTERIOR", "CENTER", "INTERIOR"]
+            items = ("EXTERIOR", "CENTER", "INTERIOR")
             index = items.index(props.offset_type_vertical)
             size = len(items)
             props.offset_type_vertical = items[((index + 1) % size)]
@@ -608,7 +606,7 @@ class DumbWallGenerator:
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
 
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
 
         self.container = None
         self.container_obj = None
@@ -800,7 +798,7 @@ class DumbWallGenerator:
         return self.create_wall()
 
     def create_wall(self) -> bpy.types.Object:
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         ifc_class = self.get_relating_type_class(self.relating_type)
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)

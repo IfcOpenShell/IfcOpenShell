@@ -48,7 +48,7 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
             if self.related_object
             else context.selected_objects or [context.active_object]
         )
-        model_props = context.scene.BIMModelProperties
+        model_props = tool.Model.get_model_props()
         for obj in related_objects:
             element = tool.Ifc.get_entity(obj)
             core.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
@@ -332,11 +332,11 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         else:
             self.report({"INFO"}, "Type object can't be selected : It may be hidden or in an excluded collection.")
 
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
 
         ifc_class = new.is_a()
         # Set duplicated type as active in current tool.
         if ifc_class in (i[0] for i in (bonsai.bim.helper.get_enum_items(props, "ifc_class", context) or ()) if i):
-            context.scene.BIMModelProperties.ifc_class = new.is_a()
-            context.scene.BIMModelProperties.relating_type_id = str(new_obj.BIMObjectProperties.ifc_definition_id)
+            props.ifc_class = new.is_a()
+            props.relating_type_id = str(new_obj.BIMObjectProperties.ifc_definition_id)
         return {"FINISHED"}

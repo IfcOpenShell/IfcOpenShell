@@ -688,7 +688,8 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def get_boundary_lines_from_context_visible_objects(cls) -> list[shapely.LineString]:
-        calculation_rl = bpy.context.scene.BIMModelProperties.rl3
+        props = props = tool.Model.get_model_props()
+        calculation_rl = props.rl3
         container = tool.Root.get_default_container()
         container_obj = tool.Ifc.get_object(container)
         cut_point = container_obj.matrix_world.translation.copy() + Vector((0, 0, calculation_rl))
@@ -1054,7 +1055,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def get_relating_type_id(cls) -> int:
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
         return relating_type_id
 
@@ -1110,7 +1111,8 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def assign_type_to_obj(cls, obj: bpy.types.Object) -> None:
-        relating_type_id = bpy.context.scene.BIMModelProperties.relating_type_id
+        props = tool.Model.get_model_props()
+        relating_type_id = props.relating_type_id
         relating_type = tool.Ifc.get().by_id(int(relating_type_id))
         ifc_class = relating_type.is_a()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]

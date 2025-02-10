@@ -55,7 +55,7 @@ from typing import Optional, Union, Iterable, Any, Literal, Sequence, TYPE_CHECK
 from pathlib import Path
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.drawing.prop import DocProperties, Sheet
+    from bonsai.bim.module.drawing.prop import DocProperties, Sheet, BIMAnnotationProperties, BIMTextProperties
     from bonsai.bim.module.drawing.prop import Drawing as DrawingProperties
 
 
@@ -90,6 +90,14 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def get_document_props(cls) -> DocProperties:
         return bpy.context.scene.DocProperties
+
+    @classmethod
+    def get_annotation_props(cls) -> BIMAnnotationProperties:
+        return bpy.context.scene.BIMAnnotationProperties
+
+    @classmethod
+    def get_text_props(cls, obj: bpy.types.Object) -> BIMTextProperties:
+        return obj.BIMTextProperties
 
     @classmethod
     def canonicalise_class_name(cls, name: str) -> str:
@@ -349,7 +357,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def disable_editing_text(cls, obj: bpy.types.Object) -> None:
-        obj.BIMTextProperties.is_editing = False
+        props = tool.Drawing.get_text_props(obj)
+        props.is_editing = False
 
     @classmethod
     def disable_editing_assigned_product(cls, obj: bpy.types.Object) -> None:
@@ -385,7 +394,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def enable_editing_text(cls, obj: bpy.types.Object) -> None:
-        obj.BIMTextProperties.is_editing = True
+        props = cls.get_text_props(obj)
+        props.is_editing = True
 
     @classmethod
     def enable_editing_assigned_product(cls, obj: bpy.types.Object) -> None:
@@ -409,7 +419,8 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def export_text_literal_attributes(cls, obj: bpy.types.Object) -> list[dict[str, Any]]:
         literals = []
-        for literal_props in obj.BIMTextProperties.literals:
+        props = tool.Drawing.get_text_props(obj)
+        for literal_props in props.literals:
             literal_data = bonsai.bim.helper.export_attributes(literal_props.attributes)
             literals.append(literal_data)
         return literals
@@ -620,7 +631,8 @@ class Drawing(bonsai.core.tool.Drawing):
     def synchronise_ifc_and_text_attributes(cls, obj: bpy.types.Object) -> None:
         literals = cls.get_text_literal(obj, return_list=True)
         literals_attributes = cls.export_text_literal_attributes(obj)
-        defined_ifc_ids = [l.ifc_definition_id for l in obj.BIMTextProperties.literals]
+        props = cls.get_text_props(obj)
+        defined_ifc_ids = [l.ifc_definition_id for l in props.literals]
         ifc_file = tool.Ifc.get()
 
         for ifc_definition_id, attributes in zip(defined_ifc_ids, literals_attributes):
@@ -921,7 +933,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def import_text_attributes(cls, obj: bpy.types.Object) -> None:
         from bonsai.bim.module.drawing.prop import BOX_ALIGNMENT_POSITIONS
 
-        props = obj.BIMTextProperties
+        props = cls.get_text_props(obj)
         props.literals.clear()
 
         for ifc_literal in cls.get_text_literal(obj, return_list=True):
@@ -1035,7 +1047,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def update_text_value(cls, obj: bpy.types.Object) -> None:
-        props = obj.BIMTextProperties
+        props = cls.get_text_props(obj)
         literals = cls.get_text_literal(obj, return_list=True)
         cls.import_text_attributes(obj)
         for i, literal in enumerate(literals):
@@ -1049,7 +1061,7 @@ class Drawing(bonsai.core.tool.Drawing):
         """
         from bonsai.bim.module.drawing.data import FONT_SIZES
 
-        props = obj.BIMTextProperties
+        props = cls.get_text_props(obj)
         element = tool.Ifc.get_entity(obj)
         # updating text font size in EPset_Annotation.Classes
         font_size = float(props.font_size)
@@ -1080,7 +1092,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def update_newline_at(cls, obj: bpy.types.Object) -> None:
-        props = obj.BIMTextProperties
+        props = cls.get_text_props(obj)
         element = tool.Ifc.get_entity(obj)
         newline_at = int(props.newline_at)
         ifc_file = tool.Ifc.get()

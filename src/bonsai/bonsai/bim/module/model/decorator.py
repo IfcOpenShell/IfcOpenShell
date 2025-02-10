@@ -829,7 +829,7 @@ class ProductDecorator:
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
 
         self.relating_type = None
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
         if relating_type_id:
             self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))

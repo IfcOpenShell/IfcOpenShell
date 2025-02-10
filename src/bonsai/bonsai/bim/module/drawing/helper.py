@@ -416,7 +416,7 @@ def elevate_segment(bounds, segm):
     return [Vector((x, ymin, zmin)), Vector((x, ymax, zmin))]
 
 
-def add_newline_between_words(text, newline_at):
+def add_newline_between_words(text: str, newline_at: int) -> str:
     result = []
     start = 0
 

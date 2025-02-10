@@ -347,10 +347,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(context.scene.BIMProjectProperties, "should_disable_undo_on_save")
         layout.prop(context.scene.BIMProjectProperties, "should_stream")
 
-    def draw_model_settings(self, layout, context):
-        layout.prop(context.scene.BIMModelProperties, "occurrence_name_style")
-        if context.scene.BIMModelProperties == "CUSTOM":
-            layout.prop(context.scene.BIMModelProperties, "occurrence_name_function")
+    def draw_model_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        props = tool.Model.get_model_props()
+        layout.prop(props, "occurrence_name_style")
+        if props == "CUSTOM":
+            layout.prop(props, "occurrence_name_function")
 
     def draw_directories(self, layout, context):
         row = layout.row(align=True)
@@ -1221,7 +1222,7 @@ class BIM_PT_decorators_overlay(Panel):
         georeference_props = bpy.context.scene.BIMGeoreferenceProperties
         aggregate_props = bpy.context.scene.BIMAggregateProperties
         nest_props = bpy.context.scene.BIMNestProperties
-        model_props = bpy.context.scene.BIMModelProperties
+        model_props = tool.Model.get_model_props()
         display_all = overlay.show_overlays
 
         col = layout.column()

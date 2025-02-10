@@ -60,7 +60,7 @@ class FilledOpeningGenerator:
         :param target: Target opening position. If ommited, cursor position is used.
         :return: None if there was no errors, otherwise returns a string with error message.
         """
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         opening_thickness_si = 0.0
 
         filling = tool.Ifc.get_entity(filling_obj)
@@ -531,7 +531,8 @@ class UpdateOpeningsFocus(Operator):
             return {"FINISHED"}
         openings = set()
         building_objects = set()
-        for opening in context.scene.BIMModelProperties.openings:
+        props = tool.Model.get_model_props()
+        for opening in props.openings:
             if opening.obj:
                 openings.add(opening.obj)
                 opening_element = tool.Ifc.get_entity(opening.obj)
@@ -545,7 +546,7 @@ class UpdateOpeningsFocus(Operator):
                 obj.color[2],
                 (
                     1
-                    if not context.scene.BIMModelProperties.openings
+                    if not props.openings
                     or not building_objects
                     or obj in openings
                     or obj in building_objects
@@ -558,7 +559,8 @@ class UpdateOpeningsFocus(Operator):
 
 def hide_openings(context: bpy.types.Context, objects: Sequence[bpy.types.Object]) -> None:
     objects_to_remove = set()
-    for opening_prop in context.scene.BIMModelProperties.openings:
+    props = tool.Model.get_model_props()
+    for opening_prop in props.openings:
         opening_obj = opening_prop.obj
         if not opening_obj:
             continue
@@ -623,7 +625,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
     def get_buildings_and_openings(
         self, context: bpy.types.Context
     ) -> tuple[set[bpy.types.Object], set[ifcopenshell.entity_instance]]:
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         building_objs: set[bpy.types.Object] = set()
         opening_elements: set[ifcopenshell.entity_instance] = set()
         objects_to_remove = set()
@@ -892,7 +894,8 @@ class DecorationsHandler:
         batch.draw(shader)
 
     def __call__(self, context):
-        if not context.scene.BIMModelProperties.openings:
+        props = tool.Model.get_model_props()
+        if not props.openings:
             return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
@@ -907,7 +910,7 @@ class DecorationsHandler:
         gpu.state.point_size_set(6)
         gpu.state.blend_set("ALPHA")
 
-        for opening in context.scene.BIMModelProperties.openings:
+        for opening in props.openings:
             obj = opening.obj
             if context.scene.BIMGeometryProperties.representation_obj == obj:
                 # We are editing the representation of the opening :

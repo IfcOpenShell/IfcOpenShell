@@ -520,7 +520,8 @@ class BIM_PT_text(Panel):
 
     def draw(self, context):
         obj = context.active_object
-        props = obj.BIMTextProperties
+        assert obj
+        props = tool.Drawing.get_text_props(obj)
 
         if props.is_editing:
             # shares most of the code with EditTextPopup.draw()

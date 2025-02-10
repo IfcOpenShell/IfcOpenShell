@@ -26,6 +26,7 @@ from bonsai.bim.module.model.data import AuthoringData
 from bpy.types import PropertyGroup, NodeTree
 from math import pi, radians
 from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
+from typing import TYPE_CHECKING, Literal, get_args
 
 
 def get_ifc_class(self, context):
@@ -229,6 +230,39 @@ class BIMModelProperties(PropertyGroup):
         default=False,
         update=update_slab_direction_decorator,
     )
+
+    if TYPE_CHECKING:
+        ifc_class: str
+        relating_type_id: str
+        search_name: str
+        menu_relating_type_id: int
+        icon_id: int
+        updating: bool
+        occurrence_name_style: Literal["CLASS", "TYPE", "CUSTOM"]
+        occurrence_name_function: str
+        extrusion_depth: float
+        cardinal_point: Literal[
+            "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19"
+        ]
+        length: float
+        openings: bpy.types.bpy_prop_collection_idprop[ObjProperty]
+        x: float
+        y: float
+        z: float
+        rl_mode: Literal["BOTTOM", "CONTAINER", "CURSOR"]
+        rl1: float
+        rl2: float
+        rl3: float
+        type_page: int
+        x_angle: float
+        type_name: str
+        boundary_class: str
+        direction_sense: Literal["POSITIVE", "NEGATIVE"]
+        offset_type_vertical: Literal["EXTERIOR", "CENTER", "INTERIOR"]
+        offset_type_horizontal: Literal["TOP", "CENTER", "BOTTOM"]
+        offset: float
+        show_wall_axis: bool
+        show_slab_direction: bool
 
 
 class BIMArrayProperties(PropertyGroup):
@@ -550,21 +584,24 @@ class BIMWindowProperties(PropertyGroup):
             setattr(self, prop_name, kwargs[prop_name])
 
 
+DoorType = Literal[
+    "SINGLE_SWING_LEFT",
+    "SINGLE_SWING_RIGHT",
+    "DOUBLE_SWING_LEFT",
+    "DOUBLE_SWING_RIGHT",
+    "DOUBLE_DOOR_SINGLE_SWING",
+    "SLIDING_TO_LEFT",
+    "SLIDING_TO_RIGHT",
+    "DOUBLE_DOOR_SLIDING",
+]
+
+
 class BIMDoorProperties(PropertyGroup):
     non_si_units_props = ("is_editing", "door_type", "panel_width_ratio")
-    door_types = (
-        ("SINGLE_SWING_LEFT", "SINGLE_SWING_LEFT", ""),
-        ("SINGLE_SWING_RIGHT", "SINGLE_SWING_RIGHT", ""),
-        ("DOUBLE_SWING_LEFT", "DOUBLE_SWING_LEFT", ""),
-        ("DOUBLE_SWING_RIGHT", "DOUBLE_SWING_RIGHT", ""),
-        ("DOUBLE_DOOR_SINGLE_SWING", "DOUBLE_DOOR_SINGLE_SWING", ""),
-        ("SLIDING_TO_LEFT", "SLIDING_TO_LEFT", ""),
-        ("SLIDING_TO_RIGHT", "SLIDING_TO_RIGHT", ""),
-        ("DOUBLE_DOOR_SLIDING", "DOUBLE_DOOR_SLIDING", ""),
-    )
-
     is_editing: bpy.props.BoolProperty(default=False)
-    door_type: bpy.props.EnumProperty(name="Door Operation Type", items=door_types, default="SINGLE_SWING_LEFT")
+    door_type: bpy.props.EnumProperty(
+        name="Door Operation Type", items=tuple((i, i, "") for i in get_args(DoorType)), default="SINGLE_SWING_LEFT"
+    )
     overall_height: bpy.props.FloatProperty(name="Overall Height", default=2.0, subtype="DISTANCE")
     overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.9, subtype="DISTANCE")
 
@@ -630,6 +667,42 @@ class BIMDoorProperties(PropertyGroup):
     # Material properties
     panel_material: bpy.props.EnumProperty(name="Panel Material", items=get_materials, options=set())
     lining_material: bpy.props.EnumProperty(name="Lining Material", items=get_materials, options=set())
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        door_type: DoorType
+        overall_height: float
+        overall_width: float
+
+        # Lining.
+        lining_depth: float
+        lining_thickness: float
+        lining_offset: float
+        lining_to_panel_offset_x: float
+        lining_to_panel_offset_y: float
+
+        # Transom.
+        transom_thickness: float
+        transom_offset: float
+
+        # Casing.
+        casing_thickness: float
+        casing_depth: float
+
+        # Threshold.
+        threshold_thickness: float
+        threshold_depth: float
+        threshold_offset: float
+
+        # Panel.
+        panel_depth: float
+        panel_width_ratio: float
+        frame_thickness: float
+        frame_depth: float
+
+        # Material.
+        panel_material: str
+        lining_material: str
 
     def get_general_kwargs(self, convert_to_project_units=False):
         kwargs = {

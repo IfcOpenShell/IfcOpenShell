@@ -21,6 +21,7 @@ import bpy
 import json
 import bmesh
 import collections
+import collections.abc
 import ifcopenshell
 import bonsai.tool as tool
 import bonsai.core.root
@@ -33,7 +34,7 @@ import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
 from bmesh.types import BMVert
 from mathutils import Vector
-from typing import Optional
+from typing import Optional, Union
 
 V_ = tool.Blender.V_
 
@@ -132,7 +133,7 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
 
 
 def create_bm_window_frame(
-    bm: bmesh.types.BMesh, size: Vector, thickness: list, position: Vector = V_(0, 0, 0).freeze()
+    bm: bmesh.types.BMesh, size: Vector, thickness: Union[float, list[float]], position: Vector = V_(0, 0, 0).freeze()
 ) -> list[bmesh.types.BMVert]:
     """`thickness` of the profile is defined as list in the following order:
     `(LEFT, TOP, RIGHT, BOTTOM)`

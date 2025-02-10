@@ -1035,7 +1035,8 @@ class Blender(bonsai.core.tool.Blender):
 
         @classmethod
         def is_editing_door_parameters(cls, obj: bpy.types.Object) -> bool:
-            return obj.BIMDoorProperties.is_editing
+            props = tool.Model.get_door_props(obj)
+            return props.is_editing
 
         @classmethod
         def is_editing_stair_parameters(cls, obj: bpy.types.Object) -> bool:

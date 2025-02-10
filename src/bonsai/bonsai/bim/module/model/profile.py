@@ -57,7 +57,7 @@ class DumbProfileGenerator:
 
         self.body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         self.axis_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Axis", "GRAPH_VIEW")
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
 
         self.container = None
         self.container_obj = None
@@ -68,7 +68,7 @@ class DumbProfileGenerator:
         self.depth = props.extrusion_depth
         self.rotation = 0
         self.location = Vector((0, 0, 0))
-        self.cardinal_point = int(bpy.context.scene.BIMModelProperties.cardinal_point)
+        self.cardinal_point = int(props.cardinal_point)
         if insertion_type == "POLYLINE":
             return self.derive_from_polyline()
         elif insertion_type == "CURSOR":
@@ -1123,7 +1123,7 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
     def __init__(self):
         super().__init__()
         self.relating_type = None
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
         if relating_type_id:
             self.relating_type = tool.Ifc.get().by_id(int(relating_type_id))
@@ -1132,7 +1132,7 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
         if not self.relating_type:
             return {"FINISHED"}
 
-        model_props = context.scene.BIMModelProperties
+        model_props = tool.Model.get_model_props()
         direction_sense = model_props.direction_sense
         offset = model_props.offset
 
