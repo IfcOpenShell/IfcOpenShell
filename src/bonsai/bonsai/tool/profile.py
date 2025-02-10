@@ -47,7 +47,7 @@ class Profile(bonsai.core.tool.Profile):
 
         verts = shape.verts
         if not verts:
-            raise RuntimeError("Profile shape has no vertices, it probably is invalid.")
+            raise RuntimeError(f"Profile shape has no vertices, it probably is invalid: '{profile}'.")
 
         edges = shape.edges
 
