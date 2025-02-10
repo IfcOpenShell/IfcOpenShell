@@ -44,7 +44,7 @@ if TYPE_CHECKING:
     VectorType = Union[Sequence[float], Vector, np.ndarray]
 else:
     # Ensure it's exportable, so other modules can reuse it for typing.
-    VectorType = ...
+    VectorType = Any
 
 SequenceOfVectors = Union[Sequence[VectorType], np.ndarray]
 
