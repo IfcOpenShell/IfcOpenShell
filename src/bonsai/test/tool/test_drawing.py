@@ -108,7 +108,7 @@ class TestDeleteDrawingElements(NewFile):
             assert False
         except:
             pass
-        assert not bpy.data.objects["Object"]
+        assert bpy.data.objects.get("Object") is None
 
 
 class TestDisableEditingDrawings(NewFile):

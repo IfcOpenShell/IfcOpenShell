@@ -499,7 +499,7 @@ def get_horizontal_profile_preview_data(context, relating_type):
 
 
 def get_generic_product_preview_data(context, relating_type):
-    props = tool.Model.get_model_props()
+    model_props = tool.Model.get_model_props()
     if relating_type.is_a("IfcDoorType"):
         rl = float(model_props.rl1)
     elif relating_type.is_a("IfcWindowType"):
