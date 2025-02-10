@@ -350,7 +350,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     def draw_model_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         props = tool.Model.get_model_props()
         layout.prop(props, "occurrence_name_style")
-        if props == "CUSTOM":
+        if props.occurrence_name_style == "CUSTOM":
             layout.prop(props, "occurrence_name_function")
 
     def draw_directories(self, layout, context):
