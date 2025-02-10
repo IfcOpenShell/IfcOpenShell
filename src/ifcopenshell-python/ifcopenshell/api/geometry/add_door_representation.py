@@ -619,7 +619,6 @@ class Usecase:
                 side_lining_thickness,
                 transom_thickness,
             ]
-            window_lining_thickness.append(transom_thickness)
             window_lining_size = V(overall_width, lining_depth, window_lining_height)
             window_position = V(0, 0, overall_height - window_lining_height)
             frame_size = V(door_opening_width, frame_depth, frame_height)
@@ -633,7 +632,6 @@ class Usecase:
                 frame_thickness,
                 glass_thickness,
                 window_position,
-                self.settings["unit_scale"],
             )
 
         lining_offset_items = lining_items + door_items + window_lining_items + frame_items + glass_items

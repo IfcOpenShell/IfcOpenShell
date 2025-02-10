@@ -498,7 +498,6 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
             side_lining_thickness,
             transom_thickness,
         ]
-        window_lining_thickness.append(transom_thickness)
         window_lining_size = V_(overall_width, lining_depth, window_lining_height)
         window_position = V_(0, 0, overall_height - window_lining_height)
         frame_size = V_(door_opening_width, frame_depth, frame_height)
