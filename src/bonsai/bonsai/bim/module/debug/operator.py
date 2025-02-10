@@ -934,6 +934,11 @@ class RestartBlender(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        # Save preferences manually since we're restarting Blender using .execv
+        # and it doens't have a chance to save them on exit.
+        if context.preferences.use_preferences_save:
+            bpy.ops.wm.save_userpref()
+
         ms_store_app_id = tool.Blender.get_microsoft_store_app_id()
         if not ms_store_app_id:
             path = bpy.app.binary_path
