@@ -486,12 +486,11 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
     sustainability_performance = None
 
     for pset_name, props in ifcopenshell.util.element.get_psets(element).items():
-        pset_warranty_type = None
         if pset_name == "COBie_Warranty":
-            warranty_guarantor_parts = props.get("WarrantyGuarantorParts", None)
-            warranty_guarantor_labor = props.get("WarrantyGuarantorLabor", None)
-            warranty_duration_parts = props.get("WarrantyDurationParts", None)
-            warranty_duration_labor = props.get("WarrantyDurationLabor", None)
+            warranty_guarantor_parts = warranty_guarantor_parts or props.get("WarrantyGuarantorParts", None)
+            warranty_guarantor_labor = warranty_guarantor_labor or props.get("WarrantyGuarantorLabor", None)
+            warranty_duration_parts = warranty_duration_parts or props.get("WarrantyDurationParts", None)
+            warranty_duration_labor = warranty_duration_labor or props.get("WarrantyDurationLabor", None)
             warranty_duration_unit = props.get("WarrantyDurationUnit", None)
             warranty_description = props.get("WarrantyDescription", None)
         elif pset_name == "COBie_Asset":
@@ -522,6 +521,18 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
             manufacturer = props.get("Manufacturer", None)
             model_number = props.get("ModelLabel", None)
             model_reference = props.get("ModelReference", None)
+        elif pset_name == "Pset_Warranty":
+            # The legacy COBie 2.4 relied on WarrantyIdentifier. This is almost
+            # certainly a mistake since you can only have a single property set
+            # of the same name, so it's not possible to have two psets
+            # targeting both parts and labor. In the new version, we do away
+            # with this, assuming the user either specifically targets
+            # COBie_Waranty, or if they use the built-in Pset_Warranty, we
+            # assume it affects both type sof warranty.
+            warranty_guarantor_parts = warranty_guarantor_parts or props.get("PointOfContact", None)
+            warranty_guarantor_labor = warranty_guarantor_labor or props.get("PointOfContact", None)
+            warranty_duration_parts = warranty_duration_parts or props.get("WarrantyPeriod", None)
+            warranty_duration_labor = warranty_duration_labor or props.get("WarrantyPeriod", None)
 
     return {
         "Name": val(element.Name),
@@ -565,8 +576,6 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
 def get_component_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     space = ifcopenshell.util.element.get_container(element)
     space_name = space.Name if space.is_a("IfcSpace") else None
-    systems = ifcopenshell.util.system.get_element_systems(element)
-    system = systems[0].Name if systems else None
 
     type_name = None
     relating_type = ifcopenshell.util.element.get_type(element)

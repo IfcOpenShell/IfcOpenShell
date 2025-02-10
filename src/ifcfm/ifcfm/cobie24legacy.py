@@ -571,7 +571,7 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
             if pset_warranty_type == "parts" and val(value):
                 if name == "PointOfContact":
                     # https://github.com/buildingSMART/IFC4.3.x-development/issues/698
-                    warranty_guarantor_parts = str(value)
+                    pset_metadata["warranty_guarantor_parts"] = str(value)
                 elif name == "WarrantyPeriod":
                     warranty_duration_parts = str(value)
                     unit = get_property_unit(pset, name)
@@ -579,7 +579,7 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
             elif pset_warranty_type == "labor" and val(value):
                 if name == "PointOfContact":
                     # https://github.com/buildingSMART/IFC4.3.x-development/issues/698
-                    warranty_guarantor_labor = str(value)
+                    pset_metadata["warranty_guarantor_labor"] = str(value)
                 elif name == "WarrantyPeriod":
                     warranty_duration_labor = str(value)
                     unit = get_property_unit(pset, name)
@@ -635,8 +635,6 @@ def get_type_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_inst
 def get_component_data(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> dict[str, Any]:
     space = ifcopenshell.util.element.get_container(element)
     space_name = space.Name if space.is_a("IfcSpace") else None
-    systems = ifcopenshell.util.system.get_element_systems(element)
-    system = systems[0].Name if systems else None
 
     type_name = None
     relating_type = ifcopenshell.util.element.get_type(element)
