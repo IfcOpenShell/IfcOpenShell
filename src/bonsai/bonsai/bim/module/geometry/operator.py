@@ -145,7 +145,7 @@ class OverrideOriginSet(bpy.types.Operator, tool.Ifc.Operator):
     blender_op = bpy.ops.object.origin_set.get_rna_type()
     bl_label = "IFC Origin Set"
     bl_description = (
-        blender_op.description + ".\nAlso makes sure changes are in sync with IFC (opeartor works only on IFC objects)"
+        blender_op.description + ".\nAlso makes sure changes are in sync with IFC (operator works only on IFC objects)"
     )
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
