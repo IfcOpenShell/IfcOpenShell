@@ -318,6 +318,25 @@ class Snap(bonsai.core.tool.Snap):
 
             return plane_origin, plane_normal
 
+        def cast_rays_to_single_object(obj, mouse_pos):
+            if obj.type != "MESH":
+                return None, None, None
+            hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
+            if hit is None:
+                # Tried original mouse position. Now it will try the offsets.
+                original_mouse_pos = mouse_pos
+                for value in mouse_offset:
+                    mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
+                    hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj, mouse_pos)
+                    if hit:
+                        break
+                mouse_pos = original_mouse_pos
+            if hit:
+                hit_world = obj.original.matrix_world @ hit
+                return obj, hit_world, face_index
+            else:
+                return None, None, None
+
         def cast_rays_and_get_best_object(objs_to_raycast, mouse_pos):
             best_length_squared = 1.0
             best_obj = None
@@ -325,26 +344,14 @@ class Snap(bonsai.core.tool.Snap):
             best_face_index = None
 
             for obj in objs_to_raycast:
-                if obj.type != "MESH":
-                    continue
-                hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
-                if hit is None:
-                    # Tried original mouse position. Now it will try the offsets.
-                    original_mouse_pos = mouse_pos
-                    for value in mouse_offset:
-                        mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
-                        hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj, mouse_pos)
-                        if hit:
-                            break
-                    mouse_pos = original_mouse_pos
+                snap_obj, hit, face_index = cast_rays_to_single_object(obj, mouse_pos)
 
                 if hit is not None:
-                    hit_world = obj.original.matrix_world @ hit
-                    length_squared = (hit_world - ray_origin).length_squared
+                    length_squared = (hit - ray_origin).length_squared
                     if best_obj is None or length_squared < best_length_squared:
                         best_length_squared = length_squared
-                        best_obj = obj
-                        best_hit = hit_world
+                        best_obj = snap_obj
+                        best_hit = hit
                         best_face_index = face_index
 
             if best_obj is not None:
@@ -428,15 +435,29 @@ class Snap(bonsai.core.tool.Snap):
                 detected_snaps.append(snap_point)
 
         # Obj
-        snap_obj, hit, face_index = cast_rays_and_get_best_object(objs_to_raycast, mouse_pos)
-        if hit is not None:
-            snap_point = {
-                "point": hit,
-                "group": "Object",
-                "object": snap_obj,
-                "face_index": face_index,
-            }
-            detected_snaps.append(snap_point)
+        if (space.shading.type == "SOLID" and space.shading.show_xray) or (
+            space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe
+        ):
+            for obj in objs_to_raycast:
+                snap_obj, hit, face_index = cast_rays_to_single_object(obj, mouse_pos)
+                if hit is not None:
+                    snap_point = {
+                        "point": hit,
+                        "group": "Object",
+                        "object": snap_obj,
+                        "face_index": face_index,
+                    }
+                    detected_snaps.append(snap_point)
+        else:
+            snap_obj, hit, face_index = cast_rays_and_get_best_object(objs_to_raycast, mouse_pos)
+            if hit is not None:
+                snap_point = {
+                    "point": hit,
+                    "group": "Object",
+                    "object": snap_obj,
+                    "face_index": face_index,
+                }
+                detected_snaps.append(snap_point)
 
         # Axis and Plane
         elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
