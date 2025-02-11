@@ -818,7 +818,7 @@ class Blender(bonsai.core.tool.Blender):
         return bool(element) and element.is_a() in classes
 
     @classmethod
-    def get_object_from_guid(cls, guid: str) -> Union[IFC_CONNECTED_TYPE, None]:
+    def get_object_from_guid(cls, guid: str) -> Union[bpy.types.Object, None]:
         element = tool.Ifc.get().by_guid(guid)
         obj = tool.Ifc.get_object(element)
         if obj:
@@ -1049,7 +1049,7 @@ class Blender(bonsai.core.tool.Blender):
 
         class Array:
             @classmethod
-            def bake_children_transform(cls, parent_element: entity_instance, item):
+            def bake_children_transform(cls, parent_element: entity_instance, item: int) -> None:
                 modifier_data = list(cls.get_modifiers_data(parent_element))[item]
                 children = cls.get_children_objects(modifier_data)
                 for child in children:
@@ -1059,8 +1059,9 @@ class Blender(bonsai.core.tool.Blender):
                             bpy.ops.constraint.apply(constraint=constraint.name, owner="OBJECT")
 
             @classmethod
-            def constrain_children_to_parent(cls, parent_element):
+            def constrain_children_to_parent(cls, parent_element: ifcopenshell.entity_instance) -> None:
                 parent_obj = tool.Ifc.get_object(parent_element)
+                assert isinstance(parent_obj, bpy.types.Object)
                 children = cls.get_all_children_objects(parent_element)
                 for child in children:
                     constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
@@ -1068,17 +1069,20 @@ class Blender(bonsai.core.tool.Blender):
                         child.constraints.remove(constraint)
                     constraint = child.constraints.new("CHILD_OF")
                     constraint.name = "BBIM_Array_CHILD_OF"
+                    assert isinstance(constraint, bpy.types.ChildOfConstraint)
                     constraint.target = parent_obj
 
             @classmethod
-            def set_children_lock_state(cls, parent_element, item, lock_state=True):
+            def set_children_lock_state(
+                cls, parent_element: ifcopenshell.entity_instance, item: int, lock_state: bool = True
+            ) -> None:
                 modifier_data = list(cls.get_modifiers_data(parent_element))[item]
                 children = cls.get_children_objects(modifier_data)
                 for child_obj in children:
                     Blender.lock_transform(child_obj, lock_state)
 
             @classmethod
-            def remove_constraints(cls, parent_element):
+            def remove_constraints(cls, parent_element: ifcopenshell.entity_instance) -> None:
                 children = cls.get_all_children_objects(parent_element)
                 for child in children:
                     constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
@@ -1086,24 +1090,30 @@ class Blender(bonsai.core.tool.Blender):
                         child.constraints.remove(constraint)
 
             @classmethod
-            def get_all_objects(cls, parent_element):
+            def get_all_objects(cls, parent_element: ifcopenshell.entity_instance) -> list[bpy.types.Object]:
                 parent_obj = tool.Ifc.get_object(parent_element)
+                assert isinstance(parent_obj, bpy.types.Object)
                 children_objects = list(cls.get_all_children_objects(parent_element))
                 array_objects = [parent_obj] + children_objects  # We ensure the parent is at index 0
                 return array_objects
 
             @classmethod
-            def get_all_children_objects(cls, parent_element):
+            def get_all_children_objects(
+                cls, parent_element: ifcopenshell.entity_instance
+            ) -> Generator[bpy.types.Object, None, None]:
                 for array_modifier in cls.get_modifiers_data(parent_element):
                     yield from cls.get_children_objects(array_modifier)
 
             @classmethod
-            def get_modifiers_data(cls, parent_element):
+            def get_modifiers_data(
+                cls, parent_element: ifcopenshell.entity_instance
+            ) -> Generator[dict[str, Any], None, None]:
                 array_pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array")
                 yield from json.loads(array_pset["Data"])
 
             @classmethod
-            def get_children_objects(cls, modifier_data):
+            def get_children_objects(cls, modifier_data: dict[str, Any]) -> Generator[bpy.types.Object, None, None]:
+                child_guid: str
                 for child_guid in modifier_data["children"]:
                     child_obj = tool.Blender.get_object_from_guid(child_guid)
                     if child_obj:
