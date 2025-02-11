@@ -52,7 +52,9 @@ class TestAddPorts(NewFile):
         for port, expected_matrix in zip(ports, expected_matrices, strict=True):
             port_matrix = tool.Model.get_element_matrix(port)
             port_matrix.translation *= si_conversion
-            assert np.allclose(port_matrix, expected_matrix, atol=1.0e-5), f"Matrix does not match:\n{port_matrix}\n{expected_matrix}"
+            assert np.allclose(
+                port_matrix, expected_matrix, atol=1.0e-5
+            ), f"Matrix does not match:\n{port_matrix}\n{expected_matrix}"
 
     def test_run(self):
         # default use

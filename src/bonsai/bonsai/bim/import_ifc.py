@@ -86,7 +86,7 @@ class MaterialCreator:
 
     def parse_element_type_material_styles(self, element: ifcopenshell.entity_instance) -> None:
         if self.mesh["ios_materials"]:
-            return # Already has materials assign to the representation itself
+            return  # Already has materials assign to the representation itself
         # Otherwise, we need to check for material styles on the element, since
         # create_shape on types only works on representations.
         context = tool.Ifc.get().by_id(self.mesh.BIMMeshProperties.ifc_definition_id).ContextOfItems
