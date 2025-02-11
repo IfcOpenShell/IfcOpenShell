@@ -1852,8 +1852,16 @@ class OverridePasteBuffer(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        previously_selected_objects = set(context.selected_objects)
         bpy.ops.view3d.pastebuffer()
+
+        # If object selection did not change, then there were no objects to paste.
+        # Then exist early to prevent unlinking previously selected objects.
         pasted_objects = context.selected_objects
+        if previously_selected_objects == set(pasted_objects):
+            self.report({"INFO"}, "No objects to paste.")
+            return {"FINISHED"}
+
         for obj in pasted_objects:
             # Pasted objects may come from another Blender session, or even
             # from the same session where the original object has since
