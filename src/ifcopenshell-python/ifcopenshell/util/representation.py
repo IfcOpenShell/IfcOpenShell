@@ -146,7 +146,7 @@ def get_representation(
             return r
 
 
-def guess_type(items: Sequence[ifcopenshell.entity_instance]) -> str | None:
+def guess_type(items: Sequence[ifcopenshell.entity_instance]) -> Union[str, None]:
     """Guesses the appropriate RepresentationType attribute based on a list of items
 
     :param items: A list of IfcRepresentationItem, typically in an IfcShapeRepresentation

@@ -18,12 +18,13 @@
 
 import ifcopenshell.api.geometry
 import ifcopenshell.util.representation
+from typing import Union
 
 
 def validate_type(
     file: ifcopenshell.file,
     representation: ifcopenshell.entity_instance,
-    preferred_item: ifcopenshell.entity_instance | None = None,
+    preferred_item: Union[ifcopenshell.entity_instance, None] = None,
 ) -> bool:
     """Validates the RepresentationType of an IfcShapeRepresentation
 
