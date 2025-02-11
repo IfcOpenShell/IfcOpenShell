@@ -135,8 +135,8 @@ endif
 	cp ../../README.md build/
 	cp pyproject.toml build/
 ifeq ($(IS_STABLE), TRUE)
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
-	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/ifcopenshell/__init__.py
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION).post1"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION).post1"/' build/ifcopenshell/__init__.py
 else
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)a$(VERSION_DATE)"/' build/pyproject.toml
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/ifcopenshell/__init__.py
@@ -146,7 +146,7 @@ endif
 	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
 
 ifeq ($(IS_STABLE), TRUE)
-	mv build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+	mv build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION).post1-$(PYVERSION)-none-$(PLATFORMTAG).whl
 else
 	cp build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION)a$(VERSION_DATE)-$(PYVERSION)-none-$(PLATFORMTAG).whl
 endif
