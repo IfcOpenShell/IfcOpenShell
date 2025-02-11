@@ -2840,6 +2840,7 @@ class UpdateItemAttributes(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        tool.Geometry.sync_item_positions()
         tool.Geometry.update_item_attributes(obj)
         tool.Geometry.reload_representation(bpy.context.scene.BIMGeometryProperties.representation_obj)
         tool.Geometry.import_item(obj)
