@@ -21,8 +21,11 @@ import math
 import bmesh
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
+import numpy as np
+import numpy.typing as npt
 from mathutils import Vector, Matrix
 from typing import Union, Optional, Literal, Any, TYPE_CHECKING
+from ifcopenshell.util.shape_builder import ifc_safe_vector_type, VectorType
 
 if TYPE_CHECKING:
     from bonsai.bim.module.geometry.helper import Helper
@@ -39,7 +42,7 @@ def add_representation(
     context: ifcopenshell.entity_instance,
     blender_object: bpy.types.Object,
     geometry: Union[bpy.types.Mesh, bpy.types.Curve],
-    coordinate_offset: Optional[Vector] = None,
+    coordinate_offset: Optional[npt.NDArray[np.float64]] = None,
     total_items: int = 1,
     unit_scale: Optional[float] = None,
     should_force_faceted_brep: bool = False,
@@ -89,7 +92,7 @@ def add_representation(
         "context": context,
         "blender_object": blender_object,
         "geometry": geometry,
-        "coordinate_offset": Vector(coordinate_offset) if coordinate_offset is not None else None,
+        "coordinate_offset": coordinate_offset if coordinate_offset is not None else None,
         "total_items": total_items,
         "unit_scale": unit_scale,
         "should_force_faceted_brep": should_force_faceted_brep,
@@ -107,9 +110,11 @@ class Usecase:
     file: ifcopenshell.file
     settings: dict[str, Any]
     ifc_vertices: list[ifcopenshell.entity_instance]
+    coordinate_offset: Union[npt.NDArray[np.float64], None]
 
     def execute(self) -> Union[ifcopenshell.entity_instance, None]:
         self.is_manifold = None
+        self.coordinate_offset = self.settings["coordinate_offset"]
         if (
             isinstance(self.settings["geometry"], bpy.types.Mesh)
             and self.settings["geometry"] == self.settings["blender_object"].data
@@ -868,11 +873,11 @@ class Usecase:
 
         x, y, z coords are provided in SI units.
         """
-        if is_model_coords and self.settings["coordinate_offset"]:
-            x += self.settings["coordinate_offset"][0]
-            y += self.settings["coordinate_offset"][1]
+        if is_model_coords and self.coordinate_offset is not None:
+            x += self.coordinate_offset[0]
+            y += self.coordinate_offset[1]
             if z is not None:
-                z += self.settings["coordinate_offset"][2]
+                z += self.coordinate_offset[2]
         x = self.convert_si_to_unit(x)
         y = self.convert_si_to_unit(y)
         if z is None:
@@ -881,21 +886,26 @@ class Usecase:
         return self.file.createIfcCartesianPoint((x, y, z))
 
     def create_cartesian_point_list_from_vertices(
-        self, vertices: list[bpy.types.MeshVertex], is_2d: bool = False, is_model_coords: bool = True
+        self, vertices: bpy.types.MeshVertices, is_2d: bool = False, is_model_coords: bool = True
     ) -> ifcopenshell.entity_instance:
-        if is_model_coords and self.settings["coordinate_offset"]:
-            if is_2d:
-                xy_offset = Vector((self.settings["coordinate_offset"][0:2]))
-                return self.file.createIfcCartesianPointList2D(
-                    [self.convert_si_to_unit(v.co.xy + xy_offset) for v in vertices]
-                )
-            xyz_offset = Vector((self.settings["coordinate_offset"][0:3]))
-            return self.file.createIfcCartesianPointList3D(
-                [self.convert_si_to_unit(v.co.xyz + xyz_offset) for v in vertices]
-            )
+        # Catch values as floats to benefit from fast buffer copy.
+        coords = np.empty(len(vertices) * 3, dtype="f")
+        vertices.foreach_get("co", coords)
+        coords = coords.reshape(-1, 3)
+
         if is_2d:
-            return self.file.createIfcCartesianPointList2D([self.convert_si_to_unit(v.co.xy) for v in vertices])
-        return self.file.createIfcCartesianPointList3D([self.convert_si_to_unit(v.co) for v in vertices])
+            coords = coords[:, :2]
+            coords_class = "IfcCartesianPointList2D"
+        else:
+            coords_class = "IfcCartesianPointList3D"
+
+        if is_model_coords and (offset := self.coordinate_offset) is not None:
+            coords = coords.astype("d")
+            if is_2d:
+                offset = offset[:2]
+            coords += offset
+
+        return self.file.create_entity(coords_class, ifc_safe_vector_type(self.convert_si_to_unit(coords)))
 
     def convert_si_to_unit(self, co):
         return co / self.settings["unit_scale"]
