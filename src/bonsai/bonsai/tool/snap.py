@@ -546,19 +546,16 @@ class Snap(bonsai.core.tool.Snap):
             if snap_group["group"] == "Polyline":
                 for p in snap_group["points"]:
                     snapping_points.append((p["point"], p["type"], None))
-                break
             if snap_group["group"] == "Measure":
                 for p in snap_group["points"]:
                     snapping_points.append((p["point"], p["type"], None))
                     if p["type"] == "Edge":
                         edges.append(p)
-                break
             if snap_group["group"] == "Edge-Vertex":
                 for p in snap_group["points"]:
                     snapping_points.append((p["point"], p["type"], snap_group["object"]))
                     if p["type"] == "Edge":
                         edges.append(p)
-
             if snap_group["group"] == "Object":
                 obj = snap_group["object"]
                 matrix = obj.matrix_world.copy()
@@ -574,14 +571,12 @@ class Snap(bonsai.core.tool.Snap):
                         snapping_points.append((p["point"], p["type"], obj))
                         if p["type"] == "Edge":
                             edges.append(p)
-                break
 
         for snap_group in filtered_snaps:
             if snap_group["group"] == "Axis":
                 axis_start = snap_group["axis_start"]
                 axis_end = snap_group["axis_end"]
                 snapping_points.append((snap_group["point"], "Axis", snap_obj))
-
             if snap_group["group"] == "Plane":
                 snapping_points.append((snap_group["point"], "Plane", snap_obj))
 
