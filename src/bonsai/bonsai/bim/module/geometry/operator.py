@@ -1849,6 +1849,12 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
 class OverridePasteBuffer(bpy.types.Operator):
     bl_idname = "bim.override_paste_buffer"
     bl_label = "IFC Paste BIM Objects"
+    bl_description = (
+        "Paste objects from the internal clipboard.\n\n"
+        "Note that pasted objects will be unliked from IFC, so some IFC data will be lost (psets, materials, etc).\n"
+        "To paste object and keep IFC data use 'IFC Duplicate Objects'.\n\n"
+        "If working in Bonsai, to prevent issues this operator must be always used instead of the default Blender 'Paste Objects'."
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
