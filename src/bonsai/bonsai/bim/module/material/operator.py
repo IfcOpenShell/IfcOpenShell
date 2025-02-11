@@ -314,7 +314,7 @@ class RemoveConstituent(bpy.types.Operator, tool.Ifc.Operator):
             if len(material_set.MaterialConstituents) == 1:
                 self.report({"ERROR"}, "At least one constituent must exist")
                 return {"CANCELLED"}
-        ifcopenshell.api.run("material.remove_constituent", tool.Ifc.get(), constituent=constituent)
+        ifcopenshell.api.material.remove_constituent(tool.Ifc.get(), constituent=constituent)
 
 
 class AddProfile(bpy.types.Operator, tool.Ifc.Operator):
@@ -349,7 +349,7 @@ class RemoveProfile(bpy.types.Operator, tool.Ifc.Operator):
             if len(material_set.MaterialProfiles) == 1:
                 self.report({"ERROR"}, "At least one profile must exist")
                 return {"CANCELLED"}
-        ifcopenshell.api.run("material.remove_profile", tool.Ifc.get(), profile=profile)
+        ifcopenshell.api.material.remove_profile(tool.Ifc.get(), profile=profile)
 
 
 class AddLayer(bpy.types.Operator, tool.Ifc.Operator):
@@ -410,7 +410,7 @@ class RemoveLayer(bpy.types.Operator, tool.Ifc.Operator):
             if len(material_set.MaterialLayers) == 1:
                 self.report({"ERROR"}, "At least one layer must exist")
                 return {"CANCELLED"}
-        ifcopenshell.api.run("material.remove_layer", tool.Ifc.get(), layer=layer)
+        ifcopenshell.api.material.remove_layer(tool.Ifc.get(), layer=layer)
         for material_set in material_sets:
             slab.DumbSlabPlaner().regenerate_from_layer_set(material_set)
             wall.DumbWallPlaner().regenerate_from_layer_set(material_set)

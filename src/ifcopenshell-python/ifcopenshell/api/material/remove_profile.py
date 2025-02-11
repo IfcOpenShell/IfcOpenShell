@@ -17,20 +17,23 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-import ifcopenshell
 import ifcopenshell.util.element
 
 
-def remove_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instance) -> None:
+def remove_profile(
+    file: ifcopenshell.file,
+    profile: ifcopenshell.entity_instance,
+    should_remove_profile_def: bool = False,
+    should_remove_material: bool = False,
+) -> None:
     """Removes a profile item from a profile set
 
     Note that it is invalid to have zero items in a set, so you should leave
     at least one profile to ensure a valid IFC dataset.
 
     :param profile: The IfcMaterialProfile entity you want to remove
-    :type profile: ifcopenshell.entity_instance
-    :return: None
-    :rtype: None
+    :param should_remove_profile_def: If true, profile defs with no users will be removed
+    :param should_remove_material: If true, materials with no users will be removed
 
     Example:
 
@@ -64,12 +67,14 @@ def remove_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instanc
         ifcopenshell.api.material.remove_profile(model, profile=weld_profile)
     """
 
-    settings = {"profile": profile}
-
     subelements = set()
-    for attribute in settings["profile"]:
+    for attribute in profile:
         if isinstance(attribute, ifcopenshell.entity_instance):
             subelements.add(attribute)
-    file.remove(settings["profile"])
+    file.remove(profile)
     for subelement in subelements:
+        if subelement.is_a("IfcMaterial") and not should_remove_material:
+            continue
+        elif subelement.is_a("IfcProfileDef") and not should_remove_profile_def:
+            continue
         ifcopenshell.util.element.remove_deep2(file, subelement)
