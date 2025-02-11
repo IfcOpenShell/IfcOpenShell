@@ -122,6 +122,7 @@ class BIM_MT_object_set_origin(Menu):
 def outliner_menu(self, context):
     self.layout.separator()
     self.layout.operator("bim.override_outliner_delete", icon="X")
+    self.layout.operator("bim.override_paste_buffer", icon="PLUGIN")
 
 
 class BIM_PT_representations(Panel):
