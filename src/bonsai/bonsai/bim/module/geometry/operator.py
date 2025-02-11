@@ -1853,13 +1853,15 @@ class OverridePasteBuffer(bpy.types.Operator):
 
     def execute(self, context):
         bpy.ops.view3d.pastebuffer()
-        for obj in context.selected_objects:
+        pasted_objects = context.selected_objects
+        for obj in pasted_objects:
             # Pasted objects may come from another Blender session, or even
             # from the same session where the original object has since
             # been deleted. As the source element may not exist, paste will
             # always unlink the element. If you want to duplicate an
             # element, use the duplicate commands.
             tool.Root.unlink_object(obj)
+        self.report({"INFO"}, f"{len(pasted_objects)} object(s) pasted and unlinked from IFC.")
         return {"FINISHED"}
 
 
