@@ -1067,6 +1067,7 @@ class Blender(bonsai.core.tool.Blender):
                     if constraint:
                         child.constraints.remove(constraint)
                     constraint = child.constraints.new("CHILD_OF")
+                    constraint.name = "BBIM_Array_CHILD_OF"
                     constraint.target = parent_obj
 
             @classmethod
