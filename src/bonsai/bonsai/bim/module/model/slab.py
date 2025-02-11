@@ -298,8 +298,8 @@ class DumbSlabPlaner:
                 x, y, z = extrusion.ExtrudedDirection.DirectionRatios
                 existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
                 perpendicular_depth = thickness * (1 / cos(existing_x_angle))
-                offset = layer_params["offset"]
-                offset_vector = Vector((0.0, 0.0, offset / self.unit_scale))
+                perpendicular_offset = layer_params["offset"] * (1 / cos(existing_x_angle))
+                offset_vector = Vector((0.0, 0.0, perpendicular_offset / self.unit_scale))
                 if layer_params["direction_sense"] == "POSITIVE":
                     y = abs(y) if existing_x_angle > 0 else -abs(y)
                     z = abs(z)
@@ -309,8 +309,8 @@ class DumbSlabPlaner:
                 extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
                 extrusion.Depth = perpendicular_depth
 
-                if offset != 0.0 and not extrusion.Position:
-                    tool.Model.add_extrusion_position(extrusion, offset)
+                if perpendicular_offset != 0.0 and not extrusion.Position:
+                    tool.Model.add_extrusion_position(extrusion, perpendicular_offset)
 
                 # Update the extrusion's location based on its current rotation angle and offset
                 if extrusion.Position:
