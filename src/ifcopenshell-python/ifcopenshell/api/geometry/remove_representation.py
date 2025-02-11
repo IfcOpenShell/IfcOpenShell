@@ -19,27 +19,30 @@
 import ifcopenshell.util.element
 
 
-def remove_representation(file: ifcopenshell.file, representation: ifcopenshell.entity_instance) -> None:
+def remove_representation(
+    file: ifcopenshell.file, representation: ifcopenshell.entity_instance, should_keep_named_profiles: bool = True
+) -> None:
     """Remove a representation.
 
     Also purges representation items and their related elements
     like IfcStyledItem, tessellated facesets colours and UV map.
 
+    By default, named profiles are assumed to be significant (i.e. curated as
+    part of a profile library) and will not be removed.
+
     :param representation: IfcRepresentation to remove.
         Note that it's expected that IfcRepresentation won't be in use
         before calling this method (in such elements as IfcProductRepresentation, IfcShapeAspect)
         otherwise representation won't be removed.
-    :type representation: ifcopenshell.entity_instance
-    :return: None
-    :rtype: None
+    :param should_keep_named_profiles: If true, named profile defs will not be
+        removed as they are assumed to be significant.
     """
-    settings = {"representation": representation}
-
     styled_items = set()
     presentation_layer_assignments = set()
     textures = set()
     colours = set()
-    for subelement in file.traverse(settings["representation"]):
+    named_profiles = set()
+    for subelement in file.traverse(representation):
         if subelement.is_a("IfcRepresentationItem"):
             [styled_items.add(s) for s in subelement.StyledByItem or []]
             # IFC2X3 is using LayerAssignments
@@ -53,12 +56,18 @@ def remove_representation(file: ifcopenshell.file, representation: ifcopenshell.
         elif subelement.is_a("IfcRepresentation"):
             for layer in subelement.LayerAssignments:
                 presentation_layer_assignments.add(layer)
+        elif subelement.is_a("IfcProfileDef") and subelement.ProfileName:
+            named_profiles.add(subelement)
+
+    do_not_delete = file.by_type("IfcGeometricRepresentationContext")
+    if should_keep_named_profiles:
+        do_not_delete += named_profiles
 
     ifcopenshell.util.element.remove_deep2(
         file,
-        settings["representation"],
+        representation,
         also_consider=list(styled_items | presentation_layer_assignments | colours),
-        do_not_delete=file.by_type("IfcGeometricRepresentationContext"),
+        do_not_delete=do_not_delete,
     )
 
     for texture in textures:
