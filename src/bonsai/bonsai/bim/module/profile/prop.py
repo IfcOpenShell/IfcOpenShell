@@ -45,8 +45,11 @@ def get_profile_classes(self, context):
 
 
 def update_profile_name(self: "Profile", context: bpy.types.Context) -> None:
+    from bonsai.bim.handler import refresh_ui_data
+
     profile = tool.Ifc.get().by_id(self.ifc_definition_id)
     profile.ProfileName = self.name
+    refresh_ui_data()
 
 
 class Profile(PropertyGroup):
