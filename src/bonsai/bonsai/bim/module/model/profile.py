@@ -105,9 +105,7 @@ class DumbProfileGenerator:
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
 
         matrix_world = Matrix()
-        if self.relating_type.is_a() in ["IfcBeamType", "IfcCoveringType", "IfcMemberType"] or self.relating_type.is_a(
-            "IfcFlowSegmentType"
-        ):
+        if not self.relating_type.is_a("IfcColumnType"):
             matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
 
             matrix_world = Matrix.Rotation(self.rotation, 4, "Z") @ matrix_world
@@ -1133,8 +1131,6 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
             return {"FINISHED"}
 
         model_props = tool.Model.get_model_props()
-        direction_sense = model_props.direction_sense
-        offset = model_props.offset
 
         profiles, is_polyline_closed = DumbProfileGenerator(self.relating_type).generate("POLYLINE")
         if profiles:
