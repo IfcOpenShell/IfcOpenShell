@@ -59,6 +59,7 @@ class Patcher:
         Example:
 
         .. code:: python
+
             ifcpatch.execute({"input": "input.ifc", "recipe": "FixArchiCADToRevitSpaces", "arguments": []})
         """
         self.file = file
