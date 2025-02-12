@@ -2933,9 +2933,9 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
         representation = tool.Geometry.get_active_representation(props.representation_obj)
         representation = ifcopenshell.util.representation.resolve_representation(representation)
 
-        if representation.RepresentationType in ("Brep", "AdvancedBrep"):
+        if tool.Ifc.get().schema == "IFC2X3" or representation.RepresentationType in ("Brep", "AdvancedBrep"):
             item = builder.faceted_brep(verts, faces)
-        elif representation.RepresentationType in ("Tessellation"):
+        else:
             item = builder.mesh(verts, faces)
 
         props.add_item_object(obj, item)
