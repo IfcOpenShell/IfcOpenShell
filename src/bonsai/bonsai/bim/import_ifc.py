@@ -589,6 +589,7 @@ class IfcImporter:
                 obj.hide_select = True
 
     def create_generic_sqlite_elements(self, elements: set[ifcopenshell.entity_instance]) -> None:
+        assert isinstance(self.file, ifcopenshell.sql.sqlite)
         self.geometry_cache = self.file.get_geometry([e.id() for e in elements])
         for geometry_id, geometry in self.geometry_cache["geometry"].items():
             mesh_name = tool.Loader.get_mesh_name_from_shape(type("Geometry", (), {"id": geometry_id}))
@@ -598,21 +599,9 @@ class IfcImporter:
             mesh["has_cartesian_point_offset"] = False
 
             if geometry["faces"]:
-                num_vertices = len(verts) // 3
-                total_faces = len(geometry["faces"])
-                loop_start = range(0, total_faces, 3)
-                num_loops = total_faces // 3
-                loop_total = [3] * num_loops
-                num_vertex_indices = len(geometry["faces"])
-
-                mesh.vertices.add(num_vertices)
-                mesh.vertices.foreach_set("co", verts)
-                mesh.loops.add(num_vertex_indices)
-                mesh.loops.foreach_set("vertex_index", geometry["faces"])
-                mesh.polygons.add(num_loops)
-                mesh.polygons.foreach_set("loop_start", loop_start)
-                mesh.polygons.foreach_set("loop_total", loop_total)
-                mesh.update()
+                mesh = tool.Loader.create_mesh_from_shape(
+                    mesh=mesh, faces=geometry["faces"].reshape(-1, 3), verts=verts.reshape(-1, 3)
+                )
             else:
                 e = geometry["edges"]
                 v = verts

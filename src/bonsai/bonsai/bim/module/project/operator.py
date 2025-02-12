@@ -1848,21 +1848,7 @@ class LoadLinkedProject(bpy.types.Operator):
 
             material_index = np.array([(material_to_slot[i] if i != -1 else 0) for i in material_ids], dtype="I")
 
-            num_vertices = len(verts) // 3
-            total_faces = len(faces)
-            loop_start = range(0, total_faces, 3)
-            num_loops = total_faces // 3
-            loop_total = [3] * num_loops
-            num_vertex_indices = len(faces)
-
-            mesh.vertices.add(num_vertices)
-            mesh.vertices.foreach_set("co", verts)
-            mesh.loops.add(num_vertex_indices)
-            mesh.loops.foreach_set("vertex_index", faces)
-            mesh.polygons.add(num_loops)
-            mesh.polygons.foreach_set("loop_start", loop_start)
-            mesh.polygons.foreach_set("loop_total", loop_total)
-            mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+            mesh = tool.Loader.create_mesh_from_shape(geometry, mesh)
             mesh.polygons.foreach_set("material_index", material_index)
             mesh.update()
 
@@ -1890,29 +1876,13 @@ class LoadLinkedProject(bpy.types.Operator):
         num_vertices = len(verts) // 3
         if not num_vertices:
             return
-        total_faces = len(faces)
-        loop_start = range(0, total_faces, 3)
-        num_loops = total_faces // 3
-        loop_total = [3] * num_loops
-        num_vertex_indices = len(faces)
 
-        mesh = bpy.data.meshes.new("Mesh")
+        mesh = tool.Loader.create_mesh_from_shape(verts=verts.reshape(-1, 3), faces=faces.reshape(-1, 3))
 
         for material in materials:
             mesh.materials.append(material)
-
-        mesh.vertices.add(num_vertices)
-        mesh.vertices.foreach_set("co", verts)
-        mesh.loops.add(num_vertex_indices)
-        mesh.loops.foreach_set("vertex_index", faces)
-        mesh.polygons.add(num_loops)
-        mesh.polygons.foreach_set("loop_start", loop_start)
-        mesh.polygons.foreach_set("loop_total", loop_total)
-        mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
-
         if material_ids.size > 0 and len(mesh.polygons) == len(material_ids):
             mesh.polygons.foreach_set("material_index", material_ids)
-
         mesh.update()
 
         obj = bpy.data.objects.new("Chunk", mesh)

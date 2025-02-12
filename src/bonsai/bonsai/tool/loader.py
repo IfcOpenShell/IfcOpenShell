@@ -972,10 +972,7 @@ class Loader(bonsai.core.tool.Loader):
         if verts is None:
             verts = ifcopenshell.util.shape.get_vertices(geometry)
         faces = ifcopenshell.util.shape.get_faces(geometry)
-        total_faces: int
-        if total_faces := faces.shape[0]:
-            num_vertices: int = verts.shape[0]
-
+        if faces.shape[0] > 0:
             # See bug 3546
             # ios_edges holds true edges that aren't triangulated.
             #
@@ -984,38 +981,7 @@ class Loader(bonsai.core.tool.Loader):
             ios_item_ids = ifcopenshell.util.shape.get_faces_representation_item_ids(geometry).tolist()
             mesh["ios_item_ids"] = ios_item_ids
 
-            mesh.vertices.add(num_vertices)
-            mesh.vertices.foreach_set("co", verts.ravel().astype("f"))
-
-            is_triangulated = True
-            num_vertex_indices = faces.size
-            if is_triangulated:
-                loop_start = np.arange(0, num_vertex_indices, 3, dtype="I")
-                loop_total = np.full(total_faces, 3, dtype="I")
-                use_smooth = np.zeros(num_vertex_indices, dtype="?")
-
-                mesh.loops.add(num_vertex_indices)
-                mesh.loops.foreach_set("vertex_index", faces.ravel().astype("I"))
-                mesh.polygons.add(total_faces)
-                mesh.polygons.foreach_set("loop_start", loop_start)
-                mesh.polygons.foreach_set("loop_total", loop_total)
-                mesh.polygons.foreach_set("use_smooth", use_smooth)
-            else:
-                # TODO: optimize using correct numpy array types.
-                faces_array = np.array(geometry.faces, dtype=object)
-                loop_total = np.array(tuple(len(face) for face in faces_array), dtype="I")
-                loop_start = np.cumsum((0,) + loop_total)[:-1]
-                vertex_index = np.concatenate(faces_array)
-                use_smooth = np.zeros(num_vertex_indices, dtype="?")
-
-                mesh.loops.add(len(vertex_index))
-                mesh.loops.foreach_set("vertex_index", vertex_index)
-                mesh.polygons.add(len(loop_start))
-                mesh.polygons.foreach_set("loop_start", loop_start)
-                mesh.polygons.foreach_set("loop_total", loop_total)
-                mesh.polygons.foreach_set("use_smooth", use_smooth)
-
-            mesh.update()
+            mesh = tool.Loader.create_mesh_from_shape(mesh=mesh, verts=verts, faces=faces)
 
             rep_str: str = geometry.id
             if load_indexed_maps and "openings" not in rep_str:
@@ -1041,6 +1007,72 @@ class Loader(bonsai.core.tool.Loader):
 
         mesh["ios_materials"] = [m.instance_id() for m in ifcopenshell.util.shape.get_shape_material_styles(geometry)]
         mesh["ios_material_ids"] = ifcopenshell.util.shape.get_faces_material_style_ids(geometry).tolist()
+        return mesh
+
+    @classmethod
+    def create_mesh_from_shape(
+        cls,
+        geometry: Optional[ifcopenshell.geom.ShapeType] = None,
+        mesh: Optional[bpy.types.Mesh] = None,
+        *,
+        verts: Optional[npt.NDArray[np.float64]] = None,
+        faces: Optional[npt.NDArray[np.int32]] = None,
+    ) -> bpy.types.Mesh:
+        """
+        Either geometry or verts+faces should be provided.
+
+        :param verts: Numpy array of shape (n, 3).
+        :param faces: Numpy array of shape (m, 3).
+        """
+        assert geometry is not None or (verts is not None and faces is not None), (
+            "Either geometry or verts+faces should be provided.\n"
+            f"Current geometry: {geometry}\n"
+            f"Current verts: {verts}\n"
+            f"Current faces: {faces}"
+        )
+
+        if mesh is None:
+            mesh = bpy.data.meshes.new("temp")
+
+        if verts is None or faces is None:
+            verts = ifcopenshell.util.shape.get_vertices(geometry)
+            faces = ifcopenshell.util.shape.get_faces(geometry)
+
+        total_faces: int = faces.shape[0]
+        num_vertices: int = verts.shape[0]
+        mesh.vertices.add(num_vertices)
+        mesh.vertices.foreach_set("co", verts.ravel().astype("f"))
+
+        is_triangulated = True
+        num_vertex_indices = faces.size
+        if is_triangulated:
+            loop_start = np.arange(0, num_vertex_indices, 3, dtype="I")
+            loop_total = np.full(total_faces, 3, dtype="I")
+            use_smooth = np.zeros(num_vertex_indices, dtype="?")
+
+            mesh.loops.add(num_vertex_indices)
+            mesh.loops.foreach_set("vertex_index", faces.ravel().astype("I"))
+            mesh.polygons.add(total_faces)
+            mesh.polygons.foreach_set("loop_start", loop_start)
+            mesh.polygons.foreach_set("loop_total", loop_total)
+            mesh.polygons.foreach_set("use_smooth", use_smooth)
+        else:
+            # TODO: optimize using correct numpy array types.
+            faces_array = np.array(geometry.faces, dtype=object)
+            loop_total = np.array(tuple(len(face) for face in faces_array), dtype="I")
+            loop_start = np.cumsum((0,) + loop_total)[:-1]
+            vertex_index = np.concatenate(faces_array)
+            use_smooth = np.zeros(num_vertex_indices, dtype="?")
+
+            mesh.loops.add(len(vertex_index))
+            mesh.loops.foreach_set("vertex_index", vertex_index)
+            mesh.polygons.add(len(loop_start))
+            mesh.polygons.foreach_set("loop_start", loop_start)
+            mesh.polygons.foreach_set("loop_total", loop_total)
+            mesh.polygons.foreach_set("use_smooth", use_smooth)
+
+        mesh.update()
+
         return mesh
 
     @classmethod

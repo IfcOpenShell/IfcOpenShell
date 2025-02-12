@@ -1188,27 +1188,7 @@ def create_mesh_from_shape(
         settings.set("keep-bounding-boxes", True)
     shape = ifcopenshell.geom.create_shape(settings, element)
     geometry = shape.geometry if element.is_a("IfcRoot") else shape
-    faces = geometry.faces
-    verts = geometry.verts
-
-    mesh = bpy.data.meshes.new("myBeautifulMesh")
-
-    num_vertices = len(verts) // 3
-    total_faces = len(faces)
-    loop_start = range(0, total_faces, 3)
-    num_loops = total_faces // 3
-    loop_total = [3] * num_loops
-    num_vertex_indices = len(faces)
-
-    mesh.vertices.add(num_vertices)
-    mesh.vertices.foreach_set("co", verts)
-    mesh.loops.add(num_vertex_indices)
-    mesh.loops.foreach_set("vertex_index", faces)
-    mesh.polygons.add(num_loops)
-    mesh.polygons.foreach_set("loop_start", loop_start)
-    mesh.polygons.foreach_set("loop_total", loop_total)
-    mesh.update()
-    return mesh
+    return tool.Loader.create_mesh_from_shape(geometry)
 
 
 def get_bmesh_from_mesh(mesh: bpy.types.Mesh) -> bmesh.types.BMesh:

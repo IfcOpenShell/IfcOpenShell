@@ -758,26 +758,7 @@ class Spatial(bonsai.core.tool.Spatial):
     @classmethod
     def create_mesh_from_shape(cls, shape: ifcopenshell.geom.ShapeElementType) -> bpy.types.Mesh:
         geometry = shape.geometry
-        mesh = bpy.data.meshes.new("tmp")
-        verts = geometry.verts
-        if geometry.faces:
-            num_vertices = len(verts) // 3
-            total_faces = len(geometry.faces)
-            loop_start = range(0, total_faces, 3)
-            num_loops = total_faces // 3
-            loop_total = [3] * num_loops
-            num_vertex_indices = len(geometry.faces)
-
-            mesh.vertices.add(num_vertices)
-            mesh.vertices.foreach_set("co", verts)
-            mesh.loops.add(num_vertex_indices)
-            mesh.loops.foreach_set("vertex_index", geometry.faces)
-            mesh.polygons.add(num_loops)
-            mesh.polygons.foreach_set("loop_start", loop_start)
-            mesh.polygons.foreach_set("loop_total", loop_total)
-            mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
-            mesh.update()
-        return mesh
+        return tool.Loader.create_mesh_from_shape(geometry)
 
     @classmethod
     def get_x_y_z_h_mat_from_obj(cls, obj: bpy.types.Object) -> tuple[float, float, float, float, Matrix]:
