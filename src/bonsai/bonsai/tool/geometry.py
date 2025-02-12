@@ -1805,6 +1805,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 props.mode = "OBJECT"
             props.is_changing_mode = False
         props.representation_obj = None
+        bpy.context.scene.BIMBooleanProperties.is_editing = False
 
     @classmethod
     def edit_meshlike_item(cls, obj: bpy.types.Object) -> None:
