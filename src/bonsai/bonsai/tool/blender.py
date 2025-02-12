@@ -23,6 +23,8 @@ import json
 import os
 import platform
 import subprocess
+import numpy as np
+import numpy.typing as npt
 from ifcopenshell import entity_instance
 import ifcopenshell.api
 import ifcopenshell.util.element
@@ -1142,6 +1144,14 @@ class Blender(bonsai.core.tool.Blender):
                 return "color"
             else:
                 raise NotImplementedError(f"Attribute data type `{data_type}` not implemented yet")
+
+    @classmethod
+    def get_verts_coordinates(cls, verts: bpy.types.MeshVertices) -> npt.NDArray[np.float32]:
+        # It's faster to get them as f and then convert to d
+        # with .astype("d"), if precision is needed.
+        coords = np.empty(len(verts) * 3, dtype="f")
+        coords = coords.reshape(-1, 3)
+        return coords
 
     @classmethod
     def get_last_commit_hash(cls) -> Union[str, None]:

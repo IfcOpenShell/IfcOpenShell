@@ -1818,10 +1818,12 @@ class Geometry(bonsai.core.tool.Geometry):
         props = tool.Geometry.get_geometry_props()
         rep_obj = props.representation_obj
         assert rep_obj
-        if (coordinate_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
-            verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
-        else:
-            verts = [v.co / unit_scale for v in obj.data.vertices]
+        assert isinstance(obj.data, bpy.types.Mesh)
+        verts = tool.Blender.get_verts_coordinates(obj.data.vertices)
+        verts = verts.astype("d")
+        if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj)) is not None:
+            verts += coordinate_offset
+        verts /= unit_scale
 
         faces = [p.vertices[:] for p in obj.data.polygons]
         if item.is_a("IfcAdvancedBrep"):

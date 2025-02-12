@@ -98,20 +98,25 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         rep_obj = props.representation_obj
         assert rep_obj
+        assert isinstance(obj.data, bpy.types.Mesh)
+        verts = tool.Blender.get_verts_coordinates(obj.data.vertices)
+        verts = verts.astype("d")
         if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj)) is not None:
-            verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
-        else:
-            verts = [v.co / unit_scale for v in obj.data.vertices]
+            verts += coordinate_offset
+        verts /= unit_scale
         faces = [p.vertices[:] for p in obj.data.polygons]
 
         representation = tool.Geometry.get_active_representation(rep_obj)
         assert representation
         representation = ifcopenshell.util.representation.resolve_representation(representation)
 
-        if representation.RepresentationType in ("Brep", "AdvancedBrep"):
+        representation_type = representation.RepresentationType
+        if representation_type in ("Brep", "AdvancedBrep"):
             item = builder.faceted_brep(verts, faces)
-        elif representation.RepresentationType in ("Tessellation"):
+        elif representation_type in ("Tessellation"):
             item = builder.mesh(verts, faces)
+        else:
+            assert False, f"Unexpected representation type: '{representation_type}'."
 
         representation.Items = list(representation.Items) + [item]
         obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
@@ -2928,10 +2933,13 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         rep_obj = tool.Geometry.get_geometry_props().representation_obj
+        assert rep_obj
+        assert isinstance(obj.data, bpy.types.Mesh)
+        verts = tool.Blender.get_verts_coordinates(obj.data.vertices)
+        verts = verts.astype("d")
         if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj)) is not None:
-            verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
-        else:
-            verts = [v.co / unit_scale for v in obj.data.vertices]
+            verts += coordinate_offset
+        verts /= unit_scale
         faces = [p.vertices[:] for p in obj.data.polygons]
 
         representation = tool.Geometry.get_active_representation(props.representation_obj)
