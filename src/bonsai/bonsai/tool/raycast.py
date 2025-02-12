@@ -210,11 +210,6 @@ class Raycast(bonsai.core.tool.Raycast):
                         points.append(snap_point)
 
         bm.free()
-        # snapping_points = []
-        # sorted_points = sorted(points, key=lambda x: x[0])
-        # for p in sorted_points:
-        #     point = copy.deepcopy(p)
-        #     snapping_points.append(point[1])
 
         return points
 
@@ -245,6 +240,8 @@ class Raycast(bonsai.core.tool.Raycast):
                 snap_point = {
                     "type": "Vertex",
                     "point": vertex,
+                    "distance": distance,
+                    "object": None,
                 }
                 polyline_verts.append(snap_point)
 
