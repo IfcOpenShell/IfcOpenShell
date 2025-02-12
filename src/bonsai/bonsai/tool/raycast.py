@@ -22,9 +22,8 @@ import copy
 from bpy_extras import view3d_utils
 import bonsai.core.tool
 import bonsai.tool as tool
-import math
 import mathutils
-from mathutils import Matrix, Vector
+from mathutils import Vector
 
 
 class Raycast(bonsai.core.tool.Raycast):
@@ -170,10 +169,12 @@ class Raycast(bonsai.core.tool.Raycast):
             distance = (v - intersection).length
             if distance < 0.2:
                 snap_point = {
+                    "object": obj,
                     "type": "Vertex",
                     "point": v,
+                    "distance": distance - stick_factor,
                 }
-                points.append([(distance - stick_factor), snap_point])
+                points.append(snap_point)
 
         for edge in bm.edges:
             v1 = edge.verts[0].co
@@ -187,10 +188,12 @@ class Raycast(bonsai.core.tool.Raycast):
             distance = (division_point - intersection).length
             if distance < 0.2:
                 snap_point = {
+                    "object": obj,
                     "type": "Edge Center",
                     "point": division_point,
+                    "distance": distance,
                 }
-                points.append([distance, snap_point])
+                points.append(snap_point)
 
             intersection = tool.Cad.intersect_edges_v2((ray_target, loc), (v1, v2))
             if intersection[0]:
@@ -198,20 +201,22 @@ class Raycast(bonsai.core.tool.Raycast):
                     distance = (intersection[1] - intersection[0]).length
                     if distance < 0.2:
                         snap_point = {
+                            "object": obj,
                             "type": "Edge",
                             "point": intersection[1],
                             "edge_verts": (v1, v2),
+                            "distance": distance + 2 * stick_factor,
                         }
-                        points.append([(distance + 2 * stick_factor), snap_point])
+                        points.append(snap_point)
 
         bm.free()
-        snapping_points = []
-        sorted_points = sorted(points, key=lambda x: x[0])
-        for p in sorted_points:
-            point = copy.deepcopy(p)
-            snapping_points.append(point[1])
+        # snapping_points = []
+        # sorted_points = sorted(points, key=lambda x: x[0])
+        # for p in sorted_points:
+        #     point = copy.deepcopy(p)
+        #     snapping_points.append(point[1])
 
-        return snapping_points
+        return points
 
     @classmethod
     def ray_cast_to_polyline(cls, context, event):
@@ -281,3 +286,32 @@ class Raycast(bonsai.core.tool.Raycast):
             intersection = Vector((0, 0, default_container_elevation))
 
         return intersection
+
+    @classmethod
+    def ray_cast_to_edge_intersection(cls, context, event, edges):
+        region = context.region
+        rv3d = context.region_data
+        mouse_pos = event.mouse_region_x, event.mouse_region_y
+        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+
+        try:
+            loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
+        except:
+            loc = Vector((0, 0, 0))
+
+        for e1, e2 in zip(edges, edges[1:] + [edges[0]]):
+            if tool.Cad.are_vectors_equal(e1["point"], e2["point"], tolerance=0.1):
+                edge_intersection = tool.Cad.intersect_edges_v2(e1["edge_verts"], e2["edge_verts"])
+                if edge_intersection[1]:
+                    mouse_intersection, _ = mathutils.geometry.intersect_point_line(edge_intersection[1], ray_target, loc)
+                    distance = (edge_intersection[1] - mouse_intersection).length
+                    if distance < 0.2:
+                        snap_point = {
+                            "object": None,
+                            "type": "Edge Intersection",
+                            "point": edge_intersection[1],
+                            "distance": distance,
+                        }
+                        return snap_point
+                    
+

@@ -657,7 +657,7 @@ class PolylineOperator:
         self.info = [
             f"Axis: {self.tool_state.axis_method}",
             f"Plane: {self.tool_state.plane_method}",
-            f"Snap: {self.snapping_points[0][1]}",
+            f"Snap: {self.snapping_points[0]['type']}",
         ]
         instructions = self.instructions | custom_instructions if custom_instructions else self.instructions
 
@@ -869,7 +869,7 @@ class PolylineOperator:
                 detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
                 self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
 
-                if self.snapping_points[0][1] not in {"Plane", "Axis"}:
+                if self.snapping_points[0]["type"] not in {"Plane", "Axis"}:
                     should_round = False
 
                 tool.Polyline.calculate_distance_and_angle(
