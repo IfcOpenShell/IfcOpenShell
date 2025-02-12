@@ -1846,7 +1846,7 @@ class LoadLinkedProject(bpy.types.Operator):
                     max_slot_index += 1
                 material_to_slot[i] = slot_index
 
-            material_index = [(material_to_slot[i] if i != -1 else 0) for i in material_ids]
+            material_index = np.array([(material_to_slot[i] if i != -1 else 0) for i in material_ids], dtype="I")
 
             num_vertices = len(verts) // 3
             total_faces = len(faces)

@@ -24,6 +24,7 @@ import logging
 import traceback
 import mathutils
 import numpy as np
+import numpy.typing as npt
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
@@ -36,7 +37,7 @@ import ifcopenshell.util.shape
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from bonsai.tool.loader import OBJECT_DATA_TYPE
-from typing import Dict, Union, Optional, Any
+from typing import Dict, Union, Optional, Any, Literal
 
 
 class MaterialCreator:
@@ -167,7 +168,7 @@ class MaterialCreator:
             if -1 in self.mesh["ios_material_ids"]:
                 material_to_slot[-1] = get_empty_slot_index()
 
-            material_index = [material_to_slot[mat_id] for mat_id in self.mesh["ios_material_ids"]]
+            material_index = np.array([material_to_slot[mat_id] for mat_id in self.mesh["ios_material_ids"]], dtype="I")
             self.mesh.polygons.foreach_set("material_index", material_index)
 
     def resolve_all_stylable_representation_items(
@@ -1030,7 +1031,7 @@ class IfcImporter:
         self,
         element: ifcopenshell.entity_instance,
         shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
-        cartesian_point_offset=None,
+        cartesian_point_offset: Union[npt.NDArray[np.float64], Literal[False]] = None,
     ) -> bpy.types.Mesh:
         try:
             if hasattr(shape, "geometry"):
@@ -1046,32 +1047,25 @@ class IfcImporter:
                 old_mesh.name = mesh_name + ".old"
             mesh = bpy.data.meshes.new(mesh_name)
 
+            verts = ifcopenshell.util.shape.get_vertices(geometry)
             if cartesian_point_offset is False:
-                verts = geometry.verts
                 mesh["has_cartesian_point_offset"] = False
             elif cartesian_point_offset is not None:
-                verts_array = np.array(geometry.verts)
-                offset = np.array([-cartesian_point_offset[0], -cartesian_point_offset[1], -cartesian_point_offset[2]])
-                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
-                verts = offset_verts.tolist()
+                verts -= cartesian_point_offset
 
                 mesh["has_cartesian_point_offset"] = True
                 mesh["cartesian_point_offset"] = (
                     f"{cartesian_point_offset[0]},{cartesian_point_offset[1]},{cartesian_point_offset[2]}"
                 )
-            elif geometry.verts and tool.Loader.is_point_far_away(
-                (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
-            ):
+            elif verts.size and tool.Loader.is_point_far_away(verts[0], is_meters=True):
                 # Shift geometry close to the origin based off that first vert it found
                 verts_array = np.array(geometry.verts)
-                offset = np.array([-geometry.verts[0], -geometry.verts[1], -geometry.verts[2]])
-                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
-                verts = offset_verts.tolist()
+                offset = verts[0]
+                verts -= offset
 
                 mesh["has_cartesian_point_offset"] = True
-                mesh["cartesian_point_offset"] = f"{geometry.verts[0]},{geometry.verts[1]},{geometry.verts[2]}"
+                mesh["cartesian_point_offset"] = f"{offset[0]},{offset[1]},{offset[2]}"
             else:
-                verts = geometry.verts
                 mesh["has_cartesian_point_offset"] = False
 
             return tool.Loader.convert_geometry_to_mesh(

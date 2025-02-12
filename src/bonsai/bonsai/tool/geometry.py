@@ -35,6 +35,7 @@ import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
@@ -1756,13 +1757,9 @@ class Geometry(bonsai.core.tool.Geometry):
             obj.matrix_world = rep_obj.matrix_world @ position
         else:
             geometry = tool.Loader.create_generic_shape(item)
+            verts = ifcopenshell.util.shape.get_vertices(geometry)
             if (cartesian_point_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
-                verts_array = np.array(geometry.verts)
-                offset = np.array([-cartesian_point_offset[0], -cartesian_point_offset[1], -cartesian_point_offset[2]])
-                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
-                verts = offset_verts.tolist()
-            else:
-                verts = geometry.verts
+                verts -= cartesian_point_offset
             tool.Loader.convert_geometry_to_mesh(geometry, obj.data, verts=verts)
 
             if ios_materials := list(obj.data["ios_materials"]):

@@ -614,7 +614,7 @@ class TestApplyIfcMaterialChanges(NewFile):
         tool.Geometry._reload_representation(obj)
 
         def get_material_indices(mesh: bpy.types.Mesh) -> np.ndarray:
-            buffer = np.empty(len(mesh.polygons), dtype=np.int32)
+            buffer = np.empty(len(mesh.polygons), dtype="I")
             mesh.polygons.foreach_get("material_index", buffer)
             return buffer
 

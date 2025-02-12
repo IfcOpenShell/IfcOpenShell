@@ -35,6 +35,7 @@ import bonsai.tool as tool
 import bonsai.bim.import_ifc
 import numpy as np
 import numpy.typing as npt
+from ifcopenshell.util.shape_builder import np_to_4d
 from mathutils import Vector, Matrix
 from pathlib import Path
 from typing import Union, Any, Optional
@@ -634,7 +635,7 @@ class Loader(bonsai.core.tool.Loader):
         limit = cls.settings.distance_limit
         limit = limit if is_meters else (limit / cls.unit_scale)
         coords = getattr(point, "Coordinates", point)
-        return abs(coords[0]) > limit or abs(coords[1]) > limit or abs(coords[2]) > limit
+        return any(abs(c) > limit for c in coords)
 
     @classmethod
     def is_element_far_away(cls, element: ifcopenshell.entity_instance) -> bool:
@@ -879,11 +880,12 @@ class Loader(bonsai.core.tool.Loader):
             if not shape:
                 continue
             mat = ifcopenshell.util.shape.get_shape_matrix(shape)
-            point = mat @ np.array((shape.geometry.verts[0], shape.geometry.verts[1], shape.geometry.verts[2], 1.0))
+            verts = ifcopenshell.util.shape.get_vertices(shape.geometry)
+            point = (mat @ np_to_4d(verts[0]))[:3]
             if cls.is_point_far_away(point, is_meters=True):
                 # Arbitrary origins should be to the nearest millimeter.
                 # Anything more precise is just ridiculous from a practical surveying perspective.
-                return [round(float(p), 3) / cls.unit_scale for p in point[:3]]
+                return np.array([round(float(p), 3) / cls.unit_scale for p in point])
             break
 
     @classmethod
@@ -960,14 +962,19 @@ class Loader(bonsai.core.tool.Loader):
         cls,
         geometry: ifcopenshell.geom.ShapeType,
         mesh: bpy.types.Mesh,
-        verts: Optional[list[float]] = None,
+        verts: Optional[npt.NDArray[np.float64]] = None,
         *,
         load_indexed_maps=True,
     ) -> bpy.types.Mesh:
+        """
+        :param verts: Numpy array of shape (n, 3).
+        """
         if verts is None:
-            verts = geometry.verts
-        if geometry.faces:
-            num_vertices = len(verts) // 3
+            verts = ifcopenshell.util.shape.get_vertices(geometry)
+        faces = ifcopenshell.util.shape.get_faces(geometry)
+        total_faces: int
+        if total_faces := faces.shape[0]:
+            num_vertices: int = verts.shape[0]
 
             # See bug 3546
             # ios_edges holds true edges that aren't triangulated.
@@ -978,34 +985,35 @@ class Loader(bonsai.core.tool.Loader):
             mesh["ios_item_ids"] = ios_item_ids
 
             mesh.vertices.add(num_vertices)
-            mesh.vertices.foreach_set("co", verts)
+            mesh.vertices.foreach_set("co", verts.ravel().astype("f"))
 
             is_triangulated = True
+            num_vertex_indices = faces.size
             if is_triangulated:
-                total_faces = len(geometry.faces)
-                num_vertex_indices = len(geometry.faces)
-                loop_start = range(0, total_faces, 3)
-                num_loops = total_faces // 3
-                loop_total = [3] * num_loops
+                loop_start = np.arange(0, num_vertex_indices, 3, dtype="I")
+                loop_total = np.full(total_faces, 3, dtype="I")
+                use_smooth = np.zeros(num_vertex_indices, dtype="?")
 
                 mesh.loops.add(num_vertex_indices)
-                mesh.loops.foreach_set("vertex_index", geometry.faces)
-                mesh.polygons.add(num_loops)
+                mesh.loops.foreach_set("vertex_index", faces.ravel().astype("I"))
+                mesh.polygons.add(total_faces)
                 mesh.polygons.foreach_set("loop_start", loop_start)
                 mesh.polygons.foreach_set("loop_total", loop_total)
-                mesh.polygons.foreach_set("use_smooth", [0] * total_faces)
+                mesh.polygons.foreach_set("use_smooth", use_smooth)
             else:
+                # TODO: optimize using correct numpy array types.
                 faces_array = np.array(geometry.faces, dtype=object)
-                loop_total = tuple(len(face) for face in faces_array)
+                loop_total = np.array(tuple(len(face) for face in faces_array), dtype="I")
                 loop_start = np.cumsum((0,) + loop_total)[:-1]
                 vertex_index = np.concatenate(faces_array)
+                use_smooth = np.zeros(num_vertex_indices, dtype="?")
 
                 mesh.loops.add(len(vertex_index))
                 mesh.loops.foreach_set("vertex_index", vertex_index)
                 mesh.polygons.add(len(loop_start))
                 mesh.polygons.foreach_set("loop_start", loop_start)
                 mesh.polygons.foreach_set("loop_total", loop_total)
-                mesh.polygons.foreach_set("use_smooth", [0] * len(geometry.faces))
+                mesh.polygons.foreach_set("use_smooth", use_smooth)
 
             mesh.update()
 
@@ -1020,11 +1028,8 @@ class Loader(bonsai.core.tool.Loader):
             tool.Blender.Attribute.fill_attribute(mesh, "ios_item_ids", "FACE", "INT", ios_item_ids)
             tool.Blender.Attribute.fill_attribute(mesh, "ios_material_ids", "FACE", "INT", geometry.material_ids)
         else:
-            e = geometry.edges
-            v = verts
-            vertices = [[v[i], v[i + 1], v[i + 2]] for i in range(0, len(v), 3)]
-            edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
-            mesh.from_pydata(vertices, edges, [])
+            edges = ifcopenshell.util.shape.get_edges(geometry)
+            mesh.from_pydata(verts.tolist(), edges.tolist(), [])
             # TODO: remove error handling after we update build in Bonsai.
             try:
                 edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
@@ -1034,8 +1039,8 @@ class Loader(bonsai.core.tool.Loader):
             tool.Blender.Attribute.fill_attribute(mesh, "ios_edges_item_ids", "EDGE", "INT", edges_item_ids)
             tool.Blender.Attribute.fill_attribute(mesh, "ios_material_ids", "EDGE", "INT", geometry.material_ids)
 
-        mesh["ios_materials"] = [m.instance_id() for m in geometry.materials]
-        mesh["ios_material_ids"] = geometry.material_ids
+        mesh["ios_materials"] = [m.instance_id() for m in ifcopenshell.util.shape.get_shape_material_styles(geometry)]
+        mesh["ios_material_ids"] = ifcopenshell.util.shape.get_faces_material_style_ids(geometry).tolist()
         return mesh
 
     @classmethod
