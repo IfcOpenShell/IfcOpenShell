@@ -1535,7 +1535,7 @@ class Model(bonsai.core.tool.Model):
         mesh: bpy.types.Mesh,
         position: Matrix | None = None,
         x_angle: Optional[float] = None,
-    ) -> Union[tuple, dict]:
+    ) -> tuple | dict | None:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         if position is None:
@@ -1750,7 +1750,9 @@ class Model(bonsai.core.tool.Model):
                 else:
                     profile_defs.append(tmp.createIfcArbitraryClosedProfileDef("AREA", None, curve))
 
-        if len(profile_defs) == 1:
+        if total_profile_defs := len(profile_defs) == 0:
+            return
+        elif total_profile_defs == 1:
             profile_def = profile_defs[0]
         else:
             profile_def = tmp.createIfcCompositeProfileDef("AREA", None, profile_defs)
