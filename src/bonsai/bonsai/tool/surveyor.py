@@ -23,24 +23,21 @@ import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 import numpy as np
+import numpy.typing as npt
 from mathutils import Matrix
 
 
 class Surveyor(bonsai.core.tool.Surveyor):
     @classmethod
-    def get_absolute_matrix(cls, obj: bpy.types.Object) -> Matrix:
+    def get_absolute_matrix(cls, obj: bpy.types.Object) -> npt.NDArray[np.float64]:
+        M_TRANSLATION = (slice(0, 3), 3)
         matrix = np.array(obj.matrix_world)
         props = bpy.context.scene.BIMGeoreferenceProperties
         if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type != "NOT_APPLICABLE":
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            if (
-                obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
-                and obj.BIMObjectProperties.cartesian_point_offset
-            ):
-                offset_x, offset_y, offset_z = map(float, obj.BIMObjectProperties.cartesian_point_offset.split(","))
-                matrix[0][3] -= offset_x
-                matrix[1][3] -= offset_y
-                matrix[2][3] -= offset_z
+            coordinate_offset = tool.Geometry.get_cartesian_point_offset(obj)
+            if coordinate_offset is not None:
+                matrix[M_TRANSLATION] -= coordinate_offset
             matrix = np.array(
                 ifcopenshell.util.geolocation.local2global(
                     matrix,
