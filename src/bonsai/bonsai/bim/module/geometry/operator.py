@@ -19,7 +19,6 @@
 import re
 import bpy
 import bmesh
-import logging
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
@@ -2309,12 +2308,13 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 mesh = bpy.data.meshes.new(name)
                 new_obj = bpy.data.objects.new(name, mesh)
                 new_obj.data.BIMMeshProperties.ifc_definition_id = item.id()
-                scene = bpy.context.scene
-                scene.collection.objects.link(new_obj)
-                props.add_item_object(obj, item)
+                bpy.context.collection.objects.link(new_obj)
+                props.add_item_object(new_obj, item)
                 new_obj.matrix_world = obj.matrix_world
                 tool.Geometry.import_item(new_obj)
 
+            if additional_curves:
+                tool.Root.reload_item_decorator()
             tool.Geometry.reload_representation(props.representation_obj)
 
     def enable_edit_mode(self, context):
