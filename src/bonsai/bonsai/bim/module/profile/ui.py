@@ -99,6 +99,7 @@ class BIM_PT_profiles(Panel):
             if active_profile.ifc_class in (
                 "IfcArbitraryClosedProfileDef",
                 "IfcArbitraryProfileDefWithVoids",
+                "IfcCompositeProfileDef",
             ):
                 if self.props.active_arbitrary_profile_id:
                     row = self.layout.row(align=True)
