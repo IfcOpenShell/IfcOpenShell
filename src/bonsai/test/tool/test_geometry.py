@@ -457,13 +457,13 @@ class TestSelectConnection(NewFile):
 
 class TestShouldForceFacetedBrep(NewFile):
     def test_run(self):
-        result = bpy.context.scene.BIMGeometryProperties.should_force_faceted_brep
+        result = tool.Geometry.get_geometry_props().should_force_faceted_brep
         assert subject.should_force_faceted_brep() is result
 
 
 class TestShouldForceTriangulation(NewFile):
     def test_run(self):
-        result = bpy.context.scene.BIMGeometryProperties.should_force_triangulation
+        result = tool.Geometry.get_geometry_props().should_force_triangulation
         assert subject.should_force_triangulation() is result
 
 
@@ -519,7 +519,7 @@ class TestShouldGenerateUVs(NewFile):
 
 class TestShouldUsePresentationStyleAssignment(NewFile):
     def test_run(self):
-        result = bpy.context.scene.BIMGeometryProperties.should_use_presentation_style_assignment
+        result = tool.Geometry.get_geometry_props().should_use_presentation_style_assignment
         assert subject.should_use_presentation_style_assignment() is result
 
 

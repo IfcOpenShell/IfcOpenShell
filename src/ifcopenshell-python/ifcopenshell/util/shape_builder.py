@@ -1282,7 +1282,7 @@ class ShapeBuilder:
         )
         return points, segments, transition_arc
 
-    def mesh(self, points: list[list[float]], faces: list[list[int]]) -> ifcopenshell.entity_instance:
+    def mesh(self, points: SequenceOfVectors, faces: Sequence[Sequence[int]]) -> ifcopenshell.entity_instance:
         if self.file.schema == "IFC2X3":
             return self.faceted_brep(points, faces)
         return self.polygonal_face_set(points, faces)

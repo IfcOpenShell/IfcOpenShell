@@ -18,6 +18,8 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.util.geolocation
+import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 import numpy as np

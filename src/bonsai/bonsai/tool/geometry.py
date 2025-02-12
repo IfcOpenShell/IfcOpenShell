@@ -174,7 +174,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def delete_ifc_item(cls, obj: bpy.types.Object) -> None:
-        props = bpy.context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         if len(props.item_objs) == 1:
             return
         for i, item_obj in enumerate(props.item_objs):
@@ -1622,7 +1622,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def sync_item_positions(cls) -> None:
-        props = bpy.context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         if not props.representation_obj:
             return
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -1732,7 +1732,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def import_item(cls, obj: bpy.types.Object) -> None:
-        props = bpy.context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         rep_obj = props.representation_obj
         tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(tool.Ifc.get())
         tool.Loader.settings.context_settings = tool.Loader.create_settings()
@@ -1792,7 +1792,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def disable_item_mode(cls) -> None:
-        props = bpy.context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         if props.representation_obj:
             props.representation_obj.hide_set(False)
             cls.unlock_object(props.representation_obj)
@@ -1815,7 +1815,9 @@ class Geometry(bonsai.core.tool.Geometry):
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
-        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        props = tool.Geometry.get_geometry_props()
+        rep_obj = props.representation_obj
+        assert rep_obj
         if (coordinate_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
             verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
         else:

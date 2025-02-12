@@ -224,7 +224,9 @@ class BIM_PT_representation_items(Panel):
         if not RepresentationItemsData.is_loaded:
             RepresentationItemsData.load()
 
-        obj = context.scene.BIMGeometryProperties.representation_obj or tool.Blender.get_active_object()
+        props = tool.Geometry.get_geometry_props()
+        obj = props.representation_obj or tool.Blender.get_active_object()
+        assert obj
         props = tool.Geometry.get_object_geometry_props(obj)
 
         row = self.layout.row(align=True)
@@ -576,7 +578,7 @@ class BIM_PT_workarounds(Panel):
         )
 
     def draw(self, context):
-        props = context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         row = self.layout.row()
         row.prop(props, "should_force_faceted_brep")
         row = self.layout.row()

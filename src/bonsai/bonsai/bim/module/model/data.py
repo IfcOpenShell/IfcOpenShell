@@ -662,19 +662,19 @@ class ItemData:
 
     @classmethod
     def representation_identifier(cls):
-        props = bpy.context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         rep = tool.Geometry.get_active_representation(props.representation_obj)
         return rep.RepresentationIdentifier
 
     @classmethod
     def representation_type(cls):
-        props = bpy.context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         rep = tool.Geometry.get_active_representation(props.representation_obj)
         return rep.RepresentationType
 
     @classmethod
     def representation_usage(cls):
-        props = bpy.context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         return tool.Model.get_usage_type(tool.Ifc.get_entity(props.representation_obj))
 
     @classmethod

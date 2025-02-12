@@ -471,7 +471,7 @@ class AddBoolean(Operator, tool.Ifc.Operator):
         second_items = [tool.Ifc.get().by_id(o.data.BIMMeshProperties.ifc_definition_id) for o in second_objs]
         booleans = ifcopenshell.api.geometry.add_boolean(tool.Ifc.get(), first_item, second_items, props.operator)
 
-        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        rep_obj = tool.Geometry.get_geometry_props().representation_obj
         rep_element = tool.Ifc.get_entity(rep_obj)
         tool.Model.mark_manual_booleans(rep_element, booleans)
         tool.Geometry.reload_representation(rep_obj)
@@ -826,7 +826,8 @@ class RemoveBoolean(Operator, tool.Ifc.Operator):
             tool.Ifc.get(), tool.Ifc.get().by_id(props.active_boolean.ifc_definition_id)
         )
         bpy.ops.bim.enable_editing_booleans()
-        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        rep_obj = tool.Geometry.get_geometry_props().representation_obj
+        assert rep_obj
         tool.Geometry.reload_representation(rep_obj)
         tool.Root.reload_item_decorator()
 

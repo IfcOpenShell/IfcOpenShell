@@ -90,20 +90,22 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"INFO"}, f"Separating an {item.is_a()} is not supported")
 
     def add_meshlike_item(self, obj: bpy.types.Object) -> None:
-        props = bpy.context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         obj.show_in_front = True
         tool.Geometry.lock_object(obj)
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        rep_obj = props.representation_obj
+        assert rep_obj
         if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj)) is not None:
             verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
         else:
             verts = [v.co / unit_scale for v in obj.data.vertices]
         faces = [p.vertices[:] for p in obj.data.polygons]
 
-        representation = tool.Geometry.get_active_representation(props.representation_obj)
+        representation = tool.Geometry.get_active_representation(rep_obj)
+        assert representation
         representation = ifcopenshell.util.representation.resolve_representation(representation)
 
         if representation.RepresentationType in ("Brep", "AdvancedBrep"):
@@ -212,8 +214,8 @@ class AddRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         assert obj
-        props = context.scene.BIMGeometryProperties
-        oprops = obj.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
+        oprops = tool.Geometry.get_object_geometry_props(obj)
         ifc_context = int(oprops.contexts or "0") or None
         if not ifc_context:
             return
@@ -1661,7 +1663,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
         return self.join_blender_obj()
 
     def join_item(self) -> None:
-        props = bpy.context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         ifc_file = tool.Ifc.get()
         item = tool.Ifc.get().by_id(self.target.data.BIMMeshProperties.ifc_definition_id)
         if tool.Geometry.is_meshlike_item(item):
@@ -1941,7 +1943,8 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
 
     def handle_single_object(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
-        if obj == context.scene.BIMGeometryProperties.representation_obj:
+        props = tool.Geometry.get_geometry_props()
+        if obj == props.representation_obj:
             self.report({"ERROR"}, f"Element '{obj.name}' is in item mode and cannot be edited directly")
         elif obj in [o.obj for o in context.scene.BIMAggregateProperties.not_editing_objects]:
             obj.select_set(False)
@@ -2298,7 +2301,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             obj.data.BIMMeshProperties.ifc_definition_id = new.id()
             tool.Geometry.import_item(obj)
 
-            props = bpy.context.scene.BIMGeometryProperties
+            props = tool.Geometry.get_geometry_props()
             for item in additional_curves:
                 representation = tool.Geometry.get_active_representation(props.representation_obj)
                 representation = ifcopenshell.util.representation.resolve_representation(representation)
@@ -2452,7 +2455,8 @@ class SelectRepresentationItem(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not context.scene.BIMGeometryProperties.representation_obj:
+        props = tool.Geometry.get_geometry_props()
+        if not props.representation_obj:
             cls.poll_message_set("No object opened in item mode.")
             return False
         return True
@@ -2462,7 +2466,7 @@ class SelectRepresentationItem(bpy.types.Operator):
         item = tool.Ifc.get().by_id(obj.BIMGeometryProperties.active_item.ifc_definition_id)
         item_ids = self.get_nested_item_ids(item)
 
-        props = context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         for item_obj in props.item_objs:
             if item_obj.obj.data.BIMMeshProperties.ifc_definition_id in item_ids:
                 tool.Blender.select_object(item_obj.obj)
@@ -2889,7 +2893,7 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
     shape: bpy.props.StringProperty(name="Shape")
 
     def _execute(self, context):
-        props = context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         mesh = bpy.data.meshes.new("Tmp")
         obj = bpy.data.objects.new("Tmp", mesh)
         scene = bpy.context.scene
@@ -2923,7 +2927,7 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        rep_obj = tool.Geometry.get_geometry_props().representation_obj
         if (coordinate_offset := tool.Geometry.get_cartesian_point_offset(rep_obj)) is not None:
             verts = [((np.array(v.co) + coordinate_offset) / unit_scale).tolist() for v in obj.data.vertices]
         else:
@@ -2953,7 +2957,7 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
     shape: bpy.props.StringProperty(name="Shape")
 
     def _execute(self, context):
-        props = context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         mesh = bpy.data.meshes.new("Tmp")
         obj = bpy.data.objects.new("Tmp", mesh)
         scene = bpy.context.scene
@@ -3009,7 +3013,7 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         shape: CurveShape
 
     def _execute(self, context):
-        props = context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
 
         representation = tool.Geometry.get_active_representation(props.representation_obj)
         is_2d = representation.ContextOfItems.ContextType == "Plan"
@@ -3082,7 +3086,7 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Select an item to apply the half space solid to.")
             return {"CANCELLED"}
 
-        props = context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         mesh = bpy.data.meshes.new("Tmp")
         obj = bpy.data.objects.new("Tmp", mesh)
         scene = bpy.context.scene

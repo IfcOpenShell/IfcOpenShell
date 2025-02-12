@@ -311,8 +311,11 @@ class EnableEditingBooleans(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.BIMBooleanProperties
-        rep_obj = bpy.context.scene.BIMGeometryProperties.representation_obj
+        gprops = tool.Geometry.get_geometry_props()
+        rep_obj = gprops.representation_obj
+        assert rep_obj
         representation = tool.Geometry.get_active_representation(rep_obj)
+        assert representation
         representation = ifcopenshell.util.representation.resolve_representation(representation)
         props.booleans.clear()
 
