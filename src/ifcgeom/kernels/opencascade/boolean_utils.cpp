@@ -683,42 +683,45 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 					BRep_Tool::Curve(e1, u21, u22)
 				);
 
-				if (!ecc.Extrema().IsParallel() && ecc.NbExtrema() == 1) {
+				if (!ecc.Extrema().IsParallel() && ecc.NbExtrema() >= 1) {
 					// @todo: extend this to work in case of multiple extrema and curved segments.
-					gp_Pnt p1, p2;
-					ecc.Points(1, p1, p2);
 
-					// #3616 Only take into account orthogonal distance between closest points on curve
-					// to see whether inside tolerance. Current DY is hardcoded. The sensible default
-					// for walls.
-					gp_Vec vec(p1, p2);
-					Standard_Real d = vec.Dot(gp::DY());
-					gp_Vec projected = d * gp::DY();
-					gp_Vec ortho_remainder = vec - projected;
-					Standard_Real ortho_distance = ortho_remainder.Magnitude();
+					for (int i = 1; i <= ecc.NbExtrema(); ++i) {
+						gp_Pnt p1, p2;
+						ecc.Points(i, p1, p2);
 
-					const bool unbounded_intersects = ortho_distance < eps;
-					if (unbounded_intersects) {
-						ecc.Parameters(1, U1, U2);
+						// #3616 Only take into account orthogonal distance between closest points on curve
+						// to see whether inside tolerance. Current DY is hardcoded. The sensible default
+						// for walls.
+						gp_Vec vec(p1, p2);
+						Standard_Real d = vec.Dot(gp::DY());
+						gp_Vec projected = d * gp::DY();
+						gp_Vec ortho_remainder = vec - projected;
+						Standard_Real ortho_distance = ortho_remainder.Magnitude();
 
-						if (u11 > u12) {
-							std::swap(u11, u12);
-						}
-						if (u21 > u22) {
-							std::swap(u21, u22);
-						}
+						const bool unbounded_intersects = ortho_distance < eps;
+						if (unbounded_intersects) {
+							ecc.Parameters(i, U1, U2);
 
-						/// @todo: tfk: probably need different thresholds on non-linear curves
-						u11 -= eps;
-						u12 += eps;
-						u21 -= eps;
-						u22 += eps;
+							if (u11 > u12) {
+								std::swap(u11, u12);
+							}
+							if (u21 > u22) {
+								std::swap(u21, u22);
+							}
 
-						if (u11 < U1 && U1 < u12 && u21 < U2 && U2 < u22) {
-							// Edge curves belonging to different operands intersect, don't process
-							// using builder.
-							Logger::Notice("Intersecting boundaries");
-							return false;
+							/// @todo: tfk: probably need different thresholds on non-linear curves
+							u11 -= eps;
+							u12 += eps;
+							u21 -= eps;
+							u22 += eps;
+
+							if (u11 < U1 && U1 < u12 && u21 < U2 && U2 < u22) {
+								// Edge curves belonging to different operands intersect, don't process
+								// using builder.
+								Logger::Notice("Intersecting boundaries");
+								return false;
+							}
 						}
 					}
 				}
