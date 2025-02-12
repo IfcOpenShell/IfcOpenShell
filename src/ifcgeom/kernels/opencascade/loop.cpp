@@ -109,6 +109,8 @@ namespace {
 				throw std::runtime_error("Different trim types not supported");
 			}
 
+			const bool reversed = !e->orientation.get_value_or(true);
+
 			TopoDS_Edge E;
 			auto e_basis = e->basis;
 			if (e_basis) {
@@ -140,7 +142,6 @@ namespace {
 					curve = approx.Curve();
 				}
 
-				const bool reversed = !e->orientation.get_value_or(true);
 				const bool is_conic = e_basis->kind() == taxonomy::ELLIPSE || e_basis->kind() == taxonomy::CIRCLE;
 
 				auto e_start = e->start;
@@ -180,10 +181,6 @@ namespace {
 				if (!e->curve_sense.get_value_or(true)) {
 					E.Reverse();
 				}
-
-				if (reversed) {
-					E.Reverse();
-				}
 			} else {
 				if (e->start.which() != 1) {
 					throw std::runtime_error("Non-cartesian trim on edge without curve");
@@ -192,6 +189,10 @@ namespace {
 				auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e->end));
 
 				E = BRepBuilderAPI_MakeEdge(p1, p2).Edge();
+			}
+
+			if (reversed) {
+				E.Reverse();
 			}
 
 #ifdef IFOPSH_DEBUG
