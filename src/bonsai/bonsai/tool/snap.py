@@ -241,7 +241,14 @@ class Snap(bonsai.core.tool.Snap):
         else:
             last_point = Vector(0, 0, 0)
 
-        sorted_intersections = sorted((i for i in intersections if i is not None), key=lambda x: (x - last_point).length, reverse=True)
+        valid_intersections = []
+        for i in intersections:
+            if i is not None:
+                distance = (i-last_point).length
+                if not math.isclose(distance, 0.0, abs_tol=1e-4):
+                    valid_intersections.append(i)
+
+        sorted_intersections = sorted(valid_intersections, key=lambda x: (x - last_point).length, reverse=True)
         return sorted_intersections
 
     @classmethod
