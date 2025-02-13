@@ -94,6 +94,7 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
     if fallback_material := (int(props.lining_material) or int(props.panel_material)):
         lining_material = tool.Ifc.get().by_id(int(props.lining_material) or fallback_material)
         panel_material = tool.Ifc.get().by_id(int(props.panel_material) or fallback_material)
+        glazing_material = tool.Ifc.get().by_id(int(props.glazing_material) or fallback_material)
         should_create_new_material_set = False
         if material := ifcopenshell.util.element.get_material(element):
             if (
@@ -122,6 +123,7 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
         styles = {
             "Lining": ifcopenshell.util.representation.get_material_style(lining_material, body),
             "Framing": ifcopenshell.util.representation.get_material_style(panel_material, body),
+            "Glazing": ifcopenshell.util.representation.get_material_style(glazing_material, body),
         }
         for item in model_representation.Items:
             if aspect := ifcopenshell.util.representation.get_item_shape_aspect(model_representation, item):

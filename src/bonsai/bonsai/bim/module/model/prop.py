@@ -667,6 +667,7 @@ class BIMDoorProperties(PropertyGroup):
     # Material properties
     panel_material: bpy.props.EnumProperty(name="Panel Material", items=get_materials, options=set())
     lining_material: bpy.props.EnumProperty(name="Lining Material", items=get_materials, options=set())
+    glazing_material: bpy.props.EnumProperty(name="Glazing Material", items=get_materials, options=set())
 
     if TYPE_CHECKING:
         is_editing: bool
@@ -703,6 +704,7 @@ class BIMDoorProperties(PropertyGroup):
         # Material.
         panel_material: str
         lining_material: str
+        glazing_material: str
 
     def get_general_kwargs(self, convert_to_project_units=False):
         kwargs = {

@@ -549,6 +549,8 @@ class BIM_PT_door(bpy.types.Panel):
                 self.layout.label(text="Material Properties")
                 self.layout.prop(props, "lining_material")
                 self.layout.prop(props, "panel_material")
+                if props.transom_thickness:
+                    self.layout.prop(props, "glazing_material")
 
                 update_door_modifier_bmesh(context)
 
