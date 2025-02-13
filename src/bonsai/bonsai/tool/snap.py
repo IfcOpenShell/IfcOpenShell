@@ -205,10 +205,11 @@ class Snap(bonsai.core.tool.Snap):
 
         # If lock axis is on it will use the snap angle so there is no need to search for eligible axis
         if elegible_axis or tool_state.lock_axis:
+            # Adapt axis to make snap angle work with other plane method
             if tool_state.plane_method == "XZ":
                 axis = -axis
             if tool_state.plane_method == "YZ":
-                axis = 90 - (axis * -1) # Don't know why this works
+                axis = 90 - (axis * -1)
             rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, pivot_axis)
             rot_intersection = rot_mat @ translated_intersection
             start, end = create_axis_line_data(rot_mat, last_point)
@@ -271,18 +272,6 @@ class Snap(bonsai.core.tool.Snap):
             (0, -offset),
             (offset, -offset),
         )
-
-        # TODO Snap like Blender snap increment. Enable this when we have a proper snap settings.
-        # Still need adjustments to improve the feel
-        def round_vector_with_increment(intersection, relative_point):
-            for i in range(len(intersection)):
-                interval = round(abs(relative_point[i] % increment), 4)
-                dist = round(abs(intersection[i] % increment), 4)
-                reference = interval - dist
-                if reference <= 0.5:
-                    intersection[i] = intersection[i] + reference
-                else:
-                    intersection[i] = intersection[i] - (1 - reference)
 
         def select_plane_method():
             if not last_polyline_point:
@@ -416,7 +405,7 @@ class Snap(bonsai.core.tool.Snap):
                 snap_point = {
                     "type": "Vertex",
                     "point": obj.location,
-                    "distance": 10,# TODO Get the real distance
+                    "distance": 10, # High value so it has low priority
                     "object": obj, 
                     "group": "Edge-Vertex",
                 }
@@ -449,7 +438,7 @@ class Snap(bonsai.core.tool.Snap):
                         "group": "Object",
                         "object": snap_obj,
                         "face_index": face_index,
-                        "distance": 10, # TODO Get the real distance
+                        "distance": 10,  # High value so it has low priority
                     }
                     detected_snaps.append(snap_point)
 
@@ -464,7 +453,6 @@ class Snap(bonsai.core.tool.Snap):
         axis_start = None
         axis_end = None
 
-        # TODO It only work for XY plane. Make it work also for None plane_method
         rot_intersection = None
         if not tool_state.plane_method:
             if tool_state.axis_method == "X":
@@ -502,7 +490,7 @@ class Snap(bonsai.core.tool.Snap):
                 "type": "Axis", 
                 "axis_start": axis_start,
                 "axis_end": axis_end,
-                "distance": 10, # TODO Get the real distance
+                "distance": 10,  # High value so it has low priority
             }
             detected_snaps.append(snap_point)
 
@@ -511,7 +499,7 @@ class Snap(bonsai.core.tool.Snap):
                 "object": None,
                 "group": "Plane",
                 "type": "Plane", 
-            "distance": 10, # TODO Get the real distance
+            "distance": 10,  # High value so it has low priority
         }
         detected_snaps.append(snap_point)
 
@@ -563,7 +551,6 @@ class Snap(bonsai.core.tool.Snap):
             for point in snaps_by_type:
                 if point["type"] == "Axis":
                     if snaps_by_type[0]["type"] not in {"Axis", "Plane"}:
-                        # TODO Fix this based on the dictionary
                         obj = snaps_by_type[0]["object"]
                         mixed_snap = cls.mix_snap_and_axis(snaps_by_type[0]["point"], axis_start, axis_end)
                         for mixed_point in mixed_snap:
