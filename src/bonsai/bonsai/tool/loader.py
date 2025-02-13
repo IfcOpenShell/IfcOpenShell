@@ -1048,7 +1048,7 @@ class Loader(bonsai.core.tool.Loader):
         if is_triangulated:
             loop_start = np.arange(0, num_vertex_indices, 3, dtype="I")
             loop_total = np.full(total_faces, 3, dtype="I")
-            use_smooth = np.zeros(num_vertex_indices, dtype="?")
+            use_smooth = np.zeros(total_faces, dtype="?")
 
             mesh.loops.add(num_vertex_indices)
             mesh.loops.foreach_set("vertex_index", faces.ravel().astype("I"))
@@ -1058,14 +1058,15 @@ class Loader(bonsai.core.tool.Loader):
             mesh.polygons.foreach_set("use_smooth", use_smooth)
         else:
             faces_array = np.array(geometry.faces, dtype=object)
+            total_faces = len(faces_array)
             loop_total = np.fromiter((len(face) for face in faces_array), dtype="I")
             loop_start = np.cumsum((0,) + loop_total, dtype="I")[:-1]
             vertex_index = np.concatenate(faces_array, dtype="I", casting="unsafe")
-            use_smooth = np.zeros(num_vertex_indices, dtype="?")
+            use_smooth = np.zeros(total_faces, dtype="?")
 
             mesh.loops.add(len(vertex_index))
             mesh.loops.foreach_set("vertex_index", vertex_index)
-            mesh.polygons.add(len(loop_start))
+            mesh.polygons.add(total_faces)
             mesh.polygons.foreach_set("loop_start", loop_start)
             mesh.polygons.foreach_set("loop_total", loop_total)
             mesh.polygons.foreach_set("use_smooth", use_smooth)
