@@ -1057,11 +1057,10 @@ class Loader(bonsai.core.tool.Loader):
             mesh.polygons.foreach_set("loop_total", loop_total)
             mesh.polygons.foreach_set("use_smooth", use_smooth)
         else:
-            # TODO: optimize using correct numpy array types.
             faces_array = np.array(geometry.faces, dtype=object)
-            loop_total = np.array(tuple(len(face) for face in faces_array), dtype="I")
-            loop_start = np.cumsum((0,) + loop_total)[:-1]
-            vertex_index = np.concatenate(faces_array)
+            loop_total = np.fromiter((len(face) for face in faces_array), dtype="I")
+            loop_start = np.cumsum((0,) + loop_total, dtype="I")[:-1]
+            vertex_index = np.concatenate(faces_array, dtype="I", casting="unsafe")
             use_smooth = np.zeros(num_vertex_indices, dtype="?")
 
             mesh.loops.add(len(vertex_index))
