@@ -232,7 +232,16 @@ class Snap(bonsai.core.tool.Snap):
         intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point, Vector((1, 0, 0))))
         intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point, Vector((0, 1, 0))))
         intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point, Vector((0, 0, 1))))
-        sorted_intersections = sorted((i for i in intersections if i is not None), reverse=False)
+
+        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+        polyline_points = polyline_data[0].polyline_points if polyline_data else []
+        if polyline_points:
+            last_point_data = polyline_points[-1]
+            last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
+        else:
+            last_point = Vector(0, 0, 0)
+
+        sorted_intersections = sorted((i for i in intersections if i is not None), key=lambda x: (x - last_point).length, reverse=True)
         return sorted_intersections
 
     @classmethod
