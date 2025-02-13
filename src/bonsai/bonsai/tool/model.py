@@ -1750,7 +1750,7 @@ class Model(bonsai.core.tool.Model):
                 else:
                     profile_defs.append(tmp.createIfcArbitraryClosedProfileDef("AREA", None, curve))
 
-        if total_profile_defs := len(profile_defs) == 0:
+        if (total_profile_defs := len(profile_defs)) == 0:
             return
         elif total_profile_defs == 1:
             profile_def = profile_defs[0]

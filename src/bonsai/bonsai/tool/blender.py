@@ -1150,6 +1150,7 @@ class Blender(bonsai.core.tool.Blender):
         # It's faster to get them as f and then convert to d
         # with .astype("d"), if precision is needed.
         coords = np.empty(len(verts) * 3, dtype="f")
+        verts.foreach_get("co", coords)
         coords = coords.reshape(-1, 3)
         return coords
 

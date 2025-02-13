@@ -113,7 +113,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         representation_type = representation.RepresentationType
         if representation_type in ("Brep", "AdvancedBrep"):
             item = builder.faceted_brep(verts, faces)
-        elif representation_type in ("Tessellation"):
+        elif representation_type == "Tessellation":
             item = builder.mesh(verts, faces)
         else:
             assert False, f"Unexpected representation type: '{representation_type}'."
