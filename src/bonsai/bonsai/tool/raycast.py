@@ -171,7 +171,7 @@ class Raycast(bonsai.core.tool.Raycast):
                 snap_point = {
                     "object": obj,
                     "type": "Vertex",
-                    "point": v,
+                    "point": v.copy(),
                     "distance": distance - stick_factor,
                 }
                 points.append(snap_point)
@@ -190,7 +190,7 @@ class Raycast(bonsai.core.tool.Raycast):
                 snap_point = {
                     "object": obj,
                     "type": "Edge Center",
-                    "point": division_point,
+                    "point": division_point.copy(),
                     "distance": distance,
                 }
                 points.append(snap_point)
@@ -203,12 +203,11 @@ class Raycast(bonsai.core.tool.Raycast):
                         snap_point = {
                             "object": obj,
                             "type": "Edge",
-                            "point": intersection[1],
+                            "point": intersection[1].copy(),
                             "edge_verts": (v1, v2),
                             "distance": distance + 2 * stick_factor,
                         }
                         points.append(snap_point)
-
         bm.free()
 
         return points
