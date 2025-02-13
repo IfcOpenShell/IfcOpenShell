@@ -32,9 +32,12 @@ from typing import TYPE_CHECKING
 from typing import Union
 from typing import overload
 from typing import Literal
+from typing import Any
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
+
+from lark import Lark, Transformer
 
 if TYPE_CHECKING:
     import ifcopenshell.util.schema
@@ -206,6 +209,103 @@ NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
 UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
 INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
 
+mvd_grammar = r'''
+    start: entry+
+
+    entry: "ViewDefinition" "[" simple_value_list "]"   -> view_definition
+         | "Comment" "[" comment_text "]" -> comment
+         | GENERIC_KEYWORD "[" value_list_set "]" -> dynamic_option
+
+    %declare COMMENT_TEXT  // Ensure Lark treats it with higher priority
+
+    GENERIC_KEYWORD: /[A-Za-z0-9_]+/
+    
+    simple_value_list: value ("," value)*
+    
+    value_list_set: value_set (";" value_set)*
+
+    value_set: set_name ":" simple_value_list
+    
+    set_name: /[A-Za-z0-9_]+/
+    
+    value: /[A-Za-z0-9 _-]+/
+    
+    comment_text: /[^\[\]]+/  // Free text inside COMMENT brackets
+
+    %import common.WS
+    %ignore WS
+'''
+
+parser = Lark(mvd_grammar, parser='lalr')
+class DescriptionTransform(Transformer):
+    def __init__(self):
+        self.mvd = []
+        self.keywords = set()
+        self.comments = ""
+        self.exchangerequirement = ""
+        self.option = ''
+
+
+    def view_definition(self, args):
+        self.keywords.add('mvd')  
+        self.mvd.extend(args[0])  
+
+
+    def dynamic_option(self, args):
+        """
+        e.g. in case of 'Remark' as optional keyword in the description
+        The value can be retrieved through DescriptionTransform.remark
+        """
+        key = str(args[0]).lower()
+        attr_name = f"{key}"
+        if attr_name not in self.keywords:
+            setattr(self, attr_name, {})
+            self.keywords.add(attr_name)
+        dynamic_dict = getattr(self, attr_name)
+        for value_set in args[1]:
+            set_name, *values = value_set
+            dynamic_dict[set_name] = values if len(values) > 1 else values[0]
+
+
+    def comment(self, args):
+        self.keywords.add('comment')
+        self.comments = " ".join(str(child) for child in args[0].children).strip()
+
+    def simple_value_list(self, args):
+        return [str(arg) for arg in args]
+
+    def value_list_set(self, args):
+        return args
+
+    def value_set(self, args):
+        return [str(args[0])] + args[1]
+
+    def value(self, args):
+        return str(args[0])
+
+    def set_name(self, args):
+        return str(args[0])
+    
+    @property 
+    def other_keywords(self):
+        """"
+        The predefined keywords are 'ViewDefinition', 'Option', 'Comment', 'ExchangeRequirement' and 'Option'
+        Keywords in the description not from this lists are returned
+        """
+        return {k for k in self.keywords if k not in {'mvd', 'comment', 'exchangerequirement', 'option'}}
+
+    
+def parse_mvd(description):
+    text = ' '.join(description)
+    parser = Lark(mvd_grammar, parser='lalr')
+    parse_tree = parser.parse(text)
+    parsed_description = DescriptionTransform()
+    try:
+        parsed_description.transform(parse_tree)
+    except Exception as e:
+        print(e)
+        parsed_description.mvd = 'Not defined'
+    return parsed_description
 
 class file:
     """Base class for containing IFC files.
@@ -305,6 +405,7 @@ class file:
         import weakref
 
         file_dict[self.file_pointer()] = weakref.ref(self)
+        self.parsed_description = parse_mvd(self.wrapped_data.header.file_description.description)
 
     def __del__(self) -> None:
         # Avoid infinite recursion if file is failed to initialize
@@ -464,6 +565,68 @@ class file:
             number = re.search(prefix + r"(\d)", schema)
             version.append(int(number.group(1)) if number else 0)
         return tuple(version)
+    
+    @property 
+    def mvd(self) -> str:
+        """
+        View Definition supported by the exporting application that is reflected in the IFC file
+        For example: 
+        “CoordinationView”
+        | “PresentationView”
+        | “StructuralAnalysisView”
+        | “FMHandOverView”
+        | “QuantityTakeOffAddOnView”
+        | “SpaceBoundary1stLevelAddOnView”
+        | “SpaceBoundary2ndLevelAddOnView”
+        """
+        return '.'.join(self.parsed_description.mvd)
+    
+    @property 
+    def mvd_comments(self) -> str:
+        """
+        For example; 'Comment [This
+        export contains Boolean Operation geometry that may not be fully
+        supported by other application]'
+        
+        f.mvd_comments
+        'This export contains Boolean Operation geometry that may not be fully supported by other application'
+        """
+        return str(self.parsed_description.comments)
+    
+    @property
+    def mvd_exchange_requirements(self) -> str:
+        return str(self.parsed_description.exchangerequirement)
+    
+    @property
+    def mvd_options(self) -> str:
+        """
+        Option being used by the exporting application for e.g. quality control and debugging
+        a. this is an optional field providing informal information, the values for the Option keyword
+        reflect the export settings of the exporting software application, those settings may be
+        specific to the exporting software
+        For example: 
+        > "{'ExcludedObjects': [' Stair', ' Ramp', ' Space'], 'SplitLevel': ' On'}"
+        """
+        return str(self.parsed_description.option)
+    
+    @property 
+    def mvd_keywords(self) -> str:
+        """
+        Returns all keywords from description, e.g. 
+        f.mvd_keywords
+        "{'exchangerequirement', 'mvd', 'option', 'comment', 'remark'}"_
+        """
+        return str(self.parsed_description.keywords)
+    
+    @property
+    def mvd_optional_keyword_fields(self) -> str:
+        """"
+        Returns fields from keywords other than 'ViewDefinition', 'Option', 'Comment' and 'ExchangeRequirement'.
+        For example, in case of 
+        'REMARK [SomeKey: SomeValue; AnotherKey: AnotherValue]'
+        file.mvd_optional_keywords_fields == "{'remark': {'SomeKey': ' SomeValue', 'AnotherKey': ' AnotherValue'}}"
+        """
+        return str({kw: getattr(self.parsed_description, kw) for kw in self.parsed_description.other_keywords})
 
     def __getattr__(self, attr) -> Union[Any, Callable[..., ifcopenshell.entity_instance]]:
         if attr[0:6] == "create":
