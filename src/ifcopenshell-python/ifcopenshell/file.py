@@ -298,13 +298,16 @@ class DescriptionTransform(Transformer):
 def parse_mvd(description):
     text = ' '.join(description)
     parser = Lark(mvd_grammar, parser='lalr')
-    parse_tree = parser.parse(text)
     parsed_description = DescriptionTransform()
     try:
+        if not text:
+            parsed_description.mvd = ['Not defined']
+            return parsed_description
+        parse_tree = parser.parse(text)
         parsed_description.transform(parse_tree)
     except Exception as e:
         print(e)
-        parsed_description.mvd = 'Not defined'
+        parsed_description.mvd = ['Not defined']
     return parsed_description
 
 class file:
@@ -579,7 +582,7 @@ class file:
         | “SpaceBoundary1stLevelAddOnView”
         | “SpaceBoundary2ndLevelAddOnView”
         """
-        return '.'.join(self.parsed_description.mvd)
+        return ','.join(self.parsed_description.mvd)
     
     @property 
     def mvd_comments(self) -> str:
