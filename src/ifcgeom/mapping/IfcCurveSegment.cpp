@@ -251,6 +251,7 @@ class curve_segment_evaluator {
 
         start_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentStart()) * length_unit;
         length_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentLength()) * length_unit;
+        projected_length_ = length_; // initialize with something reasonable
 
         if (inst) {
             curve_segment_placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst->Placement()))->ccomponents();
@@ -337,8 +338,6 @@ class curve_segment_evaluator {
 
     void set_spiral_function(double s, std::function<double(double)> fnX, std::function<double(double)> fnY) {
         if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
-            projected_length_ = length_;
-
             // start of trimmed curve
             double pcStartX = 0.0, pcStartY = 0.0;
             double pcStartDx = 1.0, pcStartDy = 0.0;
@@ -400,6 +399,33 @@ class curve_segment_evaluator {
                 m.col(3) = Eigen::Vector4d(x, y, 0, 1);
                 return m;
             });
+
+            if (segment_type_ == ST_VERTICAL) {
+               // for vertical, the input curve length is measured along the spiral.
+               // projected_length_ is the domain of the curve, measured in the horizontal "Distance Along" coordinate
+               // The quickest way to get the projected length is the difference of the i-ordinates at the start and end of the spiral.
+
+               // Evalute the parent curve at the start and end
+                Eigen::Matrix4d m1 = (*parent_curve_fn_)(start_);
+                Eigen::Matrix4d m2 = (*parent_curve_fn_)(start_ + length_);
+
+                // parent curve point at start
+                double x1 = m1(0, 3);
+                double y1 = m1(1, 3);
+
+                // parent curve point at end
+                double x2 = m2(0, 3);
+                double y2 = m2(1, 3);
+
+                // direction of tangent at start of parent curve in curve coordinates
+                auto dx = (*curve_segment_placement_)(0, 0);
+                auto dy = -(*curve_segment_placement_)(1, 0); // -1 to rotation in opposite direction
+                auto X1 = x1 * dx - y1 * dy; // X of start point in global coordinates
+                auto X2 = x2 * dx - y2 * dy; // X of end point in global coordinates
+                projected_length_ = X2 - X1; // distance between points on the global X-axis
+            } else {
+                projected_length_ = length_;
+            }
         } else if (segment_type_ == ST_CANT) {
             Logger::Error(std::runtime_error("Unexpected segment type encountered - cant is handled in set_cant_spiral_function - should never get here"));
             parent_curve_fn_ = std::make_shared<parent_curve_function>([](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
