@@ -80,8 +80,30 @@ class BIM_PT_profiles(Panel):
         else:
             row.prop(self.props, "profile_classes", text="")
         row.operator("bim.add_profile_def", text="", icon="ADD")
-        row.operator("bim.duplicate_profile_def", icon="DUPLICATE", text="")
-        row.operator("bim.select_by_profile", icon="RESTRICT_SELECT_OFF", text="")
+
+        if active_profile:
+            row = self.layout.row(align=True)
+            row.alignment = "RIGHT"
+
+            is_editable = active_profile.ifc_class in (
+                "IfcArbitraryClosedProfileDef",
+                "IfcArbitraryProfileDefWithVoids",
+                "IfcCompositeProfileDef",
+            )
+            if self.props.active_profile_id == active_profile.ifc_definition_id:
+                row.operator("bim.edit_profile", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_profile", text="", icon="CANCEL")
+            elif self.props.active_arbitrary_profile_id:
+                row.operator("bim.edit_arbitrary_profile", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
+            else:
+                row.operator("bim.duplicate_profile_def", icon="DUPLICATE", text="")
+                row.operator("bim.select_by_profile", icon="RESTRICT_SELECT_OFF", text="")
+                if is_editable:
+                    row.operator("bim.enable_editing_arbitrary_profile", text="", icon="ITALIC")
+                op = row.operator("bim.enable_editing_profile", text="", icon="GREASEPENCIL")
+                op.profile = active_profile.ifc_definition_id
+                row.operator("bim.remove_profile_def", text="", icon="X").profile = active_profile.ifc_definition_id
 
         self.layout.template_list(
             "BIM_UL_profiles",
@@ -96,21 +118,6 @@ class BIM_PT_profiles(Panel):
         row.prop(self.props, "is_filtering_material_profiles", text="Filter Material Profiles")
 
         if active_profile:
-            if active_profile.ifc_class in (
-                "IfcArbitraryClosedProfileDef",
-                "IfcArbitraryProfileDefWithVoids",
-                "IfcCompositeProfileDef",
-            ):
-                if self.props.active_arbitrary_profile_id:
-                    row = self.layout.row(align=True)
-                    row.operator("bim.edit_arbitrary_profile", text="Save Arbitrary Profile", icon="CHECKMARK")
-                    row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
-                else:
-                    row = self.layout.row()
-                    row.operator(
-                        "bim.enable_editing_arbitrary_profile", text="Edit Arbitrary Profile", icon="GREASEPENCIL"
-                    )
-
             users_of_profile = ProfileData.data["active_profile_users"]
             self.layout.label(icon="INFO", text=f"Profile has {users_of_profile} inverse relationship(s) in project")
 
@@ -128,13 +135,3 @@ class BIM_UL_profiles(UIList):
             row = layout.row(align=True)
             row.prop(item, "name", text="", emboss=False)
             row.label(text=item.ifc_class)
-
-            if props.active_profile_id == item.ifc_definition_id:
-                row.operator("bim.edit_profile", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_profile", text="", icon="CANCEL")
-            elif props.active_profile_id:
-                row.operator("bim.remove_profile_def", text="", icon="X").profile = item.ifc_definition_id
-            else:
-                op = row.operator("bim.enable_editing_profile", text="", icon="GREASEPENCIL")
-                op.profile = item.ifc_definition_id
-                row.operator("bim.remove_profile_def", text="", icon="X").profile = item.ifc_definition_id
