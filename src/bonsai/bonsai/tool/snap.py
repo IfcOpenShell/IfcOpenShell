@@ -152,26 +152,6 @@ class Snap(bonsai.core.tool.Snap):
 
             return start, end
 
-        def create_axis_rectangle_data(origin):
-            size = 0.5
-            direction = Vector((1, 0, 0))
-            if tool_state.plane_method == "YZ":
-                direction = Vector((0, 0, 1))
-            rot_mat = Matrix.Rotation(math.radians(360), 3, pivot_axis)
-            rot_dir = rot_mat.inverted() @ direction
-            v1 = origin + rot_dir * 0
-            v2 = origin + rot_dir * size
-            if tool_state.plane_method == "XY":
-                angle = 270
-            else:
-                angle = 90
-            rot_mat = Matrix.Rotation(math.radians(angle), 3, pivot_axis)
-            rot_dir = rot_mat.inverted() @ direction
-            v3 = origin + rot_dir * size
-            v4 = v2 + rot_dir * size
-
-            return (v1, v2, v3, v4)
-
         # Makes the snapping point more or less sticky than others
         # It changes the distance and affects how the snapping point is sorted
         stick_factor = 0.15
@@ -217,14 +197,18 @@ class Snap(bonsai.core.tool.Snap):
             if is_on_rot_axis:
                 elegible_axis.append((abs(proximity), axis))
 
-        # Get the elegible axis with the lowest proximity
+        # Get the eligible axis with the lowest proximity
         if elegible_axis:
             proximity, axis = sorted(elegible_axis)[0]
         else:
             pass
 
-        # If lock axis is on it will use the snap angle so there is no need to search for elegible axis
+        # If lock axis is on it will use the snap angle so there is no need to search for eligible axis
         if elegible_axis or tool_state.lock_axis:
+            if tool_state.plane_method == "XZ":
+                axis = -axis
+            if tool_state.plane_method == "YZ":
+                axis = 90 - (axis * -1) # Don't know why this works
             rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, pivot_axis)
             rot_intersection = rot_mat @ translated_intersection
             start, end = create_axis_line_data(rot_mat, last_point)

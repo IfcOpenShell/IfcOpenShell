@@ -123,7 +123,7 @@ class Polyline(bonsai.core.tool.Polyline):
             default_container_elevation = 0
             last_point_data = None
 
-        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        mouse_point = context.scene.BIMPolylineProperties.snap_mouse_point[0]
 
         if last_point_data:
             last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
@@ -132,18 +132,18 @@ class Polyline(bonsai.core.tool.Polyline):
 
         if tool_state.is_input_on:
             if tool_state.use_default_container:
-                snap_vector = Vector(
+                mouse_vector = Vector(
                     (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), default_container_elevation)
                 )
             else:
-                snap_vector = Vector(
+                mouse_vector = Vector(
                     (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), input_ui.get_number_value("Z"))
                 )
         else:
             if tool_state.use_default_container:
-                snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
+                mouse_vector = Vector((mouse_point.x, mouse_point.y, default_container_elevation))
             else:
-                snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
+                mouse_vector = Vector((mouse_point.x, mouse_point.y, mouse_point.z))
 
         second_to_last_point = None
         if len(polyline_points) > 1:
@@ -162,19 +162,19 @@ class Polyline(bonsai.core.tool.Polyline):
         if tool_state.plane_method == "YZ":
             world_second_to_last_point = Vector((last_point.x, last_point.y + 1000, last_point.z))
 
-        distance = (snap_vector - last_point).length
+        distance = (mouse_vector - last_point).length
         if distance < 0:
             return
         if distance > 0:
             angle = tool.Cad.angle_3_vectors(
-                second_to_last_point, last_point, snap_vector, new_angle=None, degrees=True
+                second_to_last_point, last_point, mouse_vector, new_angle=None, degrees=True
             )
 
             # Round angle to the nearest 0.05
             angle = round(angle / 0.05) * 0.05
 
             orientation_angle = tool.Cad.angle_3_vectors(
-                world_second_to_last_point, last_point, snap_vector, new_angle=None, degrees=True
+                world_second_to_last_point, last_point, mouse_vector, new_angle=None, degrees=True
             )
 
             # Round angle to the nearest 0.05
@@ -188,10 +188,10 @@ class Polyline(bonsai.core.tool.Polyline):
                 angle = 5 * round(angle / 5)
                 factor = tool.Snap.get_increment_snap_value(context)
                 distance = factor * round(distance / factor)
-            input_ui.set_value("X", snap_vector.x)
-            input_ui.set_value("Y", snap_vector.y)
+            input_ui.set_value("X", mouse_vector.x)
+            input_ui.set_value("Y", mouse_vector.y)
             if input_ui.get_number_value("Z") is not None:
-                input_ui.set_value("Z", snap_vector.z)
+                input_ui.set_value("Z", mouse_vector.z)
 
             input_ui.set_value("D", distance)
             input_ui.set_value("A", angle)
