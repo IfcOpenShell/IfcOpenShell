@@ -155,8 +155,12 @@ class Polyline(bonsai.core.tool.Polyline):
             # Creates a fake "second to last" point away from the first point but in the same x axis
             # this allows to calculate the angle relative to x axis when there is only one point
             second_to_last_point = Vector((last_point.x + 1000, last_point.y, last_point.z))
+            if tool_state.plane_method == "YZ":
+                second_to_last_point = Vector((last_point.x, last_point.y + 1000, last_point.z))
 
         world_second_to_last_point = Vector((last_point.x + 1000, last_point.y, last_point.z))
+        if tool_state.plane_method == "YZ":
+            world_second_to_last_point = Vector((last_point.x, last_point.y + 1000, last_point.z))
 
         distance = (snap_vector - last_point).length
         if distance < 0:

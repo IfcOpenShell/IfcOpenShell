@@ -140,7 +140,7 @@ class Snap(bonsai.core.tool.Snap):
         bpy.context.scene.BIMPolylineProperties.snap_mouse_ref.clear()
 
     @classmethod
-    def snap_on_axis(cls, intersection, tool_state, lock_angle=False):
+    def snap_on_axis(cls, intersection, tool_state):
         def create_axis_line_data(rot_mat, origin):
             length = 1000
             direction = Vector((1, 0, 0))
@@ -488,10 +488,10 @@ class Snap(bonsai.core.tool.Snap):
                 tool_state.snap_angle = 90
             if tool_state.lock_axis or tool_state.axis_method:
                 # Doesn't update snap_angle so that it keeps in the same axis
-                rot_intersection, _, axis_start, axis_end = cls.snap_on_axis(intersection, tool_state, True)
+                rot_intersection, _, axis_start, axis_end = cls.snap_on_axis(intersection, tool_state)
             else:
                 rot_intersection, tool_state.snap_angle, axis_start, axis_end = cls.snap_on_axis(
-                    intersection, tool_state, False
+                    intersection, tool_state
                 )
 
         if rot_intersection and polyline_points:

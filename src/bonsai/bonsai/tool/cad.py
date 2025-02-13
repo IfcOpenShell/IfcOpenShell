@@ -110,7 +110,7 @@ class Cad:
         parameter = (
             round(axis.z, 2) < 0
             or (round(axis.y, 2) == 0 and round(axis.x < 0))
-            or (round(axis.x, 2) == 0 and round(axis.y < 0))
+            or (round(axis.x, 2) == 0 and round(axis.y > 0))
         )
         if new_angle is not None:
             rot_mat = Matrix.Rotation(new_angle, 3, axis)
