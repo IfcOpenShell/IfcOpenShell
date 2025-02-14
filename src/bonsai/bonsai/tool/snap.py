@@ -274,14 +274,11 @@ class Snap(bonsai.core.tool.Snap):
         )
 
         def select_plane_method():
-            if not last_polyline_point:
-                plane_origin = Vector((0, 0, 0))
-                plane_normal = Vector((0, 0, 1))
-
             if not tool_state.plane_method:
-                camera_rotation = rv3d.view_rotation
-                plane_origin = Vector((0, 0, 0))
-                view_direction = Vector((0, 0, -1)) @ camera_rotation.to_matrix().transposed()
+                view_rotation = rv3d.view_rotation
+                view_location = rv3d.view_location
+                view_direction = Vector((0, 0, -1)) @ view_rotation.to_matrix().transposed()
+                plane_origin = view_location + view_direction * 10
                 plane_normal = view_direction.normalized()
 
             if tool_state.plane_method == "XY" or (
@@ -451,6 +448,7 @@ class Snap(bonsai.core.tool.Snap):
         tool_state.plane_origin = plane_origin  # This will be used along with plane method
 
         intersection = tool.Raycast.ray_cast_to_plane(context, event, plane_origin, plane_normal)
+        print(intersection)
 
         axis_start = None
         axis_end = None
