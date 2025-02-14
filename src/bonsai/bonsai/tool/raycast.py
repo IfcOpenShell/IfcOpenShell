@@ -299,7 +299,9 @@ class Raycast(bonsai.core.tool.Raycast):
             if tool.Cad.are_vectors_equal(e1["point"], e2["point"], tolerance=0.1):
                 edge_intersection = tool.Cad.intersect_edges_v2(e1["edge_verts"], e2["edge_verts"])
                 if edge_intersection[1]:
-                    mouse_intersection, _ = mathutils.geometry.intersect_point_line(edge_intersection[1], ray_target, loc)
+                    mouse_intersection, _ = mathutils.geometry.intersect_point_line(
+                        edge_intersection[1], ray_target, loc
+                    )
                     distance = (edge_intersection[1] - mouse_intersection).length
                     if distance < 0.2:
                         snap_point = {
@@ -309,5 +311,3 @@ class Raycast(bonsai.core.tool.Raycast):
                             "distance": distance,
                         }
                         return snap_point
-                    
-

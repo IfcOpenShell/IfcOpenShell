@@ -245,7 +245,7 @@ class Snap(bonsai.core.tool.Snap):
         valid_intersections = []
         for i in intersections:
             if i is not None:
-                distance = (i-last_point).length
+                distance = (i - last_point).length
                 if not math.isclose(distance, 0.0, abs_tol=1e-4):
                     valid_intersections.append(i)
 
@@ -405,8 +405,8 @@ class Snap(bonsai.core.tool.Snap):
                 snap_point = {
                     "type": "Vertex",
                     "point": obj.location,
-                    "distance": 10, # High value so it has low priority
-                    "object": obj, 
+                    "distance": 10,  # High value so it has low priority
+                    "object": obj,
                     "group": "Edge-Vertex",
                 }
                 detected_snaps.append(snap_point)
@@ -423,10 +423,12 @@ class Snap(bonsai.core.tool.Snap):
             results.append(cast_rays_and_get_best_object(objs_to_raycast, mouse_pos))
         for result in results:
             snap_obj = result[0]
-            hit = result[1] 
+            hit = result[1]
             face_index = result[2]
             if hit is not None:
-                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap_obj, snap_obj.data.polygons[face_index])
+                snap_points = tool.Raycast.ray_cast_by_proximity(
+                    context, event, snap_obj, snap_obj.data.polygons[face_index]
+                )
                 if snap_points:
                     for point in snap_points:
                         point["group"] = "Object"
@@ -487,7 +489,7 @@ class Snap(bonsai.core.tool.Snap):
                 "point": rot_intersection,
                 "object": None,
                 "group": "Axis",
-                "type": "Axis", 
+                "type": "Axis",
                 "axis_start": axis_start,
                 "axis_end": axis_end,
                 "distance": 10,  # High value so it has low priority
@@ -496,9 +498,9 @@ class Snap(bonsai.core.tool.Snap):
 
         snap_point = {
             "point": intersection,
-                "object": None,
-                "group": "Plane",
-                "type": "Plane", 
+            "object": None,
+            "group": "Plane",
+            "type": "Plane",
             "distance": 10,  # High value so it has low priority
         }
         detected_snaps.append(snap_point)
@@ -565,9 +567,7 @@ class Snap(bonsai.core.tool.Snap):
                     cls.update_snapping_point(point["point"], point["type"])
                     return snaps_by_type
 
-        cls.update_snapping_point(
-            snaps_by_type[0]["point"], snaps_by_type[0]["type"], snaps_by_type[0]["object"]
-        )
+        cls.update_snapping_point(snaps_by_type[0]["point"], snaps_by_type[0]["type"], snaps_by_type[0]["object"])
         return snaps_by_type
 
     @classmethod
