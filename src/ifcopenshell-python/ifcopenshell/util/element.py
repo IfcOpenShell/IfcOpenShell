@@ -935,7 +935,7 @@ def get_container(
                 return container
             container = get_aggregate(container)
     elif parent := get_parent(element):
-        return get_container(parent, should_get_direct)
+        return get_container(parent, should_get_direct, ifc_class)
 
 
 def get_referenced_structures(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:

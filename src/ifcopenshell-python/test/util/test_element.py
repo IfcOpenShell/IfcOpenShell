@@ -793,6 +793,26 @@ class TestGetContainerIFC4(test.bootstrap.IFC4):
         ifcopenshell.api.aggregate.assign_object(self.file, products=[subelement], relating_object=element)
         assert subject.get_container(subelement, should_get_direct=True) is None
 
+    def test_getting_the_specific_spatial_container_of_an_element(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[storey], relating_object=building)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=storey)
+        assert subject.get_container(element, ifc_class="IfcBuilding") == building
+        assert subject.get_container(element, ifc_class="IfcSite") == None
+
+    def test_getting_the_specific_spatial_container_of_an_element_indirectly(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[subelement], relating_object=element)
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[storey], relating_object=building)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=storey)
+        assert subject.get_container(subelement, ifc_class="IfcBuilding") == building
+        assert subject.get_container(subelement, ifc_class="IfcSite") == None
+
 
 class TestGetReferencedStructures(test.bootstrap.IFC4):
     def test_getting_references_of_an_element(self):
