@@ -1040,7 +1040,7 @@ class IfcImporter:
             if cartesian_point_offset is False:
                 mesh["has_cartesian_point_offset"] = False
             elif cartesian_point_offset is not None:
-                verts -= cartesian_point_offset
+                verts = verts - cartesian_point_offset
 
                 mesh["has_cartesian_point_offset"] = True
                 mesh["cartesian_point_offset"] = (
@@ -1048,9 +1048,8 @@ class IfcImporter:
                 )
             elif verts.size and tool.Loader.is_point_far_away(verts[0], is_meters=True):
                 # Shift geometry close to the origin based off that first vert it found
-                verts_array = np.array(geometry.verts)
                 offset = verts[0]
-                verts -= offset
+                verts = verts - offset
 
                 mesh["has_cartesian_point_offset"] = True
                 mesh["cartesian_point_offset"] = f"{offset[0]},{offset[1]},{offset[2]}"

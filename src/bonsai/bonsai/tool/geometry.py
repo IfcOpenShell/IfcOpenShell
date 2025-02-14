@@ -1759,7 +1759,7 @@ class Geometry(bonsai.core.tool.Geometry):
             geometry = tool.Loader.create_generic_shape(item)
             verts = ifcopenshell.util.shape.get_vertices(geometry)
             if (cartesian_point_offset := cls.get_cartesian_point_offset(rep_obj)) is not None:
-                verts -= cartesian_point_offset
+                verts = verts - cartesian_point_offset
             tool.Loader.convert_geometry_to_mesh(geometry, obj.data, verts=verts)
 
             if ios_materials := list(obj.data["ios_materials"]):
