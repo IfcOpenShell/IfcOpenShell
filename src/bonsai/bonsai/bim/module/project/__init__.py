@@ -66,6 +66,7 @@ classes = (
     operator.UnlinkIfc,
     operator.UnloadLink,
     workspace.ExploreHotkey,
+    prop.LibraryBreadcrumb,
     prop.LibraryElement,
     prop.FilterCategory,
     prop.Link,

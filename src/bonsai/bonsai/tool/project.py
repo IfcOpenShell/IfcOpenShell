@@ -31,6 +31,7 @@ import bonsai.core.unit
 import bonsai.core.owner
 import bonsai.bim.schema
 import bonsai.tool as tool
+from collections import defaultdict
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
 from pathlib import Path
@@ -38,6 +39,8 @@ from typing import Optional, Union, TYPE_CHECKING, Generator, Callable
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties
+
+HiearchyDict = dict[ifcopenshell.entity_instance, "HiearchyDict"]
 
 
 class Project(bonsai.core.tool.Project):
@@ -296,54 +299,43 @@ class Project(bonsai.core.tool.Project):
                 ifcopenshell.api.document.remove_reference(ifc_file, reference)
 
     @classmethod
-    def get_filter_for_active_library(
+    def get_project_library_elements(
+        cls, project_library: ifcopenshell.entity_instance
+    ) -> set[ifcopenshell.entity_instance]:
+        return set(element for rel in project_library.Declares for element in rel.RelatedDefinitions)
+
+    @classmethod
+    def get_project_library_rels(cls, ifc_file: ifcopenshell.file) -> set[ifcopenshell.entity_instance]:
+        return set(rel for lib in ifc_file.by_type("IfcProjectLibrary") for rel in lib.Declares)
+
+    @classmethod
+    def is_element_assigned_to_project_library(
         cls,
-    ) -> Callable[[list[ifcopenshell.entity_instance]], Generator[ifcopenshell.entity_instance, None, None]]:
-        props = cls.get_project_props()
-        library_file = IfcStore.library_file
-        assert library_file
-
-        selected_project_library = props.selected_project_library if props.filter_by_library else "*"
-
-        if selected_project_library == "*":
-
-            def condition(elements: list[ifcopenshell.entity_instance]):
-                yield from elements
-
-        elif selected_project_library == "-":
-
-            def condition(elements: list[ifcopenshell.entity_instance]):
-                for element in elements:
-                    if not getattr(element, "HasContext", False):
-                        yield element
-
-        else:
-            project_library = library_file.by_id(int(selected_project_library))
-            project_library_rels = set(project_library.Declares)
-            if project_library_rels:
-
-                def condition(elements: list[ifcopenshell.entity_instance]):
-                    for element in elements:
-                        for rel in getattr(element, "HasContext", ()):
-                            if rel in project_library_rels:
-                                yield element
-                                break
-
-            else:
-
-                def condition(elements: list[ifcopenshell.entity_instance]):
-                    # Hacky way to create empty generator.
-                    return
-                    yield
-
-        return condition
+        element: ifcopenshell.entity_instance,
+        project_library_rels: set[ifcopenshell.entity_instance],
+    ) -> bool:
+        if not (has_context := getattr(element, "HasContext", ())):
+            return False
+        return any(rel in project_library_rels for rel in has_context)
 
     @classmethod
     def update_current_library_page(cls):
         props = cls.get_project_props()
-        element_name = props.active_library_element
+        active_library_breadcrumb = props.get_active_library_breadcrumb()
+        change_back = False
+        if active_library_breadcrumb:
+            name = active_library_breadcrumb.name
+            breadcrumb_type = active_library_breadcrumb.breadcrumb_type
+            library_id = active_library_breadcrumb.library_id
+            change_back = True
+
         bpy.ops.bim.rewind_library()
-        bpy.ops.bim.change_library_element(element_name=element_name)
+        if change_back:
+            bpy.ops.bim.change_library_element(
+                element_name=name,
+                breadcrumb_type=breadcrumb_type,
+                library_id=library_id,
+            )
 
     @classmethod
     def get_parent_library(cls, project_library: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
@@ -352,3 +344,34 @@ class Project(bonsai.core.tool.Project):
             return nests[0].RelatingObject
         # IfcProject.
         return project_library.HasContext[0].RelatingContext
+
+    @classmethod
+    def get_project_hierarchy(cls, ifc_file: ifcopenshell.file) -> HiearchyDict:
+        """Get project hierarchy in the following form:
+
+        {
+            IfcProject: { IfcProjectLibrary A: { ... }, },
+            IfcProjectLibrary A: { IfcProjectLibrary B: { ... } },
+            IfcProjectLibrary B: { ... },
+        }
+
+        Use IfcProject to get hierarchy root.
+
+        """
+        hierarchy: HiearchyDict = defaultdict(dict)
+        for project_library in ifc_file.by_type("IfcProjectLibrary"):
+            parent_library = cls.get_parent_library(project_library)
+            hierarchy[parent_library][project_library] = hierarchy[project_library]
+        return hierarchy
+
+    @classmethod
+    def load_project_libraries_to_ui(
+        cls, parent_library: ifcopenshell.entity_instance, hierarchy: HiearchyDict
+    ) -> None:
+        libraries = hierarchy[parent_library]
+        props = cls.get_project_props()
+        for project_library in libraries:
+            library_elements = tool.Project.get_project_library_elements(project_library)
+            props.add_library_project_library(
+                project_library.Name or "Unnamed", len(library_elements), project_library.id()
+            )

@@ -60,9 +60,10 @@ from bpy.app.handlers import persistent
 from ifcopenshell.geom import ShapeElementType
 from bonsai.bim.module.project.data import LinksData, ProjectLibraryData
 from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator, MeasureDecorator
+from bonsai.bim.module.project.prop import BreadcrumbType
 from bonsai.bim.module.model.decorator import PolylineDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Union, TYPE_CHECKING
+from typing import Union, TYPE_CHECKING, Literal, get_args
 
 
 class NewProject(bpy.types.Operator):
@@ -184,6 +185,7 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
             context.area.tag_redraw()
         if self.append_all:
             bpy.ops.bim.append_entire_library()
+        ProjectLibraryData.load()
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -218,16 +220,27 @@ class RefreshLibrary(bpy.types.Operator):
         self.props.library_elements.clear()
         self.props.library_breadcrumb.clear()
 
-        self.props.active_library_element = ""
-
         library_file = IfcStore.library_file
         assert library_file
 
-        condition = tool.Project.get_filter_for_active_library()
-        for importable_type in sorted(tool.Project.get_appendable_asset_types()):
-            if (elements := library_file.by_type(importable_type)) and (elements := list(condition(elements))):
-                elements = self.props.add_library_asset_group(importable_type, len(elements))
+        if not self.props.show_library_tree:
+            for appendable_type in sorted(tool.Project.get_appendable_asset_types()):
+                elements = library_file.by_type(appendable_type)
+                self.props.add_library_asset_class(appendable_type, len(elements))
+            return {"FINISHED"}
 
+        # Library tree.
+        # Add entry for unassigned elements.
+        elements = set()
+        for importable_type in sorted(tool.Project.get_appendable_asset_types()):
+            elements.update(library_file.by_type(importable_type))
+        rels = tool.Project.get_project_library_rels(library_file)
+        elements = {e for e in elements if not tool.Project.is_element_assigned_to_project_library(e, rels)}
+        self.props.add_library_project_library("Unassigned", len(elements), 0)
+
+        ifc_project = library_file.by_type("IfcProject")[0]
+        hierarchy = tool.Project.get_project_hierarchy(library_file)
+        tool.Project.load_project_libraries_to_ui(ifc_project, hierarchy)
         return {"FINISHED"}
 
 
@@ -235,10 +248,14 @@ class ChangeLibraryElement(bpy.types.Operator):
     bl_idname = "bim.change_library_element"
     bl_label = "Change Library Element"
     bl_options = {"REGISTER", "UNDO"}
-    element_name: bpy.props.StringProperty(description="IFC class to select")
+    element_name: bpy.props.StringProperty()
+    breadcrumb_type: bpy.props.EnumProperty(items=[(i, i, "") for i in get_args(BreadcrumbType)])
+    library_id: bpy.props.IntProperty()
 
     if TYPE_CHECKING:
         element_name: str
+        breadcrumb_type: BreadcrumbType
+        library_id: int
 
     def execute(self, context):
         self.props = tool.Project.get_project_props()
@@ -246,33 +263,81 @@ class ChangeLibraryElement(bpy.types.Operator):
         library_file = IfcStore.library_file
         assert library_file
         self.library_file = library_file
-        self.props.active_library_element = self.element_name
 
         crumb = self.props.library_breadcrumb.add()
         crumb.name = self.element_name
+        crumb.breadcrumb_type = self.breadcrumb_type
+        if self.breadcrumb_type == "LIBRARY":
+            crumb.library_id = self.library_id
 
-        filter_elements = tool.Project.get_filter_for_active_library()
-        elements = self.library_file.by_type(self.element_name)
-        elements = list(filter_elements(elements))
-        ifc_classes_elements: dict[str, list[ifcopenshell.entity_instance]] = defaultdict(list)
-        for element in elements:
-            ifc_classes_elements[element.is_a()].append(element)
+        active_project_library = None
+        library_elements = None
+        project_library_rels = None
+        # Reverse to get last library in hierarchy.
+        for entry in reversed(self.props.library_breadcrumb):
+            if entry.breadcrumb_type == "LIBRARY":
+                if entry.library_id == 0:
+                    # For unassigned elements.
+                    active_project_library = "NO_LIBRARY"
+                    project_library_rels = tool.Project.get_project_library_rels(library_file)
+                else:
+                    active_project_library = library_file.by_id(entry.library_id)
+                    library_elements = tool.Project.get_project_library_elements(active_project_library)
+                break
+
+        def filter_elements(elements: list[ifcopenshell.entity_instance]) -> list[ifcopenshell.entity_instance]:
+            if active_project_library is None:
+                return elements
+            elif active_project_library == "NO_LIBRARY":
+                assert project_library_rels is not None
+                return [
+                    element
+                    for element in elements
+                    if not tool.Project.is_element_assigned_to_project_library(element, project_library_rels)
+                ]
+            else:
+                assert library_elements is not None
+                return [e for e in elements if e in library_elements]
 
         self.props.library_elements.clear()
 
-        if len(ifc_classes_elements) == 1 and list(ifc_classes_elements)[0] == self.element_name:
-            for name, ifc_definition_id in sorted(
-                [(self.get_name(e), e.id()) for e in ifc_classes_elements[self.element_name]]
-            ):
-                self.add_library_asset(name, ifc_definition_id)
-        else:
-            for ifc_class in sorted(ifc_classes_elements):
-                if ifc_class == self.element_name:
-                    continue
-                self.props.add_library_asset_group(ifc_class, len(ifc_classes_elements[ifc_class]))
-            elements_ = ifc_classes_elements[self.element_name]
-            for name, ifc_definition_id, ifc_class in sorted([(self.get_name(e), e.id(), e.is_a()) for e in elements_]):
-                self.add_library_asset(name, ifc_definition_id)
+        if self.breadcrumb_type == "LIBRARY":
+            hierarchy = tool.Project.get_project_hierarchy(library_file)
+            assert active_project_library is not None
+            if active_project_library == "NO_LIBRARY" or not hierarchy[active_project_library]:
+                for appendable_type in sorted(tool.Project.get_appendable_asset_types()):
+                    elements = library_file.by_type(appendable_type)
+                    if elements := filter_elements(elements):
+                        self.props.add_library_asset_class(appendable_type, len(elements))
+            else:
+                tool.Project.load_project_libraries_to_ui(active_project_library, hierarchy)
+        else:  # breadcrumb_type CLASS.
+            elements = self.library_file.by_type(self.element_name)
+            elements = list(filter_elements(elements))
+            ifc_classes_elements: dict[str, list[ifcopenshell.entity_instance]] = defaultdict(list)
+            for element in elements:
+                ifc_classes_elements[element.is_a()].append(element)
+
+            if len(ifc_classes_elements) == 1 and list(ifc_classes_elements)[0] == self.element_name:
+                for name, ifc_definition_id in sorted(
+                    [(self.get_name(e), e.id()) for e in ifc_classes_elements[self.element_name]]
+                ):
+                    self.add_library_asset(name, ifc_definition_id)
+            else:
+                for ifc_class in sorted(ifc_classes_elements):
+                    if ifc_class == self.element_name:
+                        continue
+                    self.props.add_library_asset_class(ifc_class, len(ifc_classes_elements[ifc_class]))
+                elements_ = ifc_classes_elements[self.element_name]
+                for name, ifc_definition_id, ifc_class in sorted(
+                    [(self.get_name(e), e.id(), e.is_a()) for e in elements_]
+                ):
+                    self.add_library_asset(name, ifc_definition_id)
+
+        # Could occur if all elements were assigned to a different library.
+        if len(self.props.library_elements) == 0:
+            bpy.ops.bim.rewind_library()
+
         return {"FINISHED"}
 
     def get_name(self, element: ifcopenshell.entity_instance) -> str:
@@ -300,10 +365,7 @@ class ChangeLibraryElement(bpy.types.Operator):
         elif has_context := element.HasContext:
             relating_context: ifcopenshell.entity_instance
             relating_context = has_context[0].RelatingContext
-            if selected_library in ("-", "*"):
-                new.is_declared = relating_context.is_a("IfcProjectLibrary")
-            else:
-                new.is_declared = relating_context == self.library_file.by_id(int(selected_library))
+            new.is_declared = relating_context == self.library_file.by_id(int(selected_library))
 
         # is_appended.
         try:
@@ -329,10 +391,17 @@ class RewindLibrary(bpy.types.Operator):
         if total_breadcrumbs < 2:
             bpy.ops.bim.refresh_library()
             return {"FINISHED"}
-        element_name = self.props.library_breadcrumb[total_breadcrumbs - 2].name
+        current_element = self.props.library_breadcrumb[total_breadcrumbs - 2]
+        element_name = current_element.name
+        breadcrumb_type = current_element.breadcrumb_type
+        library_id = current_element.library_id
         self.props.library_breadcrumb.remove(total_breadcrumbs - 1)
         self.props.library_breadcrumb.remove(total_breadcrumbs - 2)
-        bpy.ops.bim.change_library_element(element_name=element_name)
+        bpy.ops.bim.change_library_element(
+            element_name=element_name,
+            breadcrumb_type=breadcrumb_type,
+            library_id=library_id,
+        )
         return {"FINISHED"}
 
 
@@ -360,10 +429,7 @@ class AssignLibraryDeclaration(bpy.types.Operator):
         library_file = IfcStore.library_file
         assert library_file
 
-        if props.selected_project_library in ("*", "-"):
-            project_library = library_file.by_type("IfcProjectLibrary")[0]
-        else:
-            project_library = library_file.by_id(int(props.selected_project_library))
+        project_library = library_file.by_id(int(props.selected_project_library))
 
         ifcopenshell.api.project.assign_declaration(
             library_file,
@@ -648,6 +714,7 @@ class EditProjectLibrary(bpy.types.Operator):
                     ifcopenshell.api.nest.assign_object(library_file, [project_library], new_parent_library)
 
         props.is_editing_project_library = False
+        bpy.ops.bim.refresh_library()
         return {"FINISHED"}
 
     def rollback(self, data):

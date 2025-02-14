@@ -134,10 +134,11 @@ class ProjectLibraryData:
 
     @classmethod
     def project_libraries_enum(cls) -> list[tuple[str, str, str, str, int]]:
-        results = [
-            ("*", "All Libraries", "Show all elements", "", 0),
-            ("-", "No Library", "Show elements without library assigned", "", 1),
-        ]
+        results = []
+        project_libraries = cls.data["project_libraries"].values()
+        if not project_libraries:
+            results.append(("-", "No Library", "", "", 0))
+
         props = tool.Project.get_project_props()
         libs = []
         for i, data in enumerate(cls.data["project_libraries"].values(), len(results)):

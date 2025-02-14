@@ -392,7 +392,7 @@ class BIM_PT_project_library(Panel):
 
         library_file = IfcStore.library_file
         assert library_file
-        library_is_selected = props.selected_project_library not in ("*", "-")
+        library_is_selected = props.selected_project_library != "-"
 
         row = layout.row(align=True)
         row.prop(self.props, "selected_project_library", text="")
@@ -403,7 +403,7 @@ class BIM_PT_project_library(Panel):
         if library_is_selected and not props.is_editing_project_library:
             row.prop(props, "is_editing_project_library", text="", icon="GREASEPENCIL")
 
-        row.prop(self.props, "filter_by_library", text="", icon="FILTER")
+        row.prop(self.props, "show_library_tree", text="", icon="OUTLINER")
 
         if props.is_editing_project_library:
             row = layout.row(align=True)
@@ -420,8 +420,9 @@ class BIM_PT_project_library(Panel):
             return
 
         row = self.layout.row(align=True)
-        row.label(text=self.props.active_library_element or "Top Level Assets")
-        if self.props.active_library_element:
+        active_library_element = self.props.get_active_library_breadcrumb()
+        row.label(text=(active_library_element.name if active_library_element else "Top Level Assets"))
+        if active_library_element:
             row.operator("bim.rewind_library", icon="FRAME_PREV", text="")
         row.operator("bim.refresh_library", icon="FILE_REFRESH", text="")
         self.layout.template_list(
@@ -511,9 +512,11 @@ class BIM_UL_library(UIList):
     ):
         if item:
             row = layout.row(align=True)
-            if not item.ifc_definition_id:
+            if item.element_type != "ASSET" and item.asset_count > 0:
                 op = row.operator("bim.change_library_element", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
                 op.element_name = item.name
+                op.breadcrumb_type = item.element_type
+                op.library_id = item.ifc_definition_id
             row.label(text=item.name)
             if item.ifc_definition_id and item.is_declarable:
                 if item.is_declared:
@@ -522,7 +525,7 @@ class BIM_UL_library(UIList):
                 else:
                     op = row.operator("bim.assign_library_declaration", text="", icon="KEYFRAME", emboss=False)
                     op.definition = item.ifc_definition_id
-            if item.ifc_definition_id:
+            if item.element_type == "ASSET":
                 if item.is_appended:
                     row.label(text="", icon="CHECKMARK")
                 else:
