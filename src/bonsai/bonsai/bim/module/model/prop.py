@@ -521,6 +521,11 @@ class BIMWindowProperties(PropertyGroup):
         name="Frame Thickness", size=3, default=[0.035] * 3, subtype="TRANSLATION"
     )
 
+    # Material properties
+    lining_material: bpy.props.EnumProperty(name="Lining Material", items=get_materials, options=set())
+    framing_material: bpy.props.EnumProperty(name="Framing Material", items=get_materials, options=set())
+    glazing_material: bpy.props.EnumProperty(name="Glazing Material", items=get_materials, options=set())
+
     def get_general_kwargs(self, convert_to_project_units=False):
         kwargs = {
             "window_type": self.window_type,

@@ -232,7 +232,7 @@ def create_ifc_window(
     output_items = (lining_items, frame_extruded_items, [glass])
     builder.translate(chain(*output_items), position)
 
-    return output_items
+    return {"Lining": lining_items, "Framing": frame_extruded_items, "Glazing": [glass]}
 
 
 # we use dataclass as we need default values for arguments
@@ -363,6 +363,7 @@ def add_window_representation(
     partition_type: WINDOW_TYPE = "SINGLE_PANEL",
     lining_properties: Optional[Union[WindowLiningProperties, dict[str, Any]]] = None,
     panel_properties: Optional[list[Union[WindowPanelProperties, dict[str, Any]]]] = None,
+    part_of_product: Optional[ifcopenshell.entity_instance] = None,
     unit_scale: Optional[float] = None,
 ) -> ifcopenshell.entity_instance:
     """units in usecase_settings expected to be in ifc project units
@@ -415,6 +416,7 @@ def add_window_representation(
             "partition_type": partition_type,
             "lining_properties": lining_properties,
             "panel_properties": panel_properties,
+            "part_of_product": part_of_product,
         }
     )
 
@@ -440,6 +442,9 @@ class Usecase:
         accumulated_height = [0] * len(panel_schema[0])
         built_panels: list[int] = []
         window_items: list[ifcopenshell.entity_instance] = []
+        lining_items: list[ifcopenshell.entity_instance] = []
+        framing_items: list[ifcopenshell.entity_instance] = []
+        glazing_items: list[ifcopenshell.entity_instance] = []
 
         lining_props: dict[str, Any] = self.settings["lining_properties"]
         lining_thickness: float = lining_props["LiningThickness"]
@@ -728,13 +733,39 @@ class Usecase:
                     x_offsets,
                 )
                 built_panels.append(panel_i)
-                window_items.extend(chain(*current_window_items))
+                window_items.extend(chain(*current_window_items.values()))
+                lining_items.extend(current_window_items["Lining"])
+                framing_items.extend(current_window_items["Framing"])
+                glazing_items.extend(current_window_items["Glazing"])
 
                 accumulated_height[column_i] += panel_height
                 accumulated_width += panel_width
 
         builder.translate(window_items, (0, lining_offset, 0))  # wall offset
         representation = builder.get_representation(self.settings["context"], window_items)
+        if self.settings["part_of_product"]:
+            ifcopenshell.api.geometry.add_shape_aspect(
+                self.file,
+                "Lining",
+                items=lining_items,
+                representation=representation,
+                part_of_product=self.settings["part_of_product"],
+            )
+            ifcopenshell.api.geometry.add_shape_aspect(
+                self.file,
+                "Framing",
+                items=framing_items,
+                representation=representation,
+                part_of_product=self.settings["part_of_product"],
+            )
+            ifcopenshell.api.geometry.add_shape_aspect(
+                self.file,
+                "Glazing",
+                items=glazing_items,
+                representation=representation,
+                part_of_product=self.settings["part_of_product"],
+            )
+
         return representation
 
     @overload

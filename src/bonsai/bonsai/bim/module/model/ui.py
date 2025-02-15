@@ -448,8 +448,13 @@ class BIM_PT_window(bpy.types.Panel):
                     for panel_i in range(number_of_panels):
                         cols[panel_i + 1].prop(props, prop, index=panel_i, text="")
 
-                update_window_modifier_bmesh(context)
+                self.layout.use_property_split = True
+                self.layout.label(text="Material Properties")
+                self.layout.prop(props, "lining_material")
+                self.layout.prop(props, "framing_material", text="Panel Material")
+                self.layout.prop(props, "glazing_material")
 
+                update_window_modifier_bmesh(context)
             else:
                 row.operator("bim.enable_editing_window", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_window", icon="X", text="")
@@ -492,7 +497,6 @@ class BIM_PT_window(bpy.types.Panel):
                         prop_value = panel_props[prop_name][panel_i]
                         r.label(text=str(prop_value))
                         r = cols[panel_i + 1].row()
-
         else:
             row = self.layout.row()
             row.label(text="No Window Found")
