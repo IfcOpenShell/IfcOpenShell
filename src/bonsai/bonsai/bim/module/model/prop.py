@@ -26,6 +26,7 @@ from bonsai.bim.module.model.data import AuthoringData
 from bpy.types import PropertyGroup, NodeTree
 from math import pi, radians
 from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
+from bonsai.bim.module.model.door import update_door_modifier_bmesh
 from typing import TYPE_CHECKING, Literal, get_args
 
 
@@ -123,6 +124,10 @@ def update_x_angle(self, context):
     angle_deg = math.degrees(self.x_angle)
     if tool.Cad.is_x(angle_deg, -90, 0.5) or tool.Cad.is_x(angle_deg, 90, 0.5):
         self.x_angle = 0
+
+
+def update_door(self, context):
+    update_door_modifier_bmesh(context)
 
 
 class BIMModelProperties(PropertyGroup):
@@ -600,14 +605,19 @@ class BIMDoorProperties(PropertyGroup):
     non_si_units_props = ("is_editing", "door_type", "panel_width_ratio")
     is_editing: bpy.props.BoolProperty(default=False)
     door_type: bpy.props.EnumProperty(
-        name="Door Operation Type", items=tuple((i, i, "") for i in get_args(DoorType)), default="SINGLE_SWING_LEFT"
+        name="Door Operation Type",
+        items=tuple((i, i, "") for i in get_args(DoorType)),
+        default="SINGLE_SWING_LEFT",
+        update=update_door,
     )
-    overall_height: bpy.props.FloatProperty(name="Overall Height", default=2.0, subtype="DISTANCE")
-    overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.9, subtype="DISTANCE")
+    overall_height: bpy.props.FloatProperty(name="Overall Height", default=2.0, subtype="DISTANCE", update=update_door)
+    overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.9, subtype="DISTANCE", update=update_door)
 
     # lining properties
-    lining_depth: bpy.props.FloatProperty(name="Lining Depth", default=0.050, subtype="DISTANCE")
-    lining_thickness: bpy.props.FloatProperty(name="Lining Thickness", default=0.050, subtype="DISTANCE")
+    lining_depth: bpy.props.FloatProperty(name="Lining Depth", default=0.050, subtype="DISTANCE", update=update_door)
+    lining_thickness: bpy.props.FloatProperty(
+        name="Lining Thickness", default=0.050, subtype="DISTANCE", update=update_door
+    )
     lining_offset: bpy.props.FloatProperty(
         name="Lining Offset",
         description="Offset from the outer side of the wall (by Y-axis). "
@@ -615,12 +625,13 @@ class BIMDoorProperties(PropertyGroup):
         "`0.025 mm` is good as default value",
         default=0.0,
         subtype="DISTANCE",
+        update=update_door,
     )
     lining_to_panel_offset_x: bpy.props.FloatProperty(
-        name="Lining to Panel Offset X", default=0.025, subtype="DISTANCE"
+        name="Lining to Panel Offset X", default=0.025, subtype="DISTANCE", update=update_door
     )
     lining_to_panel_offset_y: bpy.props.FloatProperty(
-        name="Lining to Panel Offset Y", default=0.025, subtype="DISTANCE"
+        name="Lining to Panel Offset Y", default=0.025, subtype="DISTANCE", update=update_door
     )
 
     transom_thickness: bpy.props.FloatProperty(
@@ -628,12 +639,14 @@ class BIMDoorProperties(PropertyGroup):
         description="Set values > 0 to add a transom.\n" "`0.050 mm` is good as default value",
         default=0.000,
         subtype="DISTANCE",
+        update=update_door,
     )
     transom_offset: bpy.props.FloatProperty(
         name="Transom Offset",
         description="Distance from the bottom door opening to the beginning of the transom (unlike windows)",
         default=1.525,
         subtype="DISTANCE",
+        update=update_door,
     )
 
     casing_thickness: bpy.props.FloatProperty(
@@ -641,28 +654,44 @@ class BIMDoorProperties(PropertyGroup):
         description="Set values > 0 and LiningOffset = 0 to add a casing.",
         default=0.075,
         subtype="DISTANCE",
+        update=update_door,
     )
-    casing_depth: bpy.props.FloatProperty(name="Casing Depth", default=0.005, subtype="DISTANCE")
+    casing_depth: bpy.props.FloatProperty(name="Casing Depth", default=0.005, subtype="DISTANCE", update=update_door)
 
     threshold_thickness: bpy.props.FloatProperty(
-        name="Threshold Thickness", description="Set values > 0 to add a threshold.", default=0.025, subtype="DISTANCE"
+        name="Threshold Thickness",
+        description="Set values > 0 to add a threshold.",
+        default=0.025,
+        subtype="DISTANCE",
+        update=update_door,
     )
-    threshold_depth: bpy.props.FloatProperty(name="Threshold Depth", default=0.1, subtype="DISTANCE")
+    threshold_depth: bpy.props.FloatProperty(
+        name="Threshold Depth", default=0.1, subtype="DISTANCE", update=update_door
+    )
     threshold_offset: bpy.props.FloatProperty(
-        name="Threshold Offset", description="`0.025 mm` is good as default value", default=0.000, subtype="DISTANCE"
+        name="Threshold Offset",
+        description="`0.025 mm` is good as default value",
+        default=0.000,
+        subtype="DISTANCE",
+        update=update_door,
     )
 
     # panel properties
-    panel_depth: bpy.props.FloatProperty(name="Panel Depth", default=0.035, subtype="DISTANCE")
+    panel_depth: bpy.props.FloatProperty(name="Panel Depth", default=0.035, subtype="DISTANCE", update=update_door)
     panel_width_ratio: bpy.props.FloatProperty(
         name="Panel Width Ratio",
         description="Width of this panel, given as ratio " "relative to the total clear opening width of the door",
         default=1.0,
         soft_min=0,
         soft_max=1,
+        update=update_door,
     )
-    frame_thickness: bpy.props.FloatProperty(name="Window Frame Thickness", default=0.035, subtype="DISTANCE")
-    frame_depth: bpy.props.FloatProperty(name="Window Frame Depth", default=0.035, subtype="DISTANCE")
+    frame_thickness: bpy.props.FloatProperty(
+        name="Window Frame Thickness", default=0.035, subtype="DISTANCE", update=update_door
+    )
+    frame_depth: bpy.props.FloatProperty(
+        name="Window Frame Depth", default=0.035, subtype="DISTANCE", update=update_door
+    )
 
     # Material properties
     panel_material: bpy.props.EnumProperty(name="Panel Material", items=get_materials, options=set())

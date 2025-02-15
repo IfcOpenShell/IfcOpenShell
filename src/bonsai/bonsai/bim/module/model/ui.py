@@ -33,10 +33,8 @@ from bonsai.bim.module.model.data import (
 from bonsai.bim.module.model.prop import get_ifc_class
 from bonsai.bim.module.model.stair import regenerate_stair_mesh
 from bonsai.bim.module.model.window import update_window_modifier_bmesh
-from bonsai.bim.module.model.door import update_door_modifier_bmesh
 from bonsai.bim.module.model.railing import update_railing_modifier_bmesh
 from bonsai.bim.module.model.roof import update_roof_modifier_bmesh
-from bonsai.bim.helper import prop_with_search
 from collections.abc import Iterable
 
 
@@ -551,9 +549,6 @@ class BIM_PT_door(bpy.types.Panel):
                 self.layout.prop(props, "panel_material")
                 if props.transom_thickness:
                     self.layout.prop(props, "glazing_material")
-
-                update_door_modifier_bmesh(context)
-
             else:
                 row.operator("bim.enable_editing_door", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_door", icon="X", text="")
