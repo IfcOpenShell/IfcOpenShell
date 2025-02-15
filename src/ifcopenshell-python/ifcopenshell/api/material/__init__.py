@@ -55,6 +55,7 @@ from .remove_material import remove_material
 from .remove_material_set import remove_material_set
 from .remove_profile import remove_profile
 from .reorder_set_item import reorder_set_item
+from .set_shape_aspect_constituents import set_shape_aspect_constituents
 from .unassign_material import unassign_material
 
 wrap_usecases(__path__, __name__)
@@ -83,5 +84,6 @@ __all__ = [
     "remove_material_set",
     "remove_profile",
     "reorder_set_item",
+    "set_shape_aspect_constituents",
     "unassign_material",
 ]
