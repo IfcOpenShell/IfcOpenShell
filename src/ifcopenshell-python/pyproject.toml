@@ -25,9 +25,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# mathutils is broken on Python < 3.10.
-# See: https://gitlab.com/ideasman42/blender-mathutils/-/merge_requests/3
-geometry = ["mathutils"]
 dev = ["pytest"]
 
 [project.urls]

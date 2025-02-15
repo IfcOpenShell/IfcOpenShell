@@ -474,7 +474,7 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
 
         if product.is_a("IfcGridAxis"):
             # Grid geometry does not follow the "representation" paradigm and needs to be treated specially
-            ifcopenshell.api.grid.create_axis_curve(self.file, axis_curve=obj, grid_axis=product)
+            tool.Model.create_axis_curve(obj, product)
             return
         elif product.is_a("IfcRelSpaceBoundary"):
             # TODO refactor

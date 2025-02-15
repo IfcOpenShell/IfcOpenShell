@@ -26,32 +26,20 @@ geometry extrusions).
 from .. import wrap_usecases
 from .add_axis_representation import add_axis_representation
 from .add_boolean import add_boolean
-
-try:
-    from .add_door_representation import add_door_representation
-except ModuleNotFoundError as e:
-    print(f"Note: API not available due to missing dependencies: geometry.add_door_representation - {e}")
+from .add_door_representation import add_door_representation
 from .add_footprint_representation import add_footprint_representation
 from .add_mesh_representation import add_mesh_representation
 from .add_profile_representation import add_profile_representation
-
-try:
-    from .add_railing_representation import add_railing_representation
-except ModuleNotFoundError as e:
-    print(f"Note: API not available due to missing dependencies: geometry.add_railing_representation - {e}")
+from .add_railing_representation import add_railing_representation
 
 try:
     from .add_representation import add_representation
-except ModuleNotFoundError as e:
-    print(f"Note: API not available due to missing dependencies: geometry.add_representation - {e}")
+except ModuleNotFoundError:
+    pass  # Silently fail. This is Blender / Bonsai specific and on its way out.
 from .add_shape_aspect import add_shape_aspect
 from .add_slab_representation import add_slab_representation
 from .add_wall_representation import add_wall_representation
-
-try:
-    from .add_window_representation import add_window_representation
-except ModuleNotFoundError as e:
-    print(f"Note: API not available due to missing dependencies: geometry.add_window_representation - {e}")
+from .add_window_representation import add_window_representation
 from .assign_representation import assign_representation
 from .connect_element import connect_element
 from .connect_path import connect_path

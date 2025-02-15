@@ -1978,3 +1978,11 @@ class Model(bonsai.core.tool.Model):
         x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
 
         return x_angle
+
+    @classmethod
+    def create_axis_curve(cls, obj: bpy.types.Object, grid_axis: ifcopenshell.entity_instance):
+        m = tool.Surveyor.get_absolute_matrix(obj)
+        points = [m @ np.array(v.co.to_4d()) for v in obj.data.vertices[0:2]]
+        ifcopenshell.api.grid.create_axis_curve(
+            tool.Ifc.get(), p1=points[0], p2=points[1], is_si=True, grid_axis=grid_axis
+        )
