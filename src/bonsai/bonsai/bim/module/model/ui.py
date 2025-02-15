@@ -32,7 +32,6 @@ from bonsai.bim.module.model.data import (
 )
 from bonsai.bim.module.model.prop import get_ifc_class
 from bonsai.bim.module.model.stair import regenerate_stair_mesh
-from bonsai.bim.module.model.window import update_window_modifier_bmesh
 from bonsai.bim.module.model.railing import update_railing_modifier_bmesh
 from bonsai.bim.module.model.roof import update_roof_modifier_bmesh
 from collections.abc import Iterable
@@ -453,8 +452,6 @@ class BIM_PT_window(bpy.types.Panel):
                 self.layout.prop(props, "lining_material")
                 self.layout.prop(props, "framing_material", text="Panel Material")
                 self.layout.prop(props, "glazing_material")
-
-                update_window_modifier_bmesh(context)
             else:
                 row.operator("bim.enable_editing_window", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_window", icon="X", text="")

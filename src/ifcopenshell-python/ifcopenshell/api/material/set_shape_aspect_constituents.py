@@ -108,15 +108,9 @@ def set_shape_aspect_constituents(
         ifcopenshell.api.material.assign_material(file, products=[element], material=material_set)
 
     styles = {n: ifcopenshell.util.representation.get_material_style(m, context) for n, m in materials.items()}
-    print('styels are', styles)
     representation = ifcopenshell.util.representation.get_representation(element, context=context)
-    print('rep is', representation)
     representation = ifcopenshell.util.representation.resolve_representation(representation)
-    print('rrep is', representation)
     for item in representation.Items:
-        print('checking item', item)
         if aspect := ifcopenshell.util.representation.get_item_shape_aspect(representation, item):
-            print('found', aspect.Name)
             if style := styles.get(aspect.Name, None):
-                print('... and correlating style', style)
                 ifcopenshell.api.style.assign_item_style(file, item=item, style=style)

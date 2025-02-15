@@ -27,6 +27,7 @@ from bpy.types import PropertyGroup, NodeTree
 from math import pi, radians
 from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
 from bonsai.bim.module.model.door import update_door_modifier_bmesh
+from bonsai.bim.module.model.window import update_window_modifier_bmesh
 from typing import TYPE_CHECKING, Literal, get_args
 
 
@@ -128,6 +129,10 @@ def update_x_angle(self, context):
 
 def update_door(self, context):
     update_door_modifier_bmesh(context)
+
+
+def update_window(self, context):
+    update_window_modifier_bmesh(context)
 
 
 class BIMModelProperties(PropertyGroup):
@@ -439,6 +444,7 @@ def window_type_prop_update(self, context):
     number_of_panels, panels_data = self.window_types_panels[self.window_type]
     self.first_mullion_offset, self.second_mullion_offset = panels_data[0]
     self.first_transom_offset, self.second_transom_offset = panels_data[1]
+    update_window(self, context)
 
 
 # default prop values are in mm and converted later
@@ -475,50 +481,66 @@ class BIMWindowProperties(PropertyGroup):
     window_type: bpy.props.EnumProperty(
         name="Window Type", items=window_types, default="SINGLE_PANEL", update=window_type_prop_update
     )
-    overall_height: bpy.props.FloatProperty(name="Overall Height", default=0.9, subtype="DISTANCE")
-    overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.6, subtype="DISTANCE")
+    overall_height: bpy.props.FloatProperty(
+        name="Overall Height", default=0.9, subtype="DISTANCE", update=update_window
+    )
+    overall_width: bpy.props.FloatProperty(name="Overall Width", default=0.6, subtype="DISTANCE", update=update_window)
 
     # lining properties
-    lining_depth: bpy.props.FloatProperty(name="Lining Depth", default=0.050, subtype="DISTANCE")
-    lining_thickness: bpy.props.FloatProperty(name="Lining Thickness", default=0.050, subtype="DISTANCE")
-    lining_offset: bpy.props.FloatProperty(name="Lining Offset", default=0.050, subtype="DISTANCE")
+    lining_depth: bpy.props.FloatProperty(name="Lining Depth", default=0.050, subtype="DISTANCE", update=update_window)
+    lining_thickness: bpy.props.FloatProperty(
+        name="Lining Thickness", default=0.050, subtype="DISTANCE", update=update_window
+    )
+    lining_offset: bpy.props.FloatProperty(
+        name="Lining Offset", default=0.050, subtype="DISTANCE", update=update_window
+    )
     lining_to_panel_offset_x: bpy.props.FloatProperty(
-        name="Lining to Panel Offset X", default=0.025, subtype="DISTANCE"
+        name="Lining to Panel Offset X", default=0.025, subtype="DISTANCE", update=update_window
     )
     lining_to_panel_offset_y: bpy.props.FloatProperty(
-        name="Lining to Panel Offset Y", default=0.025, subtype="DISTANCE"
+        name="Lining to Panel Offset Y", default=0.025, subtype="DISTANCE", update=update_window
     )
-    mullion_thickness: bpy.props.FloatProperty(name="Mullion Thickness", default=0.050, subtype="DISTANCE")
+    mullion_thickness: bpy.props.FloatProperty(
+        name="Mullion Thickness", default=0.050, subtype="DISTANCE", update=update_window
+    )
     first_mullion_offset: bpy.props.FloatProperty(
         name="First Mullion Offset",
         description="Distance from the first lining to the first mullion center",
         default=0.3,
         subtype="DISTANCE",
+        update=update_window,
     )
     second_mullion_offset: bpy.props.FloatProperty(
         name="Second Mullion Offset",
         description="Distance from the first lining to the second mullion center",
         default=0.45,
         subtype="DISTANCE",
+        update=update_window,
     )
-    transom_thickness: bpy.props.FloatProperty(name="Transom Thickness", default=0.050, subtype="DISTANCE")
+    transom_thickness: bpy.props.FloatProperty(
+        name="Transom Thickness", default=0.050, subtype="DISTANCE", update=update_window
+    )
     first_transom_offset: bpy.props.FloatProperty(
         name="First Transom Offset",
         description="Distance from the first lining to the first transom center",
         default=0.3,
         subtype="DISTANCE",
+        update=update_window,
     )
     second_transom_offset: bpy.props.FloatProperty(
         name="Second Transom Offset",
         description="Distance from the first lining to the second transom center",
         default=0.6,
         subtype="DISTANCE",
+        update=update_window,
     )
 
     # panel properties
-    frame_depth: bpy.props.FloatVectorProperty(name="Frame Depth", size=3, default=[0.035] * 3, subtype="TRANSLATION")
+    frame_depth: bpy.props.FloatVectorProperty(
+        name="Frame Depth", size=3, default=[0.035] * 3, subtype="TRANSLATION", update=update_window
+    )
     frame_thickness: bpy.props.FloatVectorProperty(
-        name="Frame Thickness", size=3, default=[0.035] * 3, subtype="TRANSLATION"
+        name="Frame Thickness", size=3, default=[0.035] * 3, subtype="TRANSLATION", update=update_window
     )
 
     # Material properties
