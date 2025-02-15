@@ -73,7 +73,7 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
         },
     }
 
-    previously_active_context = tool.Geometry.get_active_representation_context(obj)
+    active_context = tool.Geometry.get_active_representation_context(obj)
 
     # ELEVATION_VIEW representation
     profile = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
@@ -91,49 +91,22 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
     representation_data["part_of_product"] = ifcopenshell.util.representation.get_part_of_product(element, body)
     model_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
     representation_data["part_of_product"] = None
-    if fallback_material := (int(props.lining_material) or int(props.panel_material)):
-        lining_material = tool.Ifc.get().by_id(int(props.lining_material) or fallback_material)
-        panel_material = tool.Ifc.get().by_id(int(props.panel_material) or fallback_material)
-        glazing_material = tool.Ifc.get().by_id(int(props.glazing_material) or fallback_material)
-        should_create_new_material_set = False
-        if material := ifcopenshell.util.element.get_material(element):
-            if (
-                material.is_a("IfcMaterialConstituent")
-                and len(names := [c.Name for c in material.MaterialConstituents]) == 2
-                and set(names) == {"Lining", "Framing"}
-            ):
-                should_create_new_material_set = False
-            else:
-                should_create_new_material_set = True
-                ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
-                if not material.is_a("IfcMaterial") and not ifc_file.get_total_inverses(material):
-                    ifcopenshell.api.material.remove_material_set(ifc_file, material=material)
-        else:
-            should_create_new_material_set = True
-        if should_create_new_material_set:
-            material_set = ifcopenshell.api.material.add_material_set(ifc_file, set_type="IfcMaterialConstituentSet")
-            ifcopenshell.api.material.add_constituent(
-                ifc_file, constituent_set=material_set, material=lining_material, name="Lining"
-            )
-            ifcopenshell.api.material.add_constituent(
-                ifc_file, constituent_set=material_set, material=panel_material, name="Framing"
-            )
-            ifcopenshell.api.material.assign_material(ifc_file, products=[element], material=material_set)
-
-        styles = {
-            "Lining": ifcopenshell.util.representation.get_material_style(lining_material, body),
-            "Framing": ifcopenshell.util.representation.get_material_style(panel_material, body),
-            "Glazing": ifcopenshell.util.representation.get_material_style(glazing_material, body),
-        }
-        for item in model_representation.Items:
-            if aspect := ifcopenshell.util.representation.get_item_shape_aspect(model_representation, item):
-                if style := styles.get(aspect.Name, None):
-                    ifcopenshell.api.style.assign_item_style(ifc_file, item=item, style=style)
+    tool.Model.replace_object_ifc_representation(body, obj, model_representation)
+    if fallback_material := (int(props.lining_material) or int(props.framing_material) or int(props.glazing_material)):
+        ifcopenshell.api.material.set_shape_aspect_constituents(
+            ifc_file,
+            element=element,
+            context=body,
+            materials={
+                "Lining": tool.Ifc.get().by_id(int(props.lining_material) or fallback_material),
+                "Framing": tool.Ifc.get().by_id(int(props.framing_material) or fallback_material),
+                "Glazing": tool.Ifc.get().by_id(int(props.glazing_material) or fallback_material),
+            },
+        )
     elif material := ifcopenshell.util.element.get_material(element):
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
         if not material.is_a("IfcMaterial") and not ifc_file.get_total_inverses(material):
             ifcopenshell.api.material.remove_material_set(ifc_file, material=material)
-    tool.Model.replace_object_ifc_representation(body, obj, model_representation)
 
     # Body/PLAN_VIEW representation
     plan_body = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Body", "PLAN_VIEW")
@@ -165,38 +138,15 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
             )
             tool.Model.replace_object_ifc_representation(plan_annotation, obj, plan_representation)
 
-    # adding switch representation at the end instead of changing order of representations
-    # to prevent #2744
-    if tool.Geometry.get_active_representation_context(obj) != previously_active_context:
-        previously_active_representation = ifcopenshell.util.representation.get_representation(
-            element,
-            previously_active_context.ContextType,
-            previously_active_context.ContextIdentifier,
-            previously_active_context.TargetView,
-        )
-
-        if not previously_active_representation:
-            # we assume there is no representation because it was
-            # Plan/Annotation/PLAN_VIEW
-            previously_active_context = ifcopenshell.util.representation.get_context(
-                ifc_file, "Plan", "Body", "PLAN_VIEW"
-            )
-            previously_active_representation = ifcopenshell.util.representation.get_representation(
-                element,
-                previously_active_context.ContextType,
-                previously_active_context.ContextIdentifier,
-                previously_active_context.TargetView,
-            )
-
-        bonsai.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=previously_active_representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=True,
-        )
+    bonsai.core.geometry.switch_representation(
+        tool.Ifc,
+        tool.Geometry,
+        obj=obj,
+        representation=ifcopenshell.util.representation.get_representation(element, active_context),
+        should_reload=True,
+        is_global=True,
+        should_sync_changes_first=False,
+    )
 
     # type attributes
     if tool.Ifc.get_schema() != "IFC2X3":

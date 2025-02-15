@@ -950,15 +950,6 @@ class Model(bonsai.core.tool.Model):
             ifcopenshell.api.run(
                 "geometry.assign_representation", ifc_file, product=ifc_element, representation=new_representation
             )
-        geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=new_representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
 
     @classmethod
     def update_thumbnail_for_element(cls, element: ifcopenshell.entity_instance, refresh: bool = False) -> None:

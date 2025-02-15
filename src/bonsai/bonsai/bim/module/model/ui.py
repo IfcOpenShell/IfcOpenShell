@@ -546,7 +546,7 @@ class BIM_PT_door(bpy.types.Panel):
                 self.layout.use_property_split = True
                 self.layout.label(text="Material Properties")
                 self.layout.prop(props, "lining_material")
-                self.layout.prop(props, "panel_material")
+                self.layout.prop(props, "framing_material", text="Panel Material")
                 if props.transom_thickness:
                     self.layout.prop(props, "glazing_material")
             else:

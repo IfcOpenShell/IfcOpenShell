@@ -694,8 +694,8 @@ class BIMDoorProperties(PropertyGroup):
     )
 
     # Material properties
-    panel_material: bpy.props.EnumProperty(name="Panel Material", items=get_materials, options=set())
     lining_material: bpy.props.EnumProperty(name="Lining Material", items=get_materials, options=set())
+    framing_material: bpy.props.EnumProperty(name="Framing Material", items=get_materials, options=set())
     glazing_material: bpy.props.EnumProperty(name="Glazing Material", items=get_materials, options=set())
 
     if TYPE_CHECKING:
