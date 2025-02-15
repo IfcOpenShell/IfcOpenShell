@@ -1305,6 +1305,22 @@ class ShapeBuilder:
         ]
         return self.file.createIfcFacetedBrep(self.file.createIfcClosedShell(faces))
 
+    def triangulated_face_set(
+        self, points: SequenceOfVectors, faces: Sequence[Sequence[int]]
+    ) -> ifcopenshell.entity_instance:
+        """
+        Generate an IfcTriangulatedFaceSet
+
+        Note that this is not available in IFC2X3.
+
+        :param points: list of 3d coordinates
+        :param faces: list of triangles consisted of point indices (points indices starting from 0)
+        :return: IfcTriangulatedFaceSet
+        """
+        ifc_points = self.file.createIfcCartesianPointList3D(ifc_safe_vector_type(points))
+        ifc_faces = [[i + 1 for i in face][:3] for face in faces]
+        return self.file.createIfcTriangulatedFaceSet(Coordinates=ifc_points, CoordIndex=ifc_faces)
+
     def polygonal_face_set(
         self, points: SequenceOfVectors, faces: Sequence[Sequence[int]]
     ) -> ifcopenshell.entity_instance:
