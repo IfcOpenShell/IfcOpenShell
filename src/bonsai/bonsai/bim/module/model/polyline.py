@@ -886,10 +886,11 @@ class PolylineOperator:
                 tool.Blender.update_viewport()
 
     def get_product_preview_data(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_isntance):
-        if tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type.is_a() not in {"IfcColumnType"}:
-            data = get_horizontal_profile_preview_data(context, relating_type)
-        elif tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type.is_a() in {"IfcColumnType"}:
-            data = get_vertical_profile_preview_data(context, relating_type)
+        if tool.Model.get_usage_type(relating_type) == "PROFILE":
+            if relating_type.is_a() in {"IfcColumnType", "IfcPileType"}:
+                data = get_vertical_profile_preview_data(context, relating_type)
+            else:
+                data = get_horizontal_profile_preview_data(context, relating_type)
         elif tool.Model.get_usage_type(relating_type) == "LAYER2":
             data = get_wall_preview_data(context, relating_type)
         elif tool.Model.get_usage_type(relating_type) == "LAYER3":

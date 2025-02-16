@@ -105,9 +105,8 @@ class DumbProfileGenerator:
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
 
         matrix_world = Matrix()
-        if not self.relating_type.is_a("IfcColumnType"):
+        if self.relating_type.is_a() not in ("IfcColumnType", "IfcPileType"):
             matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
-
             matrix_world = Matrix.Rotation(self.rotation, 4, "Z") @ matrix_world
 
         matrix_world.translation = self.location

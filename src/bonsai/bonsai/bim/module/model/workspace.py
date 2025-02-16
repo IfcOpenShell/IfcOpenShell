@@ -632,11 +632,11 @@ class CreateObjectUI:
                 data=cls.props, property="x_angle", text="Slope" if ui_context != "TOOL_HEADER" else "A", icon="FILE_3D"
             )
 
-        elif ifc_class in ("IfcColumnType", "IfcMemberType"):
+        elif ifc_class in ("IfcColumnType", "IfcPileType"):
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
             row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
 
-        elif ifc_class in ("IfcBeamType"):
+        elif ifc_class in ("IfcBeamType", "IfcMemberType"):
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
             row.prop(data=cls.props, property="extrusion_depth", text="Length" if ui_context != "TOOL_HEADER" else "L")
 
@@ -817,7 +817,9 @@ class EditObjectUI:
             op.cardinal_point = int(cls.props.cardinal_point)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             label = (
-                "Height" if AuthoringData.data["active_class"] in ("IfcColumn", "IfcColumnStandardCase") else "Length"
+                "Height"
+                if AuthoringData.data["active_class"] in ("IfcColumn", "IfcColumnStandardCase", "IfcPile")
+                else "Length"
             )
             row.prop(
                 data=cls.props, property="extrusion_depth", text=label if ui_context != "TOOL_HEADER" else label[0]
@@ -1168,7 +1170,10 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
         elif tool.Model.get_usage_type(relating_type) == "LAYER3":
             return bpy.ops.bim.draw_polyline_slab("INVOKE_DEFAULT")
-        elif tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type_class != "IfcColumnType":
+        elif tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type_class not in (
+            "IfcColumnType",
+            "IfcPileType",
+        ):
             return bpy.ops.bim.draw_polyline_profile("INVOKE_DEFAULT")
         return bpy.ops.bim.add_occurrence("INVOKE_DEFAULT")
 
@@ -1350,7 +1355,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.rotate_90(axis="Z")
-        elif self.active_class in ("IfcColumn", "IfcColumnStandardCase"):
+        elif self.active_class in ("IfcColumn", "IfcColumnStandardCase", "IfcPile"):
             bpy.ops.bim.rotate_90(axis="Z")
         elif self.active_class in ("IfcBeam", "IfcBeamStandardCase", "IfcMember", "IfcMemberStandardCase"):
             bpy.ops.bim.rotate_90(axis="Y")
