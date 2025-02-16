@@ -2370,11 +2370,30 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
 
         if obj.data and hasattr(obj.data, "BIMMeshProperties"):
             active_representation_id = obj.data.BIMMeshProperties.ifc_definition_id
-            element = tool.Ifc.get().by_id(active_representation_id)
+            representation = tool.Ifc.get().by_id(active_representation_id)
+
+            # Shape aspects must be considered from the PartOfProductDefinitionShape level
+            element = tool.Ifc.get_entity(obj)
+            product_reps = []
+            if element.is_a("IfcProduct"):
+                product_reps = [element.Representation]
+                if element_type := ifcopenshell.util.element.get_type(element):
+                    product_reps.extend(element_type.RepresentationMaps or [])
+            elif element.is_a("IfcTypeProduct"):
+                product_reps = element.RepresentationMaps
+            item_aspect = {}
+            for product_rep in product_reps:
+                for aspect in product_rep.HasShapeAspects:
+                    for aspect_rep in aspect.ShapeRepresentations:
+                        if aspect_rep.ContextOfItems != representation.ContextOfItems:
+                            continue
+                        for item in aspect_rep.Items:
+                            item_aspect[item] = aspect
+
             # IfcShapeRepresentation or IfcTopologyRepresentation.
-            if not element.is_a("IfcShapeModel"):
+            if not representation.is_a("IfcShapeModel"):
                 return
-            queue = list(element.Items)
+            queue = list(representation.Items)
             while queue:
                 item = queue.pop()
                 if item.is_a("IfcMappedItem"):
@@ -2397,15 +2416,14 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
                         elif inverse.is_a("IfcPresentationLayerAssignment"):
                             new.layer = inverse.Name or "Unnamed"
                             new.layer_id = inverse.id()
-                        elif inverse.is_a("IfcShapeRepresentation"):
-                            if inverse.OfShapeAspect:
-                                shape_aspect = inverse.OfShapeAspect[0]
-                                new.shape_aspect = shape_aspect.Name
-                                new.shape_aspect_id = shape_aspect.id()
                         elif inverse.is_a("IfcIndexedTextureMap"):
                             add_tag(new, "UV")
                         elif inverse.is_a("IfcIndexedColourMap"):
                             add_tag(new, "Colour")
+
+                    if aspect := item_aspect.get(item, None):
+                        new.shape_aspect = aspect.Name
+                        new.shape_aspect_id = aspect.id()
 
             # sort created items
             sorted_items = sorted(props.items[:], key=lambda i: (not i.shape_aspect, i.shape_aspect))
