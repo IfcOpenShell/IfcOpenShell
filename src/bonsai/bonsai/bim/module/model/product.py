@@ -154,7 +154,7 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.add_element()
 
 
-class AddOccurrence(bpy.types.Operator, PolylineOperator):
+class AddOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
     bl_idname = "bim.add_occurrence"
     bl_label = "Add Occurrence"
     bl_options = {"REGISTER", "UNDO"}
@@ -199,6 +199,9 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
             snap_obj.select_set(False)
 
     def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _modal(self, context, event):
         # Ensure state of BIM tool props is valid
         props = tool.Model.get_model_props()
         relating_type_id = tool.Blender.get_enum_safe(props, "relating_type_id")
@@ -251,6 +254,9 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
         super().invoke(context, event)
         ProductDecorator.install(context)
         self.tool_state.use_default_container = True

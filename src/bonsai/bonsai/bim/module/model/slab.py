@@ -31,9 +31,8 @@ import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import cos, radians
+from math import cos
 from mathutils import Vector, Matrix
-from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from bonsai.bim.module.model.wall import DumbWallRecalculator
@@ -864,7 +863,7 @@ class AddSlabFromWall(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
+class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
     bl_idname = "bim.draw_polyline_slab"
     bl_label = "Draw Polyline Slab"
     bl_options = {"REGISTER", "UNDO"}
@@ -905,6 +904,9 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
         DumbSlabPlaner().regenerate_from_occurence(element, material_set_usage)
 
     def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _modal(self, context, event):
         if not self.relating_type:
             self.report({"WARNING"}, "You need to select a slab type.")
             PolylineDecorator.uninstall()
@@ -975,6 +977,9 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
         super().invoke(context, event)
         ProductDecorator.install(context)
         self.tool_state.use_default_container = True

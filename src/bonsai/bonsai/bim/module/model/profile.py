@@ -32,9 +32,9 @@ import bonsai.core.type
 import bonsai.core.geometry
 import bonsai.core.material
 import bonsai.core.root
-from math import pi, degrees, inf, atan2
-from mathutils import Vector, Matrix, Quaternion
-from bonsai.bim.module.geometry.helper import Helper
+from bonsai.bim.ifc import IfcStore
+from math import pi, degrees, atan2
+from mathutils import Vector, Matrix
 from bonsai.bim.module.model.wall import DumbWallRecalculator
 from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
@@ -1109,7 +1109,7 @@ class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
+class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
     bl_idname = "bim.draw_polyline_profile"
     bl_label = "Draw Polyline Profile"
     bl_options = {"REGISTER", "UNDO"}
@@ -1142,6 +1142,9 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
                     DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
 
     def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _modal(self, context, event):
         if not self.relating_type:
             self.report({"WARNING"}, "You need to select a profile type.")
             PolylineDecorator.uninstall()
@@ -1192,6 +1195,9 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
         super().invoke(context, event)
         ProductDecorator.install(context)
         self.tool_state.use_default_container = True

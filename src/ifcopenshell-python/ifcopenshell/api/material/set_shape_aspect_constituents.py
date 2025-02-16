@@ -44,7 +44,7 @@ def set_shape_aspect_constituents(
 
     A material may be associated with a style (i.e. colour). For example, a
     grey style for the "Aluminium" material and a transparent blue style for
-    the "Laminated Low-e Glass" material. 
+    the "Laminated Low-e Glass" material.
 
     These three concepts of material constituents, shape aspects, and
     associated styles are correlated. For example, if the name (e.g. "Framing")
@@ -75,7 +75,7 @@ def set_shape_aspect_constituents(
         # Create two materials
         aluminium = ifcopenshell.api.material.add_material(model, name="AL01", category="aluminium")
         glass = ifcopenshell.api.material.add_material(model, name="GLZ01", category="glass")
-        
+
         # Auto assign material constituents and styles to items based on shape aspects
         ifcopenshell.api.material.set_shape_aspect_constituents(
             model, element=window, context=body, materials={
@@ -102,9 +102,7 @@ def set_shape_aspect_constituents(
     if should_create_new_material_set:
         material_set = ifcopenshell.api.material.add_material_set(file, set_type="IfcMaterialConstituentSet")
         for name, material in materials.items():
-            ifcopenshell.api.material.add_constituent(
-                file, constituent_set=material_set, material=material, name=name
-            )
+            ifcopenshell.api.material.add_constituent(file, constituent_set=material_set, material=material, name=name)
         ifcopenshell.api.material.assign_material(file, products=[element], material=material_set)
 
     styles = {n: ifcopenshell.util.representation.get_material_style(m, context) for n, m in materials.items()}

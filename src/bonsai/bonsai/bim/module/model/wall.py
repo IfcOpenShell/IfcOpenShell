@@ -350,7 +350,7 @@ class AddWallsFromSlab(bpy.types.Operator, tool.Ifc.Operator):
                 DumbWallJoiner().join_V(wall2["obj"], wall1["obj"])
 
 
-class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
+class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
     bl_idname = "bim.draw_polyline_wall"
     bl_label = "Draw Polyline Wall"
     bl_options = {"REGISTER", "UNDO"}
@@ -399,6 +399,9 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
                     DumbWallJoiner().join_V(wall2["obj"], wall1["obj"])
 
     def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _modal(self, context, event):
         if not self.relating_type:
             self.report({"WARNING"}, "You need to select a wall type.")
             PolylineDecorator.uninstall()
@@ -471,6 +474,9 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator):
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
         super().invoke(context, event)
         ProductDecorator.install(context)
         self.tool_state.use_default_container = True

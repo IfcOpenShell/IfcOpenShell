@@ -1913,7 +1913,7 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def invoke(self, context, event):
-        return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
 
     def _invoke(self, context, event):
         if not tool.Ifc.get():
@@ -2089,7 +2089,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
     should_save: bpy.props.BoolProperty(name="Should Save", default=True)
 
     def invoke(self, context, event):
-        return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
 
     def _invoke(self, context: bpy.types.Context, event: bpy.types.Event) -> set[str]:
         if not tool.Ifc.get():

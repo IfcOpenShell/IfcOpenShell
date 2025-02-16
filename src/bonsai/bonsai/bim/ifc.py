@@ -407,7 +407,12 @@ class IfcStore:
             obj.BIMObjectProperties.ifc_definition_id = 0
 
     @staticmethod
-    def execute_ifc_operator(operator: tool.Ifc.Operator, context: bpy.types.Context, is_invoke=False) -> set[str]:
+    def execute_ifc_operator(
+        operator: tool.Ifc.Operator,
+        context: bpy.types.Context,
+        event=None,
+        method: Literal["EXECUTE", "INVOKE", "MODAL"] = "EXECUTE",
+    ) -> set[str]:
         bonsai.last_actions.append({"type": "operator", "name": operator.bl_idname})
         bpy.context.scene.BIMProperties.is_dirty = True
         is_top_level_operator = not bool(IfcStore.current_transaction)
@@ -436,10 +441,12 @@ class IfcStore:
                 bonsai.bim.handler.refresh_ui_data()
 
         try:
-            if is_invoke:
-                result = getattr(operator, "_invoke")(context, None)
-            else:
+            if method == "EXECUTE":
                 result = getattr(operator, "_execute")(context)
+            elif method == "INVOKE":
+                result = getattr(operator, "_invoke")(context, event)
+            elif method == "MODAL":
+                result = getattr(operator, "_modal")(context, event)
         except:
             bonsai.last_error = traceback.format_exc()
             # Try to ensure undo will work since Blender undo does work in case of errors.

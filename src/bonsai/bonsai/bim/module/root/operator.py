@@ -355,7 +355,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
     ifc_class: bpy.props.StringProperty(options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
-        return IfcStore.execute_ifc_operator(self, context, is_invoke=True)
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
 
     def _invoke(self, context, event):
         props = context.scene.BIMRootProperties
