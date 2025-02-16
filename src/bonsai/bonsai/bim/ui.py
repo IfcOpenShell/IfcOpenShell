@@ -66,7 +66,7 @@ class IFCFileSelector:
 
         if self.use_relative_path:
             filepath = filepath.relative_to(bpy.path.abspath("//"))
-        return filepath.as_posix()
+        return filepath.as_posix().replace("\\", "/")
 
     def draw(self, context: bpy.types.Context) -> None:
         assert isinstance(context.space_data, bpy.types.SpaceFileBrowser)

@@ -906,7 +906,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
         if not filepath:
             return tooltip
         filepath = Path(filepath)
-        tooltip += f".\n"
+        tooltip += ".\n"
         if not filepath.exists():
             tooltip += "\nFile does not exist"
             return tooltip
@@ -977,7 +977,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
                 bpy.ops.bim.convert_to_blender()
 
             context.scene.BIMProperties.ifc_file = filepath
-            if not (ifc_file := tool.Ifc.get()):
+            if not tool.Ifc.get():
                 self.report(
                     {"ERROR"},
                     f"Error loading IFC file from filepath '{filepath}'. See logs above in the system console for the details.",
@@ -1593,6 +1593,7 @@ class ExportIFC(bpy.types.Operator):
             output_file = bpy.path.ensure_ext(self.filepath, ".ifcjson")
         else:
             output_file = bpy.path.ensure_ext(self.filepath, ".ifc")
+        output_file = Path(output_file).as_posix().replace("\\", "/")
 
         settings = export_ifc.IfcExportSettings.factory(context, output_file, logger)
         settings.json_version = self.json_version
@@ -1612,7 +1613,7 @@ class ExportIFC(bpy.types.Operator):
             new.name = output_file
         if context.scene.BIMProjectProperties.use_relative_project_path and bpy.data.is_saved:
             output_file = os.path.relpath(output_file, bpy.path.abspath("//"))
-        if scene.BIMProperties.ifc_file != output_file and extension not in ["ifczip", "ifcjson"]:
+        if scene.BIMProperties.ifc_file != output_file and extension not in ("ifczip", "ifcjson"):
             scene.BIMProperties.ifc_file = output_file
         save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
         if save_blend_file:

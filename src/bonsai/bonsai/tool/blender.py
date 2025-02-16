@@ -869,7 +869,7 @@ class Blender(bonsai.core.tool.Blender):
             cls.open_file_or_folder(filepath.as_posix())
             return {"PASS_THROUGH"}
 
-        # holding sHIFT - open file
+        # holding SHIFT - open file
         if not filepath.exists():
             operator.report({"ERROR"}, f'Cannot open non-existing file: "{filepath.as_posix()}"')
             return {"CANCELLED"}
