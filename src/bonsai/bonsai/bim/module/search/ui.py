@@ -141,12 +141,12 @@ class BIM_PT_select_similar(Panel):
 
 class BIM_UL_colourscheme(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.BIMWorkScheduleProperties
         if not item:
             return
         row = layout.row(align=True)
-        row.label(text=f"{item.name} ({item.total})")
-        row.prop(item, "colour", text="")
+        split = row.split(factor=0.85)
+        split.label(text=f"{item.name} ({item.total})")
+        split.prop(item, "colour", text="")
 
 
 class BIM_UL_ifc_class_filter(bpy.types.UIList):
