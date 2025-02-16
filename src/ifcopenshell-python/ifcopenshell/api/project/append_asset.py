@@ -261,7 +261,10 @@ class Usecase:
             self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": ["StyledByItem", "LayerAssignment"],
             "IfcRepresentation": ["LayerAssignments"],
+            "IfcProductDefinitionShape": ["HasShapeAspects"],
+            "IfcRepresentationMap": ["HasShapeAspects"],
         }
+        print('appending type product!')
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
         self.reuse_existing_contexts()
@@ -278,6 +281,8 @@ class Usecase:
                 "LayerAssignments" if self.file.schema == "IFC2X3" else "LayerAssignment",
             ],
             "IfcRepresentation": ["LayerAssignments"],
+            "IfcProductDefinitionShape": ["HasShapeAspects"],
+            "IfcRepresentationMap": ["HasShapeAspects"],
         }
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
