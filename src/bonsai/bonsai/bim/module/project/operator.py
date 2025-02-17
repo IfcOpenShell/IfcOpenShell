@@ -341,13 +341,12 @@ class ChangeLibraryElement(bpy.types.Operator):
         return {"FINISHED"}
 
     def get_name(self, element: ifcopenshell.entity_instance) -> str:
-        if element.is_a("IfcProfileDef"):
-            return element.ProfileName or "Unnamed"
-        return element.Name or "Unnamed"
+        attr_name = tool.Project.get_library_element_attr_name(element)
+        return getattr(element, attr_name) or "Unnamed"
 
     def add_library_asset(self, name: str, ifc_definition_id: int) -> None:
         new = self.props.library_elements.add()
-        new.name = name
+        new["name"] = name
         new.ifc_definition_id = ifc_definition_id
         element = self.library_file.by_id(ifc_definition_id)
 

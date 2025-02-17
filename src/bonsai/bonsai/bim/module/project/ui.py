@@ -517,7 +517,10 @@ class BIM_UL_library(UIList):
                 op.element_name = item.name
                 op.breadcrumb_type = item.element_type
                 op.library_id = item.ifc_definition_id
-            row.label(text=item.name)
+            if item.ifc_definition_id:
+                row.prop(item, "name", text="", emboss=False)
+            else:
+                row.label(text=item.name)
             if item.ifc_definition_id and item.is_declarable:
                 if item.is_declared:
                     op = row.operator("bim.unassign_library_declaration", text="", icon="KEYFRAME_HLT", emboss=False)

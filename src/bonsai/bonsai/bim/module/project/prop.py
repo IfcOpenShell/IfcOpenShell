@@ -36,6 +36,7 @@ from bpy.props import (
     StringProperty,
 )
 from typing import TYPE_CHECKING, Literal, Union, get_args
+from typing_extensions import assert_never
 
 
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -147,11 +148,35 @@ def update_filter_mode(self: "BIMProjectProperties", context: bpy.types.Context)
             new.total_elements = len(ifcopenshell.util.element.get_types(ifc_type))
 
 
+def update_library_element_name(self: "LibraryElement", context: bpy.types.Context) -> None:
+    library_file = IfcStore.library_file
+    assert library_file
+
+    if self.element_type == "CLASS":
+        raise Exception("Unexpected element type for rename: 'CLASS'.")
+
+    def update_element_name(ifc_definition_id: int, name: str) -> None:
+        element = library_file.by_id(ifc_definition_id)
+        attr_name = tool.Project.get_library_element_attr_name(element)
+        previous_name = getattr(element, attr_name)
+        if name == previous_name:
+            return
+        setattr(element, attr_name, name)
+
+    if self.element_type == "ASSET":
+        update_element_name(self.ifc_definition_id, self.name)
+    elif self.element_type == "LIBRARY":
+        assert self.ifc_definition_id, "Renaming for unassigned elements library is not supported."
+        update_element_name(self.ifc_definition_id, self.name)
+    else:
+        assert_never(self.element_type)
+
+
 LibraryElementType = Literal["ASSET", "CLASS", "LIBRARY"]
 
 
 class LibraryElement(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=update_library_element_name)
     element_type: EnumProperty(items=[(i, i, "") for i in get_args(LibraryElementType)], name="Element Type")
     # Asset group.
     asset_count: IntProperty(name="Asset Count")
@@ -372,7 +397,7 @@ class BIMProjectProperties(PropertyGroup):
 
     def add_library_project_library(self, name: str, asset_count: int, ifc_definition_id: int) -> LibraryElement:
         new = self.library_elements.add()
-        new.name = name
+        new["name"] = name
         new.asset_count = asset_count
         new.element_type = "LIBRARY"
         new.ifc_definition_id = ifc_definition_id
@@ -380,7 +405,7 @@ class BIMProjectProperties(PropertyGroup):
 
     def add_library_asset_class(self, name: str, asset_count: int) -> LibraryElement:
         new = self.library_elements.add()
-        new.name = name
+        new["name"] = name
         new.asset_count = asset_count
         new.element_type = "CLASS"
         return new

@@ -375,3 +375,9 @@ class Project(bonsai.core.tool.Project):
             props.add_library_project_library(
                 project_library.Name or "Unnamed", len(library_elements), project_library.id()
             )
+
+    @classmethod
+    def get_library_element_attr_name(cls, library_element: ifcopenshell.entity_instance) -> str:
+        if library_element.is_a("IfcProfileDef"):
+            return "ProfileName"
+        return "Name"
