@@ -695,6 +695,8 @@ class PolylineDecorator:
                     self.draw_batch("LINES", mouse_point + projection_point, decorator_color_unselected, edges)
 
                 if axis1 and axis2:
+                    axis1 = [tuple(tool.Polyline.use_transform_orientations(Vector(v))) for v in axis1]
+                    axis2 = [tuple(tool.Polyline.use_transform_orientations(Vector(v))) for v in axis2]
                     self.line_shader.uniform_float("lineWidth", 1.5)
                     self.draw_batch("LINES", axis1, highlight_color(axis_color1), [(0, 1)])
                     self.draw_batch("LINES", axis2, highlight_color(axis_color2), [(0, 1)])

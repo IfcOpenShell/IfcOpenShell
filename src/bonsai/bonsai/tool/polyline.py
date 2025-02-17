@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from lark import Lark, Transformer
 from math import degrees, radians, sin, cos, tan
 from mathutils import Vector, Matrix
-from typing import Optional, Union, Literal
+from typing import Optional, Union, Literal, List
 
 
 class Polyline(bonsai.core.tool.Polyline):
@@ -154,13 +154,15 @@ class Polyline(bonsai.core.tool.Polyline):
         else:
             # Creates a fake "second to last" point away from the first point but in the same x axis
             # this allows to calculate the angle relative to x axis when there is only one point
-            second_to_last_point = Vector((last_point.x + 1000, last_point.y, last_point.z))
+            second_to_last_point = Vector((last_point.x + 1000000000, last_point.y, last_point.z))
             if tool_state.plane_method == "YZ":
-                second_to_last_point = Vector((last_point.x, last_point.y + 1000, last_point.z))
+                second_to_last_point = Vector((last_point.x, last_point.y + 1000000000, last_point.z))
+            second_to_last_point = tool.Polyline.use_transform_orientations(second_to_last_point)
 
-        world_second_to_last_point = Vector((last_point.x + 1000, last_point.y, last_point.z))
+        world_second_to_last_point = Vector((last_point.x + 1000000000, last_point.y, last_point.z))
         if tool_state.plane_method == "YZ":
-            world_second_to_last_point = Vector((last_point.x, last_point.y + 1000, last_point.z))
+            world_second_to_last_point = Vector((last_point.x, last_point.y + 1000000000, last_point.z))
+        world_second_to_last_point = tool.Polyline.use_transform_orientations(world_second_to_last_point)
 
         distance = (mouse_vector - last_point).length
         if distance < 0:
@@ -278,7 +280,10 @@ class Polyline(bonsai.core.tool.Polyline):
         else:
             # Creates a fake "second to last" point away from the first point but in the same x axis
             # this allows to calculate the angle relative to x axis when there is only one point
-            second_to_last_point = Vector((last_point.x + 1000, last_point.y, last_point.z))
+            second_to_last_point = Vector((last_point.x + 1000000000, last_point.y, last_point.z))
+            if tool_state.plane_method == "YZ":
+                second_to_last_point = Vector((last_point.x, last_point.y + 1000000000, last_point.z))
+            second_to_last_point = tool.Polyline.use_transform_orientations(second_to_last_point)
 
         distance = input_ui.get_number_value("D")
 
@@ -288,8 +293,8 @@ class Polyline(bonsai.core.tool.Polyline):
             rot_vector = tool.Cad.angle_3_vectors(second_to_last_point, last_point, snap_vector, angle, degrees=True)
 
             # When the angle in 180 degrees it might create a rotation vector that is equal to
-            # when the angle is 0 degress, leading the insertion point to the opposite direction
-            # This prevents the issue by ensuring the the negative x direction
+            # when the angle is 0 degrees, leading the insertion point to the opposite direction
+            # This prevents the issue by ensuring the negative x direction
             if round(angle, 4) == round(math.pi, 4):
                 rot_vector.x = -1.0
 
@@ -439,7 +444,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
             transformer = InputTransform()
             result = transformer.transform(parse_tree)
-            result = round(result, 5)
+            result = round(result, 4)
             return True, str(result)
         except:
             return False, "0"
@@ -574,3 +579,16 @@ class Polyline(bonsai.core.tool.Polyline):
 
         measurement_data.total_length = polyline_data[0].total_length
         measurement_data.area = polyline_data[0].area
+
+    @classmethod
+    def use_transform_orientations(cls, value:Union[Vector, Matrix]) -> Union[Vector, Matrix]:
+        custom_orientation = bpy.context.scene.transform_orientation_slots[0].custom_orientation
+        if custom_orientation:
+            custom_matrix = custom_orientation.matrix
+            if isinstance(value, Vector):
+                result = custom_matrix @ value
+            else:
+                result = custom_matrix.inverted() @ value
+            return result
+        return value
+         

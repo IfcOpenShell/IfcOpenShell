@@ -188,6 +188,7 @@ class Snap(bonsai.core.tool.Snap):
             if not axis:
                 continue
             rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, pivot_axis)
+            rot_mat = tool.Polyline.use_transform_orientations(rot_mat)
             rot_intersection = rot_mat @ translated_intersection
             proximity = rot_intersection.y
             if tool_state.plane_method == "XZ":
@@ -211,6 +212,7 @@ class Snap(bonsai.core.tool.Snap):
             if tool_state.plane_method == "YZ":
                 axis = 90 - (axis * -1)
             rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, pivot_axis)
+            rot_mat = tool.Polyline.use_transform_orientations(rot_mat)
             rot_intersection = rot_mat @ translated_intersection
             start, end = create_axis_line_data(rot_mat, last_point)
             PolylineDecorator.set_angle_axis_line(start, end)
@@ -229,10 +231,13 @@ class Snap(bonsai.core.tool.Snap):
     def mix_snap_and_axis(cls, snap_point, axis_start, axis_end):
         # Creates a mixed snap point between the locked axis and the object snap
         # Then it sorts them to get the shortest first
+        x_axis = tool.Polyline.use_transform_orientations(Vector((1, 0, 0)))
+        y_axis = tool.Polyline.use_transform_orientations(Vector((0, 1, 0)))
+        z_axis = tool.Polyline.use_transform_orientations(Vector((0, 0, 1)))
         intersections = []
-        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point, Vector((1, 0, 0))))
-        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point, Vector((0, 1, 0))))
-        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point, Vector((0, 0, 1))))
+        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point, x_axis))
+        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point, y_axis))
+        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point, z_axis))
 
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
@@ -274,6 +279,9 @@ class Snap(bonsai.core.tool.Snap):
         )
 
         def select_plane_method():
+            if not last_polyline_point:
+                plane_origin = Vector((0, 0, 0))
+                plane_normal = Vector((0, 0, 1))
             if not tool_state.plane_method:
                 view_rotation = rv3d.view_rotation
                 view_location = rv3d.view_location
@@ -302,6 +310,7 @@ class Snap(bonsai.core.tool.Snap):
                     plane_origin = Vector((last_polyline_point.x, last_polyline_point.y, last_polyline_point.z))
                 plane_normal = Vector((1, 0, 0))
 
+            plane_normal = tool.Polyline.use_transform_orientations(plane_normal)
             return plane_origin, plane_normal
 
         def cast_rays_to_single_object(obj, mouse_pos):
@@ -448,7 +457,6 @@ class Snap(bonsai.core.tool.Snap):
         tool_state.plane_origin = plane_origin  # This will be used along with plane method
 
         intersection = tool.Raycast.ray_cast_to_plane(context, event, plane_origin, plane_normal)
-        print(intersection)
 
         axis_start = None
         axis_end = None
