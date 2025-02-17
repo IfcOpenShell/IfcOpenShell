@@ -25,11 +25,21 @@ Can be used to run validation on IFC file from the command line:
 
     python -m ifcopenshell.validate /path/to/model.ifc --rules
 
-Available flags:
+```
+$ python -m ifcopenshell.validate -h
+usage: validate.py [-h] [--rules] [--json] [--fields] [--spf] files [files ...]
 
-- ``--rules``: Also check express rules.
-- ``--json``: Produce JSON output.
-- ``--fields``: Output more detailed information about failed entities (available only with ``--json``).
+positional arguments:
+  files       The IFC file to validate.
+
+options:
+  -h, --help  show this help message and exit
+  --rules     Run express rules.
+  --json      Output in JSON format.
+  --fields    Output more detailed information about failed entities (only with --json).
+  --spf       Output entities in SPF format (only with --json).
+```
+
 """
 
 import os
@@ -37,6 +47,7 @@ import sys
 import json
 import functools
 import types
+import argparse
 
 from collections import namedtuple
 from typing import Union, Iterator, Any, Optional
@@ -647,13 +658,24 @@ if __name__ == "__main__":
 
     sys.excepthook = handle_exception
 
-    filenames = [x for x in sys.argv[1:] if not x.startswith("--")]
-    flags = set(x for x in sys.argv[1:] if x.startswith("--"))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("files", nargs="+", help="The IFC file to validate.")
+    parser.add_argument("--rules", action="store_true", help="Run express rules.")
+    parser.add_argument("--json", action="store_true", help="Output in JSON format.")
+    parser.add_argument(
+        "--fields",
+        action="store_true",
+        help="Output more detailed information about failed entities (only with --json).",
+    )
+    parser.add_argument("--spf", action="store_true", help="Output entities in SPF format (only with --json).")
+    args = parser.parse_args()
+
+    filenames: list[str] = args.files
     some_file_is_invalid = False
 
     for fn in filenames:
         handler = None
-        if "--json" in flags:
+        if args.json:
             logger = json_logger()
         else:
             logger = logging.getLogger("validate")
@@ -662,14 +684,14 @@ if __name__ == "__main__":
             logger.setLevel(logging.DEBUG)
 
         print("Validating", fn, file=sys.stderr)
-        validate(fn, logger, "--rules" in flags)
+        validate(fn, logger, args.rules)
 
-        if "--json" in flags:
+        if args.json:
             sys.stdout.reconfigure(encoding="utf-8")
             conv = str
-            if "--spf" in flags:
+            if args.spf:
                 conv = lambda x: x.to_string() if isinstance(x, ifcopenshell.entity_instance) else str(x)
-            if "--fields" in flags:
+            if args.fields:
 
                 def conv(x):
                     if isinstance(x, ifcopenshell.entity_instance):
