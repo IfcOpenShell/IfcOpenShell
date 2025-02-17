@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bonsai.bim.prop import StrProperty, Attribute
 from bonsai.bim.module.library.data import LibrariesData
 from bpy.types import PropertyGroup
@@ -37,8 +38,18 @@ def update_active_reference_index(self, context):
     LibrariesData.is_loaded = False
 
 
+def update_library_element_name(self: "LibraryReference", context: bpy.types.Context):
+    ifc_file = tool.Ifc.get()
+    element = ifc_file.by_id(self.ifc_definition_id)
+    previous_name = element.Name
+    if self.name == previous_name:
+        return
+    element.Name = self.name
+    LibrariesData.is_loaded = False
+
+
 class LibraryReference(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=update_library_element_name)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
     if TYPE_CHECKING:

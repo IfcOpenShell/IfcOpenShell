@@ -140,7 +140,7 @@ class BIM_UL_library_references(UIList):
     ):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
+            row.prop(item, "name", text="", emboss=False)
             op = row.operator("bim.enable_editing_library_reference", text="", icon="GREASEPENCIL")
             op.reference = item.ifc_definition_id
             op = row.operator("bim.remove_library_reference", text="", icon="X")
@@ -153,6 +153,6 @@ class BIM_UL_object_library_references(UIList):
     ):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
+            row.prop(item, "name", text="", emboss=False)
             op = row.operator("bim.assign_library_reference", text="", icon="ADD")
             op.reference = item.ifc_definition_id
