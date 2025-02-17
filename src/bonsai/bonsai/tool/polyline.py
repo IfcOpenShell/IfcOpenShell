@@ -456,8 +456,9 @@ class Polyline(bonsai.core.tool.Polyline):
         else:
             precision = None
 
+        value = value if is_area else value / unit_scale
         return format_distance(
-            value / unit_scale,
+            value,
             precision=precision,
             hide_units=False,
             isArea=is_area,
