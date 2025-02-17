@@ -19,6 +19,7 @@
 import bpy
 import json
 import ifcopenshell.api
+import ifcopenshell.api.material
 import ifcopenshell.util.element
 import ifcopenshell.util.attribute
 import ifcopenshell.util.representation
@@ -40,7 +41,8 @@ class LoadMaterials(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        core.load_materials(tool.Material, context.scene.BIMMaterialProperties.material_type)
+        props = tool.Material.get_material_props()
+        core.load_materials(tool.Material, props.material_type)
         return {"FINISHED"}
 
 
@@ -327,12 +329,13 @@ class AddProfile(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
+        props = tool.Material.get_material_props()
         ifcopenshell.api.run(
             "material.add_profile",
             self.file,
             profile_set=self.file.by_id(self.profile_set),
             material=self.file.by_id(int(obj.BIMObjectMaterialProperties.material)),
-            profile=self.file.by_id(int(context.scene.BIMMaterialProperties.profiles)),
+            profile=self.file.by_id(int(props.profiles)),
         )
 
 
@@ -662,7 +665,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
     def execute(self, context):
         self.file = IfcStore.get_file()
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.mprops = context.scene.BIMMaterialProperties
+        self.mprops = tool.Material.get_material_props()
         self.props = obj.BIMObjectMaterialProperties
         self.props.active_material_set_item_id = self.material_set_item
 
@@ -706,7 +709,7 @@ class EditMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = IfcStore.get_file()
         props = obj.BIMObjectMaterialProperties
-        mprops = context.scene.BIMMaterialProperties
+        mprops = tool.Material.get_material_props()
         element = tool.Ifc.get_entity(obj)
         material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
 
@@ -763,7 +766,7 @@ class ExpandMaterialCategory(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
-        props = context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         for index, category in (
             (i, c)
             for i, c in enumerate(props.materials)
@@ -792,7 +795,7 @@ class ContractMaterialCategory(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
-        props = context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         for index, category in (
             (i, c)
             for i, c in enumerate(props.materials)
@@ -812,7 +815,7 @@ class EnableEditingMaterialStyle(bpy.types.Operator):
     material: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         props.active_material_id = self.material
         props.editing_material_type = "STYLE"
 
@@ -843,7 +846,7 @@ class EditMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         ifc_file = tool.Ifc.get()
         material = ifc_file.by_id(props.active_material_id)
         style = ifc_file.by_id(int(props.styles))
@@ -867,7 +870,7 @@ class UnassignMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
     context: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         material = tool.Ifc.get().by_id(props.materials[props.active_material_index].ifc_definition_id)
         style = tool.Ifc.get().by_id(self.style)
         context = tool.Ifc.get().by_id(self.context)
@@ -888,7 +891,7 @@ class SelectMaterialInMaterialsUI(bpy.types.Operator):
         material_id: int
 
     def execute(self, context):
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         ifc_file = tool.Ifc.get()
         material_id = self.material_id
         material = ifc_file.by_id(material_id)

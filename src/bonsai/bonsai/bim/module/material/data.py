@@ -48,7 +48,8 @@ class MaterialsData:
 
     @classmethod
     def total_materials(cls):
-        return len(tool.Ifc.get().by_type(bpy.context.scene.BIMMaterialProperties.material_type))
+        props = tool.Material.get_material_props()
+        return len(tool.Ifc.get().by_type(props.material_type))
 
     @classmethod
     def material_types(cls):
@@ -101,7 +102,7 @@ class MaterialsData:
 
     @classmethod
     def material_styles_data(cls) -> dict[int, list[dict[str, Any]]]:
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         material_styles_data: dict[int, list[dict[str, Any]]] = {}
 
         for material_item in props.materials:

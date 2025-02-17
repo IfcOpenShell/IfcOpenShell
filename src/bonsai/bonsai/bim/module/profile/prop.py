@@ -35,7 +35,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 
 def get_profile_classes(self, context):
@@ -91,6 +91,17 @@ class BIMProfileProperties(PropertyGroup):
         poll=lambda self, obj: obj.type == "MESH",
     )
 
+    if TYPE_CHECKING:
+        is_editing: bool
+        profiles: bpy.types.bpy_prop_collection_idprop[Profile]
+        active_profile_index: int
+        active_profile_id: int
+        active_arbitrary_profile_id: int
+        profile_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        profile_classes: str
+        is_filtering_material_profiles: bool
+        object_to_profile: Union[bpy.types.Object, None]
+
 
 def generate_thumbnail_for_active_profile():
     from PIL import Image, ImageDraw
@@ -98,7 +109,7 @@ def generate_thumbnail_for_active_profile():
     if bpy.app.background:
         return
 
-    props = bpy.context.scene.BIMProfileProperties
+    props = tool.Profile.get_profile_props()
     ifc_file = tool.Ifc.get()
     preview_collection = ProfileData.preview_collection
 

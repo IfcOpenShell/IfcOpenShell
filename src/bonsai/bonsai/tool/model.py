@@ -26,6 +26,7 @@ import collections.abc
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.grid
 import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.util.element
@@ -1973,14 +1974,14 @@ class Model(bonsai.core.tool.Model):
         extrusion.Position = position
 
     @classmethod
-    def get_existing_x_angle(cls, extrusion):
+    def get_existing_x_angle(cls, extrusion: ifcopenshell.entity_instance) -> float:
         x, y, z = extrusion.ExtrudedDirection.DirectionRatios
         x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
 
         return x_angle
 
     @classmethod
-    def create_axis_curve(cls, obj: bpy.types.Object, grid_axis: ifcopenshell.entity_instance):
+    def create_axis_curve(cls, obj: bpy.types.Object, grid_axis: ifcopenshell.entity_instance) -> None:
         m = tool.Surveyor.get_absolute_matrix(obj)
         points = [m @ np.array(v.co.to_4d()) for v in obj.data.vertices[0:2]]
         ifcopenshell.api.grid.create_axis_curve(

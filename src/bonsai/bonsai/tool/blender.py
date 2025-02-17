@@ -191,9 +191,8 @@ class Blender(bonsai.core.tool.Blender):
         if obj_type == "Object":
             return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
         elif obj_type == "Material":
-            return context.scene.BIMMaterialProperties.materials[
-                context.scene.BIMMaterialProperties.active_material_index
-            ].ifc_definition_id
+            props = tool.Material.get_material_props()
+            return props.materials[props.active_material_index].ifc_definition_id
         elif obj_type == "MaterialSetItem":
             return bpy.data.objects.get(obj).BIMObjectMaterialProperties.active_material_set_item_id
         elif obj_type == "Task":
@@ -208,9 +207,8 @@ class Blender(bonsai.core.tool.Blender):
                 context.scene.BIMResourceProperties.active_resource_index
             ].ifc_definition_id
         elif obj_type == "Profile":
-            return context.scene.BIMProfileProperties.profiles[
-                context.scene.BIMProfileProperties.active_profile_index
-            ].ifc_definition_id
+            props = tool.Profile.get_profile_props()
+            return props.profiles[props.active_profile_index].ifc_definition_id
         elif obj_type == "WorkSchedule":
             return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
         elif obj_type == "Group":

@@ -264,7 +264,6 @@ class Usecase:
             "IfcProductDefinitionShape": ["HasShapeAspects"],
             "IfcRepresentationMap": ["HasShapeAspects"],
         }
-        print('appending type product!')
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
         self.reuse_existing_contexts()

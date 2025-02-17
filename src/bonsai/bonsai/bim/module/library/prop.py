@@ -30,6 +30,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Literal
 
 
 def update_active_reference_index(self, context):
@@ -39,6 +40,10 @@ def update_active_reference_index(self, context):
 class LibraryReference(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+    if TYPE_CHECKING:
+        name: str
+        ifc_definition_id: int
 
 
 class BIMLibraryProperties(PropertyGroup):
@@ -58,3 +63,12 @@ class BIMLibraryProperties(PropertyGroup):
     active_reference_id: IntProperty(name="Active Reference Id")
     references: CollectionProperty(type=LibraryReference, name="References")
     active_reference_index: IntProperty(name="Active Reference Index", update=update_active_reference_index)
+
+    if TYPE_CHECKING:
+        editing_mode: Literal["NONE", "LIBRARY", "REFERENCES", "REFERENCE"]
+        library_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        active_library_id: int
+        reference_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        active_reference_id: int
+        references: bpy.types.bpy_prop_collection_idprop[LibraryReference]
+        active_reference_index: int

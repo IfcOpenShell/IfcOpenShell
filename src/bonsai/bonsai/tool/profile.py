@@ -33,9 +33,14 @@ from typing import Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import bonsai.bim.module.profile.prop
+    from bonsai.bim.module.profile.prop import BIMProfileProperties
 
 
 class Profile(bonsai.core.tool.Profile):
+    @classmethod
+    def get_profile_props(cls) -> BIMProfileProperties:
+        return bpy.context.scene.BIMProfileProperties
+
     @classmethod
     def draw_image_for_ifc_profile(
         cls, draw: PIL.ImageDraw.ImageDraw, profile: ifcopenshell.entity_instance, size: float
@@ -116,7 +121,7 @@ class Profile(bonsai.core.tool.Profile):
 
     @classmethod
     def get_active_profile_ui(cls) -> Union[bonsai.bim.module.profile.prop.Profile, None]:
-        props = bpy.context.scene.BIMProfileProperties
+        props = cls.get_profile_props()
         index = props.active_profile_index
         if len(props.profiles) > index >= 0:
             return props.profiles[index]

@@ -29,7 +29,7 @@ from bonsai.bim.module.drawing.helper import format_distance
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.material.prop import Material
+    from bonsai.bim.module.material.prop import Material, BIMMaterialProperties
 
 
 class BIM_PT_materials(Panel):
@@ -49,7 +49,7 @@ class BIM_PT_materials(Panel):
         if not MaterialsData.is_loaded:
             MaterialsData.load()
 
-        self.props = context.scene.BIMMaterialProperties
+        self.props = tool.Material.get_material_props()
         material = tool.Material.get_active_material_item()
         material_id = material.ifc_definition_id if material else None
 
@@ -156,7 +156,7 @@ class BIM_PT_object_material(Panel):
         self.file = IfcStore.get_file()
         self.oprops = context.active_object.BIMObjectProperties
         self.props = context.active_object.BIMObjectMaterialProperties
-        self.mprops = context.scene.BIMMaterialProperties
+        self.mprops = tool.Material.get_material_props()
 
         if not ObjectMaterialData.data["materials"]:
             row = self.layout.row(align=True)
@@ -401,10 +401,16 @@ class BIM_PT_object_material(Panel):
 
 class BIM_UL_materials(UIList):
     def draw_item(
-        self, context, layout: bpy.types.UILayout, data, item: Material, icon, active_data, active_propname
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMMaterialProperties,
+        item: Material,
+        icon,
+        active_data,
+        active_propname,
     ) -> None:
-        mprops = context.scene.BIMMaterialProperties
-        material_type = mprops.material_type
+        material_type = data.material_type
 
         if item:
             row = layout.row(align=True)

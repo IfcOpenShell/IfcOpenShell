@@ -312,7 +312,7 @@ class BIM_PT_material_classifications(Panel, ReferenceUI):
     def poll(cls, context):
         if not tool.Ifc.get():
             return False
-        props = context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         if props.is_editing and (material := props.active_material) and material.ifc_definition_id:
             return True
         return False

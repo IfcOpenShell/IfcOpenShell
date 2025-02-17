@@ -33,12 +33,18 @@ from typing_extensions import assert_never
 if TYPE_CHECKING:
     # Avoid circular imports.
     from bonsai.bim.module.material.prop import Material as MaterialItem
+    from bonsai.bim.module.material.prop import BIMMaterialProperties
 
 
 class Material(bonsai.core.tool.Material):
     @classmethod
+    def get_material_props(cls) -> BIMMaterialProperties:
+        return bpy.context.scene.BIMMaterialProperties
+
+    @classmethod
     def disable_editing_materials(cls) -> None:
-        bpy.context.scene.BIMMaterialProperties.is_editing = False
+        props = tool.Material.get_material_props()
+        props.is_editing = False
 
     @classmethod
     def duplicate_material(cls, material: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
@@ -55,11 +61,13 @@ class Material(bonsai.core.tool.Material):
 
     @classmethod
     def enable_editing_materials(cls) -> None:
-        bpy.context.scene.BIMMaterialProperties.is_editing = True
+        props = tool.Material.get_material_props()
+        props.is_editing = True
 
     @classmethod
     def get_active_material_type(cls) -> str:
-        return bpy.context.scene.BIMMaterialProperties.material_type
+        props = tool.Material.get_material_props()
+        return props.material_type
 
     @classmethod
     def get_elements_by_material(cls, material: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -68,7 +76,7 @@ class Material(bonsai.core.tool.Material):
     @classmethod
     def get_active_material_item(cls) -> Union[MaterialItem, None]:
         """Get active material props item if index is valid, otherwise, return None."""
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         if 0 <= props.active_material_index < len(props.materials):
             return props.materials[props.active_material_index]
         return None
@@ -80,7 +88,7 @@ class Material(bonsai.core.tool.Material):
 
     @classmethod
     def import_material_definitions(cls, material_type: str) -> None:
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
 
         # Store active category name to reselect it later.
         # Occurs when we expand/contract all categories.
@@ -140,7 +148,8 @@ class Material(bonsai.core.tool.Material):
 
     @classmethod
     def is_editing_materials(cls) -> bool:
-        return bpy.context.scene.BIMMaterialProperties.is_editing
+        props = tool.Material.get_material_props()
+        return props.is_editing
 
     @classmethod
     def is_material_used_in_sets(cls, material: ifcopenshell.entity_instance) -> bool:
@@ -156,23 +165,24 @@ class Material(bonsai.core.tool.Material):
 
     @classmethod
     def load_material_attributes(cls, material: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         props.material_attributes.clear()
         bonsai.bim.helper.import_attributes2(material, props.material_attributes)
 
     @classmethod
     def enable_editing_material(cls, material: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         props.active_material_id = material.id()
         props.editing_material_type = "ATTRIBUTES"
 
     @classmethod
     def get_material_attributes(cls) -> dict[str, Any]:
-        return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMMaterialProperties.material_attributes)
+        props = tool.Material.get_material_props()
+        return bonsai.bim.helper.export_attributes(props.material_attributes)
 
     @classmethod
     def disable_editing_material(cls) -> None:
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         props.active_material_id = 0
         props.editing_material_type = ""
 

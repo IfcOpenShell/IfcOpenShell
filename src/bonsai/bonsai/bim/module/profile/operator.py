@@ -35,7 +35,7 @@ class LoadProfiles(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMProfileProperties
+        props = tool.Profile.get_profile_props()
         props.profiles.clear()
 
         filter_material_profiles = props.is_filtering_material_profiles
@@ -64,7 +64,8 @@ class DisableProfileEditingUI(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.BIMProfileProperties.is_editing = False
+        props = tool.Profile.get_profile_props()
+        props.is_editing = False
         return {"FINISHED"}
 
 
@@ -75,7 +76,7 @@ class RemoveProfileDef(bpy.types.Operator, tool.Ifc.Operator):
     profile: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMProfileProperties
+        props = tool.Profile.get_profile_props()
         current_index = props.active_profile_index
 
         ifc_file = tool.Ifc.get()
@@ -113,7 +114,7 @@ class EnableEditingProfile(bpy.types.Operator):
     profile: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.BIMProfileProperties
+        props = tool.Profile.get_profile_props()
         props.profile_attributes.clear()
         bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.profile), props.profile_attributes)
         props.active_profile_id = self.profile
@@ -126,7 +127,8 @@ class DisableEditingProfile(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.BIMProfileProperties.active_profile_id = 0
+        props = tool.Profile.get_profile_props()
+        props.active_profile_id = 0
         bpy.ops.bim.disable_editing_arbitrary_profile()
         return {"FINISHED"}
 
@@ -137,7 +139,7 @@ class EditProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMProfileProperties
+        props = tool.Profile.get_profile_props()
         attributes = bonsai.bim.helper.export_attributes(props.profile_attributes)
         profile = tool.Ifc.get().by_id(props.active_profile_id)
         ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
@@ -152,7 +154,7 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMProfileProperties
+        props = tool.Profile.get_profile_props()
         profile_class = props.profile_classes
         if profile_class == "IfcArbitraryClosedProfileDef":
             obj = props.object_to_profile
@@ -229,7 +231,7 @@ class EnableEditingArbitraryProfile(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMProfileProperties
+        props = tool.Profile.get_profile_props()
         active_profile = props.profiles[props.active_profile_index]
         profile_id = active_profile.ifc_definition_id
         props.active_arbitrary_profile_id = profile_id
@@ -253,7 +255,7 @@ def disable_editing_arbitrary_profile(context):
         bpy.data.objects.remove(obj)
         bpy.data.meshes.remove(profile_mesh)
 
-    props = context.scene.BIMProfileProperties
+    props = tool.Profile.get_profile_props()
     props.active_arbitrary_profile_id = 0
     # need to update profile manager ui
     # if this was called from decorator
@@ -276,7 +278,7 @@ class EditArbitraryProfile(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMProfileProperties
+        props = tool.Profile.get_profile_props()
         old_profile = tool.Ifc.get().by_id(props.active_arbitrary_profile_id)
 
         obj = context.active_object
@@ -322,7 +324,7 @@ class SelectProfileInProfilesUI(bpy.types.Operator):
     profile_id: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = bpy.context.scene.BIMProfileProperties
+        props = tool.Profile.get_profile_props()
         ifc_file = tool.Ifc.get()
         profile = ifc_file.by_id(self.profile_id)
         bpy.ops.bim.load_profiles()

@@ -403,13 +403,13 @@ class BIM_PT_material_psets(Panel):
         ifc_file = tool.Ifc.get()
         if not ifc_file or ifc_file.schema == "IFC2X3":
             return False  # We don't support material psets in IFC2X3 because they suck
-        props = context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         if props.is_editing and (material := props.active_material) and material.ifc_definition_id:
             return True
         return False
 
     def draw(self, context):
-        props = context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         if props.materials and props.active_material_index < len(props.materials):
             ifc_definition_id = props.materials[props.active_material_index].ifc_definition_id
 
@@ -663,10 +663,10 @@ class BIM_PT_profile_psets(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMProfileProperties
+        props = tool.Profile.get_profile_props()
         if not props.is_editing:
             return False
-        total_profiles = len(context.scene.BIMProfileProperties.profiles)
+        total_profiles = len(props.profiles)
         if total_profiles > 0 and props.active_profile_index < total_profiles:
             return True
         return False

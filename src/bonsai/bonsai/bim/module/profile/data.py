@@ -51,7 +51,7 @@ class ProfileData:
 
     @classmethod
     def active_profile_users(cls):
-        profiles_props = bpy.context.scene.BIMProfileProperties
+        profiles_props = tool.Profile.get_profile_props()
         if profiles_props.active_profile_index >= len(profiles_props.profiles):
             return 0
         profile_prop = profiles_props.profiles[profiles_props.active_profile_index]
@@ -83,7 +83,7 @@ class ProfileData:
 
     @classmethod
     def is_arbitrary_profile(cls):
-        props = bpy.context.scene.BIMProfileProperties
+        props = tool.Profile.get_profile_props()
         if props.active_profile_id:
             profile = tool.Ifc.get().by_id(props.active_profile_id)
             if profile.is_a("IfcArbitraryClosedProfileDef"):

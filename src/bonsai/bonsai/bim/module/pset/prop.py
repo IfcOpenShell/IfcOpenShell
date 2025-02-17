@@ -173,7 +173,7 @@ def get_group_qto_names(self, context):
 
 def get_profile_pset_names(self, context):
     global psetnames
-    pprops = context.scene.BIMProfileProperties
+    pprops = tool.Profile.get_profile_props()
     ifc_class = IfcStore.get_file().by_id(pprops.profiles[pprops.active_profile_index].ifc_definition_id).is_a()
     if ifc_class not in psetnames:
         psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())

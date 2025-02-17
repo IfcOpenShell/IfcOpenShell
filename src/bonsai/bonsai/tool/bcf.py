@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bcf.v2.visinfo
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -32,7 +33,10 @@ import bcf.agnostic.model
 import bcf.agnostic.topic
 import bcf.agnostic.visinfo
 
-from typing import Any, Union, TypeVar, TypeGuard, Optional
+from typing import Any, Union, TypeVar, TypeGuard, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.bcf.prop import BCFProperties
 
 
 T = TypeVar("T")
@@ -40,8 +44,13 @@ T = TypeVar("T")
 
 class Bcf(bonsai.core.tool.Bcf):
     @classmethod
+    def get_bcf_props(cls) -> "BCFProperties":
+        return bpy.context.scene.BCFProperties
+
+    @classmethod
     def get_path(cls) -> str:
-        return bpy.context.scene.BCFProperties.bcf_file
+        props = cls.get_bcf_props()
+        return props.bcf_file
 
     @classmethod
     def is_list_of(cls, a: list[Any], t: type[T]) -> TypeGuard[list[T]]:

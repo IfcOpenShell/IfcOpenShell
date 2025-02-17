@@ -689,13 +689,15 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
 
         scene = context.scene
         if object_type == "PROFILE":
-            if scene.BIMProfileProperties.is_editing:
+            props = tool.Profile.get_profile_props()
+            if props.is_editing:
                 bpy.ops.bim.load_profiles()
         elif object_type == "STYLE":
             if scene.BIMStylesProperties.is_editing:
                 bpy.ops.bim.load_styles()
         elif object_type == "MATERIAL":
-            if scene.BIMMaterialProperties.is_editing:
+            props = tool.Material.get_material_props()
+            if props.is_editing:
                 bpy.ops.bim.load_materials()
 
 
@@ -737,13 +739,15 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
 
         scene = context.scene
         if object_type == "PROFILE":
-            if scene.BIMProfileProperties.is_editing:
+            props = tool.Profile.get_profile_props()
+            if props.is_editing:
                 bpy.ops.bim.load_profiles()
         elif object_type == "STYLE":
             if scene.BIMStylesProperties.is_editing:
                 bpy.ops.bim.load_styles()
         elif object_type == "MATERIAL":
-            if scene.BIMMaterialProperties.is_editing:
+            props = tool.Material.get_material_props()
+            if props.is_editing:
                 bpy.ops.bim.load_materials()
 
 

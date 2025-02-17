@@ -16,10 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
 from bpy.types import Panel, UIList
 from bonsai.bim.module.library.data import LibrariesData, LibraryReferencesData
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.library.prop import BIMLibraryProperties, LibraryReference
 
 
 class BIM_PT_libraries(Panel):
@@ -38,7 +44,7 @@ class BIM_PT_libraries(Panel):
     def draw(self, context):
         if not LibrariesData.is_loaded:
             LibrariesData.load()
-        self.props = context.scene.BIMLibraryProperties
+        self.props = tool.Library.get_library_props()
 
         if self.props.editing_mode == "LIBRARY":
             self.draw_editable_library_ui()
@@ -110,7 +116,7 @@ class BIM_PT_library_references(Panel):
     def draw(self, context):
         if not LibraryReferencesData.is_loaded:
             LibraryReferencesData.load()
-        self.props = context.scene.BIMLibraryProperties
+        self.props = tool.Library.get_library_props()
 
         if self.props.editing_mode == "REFERENCES":
             self.layout.template_list(
@@ -129,7 +135,9 @@ class BIM_PT_library_references(Panel):
 
 
 class BIM_UL_library_references(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: LibraryReference, icon, active_data, active_propname
+    ):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)
@@ -140,7 +148,9 @@ class BIM_UL_library_references(UIList):
 
 
 class BIM_UL_object_library_references(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self, context, layout: bpy.types.UILayout, data, item: LibraryReference, icon, active_data, active_propname
+    ):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)

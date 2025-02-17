@@ -22,13 +22,14 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import numpy as np
+from ifcopenshell.util.shape_builder import VectorType, V, ifc_safe_vector_type
 
 
 def create_axis_curve(
     file: ifcopenshell.file,
     *,
-    p1: np.ndarray,
-    p2: np.ndarray,
+    p1: VectorType,
+    p2: VectorType,
     grid_axis: ifcopenshell.entity_instance,
     is_si: bool = True,
 ) -> None:
@@ -60,7 +61,7 @@ def create_axis_curve(
             model, p1=np.array((0., 0., 0.)), p2=np.array((0., 10., 0.)), grid_axis=axis_1)
     """
     existing_curve = grid_axis.AxisCurve
-
+    p1, p2 = V(p1), V(p2)
     if is_si:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
         p1 /= unit_scale
@@ -70,8 +71,8 @@ def create_axis_curve(
     grid_matrix_i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement))
     grid_axis.AxisCurve = file.createIfcPolyline(
         (
-            file.createIfcCartesianPoint((grid_matrix_i @ p1).tolist()),
-            file.createIfcCartesianPoint((grid_matrix_i @ p2).tolist()),
+            file.createIfcCartesianPoint(ifc_safe_vector_type(grid_matrix_i @ p1)),
+            file.createIfcCartesianPoint(ifc_safe_vector_type(grid_matrix_i @ p2)),
         )
     )
 

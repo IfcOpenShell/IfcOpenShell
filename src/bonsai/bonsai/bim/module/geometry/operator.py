@@ -2136,7 +2136,8 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 continue
 
             if tool.Profile.is_editing_profile():
-                profile_id = context.scene.BIMProfileProperties.active_profile_id
+                props = tool.Profile.get_profile_props()
+                profile_id = props.active_profile_id
                 if profile_id:
                     profile = tool.Ifc.get().by_id(profile_id)
                     if tool.Ifc.get_object(profile):  # We are editing an arbitrary profile
@@ -2148,7 +2149,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 elif tool.Model.get_usage_type(element) == "PROFILE":
                     bpy.ops.bim.edit_extrusion_axis()
                 # if in the process of editing arbitrary profile
-                elif context.scene.BIMProfileProperties.active_arbitrary_profile_id:
+                elif props.active_arbitrary_profile_id:
                     bpy.ops.bim.edit_arbitrary_profile()
                 else:
                     bpy.ops.bim.edit_extrusion_profile()

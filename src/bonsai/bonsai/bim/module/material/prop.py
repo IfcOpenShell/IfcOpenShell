@@ -121,7 +121,7 @@ def set_material_name(self: "Material", new_category_name: str) -> None:
             material.Category = new_category_name
 
     # Reload UI elements if necessary.
-    props: "BIMMaterialProperties" = self.id_data.BIMMaterialProperties
+    props = tool.Material.get_material_props()
     new_category_name_already_in_use = bool(
         next((m for m in props.materials if m.is_category and m.name == new_category_name), None)
     )

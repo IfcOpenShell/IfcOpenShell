@@ -118,7 +118,7 @@ class MaterialClassificationsData(ReferencesData):
     def references(cls):
         results = []
 
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         if props.materials and props.active_material_index < len(props.materials):
             material = props.materials[props.active_material_index]
             if material.ifc_definition_id:
