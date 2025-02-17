@@ -146,5 +146,7 @@ class BIM_UL_profiles(UIList):
     ):
         if item:
             row = layout.row(align=True)
+            if item.ifc_definition_id == data.active_profile_id:
+                row.label(text="", icon="GREASEPENCIL")
             row.prop(item, "name", text="", emboss=False)
             row.label(text=item.ifc_class)

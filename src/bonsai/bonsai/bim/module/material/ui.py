@@ -431,6 +431,8 @@ class BIM_UL_materials(UIList):
                     row.prop(item, "name", text="", emboss=False)
             else:
                 row.label(text="", icon="BLANK1")
+                if item.ifc_definition_id == data.active_material_id:
+                    row.label(text="", icon="GREASEPENCIL")
                 if material_type == "IfcMaterialList":
                     row.label(text=item.name, icon="MATERIAL")
                 else:
