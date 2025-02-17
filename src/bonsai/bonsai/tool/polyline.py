@@ -31,7 +31,6 @@ from typing import Optional, Union, Literal, List
 
 
 class Polyline(bonsai.core.tool.Polyline):
-
     @dataclass
     class PolylineUI:
         _D: str = ""
@@ -581,7 +580,7 @@ class Polyline(bonsai.core.tool.Polyline):
         measurement_data.area = polyline_data[0].area
 
     @classmethod
-    def use_transform_orientations(cls, value:Union[Vector, Matrix]) -> Union[Vector, Matrix]:
+    def use_transform_orientations(cls, value: Union[Vector, Matrix]) -> Union[Vector, Matrix]:
         custom_orientation = bpy.context.scene.transform_orientation_slots[0].custom_orientation
         if custom_orientation:
             custom_matrix = custom_orientation.matrix
@@ -591,4 +590,3 @@ class Polyline(bonsai.core.tool.Polyline):
                 result = custom_matrix.inverted() @ value
             return result
         return value
-         
