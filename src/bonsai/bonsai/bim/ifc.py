@@ -415,7 +415,8 @@ class IfcStore:
     ) -> set[str]:
         bonsai.last_actions.append({"type": "operator", "name": operator.bl_idname})
         bpy.context.scene.BIMProperties.is_dirty = True
-        is_top_level_operator = not bool(IfcStore.current_transaction)
+        # Modals don't nest, and Blender handles the loop that continuously calls modal()
+        is_top_level_operator = not bool(IfcStore.current_transaction) or (method == "MODAL")
 
         if is_top_level_operator:
             IfcStore.begin_transaction(operator)
@@ -458,7 +459,22 @@ class IfcStore:
             end_top_level_operator()
             raise
 
-        end_top_level_operator()
+        if method == "MODAL":
+            if result == {"FINISHED"}:
+                end_top_level_operator()
+            elif result == {"CANCELLED"}:
+                # Please read the docs: https://docs.blender.org/api/current/bpy.types.Operator.html
+                # > "when an operator returns {'CANCELLED'}, no undo step will be created".
+                # This means that if your modal edits IFC data, then the user
+                # cancels it, Blender's undo history will not be in sync with
+                # Bonsai / IfcOpenShell's undo history. Instead of hoping for
+                # Bonsai devs to remember to handle the "cancel" state (i.e.
+                # detect escape keypress) and return {"FINISHED"}, we instead
+                # always enforce an undo step.
+                bpy.ops.ed.undo_push(message=f"Cancel {operator.bl_idname}")
+                end_top_level_operator()
+        else:
+            end_top_level_operator()
         return result
 
     @staticmethod
