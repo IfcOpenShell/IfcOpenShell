@@ -57,4 +57,4 @@ def remove_layer(
     material = layer.Material
     file.remove(layer)
     if material and should_remove_material:
-        ifcopenshell.util.element.remove_deep2(file, subelement)
+        ifcopenshell.util.element.remove_deep2(file, material)

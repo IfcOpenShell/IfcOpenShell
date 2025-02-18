@@ -52,7 +52,7 @@ def remove_constituent(
         # invalid.
         ifcopenshell.api.material.remove_constituent(model, constituent=glazing)
     """
-    material = layer.Material
+    material = constituent.Material
     file.remove(constituent)
     if material and should_remove_material:
-        ifcopenshell.util.element.remove_deep2(file, subelement)
+        ifcopenshell.util.element.remove_deep2(file, material)
