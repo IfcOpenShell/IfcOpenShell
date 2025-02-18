@@ -203,67 +203,62 @@ class IfcAlignmentHelper:
         else:
             transition = "CONTSAMEGRADIENTSAMECURVATURE"
 
-        match _type:
-            case "LINE":
-                parent_curve = self._file.create_entity(
-                    type="IfcLine",
-                    Pnt=self._file.create_entity(
-                        type="IfcCartesianPoint",
-                        Coordinates=(0.0, 0.0),
+        if _type == "LINE":
+            parent_curve = self._file.create_entity(
+                type="IfcLine",
+                Pnt=self._file.create_entity(
+                    type="IfcCartesianPoint",
+                    Coordinates=(0.0, 0.0),
+                ),
+                Dir=self._file.create_entity(
+                    type="IfcVector",
+                    Orientation=self._file.create_entity(
+                        type="IfcDirection",
+                        DirectionRatios=(1.0, 0.0),
                     ),
-                    Dir=self._file.create_entity(
-                        type="IfcVector",
-                        Orientation=self._file.create_entity(
-                            type="IfcDirection",
-                            DirectionRatios=(1.0, 0.0),
-                        ),
-                        Magnitude=1.0,
+                    Magnitude=1.0,
+                ),
+            )
+            curve_segment = self._file.create_entity(
+                type="IfcCurveSegment",
+                Transition=transition,
+                Placement=self._file.create_entity(
+                    type="IfcAxis2Placement2D",
+                    Location=start_point,
+                    RefDirection=self._file.createIfcDirection(
+                        (math.cos(start_direction), math.sin(start_direction)),
                     ),
-                )
-                curve_segment = self._file.create_entity(
-                    type="IfcCurveSegment",
-                    Transition=transition,
-                    Placement=self._file.create_entity(
-                        type="IfcAxis2Placement2D",
-                        Location=start_point,
-                        RefDirection=self._file.createIfcDirection(
-                            (math.cos(start_direction), math.sin(start_direction)),
-                        ),
-                    ),
-                    SegmentStart=self._file.createIfcLengthMeasure(0.0),
-                    SegmentLength=self._file.createIfcLengthMeasure(length),
-                    ParentCurve=parent_curve,
-                )
-                result = (curve_segment, None)
-            case "CIRCULARARC":
-                parent_curve = self._file.createIfcCircle(
-                    Position=self._file.createIfcAxis2Placement2D(
-                        Location=self._file.createIfcCartesianPoint(Coordinates=(0.0, 0.0)),
-                        RefDirection=self._file.createIfcDirection(
-                            (math.cos(start_direction), math.sin(start_direction))
-                        ),
-                    ),
-                    Radius=abs(start_radius),
-                )
+                ),
+                SegmentStart=self._file.createIfcLengthMeasure(0.0),
+                SegmentLength=self._file.createIfcLengthMeasure(length),
+                ParentCurve=parent_curve,
+            )
+            result = (curve_segment, None)
+        elif _type == "CIRCULARARC":
+            parent_curve = self._file.createIfcCircle(
+                Position=self._file.createIfcAxis2Placement2D(
+                    Location=self._file.createIfcCartesianPoint(Coordinates=(0.0, 0.0)),
+                    RefDirection=self._file.createIfcDirection((math.cos(start_direction), math.sin(start_direction))),
+                ),
+                Radius=abs(start_radius),
+            )
 
-                curve_segment = self._file.create_entity(
-                    type="IfcCurveSegment",
-                    Transition=transition,
-                    Placement=self._file.create_entity(
-                        type="IfcAxis2Placement2D",
-                        Location=start_point,
-                        RefDirection=self._file.createIfcDirection(
-                            (math.cos(start_direction), math.sin(start_direction))
-                        ),
-                    ),
-                    SegmentStart=self._file.createIfcLengthMeasure(0.0),
-                    SegmentLength=self._file.createIfcLengthMeasure(length * start_radius / abs(start_radius)),
-                    ParentCurve=parent_curve,
-                )
-                result = (curve_segment, None)
+            curve_segment = self._file.create_entity(
+                type="IfcCurveSegment",
+                Transition=transition,
+                Placement=self._file.create_entity(
+                    type="IfcAxis2Placement2D",
+                    Location=start_point,
+                    RefDirection=self._file.createIfcDirection((math.cos(start_direction), math.sin(start_direction))),
+                ),
+                SegmentStart=self._file.createIfcLengthMeasure(0.0),
+                SegmentLength=self._file.createIfcLengthMeasure(length * start_radius / abs(start_radius)),
+                ParentCurve=parent_curve,
+            )
+            result = (curve_segment, None)
 
-            case _:
-                result = (None, None)
+        else:
+            result = (None, None)
 
         return result
 
