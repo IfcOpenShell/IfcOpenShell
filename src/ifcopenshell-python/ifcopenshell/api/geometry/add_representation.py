@@ -204,6 +204,7 @@ class Usecase:
         elif self.settings["context"].ContextIdentifier == "Reference":
             if self.settings["context"].TargetView == "GRAPH_VIEW":
                 return self.create_structural_reference_representation()
+            return self.create_variable_representation()
         elif self.settings["context"].ContextIdentifier == "Profile":
             return self.create_curve3d_representation()
         elif self.settings["context"].ContextIdentifier == "SurveyPoints":
