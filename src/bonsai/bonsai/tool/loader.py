@@ -592,33 +592,42 @@ class Loader(bonsai.core.tool.Loader):
             opacity = opacity if opacity is not None else 1.0
             data_list = [d + (opacity,) for d in data_list]
 
-        faces_tex_coord_data = {}
-        for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True):
-            faces_tex_coord_data[tuple(face_remap)] = (tex_coord_index, face_remap)
+        if index_map.is_a("IfcIndexedColourMap") and len(index_map.Colours.ColourList) == 1:
+            # Early return scenario in case there is only one colour
+            data_colour = data_list[0]
+            for bface in bm.faces:
+                for loop in bface.loops:
+                    loop[layer] = data_colour
+        elif len(texture_map) != len(faces_remap):
+            print(f"Warning: invalid index map found: {index_map}")
+        else:
+            faces_tex_coord_data = {}
+            for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True):
+                faces_tex_coord_data[tuple(face_remap)] = (tex_coord_index, face_remap)
 
-        # Apply attribute to each face
-        for bface in bm.faces:
-            face = tuple(loop.vert.index for loop in bface.loops)
-            # Find the corresponding index in data list by matching ifc faceset with blender face.
-            data_index = None
-            if tex_coord_data := faces_tex_coord_data.get(face):
-                tex_coord_index, face_remap = tex_coord_data
-                # Subtract 1 as tex_coord_index starts with 1.
-                if map_type == "UV":
-                    data_index = [tex_coord_index[face_remap.index(i)] - 1 for i in face]
+            # Apply attribute to each face
+            for bface in bm.faces:
+                face = tuple(loop.vert.index for loop in bface.loops)
+                # Find the corresponding index in data list by matching ifc faceset with blender face.
+                data_index = None
+                if tex_coord_data := faces_tex_coord_data.get(face):
+                    tex_coord_index, face_remap = tex_coord_data
+                    # Subtract 1 as tex_coord_index starts with 1.
+                    if map_type == "UV":
+                        data_index = [tex_coord_index[face_remap.index(i)] - 1 for i in face]
+                    else:
+                        data_index = [tex_coord_index - 1 for i in face]
                 else:
-                    data_index = [tex_coord_index - 1 for i in face]
-            else:
-                # This face may be part of another representation item
-                # Or we couldn't match it due to georeferencing.
-                continue
+                    # This face may be part of another representation item
+                    # Or we couldn't match it due to georeferencing.
+                    continue
 
-            # apply uv to each loop
-            for loop, i in zip(bface.loops, data_index):
-                if map_type == "UV":
-                    loop[layer].uv = data_list[i]
-                else:
-                    loop[layer] = data_list[i]
+                # apply uv to each loop
+                for loop, i in zip(bface.loops, data_index):
+                    if map_type == "UV":
+                        loop[layer].uv = data_list[i]
+                    else:
+                        loop[layer] = data_list[i]
 
         # Finish up, write the bmesh back to the mesh
         bm.to_mesh(mesh)
