@@ -52,6 +52,9 @@ def add_profile_representation(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         self.settings["clippings"] = [Clipping.parse(c) for c in self.settings["clippings"]]

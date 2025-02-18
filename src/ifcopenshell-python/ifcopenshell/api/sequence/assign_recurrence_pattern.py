@@ -65,11 +65,8 @@ def assign_recurrence_pattern(
     :param parent: Either an IfcTaskTimeRecurring if you are defining a
         recurring schedule for a task, or IfcWorkTime if you are defining a
         recurring pattern for a workdays or holidays in a calendar.
-    :type parent: ifcopenshell.entity_instance
     :param recurrence_type: One of the types of recurrences.
-    :type recurrence_type: str
     :return: The newly created IfcRecurrencePattern
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -108,16 +105,14 @@ def assign_recurrence_pattern(
         ifcopenshell.api.sequence.edit_recurrence_pattern(model,
             recurrence_pattern=pattern, attributes={"DayComponent": [1], "Interval": 6})
     """
-    settings = {"parent": parent, "recurrence_type": recurrence_type}
+    recurrence = file.create_entity("IfcRecurrencePattern", recurrence_type)
 
-    recurrence = file.createIfcRecurrencePattern(settings["recurrence_type"])
-
-    if settings["parent"].is_a("IfcWorkTime"):
-        if settings["parent"].RecurrencePattern and len(file.get_inverse(settings["parent"].RecurrencePattern)) == 1:
-            file.remove(settings["parent"].RecurrencePattern)
-        settings["parent"].RecurrencePattern = recurrence
-    elif settings["parent"].is_a("IfcTaskTimeRecurring"):
-        if recurrence_old := settings["parent"].Recurrence and len(file.get_inverse(recurrence_old)) == 1:
+    if parent.is_a("IfcWorkTime"):
+        if parent.RecurrencePattern and len(file.get_inverse(parent.RecurrencePattern)) == 1:
+            file.remove(parent.RecurrencePattern)
+        parent.RecurrencePattern = recurrence
+    elif parent.is_a("IfcTaskTimeRecurring"):
+        if (recurrence_old := parent.Recurrence) and len(file.get_inverse(recurrence_old)) == 1:
             file.remove(recurrence_old)
-        settings["parent"].Recurrence = recurrence
+        parent.Recurrence = recurrence
     return recurrence

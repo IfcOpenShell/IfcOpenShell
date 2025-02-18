@@ -22,7 +22,7 @@ import ifcopenshell.api.owner
 import ifcopenshell.api.material
 import ifcopenshell.guid
 import ifcopenshell.util.element
-from typing import Union, Iterable
+from typing import Union, Iterable, Any
 
 
 def assign_type(
@@ -186,6 +186,9 @@ def assign_type(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         if not self.settings["related_objects"]:
             return

@@ -24,6 +24,7 @@ import zipfile
 import functools
 import ifcopenshell
 from pathlib import Path
+from typing import Any
 from typing import Callable
 from typing import Generator
 from typing import Optional

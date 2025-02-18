@@ -34,17 +34,13 @@ def assign_lag_time(
     are allowed.
 
     :param rel_sequence: The IfcRelSequence to assign the lag time to.
-    :type rel_sequence: ifcopenshell.entity_instance
     :param lag_value: An ISO standardised duration string.
-    :type lag_value: str
     :param duration_type: Choose from WORKTIME for the associated
         calendar-based lag times (this is the most common scenario and is
         recommended as a default), or ELAPSEDTIME to not follow the
         calendar. You may also choose NOTDEFINED but the behaviour of this
         is unclear.
-    :type duration_type: str
     :return: The newly created IfcLagTime
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -84,16 +80,10 @@ def assign_lag_time(
         # for whatever reason.
         ifcopenshell.api.sequence.assign_lag_time(model, rel_sequence=sequence, lag_value="P1D")
     """
-    settings = {
-        "rel_sequence": rel_sequence,
-        "lag_value": lag_value,
-        "duration_type": duration_type,
-    }
-
-    lag_value = file.createIfcDuration(ifcopenshell.util.date.datetime2ifc(settings["lag_value"], "IfcDuration"))
-    lag_time = file.create_entity("IfcLagTime", DurationType=settings["duration_type"], LagValue=lag_value)
-    if settings["rel_sequence"].is_a("IfcRelSequence"):
-        if settings["rel_sequence"].TimeLag and len(file.get_inverse(settings["rel_sequence"].TimeLag)) == 1:
-            file.remove(settings["rel_sequence"].TimeLag)
-    settings["rel_sequence"].TimeLag = lag_time
+    lag_value = file.create_entity("IfcDuration", ifcopenshell.util.date.datetime2ifc(lag_value, "IfcDuration"))
+    lag_time = file.create_entity("IfcLagTime", DurationType=duration_type, LagValue=lag_value)
+    if rel_sequence.is_a("IfcRelSequence"):
+        if rel_sequence.TimeLag and len(file.get_inverse(rel_sequence.TimeLag)) == 1:
+            file.remove(rel_sequence.TimeLag)
+    rel_sequence.TimeLag = lag_time
     return lag_time

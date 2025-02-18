@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
-from typing import Any
+from typing import Any, Union
 
 
 def edit_surface_style(
@@ -36,11 +36,8 @@ def edit_surface_style(
     example below.
 
     :param style: The IfcPresentationStyle entity you want to edit
-    :type style: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -74,14 +71,18 @@ def edit_surface_style(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"style": style, "attributes": attributes or {}}
-    return usecase.execute()
+    return usecase.execute(style, attributes)
 
 
 class Usecase:
-    def execute(self):
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
+    def execute(self, style: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+        self.style = style
+
         attributes = {}
-        for attribute in self.settings["style"].wrapped_data.declaration().as_entity().all_attributes():
+        for attribute in style.wrapped_data.declaration().as_entity().all_attributes():
             attribute_type = attribute.type_of_attribute()
             if attribute_type.as_aggregation_type() is None:
                 attribute_type = attribute_type.declared_type().name()
@@ -90,7 +91,7 @@ class Usecase:
                 attribute_type = attribute_type.type_of_element()
             attributes[attribute.name()] = attribute_type
 
-        for key, value in self.settings["attributes"].items():
+        for key, value in attributes.items():
             attribute_class = attributes.get(key)
             if attribute_class == "IfcColourRgb":
                 self.edit_colour_rgb(key, value)
@@ -101,39 +102,37 @@ class Usecase:
             else:
                 setattr(self.settings["style"], key, value)
 
-    def edit_colour_rgb(self, name, value: dict):
-        if (attribute := getattr(self.settings["style"], name)) is None:
+    def edit_colour_rgb(self, name: str, value: dict[str, Any]):
+        if (attribute := getattr(self.style, name)) is None:
             attribute = self.file.createIfcColourRgb()
-            setattr(self.settings["style"], name, attribute)
+            setattr(self.style, name, attribute)
         attribute.Name = value.get("Name", None)
         attribute.Red = value["Red"]
         attribute.Green = value["Green"]
         attribute.Blue = value["Blue"]
 
-    def edit_colour_or_factor(self, name, value):
+    def edit_colour_or_factor(self, name: str, value: Union[dict[str, Any], ifcopenshell.entity_instance, None]):
         if isinstance(value, dict):
-            attribute = getattr(self.settings["style"], name)
+            attribute = getattr(self.style, name)
             if not attribute or not attribute.is_a("IfcColourRgb"):
                 colour = self.file.createIfcColourRgb(None, 0, 0, 0)
-                setattr(self.settings["style"], name, colour)
-                attribute = getattr(self.settings["style"], name)
+                setattr(self.style, name, colour)
+                attribute = getattr(self.style, name)
             attribute[1] = value["Red"]
             attribute[2] = value["Green"]
             attribute[3] = value["Blue"]
         else:  # assume it's float value for IfcNormalisedRatioMeasure or None
-            existing_value = getattr(self.settings["style"], name)
+            existing_value = getattr(self.style, name)
             if existing_value and existing_value.id():
                 self.file.remove(existing_value)
             if value is not None:
-                value = self.file.createIfcNormalisedRatioMeasure(value)
-            setattr(self.settings["style"], name, value)
+                value = self.file.create_entity("IfcNormalisedRatioMeasure", value)
+            setattr(self.style, name, value)
 
-    def edit_specular_highlight(self, value):
+    def edit_specular_highlight(self, value: Union[dict[str, Any], None]) -> None:
         if value is None:
-            self.settings["style"].SpecularHighlight = None
+            self.style.SpecularHighlight = None
         elif value.get("IfcSpecularExponent", None):
-            self.settings["style"].SpecularHighlight = self.file.createIfcSpecularExponent(value["IfcSpecularExponent"])
+            self.style.SpecularHighlight = self.file.createIfcSpecularExponent(value["IfcSpecularExponent"])
         elif value.get("IfcSpecularRoughness", None):
-            self.settings["style"].SpecularHighlight = self.file.createIfcSpecularRoughness(
-                value["IfcSpecularRoughness"]
-            )
+            self.style.SpecularHighlight = self.file.createIfcSpecularRoughness(value["IfcSpecularRoughness"])

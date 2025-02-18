@@ -24,7 +24,7 @@ import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.sequence
 import ifcopenshell.util.system
-from typing import Optional
+from typing import Optional, Union
 
 
 def create_baseline(
@@ -44,11 +44,8 @@ def create_baseline(
     * Same Resource Relationships
 
     :param work_schedule: The planned work_schedule to baseline
-    :type work_schedule: ifcopenshell.entity_instance
     :param name: baseline work schedule name
-    :type name: str, optional
     :return: The baseline work_schedule
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -62,23 +59,20 @@ def create_baseline(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"work_schedule": work_schedule, "name": name}
-    return usecase.execute()
+    return usecase.execute(work_schedule, name)
 
 
 class Usecase:
-    def execute(self):
-        result = self.create_baseline_work_schedule(self.settings["work_schedule"])
-        return result
+    file: ifcopenshell.file
 
-    def create_baseline_work_schedule(self, work_schedule):
+    def execute(self, work_schedule: ifcopenshell.entity_instance, name: Union[str, None]) -> None:
         # create work schedule
         if not work_schedule.PredefinedType == "PLANNED":
             return
         baseline_work_schedule = ifcopenshell.api.sequence.add_work_schedule(
             self.file, name=work_schedule.Name, predefined_type="BASELINE"
         )
-        baseline_work_schedule.Name = self.settings["name"]
+        baseline_work_schedule.Name = name
         self.create_baseline_reference(work_schedule, baseline_work_schedule)
         for summary_task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
             current, duplicate = ifcopenshell.api.sequence.duplicate_task(self.file, task=summary_task)
@@ -88,7 +82,9 @@ class Usecase:
             for i, task in enumerate(current):
                 self.create_baseline_reference(task, duplicate[i])
 
-    def create_baseline_reference(self, relating_object, related_object):
+    def create_baseline_reference(
+        self, relating_object: ifcopenshell.entity_instance, related_object: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         referenced_by = None
         if relating_object.Declares:
             referenced_by = relating_object.Declares[0]

@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.representation
+from typing import Any
 
 
 def assign_profile(
@@ -97,6 +98,7 @@ def assign_profile(
 
 class Usecase:
     file: ifcopenshell.file
+    settings: dict[str, Any]
 
     def execute(self) -> None:
         # TODO: handle composite profiles

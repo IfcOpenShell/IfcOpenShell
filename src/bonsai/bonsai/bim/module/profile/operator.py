@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.api.profile
 import ifcopenshell.util.element
 import bonsai.bim.helper
 import bonsai.tool as tool
@@ -174,12 +175,12 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
             props.object_to_profile = None
             if not indices:
                 points = [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1), (0, 0)]
-                profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
+                profile = ifcopenshell.api.profile.add_arbitrary_profile(tool.Ifc.get(), profile=points)
             else:
                 if "inner_curves" not in indices:
                     points = [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in indices["profile"]]
                     points.append(points[0])
-                    profile = ifcopenshell.api.run("profile.add_arbitrary_profile", tool.Ifc.get(), profile=points)
+                    profile = ifcopenshell.api.profile.add_arbitrary_profile(tool.Ifc.get(), profile=points)
                 else:
                     outer_points = [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in indices["profile"]]
                     outer_points.append(outer_points[0])
@@ -189,8 +190,7 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
                     ]
                     for curve in inner_points:
                         curve.append(curve[0])
-                    profile = ifcopenshell.api.run(
-                        "profile.add_arbitrary_profile_with_voids",
+                    profile = ifcopenshell.api.profile.add_arbitrary_profile_with_voids(
                         tool.Ifc.get(),
                         outer_profile=outer_points,
                         inner_profiles=inner_points,

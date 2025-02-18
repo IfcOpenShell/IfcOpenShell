@@ -29,6 +29,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
 import ifcopenshell.api
+import ifcopenshell.api.boundary
 import ifcopenshell.api.grid
 import bonsai.core.geometry
 import bonsai.core.geometry as core
@@ -479,7 +480,7 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         elif product.is_a("IfcRelSpaceBoundary"):
             # TODO refactor
             settings = tool.Boundary.get_assign_connection_geometry_settings(obj)
-            ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
+            ifcopenshell.api.boundary.assign_connection_geometry(tool.Ifc.get(), **settings)
             return
 
         if tool.Ifc.is_moved(obj) or tool.Geometry.is_scaled(obj):

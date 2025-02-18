@@ -29,11 +29,8 @@ def edit_named_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instance,
     IfcNamedUnit, consult the IFC documentation.
 
     :param unit: The IfcNamedUnit entity you want to edit
-    :type unit: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -45,15 +42,13 @@ def edit_named_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instance,
         # Uh, crates? Boxes? Whatever.
         ifcopenshell.api.unit.edit_named_unit(model, unit=unit, attibutes={"Name": "CRATES"})
     """
-    settings = {"unit": unit, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
+    for name, value in attributes.items():
         if name == "Dimensions":
-            dimensions = settings["unit"].Dimensions
+            dimensions = unit.Dimensions
             if len(file.get_inverse(dimensions)) > 1:
-                settings["unit"].Dimensions = file.createIfcDimensionalExponents(*value)
+                unit.Dimensions = file.createIfcDimensionalExponents(*value)
             else:
                 for i, exponent in enumerate(value):
                     dimensions[i] = exponent
             continue
-        setattr(settings["unit"], name, value)
+        setattr(unit, name, value)

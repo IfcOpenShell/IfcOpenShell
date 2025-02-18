@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
-from typing import Optional
+from typing import Optional, Any
 
 COORD_3D = tuple[float, float, float]
 
@@ -60,6 +60,9 @@ def add_mesh_representation(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         if self.settings["unit_scale"] is None:
             self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)

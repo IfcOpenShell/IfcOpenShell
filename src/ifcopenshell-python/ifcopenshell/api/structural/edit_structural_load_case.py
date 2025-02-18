@@ -28,13 +28,8 @@ def edit_structural_load_case(
     IfcStructuralLoadCase, consult the IFC documentation.
 
     :param load_case: The IfcStructuralLoadCase entity you want to edit
-    :type load_case: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
     """
-    settings = {"load_case": load_case, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["load_case"], name, value)
+    for name, value in attributes.items():
+        setattr(load_case, name, value)

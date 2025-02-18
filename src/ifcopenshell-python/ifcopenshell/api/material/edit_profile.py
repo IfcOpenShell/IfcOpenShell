@@ -34,17 +34,12 @@ def edit_profile(
     IfcMaterialProfile, consult the IFC documentation.
 
     :param profile: The IfcMaterialProfile entity you want to edit
-    :type profile: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
     :param profile_def: The IfcProfileDef entity the profile curve should be
         extruded from.
-    :type profile_def: ifcopenshell.entity_instance, optional
     :param material: The IfcMaterial entity you want to change the profile
         to be made from.
-    :type material: ifcopenshell.entity_instance, optional
     :return: None
-    :rtype: None
 
     Example:
 
@@ -80,16 +75,9 @@ def edit_profile(
         ifcopenshell.api.material.edit_profile(model,
             profile=profile_item, profile_def=hea200, material=steel2)
     """
-    settings = {
-        "profile": profile,
-        "attributes": attributes or {},
-        "profile_def": profile_def,
-        "material": material,
-    }
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["profile"], name, value)
-    if settings["material"]:
-        settings["profile"].Material = settings["material"]
-    if settings["profile_def"]:
-        settings["profile"].Profile = settings["profile_def"]
+    for name, value in (attributes or {}).items():
+        setattr(profile, name, value)
+    if material:
+        profile.Material = material
+    if profile_def:
+        profile.Profile = profile_def

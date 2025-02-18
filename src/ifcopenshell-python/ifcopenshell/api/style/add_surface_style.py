@@ -82,17 +82,13 @@ def add_surface_style(
 
     :param style: The IfcSurfaceStyle you want to add to presentation item
         to. See ifcopenshell.api.style.add_style.
-    :type style: ifcopenshell.entity_instance
     :param ifc_class: Choose from IfcSurfaceStyleShading,
         IfcSurfaceStyleRendering, IfcSurfaceStyleWithTextures,
         IfcSurfaceStyleLighting, IfcSurfaceStyleReflectance, or
         IfcExternallyDefinedSurfaceStyle.
-    :type ifc_class: str
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
     :return: The newly created presentation item based on the provided
         ifc_class.
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 

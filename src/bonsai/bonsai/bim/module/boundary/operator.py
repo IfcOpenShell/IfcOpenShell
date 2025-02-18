@@ -25,6 +25,7 @@ import mathutils
 import numpy as np
 import multiprocessing
 import ifcopenshell.api
+import ifcopenshell.api.boundary
 import ifcopenshell.geom
 import ifcopenshell.util.unit
 import ifcopenshell.util.shape
@@ -416,7 +417,7 @@ class UpdateBoundaryGeometry(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         tool.Boundary.move_origin_to_space_origin(context.active_object)
         settings = tool.Boundary.get_assign_connection_geometry_settings(context.active_object)
-        ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
+        ifcopenshell.api.boundary.assign_connection_geometry(tool.Ifc.get(), **settings)
         return {"FINISHED"}
 
 

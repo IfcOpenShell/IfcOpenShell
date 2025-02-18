@@ -28,11 +28,8 @@ def edit_organisation(
     IfcOrganization, consult the IFC documentation.
 
     :param organisation: The IfcOrganization entity you want to edit
-    :type organisation: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -43,7 +40,5 @@ def edit_organisation(
         ifcopenshell.api.owner.edit_organisation(model, organisation=organisation,
             attributes={"name": "Architects Without Ballpens"})
     """
-    settings = {"organisation": organisation, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["organisation"], name, value)
+    for name, value in attributes.items():
+        setattr(organisation, name, value)

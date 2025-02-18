@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.style
 import ifcopenshell.util.element
+from typing import Any
 
 
 def assign_material_style(
@@ -115,6 +116,9 @@ def assign_material_style(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         self.style = self.settings["style"]
         if self.file.schema == "IFC2X3" or self.settings["should_use_presentation_style_assignment"]:

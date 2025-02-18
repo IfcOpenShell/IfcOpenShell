@@ -26,13 +26,8 @@ def edit_derived_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instanc
     IfcDerivedUnit, consult the IFC documentation.
 
     :param unit: The IfcDerivedUnit entity you want to edit
-    :type unit: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
     """
-    settings = {"unit": unit, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["unit"], name, value)
+    for name, value in attributes.items():
+        setattr(unit, name, value)

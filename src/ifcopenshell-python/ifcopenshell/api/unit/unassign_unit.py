@@ -23,9 +23,7 @@ def unassign_unit(file: ifcopenshell.file, units: Optional[list[ifcopenshell.ent
     """Unassigns units as default units for the project
 
     :param units: A list of units to assign as project defaults.
-    :type units: list[ifcopenshell.entity_instance],optional
     :return: None
-    :rtype: None
 
     Example:
 
@@ -44,15 +42,12 @@ def unassign_unit(file: ifcopenshell.file, units: Optional[list[ifcopenshell.ent
         # Actually, we don't need areas.
         ifcopenshell.api.unit.unassign_unit(model, units=[area])
     """
-    settings = {"units": units}
-
-    unit_assignment = file.by_type("IfcUnitAssignment")
-    if not unit_assignment:
+    unit_assignments = file.by_type("IfcUnitAssignment")
+    if not unit_assignments:
         return
-    unit_assignment = unit_assignment[0]
-    units = set(unit_assignment.Units or [])
-    units = units - set(settings["units"])
-    if units:
-        unit_assignment.Units = list(units)
-        return unit_assignment
+    unit_assignment = unit_assignments[0]
+    units_set = set(unit_assignment.Units or [])
+    units_set = units_set - set(units or [])
+    if units_set:
+        unit_assignment.Units = list(units_set)
     file.remove(unit_assignment)

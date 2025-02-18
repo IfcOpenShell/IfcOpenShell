@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell.geom
 import ifcopenshell.util.representation
+from ifcopenshell.geom import ShapeType
 from typing import Any
 
 
@@ -34,11 +35,8 @@ def edit_profile_usage(
     IfcMaterialProfileSetUsage, consult the IFC documentation.
 
     :param usage: The IfcMaterialProfileSetUsage entity you want to edit
-    :type usage: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -98,16 +96,19 @@ def edit_profile_usage(
 
 
 class Usecase:
-    def execute(self):
-        self.cardinal_point = self.settings["attributes"].get("CardinalPoint")
-        if self.cardinal_point and self.cardinal_point != self.settings["usage"].CardinalPoint:
+    file: ifcopenshell.file
+
+    def execute(self, usage: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+        self.attributes = attributes
+        self.cardinal_point = attributes.get("CardinalPoint")
+        if self.cardinal_point and self.cardinal_point != usage.CardinalPoint:
             self.update_cardinal_point()
 
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["usage"], name, value)
+        for name, value in attributes.items():
+            setattr(usage, name, value)
 
     def update_cardinal_point(self):
-        material_set = self.settings["usage"].ForProfileSet
+        material_set = self.attributes["usage"].ForProfileSet
         self.profile = material_set.CompositeProfile
         if not self.profile and material_set.MaterialProfiles:
             self.profile = material_set.MaterialProfiles[0].Profile
@@ -117,13 +118,13 @@ class Usecase:
         self.position = self.calculate_position()
 
         if self.file.schema == "IFC2X3":
-            for rel in self.file.get_inverse(self.settings["usage"]):
+            for rel in self.file.get_inverse(self.attributes["usage"]):
                 if not rel.is_a("IfcRelAssociatesMaterial"):
                     continue
                 for element in rel.RelatedObjects:
                     self.update_representation(element)
         else:
-            for rel in self.settings["usage"].AssociatedTo:
+            for rel in self.attributes["usage"].AssociatedTo:
                 for element in rel.RelatedObjects:
                     self.update_representation(element)
 
@@ -166,7 +167,7 @@ class Usecase:
         elif self.cardinal_point == 9:
             return self.get_top_right(shape)
 
-    def get_bottom_left(self, shape):
+    def get_bottom_left(self, shape: ShapeType) -> ifcopenshell.entity_instance:
         v = shape.verts
         x = [v[i] for i in range(0, len(v), 3)]
         y = [v[i + 1] for i in range(0, len(v), 3)]
@@ -174,13 +175,13 @@ class Usecase:
         height = max(y) - min(y)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((-width / 2, height / 2, 0.0)))
 
-    def get_bottom_centre(self, shape):
+    def get_bottom_centre(self, shape: ShapeType) -> ifcopenshell.entity_instance:
         v = shape.verts
         y = [v[i + 1] for i in range(0, len(v), 3)]
         height = max(y) - min(y)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0.0, height / 2, 0.0)))
 
-    def get_bottom_right(self, shape):
+    def get_bottom_right(self, shape: ShapeType) -> ifcopenshell.entity_instance:
         v = shape.verts
         x = [v[i] for i in range(0, len(v), 3)]
         y = [v[i + 1] for i in range(0, len(v), 3)]
@@ -188,22 +189,22 @@ class Usecase:
         height = max(y) - min(y)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((width / 2, height / 2, 0.0)))
 
-    def get_mid_depth_left(self, shape):
+    def get_mid_depth_left(self, shape: ShapeType) -> ifcopenshell.entity_instance:
         v = shape.verts
         x = [v[i] for i in range(0, len(v), 3)]
         width = max(x) - min(x)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((-width / 2, 0.0, 0.0)))
 
-    def get_mid_depth_centre(self, shape):
+    def get_mid_depth_centre(self, shape: ShapeType) -> ifcopenshell.entity_instance:
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)))
 
-    def get_mid_depth_right(self, shape):
+    def get_mid_depth_right(self, shape: ShapeType) -> ifcopenshell.entity_instance:
         v = shape.verts
         x = [v[i] for i in range(0, len(v), 3)]
         width = max(x) - min(x)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((width / 2, 0.0, 0.0)))
 
-    def get_top_left(self, shape):
+    def get_top_left(self, shape: ShapeType) -> ifcopenshell.entity_instance:
         v = shape.verts
         x = [v[i] for i in range(0, len(v), 3)]
         y = [v[i + 1] for i in range(0, len(v), 3)]
@@ -211,13 +212,13 @@ class Usecase:
         height = max(y) - min(y)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((-width / 2, -height / 2, 0.0)))
 
-    def get_top_centre(self, shape):
+    def get_top_centre(self, shape: ShapeType) -> ifcopenshell.entity_instance:
         v = shape.verts
         y = [v[i + 1] for i in range(0, len(v), 3)]
         height = max(y) - min(y)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0.0, -height / 2, 0.0)))
 
-    def get_top_right(self, shape):
+    def get_top_right(self, shape: ShapeType) -> ifcopenshell.entity_instance:
         v = shape.verts
         x = [v[i] for i in range(0, len(v), 3)]
         y = [v[i + 1] for i in range(0, len(v), 3)]
@@ -225,7 +226,7 @@ class Usecase:
         height = max(y) - min(y)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((width / 2, -height / 2, 0.0)))
 
-    def update_representation(self, element):
+    def update_representation(self, element: ifcopenshell.entity_instance) -> None:
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if not representation:
             return
@@ -234,5 +235,5 @@ class Usecase:
             if subelement.is_a("IfcSweptAreaSolid") and subelement.SweptArea == self.profile:
                 self.update_swept_area_solid(subelement)
 
-    def update_swept_area_solid(self, element):
+    def update_swept_area_solid(self, element: ifcopenshell.entity_instance) -> None:
         element.Position = self.position

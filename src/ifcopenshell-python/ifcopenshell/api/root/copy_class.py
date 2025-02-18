@@ -23,6 +23,7 @@ import ifcopenshell.api.geometry
 import ifcopenshell.util.system
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+from typing import Any
 
 
 def copy_class(file: ifcopenshell.file, product: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
@@ -74,6 +75,9 @@ def copy_class(file: ifcopenshell.file, product: ifcopenshell.entity_instance) -
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         result = ifcopenshell.util.element.copy(self.file, self.settings["product"])
         self.copy_direct_attributes(result)

@@ -26,11 +26,8 @@ def edit_resource(file: ifcopenshell.file, resource: ifcopenshell.entity_instanc
     IfcResource, consult the IFC documentation.
 
     :param resource: The IfcResource entity you want to edit
-    :type resource: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -42,7 +39,5 @@ def edit_resource(file: ifcopenshell.file, resource: ifcopenshell.entity_instanc
         # Change the name of the resource to "Zone A Crew"
         ifcopenshell.api.resource.edit_resource(model, resource=resource, attributes={"Name": "Foo"})
     """
-    settings = {"resource": resource, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["resource"], name, value)
+    for name, value in attributes.items():
+        setattr(resource, name, value)

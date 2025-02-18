@@ -20,6 +20,7 @@ import math
 import ifcopenshell.api.sequence
 import ifcopenshell.util.date
 import ifcopenshell.util.element
+from typing import Union
 
 
 def calculate_task_duration(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> None:
@@ -35,9 +36,7 @@ def calculate_task_duration(file: ifcopenshell.file, task: ifcopenshell.entity_i
     then nothing happens.
 
     :param task: The IfcTask to calculate the duration for.
-    :type task: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -82,18 +81,20 @@ def calculate_task_duration(file: ifcopenshell.file, task: ifcopenshell.entity_i
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"task": task}
-    return usecase.execute()
+    return usecase.execute(task)
 
 
 class Usecase:
-    def execute(self):
+    file: ifcopenshell.file
+
+    def execute(self, task: ifcopenshell.entity_instance) -> None:
+        self.task = task
         self.seconds_per_workday = self.calculate_seconds_per_workday()
         duration = self.calculate_max_resource_usage_duration()
         if duration:
             self.set_task_duration(duration)
 
-    def calculate_seconds_per_workday(self):
+    def calculate_seconds_per_workday(self) -> float:
         def get_work_schedule(task):
             for rel in task.HasAssignments or []:
                 if rel.is_a("IfcRelAssignsToControl") and rel.RelatingControl.is_a("IfcWorkSchedule"):
@@ -102,7 +103,7 @@ class Usecase:
                 return get_work_schedule(rel.RelatingObject)
 
         default_seconds_per_workday = 8 * 60 * 60
-        work_schedule = get_work_schedule(self.settings["task"])
+        work_schedule = get_work_schedule(self.task)
         if not work_schedule:
             return default_seconds_per_workday
         psets = ifcopenshell.util.element.get_psets(work_schedule)
@@ -115,9 +116,9 @@ class Usecase:
         work_day_duration = ifcopenshell.util.date.ifc2datetime(psets["Pset_WorkControlCommon"]["WorkDayDuration"])
         return work_day_duration.seconds
 
-    def calculate_max_resource_usage_duration(self):
+    def calculate_max_resource_usage_duration(self) -> float:
         max_duration = 0
-        for rel in self.settings["task"].OperatesOn or []:
+        for rel in self.task.OperatesOn or []:
             for related_object in rel.RelatedObjects:
                 if related_object.is_a("IfcConstructionResource"):
                     duration = self.calculate_duration_in_days(related_object)
@@ -125,7 +126,7 @@ class Usecase:
                         max_duration = duration
         return max_duration
 
-    def calculate_duration_in_days(self, resource):
+    def calculate_duration_in_days(self, resource: ifcopenshell.entity_instance) -> Union[float, None]:
         def is_hourly_work(schedule_work):
             return "T" in schedule_work
 
@@ -140,7 +141,7 @@ class Usecase:
             schedule_seconds = (schedule_duration.days + partial_days) * self.seconds_per_workday
         return math.ceil((schedule_seconds / self.seconds_per_workday) / schedule_usage)
 
-    def set_task_duration(self, duration):
-        if not self.settings["task"].TaskTime:
-            ifcopenshell.api.sequence.add_task_time(self.file, task=self.settings["task"])
-        self.settings["task"].TaskTime.ScheduleDuration = f"P{duration}D"
+    def set_task_duration(self, duration: float) -> None:
+        if not (task_time := self.task.TaskTime):
+            ifcopenshell.api.sequence.add_task_time(self.file, task=self.task)
+        task_time.ScheduleDuration = f"P{duration}D"
