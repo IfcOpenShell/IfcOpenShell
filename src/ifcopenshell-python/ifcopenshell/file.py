@@ -38,6 +38,8 @@ from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
 
 from lark import Lark, Transformer
+from lark.exceptions import UnexpectedCharacters, UnexpectedEOF, UnexpectedToken
+
 
 if TYPE_CHECKING:
     import ifcopenshell.util.schema
@@ -301,13 +303,12 @@ def parse_mvd(description):
     parsed_description = DescriptionTransform()
     try:
         if not text:
-            parsed_description.mvd = ['Not defined']
+            parsed_description.mvd = None
             return parsed_description
         parse_tree = parser.parse(text)
         parsed_description.transform(parse_tree)
-    except Exception as e:
-        print(e)
-        parsed_description.mvd = ['Not defined']
+    except (UnexpectedCharacters, UnexpectedEOF, UnexpectedToken) as e:
+        parsed_description.mvd = None
     return parsed_description
 
 class file:
