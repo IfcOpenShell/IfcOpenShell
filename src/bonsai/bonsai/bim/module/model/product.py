@@ -618,7 +618,7 @@ class AlignProduct(bpy.types.Operator):
         return results
 
 
-class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
+class LoadTypeThumbnails(bpy.types.Operator):
     bl_idname = "bim.load_type_thumbnails"
     bl_label = "Load Type Thumbnails"
     bl_options = {"REGISTER", "UNDO"}
@@ -626,9 +626,9 @@ class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
     limit: bpy.props.IntProperty()
     offset: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         if bpy.app.background:
-            return
+            return {"FINISHED"}
 
         props = tool.Model.get_model_props()
         # Only process at most one paginated class at a time.
