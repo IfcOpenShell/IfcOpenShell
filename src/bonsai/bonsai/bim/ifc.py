@@ -479,7 +479,7 @@ class IfcStore:
 
     @staticmethod
     def begin_transaction(operator: tool.Ifc.Operator) -> None:
-        IfcStore.current_transaction = str(uuid.uuid4())
+        IfcStore.current_transaction = str(uuid.uuid4()) + operator.__class__.__name__
         operator.transaction_key = IfcStore.current_transaction
 
     @staticmethod
