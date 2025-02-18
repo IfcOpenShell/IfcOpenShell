@@ -556,6 +556,7 @@ class ResetObjectColours(Operator):
 
 class ToggleFilterSelection(Operator):
     "Click to select/deselect current selection"
+
     bl_idname = "bim.toggle_filter_selection"
     bl_label = "Toggle Filter Selection"
     action: EnumProperty(items=(("SELECT", "Select", ""), ("DESELECT", "Deselect", "")))
