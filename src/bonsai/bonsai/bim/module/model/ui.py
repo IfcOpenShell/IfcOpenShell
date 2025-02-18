@@ -20,6 +20,7 @@ import bpy
 import bonsai.bim
 import bonsai.tool as tool
 from bpy.types import Panel, Menu
+from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.model.data import (
     AuthoringData,
     ArrayData,
@@ -449,9 +450,9 @@ class BIM_PT_window(bpy.types.Panel):
 
                 self.layout.use_property_split = True
                 self.layout.label(text="Material Properties")
-                self.layout.prop(props, "lining_material")
-                self.layout.prop(props, "framing_material", text="Panel Material")
-                self.layout.prop(props, "glazing_material")
+                prop_with_search(self.layout, props, "lining_material")
+                prop_with_search(self.layout, props, "framing_material", text="Panel Material")
+                prop_with_search(self.layout, props, "glazing_material")
             else:
                 row.operator("bim.enable_editing_window", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_window", icon="X", text="")
@@ -546,10 +547,10 @@ class BIM_PT_door(bpy.types.Panel):
 
                 self.layout.use_property_split = True
                 self.layout.label(text="Material Properties")
-                self.layout.prop(props, "lining_material")
-                self.layout.prop(props, "framing_material", text="Panel Material")
+                prop_with_search(self.layout, props, "lining_material")
+                prop_with_search(self.layout, props, "framing_material", text="Panel Material")
                 if props.transom_thickness:
-                    self.layout.prop(props, "glazing_material")
+                    prop_with_search(self.layout, props, "glazing_material")
             else:
                 row.operator("bim.enable_editing_door", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_door", icon="X", text="")
