@@ -230,7 +230,7 @@ mvd_grammar = r'''
     
     set_name: /[A-Za-z0-9_]+/
     
-    value: /[A-Za-z0-9 _-]+/
+    value: /[A-Za-z0-9 _\.-]+/
     
     comment_text: /[^\[\]]+/  // Free text inside COMMENT brackets
 
