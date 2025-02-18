@@ -453,12 +453,14 @@ class Polyline(bonsai.core.tool.Polyline):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         if bpy.context.scene.unit_settings.system == "IMPERIAL":
             precision = bpy.context.scene.DocProperties.imperial_precision
+            if is_area:
+                area_unit = bpy.context.scene.BIMProperties.area_unit
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get(), unit_type=area_unit)
         else:
             precision = None
 
-        value = value if is_area else value / unit_scale
         return format_distance(
-            value,
+            value / unit_scale,
             precision=precision,
             hide_units=False,
             isArea=is_area,
