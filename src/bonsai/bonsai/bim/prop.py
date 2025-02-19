@@ -230,15 +230,11 @@ def update_attribute_value(self: "Attribute", context: bpy.types.Context) -> Non
 
 
 def update_is_null(self: "Attribute", context: bpy.types.Context) -> None:
-    if not self.is_null:
-        return
-    self.string_value = ""
-    self.int_value = 0
-    self.float_value = 0
-    self.length_value = 0
-    self.bool_value = False
-    if self.is_null is not True:
-        self.is_null = True
+    if self.is_null:
+        if self.data_type != "enum" and self.get_value() != (default := self.get_value_default()):
+            self.set_value(default)
+        if self.is_null is not True:
+            self.is_null = True
 
 
 def set_int_value(self: "Attribute", new_value: int) -> None:
