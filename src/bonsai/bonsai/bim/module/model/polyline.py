@@ -597,7 +597,7 @@ class PolylineOperator:
                 self.report({"WARNING"}, "The number typed is not valid.")
                 return is_valid
             else:
-                if self.input_type in {"X", "Y"}:
+                if self.input_type in {"X", "Y", "Z"}:
                     tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
                 elif self.input_type in {"D", "A"}:
                     tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)

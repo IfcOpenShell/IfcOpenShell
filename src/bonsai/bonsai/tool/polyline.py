@@ -267,10 +267,20 @@ class Polyline(bonsai.core.tool.Polyline):
         snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
         snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
-        if tool_state.use_default_container:
-            snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
+        if tool_state.is_input_on:
+            if tool_state.use_default_container:
+                mouse_vector = Vector(
+                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), default_container_elevation)
+                )
+            else:
+                mouse_vector = Vector(
+                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), input_ui.get_number_value("Z"))
+                )
         else:
-            snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
+            if tool_state.use_default_container:
+                snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
+            else:
+                snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
         if len(polyline_points) > 1:
             second_to_last_point_data = polyline_points[len(polyline_points) - 2]
