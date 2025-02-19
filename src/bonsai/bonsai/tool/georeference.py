@@ -58,6 +58,7 @@ class Georeference(bonsai.core.tool.Georeference):
                 )
                 if data["MapUnit"]:
                     new.enum_value = str(data["MapUnit"].id())
+                new.update = "tool.Georeference.update_map_unit"
                 return True
 
         props = bpy.context.scene.BIMGeoreferenceProperties
@@ -71,6 +72,21 @@ class Georeference(bonsai.core.tool.Georeference):
                 projected_crs = context.HasCoordinateOperation[0].TargetCRS
                 bonsai.bim.helper.import_attributes2(projected_crs, props.projected_crs, callback=callback)
                 return
+
+    @classmethod
+    def update_map_unit(cls, self, context) -> None:
+        if unit_id := self.get_value():
+            map_unit = tool.Ifc.get().by_id(int(unit_id))
+            project_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT")
+            if map_unit and project_unit:
+                result = ifcopenshell.util.unit.convert_unit(1, project_unit, map_unit)
+            else:
+                result = 1.0
+        else:
+            result = 1.0
+        for attribute in bpy.context.scene.BIMGeoreferenceProperties.coordinate_operation:
+            if attribute.name == "Scale":
+                attribute.set_value(str(result))
 
     @classmethod
     def import_coordinate_operation(cls) -> None:

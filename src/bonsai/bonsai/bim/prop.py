@@ -235,6 +235,11 @@ def update_is_null(self: "Attribute", context: bpy.types.Context) -> None:
             self.set_value(default)
         if self.is_null is not True:
             self.is_null = True
+    if self.update:
+        update = globals()
+        for name in self.update.split("."):
+            update = update[name] if isinstance(update, dict) else getattr(update, name)
+        update(self, context)
 
 
 def set_int_value(self: "Attribute", new_value: int) -> None:
@@ -322,6 +327,7 @@ class Attribute(PropertyGroup):
     value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
     special_type: StringProperty(name="Special Value Type", default="")
     metadata: StringProperty(name="Metadata", description="For storing some additional information about the attribute")
+    update: StringProperty(name="Update", description="Custom update function to be executed")
 
     if TYPE_CHECKING:
         name: str
