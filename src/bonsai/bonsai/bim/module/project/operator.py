@@ -304,13 +304,14 @@ class ChangeLibraryElement(bpy.types.Operator):
         if self.breadcrumb_type == "LIBRARY":
             hierarchy = tool.Project.get_project_hierarchy(library_file)
             assert active_project_library is not None
-            if active_project_library == "NO_LIBRARY" or not hierarchy[active_project_library]:
-                for appendable_type in sorted(tool.Project.get_appendable_asset_types()):
-                    elements = library_file.by_type(appendable_type)
-                    if elements := filter_elements(elements):
-                        self.props.add_library_asset_class(appendable_type, len(elements))
-            else:
+            if active_project_library != "NO_LIBRARY" and hierarchy[active_project_library]:
                 tool.Project.load_project_libraries_to_ui(active_project_library, hierarchy)
+
+            for appendable_type in sorted(tool.Project.get_appendable_asset_types()):
+                elements = library_file.by_type(appendable_type)
+                if elements := filter_elements(elements):
+                    self.props.add_library_asset_class(appendable_type, len(elements))
+
         else:  # breadcrumb_type CLASS.
             elements = self.library_file.by_type(self.element_name)
             elements = list(filter_elements(elements))
