@@ -226,47 +226,27 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
         return {"RUNNING_MODAL"}
 
 
-class SelectDataDir(bpy.types.Operator):
-    bl_idname = "bim.select_data_dir"
-    bl_label = "Select Data Directory"
+class SelectDir(bpy.types.Operator):
+    bl_idname = "bim.select_dir"
+    bl_label = "Select Directory"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select the directory that contains all IFC data es. PSet, styles, etc..."
+    bl_description = "Open a file browser to choose the directory"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    data_path: bpy.props.StringProperty(name="Data Path")
 
     def execute(self, context):
-        context.scene.BIMProperties.data_dir = os.path.dirname(self.filepath)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class SelectCacheDir(bpy.types.Operator):
-    bl_idname = "bim.select_cache_dir"
-    bl_label = "Select Cache Directory"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select the directory that contains HDF5 cache files"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        context.scene.BIMProperties.cache_dir = os.path.dirname(self.filepath)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class SelectSchemaDir(bpy.types.Operator):
-    bl_idname = "bim.select_schema_dir"
-    bl_label = "Select Schema Directory"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select the directory containing the IFC schema specification"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        context.scene.BIMProperties.schema_dir = os.path.dirname(self.filepath)
+        crumbs = self.data_path.split(".")
+        if crumbs[0] == "preferences":
+            crumbs.pop(0)
+            data = tool.Blender.get_addon_preferences()
+        else:
+            data = context
+        while crumbs:
+            crumb = crumbs.pop(0)
+            if crumbs:
+                data = getattr(data, crumb)
+            else:
+                setattr(data, crumb, os.path.dirname(self.filepath))
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -816,7 +796,9 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
         logger = logging.getLogger("ImportIFC")
         path_log = tool.Blender.get_data_dir_path("process.log")
         if not os.access(path_log.parent, os.W_OK):
-            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
+            path_log = os.path.join(
+                tempfile.mkdtemp(dir=tool.Blender.get_addon_preferences().tmp_dir or None), "process.log"
+            )
         logging.basicConfig(
             filename=path_log,
             filemode="a",

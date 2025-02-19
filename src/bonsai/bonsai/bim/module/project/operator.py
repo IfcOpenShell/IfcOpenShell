@@ -1057,7 +1057,9 @@ class LoadProjectElements(bpy.types.Operator):
         logger = logging.getLogger("ImportIFC")
         path_log = tool.Blender.get_data_dir_path("process.log")
         if not os.access(path_log.parent, os.W_OK):
-            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
+            path_log = os.path.join(
+                tempfile.mkdtemp(dir=tool.Blender.get_addon_preferences().tmp_dir or None), "process.log"
+            )
         logging.basicConfig(
             filename=path_log,
             filemode="a",
@@ -1579,7 +1581,9 @@ class ExportIFC(bpy.types.Operator):
         logger = logging.getLogger("ExportIFC")
         path_log = tool.Blender.get_data_dir_path("process.log")
         if not os.access(path_log.parent, os.W_OK):
-            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
+            path_log = os.path.join(
+                tempfile.mkdtemp(dir=tool.Blender.get_addon_preferences().tmp_dir or None), "process.log"
+            )
         logging.basicConfig(
             filename=path_log,
             filemode="a",

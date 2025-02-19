@@ -113,7 +113,7 @@ class AuginCreateNewModel(bpy.types.Operator):
         context.scene.collection.objects.link(cam_obj)
         context.scene.camera = cam_obj
 
-        tmpdir = tempfile.mkdtemp()
+        tmpdir = tempfile.mkdtemp(dir=tool.Blender.get_addon_preferences().tmp_dir or None)
         thumb_path = os.path.join(tmpdir, "thumb.png")
         context.scene.render.image_settings.file_format = "PNG"
         context.scene.render.filepath = thumb_path

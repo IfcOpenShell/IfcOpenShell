@@ -72,7 +72,7 @@ class ExecuteIfcTester(bpy.types.Operator):
 
         # No need for if-statement, just postponing lots of diffs.
         if True:
-            dirpath = tempfile.mkdtemp()
+            dirpath = tempfile.mkdtemp(dir=tool.Blender.get_addon_preferences().tmp_dir or None)
             start = time.time()
             output = Path(os.path.join(dirpath, "{}_{}.html".format(Path(ifc_path).name, Path(specs_path).name)))
 

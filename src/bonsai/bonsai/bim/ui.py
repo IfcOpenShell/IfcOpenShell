@@ -245,6 +245,10 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description="If disabled, the toolbar will only load when an IFC model is active",
     )
     should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
+    tmp_dir: StringProperty(
+        name="Temporary Directory",
+        description='Path to create and store temporary files. If left blank, a system default will be used.',
+    )
     spatial_elements_unselectable: BoolProperty(
         name="Make Spatial Elements Unselectable By Default",
         default=True,
@@ -356,11 +360,15 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
     def draw_directories(self, layout, context):
         row = layout.row(align=True)
         row.prop(context.scene.BIMProperties, "data_dir")
-        row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
+        row.operator("bim.select_dir", icon="FILE_FOLDER", text="").data_path = "scene.BIMProperties.data_dir"
 
         row = layout.row(align=True)
         row.prop(context.scene.BIMProperties, "cache_dir")
-        row.operator("bim.select_cache_dir", icon="FILE_FOLDER", text="")
+        row.operator("bim.select_dir", icon="FILE_FOLDER", text="").data_path = "scene.BIMProperties.cache_dir"
+
+        row = layout.row(align=True)
+        row.prop(self, "tmp_dir")
+        row.operator("bim.select_dir", icon="FILE_FOLDER", text="").data_path = "preferences.tmp_dir"
 
     def draw_drawing_settings(self, layout, context):
         layout.prop(context.scene.BIMProperties, "pset_dir")
