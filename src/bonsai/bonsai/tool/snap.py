@@ -193,7 +193,7 @@ class Snap(bonsai.core.tool.Snap):
             rot_intersection = rot_mat @ translated_intersection
             proximity = rot_intersection.y
             if tool_state.plane_method == "XZ":
-                proximity = rot_intersection.z
+                proximity = rot_intersection.x
 
             is_on_rot_axis = abs(proximity) <= stick_factor
             if is_on_rot_axis:
@@ -208,10 +208,14 @@ class Snap(bonsai.core.tool.Snap):
         # If lock axis is on it will use the snap angle so there is no need to search for eligible axis
         if elegible_axis or tool_state.lock_axis:
             # Adapt axis to make snap angle work with other plane method
-            if tool_state.plane_method == "XZ":
-                axis = -axis
-            if tool_state.plane_method == "YZ":
-                axis = 90 - (axis * -1)
+            if elegible_axis:
+                if tool_state.plane_method == "XZ":
+                    axis = 90 - (axis * -1)
+            else:
+                if tool_state.plane_method == "XZ":
+                    axis = -axis
+                if tool_state.plane_method == "YZ":
+                    axis = 90 - (axis * -1)
             rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, pivot_axis)
             rot_mat = tool.Polyline.use_transform_orientations(rot_mat)
             rot_intersection = rot_mat @ translated_intersection
