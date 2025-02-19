@@ -27,7 +27,6 @@ import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
 from bonsai.tool.drawing import Drawing as subject
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.drawing.data import DecoratorData
 from mathutils import Vector
 

@@ -889,7 +889,7 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
         model_props = tool.Model.get_model_props()
         direction_sense = model_props.direction_sense
         offset = model_props.offset
-        model = IfcStore.get_file()
+        model = tool.Ifc.get()
         element = tool.Ifc.get_entity(slab)
         material = ifcopenshell.util.element.get_material(element)
         material_set_usage = model.by_id(material.id())

@@ -240,7 +240,7 @@ class RemoveClassification(bpy.types.Operator, tool.Ifc.Operator):
     classification: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         ifcopenshell.api.run(
             "classification.remove_classification",
             tool.Ifc.get(),

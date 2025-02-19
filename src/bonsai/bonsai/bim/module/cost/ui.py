@@ -21,7 +21,6 @@ import bonsai.bim.helper
 import bonsai.bim.module.cost.prop as CostProp
 import bonsai.tool as tool
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.cost.data import CostSchedulesData
 from typing import Any
 
@@ -37,7 +36,7 @@ class BIM_PT_cost_schedules(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):

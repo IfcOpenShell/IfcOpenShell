@@ -503,10 +503,10 @@ class AppendEntireLibrary(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         self.library = IfcStore.library_file
 
         query = ", ".join(tool.Project.get_appendable_asset_types())
@@ -523,10 +523,10 @@ class AppendLibraryElementByQuery(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         self.library = IfcStore.library_file
 
         for element in ifcopenshell.util.selector.filter_elements(self.library, self.query):
@@ -556,7 +556,7 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        poll = bool(IfcStore.get_file())
+        poll = bool(tool.Ifc.get())
         if not poll:
             cls.poll_message_set("Please create or load a project first.")
         return poll
@@ -602,7 +602,7 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
     def import_material_from_ifc(self, element: ifcopenshell.entity_instance, context: bpy.types.Context) -> None:
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
@@ -620,7 +620,7 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         ifc_importer.create_style(style)
 
     def import_product_from_ifc(self, element: ifcopenshell.entity_instance, context: bpy.types.Context) -> None:
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
@@ -633,7 +633,7 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         ifc_importer.place_objects_in_collections()
 
     def import_type_from_ifc(self, element: ifcopenshell.entity_instance, context: bpy.types.Context) -> None:
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         logger = logging.getLogger("ImportIFC")
         ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
 
@@ -648,7 +648,7 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
 
     def import_materials(self, element: ifcopenshell.entity_instance, ifc_importer: import_ifc.IfcImporter) -> None:
         for material in ifcopenshell.util.element.get_materials(element):
-            if IfcStore.get_element(material.id()):
+            if tool.Ifc.get_object_by_identifier(material.id()):
                 continue
             self.import_material_styles(material, ifc_importer)
 
@@ -662,7 +662,7 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
                 if not element.is_a("IfcRepresentationItem") or not element.StyledByItem:
                     continue
                 for element2 in self.file.traverse(element.StyledByItem[0]):
-                    if element2.is_a("IfcSurfaceStyle") and not IfcStore.get_element(element2.id()):
+                    if element2.is_a("IfcSurfaceStyle") and not tool.Ifc.get_object_by_identifier(element2.id()):
                         ifc_importer.create_style(element2)
 
     def import_material_styles(
@@ -673,7 +673,7 @@ class AppendLibraryElement(bpy.types.Operator, tool.Ifc.Operator):
         if not material.HasRepresentation:
             return
         for element in self.file.traverse(material.HasRepresentation[0]):
-            if element.is_a("IfcSurfaceStyle") and not IfcStore.get_element(element.id()):
+            if element.is_a("IfcSurfaceStyle") and not tool.Ifc.get_object_by_identifier(element.id()):
                 ifc_importer.create_style(element)
 
 
@@ -770,14 +770,14 @@ class EnableEditingHeader(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def execute(self, context):
         self.file = tool.Ifc.get()
         props = tool.Project.get_project_props()
         props.is_editing = True
 
-        mvd = "".join(IfcStore.get_file().wrapped_data.header.file_description.description)
+        mvd = "".join(tool.Ifc.get().wrapped_data.header.file_description.description)
         if "[" in mvd:
             props.mvd = mvd.split("[")[1][0:-1]
         else:
@@ -807,7 +807,7 @@ class EditHeader(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def execute(self, context):
         IfcStore.begin_transaction(self)
@@ -832,7 +832,7 @@ class EditHeader(bpy.types.Operator):
         return {"FINISHED"}
 
     def record_state(self):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         return {
             "description": self.file.wrapped_data.header.file_description.description,
             "author": self.file.wrapped_data.header.file_name.author,
@@ -841,14 +841,14 @@ class EditHeader(bpy.types.Operator):
         }
 
     def rollback(self, data):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         file.wrapped_data.header.file_description.description = data["old"]["description"]
         file.wrapped_data.header.file_name.author = data["old"]["author"]
         file.wrapped_data.header.file_name.organization = data["old"]["organisation"]
         file.wrapped_data.header.file_name.authorization = data["old"]["authorisation"]
 
     def commit(self, data):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         file.wrapped_data.header.file_description.description = data["new"]["description"]
         file.wrapped_data.header.file_name.author = data["new"]["author"]
         file.wrapped_data.header.file_name.organization = data["new"]["organisation"]

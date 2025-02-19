@@ -38,7 +38,6 @@ import bonsai.tool as tool
 import bonsai.core.geometry
 import bonsai.bim.import_ifc as import_ifc
 from collections import defaultdict
-from bonsai.bim.ifc import IfcStore
 from math import pi, radians
 from mathutils import Vector, Matrix
 from bpy.types import Operator

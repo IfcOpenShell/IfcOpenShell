@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bonsai.tool as tool
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.document.data import DocumentData, ObjectDocumentData
 
@@ -33,7 +33,7 @@ class BIM_PT_documents(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not DocumentData.is_loaded:
@@ -92,7 +92,7 @@ class BIM_PT_object_documents(Panel):
     def poll(cls, context):
         if not context.active_object:
             return False
-        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(context.active_object.BIMObjectProperties.ifc_definition_id):
             return False
         return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
 
@@ -103,7 +103,7 @@ class BIM_PT_object_documents(Panel):
         obj = context.active_object
         self.oprops = obj.BIMObjectProperties
         self.props = context.scene.BIMDocumentProperties
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
 
         self.draw_add_ui()
 

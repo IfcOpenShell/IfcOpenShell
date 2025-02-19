@@ -20,7 +20,6 @@ from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 from bpy.types import Panel
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import prop_with_search, get_display_value
 from bonsai.bim.module.pset.data import (
     ObjectPsetsData,
@@ -247,7 +246,7 @@ class BIM_PT_object_psets(Panel):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
             return False
         return True
 
@@ -325,7 +324,7 @@ class BIM_PT_object_qtos(Panel):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
             return False
         return True
 

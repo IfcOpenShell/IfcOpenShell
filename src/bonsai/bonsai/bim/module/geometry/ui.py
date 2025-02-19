@@ -20,7 +20,6 @@ import bpy
 import bonsai.bim
 import bonsai.tool as tool
 from bpy.types import Panel, Menu, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.geometry.data import (
     RepresentationsData,
@@ -337,9 +336,9 @@ class BIM_PT_connections(Panel):
     def poll(cls, context):
         if not context.active_object:
             return False
-        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(context.active_object.BIMObjectProperties.ifc_definition_id):
             return False
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not ConnectionsData.is_loaded:

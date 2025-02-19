@@ -757,7 +757,7 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
                 elements.append(element)
 
     for element in elements:
-        obj = IfcStore.get_element(element.id())
+        obj = tool.Ifc.get_object_by_identifier(element.id())
         if not obj:
             continue
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")

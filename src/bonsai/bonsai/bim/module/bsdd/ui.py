@@ -18,7 +18,6 @@
 
 import bonsai.tool as tool
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 
 
 class BIM_PT_bsdd(Panel):

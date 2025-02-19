@@ -43,7 +43,6 @@ import bonsai.tool as tool
 import bonsai.bim.module.bcf.prop as bcf_prop
 import bonsai.bim.module.bcf.bcfstore as bcfstore
 from pathlib import Path
-from bonsai.bim.ifc import IfcStore
 from math import radians, degrees, atan, tan, cos, sin
 from mathutils import Vector, Matrix, Euler, geometry
 from xsdata.models.datatype import XmlDateTime
@@ -1206,7 +1205,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
 
@@ -1355,7 +1354,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
 
         objs: list[bpy.types.Object] = []
         for global_id in exception_global_ids:
-            obj = IfcStore.get_element(global_id)
+            obj = tool.Ifc.get_object_by_identifier(global_id)
             if obj and context.view_layer.objects.get(obj.name):
                 assert isinstance(obj, bpy.types.Object)
                 objs.append(obj)
@@ -1414,7 +1413,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             return
         bpy.ops.object.select_all(action="DESELECT")
         for global_id in selected_global_ids:
-            obj = IfcStore.get_element(global_id)
+            obj = tool.Ifc.get_object_by_identifier(global_id)
             if obj:
                 obj.select_set(True)
                 obj.hide_set(False)
@@ -1427,7 +1426,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             for acomponent in acoloring.component:
                 global_id_colours.setdefault(acomponent.ifc_guid, acoloring.color)
         for global_id, color in global_id_colours.items():
-            obj = IfcStore.get_element(global_id)
+            obj = tool.Ifc.get_object_by_identifier(global_id)
             if obj:
                 obj.color = self.hex_to_rgb(color)
 

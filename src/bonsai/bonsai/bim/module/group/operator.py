@@ -22,7 +22,6 @@ import ifcopenshell.api.group
 import ifcopenshell.util.attribute
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 import json
 
 
@@ -129,8 +128,7 @@ class RemoveGroup(bpy.types.Operator, tool.Ifc.Operator):
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMGroupProperties
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         ifcopenshell.api.run("group.remove_group", self.file, **{"group": self.file.by_id(self.group)})
         bpy.ops.bim.load_groups()
         return {"FINISHED"}

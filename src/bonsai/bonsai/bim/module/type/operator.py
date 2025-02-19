@@ -29,7 +29,6 @@ import bonsai.tool as tool
 import bonsai.core.geometry
 import bonsai.core.type as core
 import bonsai.core.root
-from bonsai.bim.ifc import IfcStore
 
 
 class AssignType(bpy.types.Operator, tool.Ifc.Operator):
@@ -66,7 +65,7 @@ class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
         def exclude_callback(attribute):
             return attribute.is_a("IfcProfileDef") and attribute.ProfileName
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         objs = [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
@@ -187,7 +186,7 @@ class SelectSimilarType(bpy.types.Operator):
     related_object: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         objects = bpy.context.selected_objects
 
         # store relating types to avoid selecting same elements multiple times
@@ -229,7 +228,7 @@ class SelectTypeObjects(bpy.types.Operator):
     relating_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         relating_type = bpy.data.objects.get(self.relating_type) if self.relating_type else context.active_object
         at_least_one_selectable_typed_object = False
         for element in ifcopenshell.util.element.get_types(tool.Ifc.get_entity(relating_type)):

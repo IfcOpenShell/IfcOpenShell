@@ -24,7 +24,6 @@ import ifcopenshell.util.element
 import bonsai.bim.handler
 import bonsai.tool as tool
 import bonsai.core.document as core
-from bonsai.bim.ifc import IfcStore
 
 
 class LoadProjectDocuments(bpy.types.Operator):

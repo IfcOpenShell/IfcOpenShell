@@ -153,7 +153,7 @@ class BIM_PT_project(Panel):
         self.layout.use_property_split = True
         props = context.scene.BIMProperties
         pprops = self.props = tool.Project.get_project_props()
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         if pprops.is_loading:
             self.draw_advanced_loading_ui(context)
         elif self.file or props.ifc_file:
@@ -247,7 +247,7 @@ class BIM_PT_project(Panel):
 
     def draw_editing_buttons(self, context, row):
         pprops = self.props
-        if IfcStore.get_file():
+        if tool.Ifc.get():
             if pprops.is_editing:
                 row.operator("bim.edit_header", icon="CHECKMARK", text="")
                 row.operator("bim.disable_editing_header", icon="CANCEL", text="")
@@ -257,10 +257,10 @@ class BIM_PT_project(Panel):
     def draw_editable_file_info(self, context):
         pprops = self.props
 
-        if IfcStore.get_file():
+        if tool.Ifc.get():
             row = self.layout.row(align=True)
             row.label(text="IFC Schema", icon="FILE_CACHE")
-            row.label(text=IfcStore.get_file().schema)
+            row.label(text=tool.Ifc.get().schema)
 
             if pprops.is_editing:
                 row = self.layout.row(align=True)
@@ -281,7 +281,7 @@ class BIM_PT_project(Panel):
             else:
                 row = self.layout.row(align=True)
                 row.label(text="IFC MVD", icon="FILE_HIDDEN")
-                mvd = "".join(IfcStore.get_file().wrapped_data.header.file_description.description)
+                mvd = "".join(tool.Ifc.get().wrapped_data.header.file_description.description)
                 if "[" in mvd:
                     mvd = mvd.split("[")[1][0:-1]
                 row.label(text=mvd)

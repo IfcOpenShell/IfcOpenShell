@@ -24,7 +24,6 @@ import bonsai.tool as tool
 import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.bim.handler
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 
 
@@ -98,7 +97,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                     break
 
             element_had_openings = tool.Geometry.has_openings(voided_element)
-            body_context = ifcopenshell.util.representation.get_context(IfcStore.get_file(), "Model", "Body")
+            body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body")
             if not element2:
                 element2 = bonsai.core.root.assign_class(
                     tool.Ifc,
@@ -215,7 +214,7 @@ class AddFilling(bpy.types.Operator, tool.Ifc.Operator):
         opening = context.scene.objects.get(self.opening, context.scene.VoidProperties.desired_opening)
         if opening is None:
             return {"FINISHED"}
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         element_id = obj.BIMObjectProperties.ifc_definition_id
         opening_id = opening.BIMObjectProperties.ifc_definition_id
         if not element_id or not opening_id or element_id == opening_id:

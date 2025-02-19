@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 import bonsai.bim.module.root.prop as root_prop
 from bpy.types import Panel
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.root.data import IfcClassData
 from bonsai.bim.module.model.data import AuthoringData
@@ -38,7 +38,7 @@ class BIM_PT_class(Panel):
     def poll(cls, context):
         if not context.active_object:
             return False
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not IfcClassData.is_loaded:

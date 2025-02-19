@@ -35,7 +35,6 @@ import bonsai.core.root
 import bonsai.core.geometry
 import bonsai.core.model as core
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from math import pi, sin, cos, degrees, tan, radians
 from mathutils import Vector, Matrix, Quaternion
 from bonsai.bim.module.model.opening import FilledOpeningGenerator

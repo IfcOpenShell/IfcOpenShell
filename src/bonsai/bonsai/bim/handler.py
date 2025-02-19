@@ -60,7 +60,7 @@ def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -
             if props.is_renaming:
                 props.is_renmaing = False
                 return
-            IfcStore.get_file().by_id(ifc_definition_id).Name = obj.name
+            tool.Ifc.get().by_id(ifc_definition_id).Name = obj.name
             refresh_ui_data()
         return
 
@@ -71,7 +71,7 @@ def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -
         obj.BIMObjectProperties.is_renaming = False
         return
 
-    element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+    element = tool.Ifc.get().by_id(obj.BIMObjectProperties.ifc_definition_id)
     if "/" in obj.name:
         object_name = obj.name
         element_name = obj.name.split("/", 1)[1]
@@ -231,9 +231,9 @@ def refresh_ui_data():
 def loadIfcStore(scene):
     IfcStore.purge()
     refresh_ui_data()
-    if not IfcStore.get_file():
+    if not tool.Ifc.get():
         return
-    IfcStore.get_schema()
+    tool.Ifc.schema()
     IfcStore.relink_all_objects()
 
 

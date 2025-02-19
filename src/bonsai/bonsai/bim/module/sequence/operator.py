@@ -31,7 +31,6 @@ import ifcopenshell.util.sequence
 import ifcopenshell.util.selector
 from datetime import datetime
 from dateutil import parser, relativedelta
-from bonsai.bim.ifc import IfcStore
 from bpy_extras.io_utils import ImportHelper
 from typing import get_args, TYPE_CHECKING
 from typing_extensions import assert_never
@@ -700,7 +699,7 @@ class ImportP6(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.p62ifc import P62Ifc
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         p62ifc = P62Ifc()
         p62ifc.xml = self.filepath
@@ -728,7 +727,7 @@ class ImportP6XER(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.p6xer2ifc import P6XER2Ifc
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         p6xer2ifc = P6XER2Ifc()
         p6xer2ifc.xer = self.filepath
@@ -756,7 +755,7 @@ class ImportPP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.pp2ifc import PP2Ifc
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         pp2ifc = PP2Ifc()
         pp2ifc.pp = self.filepath
@@ -784,7 +783,7 @@ class ImportMSP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.msp2ifc import MSP2Ifc
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         msp2ifc = MSP2Ifc()
         msp2ifc.xml = self.filepath
@@ -814,7 +813,7 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         from ifc4d.ifc2msp import Ifc2Msp
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         ifc2msp = Ifc2Msp()
         ifc2msp.work_schedule = self.file.by_type("IfcWorkSchedule")[0]
@@ -847,7 +846,7 @@ class ExportP6(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         from ifc4d.ifc2p6 import Ifc2P6
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         ifc2p6 = Ifc2P6()
         ifc2p6.xml = bpy.path.ensure_ext(self.filepath, ".xml")

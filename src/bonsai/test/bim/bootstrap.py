@@ -174,14 +174,14 @@ def the_object_name_exists(name):
 
 
 def an_ifc_file_exists():
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     if not ifc:
         assert False, "No IFC file is available"
     return ifc
 
 
 def an_ifc_file_does_not_exist():
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     if ifc:
         assert False, "An IFC is available"
 
@@ -283,7 +283,7 @@ def the_object_name1_has_no_boolean_difference_by_name2(name1, name2):
 
 
 def the_object_name_is_voided_by_void(name, void):
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     for rel in element.HasOpenings:
         if rel.RelatedOpeningElement.Name == void:
@@ -292,7 +292,7 @@ def the_object_name_is_voided_by_void(name, void):
 
 
 def the_object_name_is_not_voided_by_void(name, void):
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     for rel in element.HasOpenings:
         if rel.RelatedOpeningElement.Name == void:
@@ -300,21 +300,21 @@ def the_object_name_is_not_voided_by_void(name, void):
 
 
 def the_object_name_is_not_voided(name):
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     if any(element.HasOpenings):
         assert False, "An opening was found"
 
 
 def the_object_name_is_not_a_void(name):
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     if any(element.VoidsElements):
         assert False, "A void was found"
 
 
 def the_void_name_is_filled_by_filling(name, filling):
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     if any(rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings):
         return True
@@ -322,14 +322,14 @@ def the_void_name_is_filled_by_filling(name, filling):
 
 
 def the_void_name_is_not_filled_by_filling(name, filling):
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     if any(rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings):
         assert False, "A filling was found"
 
 
 def the_object_name_is_not_a_filling(name):
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     if any(element.FillsVoids):
         assert False, "A filling was found"

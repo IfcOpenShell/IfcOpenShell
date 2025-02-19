@@ -27,7 +27,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from typing import Optional, Callable, Any, Union, Iterable, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -119,7 +118,8 @@ def import_attributes(
     data: dict[str, Any],
     callback: Optional[ImportCallback] = None,
 ) -> None:
-    for attribute in IfcStore.get_schema().declaration_by_name(ifc_class).all_attributes():
+    schema = tool.Ifc.schema()
+    for attribute in schema.declaration_by_name(ifc_class).all_attributes():
         import_attribute(attribute, props, data, callback=callback)
 
 

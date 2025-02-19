@@ -129,8 +129,12 @@ class Ifc(bonsai.core.tool.Ifc):
             return None
 
     @classmethod
-    def get_object(cls, element: ifcopenshell.entity_instance) -> IFC_CONNECTED_TYPE:
+    def get_object(cls, element: ifcopenshell.entity_instance) -> Union[IFC_CONNECTED_TYPE, None]:
         return IfcStore.get_element(element.id())
+
+    @classmethod
+    def get_object_by_identifier(cls, id_or_guid: Union[int, str]) -> Union[IFC_CONNECTED_TYPE, None]:
+        return IfcStore.get_element(id_or_guid)
 
     @classmethod
     def rebuild_element_maps(cls) -> None:

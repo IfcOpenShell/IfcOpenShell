@@ -377,7 +377,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
 
         walls, is_polyline_closed = DumbWallGenerator(self.relating_type).generate("POLYLINE")
         for wall in walls:
-            model = IfcStore.get_file()
+            model = tool.Ifc.get()
             element = tool.Ifc.get_entity(wall["obj"])
             material = ifcopenshell.util.element.get_material(element)
             material_set_usage = model.by_id(material.id())
@@ -598,7 +598,7 @@ class DumbWallGenerator:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     def generate(self, insertion_type="CURSOR"):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         self.layers = tool.Model.get_material_layer_parameters(self.relating_type)
         if not self.layers["thickness"]:
             return

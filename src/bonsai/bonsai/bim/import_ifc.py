@@ -881,7 +881,7 @@ class IfcImporter:
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)
         if not bpy.context.scene.BIMProperties.ifc_file:
             bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
 
     def calculate_unit_scale(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)

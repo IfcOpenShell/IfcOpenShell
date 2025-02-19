@@ -78,10 +78,10 @@ class PrintIfcFile(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def execute(self, context):
-        print(IfcStore.get_file().wrapped_data.to_string())
+        print(tool.Ifc.get().wrapped_data.to_string())
         return {"FINISHED"}
 
 
@@ -184,10 +184,10 @@ class CreateAllShapes(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         elements = self.file.by_type("IfcElement") + self.file.by_type("IfcSpace")
 
         total = len(elements)
@@ -328,10 +328,10 @@ class InspectFromStepId(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         debug_props = tool.Debug.get_debug_props()
         debug_props.active_step_id = self.step_id
         crumb = debug_props.step_id_breadcrumb.add()
@@ -422,7 +422,7 @@ class PrintObjectPlacement(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
-        placement = ifcopenshell.util.placement.get_local_placement(IfcStore.get_file().by_id(self.step_id))
+        placement = ifcopenshell.util.placement.get_local_placement(tool.Ifc.get().by_id(self.step_id))
         if self.create_empty_object:
             bpy.ops.object.empty_add(type="ARROWS")
             si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())

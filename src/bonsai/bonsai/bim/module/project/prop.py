@@ -121,7 +121,7 @@ def update_filter_mode(self: "BIMProjectProperties", context: bpy.types.Context)
     self.filter_categories.clear()
     if self.filter_mode == "NONE":
         return
-    file = IfcStore.get_file()
+    file = tool.Ifc.get()
     if self.filter_mode == "DECOMPOSITION":
         if file.schema == "IFC2X3":
             elements = file.by_type("IfcSpatialStructureElement")

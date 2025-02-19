@@ -23,7 +23,6 @@ import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.core.aggregate as core
 import bonsai.core.spatial
-from bonsai.bim.ifc import IfcStore
 
 
 class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):

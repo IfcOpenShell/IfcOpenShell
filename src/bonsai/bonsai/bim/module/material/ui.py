@@ -21,7 +21,6 @@ import bonsai.bim.helper
 import bonsai.tool as tool
 import bpy
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
@@ -43,7 +42,7 @@ class BIM_PT_materials(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not MaterialsData.is_loaded:
@@ -143,9 +142,9 @@ class BIM_PT_object_material(Panel):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
             return False
-        if not hasattr(IfcStore.get_file().by_id(props.ifc_definition_id), "HasAssociations"):
+        if not hasattr(tool.Ifc.get().by_id(props.ifc_definition_id), "HasAssociations"):
             return False
         return True
 
@@ -153,7 +152,7 @@ class BIM_PT_object_material(Panel):
         if not ObjectMaterialData.is_loaded:
             ObjectMaterialData.load()
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         self.oprops = context.active_object.BIMObjectProperties
         self.props = context.active_object.BIMObjectMaterialProperties
         self.mprops = tool.Material.get_material_props()

@@ -29,7 +29,6 @@ import bonsai.tool as tool
 import bonsai.core.style
 import bonsai.core.material as core
 import bonsai.bim.module.model.profile as model_profile
-from bonsai.bim.ifc import IfcStore
 from typing import Any, Union, TYPE_CHECKING
 from bonsai.bim.module.model import wall, slab
 
@@ -118,7 +117,7 @@ class AssignParameterizedProfile(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         profile = ifcopenshell.api.run(
             "profile.add_parameterized_profile",
             self.file,
@@ -292,7 +291,7 @@ class AddConstituent(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         ifcopenshell.api.run(
             "material.add_constituent",
             self.file,
@@ -328,7 +327,7 @@ class AddProfile(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         props = tool.Material.get_material_props()
         ifcopenshell.api.run(
             "material.add_profile",
@@ -387,7 +386,7 @@ class ReorderMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         material_set = self.file.by_id(self.material_set)
         ifcopenshell.api.run(
             "material.reorder_set_item",
@@ -443,7 +442,7 @@ class AddListItem(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         ifcopenshell.api.run(
             "material.add_list_item",
             self.file,
@@ -463,7 +462,7 @@ class RemoveListItem(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         ifcopenshell.api.run(
             "material.remove_list_item",
             self.file,
@@ -557,7 +556,7 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
     material_set_usage: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         active_obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         props = active_obj.BIMObjectMaterialProperties
         element = tool.Ifc.get_entity(active_obj)
@@ -663,7 +662,7 @@ class EnableEditingMaterialSetItem(bpy.types.Operator):
     material_set_item: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.mprops = tool.Material.get_material_props()
         self.props = obj.BIMObjectMaterialProperties
@@ -707,7 +706,7 @@ class EditMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         props = obj.BIMObjectMaterialProperties
         mprops = tool.Material.get_material_props()
         element = tool.Ifc.get_entity(obj)

@@ -300,7 +300,7 @@ class SelectIfcClashResults(bpy.types.Operator):
 
     def execute(self, context):
         # TODO refactor into new clash results system
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
         with open(self.filepath) as f:
             clash_sets = json.load(f)
@@ -478,7 +478,7 @@ class SelectSmartGroup(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file() and context.visible_objects and context.scene.BIMClashProperties.active_smart_group
+        return tool.Ifc.get() and context.visible_objects and context.scene.BIMClashProperties.active_smart_group
 
     def execute(self, context):
         selected_smart_group = context.scene.BIMClashProperties.active_smart_group

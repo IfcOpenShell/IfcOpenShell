@@ -57,8 +57,9 @@ class EnableReassignClass(bpy.types.Operator):
             "IfcAnnotation",
             "IfcRelSpaceBoundary",
         ]
+        schema = tool.Ifc.schema()
         for ifc_product in ifc_products:
-            if ifcopenshell.util.schema.is_a(IfcStore.get_schema().declaration_by_name(ifc_class), ifc_product):
+            if schema.declaration_by_name(ifc_class).is_a(ifc_product):
                 context.scene.BIMRootProperties.ifc_product = ifc_product
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         context.scene.BIMRootProperties.ifc_class = element.is_a()

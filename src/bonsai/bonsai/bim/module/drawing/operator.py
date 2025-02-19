@@ -261,7 +261,7 @@ class CreateDrawing(bpy.types.Operator):
             self.camera = context.scene.camera
             self.camera_element = tool.Ifc.get_entity(self.camera)
             self.camera_document = tool.Drawing.get_drawing_document(self.camera_element)
-            self.file = IfcStore.get_file()
+            self.file = tool.Ifc.get()
 
             with profile("Drawing generation process"):
                 with profile("Initialize drawing generation process"):

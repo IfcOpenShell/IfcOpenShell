@@ -609,7 +609,7 @@ class UpdateParametricRepresentation(bpy.types.Operator):
         return (obj := context.active_object) and obj.mode == "OBJECT" and tool.Geometry.has_mesh_properties(obj.data)
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         obj = context.active_object
         assert obj and tool.Geometry.has_mesh_properties(obj.data)
         props = tool.Geometry.get_mesh_props(obj.data)
@@ -834,7 +834,7 @@ class OverrideOutlinerDelete(bpy.types.Operator):
         # unintended IFC spatial modifications. To make life less confusing for
         # the user, Delete means Delete. End of story.
         # Deep magick from the dawn of time
-        if IfcStore.get_file():
+        if tool.Ifc.get():
             return IfcStore.execute_ifc_operator(self, context)
         # https://blender.stackexchange.com/questions/203729/python-get-selected-objects-in-outliner
         objects_to_delete = set()
@@ -958,7 +958,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
     @staticmethod
     def execute_duplicate_operator(self, context, linked=False):
         # Deep magick from the dawn of time
-        if IfcStore.get_file():
+        if tool.Ifc.get():
             IfcStore.execute_ifc_operator(self, context)
             if self.new_active_obj:
                 context.view_layer.objects.active = self.new_active_obj
@@ -3218,7 +3218,7 @@ class OverrideMove(bpy.types.Operator):
 
     def execute(self, context):
         # Deep magick from the dawn of time
-        if IfcStore.get_file():
+        if tool.Ifc.get():
             IfcStore.execute_ifc_operator(self, context)
             if self.new_active_obj:
                 context.view_layer.objects.active = self.new_active_obj

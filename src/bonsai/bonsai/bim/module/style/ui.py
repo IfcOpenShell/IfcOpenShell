@@ -20,9 +20,7 @@ import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.style.data import StylesData, BlenderMaterialStyleData
-from typing import Union
 
 
 class BIM_PT_styles(Panel):
@@ -36,7 +34,7 @@ class BIM_PT_styles(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not StylesData.is_loaded:
