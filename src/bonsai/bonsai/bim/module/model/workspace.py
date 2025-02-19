@@ -96,7 +96,8 @@ class BimTool(WorkSpaceTool):
     def draw_settings(
         cls, context: bpy.types.Context, layout: bpy.types.UILayout, ws_tool: bpy.types.WorkSpaceTool
     ) -> None:
-        if context.scene.BIMGeometryProperties.mode == "ITEM":
+        props = tool.Geometry.get_geometry_props()
+        if props.mode == "ITEM":
             EditItemUI.draw(context, layout)
         elif (
             active_ifc_object := (context.active_object and tool.Ifc.get_entity(context.active_object))
@@ -430,7 +431,7 @@ class EditItemUI:
         obj = context.active_object
         assert obj
 
-        mesh_props = obj.data.BIMMeshProperties
+        mesh_props = tool.Geometry.get_mesh_props(obj.data)
         if AuthoringData.data["is_representation_item_swept_solid"]:
             # TODO: support EndSweptArea for IfcRevolvedAreaSolidTapered,
             # will need to add second attribute for this.
@@ -440,10 +441,10 @@ class EditItemUI:
                 op = row.operator("bim.name_profile", text="", icon="TAG")
                 op.extrusion_item_obj = obj.name
 
-        for item_attribute in obj.data.BIMMeshProperties.item_attributes:
+        for item_attribute in mesh_props.item_attributes:
             row = cls.layout.row()
             draw_attribute(item_attribute, cls.layout)
-        if len(obj.data.BIMMeshProperties.item_attributes) or AuthoringData.data["is_representation_item_swept_solid"]:
+        if len(mesh_props.item_attributes) or AuthoringData.data["is_representation_item_swept_solid"]:
             row = cls.layout.row()
             row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")
 
@@ -1136,7 +1137,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             row.prop(self, "z")
 
     def hotkey_S_A(self):
-        if bpy.context.scene.BIMGeometryProperties.mode == "ITEM":
+        gprops = tool.Geometry.get_geometry_props()
+        if gprops.mode == "ITEM":
             bpy.ops.wm.call_menu(name="BIM_MT_add_representation_item")
             return
 

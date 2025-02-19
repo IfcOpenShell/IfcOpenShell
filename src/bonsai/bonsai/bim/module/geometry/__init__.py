@@ -98,12 +98,14 @@ addon_keymaps = []
 
 
 @persistent
-def block_scale(scene):
+def block_scale(scene: bpy.types.Scene) -> None:
+    import bonsai.tool as tool
+
     if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
         if isinstance(obj, bpy.types.Object) and obj.BIMObjectProperties.ifc_definition_id:
             if obj.scale != (1, 1, 1):
                 obj.scale = (1, 1, 1)
-        elif isinstance(obj, bpy.types.Mesh) and obj.BIMMeshProperties.ifc_definition_id:
+        elif isinstance(obj, bpy.types.Mesh) and tool.Geometry.get_mesh_props(obj).ifc_definition_id:
             if obj.scale != (1, 1, 1):
                 obj.scale = (1, 1, 1)
 

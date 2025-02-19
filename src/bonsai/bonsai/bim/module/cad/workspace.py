@@ -69,10 +69,12 @@ class CadTool(WorkSpaceTool):
         ("bim.cad_hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
     )
 
-    def draw_settings(context, layout, workspace_tool):
+    def draw_settings(
+        context: bpy.types.Context, layout: bpy.types.UILayout, workspace_tool: bpy.types.WorkSpaceTool
+    ) -> None:
         ui_context = str(context.region.type)
         obj = context.active_object
-        if not obj or not obj.data:
+        if not obj or not (data := obj.data):
             return
         is_profile = tool.Geometry.is_profile_object_active()
         if is_profile:
@@ -122,7 +124,10 @@ class CadTool(WorkSpaceTool):
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
             add_layout_hotkey_operator(row, "Reset Vertex", "S_X", bpy.ops.bim.reset_vertex.__doc__, ui_context)
 
-        elif hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "AXIS":
+        elif (
+            isinstance(data, tool.Geometry.TYPES_WITH_MESH_PROPERTIES)
+            and tool.Geometry.get_mesh_props(data).subshape_type == "AXIS"
+        ):
             add_header_apply_button(
                 layout, "Edit Axis", "bim.edit_extrusion_axis", "bim.disable_editing_extrusion_axis", ui_context
             )
@@ -141,7 +146,7 @@ class CadTool(WorkSpaceTool):
             if (
                 (RailingData.is_loaded or not RailingData.load())
                 and RailingData.data["pset_data"]
-                and context.active_object.BIMRailingProperties.is_editing_path
+                and obj.BIMRailingProperties.is_editing_path
             ):
                 add_header_apply_button(
                     layout,
@@ -154,7 +159,7 @@ class CadTool(WorkSpaceTool):
             elif (
                 (RoofData.is_loaded or not RoofData.load())
                 and RoofData.data["pset_data"]
-                and context.active_object.BIMRoofProperties.is_editing_path
+                and obj.BIMRoofProperties.is_editing_path
             ):
                 add_header_apply_button(
                     layout, "Edit Roof Path", "bim.finish_editing_roof_path", "bim.cancel_editing_roof_path", ui_context
@@ -252,15 +257,27 @@ class CadHotkey(bpy.types.Operator):
         bpy.ops.bim.cad_offset(distance=self.props.distance / si_conversion)
 
     def hotkey_S_Q(self):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if bpy.context.active_object.data.BIMMeshProperties.subshape_type == "PROFILE":
+        obj = bpy.context.active_object
+
+        if not obj:
+            return
+
+        if not tool.Geometry.has_mesh_properties(data := obj.data):
+            return
+
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+
+        mprops = tool.Geometry.get_mesh_props(data)
+        if mprops.subshape_type == "PROFILE":
             if element.is_a("IfcProfileDef"):
                 bpy.ops.bim.edit_arbitrary_profile()
             elif element.is_a("IfcRelSpaceBoundary"):
                 bpy.ops.bim.edit_boundary_geometry()
             else:
                 bpy.ops.bim.edit_extrusion_profile()
-        elif bpy.context.active_object.data.BIMMeshProperties.subshape_type == "AXIS":
+        elif mprops.subshape_type == "AXIS":
             bpy.ops.bim.edit_extrusion_axis()
 
     def hotkey_S_R(self):

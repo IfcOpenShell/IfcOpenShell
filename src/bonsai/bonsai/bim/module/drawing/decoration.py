@@ -423,7 +423,8 @@ class BaseDecorator:
         # font_size = 16 <-- this is a good default
         # TODO: need to synchronize it better with svg
 
-        magic_font_scale = bpy.context.scene.DocProperties.magic_font_scale
+        props = tool.Drawing.get_document_props()
+        magic_font_scale = props.magic_font_scale
         font_size_px = int(magic_font_scale * mm_to_px) * font_size_mm / 2.5
         pos = pos - line_no * font_size_px * rotation_matrix[1]
 
@@ -2022,7 +2023,8 @@ class DecorationsHandler:
         for object_type in ("SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
             self.decorators[object_type] = self.decorators["FALL"]
         self.decorators["MULTI_SYMBOL"] = self.decorators["SYMBOL"]
-        if drawing_font := bpy.context.scene.DocProperties.drawing_font:
+        props = tool.Drawing.get_document_props()
+        if drawing_font := props.drawing_font:
             drawing_font_path = tool.Blender.get_data_dir_path(Path("fonts") / drawing_font)
             if drawing_font_path.is_file():
                 font_id = blf.load(drawing_font_path.__str__())

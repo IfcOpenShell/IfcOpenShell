@@ -346,19 +346,23 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def disable_editing_drawings(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_drawings = False
+        props = tool.Drawing.get_document_props()
+        props.is_editing_drawings = False
 
     @classmethod
     def disable_editing_schedules(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_schedules = False
+        props = tool.Drawing.get_document_props()
+        props.is_editing_schedules = False
 
     @classmethod
     def disable_editing_references(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_references = False
+        props = tool.Drawing.get_document_props()
+        props.is_editing_references = False
 
     @classmethod
     def disable_editing_sheets(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_sheets = False
+        props = tool.Drawing.get_document_props()
+        props.is_editing_sheets = False
 
     @classmethod
     def disable_editing_text(cls, obj: bpy.types.Object) -> None:
@@ -383,19 +387,23 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def enable_editing_drawings(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_drawings = True
+        props = tool.Drawing.get_document_props()
+        props.is_editing_drawings = True
 
     @classmethod
     def enable_editing_schedules(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_schedules = True
+        props = tool.Drawing.get_document_props()
+        props.is_editing_schedules = True
 
     @classmethod
     def enable_editing_references(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_references = True
+        props = tool.Drawing.get_document_props()
+        props.is_editing_references = True
 
     @classmethod
     def enable_editing_sheets(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_sheets = True
+        props = tool.Drawing.get_document_props()
+        props.is_editing_sheets = True
 
     @classmethod
     def enable_editing_text(cls, obj: bpy.types.Object) -> None:
@@ -616,7 +624,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def is_editing_sheets(cls) -> bool:
-        return bpy.context.scene.DocProperties.is_editing_sheets
+        props = tool.Drawing.get_document_props()
+        return props.is_editing_sheets
 
     @classmethod
     def remove_literal_from_annotation(cls, obj: bpy.types.Object, literal: ifcopenshell.entity_instance) -> None:
@@ -810,7 +819,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def import_drawings(cls) -> None:
-        props = bpy.context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         expanded_target_views = {d.target_view for d in props.drawings if d.is_expanded}
         if not hasattr(cls, "drawing_selected_states"):
             cls.drawing_selected_states = {}
@@ -1048,7 +1057,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def show_decorations(cls) -> None:
-        bpy.context.scene.DocProperties.should_draw_decorations = True
+        props = tool.Drawing.get_document_props()
+        props.should_draw_decorations = True
 
     @classmethod
     def update_text_value(cls, obj: bpy.types.Object) -> None:
@@ -1147,36 +1157,33 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def get_default_layout_path(cls, identification: str, name: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
+        props = tool.Drawing.get_document_props()
         layouts_dir = (
-            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "LayoutsDir")
-            or bpy.context.scene.DocProperties.layouts_dir
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "LayoutsDir") or props.layouts_dir
         )
         return os.path.join(layouts_dir, cls.sanitise_filename(f"{identification} - {name}.svg")).replace("\\", "/")
 
     @classmethod
     def get_default_sheet_path(cls, identification: str, name: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
-        sheets_dir = (
-            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "SheetsDir")
-            or bpy.context.scene.DocProperties.sheets_dir
-        )
+        props = tool.Drawing.get_document_props()
+        sheets_dir = ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "SheetsDir") or props.sheets_dir
         return os.path.join(sheets_dir, cls.sanitise_filename(f"{identification} - {name}.svg")).replace("\\", "/")
 
     @classmethod
     def get_default_titleblock_path(cls, name: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
         titleblocks_dir = (
-            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir")
-            or bpy.context.scene.DocProperties.titleblocks_dir
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir") or props.titleblocks_dir
         )
         return os.path.join(titleblocks_dir, cls.sanitise_filename(f"{name}.svg")).replace("\\", "/")
 
     @classmethod
     def get_default_drawing_path(cls, name: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
+        props = tool.Drawing.get_document_props()
         drawings_dir = (
-            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "DrawingsDir")
-            or bpy.context.scene.DocProperties.drawings_dir
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "DrawingsDir") or props.drawings_dir
         )
         return os.path.join(drawings_dir, cls.sanitise_filename(f"{name}.svg")).replace("\\", "/")
 
@@ -1187,15 +1194,16 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def get_default_drawing_resource_path(cls, resource: str) -> Union[str, None]:
         project = tool.Ifc.get().by_type("IfcProject")[0]
-        resource_path = ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", f"{resource}Path") or getattr(
-            bpy.context.scene.DocProperties, f"{resource.lower()}_path"
+        props = tool.Drawing.get_document_props()
+        resource_path = (
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", f"{resource}Path") or props.resource_path
         )
         if resource_path:
             return resource_path.replace("\\", "/")
 
     @classmethod
     def get_default_shading_style(cls) -> str:
-        dprops = bpy.context.scene.DocProperties
+        dprops = tool.Drawing.get_document_props()
         return dprops.shadingstyle_default
 
     @classmethod
@@ -1501,7 +1509,7 @@ class Drawing(bonsai.core.tool.Drawing):
             dst.data = dst.data.copy()
             dst.name = dst.name.replace("IfcGridAxis/", "")
             dst.BIMObjectProperties.ifc_definition_id = 0
-            dst.data.BIMMeshProperties.ifc_definition_id = 0
+            tool.Geometry.get_geometry_props(dst).ifc_definition_id = 0
             return dst
 
         def disassemble(obj: bpy.types.Object) -> tuple[bpy.types.Object, bmesh.types.BMesh]:
@@ -1883,7 +1891,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def is_active_drawing(cls, drawing: ifcopenshell.entity_instance) -> bool:
-        return drawing.id() == bpy.context.scene.DocProperties.active_drawing_id
+        props = tool.Drawing.get_document_props()
+        return drawing.id() == props.active_drawing_id
 
     @classmethod
     def run_drawing_activate_model(cls) -> None:

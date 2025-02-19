@@ -201,7 +201,8 @@ class EnableEditingClassification(bpy.types.Operator):
     def execute(self, context):
         def callback(name, prop, data):
             if name == "ReferenceTokens":
-                new = bpy.context.scene.BIMGeoreferenceProperties.projected_crs.add()
+                geo_props = tool.Georeference.get_georeference_props()
+                new = geo_props.projected_crs.add()
                 new.name = name
                 new.data_type = "string"
                 new.is_null = data[name] is None

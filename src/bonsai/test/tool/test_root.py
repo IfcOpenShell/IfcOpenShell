@@ -120,8 +120,8 @@ class TestGetObjectRepresentation(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         representation = ifc.createIfcShapeRepresentation()
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        obj.data.BIMMeshProperties.ifc_definition_id = representation.id()
+        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = representation.id()
         assert subject.get_object_representation(obj) == representation
 
 
@@ -175,7 +175,7 @@ class TestSetObjectName(NewFile):
 
 class TestReassignClass(NewFile):
     def test_reassigning_multiple_occurrences_of_the_same_type(self):
-        bpy.context.scene.BIMProjectProperties.template_file = "IFC4 Demo Template.ifc"
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
         context = bpy.context

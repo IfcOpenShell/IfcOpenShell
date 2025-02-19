@@ -20,6 +20,7 @@ import bpy
 import bmesh
 import math
 import ifcopenshell
+import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
@@ -452,7 +453,8 @@ class Polyline(bonsai.core.tool.Polyline):
     def format_input_ui_units(cls, value: float, is_area: bool = False) -> str:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         if bpy.context.scene.unit_settings.system == "IMPERIAL":
-            precision = bpy.context.scene.DocProperties.imperial_precision
+            dprops = tool.Drawing.get_document_props()
+            precision = dprops.imperial_precision
             if is_area:
                 area_unit = bpy.context.scene.BIMProperties.area_unit
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get(), unit_type=area_unit)

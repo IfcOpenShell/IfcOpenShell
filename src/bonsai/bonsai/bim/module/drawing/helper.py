@@ -22,6 +22,7 @@ import mathutils.geometry
 import ifcopenshell
 import bonsai.tool as tool
 from mathutils import Vector
+from typing import Union
 
 # Code taken and updated from https://blenderartists.org/t/detecting-intersection-of-bounding-boxes/457520/2
 
@@ -136,7 +137,9 @@ def format_distance(
     scaleFactor = bpy.context.scene.unit_settings.scale_length
     unit_system = bpy.context.scene.unit_settings.system
     unit_length = bpy.context.scene.unit_settings.length_unit
-    area_unit_symbol = " " + ifcopenshell.util.unit.get_unit_symbol(ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT"))
+    area_unit_symbol = " " + ifcopenshell.util.unit.get_unit_symbol(
+        ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT")
+    )
 
     value *= scaleFactor
 
@@ -326,16 +329,18 @@ def format_distance(
                     fmt += area_unit_symbol
                 d_cm = value * (1000000)
                 tx_dist = fmt % d_cm
-            
+
     else:
         tx_dist = fmt % value
 
     return tx_dist
 
 
-def get_active_drawing(scene):
+def get_active_drawing(
+    scene: bpy.types.Scene,
+) -> Union[tuple[bpy.types.Collection, bpy.types.Camera], tuple[None, None]]:
     """Get active drawing collection and camera"""
-    props = scene.DocProperties
+    props = tool.Drawing.get_document_props()
     try:
         camera = tool.Ifc.get_object(tool.Ifc.get().by_id(props.active_drawing_id))
         return camera.BIMObjectProperties.collection, camera

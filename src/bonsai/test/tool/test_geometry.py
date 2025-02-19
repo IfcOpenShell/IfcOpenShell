@@ -171,14 +171,14 @@ class TestGetCartesianPointCoordinateOffset(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
         obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True
         obj.BIMObjectProperties.cartesian_point_offset = "1,2,3"
         assert np.allclose(subject.get_cartesian_point_offset(obj), np.array((1.0, 2.0, 3.0)))
 
     def test_get_null_if_not_a_cartesian_point_offset_type(self):
         obj = bpy.data.objects.new("Object", None)
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True
         obj.BIMObjectProperties.cartesian_point_offset = "1,2,3"
         assert subject.get_cartesian_point_offset(obj) is None
@@ -186,7 +186,7 @@ class TestGetCartesianPointCoordinateOffset(NewFile):
     def test_get_null_if_no_blender_offset(self):
         obj = bpy.data.objects.new("Object", None)
         obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = False
         assert subject.get_cartesian_point_offset(obj) is None
 
@@ -237,14 +237,15 @@ class TestImportRepresentationParameters(NewFile):
         item = ifc.createIfcExtrudedAreaSolid(SweptArea=swept_area, Depth=2)
         representation = ifc.createIfcShapeRepresentation(Items=[item])
         data = bpy.data.meshes.new("Mesh")
-        data.BIMMeshProperties.ifc_definition_id = representation.id()
+        mprops = tool.Geometry.get_mesh_props(data)
+        mprops.ifc_definition_id = representation.id()
         subject.import_representation_parameters(data)
-        assert data.BIMMeshProperties.ifc_parameters[0].name == "IfcExtrudedAreaSolid/Depth"
-        assert data.BIMMeshProperties.ifc_parameters[0].step_id == item.id()
-        assert data.BIMMeshProperties.ifc_parameters[0].index == 3
-        assert data.BIMMeshProperties.ifc_parameters[1].name == "IfcCircleProfileDef/Radius"
-        assert data.BIMMeshProperties.ifc_parameters[1].step_id == swept_area.id()
-        assert data.BIMMeshProperties.ifc_parameters[1].index == 3
+        assert mprops.ifc_parameters[0].name == "IfcExtrudedAreaSolid/Depth"
+        assert mprops.ifc_parameters[0].step_id == item.id()
+        assert mprops.ifc_parameters[0].index == 3
+        assert mprops.ifc_parameters[1].name == "IfcCircleProfileDef/Radius"
+        assert mprops.ifc_parameters[1].step_id == swept_area.id()
+        assert mprops.ifc_parameters[1].index == 3
 
 
 class TestIsBodyRepresentation(NewFile):
@@ -293,7 +294,7 @@ class TestLink(NewFile):
         element = ifc.createIfcShapeRepresentation()
         obj = bpy.data.meshes.new("Mesh")
         subject.link(element, obj)
-        assert obj.BIMMeshProperties.ifc_definition_id == element.id()
+        assert tool.Geometry.get_mesh_props(obj).ifc_definition_id == element.id()
 
 
 class TestRecordObjectMaterials(NewFile):
@@ -306,7 +307,7 @@ class TestRecordObjectMaterials(NewFile):
         material.BIMStyleProperties.ifc_definition_id = style.id()
         obj.data.materials.append(material)
         subject.record_object_materials(obj)
-        assert obj.data.BIMMeshProperties.material_checksum == str([style.id()])
+        assert tool.Geometry.get_mesh_props(obj).material_checksum == str([style.id()])
 
 
 class TestRecordObjectPosition(NewFile):

@@ -221,7 +221,8 @@ def refresh_ui_data():
     if isinstance(tool.Ifc.get(), ifcopenshell.sqlite):
         tool.Ifc.get().clear_cache()
 
-    bpy.context.scene.DocProperties.should_draw_decorations = bpy.context.scene.DocProperties.should_draw_decorations
+    props = tool.Drawing.get_document_props()
+    props.should_draw_decorations = props.should_draw_decorations
     if bpy.context.scene.WebProperties.is_connected:
         tool.Web.send_webui_data()
 
@@ -343,7 +344,7 @@ def load_post(scene):
         bpy.context.scene.BIMProperties.has_blend_warning = True
 
     # Bonsai overlays
-    georeference_props = bpy.context.scene.BIMGeoreferenceProperties
+    georeference_props = tool.Georeference.get_georeference_props()
     aggregate_props = bpy.context.scene.BIMAggregateProperties
     nest_props = bpy.context.scene.BIMNestProperties
     model_props = tool.Model.get_model_props()

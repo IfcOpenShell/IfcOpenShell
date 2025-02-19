@@ -32,7 +32,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union, Literal
 
 
 def get_contexts(self, context):
@@ -270,6 +270,9 @@ class BIMObjectGeometryProperties(PropertyGroup):
         representation_item_layer: str
 
 
+GeometryMode = Literal["OBJECT", "ITEM", "EDIT"]
+
+
 class BIMGeometryProperties(PropertyGroup):
     # Revit workaround
     should_use_presentation_style_assignment: BoolProperty(name="Force Presentation Style Assignment", default=False)
@@ -308,7 +311,7 @@ class BIMGeometryProperties(PropertyGroup):
         should_force_faceted_brep: bool
         should_force_triangulation: bool
         is_changing_mode: bool
-        mode: str
+        mode: GeometryMode
         representation_obj: Union[bpy.types.Object, None]
         item_objs: bpy.types.bpy_prop_collection_idprop[RepresentationItemObject]
         representation_from_object: Union[bpy.types.Object, None]

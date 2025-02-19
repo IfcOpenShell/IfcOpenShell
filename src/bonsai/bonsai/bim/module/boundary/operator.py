@@ -114,7 +114,7 @@ class Loader:
                 bm.edges.new((verts[-1], verts[0]))
             bm.to_mesh(mesh)
             bm.free()
-            mesh.BIMMeshProperties.ifc_definition_id = surface.id()
+            tool.Ifc.link(surface, mesh)
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             matrix = mathutils.Matrix(
                 ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position).tolist()

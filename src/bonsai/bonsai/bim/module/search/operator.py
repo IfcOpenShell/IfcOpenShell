@@ -711,14 +711,14 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
-        props = context.scene.BIMSearchProperties
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
         key = self.key
         if key == "PredefinedType":
             key = "predefined_type"
         value = ifcopenshell.util.selector.get_element_value(element, key)
-        tolerance = bpy.context.scene.DocProperties.tolerance
+        dprops = tool.Drawing.get_document_props()
+        tolerance = dprops.tolerance
 
         # Determine the number of decimal places based on the magnitude of the rounding value
         if tolerance < 1:

@@ -126,13 +126,10 @@ class BIM_PT_booleans(Panel):
     @classmethod
     def poll(cls, context):
         return (
-            context.active_object is not None
-            and context.active_object.type == "MESH"
-            and hasattr(context.active_object.data, "BIMMeshProperties")
-            and (
-                context.active_object.data.BIMMeshProperties.ifc_definition_id
-                or context.active_object.data.BIMMeshProperties.ifc_boolean_id
-            )
+            (obj := context.active_object) is not None
+            and isinstance(data := obj.data, bpy.types.Mesh)
+            and (mesh_props := tool.Geometry.get_mesh_props(data))
+            and (mesh_props.ifc_definition_id or mesh_props.ifc_boolean_id)
         )
 
     def draw(self, context):
@@ -141,13 +138,13 @@ class BIM_PT_booleans(Panel):
 
         obj = context.active_object
         assert obj
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
 
-        if not context.active_object.data:
-            return
         layout = self.layout
-        props = context.scene.BIMBooleanProperties
+        props = tool.Feature.get_boolean_props()
 
-        if context.active_object.data.BIMMeshProperties.ifc_definition_id:
+        if tool.Geometry.get_mesh_props(mesh).ifc_definition_id:
             row = layout.row(align=True)
             total_booleans = BooleansData.data["total_booleans"]
             manual_booleans = BooleansData.data["manual_booleans"]

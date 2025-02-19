@@ -189,7 +189,7 @@ class TestLink(test.bim.bootstrap.NewFile):
         element = ifc.create_entity("IfcShapeRepresentation")
         obj = bpy.data.meshes.new("Material")
         subject.link(element, obj)
-        assert obj.BIMMeshProperties.ifc_definition_id == element.id()
+        assert tool.Geometry.get_mesh_props(obj).ifc_definition_id == element.id()
 
 
 class TestUnlink(test.bim.bootstrap.NewFile):

@@ -378,7 +378,7 @@ class TestGenerateStair2DProfile(NewFile):
 
 class TestUsingArrays(NewFile):
     def setup_array(self, add_second_layer=False, sync_children=False):
-        bpy.context.scene.BIMProjectProperties.template_file = "0"
+        tool.Project.get_project_props().template_file = "0"
         bpy.ops.bim.create_project()
 
         bpy.ops.mesh.primitive_cube_add()
@@ -467,7 +467,8 @@ class TestApplyIfcMaterialChanges(NewFile):
         return mesh
 
     def setup_test(self, and_elements: bool = True) -> None:
-        bpy.context.scene.BIMProjectProperties.template_file = "0"
+        props = tool.Project.get_project_props()
+        props.template_file = "0"
         bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()

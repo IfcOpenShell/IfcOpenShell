@@ -259,7 +259,7 @@ class DumbSlabPlaner:
         self, related_object: ifcopenshell.entity_instance, layer_set_direction: Optional[str], new_thickness: float
     ) -> None:
         obj = tool.Ifc.get_object(related_object)
-        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+        if not obj or not tool.Geometry.get_active_representation(obj):
             return
 
         material = ifcopenshell.util.element.get_material(related_object)

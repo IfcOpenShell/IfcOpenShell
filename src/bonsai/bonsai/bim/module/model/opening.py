@@ -236,9 +236,9 @@ class FilledOpeningGenerator:
         voided_elements = ifcopenshell.util.element.get_parts(voided_element) or [voided_element]
         for voided_element in voided_elements:
             voided_obj = tool.Ifc.get_object(voided_element)
-            if not voided_obj.data:
+            representation = tool.Geometry.get_active_representation(voided_obj)
+            if not representation:
                 continue
-            representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
             bonsai.core.geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,
@@ -465,10 +465,13 @@ class AddBoolean(Operator, tool.Ifc.Operator):
             self.report({"INFO"}, "At least two representation items must be selected to add a boolean.")
             return {"CANCELLED"}
 
-        props = context.scene.BIMBooleanProperties
+        props = tool.Feature.get_boolean_props()
 
-        first_item = tool.Ifc.get().by_id(first_obj.data.BIMMeshProperties.ifc_definition_id)
-        second_items = [tool.Ifc.get().by_id(o.data.BIMMeshProperties.ifc_definition_id) for o in second_objs]
+        first_item = tool.Geometry.get_active_representation(first_obj)
+        assert first_item
+        second_items = [
+            representation for o in second_objs if (representation := tool.Geometry.get_active_representation(o))
+        ]
         booleans = ifcopenshell.api.geometry.add_boolean(tool.Ifc.get(), first_item, second_items, props.operator)
 
         rep_obj = tool.Geometry.get_geometry_props().representation_obj
@@ -664,6 +667,7 @@ class EditOpenings(Operator, tool.Ifc.Operator):
     def edit_openings(
         self, building_objs: set[bpy.types.Object], opening_elements: set[ifcopenshell.entity_instance]
     ) -> None:
+        props = tool.Geometry.get_geometry_props()
         objects_to_remove: set[bpy.types.Object] = set()
         for opening_element in opening_elements:
             opening_obj = tool.Ifc.get_object(opening_element)
@@ -690,8 +694,8 @@ class EditOpenings(Operator, tool.Ifc.Operator):
                     self.get_all_building_objects_of_similar_openings(opening_element)
                 )  # NB this has nothing to do with clone similar_opening
                 tool.Ifc.unlink(element=opening_element)
-                if bpy.context.scene.BIMGeometryProperties.representation_obj == opening_obj:
-                    bpy.context.scene.BIMGeometryProperties.representation_obj = None
+                if props.representation_obj == opening_obj:
+                    props.representation_obj = None
                 objects_to_remove.add(opening_obj)
         tool.Blender.remove_data_blocks(objects_to_remove, remove_unused_data=True)
 
@@ -817,11 +821,11 @@ class RemoveBoolean(Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMBooleanProperties
+        props = tool.Feature.get_boolean_props()
         return props.active_boolean
 
     def _execute(self, context):
-        props = context.scene.BIMBooleanProperties
+        props = tool.Feature.get_boolean_props()
         ifcopenshell.api.geometry.remove_boolean(
             tool.Ifc.get(), tool.Ifc.get().by_id(props.active_boolean.ifc_definition_id)
         )
@@ -841,7 +845,7 @@ class SelectBoolean(Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMBooleanProperties
+        props = tool.Feature.get_boolean_props()
         return props.active_boolean
 
     def invoke(self, context, event):
@@ -850,9 +854,9 @@ class SelectBoolean(Operator):
         return self.execute(context)
 
     def execute(self, context):
-        props = context.scene.BIMBooleanProperties
+        props = tool.Feature.get_boolean_props()
         queue = [tool.Ifc.get().by_id(props.active_boolean.ifc_definition_id)]
-        items = {i.ifc_definition_id: i.obj for i in context.scene.BIMGeometryProperties.item_objs}
+        items = {i.ifc_definition_id: i.obj for i in tool.Geometry.get_geometry_props().item_objs}
         while queue:
             item = queue.pop()
             if item.is_a("IfcBooleanResult"):
@@ -911,11 +915,12 @@ class DecorationsHandler:
         gpu.state.point_size_set(6)
         gpu.state.blend_set("ALPHA")
 
+        gprops = tool.Geometry.get_geometry_props()
         for opening in props.openings:
             obj = opening.obj
-            if context.scene.BIMGeometryProperties.representation_obj == obj:
+            if gprops.representation_obj == obj:
                 # We are editing the representation of the opening :
-                for item in context.scene.BIMGeometryProperties.item_objs:
+                for item in gprops.item_objs:
                     if item.obj.mode == "EDIT":
                         obj = item.obj
                         break

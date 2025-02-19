@@ -147,7 +147,7 @@ class AssignPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
             "layer.assign_layer",
             self.file,
             **{
-                "items": [self.file.by_id(item.BIMMeshProperties.ifc_definition_id)],
+                "items": [self.file.by_id(tool.Geometry.get_mesh_props(item).ifc_definition_id)],
                 "layer": self.file.by_id(self.layer),
             },
         )
@@ -164,15 +164,10 @@ class UnassignPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         item = bpy.data.meshes.get(self.item) if self.item else context.active_object.data
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "layer.unassign_layer",
-            self.file,
-            **{
-                "items": [self.file.by_id(item.BIMMeshProperties.ifc_definition_id)],
-                "layer": self.file.by_id(self.layer),
-            },
-        )
+        ifc_file = tool.Ifc.get()
+        representation = tool.Geometry.get_data_representation(item)
+        assert representation
+        ifcopenshell.api.layer.unassign_layer(ifc_file, items=[representation], layer=ifc_file.by_id(self.layer))
         return {"FINISHED"}
 
 

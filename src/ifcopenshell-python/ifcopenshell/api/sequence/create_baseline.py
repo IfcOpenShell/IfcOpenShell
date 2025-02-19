@@ -75,7 +75,9 @@ class Usecase:
         baseline_work_schedule.Name = name
         self.create_baseline_reference(work_schedule, baseline_work_schedule)
         for summary_task in ifcopenshell.util.sequence.get_root_tasks(work_schedule):
-            current, duplicate = ifcopenshell.api.sequence.duplicate_task(self.file, task=summary_task)
+            res = ifcopenshell.api.sequence.duplicate_task(self.file, task=summary_task)
+            assert isinstance(res, list)
+            current, duplicate = res
             ifcopenshell.api.control.assign_control(
                 self.file, relating_control=baseline_work_schedule, related_object=duplicate[0]
             )

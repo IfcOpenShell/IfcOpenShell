@@ -351,9 +351,10 @@ class BIM_PT_object_material(Panel):
         if ObjectMaterialData.data["total_thickness"]:
             total_thickness = ObjectMaterialData.data["total_thickness"]
             unit_system = bpy.context.scene.unit_settings.system
+            props = tool.Drawing.get_document_props()
 
             if unit_system == "IMPERIAL":
-                precision = bpy.context.scene.DocProperties.imperial_precision
+                precision = props.imperial_precision
             else:
                 precision = None
             formatted_thickness = format_distance(

@@ -90,7 +90,8 @@ class MaterialCreator:
             return  # Already has materials assign to the representation itself
         # Otherwise, we need to check for material styles on the element, since
         # create_shape on types only works on representations.
-        context = tool.Ifc.get().by_id(self.mesh.BIMMeshProperties.ifc_definition_id).ContextOfItems
+        mprops = tool.Geometry.get_mesh_props(self.mesh)
+        context = tool.Ifc.get().by_id(mprops.ifc_definition_id).ContextOfItems
         for material in ifcopenshell.util.element.get_materials(element):
             if style := ifcopenshell.util.representation.get_material_style(material, context):
                 self.mesh["ios_materials"] = (style.id(),)
@@ -218,7 +219,7 @@ class IfcImporter:
         self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
-        classes_to_wireframe_str = bpy.context.scene.DocProperties.classes_to_wireframe
+        classes_to_wireframe_str = tool.Drawing.get_document_props().classes_to_wireframe
         self.classes_to_wireframe_list = [word.strip() for word in classes_to_wireframe_str.split(",")]
 
     def profile_code(self, message: str) -> None:
@@ -434,7 +435,7 @@ class IfcImporter:
         return False
 
     def calculate_model_offset(self) -> None:
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if self.ifc_import_settings.false_origin_mode == "MANUAL":
             tool.Loader.set_manual_blender_offset(self.file)
         elif self.ifc_import_settings.false_origin_mode == "AUTOMATIC":

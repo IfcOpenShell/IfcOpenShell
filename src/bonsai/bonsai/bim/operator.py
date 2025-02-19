@@ -828,7 +828,8 @@ class AddIfcFile(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.DocProperties.ifc_files.add()
+        props = tool.Drawing.get_document_props()
+        props.ifc_files.add()
         return {"FINISHED"}
 
 
@@ -839,7 +840,8 @@ class RemoveIfcFile(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.DocProperties.ifc_files.remove(self.index)
+        props = tool.Drawing.get_document_props()
+        props.ifc_files.remove(self.index)
         return {"FINISHED"}
 
 
@@ -1060,7 +1062,8 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        cutting_planes = [p.obj for p in context.scene.BIMProjectProperties.clipping_planes]
+        props = tool.Project.get_project_props()
+        cutting_planes = [obj for p in props.clipping_planes if (obj := p.obj)]
         if not cutting_planes:
             self.report({"INFO"}, "No cutting planes found.")
             return {"FINISHED"}
@@ -1070,7 +1073,7 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
         objects_processed, t0 = 0, time.time()
         wm.progress_begin(0, len(context.selected_objects))
         for obj_i, obj in enumerate(context.selected_objects):
-            if obj.type != "MESH":
+            if not isinstance((mesh := obj.data), bpy.types.Mesh):
                 continue
 
             if obj in cutting_planes:
@@ -1082,7 +1085,6 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
             ws_to_ls = obj.matrix_world.inverted()
             rotation = ws_to_ls.to_quaternion()
 
-            mesh = obj.data
             bm = tool.Blender.get_bmesh_for_mesh(mesh)
             object_changed = False
 
@@ -1106,7 +1108,7 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
             # don't swap mesh if it wasn't affected by any of the cutting planes
             if object_changed:
                 temp_mesh = bpy.data.meshes.new("temp_cut")
-                temp_mesh.BIMMeshProperties.replaced_mesh = mesh
+                tool.Geometry.get_mesh_props(temp_mesh).replaced_mesh = mesh
                 for material in mesh.materials:
                     temp_mesh.materials.append(material)
                 obj.data = temp_mesh
@@ -1163,9 +1165,10 @@ class RevertClippingPlaneCut(bpy.types.Operator):
         self.report({"INFO"}, f"{objects_processed} processed - {time.time()-t0:.3f} sec")
         return {"FINISHED"}
 
-    def revert_object_mesh(self, obj):
+    def revert_object_mesh(self, obj: bpy.types.Object) -> None:
         mesh = obj.data
-        replaced_mesh = mesh.BIMMeshProperties.replaced_mesh
+        assert isinstance(mesh, bpy.types.Mesh)
+        replaced_mesh = tool.Geometry.get_mesh_props(mesh).replaced_mesh
         if replaced_mesh:
             obj.data = replaced_mesh
             tool.Blender.remove_data_block(mesh, do_unlink=False)

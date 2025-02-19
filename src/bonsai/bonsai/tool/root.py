@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.style
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -49,12 +50,12 @@ class Root(bonsai.core.tool.Root):
                 tool.Geometry.run_style_add_style(obj=mat)
                 for mat in tool.Geometry.get_object_materials_without_styles(obj)
             ]
-            ifcopenshell.api.run(
-                "style.assign_representation_styles",
+            props = tool.Geometry.get_geometry_props()
+            ifcopenshell.api.style.assign_representation_styles(
                 tool.Ifc.get(),
                 shape_representation=body,
                 styles=tool.Geometry.get_styles(obj),
-                should_use_presentation_style_assignment=bpy.context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
+                should_use_presentation_style_assignment=props.should_use_presentation_style_assignment,
             )
 
     @classmethod
@@ -169,8 +170,8 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def get_object_representation(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
-        if obj.data and obj.data.BIMMeshProperties.ifc_definition_id:
-            return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        if obj.data and (mesh_props := tool.Geometry.get_mesh_props(obj.data)).ifc_definition_id:
+            return tool.Ifc.get().by_id(mesh_props.ifc_definition_id)
         element = tool.Ifc.get_entity(obj)
         if element.is_a("IfcTypeProduct"):
             if element.RepresentationMaps:
@@ -302,8 +303,8 @@ class Root(bonsai.core.tool.Root):
                             voided_objs.append(subobj)
 
                     for voided_obj in voided_objs:
-                        if voided_obj.data:
-                            representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+                        if data := voided_obj.data:
+                            representation = tool.Ifc.get().by_id(tool.Geometry.get_mesh_props(data).ifc_definition_id)
                             bonsai.core.geometry.switch_representation(
                                 tool.Ifc,
                                 tool.Geometry,
@@ -421,8 +422,8 @@ class Root(bonsai.core.tool.Root):
         to unlink them.
         """
         tool.Ifc.unlink(obj=obj)
-        if hasattr(obj.data, "BIMMeshProperties"):
-            obj.data.BIMMeshProperties.ifc_definition_id = 0
+        if tool.Geometry.has_mesh_properties((data := obj.data)):
+            tool.Geometry.get_mesh_props(mesh).ifc_definition_id = 0
         for material_slot in obj.material_slots:
             if material := material_slot.material:
                 tool.Ifc.unlink(obj=material)

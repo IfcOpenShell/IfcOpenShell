@@ -39,7 +39,7 @@ scenarios("feature")
 
 variables = {
     "cwd": Path.cwd().as_posix(),
-    "ifc": "IfcStore.get_file()",
+    "ifc": "tool.Ifc.get()",
     "pset_ifc": "IfcStore.pset_template_file",
     "classification_ifc": "IfcStore.classification_file",
 }
@@ -190,7 +190,8 @@ def an_empty_blender_session():
     # default project settings
     bpy.context.scene.unit_settings.system = "METRIC"
     bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
-    bpy.context.scene.BIMProjectProperties.template_file = "0"
+    props = tool.Project.get_project_props()
+    props.template_file = "0"
     tool.Blender.get_addon_preferences().should_play_chaching_sound = False
 
 
@@ -203,7 +204,8 @@ def an_empty_ifc_project():
 @given("an empty IFC2X3 project")
 def an_empty_ifc_2x3_project():
     an_empty_blender_session()
-    bpy.context.scene.BIMProjectProperties.export_schema = "IFC2X3"
+    props = tool.Project.get_project_props()
+    props.export_schema = "IFC2X3"
     bpy.ops.bim.create_project()
 
 
@@ -742,7 +744,7 @@ def the_object_name_has_a_representation_type_of_context(name, type, context):
 def the_object_name_data_is_a_type_representation_of_context(name, type, context):
     ifc = an_ifc_file_exists()
     context, subcontext, target_view = context.split("/")
-    rep = ifc.by_id(the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id)
+    rep = ifc.by_id(tool.Geometry.get_mesh_props(the_object_name_exists(name).data).ifc_definition_id)
     assert rep
     assert rep.RepresentationType == type, f"The object {name} is not a {type} representation"
     assert rep.ContextOfItems.ContextType == context
@@ -888,7 +890,7 @@ def the_object_name_has_no_data(name):
 
 @then(parsers.parse('the object "{name}" has data which is an IFC representation'))
 def the_object_name_has_ifc_representation_data(name):
-    id = the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id
+    id = tool.Geometry.get_mesh_props(the_object_name_exists(name).data).ifc_definition_id
     assert id != 0, f"The ID is {id}"
 
 

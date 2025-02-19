@@ -91,8 +91,7 @@ def edit_profile_usage(
     usecase = Usecase()
 
     usecase.file = file
-    usecase.settings = {"usage": usage, "attributes": attributes}
-    return usecase.execute()
+    return usecase.execute(usage, attributes)
 
 
 class Usecase:

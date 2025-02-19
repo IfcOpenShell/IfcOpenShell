@@ -908,7 +908,7 @@ class DumbWallPlaner:
         self, related_object: ifcopenshell.entity_instance, layer_set_direction: Optional[str]
     ) -> None:
         obj = tool.Ifc.get_object(related_object)
-        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+        if not obj or not tool.Geometry.get_active_representation(obj):
             return
 
         material = ifcopenshell.util.element.get_material(related_object)
@@ -1331,7 +1331,9 @@ class DumbWallJoiner:
             axis = body = tool.Model.get_wall_axis(obj)["reference"]
         self.axis = copy.deepcopy(axis)
         self.body = copy.deepcopy(body)
-        extrusion_data = self.get_extrusion_data(tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id))
+        representation = tool.Geometry.get_active_representation(obj)
+        assert representation
+        extrusion_data = self.get_extrusion_data(representation)
         height = extrusion_data["height"]
         x_angle = extrusion_data["x_angle"]
         self.clippings = []
@@ -1410,8 +1412,9 @@ class DumbWallJoiner:
         if old_body:
             for inverse in tool.Ifc.get().get_inverse(old_body):
                 ifcopenshell.util.element.replace_attribute(inverse, old_body, new_body)
-            obj.data.BIMMeshProperties.ifc_definition_id = int(new_body.id())
-            obj.data.name = f"{self.body_context.id()}/{new_body.id()}"
+            assert isinstance(mesh := obj.data, bpy.types.Mesh)
+            tool.Ifc.link(new_body, mesh)
+            mesh.name = tool.Loader.get_mesh_name(new_body)
             bonsai.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_body)
         else:
             ifcopenshell.api.run(
@@ -1708,10 +1711,11 @@ class DumbWallJoiner:
 
         return True
 
-    def clip(self, wall1, slab2):
+    def clip(self, wall1: bpy.types.Object, slab2: bpy.types.Object) -> float:
         """returns height of the clipped wall, adds clipping plane to `clippings`"""
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(slab2)
+        assert element1 and element2
 
         layers1 = tool.Model.get_material_layer_parameters(element1)
         axis1 = tool.Model.get_wall_axis(wall1, layers1)
@@ -1719,7 +1723,9 @@ class DumbWallJoiner:
         bases = [axis1["base"][0].to_3d(), axis1["base"][1].to_3d(), axis1["side"][0].to_3d(), axis1["side"][1].to_3d()]
         bases = [Vector((v[0], v[1], wall1.matrix_world.translation.z)) for v in bases]  # add wall Z location
 
-        extrusion = self.get_extrusion_data(tool.Ifc.get().by_id(wall1.data.BIMMeshProperties.ifc_definition_id))
+        representation = tool.Geometry.get_active_representation(wall1)
+        assert representation
+        extrusion = self.get_extrusion_data(representation)
         wall_dir = wall1.matrix_world.to_quaternion() @ extrusion["direction"]
 
         slab_pt = slab2.matrix_world @ Vector((0, 0, 0))

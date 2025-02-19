@@ -22,6 +22,7 @@ import bmesh
 import mathutils.geometry
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
@@ -265,7 +266,7 @@ class DumbProfileRegenerator:
 
     def _regenerate_from_type(self, related_object: ifcopenshell.entity_instance) -> None:
         obj = tool.Ifc.get_object(related_object)
-        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+        if not obj or not tool.Geometry.get_active_representation(obj):
             return
         DumbProfileRecalculator().recalculate([obj])
 
@@ -501,7 +502,9 @@ class DumbProfileJoiner:
                     "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_axis
                 )
 
-        def get_placement_axes(body_representation):
+        def get_placement_axes(
+            body_representation: Union[ifcopenshell.entity_instance, None],
+        ) -> Union[tuple[tuple[float, float, float], tuple[float, float, float]], tuple[None, None]]:
             if not body_representation:
                 return None, None
             extrusion = tool.Model.get_extrusion(body_representation)
@@ -513,8 +516,7 @@ class DumbProfileJoiner:
             return ((0.0, 0.0, 1.0), (1.0, 0.0, 0.0))
 
         old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        new_body = ifcopenshell.api.run(
-            "geometry.add_profile_representation",
+        new_body = ifcopenshell.api.geometry.add_profile_representation(
             tool.Ifc.get(),
             context=self.body_context,
             profile=self.profile,
@@ -527,8 +529,9 @@ class DumbProfileJoiner:
         if old_body:
             for inverse in tool.Ifc.get().get_inverse(old_body):
                 ifcopenshell.util.element.replace_attribute(inverse, old_body, new_body)
-            obj.data.BIMMeshProperties.ifc_definition_id = int(new_body.id())
-            obj.data.name = f"{self.body_context.id()}/{new_body.id()}"
+            assert isinstance(mesh := obj.data, bpy.types.Mesh)
+            tool.Ifc.link(new_body, mesh)
+            mesh.name = tool.Loader.get_mesh_name(new_body)
             bonsai.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_body)
         else:
             ifcopenshell.api.run(

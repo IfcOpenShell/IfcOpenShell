@@ -699,9 +699,10 @@ class Spatial(bonsai.core.tool.Spatial):
         for obj in bpy.context.visible_objects:
             visible_element = tool.Ifc.get_entity(obj)
 
+            old_mesh = obj.data
             if (
                 not visible_element
-                or obj.type != "MESH"
+                or not isinstance(old_mesh, bpy.types.Mesh)
                 or not cls.is_bounding_class(visible_element)
                 or not tool.Drawing.is_intersecting_plane(obj, cut_point, cut_normal)
             ):
@@ -959,7 +960,7 @@ class Spatial(bonsai.core.tool.Spatial):
         old_mesh = active_obj.data
         old_mesh_name = old_mesh.name
         assert active_obj and isinstance(old_mesh, bpy.types.Mesh)
-        mesh.BIMMeshProperties.ifc_definition_id = old_mesh.BIMMeshProperties.ifc_definition_id
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = tool.Geometry.get_mesh_props(old_mesh).ifc_definition_id
         tool.Geometry.change_object_data(active_obj, mesh, is_global=True)
         tool.Ifc.edit(active_obj)
         tool.Blender.remove_data_block(old_mesh)

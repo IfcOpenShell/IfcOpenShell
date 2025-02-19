@@ -1,12 +1,13 @@
 # This can be run using `blender -b -P headless_import.py`
 
 import bpy
+import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 
 # When federating, you may wish to manually specify the origin to ensure models
 # with different or arbitrary origin conventions will turn up in the right spot.
 
-props = bpy.context.scene.BIMGeoreferenceProperties
+props = tool.Georeference.get_georeference_props()
 
 # A good idea it to test import a portion of the model (or grids only) and check
 # georeferencing coordinates in the IFC Georeferencing panel before filling out
@@ -19,7 +20,7 @@ props = bpy.context.scene.BIMGeoreferenceProperties
 # props.blender_x_axis_ordinate = '0.989063862448262'
 # props.has_blender_offset = True
 
-props = bpy.context.scene.BIMProjectProperties
+props = tool.Project.get_project_props()
 
 # Generally recommended to disable caching for stability right now
 props.should_cache = False

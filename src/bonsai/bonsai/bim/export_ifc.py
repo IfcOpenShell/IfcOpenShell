@@ -132,7 +132,8 @@ class IfcExporter:
         bpy.ops.bim.update_representation(obj=obj.name)
 
     def has_changed_materials(self, obj: bpy.types.Object) -> bool:
-        checksum = obj.data.BIMMeshProperties.material_checksum
+        mprops = tool.Geometry.get_mesh_props(obj.data)
+        checksum = mprops.material_checksum
         return checksum != tool.Geometry.get_material_checksum(obj)
 
     def sync_object_placement(self, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:

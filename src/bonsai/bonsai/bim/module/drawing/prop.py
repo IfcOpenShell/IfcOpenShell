@@ -76,7 +76,7 @@ def update_diagram_scale(self, context):
     try:
         element = (
             tool.Ifc.get()
-            .by_id(self.id_data.BIMMeshProperties.ifc_definition_id)
+            .by_id(tool.Geometry.get_mesh_props(self.id_data).ifc_definition_id)
             .OfProductRepresentation[0]
             .ShapeOfProduct[0]
         )
@@ -93,7 +93,7 @@ def update_diagram_scale(self, context):
     ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties=diagram_scale)
 
 
-def update_is_nts(self, context):
+def update_is_nts(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     if not self.update_props:
         return
     if not context.scene.camera or context.scene.camera.data != self.id_data:
@@ -104,7 +104,7 @@ def update_is_nts(self, context):
     try:
         element = (
             tool.Ifc.get()
-            .by_id(self.id_data.BIMMeshProperties.ifc_definition_id)
+            .by_id(tool.Geometry.get_mesh_props(self.id_data).ifc_definition_id)
             .OfProductRepresentation[0]
             .ShapeOfProduct[0]
         )
@@ -192,8 +192,8 @@ def get_drawing_style_name(self: "DrawingStyle"):
 
 def set_drawing_style_name(self: "DrawingStyle", new_value: str) -> None:
     """ensure the name is unique"""
-    scene = bpy.context.scene
-    drawing_styles = [s.name for s in scene.DocProperties.drawing_styles if s.name != self.name]
+    props = tool.Drawing.get_document_props()
+    drawing_styles = [s.name for s in props.drawing_styles if s.name != self.name]
     new_value = tool.Blender.ensure_unique_name(new_value, drawing_styles)
     old_value = self.name
     self["name"] = new_value

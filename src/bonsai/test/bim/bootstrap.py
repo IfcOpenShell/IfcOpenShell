@@ -23,6 +23,7 @@ import bpy
 import pytest
 import webbrowser
 import bonsai.bim.handler
+import bonsai.tool as tool
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
@@ -66,7 +67,8 @@ class NewIfc4X3:
         bpy.data.batch_remove(bpy.data.objects)
         bpy.ops.outliner.orphans_purge(do_local_ids=True, do_linked_ids=True, do_recursive=True)
         bonsai.bim.handler.load_post(None)
-        bpy.context.scene.BIMProjectProperties.export_schema = "IFC4X3_ADD2"
+        props = tool.Project.get_project_props()
+        props.export_schema = "IFC4X3_ADD2"
         bpy.ops.bim.create_project()
 
 

@@ -139,7 +139,8 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                             tool.Ifc, tool.Geometry, tool.Surveyor, obj=voided_obj
                         )
 
-                    representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+                    representation = tool.Geometry.get_active_representation(voided_obj)
+                    assert representation
                     bonsai.core.geometry.switch_representation(
                         tool.Ifc,
                         tool.Geometry,
@@ -269,20 +270,18 @@ class BooleansMarkAsManual(bpy.types.Operator, tool.Ifc.Operator):
     @classmethod
     def poll(cls, context):
         obj = context.active_object
-        if (
-            obj
-            and tool.Ifc.get_entity(obj)
-            and hasattr(obj.data, "BIMMeshProperties")
-            and obj.data.BIMMeshProperties.ifc_definition_id
-        ):
+        if obj and tool.Ifc.get_entity(obj) and tool.Geometry.get_active_representation(obj):
             return True
         cls.poll_message_set("Need to select IFC element with representation")
         return False
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         element = tool.Ifc.get_entity(obj)
-        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        assert element
+        representation = tool.Geometry.get_active_representation(obj)
+        assert representation
         booleans = tool.Model.get_booleans(representation=representation)
 
         if self.mark_as_manual:
@@ -304,13 +303,13 @@ class EnableEditingBooleans(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not bpy.context.scene.BIMGeometryProperties.representation_obj:
+        if not tool.Geometry.get_geometry_props().representation_obj:
             cls.poll_message_set("To enable editing booleans object should be in item mode.")
             return False
         return True
 
     def execute(self, context):
-        props = context.scene.BIMBooleanProperties
+        props = tool.Feature.get_boolean_props()
         gprops = tool.Geometry.get_geometry_props()
         rep_obj = gprops.representation_obj
         assert rep_obj
@@ -344,6 +343,6 @@ class DisableEditingBooleans(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMBooleanProperties
+        props = tool.Feature.get_boolean_props()
         props.is_editing = False
         return {"FINISHED"}

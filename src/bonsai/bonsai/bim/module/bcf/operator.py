@@ -1316,7 +1316,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
                 [0, 0, 0, 1],
             )
         )
-        props = context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if props.has_blender_offset:
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
             matrix = ifcopenshell.util.geolocation.global2local(

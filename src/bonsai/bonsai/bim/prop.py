@@ -525,12 +525,24 @@ class IfcParameter(PropertyGroup):
     value: FloatProperty(name="Value")  # For now, only floats
     type: StringProperty(name="Type")
 
+    if TYPE_CHECKING:
+        name: str
+        step_id: int
+        index: int
+        value: float
+        type: str
+
 
 class PsetQto(PropertyGroup):
     name: StringProperty(name="Name")
     properties: CollectionProperty(name="Properties", type=Attribute)
     is_expanded: BoolProperty(name="Is Expanded", default=True)
     is_editable: BoolProperty(name="Is Editable")
+
+    if TYPE_CHECKING:
+        properties: bpy.types.bpy_prop_collection_idprop[Attribute]
+        is_expanded: bool
+        is_editable: bool
 
 
 class GlobalId(PropertyGroup):
@@ -539,6 +551,9 @@ class GlobalId(PropertyGroup):
 
 class BIMCollectionProperties(PropertyGroup):
     obj: PointerProperty(type=bpy.types.Object)
+
+    if TYPE_CHECKING:
+        obj: Union[bpy.types.Object, None]
 
 
 class BIMObjectProperties(PropertyGroup):
@@ -564,6 +579,9 @@ def get_profiles(self: "BIMMeshProperties", context: bpy.types.Context):
     return ItemData.data["profiles_enum"]
 
 
+SubshapeType = Literal["-", "PROFILE", "AXIS"]
+
+
 class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     ifc_boolean_id: IntProperty(name="IFC Boolean ID")
@@ -572,13 +590,29 @@ class BIMMeshProperties(PropertyGroup):
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     is_parametric: BoolProperty(name="Is Parametric", default=False)
-    subshape_type: EnumProperty(name="Subshape Type", items=[(i, i, "") for i in ("-", "PROFILE", "AXIS")])
+    subshape_type: EnumProperty(name="Subshape Type", items=[(i, i, "") for i in get_args(SubshapeType)])
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     item_attributes: CollectionProperty(name="Item Attributes", type=Attribute)
     item_profile: EnumProperty(name="Item Profile", items=get_profiles)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
     mesh_checksum: StringProperty(name="Mesh Checksum", default="")
     replaced_mesh: PointerProperty(type=bpy.types.Mesh, description="Original mesh to revert section cutaway")
+
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+        ifc_boolean_id: int
+        obj: Union[bpy.types.Object, None]
+        has_openings_applied: bool
+        is_native: bool
+        is_swept_solid: bool
+        is_parametric: bool
+        subshape_type: SubshapeType
+        ifc_parameters: bpy.types.bpy_prop_collection_idprop[IfcParameter]
+        item_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        item_profile: str
+        material_checksum: str
+        mesh_checksum: str
+        replaced_mesh: Union[bpy.types.Mesh, None]
 
 
 class BIMFacet(PropertyGroup):
@@ -599,15 +633,29 @@ class BIMFacet(PropertyGroup):
         ],
     )
 
+    if TYPE_CHECKING:
+        pset: str
+        value: str
+        type: str
+        comparison: Literal["=", "!=", ">=", "<=", ">", "<", "*=", "!*="]
+
 
 class BIMFilterGroup(PropertyGroup):
     filters: CollectionProperty(type=BIMFacet, name="filters")
+
+    if TYPE_CHECKING:
+        filters: bpy.types.bpy_prop_collection_idprop[BIMFacet]
 
 
 class BIMSnapGroups(PropertyGroup):
     object: BoolProperty(name="Object", default=True)
     polyline: BoolProperty(name="Polyline", default=True)
     measure: BoolProperty(name="Measure", default=True)
+
+    if TYPE_CHECKING:
+        object: bool
+        polyline: bool
+        measure: bool
 
 
 class BIMSnapProperties(PropertyGroup):
@@ -616,3 +664,10 @@ class BIMSnapProperties(PropertyGroup):
     edge_center: BoolProperty(name="Edge Center", default=True)
     edge_intersection: BoolProperty(name="Edge Intersection", default=True)
     face: BoolProperty(name="Face", default=True)
+
+    if TYPE_CHECKING:
+        vertex: bool
+        edge: bool
+        edge_center: bool
+        edge_intersection: bool
+        face: bool

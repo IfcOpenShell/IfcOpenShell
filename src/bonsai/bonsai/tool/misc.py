@@ -113,10 +113,11 @@ class Misc(bonsai.core.tool.Misc):
 
         new_objs = []
         for obj in objs:
-            if obj.type != "MESH" or obj == cutter:
+            mesh = obj.data
+            if not isinstance(mesh, bpy.types.Mesh) or obj == cutter:
                 continue
             new_obj = obj.copy()
-            new_obj.data = obj.data.copy()
+            new_obj.data = mesh.copy()
 
             for collection in obj.users_collection:
                 collection.objects.link(new_obj)

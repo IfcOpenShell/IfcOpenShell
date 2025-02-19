@@ -53,15 +53,16 @@ class ViewportData:
         obj = bpy.context.active_object
         element = tool.Ifc.get_entity(obj)
 
-        modes = [obj_mode]
-
-        if bpy.context.scene.BIMGeometryProperties.representation_obj:
+        modes: list[tuple[str, str, str, str, int]] = [obj_mode]
+        gprops = tool.Geometry.get_geometry_props()
+        if gprops.representation_obj:
             modes.append(item_mode)
 
         if not obj:
             return modes
 
-        if obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
+        pprops = tool.Project.get_project_props()
+        if obj in pprops.clipping_planes_objs:
             pass
         elif element:
             if tool.Geometry.is_locked(element):
@@ -107,8 +108,9 @@ class RepresentationsData:
         element = tool.Ifc.get_entity(obj)
 
         active_representation_id = None
-        if obj.data and hasattr(obj.data, "BIMMeshProperties"):
-            active_representation_id = obj.data.BIMMeshProperties.ifc_definition_id
+        active_representation = tool.Geometry.get_active_representation(obj)
+        if active_representation:
+            active_representation_id = active_representation.id()
 
         for representation in tool.Geometry.get_representations_iter(element):
             representation_type = representation.RepresentationType
@@ -158,9 +160,9 @@ class RepresentationsData:
         if not obj.data:
             return []
         element = tool.Ifc.get_entity(obj)
-        if not (active_representation_id := obj.data.BIMMeshProperties.ifc_definition_id):
+        base_representation = tool.Geometry.get_active_representation(obj)
+        if not base_representation:
             return []  # Maybe in profile editing mode
-        base_representation = tool.Ifc.get().by_id(active_representation_id)
 
         # shape aspects matching context of the active representation
         matching_shape_aspects = []
@@ -390,7 +392,7 @@ class PlacementData:
     def load(cls):
         cls.data = {"has_placement": cls.has_placement()}
 
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         obj = bpy.context.active_object
         if obj and props.has_blender_offset:
             xyz = cls.original_xyz(obj)
@@ -413,7 +415,7 @@ class PlacementData:
     @classmethod
     def original_xyz(cls, obj):
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         xyz = ifcopenshell.util.geolocation.xyz2enh(
             obj.matrix_world[0][3],
             obj.matrix_world[1][3],

@@ -520,7 +520,8 @@ class TestLoadingIndexedMap(NewFile):
 class TestSetupActiveBsddClassification(NewFile):
     def run_test(self, schema: ifcopenshell.util.schema.IFC_SCHEMA) -> None:
         schema_ = "IFC4X3_ADD2" if schema == "IFC4X3" else schema
-        bpy.context.scene.BIMProjectProperties.export_schema = schema_
+        props = tool.Project.get_project_props()
+        props.export_schema = schema_
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
         name = "CCI Construction"

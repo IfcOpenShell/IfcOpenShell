@@ -113,30 +113,34 @@ class TestDeleteDrawingElements(NewFile):
 
 class TestDisableEditingDrawings(NewFile):
     def test_run(self):
-        bpy.context.scene.DocProperties.is_editing_drawings = True
+        props = tool.Drawing.get_document_props()
+        props.is_editing_drawings = True
         subject.disable_editing_drawings()
-        assert bpy.context.scene.DocProperties.is_editing_drawings == False
+        assert props.is_editing_drawings == False
 
 
 class TestDisableEditingSchedules(NewFile):
     def test_run(self):
-        bpy.context.scene.DocProperties.is_editing_schedules = True
+        props = tool.Drawing.get_document_props()
+        props.is_editing_schedules = True
         subject.disable_editing_schedules()
-        assert bpy.context.scene.DocProperties.is_editing_schedules == False
+        assert props.is_editing_schedules == False
 
 
 class TestDisableEditingReferences(NewFile):
     def test_run(self):
-        bpy.context.scene.DocProperties.is_editing_references = True
+        props = tool.Drawing.get_document_props()
+        props.is_editing_references = True
         subject.disable_editing_references()
-        assert bpy.context.scene.DocProperties.is_editing_references == False
+        assert props.is_editing_references == False
 
 
 class TestDisableEditingSheets(NewFile):
     def test_run(self):
-        bpy.context.scene.DocProperties.is_editing_sheets = True
+        props = tool.Drawing.get_document_props()
+        props.is_editing_sheets = True
         subject.disable_editing_sheets()
-        assert bpy.context.scene.DocProperties.is_editing_sheets == False
+        assert props.is_editing_sheets == False
 
 
 class TestDisableEditingText(NewFile):
@@ -166,30 +170,34 @@ class TestEnableEditing(NewFile):
 
 class TestEnableEditingDrawings(NewFile):
     def test_run(self):
-        bpy.context.scene.DocProperties.is_editing_drawings = False
+        props = tool.Drawing.get_document_props()
+        props.is_editing_drawings = False
         subject.enable_editing_drawings()
-        assert bpy.context.scene.DocProperties.is_editing_drawings == True
+        assert props.is_editing_drawings == True
 
 
 class TestEnableEditingSchedules(NewFile):
     def test_run(self):
-        bpy.context.scene.DocProperties.is_editing_schedules = False
+        props = tool.Drawing.get_document_props()
+        props.is_editing_schedules = False
         subject.enable_editing_schedules()
-        assert bpy.context.scene.DocProperties.is_editing_schedules == True
+        assert props.is_editing_schedules == True
 
 
 class TestEnableEditingReferences(NewFile):
     def test_run(self):
-        bpy.context.scene.DocProperties.is_editing_references = False
+        props = tool.Drawing.get_document_props()
+        props.is_editing_references = False
         subject.enable_editing_references()
-        assert bpy.context.scene.DocProperties.is_editing_references == True
+        assert props.is_editing_references == True
 
 
 class TestEnableEditingSheets(NewFile):
     def test_run(self):
-        bpy.context.scene.DocProperties.is_editing_sheets = False
+        props = tool.Drawing.get_document_props()
+        props.is_editing_sheets = False
         subject.enable_editing_sheets()
-        assert bpy.context.scene.DocProperties.is_editing_sheets == True
+        assert props.is_editing_sheets == True
 
 
 class TestEnableEditingText(NewFile):
@@ -492,7 +500,7 @@ class TestImportDrawings(NewFile):
         pset = ifcopenshell.api.run("pset.add_pset", ifc, product=drawing, name="EPset_Drawing")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"TargetView": "PLAN_VIEW"})
         subject.import_drawings()
-        props = bpy.context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         for d in props.drawings:
             d.is_expanded = True
         subject.import_drawings()
@@ -508,7 +516,7 @@ class TestImportSchedules(NewFile):
         ifc.createIfcDocumentInformation(Identification="Y", Name="FOOBAZ")
         document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="SCHEDULE")
         subject.import_documents("SCHEDULE")
-        props = bpy.context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         assert props.schedules[0].ifc_definition_id == document.id()
         assert props.schedules[0].identification == "X"
         assert props.schedules[0].name == "FOOBAR"
@@ -519,7 +527,7 @@ class TestImportSchedules(NewFile):
         ifc.createIfcDocumentInformation(DocumentId="Y", Name="FOOBAZ")
         document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="SCHEDULE")
         subject.import_documents("SCHEDULE")
-        props = bpy.context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         assert props.schedules[0].ifc_definition_id == document.id()
         assert props.schedules[0].identification == "X"
         assert props.schedules[0].name == "FOOBAR"
@@ -532,7 +540,7 @@ class TestImportReferences(NewFile):
         ifc.createIfcDocumentInformation(Identification="Y", Name="FOOBAZ")
         document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="REFERENCE")
         subject.import_documents("REFERENCE")
-        props = bpy.context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         assert props.references[0].ifc_definition_id == document.id()
         assert props.references[0].identification == "X"
         assert props.references[0].name == "FOOBAR"
@@ -543,7 +551,7 @@ class TestImportReferences(NewFile):
         ifc.createIfcDocumentInformation(DocumentId="Y", Name="FOOBAZ")
         document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="REFERENCE")
         subject.import_documents("REFERENCE")
-        props = bpy.context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         assert props.references[0].ifc_definition_id == document.id()
         assert props.references[0].identification == "X"
         assert props.references[0].name == "FOOBAR"
@@ -556,7 +564,7 @@ class TestImportSheets(NewFile):
         ifc.createIfcDocumentInformation(Identification="Y", Name="FOOBAZ")
         document = ifc.createIfcDocumentInformation(Identification="X", Name="FOOBAR", Scope="SHEET")
         subject.import_sheets()
-        props = bpy.context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         assert props.sheets[0].ifc_definition_id == document.id()
         assert props.sheets[0].identification == "X"
         assert props.sheets[0].name == "FOOBAR"
@@ -567,7 +575,7 @@ class TestImportSheets(NewFile):
         ifc.createIfcDocumentInformation(DocumentId="Y", Name="FOOBAZ")
         document = ifc.createIfcDocumentInformation(DocumentId="X", Name="FOOBAR", Scope="SHEET")
         subject.import_sheets()
-        props = bpy.context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         assert props.sheets[0].ifc_definition_id == document.id()
         assert props.sheets[0].identification == "X"
         assert props.sheets[0].name == "FOOBAR"
@@ -657,9 +665,10 @@ class TestSetName(NewFile):
 
 class TestShowDecorations(NewFile):
     def test_run(self):
-        bpy.context.scene.DocProperties.should_draw_decorations = False
+        props = tool.Drawing.get_document_props()
+        props.should_draw_decorations = False
         subject.show_decorations()
-        assert bpy.context.scene.DocProperties.should_draw_decorations is True
+        assert props.should_draw_decorations is True
 
 
 class TestDrawingMaintainingSheetPosition(NewFile):
@@ -680,7 +689,7 @@ class TestDrawingMaintainingSheetPosition(NewFile):
         return drawing_data
 
     def test_run(self):
-        props = bpy.context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         bpy.ops.bim.create_project()
         ifc = tool.Ifc.get()
         sheet_path = Path.cwd() / "layouts" / "A00 - UNTITLED.svg"
@@ -845,10 +854,11 @@ class TestDrawingStyles(NewFile):
         ifc = tool.Ifc.get()
         drawing = ifc.by_type("IfcAnnotation")[0]
         bpy.ops.bim.expand_target_view(target_view="PLAN_VIEW")
-        props = bpy.context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         props.active_drawing_index = 2
         bpy.ops.bim.activate_drawing(drawing=drawing.id())
-        self.drawing_styles = bpy.context.scene.DocProperties.drawing_styles
+        props = tool.Drawing.get_document_props()
+        self.drawing_styles = props.drawing_styles
 
     def test_drawing_styles_not_loaded_if_underlay_is_inactive(self):
         self.setup_project_with_drawing()
@@ -867,7 +877,8 @@ class TestDrawingStyles(NewFile):
 
 class TestAddReferenceImage(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMProjectProperties.template_file = "0"
+        props = tool.Project.get_project_props()
+        props.template_file = "0"
         bpy.ops.bim.create_project()
         ifc_path = Path("test/files/temp/test.ifc").absolute()
         bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)

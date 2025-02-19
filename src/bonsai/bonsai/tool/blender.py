@@ -913,7 +913,7 @@ class Blender(bonsai.core.tool.Blender):
             return False
         if not (element := tool.Ifc.get_entity(obj)):
             return True
-        if obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
+        if obj in tool.Project.get_project_props().clipping_planes_objs:
             return False
         usage_type = tool.Model.get_usage_type(element)
         if usage_type in ("LAYER1", "LAYER2"):

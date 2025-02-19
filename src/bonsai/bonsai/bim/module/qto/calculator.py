@@ -451,7 +451,8 @@ def get_side_area(o: bpy.types.Object) -> float:
 
 
 def get_cross_section_area(obj: bpy.types.Object) -> float:
-    representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+    representation = tool.Geometry.get_active_representation(obj)
+    assert representation
     item = representation.Items[0]
     while True:
         if item.is_a("IfcExtrudedAreaSolid"):

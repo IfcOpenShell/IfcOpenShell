@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import json
 import bpy
@@ -30,10 +31,17 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from mathutils import Vector
 from collections import defaultdict
-from typing import Iterable, Literal
+from typing import Iterable, Literal, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.debug.prop import BIMDebugProperties
 
 
 class Debug(bonsai.core.tool.Debug):
+    @classmethod
+    def get_debug_props(cls) -> BIMDebugProperties:
+        return bpy.context.scene.BIMDebugProperties
+
     @classmethod
     def add_schema_identifier(cls, schema: W.schema_definition) -> None:
         IfcStore.schema_identifiers.append(schema.name())

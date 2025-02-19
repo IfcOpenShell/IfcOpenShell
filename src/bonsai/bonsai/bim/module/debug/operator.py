@@ -101,13 +101,13 @@ class ConvertToBlender(bpy.types.Operator):
                 if tool.Geometry.has_mesh_properties(data):
                     if data.library:
                         continue
-                    data.BIMMeshProperties.ifc_definition_id = 0
+                    tool.Geometry.get_mesh_props(data).ifc_definition_id = 0
         for material in bpy.data.materials:
             if material.library:
                 continue
             tool.Ifc.unlink(obj=material)
         context.scene.BIMProperties.ifc_file = ""
-        context.scene.BIMDebugProperties.attributes.clear()
+        tool.Debug.get_debug_props().attributes.clear()
         IfcStore.purge()
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
@@ -256,7 +256,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
         self.file = tool.Ifc.get()
-        element = self.file.by_id(self.step_id or int(context.scene.BIMDebugProperties.step_id))
+        element = self.file.by_id(self.step_id or int(tool.Debug.get_debug_props().step_id))
         settings = ifcopenshell.geom.settings()
         settings.set("keep-bounding-boxes", True)
         if self.should_include_curves:
@@ -309,7 +309,7 @@ class RewindInspector(bpy.types.Operator):
     bl_description = "Rewind the Inspector to the previously inspected element"
 
     def execute(self, context):
-        props = context.scene.BIMDebugProperties
+        props = tool.Debug.get_debug_props()
         total_breadcrumbs = len(props.step_id_breadcrumb)
         if total_breadcrumbs < 2:
             return {"FINISHED"}
@@ -332,9 +332,9 @@ class InspectFromStepId(bpy.types.Operator):
 
     def execute(self, context):
         self.file = IfcStore.get_file()
-        debug_props = context.scene.BIMDebugProperties
+        debug_props = tool.Debug.get_debug_props()
         debug_props.active_step_id = self.step_id
-        crumb = context.scene.BIMDebugProperties.step_id_breadcrumb.add()
+        crumb = debug_props.step_id_breadcrumb.add()
         crumb.name = str(self.step_id)
         element = self.file.by_id(self.step_id)
         debug_props.attributes.clear()
@@ -385,7 +385,7 @@ class InspectFromObject(bpy.types.Operator):
         if (
             (data := obj.data)
             and tool.Geometry.has_mesh_properties(data)
-            and (ifc_id := data.BIMMeshProperties.ifc_definition_id)
+            and (ifc_id := tool.Geometry.get_mesh_props(data).ifc_definition_id)
         ):
             return ifc_id
 
@@ -438,7 +438,8 @@ class ParseExpress(bpy.types.Operator):
     bl_label = "Parse Express"
 
     def execute(self, context):
-        core.parse_express(tool.Debug, context.scene.BIMDebugProperties.express_file)
+        props = tool.Debug.get_debug_props()
+        core.parse_express(tool.Debug, props.express_file)
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
@@ -452,8 +453,9 @@ class SelectExpressFile(bpy.types.Operator):
     filter_glob: bpy.props.StringProperty(default="*.exp", options={"HIDDEN"})
 
     def execute(self, context):
+        props = tool.Debug.get_debug_props()
         if os.path.exists(self.filepath) and "exp" in os.path.splitext(self.filepath)[1]:
-            context.scene.BIMDebugProperties.express_file = self.filepath
+            props.express_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -497,7 +499,7 @@ class PrintUnusedElementStats(bpy.types.Operator):
     ignore_styled_items: bpy.props.BoolProperty(name="Ignore Styled Items", default=True)
 
     def execute(self, context):
-        props = context.scene.BIMDebugProperties
+        props = tool.Debug.get_debug_props()
         # ignore some classes that could have zero 0 inverse references by their nature
         ignore_classes = []
         if self.ignore_contexts:
@@ -543,7 +545,7 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
-        props = context.scene.BIMDebugProperties
+        props = tool.Debug.get_debug_props()
         if props.ifc_class_purge:
             purged_elements = core.purge_unused_elements(tool.Ifc, tool.Debug, props.ifc_class_purge)
             self.report({"INFO"}, f"{purged_elements} unused elements found and removed.")
@@ -803,7 +805,7 @@ class DebugActiveDrawing(bpy.types.Operator):
     )
 
     def execute(self, context: bpy.types.Context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         drawing_item = props.drawings[props.active_drawing_index]
         drawing = tool.Ifc.get().by_id(drawing_item.ifc_definition_id)
 

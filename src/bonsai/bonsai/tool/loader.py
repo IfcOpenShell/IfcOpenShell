@@ -89,7 +89,7 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def get_mesh_name(cls, representation: ifcopenshell.entity_instance) -> str:
-        context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
+        context_id = context.id() if (context := getattr(representation, "ContextOfItems", None)) else 0
         return "{}/{}".format(context_id, representation.id())
 
     @classmethod
@@ -105,7 +105,7 @@ class Loader(bonsai.core.tool.Loader):
         mesh: tool.Geometry.TYPES_WITH_MESH_PROPERTIES,
     ) -> None:
         geometry = shape.geometry if hasattr(shape, "geometry") else shape
-        mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = int(geometry.id.split("-")[0])
 
     @classmethod
     def create_surface_style_shading(
@@ -698,7 +698,7 @@ class Loader(bonsai.core.tool.Loader):
             project_north = 0
 
         if has_offset or has_rotation:
-            props = bpy.context.scene.BIMGeoreferenceProperties
+            props = tool.Georeference.get_georeference_props()
             props.blender_offset_x = str(model_offset[0])
             props.blender_offset_y = str(model_offset[1])
             props.blender_offset_z = str(model_offset[2])
@@ -747,7 +747,7 @@ class Loader(bonsai.core.tool.Loader):
         cls, element: ifcopenshell.entity_instance, is_gross: bool = False
     ) -> Union[ifcopenshell.geom.ShapeElementType, None]:
         context_settings = cls.settings.gross_context_settings if is_gross else cls.settings.context_settings
-        geometry_library = bpy.context.scene.BIMProjectProperties.geometry_library
+        geometry_library = tool.Project.get_project_props().geometry_library
         for settings in context_settings:
             try:
                 result = ifcopenshell.geom.create_shape(settings, element, geometry_library=geometry_library)
@@ -952,7 +952,7 @@ class Loader(bonsai.core.tool.Loader):
                 matrix[1][3] = offset_xyz[1]
                 matrix[2][3] = offset_xyz[2]
 
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if props.has_blender_offset:
             if obj.BIMObjectProperties.blender_offset_type == "NONE":
                 obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"

@@ -197,6 +197,8 @@ def create_annotation_occurrence(context):
 
 
 class AnnotationToolUI:
+    layout: bpy.types.UILayout
+
     @classmethod
     def draw(cls, context, layout):
         cls.layout = layout
@@ -224,7 +226,8 @@ class AnnotationToolUI:
     @classmethod
     def draw_create_object_interface(cls):
         row = cls.layout.row(align=True)
-        row.prop(bpy.context.scene.DocProperties, "should_draw_decorations", text="Viewport Annotations")
+        props = tool.Drawing.get_document_props()
+        row.prop(props, "should_draw_decorations", text="Viewport Annotations")
 
     @classmethod
     def draw_edit_object_interface(cls, context):

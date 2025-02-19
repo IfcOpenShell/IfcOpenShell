@@ -46,12 +46,14 @@ class ItemDecorator:
         obj_is_boolean: dict[str, list[ifcopenshell.entity_instance]] = {}
         objs: dict[str, dict[str, list]] = {}
         obj_matrix: dict[str, Matrix] = {}
-        for item_obj in context.scene.BIMGeometryProperties.item_objs:
+        props = tool.Geometry.get_geometry_props()
+        for item_obj in props.item_objs:
             if obj := item_obj.obj:
                 obj: bpy.types.Object
                 objs[obj.name] = cls.get_obj_data(obj)
                 obj_is_selected[obj.name] = obj.select_get()
-                item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                item = tool.Geometry.get_active_representation(obj)
+                assert item
                 obj_is_boolean[obj.name] = [i for i in tool.Ifc.get().get_inverse(item) if i.is_a("IfcBooleanResult")]
                 obj_matrix[obj.name] = obj.matrix_world.copy()
 
@@ -143,7 +145,8 @@ class ItemDecorator:
         color = selected_elements_color
         blf.color(font_id, *color)
 
-        for item in context.scene.BIMGeometryProperties.item_objs:
+        props = tool.Geometry.get_geometry_props()
+        for item in props.item_objs:
             if (obj := item.obj) and obj.hide_get() == False:
                 if obj.select_get():
                     centroid = obj.matrix_world @ Vector(obj.bound_box[0]).lerp(Vector(obj.bound_box[6]), 0.5)

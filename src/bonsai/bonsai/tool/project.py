@@ -235,7 +235,7 @@ class Project(bonsai.core.tool.Project):
 
     @classmethod
     def load_linked_models_from_ifc(cls) -> None:
-        links = bpy.context.scene.BIMProjectProperties.links
+        links = tool.Project.get_project_props().links
         links.clear()
         links_document = cls.get_linked_models_document()
         if not links_document:
@@ -252,7 +252,7 @@ class Project(bonsai.core.tool.Project):
     @classmethod
     def save_linked_models_to_ifc(cls) -> None:
         ifc_file = tool.Ifc.get()
-        links = bpy.context.scene.BIMProjectProperties.links
+        links = tool.Project.get_project_props().links
         filepaths: set[Path] = set()
         for link in links:
             filepaths.add(Path(link.name))

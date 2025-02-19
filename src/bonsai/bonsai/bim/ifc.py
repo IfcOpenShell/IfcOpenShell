@@ -178,6 +178,7 @@ class IfcStore:
         if not os.path.isfile(path):
             return
         extension = path.split(".")[-1]
+        props = tool.Project.get_project_props()
         if extension.lower() == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
                 with zipfile.ZipFile(path, "r") as zip_ref:
@@ -187,7 +188,7 @@ class IfcStore:
                     return
         elif extension.lower() == "ifcxml":
             IfcStore.file = ifcopenshell.file(ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(path))
-        elif bpy.context.scene.BIMProjectProperties.should_stream:
+        elif props.should_stream:
             IfcStore.file = ifcopenshell.open(path, should_stream=True)
         else:
             IfcStore.file = ifcopenshell.open(path)
@@ -195,9 +196,8 @@ class IfcStore:
     @staticmethod
     def get_schema() -> ifcopenshell.ifcopenshell_wrapper.schema_definition:
         if IfcStore.file is None:
-            IfcStore.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(
-                bpy.context.scene.BIMProjectProperties.export_schema
-            )
+            props = tool.Project.get_project_props()
+            IfcStore.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(props.export_schema)
         elif IfcStore.schema is None:
             IfcStore.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(IfcStore.file.schema_identifier)
         return IfcStore.schema
@@ -247,7 +247,7 @@ class IfcStore:
         # refactor this class and deprecate usage of IfcStore in favour of
         # tools.
         if not isinstance(obj, (bpy.types.Object, bpy.types.Material)):
-            obj.BIMMeshProperties.ifc_definition_id = element.id()
+            tool.Geometry.get_mesh_props(obj).ifc_definition_id = element.id()
             return
 
         existing_obj = IfcStore.id_map.get(element.id(), None)

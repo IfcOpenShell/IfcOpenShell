@@ -25,6 +25,7 @@ import math
 import mathutils
 from mathutils import Matrix, Vector
 from lark import Lark, Transformer
+from typing import Union
 
 
 class Snap(bonsai.core.tool.Snap):
@@ -313,7 +314,9 @@ class Snap(bonsai.core.tool.Snap):
             plane_normal = tool.Polyline.use_transform_orientations(plane_normal)
             return plane_origin, plane_normal
 
-        def cast_rays_to_single_object(obj, mouse_pos):
+        def cast_rays_to_single_object(
+            obj: bpy.types.Object, mouse_pos: tuple[int, int]
+        ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
             if obj.type != "MESH":
                 return None, None, None
             hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
@@ -332,7 +335,9 @@ class Snap(bonsai.core.tool.Snap):
             else:
                 return None, None, None
 
-        def cast_rays_and_get_best_object(objs_to_raycast, mouse_pos):
+        def cast_rays_and_get_best_object(
+            objs_to_raycast: list[bpy.types.Object], mouse_pos: tuple[int, int]
+        ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
             best_length_squared = 1.0
             best_obj = None
             best_hit = None

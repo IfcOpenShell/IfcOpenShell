@@ -49,7 +49,7 @@ class BIM_PT_camera(Panel):
             return
 
         self.layout.use_property_split = True
-        dprops = context.scene.DocProperties
+        dprops = tool.Drawing.get_document_props()
         props = context.scene.camera.data.BIMCameraProperties
 
         col = self.layout.column(align=True)
@@ -161,7 +161,7 @@ class BIM_PT_drawing_underlay(Panel):
         layout.use_property_split = True
         camera = context.scene.camera
         assert camera
-        dprops = context.scene.DocProperties
+        dprops = tool.Drawing.get_document_props()
         props = camera.data.BIMCameraProperties
         drawing_index_is_valid = props.active_drawing_style_index < len(dprops.drawing_styles)
 
@@ -229,7 +229,7 @@ class BIM_PT_drawings(Panel):
             draw_project_not_saved_ui(self)
             return
 
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
 
         if not self.props.is_editing_drawings:
             row = self.layout.row(align=True)
@@ -302,7 +302,7 @@ class BIM_PT_schedules(Panel):
             draw_project_not_saved_ui(self)
             return
 
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
 
         if not self.props.is_editing_schedules:
             row = self.layout.row(align=True)
@@ -352,7 +352,7 @@ class BIM_PT_references(Panel):
             draw_project_not_saved_ui(self)
             return
 
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
 
         if not self.props.is_editing_references:
             row = self.layout.row(align=True)
@@ -394,7 +394,7 @@ class BIM_PT_sheets(Panel):
             draw_project_not_saved_ui(self)
             return
 
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
 
         if not self.props.is_editing_sheets:
             row = self.layout.row(align=True)
@@ -601,7 +601,7 @@ class BIM_UL_drawinglist(bpy.types.UIList):
             selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
             row.prop(item, "is_selected", text="", icon=selected_icon, emboss=False)
             row.prop(item, "name", text="", emboss=False)
-            self.props = context.scene.DocProperties
+            self.props = tool.Drawing.get_document_props()
             if (
                 self.props.drawings
                 and self.props.active_drawing_id

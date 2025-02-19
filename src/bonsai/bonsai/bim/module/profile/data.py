@@ -94,7 +94,7 @@ class ProfileData:
         obj = bpy.context.active_object
         return (
             obj
-            and obj.data
-            and hasattr(obj.data, "BIMMeshProperties")
-            and obj.data.BIMMeshProperties.subshape_type == "PROFILE"
+            and (data := obj.data)
+            and isinstance(data, bpy.types.Mesh)
+            and tool.Geometry.get_mesh_props(data).subshape_type == "PROFILE"
         )
