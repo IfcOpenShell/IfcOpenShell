@@ -731,6 +731,7 @@ class OverrideDelete(bpy.types.Operator):
         if self.is_batch:
             row = self.layout.row()
             row.label(text="Warning: Faster deletion will use more memory.", icon="ERROR")
+        row.label(text="See system console for deletion progress.")
 
     def _execute(self, context: bpy.types.Context):
         start_time = time()
@@ -740,8 +741,19 @@ class OverrideDelete(bpy.types.Operator):
 
         self.process_arrays(context)
         clear_active_object = True
-        for obj in context.selected_objects:
-            if not tool.Blender.is_valid_data_block(obj):
+        objects_to_remove = context.selectable_objects
+        for i, obj in enumerate(objects_to_remove):
+            # Log time.
+            time_since_start = time() - start_time
+            is_valid_data_block = tool.Blender.is_valid_data_block(obj)
+            if time_since_start > 10:
+                obj_name = f" ({obj.name})" if is_valid_data_block else ""
+                print(
+                    f"Removing object {i}/{len(objects_to_remove)}{obj_name}. "
+                    f"Time since start: {time_since_start:.2f} seconds."
+                )
+
+            if not is_valid_data_block:
                 continue
             element = tool.Ifc.get_entity(obj)
             if element:
