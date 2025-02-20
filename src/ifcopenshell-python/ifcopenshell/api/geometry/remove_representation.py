@@ -37,6 +37,7 @@ def remove_representation(
     :param should_keep_named_profiles: If true, named profile defs will not be
         removed as they are assumed to be significant.
     """
+    is_ifc2x3 = file.schema == "IFC2X3"
     styled_items = set()
     presentation_layer_assignments = set()
     textures = set()
@@ -46,9 +47,7 @@ def remove_representation(
         if subelement.is_a("IfcRepresentationItem"):
             [styled_items.add(s) for s in subelement.StyledByItem or []]
             # IFC2X3 is using LayerAssignments
-            for s in (
-                subelement.LayerAssignment if hasattr(subelement, "LayerAssignment") else subelement.LayerAssignments
-            ):
+            for s in subelement.LayerAssignment if not is_ifc2x3 else subelement.LayerAssignments:
                 presentation_layer_assignments.add(s)
             # IfcTessellatedFaceSet inverses
             [textures.add(t) for t in getattr(subelement, "HasTextures", []) or []]
@@ -77,7 +76,8 @@ def remove_representation(
 
     to_delete = file.to_delete or set()
     for element in styled_items:
-        if not element.Item or element.Item in to_delete:
+        item = element.Item
+        if not item or item in to_delete:
             file.remove(element)
     for element in presentation_layer_assignments:
         if all(item in to_delete for item in element.AssignedItems):
