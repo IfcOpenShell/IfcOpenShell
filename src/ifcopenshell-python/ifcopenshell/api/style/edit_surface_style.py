@@ -81,7 +81,7 @@ class Usecase:
     def execute(self, style: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
         self.style = style
 
-        attributes = {}
+        attribute_types = {}
         for attribute in style.wrapped_data.declaration().as_entity().all_attributes():
             attribute_type = attribute.type_of_attribute()
             if attribute_type.as_aggregation_type() is None:
@@ -89,10 +89,10 @@ class Usecase:
             else:
                 # doesn't have .declared_type()
                 attribute_type = attribute_type.type_of_element()
-            attributes[attribute.name()] = attribute_type
+            attribute_types[attribute.name()] = attribute_type
 
         for key, value in attributes.items():
-            attribute_class = attributes.get(key)
+            attribute_class = attribute_types.get(key)
             if attribute_class == "IfcColourRgb":
                 self.edit_colour_rgb(key, value)
             elif key == "SpecularHighlight":
