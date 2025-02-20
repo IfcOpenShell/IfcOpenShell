@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import json
 import math
@@ -23,24 +24,34 @@ import ifcopenshell
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Union, Literal, Any
+from typing import Union, Literal, Any, TYPE_CHECKING
 from typing_extensions import assert_never
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.unit.prop import BIMUnitProperties
 
 
 class Unit(bonsai.core.tool.Unit):
     UNIT_TYPE = Literal["LENGTHUNIT", "AREAUNIT", "VOLUMEUNIT"]
 
     @classmethod
+    def get_unit_props(cls) -> BIMUnitProperties:
+        return bpy.context.scene.BIMUnitProperties
+
+    @classmethod
     def clear_active_unit(cls) -> None:
-        bpy.context.scene.BIMUnitProperties.active_unit_id = 0
+        props = cls.get_unit_props()
+        props.active_unit_id = 0
 
     @classmethod
     def disable_editing_units(cls) -> None:
-        bpy.context.scene.BIMUnitProperties.is_editing = False
+        props = cls.get_unit_props()
+        props.is_editing = False
 
     @classmethod
     def enable_editing_units(cls) -> None:
-        bpy.context.scene.BIMUnitProperties.is_editing = True
+        props = cls.get_unit_props()
+        props.is_editing = True
 
     @classmethod
     def export_unit_attributes(cls) -> dict[str, Any]:
@@ -52,11 +63,12 @@ class Unit(bonsai.core.tool.Unit):
                     attributes[prop.name] = (0, 0, 0, 0, 0, 0, 0)
                 return True
 
-        props = bpy.context.scene.BIMUnitProperties
+        props = cls.get_unit_props()
         return bonsai.bim.helper.export_attributes(props.unit_attributes, callback=callback)
 
     @classmethod
     def get_scene_unit_name(cls, unit_type: UNIT_TYPE) -> str:
+        bim_props = tool.Blender.get_bim_props()
         if unit_type == "LENGTHUNIT":
             props = bpy.context.scene.unit_settings
             if props.length_unit == "MILES":
@@ -69,23 +81,24 @@ class Unit(bonsai.core.tool.Unit):
                 return "thou"
             return "foot"
         elif unit_type == "AREAUNIT":
-            return bpy.context.scene.BIMProperties.area_unit
+            return bim_props.area_unit
         elif unit_type == "VOLUMEUNIT":
-            return bpy.context.scene.BIMProperties.volume_unit
+            return bim_props.volume_unit
         else:
             assert_never()
 
     @classmethod
     def get_scene_unit_si_prefix(cls, unit_type: UNIT_TYPE) -> Union[str, None]:
+        bim_props = tool.Blender.get_bim_props()
         if unit_type == "LENGTHUNIT":
             props = bpy.context.scene.unit_settings
             if props.length_unit == "ADAPTIVE" or props.length_unit == "METERS":
                 return
             return props.length_unit.replace("METERS", "")
         elif unit_type == "AREAUNIT":
-            unit = bpy.context.scene.BIMProperties.area_unit
+            unit = bim_props.area_unit
         elif unit_type == "VOLUMEUNIT":
-            unit = bpy.context.scene.BIMProperties.volume_unit
+            unit = bim_props.volume_unit
         else:
             assert_never(unit_type)
         if "/" in unit:
@@ -93,9 +106,11 @@ class Unit(bonsai.core.tool.Unit):
 
     @classmethod
     def import_unit_attributes(cls, unit: ifcopenshell.entity_instance) -> None:
+        props = cls.get_unit_props()
+
         def callback(name, prop, data):
             if name == "Dimensions" and data["type"] != "IfcSIUnit":
-                new = bpy.context.scene.BIMUnitProperties.unit_attributes.add()
+                new = props.unit_attributes.add()
                 new.name = name
                 new.is_null = data[name] is None
                 new.is_optional = False
@@ -103,13 +118,12 @@ class Unit(bonsai.core.tool.Unit):
                 new.string_value = json.dumps([e for e in tool.Ifc.get().by_id(data["id"]).Dimensions])
                 return True
 
-        props = bpy.context.scene.BIMUnitProperties
         props.unit_attributes.clear()
         bonsai.bim.helper.import_attributes2(unit, props.unit_attributes, callback=callback)
 
     @classmethod
     def import_units(cls) -> None:
-        props = bpy.context.scene.BIMUnitProperties
+        props = tool.Unit.get_unit_props()
         props.units.clear()
 
         units = []
@@ -158,7 +172,8 @@ class Unit(bonsai.core.tool.Unit):
 
     @classmethod
     def set_active_unit(cls, unit: ifcopenshell.entity_instance) -> None:
-        bpy.context.scene.BIMUnitProperties.active_unit_id = unit.id()
+        props = cls.get_unit_props()
+        props.active_unit_id = unit.id()
 
     @classmethod
     def get_project_currency_unit(cls) -> Union[ifcopenshell.entity_instance, None]:

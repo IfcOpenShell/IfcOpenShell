@@ -340,8 +340,8 @@ class IfcGit:
 
     @classmethod
     def get_revisions_step_ids(cls) -> Union[STEP_IDS, None]:
-
-        path_ifc = bpy.data.scenes["Scene"].BIMProperties.ifc_file
+        props = tool.Blender.get_bim_props()
+        path_ifc = tool.Blender.get_bim_props().ifc_file
         props = bpy.context.scene.IfcGitProperties
         repo = IfcGitRepo.repo
         item = props.ifcgit_commits[props.commit_index]

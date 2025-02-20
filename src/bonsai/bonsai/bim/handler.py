@@ -228,7 +228,7 @@ def refresh_ui_data():
 
 
 @persistent
-def loadIfcStore(scene):
+def loadIfcStore(scene: bpy.types.Scene) -> None:
     IfcStore.purge()
     refresh_ui_data()
     if not tool.Ifc.get():
@@ -238,19 +238,21 @@ def loadIfcStore(scene):
 
 
 @persistent
-def undo_post(scene):
-    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
-        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
-        IfcStore.undo(until_key=bpy.context.scene.BIMProperties.last_transaction)
+def undo_post(scene: bpy.types.Scene) -> None:
+    props = tool.Blender.get_bim_props()
+    if IfcStore.last_transaction != props.last_transaction:
+        IfcStore.last_transaction = props.last_transaction
+        IfcStore.undo(until_key=props.last_transaction)
         refresh_ui_data()
     tool.Ifc.rebuild_element_maps()
 
 
 @persistent
-def redo_post(scene):
-    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
-        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
-        IfcStore.redo(until_key=bpy.context.scene.BIMProperties.last_transaction)
+def redo_post(scene: bpy.types.Scene) -> None:
+    props = tool.Blender.get_bim_props()
+    if IfcStore.last_transaction != props.last_transaction:
+        IfcStore.last_transaction = props.last_transaction
+        IfcStore.redo(until_key=props.last_transaction)
         refresh_ui_data()
     tool.Ifc.rebuild_element_maps()
 
@@ -283,7 +285,7 @@ def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None
         return pao
 
 
-def viewport_shading_changed_callback(area):
+def viewport_shading_changed_callback(area: bpy.types.Area) -> None:
     shading = area.spaces.active.shading.type
     if shading == "RENDERED":
         bpy.context.scene.BIMStylesProperties.active_style_type = "External"
@@ -341,7 +343,8 @@ def load_post(scene):
     tool.Blender.setup_tabs()
 
     if tool.Ifc.get() and bpy.data.is_saved:
-        bpy.context.scene.BIMProperties.has_blend_warning = True
+        props = tool.Blender.get_bim_props()
+        props.has_blend_warning = True
 
     # Bonsai overlays
     georeference_props = tool.Georeference.get_georeference_props()

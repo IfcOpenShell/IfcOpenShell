@@ -34,9 +34,10 @@ class BIM_PT_debug(Panel):
         layout = self.layout
 
         props = tool.Debug.get_debug_props()
+        bim_props = tool.Blender.get_bim_props()
 
         row = self.layout.row(align=True)
-        row.prop(context.scene.BIMProperties, "ifc_file", text="")
+        row.prop(bim_props, "ifc_file", text="")
         row.operator("bim.validate_ifc_file", icon="CHECKMARK", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 

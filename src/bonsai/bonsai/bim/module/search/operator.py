@@ -39,6 +39,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Literal, get_args
 
 
 class AddFilterGroup(Operator):
@@ -144,13 +145,19 @@ class Search(Operator):
     bl_idname = "bim.search"
     bl_label = "Search"
 
-    property_group: bpy.props.StringProperty(name="Property Group", default="")
+    PropertyGroupType = Literal["CsvProperties", "BIMSearchProperties"]
+    property_group: bpy.props.EnumProperty(
+        name="Property Group", items=[(i, i, "") for i in get_args(PropertyGroupType)]
+    )
+
+    if TYPE_CHECKING:
+        property_group: PropertyGroupType
 
     def execute(self, context):
         if self.property_group == "CsvProperties":
             props = context.scene.CsvProperties
         elif self.property_group == "BIMSearchProperties":
-            props = context.scene.BIMSearchProperties
+            props = tool.Search.get_search_props()
         else:
             raise Exception(f"bim.search - unexpected property group name '{self.property_group}'.")
 
@@ -213,11 +220,12 @@ class LoadSearch(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         filter_groups = tool.Search.get_filter_groups(self.module)
-        group = tool.Ifc.get().by_id(int(context.scene.BIMSearchProperties.saved_searches))
+        props = tool.Search.get_search_props()
+        group = tool.Ifc.get().by_id(int(props.saved_searches))
         tool.Search.import_filter_query(tool.Search.get_group_query(group), filter_groups)
 
     def draw(self, context):
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         row = self.layout.row()
         row.prop(props, "saved_searches", text="")
 
@@ -239,7 +247,7 @@ class ColourByProperty(Operator):
         return result
 
     def _execute(self, context):
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         query = props.colourscheme_query if props.colourscheme_key == "QUERY" else props.colourscheme_key
 
         if not query:
@@ -358,11 +366,11 @@ class SelectByProperty(Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         return props.active_colourscheme_index < len(props.colourscheme)
 
     def execute(self, context):
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         query = props.colourscheme_query if props.colourscheme_key == "QUERY" else props.colourscheme_key
 
         if not query:
@@ -420,7 +428,7 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
         if not self.name:
             return
 
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         query = props.colourscheme_query
 
         group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == self.name]
@@ -446,7 +454,7 @@ class LoadColourscheme(Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         group = tool.Ifc.get().by_id(int(props.saved_colourschemes))
         description = json.loads(group.Description)
         props.colourscheme_query = description.get("colourscheme_query")
@@ -458,7 +466,7 @@ class LoadColourscheme(Operator, tool.Ifc.Operator):
             new.colour = data["colour"]
 
     def draw(self, context):
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         row = self.layout.row()
         row.prop(props, "saved_colourschemes", text="")
 
@@ -549,7 +557,7 @@ class ResetObjectColours(Operator):
     def execute(self, context):
         for obj in context.visible_objects:
             obj.color = (1, 1, 1, 1)
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         props.colourscheme.clear()
         return {"FINISHED"}
 
@@ -562,7 +570,7 @@ class ToggleFilterSelection(Operator):
     action: EnumProperty(items=(("SELECT", "Select", ""), ("DESELECT", "Deselect", "")))
 
     def execute(self, context):
-        props = bpy.context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         self.selecting_actionbool = self.action == "SELECT"
         if props.filter_type == "CLASSES":
             for ifc_class in props.filter_classes:
@@ -587,7 +595,7 @@ class ActivateIfcClassFilter(Operator):
         return True
 
     def invoke(self, context, event):
-        props = bpy.context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         props.filter_classes.clear()
         ifc_types = {}
         for obj in context.selected_objects:
@@ -606,18 +614,20 @@ class ActivateIfcClassFilter(Operator):
         return context.window_manager.invoke_props_dialog(self, width=250)
 
     def execute(self, context):
-        bpy.context.scene.BIMSearchProperties.filter_classes.clear()
+        props = tool.Search.get_search_props()
+        props.filter_classes.clear()
         return {"FINISHED"}
 
     def draw(self, context):
+        props = tool.Search.get_search_props()
         self.layout.template_list(
             "BIM_UL_ifc_class_filter",
             "",
-            context.scene.BIMSearchProperties,
+            props,
             "filter_classes",
-            context.scene.BIMSearchProperties,
+            props,
             "filter_classes_index",
-            rows=min(len(bpy.context.scene.BIMSearchProperties.filter_classes), 20),
+            rows=min(len(props.filter_classes), 20),
         )
         row = self.layout.row(align=True)
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
@@ -638,7 +648,7 @@ class ActivateContainerFilter(Operator):
         return True
 
     def invoke(self, context, event):
-        props = bpy.context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         props.filter_container.clear()
 
         containers = {}
@@ -661,18 +671,20 @@ class ActivateContainerFilter(Operator):
         return context.window_manager.invoke_props_dialog(self, width=250)
 
     def execute(self, context):
-        bpy.context.scene.BIMSearchProperties.filter_container.clear()
+        props = tool.Search.get_search_props()
+        props.filter_container.clear()
         return {"FINISHED"}
 
     def draw(self, context):
+        props = tool.Search.get_search_props()
         self.layout.template_list(
             "BIM_UL_ifc_building_storey_filter",
             "",
-            context.scene.BIMSearchProperties,
+            props,
             "filter_container",
-            context.scene.BIMSearchProperties,
+            props,
             "filter_container_index",
-            rows=min(len(bpy.context.scene.BIMSearchProperties.filter_container), 20),
+            rows=min(len(props.filter_container), 20),
         )
         row = self.layout.row(align=True)
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"

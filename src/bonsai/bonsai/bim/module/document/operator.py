@@ -115,7 +115,7 @@ class EditDocument(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMDocumentProperties
+        props = tool.Document.get_document_props()
         core.edit_document(tool.Ifc, tool.Document, document=tool.Ifc.get().by_id(props.active_document_id))
 
 

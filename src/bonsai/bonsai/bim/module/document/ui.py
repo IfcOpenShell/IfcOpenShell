@@ -39,7 +39,7 @@ class BIM_PT_documents(Panel):
         if not DocumentData.is_loaded:
             DocumentData.load()
 
-        self.props = context.scene.BIMDocumentProperties
+        self.props = tool.Document.get_document_props()
 
         row = self.layout.row(align=True)
         row.label(text="{} Documents Found".format(DocumentData.data["total_information"]), icon="FILE")
@@ -102,7 +102,7 @@ class BIM_PT_object_documents(Panel):
 
         obj = context.active_object
         self.oprops = obj.BIMObjectProperties
-        self.props = context.scene.BIMDocumentProperties
+        self.props = tool.Document.get_document_props()
         self.file = tool.Ifc.get()
 
         self.draw_add_ui()

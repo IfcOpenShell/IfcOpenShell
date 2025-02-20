@@ -121,7 +121,7 @@ class BIM_PT_section_plane(Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        props = context.scene.BIMProperties
+        props = tool.Blender.get_bim_props()
 
         layout.prop(props, "should_section_selected_objects")
         layout.prop(props, "section_plane_colour")
@@ -381,12 +381,13 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
             layout.prop(props, "occurrence_name_function")
 
     def draw_directories(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        props = tool.Blender.get_bim_props()
         row = layout.row(align=True)
-        row.prop(context.scene.BIMProperties, "data_dir")
+        row.prop(props, "data_dir")
         row.operator("bim.select_dir", icon="FILE_FOLDER", text="").data_path = "scene.BIMProperties.data_dir"
 
         row = layout.row(align=True)
-        row.prop(context.scene.BIMProperties, "cache_dir")
+        row.prop(props, "cache_dir")
         row.operator("bim.select_dir", icon="FILE_FOLDER", text="").data_path = "scene.BIMProperties.cache_dir"
 
         row = layout.row(align=True)
@@ -394,7 +395,8 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.operator("bim.select_dir", icon="FILE_FOLDER", text="").data_path = "preferences.tmp_dir"
 
     def draw_drawing_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
-        layout.prop(context.scene.BIMProperties, "pset_dir")
+        props = tool.Blender.get_bim_props()
+        layout.prop(props, "pset_dir")
         dprops = tool.Drawing.get_document_props()
         layout.prop(dprops, "sheets_dir")
         layout.prop(dprops, "layouts_dir")
@@ -510,8 +512,8 @@ class BIM_PT_tabs(Panel):
         if not tool.Ifc.get():
             return
 
-        props = context.scene.BIMProperties
-        if props.has_blend_warning:
+        bim_props = tool.Blender.get_bim_props()
+        if bim_props.has_blend_warning:
             box = self.layout.box()
             box.alert = True
             row = box.row(align=True)
@@ -557,11 +559,11 @@ class BIM_PT_tab_new_project_wizard(Panel):
     def poll(cls, context):
         if not tool.Blender.is_tab(context, "PROJECT"):
             return False
-        props = context.scene.BIMProperties
+        bim_props = tool.Blender.get_bim_props()
         pprops = tool.Project.get_project_props()
         if pprops.is_loading:
             return False
-        elif tool.Ifc.get() or props.ifc_file:
+        elif tool.Ifc.get() or bim_props.ifc_file:
             return False
         return True
 
@@ -579,11 +581,11 @@ class BIM_PT_tab_project_info(Panel):
     def poll(cls, context):
         if not tool.Blender.is_tab(context, "PROJECT"):
             return False
-        props = context.scene.BIMProperties
+        bim_props = tool.Blender.get_bim_props()
         pprops = tool.Project.get_project_props()
         if pprops.is_loading:
             return True
-        elif tool.Ifc.get() or props.ifc_file:
+        elif tool.Ifc.get() or bim_props.ifc_file:
             return True
         return False
 

@@ -81,7 +81,7 @@ class Usecase:
     def execute(self, style: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
         self.style = style
 
-        attribute_types = {}
+        attribute_types: dict[str, str] = {}
         for attribute in style.wrapped_data.declaration().as_entity().all_attributes():
             attribute_type = attribute.type_of_attribute()
             if attribute_type.as_aggregation_type() is None:

@@ -106,7 +106,8 @@ class ConvertToBlender(bpy.types.Operator):
             if material.library:
                 continue
             tool.Ifc.unlink(obj=material)
-        context.scene.BIMProperties.ifc_file = ""
+        bim_props = tool.Blender.get_bim_props()
+        bim_props.ifc_file = ""
         tool.Debug.get_debug_props().attributes.clear()
         IfcStore.purge()
         bonsai.bim.handler.refresh_ui_data()
@@ -160,7 +161,8 @@ class ProfileImportIFC(bpy.types.Operator):
         if not tool.Ifc.get():
             cls.poll_message_set("No IFC file loaded.")
             return False
-        if not context.scene.BIMProperties.ifc_file:
+        bim_props = tool.Blender.get_bim_props()
+        if not bim_props.ifc_file:
             cls.poll_message_set("Current IFC file is not saved.")
             return False
         return True

@@ -76,34 +76,35 @@ class NewProject(bpy.types.Operator):
     def execute(self, context):
         bpy.ops.wm.read_homefile()
         pprops = tool.Project.get_project_props()
+        bim_props = tool.Blender.get_bim_props()
 
         if self.preset == "metric_m":
             pprops.export_schema = "IFC4"
             bpy.context.scene.unit_settings.system = "METRIC"
             bpy.context.scene.unit_settings.length_unit = "METERS"
-            bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
-            bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+            bim_props.area_unit = "SQUARE_METRE"
+            bim_props.volume_unit = "CUBIC_METRE"
             pprops.template_file = "0"
         elif self.preset == "metric_mm":
             pprops.export_schema = "IFC4"
             bpy.context.scene.unit_settings.system = "METRIC"
             bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
-            bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
-            bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+            bim_props.area_unit = "SQUARE_METRE"
+            bim_props.volume_unit = "CUBIC_METRE"
             pprops.template_file = "0"
         elif self.preset == "imperial_ft":
             pprops.export_schema = "IFC4"
             bpy.context.scene.unit_settings.system = "IMPERIAL"
             bpy.context.scene.unit_settings.length_unit = "FEET"
-            bpy.context.scene.BIMProperties.area_unit = "square foot"
-            bpy.context.scene.BIMProperties.volume_unit = "cubic foot"
+            bim_props.area_unit = "square foot"
+            bim_props.volume_unit = "cubic foot"
             pprops.template_file = "0"
         elif self.preset == "demo":
             pprops.export_schema = "IFC4"
             bpy.context.scene.unit_settings.system = "METRIC"
             bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
-            bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
-            bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+            bim_props.area_unit = "SQUARE_METRE"
+            bim_props.volume_unit = "CUBIC_METRE"
             pprops.template_file = "IFC4 Demo Template.ifc"
 
         if self.preset != "wizard":
@@ -979,7 +980,8 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             if not self.is_advanced and not self.should_start_fresh_session:
                 bpy.ops.bim.convert_to_blender()
 
-            context.scene.BIMProperties.ifc_file = filepath
+            bim_props = tool.Blender.get_bim_props()
+            bim_props.ifc_file = filepath
             if not tool.Ifc.get():
                 self.report(
                     {"ERROR"},
@@ -1039,13 +1041,15 @@ class RevertProject(bpy.types.Operator, IFCFileSelector):
 
     @classmethod
     def poll(cls, context):
-        if not context.scene.BIMProperties.ifc_file:
+        props = tool.Blender.get_bim_props()
+        if not props.ifc_file:
             cls.poll_message_set("IFC project need to be loaded and saved on the disk.")
             return False
         return True
 
     def execute(self, context):
-        bpy.ops.bim.load_project(should_start_fresh_session=True, filepath=context.scene.BIMProperties.ifc_file)
+        props = tool.Blender.get_bim_props()
+        bpy.ops.bim.load_project(should_start_fresh_session=True, filepath=props.ifc_file)
         return {"FINISHED"}
 
 
@@ -1070,7 +1074,8 @@ class LoadProjectElements(bpy.types.Operator):
             filemode="a",
             level=logging.DEBUG,
         )
-        settings = import_ifc.IfcImportSettings.factory(context, context.scene.BIMProperties.ifc_file, logger)
+        props = tool.Blender.get_bim_props()
+        settings = import_ifc.IfcImportSettings.factory(context, props.ifc_file, logger)
         settings.has_filter = self.props.filter_mode != "NONE"
         settings.should_filter_spatial_elements = self.props.should_filter_spatial_elements
         if self.props.filter_mode == "DECOMPOSITION":
@@ -1560,7 +1565,8 @@ class ExportIFC(bpy.types.Operator):
             return {"FINISHED"}
 
         self.use_relative_path = tool.Project.get_project_props().use_relative_project_path
-        if (filepath := context.scene.BIMProperties.ifc_file) and not self.should_save_as:
+        props = tool.Blender.get_bim_props()
+        if (filepath := props.ifc_file) and not self.should_save_as:
             self.filepath = str(tool.Blender.ensure_blender_path_is_abs(Path(filepath)))
             return self.execute(context)
         if not self.filepath:
@@ -1621,7 +1627,6 @@ class ExportIFC(bpy.types.Operator):
         print("Export finished in {:.2f} seconds".format(time.time() - start))
         # New project created in Bonsai should be in recent projects too.
         tool.Project.add_recent_ifc_project(Path(output_file))
-        scene = context.scene
         props = tool.Drawing.get_document_props()
         if not props.ifc_files:
             new = props.ifc_files.add()
@@ -1629,12 +1634,13 @@ class ExportIFC(bpy.types.Operator):
         props = tool.Project.get_project_props()
         if props.use_relative_project_path and bpy.data.is_saved:
             output_file = os.path.relpath(output_file, bpy.path.abspath("//"))
-        if scene.BIMProperties.ifc_file != output_file and extension not in ("ifczip", "ifcjson"):
-            scene.BIMProperties.ifc_file = output_file
+        bim_props = tool.Blender.get_bim_props()
+        if bim_props.ifc_file != output_file and extension not in ("ifczip", "ifcjson"):
+            bim_props.ifc_file = output_file
         save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
         if save_blend_file:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)
-        bpy.context.scene.BIMProperties.is_dirty = False
+        bim_props.is_dirty = False
         bonsai.bim.handler.refresh_ui_data()
         self.report(
             {"INFO"},

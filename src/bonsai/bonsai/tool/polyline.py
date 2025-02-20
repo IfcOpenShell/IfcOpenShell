@@ -456,7 +456,8 @@ class Polyline(bonsai.core.tool.Polyline):
             dprops = tool.Drawing.get_document_props()
             precision = dprops.imperial_precision
             if is_area:
-                area_unit = bpy.context.scene.BIMProperties.area_unit
+                props = tool.Blender.get_bim_props()
+                area_unit = props.area_unit
                 unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get(), unit_type=area_unit)
         else:
             precision = None

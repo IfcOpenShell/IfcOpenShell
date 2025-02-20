@@ -18,6 +18,9 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.project
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -31,23 +34,26 @@ class TestImplementsTool(NewFile):
 
 class TestClearActiveUnit(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMUnitProperties.active_unit_id = 1
+        props = tool.Unit.get_unit_props()
+        props.active_unit_id = 1
         subject.clear_active_unit()
-        assert bpy.context.scene.BIMUnitProperties.active_unit_id == 0
+        assert props.active_unit_id == 0
 
 
 class TestDisableEditingUnits(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMUnitProperties.is_editing = True
+        props = tool.Unit.get_unit_props()
+        props.is_editing = True
         subject.disable_editing_units()
-        assert bpy.context.scene.BIMUnitProperties.is_editing == False
+        assert props.is_editing == False
 
 
 class TestEnableEditingUnits(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMUnitProperties.is_editing = False
+        props = tool.Unit.get_unit_props()
+        props.is_editing = False
         subject.enable_editing_units()
-        assert bpy.context.scene.BIMUnitProperties.is_editing == True
+        assert props.is_editing == True
 
 
 class TestExportUnitAttributes(NewFile):
@@ -98,10 +104,11 @@ class TestExportUnitAttributes(NewFile):
 
 class TestGetSceneUnitName(NewFile):
     def test_getting_an_imperial_name(self):
+        props = tool.Blender.get_bim_props()
         bpy.context.scene.unit_settings.system = "IMPERIAL"
         bpy.context.scene.unit_settings.length_unit = "MILES"
-        bpy.context.scene.BIMProperties.area_unit = "square foot"
-        bpy.context.scene.BIMProperties.volume_unit = "cubic inch"
+        props.area_unit = "square foot"
+        props.volume_unit = "cubic inch"
         assert subject.get_scene_unit_name("LENGTHUNIT") == "mile"
         assert subject.get_scene_unit_name("AREAUNIT") == "square foot"
         assert subject.get_scene_unit_name("VOLUMEUNIT") == "cubic inch"
@@ -142,13 +149,14 @@ class TestGetSceneUnitSIPrefix:
         assert subject.get_scene_unit_si_prefix("LENGTHUNIT") == "KILO"
         bpy.context.scene.unit_settings.length_unit = "ADAPTIVE"
         assert subject.get_scene_unit_si_prefix("LENGTHUNIT") is None
-        bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
+        props = tool.Blender.get_bim_props()
+        props.area_unit = "SQUARE_METRE"
         assert subject.get_scene_unit_si_prefix("AREAUNIT") is None
-        bpy.context.scene.BIMProperties.area_unit = "MILLI/SQUARE_METRE"
+        props.area_unit = "MILLI/SQUARE_METRE"
         assert subject.get_scene_unit_si_prefix("AREAUNIT") == "MILLI"
-        bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+        props.volume_unit = "CUBIC_METRE"
         assert subject.get_scene_unit_si_prefix("VOLUMEUNIT") is None
-        bpy.context.scene.BIMProperties.volume_unit = "MILLI/CUBIC_METRE"
+        props.volume_unit = "MILLI/CUBIC_METRE"
         assert subject.get_scene_unit_si_prefix("VOLUMEUNIT") == "MILLI"
 
 
@@ -159,25 +167,25 @@ class TestImportUnitAttributes(NewFile):
         unit.UnitType = "ANGULARVELOCITYUNIT"
         unit.UserDefinedType = "UserDefinedType"
         subject.import_unit_attributes(unit)
-        props = bpy.context.scene.BIMUnitProperties
-        assert props.unit_attributes.get("UnitType").enum_value == "ANGULARVELOCITYUNIT"
-        assert props.unit_attributes.get("UserDefinedType").string_value == "UserDefinedType"
+        props = tool.Unit.get_unit_props()
+        assert props.unit_attributes["UnitType"].enum_value == "ANGULARVELOCITYUNIT"
+        assert props.unit_attributes["UserDefinedType"].string_value == "UserDefinedType"
 
     def test_importing_monetary_units(self):
         tool.Ifc.set(ifc := ifcopenshell.file())
         unit = ifc.createIfcMonetaryUnit()
         unit.Currency = "Currency"
         subject.import_unit_attributes(unit)
-        props = bpy.context.scene.BIMUnitProperties
-        assert props.unit_attributes.get("Currency").string_value == "Currency"
+        props = tool.Unit.get_unit_props()
+        assert props.unit_attributes["Currency"].string_value == "Currency"
 
     def test_importing_monetary_units_ifc2x3(self):
         tool.Ifc.set(ifc := ifcopenshell.file(schema="IFC2X3"))
         unit = ifc.createIfcMonetaryUnit()
         unit.Currency = "USD"
         subject.import_unit_attributes(unit)
-        props = bpy.context.scene.BIMUnitProperties
-        assert props.unit_attributes.get("Currency").enum_value == "USD"
+        props = tool.Unit.get_unit_props()
+        assert props.unit_attributes["Currency"].enum_value == "USD"
 
     def test_importing_context_dependent_units(self):
         ifc = ifcopenshell.file()
@@ -187,10 +195,10 @@ class TestImportUnitAttributes(NewFile):
         unit.Name = "Name"
         unit.Dimensions = ifc.createIfcDimensionalExponents(1, 2, 3, 4, 5, 6, 7)
         subject.import_unit_attributes(unit)
-        props = bpy.context.scene.BIMUnitProperties
-        assert props.unit_attributes.get("UnitType").enum_value == "ABSORBEDDOSEUNIT"
-        assert props.unit_attributes.get("Name").string_value == "Name"
-        assert props.unit_attributes.get("Dimensions").string_value == "[1, 2, 3, 4, 5, 6, 7]"
+        props = tool.Unit.get_unit_props()
+        assert props.unit_attributes["UnitType"].enum_value == "ABSORBEDDOSEUNIT"
+        assert props.unit_attributes["Name"].string_value == "Name"
+        assert props.unit_attributes["Dimensions"].string_value == "[1, 2, 3, 4, 5, 6, 7]"
 
     def test_importing_conversion_based_units(self):
         ifc = ifcopenshell.file()
@@ -200,10 +208,10 @@ class TestImportUnitAttributes(NewFile):
         unit.Name = "Name"
         unit.Dimensions = ifc.createIfcDimensionalExponents(1, 2, 3, 4, 5, 6, 7)
         subject.import_unit_attributes(unit)
-        props = bpy.context.scene.BIMUnitProperties
-        assert props.unit_attributes.get("UnitType").enum_value == "ABSORBEDDOSEUNIT"
-        assert props.unit_attributes.get("Name").string_value == "Name"
-        assert props.unit_attributes.get("Dimensions").string_value == "[1, 2, 3, 4, 5, 6, 7]"
+        props = tool.Unit.get_unit_props()
+        assert props.unit_attributes["UnitType"].enum_value == "ABSORBEDDOSEUNIT"
+        assert props.unit_attributes["Name"].string_value == "Name"
+        assert props.unit_attributes["Dimensions"].string_value == "[1, 2, 3, 4, 5, 6, 7]"
 
     def test_importing_conversion_based_with_offset_units(self):
         ifc = ifcopenshell.file()
@@ -214,11 +222,11 @@ class TestImportUnitAttributes(NewFile):
         unit.Dimensions = ifc.createIfcDimensionalExponents(1, 2, 3, 4, 5, 6, 7)
         unit.ConversionOffset = 1
         subject.import_unit_attributes(unit)
-        props = bpy.context.scene.BIMUnitProperties
-        assert props.unit_attributes.get("UnitType").enum_value == "ABSORBEDDOSEUNIT"
-        assert props.unit_attributes.get("Name").string_value == "Name"
-        assert props.unit_attributes.get("Dimensions").string_value == "[1, 2, 3, 4, 5, 6, 7]"
-        assert props.unit_attributes.get("ConversionOffset").float_value == 1
+        props = tool.Unit.get_unit_props()
+        assert props.unit_attributes["UnitType"].enum_value == "ABSORBEDDOSEUNIT"
+        assert props.unit_attributes["Name"].string_value == "Name"
+        assert props.unit_attributes["Dimensions"].string_value == "[1, 2, 3, 4, 5, 6, 7]"
+        assert props.unit_attributes["ConversionOffset"].float_value == 1
 
     def test_importing_si_units(self):
         ifc = ifcopenshell.file()
@@ -228,11 +236,11 @@ class TestImportUnitAttributes(NewFile):
         unit.Prefix = "EXA"
         unit.Name = "AMPERE"
         subject.import_unit_attributes(unit)
-        props = bpy.context.scene.BIMUnitProperties
-        assert props.unit_attributes.get("UnitType").enum_value == "ABSORBEDDOSEUNIT"
-        assert props.unit_attributes.get("Prefix").enum_value == "EXA"
-        assert props.unit_attributes.get("Name").enum_value == "AMPERE"
-        assert props.unit_attributes.get("Dimensions") is None
+        props = tool.Unit.get_unit_props()
+        assert props.unit_attributes["UnitType"].enum_value == "ABSORBEDDOSEUNIT"
+        assert props.unit_attributes["Prefix"].enum_value == "EXA"
+        assert props.unit_attributes["Name"].enum_value == "AMPERE"
+        assert props.unit_attributes["Dimensions"] is None
 
 
 class TestImportUnits(NewFile):
@@ -248,7 +256,7 @@ class TestImportUnits(NewFile):
         ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
         ifcopenshell.api.unit.assign_unit(ifc, units=[unit2])
         subject.import_units()
-        props = bpy.context.scene.BIMUnitProperties
+        props = tool.Unit.get_unit_props()
         assert len(props.units) == 6
 
         assert props.units[0].ifc_definition_id == unit1.id()
@@ -311,4 +319,5 @@ class TestSetActiveUnit(NewFile):
         ifc = ifcopenshell.file()
         unit = ifc.createIfcSIUnit()
         subject.set_active_unit(unit)
-        assert bpy.context.scene.BIMUnitProperties.active_unit_id == unit.id()
+        props = tool.Unit.get_unit_props()
+        assert props.active_unit_id == unit.id()

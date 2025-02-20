@@ -321,8 +321,9 @@ class SelectIfcClashResults(bpy.types.Operator):
 
             ifc_file = ""
             for scene in obj.users_scene:
-                if scene.BIMProperties.ifc_file:
-                    ifc_file = scene.BIMProperties.ifc_file
+                bim_props = tool.Blender.get_bim_props(scene)
+                if bim_props.ifc_file:
+                    ifc_file = bim_props.ifc_file
                     if scene.library:
                         break
 

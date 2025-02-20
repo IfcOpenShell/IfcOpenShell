@@ -130,7 +130,8 @@ class CloseBlendWarning(bpy.types.Operator):
     bl_label = "Close Blend Warning"
 
     def execute(self, context):
-        bpy.context.scene.BIMProperties.has_blend_warning = False
+        props = tool.Blender.get_bim_props()
+        props.has_blend_warning = False
         return {"FINISHED"}
 
     def draw(self, context):
@@ -213,11 +214,13 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
 
     def execute(self, context):
         if self.is_existing_ifc_file():
-            context.scene.BIMProperties.ifc_file = self.get_filepath()
+            props = tool.Blender.get_bim_props()
+            props.ifc_file = self.get_filepath()
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        filepath = Path(context.scene.BIMProperties.ifc_file)
+        props = tool.Blender.get_bim_props()
+        filepath = Path(props.ifc_file)
         res = tool.Blender.operator_invoke_filepath_hotkeys(self, context, event, filepath)
         if res is not None:
             return res
@@ -575,7 +578,8 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         backfacing.location = mix_backfacing.location + Vector((-200, 200))
 
         emission = nodes.new(type="ShaderNodeEmission")
-        emission.inputs[0].default_value = list(context.scene.BIMProperties.section_plane_colour) + [1]
+        props = tool.Blender.get_bim_props()
+        emission.inputs[0].default_value = list(props.section_plane_colour) + [1]
         emission.location = mix_backfacing.location - Vector((200, 150))
 
         cut_obj = nodes.new(type="ShaderNodeTexCoord")
@@ -639,7 +643,8 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
             material = bpy.data.materials.new("Section Override")
             material.use_nodes = True
 
-        if context.scene.BIMProperties.should_section_selected_objects:
+        props = tool.Blender.get_bim_props()
+        if props.should_section_selected_objects:
             objects = list(context.selected_objects)
         else:
             objects = list(context.visible_objects)
@@ -814,7 +819,8 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
         settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
         print("Import finished in {:.2f} seconds".format(time.time() - start))
 
-        context.scene.BIMProperties.ifc_file = self.filepath
+        bim_props = tool.Blender.get_bim_props()
+        bim_props.ifc_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -852,7 +858,8 @@ class FetchObjectPassport(bpy.types.Operator):
     def execute(self, context):
         # TODO: this is dead code, awaiting reimplementation. See #1222.
         for reference in context.active_object.BIMObjectProperties.document_references:
-            reference = context.scene.BIMProperties.document_references[reference.name]
+            bim_props = tool.Blender.get_bim_props()
+            reference = bim_props.document_references[reference.name]
             if reference.location[-6:] == ".blend":
                 self.fetch_blender(reference, context)
         return {"FINISHED"}

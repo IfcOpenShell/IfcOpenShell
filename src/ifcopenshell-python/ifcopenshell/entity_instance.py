@@ -248,14 +248,10 @@ class entity_instance:
 
         :param f: A callable that takes a single argument and returns a boolean
             value. It represents the condition.
-        :type f: Callable
         :param g: A callable that takes a single argument and returns a
             transformed value. It represents the transformation.
-        :type g: Callable
         :param value: Any object, the input value to be processed
-        :type value: Any
         :return: Transformed value
-        :rtype: Any
 
         Example:
 
@@ -304,8 +300,6 @@ class entity_instance:
         """Return the data type of a positional attribute of the element
 
         :param attr: The index or name of the attribute
-        :type attr: Union[int, str]
-        :rtype: string
         """
         attr_idx = attr if isinstance(attr, numbers.Integral) else self.wrapped_data.get_argument_index(attr)
         return self.wrapped_data.get_argument_type(attr_idx)
@@ -314,8 +308,6 @@ class entity_instance:
         """Return the name of a positional attribute of the element
 
         :param attr_idx: The index of the attribute
-        :type attr_idx: int
-        :rtype: string
         """
         return self.wrapped_data.get_argument_name(attr_idx)
 
@@ -405,9 +397,7 @@ class entity_instance:
             returned IFC class name should include schema name
             (e.g. "IFC4.IfcWall" if `True` and "IfcWall" if `False`).
             If omitted will act as `False`.
-        :type args: Union[str, bool]
         :returns: Either the name of the class, or a boolean if it passes the check
-        :rtype: Union[str, bool]
 
         Example:
 
@@ -423,10 +413,7 @@ class entity_instance:
         return self.wrapped_data.is_a(*args)
 
     def id(self) -> int:
-        """Return the STEP numerical identifier
-
-        :rtype: int
-        """
+        """Return the STEP numerical identifier"""
         return self.wrapped_data.id()
 
     def __eq__(self, other: "entity_instance") -> bool:

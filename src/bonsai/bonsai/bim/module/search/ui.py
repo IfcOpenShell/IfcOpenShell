@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 import bonsai.bim.helper
 from bpy.types import Panel
 from bonsai.bim.module.search.data import SearchData, ColourByPropertyData, SelectSimilarData
@@ -34,7 +35,7 @@ class BIM_PT_search(Panel):
         if not SearchData.is_loaded:
             SearchData.load()
 
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
 
         bonsai.bim.helper.draw_filter(self.layout, props.filter_groups, SearchData, "search")
 
@@ -73,7 +74,7 @@ class BIM_PT_colour_by_property(Panel):
         if not ColourByPropertyData.is_loaded:
             ColourByPropertyData.load()
 
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
 
         row = self.layout.row(align=True)
         row.label(text=f"{len(ColourByPropertyData.data['saved_colourschemes'])} Saved Colourschemes")
@@ -127,7 +128,7 @@ class BIM_PT_select_similar(Panel):
         if not SelectSimilarData.is_loaded:
             SelectSimilarData.load()
 
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
 
         if SelectSimilarData.data["element_key"]:
             row = self.layout.row(align=True)

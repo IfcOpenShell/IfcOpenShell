@@ -30,21 +30,22 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING
 
 
-def get_unit_classes(self, context):
+def get_unit_classes(self: "BIMUnitProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not UnitsData.is_loaded:
         UnitsData.load()
     return UnitsData.data["unit_classes"]
 
 
-def get_conversion_unit_types(self, context):
+def get_conversion_unit_types(self: "BIMUnitProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not UnitsData.is_loaded:
         UnitsData.load()
     return UnitsData.data["conversion_unit_types"]
 
 
-def get_named_unit_types(self, context):
+def get_named_unit_types(self: "BIMUnitProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not UnitsData.is_loaded:
         UnitsData.load()
     return UnitsData.data["named_unit_types"]
@@ -57,6 +58,12 @@ class Unit(PropertyGroup):
     ifc_class: StringProperty(name="IFC Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
+    if TYPE_CHECKING:
+        unit_type: str
+        is_assigned: bool
+        ifc_class: str
+        ifc_definition_id: int
+
 
 class BIMUnitProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
@@ -67,3 +74,13 @@ class BIMUnitProperties(PropertyGroup):
     conversion_unit_types: EnumProperty(items=get_conversion_unit_types, name="Conversion Unit Types")
     named_unit_types: EnumProperty(items=get_named_unit_types, name="Named Unit Types")
     unit_attributes: CollectionProperty(name="Unit Attributes", type=Attribute)
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        units: bpy.types.bpy_prop_collection_idprop[Unit]
+        active_unit_index: int
+        active_unit_id: int
+        unit_classes: str
+        conversion_unit_types: str
+        named_unit_types: str
+        unit_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]

@@ -879,17 +879,19 @@ class IfcImporter:
 
     def load_file(self):
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)
-        if not bpy.context.scene.BIMProperties.ifc_file:
-            bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
+        props = tool.Blender.get_bim_props()
+        if not props.ifc_file:
+            props.ifc_file = self.ifc_import_settings.input_file
         self.file = tool.Ifc.get()
 
     def calculate_unit_scale(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         tool.Loader.set_unit_scale(self.unit_scale)
 
-    def set_units(self):
+    def set_units(self) -> None:
         if not (assignment := self.file.by_type("IfcProject")[0].UnitsInContext):
             return  # Geometry is optional in IFC
+        props = tool.Blender.get_bim_props()
         for unit in assignment.Units:
             if unit.is_a("IfcNamedUnit") and unit.UnitType == "LENGTHUNIT":
                 if unit.is_a("IfcSIUnit"):
@@ -909,19 +911,19 @@ class IfcImporter:
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "AREAUNIT":
                 name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
                 try:
-                    bpy.context.scene.BIMProperties.area_unit = "{}{}".format(
+                    props.area_unit = "{}{}".format(
                         unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
                     )
                 except:  # Probably an invalid unit.
-                    bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
+                    props.area_unit = "SQUARE_METRE"
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "VOLUMEUNIT":
                 name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
                 try:
-                    bpy.context.scene.BIMProperties.volume_unit = "{}{}".format(
+                    props.volume_unit = "{}{}".format(
                         unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
                     )
                 except:  # Probably an invalid unit.
-                    bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+                    props.volume_unit = "CUBIC_METRE"
 
     def create_project(self):
         project = self.file.by_type("IfcProject")[0]

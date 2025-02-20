@@ -70,7 +70,8 @@ class Project(bonsai.core.tool.Project):
 
     @classmethod
     def load_pset_templates(cls):
-        pset_dir = tool.Ifc.resolve_uri(bpy.context.scene.BIMProperties.pset_dir)
+        props = tool.Blender.get_bim_props()
+        pset_dir = tool.Ifc.resolve_uri(props.pset_dir)
         if os.path.isdir(pset_dir):
             for path in Path(pset_dir).glob("*.ifc"):
                 bonsai.bim.schema.ifc.psetqto.templates.append(ifcopenshell.open(path))

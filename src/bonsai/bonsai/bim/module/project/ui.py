@@ -28,7 +28,7 @@ from bonsai.bim.module.project.data import ProjectData, LinksData
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.project.prop import LibraryElement, BIMProjectProperties
+    from bonsai.bim.module.project.prop import LibraryElement, BIMProjectProperties, FilterCategory, Link
 
 
 def file_import_menu(self, context):
@@ -151,7 +151,7 @@ class BIM_PT_project(Panel):
 
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
-        props = context.scene.BIMProperties
+        props = tool.Blender.get_bim_props()
         pprops = self.props = tool.Project.get_project_props()
         self.file = tool.Ifc.get()
         if pprops.is_loading:
@@ -305,7 +305,7 @@ class BIM_PT_project(Panel):
 
     def draw_loaded_project_ui(self, context):
         # file name row
-        props = context.scene.BIMProperties
+        props = tool.Blender.get_bim_props()
         file_name_row = self.layout.row(align=True)
         file_name_row.label(text=os.path.basename(props.ifc_file), icon="FILE")
         self.draw_editing_buttons(context, file_name_row)
@@ -315,7 +315,7 @@ class BIM_PT_project(Panel):
 
         # file path row and actions section
         row = self.layout.row(align=True)
-        if context.scene.BIMProperties.is_dirty:
+        if props.is_dirty:
             row.label(text="Saved*", icon="EXPORT")
         else:
             row.label(text="Saved", icon="EXPORT")
@@ -339,7 +339,7 @@ class BIM_PT_new_project_wizard(Panel):
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
 
-        props = context.scene.BIMProperties
+        props = tool.Blender.get_bim_props()
         pprops = tool.Project.get_project_props()
         prop_with_search(self.layout, pprops, "export_schema")
         row = self.layout.row()
@@ -542,7 +542,16 @@ class BIM_UL_library(UIList):
 
 
 class BIM_UL_filter_categories(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMProjectProperties,
+        item: FilterCategory,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
             row.label(text=f"{item.name} ({item.total_elements})")
@@ -556,7 +565,17 @@ class BIM_UL_filter_categories(UIList):
 
 
 class BIM_UL_links(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMProjectProperties,
+        item: Link,
+        icon,
+        active_data,
+        active_propname,
+        index,
+    ):
         if item:
             row = layout.row(align=True)
             if item.is_loaded:

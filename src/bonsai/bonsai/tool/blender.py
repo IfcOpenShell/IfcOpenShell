@@ -37,8 +37,11 @@ from mathutils import Vector
 from pathlib import Path
 from functools import lru_cache
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator
+from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator, TYPE_CHECKING
 from typing_extensions import assert_never
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import BIMProperties
 
 
 VIEWPORT_ATTRIBUTES = [
@@ -1477,10 +1480,8 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_user_data_dir(cls) -> Path:
-        try:
-            return Path(bpy.context.scene.BIMProperties.data_dir)
-        except AttributeError:
-            return Path()
+        props = tool.Blender.get_bim_props()
+        return Path(props.data_dir)
 
     @classmethod
     def get_data_dir_path(cls, relative_path: Union[str, Path]) -> Path:
@@ -1538,3 +1539,9 @@ class Blender(bonsai.core.tool.Blender):
 
         dct = {cls.bl_idname: cls.ifc_element_type for cls in (BimTool.__subclasses__())}
         return types.MappingProxyType(dct)
+
+    @classmethod
+    def get_bim_props(cls, scene: Optional[bpy.types.Scene] = None) -> BIMProperties:
+        if scene is None:
+            scene = bpy.context.scene
+        return scene.BIMProperties

@@ -41,7 +41,7 @@ class BIM_PT_units(Panel):
         if not UnitsData.is_loaded:
             UnitsData.load()
 
-        self.props = context.scene.BIMUnitProperties
+        self.props = tool.Unit.get_unit_props()
 
         row = self.layout.row(align=True)
         row.label(text="{} Units Found".format(UnitsData.data["total_units"]), icon="SNAP_GRID")
@@ -103,7 +103,7 @@ class BIM_PT_units(Panel):
 
 class BIM_UL_units(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.BIMUnitProperties
+        props = tool.Unit.get_unit_props()
         if item:
             icon = "MOD_MESHDEFORM"
             if item.ifc_class == "IfcSIUnit":

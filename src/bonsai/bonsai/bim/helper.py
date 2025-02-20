@@ -32,6 +32,7 @@ from typing import Optional, Callable, Any, Union, Iterable, TYPE_CHECKING
 if TYPE_CHECKING:
     import bonsai.bim.prop
     from bonsai.bim.prop import Attribute
+    from bonsai.bim.module.search.prop import BIMFilterGroup
 
     # ImportCallback return values:
     # - None  - property should be imported by default workflow
@@ -372,11 +373,16 @@ def convert_property_group_from_si(property_group: bpy.types.PropertyGroup, skip
         setattr(property_group, prop_name, prop_value)
 
 
-def draw_filter(layout: bpy.types.UILayout, filter_groups, data, module: str) -> None:
+def draw_filter(
+    layout: bpy.types.UILayout,
+    filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup],
+    data,
+    module: str,
+) -> None:
     if not data.is_loaded:
         data.load()
 
-    sprops = bpy.context.scene.BIMSearchProperties
+    sprops = tool.Search.get_search_props()
 
     if tool.Ifc.get():
         row = layout.row(align=True)

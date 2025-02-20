@@ -105,7 +105,8 @@ class IfcStore:
     @staticmethod
     def get_file():
         if IfcStore.file is None:
-            IfcStore.path = cast(str, bpy.context.scene.BIMProperties.ifc_file)
+            props = tool.Blender.get_bim_props()
+            IfcStore.path = props.ifc_file
             # Interpret relative paths as relative to .blend file.
             if IfcStore.path and not os.path.isabs(IfcStore.path):
                 IfcStore.path = os.path.abspath(os.path.join(bpy.path.abspath("//"), IfcStore.path))
@@ -119,10 +120,11 @@ class IfcStore:
     @staticmethod
     def get_cache():
         if IfcStore.cache is None and IfcStore.path:
+            props = tool.Blender.get_bim_props()
             ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
             ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-            os.makedirs(bpy.context.scene.BIMProperties.cache_dir, exist_ok=True)
-            IfcStore.cache_path = os.path.join(bpy.context.scene.BIMProperties.cache_dir, f"{ifc_hash}.h5")
+            os.makedirs(props.cache_dir, exist_ok=True)
+            IfcStore.cache_path = os.path.join(props.cache_dir, f"{ifc_hash}.h5")
             cache_path = Path(IfcStore.cache_path)
             cache_settings = ifcopenshell.geom.settings()
             serializer_settings = ifcopenshell.geom.serializer_settings()
@@ -162,7 +164,8 @@ class IfcStore:
         assert IfcStore.file
         ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
         ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-        new_cache_path = os.path.join(bpy.context.scene.BIMProperties.cache_dir, f"{ifc_hash}.h5")
+        props = tool.Blender.get_bim_props()
+        new_cache_path = os.path.join(props.cache_dir, f"{ifc_hash}.h5")
         IfcStore.cache = None
         try:
             shutil.move(IfcStore.cache_path, new_cache_path)
@@ -414,7 +417,8 @@ class IfcStore:
         method: Literal["EXECUTE", "INVOKE", "MODAL"] = "EXECUTE",
     ) -> set[str]:
         bonsai.last_actions.append({"type": "operator", "name": operator.bl_idname})
-        bpy.context.scene.BIMProperties.is_dirty = True
+        props = tool.Blender.get_bim_props()
+        props.is_dirty = True
         # Modals don't nest, and Blender handles the loop that continuously calls modal()
         is_top_level_operator = not bool(IfcStore.current_transaction) or (method == "MODAL")
 
@@ -493,7 +497,8 @@ class IfcStore:
     ) -> None:
         key = getattr(operator, "transaction_key", None)
         data = getattr(operator, "transaction_data", None)
-        bpy.context.scene.BIMProperties.last_transaction = key
+        props = tool.Blender.get_bim_props()
+        props.last_transaction = key
         IfcStore.last_transaction = key
         rollback = rollback or getattr(operator, "rollback", lambda data: True)
         commit = commit or getattr(operator, "commit", lambda data: True)

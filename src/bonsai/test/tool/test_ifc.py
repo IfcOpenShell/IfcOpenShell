@@ -40,12 +40,14 @@ class TestSet(test.bim.bootstrap.NewFile):
 class TestGet(test.bim.bootstrap.NewFile):
     def test_getting_an_ifc_dataset_from_a_ifc_spf_filepath(self):
         assert subject.get() is None
-        bpy.context.scene.BIMProperties.ifc_file = "test/files/basic.ifc"
+        props = tool.Blender.get_bim_props()
+        props.ifc_file = "test/files/basic.ifc"
         result = subject.get()
         assert isinstance(result, ifcopenshell.file)
 
     def test_getting_the_active_ifc_dataset_regardless_of_ifc_path(self):
-        bpy.context.scene.BIMProperties.ifc_file = "test/files/basic.ifc"
+        props = tool.Blender.get_bim_props()
+        props.ifc_file = "test/files/basic.ifc"
         ifc = ifcopenshell.file()
         subject.set(ifc)
         assert subject.get() == ifc
