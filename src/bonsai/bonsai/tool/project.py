@@ -377,7 +377,7 @@ class Project(bonsai.core.tool.Project):
                 sublibrary_elements = tool.Project.get_project_library_elements(sublibrary)
                 library_elements.update(sublibrary_elements)
             props.add_library_project_library(
-                project_library.Name or "Unnamed", len(library_elements), project_library.id()
+                project_library.Name or "Unnamed", len(library_elements), project_library.id(), bool(subhierarchy)
             )
 
     @classmethod

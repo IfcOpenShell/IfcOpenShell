@@ -512,7 +512,7 @@ class BIM_UL_library(UIList):
     ):
         if item:
             row = layout.row(align=True)
-            if item.element_type != "ASSET" and item.asset_count > 0:
+            if item.element_type != "ASSET" and (item.asset_count > 0 or item.has_sublibraries):
                 op = row.operator("bim.change_library_element", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
                 op.element_name = item.name
                 op.breadcrumb_type = item.element_type

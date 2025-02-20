@@ -237,7 +237,7 @@ class RefreshLibrary(bpy.types.Operator):
             elements.update(library_file.by_type(importable_type))
         rels = tool.Project.get_project_library_rels(library_file)
         elements = {e for e in elements if not tool.Project.is_element_assigned_to_project_library(e, rels)}
-        self.props.add_library_project_library("Unassigned", len(elements), 0)
+        self.props.add_library_project_library("Unassigned", len(elements), 0, False)
 
         ifc_project = library_file.by_type("IfcProject")[0]
         hierarchy = tool.Project.get_project_hierarchy(library_file)
