@@ -429,71 +429,78 @@ def get_horizontal_profile_preview_data(context, relating_type):
         case "9":
             grouped_verts = [(v[0] + x_offset, v[1] - y_offset, v[2]) for v in grouped_verts]
 
-    # Create profile curve
-    scale_mat = Matrix.Scale(-1, 4, (1.0, 0.0, 0.0))
-    grouped_verts = [scale_mat @ Vector(v) for v in grouped_verts]
-    profile_curve = bpy.data.curves.new("Profile", type="CURVE")
-    profile_curve.dimensions = "2D"
-    profile_curve.splines.new("POLY")
-    profile_curve.splines[0].points.add(len(grouped_verts))
-
-    for i, point in enumerate(profile_curve.splines[0].points):
-        if i == len(grouped_verts):  # Close curve
-            point.co = Vector((*grouped_verts[0], 0))
-            continue
-        point.co = Vector((*grouped_verts[i], 0))
-    profile_obj = bpy.data.objects.new("Profile", profile_curve)
-
-    # Create path curve with profile object as bevel
-    path_curve = bpy.data.curves.new("Polyline", type="CURVE")
-    path_curve.dimensions = "2D"
-    path_curve.splines.new("POLY")
-    path_curve.splines[0].points.add(len(polyline_verts) - 1)
-    for i, point in enumerate(path_curve.splines[0].points):
-        point.co = Vector((*polyline_verts[i], 0))
-    path_curve.splines[0].use_smooth = False
-    path_curve.bevel_mode = "OBJECT"
-    path_curve.bevel_object = profile_obj
-
-    # Convert path curve to mesh
-    # This operation throws a warning when done during gpu drawing, so it was removed from the decorator file to be handled here
-    path_obj = bpy.data.objects.new("Preview", path_curve)
-    context.scene.collection.objects.link(path_obj)
-    bpy.context.view_layer.objects.active = path_obj
-    dg = context.evaluated_depsgraph_get()
-    path_obj = path_obj.evaluated_get(dg)
-    me = path_obj.to_mesh()
-
-    # Create bmesh from path mesh
-    bm = bmesh.new()
-    new_verts = [bm.verts.new(v.co) for v in me.vertices]
-    index = [[v for v in edge.vertices] for edge in me.edges]
-    new_edges = [bm.edges.new((new_verts[i[0]], new_verts[i[1]])) for i in index]
-    for face in me.polygons:
-        verts = [new_verts[i] for i in face.vertices]
-        bm.faces.new(verts)
-    bm.verts.index_update()
-    bm.edges.index_update()
-    tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
-
-    bpy.data.objects.remove(bpy.data.objects[path_obj.name], do_unlink=True)
-    bpy.data.objects.remove(bpy.data.objects[profile_obj.name], do_unlink=True)
-    try:
-        bpy.data.curves.remove(profile_obj.data, do_unlink=True)
-    except:
-        pass
-    try:
-        bpy.data.curves.remove(path_obj.data, do_unlink=True)
-    except:
-        pass
-
     data = {}
-    data["verts"] = [tuple(v.co) for v in bm.verts]
-    data["edges"] = [(edge.verts[0].index, edge.verts[1].index) for edge in bm.edges]
+    data["verts"] = []
+    data["edges"] = []
+    data["tris"] = []
+
+    grouped_verts = [(v) for v in grouped_verts]
+
+    all_bm = bmesh.new()
+    for i in range(len(polyline_verts) - 1):
+        mesh = bpy.data.meshes.new("TempMesh")
+        # Create the initial mesh from the profile verts
+        bm = create_bmesh_from_vertices(grouped_verts, is_closed=True)
+        bm.verts.ensure_lookup_table()
+        # Creates the clipping plane formed by two segments.
+        # The first one is for the profile start, based on the current and previous segment of the polyline.
+        # The second is for the profile end, based on the current and the next segment.
+        if i == 0:
+            d = (polyline_verts[i+1] - polyline_verts[i]).normalized()
+            clip_start = d
+        else:
+            d1 = (polyline_verts[i] - polyline_verts[i-1]).normalized()
+            d2 = (polyline_verts[i] - polyline_verts[i+1]).normalized()
+            clip_start = (d1-d2).normalized()
+        
+        if i == len(polyline_verts) - 2:
+            d = (polyline_verts[i+1] - polyline_verts[i]).normalized()
+            clip_end = d
+        else:
+            d1 = (polyline_verts[i+1] - polyline_verts[i]).normalized()
+            d2 = (polyline_verts[i+1] - polyline_verts[i+2]).normalized()
+            clip_end = (d1-d2).normalized()
+
+        # Rotates the profile face to the right direction
+        direction = polyline_verts[i+1] - polyline_verts[i]
+        position = polyline_verts[i]
+        rotation_matrix = direction.to_track_quat('Z', 'Y').to_matrix().to_4x4()
+        bmesh.ops.transform(bm, verts=bm.verts, matrix=rotation_matrix)
+        bmesh.ops.translate(bm, verts=bm.verts, vec=position)
+        bmesh.ops.translate(bm, verts=bm.verts, vec=-direction)
+
+        # Extrude and move the new face
+        last_face = bmesh.ops.extrude_face_region(bm, geom=bm.edges[:] + bm.faces[:])
+        new_verts = [e for e in last_face["geom"] if isinstance(e, bmesh.types.BMVert)]
+        bmesh.ops.translate(bm, verts=new_verts, vec=direction * 3)
+        # Apply the cutting planes
+        cut = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=polyline_verts[i], plane_no=clip_start, clear_inner=True)
+        bm.verts.index_update()
+        bm.edges.index_update()
+        cut = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=polyline_verts[i+1], plane_no=clip_end, clear_outer=True)
+
+        bm.to_mesh(mesh)
+        bm.free()
+        mesh.update()
+        all_bm.from_mesh(mesh)
+        bpy.data.meshes.remove(bpy.data.meshes["TempMesh"])
+
+    # It's necessary to add the mesh to an object to get the expected result.
+    mesh = bpy.data.meshes.new("TempMesh2")
+    all_bm.to_mesh(mesh)
+    all_bm.free()
+    obj = bpy.data.objects.new('TempObj', mesh)
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bpy.data.meshes.remove(bpy.data.meshes["TempMesh2"])
+
+    verts = [tuple(v.co) for v in bm.verts]
+    edges = [[v.index for v in e.verts] for e in bm.edges]
+    tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
+    data["verts"] = verts
+    data["edges"] = edges
     data["tris"] = tris
-
     bm.free()
-
     return data
 
 
@@ -632,21 +639,21 @@ class PolylineOperator:
         if x:
             if event.shift and event.value == "PRESS" and event.type == "X":
                 self.tool_state.use_default_container = False
-                self.tool_state.plane_method = "YZ"
+                self.tool_state.plane_method = "YZ" if self.tool_state.plane_method !="YZ" else None
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
         if y:
             if event.shift and event.value == "PRESS" and event.type == "Y":
                 self.tool_state.use_default_container = False
-                self.tool_state.plane_method = "XZ"
+                self.tool_state.plane_method = "XZ" if self.tool_state.plane_method !="XZ" else None
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
         if z:
             if event.shift and event.value == "PRESS" and event.type == "Z":
                 self.tool_state.use_default_container = False
-                self.tool_state.plane_method = "XY"
+                self.tool_state.plane_method = "XY" if self.tool_state.plane_method !="XY" else None
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 

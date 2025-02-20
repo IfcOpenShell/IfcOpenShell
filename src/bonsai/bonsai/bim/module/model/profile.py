@@ -48,6 +48,7 @@ class DumbProfileGenerator:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     def generate(self, insertion_type="CURSOR"):
+        self.insertion_type = insertion_type
         self.file = tool.Ifc.get()
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         material = ifcopenshell.util.element.get_material(self.relating_type)
@@ -70,9 +71,9 @@ class DumbProfileGenerator:
         self.rotation = 0
         self.location = Vector((0, 0, 0))
         self.cardinal_point = int(props.cardinal_point)
-        if insertion_type == "POLYLINE":
+        if self.insertion_type == "POLYLINE":
             return self.derive_from_polyline()
-        elif insertion_type == "CURSOR":
+        elif self.insertion_type == "CURSOR":
             return self.derive_from_cursor()
 
     def derive_from_polyline(self) -> tuple[list[Union[dict[str, Any], None]], bool]:
@@ -107,13 +108,17 @@ class DumbProfileGenerator:
 
         matrix_world = Matrix()
         if self.relating_type.is_a() not in ("IfcColumnType", "IfcPileType"):
-            matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
-            matrix_world = Matrix.Rotation(self.rotation, 4, "Z") @ matrix_world
+            if self.insertion_type not in {"POLYLINE"}:
+                matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
+                matrix_world = Matrix.Rotation(self.rotation, 4, "Z") @ matrix_world
+            else:
+                rotation_matrix = self.direction.to_track_quat('Z', 'Y')
+                matrix_world = rotation_matrix.to_matrix().to_4x4() @ matrix_world
+
 
         matrix_world.translation = self.location
-        if self.container_obj:
+        if self.insertion_type not in {"POLYLINE"} and self.container_obj:
             matrix_world.translation.z = self.container_obj.location.z
-
         element = bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
@@ -171,19 +176,19 @@ class DumbProfileGenerator:
         return obj
 
     def create_profile_from_2_points(self, coords, should_round=False) -> Union[dict[str, Any], None]:
-        direction = coords[1] - coords[0]
-        length = direction.length
+        self.direction = coords[1] - coords[0]
+        length = self.direction.length
         if round(length, 4) < 0.1:
             return
         data = {"coords": coords}
 
         self.depth = length
-        self.rotation = atan2(direction[1], direction[0])
+        self.rotation = atan2(self.direction[1], self.direction[0])
         if should_round:
             # Round to nearest 50mm (yes, metric for now)
             self.length = 0.05 * round(length / 0.05)
             # Round to nearest 5 degrees
-            nearest_degree = (math.pi / 180) * 5
+            nearest_degree = (pi / 180) * 5
             self.rotation = nearest_degree * round(self.rotation / nearest_degree)
         self.location = coords[0]
         data["obj"] = self.create_profile()
@@ -1122,6 +1127,8 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
 
     def __init__(self):
         super().__init__()
+        self.input_ui = tool.Polyline.create_input_ui(init_z=True)
+        self.input_options = ["D", "A", "X", "Y", "Z"]
         self.relating_type = None
         props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
@@ -1166,7 +1173,9 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
 
         self.handle_mouse_move(context, event, should_round=True)
 
-        self.choose_axis(event)
+        self.choose_axis(event, z=True)
+
+        self.choose_plane(event)
 
         self.handle_snap_selection(context, event)
 
@@ -1202,6 +1211,6 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
     def _invoke(self, context, event):
         super().invoke(context, event)
         ProductDecorator.install(context)
-        self.tool_state.use_default_container = True
-        self.tool_state.plane_method = "XY"
+        self.tool_state.use_default_container = False
+        self.tool_state.plane_method = None
         return {"RUNNING_MODAL"}
