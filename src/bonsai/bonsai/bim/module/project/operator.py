@@ -1340,6 +1340,7 @@ class LoadLink(bpy.types.Operator):
 import bpy
 
 def run():
+    import bonsai.tool as tool
     gprops = tool.Georeference.get_georeference_props()
     # Our model origin becomes their host model origin
     gprops.host_model_origin = "{gprops.model_origin}"
