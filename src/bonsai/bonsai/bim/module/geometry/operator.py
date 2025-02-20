@@ -731,6 +731,7 @@ class OverrideDelete(bpy.types.Operator):
         if self.is_batch:
             row = self.layout.row()
             row.label(text="Warning: Faster deletion will use more memory.", icon="ERROR")
+        row = self.layout.row()
         row.label(text="See system console for deletion progress.")
 
     def _execute(self, context: bpy.types.Context):
