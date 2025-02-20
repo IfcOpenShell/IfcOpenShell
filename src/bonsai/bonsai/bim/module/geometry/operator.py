@@ -742,7 +742,7 @@ class OverrideDelete(bpy.types.Operator):
         self.process_arrays(context)
         clear_active_object = True
         objects_to_remove = context.selectable_objects
-        for i, obj in enumerate(objects_to_remove):
+        for i, obj in enumerate(objects_to_remove, 1):
             # Log time.
             time_since_start = time() - start_time
             is_valid_data_block = tool.Blender.is_valid_data_block(obj)
