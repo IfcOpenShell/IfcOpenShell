@@ -1434,7 +1434,7 @@ def remove_deep2(
     ifc_file: ifcopenshell.file,
     element: ifcopenshell.entity_instance,
     also_consider: list[ifcopenshell.entity_instance] = [],
-    do_not_delete: list[ifcopenshell.entity_instance] = [],
+    do_not_delete: set[ifcopenshell.entity_instance] = set(),
 ) -> None:
     """Recursively purges a subgraph safely, starting at an element
 
@@ -1462,6 +1462,8 @@ def remove_deep2(
 
     :param ifc_file: The IFC file object
     :param also_consider: elements to also consider as a part of a subgraph
+        Order could matter for perfomance - elements that reference `element`
+        directly should go first for the better performance.
     :param do_not_delete: elements to protect from deletion
     :param element: The starting element that defines the subgraph
     """
