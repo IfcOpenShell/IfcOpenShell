@@ -977,6 +977,7 @@ class FallDecorator(BaseDecorator):
         # same function as in svgwriter.py
         def get_label_text():
             element = tool.Ifc.get_entity(obj)
+            assert element
             B, A = [v.co.xyz for v in spline_points[:2]]
             rise = abs(A.z - B.z)
             O = A.copy()
@@ -989,13 +990,14 @@ class FallDecorator(BaseDecorator):
                 angle = 90
 
             # ues SLOPE_ANGLE as default
-            if element.ObjectType in ("FALL", "SLOPE_ANGLE"):
+            object_type = ifcopenshell.util.element.get_predefined_type(element)
+            if object_type in ("FALL", "SLOPE_ANGLE"):
                 return f"{angle}°"
-            elif element.ObjectType == "SLOPE_FRACTION":
+            elif object_type == "SLOPE_FRACTION":
                 if angle == 90:
                     return "-"
                 return f"{self.format_value(context, rise)} / {self.format_value(context, run)}"
-            elif element.ObjectType == "SLOPE_PERCENT":
+            elif object_type == "SLOPE_PERCENT":
                 if angle == 90:
                     return "-"
                 return f"{round(angle_tg * 100)} %"
@@ -2047,7 +2049,7 @@ class DecorationsHandler:
             if not element.is_a("IfcAnnotation"):
                 continue
 
-            object_type: Union[str, None] = element.ObjectType
+            object_type: Union[str, None] = ifcopenshell.util.element.get_predefined_type(element)
             if object_type == "DRAWING":
                 continue
 

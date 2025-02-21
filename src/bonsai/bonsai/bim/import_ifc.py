@@ -967,7 +967,7 @@ class IfcImporter:
                 tool.Collector.assign(obj, should_clean_users_collection=False)
 
     def is_curve_annotation(self, element: ifcopenshell.entity_instance) -> bool:
-        object_type = element.ObjectType
+        object_type = ifcopenshell.util.element.get_predefined_type(element)
         return (
             object_type in tool.Drawing.ANNOTATION_TYPES_DATA
             and tool.Drawing.ANNOTATION_TYPES_DATA[object_type].data_type == "curve"

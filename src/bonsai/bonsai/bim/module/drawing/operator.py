@@ -1370,7 +1370,11 @@ class CreateDrawing(bpy.types.Operator):
         elements = list(elements | filtered_drawing_annotations)
 
         annotations = sorted(
-            elements, key=lambda a: (tool.Drawing.get_annotation_z_index(a), 1 if a.ObjectType == "TEXT" else 0)
+            elements,
+            key=lambda a: (
+                tool.Drawing.get_annotation_z_index(a),
+                1 if ifcopenshell.util.element.get_predefined_type(a) == "TEXT" else 0,
+            ),
         )
 
         precision = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "MetricPrecision")

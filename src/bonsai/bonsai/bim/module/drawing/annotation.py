@@ -153,7 +153,11 @@ class Annotator:
         if object_type != "ANGLE":
             for obj in collection.objects:
                 element = tool.Ifc.get_entity(obj)
-                if element and element.ObjectType == object_type and obj.type == object_type.upper():
+                if (
+                    element
+                    and ifcopenshell.util.element.get_predefined_type(element) == object_type
+                    and obj.type == object_type.upper()
+                ):
                     return obj
 
         if data_type == "mesh":

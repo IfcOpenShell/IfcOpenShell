@@ -245,7 +245,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
         element_type = element.is_a()
 
-        if element_type == "IfcAnnotation" and element.ObjectType in object_types:
+        if element_type == "IfcAnnotation" and ifcopenshell.util.element.get_predefined_type(element) in object_types:
             return True
 
         if element_type == "IfcTypeProduct" and (

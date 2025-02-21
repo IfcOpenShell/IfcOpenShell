@@ -19,6 +19,7 @@
 
 import os
 import bpy
+import ifcopenshell.util.element
 import bonsai.core.type
 import bonsai.core.drawing as core
 import bonsai.tool as tool
@@ -333,7 +334,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             if not element or not element.is_a("IfcAnnotation"):
                 continue
 
-            annotation_type = element.ObjectType
+            annotation_type = ifcopenshell.util.element.get_predefined_type(element)
             if annotation_type not in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
                 self.report({"ERROR"}, f"Annotation type {annotation_type} is not supported for readjustment.")
                 continue

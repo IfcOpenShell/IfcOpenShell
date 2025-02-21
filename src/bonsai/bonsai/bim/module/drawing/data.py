@@ -364,7 +364,11 @@ class DecoratorData:
 
         element = tool.Ifc.get_entity(obj)
         supported_object_types = ("DIMENSION", "DIAMETER", "SECTION_LEVEL", "PLAN_LEVEL", "RADIUS")
-        if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in supported_object_types:
+        if (
+            not element
+            or not element.is_a("IfcAnnotation")
+            or ifcopenshell.util.element.get_predefined_type(element) not in supported_object_types
+        ):
             return None
 
         dimension_style = "arrow"
