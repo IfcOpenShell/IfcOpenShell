@@ -76,7 +76,6 @@ def edit_surface_style(
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
     def execute(self, style: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
         self.style = style
@@ -100,7 +99,7 @@ class Usecase:
             elif attribute_class == "IfcColourOrFactor":
                 self.edit_colour_or_factor(key, value)
             else:
-                setattr(self.settings["style"], key, value)
+                setattr(style, key, value)
 
     def edit_colour_rgb(self, name: str, value: dict[str, Any]):
         if (attribute := getattr(self.style, name)) is None:

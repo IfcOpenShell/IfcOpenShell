@@ -50,4 +50,5 @@ def unassign_unit(file: ifcopenshell.file, units: Optional[list[ifcopenshell.ent
     units_set = units_set - set(units or [])
     if units_set:
         unit_assignment.Units = list(units_set)
+        return
     file.remove(unit_assignment)
