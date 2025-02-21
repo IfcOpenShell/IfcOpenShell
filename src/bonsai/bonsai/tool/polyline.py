@@ -521,9 +521,14 @@ class Polyline(bonsai.core.tool.Polyline):
             for point in polyline_points[1:]:  # The first can be repeated to form a wall loop
                 if (x, y, z) == (point.x, point.y, point.z):
                     return "Cannot create two points at the same location"
-            # Avoids duplicating an edge
+            # Avoids creating overlapping edges
             if len(polyline_points) > 1:
-                if Vector((x, y, z)) == Vector((polyline_points[-2].x, polyline_points[-2].y, polyline_points[-2].z)):
+                v1 = Vector((x, y, z)) 
+                v2 = Vector((polyline_points[-1].x, polyline_points[-1].y, polyline_points[-1].z))
+                v3 =  Vector((polyline_points[-2].x, polyline_points[-2].y, polyline_points[-2].z))
+                angle = tool.Cad.angle_3_vectors(v1, v2, v3, new_angle=None, degrees=True
+                )
+                if tool.Cad.is_x(angle, 0):
                     return
             # TODO move this limitation to be Wall tool specific. Right now it also affects Measure tool
             # Avoids creating segments smaller then 0.1. This is a limitation from create_wall_from_2_points
