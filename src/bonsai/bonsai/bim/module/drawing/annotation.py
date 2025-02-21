@@ -156,7 +156,7 @@ class Annotator:
                 if (
                     element
                     and ifcopenshell.util.element.get_predefined_type(element) == object_type
-                    and obj.type == object_type.upper()
+                    and obj.type == data_type.upper()
                 ):
                     return obj
 
