@@ -885,6 +885,8 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             return {"FINISHED"}
 
         slab = DumbSlabGenerator(self.relating_type).generate("POLYLINE")
+        if not slab:
+            return
 
         model_props = tool.Model.get_model_props()
         direction_sense = model_props.direction_sense
