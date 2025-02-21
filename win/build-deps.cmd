@@ -563,6 +563,23 @@ set DEPENDENCY_NAME=Eigen
 set DEPENDENCY_DIR=%INSTALL_DIR%\%DEPENDENCY_NAME%
 call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPENDENCY_DIR%" 3.3.9
 
+:rocksdb
+set DEPENDENCY_NAME=rocksdb
+set DEPENDENCY_DIR=%INSTALL_DIR%\%DEPENDENCY_NAME%
+call :GitCloneAndCheckoutRevision https://github.com/facebook/rocksdb "%DEPENDENCY_DIR%" v9.9.3
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+cd "%DEPENDENCY_DIR%"
+call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\rocksdb" ^
+               -DROCKSDB_INSTALL_ON_WINDOWS=On ^
+               -DFAIL_ON_WARNINGS=Off ^
+               -DWITH_TESTS=OFF
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\rocksdb.sln" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+
 :: :tbb
 :: set DEPENDENCY_NAME=tbb
 :: set DEPENDENCY_DIR=%DEPS_DIR%\tbb
