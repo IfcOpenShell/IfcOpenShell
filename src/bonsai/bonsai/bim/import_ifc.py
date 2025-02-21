@@ -970,7 +970,7 @@ class IfcImporter:
         object_type = element.ObjectType
         return (
             object_type in tool.Drawing.ANNOTATION_TYPES_DATA
-            and tool.Drawing.ANNOTATION_TYPES_DATA[object_type][3] == "curve"
+            and tool.Drawing.ANNOTATION_TYPES_DATA[object_type].data_type == "curve"
         )
 
     def get_drawing_group(self, element):

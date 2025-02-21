@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import bpy
 import math
@@ -125,7 +126,9 @@ class Annotator:
         return obj
 
     @staticmethod
-    def get_annotation_obj(drawing: ifcopenshell.entity_instance, object_type: str, data_type: str) -> bpy.types.Object:
+    def get_annotation_obj(
+        drawing: ifcopenshell.entity_instance, object_type: str, data_type: tool.Drawing.ANNOTATION_DATA_TYPE
+    ) -> bpy.types.Object:
         camera = tool.Ifc.get_object(drawing)
         co1, _, _, _ = Annotator.get_placeholder_coords(camera)
         matrix_world = tool.Drawing.get_camera_matrix(camera)

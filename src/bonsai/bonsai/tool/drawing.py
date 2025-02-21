@@ -51,7 +51,7 @@ from shapely.ops import unary_union
 from lxml import etree
 from mathutils import Vector, Matrix
 from fractions import Fraction
-from typing import Optional, Union, Iterable, Any, Literal, Sequence, TYPE_CHECKING
+from typing import Optional, Union, Iterable, Any, Literal, Sequence, TYPE_CHECKING, NamedTuple
 from pathlib import Path
 
 if TYPE_CHECKING:
@@ -65,25 +65,32 @@ class Drawing(bonsai.core.tool.Drawing):
 
     # ObjectType: annotation_name, description, icon, data_type
     # fmt: off
-    ANNOTATION_TYPES_DATA = {
-        "DIMENSION":     ("Dimension",        "Add dimensions annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "FIXED_SIZE", "curve"),
-        "ANGLE":         ("Angle",            "", "DRIVER_ROTATIONAL_DIFFERENCE", "curve"),
-        "RADIUS":        ("Radius",           "", "FORWARD", "curve"),
-        "DIAMETER":      ("Diameter",         "Add diameter annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "ARROW_LEFTRIGHT", "curve"),
-        "TEXT":          ("Text",             "", "SMALL_CAPS", "empty"),
-        "TEXT_LEADER":   ("Leader",           "", "TRACKING_BACKWARDS", "curve"),
-        "STAIR_ARROW":   ("Stair Arrow",      "Add stair arrow annotation.\nIf you have IfcStairFlight object selected, it will be used as a reference for the annotation", "SCREEN_BACK", "curve"),
-        "PLAN_LEVEL":    ("Level (Plan)",     "", "SORTBYEXT", "curve"),
-        "SECTION_LEVEL": ("Level (Section)",  "", "TRIA_DOWN", "curve"),
-        "BREAKLINE":     ("Breakline",        "", "FCURVE", "mesh"),
-        "SYMBOL":        ("Symbol",           "", "KEYFRAME", "empty"),
-        "MULTI_SYMBOL":  ("Multi-Symbol",     "", "OUTLINER_DATA_POINTCLOUD", "mesh"),
-        "LINEWORK":      ("Line",             "", "SNAP_MIDPOINT", "mesh"),
-        "BATTING":       ("Batting",          "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set", "FORCE_FORCE", "mesh"),
-        "REVISION_CLOUD":("Revision Cloud",   "Add revision cloud", "VOLUME_DATA", "mesh"),
-        "FILL_AREA":     ("Fill Area",        "", "NODE_TEXTURE", "mesh"),
-        "FALL":          ("Fall",             "", "SORT_ASC", "curve"),
-        "IMAGE":         ("Image",            "Add reference image attached to the drawing", "TEXTURE", "mesh"),
+
+    class AnnotationObjectType(NamedTuple):
+        annotation_name: str
+        description: str
+        icon: str
+        data_type: Drawing.ANNOTATION_DATA_TYPE
+
+    ANNOTATION_TYPES_DATA: dict[str, AnnotationObjectType] = {
+        "DIMENSION":     AnnotationObjectType("Dimension",        "Add dimensions annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "FIXED_SIZE", "curve"),
+        "ANGLE":         AnnotationObjectType("Angle",            "", "DRIVER_ROTATIONAL_DIFFERENCE", "curve"),
+        "RADIUS":        AnnotationObjectType("Radius",           "", "FORWARD", "curve"),
+        "DIAMETER":      AnnotationObjectType("Diameter",         "Add diameter annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "ARROW_LEFTRIGHT", "curve"),
+        "TEXT":          AnnotationObjectType("Text",             "", "SMALL_CAPS", "empty"),
+        "TEXT_LEADER":   AnnotationObjectType("Leader",           "", "TRACKING_BACKWARDS", "curve"),
+        "STAIR_ARROW":   AnnotationObjectType("Stair Arrow",      "Add stair arrow annotation.\nIf you have IfcStairFlight object selected, it will be used as a reference for the annotation", "SCREEN_BACK", "curve"),
+        "PLAN_LEVEL":    AnnotationObjectType("Level (Plan)",     "", "SORTBYEXT", "curve"),
+        "SECTION_LEVEL": AnnotationObjectType("Level (Section)",  "", "TRIA_DOWN", "curve"),
+        "BREAKLINE":     AnnotationObjectType("Breakline",        "", "FCURVE", "mesh"),
+        "SYMBOL":        AnnotationObjectType("Symbol",           "", "KEYFRAME", "empty"),
+        "MULTI_SYMBOL":  AnnotationObjectType("Multi-Symbol",     "", "OUTLINER_DATA_POINTCLOUD", "mesh"),
+        "LINEWORK":      AnnotationObjectType("Line",             "", "SNAP_MIDPOINT", "mesh"),
+        "BATTING":       AnnotationObjectType("Batting",          "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set", "FORCE_FORCE", "mesh"),
+        "REVISION_CLOUD":AnnotationObjectType("Revision Cloud",   "Add revision cloud", "VOLUME_DATA", "mesh"),
+        "FILL_AREA":     AnnotationObjectType("Fill Area",        "", "NODE_TEXTURE", "mesh"),
+        "FALL":          AnnotationObjectType("Fall",             "", "SORT_ASC", "curve"),
+        "IMAGE":         AnnotationObjectType("Image",            "Add reference image attached to the drawing", "TEXTURE", "mesh"),
     }
     # fmt: on
 
@@ -112,7 +119,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_annotation_data_type(cls, object_type: str) -> ANNOTATION_DATA_TYPE:
-        return cls.ANNOTATION_TYPES_DATA[object_type][3]
+        return cls.ANNOTATION_TYPES_DATA[object_type].data_type
 
     @classmethod
     def create_annotation_object(cls, drawing: ifcopenshell.entity_instance, object_type: str) -> bpy.types.Object:

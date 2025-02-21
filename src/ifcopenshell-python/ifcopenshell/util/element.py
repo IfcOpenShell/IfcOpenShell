@@ -454,7 +454,7 @@ def get_elements_by_pset(pset: ifcopenshell.entity_instance) -> set[ifcopenshell
     return elements
 
 
-def get_predefined_type(element: ifcopenshell.entity_instance) -> str:
+def get_predefined_type(element: ifcopenshell.entity_instance) -> Union[str, None]:
     """Retrieves the PrefefinedType attribute of an element.
 
     If the predefined type is user defined, the custom type (such as object

@@ -683,7 +683,7 @@ class CopyRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 )
 
 
-def lock_error_message(name):
+def lock_error_message(name: str) -> str:
     return f"'{name}' is locked. Unlock it via the Spatial panel in the Project Overview tab."
 
 

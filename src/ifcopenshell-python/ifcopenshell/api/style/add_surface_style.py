@@ -35,7 +35,7 @@ def add_surface_style(
     style: ifcopenshell.entity_instance,
     ifc_class: SURFACE_STYLE_TYPES = "IfcSurfaceStyleShading",
     attributes: Optional[dict[str, Any]] = None,
-) -> None:
+) -> ifcopenshell.entity_instance:
     """Adds a new presentation item to a surface style
 
     A surface style can have multiple different types of presentation items
@@ -123,20 +123,20 @@ def add_surface_style(
                 "SpecularHighlight": {"SpecularRoughness": 0.5}, # Roughness factor
             })
     """
-    settings = {"style": style, "ifc_class": ifc_class, "attributes": attributes or {}}
+    attributes = attributes or {}
+    style_item = file.create_entity(ifc_class)
+    ifcopenshell.api.style.edit_surface_style(file, style=style_item, attributes=attributes)
+    styles: list[ifcopenshell.entity_instance]
+    styles = list(style.Styles or [])
 
-    style_item = file.create_entity(settings["ifc_class"])
-    ifcopenshell.api.style.edit_surface_style(file, style=style_item, attributes=settings["attributes"])
-    styles = list(settings["style"].Styles or [])
-
-    select_class = settings["ifc_class"]
+    select_class = ifc_class
     if select_class == "IfcSurfaceStyleRendering":
         select_class = "IfcSurfaceStyleShading"
     duplicate_items = [s for s in styles if s.is_a(select_class)]
     for duplicate_item in duplicate_items:
         ifcopenshell.api.style.remove_surface_style(file, style=duplicate_item)
 
-    styles = list(settings["style"].Styles or [])
+    styles = list(style.Styles or [])
     styles.append(style_item)
-    settings["style"].Styles = styles
+    style.Styles = styles
     return style_item
