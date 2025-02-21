@@ -39,14 +39,6 @@ class IFC_PARSE_API HeaderEntity {
     HeaderEntity(const char* const datatype, size_t size, IfcParse::IfcFile* file);
     virtual ~HeaderEntity();
 
-    void setValue(unsigned int index, const std::string& string) {
-        data_.storage_.set(index, string);
-    }
-
-    void setValue(unsigned int index, const std::vector<std::string>& strings) {
-        data_.storage_.set(index, strings);
-    }
-
   public:
     virtual size_t getArgumentCount() const {
         return data_.size();
@@ -71,8 +63,8 @@ class IFC_PARSE_API FileDescription : public HeaderEntity {
     std::vector<std::string> description() const { return data_.get_attribute_value(0); }
     std::string implementation_level() const { return data_.get_attribute_value(1); }
 
-    void description(const std::vector<std::string>& value) { setValue(0, value); }
-    void implementation_level(const std::string& value) { setValue(1, value); }
+    void description(const std::vector<std::string>& value) { data_.set_attribute_value(0, value); }
+    void implementation_level(const std::string& value) { data_.set_attribute_value(1, value); }
 };
 
 class IFC_PARSE_API FileName : public HeaderEntity {
@@ -87,13 +79,13 @@ class IFC_PARSE_API FileName : public HeaderEntity {
     std::string originating_system() const { return data_.get_attribute_value(5); }
     std::string authorization() const { return data_.get_attribute_value(6); }
 
-    void name(const std::string& value) { setValue(0, value); }
-    void time_stamp(const std::string& value) { setValue(1, value); }
-    void author(const std::vector<std::string>& value) { setValue(2, value); }
-    void organization(const std::vector<std::string>& value) { setValue(3, value); }
-    void preprocessor_version(const std::string& value) { setValue(4, value); }
-    void originating_system(const std::string& value) { setValue(5, value); }
-    void authorization(const std::string& value) { setValue(6, value); }
+    void name(const std::string& value) { data_.set_attribute_value(0, value); }
+    void time_stamp(const std::string& value) { data_.set_attribute_value(1, value); }
+    void author(const std::vector<std::string>& value) { data_.set_attribute_value(2, value); }
+    void organization(const std::vector<std::string>& value) { data_.set_attribute_value(3, value); }
+    void preprocessor_version(const std::string& value) { data_.set_attribute_value(4, value); }
+    void originating_system(const std::string& value) { data_.set_attribute_value(5, value); }
+    void authorization(const std::string& value) { data_.set_attribute_value(6, value); }
 };
 
 class IFC_PARSE_API FileSchema : public HeaderEntity {
@@ -102,7 +94,7 @@ class IFC_PARSE_API FileSchema : public HeaderEntity {
 
     std::vector<std::string> schema_identifiers() const { return data_.get_attribute_value(0); }
 
-    void schema_identifiers(const std::vector<std::string>& value) { setValue(0, value); }
+    void schema_identifiers(const std::vector<std::string>& value) { data_.set_attribute_value(0, value); }
 };
 
 class IFC_PARSE_API IfcSpfHeader {

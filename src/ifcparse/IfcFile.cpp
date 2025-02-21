@@ -259,10 +259,10 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
     }
 
     if (tokens_.empty()) {
-        return IfcEntityInstanceData(storage_t(0));
+        return IfcEntityInstanceData(in_memory_attribute_storage(0));
     }
 
-    storage_t storage(decl != nullptr
+    in_memory_attribute_storage storage(decl != nullptr
         ? (std::min)(parameter_types.size(), tokens_.size())
         : tokens_.size()
     );
@@ -327,4 +327,97 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
     }
 
     return IfcEntityInstanceData(std::move(storage));
+}
+
+IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::rocksdb_instance_iterator::operator*() const {
+    auto it = storage_->byid_.find(*read_id_());
+    if (it != storage_->byid_.end()) {
+        // @todo define an implicit std::to_string() in all map adapters with leading 0s
+        auto jt = storage_->instance_cache_.find(it->second);
+        if (jt != storage_->instance_cache_.end()) {
+            return jt->second;
+        } else {
+            return storage_->assert_existance(it->second);
+        }
+    }
+}
+
+const IfcParse::declaration* IfcParse::impl::rocks_db_file_storage::rocksdb_types_iterator::operator*() const {
+    return storage_->file->schema()->declarations()[*read_id_()];
+}
+
+IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(size_t instanceId) {
+    std::string v;
+    rocksdb::Status s = db->Get(rocksdb::ReadOptions{}, "i|" + std::to_string(instanceId) + "|t", &v);
+    if (s.ok()) {
+        size_t s;
+        memcpy(&s, v.data(), sizeof(size_t));
+        auto decl = file->schema()->declarations()[s];
+        IfcEntityInstanceData data(rocks_db_attribute_storage{});
+        auto inst = file->schema()->instantiate(decl, std::move(data));
+        inst->id_ = instanceId;
+        instance_cache_.insert({ inst->identity(), inst });
+        byid_.insert({ inst->id(), inst->identity() });
+        return inst;
+    }
+    throw std::runtime_error("");
+}
+
+
+#include "rocksdb/merge_operator.h"
+
+namespace {
+
+    class ConcatenateIdMergeOperator : public rocksdb::AssociativeMergeOperator {
+    public:
+        virtual bool Merge(const rocksdb::Slice& key,
+            const rocksdb::Slice* existing_value,
+            const rocksdb::Slice& value,
+            std::string* new_value,
+            rocksdb::Logger* logger) const override {
+            if (existing_value) {
+                new_value->assign(existing_value->data(), existing_value->size());
+                new_value->append(value.data(), value.size());
+            } else {
+                new_value->assign(value.data(), value.size());
+            }
+            return true;
+        }
+
+        virtual const char* Name() const override {
+            return "ConcatenateIdMergeOperator";
+        }
+    };
+
+}
+
+
+// @todo naming
+IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& filepath, IfcParse::IfcFile* ffile)
+    : file(ffile)
+    // @todo db is not initialized here yet
+    , byguid_internal_(db, "g|")
+    , byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
+    , byid_(db, "d|")
+    , bytype_(db, "t|")
+{
+    rocksdb::Options options;
+    options.create_if_missing = true;
+    options.merge_operator.reset(new ConcatenateIdMergeOperator());
+    rocksdb::Status status = rocksdb::DB::Open(options, filepath, &db);
+}
+
+IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::instance_by_id(int id)
+{
+    // @todo rename assert_existance() -> instance_by_id();
+    return assert_existance(id);
+}
+
+IfcUtil::IfcBaseClass* IfcParse::impl::in_memory_file_storage::instance_by_id(int id)
+{
+    auto it = byid_.find(id);
+    if (it == byid_.end()) {
+        throw IfcException("Instance #" + boost::lexical_cast<std::string>(id) + " not found");
+    }
+    return it->second;
 }
