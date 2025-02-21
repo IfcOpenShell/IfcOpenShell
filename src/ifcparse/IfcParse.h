@@ -164,8 +164,6 @@ class IFC_PARSE_API IfcSpfLexer {
     void TokenString(unsigned int offset, std::string& result);
 };
 
-IFC_PARSE_API IfcEntityInstanceData read(unsigned int index, IfcFile* file);
-
 IFC_PARSE_API aggregate_of_instance::ptr traverse(IfcUtil::IfcBaseClass* instance, int max_level = -1);
 
 IFC_PARSE_API aggregate_of_instance::ptr traverse_breadth_first(IfcUtil::IfcBaseClass* instance, int max_level = -1);

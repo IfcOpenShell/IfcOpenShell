@@ -37,44 +37,69 @@ static const char* const DATA = "DATA";
 using namespace IfcParse;
 
 namespace {
-    IfcEntityInstanceData read_from_file(IfcFile* f, size_t s) {
-        parse_context pc;
-        f->tokens->Next();
-        f->load(-1, nullptr, pc, -1);
-        return pc.construct(-1, f->references_to_resolve, nullptr, s);
+    IfcEntityInstanceData read_from_spf_file(IfcFile* f, size_t s) {
+        return std::visit([f, s](auto& m) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
+                parse_context pc;
+                m.tokens->Next();
+                m.load(-1, nullptr, pc, -1);
+                return pc.construct(-1, m.references_to_resolve, nullptr, s);
+            } else {
+                // std::unreachable();
+                return IfcEntityInstanceData(in_memory_attribute_storage(10));
+            }
+        }, f->storage_);
     }
 }
 
 HeaderEntity::HeaderEntity(const char* const datatype, size_t size, IfcFile* file)
     : datatype_(datatype)
     , file_(file)
-    , data_(file ? read_from_file(file, size) : IfcEntityInstanceData(storage_t(size)))
+    , data_(file ? read_from_spf_file(file, size) : IfcEntityInstanceData(in_memory_attribute_storage(size)))
 {}
 
 HeaderEntity::~HeaderEntity() {
 }
 
 void IfcSpfHeader::readSemicolon() {
-    if (!TokenFunc::isOperator(file_->tokens->Next(), ';')) {
-        throw IfcException(std::string("Expected ;"));
-    }
+    std::visit([](auto& m) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
+            if (!TokenFunc::isOperator(m.tokens->Next(), ';')) {
+                throw IfcException(std::string("Expected ;"));
+            }
+        } else {
+            // std::unreachable();
+        }
+    }, file_->storage_);
 }
 
 void IfcSpfHeader::readParen() {
-    if (!TokenFunc::isOperator(file_->tokens->Next(), '(')) {
-        throw IfcException(std::string("Expected ("));
-    }
+    std::visit([](auto& m) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
+            if (!TokenFunc::isOperator(m.tokens->Next(), '(')) {
+                throw IfcException(std::string("Expected ("));
+            }
+        } else {
+            // std::unreachable();
+        }
+    }, file_->storage_);
 }
 
 void IfcSpfHeader::readTerminal(const std::string& term, Trail trail) {
-    if (TokenFunc::asStringRef(file_->tokens->Next()) != term) {
-        throw IfcException(std::string("Expected " + term));
-    }
-    if (trail == TRAILING_SEMICOLON) {
-        readSemicolon();
-    } else if (trail == TRAILING_PAREN) {
-        readParen();
-    }
+    std::visit([this, term, trail](auto& m) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
+            if (TokenFunc::asStringRef(m.tokens->Next()) != term) {
+                throw IfcException(std::string("Expected " + term));
+            }
+            if (trail == TRAILING_SEMICOLON) {
+                readSemicolon();
+            } else if (trail == TRAILING_PAREN) {
+                readParen();
+            }
+        } else {
+            // std::unreachable();
+        }
+    }, file_->storage_);    
 }
 
 void IfcSpfHeader::read() {

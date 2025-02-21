@@ -117,6 +117,8 @@ public:
     
     void unset_attribute_value(size_t i);
 
+    AttributeValue get_attribute_value(size_t index) const;
+
     uint32_t identity() const { return identity_; }
 
     uint32_t id() const { return id_; }
@@ -131,7 +133,7 @@ class IFC_PARSE_API IfcBaseEntity : public IfcBaseClass {
     IfcBaseEntity(IfcEntityInstanceData&& data);
 
     IfcBaseEntity(size_t n)
-        : IfcBaseClass(IfcEntityInstanceData(storage_t(n)))
+        : IfcBaseClass(IfcEntityInstanceData(in_memory_attribute_storage(n)))
     {}
 
     virtual const IfcParse::declaration& declaration() const = 0;
@@ -172,7 +174,7 @@ class IFC_PARSE_API IfcBaseType : public IfcBaseClass {
     {}
 
     IfcBaseType()
-        : IfcBaseClass(IfcEntityInstanceData(storage_t(1)))
+        : IfcBaseClass(IfcEntityInstanceData(in_memory_attribute_storage(1)))
     {}
 
     virtual const IfcParse::declaration& declaration() const = 0;
