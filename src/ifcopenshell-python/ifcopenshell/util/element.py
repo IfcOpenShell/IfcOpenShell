@@ -1466,18 +1466,22 @@ def remove_deep2(
     :param element: The starting element that defines the subgraph
     """
     # ifc_file.batch()
-    also_considered_inverses = 0
+    total_inverses = ifc_file.get_total_inverses(element)
+    if total_inverses > 0:
 
-    def increment_considered_inverses(_):
-        nonlocal also_considered_inverses
-        also_considered_inverses += 1
+        def are_inverses_contained() -> bool:
+            also_considered_inverses = 0
 
-    for considered_element in also_consider:
-        for attribute in considered_element:
-            considered_element.walk(lambda x: x == element, increment_considered_inverses, attribute)
+            for considered_element in also_consider:
+                traverse = ifc_file.traverse(considered_element, max_levels=1)
+                if element in traverse:
+                    also_considered_inverses += 1
+                    if total_inverses == also_considered_inverses:
+                        return True
+            return False
 
-    if ifc_file.get_total_inverses(element) > 0 + also_considered_inverses:
-        return
+        if not are_inverses_contained():
+            return
 
     to_delete = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
