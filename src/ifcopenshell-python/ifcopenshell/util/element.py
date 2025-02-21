@@ -1489,7 +1489,7 @@ def remove_deep2(
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
     subgraph_set = set(subgraph)
-    subelement_queue = ifc_file.traverse(element, max_levels=1)
+    subelement_queue = [element]
     while subelement_queue:
         subelement = subelement_queue.pop(0)
         if (
