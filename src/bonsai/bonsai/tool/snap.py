@@ -577,7 +577,7 @@ class Snap(bonsai.core.tool.Snap):
                                 "object": obj,
                             }
                             snaps_by_type.insert(0, snap_point)
-                        cls.update_snapping_point(snap_point["point"], snap_point["type"])
+                            cls.update_snapping_point(snap_point["point"], snap_point["type"])
                         return snaps_by_type
                     cls.update_snapping_point(point["point"], point["type"])
                     return snaps_by_type
