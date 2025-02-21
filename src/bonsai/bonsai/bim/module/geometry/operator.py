@@ -742,7 +742,7 @@ class OverrideDelete(bpy.types.Operator):
 
         self.process_arrays(context)
         clear_active_object = True
-        objects_to_remove = context.selectable_objects
+        objects_to_remove = context.selected_objects
         for i, obj in enumerate(objects_to_remove, 1):
             # Log time.
             time_since_start = time() - start_time
