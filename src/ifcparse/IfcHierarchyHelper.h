@@ -451,6 +451,37 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
         }
     }
 
+    template <>
+    void addRelatedObject<typename Schema::IfcRelDefinesByType>(typename Schema::IfcObjectDefinition* relating_type,
+                                                                                           typename Schema::IfcObjectDefinition* related_object,
+                                                                                           typename Schema::IfcOwnerHistory* owner_hist) {
+        typename Schema::IfcRelDefinesByType::list::ptr li = instances_by_type<typename Schema::IfcRelDefinesByType>();
+        bool found = false;
+        for (typename Schema::IfcRelDefinesByType::list::it i = li->begin(); i != li->end(); ++i) {
+            typename Schema::IfcRelDefinesByType* rel = *i;
+            if (rel->RelatingType() == relating_type) {
+                typename Schema::IfcObject::list::ptr objects = rel->RelatedObjects();
+                objects->push((typename Schema::IfcObject*)related_object);
+                rel->setRelatedObjects(objects);
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            if (!owner_hist) {
+                owner_hist = getSingle<typename Schema::IfcOwnerHistory>();
+            }
+            if (!owner_hist) {
+                owner_hist = addOwnerHistory();
+            }
+            typename Schema::IfcObject::list::ptr related_objects(new aggregate_of<typename Schema::IfcObject>());
+            related_objects->push((typename Schema::IfcObject*)related_object);
+            typename Schema::IfcRelDefinesByType* t = new typename Schema::IfcRelDefinesByType(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, related_objects, (typename Schema::IfcTypeObject*)relating_type);
+
+            addEntity(t);
+        }
+    }
+
     typename Schema::IfcOwnerHistory* addOwnerHistory();
     typename Schema::IfcProject* addProject(typename Schema::IfcOwnerHistory* owner_hist = 0);
     void relatePlacements(typename Schema::IfcProduct* parent, typename Schema::IfcProduct* product);
@@ -588,71 +619,5 @@ IFC_PARSE_API Ifc4x3_add1::IfcPresentationStyle* setSurfaceColour(IfcHierarchyHe
 IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcProductRepresentation* shape, Ifc4x3_add1::IfcPresentationStyle* style);
 IFC_PARSE_API void setSurfaceColour(IfcHierarchyHelper<Ifc4x3_add1>& file, Ifc4x3_add1::IfcRepresentation* shape, Ifc4x3_add1::IfcPresentationStyle* style);
 #endif
-
-/*
-template <>
-inline void IfcHierarchyHelper::addRelatedObject <typename Schema::IfcRelContainedInSpatialStructure> (typename Schema::IfcObjectDefinition* relating_structure, 
-	typename Schema::IfcObjectDefinition* related_object, typename Schema::IfcOwnerHistory* owner_hist)
-{
-	typename Schema::IfcRelContainedInSpatialStructure::list::ptr li = instances_by_type<typename Schema::IfcRelContainedInSpatialStructure>();
-	bool found = false;
-	for (typename Schema::IfcRelContainedInSpatialStructure::list::it i = li->begin(); i != li->end(); ++i) {
-		typename Schema::IfcRelContainedInSpatialStructure* rel = *i;
-		if (rel->RelatingStructure() == relating_structure) {
-			typename Schema::IfcProduct::list::ptr products = rel->RelatedElements();
-			products->push((typename Schema::IfcProduct*)related_object);
-			rel->setRelatedElements(products);
-			found = true;
-			break;
-		}
-	}
-	if (! found) {
-		if (! owner_hist) {
-			owner_hist = getSingle<typename Schema::IfcOwnerHistory>();
-		}
-		if (! owner_hist) {
-			owner_hist = addOwnerHistory();
-		}
-		typename Schema::IfcProduct::list::ptr related_objects (new aggregate_of<typename Schema::IfcProduct>());
-		related_objects->push((typename Schema::IfcProduct*)related_object);
-		typename Schema::IfcRelContainedInSpatialStructure* t = new typename Schema::IfcRelContainedInSpatialStructure(IfcParse::IfcGlobalId(), owner_hist, 
-			boost::none, boost::none, related_objects, (typename Schema::IfcSpatialStructureElement*)relating_structure);
-
-		addEntity(t);
-	}
-}
-
-template <>
-inline void IfcHierarchyHelper::addRelatedObject <typename Schema::IfcRelDefinesByType> (typename Schema::IfcObjectDefinition* relating_type, 
-	typename Schema::IfcObjectDefinition* related_object, typename Schema::IfcOwnerHistory* owner_hist)
-{
-	typename Schema::IfcRelDefinesByType::list::ptr li = instances_by_type<typename Schema::IfcRelDefinesByType>();
-	bool found = false;
-	for (typename Schema::IfcRelDefinesByType::list::it i = li->begin(); i != li->end(); ++i) {
-		typename Schema::IfcRelDefinesByType* rel = *i;
-		if (rel->RelatingType() == relating_type) {
-			typename Schema::IfcObject::list::ptr objects = rel->RelatedObjects();
-			objects->push((typename Schema::IfcObject*)related_object);
-			rel->setRelatedObjects(objects);
-			found = true;
-			break;
-		}
-	}
-	if (! found) {
-		if (! owner_hist) {
-			owner_hist = getSingle<typename Schema::IfcOwnerHistory>();
-		}
-		if (! owner_hist) {
-			owner_hist = addOwnerHistory();
-		}
-		typename Schema::IfcObject::list::ptr related_objects (new aggregate_of<typename Schema::IfcObject>());
-		related_objects->push((typename Schema::IfcObject*)related_object);
-		typename Schema::IfcRelDefinesByType* t = new typename Schema::IfcRelDefinesByType(IfcParse::IfcGlobalId(), owner_hist, 
-			boost::none, boost::none, related_objects, (typename Schema::IfcTypeObject*)relating_type);
-
-		addEntity(t);
-	}
-}
-*/
 
 #endif
