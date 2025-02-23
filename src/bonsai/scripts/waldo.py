@@ -28,9 +28,20 @@ axis = ifcopenshell.api.context.add_context(
 body = ifcopenshell.api.context.add_context(
     f, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
 )
-concrete = ifcopenshell.api.material.add_material(f, name="concrete", category="concrete")
+material1 = ifcopenshell.api.material.add_material(f, name="material1", category="material1")
+material2 = ifcopenshell.api.material.add_material(f, name="material2", category="material2")
 site = ifcopenshell.api.root.create_entity(f, ifc_class="IfcSite")
 builder = ifcopenshell.util.shape_builder.ShapeBuilder(f)
+
+style = ifcopenshell.api.style.add_style(f)
+attributes = {"SurfaceColour": {"Name": None, "Red": 1.0, "Green": 0.5, "Blue": 0.5}, "Transparency": 0.0}
+ifcopenshell.api.style.add_surface_style(f, style=style, ifc_class="IfcSurfaceStyleShading", attributes=attributes)
+ifcopenshell.api.style.assign_material_style(f, material=material1, style=style, context=body)
+
+style = ifcopenshell.api.style.add_style(f)
+attributes = {"SurfaceColour": {"Name": None, "Red": 0.5, "Green": 0.5, "Blue": 1.0}, "Transparency": 0.0}
+ifcopenshell.api.style.add_surface_style(f, style=style, ifc_class="IfcSurfaceStyleShading", attributes=attributes)
+ifcopenshell.api.style.assign_material_style(f, material=material2, style=style, context=body)
 
 
 def test_wall(offset, p1, p2, p3, p4):
@@ -39,18 +50,18 @@ def test_wall(offset, p1, p2, p3, p4):
     wall_type_b = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWallType", name="B")
 
     set_a = ifcopenshell.api.material.add_material_set(f, set_type="IfcMaterialLayerSet")
-    structure = ifcopenshell.api.material.add_layer(f, layer_set=set_a, material=concrete, name="structure")
+    structure = ifcopenshell.api.material.add_layer(f, layer_set=set_a, material=material1, name="structure")
     structure.Priority = p1
     structure.LayerThickness = 0.1
-    cladding = ifcopenshell.api.material.add_layer(f, layer_set=set_a, material=concrete, name="cladding")
+    cladding = ifcopenshell.api.material.add_layer(f, layer_set=set_a, material=material2, name="cladding")
     cladding.Priority = p2
     cladding.LayerThickness = 0.05
 
     set_b = ifcopenshell.api.material.add_material_set(f, set_type="IfcMaterialLayerSet")
-    structure = ifcopenshell.api.material.add_layer(f, layer_set=set_b, material=concrete, name="structure")
+    structure = ifcopenshell.api.material.add_layer(f, layer_set=set_b, material=material1, name="structure")
     structure.Priority = p3
     structure.LayerThickness = 0.1
-    cladding = ifcopenshell.api.material.add_layer(f, layer_set=set_b, material=concrete, name="cladding")
+    cladding = ifcopenshell.api.material.add_layer(f, layer_set=set_b, material=material2, name="cladding")
     cladding.Priority = p4
     cladding.LayerThickness = 0.05
 
@@ -58,38 +69,79 @@ def test_wall(offset, p1, p2, p3, p4):
     ifcopenshell.api.material.assign_material(f, products=[wall_type_b], material=set_b)
 
     for i, rotation in enumerate((-90, -60, -120, 90, 60, 120)):
-        wall_a = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWall", name=f"A{p1}{p2}")
-        wall_b = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWall", name=f"B{p3}{p4}")
+        for i2, connection in enumerate(("ATEND", "ATSTART", "MIX")):
+            wall_a = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWall", name=f"A{p1}{p2}")
+            wall_b = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWall", name=f"B{p3}{p4}")
 
-        ifcopenshell.api.spatial.assign_container(f, products=[wall_a, wall_b], relating_structure=site)
+            ifcopenshell.api.spatial.assign_container(f, products=[wall_a, wall_b], relating_structure=site)
 
-        ifcopenshell.api.type.assign_type(f, related_objects=[wall_a], relating_type=wall_type_a)
-        ifcopenshell.api.type.assign_type(f, related_objects=[wall_b], relating_type=wall_type_b)
+            ifcopenshell.api.type.assign_type(f, related_objects=[wall_a], relating_type=wall_type_a)
+            ifcopenshell.api.type.assign_type(f, related_objects=[wall_b], relating_type=wall_type_b)
 
-        axis_a = builder.polyline(((0.0, 0.0), (1.0, 0.0)))
-        axis_b = builder.polyline(((0.0, 0.0), (1.0, 0.0)))
-        rep_a = builder.get_representation(axis, [axis_a])
-        rep_b = builder.get_representation(axis, [axis_b])
+            axis_a = builder.polyline(((0.0, 0.0), (1.0, 0.0)))
+            axis_b = builder.polyline(((0.0, 0.0), (1.0, 0.0)))
+            rep_a = builder.get_representation(axis, [axis_a])
+            rep_b = builder.get_representation(axis, [axis_b])
 
-        ifcopenshell.api.geometry.assign_representation(f, product=wall_a, representation=rep_a)
-        ifcopenshell.api.geometry.assign_representation(f, product=wall_b, representation=rep_b)
+            ifcopenshell.api.geometry.assign_representation(f, product=wall_a, representation=rep_a)
+            ifcopenshell.api.geometry.assign_representation(f, product=wall_b, representation=rep_b)
 
-        x_offset = i * 2
-        sign_offset = 0 if rotation < 0 else 1
-        matrix_a = np.eye(4)
-        matrix_a[:, 3][0:3] = (0 + x_offset, 0 + offset + sign_offset, 0)
-        matrix_b = np.eye(4)
-        matrix_b = ifcopenshell.util.placement.rotation(rotation, "Z") @ matrix_b
-        matrix_b[:, 3][0:3] = (1 + x_offset, 1 + offset - sign_offset, 0)
-        ifcopenshell.api.geometry.edit_object_placement(f, product=wall_a, matrix=matrix_a)
-        ifcopenshell.api.geometry.edit_object_placement(f, product=wall_b, matrix=matrix_b)
+            x_offset = i * 2
+            x_offset += i2 * (2 * 6)
+            if connection == "ATEND":
+                sign_offset = 0 if rotation < 0 else 1
+                matrix_a = np.eye(4)
+                matrix_a[:, 3][0:3] = (0 + x_offset, 0 + offset + sign_offset, 0)
+                matrix_b = np.eye(4)
+                matrix_b = ifcopenshell.util.placement.rotation(rotation, "Z") @ matrix_b
+                matrix_b[:, 3][0:3] = (1 + x_offset, 1 + offset - sign_offset, 0)
+                ifcopenshell.api.geometry.edit_object_placement(f, product=wall_a, matrix=matrix_a)
+                ifcopenshell.api.geometry.edit_object_placement(f, product=wall_b, matrix=matrix_b)
 
-        ifcopenshell.api.geometry.connect_path(
-            f, relating_element=wall_a, related_element=wall_b, relating_connection="ATEND", related_connection="ATEND"
-        )
+                ifcopenshell.api.geometry.connect_path(
+                    f,
+                    relating_element=wall_a,
+                    related_element=wall_b,
+                    relating_connection="ATEND",
+                    related_connection="ATEND",
+                )
+            elif connection == "ATSTART":
+                sign_offset = 0 if rotation < 0 else 1
+                matrix_a = np.eye(4)
+                matrix_a[:, 3][0:3] = (0 + x_offset, 1 + offset - sign_offset, 0)
+                matrix_b = np.eye(4)
+                matrix_b = ifcopenshell.util.placement.rotation(rotation, "Z") @ matrix_b
+                matrix_b[:, 3][0:3] = (0 + x_offset, 1 + offset - sign_offset, 0)
+                ifcopenshell.api.geometry.edit_object_placement(f, product=wall_a, matrix=matrix_a)
+                ifcopenshell.api.geometry.edit_object_placement(f, product=wall_b, matrix=matrix_b)
 
-        Foo(f, body).regenerate(wall_a)
-        Foo(f, body).regenerate(wall_b)
+                ifcopenshell.api.geometry.connect_path(
+                    f,
+                    relating_element=wall_a,
+                    related_element=wall_b,
+                    relating_connection="ATSTART",
+                    related_connection="ATSTART",
+                )
+            elif connection == "MIX":
+                sign_offset = 0 if rotation < 0 else 1
+                matrix_a = np.eye(4)
+                matrix_a[:, 3][0:3] = (0 + x_offset, 1 + offset - sign_offset, 0)
+                matrix_b = np.eye(4)
+                matrix_b = ifcopenshell.util.placement.rotation(rotation, "Z") @ matrix_b
+                matrix_b[:, 3][0:3] = (1 + x_offset, 1 + offset - sign_offset, 0)
+                ifcopenshell.api.geometry.edit_object_placement(f, product=wall_a, matrix=matrix_a)
+                ifcopenshell.api.geometry.edit_object_placement(f, product=wall_b, matrix=matrix_b)
+
+                ifcopenshell.api.geometry.connect_path(
+                    f,
+                    relating_element=wall_a,
+                    related_element=wall_b,
+                    relating_connection="ATEND",
+                    related_connection="ATSTART",
+                )
+
+            Foo(f, body).regenerate(wall_a)
+            Foo(f, body).regenerate(wall_b)
 
 
 PrioritisedLayer = namedtuple("PrioritisedLayer", "priority thickness")
