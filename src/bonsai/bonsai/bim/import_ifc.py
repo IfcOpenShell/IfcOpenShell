@@ -69,6 +69,9 @@ class MaterialCreator:
         if isinstance(mesh, bpy.types.Curve):
             return
 
+        if mesh.get("has_layer_styles", None) == True:
+            return
+
         self.mesh = mesh
         self.obj = obj
         if element.is_a("IfcTypeProduct"):
@@ -1059,12 +1062,13 @@ class IfcImporter:
             else:
                 mesh["has_cartesian_point_offset"] = False
 
-            return tool.Loader.convert_geometry_to_mesh(
+            mesh = tool.Loader.convert_geometry_to_mesh(
                 geometry,
                 mesh,
                 verts=verts,
                 load_indexed_maps=self.ifc_import_settings.load_indexed_maps,
             )
+            return tool.Loader.slice_layerset_mesh(element, mesh)
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
             import traceback
