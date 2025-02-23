@@ -140,17 +140,18 @@ def test_wall(offset, p1, p2, p3, p4):
                     related_connection="ATSTART",
                 )
 
-            Foo(f, body).regenerate(wall_a)
-            Foo(f, body).regenerate(wall_b)
+            Foo(f, body, axis).regenerate(wall_a)
+            Foo(f, body, axis).regenerate(wall_b)
 
 
 PrioritisedLayer = namedtuple("PrioritisedLayer", "priority thickness")
 
 
 class Foo:
-    def __init__(self, file, body):
+    def __init__(self, file, body, axis):
         self.file = file
         self.body = body
+        self.axis = axis
 
     def regenerate(self, wall):
         print("-" * 100)
@@ -158,7 +159,10 @@ class Foo:
         layers = self.get_layers(wall)
         if not layers:
             return
-        axes = self.get_axes(wall, layers)
+        reference = self.get_reference_line(wall)
+        self.reference_p1, self.reference_p2 = reference
+        axes = self.get_axes(wall, reference, layers)
+        self.end_point = None
         self.start_points = []
         self.end_points = []
         for rel in wall.ConnectedTo:
@@ -211,7 +215,18 @@ class Foo:
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(wall.file)
         item = builder.extrude(builder.polyline(points, closed=True), magnitude=1.0)
         rep = builder.get_representation(self.body, items=[item])
-        ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=rep)
+        if old_rep := ifcopenshell.util.representation.get_representation(wall, self.body):
+            ifcopenshell.util.element.replace_element(old_rep, rep)
+        else:
+            ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=rep)
+
+        item = builder.polyline([self.reference_p1, self.reference_p2])
+        rep = builder.get_representation(self.axis, items=[item])
+        if old_rep := ifcopenshell.util.representation.get_representation(wall, self.axis):
+            ifcopenshell.util.element.replace_element(old_rep, rep)
+        else:
+            ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=rep)
+
 
     def join(self, wall1, wall2, layers1, layers2, connection1, connection2):
         if connection1 == "NOTDEFINED" or connection2 == "NOTDEFINED":
@@ -220,17 +235,21 @@ class Foo:
         print("to", wall2, layers2, connection2)
 
         # axes = self.get_axes(wall2, layers2)
-        axes1 = self.get_axes(wall1, layers1)
-        axes2 = self.get_axes(wall2, layers2)
+        reference1 = self.get_reference_line(wall1)
+        reference2 = self.get_reference_line(wall2)
+        axes1 = self.get_axes(wall1, reference1, layers1)
+        axes2 = self.get_axes(wall2, reference2, layers2)
         matrix1i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement))
         matrix2 = ifcopenshell.util.placement.get_local_placement(wall2.ObjectPlacement)
         print(axes1)
         print(axes2)
 
-        # Convert wall2 axes to wall1 local coordinates
+        # Convert wall2 data to wall1 local coordinates
         for axis in axes2:
             axis[0] = (matrix1i @ matrix2 @ np.concatenate((axis[0], (0, 1))))[:2]
             axis[1] = (matrix1i @ matrix2 @ np.concatenate((axis[1], (0, 1))))[:2]
+        reference2[0] = (matrix1i @ matrix2 @ np.concatenate((reference2[0], (0, 1))))[:2]
+        reference2[1] = (matrix1i @ matrix2 @ np.concatenate((reference2[1], (0, 1))))[:2]
 
         # Sort axes from interior to exterior
         if connection1 == "ATEND":
@@ -300,8 +319,10 @@ class Foo:
         print("fpoints", points)
         if connection1 == "ATSTART":
             self.start_points = points
+            self.reference_p1[0] = self.intersect_axis(*reference2, y=reference1[0][1])
         elif connection1 == "ATEND":
             self.end_points = points
+            self.reference_p2[0] = self.intersect_axis(*reference2, y=reference1[0][1])
 
     def get_layers(self, wall) -> list:
         material = ifcopenshell.util.element.get_material(wall, should_skip_usage=True)
@@ -333,10 +354,7 @@ class Foo:
         t = (y - y1) / (y2 - y1)
         return x1 + t * (x2 - x1)
 
-    def get_axes(self, wall, layers: list[PrioritisedLayer]):
-        # I think it's not actually necessary to get the exact axis line here.
-        axes = []
-        # Start by getting Reference line
+    def get_reference_line(self, wall):
         if axis := ifcopenshell.util.representation.get_representation(wall, "Plan", "Axis", "GRAPH_VIEW"):
             for item in ifcopenshell.util.representation.resolve_representation(axis).Items:
                 if item.is_a("IfcPolyline"):
@@ -346,14 +364,12 @@ class Foo:
                 else:
                     continue
                 if points[0][0] < points[1][0]:  # An axis always goes in the +X direction
-                    axes.append([np.array(points[0]), np.array(points[1])])
-                else:
-                    axes.append([np.array(points[1]), np.array(points[0])])
-                break
-        else:
-            # TODO: derive from existing geometry
-            axes.append([np.array((0.0, 0.0)), np.array((1.0, 0.0))])
+                    return [np.array(points[0]), np.array(points[1])]
+                return [np.array(points[1]), np.array(points[0])]
+        return [np.array((0.0, 0.0)), np.array((1.0, 0.0))]
 
+    def get_axes(self, wall, reference, layers: list[PrioritisedLayer]):
+        axes = [[p.copy() for p in reference]]
         # Apply usage to convert the Reference line into MlsBase
         sense_factor = 1
         if (usage := ifcopenshell.util.element.get_material(wall)) and usage.is_a("IfcMaterialLayerSetUage"):
