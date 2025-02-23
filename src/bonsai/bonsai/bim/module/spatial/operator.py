@@ -239,6 +239,7 @@ class ImportSpatialDecomposition(bpy.types.Operator):
 
     def execute(self, context):
         core.import_spatial_decomposition(tool.Spatial)
+        core.create_orientation_slots(ifc=tool.Ifc, spatial=tool.Spatial)
         return {"FINISHED"}
 
 
@@ -345,6 +346,7 @@ class SetDefaultContainer(bpy.types.Operator):
 
     def execute(self, context):
         core.set_default_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        core.set_orientation_slot(spatial=tool.Spatial, element=tool.Ifc.get().by_id(self.container))
         return {"FINISHED"}
 
 

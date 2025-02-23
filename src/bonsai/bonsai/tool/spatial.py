@@ -38,6 +38,7 @@ import bonsai.core.geometry
 import bonsai.core.unit
 import bonsai.tool as tool
 import json
+import numpy as np
 from math import pi
 from mathutils import Vector, Matrix
 from shapely import Polygon
@@ -478,6 +479,51 @@ class Spatial(bonsai.core.tool.Spatial):
         if new.is_expanded:
             for child in children or []:
                 cls.import_spatial_element(child, level_index + 1)
+
+    @classmethod
+    def create_orientation_slots(cls, elements: list[ifcopenshell.entity_instance], use: bool = False) -> None:
+        active_slot = bpy.context.scene.transform_orientation_slots[0]
+        initial_orientation = active_slot.type
+
+        # stash selected objects
+        active_object = bpy.context.view_layer.objects.active
+        selected_objects = list(bpy.context.view_layer.objects.selected)
+
+        # bpy.ops.transform.create_orientation() requires a dummy object
+        bpy.ops.object.empty_add(type="PLAIN_AXES")
+
+        for element in elements:
+            placement = element.ObjectPlacement
+            combined_matrix = ifcopenshell.util.placement.get_local_placement(placement)[:3, :3]
+            if np.allclose(combined_matrix, np.eye(3), atol=1e-6):
+                # this element has global orientation
+                active_slot.type = "GLOBAL"
+                continue
+            elif element.Decomposes and hasattr(element.Decomposes[0].RelatingObject, "ObjectPlacement"):
+                # this element is part of a decomposition
+                parent_placement = element.Decomposes[0].RelatingObject.ObjectPlacement
+                parent_matrix = ifcopenshell.util.placement.get_local_placement(parent_placement)[:3, :3]
+                if np.allclose(combined_matrix, parent_matrix, atol=1e-6):
+                    # this element has the same orientation as its parent
+                    cls.create_orientation_slots(elements=[element.Decomposes[0].RelatingObject], use=use)
+                    continue
+            # this element has a unique orientation
+            orientation_name = element.is_a() + "/" + element.Name
+            bpy.ops.transform.create_orientation(name=orientation_name, overwrite=True)
+            active_slot.type = orientation_name
+            active_slot.custom_orientation.matrix = np.linalg.inv(combined_matrix)
+
+        # delete dummy object
+        bpy.ops.object.delete()
+
+        # reinstate selected objects
+        for obj in selected_objects:
+            obj.select_set(True)
+        if active_object:
+            bpy.context.view_layer.objects.active = active_object
+
+        if not use:
+            active_slot.type = initial_orientation
 
     @classmethod
     def edit_container_attributes(cls, entity: ifcopenshell.entity_instance) -> None:
