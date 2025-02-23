@@ -1180,6 +1180,7 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def get_default_titleblock_path(cls, name: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
+        props = tool.Drawing.get_document_props()
         titleblocks_dir = (
             ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir") or props.titleblocks_dir
         )
