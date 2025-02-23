@@ -7,6 +7,17 @@
 
 namespace ifcopenshell { namespace geometry {
 
+/// @brief Computes the curve length of a polynomial of the form y = A + Bx + Cx^2
+///    This function is needed on the python side. To do this computation, a large library like scipy
+///    is needed. That is too much overhead. For this reason, a simple function is here on the C++ side
+///    that the python side can call
+/// @param A constant term
+/// @param B linear term
+/// @param C quadradic term
+/// @param horizontal_length length of the polynomal projected onto the horizontal axis
+/// @return curve length
+double polynomial_length(double A, double B, double C,double horizontal_length);
+
 /// @brief Abstract class for evaluating a function_item. This class is specialized for each of the function_item types.
 struct fn_evaluator {
     fn_evaluator(const ifcopenshell::geometry::Settings& settings) : settings_(settings) {

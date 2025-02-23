@@ -28,6 +28,8 @@ import ifcopenshell.guid
 import ifcopenshell.template
 from ifcopenshell import entity_instance
 from ifcopenshell import ifcopenshell_wrapper
+import ifcopenshell.util
+import ifcopenshell.util.stationing
 
 
 def evaluate_representation(shape_rep: entity_instance, dist_along: float) -> np.ndarray:
@@ -46,10 +48,10 @@ def evaluate_representation(shape_rep: entity_instance, dist_along: float) -> np
     # TODO: confirm point is not beyond limits of alignment
 
     s = ifcopenshell.geom.settings()
-    piecewise_function = ifcopenshell_wrapper.map_shape(s, shape_rep.wrapped_data)
-    pwf_evaluator = ifcopenshell_wrapper.piecewise_function_evaluator(piecewise_function, s)
+    function_item = ifcopenshell_wrapper.map_shape(s, shape_rep.wrapped_data)
+    evaluator = ifcopenshell_wrapper.function_item_evaluator(s, function_item)
 
-    trans_matrix = pwf_evaluator.evaluate(dist_along)
+    trans_matrix = evaluator.evaluate(dist_along)
 
     return np.array(trans_matrix, dtype=np.float64).T
 
@@ -68,10 +70,10 @@ def evaluate_segment(segment: entity_instance, dist_along: float) -> np.ndarray:
         raise ValueError(f"Provided value {dist_along=} is beyond the end of the segment ({segment.SegmentLength}).")
 
     s = ifcopenshell.geom.settings()
-    piecewise_function = ifcopenshell_wrapper.map_shape(s, segment.wrapped_data)
-    pwf_evaluator = ifcopenshell_wrapper.piecewise_function_evaluator(piecewise_function, s)
+    function_item = ifcopenshell_wrapper.map_shape(s, segment.wrapped_data)
+    evaluator = ifcopenshell_wrapper.function_item_evaluator(s, function_item)
 
-    trans_matrix = pwf_evaluator.evaluate(dist_along)
+    trans_matrix = evaluator.evaluate(dist_along)
 
     return np.array(trans_matrix, dtype=np.float64).T
 
@@ -90,7 +92,8 @@ def generate_vertices(rep_curve: entity_instance, distance_interval: float = 5.0
         raise ValueError("Alignment representation not found.")
 
     s = ifcopenshell.geom.settings()
-    s.set("PIECEWISE_STEP_PARAM", distance_interval)
+    s.set("piecewise-step-type",0) # 0 = step-size is maximum step size, 1 = step-size is mininimum number of steps
+    s.set("piecewise-step-size", distance_interval)
     shape = ifcopenshell.geom.create_shape(s, rep_curve)
     vertices = shape.verts
     if len(vertices) == 0:
@@ -184,6 +187,129 @@ class IfcAlignmentHelper:
             )
             alignment_segment.ObjectPlacement = global_placement
             alignment_segment.Representation = product
+
+    def _map_alignment_vertical_segment(self, segment: entity_instance) -> Sequence[entity_instance]:
+        segment_type = segment.is_a().upper()
+        expected_type = "IFCALIGNMENTVERTICALSEGMENT"
+        if not segment_type == expected_type:
+            raise TypeError(f"Expected to see type '{expected_type}', instead received '{segment_type}'.")
+        
+        start_distance_along = segment.StartDistAlong
+        horizontal_length = segment.HorizontalLength
+        start_height = segment.StartHeight
+        start_gradient = segment.StartGradient
+        end_gradient = segment.EndGradient
+        radius_of_curvature = segment.RadiusOfCurvature
+        
+        if math.isclose(horizontal_length, 0):
+            # set transition value based on whether this is the final zero-length segment
+            transition = "DISCONTINUOUS"
+        else:
+            transition = "CONTSAMEGRADIENTSAMECURVATURE"
+
+        _type = segment.PredefinedType
+
+        match _type:
+            case "CONSTANTGRADIENT":
+                parent_curve = self._file.create_entity(
+                    type="IfcLine",
+                    Pnt=self._file.create_entity(type="IfcCartesianPoint",Coordinates=(0.0,0.0),),
+                    Dir=self._file.create_entity(type="IfcVector",
+                        Orientation=self._file.create_entity(type="IfcDirection",DirectionRatios=(1.0,0.0),),
+                        Magnitude=1.0,),
+                    )
+                    
+                dx = math.cos(math.atan(start_gradient))
+                dy = math.sin(math.atan(start_gradient))
+                curve_segment_length = horizontal_length/dx
+
+                curve_segment = self._file.create_entity(
+                    type="IfcCurveSegment",
+                    Transition=transition,
+                    Placement=self._file.create_entity(
+                        type="IfcAxis2Placement2D",
+                        Location=self._file.create_entity(type="IfcCartesianPoint",Coordinates=(start_distance_along,start_height)),
+                        RefDirection=self._file.createIfcDirection((dx,dy)),
+                    ),
+                    SegmentStart=self._file.createIfcLengthMeasure(0.0),
+                    SegmentLength=self._file.createIfcLengthMeasure(curve_segment_length),
+                    ParentCurve=parent_curve,
+                )
+                result = (curve_segment, None)
+
+            case "PARABOLICARC":
+                A = start_height
+                B = start_gradient
+                C = (end_gradient - start_gradient)/(2.0*horizontal_length)
+
+                parent_curve = self._file.create_entity(
+                    type="IfcPolynomialCurve",
+                    Position=self._file.create_entity(
+                        type="IfcAxis2Placement2D",
+                        Location=self._file.create_entity(type="IfcCartesianPoint",Coordinates=(0.0,0.0)),
+                        RefDirection=self._file.createIfcDirection((1.0, 0.0),),
+                    ),
+                    CoefficientsX=(0.0,1.0),
+                    CoefficientsY=(A,B,C),
+                )
+                
+                dx = math.cos(math.atan(start_gradient))
+                dy = math.sin(math.atan(start_gradient))
+                curve_segment_length = ifcopenshell_wrapper.polynomial_length(A,B,C,horizontal_length)
+
+                curve_segment = self._file.create_entity(
+                    type="IfcCurveSegment",
+                    Transition=transition,
+                    Placement=self._file.create_entity(
+                        type="IfcAxis2Placement2D",
+                        Location=self._file.create_entity(type="IfcCartesianPoint",Coordinates=(start_distance_along,start_height)),
+                        RefDirection=self._file.createIfcDirection((dx,dy)),
+                    ),
+                    SegmentStart=self._file.createIfcLengthMeasure(0.0),
+                    SegmentLength=self._file.createIfcLengthMeasure(curve_segment_length),
+                    ParentCurve=parent_curve,
+                )
+                result = (curve_segment, None)
+
+            case "CIRCULARARC":
+                start_angle = math.atan(start_gradient)
+                end_angle = math.atan(end_gradient)
+                if start_angle < end_angle:
+                    radius = horizontal_length/(math.sin(end_angle) - math.sin(start_angle))    
+                else:
+                    radius = horizontal_length/(math.sin(start_angle) - math.sin(end_angle))    
+
+                parent_curve = self._file.create_entity(
+                    type="IfcCircle",
+                    Position=self._file.create_entity(
+                        type="IfcAxis2Placement2D",
+                        Location=self._file.create_entity(type="IfcCartesianPoint",Coordinates=(0.0,0.0)),
+                        RefDirection=self._file.createIfcDirection((1.0, 0.0),),
+                    ),
+                    Radius=radius,
+                )
+
+                segment_curve_length = radius*math.fabs(end_angle - start_angle)
+
+                curve_segment = self._file.create_entity(
+                    type="IfcCurveSegment",
+                    Transition=transition,
+                    Placement=self._file.create_entity(
+                        type="IfcAxis2Placement2D",
+                        Location=self._file.create_entity(type="IfcCartesianPoint",Coordinates=(start_distance_along,start_height)),
+                        RefDirection=self._file.createIfcDirection((1.0,0.0),
+                        ),
+                    ),
+                    SegmentStart=self._file.createIfcLengthMeasure(0.0),
+                    SegmentLength=self._file.createIfcLengthMeasure(curve_segment_length),
+                    ParentCurve=parent_curve,
+                )
+                result = (curve_segment, None)
+
+            case _:
+                result = (None, None)
+
+        return result
 
     def _map_alignment_horizontal_segment(self, segment: entity_instance) -> Sequence[entity_instance]:
         segment_type = segment.is_a().upper()
@@ -550,10 +676,11 @@ class IfcAlignmentHelper:
             alignment.Representation = product_definition_shape
 
             # create referent for start station
+            start_station_name = "Start Station ({})".format(ifcopenshell.util.stationing.station_as_string(start_station))
             start_referent = self._file.createIfcReferent(
                 GlobalId=ifcopenshell.guid.new(),
                 OwnerHistory=None,
-                Name="Start Station",
+                Name=start_station_name,
                 Description=None,
                 ObjectType=None,
                 ObjectPlacement=self._file.createIfcLinearPlacement(
@@ -571,6 +698,8 @@ class IfcAlignmentHelper:
                 Representation=None,
                 PredefinedType="STATION",
             )
+            pset_stationing = ifcopenshell.api.pset.add_pset(self._file,product=start_referent,name="Pset_Stationing")
+            ifcopenshell.api.pset.edit_pset(self._file,pset=pset_stationing,properties={"Station":start_station})
 
             # nest the horizontal and the referent under the alignment
             nesting_of_alignment = self._file.create_entity(
@@ -594,12 +723,11 @@ class IfcAlignmentHelper:
 
         return alignment
 
-    def add_vertical_alignment(
+    def _create_vertical_alignment(
         self,
-        name: str,
-        description: str,
+        composite_curve: entity_instance,
         vpoints: Sequence[Sequence[float]],
-        vclengths: Sequence[Sequence[float]],
+        lengths: Sequence[float],
         include_geometry: bool = True,
     ):
         """
@@ -608,12 +736,353 @@ class IfcAlignmentHelper:
         @param name: value for Name attribute
         @param description: value for Description attribute
         @param vpoints: (distance_along, Z_height) pairs denoting the location of the vertical PIs, including start and end.
-        @param vclengths: radii values to use for transition
+        @param vclengths: horizontal length of parabolic vertical curves
         @param include_geometry: optionally create the alignment geometric representation as well as the semantic business logic
         """
-        pass
+        vertical_segments = list() # business logic
+        vertical_curve_segments = list() # geometry
+        xPBG, yPBG = vpoints[0]
+        xPVI, yPVI = vpoints[1]
+        i = 1
+        for length in lengths:
+            # back gradient
+            dxBG = xPVI - xPBG
+            dyBG = yPVI - yPBG
+            start_slope = math.tan(math.atan2(dyBG,dxBG))
 
-    def add_alignment(
+            #forward gradient
+            i += 1
+            xPFG, yPFG = vpoints[i]
+            dxFG = xPFG - xPVI
+            dyFG = yPFG - yPVI
+            end_slope = math.tan(math.atan2(dyFG,dxFG))
+
+            xEVC = xPVI + length/2.0
+            yEVC = yPVI + end_slope * length/2.0
+
+            # create gradient
+            gradient_length = dxBG - length/2.0
+            design_parameters = self._file.create_entity(
+                type="IfcAlignmentVerticalSegment",
+                StartTag=None,
+                EndTag=None,
+                StartDistAlong=xPBG,
+                HorizontalLength=gradient_length,
+                StartHeight=yPBG,
+                StartGradient=start_slope,
+                EndGradient=start_slope,
+                RadiusOfCurvature=None,
+                PredefinedType="CONSTANTGRADIENT"
+            )
+            alignment_segment = self._file.create_entity(
+                type="IfcAlignmentSegment",
+                GlobalId=ifcopenshell.guid.new(),
+                OwnerHistory=None,
+                Name=None,
+                Description=None,
+                ObjectType=None,
+                ObjectPlacement=None,
+                Representation=None,
+                DesignParameters=design_parameters,
+            )
+            vertical_segments.append(alignment_segment)
+
+            if include_geometry:
+                vertical_curve_segments.append(self._map_alignment_vertical_segment(design_parameters)[0])
+
+            # create vertical curve
+            k = (end_slope - start_slope)/length
+            xBVC = xPVI - length/2.0
+            yBVC = yPVI - start_slope*length/2.0
+
+            design_parameters = self._file.create_entity(
+                type="IfcAlignmentVerticalSegment",
+                StartTag=None,
+                EndTag=None,
+                StartDistAlong=xBVC,
+                HorizontalLength=length,
+                StartHeight=yBVC,
+                StartGradient=start_slope,
+                EndGradient=end_slope,
+                RadiusOfCurvature=1/k,
+                PredefinedType="PARABOLICARC"
+            )
+            alignment_segment = self._file.create_entity(
+                type="IfcAlignmentSegment",
+                GlobalId=ifcopenshell.guid.new(),
+                OwnerHistory=None,
+                Name=None,
+                Description=None,
+                ObjectType=None,
+                ObjectPlacement=None,
+                Representation=None,
+                DesignParameters=design_parameters,
+            )
+            vertical_segments.append(alignment_segment)
+
+            if include_geometry:
+                vertical_curve_segments.append(self._map_alignment_vertical_segment(design_parameters)[0])            
+
+            # start of next curve is end of this curve
+            xPBG = xEVC
+            yPBG = yEVC
+            xPVI = xPFG
+            yPVI = yPFG
+
+
+        # create last gradient run
+        dx = xPVI - xPBG
+        dy = yPVI - yPBG
+        slope = math.tan(math.atan2(dy,dx))
+        gradient_length = dx
+
+        design_parameters = self._file.create_entity(
+            type="IfcAlignmentVerticalSegment",
+            StartTag=None,
+            EndTag=None,
+            StartDistAlong=xPBG,
+            HorizontalLength=gradient_length,
+            StartHeight=yPBG,
+            StartGradient=slope,
+            EndGradient=slope,
+            RadiusOfCurvature=None,
+            PredefinedType="CONSTANTGRADIENT"
+        )
+        alignment_segment = self._file.create_entity(
+            type="IfcAlignmentSegment",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name=None,
+            Description=None,
+            ObjectType=None,
+            ObjectPlacement=None,
+            Representation=None,
+            DesignParameters=design_parameters,
+        )
+        vertical_segments.append(alignment_segment)
+
+        if include_geometry:
+            vertical_curve_segments.append(self._map_alignment_vertical_segment(design_parameters)[0])
+
+        # create zero length terminator segment
+        design_parameters = self._file.create_entity(
+            type="IfcAlignmentVerticalSegment",
+            StartTag="VPOE",
+            EndTag="VPOE",
+            StartDistAlong=xPVI,
+            HorizontalLength=0.0,
+            StartHeight=yPVI,
+            StartGradient=slope,
+            EndGradient=slope,
+            RadiusOfCurvature=None,
+            PredefinedType="CONSTANTGRADIENT"
+        )
+        alignment_segment = self._file.create_entity(
+            type="IfcAlignmentSegment",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name=None,
+            Description=None,
+            ObjectType=None,
+            ObjectPlacement=None,
+            Representation=None,
+            DesignParameters=design_parameters,
+        )
+        vertical_segments.append(alignment_segment)
+
+        if include_geometry:
+            vertical_curve_segments.append(self._map_alignment_vertical_segment(design_parameters)[0])
+
+        if include_geometry:
+            gradient_curve = self._file.create_entity(
+                type="IfcGradientCurve",
+                Segments=vertical_curve_segments,
+                SelfIntersect=False,
+                BaseCurve=composite_curve,
+                EndPoint=None
+            )
+        else:
+           gradient_curve = None
+
+        return vertical_segments, vertical_curve_segments, gradient_curve
+
+    def create_alignment_by_pi_method(
+        self,
+        alignment_name: str,
+        points: Sequence[Sequence[float]],
+        radii: Sequence[float],
+        vpoints: Sequence[Sequence[float]],
+        lengths: Sequence[float],
+        alignment_description: str = None,
+        start_station: float = 1000.0,
+        include_geometry: bool = True
+    ):
+        """
+        Create an alignment using the PI layout method for both horizontal and vertical alignments.
+
+        @param alignment_name: value for Name attribute
+        @param alignment_description: value for Description attribute
+        @param points: (X,Y) pairs denoting the location of the horizontal PIs, including start and end
+        @param radii: radii values to use for transition
+        @param vpoints: (distance_along, Z_height) pairs denoting the location of the vertical PIs, including start and end.
+        @param lengths: parabolic vertical curve horizontal length values to use for transition
+        @param start_station: ??? NOT USED AT THIS TIME ???
+        @param include_geometry: optionally create the alignment geometric representation as well as the semantic business logic
+        """
+
+        horizontal_segments, horizontal_curve_segments, composite_curve = self._create_horizontal_alignment(alignment_name,alignment_description,points,radii,include_geometry)
+        vertical_segments, vertical_curve_segments, gradient_curve = self._create_vertical_alignment(composite_curve,vpoints,lengths)
+
+        name_segments(prefix="H",segments=horizontal_segments)
+        name_segments(prefix="V",segments=vertical_segments)
+
+        # Create the horizontal alignment (IfcAlignmentHorizontal) and nest alignment segments
+        horizontal_alignment = self._file.create_entity(
+            type="IfcAlignmentHorizontal",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name=f"{alignment_name} - Horizontal",
+            Description=alignment_description,
+            ObjectType=None,
+            ObjectPlacement=None,
+            Representation=None,
+        )
+
+        nests_horizontal_segments = self._file.create_entity(
+            type="IfcRelNests",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name="Nests horizontal alignment segments under horizontal alignment",
+            RelatingObject=horizontal_alignment,
+            RelatedObjects=horizontal_segments,
+        )
+
+        # Create the vertical alignment (IfcAlignmentVertical) and nest alignment segments
+        vertical_alignment = self._file.create_entity(
+            type="IfcAlignmentVertical",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name=f"{alignment_name} - Vertical",
+            Description=alignment_description,
+            ObjectType=None,
+            ObjectPlacement=None,
+            Representation=None,
+        )
+
+        nests_vertical_segments = self._file.create_entity(
+            type="IfcRelNests",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name="Nests vertical alignment segments under vertical alignment",
+            RelatingObject=vertical_alignment,
+            RelatedObjects=vertical_segments,
+        )
+
+        # create the alignment
+        placement = self._file.createIfcLocalPlacement(
+            PlacementRelTo=None,
+            RelativePlacement=self._file.createIfcAxis2Placement2D(
+                Location=self._file.createIfcCartesianPoint(Coordinates=(0.0, 0.0))
+            ),
+        )
+
+        alignment = self._file.create_entity(
+            type="IfcAlignment",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name=alignment_name,
+            Description=alignment_description,
+            ObjectType=None,
+            ObjectPlacement=placement,
+            Representation=None,
+            PredefinedType=None,
+        )
+
+        # create referent for start station
+        start_station_name = "Start Station ({})".format(ifcopenshell.util.stationing.station_as_string(start_station))
+        start_referent = self._file.createIfcReferent(
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name=start_station_name,
+            Description=None,
+            ObjectType=None,
+            ObjectPlacement=self._file.createIfcLinearPlacement(
+                RelativePlacement=self._file.createIfcAxis2PlacementLinear(
+                    Location=self._file.createIfcPointByDistanceExpression(
+                        DistanceAlong=self._file.createIfcLengthMeasure(0.0),
+                        OffsetLateral=None,
+                        OffsetVertical=None,
+                        OffsetLongitudinal=None,
+                        BasisCurve=composite_curve,
+                    ),
+                ),
+                CartesianPosition=None,
+            ),
+            Representation=None,
+            PredefinedType="STATION",
+        )
+        pset_stationing = ifcopenshell.api.pset.add_pset(self._file,product=start_referent,name="Pset_Stationing")
+        ifcopenshell.api.pset.edit_pset(self._file,pset=pset_stationing,properties={"Station":start_station})
+
+        # nest the horizontal, vertical and the referent under the alignment
+        nesting_of_alignment = self._file.create_entity(
+            type="IfcRelNests",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name="Nests horizontal alignment, vertical alginment, and referents under overall alignment",
+            RelatingObject=alignment,
+            RelatedObjects=(horizontal_alignment, vertical_alignment, start_referent),
+        )
+
+        # aggregate the alignment under the project
+        project = self._file.by_type("IfcProject")[0]
+        alignment_within_project = self._file.createIfcRelAggregates(
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name="Aggregates alignment under the project",
+            RelatingObject=project,
+            RelatedObjects=(alignment,),
+        )
+
+        # create geometric representation
+        if include_geometry:
+            # create the footprint representation
+            footprint_shape_representation = self._file.create_entity(
+                type="IfcShapeRepresentation",
+                ContextOfItems=self._axis_geom_subcontext,
+                RepresentationIdentifier="FootPrint",
+                RepresentationType="Curve2D",
+                Items=(composite_curve,),
+            )
+
+            # create the Curve3D representation
+            axis3d_shape_representation = self._file.create_entity(
+                type="IfcShapeRepresentation",
+                ContextOfItems=self._axis_geom_subcontext,
+                RepresentationIdentifier="Axis",
+                RepresentationType="Curve3D",
+                Items=(gradient_curve,),
+            )
+
+            # create the alignment product definition
+            product_definition_shape = self._file.create_entity(
+                type="IfcProductDefinitionShape",
+                Name="Alignment Product Definition Shape",
+                Description=None,
+                Representations=(footprint_shape_representation,axis3d_shape_representation,),
+            )
+
+            # create representations for each segment
+            self._create_segment_representations(placement, horizontal_curve_segments, horizontal_segments)
+            self._create_segment_representations(placement, vertical_curve_segments, vertical_segments)
+
+            # add the representation to the alignment
+            alignment.Representation = product_definition_shape
+        
+        return alignment
+
+
+    def create_horizontal_alignment_by_pi_method(
         self,
         name: str,
         hpoints: Sequence[Sequence[float]],
@@ -625,7 +1094,7 @@ class IfcAlignmentHelper:
         """
         Create a new alignment with a horizontal alignment using the PI layout method
         """
-        self._add_horizontal_alignment(
+        return self._add_horizontal_alignment(
             alignment_name=name,
             points=hpoints,
             radii=radii,
@@ -642,7 +1111,19 @@ if __name__ == "__main__":
     import sys
     from matplotlib import pyplot as plt
 
-    f = ifcopenshell.open(sys.argv[1])
+    f = ifcopenshell.file(schema="IFC4X3_ADD2")
+    project = f.create_entity(type="IfcProject",GlobalId=ifcopenshell.guid.new())
+    context = f.create_entity(type="IfcGeometricRepresentationContext")
+
+    points=[(0.,0.),(100.,0.),(200.,150.)]
+    radii=[(50.)]
+
+    helper = IfcAlignmentHelper(f)
+    helper.create_horizontal_alignment_by_pi_method(
+        name="MyAlignment",hpoints = points,radii = radii
+    )
+
+    #f = ifcopenshell.open(sys.argv[1])
     print_structure(f.by_type("IfcAlignment")[0])
 
     al_hor_rep = f.by_type("IfcCompositeCurve")[0]
