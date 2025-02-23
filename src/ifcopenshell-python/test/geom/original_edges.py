@@ -1,0 +1,97 @@
+import ifcopenshell
+import ifcopenshell.geom
+
+contents = """ISO-10303-21;
+HEADER;
+FILE_DESCRIPTION(('ViewDefinition[DesignTransferView]'),'2;1');
+FILE_NAME('untitled.ifc','2025-02-17T08:13:34+11:00',(''),(''),'IfcOpenShell 0.0.0','Bonsai 0.8.1-alpha250208-8f261be','Nobody');
+FILE_SCHEMA(('IFC4'));
+ENDSEC;
+DATA;
+#1=IFCPROJECT('3IbgqFUY99IejU9tnNSVCj',$,'My Project',$,$,$,$,(#14,#26),#9);
+#2=IFCSIUNIT(*,.LENGTHUNIT.,$,.METRE.);
+#3=IFCSIUNIT(*,.AREAUNIT.,$,.SQUARE_METRE.);
+#4=IFCSIUNIT(*,.VOLUMEUNIT.,$,.CUBIC_METRE.);
+#5=IFCDIMENSIONALEXPONENTS(0,0,0,0,0,0,0);
+#6=IFCSIUNIT(*,.PLANEANGLEUNIT.,$,.RADIAN.);
+#7=IFCMEASUREWITHUNIT(IFCREAL(0.0174532925199433),#6);
+#8=IFCCONVERSIONBASEDUNIT(#5,.PLANEANGLEUNIT.,'degree',#7);
+#9=IFCUNITASSIGNMENT((#3,#4,#2,#8));
+#10=IFCCARTESIANPOINT((0.,0.,0.));
+#11=IFCDIRECTION((0.,0.,1.));
+#12=IFCDIRECTION((1.,0.,0.));
+#13=IFCAXIS2PLACEMENT3D(#10,#11,#12);
+#14=IFCGEOMETRICREPRESENTATIONCONTEXT($,'Model',3,1.E-05,#13,$);
+#15=IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Body','Model',*,*,*,*,#14,$,.MODEL_VIEW.,$);
+#16=IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Axis','Model',*,*,*,*,#14,$,.GRAPH_VIEW.,$);
+#17=IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Box','Model',*,*,*,*,#14,$,.MODEL_VIEW.,$);
+#18=IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Annotation','Model',*,*,*,*,#14,$,.SECTION_VIEW.,$);
+#19=IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Annotation','Model',*,*,*,*,#14,$,.ELEVATION_VIEW.,$);
+#20=IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Annotation','Model',*,*,*,*,#14,$,.MODEL_VIEW.,$);
+#21=IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Annotation','Model',*,*,*,*,#14,$,.PLAN_VIEW.,$);
+#22=IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Profile','Model',*,*,*,*,#14,$,.ELEVATION_VIEW.,$);
+#23=IFCCARTESIANPOINT((0.,0.));
+#24=IFCDIRECTION((1.,0.));
+#25=IFCAXIS2PLACEMENT2D(#23,#24);
+#26=IFCGEOMETRICREPRESENTATIONCONTEXT($,'Plan',2,1.E-05,#25,$);
+#27=IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Axis','Plan',*,*,*,*,#26,$,.GRAPH_VIEW.,$);
+#28=IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Body','Plan',*,*,*,*,#26,$,.PLAN_VIEW.,$);
+#29=IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Annotation','Plan',*,*,*,*,#26,$,.PLAN_VIEW.,$);
+#30=IFCGEOMETRICREPRESENTATIONSUBCONTEXT('Annotation','Plan',*,*,*,*,#26,$,.REFLECTED_PLAN_VIEW.,$);
+#31=IFCSITE('0RWRVKEyv0w8rD30dnxZgC',$,'My Site',$,$,#54,$,$,$,$,$,$,$,$);
+#37=IFCBUILDING('39X8AnBtP4gvIIEtolio1r',$,'My Building',$,$,#60,$,$,$,$,$,$);
+#43=IFCBUILDINGSTOREY('3u3kxyF4r8PPWfqNxA77Mg',$,'My Storey',$,$,#66,$,$,$,$);
+#49=IFCRELAGGREGATES('254xcZnL5DnQg9572XWoGw',$,$,$,#1,(#31));
+#50=IFCCARTESIANPOINT((0.,0.,0.));
+#51=IFCDIRECTION((0.,0.,1.));
+#52=IFCDIRECTION((1.,0.,0.));
+#53=IFCAXIS2PLACEMENT3D(#50,#51,#52);
+#54=IFCLOCALPLACEMENT($,#53);
+#55=IFCRELAGGREGATES('3mOs7xn1P8ZutyBJCrBHy6',$,$,$,#31,(#37));
+#56=IFCCARTESIANPOINT((0.,0.,0.));
+#57=IFCDIRECTION((0.,0.,1.));
+#58=IFCDIRECTION((1.,0.,0.));
+#59=IFCAXIS2PLACEMENT3D(#56,#57,#58);
+#60=IFCLOCALPLACEMENT(#54,#59);
+#61=IFCRELAGGREGATES('061R4J$_v02e5$uJ_Zcpwu',$,$,$,#37,(#43));
+#62=IFCCARTESIANPOINT((0.,0.,0.));
+#63=IFCDIRECTION((0.,0.,1.));
+#64=IFCDIRECTION((1.,0.,0.));
+#65=IFCAXIS2PLACEMENT3D(#62,#63,#64);
+#66=IFCLOCALPLACEMENT(#60,#65);
+#67=IFCACTUATOR('3XPXM$jnf6gQHxVSs1SU0h',$,'Cube',$,$,#83,#78,$,.ELECTRICACTUATOR.);
+#68=IFCRELCONTAINEDINSPATIALSTRUCTURE('2uCE41OAzCIh07v_z205CZ',$,$,$,(#67),#43);
+#77=IFCSHAPEREPRESENTATION(#15,'Body','Tessellation',(#95));
+#78=IFCPRODUCTDEFINITIONSHAPE($,$,(#77));
+#79=IFCCARTESIANPOINT((0.,0.,0.));
+#80=IFCDIRECTION((0.,0.,1.));
+#81=IFCDIRECTION((1.,0.,0.));
+#82=IFCAXIS2PLACEMENT3D(#79,#80,#81);
+#83=IFCLOCALPLACEMENT(#66,#82);
+#84=IFCCARTESIANPOINTLIST3D(((-1.,1.,-1.),(-1.,-1.,-1.),(-1.,-1.,1.),(1.,1.,-1.),(-1.,1.,1.),(1.,-1.,-1.),(1.,1.,1.),(1.,-1.,1.),(1.,1.,2.),(1.,-1.,2.),(-1.,1.,2.),(-1.,-1.,2.)));
+#85=IFCINDEXEDPOLYGONALFACE((5,7,4,1));
+#86=IFCINDEXEDPOLYGONALFACE((7,8,6,4));
+#87=IFCINDEXEDPOLYGONALFACE((8,3,2,6));
+#88=IFCINDEXEDPOLYGONALFACE((4,6,2,1));
+#89=IFCINDEXEDPOLYGONALFACE((5,3,12,11));
+#90=IFCINDEXEDPOLYGONALFACE((3,5,1,2));
+#91=IFCINDEXEDPOLYGONALFACE((11,12,10,9));
+#92=IFCINDEXEDPOLYGONALFACE((8,7,9,10));
+#93=IFCINDEXEDPOLYGONALFACE((3,8,10,12));
+#94=IFCINDEXEDPOLYGONALFACE((7,5,11,9));
+#95=IFCPOLYGONALFACESET(#84,$,(#85,#86,#87,#88,#89,#90,#91,#92,#93,#94),$);
+ENDSEC;
+END-ISO-10303-21;
+"""
+
+def test_original_edges():
+    ifc_file = ifcopenshell.file.from_string(contents)
+    element = ifc_file.by_id(95)
+    settings = ifcopenshell.geom.settings()
+    shape = ifcopenshell.geom.create_shape(settings, element, geometry_library="opencascade")
+    assert (len(shape.edges) // 2) == 20
+    shape = ifcopenshell.geom.create_shape(settings, element, geometry_library="cgal")
+    assert (len(shape.edges) // 2) == 16
+    settings.set('cgal-original-edges', True)
+    shape = ifcopenshell.geom.create_shape(settings, element, geometry_library="cgal")
+    assert (len(shape.edges) // 2) == 20
