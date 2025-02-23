@@ -1202,8 +1202,8 @@ class Drawing(bonsai.core.tool.Drawing):
     def get_default_drawing_resource_path(cls, resource: str) -> Union[str, None]:
         project = tool.Ifc.get().by_type("IfcProject")[0]
         props = tool.Drawing.get_document_props()
-        resource_path = (
-            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", f"{resource}Path") or props.resource_path
+        resource_path = ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", f"{resource}Path") or getattr(
+            props, f"{resource.lower()}_path"
         )
         if resource_path:
             return resource_path.replace("\\", "/")
