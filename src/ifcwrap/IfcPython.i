@@ -54,6 +54,11 @@
 %include "exception.i"
 %include "std_shared_ptr.i"
 
+%{
+	#include <array>
+%}
+%template(DoubleArray3) std::array<double, 3>;
+
 %ignore IfcGeom::NumberNativeDouble;
 %ignore ifcopenshell::geometry::Converter;
 
