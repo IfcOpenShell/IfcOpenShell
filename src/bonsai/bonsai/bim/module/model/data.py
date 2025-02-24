@@ -26,7 +26,7 @@ from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import bonsai.tool as tool
 from math import degrees
 from natsort import natsorted
-from typing import Union
+from typing import Union, Optional
 
 
 def refresh():
@@ -45,17 +45,14 @@ class AuthoringData:
     data = {}
     type_thumbnails = {}
     types_per_page = 9
-    ifc_element_type = None
     is_loaded = False
 
     @classmethod
-    def load(cls, ifc_element_type=None):
+    def load(cls, ifc_element_type: Optional[str] = None):
         cls.is_loaded = True
         cls.props = tool.Model.get_model_props()
-        if ifc_element_type:
-            cls.ifc_element_type = None if ifc_element_type == "all" else ifc_element_type
         cls.data["default_container"] = cls.default_container()
-        cls.data["ifc_element_type"] = cls.ifc_element_type
+        cls.data["ifc_element_type"] = ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
         cls.data["ifc_class_current"] = cls.ifc_class_current()
         # Make sure .ifc_classes() was run before next lines
