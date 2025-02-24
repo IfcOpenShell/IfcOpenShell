@@ -242,17 +242,6 @@ class ImportSpatialDecomposition(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditContainerAttributes(bpy.types.Operator):
-    bl_idname = "bim.edit_container_attributes"
-    bl_label = "Edit container attributes"
-    bl_options = {"REGISTER", "UNDO"}
-    container: bpy.props.IntProperty()
-
-    def execute(self, context):
-        core.edit_container_attributes(tool.Spatial, entity=tool.Ifc.get().by_id(self.container))
-        return {"FINISHED"}
-
-
 class ContractContainer(bpy.types.Operator):
     bl_idname = "bim.contract_container"
     bl_label = "Contract Container"
