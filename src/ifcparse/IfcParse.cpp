@@ -811,6 +811,28 @@ void IfcParse::impl::rocks_db_file_storage::unregister_inverse(unsigned id_from,
     }
 }
 
+void IfcParse::impl::rocks_db_file_storage::add_type_ref(IfcUtil::IfcBaseClass* new_entity)
+{
+    size_t v = new_entity->identity();
+    std::string s(sizeof(size_t), ' ');
+    memcpy(s.data(), &v, sizeof(size_t));
+    db->Merge(rocksdb::WriteOptions{}, "t|" + std::to_string(new_entity->declaration().index_in_schema()), s);
+}
+
+void IfcParse::impl::rocks_db_file_storage::remove_type_ref(IfcUtil::IfcBaseClass* new_entity)
+{
+    std::string s;
+    auto key = "t|" + std::to_string(new_entity->declaration().index_in_schema());
+    if (db->Get(rocksdb::ReadOptions{}, key, &s).ok()) {
+        std::vector<size_t> vals(s.size() / sizeof(size_t));
+        memcpy(vals.data(), s.data(), s.size());
+        vals.erase(std::find(vals.begin(), vals.end(), (size_t)new_entity->identity()));
+        s.resize(vals.size() * sizeof(size_t));
+        memcpy(s.data(), vals.data(), s.size());
+        db->Put(rocksdb::WriteOptions{}, key, s);
+    }
+}
+
 namespace {
     class StringBuilderVisitor : public boost::static_visitor<void> {
     private:
@@ -1231,7 +1253,9 @@ IfcFile::IfcFile(const std::string& path, filetype ty) {
     // @todo allow for rocksdb from path
     if (ty == ifcspf) {
         IfcSpfStream s(path);
-        storage_ = impl::in_memory_file_storage{};
+        storage_.emplace<1>(); // impl::in_memory_file_storage{};
+        // @todo assign in constructor
+        std::get<impl::in_memory_file_storage>(storage_).file = this;
         std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
     } else {
         storage_ = impl::rocks_db_file_storage(path, this);
@@ -1243,20 +1267,20 @@ IfcFile::IfcFile(const std::string& path, filetype ty) {
 
 IfcFile::IfcFile(std::istream& stream, int length) {
     IfcSpfStream s(stream, length);
-    storage_ = impl::in_memory_file_storage{};
+    storage_.emplace<1>();
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
     ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
 }
 
 IfcFile::IfcFile(void* data, int length) {
     IfcSpfStream s(data, length);
-    storage_ = impl::in_memory_file_storage{};
+    storage_.emplace<1>();
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
     ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
 }
 
 IfcFile::IfcFile(IfcParse::IfcSpfStream* s) {
-    storage_ = impl::in_memory_file_storage{};
+    storage_.emplace<1>();
     std::get<impl::in_memory_file_storage>(storage_).read_from_stream(s, schema_, max_id_);
     ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
 }
@@ -1266,7 +1290,7 @@ IfcFile::IfcFile(const IfcParse::schema_definition* schema)
     , ifcroot_type_(schema_->declaration_by_name("IfcRoot"))
     , max_id_(0)
 {
-    storage_ = impl::in_memory_file_storage{};
+    storage_.emplace<1>();
     setDefaultHeaderValues();
 }
 
@@ -1283,7 +1307,8 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
         return;
     }
 
-    tokens = new IfcSpfLexer(stream, file);
+    // @todo file ptr arg removed?
+    tokens = new IfcSpfLexer(stream, nullptr);
 
     std::vector<std::string> schemas;
 
@@ -2014,7 +2039,7 @@ void IfcParse::impl::in_memory_file_storage::process_deletion_inverse(IfcUtil::I
                 ids.erase(std::remove(ids.begin(), ids.end(), id), ids.end());
             }
         }
-    }    
+    }
 }
 
 namespace {
@@ -2102,7 +2127,7 @@ aggregate_of_instance::ptr IfcFile::instances_by_reference(int t) {
 }
 
 IfcUtil::IfcBaseClass* IfcFile::instance_by_id(int id) {
-    std::visit([id](auto& x) {
+    return std::visit([id](auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
             throw std::runtime_error("Storage not initialized");
             return (IfcUtil::IfcBaseClass*) nullptr;
@@ -2185,7 +2210,7 @@ std::ostream& operator<<(std::ostream& out, const IfcParse::IfcFile& file) {
 
     typedef std::vector<IfcUtil::IfcBaseClass*> vector_t;
     vector_t sorted;
-    std::transform(file.begin(), file.end(), std::back_inserter(sorted), [file](const auto& x) { return file.byidentity_.find(x.second)->second; });
+    std::transform(file.begin(), file.end(), std::back_inserter(sorted), [&file](const auto& x) { return file.byidentity_.find(x.second)->second; });
     std::sort(sorted.begin(), sorted.end(), [](const auto& a, const auto& b) { return a->id() < b->id(); });
 
     for (auto& e : sorted) {
@@ -2436,6 +2461,28 @@ void IfcParse::IfcFile::build_inverses() {
     }
 }
 
+void IfcParse::IfcFile::register_inverse(unsigned id_from, const IfcParse::entity* from_entity, int inst_id, int attribute_index)
+{
+    std::visit([id_from, from_entity, inst_id, attribute_index](auto& x) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
+            throw std::runtime_error("Storage not initialized");
+        } else {
+            return x.register_inverse(id_from, from_entity, inst_id, attribute_index);
+        }
+    }, storage_);
+}
+
+void IfcParse::IfcFile::unregister_inverse(unsigned id_from, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass* inst, int attribute_index)
+{
+    std::visit([id_from, from_entity, inst, attribute_index](auto& x) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
+            throw std::runtime_error("Storage not initialized");
+        } else {
+            return x.unregister_inverse(id_from, from_entity, inst, attribute_index);
+        }
+    }, storage_);
+}
+
 std::atomic_uint32_t IfcUtil::IfcBaseClass::counter_(0);
 
 // bool IfcParse::IfcFile::guid_map_ = true;
@@ -2497,9 +2544,9 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& data)
 AttributeValue IfcEntityInstanceData::get_attribute_value(size_t index) const
 {
     return std::visit([index](const auto& x) {
-        if constexpr (std::is_same_v<std::decay_t<decltype(x)>, IfcParse::impl::in_memory_file_storage>) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(x)>, in_memory_attribute_storage>) {
             return AttributeValue(&x, (uint8_t)index);
-        } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, IfcParse::impl::rocks_db_file_storage>) {
+        } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, rocks_db_attribute_storage>) {
             // @todo
             return AttributeValue{};
         } else {
