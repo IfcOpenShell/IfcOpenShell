@@ -1981,7 +1981,18 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_existing_x_angle(cls, extrusion: ifcopenshell.entity_instance) -> float:
         x, y, z = extrusion.ExtrudedDirection.DirectionRatios
-        x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+        vector = Vector((0, 1))
+        x_angle = vector.angle_signed(Vector((y, z)))
+
+        # The extrusion direction is changed by the layer direction change
+        # So we have to adapt the values of y, z and vector accordingly
+        if z < 0 and y < 0:
+            y = abs(y)
+            z = abs(z)
+        if z < 0 and y >=0:
+            vector = Vector((0, -1))
+            
+        x_angle = vector.angle_signed(Vector((y, z)))
 
         return x_angle
 
