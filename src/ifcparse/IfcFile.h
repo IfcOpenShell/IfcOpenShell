@@ -206,8 +206,6 @@ namespace impl {
         typedef map_transformer<identity_by_id_t, std::function<IfcUtil::IfcBaseClass* (size_t)>, std::function<size_t(IfcUtil::IfcBaseClass*)>> entity_by_id_t;
         typedef entity_by_id_t::iterator iterator;
 
-        identity_by_id_t idenbyid_;
-
         in_memory_file_storage()
             : byid_(
                 &idenbyid_, 
@@ -215,6 +213,9 @@ namespace impl {
                 [](IfcUtil::IfcBaseClass* inst) { return inst->identity(); }
             )
         {}
+
+        in_memory_file_storage(const in_memory_file_storage&) = delete;
+        in_memory_file_storage(const in_memory_file_storage&&) = delete;
 
         class type_iterator : private entities_by_type_t::const_iterator {
         public:
@@ -260,7 +261,6 @@ namespace impl {
         static bool guid_map() { return guid_map_; }
         static void guid_map(bool b) { guid_map_ = b; }
 
-        entity_by_id_t byid_;
         // this is for simple types
         entity_by_iden_t byidentity_;
         // entities_by_type_t bytype_;
@@ -268,6 +268,8 @@ namespace impl {
         // entities_by_ref_t byref_;
         entities_by_ref_t byref_excl_;
         entity_by_guid_t byguid_;
+        identity_by_id_t idenbyid_;
+        entity_by_id_t byid_;
 
         void load(unsigned entity_instance_name, const IfcParse::entity* entity, parse_context&, int attribute_index = -1);
         void try_read_semicolon() const;
@@ -291,7 +293,14 @@ namespace impl {
             bytype_excl_[ty]->push(new_entity);
         }
         void remove_type_ref(IfcUtil::IfcBaseClass* new_entity) {
-            // @todo
+            auto ty = new_entity->declaration().as_entity();
+            auto it = bytype_excl_.find(ty);
+            if (it != bytype_excl_.end()) {
+                it->second->remove(new_entity);
+                if (it->second->size() == 0) {
+                    bytype_excl_.erase(ty);
+                }
+            }
         }
 
         void add_inverse_ref(IfcUtil::IfcBaseClass* new_entity) {
@@ -509,6 +518,7 @@ namespace impl {
             const IfcParse::declaration* operator*() const;
         };
 
+        // @todo rocksdb_instance_iterator?
         using const_iterator = rocksdb_types_iterator;
 
         void register_inverse(unsigned, const IfcParse::entity* from_entity, int inst_id, int attribute_index);
@@ -707,7 +717,6 @@ private:
 
     void build_inverses();
 
-    // @todo variant apply_visitor
     void register_inverse(unsigned, const IfcParse::entity* from_entity, int inst_id, int attribute_index);
     void unregister_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
 

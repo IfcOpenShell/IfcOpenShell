@@ -330,6 +330,8 @@ if (WITH_ROCKSDB)
 
     add_definitions(-DWITH_ROCKSDB)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_ROCKSDB)
+
+    set(RPCRT_LIBRARIES "rpcrt4.lib" "shlwapi.lib")
 endif()
 
 # Find Boost: On win32 the (hardcoded) default is to use static libraries and
@@ -967,7 +969,7 @@ endforeach()
 set(IFCPARSE_FILES ${IFCPARSE_CPP_FILES} ${IFCPARSE_H_FILES})
 
 add_library(IfcParse ${IFCPARSE_FILES})
-target_link_libraries(IfcParse ${ROCKSDB_LIBRARY})
+target_link_libraries(IfcParse ${ROCKSDB_LIBRARY} ${RPCRT_LIBRARIES})
 set_target_properties(IfcParse PROPERTIES COMPILE_FLAGS -DIFC_PARSE_EXPORTS VERSION "${PROJECT_VERSION}" SOVERSION "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}")
 
 if(WASM_BUILD)

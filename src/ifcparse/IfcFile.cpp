@@ -391,7 +391,6 @@ namespace {
 
 }
 
-
 // @todo naming
 IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& filepath, IfcParse::IfcFile* ffile)
     : file(ffile)
@@ -411,6 +410,61 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::instance_by_id(int
 {
     // @todo rename assert_existance() -> instance_by_id();
     return assert_existance(id);
+}
+
+void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::IfcBaseClass* inst)
+{
+    auto id = inst->id();
+
+    {
+        // compute next prefix that does not start with v|{id}
+        auto prefix = "v|" + id;
+        auto it = db->NewIterator(rocksdb::ReadOptions());
+        it->Seek(prefix);
+        while (it->Valid()) {
+            it->Next();
+            if (!it->key().starts_with(prefix)) {
+                break;
+            }
+        }
+
+        rocksdb::WriteBatch batch;
+        batch.DeleteRange(prefix, it->key());
+        db->Write(rocksdb::WriteOptions{}, &batch);
+    }
+
+    // This is based on traversal which needs instances to still be contained in the map.
+    // another option would be to keep byid intact for the remainder of this loop
+    aggregate_of_instance::ptr entity_attributes = traverse(inst, 1);
+    for (aggregate_of_instance::it it = entity_attributes->begin(); it != entity_attributes->end(); ++it) {
+        IfcUtil::IfcBaseClass* entity_attribute = *it;
+        if (entity_attribute == inst) {
+            continue;
+        }
+        const unsigned int name = entity_attribute->id();
+        // Do not update inverses for simple types (which have id()==0 in IfcOpenShell).
+        if (name != 0) {
+            // Find instances entity -> other
+            // and update inverses from entity into other
+
+            {
+                auto prefix = "v|" + name;
+                auto it = db->NewIterator(rocksdb::ReadOptions());
+                it->Seek(prefix);
+                while (it->Valid() && it->key().starts_with(prefix)) {
+                    std::string s = it->value().ToString();
+
+                    // Iterator are snapshotted? So don't get invalidated?
+                    std::vector<size_t> vals(s.size() / sizeof(size_t));
+                    memcpy(vals.data(), s.data(), s.size());
+                    vals.erase(std::find(vals.begin(), vals.end(), (size_t)id));
+                    s.resize(vals.size() * sizeof(size_t));
+                    memcpy(s.data(), vals.data(), s.size());
+                    db->Put(rocksdb::WriteOptions{}, it->key(), s);
+                }
+            }
+        }
+    }
 }
 
 IfcUtil::IfcBaseClass* IfcParse::impl::in_memory_file_storage::instance_by_id(int id)
