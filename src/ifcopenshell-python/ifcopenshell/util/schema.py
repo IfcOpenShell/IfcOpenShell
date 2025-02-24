@@ -80,12 +80,7 @@ def is_a(declaration: ifcopenshell.ifcopenshell_wrapper.entity, ifc_class: str) 
         declaration = ifcopenshell.util.schema.get_declaration(wall)
         ifcopenshell.util.schema.is_a(declaration, "IfcRoot") # True
     """
-    ifc_class = ifc_class.upper()
-    if declaration.name_uc() == ifc_class:
-        return True
-    if declaration.supertype():
-        return is_a(declaration.supertype(), ifc_class)
-    return False
+    return declaration._is(ifc_class)
 
 
 def get_supertypes(
