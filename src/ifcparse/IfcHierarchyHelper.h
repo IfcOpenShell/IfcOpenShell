@@ -404,81 +404,79 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
     template <class T>
     void addRelatedObject(typename Schema::IfcObjectDefinition* relating_object,
                           typename Schema::IfcObjectDefinition* related_object,
-                          typename Schema::IfcOwnerHistory* owner_hist = 0) {
-        typename T::list::ptr li = instances_by_type<T>();
-        bool found = false;
-        for (typename T::list::it i = li->begin(); i != li->end(); ++i) {
-            T* rel = *i;
-            try {
-                if (get_parent_of_relation(rel) == relating_object) {
-                    aggregate_of_instance::ptr products = get_children_of_relation(rel);
-                    products->push(related_object);
-                    set_children_of_relation(rel, products);
+                          typename Schema::IfcOwnerHistory* owner_hist = 0)
+    {
+        if constexpr (std::is_same_v<T, typename Schema::IfcRelDefinesByType>) {
+            typename Schema::IfcRelDefinesByType::list::ptr li = instances_by_type<typename Schema::IfcRelDefinesByType>();
+            bool found = false;
+            for (typename Schema::IfcRelDefinesByType::list::it i = li->begin(); i != li->end(); ++i) {
+                typename Schema::IfcRelDefinesByType* rel = *i;
+                if (rel->RelatingType() == related_object) {
+                    typename Schema::IfcObject::list::ptr objects = rel->RelatedObjects();
+                    objects->push((typename Schema::IfcObject*)related_object);
+                    rel->setRelatedObjects(objects);
                     found = true;
                     break;
                 }
-            } catch (std::exception& e) {
-                Logger::Error(e);
-            } catch (...) {
-                Logger::Error("Unknown error in addRelatedObject()");
             }
-        }
-        if (!found) {
-            if (!owner_hist) {
-                owner_hist = getSingle<typename Schema::IfcOwnerHistory>();
-            }
-            if (!owner_hist) {
-                owner_hist = addOwnerHistory();
-            }
+            if (!found) {
+                if (!owner_hist) {
+                    owner_hist = getSingle<typename Schema::IfcOwnerHistory>();
+                }
+                if (!owner_hist) {
+                    owner_hist = addOwnerHistory();
+                }
+                typename Schema::IfcObject::list::ptr related_objects(new aggregate_of<typename Schema::IfcObject>());
+                related_objects->push((typename Schema::IfcObject*)related_object);
+                typename Schema::IfcRelDefinesByType* t = new typename Schema::IfcRelDefinesByType(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, related_objects, related_object->as<typename Schema::IfcTypeObject>);
 
-            aggregate_of_instance::ptr related_objects(new aggregate_of_instance);
-            related_objects->push(related_object);
-
-            IfcEntityInstanceData data = IfcEntityInstanceData(storage_t(T::Class().attribute_count()));
-            data.storage_.set(0, (std::string)IfcParse::IfcGlobalId());
-            data.storage_.set(1, owner_hist);
-            int relating_index = 4;
-            int related_index = 5;
-            if (T::Class().name() == "IfcRelContainedInSpatialStructure" || std::is_base_of<typename Schema::IfcRelDefines, T>::value) {
-                // some classes have attributes reversed.
-                std::swap(relating_index, related_index);
+                addEntity(t);
             }
-            data.storage_.set(relating_index, relating_object);
-            data.storage_.set(related_index, related_objects);
-
-            T* t = (T*)Schema::get_schema().instantiate(&T::Class(), std::move(data));
-            addEntity(t);
-        }
-    }
-
-    template <>
-    void addRelatedObject<typename Schema::IfcRelDefinesByType>(typename Schema::IfcObjectDefinition* relating_type,
-                                                                                           typename Schema::IfcObjectDefinition* related_object,
-                                                                                           typename Schema::IfcOwnerHistory* owner_hist) {
-        typename Schema::IfcRelDefinesByType::list::ptr li = instances_by_type<typename Schema::IfcRelDefinesByType>();
-        bool found = false;
-        for (typename Schema::IfcRelDefinesByType::list::it i = li->begin(); i != li->end(); ++i) {
-            typename Schema::IfcRelDefinesByType* rel = *i;
-            if (rel->RelatingType() == relating_type) {
-                typename Schema::IfcObject::list::ptr objects = rel->RelatedObjects();
-                objects->push((typename Schema::IfcObject*)related_object);
-                rel->setRelatedObjects(objects);
-                found = true;
-                break;
+        } else {
+            typename T::list::ptr li = instances_by_type<T>();
+            bool found = false;
+            for (typename T::list::it i = li->begin(); i != li->end(); ++i) {
+                T* rel = *i;
+                try {
+                    if (get_parent_of_relation(rel) == relating_object) {
+                        aggregate_of_instance::ptr products = get_children_of_relation(rel);
+                        products->push(related_object);
+                        set_children_of_relation(rel, products);
+                        found = true;
+                        break;
+                    }
+                } catch (std::exception& e) {
+                    Logger::Error(e);
+                } catch (...) {
+                    Logger::Error("Unknown error in addRelatedObject()");
+                }
             }
-        }
-        if (!found) {
-            if (!owner_hist) {
-                owner_hist = getSingle<typename Schema::IfcOwnerHistory>();
-            }
-            if (!owner_hist) {
-                owner_hist = addOwnerHistory();
-            }
-            typename Schema::IfcObject::list::ptr related_objects(new aggregate_of<typename Schema::IfcObject>());
-            related_objects->push((typename Schema::IfcObject*)related_object);
-            typename Schema::IfcRelDefinesByType* t = new typename Schema::IfcRelDefinesByType(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, related_objects, (typename Schema::IfcTypeObject*)relating_type);
+            if (!found) {
+                if (!owner_hist) {
+                    owner_hist = getSingle<typename Schema::IfcOwnerHistory>();
+                }
+                if (!owner_hist) {
+                    owner_hist = addOwnerHistory();
+                }
 
-            addEntity(t);
+                aggregate_of_instance::ptr related_objects(new aggregate_of_instance);
+                related_objects->push(related_object);
+
+                IfcEntityInstanceData data = IfcEntityInstanceData(storage_t(T::Class().attribute_count()));
+                data.storage_.set(0, (std::string)IfcParse::IfcGlobalId());
+                data.storage_.set(1, owner_hist);
+                int relating_index = 4;
+                int related_index = 5;
+                if (T::Class().name() == "IfcRelContainedInSpatialStructure" || std::is_base_of<typename Schema::IfcRelDefines, T>::value) {
+                    // some classes have attributes reversed.
+                    std::swap(relating_index, related_index);
+                }
+                data.storage_.set(relating_index, relating_object);
+                data.storage_.set(related_index, related_objects);
+
+                T* t = (T*)Schema::get_schema().instantiate(&T::Class(), std::move(data));
+                addEntity(t);
+            }
         }
     }
 
