@@ -431,7 +431,7 @@ class Root(bonsai.core.tool.Root):
         """
         tool.Ifc.unlink(obj=obj)
         if tool.Geometry.has_mesh_properties((data := obj.data)):
-            tool.Geometry.get_mesh_props(mesh).ifc_definition_id = 0
+            tool.Geometry.get_mesh_props(data).ifc_definition_id = 0
         for material_slot in obj.material_slots:
             if material := material_slot.material:
                 tool.Ifc.unlink(obj=material)

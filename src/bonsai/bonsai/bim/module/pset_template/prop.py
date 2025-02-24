@@ -21,6 +21,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.attribute
 from ifcopenshell.util.doc import get_attribute_doc
+import bonsai.tool as tool
 from bonsai.bim.module.pset_template.data import PsetTemplatesData
 from bonsai.bim.prop import StrProperty, Attribute
 from bonsai.bim.ifc import IfcStore
