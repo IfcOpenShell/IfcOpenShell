@@ -45,7 +45,7 @@ def remove_cost_value(
 
         ifcopenshell.api.cost.remove_cost_value(model, parent=item, cost_value=value)
     """
-    if len(file.get_inverse(cost_value)) == 1:
+    if file.get_total_inverses(cost_value) == 1:
         file.remove(cost_value)
         # TODO deep purge
     elif parent.is_a("IfcCostItem"):

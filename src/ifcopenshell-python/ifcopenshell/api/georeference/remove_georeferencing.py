@@ -43,7 +43,7 @@ def remove_georeferencing(file: ifcopenshell.file) -> None:
             ifcopenshell.api.pset.remove_pset(file, project, file.by_id(pset["id"]))
         return
     for projected_crs in file.by_type("IfcProjectedCRS"):
-        if (unit := projected_crs.MapUnit) and len(file.get_inverse(unit)) == 1:
+        if (unit := projected_crs.MapUnit) and file.get_total_inverses(unit) == 1:
             projected_crs.MapUnit = None
             ifcopenshell.util.element.remove_deep2(file, unit)
         file.remove(projected_crs)

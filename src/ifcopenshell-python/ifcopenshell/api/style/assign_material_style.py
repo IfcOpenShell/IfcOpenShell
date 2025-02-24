@@ -174,7 +174,7 @@ class Usecase:
             new_items.append(self.create_styled_item(item_to_reuse))
             representation.Items = new_items
             for item in same_style_items:
-                if len(self.file.get_inverse(item)) == 0:
+                if self.file.get_total_inverses(item) == 0:
                     self.file.remove(item)
         else:
             representations = list(definition_representation.Representations)

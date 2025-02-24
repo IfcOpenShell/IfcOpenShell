@@ -42,7 +42,7 @@ def remove_grid_axis(file: ifcopenshell.file, axis: ifcopenshell.entity_instance
         ifcopenshell.api.grid.remove_grid_axis(model, axis=axis_2)
     """
     axis_curve = axis.AxisCurve
-    if len(file.get_inverse(axis_curve)) == 1:
+    if file.get_total_inverses(axis_curve) == 1:
         ifcopenshell.util.element.remove_deep(file, axis_curve)
         file.remove(axis_curve)
     file.remove(axis)

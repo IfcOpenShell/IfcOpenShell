@@ -43,7 +43,7 @@ def remove_cost_item_quantity(
         ifcopenshell.api.cost.remove_cost_item(model,
             cost_item=item, physical_quantity=quantity)
     """
-    if len(file.get_inverse(physical_quantity)) == 1:
+    if file.get_total_inverses(physical_quantity) == 1:
         file.remove(physical_quantity)
         return
     quantities = list(cost_item.CostQuantities or [])

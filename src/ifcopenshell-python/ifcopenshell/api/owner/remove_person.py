@@ -41,10 +41,10 @@ def remove_person(file: ifcopenshell.file, person: ifcopenshell.entity_instance)
     """
 
     for role in person.Roles or []:
-        if len(file.get_inverse(role)) == 1:
+        if file.get_total_inverses(role) == 1:
             ifcopenshell.api.owner.remove_role(file, role=role)
     for address in person.Addresses or []:
-        if len(file.get_inverse(address)) == 1:
+        if file.get_total_inverses(address) == 1:
             ifcopenshell.api.owner.remove_address(file, address=address)
     for inverse in file.get_inverse(person):
         if inverse.is_a("IfcWorkControl"):

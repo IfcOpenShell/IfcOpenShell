@@ -45,7 +45,7 @@ def edit_named_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instance,
     for name, value in attributes.items():
         if name == "Dimensions":
             dimensions = unit.Dimensions
-            if len(file.get_inverse(dimensions)) > 1:
+            if file.get_total_inverses(dimensions) > 1:
                 unit.Dimensions = file.createIfcDimensionalExponents(*value)
             else:
                 for i, exponent in enumerate(value):

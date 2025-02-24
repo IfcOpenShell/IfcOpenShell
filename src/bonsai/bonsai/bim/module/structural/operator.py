@@ -750,7 +750,7 @@ class LoadStructuralLoads(bpy.types.Operator):
             for structural_load in loads:
                 if (
                     names.count(structural_load.Name or "Unnamed") > 1
-                    and len(self.file.get_inverse(structural_load)) < 2
+                    and self.file.get_total_inverses(structural_load) < 2
                 ):
                     continue
                 new = props.structural_loads.add()

@@ -117,7 +117,7 @@ class Usecase:
                         for element in rel.RelatedObjects:
                             self.change_profile(element, profile)
 
-        if old_profile and len(self.file.get_inverse(old_profile)) == 0:
+        if old_profile and self.file.get_total_inverses(old_profile) == 0:
             # TODO: check remove deep
             self.file.remove(old_profile)
 

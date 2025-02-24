@@ -38,10 +38,10 @@ def remove_organisation(file: ifcopenshell.file, organisation: ifcopenshell.enti
         ifcopenshell.api.owner.remove_organisation(model, organisation=organisation)
     """
     for role in organisation.Roles or []:
-        if len(file.get_inverse(role)) == 1:
+        if (file.get_total_inverses(role)) == 1:
             ifcopenshell.api.owner.remove_role(file, role=role)
     for address in organisation.Addresses or []:
-        if len(file.get_inverse(address)) == 1:
+        if (file.get_total_inverses(address)) == 1:
             ifcopenshell.api.owner.remove_address(file, address=address)
     for inverse in file.get_inverse(organisation):
         if inverse.is_a("IfcOrganizationRelationship"):

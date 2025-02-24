@@ -83,7 +83,7 @@ def assign_lag_time(
     duration = file.create_entity("IfcDuration", ifcopenshell.util.date.datetime2ifc(lag_value, "IfcDuration"))
     lag_time = file.create_entity("IfcLagTime", DurationType=duration_type, LagValue=duration)
     if rel_sequence.is_a("IfcRelSequence"):
-        if rel_sequence.TimeLag and len(file.get_inverse(rel_sequence.TimeLag)) == 1:
-            file.remove(rel_sequence.TimeLag)
+        if (current_lag_time := rel_sequence.TimeLag) and file.get_total_inverses(current_lag_time) == 1:
+            file.remove(current_lag_time)
     rel_sequence.TimeLag = lag_time
     return lag_time

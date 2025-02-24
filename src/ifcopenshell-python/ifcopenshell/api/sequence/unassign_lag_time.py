@@ -55,8 +55,8 @@ def unassign_lag_time(file: ifcopenshell.file, rel_sequence: ifcopenshell.entity
         # What if you didn't?
         ifcopenshell.api.sequence.unassign_lag_time(model, rel_sequence=sequence)
     """
-    if len(file.get_inverse(rel_sequence.TimeLag)) == 1:
-        file.remove(rel_sequence.TimeLag)
+    if file.get_total_inverses((current_lag_time := rel_sequence.TimeLag)) == 1:
+        file.remove(current_lag_time)
     else:
         rel_sequence.TimeLag = None
     ifcopenshell.api.sequence.cascade_schedule(file, task=rel_sequence.RelatedProcess)

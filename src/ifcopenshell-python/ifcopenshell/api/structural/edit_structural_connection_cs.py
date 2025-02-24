@@ -40,9 +40,9 @@ def edit_structural_connection_cs(
         structural_item.ConditionCoordinateSystem = ccs
 
     ccs = structural_item.ConditionCoordinateSystem
-    if ccs.Axis and len(file.get_inverse(ccs.Axis)) == 1:
-        file.remove(ccs.Axis)
+    if (current_axis := ccs.Axis) and file.get_total_inverses(current_axis) == 1:
+        file.remove(current_axis)
     ccs.Axis = file.create_entity("IfcDirection", ifc_safe_vector_type(axis))
-    if (prev_ref_direction := ccs.RefDirection) and len(file.get_inverse(prev_ref_direction)) == 1:
+    if (prev_ref_direction := ccs.RefDirection) and file.get_total_inverses(prev_ref_direction) == 1:
         file.remove(prev_ref_direction)
     ccs.RefDirection = file.create_entity("IfcDirection", ifc_safe_vector_type(ref_direction))

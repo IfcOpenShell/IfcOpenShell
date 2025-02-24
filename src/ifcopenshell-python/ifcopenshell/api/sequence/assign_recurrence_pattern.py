@@ -108,11 +108,11 @@ def assign_recurrence_pattern(
     recurrence = file.create_entity("IfcRecurrencePattern", recurrence_type)
 
     if parent.is_a("IfcWorkTime"):
-        if parent.RecurrencePattern and len(file.get_inverse(parent.RecurrencePattern)) == 1:
-            file.remove(parent.RecurrencePattern)
+        if (old_recurrence := parent.RecurrencePattern) and file.get_total_inverses(old_recurrence) == 1:
+            file.remove(old_recurrence)
         parent.RecurrencePattern = recurrence
     elif parent.is_a("IfcTaskTimeRecurring"):
-        if (recurrence_old := parent.Recurrence) and len(file.get_inverse(recurrence_old)) == 1:
+        if (recurrence_old := parent.Recurrence) and file.get_total_inverses(recurrence_old) == 1:
             file.remove(recurrence_old)
         parent.Recurrence = recurrence
     return recurrence
