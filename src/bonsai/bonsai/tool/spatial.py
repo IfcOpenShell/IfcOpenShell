@@ -492,7 +492,11 @@ class Spatial(bonsai.core.tool.Spatial):
                 # this product has global orientation
                 active_slot.type = "GLOBAL"
                 continue
-            elif product.Decomposes and hasattr(product.Decomposes[0].RelatingObject, "ObjectPlacement"):
+            elif (
+                hasattr(product, "Decomposes")
+                and product.Decomposes
+                and hasattr(product.Decomposes[0].RelatingObject, "ObjectPlacement")
+            ):
                 # this product is part of a decomposition
                 parent_placement = product.Decomposes[0].RelatingObject.ObjectPlacement
                 parent_matrix = ifcopenshell.util.placement.get_local_placement(parent_placement)[:3, :3]
@@ -500,6 +504,19 @@ class Spatial(bonsai.core.tool.Spatial):
                     # this product has the same orientation as its parent
                     cls.create_orientation_slots(products=[product.Decomposes[0].RelatingObject], use=use)
                     continue
+            elif (
+                hasattr(product, "ContainedInStructure")
+                and product.ContainedInStructure
+                and hasattr(product.ContainedInStructure[0].RelatingStructure, "Objectplacement")
+            ):
+                # contained in a spatial element
+                parent_placement = product.ContainedInStructure[0].RelatingStructure.ObjectPlacement
+                parent_matrix = ifcopenshell.util.placement.get_local_placement(parent_placement)[:3, :3]
+                if np.allclose(combined_matrix, parent_matrix, atol=1e-6):
+                    # this product has the same orientation as its container
+                    cls.create_orientation_slots(products=[product.ContainedInStructure[0].RelatingStructure], use=use)
+                    continue
+
             # this product has a unique orientation
             orientation_name = product.is_a() + "/" + product.Name
 
