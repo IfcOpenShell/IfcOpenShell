@@ -60,7 +60,8 @@ class IfcClassData:
 
     @classmethod
     def ifc_classes(cls):
-        ifc_product = bpy.context.scene.BIMRootProperties.ifc_product
+        rprops = tool.Root.get_root_props()
+        ifc_product = rprops.ifc_product
         declaration = tool.Ifc.schema().declaration_by_name(ifc_product)
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
@@ -80,7 +81,8 @@ class IfcClassData:
     @classmethod
     def ifc_predefined_types(cls):
         types_enum = []
-        ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
+        rprops = tool.Root.get_root_props()
+        ifc_class = rprops.ifc_class
         declaration = tool.Ifc.schema().declaration_by_name(ifc_class)
         version = tool.Ifc.get_schema()
         for attribute in declaration.attributes():
@@ -114,7 +116,8 @@ class IfcClassData:
 
     @classmethod
     def representation_template(cls):
-        ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
+        rprops = tool.Root.get_root_props()
+        ifc_class = rprops.ifc_class
         templates = [
             ("EMPTY", "No Geometry", "Start with an empty object"),
             None,

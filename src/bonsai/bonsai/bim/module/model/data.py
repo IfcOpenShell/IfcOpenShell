@@ -97,7 +97,7 @@ class AuthoringData:
 
     @classmethod
     def default_container(cls) -> str | None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = tool.Spatial.get_spatial_props()
         if props.default_container:
             try:
                 return tool.Ifc.get().by_id(props.default_container).Name

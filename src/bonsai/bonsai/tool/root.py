@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcopenshell.api
@@ -27,12 +28,19 @@ import bonsai.core.tool
 import bonsai.core.aggregate
 import bonsai.core.geometry
 import bonsai.tool as tool
-from typing import Union, Optional, Any, Literal
+from typing import Union, Optional, Any, Literal, TYPE_CHECKING
 from bonsai.bim.module.spatial.decorator import GridDecorator
 from bonsai.bim.module.geometry.decorator import ItemDecorator
 
+if TYPE_CHECKING:
+    from bonsai.bim.module.root.prop import BIMRootProperties
+
 
 class Root(bonsai.core.tool.Root):
+    @classmethod
+    def get_root_props(cls) -> BIMRootProperties:
+        return bpy.context.scene.BIMRootProperties
+
     @classmethod
     def add_tracked_opening(cls, obj: bpy.types.Object, opening_type: Literal["OPENING", "BOOLEAN"]) -> None:
         """Add tracked opening or boolean object."""
@@ -112,7 +120,7 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def get_default_container(cls) -> Optional[ifcopenshell.entity_instance]:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = tool.Spatial.get_spatial_props()
         if container := props.default_container:
             try:
                 return tool.Ifc.get().by_id(container)
@@ -233,7 +241,7 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def reload_grid_decorator(cls) -> None:
-        axes = bpy.context.scene.BIMGridProperties.grid_axes
+        axes = tool.Spatial.get_grid_props().grid_axes
         axes.clear()
         for axis in tool.Ifc.get().by_type("IfcGridAxis"):
             if obj := tool.Ifc.get_object(axis):

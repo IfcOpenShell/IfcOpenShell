@@ -28,11 +28,8 @@ def remove_cost_item_quantity(
     removed.
 
     :param cost_item: The IfcCostItem that the quantity is assigned to
-    :type cost_item: ifcopenshell.entity_instance
     :param physical_quantity: The IfcPhysicalQuantity to remove
-    :type physical_quantity: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -46,11 +43,9 @@ def remove_cost_item_quantity(
         ifcopenshell.api.cost.remove_cost_item(model,
             cost_item=item, physical_quantity=quantity)
     """
-    settings = {"cost_item": cost_item, "physical_quantity": physical_quantity}
-
-    if len(file.get_inverse(settings["physical_quantity"])) == 1:
-        file.remove(settings["physical_quantity"])
+    if len(file.get_inverse(physical_quantity)) == 1:
+        file.remove(physical_quantity)
         return
-    quantities = list(settings["cost_item"].CostQuantities or [])
-    quantities.remove(settings["physical_quantity"])
-    settings["cost_item"].CostQuantities = quantities
+    quantities = list(cost_item.CostQuantities or [])
+    quantities.remove(physical_quantity)
+    cost_item.CostQuantities = quantities

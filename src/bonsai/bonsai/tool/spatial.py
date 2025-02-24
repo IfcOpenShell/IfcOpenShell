@@ -41,12 +41,31 @@ import json
 from math import pi
 from mathutils import Vector, Matrix
 from shapely import Polygon
-from typing import Generator, Optional, Union, Literal, List, Any, Iterable
+from typing import Generator, Optional, Union, Literal, List, Any, Iterable, TYPE_CHECKING
 from collections import defaultdict
 from natsort import natsorted
 
+if TYPE_CHECKING:
+    from bonsai.bim.module.spatial.prop import (
+        BIMGridProperties,
+        BIMSpatialDecompositionProperties,
+        BIMObjectSpatialProperties,
+    )
+
 
 class Spatial(bonsai.core.tool.Spatial):
+    @classmethod
+    def get_spatial_props(cls) -> BIMSpatialDecompositionProperties:
+        return bpy.context.scene.BIMSpatialDecompositionProperties
+
+    @classmethod
+    def get_object_spatial_props(cls, obj: bpy.types.Object) -> BIMObjectSpatialProperties:
+        return obj.BIMObjectSpatialProperties
+
+    @classmethod
+    def get_grid_props(cls) -> BIMGridProperties:
+        return bpy.context.scene.BIMGridProperties
+
     @classmethod
     def can_contain(cls, container: ifcopenshell.entity_instance, element_obj: Union[bpy.types.Object, None]) -> bool:
         if not (element := tool.Ifc.get_entity(element_obj)):
@@ -81,7 +100,8 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def disable_editing(cls, obj: bpy.types.Object) -> None:
-        obj.BIMObjectSpatialProperties.is_editing = False
+        props = cls.get_object_spatial_props(obj)
+        props.is_editing = False
 
     @classmethod
     def duplicate_object_and_data(cls, obj: bpy.types.Object) -> bpy.types.Object:
@@ -92,8 +112,9 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def enable_editing(cls, obj: bpy.types.Object) -> None:
-        obj.BIMObjectSpatialProperties.is_editing = True
-        obj.BIMObjectSpatialProperties.relating_container_object = None
+        props = cls.get_object_spatial_props(obj)
+        props.is_editing = True
+        props.relating_container_object = None
 
     @classmethod
     def get_container(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -207,7 +228,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def get_container_elements_grouped_by_classification(cls, container: ifcopenshell.entity_instance) -> dict:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         results = {}
         if props.should_include_children:
             elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
@@ -254,7 +275,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def get_container_elements_grouped_by_type(cls, container: ifcopenshell.entity_instance) -> dict:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         results: defaultdict[str, dict[int, Any]] = defaultdict(dict)
         if props.should_include_children:
             elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
@@ -280,7 +301,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def load_contained_elements(cls) -> None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         props.elements.clear()
         if not (container := props.active_container):
             return
@@ -295,7 +316,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def load_contained_elements_by_type(cls, container: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         results = cls.get_container_elements_grouped_by_type(container)
 
         expanded_elements = json.loads(props.expanded_elements)
@@ -350,7 +371,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def load_contained_elements_by_decomposition(cls, container: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         expanded_elements = json.loads(props.expanded_elements)
         expanded_ifc_ids = expanded_elements.get("IFC_ID", [])
 
@@ -381,7 +402,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def load_contained_elements_by_classification(cls, container: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         expanded_elements = json.loads(props.expanded_elements)
         expanded_classifications = expanded_elements.get("CLASSIFICATION", [])
         expanded_classifications_r = expanded_elements.get("CLASSIFICATION_R", [])
@@ -445,7 +466,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def import_spatial_decomposition(cls) -> None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         previous_container_index = props.active_container_index
         props.containers.clear()
         cls.contracted_containers = json.loads(props.contracted_containers)
@@ -456,7 +477,7 @@ class Spatial(bonsai.core.tool.Spatial):
     def import_spatial_element(cls, element: ifcopenshell.entity_instance, level_index: int) -> None:
         if not element.is_a("IfcProject") and not tool.Root.is_spatial_element(element):
             return
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         new = props.containers.add()
         new.ifc_class = element.is_a()
         new["name"] = element.Name or "Unnamed"
@@ -485,28 +506,28 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def get_active_container(cls) -> Union[ifcopenshell.entity_instance, None]:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         if props.active_container_index < len(props.containers):
             container = tool.Ifc.get().by_id(props.containers[props.active_container_index].ifc_definition_id)
             return container
 
     @classmethod
     def contract_container(cls, container: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         contracted_containers = json.loads(props.contracted_containers)
         contracted_containers.append(container.id())
         props.contracted_containers = json.dumps(contracted_containers)
 
     @classmethod
     def expand_container(cls, container: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         contracted_containers = json.loads(props.contracted_containers)
         contracted_containers.remove(container.id())
         props.contracted_containers = json.dumps(contracted_containers)
 
     @classmethod
     def toggle_container_element(cls, element_index: int, is_recursive: bool) -> None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         if props.element_mode == "TYPE":
             cls.toggle_container_element_by_type(element_index, is_recursive)
         elif props.element_mode == "DECOMPOSITION":
@@ -516,7 +537,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def toggle_container_element_by_type(cls, element_index: int, is_recursive: bool) -> None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         expanded_elements: dict[str, list[Union[str, int]]] = json.loads(props.expanded_elements)
 
         element = props.elements[element_index]
@@ -565,7 +586,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def toggle_container_element_by_decomposition(cls, element_index: int, is_recursive: bool) -> None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         element = props.elements[element_index]
         expanded_elements: dict[str, list[Union[str, int]]] = json.loads(props.expanded_elements)
         expanded_elements_list: list[Union[str, int]] = expanded_elements.setdefault("IFC_ID", [])
@@ -598,7 +619,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def toggle_container_element_by_classification(cls, element_index: int, is_recursive: bool) -> None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         expanded_elements: dict[str, list[str]] = json.loads(props.expanded_elements)
         expanded_elements_list: list[str] = expanded_elements.setdefault("CLASSIFICATION", [])
 
@@ -679,7 +700,7 @@ class Spatial(bonsai.core.tool.Spatial):
 
     @classmethod
     def get_boundary_lines_from_context_visible_objects(cls) -> list[shapely.LineString]:
-        props = props = tool.Model.get_model_props()
+        props = tool.Model.get_model_props()
         calculation_rl = props.rl3
         container = tool.Root.get_default_container()
         container_obj = tool.Ifc.get_object(container)
@@ -1154,8 +1175,8 @@ class Spatial(bonsai.core.tool.Spatial):
     def set_default_container(cls, container: ifcopenshell.entity_instance) -> None:
         from bonsai.bim.module.spatial.data import SpatialDecompositionData
 
-        assert bpy.context
-        bpy.context.scene.BIMSpatialDecompositionProperties.default_container = container.id()
+        props = cls.get_spatial_props()
+        props.default_container = container.id()
         SpatialDecompositionData.data["default_container"] = SpatialDecompositionData.default_container()
 
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
@@ -1212,16 +1233,16 @@ class Spatial(bonsai.core.tool.Spatial):
     def set_target_container_as_default(cls) -> None:
         if (
             (container := tool.Root.get_default_container())
-            and (obj := tool.Ifc.get_object(container))
-            and bpy.context.active_object
+            and (container_obj := tool.Ifc.get_object(container))
+            and (obj := bpy.context.active_object)
         ):
-            props = bpy.context.active_object.BIMObjectSpatialProperties
-            props.container_obj = obj
+            props = cls.get_object_spatial_props(obj)
+            props.container_obj = container_obj
 
     @classmethod
     def get_filtered_elements(cls, should_filter: bool = True) -> Iterable[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = cls.get_spatial_props()
         container = ifc_file.by_id(props.active_container.ifc_definition_id)
         element_filter = props.element_filter
         active_element = props.active_element

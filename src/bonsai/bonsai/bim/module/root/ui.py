@@ -44,6 +44,7 @@ class BIM_PT_class(Panel):
         if not IfcClassData.is_loaded:
             IfcClassData.load()
         props = context.active_object.BIMObjectProperties
+        rprops = tool.Root.get_root_props()
         if props.ifc_definition_id:
             if not IfcClassData.data["has_entity"]:
                 row = self.layout.row(align=True)
@@ -58,10 +59,10 @@ class BIM_PT_class(Panel):
                 row.operator("bim.disable_reassign_class", icon="CANCEL", text="")
                 self.draw_class_dropdowns(
                     context,
-                    root_prop.get_ifc_predefined_types(context.scene.BIMRootProperties, context),
+                    root_prop.get_ifc_predefined_types(rprops, context),
                     is_reassigning_class=True,
                 )
-                self.layout.prop(context.scene.BIMRootProperties, "relating_class_object", icon="COPYDOWN")
+                self.layout.prop(rprops, "relating_class_object", icon="COPYDOWN")
             else:
                 row = self.layout.row(align=True)
                 row.label(
@@ -78,16 +79,16 @@ class BIM_PT_class(Panel):
             if AuthoringData.data["is_representation_item_active"]:
                 return
 
-            ifc_predefined_types = root_prop.get_ifc_predefined_types(context.scene.BIMRootProperties, context)
+            ifc_predefined_types = root_prop.get_ifc_predefined_types(rprops, context)
             self.draw_class_dropdowns(context, ifc_predefined_types)
             row = self.layout.row(align=True)
             op = row.operator("bim.assign_class")
-            op.ifc_class = context.scene.BIMRootProperties.ifc_class
-            op.predefined_type = context.scene.BIMRootProperties.ifc_predefined_type if ifc_predefined_types else ""
-            op.userdefined_type = context.scene.BIMRootProperties.ifc_userdefined_type
+            op.ifc_class = rprops.ifc_class
+            op.predefined_type = rprops.ifc_predefined_type if ifc_predefined_types else ""
+            op.userdefined_type = rprops.ifc_userdefined_type
 
     def draw_class_dropdowns(self, context, ifc_predefined_types, is_reassigning_class=False):
-        props = context.scene.BIMRootProperties
+        props = tool.Root.get_root_props()
         layout = self.layout
         prop_with_search(layout, props, "ifc_product")
         prop_with_search(layout, props, "ifc_class")

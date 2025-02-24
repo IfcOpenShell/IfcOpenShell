@@ -1076,9 +1076,10 @@ class IfcImporter:
             print(traceback.format_exc())
 
     def set_default_context(self):
+        rprops = tool.Root.get_root_props()
         for subcontext in self.file.by_type("IfcGeometricRepresentationSubContext"):
             if subcontext.ContextIdentifier == "Body":
-                bpy.context.scene.BIMRootProperties.contexts = str(subcontext.id())
+                rprops.contexts = str(subcontext.id())
                 break
 
     def link_element(self, element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:

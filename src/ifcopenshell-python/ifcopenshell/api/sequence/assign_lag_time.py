@@ -80,8 +80,8 @@ def assign_lag_time(
         # for whatever reason.
         ifcopenshell.api.sequence.assign_lag_time(model, rel_sequence=sequence, lag_value="P1D")
     """
-    lag_value = file.create_entity("IfcDuration", ifcopenshell.util.date.datetime2ifc(lag_value, "IfcDuration"))
-    lag_time = file.create_entity("IfcLagTime", DurationType=duration_type, LagValue=lag_value)
+    duration = file.create_entity("IfcDuration", ifcopenshell.util.date.datetime2ifc(lag_value, "IfcDuration"))
+    lag_time = file.create_entity("IfcLagTime", DurationType=duration_type, LagValue=duration)
     if rel_sequence.is_a("IfcRelSequence"):
         if rel_sequence.TimeLag and len(file.get_inverse(rel_sequence.TimeLag)) == 1:
             file.remove(rel_sequence.TimeLag)

@@ -28,23 +28,21 @@ def remove_structural_boundary_condition(
 
     :param connection: The IfcStructuralConnection to remove the condition
         from. If omitted, it is assumed to be an orphaned condition.
-    :type connection: ifcopenshell.entity_instance,optional
     :param boundary_condition: The IfcBoundaryCondition to remove.
-    :type boundary_condition: ifcopenshell.entity_instance, optional.
     :return: None
-    :rtype: None
     """
-    settings = {"connection": connection, "boundary_condition": boundary_condition}
 
-    if settings["connection"]:
+    if connection:
         # remove boundary condition from a connection
-        if not settings["connection"].AppliedCondition:
+        if not connection.AppliedCondition:
             return
-        if len(file.get_inverse(settings["connection"].AppliedCondition)) == 1:
-            file.remove(settings["connection"].AppliedCondition)
-        settings["connection"].AppliedCondition = None
+        applied_condition = connection.AppliedCondition
+        if file.get_total_inverses(applied_condition) == 1:
+            file.remove(applied_condition)
+        connection.AppliedCondition = None
     else:
+        assert boundary_condition, "Either connection or boundary_condition must be provided."
         # remove the boundary condition
-        for conn in file.get_inverse(settings["boundary_condition"]):
+        for conn in file.get_inverse(boundary_condition):
             conn.AppliedCondition = None
-        file.remove(settings["boundary_condition"])
+        file.remove(boundary_condition)

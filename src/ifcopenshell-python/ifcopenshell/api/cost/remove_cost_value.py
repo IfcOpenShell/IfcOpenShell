@@ -28,11 +28,8 @@ def remove_cost_value(
 
     :param parent: The IfcCostItem, IfcConstructionResource, or IfcCostValue
         that the IfcCostValue is assigned to.
-    :type parent: ifcopenshell.entity_instance
     :param cost_value: The IfcCostValue that you want to remove
-    :type parent: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -48,20 +45,18 @@ def remove_cost_value(
 
         ifcopenshell.api.cost.remove_cost_value(model, parent=item, cost_value=value)
     """
-    settings = {"parent": parent, "cost_value": cost_value}
-
-    if len(file.get_inverse(settings["cost_value"])) == 1:
-        file.remove(settings["cost_value"])
+    if len(file.get_inverse(cost_value)) == 1:
+        file.remove(cost_value)
         # TODO deep purge
-    elif settings["parent"].is_a("IfcCostItem"):
-        values = list(settings["parent"].CostValues)
-        values.remove(settings["cost_value"])
-        settings["parent"].CostValues = values if values else None
-    elif settings["parent"].is_a("IfcConstructionResource"):
-        values = list(settings["parent"].BaseCosts)
-        values.remove(settings["cost_value"])
-        settings["parent"].BaseCosts = values if values else None
-    elif settings["parent"].is_a("IfcCostValue"):
-        components = list(settings["parent"].Components)
-        components.remove(settings["cost_value"])
-        settings["parent"].Components = components if components else None
+    elif parent.is_a("IfcCostItem"):
+        values = list(parent.CostValues)
+        values.remove(cost_value)
+        parent.CostValues = values if values else None
+    elif parent.is_a("IfcConstructionResource"):
+        values = list(parent.BaseCosts)
+        values.remove(cost_value)
+        parent.BaseCosts = values if values else None
+    elif parent.is_a("IfcCostValue"):
+        components = list(parent.Components)
+        components.remove(cost_value)
+        parent.Components = components if components else None

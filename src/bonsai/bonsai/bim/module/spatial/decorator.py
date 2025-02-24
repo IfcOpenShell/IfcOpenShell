@@ -66,7 +66,8 @@ class GridDecorator:
         blf.size(font_id, 12)
         blf.enable(font_id, blf.SHADOW)
 
-        for axis in context.scene.BIMGridProperties.grid_axes:
+        grid_props = tool.Spatial.get_grid_props()
+        for axis in grid_props.grid_axes:
             if not (obj := axis.obj) or obj.hide_get() == True:
                 continue
             if obj.select_get() and context.mode != "OBJECT":
@@ -120,7 +121,8 @@ class GridDecorator:
         selected_edges = []
         unselected_verts = []
         unselected_edges = []
-        for axis in context.scene.BIMGridProperties.grid_axes:
+        grid_props = tool.Spatial.get_grid_props()
+        for axis in grid_props.grid_axes:
             if (obj := axis.obj) and obj.hide_get() == False:
                 if obj.select_get():
                     if context.mode != "OBJECT":

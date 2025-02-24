@@ -58,7 +58,8 @@ class AddEmptyType(bpy.types.Operator, AddObjectHelper):
     def execute(self, context):
         obj = bpy.data.objects.new("TYPEX", None)
         context.scene.collection.objects.link(obj)
-        context.scene.BIMRootProperties.ifc_product = "IfcElementType"
+        rprops = tool.Root.get_root_props()
+        rprops.ifc_product = "IfcElementType"
         tool.Blender.select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
@@ -71,7 +72,7 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
     ifc_element_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMRootProperties
+        props = tool.Root.get_root_props()
         props.ifc_product = "IfcElementType"
         props.ifc_class = self.ifc_element_type
         if self.ifc_element_type == "IfcWallType":
@@ -363,7 +364,7 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
             )
             bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
-            rprops = context.scene.BIMRootProperties
+            rprops = tool.Root.get_root_props()
             ifc_context = None
             if get_enum_items(rprops, "contexts", context):
                 ifc_context = int(rprops.contexts or "0") or None

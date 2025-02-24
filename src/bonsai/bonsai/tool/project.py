@@ -137,13 +137,15 @@ class Project(bonsai.core.tool.Project):
     @classmethod
     def set_context(cls, context):
         bonsai.bim.handler.refresh_ui_data()
-        bpy.context.scene.BIMRootProperties.contexts = str(context.id())
+        rprops = tool.Root.get_root_props()
+        rprops.contexts = str(context.id())
 
     @classmethod
     def set_default_context(cls):
         context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         if context:
-            bpy.context.scene.BIMRootProperties.contexts = str(context.id())
+            rprops = tool.Root.get_root_props()
+            rprops.contexts = str(context.id())
 
     @classmethod
     def set_default_modeling_dimensions(cls):

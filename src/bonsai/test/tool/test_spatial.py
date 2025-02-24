@@ -129,7 +129,8 @@ class TestDisableEditing(NewFile):
         obj = bpy.data.objects.new("Object", None)
         subject.enable_editing(obj)
         subject.disable_editing(obj)
-        assert obj.BIMObjectSpatialProperties.is_editing is False
+        props = tool.Spatial.get_object_spatial_props(obj)
+        assert props.is_editing is False
 
 
 class TestDuplicateObjectAndData(NewFile):
@@ -148,7 +149,8 @@ class TestEnableEditing(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
         subject.enable_editing(obj)
-        assert obj.BIMObjectSpatialProperties.is_editing is True
+        props = tool.Spatial.get_object_spatial_props(obj)
+        assert props.is_editing is True
 
 
 class TestGetContainer(NewFile):

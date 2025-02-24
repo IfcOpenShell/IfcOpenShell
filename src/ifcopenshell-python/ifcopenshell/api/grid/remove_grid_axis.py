@@ -23,9 +23,7 @@ def remove_grid_axis(file: ifcopenshell.file, axis: ifcopenshell.entity_instance
     """Removes a grid axis from a grid
 
     :param axis: The IfcGridAxis you want to remove.
-    :type axis: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

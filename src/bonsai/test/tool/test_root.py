@@ -191,8 +191,10 @@ class TestReassignClass(NewFile):
         slabs = [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSlab")]
         assert len(slabs) == 3
         tool.Blender.set_objects_selection(context, slabs[0], (slabs[1],))
-        context.scene.BIMRootProperties.ifc_product = "IfcElement"
-        context.scene.BIMRootProperties.ifc_class = "IfcWall"
+
+        props = tool.Root.get_root_props()
+        props.ifc_product = "IfcElement"
+        props.ifc_class = "IfcWall"
         bpy.ops.bim.reassign_class()
 
         assert len(ifc_file.by_type("IfcWall")) == 3

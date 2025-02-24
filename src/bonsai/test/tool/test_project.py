@@ -97,7 +97,8 @@ class TestSetContext(NewFile):
         tool.Ifc.set(ifc)
         context = ifc.createIfcGeometricRepresentationContext()
         subject.set_context(context)
-        assert bpy.context.scene.BIMRootProperties.contexts == str(context.id())
+        rprops = tool.Root.get_root_props()
+        assert rprops.contexts == str(context.id())
 
 
 class TestSetDefaultContext(NewFile):
@@ -115,7 +116,8 @@ class TestSetDefaultContext(NewFile):
             target_view="MODEL_VIEW",
         )
         subject.set_default_context()
-        assert bpy.context.scene.BIMRootProperties.contexts == str(body.id())
+        rprops = tool.Root.get_root_props()
+        assert rprops.contexts == str(body.id())
 
 
 class TestSetDefaultModelingDimensions(NewFile):

@@ -835,6 +835,7 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
     import ifcopenshell.util.element
     import ifcopenshell.util.geolocation
     import ifcopenshell.api.georeference
+    import ifcopenshell.api.unit
 
     prefix = get_prefix(target_units)
     si_unit = get_unit_name(target_units)

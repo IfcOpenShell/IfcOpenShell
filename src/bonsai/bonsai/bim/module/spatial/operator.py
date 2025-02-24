@@ -96,7 +96,7 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
             container = tool.Ifc.get().by_id(self.container)
         elif (
             (obj := tool.Blender.get_active_object())
-            and (props := obj.BIMObjectSpatialProperties)
+            and (props := tool.Spatial.get_object_spatial_props(obj))
             and (container_obj := props.container_obj)
             and (container := tool.Ifc.get_entity(container_obj))
         ):

@@ -34,28 +34,27 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Union
 
 
-def get_ifc_predefined_types(self, context):
+def get_ifc_predefined_types(self: "BIMRootProperties", context: bpy.types.Context) -> list[tuple[str, str]]:
     if not IfcClassData.is_loaded:
         IfcClassData.load()
     return IfcClassData.data["ifc_predefined_types"]
 
 
-def get_representation_template(self, context):
+def get_representation_template(self: "BIMRootProperties", context: bpy.types.Context) -> list[tuple[str, str]]:
     if not IfcClassData.is_loaded:
         IfcClassData.load()
     return IfcClassData.data["representation_template"]
 
 
-def refresh_classes(self, context):
-    old_class = context.scene.BIMRootProperties.ifc_class
-    old_predefined_type = (
-        context.scene.BIMRootProperties.ifc_predefined_type if get_ifc_predefined_types(self, context) else ""
-    )
+def refresh_classes(self: "BIMRootProperties", context: bpy.types.Context) -> None:
+    old_class = self.ifc_class
+    old_predefined_type = self.ifc_predefined_type if get_ifc_predefined_types(self, context) else ""
 
     enum = get_ifc_classes(self, context)
-    context.scene.BIMRootProperties.ifc_class = enum[0][0]
+    self.ifc_class = enum[0][0]
     IfcClassData.load()
 
     if self.ifc_product == "IfcFeatureElement":
@@ -81,48 +80,44 @@ def refresh_classes(self, context):
             self.ifc_predefined_type = old_predefined_type
 
 
-def refresh_predefined_types(self, context):
+def refresh_predefined_types(self: "BIMRootProperties", context: bpy.types.Context) -> None:
     IfcClassData.load()
     enum = get_ifc_predefined_types(self, context)
     if enum:
-        context.scene.BIMRootProperties.ifc_predefined_type = enum[0][0]
+        self.ifc_predefined_type = enum[0][0]
 
 
-def update_class_enum(self, context):
-    self.ifc_class = self.ifc_class_filter_enum
-
-
-def get_ifc_products(self, context):
+def get_ifc_products(self: "BIMRootProperties", context: bpy.types.Context) -> list[tuple[str, str]]:
     if not IfcClassData.is_loaded:
         IfcClassData.load()
     return IfcClassData.data["ifc_products"]
 
 
-def get_ifc_classes(self, context):
+def get_ifc_classes(self: "BIMRootProperties", context: bpy.types.Context) -> list[tuple[str, str]]:
     if not IfcClassData.is_loaded:
         IfcClassData.load()
     return IfcClassData.data["ifc_classes"]
 
 
-def get_ifc_classes_suggestions():
+def get_ifc_classes_suggestions(self: "BIMRootProperties", context: bpy.types.Context) -> list[tuple[str, str]]:
     if not IfcClassData.is_loaded:
         IfcClassData.load()
     return IfcClassData.data["ifc_classes_suggestions"]
 
 
-def get_contexts(self, context):
+def get_contexts(self: "BIMRootProperties", context: bpy.types.Context) -> list[tuple[str, str]]:
     if not IfcClassData.is_loaded:
         IfcClassData.load()
     return IfcClassData.data["contexts"]
 
 
-def get_profile(self, context):
+def get_profile(self: "BIMRootProperties", context: bpy.types.Context) -> list[tuple[str, str]]:
     if not IfcClassData.is_loaded:
         IfcClassData.load()
     return IfcClassData.data["profile"]
 
 
-def update_relating_class_from_object(self, context):
+def update_relating_class_from_object(self: "BIMRootProperties", context: bpy.types.Context) -> None:
     if self.relating_class_object is None:
         return
     element = tool.Ifc.get_entity(self.relating_class_object)
@@ -139,7 +134,7 @@ def update_relating_class_from_object(self, context):
     bpy.ops.bim.reassign_class()
 
 
-def is_object_class_applicable(self, obj):
+def is_object_class_applicable(self: "BIMRootProperties", obj: bpy.types.Object) -> bool:
     element = tool.Ifc.get_entity(obj)
     if not element:
         return False
@@ -149,11 +144,11 @@ def is_object_class_applicable(self, obj):
     return element.is_a("IfcTypeObject") == active_element.is_a("IfcTypeObject")
 
 
-def poll_representation_obj(self, obj):
+def poll_representation_obj(self: "BIMRootProperties", obj: bpy.types.Object) -> bool:
     return obj.type == "MESH" and obj.data.polygons
 
 
-def poll_featured_obj(self, obj):
+def poll_featured_obj(self: "BIMRootProperties", obj: bpy.types.Object) -> bool:
     return tool.Ifc.get_entity(obj)
 
 
@@ -192,3 +187,16 @@ class BIMRootProperties(PropertyGroup):
     getter_enum_suggestions = {
         "ifc_class": get_ifc_classes_suggestions,
     }
+
+    if TYPE_CHECKING:
+        contexts: str
+        description: str
+        ifc_product: str
+        ifc_class: str
+        ifc_predefined_type: str
+        ifc_userdefined_type: str
+        featured_obj: Union[bpy.types.Object, None]
+        representation_template: str
+        representation_obj: Union[bpy.types.Object, None]
+        profile: str
+        relating_class_object: Union[bpy.types.Object, None]

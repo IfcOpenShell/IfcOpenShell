@@ -58,7 +58,7 @@ class SpatialData:
 
     @classmethod
     def default_container(cls) -> str | None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = tool.Spatial.get_spatial_props()
         if props.default_container:
             try:
                 return tool.Ifc.get().by_id(props.default_container).Name
@@ -102,7 +102,7 @@ class SpatialDecompositionData:
 
     @classmethod
     def default_container(cls) -> str | None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = tool.Spatial.get_spatial_props()
         if props.default_container:
             try:
                 return tool.Ifc.get().by_id(props.default_container).Name
@@ -112,7 +112,7 @@ class SpatialDecompositionData:
     @classmethod
     def subelement_class(cls) -> list[tuple[str, str, str]]:
         results = []
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = tool.Spatial.get_spatial_props()
         if not (container := props.active_container):
             return results
         container_class = tool.Ifc.get().by_id(container.ifc_definition_id).is_a()

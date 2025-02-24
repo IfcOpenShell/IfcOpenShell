@@ -92,19 +92,17 @@ def assign_profile(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"material_profile": material_profile, "profile": profile}
-    return usecase.execute()
+    return usecase.execute(material_profile, profile)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self) -> None:
+    def execute(self, material_profile: ifcopenshell.entity_instance, profile: ifcopenshell.entity_instance) -> None:
         # TODO: handle composite profiles
-        old_profile = self.settings["material_profile"].Profile
-        self.settings["material_profile"].Profile = self.settings["profile"]
-        for profile_set in self.settings["material_profile"].ToMaterialProfileSet:
+        old_profile = material_profile.Profile
+        material_profile.Profile = profile
+        for profile_set in material_profile.ToMaterialProfileSet:
             for inverse in self.file.get_inverse(profile_set):
                 if not inverse.is_a("IfcMaterialProfileSetUsage"):
                     continue
@@ -113,20 +111,20 @@ class Usecase:
                         if not rel.is_a("IfcRelAssociatesMaterial"):
                             continue
                         for element in rel.RelatedObjects:
-                            self.change_profile(element)
+                            self.change_profile(element, profile)
                 else:
                     for rel in inverse.AssociatedTo:
                         for element in rel.RelatedObjects:
-                            self.change_profile(element)
+                            self.change_profile(element, profile)
 
         if old_profile and len(self.file.get_inverse(old_profile)) == 0:
             # TODO: check remove deep
             self.file.remove(old_profile)
 
-    def change_profile(self, element: ifcopenshell.entity_instance) -> None:
+    def change_profile(self, element: ifcopenshell.entity_instance, profile: ifcopenshell.entity_instance) -> None:
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if not representation:
             return
         for subelement in self.file.traverse(representation):
             if subelement.is_a("IfcSweptAreaSolid"):
-                subelement.SweptArea = self.settings["profile"]
+                subelement.SweptArea = profile

@@ -383,7 +383,8 @@ class TestUsingArrays(NewFile):
 
         bpy.ops.mesh.primitive_cube_add()
         obj = bpy.context.active_object
-        bpy.context.scene.BIMRootProperties.ifc_product = "IfcElement"
+        rprops = tool.Root.get_root_props()
+        rprops.ifc_product = "IfcElement"
         bpy.ops.bim.assign_class(ifc_class="IfcActuator", predefined_type="ELECTRICACTUATOR", userdefined_type="")
 
         bpy.ops.bim.add_array()
@@ -520,7 +521,7 @@ class TestApplyIfcMaterialChanges(NewFile):
         bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
         with_opening = bpy.context.active_object
         with_opening.name = "With Opening"
-        props = bpy.context.scene.BIMRootProperties
+        props = tool.Root.get_root_props()
         props.representation_obj = with_opening
         bpy.ops.bim.add_element(ifc_product="IfcFeatureElement", ifc_class="IfcOpeningElement")
 

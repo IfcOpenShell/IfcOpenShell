@@ -147,11 +147,11 @@ class Geometry(bonsai.core.tool.Geometry):
     def is_locked(cls, element: ifcopenshell.entity_instance) -> bool:
         if element.is_a("IfcProject"):
             return True
-        elif tool.Root.is_spatial_element(element) and bpy.context.scene.BIMSpatialDecompositionProperties.is_locked:
+        elif tool.Root.is_spatial_element(element) and tool.Spatial.get_spatial_props().is_locked:
             return True
         elif (
             element.is_a("IfcPositioningElement") or element.is_a("IfcGrid") or element.is_a("IfcGridAxis")
-        ) and bpy.context.scene.BIMGridProperties.is_locked:
+        ) and tool.Spatial.get_grid_props().is_locked:
             return True
         return False
 
