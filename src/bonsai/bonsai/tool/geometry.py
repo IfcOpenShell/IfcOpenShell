@@ -268,10 +268,9 @@ class Geometry(bonsai.core.tool.Geometry):
                 bonsai.core.system.remove_port(tool.Ifc, tool.System, port=port)
             ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
 
-            mesh = obj.data
-            assert isinstance(mesh, bpy.types.Mesh)
-            if not tool.Ifc.get_entity_by_id(tool.Geometry.get_mesh_props(mesh).ifc_definition_id):
-                tool.Blender.remove_data_block(mesh)
+            data = obj.data
+            if data and tool.Geometry.get_data_representation(data):
+                tool.Blender.remove_data_block(data)
 
             if is_spatial:
                 bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
