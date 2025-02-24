@@ -54,27 +54,8 @@ class IfcClassData:
 
     @classmethod
     def ifc_products(cls):
-        products = [
-            "IfcElementType",
-            "IfcElement",
-            "IfcFeatureElement",
-            "IfcSpatialElement",
-            "IfcSpatialElementType",
-            "IfcStructuralItem",
-            "IfcAnnotation",
-            "IfcRelSpaceBoundary",
-        ]
+        products = tool.Root.get_ifc_products()
         version = tool.Ifc.get_schema()
-        if version == "IFC2X3":
-            products = [
-                "IfcElementType",
-                "IfcElement",
-                "IfcFeatureElement",
-                "IfcSpatialStructureElement",
-                "IfcStructuralItem",
-                "IfcAnnotation",
-                "IfcRelSpaceBoundary",
-            ]
         return [(e, e, (get_entity_doc(version, e) or {}).get("description", "")) for e in products]
 
     @classmethod

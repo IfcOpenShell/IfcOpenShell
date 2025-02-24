@@ -429,3 +429,29 @@ class Root(bonsai.core.tool.Root):
                 tool.Ifc.unlink(obj=material)
         if "Ifc" in obj.name and "/" in obj.name:
             obj.name = obj.name.split("/", 1)[1]
+
+    @classmethod
+    def get_ifc_products(cls) -> tuple[str, ...]:
+        version = tool.Ifc.get_schema()
+        if version == "IFC2X3":
+            products = (
+                "IfcElementType",
+                "IfcElement",
+                "IfcFeatureElement",
+                "IfcSpatialStructureElement",
+                "IfcStructuralItem",
+                "IfcAnnotation",
+                "IfcRelSpaceBoundary",
+            )
+        else:
+            products = (
+                "IfcElementType",
+                "IfcElement",
+                "IfcFeatureElement",
+                "IfcSpatialElement",
+                "IfcSpatialElementType",
+                "IfcStructuralItem",
+                "IfcAnnotation",
+                "IfcRelSpaceBoundary",
+            )
+        return products

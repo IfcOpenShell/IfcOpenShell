@@ -48,17 +48,7 @@ class EnableReassignClass(bpy.types.Operator):
         assert element
         ifc_class = element.is_a()
         context.active_object.BIMObjectProperties.is_reassigning_class = True
-        ifc_products = [
-            "IfcElement",
-            "IfcElementType",
-            "IfcSpatialElement",
-            "IfcGroup",
-            "IfcStructural",
-            "IfcPositioningElement",
-            "IfcContext",
-            "IfcAnnotation",
-            "IfcRelSpaceBoundary",
-        ]
+        ifc_products = tool.Root.get_ifc_products()
         schema = tool.Ifc.schema()
         declaration = schema.declaration_by_name(ifc_class)
         for ifc_product in ifc_products:
