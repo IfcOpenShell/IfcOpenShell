@@ -627,25 +627,17 @@ class PolylineOperator:
             return is_valid
 
     def choose_axis(self, event: bpy.types.Event, x: bool = True, y: bool = True, z: bool = False) -> None:
-        if x:
-            if not event.shift and event.value == "PRESS" and event.type == "X":
-                self.tool_state.axis_method = "X" if self.tool_state.axis_method != event.type else None
-                self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
-                PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
-                tool.Blender.update_viewport()
-
-        if y:
-            if not event.shift and event.value == "PRESS" and event.type == "Y":
-                self.tool_state.axis_method = "Y" if self.tool_state.axis_method != event.type else None
-                self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
-                PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
-                tool.Blender.update_viewport()
+        options = {"X", "Y"}
         if z:
-            if not event.shift and event.value == "PRESS" and event.type == "Z":
-                self.tool_state.axis_method = "Z" if self.tool_state.axis_method != event.type else None
-                self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
-                PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
-                tool.Blender.update_viewport()
+            options = {"X", "Y", "Z"}
+        if not event.shift and event.value == "PRESS" and event.type in options:
+            self.tool_state.axis_method = event.type if self.tool_state.axis_method != event.type else None
+            if self.tool_state.axis_method is not None:
+                self.tool_state.lock_axis = True
+            else:
+                self.tool_state.lock_axis = False
+            PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+            tool.Blender.update_viewport()
 
     def choose_plane(self, event: bpy.types.Event, x: bool = True, y: bool = True, z: bool = True) -> None:
         if x:
