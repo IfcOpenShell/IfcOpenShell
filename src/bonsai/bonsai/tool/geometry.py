@@ -269,7 +269,9 @@ class Geometry(bonsai.core.tool.Geometry):
             ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
 
             data = obj.data
-            if data and tool.Geometry.get_data_representation(data):
+            if tool.Geometry.has_mesh_properties(data) and tool.Ifc.get_entity_by_id(
+                tool.Geometry.get_mesh_props(data).ifc_definition_id
+            ):
                 tool.Blender.remove_data_block(data)
 
             if is_spatial:
