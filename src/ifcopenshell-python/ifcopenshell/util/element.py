@@ -454,7 +454,7 @@ def get_elements_by_pset(pset: ifcopenshell.entity_instance) -> set[ifcopenshell
     return elements
 
 
-def get_predefined_type(element: ifcopenshell.entity_instance) -> str:
+def get_predefined_type(element: ifcopenshell.entity_instance) -> Union[str, None]:
     """Retrieves the PrefefinedType attribute of an element.
 
     If the predefined type is user defined, the custom type (such as object
@@ -1333,7 +1333,7 @@ def get_referenced_elements(reference: ifcopenshell.entity_instance) -> set[ifco
 
 
 def replace_element(element: ifcopenshell.entity_instance, replacement: ifcopenshell.entity_instance) -> None:
-    for inverse in element.file:
+    for inverse in element.file.get_inverse(element):
         replace_attribute(inverse, element, replacement)
 
 
@@ -1434,7 +1434,7 @@ def remove_deep2(
     ifc_file: ifcopenshell.file,
     element: ifcopenshell.entity_instance,
     also_consider: list[ifcopenshell.entity_instance] = [],
-    do_not_delete: list[ifcopenshell.entity_instance] = [],
+    do_not_delete: set[ifcopenshell.entity_instance] = set(),
 ) -> None:
     """Recursively purges a subgraph safely, starting at an element
 
@@ -1462,28 +1462,34 @@ def remove_deep2(
 
     :param ifc_file: The IFC file object
     :param also_consider: elements to also consider as a part of a subgraph
+        Order could matter for perfomance - elements that reference `element`
+        directly should go first for the better performance.
     :param do_not_delete: elements to protect from deletion
     :param element: The starting element that defines the subgraph
     """
     # ifc_file.batch()
-    also_considered_inverses = 0
+    total_inverses = ifc_file.get_total_inverses(element)
+    if total_inverses > 0:
 
-    def increment_considered_inverses(_):
-        nonlocal also_considered_inverses
-        also_considered_inverses += 1
+        def are_inverses_contained() -> bool:
+            also_considered_inverses = 0
 
-    for considered_element in also_consider:
-        for attribute in considered_element:
-            considered_element.walk(lambda x: x == element, increment_considered_inverses, attribute)
+            for considered_element in also_consider:
+                traverse = ifc_file.traverse(considered_element, max_levels=1)
+                if element in traverse:
+                    also_considered_inverses += 1
+                    if total_inverses == also_considered_inverses:
+                        return True
+            return False
 
-    if ifc_file.get_total_inverses(element) > 0 + also_considered_inverses:
-        return
+        if not are_inverses_contained():
+            return
 
     to_delete = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
     subgraph_set = set(subgraph)
-    subelement_queue = ifc_file.traverse(element, max_levels=1)
+    subelement_queue = [element]
     while subelement_queue:
         subelement = subelement_queue.pop(0)
         if (

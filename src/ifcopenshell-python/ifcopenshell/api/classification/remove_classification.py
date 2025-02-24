@@ -28,9 +28,7 @@ def remove_classification(file: ifcopenshell.file, classification: ifcopenshell.
     removed from a project.
 
     :param classification: The IfcClassification entity you want to remove
-    :type classification: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -42,16 +40,17 @@ def remove_classification(file: ifcopenshell.file, classification: ifcopenshell.
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"classification": classification}
-    return usecase.execute()
+    return usecase.execute(classification)
 
 
 class Usecase:
-    def execute(self):
-        references = self.get_references(self.settings["classification"])
+    file: ifcopenshell.file
+
+    def execute(self, classification: ifcopenshell.entity_instance) -> None:
+        references = self.get_references(classification)
         for reference in references:
             self.file.remove(reference)
-        self.file.remove(self.settings["classification"])
+        self.file.remove(classification)
         for rel in self.file.by_type("IfcRelAssociatesClassification"):
             if not rel.RelatingClassification:
                 history = rel.OwnerHistory

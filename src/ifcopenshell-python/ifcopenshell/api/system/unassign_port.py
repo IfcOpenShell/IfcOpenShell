@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.util.element
+from typing import Any
 
 
 def unassign_port(
@@ -62,6 +63,9 @@ def unassign_port(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         if self.file.schema == "IFC2X3":
             return self.execute_ifc2x3()

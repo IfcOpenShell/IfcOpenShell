@@ -23,7 +23,6 @@ import ifcopenshell.api.constraint
 import ifcopenshell.util.attribute
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 
 
 class LoadObjectives(bpy.types.Operator):
@@ -84,7 +83,7 @@ class AddObjective(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        result = ifcopenshell.api.run("constraint.add_objective", IfcStore.get_file())
+        result = ifcopenshell.api.run("constraint.add_objective", tool.Ifc.get())
         bpy.ops.bim.load_objectives()
         bpy.ops.bim.enable_editing_constraint(constraint=result.id())
         return {"FINISHED"}
@@ -116,7 +115,7 @@ class RemoveConstraint(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMConstraintProperties
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         ifcopenshell.api.run(
             "constraint.remove_constraint", self.file, **{"constraint": self.file.by_id(self.constraint)}
         )

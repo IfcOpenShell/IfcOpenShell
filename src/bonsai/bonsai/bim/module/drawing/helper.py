@@ -19,8 +19,10 @@
 import bpy
 import math
 import mathutils.geometry
+import ifcopenshell
 import bonsai.tool as tool
 from mathutils import Vector
+from typing import Union
 
 # Code taken and updated from https://blenderartists.org/t/detecting-intersection-of-bounding-boxes/457520/2
 
@@ -135,6 +137,9 @@ def format_distance(
     scaleFactor = bpy.context.scene.unit_settings.scale_length
     unit_system = bpy.context.scene.unit_settings.system
     unit_length = bpy.context.scene.unit_settings.length_unit
+    area_unit_symbol = " " + ifcopenshell.util.unit.get_unit_symbol(
+        ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT")
+    )
 
     value *= scaleFactor
 
@@ -225,7 +230,24 @@ def format_distance(
             if add_inches or frac:
                 tx_dist += '"'
         else:
-            tx_dist = str("%1.3f" % (value * toInches / inPerFoot)) + " sq. ft."
+            fmt = "%1.3f"
+            sq_feet = round(value * toInches / inPerFoot, 4)
+            tx_dist = ""
+            if area_unit_symbol == " ft2":
+                fmt += area_unit_symbol
+                tx_dist = fmt % sq_feet
+            if area_unit_symbol == " in2":
+                sq_inch = sq_feet * 144
+                fmt += area_unit_symbol
+                tx_dist = fmt % sq_inch
+            if area_unit_symbol == " yd2":
+                sq_yard = sq_feet / 9
+                fmt += area_unit_symbol
+                tx_dist = fmt % sq_yard
+            if area_unit_symbol == " mi2":
+                sq_mile = sq_feet / 27878400
+                fmt += area_unit_symbol
+                tx_dist = fmt % sq_mile
 
     # METRIC FORMATTING
     elif unit_system == "METRIC":
@@ -287,16 +309,38 @@ def format_distance(
                     d_mm = value * (1000)
                     tx_dist = fmt % d_mm
         if isArea:
-            tx_dist += s_code
+            if area_unit_symbol == " m2":
+                if decimal_places is None:
+                    fmt = "%1.3f"
+                if hide_units is False:
+                    fmt += area_unit_symbol
+                tx_dist = fmt % value
+            if area_unit_symbol == " cm2":
+                if decimal_places is None:
+                    fmt = "%1.1f"
+                if hide_units is False:
+                    fmt += area_unit_symbol
+                d_cm = value * (10000)
+                tx_dist = fmt % d_cm
+            if area_unit_symbol == " mm2":
+                if decimal_places is None:
+                    fmt = "%1.0f"
+                if hide_units is False:
+                    fmt += area_unit_symbol
+                d_cm = value * (1000000)
+                tx_dist = fmt % d_cm
+
     else:
         tx_dist = fmt % value
 
     return tx_dist
 
 
-def get_active_drawing(scene):
+def get_active_drawing(
+    scene: bpy.types.Scene,
+) -> Union[tuple[bpy.types.Collection, bpy.types.Camera], tuple[None, None]]:
     """Get active drawing collection and camera"""
-    props = scene.DocProperties
+    props = tool.Drawing.get_document_props()
     try:
         camera = tool.Ifc.get_object(tool.Ifc.get().by_id(props.active_drawing_id))
         return camera.BIMObjectProperties.collection, camera

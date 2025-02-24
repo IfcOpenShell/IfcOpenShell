@@ -54,6 +54,11 @@
 %include "exception.i"
 %include "std_shared_ptr.i"
 
+%{
+	#include <array>
+%}
+%template(DoubleArray3) std::array<double, 3>;
+
 %ignore IfcGeom::NumberNativeDouble;
 %ignore ifcopenshell::geometry::Converter;
 
@@ -86,7 +91,7 @@
 %ignore curve_to_loop_upgrade_impl;
 %ignore edge_to_loop_upgrade_impl;
 %ignore curve_to_face_upgrade_impl;
-%ignore loop_to_piecewise_function_upgrade_impl;
+%ignore loop_to_function_item_upgrade_impl;
 
 // settings, can this done more generally?
 %ignore UseElementNames;

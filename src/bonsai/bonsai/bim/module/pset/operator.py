@@ -94,7 +94,7 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
     properties: bpy.props.StringProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         props = tool.Pset.get_pset_props(self.obj, self.obj_type)
         ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
         element = tool.Ifc.get().by_id(ifc_definition_id)
@@ -226,7 +226,7 @@ class AddQto(bpy.types.Operator, tool.Ifc.Operator):
     obj_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         qto_name = tool.Pset.get_pset_name(self.obj, self.obj_type, pset_type="QTO")
         bpy.ops.bim.enable_pset_editing(
             pset_id=0, pset_name=qto_name, pset_type="QTO", obj=self.obj, obj_type=self.obj_type
@@ -314,7 +314,7 @@ class BIM_OT_rename_parameters(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props_to_map = context.scene.RenameProperties
-        ifc_file = IfcStore.get_file()
+        ifc_file = tool.Ifc.get()
         all_ifc_elements = ifc_file.by_type("IfcElement")
 
         for ifc_element in all_ifc_elements:
@@ -347,7 +347,7 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator, tool.Ifc.Operator):
     index: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         props = context.scene.AddEditProperties
 
         for obj in tool.Blender.get_selected_objects():
@@ -402,7 +402,7 @@ class BIM_OT_bulk_remove_psets(bpy.types.Operator, tool.Ifc.Operator):
     index: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         props = context.scene.DeletePsets
 
         for obj in tool.Blender.get_selected_objects():

@@ -21,9 +21,7 @@ import ifcopenshell.api
 import bonsai.tool as tool
 import bonsai.core.system as core
 import bonsai.bim.helper
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.system.data import PortData
-from mathutils import Matrix
 
 
 class LoadSystems(bpy.types.Operator):

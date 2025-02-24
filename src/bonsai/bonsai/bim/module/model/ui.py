@@ -117,9 +117,8 @@ class LaunchTypeManager(bpy.types.Operator):
         op.ifc_product = "IfcElementType"
         op.ifc_class = AuthoringData.data["ifc_element_type"] or props.ifc_class or ""
 
-        if AuthoringData.data["total_types"]:
-            row = self.layout.row(align=True)
-            row.prop(props, "search_name", icon="FILTER", text="")
+        row = self.layout.row(align=True)
+        row.prop(props, "search_name", icon="FILTER", text="")
 
         columns = self.layout.column_flow(columns=3)
         if AuthoringData.data["total_pages"] > 0:

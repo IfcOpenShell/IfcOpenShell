@@ -18,7 +18,6 @@
 
 import bpy
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 import bonsai.tool as tool
 from bonsai.bim.module.boundary.data import SpaceBoundariesData
 
@@ -34,7 +33,7 @@ class BIM_PT_SceneBoundaries(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         row = self.layout.row(align=True)
@@ -58,9 +57,9 @@ class BIM_PT_Boundary(Panel):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
             return False
-        entity = IfcStore.get_file().by_id(props.ifc_definition_id)
+        entity = tool.Ifc.get().by_id(props.ifc_definition_id)
         return entity.is_a("IfcRelSpaceBoundary")
 
     def draw(self, context):
@@ -134,7 +133,7 @@ class BIM_PT_SpaceBoundaries(Panel):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
             return False
         element = tool.Ifc.get_entity(context.active_object)
         for ifc_class in ("IfcSpace", "IfcExternalSpatialElement"):

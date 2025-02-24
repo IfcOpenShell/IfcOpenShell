@@ -19,7 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.guid
-from typing import Optional
+from typing import Optional, Any
 
 
 def create_entity(
@@ -80,6 +80,9 @@ def create_entity(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         element = self.file.create_entity(
             self.settings["ifc_class"],

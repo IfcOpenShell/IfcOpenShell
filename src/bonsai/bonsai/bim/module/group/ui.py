@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.group.data import GroupsData, ObjectGroupsData
 
@@ -34,7 +34,7 @@ class BIM_PT_groups(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not GroupsData.is_loaded:
@@ -93,7 +93,7 @@ class BIM_PT_object_groups(Panel):
     def poll(cls, context):
         if not context.active_object:
             return False
-        return IfcStore.get_file() and context.active_object.BIMObjectProperties.ifc_definition_id
+        return tool.Ifc.get() and context.active_object.BIMObjectProperties.ifc_definition_id
 
     def draw(self, context):
         if not ObjectGroupsData.is_loaded:

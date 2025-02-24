@@ -1,7 +1,15 @@
 #include "function_item_evaluator.h"
 #include "profile_helper.h"
 
+#include <boost/math/quadrature/trapezoidal.hpp>
+
 using namespace ifcopenshell::geometry;
+
+double ifcopenshell::geometry::polynomial_length(double A, double B, double C, double horizontal_length) {
+    auto fn = [A, B, C](double x) -> double { return sqrt(pow(B + 2 * C * x, 2.0) + 1.0); };
+    auto l = boost::math::quadrature::trapezoidal(fn, 0.0, horizontal_length);
+    return l;
+}
 
 
 struct functor_fn_evaluator : public fn_evaluator {

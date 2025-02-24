@@ -46,11 +46,8 @@ def add_derived_unit(
     :type unit_type: str
     :param userdefinedtype: The user defined type in case of choosing USERDEFINED, or None for no
         user defined type.
-    :type userdefinedtype: str or None
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: The newly created IfcDerivedUnit
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -69,15 +66,13 @@ def add_derived_unit(
         #12=IfcDerivedUnit((#10,#11),.LINEARVELOCITY.,$)
 
     """
-    settings = {"unit_type": unit_type, "attributes": attributes}
-
     derive_unit_elements = []
 
-    for named_unit in settings["attributes"]:
+    for named_unit in attributes:
         derive_unit_elements.append(
-            file.create_entity("IfcDerivedUnitElement", Unit=named_unit, Exponent=settings["attributes"][named_unit])
+            file.create_entity("IfcDerivedUnitElement", Unit=named_unit, Exponent=attributes[named_unit])
         )
 
     return file.create_entity(
-        "IfcDerivedUnit", Elements=derive_unit_elements, UnitType=settings["unit_type"], UserDefinedType=userdefinedtype
+        "IfcDerivedUnit", Elements=derive_unit_elements, UnitType=unit_type, UserDefinedType=userdefinedtype
     )

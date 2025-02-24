@@ -31,7 +31,8 @@ from typing import Union
 
 @persistent
 def toggle_decorations_on_load(*args):
-    if bpy.context.scene.BIMProjectProperties.clipping_planes:
+    props = tool.Project.get_project_props()
+    if props.clipping_planes:
         ClippingPlaneDecorator.install(bpy.context)
     else:
         ClippingPlaneDecorator.uninstall()
@@ -99,7 +100,7 @@ class ProjectDecorator:
         selected_edges = []
         selected_tris = []
 
-        props = context.scene.BIMProjectProperties
+        props = tool.Project.get_project_props()
         try:
             obj = props.queried_obj
             selected_vertices = obj["selected_vertices"]
@@ -171,7 +172,8 @@ class ClippingPlaneDecorator:
         unselected_edges = []
         unselected_tris = []
 
-        for clipping_plane in context.scene.BIMProjectProperties.clipping_planes:
+        props = tool.Project.get_project_props()
+        for clipping_plane in props.clipping_planes:
             obj = clipping_plane.obj
             if not obj or not obj.data:
                 continue

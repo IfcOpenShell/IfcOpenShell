@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.diff.data import DiffData
 import bonsai.bim.helper
 import bonsai.tool as tool

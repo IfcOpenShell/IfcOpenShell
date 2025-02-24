@@ -28,11 +28,8 @@ def edit_assigned_material(
     IfcMaterial, consult the IFC documentation.
 
     :param element: The IfcMaterial entity you want to edit
-    :type element: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -42,7 +39,5 @@ def edit_assigned_material(
         ifcopenshell.api.material.edit_assigned_material(model,
             element=concrete, attributes={"Description": "40MPA concrete with broom finish"})
     """
-    settings = {"element": element, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["element"], name, value)
+    for name, value in attributes.items():
+        setattr(element, name, value)

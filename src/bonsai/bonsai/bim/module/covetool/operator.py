@@ -20,8 +20,8 @@ import bpy
 import json
 import ifcopenshell
 import ifcopenshell.util.element
+import bonsai.tool as tool
 from math import degrees, atan2
-from bonsai.bim.ifc import IfcStore
 
 from .api import Api
 
@@ -92,7 +92,7 @@ class RunAnalysis(bpy.types.Operator):
     bl_label = "Run Analysis"
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         self.inputs = {
             "floors": [],
             "walls": [],

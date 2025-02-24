@@ -277,7 +277,7 @@ class Model(bonsai.core.tool.Model):
 
         mesh = bpy.data.meshes.new("Axis")
         mesh.from_pydata(cls.vertices, cls.edges, [])
-        mesh.BIMMeshProperties.subshape_type = "AXIS"
+        tool.Geometry.get_mesh_props(mesh).subshape_type = "AXIS"
 
         if obj is None:
             obj = bpy.data.objects.new("Axis", mesh)
@@ -334,7 +334,7 @@ class Model(bonsai.core.tool.Model):
 
         mesh = bpy.data.meshes.new("Profile")
         mesh.from_pydata(cls.vertices, cls.edges, [])
-        mesh.BIMMeshProperties.subshape_type = "PROFILE"
+        tool.Geometry.get_mesh_props(mesh).subshape_type = "PROFILE"
 
         if obj is None:
             obj = bpy.data.objects.new("Profile", mesh)
@@ -376,7 +376,7 @@ class Model(bonsai.core.tool.Model):
 
         mesh = bpy.data.meshes.new("Curve")
         mesh.from_pydata(cls.vertices, cls.edges, [])
-        mesh.BIMMeshProperties.subshape_type = "PROFILE"
+        tool.Geometry.get_mesh_props(mesh).subshape_type = "PROFILE"
 
         if obj is None:
             obj = bpy.data.objects.new("Curve", mesh)
@@ -417,7 +417,7 @@ class Model(bonsai.core.tool.Model):
 
         mesh = bpy.data.meshes.new("Surface")
         mesh.from_pydata(cls.vertices, cls.edges, [])
-        mesh.BIMMeshProperties.subshape_type = "PROFILE"
+        tool.Geometry.get_mesh_props(mesh).subshape_type = "PROFILE"
 
         if obj is None:
             obj = bpy.data.objects.new("Surface", mesh)
@@ -569,7 +569,10 @@ class Model(bonsai.core.tool.Model):
         element: Optional[ifcopenshell.entity_instance] = None,
         representation: Optional[ifcopenshell.entity_instance] = None,
     ) -> list[ifcopenshell.entity_instance]:
+        """Either element or representation must be provided."""
+        assert element or representation, "Either element or representation must be provided."
         if representation is None:
+            assert element
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
                 return []
@@ -1461,9 +1464,9 @@ class Model(bonsai.core.tool.Model):
         after material assignment or material unassignment.
         """
         for element in elements:
-            if not (obj := tool.Ifc.get_object(element)) or not obj.data:
+            if not (obj := tool.Ifc.get_object(element)) or not (data := obj.data):
                 continue
-            representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            representation = tool.Ifc.get().by_id(tool.Geometry.get_mesh_props(data).ifc_definition_id)
             bonsai.core.geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,
@@ -1931,7 +1934,9 @@ class Model(bonsai.core.tool.Model):
         or it's not referring to an object (e.g. potential boolean object)."""
         if obj.type != "MESH":
             return
-        return obj.data.BIMMeshProperties.obj
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        return tool.Geometry.get_mesh_props(mesh).obj
 
     @classmethod
     def get_tracked_opening_type(cls, obj: bpy.types.Object) -> Union[Literal["OPENING", "BOOLEAN"], None]:

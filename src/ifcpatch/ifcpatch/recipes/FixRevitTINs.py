@@ -84,7 +84,8 @@ class Patcher:
         import bonsai.tool as tool
         from math import degrees
 
-        bpy.context.scene.BIMProjectProperties.should_use_native_meshes = True
+        props = tool.Project.get_project_props()
+        props.should_use_native_meshes = True
         bpy.ops.bim.load_project(filepath=self.filepath)
 
         old_history_size = tool.Ifc.get().history_size

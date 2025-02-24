@@ -19,6 +19,7 @@
 
 import os
 import bpy
+import ifcopenshell.util.element
 import bonsai.core.type
 import bonsai.core.drawing as core
 import bonsai.tool as tool
@@ -197,6 +198,8 @@ def create_annotation_occurrence(context):
 
 
 class AnnotationToolUI:
+    layout: bpy.types.UILayout
+
     @classmethod
     def draw(cls, context, layout):
         cls.layout = layout
@@ -224,7 +227,8 @@ class AnnotationToolUI:
     @classmethod
     def draw_create_object_interface(cls):
         row = cls.layout.row(align=True)
-        row.prop(bpy.context.scene.DocProperties, "should_draw_decorations", text="Viewport Annotations")
+        props = tool.Drawing.get_document_props()
+        row.prop(props, "should_draw_decorations", text="Viewport Annotations")
 
     @classmethod
     def draw_edit_object_interface(cls, context):
@@ -330,7 +334,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             if not element or not element.is_a("IfcAnnotation"):
                 continue
 
-            annotation_type = element.ObjectType
+            annotation_type = ifcopenshell.util.element.get_predefined_type(element)
             if annotation_type not in tool.Drawing.ANNOTATION_TYPES_SUPPORT_SETUP:
                 self.report({"ERROR"}, f"Annotation type {annotation_type} is not supported for readjustment.")
                 continue

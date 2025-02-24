@@ -122,11 +122,10 @@ class TestAddBrickifcProject(NewFile):
         result = subject.add_brickifc_project("http://example.org/digitaltwin#")
         assert result == f"http://example.org/digitaltwin#{project.GlobalId}"
         brick = URIRef(result)
+        props = tool.Blender.get_bim_props()
         assert list(BrickStore.graph.triples((brick, A, REF.ifcProject)))
         assert list(BrickStore.graph.triples((brick, REF.ifcProjectID, Literal(project.GlobalId))))
-        assert list(
-            BrickStore.graph.triples((brick, REF.ifcFileLocation, Literal(bpy.context.scene.BIMProperties.ifc_file)))
-        )
+        assert list(BrickStore.graph.triples((brick, REF.ifcFileLocation, Literal(props.ifc_file))))
         assert list(
             BrickStore.graph.triples(
                 (brick, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal("My Project"))

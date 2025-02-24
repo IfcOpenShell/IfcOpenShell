@@ -201,7 +201,8 @@ class EnableEditingClassification(bpy.types.Operator):
     def execute(self, context):
         def callback(name, prop, data):
             if name == "ReferenceTokens":
-                new = bpy.context.scene.BIMGeoreferenceProperties.projected_crs.add()
+                geo_props = tool.Georeference.get_georeference_props()
+                new = geo_props.projected_crs.add()
                 new.name = name
                 new.data_type = "string"
                 new.is_null = data[name] is None
@@ -239,7 +240,7 @@ class RemoveClassification(bpy.types.Operator, tool.Ifc.Operator):
     classification: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         ifcopenshell.api.run(
             "classification.remove_classification",
             tool.Ifc.get(),

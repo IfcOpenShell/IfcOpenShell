@@ -259,7 +259,7 @@ class DumbSlabPlaner:
         self, related_object: ifcopenshell.entity_instance, layer_set_direction: Optional[str], new_thickness: float
     ) -> None:
         obj = tool.Ifc.get_object(related_object)
-        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+        if not obj or not tool.Geometry.get_active_representation(obj):
             return
 
         material = ifcopenshell.util.element.get_material(related_object)
@@ -885,11 +885,13 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             return {"FINISHED"}
 
         slab = DumbSlabGenerator(self.relating_type).generate("POLYLINE")
+        if not slab:
+            return
 
         model_props = tool.Model.get_model_props()
         direction_sense = model_props.direction_sense
         offset = model_props.offset
-        model = IfcStore.get_file()
+        model = tool.Ifc.get()
         element = tool.Ifc.get_entity(slab)
         material = ifcopenshell.util.element.get_material(element)
         material_set_usage = model.by_id(material.id())

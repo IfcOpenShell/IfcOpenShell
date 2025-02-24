@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
-from typing import Union
+from typing import Union, Any
 
 COORD = Union[tuple[float, float], tuple[float, float, float]]
 
@@ -82,6 +82,9 @@ def add_axis_representation(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         is_2d = len(self.settings["axis"][0]) == 2

@@ -26,7 +26,6 @@ import ifcopenshell.api
 import ifcopenshell.util.attribute
 import ifcopenshell.util.unit as ifcunit
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.structural.shader import DecorationShader
 from typing import Literal, TypedDict, Iterable
 
@@ -307,7 +306,7 @@ class ShaderInfo:
 
         props = bpy.context.scene.BIMStructuralProperties
         group_definition_id = int(props.load_group_to_show)
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         groups = [file.by_id(group_definition_id)]
         recursive_subgroups(groups, 10, props.activity_type)
 
@@ -333,7 +332,7 @@ class ShaderInfo:
             orientation = np.eye(3)
             if reference_frame == "LOCAL_COORDS":
                 orientation = rotation
-            blender_object: bpy.types.Object = IfcStore.get_element(getattr(surf, "GlobalId", None))
+            blender_object: bpy.types.Object = tool.Ifc.get_object_by_identifier(getattr(surf, "GlobalId", None))
             mat = blender_object.matrix_world
             mesh: bpy.types.Mesh = blender_object.data
 
@@ -454,7 +453,7 @@ class ShaderInfo:
             activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue
-            blender_object = IfcStore.get_element(getattr(conn, "GlobalId", None))
+            blender_object = tool.Ifc.get_object_by_identifier(getattr(conn, "GlobalId", None))
             if blender_object.type == "MESH":
                 conn_location = blender_object.matrix_world @ blender_object.data.vertices[0].co
                 rotation = self.get_point_connection_rotation(conn)
@@ -580,7 +579,7 @@ class ShaderInfo:
             if len(activity_list) == 0:
                 continue
 
-            blender_object = IfcStore.get_element(getattr(member, "GlobalId", None))
+            blender_object = tool.Ifc.get_object_by_identifier(getattr(member, "GlobalId", None))
 
             start_co = blender_object.matrix_world @ blender_object.data.vertices[0].co
             end_co = blender_object.matrix_world @ blender_object.data.vertices[1].co

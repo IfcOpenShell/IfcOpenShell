@@ -20,7 +20,6 @@ import bpy
 import bonsai.bim
 import bonsai.tool as tool
 from bpy.types import Panel, Menu, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.geometry.data import (
     RepresentationsData,
@@ -53,9 +52,10 @@ def mode_menu(self, context):
         UIData.load()
     ifc_icon = f"{UIData.data['menu_icon_color_mode']}_ifc"
     row = self.layout.row(align=True)
-    if context.scene.BIMGeometryProperties.mode == "EDIT":
+    props = tool.Geometry.get_geometry_props()
+    if props.mode == "EDIT":
         row.operator("bim.override_mode_set_object", icon="CANCEL", text="Discard Changes").should_save = False
-    row.prop(context.scene.BIMGeometryProperties, "mode", text="", icon_value=bonsai.bim.icons[ifc_icon].icon_id)
+    row.prop(props, "mode", text="", icon_value=bonsai.bim.icons[ifc_icon].icon_id)
 
 
 def object_menu(self, context):
@@ -336,9 +336,9 @@ class BIM_PT_connections(Panel):
     def poll(cls, context):
         if not context.active_object:
             return False
-        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(context.active_object.BIMObjectProperties.ifc_definition_id):
             return False
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not ConnectionsData.is_loaded:
@@ -411,15 +411,18 @@ class BIM_PT_mesh(Panel):
     @classmethod
     def poll(cls, context):
         return (
-            context.active_object is not None
-            and context.active_object.type == "MESH"
-            and hasattr(context.active_object.data, "BIMMeshProperties")
-            and context.active_object.data.BIMMeshProperties.ifc_definition_id
+            (obj := context.active_object) is not None
+            and (mesh := obj.data)
+            and isinstance(mesh, bpy.types.Mesh)
+            and tool.Geometry.get_mesh_props(mesh).ifc_definition_id
         )
 
     def draw(self, context):
-        if not context.active_object.data:
-            return
+        obj = context.active_object
+        assert obj
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+
         row = self.layout.row()
         row.label(text="Advanced Users Only", icon="ERROR")
 
@@ -427,7 +430,7 @@ class BIM_PT_mesh(Panel):
 
         row = layout.row()
         text = "Manually Save Representation"
-        if tool.Ifc.is_edited(context.active_object):
+        if tool.Ifc.is_edited(obj):
             text += "*"
         row.operator("bim.update_representation", text=text)
 
@@ -454,8 +457,8 @@ class BIM_PT_mesh(Panel):
         op = row.operator("bim.update_representation", text="Convert To Arbitrary Extrusion With Voids")
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
-        if context.active_object and context.active_object.data:
-            mprops = context.active_object.data.BIMMeshProperties
+        if True:
+            mprops = tool.Geometry.get_mesh_props(mesh)
             row = layout.row()
             row.operator("bim.get_representation_ifc_parameters")
             for index, ifc_parameter in enumerate(mprops.ifc_parameters):
@@ -477,7 +480,7 @@ class BIM_PT_placement(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object and context.active_object.BIMObjectProperties.ifc_definition_id
+        return (obj := context.active_object) and obj.BIMObjectProperties.ifc_definition_id
 
     def draw(self, context):
         if not PlacementData.is_loaded:
@@ -571,10 +574,10 @@ class BIM_PT_workarounds(Panel):
     @classmethod
     def poll(cls, context):
         return (
-            context.active_object is not None
-            and context.active_object.type == "MESH"
-            and hasattr(context.active_object.data, "BIMMeshProperties")
-            and context.active_object.data.BIMMeshProperties.ifc_definition_id
+            (obj := context.active_object) is not None
+            and (mesh := obj.data)
+            and isinstance(mesh, bpy.types.Mesh)
+            and tool.Geometry.get_mesh_props(mesh).ifc_definition_id
         )
 
     def draw(self, context):
@@ -588,7 +591,7 @@ class BIM_PT_workarounds(Panel):
 
 
 class BIM_UL_representation_items(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(self, context, layout: bpy.types.UILayout, data, item, icon, active_data, active_propname):
         if item:
             icon = "MATERIAL" if item.surface_style else "MESH_UVSPHERE"
             row = layout.row(align=True)

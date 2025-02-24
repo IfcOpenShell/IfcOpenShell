@@ -86,10 +86,11 @@ class Brick(bonsai.core.tool.Brick):
         project = tool.Ifc.get().by_type("IfcProject")[0]
         ns = Namespace(namespace)
         brick_project = ns[project.GlobalId]
+        props = tool.Blender.get_bim_props()
         with BrickStore.new_changeset() as cs:
             cs.add((brick_project, A, REF.ifcProject))
             cs.add((brick_project, REF.ifcProjectID, Literal(project.GlobalId)))
-            cs.add((brick_project, REF.ifcFileLocation, Literal(bpy.context.scene.BIMProperties.ifc_file)))
+            cs.add((brick_project, REF.ifcFileLocation, Literal(props.ifc_file)))
             if project.Name:
                 cs.add((brick_project, URIRef("http://www.w3.org/2000/01/rdf-schema#label"), Literal(project.Name)))
         return str(brick_project)

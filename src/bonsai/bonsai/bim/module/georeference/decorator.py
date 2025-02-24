@@ -21,6 +21,7 @@ import blf
 import gpu
 import bmesh
 import ifcopenshell
+import ifcopenshell.util.geolocation
 import bonsai.tool as tool
 from math import radians
 from bpy.types import SpaceView3D
@@ -53,7 +54,8 @@ class GeoreferenceDecorator:
         cls.is_installed = False
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
-        self.scale = bpy.context.scene.BIMGeoreferenceProperties.visualization_scale
+        props = tool.Georeference.get_georeference_props()
+        self.scale = props.visualization_scale
         content_pos = [v * self.scale for v in content_pos]
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
@@ -64,7 +66,7 @@ class GeoreferenceDecorator:
         if not GeoreferenceData.is_loaded:
             GeoreferenceData.load()
 
-        props = context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if not props.model_origin:  # If this is empty, no georeferencing data has been loaded.
             return
 
@@ -177,7 +179,7 @@ class GeoreferenceDecorator:
         if not GeoreferenceData.is_loaded:
             GeoreferenceData.load()
 
-        props = context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if not props.model_origin:  # If this is empty, no georeferencing data has been loaded.
             return
 
@@ -350,7 +352,7 @@ class GeoreferenceDecorator:
         self.gn_angle = float(GeoreferenceData.data["map_derived_angle"] or 0)
         self.tn_angle = float(GeoreferenceData.data["true_derived_angle"] or 0)
 
-        props = context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if props.has_blender_offset:
             blender_angle = ifcopenshell.util.geolocation.xaxis2angle(
                 float(props.blender_x_axis_abscissa), float(props.blender_x_axis_ordinate)

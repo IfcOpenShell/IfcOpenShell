@@ -30,11 +30,8 @@ def edit_reference(
     IfcDocumentReference, consult the IFC documentation.
 
     :param reference: The IfcDocumentReference entity you want to edit
-    :type reference: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -49,7 +46,5 @@ def edit_reference(
         ifcopenshell.api.document.edit_reference(model,
             reference=reference, attributes={"Identification": "2.1.15"})
     """
-    settings = {"reference": reference, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["reference"], name, value)
+    for name, value in attributes.items():
+        setattr(reference, name, value)

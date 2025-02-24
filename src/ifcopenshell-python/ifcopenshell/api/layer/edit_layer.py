@@ -37,7 +37,5 @@ def edit_layer(file: ifcopenshell.file, layer: ifcopenshell.entity_instance, att
         ifcopenshell.api.layer.edit_layer(model,
             layer=layer, attributes={"Description": "All walls, based on the AIA standard."})
     """
-    settings = {"layer": layer, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["layer"], name, value)
+    for name, value in attributes.items():
+        setattr(layer, name, value)

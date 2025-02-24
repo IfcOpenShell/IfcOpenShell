@@ -20,6 +20,7 @@ import bpy
 import bmesh
 import math
 import ifcopenshell
+import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
@@ -266,10 +267,20 @@ class Polyline(bonsai.core.tool.Polyline):
         snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
         snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
-        if tool_state.use_default_container:
-            snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
+        if tool_state.is_input_on:
+            if tool_state.use_default_container:
+                mouse_vector = Vector(
+                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), default_container_elevation)
+                )
+            else:
+                mouse_vector = Vector(
+                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), input_ui.get_number_value("Z"))
+                )
         else:
-            snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
+            if tool_state.use_default_container:
+                snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
+            else:
+                snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
         if len(polyline_points) > 1:
             second_to_last_point_data = polyline_points[len(polyline_points) - 2]
@@ -452,13 +463,17 @@ class Polyline(bonsai.core.tool.Polyline):
     def format_input_ui_units(cls, value: float, is_area: bool = False) -> str:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         if bpy.context.scene.unit_settings.system == "IMPERIAL":
-            precision = bpy.context.scene.DocProperties.imperial_precision
+            dprops = tool.Drawing.get_document_props()
+            precision = dprops.imperial_precision
+            if is_area:
+                props = tool.Blender.get_bim_props()
+                area_unit = props.area_unit
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get(), unit_type=area_unit)
         else:
             precision = None
 
-        value = value if is_area else value / unit_scale
         return format_distance(
-            value,
+            value / unit_scale,
             precision=precision,
             hide_units=False,
             isArea=is_area,
@@ -506,9 +521,13 @@ class Polyline(bonsai.core.tool.Polyline):
             for point in polyline_points[1:]:  # The first can be repeated to form a wall loop
                 if (x, y, z) == (point.x, point.y, point.z):
                     return "Cannot create two points at the same location"
-            # Avoids duplicating an edge
+            # Avoids creating overlapping edges
             if len(polyline_points) > 1:
-                if Vector((x, y, z)) == Vector((polyline_points[-2].x, polyline_points[-2].y, polyline_points[-2].z)):
+                v1 = Vector((x, y, z))
+                v2 = Vector((polyline_points[-1].x, polyline_points[-1].y, polyline_points[-1].z))
+                v3 = Vector((polyline_points[-2].x, polyline_points[-2].y, polyline_points[-2].z))
+                angle = tool.Cad.angle_3_vectors(v1, v2, v3, new_angle=None, degrees=True)
+                if tool.Cad.is_x(angle, 0):
                     return
             # TODO move this limitation to be Wall tool specific. Right now it also affects Measure tool
             # Avoids creating segments smaller then 0.1. This is a limitation from create_wall_from_2_points

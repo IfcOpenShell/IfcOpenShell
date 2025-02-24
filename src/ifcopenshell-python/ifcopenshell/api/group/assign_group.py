@@ -46,29 +46,25 @@ def assign_group(
         ifcopenshell.api.group.assign_group(model,
             products=model.by_type("IfcFurniture"), group=group)
     """
-    settings = {
-        "products": products,
-        "group": group,
-    }
-
-    if not settings["products"]:
+    if not products:
         return
 
-    if not settings["group"].IsGroupedBy:
+    is_grouped_by: tuple[ifcopenshell.entity_instance, ...]
+    if not (is_grouped_by := group.IsGroupedBy):
         return file.create_entity(
             "IfcRelAssignsToGroup",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": settings["products"],
-                "RelatingGroup": settings["group"],
-            }
+                "RelatedObjects": products,
+                "RelatingGroup": group,
+            },
         )
-    rel = settings["group"].IsGroupedBy[0]
+    rel = is_grouped_by[0]
     related_objects = set(rel.RelatedObjects) or set()
-    products = set(settings["products"])
-    if products.issubset(related_objects):
+    products_set = set(products)
+    if products_set.issubset(related_objects):
         return rel
-    rel.RelatedObjects = list(related_objects | products)
+    rel.RelatedObjects = list(related_objects | products_set)
     ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
     return rel

@@ -417,6 +417,7 @@ def add_annotation(
     drawing_tool.show_decorations()
     obj = drawing_tool.create_annotation_object(drawing, object_type)
     element = ifc.get_entity(obj)
+    # TODO: element is never None?
     if not element:
         relating_type_rep = drawing_tool.get_annotation_representation(relating_type) if relating_type else None
         element = drawing_tool.run_root_assign_class(

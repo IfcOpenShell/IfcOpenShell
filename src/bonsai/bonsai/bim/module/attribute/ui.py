@@ -18,7 +18,6 @@
 
 import bonsai.bim.helper
 from bpy.types import Panel
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.attribute.data import AttributesData
 import bonsai.tool as tool
 

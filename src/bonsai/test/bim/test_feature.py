@@ -39,7 +39,7 @@ scenarios("feature")
 
 variables = {
     "cwd": Path.cwd().as_posix(),
-    "ifc": "IfcStore.get_file()",
+    "ifc": "tool.Ifc.get()",
     "pset_ifc": "IfcStore.pset_template_file",
     "classification_ifc": "IfcStore.classification_file",
 }
@@ -190,7 +190,8 @@ def an_empty_blender_session():
     # default project settings
     bpy.context.scene.unit_settings.system = "METRIC"
     bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
-    bpy.context.scene.BIMProjectProperties.template_file = "0"
+    props = tool.Project.get_project_props()
+    props.template_file = "0"
     tool.Blender.get_addon_preferences().should_play_chaching_sound = False
 
 
@@ -203,7 +204,8 @@ def an_empty_ifc_project():
 @given("an empty IFC2X3 project")
 def an_empty_ifc_2x3_project():
     an_empty_blender_session()
-    bpy.context.scene.BIMProjectProperties.export_schema = "IFC2X3"
+    props = tool.Project.get_project_props()
+    props.export_schema = "IFC2X3"
     bpy.ops.bim.create_project()
 
 
@@ -742,7 +744,7 @@ def the_object_name_has_a_representation_type_of_context(name, type, context):
 def the_object_name_data_is_a_type_representation_of_context(name, type, context):
     ifc = an_ifc_file_exists()
     context, subcontext, target_view = context.split("/")
-    rep = ifc.by_id(the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id)
+    rep = ifc.by_id(tool.Geometry.get_mesh_props(the_object_name_exists(name).data).ifc_definition_id)
     assert rep
     assert rep.RepresentationType == type, f"The object {name} is not a {type} representation"
     assert rep.ContextOfItems.ContextType == context
@@ -784,14 +786,14 @@ def the_ifc_material_name_does_not_exist(name):
 
 @then("an IFC file does not exist")
 def an_ifc_file_does_not_exist():
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     if ifc:
         assert False, "An IFC is available"
 
 
 @then("an IFC file exists")
 def an_ifc_file_exists():
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     if not ifc:
         assert False, "No IFC file is available"
     return ifc
@@ -805,7 +807,7 @@ def the_object_name_should_display_as_mode(name, mode):
 
 @then(parsers.parse('the object "{name}" is voided by "{void}"'))
 def the_object_name_is_voided_by_void(name, void):
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     assert any((rel for rel in element.HasOpenings if rel.RelatedOpeningElement.Name == void)), "No void found"
 
@@ -821,14 +823,14 @@ def the_object_name_is_not_voided_by_void(name, void):
 
 @then(parsers.parse('the object "{name}" is not voided'))
 def the_object_name_is_not_voided(name):
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     assert not element.HasOpenings, "A void was found"
 
 
 @then(parsers.parse('the object "{name}" is a void'))
 def the_object_name_is_a_void(name):
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     obj = the_object_name_exists(name)
     element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
     assert any((element.VoidsElements)), "No void was found"
@@ -888,7 +890,7 @@ def the_object_name_has_no_data(name):
 
 @then(parsers.parse('the object "{name}" has data which is an IFC representation'))
 def the_object_name_has_ifc_representation_data(name):
-    id = the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id
+    id = tool.Geometry.get_mesh_props(the_object_name_exists(name).data).ifc_definition_id
     assert id != 0, f"The ID is {id}"
 
 
@@ -934,7 +936,7 @@ def the_object_name_has_number_vertices(name, number):
 
 @then(parsers.parse('the void "{name}" is filled by "{filling}"'))
 def the_void_name_is_filled_by_filling(name, filling):
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     assert any((rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings)), "No filling found"
 
@@ -951,7 +953,7 @@ def the_void_name_is_not_filled_by_filling(name, filling):
 @when(parsers.parse('the object "{name}" is not a filling'))
 @then(parsers.parse('the object "{name}" is not a filling'))
 def the_object_name_is_not_a_filling(name):
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
     assert not any(element.FillsVoids), "A filling was found"
 

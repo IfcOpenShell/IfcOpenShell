@@ -89,7 +89,7 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def get_mesh_name(cls, representation: ifcopenshell.entity_instance) -> str:
-        context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
+        context_id = context.id() if (context := getattr(representation, "ContextOfItems", None)) else 0
         return "{}/{}".format(context_id, representation.id())
 
     @classmethod
@@ -105,7 +105,7 @@ class Loader(bonsai.core.tool.Loader):
         mesh: tool.Geometry.TYPES_WITH_MESH_PROPERTIES,
     ) -> None:
         geometry = shape.geometry if hasattr(shape, "geometry") else shape
-        mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = int(geometry.id.split("-")[0])
 
     @classmethod
     def create_surface_style_shading(
@@ -698,7 +698,7 @@ class Loader(bonsai.core.tool.Loader):
             project_north = 0
 
         if has_offset or has_rotation:
-            props = bpy.context.scene.BIMGeoreferenceProperties
+            props = tool.Georeference.get_georeference_props()
             props.blender_offset_x = str(model_offset[0])
             props.blender_offset_y = str(model_offset[1])
             props.blender_offset_z = str(model_offset[2])
@@ -747,7 +747,7 @@ class Loader(bonsai.core.tool.Loader):
         cls, element: ifcopenshell.entity_instance, is_gross: bool = False
     ) -> Union[ifcopenshell.geom.ShapeElementType, None]:
         context_settings = cls.settings.gross_context_settings if is_gross else cls.settings.context_settings
-        geometry_library = bpy.context.scene.BIMProjectProperties.geometry_library
+        geometry_library = tool.Project.get_project_props().geometry_library
         for settings in context_settings:
             try:
                 result = ifcopenshell.geom.create_shape(settings, element, geometry_library=geometry_library)
@@ -952,7 +952,7 @@ class Loader(bonsai.core.tool.Loader):
                 matrix[1][3] = offset_xyz[1]
                 matrix[2][3] = offset_xyz[2]
 
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if props.has_blender_offset:
             if obj.BIMObjectProperties.blender_offset_type == "NONE":
                 obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
@@ -1016,6 +1016,74 @@ class Loader(bonsai.core.tool.Loader):
 
         mesh["ios_materials"] = [m.instance_id() for m in ifcopenshell.util.shape.get_shape_material_styles(geometry)]
         mesh["ios_material_ids"] = ifcopenshell.util.shape.get_faces_material_style_ids(geometry).tolist()
+        return mesh
+
+    @classmethod
+    def slice_layerset_mesh(cls, element: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> bpy.types.Mesh:
+        if True:  # This feature is still experimental
+            return mesh
+        if not (material := ifcopenshell.util.element.get_material(element)):
+            return mesh
+        elif material.is_a("IfcMaterialLayerSetUsage"):
+            usage = material
+            layer_set = material.ForLayerSet
+            offset = usage.OffsetFromReferenceLine * cls.unit_scale
+            sense_factor = 1 if usage.DirectionSense == "POSITIVE" else -1
+        elif material.is_a("IfcMaterialLayerSet"):
+            usage = None
+            layer_set = material
+            offset = 0
+            sense_factor = 1
+        else:
+            return mesh
+        if len(layer_set.MaterialLayers) == 1:
+            return mesh
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        prev_co = None
+        co = Vector((0.0, offset, 0.0))
+        no = Vector((0.0, 1.0, 0.0))
+        # Cache this
+        body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        styles = {}
+        has_layer_styles = False
+        for i, material in mesh.materials:
+            if style := tool.Ifc.get_entity(material):
+                styles[style] = i
+        for layer in layer_set.MaterialLayers[:-1]:
+            prev_co = co.copy()
+            co.y = layer.LayerThickness * cls.unit_scale * sense_factor
+            bisect_geom = bmesh.ops.bisect_plane(
+                bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
+            )
+            bmesh.ops.duplicate(bm, geom=bisect_geom["geom_cut"])
+            if style := ifcopenshell.util.representation.get_material_style(layer.Material, body):
+                if (material_index := styles.get(style, None)) is None:
+                    material_index = len(mesh.materials)
+                    mesh.materials.append(tool.Ifc.get_object(style))
+                for face in bisect_geom["geom"]:
+                    if isinstance(face, bmesh.types.BMFace):
+                        center = face.calc_center_bounds() * sense_factor
+                        if center.y < co.y and center.y > prev_co.y:
+                            face.material_index = material_index
+                            has_layer_styles = True
+
+        # Last layer
+        layer = layer_set.MaterialLayers[-1]
+        if style := ifcopenshell.util.representation.get_material_style(layer.Material, body):
+            if (material_index := styles.get(style, None)) is None:
+                material_index = len(mesh.materials)
+                mesh.materials.append(tool.Ifc.get_object(style))
+            for face in bisect_geom["geom"]:
+                if isinstance(face, bmesh.types.BMFace):
+                    center = face.calc_center_bounds() * sense_factor
+                    if center.y > co.y:
+                        face.material_index = material_index
+                        has_layer_styles = True
+
+        bm.to_mesh(mesh)
+        bm.free()
+        mesh["has_layer_styles"] = has_layer_styles
         return mesh
 
     @classmethod

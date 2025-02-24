@@ -21,7 +21,7 @@ import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 
 def add_reference(
@@ -65,23 +65,18 @@ def add_reference(
 
     :param product: The list of IFC objects, properties, or resources you want to
         associate the classification reference to.
-    :type product: list[ifcopenshell.entity_instance]
     :param reference: The classification reference entity taken from an
         IFC classification library. If you supply this parameter, you will
         use option 2.
-    :type reference: ifcopenshell.entity_instance, optional
     :param identification: If you choose option 1 and do not specify a
         reference, you may manually specify an identification code. The code
         is typically a short identifier and may have punctuation to separate
         the levels of hierarchy in the classificaion (e.g. Pr_12_23_34).
-    :type identification: str, optional
     :param name: If you choose option 1 and do not specify a reference, you
         may manually specify a name. The name is typically human readable.
-    :type name: str, optional
     :param classification: The IfcClassification entity in your IFC model
         (not the library, if you are doing option 2) that the reference is
         part of.
-    :type classification: ifcopenshell.entity_instance
     :param is_lightweight: If you are doing option 2, choose whether or not
         to only add that particular reference (lighweight) or also add all
         of its parent references in the classification hierarchy (not
@@ -91,13 +86,11 @@ def add_reference(
         references merely help describe the "tree" of classifications, but
         is generally unnecessary. Using lightweight classifications are
         recommended and is the default.
-    :type is_lightweight: bool, optional
 
     :raises TypeError: If file is IFC2X3 and `products` has non-IfcRoot elements.
 
     :return: The newly added IfcClassificationReference
         or `None` if `products` was empty list.
-    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -136,6 +129,9 @@ def add_reference(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         if not self.settings["products"]:
             return

@@ -23,7 +23,6 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.date
 import bonsai.tool as tool
 import bonsai.core.sequence as core
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.sequence.data import SequenceData, AnimationColorSchemeData, refresh as refresh_sequence_data
 import bonsai.bim.module.resource.data
 import bonsai.bim.module.pset.data

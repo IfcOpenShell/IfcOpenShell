@@ -19,7 +19,6 @@
 import bonsai.tool as tool
 import bonsai.bim.module.type.prop as type_prop
 from bpy.types import Panel
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.type.data import TypeData
 

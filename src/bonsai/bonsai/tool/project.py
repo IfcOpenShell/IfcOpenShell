@@ -70,7 +70,8 @@ class Project(bonsai.core.tool.Project):
 
     @classmethod
     def load_pset_templates(cls):
-        pset_dir = tool.Ifc.resolve_uri(bpy.context.scene.BIMProperties.pset_dir)
+        props = tool.Blender.get_bim_props()
+        pset_dir = tool.Ifc.resolve_uri(props.pset_dir)
         if os.path.isdir(pset_dir):
             for path in Path(pset_dir).glob("*.ifc"):
                 bonsai.bim.schema.ifc.psetqto.templates.append(ifcopenshell.open(path))
@@ -136,13 +137,15 @@ class Project(bonsai.core.tool.Project):
     @classmethod
     def set_context(cls, context):
         bonsai.bim.handler.refresh_ui_data()
-        bpy.context.scene.BIMRootProperties.contexts = str(context.id())
+        rprops = tool.Root.get_root_props()
+        rprops.contexts = str(context.id())
 
     @classmethod
     def set_default_context(cls):
         context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         if context:
-            bpy.context.scene.BIMRootProperties.contexts = str(context.id())
+            rprops = tool.Root.get_root_props()
+            rprops.contexts = str(context.id())
 
     @classmethod
     def set_default_modeling_dimensions(cls):
@@ -235,7 +238,7 @@ class Project(bonsai.core.tool.Project):
 
     @classmethod
     def load_linked_models_from_ifc(cls) -> None:
-        links = bpy.context.scene.BIMProjectProperties.links
+        links = tool.Project.get_project_props().links
         links.clear()
         links_document = cls.get_linked_models_document()
         if not links_document:
@@ -252,7 +255,7 @@ class Project(bonsai.core.tool.Project):
     @classmethod
     def save_linked_models_to_ifc(cls) -> None:
         ifc_file = tool.Ifc.get()
-        links = bpy.context.scene.BIMProjectProperties.links
+        links = tool.Project.get_project_props().links
         filepaths: set[Path] = set()
         for link in links:
             filepaths.add(Path(link.name))
@@ -372,8 +375,12 @@ class Project(bonsai.core.tool.Project):
         props = cls.get_project_props()
         for project_library in libraries:
             library_elements = tool.Project.get_project_library_elements(project_library)
+            subhierarchy = libraries[project_library]
+            for sublibrary in subhierarchy:
+                sublibrary_elements = tool.Project.get_project_library_elements(sublibrary)
+                library_elements.update(sublibrary_elements)
             props.add_library_project_library(
-                project_library.Name or "Unnamed", len(library_elements), project_library.id()
+                project_library.Name or "Unnamed", len(library_elements), project_library.id(), bool(subhierarchy)
             )
 
     @classmethod

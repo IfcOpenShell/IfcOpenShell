@@ -30,9 +30,14 @@ from typing import Union, Literal, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import BIMFilterGroup
+    from bonsai.bim.module.search.prop import BIMSearchProperties
 
 
 class Search(bonsai.core.tool.Search):
+    @classmethod
+    def get_search_props(cls) -> BIMSearchProperties:
+        return bpy.context.scene.BIMSearchProperties
+
     @classmethod
     def get_group_query(cls, group: ifcopenshell.entity_instance) -> str:
         return json.loads(group.Description)["query"]
@@ -40,7 +45,7 @@ class Search(bonsai.core.tool.Search):
     @classmethod
     def get_filter_groups(cls, module: str) -> bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]:
         if module == "search":
-            return bpy.context.scene.BIMSearchProperties.filter_groups
+            return cls.get_search_props().filter_groups
         elif module == "csv":
             return bpy.context.scene.CsvProperties.filter_groups
         elif module == "diff":

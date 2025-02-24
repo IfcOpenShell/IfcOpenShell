@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import re
-import types
+import sys
 import lark
 import numpy as np
 import ifcopenshell.api.pset
@@ -36,6 +36,11 @@ import ifcopenshell.util.system
 import ifcopenshell.util.unit
 from decimal import Decimal
 from typing import Optional, Any, Union, Iterable
+
+if sys.version_info >= (3, 10):
+    from types import EllipsisType
+else:
+    EllipsisType = type(...)
 
 
 filter_elements_grammar = lark.Lark(
@@ -659,7 +664,7 @@ def set_element_value(
 
                 def process_pset_prop_value(
                     pset: ifcopenshell.entity_instance, prop: str, value: Any
-                ) -> Union[Any, types.EllipsisType]:
+                ) -> Union[Any, EllipsisType]:
                     """Try to process value for edit_pset.
 
                     `edit_pset` is expecting a sequence of values
@@ -672,7 +677,7 @@ def set_element_value(
 
                     current_value = element.get(key, ...)
                     # Check if previous value is a list as a fast way to identify enum properties.
-                    if not isinstance(current_value, (types.EllipsisType, list)):
+                    if not isinstance(current_value, (EllipsisType, list)):
                         return value
 
                     if isinstance(current_value, list):

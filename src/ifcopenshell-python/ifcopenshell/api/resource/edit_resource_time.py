@@ -18,6 +18,9 @@
 
 import ifcopenshell
 import ifcopenshell.api.sequence
+import ifcopenshell.util.constraint
+import ifcopenshell.util.date
+import ifcopenshell.util.resource
 from typing import Any
 
 
@@ -30,11 +33,8 @@ def edit_resource_time(
     IfcResourceTime, consult the IFC documentation.
 
     :param resource_time: The IfcResourceTime entity you want to edit
-    :type resource_time: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -62,25 +62,23 @@ def edit_resource_time(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"resource_time": resource_time, "attributes": attributes}
-    return usecase.execute()
+    return usecase.execute(resource_time, attributes)
 
 
 class Usecase:
-    def execute(self):
-        self.resource = self.get_resource()
+    file: ifcopenshell.file
+
+    def execute(self, resource_time: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+        resource = self.get_resource(resource_time)
 
         # If the user specifies both an end date and a duration, the duration takes priority
-        if (
-            self.settings["attributes"].get("ScheduleWork", None)
-            and "ScheduleFinish" in self.settings["attributes"].keys()
-        ):
-            del self.settings["attributes"]["ScheduleFinish"]
-        if self.settings["attributes"].get("ActualWork", None) and "ActualFinish" in self.settings["attributes"].keys():
-            del self.settings["attributes"]["ActualFinish"]
+        if attributes.get("ScheduleWork", None) and "ScheduleFinish" in attributes.keys():
+            del attributes["ScheduleFinish"]
+        if attributes.get("ActualWork", None) and "ActualFinish" in attributes.keys():
+            del attributes["ActualFinish"]
 
-        for name, value in self.settings["attributes"].items():
-            metrics = ifcopenshell.util.constraint.get_metric_constraints(self.resource, "Usage." + name)
+        for name, value in attributes.items():
+            metrics = ifcopenshell.util.constraint.get_metric_constraints(resource, "Usage." + name)
             if metrics and ifcopenshell.util.constraint.is_hard_constraint(metrics[0]):
                 continue
             if value:
@@ -88,13 +86,13 @@ class Usecase:
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDateTime")
                 elif name == "ScheduleWork" or name == "ActualWork" or name == "RemainingTime":
                     value = ifcopenshell.util.date.datetime2ifc(value, "IfcDuration")
-            setattr(self.settings["resource_time"], name, value)
+            setattr(resource_time, name, value)
             if name == "ScheduleUsage" and ifcopenshell.util.constraint.get_metric_constraints(
-                self.resource, "Usage.ScheduleWork"
+                resource, "Usage.ScheduleWork"
             ):
-                task = ifcopenshell.util.resource.get_task_assignments(self.resource)
+                task = ifcopenshell.util.resource.get_task_assignments(resource)
                 if task:
                     ifcopenshell.api.sequence.calculate_task_duration(self.file, task=task)
 
-    def get_resource(self):
-        return [e for e in self.file.get_inverse(self.settings["resource_time"]) if e.is_a("IfcResource")][0]
+    def get_resource(self, resource_time: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        return next(e for e in self.file.get_inverse(resource_time) if e.is_a("IfcResource"))

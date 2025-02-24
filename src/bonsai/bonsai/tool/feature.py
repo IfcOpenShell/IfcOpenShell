@@ -16,16 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
 import ifcopenshell
-from typing import Iterable
+from typing import Iterable, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.void.prop import BIMBooleanProperties
 
 
 class Feature(bonsai.core.tool.Feature):
     # TODO: consolidate module/model/opening and module/void into new module/feature
+
+    @classmethod
+    def get_boolean_props(cls) -> BIMBooleanProperties:
+        return bpy.context.scene.BIMBooleanProperties
 
     @classmethod
     def add_feature(cls, featured_obj: bpy.types.Object, feature_objs: Iterable[bpy.types.Object]) -> None:

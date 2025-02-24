@@ -35,9 +35,7 @@ def recalculate_schedule(file: ifcopenshell.file, work_schedule: ifcopenshell.en
     error.
 
     :param work_schedule: The IfcWorkSchedule to perform the calculation on.
-    :type work_schedule: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -50,12 +48,14 @@ def recalculate_schedule(file: ifcopenshell.file, work_schedule: ifcopenshell.en
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"work_schedule": work_schedule}
-    return usecase.execute()
+    return usecase.execute(work_schedule)
 
 
 class Usecase:
-    def execute(self):
+    file: ifcopenshell.file
+
+    def execute(self, work_schedule: ifcopenshell.entity_instance) -> None:
+        self.work_schedule = work_schedule
         # The method implemented is the same as shown here:
         # https://www.youtube.com/watch?v=qTErIV6OqLg
         self.start_dates = []
@@ -88,7 +88,6 @@ class Usecase:
 
         if is_cyclic:
             raise RecursionError("Task graph is cyclic and so critical path method cannot be performed.")
-            return
 
         self.pending_nodes = set(self.g.nodes)
         while self.pending_nodes:
@@ -100,7 +99,7 @@ class Usecase:
 
         self.update_task_times()
 
-    def build_network_graph(self):
+    def build_network_graph(self) -> None:
         self.sequence_type_map = {
             None: "FS",
             "START_START": "SS",
@@ -114,14 +113,14 @@ class Usecase:
         self.edges = []
         self.g.add_node("start", duration=0, duration_type="ELAPSEDTIME", calendar=None)
         self.g.add_node("finish", duration=0, duration_type="ELAPSEDTIME", calendar=None)
-        for rel in self.settings["work_schedule"].Controls:
+        for rel in self.work_schedule.Controls:
             for related_object in rel.RelatedObjects:
                 if not related_object.is_a("IfcTask"):
                     continue
                 self.add_node(related_object)
         self.g.add_edges_from(self.edges)
 
-    def add_node(self, task):
+    def add_node(self, task: ifcopenshell.entity_instance) -> None:
         if task.IsNestedBy:
             for rel in task.IsNestedBy:
                 [self.add_node(o) for o in rel.RelatedObjects]
@@ -176,7 +175,7 @@ class Usecase:
         if not successor_types:
             self.edges.append((task.id(), "finish", {"lag_time": 0, "type": "FF"}))
 
-    def update_task_times(self):
+    def update_task_times(self) -> None:
         for ifc_definition_id in self.g.nodes:
             if ifc_definition_id in ("start", "finish"):
                 continue
@@ -198,12 +197,12 @@ class Usecase:
                 },
             )
 
-    def offset_date(self, date, days, node):
+    def offset_date(self, date: datetime.datetime, days: int, node: dict) -> datetime.datetime:
         return ifcopenshell.util.sequence.offset_date(
             date, datetime.timedelta(days=days), node["duration_type"], node["calendar"]
         )
 
-    def forward_pass(self, node):
+    def forward_pass(self, node) -> bool:
         successors = self.g.successors(node)
         predecessors = list(self.g.predecessors(node))
         data = self.g.nodes[node]
@@ -326,7 +325,7 @@ class Usecase:
 
         return True
 
-    def backward_pass(self, node):
+    def backward_pass(self, node) -> bool:
         successors = list(self.g.successors(node))
         predecessors = self.g.predecessors(node)
         data = self.g.nodes[node]
@@ -496,12 +495,12 @@ class Usecase:
 
     def calculate_free_float(
         self,
-        predecessor_date,
-        successor_date,
-        lag_time,
-        predecessor_data,
-        successor_data,
-    ):
+        predecessor_date: datetime.datetime,
+        successor_date: datetime.datetime,
+        lag_time: int,
+        predecessor_data: dict,
+        successor_data: dict,
+    ) -> datetime.timedelta:
         if not lag_time:
             min_successor_date = successor_date
         else:

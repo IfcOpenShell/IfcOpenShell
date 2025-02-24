@@ -901,7 +901,6 @@ class Spatial:
     def deselect_objects(cls): pass
     def disable_editing(cls, obj): pass
     def duplicate_object_and_data(cls, obj): pass
-    def edit_container_attributes(cls, entity): pass
     def edit_container_name(cls, container, name): pass
     def enable_editing(cls, obj): pass
     def expand_container(cls, container): pass

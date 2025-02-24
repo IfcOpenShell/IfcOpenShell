@@ -426,6 +426,9 @@ def add_window_representation(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         builder = ShapeBuilder(self.file)
         np_X, np_Y, np_Z = 0, 1, 2

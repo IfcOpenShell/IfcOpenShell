@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.util.element
+from typing import Any
 
 
 def unassign_material(file: ifcopenshell.file, products: list[ifcopenshell.entity_instance]) -> None:
@@ -58,6 +59,9 @@ def unassign_material(file: ifcopenshell.file, products: list[ifcopenshell.entit
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         self.products = set(self.settings["products"])
         if not self.products:

@@ -26,7 +26,6 @@ import bonsai.tool as tool
 from bonsai.bim.prop import Attribute, StrProperty
 from bonsai.bim.module.pset.data import AddEditCustomPropertiesData, ObjectPsetsData, MaterialPsetsData
 from bonsai.bim.module.material.data import ObjectMaterialData
-from bonsai.bim.ifc import IfcStore
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -135,7 +134,7 @@ def get_resource_pset_names(self, context):
     global psetnames
     rprops = context.scene.BIMResourceProperties
     rtprops = context.scene.BIMResourceTreeProperties
-    ifc_class = IfcStore.get_file().by_id(rtprops.resources[rprops.active_resource_index].ifc_definition_id).is_a()
+    ifc_class = tool.Ifc.get().by_id(rtprops.resources[rprops.active_resource_index].ifc_definition_id).is_a()
     if ifc_class not in psetnames:
         psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
@@ -146,7 +145,7 @@ def get_resource_qto_names(self, context):
     global qtonames
     rprops = context.scene.BIMResourceProperties
     rtprops = context.scene.BIMResourceTreeProperties
-    ifc_class = IfcStore.get_file().by_id(rtprops.resources[rprops.active_resource_index].ifc_definition_id).is_a()
+    ifc_class = tool.Ifc.get().by_id(rtprops.resources[rprops.active_resource_index].ifc_definition_id).is_a()
     if ifc_class not in qtonames:
         psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, qto_only=True, schema=tool.Ifc.get_schema())
         qtonames[ifc_class] = blender_formatted_enum_from_psets(psets)
@@ -174,7 +173,7 @@ def get_group_qto_names(self, context):
 def get_profile_pset_names(self, context):
     global psetnames
     pprops = tool.Profile.get_profile_props()
-    ifc_class = IfcStore.get_file().by_id(pprops.profiles[pprops.active_profile_index].ifc_definition_id).is_a()
+    ifc_class = tool.Ifc.get().by_id(pprops.profiles[pprops.active_profile_index].ifc_definition_id).is_a()
     if ifc_class not in psetnames:
         psets = bonsai.bim.schema.ifc.psetqto.get_applicable(ifc_class, pset_only=True, schema=tool.Ifc.get_schema())
         psetnames[ifc_class] = blender_formatted_enum_from_psets(psets)
@@ -290,7 +289,8 @@ class AddEditProperties(PropertyGroup):
     enum_values: CollectionProperty(name="Enum Values", type=Attribute)
 
     def get_value_name(self) -> Union[Literal["string_value", "bool_value", "int_value", "float_value"], None]:
-        ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)
+        schema = tool.Ifc.schema()
+        ifc_data_type = schema.declaration_by_name(self.primary_measure_type)
         data_type = ifcopenshell.util.attribute.get_primitive_type(ifc_data_type)
         if data_type == "string":
             return "string_value"

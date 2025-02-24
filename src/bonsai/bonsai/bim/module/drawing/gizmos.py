@@ -19,6 +19,7 @@
 import bpy
 import blf
 import gpu
+import bonsai.tool as tool
 from bpy import types
 from mathutils import Vector
 from mathutils import geometry
@@ -478,21 +479,25 @@ class ExtrusionWidget(types.GizmoGroup):
     bl_options = {"3D", "PERSISTENT", "SHOW_MODAL_ALL"}
 
     @classmethod
-    def poll(cls, ctx):
-        obj = ctx.object
+    def poll(cls, context):
+        obj = context.active_object
         return (
             obj
-            and obj.type == "MESH"
-            and obj.data.BIMMeshProperties.ifc_parameters.get("IfcExtrudedAreaSolid/Depth") is not None
+            and (data := obj.data)
+            and isinstance(data, bpy.types.Mesh)
+            and tool.Geometry.get_mesh_props(data).ifc_parameters.get("IfcExtrudedAreaSolid/Depth") is not None
         )
 
-    def setup(self, ctx):
-        target = ctx.object
-        prop = target.data.BIMMeshProperties.ifc_parameters.get("IfcExtrudedAreaSolid/Depth")
+    def setup(self, context: bpy.types.Context) -> None:
+        target = context.object
+        assert target
+        mesh = target.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        prop = tool.Geometry.get_mesh_props(mesh).ifc_parameters.get("IfcExtrudedAreaSolid/Depth")
 
         basis = target.matrix_world.normalized()
-        theme = ctx.preferences.themes[0].user_interface
-        scale_value = self.get_scale_value(ctx.scene.unit_settings.system, ctx.scene.unit_settings.length_unit)
+        theme = context.preferences.themes[0].user_interface
+        scale_value = self.get_scale_value(context.scene.unit_settings.system, context.scene.unit_settings.length_unit)
 
         # setup handle
         gz = self.handle = self.gizmos.new("BIM_GT_uglydot_3d")
@@ -521,23 +526,26 @@ class ExtrusionWidget(types.GizmoGroup):
         # gz.use_draw_modal = True
         # gz.target_set_prop('value', target.demo, 'depth')
 
-    def refresh(self, ctx):
+    def refresh(self, context: bpy.types.Context) -> None:
         """updating gizmos"""
-        target = ctx.object
+        target = context.active_object
         basis = target.matrix_world.normalized()
         self.handle.matrix_basis = basis
         self.guides.matrix_basis = basis
 
-    def update(self, ctx):
+    def update(self, context: bpy.types.Context) -> None:
         """updating object"""
         bpy.ops.bim.update_parametric_representation()
-        target = ctx.object
-        prop = target.data.BIMMeshProperties.ifc_parameters.get("IfcExtrudedAreaSolid/Depth")
+        target = context.active_object
+        assert target
+        mesh = target.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        prop = tool.Geometry.get_mesh_props(mesh).ifc_parameters.get("IfcExtrudedAreaSolid/Depth")
         self.handle.target_set_prop("offset", prop, "value")
         self.guides.target_set_prop("depth", prop, "value")
 
     @staticmethod
-    def get_scale_value(system, length_unit):
+    def get_scale_value(system: str, length_unit: str) -> float:
         scale_value = 1
         if system == "METRIC":
             if length_unit == "KILOMETERS":

@@ -29,11 +29,8 @@ def add_task_time(
     (especially for maintenance tasks).
 
     :param task: The task to add time data to.
-    :type task: ifcopenshell.entity_instance
     :param is_recurring: Whether or not the time should recur.
-    :type is_recurring: bool
     :return: The newly created IfcTaskTime.
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -61,11 +58,9 @@ def add_task_time(
         ifcopenshell.api.sequence.edit_task_time(model,
             task_time=time, attributes={"ScheduleStart": "2000-01-01", "ScheduleDuration": "P2D"})
     """
-    settings = {"task": task, "is_recurring": is_recurring}
-
-    if settings["is_recurring"]:
+    if is_recurring:
         task_time = file.create_entity("IfcTaskTimeRecurring")
     else:
         task_time = file.create_entity("IfcTaskTime")
-    settings["task"].TaskTime = task_time
+    task.TaskTime = task_time
     return task_time

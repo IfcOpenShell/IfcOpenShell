@@ -60,6 +60,8 @@ def get_materials(self, context):
 
 def update_ifc_class(self, context):
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
+    AuthoringData.data["ifc_class_current"] = self.ifc_class
+    AuthoringData.data["type_elements"] = AuthoringData.type_elements()
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
     AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
     if tool.Blender.get_enum_safe(self, "relating_type_id") is None:

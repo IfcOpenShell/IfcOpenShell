@@ -41,7 +41,6 @@ def remove_style(file: ifcopenshell.file, style: ifcopenshell.entity_instance) -
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"style": style}
     return usecase.execute(style)
 
 

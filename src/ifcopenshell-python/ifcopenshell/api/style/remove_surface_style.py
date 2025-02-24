@@ -24,9 +24,7 @@ def remove_surface_style(file: ifcopenshell.file, style: ifcopenshell.entity_ins
     """Removes a presentation item from a presentation style
 
     :param style: The IfcPresentationItem to remove.
-    :type style: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

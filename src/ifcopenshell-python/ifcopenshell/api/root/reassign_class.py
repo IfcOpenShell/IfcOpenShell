@@ -27,7 +27,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
-from typing import Optional, Union, Literal
+from typing import Optional, Union, Literal, Any
 
 
 def reassign_class(
@@ -87,6 +87,7 @@ def reassign_class(
 
 class Usecase:
     file: ifcopenshell.file
+    settings: dict[str, Any]
 
     def execute(self):
         ifc_class: str = self.settings["ifc_class"]

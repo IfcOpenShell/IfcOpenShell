@@ -69,6 +69,9 @@ class MaterialCreator:
         if isinstance(mesh, bpy.types.Curve):
             return
 
+        if mesh.get("has_layer_styles", None) == True:
+            return
+
         self.mesh = mesh
         self.obj = obj
         if element.is_a("IfcTypeProduct"):
@@ -90,7 +93,8 @@ class MaterialCreator:
             return  # Already has materials assign to the representation itself
         # Otherwise, we need to check for material styles on the element, since
         # create_shape on types only works on representations.
-        context = tool.Ifc.get().by_id(self.mesh.BIMMeshProperties.ifc_definition_id).ContextOfItems
+        mprops = tool.Geometry.get_mesh_props(self.mesh)
+        context = tool.Ifc.get().by_id(mprops.ifc_definition_id).ContextOfItems
         for material in ifcopenshell.util.element.get_materials(element):
             if style := ifcopenshell.util.representation.get_material_style(material, context):
                 self.mesh["ios_materials"] = (style.id(),)
@@ -218,7 +222,7 @@ class IfcImporter:
         self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
-        classes_to_wireframe_str = bpy.context.scene.DocProperties.classes_to_wireframe
+        classes_to_wireframe_str = tool.Drawing.get_document_props().classes_to_wireframe
         self.classes_to_wireframe_list = [word.strip() for word in classes_to_wireframe_str.split(",")]
 
     def profile_code(self, message: str) -> None:
@@ -434,7 +438,7 @@ class IfcImporter:
         return False
 
     def calculate_model_offset(self) -> None:
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if self.ifc_import_settings.false_origin_mode == "MANUAL":
             tool.Loader.set_manual_blender_offset(self.file)
         elif self.ifc_import_settings.false_origin_mode == "AUTOMATIC":
@@ -878,17 +882,19 @@ class IfcImporter:
 
     def load_file(self):
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)
-        if not bpy.context.scene.BIMProperties.ifc_file:
-            bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
-        self.file = IfcStore.get_file()
+        props = tool.Blender.get_bim_props()
+        if not props.ifc_file:
+            props.ifc_file = self.ifc_import_settings.input_file
+        self.file = tool.Ifc.get()
 
     def calculate_unit_scale(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         tool.Loader.set_unit_scale(self.unit_scale)
 
-    def set_units(self):
+    def set_units(self) -> None:
         if not (assignment := self.file.by_type("IfcProject")[0].UnitsInContext):
             return  # Geometry is optional in IFC
+        props = tool.Blender.get_bim_props()
         for unit in assignment.Units:
             if unit.is_a("IfcNamedUnit") and unit.UnitType == "LENGTHUNIT":
                 if unit.is_a("IfcSIUnit"):
@@ -908,19 +914,19 @@ class IfcImporter:
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "AREAUNIT":
                 name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
                 try:
-                    bpy.context.scene.BIMProperties.area_unit = "{}{}".format(
+                    props.area_unit = "{}{}".format(
                         unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
                     )
                 except:  # Probably an invalid unit.
-                    bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
+                    props.area_unit = "SQUARE_METRE"
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "VOLUMEUNIT":
                 name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
                 try:
-                    bpy.context.scene.BIMProperties.volume_unit = "{}{}".format(
+                    props.volume_unit = "{}{}".format(
                         unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
                     )
                 except:  # Probably an invalid unit.
-                    bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+                    props.volume_unit = "CUBIC_METRE"
 
     def create_project(self):
         project = self.file.by_type("IfcProject")[0]
@@ -964,10 +970,10 @@ class IfcImporter:
                 tool.Collector.assign(obj, should_clean_users_collection=False)
 
     def is_curve_annotation(self, element: ifcopenshell.entity_instance) -> bool:
-        object_type = element.ObjectType
+        object_type = ifcopenshell.util.element.get_predefined_type(element)
         return (
             object_type in tool.Drawing.ANNOTATION_TYPES_DATA
-            and tool.Drawing.ANNOTATION_TYPES_DATA[object_type][3] == "curve"
+            and tool.Drawing.ANNOTATION_TYPES_DATA[object_type].data_type == "curve"
         )
 
     def get_drawing_group(self, element):
@@ -1056,12 +1062,13 @@ class IfcImporter:
             else:
                 mesh["has_cartesian_point_offset"] = False
 
-            return tool.Loader.convert_geometry_to_mesh(
+            mesh = tool.Loader.convert_geometry_to_mesh(
                 geometry,
                 mesh,
                 verts=verts,
                 load_indexed_maps=self.ifc_import_settings.load_indexed_maps,
             )
+            return tool.Loader.slice_layerset_mesh(element, mesh)
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
             import traceback
@@ -1069,9 +1076,10 @@ class IfcImporter:
             print(traceback.format_exc())
 
     def set_default_context(self):
+        rprops = tool.Root.get_root_props()
         for subcontext in self.file.by_type("IfcGeometricRepresentationSubContext"):
             if subcontext.ContextIdentifier == "Body":
-                bpy.context.scene.BIMRootProperties.contexts = str(subcontext.id())
+                rprops.contexts = str(subcontext.id())
                 break
 
     def link_element(self, element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:

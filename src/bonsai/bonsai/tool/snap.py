@@ -25,6 +25,7 @@ import math
 import mathutils
 from mathutils import Matrix, Vector
 from lark import Lark, Transformer
+from typing import Union
 
 
 class Snap(bonsai.core.tool.Snap):
@@ -192,7 +193,7 @@ class Snap(bonsai.core.tool.Snap):
             rot_intersection = rot_mat @ translated_intersection
             proximity = rot_intersection.y
             if tool_state.plane_method == "XZ":
-                proximity = rot_intersection.z
+                proximity = rot_intersection.x
 
             is_on_rot_axis = abs(proximity) <= stick_factor
             if is_on_rot_axis:
@@ -207,10 +208,14 @@ class Snap(bonsai.core.tool.Snap):
         # If lock axis is on it will use the snap angle so there is no need to search for eligible axis
         if elegible_axis or tool_state.lock_axis:
             # Adapt axis to make snap angle work with other plane method
-            if tool_state.plane_method == "XZ":
-                axis = -axis
-            if tool_state.plane_method == "YZ":
-                axis = 90 - (axis * -1)
+            if elegible_axis:
+                if tool_state.plane_method == "XZ":
+                    axis = 90 - (axis * -1)
+            else:
+                if tool_state.plane_method == "XZ":
+                    axis = -axis
+                if tool_state.plane_method == "YZ":
+                    axis = 90 - (axis * -1)
             rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, pivot_axis)
             rot_mat = tool.Polyline.use_transform_orientations(rot_mat)
             rot_intersection = rot_mat @ translated_intersection
@@ -313,7 +318,9 @@ class Snap(bonsai.core.tool.Snap):
             plane_normal = tool.Polyline.use_transform_orientations(plane_normal)
             return plane_origin, plane_normal
 
-        def cast_rays_to_single_object(obj, mouse_pos):
+        def cast_rays_to_single_object(
+            obj: bpy.types.Object, mouse_pos: tuple[int, int]
+        ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
             if obj.type != "MESH":
                 return None, None, None
             hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
@@ -332,7 +339,9 @@ class Snap(bonsai.core.tool.Snap):
             else:
                 return None, None, None
 
-        def cast_rays_and_get_best_object(objs_to_raycast, mouse_pos):
+        def cast_rays_and_get_best_object(
+            objs_to_raycast: list[bpy.types.Object], mouse_pos: tuple[int, int]
+        ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
             best_length_squared = 1.0
             best_obj = None
             best_hit = None
@@ -568,7 +577,7 @@ class Snap(bonsai.core.tool.Snap):
                                 "object": obj,
                             }
                             snaps_by_type.insert(0, snap_point)
-                        cls.update_snapping_point(snap_point["point"], snap_point["type"])
+                            cls.update_snapping_point(snap_point["point"], snap_point["type"])
                         return snaps_by_type
                     cls.update_snapping_point(point["point"], point["type"])
                     return snaps_by_type

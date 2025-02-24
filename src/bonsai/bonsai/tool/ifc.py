@@ -111,7 +111,7 @@ class Ifc(bonsai.core.tool.Ifc):
         elif isinstance(obj, bpy.types.Material):
             props = obj.BIMStyleProperties
         else:
-            props = obj.BIMMeshProperties
+            props = tool.Geometry.get_mesh_props(obj)
 
         if props and (ifc_definition_id := props.ifc_definition_id):
             try:
@@ -129,8 +129,12 @@ class Ifc(bonsai.core.tool.Ifc):
             return None
 
     @classmethod
-    def get_object(cls, element: ifcopenshell.entity_instance) -> IFC_CONNECTED_TYPE:
+    def get_object(cls, element: ifcopenshell.entity_instance) -> Union[IFC_CONNECTED_TYPE, None]:
         return IfcStore.get_element(element.id())
+
+    @classmethod
+    def get_object_by_identifier(cls, id_or_guid: Union[int, str]) -> Union[IFC_CONNECTED_TYPE, None]:
+        return IfcStore.get_element(id_or_guid)
 
     @classmethod
     def rebuild_element_maps(cls) -> None:
@@ -180,7 +184,7 @@ class Ifc(bonsai.core.tool.Ifc):
             cls.setup_listeners(obj)
 
         IfcStore.edited_objs = set()
-        edited_objs = bpy.context.scene.BIMProjectProperties.edited_objs
+        edited_objs = tool.Project.get_project_props().edited_objs
         for i in range(len(edited_objs))[::-1]:
             obj = edited_objs[i].obj
             if obj:
@@ -220,7 +224,7 @@ class Ifc(bonsai.core.tool.Ifc):
         """
         if obj in IfcStore.edited_objs:
             return
-        edited_objs = bpy.context.scene.BIMProjectProperties.edited_objs
+        edited_objs = tool.Project.get_project_props().edited_objs
         edited_objs.add().obj = obj
         IfcStore.edited_objs.add(obj)
         IfcStore.history_edit_object(obj, finish_editing=False)
@@ -233,7 +237,7 @@ class Ifc(bonsai.core.tool.Ifc):
         """
         if obj not in IfcStore.edited_objs:
             return
-        edited_objs = bpy.context.scene.BIMProjectProperties.edited_objs
+        edited_objs = tool.Project.get_project_props().edited_objs
         edited_objs.remove(next(i for i, o in enumerate(edited_objs) if o.obj == obj))
         IfcStore.edited_objs.discard(obj)
         IfcStore.history_edit_object(obj, finish_editing=True)

@@ -111,10 +111,12 @@ class Usecase:
     settings: dict[str, Any]
     ifc_vertices: list[ifcopenshell.entity_instance]
     coordinate_offset: Union[npt.NDArray[np.float64], None]
+    geometry: Union[bpy.types.Mesh, bpy.types.Curve]
 
     def execute(self) -> Union[ifcopenshell.entity_instance, None]:
         self.is_manifold = None
         self.coordinate_offset = self.settings["coordinate_offset"]
+        self.geometry = self.settings["geometry"]
         if (
             isinstance(self.settings["geometry"], bpy.types.Mesh)
             and self.settings["geometry"] == self.settings["blender_object"].data
@@ -636,9 +638,7 @@ class Usecase:
         dim = (lambda v: v.xy) if is_2d else (lambda v: v.xyz)
         results = []
         for spline in curve_object_data.splines:
-            points = spline.bezier_points[:] + spline.points[:]
-            if spline.use_cyclic_u:
-                points.append(points[0])
+            points = self.get_spline_points(spline)
             ifc_points = [self.create_cartesian_point(*dim(point.co)) for point in points]
             results.append(self.file.createIfcPolyline(ifc_points))
         return results
@@ -981,12 +981,12 @@ class Usecase:
         )
 
     def create_structural_reference_representation(self) -> ifcopenshell.entity_instance:
-        if len(self.settings["geometry"].vertices) == 1:
+        if isinstance(self.geometry, bpy.types.Mesh) and len(self.geometry.vertices) == 1:
             return self.file.createIfcTopologyRepresentation(
                 self.settings["context"],
                 self.settings["context"].ContextIdentifier,
                 "Vertex",
-                [self.create_vertex_point(self.settings["geometry"].vertices[0].co)],
+                [self.create_vertex_point(self.geometry.vertices[0].co)],
             )
         return self.file.createIfcTopologyRepresentation(
             self.settings["context"],
@@ -998,11 +998,22 @@ class Usecase:
     def create_vertex_point(self, point: Vector) -> ifcopenshell.entity_instance:
         return self.file.createIfcVertexPoint(self.create_cartesian_point(point.x, point.y, point.z))
 
+    def get_spline_points(
+        self, spline: bpy.types.Spline
+    ) -> list[Union[bpy.types.SplinePoint, bpy.types.BezierSplinePoint]]:
+        points = spline.bezier_points[:] + spline.points[:]
+        if spline.use_cyclic_u:
+            points.append(points[0])
+        return points
+
     def create_edge(self) -> Union[ifcopenshell.entity_instance, None]:
-        if hasattr(self.settings["geometry"], "splines"):
-            points = self.get_spline_points(self.settings["geometry"].splines[0])
+        geometry = self.geometry
+        if isinstance(geometry, bpy.types.Curve):
+            points = self.get_spline_points(geometry.splines[0])
+        elif isinstance(geometry, bpy.types.Mesh):
+            points = geometry.vertices
         else:
-            points = self.settings["geometry"].vertices
+            assert False, type(geometry)
         if not points:
             return
         return self.file.createIfcEdge(self.create_vertex_point(points[0].co), self.create_vertex_point(points[1].co))

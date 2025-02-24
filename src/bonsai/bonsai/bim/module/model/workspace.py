@@ -96,14 +96,16 @@ class BimTool(WorkSpaceTool):
     def draw_settings(
         cls, context: bpy.types.Context, layout: bpy.types.UILayout, ws_tool: bpy.types.WorkSpaceTool
     ) -> None:
-        if context.scene.BIMGeometryProperties.mode == "ITEM":
+        props = tool.Geometry.get_geometry_props()
+        ifc_element_type = None if cls.ifc_element_type == "all" else cls.ifc_element_type
+        if props.mode == "ITEM":
             EditItemUI.draw(context, layout)
         elif (
             active_ifc_object := (context.active_object and tool.Ifc.get_entity(context.active_object))
         ) and context.selected_objects:
-            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            EditObjectUI.draw(context, layout, ifc_element_type=ifc_element_type)
         else:
-            CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            CreateObjectUI.draw(context, layout, ifc_element_type=ifc_element_type)
 
 
 class WallTool(BimTool):
@@ -430,7 +432,7 @@ class EditItemUI:
         obj = context.active_object
         assert obj
 
-        mesh_props = obj.data.BIMMeshProperties
+        mesh_props = tool.Geometry.get_mesh_props(obj.data)
         if AuthoringData.data["is_representation_item_swept_solid"]:
             # TODO: support EndSweptArea for IfcRevolvedAreaSolidTapered,
             # will need to add second attribute for this.
@@ -440,10 +442,10 @@ class EditItemUI:
                 op = row.operator("bim.name_profile", text="", icon="TAG")
                 op.extrusion_item_obj = obj.name
 
-        for item_attribute in obj.data.BIMMeshProperties.item_attributes:
+        for item_attribute in mesh_props.item_attributes:
             row = cls.layout.row()
             draw_attribute(item_attribute, cls.layout)
-        if len(obj.data.BIMMeshProperties.item_attributes) or AuthoringData.data["is_representation_item_swept_solid"]:
+        if len(mesh_props.item_attributes) or AuthoringData.data["is_representation_item_swept_solid"]:
             row = cls.layout.row()
             row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")
 
@@ -499,9 +501,7 @@ class CreateObjectUI:
     layout: bpy.types.UILayout
 
     @classmethod
-    def draw(
-        cls, context: bpy.types.Context, layout: bpy.types.UILayout, ifc_element_type: Optional[str] = None
-    ) -> None:
+    def draw(cls, context: bpy.types.Context, layout: bpy.types.UILayout, ifc_element_type: Union[str, None]) -> None:
         cls.layout = layout
         cls.props = tool.Model.get_model_props()
 
@@ -515,15 +515,13 @@ class CreateObjectUI:
 
         if not AuthoringData.is_loaded:
             AuthoringData.load(ifc_element_type)
-        elif ifc_element_type == "all" and AuthoringData.data["ifc_element_type"] is not None:
-            AuthoringData.load("all")
         elif AuthoringData.data["ifc_element_type"] != ifc_element_type:
             AuthoringData.load(ifc_element_type)
 
-        if ifc_element_type and context.region.type == "TOOL_HEADER":
+        if context.region.type == "TOOL_HEADER":
             tool_name = (
                 "Multi Object Tool"
-                if ifc_element_type == "all"
+                if ifc_element_type is None
                 else format_ifc_camel_case(ifc_element_type.removesuffix("Type")) + " Tool"
             )
             cls.layout.label(text=tool_name, icon="TOOL_SETTINGS")
@@ -746,8 +744,6 @@ class EditObjectUI:
 
         if not AuthoringData.is_loaded:
             AuthoringData.load(ifc_element_type)
-        elif ifc_element_type == "all" and AuthoringData.data["ifc_element_type"] is not None:
-            AuthoringData.load("all")
         elif AuthoringData.data["ifc_element_type"] != ifc_element_type:
             AuthoringData.load(ifc_element_type)
 
@@ -1136,7 +1132,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             row.prop(self, "z")
 
     def hotkey_S_A(self):
-        if bpy.context.scene.BIMGeometryProperties.mode == "ITEM":
+        gprops = tool.Geometry.get_geometry_props()
+        if gprops.mode == "ITEM":
             bpy.ops.wm.call_menu(name="BIM_MT_add_representation_item")
             return
 

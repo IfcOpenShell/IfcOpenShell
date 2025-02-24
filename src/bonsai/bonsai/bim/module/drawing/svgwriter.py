@@ -181,35 +181,35 @@ class SvgWriter:
         self.decimal_places = decimal_places
         for element in annotations:
             obj = tool.Ifc.get_object(element)
-            if not obj or element.ObjectType == "DRAWING":
+            if not obj or (object_type := ifcopenshell.util.element.get_predefined_type(element)) == "DRAWING":
                 continue
-            elif element.ObjectType == "GRID":
+            elif object_type == "GRID":
                 self.draw_grid_annotation(obj)
-            elif element.ObjectType == "TEXT_LEADER":
+            elif object_type == "TEXT_LEADER":
                 self.draw_leader_annotation(obj)
-            elif element.ObjectType == "STAIR_ARROW":
+            elif object_type == "STAIR_ARROW":
                 self.draw_stair_annotation(obj)
-            elif element.ObjectType == "DIMENSION":
+            elif object_type == "DIMENSION":
                 self.draw_dimension_annotations(obj)
-            elif element.ObjectType == "ANGLE":
+            elif object_type == "ANGLE":
                 self.draw_angle_annotations(obj)
-            elif element.ObjectType == "RADIUS":
+            elif object_type == "RADIUS":
                 self.draw_radius_annotations(obj)
-            elif element.ObjectType == "DIAMETER":
+            elif object_type == "DIAMETER":
                 self.draw_diameter_annotations(obj)
-            elif element.ObjectType == "ELEVATION":
+            elif object_type == "ELEVATION":
                 self.draw_elevation_annotation(obj)
-            elif element.ObjectType == "SECTION":
+            elif object_type == "SECTION":
                 self.draw_section_annotation(obj)
-            elif element.ObjectType == "BREAKLINE":
+            elif object_type == "BREAKLINE":
                 self.draw_break_annotations(obj)
-            elif element.ObjectType == "PLAN_LEVEL":
+            elif object_type == "PLAN_LEVEL":
                 self.draw_plan_level_annotation(obj)
-            elif element.ObjectType == "SECTION_LEVEL":
+            elif object_type == "SECTION_LEVEL":
                 self.draw_section_level_annotation(obj)
-            elif element.ObjectType == "TEXT":
+            elif object_type == "TEXT":
                 self.draw_text_annotation(obj, obj.location)
-            elif element.ObjectType in ("FALL", "SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
+            elif object_type in ("FALL", "SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
                 self.draw_fall_annotations(obj)
             else:
                 self.draw_misc_annotation(obj)
@@ -1207,13 +1207,14 @@ class SvgWriter:
                     angle = 90
 
                 # ues SLOPE_ANGLE as default
-                if element.ObjectType in ("FALL", "SLOPE_ANGLE"):
+                object_type = ifcopenshell.util.element.get_predefined_type(element)
+                if object_type in ("FALL", "SLOPE_ANGLE"):
                     return f"{angle}°"
-                elif element.ObjectType == "SLOPE_FRACTION":
+                elif object_type == "SLOPE_FRACTION":
                     if angle == 90:
                         return "-"
                     return f"{helper.format_distance(rise, precision=self.precision, decimal_places=self.decimal_places)} / {helper.format_distance(run, precision=self.precision, decimal_places=self.decimal_places)}"
-                elif element.ObjectType == "SLOPE_PERCENT":
+                elif object_type == "SLOPE_PERCENT":
                     if angle == 90:
                         return "-"
                     return f"{round(angle_tg * 100)} %"

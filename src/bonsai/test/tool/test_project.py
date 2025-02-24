@@ -97,7 +97,8 @@ class TestSetContext(NewFile):
         tool.Ifc.set(ifc)
         context = ifc.createIfcGeometricRepresentationContext()
         subject.set_context(context)
-        assert bpy.context.scene.BIMRootProperties.contexts == str(context.id())
+        rprops = tool.Root.get_root_props()
+        assert rprops.contexts == str(context.id())
 
 
 class TestSetDefaultContext(NewFile):
@@ -115,7 +116,8 @@ class TestSetDefaultContext(NewFile):
             target_view="MODEL_VIEW",
         )
         subject.set_default_context()
-        assert bpy.context.scene.BIMRootProperties.contexts == str(body.id())
+        rprops = tool.Root.get_root_props()
+        assert rprops.contexts == str(body.id())
 
 
 class TestSetDefaultModelingDimensions(NewFile):
@@ -244,25 +246,25 @@ class TestLoadProject(NewFile):
 
 class TestLoadLinkedModels(NewFile):
     def test_load_linked_models_no_document(self):
-        links = bpy.context.scene.BIMProjectProperties.links
+        props = tool.Project.get_project_props()
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         subject.load_linked_models_from_ifc()
-        assert len(links) == 0
+        assert len(props.links) == 0
 
     def test_load_linked_models_document_no_references(self):
         ifc = ifcopenshell.file()
-        links = bpy.context.scene.BIMProjectProperties.links
+        props = tool.Project.get_project_props()
         ifcopenshell.api.root.create_entity(ifc, "IfcProject")
         document = ifcopenshell.api.document.add_information(ifc)
         document.Name = "BBIM_Linked_Models"
         tool.Ifc.set(ifc)
         subject.load_linked_models_from_ifc()
-        assert len(links) == 0
+        assert len(props.links) == 0
 
     def test_load_linked_models_document_with_references(self):
         ifc = ifcopenshell.file()
-        links = bpy.context.scene.BIMProjectProperties.links
+        props = tool.Project.get_project_props()
         ifcopenshell.api.root.create_entity(ifc, "IfcProject")
         document = ifcopenshell.api.document.add_information(ifc)
         document.Name = "BBIM_Linked_Models"
@@ -271,8 +273,8 @@ class TestLoadLinkedModels(NewFile):
         reference.Location = linked_model_path
         tool.Ifc.set(ifc)
         subject.load_linked_models_from_ifc()
-        assert len(links) == 1
-        assert links[0].name == linked_model_path
+        assert len(props.links) == 1
+        assert props.links[0].name == linked_model_path
 
 
 class TestSaveLinkedModelsToIfc(NewFile):
@@ -286,8 +288,8 @@ class TestSaveLinkedModelsToIfc(NewFile):
     def test_save_linked_models_to_ifc_paths_to_add(self):
         ifc = ifcopenshell.file()
         ifcopenshell.api.root.create_entity(ifc, "IfcProject")
-        links = bpy.context.scene.BIMProjectProperties.links
-        link = links.add()
+        props = tool.Project.get_project_props()
+        link = props.links.add()
         linked_model_path = "test.ifc"
         link.name = linked_model_path
         tool.Ifc.set(ifc)
@@ -299,7 +301,7 @@ class TestSaveLinkedModelsToIfc(NewFile):
 
     def test_save_linked_models_to_ifc_already_created_references(self):
         ifc = ifcopenshell.file()
-        links = bpy.context.scene.BIMProjectProperties.links
+        links = tool.Project.get_project_props().links
         ifcopenshell.api.root.create_entity(ifc, "IfcProject")
 
         document = ifcopenshell.api.document.add_information(ifc)
@@ -326,7 +328,7 @@ class TestSaveLinkedModelsToIfc(NewFile):
 
     def test_save_linked_models_to_ifc_references_to_remove(self):
         ifc = ifcopenshell.file()
-        links = bpy.context.scene.BIMProjectProperties.links
+        links = tool.Project.get_project_props().links
         ifcopenshell.api.root.create_entity(ifc, "IfcProject")
 
         document = ifcopenshell.api.document.add_information(ifc)

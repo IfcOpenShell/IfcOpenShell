@@ -21,7 +21,6 @@ import ifcopenshell
 import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty, Attribute
 from bonsai.bim.module.profile.data import ProfileData
 from bpy.types import PropertyGroup

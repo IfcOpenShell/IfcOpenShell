@@ -121,7 +121,7 @@ def update_filter_mode(self: "BIMProjectProperties", context: bpy.types.Context)
     self.filter_categories.clear()
     if self.filter_mode == "NONE":
         return
-    file = IfcStore.get_file()
+    file = tool.Ifc.get()
     if self.filter_mode == "DECOMPOSITION":
         if file.schema == "IFC2X3":
             elements = file.by_type("IfcSpatialStructureElement")
@@ -180,6 +180,8 @@ class LibraryElement(PropertyGroup):
     element_type: EnumProperty(items=[(i, i, "") for i in get_args(LibraryElementType)], name="Element Type")
     # Asset group.
     asset_count: IntProperty(name="Asset Count")
+    # Asset library.
+    has_sublibraries: BoolProperty(name="Has Sublibraries", default=False)
     # Asset.
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_declared: BoolProperty(name="Is Declared", default=False)
@@ -194,6 +196,7 @@ class LibraryElement(PropertyGroup):
         name: str
         element_type: LibraryElementType
         asset_count: int
+        has_sublibraries: bool
         ifc_definition_id: int
         is_declared: bool
         is_appended: bool
@@ -299,7 +302,14 @@ class BIMProjectProperties(PropertyGroup):
     should_merge_materials_by_colour: BoolProperty(name="Merge Materials by Colour", default=False)
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
     should_load_geometry: BoolProperty(name="Load Geometry", default=True)
-    should_clean_mesh: BoolProperty(name="Clean Meshes", default=False)
+    should_clean_mesh: BoolProperty(
+        name="Clean Meshes",
+        description=(
+            "Convert all triangles to quads for meshes. "
+            "By default Bonsai is importing meshes triangulated (even if they are not stored as triangulated in IFC)."
+        ),
+        default=False,
+    )
     should_cache: BoolProperty(name="Cache", default=False)
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
@@ -395,12 +405,15 @@ class BIMProjectProperties(PropertyGroup):
     def clipping_planes_objs(self) -> list[bpy.types.Object]:
         return list({cp.obj for cp in self.clipping_planes if cp.obj})
 
-    def add_library_project_library(self, name: str, asset_count: int, ifc_definition_id: int) -> LibraryElement:
+    def add_library_project_library(
+        self, name: str, asset_count: int, ifc_definition_id: int, has_sublibraries: bool
+    ) -> LibraryElement:
         new = self.library_elements.add()
         new["name"] = name
         new.asset_count = asset_count
         new.element_type = "LIBRARY"
         new.ifc_definition_id = ifc_definition_id
+        new.has_sublibraries = has_sublibraries
         return new
 
     def add_library_asset_class(self, name: str, asset_count: int) -> LibraryElement:

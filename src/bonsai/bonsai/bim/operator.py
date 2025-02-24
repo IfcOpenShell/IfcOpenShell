@@ -130,7 +130,8 @@ class CloseBlendWarning(bpy.types.Operator):
     bl_label = "Close Blend Warning"
 
     def execute(self, context):
-        bpy.context.scene.BIMProperties.has_blend_warning = False
+        props = tool.Blender.get_bim_props()
+        props.has_blend_warning = False
         return {"FINISHED"}
 
     def draw(self, context):
@@ -213,11 +214,13 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
 
     def execute(self, context):
         if self.is_existing_ifc_file():
-            context.scene.BIMProperties.ifc_file = self.get_filepath()
+            props = tool.Blender.get_bim_props()
+            props.ifc_file = self.get_filepath()
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        filepath = Path(context.scene.BIMProperties.ifc_file)
+        props = tool.Blender.get_bim_props()
+        filepath = Path(props.ifc_file)
         res = tool.Blender.operator_invoke_filepath_hotkeys(self, context, event, filepath)
         if res is not None:
             return res
@@ -226,47 +229,27 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
         return {"RUNNING_MODAL"}
 
 
-class SelectDataDir(bpy.types.Operator):
-    bl_idname = "bim.select_data_dir"
-    bl_label = "Select Data Directory"
+class SelectDir(bpy.types.Operator):
+    bl_idname = "bim.select_dir"
+    bl_label = "Select Directory"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select the directory that contains all IFC data es. PSet, styles, etc..."
+    bl_description = "Open a file browser to choose the directory"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    data_path: bpy.props.StringProperty(name="Data Path")
 
     def execute(self, context):
-        context.scene.BIMProperties.data_dir = os.path.dirname(self.filepath)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class SelectCacheDir(bpy.types.Operator):
-    bl_idname = "bim.select_cache_dir"
-    bl_label = "Select Cache Directory"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select the directory that contains HDF5 cache files"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        context.scene.BIMProperties.cache_dir = os.path.dirname(self.filepath)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
-
-class SelectSchemaDir(bpy.types.Operator):
-    bl_idname = "bim.select_schema_dir"
-    bl_label = "Select Schema Directory"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select the directory containing the IFC schema specification"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def execute(self, context):
-        context.scene.BIMProperties.schema_dir = os.path.dirname(self.filepath)
+        crumbs = self.data_path.split(".")
+        if crumbs[0] == "preferences":
+            crumbs.pop(0)
+            data = tool.Blender.get_addon_preferences()
+        else:
+            data = context
+        while crumbs:
+            crumb = crumbs.pop(0)
+            if crumbs:
+                data = getattr(data, crumb)
+            else:
+                setattr(data, crumb, os.path.dirname(self.filepath))
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -595,7 +578,8 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         backfacing.location = mix_backfacing.location + Vector((-200, 200))
 
         emission = nodes.new(type="ShaderNodeEmission")
-        emission.inputs[0].default_value = list(context.scene.BIMProperties.section_plane_colour) + [1]
+        props = tool.Blender.get_bim_props()
+        emission.inputs[0].default_value = list(props.section_plane_colour) + [1]
         emission.location = mix_backfacing.location - Vector((200, 150))
 
         cut_obj = nodes.new(type="ShaderNodeTexCoord")
@@ -659,7 +643,8 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
             material = bpy.data.materials.new("Section Override")
             material.use_nodes = True
 
-        if context.scene.BIMProperties.should_section_selected_objects:
+        props = tool.Blender.get_bim_props()
+        if props.should_section_selected_objects:
             objects = list(context.selected_objects)
         else:
             objects = list(context.visible_objects)
@@ -816,7 +801,9 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
         logger = logging.getLogger("ImportIFC")
         path_log = tool.Blender.get_data_dir_path("process.log")
         if not os.access(path_log.parent, os.W_OK):
-            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
+            path_log = os.path.join(
+                tempfile.mkdtemp(dir=tool.Blender.get_addon_preferences().tmp_dir or None), "process.log"
+            )
         logging.basicConfig(
             filename=path_log,
             filemode="a",
@@ -832,7 +819,8 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
         settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
         print("Import finished in {:.2f} seconds".format(time.time() - start))
 
-        context.scene.BIMProperties.ifc_file = self.filepath
+        bim_props = tool.Blender.get_bim_props()
+        bim_props.ifc_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -846,7 +834,8 @@ class AddIfcFile(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.DocProperties.ifc_files.add()
+        props = tool.Drawing.get_document_props()
+        props.ifc_files.add()
         return {"FINISHED"}
 
 
@@ -857,7 +846,8 @@ class RemoveIfcFile(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.DocProperties.ifc_files.remove(self.index)
+        props = tool.Drawing.get_document_props()
+        props.ifc_files.remove(self.index)
         return {"FINISHED"}
 
 
@@ -868,7 +858,8 @@ class FetchObjectPassport(bpy.types.Operator):
     def execute(self, context):
         # TODO: this is dead code, awaiting reimplementation. See #1222.
         for reference in context.active_object.BIMObjectProperties.document_references:
-            reference = context.scene.BIMProperties.document_references[reference.name]
+            bim_props = tool.Blender.get_bim_props()
+            reference = bim_props.document_references[reference.name]
             if reference.location[-6:] == ".blend":
                 self.fetch_blender(reference, context)
         return {"FINISHED"}
@@ -1078,7 +1069,8 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        cutting_planes = [p.obj for p in context.scene.BIMProjectProperties.clipping_planes]
+        props = tool.Project.get_project_props()
+        cutting_planes = [obj for p in props.clipping_planes if (obj := p.obj)]
         if not cutting_planes:
             self.report({"INFO"}, "No cutting planes found.")
             return {"FINISHED"}
@@ -1088,7 +1080,7 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
         objects_processed, t0 = 0, time.time()
         wm.progress_begin(0, len(context.selected_objects))
         for obj_i, obj in enumerate(context.selected_objects):
-            if obj.type != "MESH":
+            if not isinstance((mesh := obj.data), bpy.types.Mesh):
                 continue
 
             if obj in cutting_planes:
@@ -1100,7 +1092,6 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
             ws_to_ls = obj.matrix_world.inverted()
             rotation = ws_to_ls.to_quaternion()
 
-            mesh = obj.data
             bm = tool.Blender.get_bmesh_for_mesh(mesh)
             object_changed = False
 
@@ -1124,7 +1115,7 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
             # don't swap mesh if it wasn't affected by any of the cutting planes
             if object_changed:
                 temp_mesh = bpy.data.meshes.new("temp_cut")
-                temp_mesh.BIMMeshProperties.replaced_mesh = mesh
+                tool.Geometry.get_mesh_props(temp_mesh).replaced_mesh = mesh
                 for material in mesh.materials:
                     temp_mesh.materials.append(material)
                 obj.data = temp_mesh
@@ -1181,9 +1172,10 @@ class RevertClippingPlaneCut(bpy.types.Operator):
         self.report({"INFO"}, f"{objects_processed} processed - {time.time()-t0:.3f} sec")
         return {"FINISHED"}
 
-    def revert_object_mesh(self, obj):
+    def revert_object_mesh(self, obj: bpy.types.Object) -> None:
         mesh = obj.data
-        replaced_mesh = mesh.BIMMeshProperties.replaced_mesh
+        assert isinstance(mesh, bpy.types.Mesh)
+        replaced_mesh = tool.Geometry.get_mesh_props(mesh).replaced_mesh
         if replaced_mesh:
             obj.data = replaced_mesh
             tool.Blender.remove_data_block(mesh, do_unlink=False)

@@ -39,7 +39,7 @@ class BIM_PT_aggregate(Panel):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
             return False
         if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcObjectDefinition"):
             return False
@@ -120,9 +120,9 @@ class BIM_PT_linked_aggregate(Panel):
         props = context.active_object.BIMObjectProperties
         if not props.ifc_definition_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
             return False
-        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcObjectDefinition"):
+        if not tool.Ifc.get().by_id(props.ifc_definition_id).is_a("IfcObjectDefinition"):
             return False
         return True
 

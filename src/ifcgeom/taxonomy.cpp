@@ -800,13 +800,14 @@ boost::optional<face::ptr> ifcopenshell::geometry::taxonomy::curve_to_face_upgra
 }
 
 
-boost::optional<piecewise_function::ptr> ifcopenshell::geometry::taxonomy::loop_to_piecewise_function_upgrade_impl(ptr item) {
-	boost::optional<piecewise_function::ptr> pwf_;
+boost::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_function_item_upgrade_impl(ptr item) {
+	boost::optional<function_item::ptr> fi_;
 	auto loop_ = dcast<loop>(item);
 	if (loop_) {
-		if (loop_->pwf.is_initialized()) {
-			pwf_ = loop_->pwf;
+		if (loop_->fi.is_initialized()) {
+			fi_ = loop_->fi;
 		} else {
+         // piecewise_function is a specialization of function_item - callers don't need to know this detail
 			piecewise_function::spans_t spans;
 			spans.reserve(loop_->children.size());
 			for (auto& edge_ : loop_->children) {
@@ -828,9 +829,9 @@ boost::optional<piecewise_function::ptr> ifcopenshell::geometry::taxonomy::loop_
 				};
             spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
 			}
-			pwf_ = make<piecewise_function>(0.0,spans);
-			loop_->pwf = pwf_;
+			fi_ = make<piecewise_function>(0.0,spans);
+			loop_->fi = fi_;
 		}
 	}
-	return pwf_;
+    return fi_;
 }

@@ -27,7 +27,6 @@ import ifcopenshell
 import ifcopenshell.util.selector
 import bonsai.tool as tool
 import bonsai.bim.module.drawing.scheduler as scheduler
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.handler import refresh_ui_data
 from typing import TYPE_CHECKING
 from collections import Counter
@@ -212,7 +211,7 @@ class ExportIfcCsv(bpy.types.Operator):
         props = context.scene.CsvProperties
         self.filepath = bpy.path.ensure_ext(self.filepath, f".{props.format}")
         if props.should_load_from_memory:
-            ifc_file = IfcStore.get_file()
+            ifc_file = tool.Ifc.get()
         else:
             ifc_file = ifcopenshell.open(props.csv_ifc_file)
         results = ifcopenshell.util.selector.filter_elements(
@@ -314,7 +313,7 @@ class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator):
 
         props = context.scene.CsvProperties
         if props.should_load_from_memory:
-            ifc_file = IfcStore.get_file()
+            ifc_file = tool.Ifc.get()
         else:
             ifc_file = ifcopenshell.open(props.csv_ifc_file)
         ifc_csv = ifccsv.IfcCsv()

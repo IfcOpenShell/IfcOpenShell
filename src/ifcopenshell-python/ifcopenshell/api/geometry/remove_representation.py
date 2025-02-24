@@ -37,8 +37,10 @@ def remove_representation(
     :param should_keep_named_profiles: If true, named profile defs will not be
         removed as they are assumed to be significant.
     """
+    is_ifc2x3 = file.schema == "IFC2X3"
     styled_items = set()
-    presentation_layer_assignments = set()
+    presentation_layer_assignments_items: set[ifcopenshell.entity_instance] = set()
+    presentation_layer_assignments_reps: set[ifcopenshell.entity_instance] = set()
     textures = set()
     colours = set()
     named_profiles = set()
@@ -46,16 +48,14 @@ def remove_representation(
         if subelement.is_a("IfcRepresentationItem"):
             [styled_items.add(s) for s in subelement.StyledByItem or []]
             # IFC2X3 is using LayerAssignments
-            for s in (
-                subelement.LayerAssignment if hasattr(subelement, "LayerAssignment") else subelement.LayerAssignments
-            ):
-                presentation_layer_assignments.add(s)
+            for s in subelement.LayerAssignment if not is_ifc2x3 else subelement.LayerAssignments:
+                presentation_layer_assignments_items.add(s)
             # IfcTessellatedFaceSet inverses
             [textures.add(t) for t in getattr(subelement, "HasTextures", []) or []]
             [colours.add(t) for t in getattr(subelement, "HasColours", []) or []]
         elif subelement.is_a("IfcRepresentation"):
             for layer in subelement.LayerAssignments:
-                presentation_layer_assignments.add(layer)
+                presentation_layer_assignments_reps.add(layer)
         elif subelement.is_a("IfcProfileDef") and subelement.ProfileName:
             named_profiles.add(subelement)
 
@@ -63,11 +63,16 @@ def remove_representation(
     if should_keep_named_profiles:
         do_not_delete += named_profiles
 
+    # Order matters - layer assignments may reference representation directly.
+    also_consider = list(presentation_layer_assignments_reps)
+    also_consider.extend(presentation_layer_assignments_items - presentation_layer_assignments_reps)
+    also_consider.extend(styled_items)
+    also_consider.extend(textures)
     ifcopenshell.util.element.remove_deep2(
         file,
         representation,
-        also_consider=list(styled_items | presentation_layer_assignments | colours),
-        do_not_delete=do_not_delete,
+        also_consider=also_consider,
+        do_not_delete=set(do_not_delete),
     )
 
     for texture in textures:
@@ -77,8 +82,10 @@ def remove_representation(
 
     to_delete = file.to_delete or set()
     for element in styled_items:
-        if not element.Item or element.Item in to_delete:
+        item = element.Item
+        if not item or item in to_delete:
             file.remove(element)
+    presentation_layer_assignments = presentation_layer_assignments_reps | presentation_layer_assignments_items
     for element in presentation_layer_assignments:
         if all(item in to_delete for item in element.AssignedItems):
             file.remove(element)

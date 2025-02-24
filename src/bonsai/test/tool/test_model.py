@@ -378,12 +378,13 @@ class TestGenerateStair2DProfile(NewFile):
 
 class TestUsingArrays(NewFile):
     def setup_array(self, add_second_layer=False, sync_children=False):
-        bpy.context.scene.BIMProjectProperties.template_file = "0"
+        tool.Project.get_project_props().template_file = "0"
         bpy.ops.bim.create_project()
 
         bpy.ops.mesh.primitive_cube_add()
         obj = bpy.context.active_object
-        bpy.context.scene.BIMRootProperties.ifc_product = "IfcElement"
+        rprops = tool.Root.get_root_props()
+        rprops.ifc_product = "IfcElement"
         bpy.ops.bim.assign_class(ifc_class="IfcActuator", predefined_type="ELECTRICACTUATOR", userdefined_type="")
 
         bpy.ops.bim.add_array()
@@ -467,7 +468,8 @@ class TestApplyIfcMaterialChanges(NewFile):
         return mesh
 
     def setup_test(self, and_elements: bool = True) -> None:
-        bpy.context.scene.BIMProjectProperties.template_file = "0"
+        props = tool.Project.get_project_props()
+        props.template_file = "0"
         bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
@@ -519,7 +521,7 @@ class TestApplyIfcMaterialChanges(NewFile):
         bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
         with_opening = bpy.context.active_object
         with_opening.name = "With Opening"
-        props = bpy.context.scene.BIMRootProperties
+        props = tool.Root.get_root_props()
         props.representation_obj = with_opening
         bpy.ops.bim.add_element(ifc_product="IfcFeatureElement", ifc_class="IfcOpeningElement")
 

@@ -22,7 +22,6 @@ from ifcopenshell.util.doc import get_entity_doc
 import bonsai.tool as tool
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
 from bonsai.bim.module.profile.data import ProfileData
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (

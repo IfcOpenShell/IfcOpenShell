@@ -155,10 +155,10 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
         # for unlinked blender material.
         updated_meshes = set()
         for obj in bpy.data.objects:
-            mesh = obj.data
-            if not isinstance(mesh, bpy.types.Mesh):
+            if not (mesh := obj.data) or not isinstance(mesh, bpy.types.Mesh):
                 continue
-            if not mesh.BIMMeshProperties.ifc_definition_id:
+            representation = tool.Geometry.get_data_representation(mesh)
+            if not representation:
                 continue
             if mesh in updated_meshes:
                 continue
@@ -1137,13 +1137,16 @@ class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
         ifc_file = tool.Ifc.get()
         style = ifc_file.by_id(self.style_id)
         material = tool.Ifc.get_object(style)
+        assert isinstance(material, bpy.types.Material)
 
         has_items = False
         representations: dict[ifcopenshell.entity_instance, bpy.types.Object] = {}
         for obj in context.selected_objects:
             if tool.Geometry.is_representation_item(obj):
                 has_items = True
-                item = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+                assert isinstance(obj.data, bpy.types.Mesh)
+                item = tool.Geometry.get_active_representation(obj)
+                assert item
                 tool.Style.assign_style_to_representation_item(item, style)
                 obj.data.materials.clear()
                 obj.data.materials.append(material)
@@ -1156,7 +1159,8 @@ class AssignStyleToSelected(bpy.types.Operator, tool.Ifc.Operator):
             return {"FINISHED"}
 
         if has_items:
-            tool.Geometry.reload_representation(context.scene.BIMGeometryProperties.representation_obj)
+            gprops = tool.Geometry.get_geometry_props()
+            tool.Geometry.reload_representation(gprops.representation_obj)
             bpy.ops.bim.disable_editing_representation_items()
             bpy.ops.bim.enable_editing_representation_items()
 

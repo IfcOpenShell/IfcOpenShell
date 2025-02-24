@@ -25,20 +25,16 @@ def remove_structural_load_group(file: ifcopenshell.file, load_group: ifcopenshe
     """Removes a structural load group
 
     :param load_group: The IfcStructuralLoadGroup to remove.
-    :type load_group: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
     """
-    settings = {"load_group": load_group}
-
     # TODO: do a deep purge
-    for inverse in file.get_inverse(settings["load_group"]):
+    for inverse in file.get_inverse(load_group):
         if inverse.is_a("IfcRelAssignsToGroup") and len(inverse.RelatedObjects) == 1:
             history = inverse.OwnerHistory
             file.remove(inverse)
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
-    history = settings["load_group"].OwnerHistory
-    file.remove(settings["load_group"])
+    history = load_group.OwnerHistory
+    file.remove(load_group)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)

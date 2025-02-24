@@ -21,7 +21,6 @@ import ifcopenshell
 import ifcopenshell.api
 import bonsai.tool as tool
 import bonsai.core.qto as core
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.qto import helper
 
 

@@ -88,7 +88,8 @@ class SheetsData:
             project = tool.Ifc.get().by_type("IfcProject")[0]
             titleblocks_dir = ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir")
             if not titleblocks_dir:
-                titleblocks_dir = bpy.context.scene.DocProperties.titleblocks_dir
+                props = tool.Drawing.get_document_props()
+                titleblocks_dir = props.titleblocks_dir
             titleblocks_dir = tool.Ifc.resolve_uri(titleblocks_dir)
             if os.path.exists(titleblocks_dir):
                 files.extend([str(f.stem) for f in Path(titleblocks_dir).glob("*.svg")])
@@ -120,23 +121,25 @@ class DrawingsData:
 
     @classmethod
     def location_hint(cls):
-        if bpy.context.scene.DocProperties.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
+        props = tool.Drawing.get_document_props()
+        if props.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
             results = [("0", "Origin", "")]
             results.extend(
                 [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcBuildingStorey")]
             )
             return results
-        elif bpy.context.scene.DocProperties.target_view in ["MODEL_VIEW"]:
+        elif props.target_view in ["MODEL_VIEW"]:
             return [(h.upper(), h, "") for h in ["Orthographic", "Perspective"]]
         return [(h.upper(), h, "") for h in ["North", "South", "East", "West"]]
 
     @classmethod
     def active_drawing_pset_data(cls):
         ifc_file = tool.Ifc.get()
-        drawing_id = bpy.context.scene.DocProperties.active_drawing_id
+        props = tool.Drawing.get_document_props()
+        drawing_id = props.active_drawing_id
         if drawing_id == 0:
             return {}
-        drawing = ifc_file.by_id(bpy.context.scene.DocProperties.active_drawing_id)
+        drawing = ifc_file.by_id(drawing_id)
         return ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
 
 
@@ -361,7 +364,11 @@ class DecoratorData:
 
         element = tool.Ifc.get_entity(obj)
         supported_object_types = ("DIMENSION", "DIAMETER", "SECTION_LEVEL", "PLAN_LEVEL", "RADIUS")
-        if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in supported_object_types:
+        if (
+            not element
+            or not element.is_a("IfcAnnotation")
+            or ifcopenshell.util.element.get_predefined_type(element) not in supported_object_types
+        ):
             return None
 
         dimension_style = "arrow"
