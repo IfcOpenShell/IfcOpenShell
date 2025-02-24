@@ -273,12 +273,16 @@ def set_length_value(self: "Attribute", value: float) -> None:
 
 
 def get_display_name(self: "Attribute") -> str:
+    DISPLAY_UNIT_TYPES = ("AREA", "VOLUME", "FORCE")
     name = self.name
-    if not self.special_type or self.special_type == "LENGTH":
+    if not self.special_type or self.special_type not in DISPLAY_UNIT_TYPES:
         return name
 
     unit_type = f"{self.special_type}UNIT"
     project_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), unit_type)
+    if not project_unit:
+        return name
+
     unit_symbol = ifcopenshell.util.unit.get_unit_symbol(project_unit)
     return f"{name}, {unit_symbol}"
 
