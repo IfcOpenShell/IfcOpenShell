@@ -24,7 +24,7 @@ def remove_structural_boundary_condition(
     connection: Optional[ifcopenshell.entity_instance] = None,
     boundary_condition: Optional[ifcopenshell.entity_instance] = None,
 ) -> None:
-    """Removes a condition from a connection, or an orphased boundary condition
+    """Removes a condition from a connection, or an orphaned boundary condition
 
     :param connection: The IfcStructuralConnection to remove the condition
         from. If omitted, it is assumed to be an orphaned condition.
