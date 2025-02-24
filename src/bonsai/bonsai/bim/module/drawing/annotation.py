@@ -150,15 +150,17 @@ class Annotator:
             collection.objects.link(obj)
             return obj
 
-        if object_type != "ANGLE":
-            for obj in collection.objects:
-                element = tool.Ifc.get_entity(obj)
-                if (
-                    element
-                    and ifcopenshell.util.element.get_predefined_type(element) == object_type
-                    and obj.type == data_type.upper()
-                ):
-                    return obj
+        # TODO: remove as outdated?
+        # Is reusing the same objects preventing the creation of new annotations.
+        # if object_type != "ANGLE":
+        #     for obj in collection.objects:
+        #         element = tool.Ifc.get_entity(obj)
+        #         if (
+        #             element
+        #             and ifcopenshell.util.element.get_predefined_type(element) == object_type
+        #             and obj.type == data_type.upper()
+        #         ):
+        #             return obj
 
         if data_type == "mesh":
             data = bpy.data.meshes.new(object_type)
