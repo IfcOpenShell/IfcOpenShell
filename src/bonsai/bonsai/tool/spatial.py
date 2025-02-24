@@ -485,13 +485,6 @@ class Spatial(bonsai.core.tool.Spatial):
         active_slot = bpy.context.scene.transform_orientation_slots[0]
         initial_orientation = active_slot.type
 
-        # stash selected objects
-        active_object = bpy.context.view_layer.objects.active
-        selected_objects = list(bpy.context.view_layer.objects.selected)
-
-        # bpy.ops.transform.create_orientation() requires a dummy object
-        bpy.ops.object.empty_add(type="PLAIN_AXES")
-
         for product in products:
             placement = product.ObjectPlacement
             combined_matrix = ifcopenshell.util.placement.get_local_placement(placement)[:3, :3]
@@ -509,18 +502,24 @@ class Spatial(bonsai.core.tool.Spatial):
                     continue
             # this product has a unique orientation
             orientation_name = product.is_a() + "/" + product.Name
+
+            # stash selected objects
+            active_object = bpy.context.view_layer.objects.active
+            selected_objects = list(bpy.context.view_layer.objects.selected)
+            # bpy.ops.transform.create_orientation() requires a dummy object
+            bpy.ops.object.empty_add(type="PLAIN_AXES")
+
             bpy.ops.transform.create_orientation(name=orientation_name, overwrite=True)
             active_slot.type = orientation_name
             active_slot.custom_orientation.matrix = np.linalg.inv(combined_matrix)
 
-        # delete dummy object
-        bpy.ops.object.delete()
-
-        # reinstate selected objects
-        for obj in selected_objects:
-            obj.select_set(True)
-        if active_object:
-            bpy.context.view_layer.objects.active = active_object
+            # delete dummy object
+            bpy.ops.object.delete()
+            # reinstate selected objects
+            for obj in selected_objects:
+                obj.select_set(True)
+            if active_object:
+                bpy.context.view_layer.objects.active = active_object
 
         if not use:
             active_slot.type = initial_orientation
