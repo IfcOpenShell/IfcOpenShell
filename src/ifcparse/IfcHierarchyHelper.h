@@ -428,7 +428,7 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
                 }
                 typename Schema::IfcObject::list::ptr related_objects(new aggregate_of<typename Schema::IfcObject>());
                 related_objects->push((typename Schema::IfcObject*)related_object);
-                typename Schema::IfcRelDefinesByType* t = new typename Schema::IfcRelDefinesByType(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, related_objects, related_object->as<typename Schema::IfcTypeObject>);
+                typename Schema::IfcRelDefinesByType* t = new typename Schema::IfcRelDefinesByType(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, related_objects, related_object->template as<typename Schema::IfcTypeObject>);
 
                 addEntity(t);
             }
