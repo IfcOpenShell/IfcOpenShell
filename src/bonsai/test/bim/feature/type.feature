@@ -202,11 +202,11 @@ Scenario: Select similar type
 Scenario: Purge unused types
     Given an empty IFC project
     And I press "bim.launch_type_manager"
-    And I set "scene.BIMModelProperties.type_class" to "IfcWallType"
-    And I set "scene.BIMModelProperties.type_predefined_type" to "SOLIDWALL"
-    And I set "scene.BIMModelProperties.type_template" to "EMPTY"
-    When I press "bim.add_type"
-    Then the object "IfcWallType/TYPEX" is an "IfcWallType"
-    And the object "IfcWallType/TYPEX" has no data
-    When I press "bim.purge_unused_types"
-    Then the object "IfcWallType/TYPEX" does not exist
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMRootProperties.ifc_predefined_type" to "SOLIDWALL"
+    And I set "scene.BIMRootProperties.representation_template" to "EMPTY"
+    When I press "bim.add_element"
+    Then the object "IfcWallType/Unnamed" is an "IfcWallType"
+    And the object "IfcWallType/Unnamed" has no data
+    When I press "bim.purge_unused_objects(object_type='TYPE')"
+    Then the object "IfcWallType/Unnamed" does not exist
