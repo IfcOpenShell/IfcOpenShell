@@ -44,7 +44,9 @@ class EnableReassignClass(bpy.types.Operator):
     def execute(self, context):
         obj = context.active_object
         self.file = tool.Ifc.get()
-        ifc_class = obj.name.split("/")[0]
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        ifc_class = element.is_a()
         context.active_object.BIMObjectProperties.is_reassigning_class = True
         ifc_products = [
             "IfcElement",
@@ -58,9 +60,16 @@ class EnableReassignClass(bpy.types.Operator):
             "IfcRelSpaceBoundary",
         ]
         schema = tool.Ifc.schema()
+        declaration = schema.declaration_by_name(ifc_class)
         for ifc_product in ifc_products:
-            if schema.declaration_by_name(ifc_class).is_a(ifc_product):
+            if ifcopenshell.util.schema.is_a(declaration, ifc_product):
                 context.scene.BIMRootProperties.ifc_product = ifc_product
+                break
+        else:
+            self.report({"ERROR"}, f"Couldn't find matching IFC product for the selected object: '{element}'.")
+            obj.BIMObjectProperties.is_reassigning_class = False
+            return {"CANCELLED"}
+
         element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
         context.scene.BIMRootProperties.ifc_class = element.is_a()
         context.scene.BIMRootProperties.relating_class_object = None
