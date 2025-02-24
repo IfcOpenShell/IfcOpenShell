@@ -446,25 +446,25 @@ def get_horizontal_profile_preview_data(context, relating_type):
         # The first one is for the profile start, based on the current and previous segment of the polyline.
         # The second is for the profile end, based on the current and the next segment.
         if i == 0:
-            d = (polyline_verts[i+1] - polyline_verts[i]).normalized()
+            d = (polyline_verts[i + 1] - polyline_verts[i]).normalized()
             clip_start = d
         else:
-            d1 = (polyline_verts[i] - polyline_verts[i-1]).normalized()
-            d2 = (polyline_verts[i] - polyline_verts[i+1]).normalized()
-            clip_start = (d1-d2).normalized()
-        
+            d1 = (polyline_verts[i] - polyline_verts[i - 1]).normalized()
+            d2 = (polyline_verts[i] - polyline_verts[i + 1]).normalized()
+            clip_start = (d1 - d2).normalized()
+
         if i == len(polyline_verts) - 2:
-            d = (polyline_verts[i+1] - polyline_verts[i]).normalized()
+            d = (polyline_verts[i + 1] - polyline_verts[i]).normalized()
             clip_end = d
         else:
-            d1 = (polyline_verts[i+1] - polyline_verts[i]).normalized()
-            d2 = (polyline_verts[i+1] - polyline_verts[i+2]).normalized()
-            clip_end = (d1-d2).normalized()
+            d1 = (polyline_verts[i + 1] - polyline_verts[i]).normalized()
+            d2 = (polyline_verts[i + 1] - polyline_verts[i + 2]).normalized()
+            clip_end = (d1 - d2).normalized()
 
         # Rotates the profile face to the right direction
-        direction = polyline_verts[i+1] - polyline_verts[i]
+        direction = polyline_verts[i + 1] - polyline_verts[i]
         position = polyline_verts[i]
-        rotation_matrix = direction.to_track_quat('Z', 'Y').to_matrix().to_4x4()
+        rotation_matrix = direction.to_track_quat("Z", "Y").to_matrix().to_4x4()
         bmesh.ops.transform(bm, verts=bm.verts, matrix=rotation_matrix)
         bmesh.ops.translate(bm, verts=bm.verts, vec=position)
         bmesh.ops.translate(bm, verts=bm.verts, vec=-direction)
@@ -474,10 +474,22 @@ def get_horizontal_profile_preview_data(context, relating_type):
         new_verts = [e for e in last_face["geom"] if isinstance(e, bmesh.types.BMVert)]
         bmesh.ops.translate(bm, verts=new_verts, vec=direction * 3)
         # Apply the cutting planes
-        cut = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=polyline_verts[i], plane_no=clip_start, clear_inner=True)
+        cut = bmesh.ops.bisect_plane(
+            bm,
+            geom=bm.verts[:] + bm.edges[:] + bm.faces[:],
+            plane_co=polyline_verts[i],
+            plane_no=clip_start,
+            clear_inner=True,
+        )
         bm.verts.index_update()
         bm.edges.index_update()
-        cut = bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=polyline_verts[i+1], plane_no=clip_end, clear_outer=True)
+        cut = bmesh.ops.bisect_plane(
+            bm,
+            geom=bm.verts[:] + bm.edges[:] + bm.faces[:],
+            plane_co=polyline_verts[i + 1],
+            plane_no=clip_end,
+            clear_outer=True,
+        )
 
         bm.to_mesh(mesh)
         bm.free()
@@ -489,7 +501,7 @@ def get_horizontal_profile_preview_data(context, relating_type):
     mesh = bpy.data.meshes.new("TempMesh2")
     all_bm.to_mesh(mesh)
     all_bm.free()
-    obj = bpy.data.objects.new('TempObj', mesh)
+    obj = bpy.data.objects.new("TempObj", mesh)
     bm = bmesh.new()
     bm.from_mesh(obj.data)
     bpy.data.meshes.remove(bpy.data.meshes["TempMesh2"])
@@ -639,21 +651,21 @@ class PolylineOperator:
         if x:
             if event.shift and event.value == "PRESS" and event.type == "X":
                 self.tool_state.use_default_container = False
-                self.tool_state.plane_method = "YZ" if self.tool_state.plane_method !="YZ" else None
+                self.tool_state.plane_method = "YZ" if self.tool_state.plane_method != "YZ" else None
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
         if y:
             if event.shift and event.value == "PRESS" and event.type == "Y":
                 self.tool_state.use_default_container = False
-                self.tool_state.plane_method = "XZ" if self.tool_state.plane_method !="XZ" else None
+                self.tool_state.plane_method = "XZ" if self.tool_state.plane_method != "XZ" else None
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
         if z:
             if event.shift and event.value == "PRESS" and event.type == "Z":
                 self.tool_state.use_default_container = False
-                self.tool_state.plane_method = "XY" if self.tool_state.plane_method !="XY" else None
+                self.tool_state.plane_method = "XY" if self.tool_state.plane_method != "XY" else None
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 

@@ -84,6 +84,7 @@ ENDSEC;
 END-ISO-10303-21;
 """
 
+
 def test_original_edges():
     ifc_file = ifcopenshell.file.from_string(contents)
     element = ifc_file.by_id(95)
@@ -92,6 +93,6 @@ def test_original_edges():
     assert (len(shape.edges) // 2) == 20
     shape = ifcopenshell.geom.create_shape(settings, element, geometry_library="cgal")
     assert (len(shape.edges) // 2) == 16
-    settings.set('cgal-original-edges', True)
+    settings.set("cgal-original-edges", True)
     shape = ifcopenshell.geom.create_shape(settings, element, geometry_library="cgal")
     assert (len(shape.edges) // 2) == 20

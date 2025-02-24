@@ -227,7 +227,6 @@ class Foo:
         else:
             ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=rep)
 
-
     def join(self, wall1, wall2, layers1, layers2, connection1, connection2):
         if connection1 == "NOTDEFINED" or connection2 == "NOTDEFINED":
             return

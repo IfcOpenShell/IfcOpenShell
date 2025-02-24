@@ -523,11 +523,10 @@ class Polyline(bonsai.core.tool.Polyline):
                     return "Cannot create two points at the same location"
             # Avoids creating overlapping edges
             if len(polyline_points) > 1:
-                v1 = Vector((x, y, z)) 
+                v1 = Vector((x, y, z))
                 v2 = Vector((polyline_points[-1].x, polyline_points[-1].y, polyline_points[-1].z))
-                v3 =  Vector((polyline_points[-2].x, polyline_points[-2].y, polyline_points[-2].z))
-                angle = tool.Cad.angle_3_vectors(v1, v2, v3, new_angle=None, degrees=True
-                )
+                v3 = Vector((polyline_points[-2].x, polyline_points[-2].y, polyline_points[-2].z))
+                angle = tool.Cad.angle_3_vectors(v1, v2, v3, new_angle=None, degrees=True)
                 if tool.Cad.is_x(angle, 0):
                     return
             # TODO move this limitation to be Wall tool specific. Right now it also affects Measure tool

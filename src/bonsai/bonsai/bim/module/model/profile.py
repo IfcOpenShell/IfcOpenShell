@@ -112,9 +112,8 @@ class DumbProfileGenerator:
                 matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
                 matrix_world = Matrix.Rotation(self.rotation, 4, "Z") @ matrix_world
             else:
-                rotation_matrix = self.direction.to_track_quat('Z', 'Y')
+                rotation_matrix = self.direction.to_track_quat("Z", "Y")
                 matrix_world = rotation_matrix.to_matrix().to_4x4() @ matrix_world
-
 
         matrix_world.translation = self.location
         if self.insertion_type not in {"POLYLINE"} and self.container_obj:

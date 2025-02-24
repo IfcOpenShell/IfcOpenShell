@@ -18,28 +18,29 @@
 
 import ifcopenshell.util.stationing as sta
 
+
 def test_station_as_string():
     # test with a bunch of "random" station values
     s = sta.station_as_string(0.0)
-    assert(s == "0+000.000")
+    assert s == "0+000.000"
 
-    s = sta.station_as_string(0.0,2,2)
-    assert(s == "0+00.00")
+    s = sta.station_as_string(0.0, 2, 2)
+    assert s == "0+00.00"
 
-    s = sta.station_as_string(0.0,2)
-    assert(s == "0+00.000")
+    s = sta.station_as_string(0.0, 2)
+    assert s == "0+00.000"
 
-    s = sta.station_as_string(100.00)    
-    assert(s == "0+100.000")
+    s = sta.station_as_string(100.00)
+    assert s == "0+100.000"
 
-    s = sta.station_as_string(-100.00)    
-    assert(s == "-0+100.000")
+    s = sta.station_as_string(-100.00)
+    assert s == "-0+100.000"
 
-    s = sta.station_as_string(123456.789,2,2)    
-    assert(s == "1234+56.79")
+    s = sta.station_as_string(123456.789, 2, 2)
+    assert s == "1234+56.79"
 
-    s = sta.station_as_string(-123456.789,2,2)    
-    assert(s == "-1234+56.79")
+    s = sta.station_as_string(-123456.789, 2, 2)
+    assert s == "-1234+56.79"
 
-    s = sta.station_as_string(123456.789,3,4)    
-    assert(s == "123+456.7890")
+    s = sta.station_as_string(123456.789, 3, 4)
+    assert s == "123+456.7890"
