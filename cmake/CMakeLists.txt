@@ -328,6 +328,7 @@ if (WITH_ROCKSDB)
         message(FATAL_ERROR "Unable to find rocksdb library in: ${ROCKSDB_LIBRARY_DIR}")
     endif()
 
+    # @todo IFOPSH_ prefix?
     add_definitions(-DWITH_ROCKSDB)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_ROCKSDB)
 

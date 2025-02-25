@@ -55,7 +55,12 @@ namespace {
 HeaderEntity::HeaderEntity(const char* const datatype, size_t size, IfcFile* file)
     : datatype_(datatype)
     , file_(file)
-    , data_(file ? read_from_spf_file(file, size) : IfcEntityInstanceData(in_memory_attribute_storage(size)))
+    , data_((file && file->storage_.index() == 1)
+        ? read_from_spf_file(file, size)
+        : (file && file->storage_.index() == 2)
+        ? IfcEntityInstanceData(rocks_db_attribute_storage(&std::get<IfcParse::impl::rocks_db_file_storage>(file->storage_), "h|"))
+        : IfcEntityInstanceData(in_memory_attribute_storage(size))
+    )
 {}
 
 HeaderEntity::~HeaderEntity() {
@@ -185,21 +190,21 @@ const FileSchema& IfcSpfHeader::file_schema() const {
 
 FileDescription& IfcSpfHeader::file_description() {
     if (file_description_ == nullptr) {
-        throw IfcException("File description not set");
+        file_description_ = new FileDescription(file_);
     }
     return *file_description_;
 }
 
 FileName& IfcSpfHeader::file_name() {
     if (file_name_ == nullptr) {
-        throw IfcException("File name not set");
+        file_name_ = new FileName(file_);
     }
     return *file_name_;
 }
 
 FileSchema& IfcSpfHeader::file_schema() {
     if (file_schema_ == nullptr) {
-        throw IfcException("File schema not set");
+        file_schema_ = new FileSchema(file_);
     }
     return *file_schema_;
 }

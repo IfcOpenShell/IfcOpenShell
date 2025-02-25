@@ -1258,6 +1258,7 @@ IfcFile::IfcFile(const std::string& path, filetype ty) {
         std::get<impl::in_memory_file_storage>(storage_).file = this;
         std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
     } else {
+        // @todo this can only be used for databases that already exist, because otherwise there is no way to specify the schema
         storage_ = impl::rocks_db_file_storage(path, this);
         std::get<impl::rocks_db_file_storage>(storage_).read_schema(schema_);
     }
@@ -1285,12 +1286,17 @@ IfcFile::IfcFile(IfcParse::IfcSpfStream* s) {
     ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
 }
 
-IfcFile::IfcFile(const IfcParse::schema_definition* schema)
+IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const std::string& path)
     : schema_(schema)
     , ifcroot_type_(schema_->declaration_by_name("IfcRoot"))
     , max_id_(0)
+    , _header(ty == rocksdb ? this : nullptr)
 {
-    storage_.emplace<1>();
+    if (ty == ifcspf) {
+        storage_.emplace<1>();
+    } else {
+        storage_.emplace<2>(path, this);
+    }
     setDefaultHeaderValues();
 }
 
@@ -1866,7 +1872,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
             Logger::Message(Logger::LOG_WARNING, ss.str());
         }
         // The mapping by entity instance name is updated.
-        byid_.insert({ new_id, new_entity->identity() });
+        idenbyid_.insert({ new_id, new_entity->identity() });
         byidentity_.insert({ new_entity->identity(), new_entity });
     } else if (new_entity->file_ == nullptr) {
         // For non-entity instances, no mappings are updated, but the file
@@ -2210,7 +2216,7 @@ std::ostream& operator<<(std::ostream& out, const IfcParse::IfcFile& file) {
 
     typedef std::vector<IfcUtil::IfcBaseClass*> vector_t;
     vector_t sorted;
-    std::transform(file.begin(), file.end(), std::back_inserter(sorted), [&file](const auto& x) { return file.byidentity_.find(x.second)->second; });
+    std::transform(file.begin(), file.end(), std::back_inserter(sorted), [&file](const auto& x) { return x.second; });
     std::sort(sorted.begin(), sorted.end(), [](const auto& a, const auto& b) { return a->id() < b->id(); });
 
     for (auto& e : sorted) {
@@ -2457,7 +2463,7 @@ void IfcParse::IfcFile::build_inverses_(IfcUtil::IfcBaseClass* inst) {
 
 void IfcParse::IfcFile::build_inverses() {
     for (const auto& pair : *this) {
-        build_inverses_(byidentity_.find(pair.second)->second);
+        build_inverses_(pair.second);
     }
 }
 
