@@ -99,7 +99,7 @@ def get_ifc_classes(self: "BIMRootProperties", context: bpy.types.Context) -> li
     return IfcClassData.data["ifc_classes"]
 
 
-def get_ifc_classes_suggestions(self: "BIMRootProperties", context: bpy.types.Context) -> list[tuple[str, str]]:
+def get_ifc_classes_suggestions() -> dict[str, list[dict[str, Union[str, None]]]]:
     if not IfcClassData.is_loaded:
         IfcClassData.load()
     return IfcClassData.data["ifc_classes_suggestions"]

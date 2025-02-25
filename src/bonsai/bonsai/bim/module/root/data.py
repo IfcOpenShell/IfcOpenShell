@@ -97,7 +97,7 @@ class IfcClassData:
         return types_enum
 
     @classmethod
-    def ifc_classes_suggestions(cls):
+    def ifc_classes_suggestions(cls) -> dict[str, list[dict[str, Union[str, None]]]]:
         # suggestions : dict[class_name: list[dict[predefined_type, name(optional)]]]
         suggestions = defaultdict(list)
         version = tool.Ifc.get_schema()
