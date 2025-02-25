@@ -712,8 +712,6 @@ class DumbWallGenerator:
     def create_wall_from_2_points(self, coords, should_round=False) -> Union[dict[str, Any], None]:
         direction = coords[1] - coords[0]
         length = direction.length
-        if round(length, 4) < 0.1:
-            return
         data = {"coords": coords}
 
         self.length = length

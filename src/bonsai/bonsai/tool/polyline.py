@@ -534,8 +534,6 @@ class Polyline(bonsai.core.tool.Polyline):
             length = (
                 Vector((x, y, z)) - Vector((polyline_points[-1].x, polyline_points[-1].y, polyline_points[-1].z))
             ).length
-            if round(length, 4) < 0.1:
-                return "Cannot create a segment smaller then 10cm"
 
         polyline_point = polyline_points.add()
         polyline_point.x = x
