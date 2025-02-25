@@ -575,9 +575,6 @@ class Snap(bonsai.core.tool.Snap):
 
         snaps_by_type = filter_snapping_points_by_type(snaps_by_group)
         ordered_snaps = sort_points_by_weighted_distance(snaps_by_type)
-        
-        for snap in ordered_snaps:
-            print("\n", snap["type"], snap["distance"])
 
         # Make Axis first priority
         if tool_state.lock_axis or tool_state.axis_method in {"X", "Y", "Z"}:
