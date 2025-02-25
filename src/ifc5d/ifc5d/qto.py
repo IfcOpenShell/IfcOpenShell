@@ -380,24 +380,27 @@ class Blender:
         import bonsai.bim.module.qto.calculator as calculator
 
         unit_converter = SI2ProjectUnitConverter(ifc_file)
-        formula_functions = {}
+        formula_functions: dict[str, types.FunctionType] = {}
 
         for element in elements:
             obj = tool.Ifc.get_object(element)
             if not obj or obj.type != "MESH":
                 continue
-            results.setdefault(element, {})
+            element_results = {}
             for name, quantities in qtos.items():
-                results[element].setdefault(name, {})
+                qto_results = {}
                 for quantity, formula in quantities.items():
                     if not formula:
                         continue
                     if not (formula_function := formula_functions.get(formula)):
                         formula_function = formula_functions[formula] = getattr(calculator, formula)
                     if (value := formula_function(obj)) is not None:
-                        results[element][name][quantity] = unit_converter.convert(
-                            value, Blender.functions[formula].measure
-                        )
+                        qto_results[quantity] = unit_converter.convert(value, Blender.functions[formula].measure)
+                if qto_results:
+                    element_results[name] = qto_results
+            # Avoid adding empty qsets if nothing was calculated.
+            if element_results:
+                results[element] = element_results
 
 
 calculators = {"Blender": Blender, "IfcOpenShell": IfcOpenShell}
