@@ -104,7 +104,7 @@ class LaunchTypeManager(bpy.types.Operator):
         props = tool.Model.get_model_props()
         row = self.layout.row(align=True)
         text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type'] or 'Types'}"
-        if AuthoringData.data["total_types"] > 1:
+        if AuthoringData.data["ifc_element_type"] and AuthoringData.data["total_types"] > 1:
             text += "s"
         row.label(text=text, icon="FILE_VOLUME")
         row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
