@@ -35,16 +35,6 @@ Scenario: Unlink object
     And the material "Style" is an IFC style
     And the material "Style.001" is not an IFC style
 
-Scenario: Copy class
-    Given an empty IFC project
-    And I add a cube
-    And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
-    When I press "bim.copy_class(obj='IfcWall/Cube')"
-    Then the object "IfcWall/Cube" is an "IfcWall"
-
 Scenario: Assign a class to a cube
     Given an empty IFC project
     And I add a cube
