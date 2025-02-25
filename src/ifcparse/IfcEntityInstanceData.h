@@ -161,6 +161,89 @@ namespace IfcParse {
     }
 }
 
+
+namespace impl {
+
+    // Trait to detect contiguous containers (vector / string)
+    template <typename T>
+    struct is_contiguous_container : std::false_type {};
+    template <typename T, typename Alloc>
+    struct is_contiguous_container<std::vector<T, Alloc>> : std::true_type {};
+    template <typename CharT, typename Traits, typename Alloc>
+    struct is_contiguous_container<std::basic_string<CharT, Traits, Alloc>> : std::true_type {};
+
+    template <typename T, typename std::enable_if<is_contiguous_container<T>::value && is_contiguous_container<typename T::value_type>::value, int>::type = 0>
+    bool serialize(std::string& val, const T& t) {
+        return false;
+    }
+
+    template <typename T, typename std::enable_if<is_contiguous_container<T>::value && !is_contiguous_container<typename T::value_type>::value, int>::type = 0>
+    bool serialize(std::string& val, const T& t) {
+        auto s = sizeof(typename T::value_type) * t.size();
+        val.resize(s + 1);
+        val[0] = TypeEncoder::encode_type<T>();
+        memcpy(val.data() + 1, t.data(), s);
+        return true;
+    }
+
+    template <typename T, typename std::enable_if<std::is_integral_v<T> || std::is_floating_point_v<T>, int>::type = 0>
+    bool serialize(std::string& val, const T& t) {
+        val.resize(sizeof(T) + 1);
+        val[0] = TypeEncoder::encode_type<T>();
+        memcpy(val.data() + 1, &t, sizeof(T));
+        return true;
+    }
+
+    bool serialize(std::string& val, const Blank& t);
+
+    bool serialize(std::string& val, const Derived& t);
+    bool serialize(std::string& val, const empty_aggregate_t& t);
+    bool serialize(std::string& val, const empty_aggregate_of_aggregate_t& t);
+
+    bool serialize(std::string& val, const boost::logic::tribool& t);
+
+    bool serialize(std::string& val, const boost::dynamic_bitset<>& t);
+    
+    bool serialize(std::string& val, const IfcUtil::IfcBaseClass* t);
+
+    bool serialize(std::string& val, const EnumerationReference& v);
+
+    bool serialize(std::string& val, const aggregate_of_instance::ptr& t);
+
+    bool serialize(std::string& val, const aggregate_of_aggregate_of_instance::ptr& t);
+
+    template <typename T, typename std::enable_if<is_contiguous_container<T>::value, int>::type = 0>
+    bool deserialize(std::string& val, T& t) {
+        // @todo vector of vector
+        if (val[0] != TypeEncoder::encode_type<T>()) {
+            return false;
+        }
+        auto s = (val.size() - 1) / sizeof(typename T::value_type);
+        t.resize(s);
+        memcpy(t.data(), val.data() + 1, s * sizeof(typename T::value_type));
+        return true;
+    }
+
+    template <typename T, typename std::enable_if<std::is_integral_v<T> || std::is_floating_point_v<T>, int>::type = 0>
+    bool deserialize(std::string & val, T & t) {
+        if (val[0] != TypeEncoder::encode_type<T>()) {
+            return false;
+        }
+        auto s = (val.size() - 1) / sizeof(T);
+        memcpy(&t, val.data() + 1, sizeof(T));
+        return true;
+    }
+
+    bool deserialize(std::string& val, boost::logic::tribool& t);
+
+    bool deserialize(std::string& val, boost::dynamic_bitset<>& t);
+
+    bool deserialize(std::string& val, aggregate_of_instance::ptr& t);
+
+    bool deserialize(std::string& val, aggregate_of_aggregate_of_instance::ptr& t);
+}
+
+
 // short lived
 struct AttributeValue {
     uint8_t index_;
@@ -224,7 +307,10 @@ struct AttributeValue {
 
 struct rocks_db_attribute_storage {
 private:
-    IfcParse::impl::rocks_db_file_storage* fs;
+    // @todo not needed as call always passes through EntityInstanceData
+    IfcParse::impl::rocks_db_file_storage* fs_;
+    // @todo not needed should be passed from call stack
+    const char* prefix_;
 
     template<typename Visitor, std::size_t Index>
     auto apply_visitor_impl(Visitor&& visitor, std::size_t idx, std::integral_constant<std::size_t, Index>) const {
@@ -237,15 +323,44 @@ private:
     }
 
 public:
+    rocks_db_attribute_storage(IfcParse::impl::rocks_db_file_storage* fs, const char* const prefix)
+        : fs_(fs)
+        , prefix_(prefix)
+    {}
+
+    rocks_db_attribute_storage(rocks_db_attribute_storage& other)
+        : fs_(other.fs_)
+        , prefix_(other.prefix_)
+    {}
+
+    rocks_db_attribute_storage(rocks_db_attribute_storage&& other)
+        : fs_(other.fs_)
+        , prefix_(other.prefix_)
+    {}
+
+    rocks_db_attribute_storage& operator=(const rocks_db_attribute_storage& other) {
+        if (this != &other) {
+            fs_ = other.fs_;
+            prefix_ = other.prefix_;
+        }
+        return *this;
+    }
+
+    rocks_db_attribute_storage& operator=(const rocks_db_attribute_storage&& other) {
+        if (this != &other) {
+            fs_ = other.fs_;
+            prefix_ = other.prefix_;
+        }
+        return *this;
+    }
+
     size_t size() const {
-        // @todo
+        // @todo is this actually needed?
         return 8;
     }
 
     template<typename T>
-    void set(std::size_t index, T&& value) {
-        // @todo
-    }
+    void set(std::size_t index, const T& value);
 
     template<typename T>
     bool has(std::size_t index) const {

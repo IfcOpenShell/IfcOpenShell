@@ -40,6 +40,7 @@
 #include "../serializers/SvgSerializer.h"
 #include "../serializers/USDSerializer.h"
 #include "../serializers/TtlWktSerializer.h"
+#include "../serializers/RocksDbSerializer.h"
 
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/Iterator.h"
@@ -126,7 +127,8 @@ void print_usage(bool suggest_help = true)
         << "  .stp   STEP           Standard for the Exchange of Product Data\n"
         << "  .igs   IGES           Initial Graphics Exchange Specification\n"
         << "  .xml   XML            Property definitions and decomposition tree\n"
-        << "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
+		<< "  .rdb   RocksDB        RocksDB Key-Value store serialization of IFC data\n"
+		<< "  .svg   SVG            Scalable Vector Graphics (2D floor plan)\n"
 #ifdef WITH_HDF5
 		<< "  .h5    HDF            Hierarchical Data Format storing positions, normals and indices\n"
 #endif
@@ -642,6 +644,8 @@ int main(int argc, char** argv) {
 		CACHE = IfcUtil::path::from_utf8(".cache"),
 		HDF = IfcUtil::path::from_utf8(".h5"),
 		XML = IfcUtil::path::from_utf8(".xml"),
+		// @todo this is just temporary as it doesn't make sense to require an extension for a DB
+		RDB = IfcUtil::path::from_utf8(".rdb"),
 		CITY_JSON = IfcUtil::path::from_utf8(".cityjson"),
 		IFC = IfcUtil::path::from_utf8(".ifc"),
 		USD = IfcUtil::path::from_utf8(".usd"),
@@ -696,6 +700,27 @@ int main(int argc, char** argv) {
 		write_log(!quiet);
 		return exit_code;
 	}
+#ifdef WITH_ROCKSDB
+	else if (output_extension == RDB) {
+		int exit_code = EXIT_FAILURE;
+		try {
+			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
+				time_t start, end;
+				time(&start);
+				RocksDbSerializer s(ifc_file, IfcUtil::path::to_utf8(output_filename));
+				Logger::Status("Populating RockDB Key-Value store...");
+				s.finalize();
+				time(&end);
+				Logger::Status("Done! Conversion took " + format_duration(start, end));
+				exit_code = EXIT_SUCCESS;
+			}
+		} catch (const std::exception& e) {
+			Logger::Error(e);
+		}
+		write_log(!quiet);
+		return exit_code;
+	}
+#endif
 #ifdef IFOPSH_WITH_CITYJSON
 	else if (output_extension == CITY_JSON || (output_extension == OBJ || output_extension == DAE || output_extension == GLB) && vmap.count("exterior-only") && exterior_only_algo != "none") {
 

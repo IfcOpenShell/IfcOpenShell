@@ -31,6 +31,7 @@ public:
     using base_mapped_type = typename BaseMap::mapped_type;
     using transformed_mapped_type = std::invoke_result_t<Transform, base_mapped_type>;
     using value_type = std::pair<key_type, transformed_mapped_type>;
+    using mapped_type = transformed_mapped_type;
 
 private:
     BaseMap* base_map_;

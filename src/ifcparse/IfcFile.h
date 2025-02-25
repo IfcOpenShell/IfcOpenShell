@@ -37,6 +37,32 @@
 #include <iterator>
 #include <map>
 
+#include "rocksdb/merge_operator.h"
+
+namespace {
+    // @todo move to a proper place
+    class ConcatenateIdMergeOperator : public rocksdb::AssociativeMergeOperator {
+    public:
+        virtual bool Merge(const rocksdb::Slice& key,
+            const rocksdb::Slice* existing_value,
+            const rocksdb::Slice& value,
+            std::string* new_value,
+            rocksdb::Logger* logger) const override {
+            if (existing_value) {
+                new_value->assign(existing_value->data(), existing_value->size());
+                new_value->append(value.data(), value.size());
+            } else {
+                new_value->assign(value.data(), value.size());
+            }
+            return true;
+        }
+
+        virtual const char* Name() const override {
+            return "ConcatenateIdMergeOperator";
+        }
+    };
+}
+
 namespace IfcParse {
 
 class IFC_PARSE_API file_open_status {
@@ -315,6 +341,11 @@ namespace impl {
         }
 
         void process_deletion_inverse(IfcUtil::IfcBaseClass* inst);
+
+        template <typename T>
+        T* create();
+
+        IfcUtil::IfcBaseClass* create(const IfcParse::declaration* decl);
     };
 
     struct rocks_db_file_storage {
@@ -328,9 +359,9 @@ namespace impl {
         typedef rocksdb_map_adapter<size_t, size_t> identity_by_id_t;
         identity_by_id_t byid_;
 
-        // typedef map_transformer<rocksdb_map_adapter<size_t, size_t>, std::function<IfcUtil::IfcBaseClass*(size_t)>, std::function<size_t(IfcUtil::IfcBaseClass*)>> entity_by_identity_t;
+        typedef map_transformer<rocksdb_map_adapter<size_t, size_t>, std::function<IfcUtil::IfcBaseClass*(size_t)>, std::function<size_t(IfcUtil::IfcBaseClass*)>> entity_by_id_t;
         // storage is now Instance name -> Identity -> Pointer (cached)
-        // entity_by_identity_t byidentity_;
+        entity_by_id_t byidentity_;
 
         // index in schema to binary serialized ids
         typedef rocksdb_map_adapter<size_t, std::string> instance_id_str_by_type_t;
@@ -531,6 +562,11 @@ namespace impl {
         IfcUtil::IfcBaseClass* instance_by_id(int id);
 
         void process_deletion_inverse(IfcUtil::IfcBaseClass* inst);
+
+        template <typename T>
+        T* create();
+
+        IfcUtil::IfcBaseClass* create(const IfcParse::declaration* decl);
     };
 }
 
@@ -591,7 +627,8 @@ private:
     IfcFile(std::istream& stream, int length);
     IfcFile(void* data, int length);
     IfcFile(IfcParse::IfcSpfStream* stream);
-    IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"));
+    // @nb path is only used in rocksdb mode, for spf file is in-memory only until write() is called
+    IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"), filetype ty = ifcspf, const std::string& path = "");
 
     ~IfcFile() {
         for (const auto& p : byidentity_) {
@@ -722,10 +759,13 @@ private:
 
     typedef VariantMap<impl::in_memory_file_storage::entity_by_guid_t, impl::rocks_db_file_storage::entity_by_guid_t> entity_by_guid_t;
     entity_by_guid_t byguid_;
-    typedef VariantMap<impl::in_memory_file_storage::identity_by_id_t, impl::rocks_db_file_storage::identity_by_id_t> identity_by_id_t;
-    identity_by_id_t byid_;
+    typedef VariantMap<impl::in_memory_file_storage::entity_by_id_t, impl::rocks_db_file_storage::entity_by_id_t> entity_by_id_t;
+    entity_by_id_t byid_;
     typedef VariantMap<impl::in_memory_file_storage::entity_by_iden_t, impl::rocks_db_file_storage::entity_by_iden_cache_t> entity_by_iden_t;
     entity_by_iden_t byidentity_;
+    typedef VariantMap<impl::in_memory_file_storage::identity_by_id_t, impl::rocks_db_file_storage::identity_by_id_t> identity_by_id_t;
+    identity_by_id_t idenbyid_;
+
 
     // @todo
     entity_by_guid_t internal_guid_map() { return byguid_; };
@@ -735,6 +775,31 @@ private:
     void process_deletion_inverse(IfcUtil::IfcBaseClass* inst);
 
     void build_inverses_(IfcUtil::IfcBaseClass*);
+
+    template <typename T>
+    T* create() {
+        return std::visit([](auto& m) -> T* {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage> || 
+                std::is_same_v<std::decay_t<decltype(m)>, impl::rocks_db_file_storage>)
+            {
+                return m.create<T>();
+            } else {
+                return nullptr;
+            }
+        }, storage_);
+    }
+
+    IfcUtil::IfcBaseClass* create(const IfcParse::declaration* decl) {
+        return std::visit([decl](auto& m) -> IfcUtil::IfcBaseClass* {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage> ||
+                std::is_same_v<std::decay_t<decltype(m)>, impl::rocks_db_file_storage>)
+            {
+                return m.create(decl);
+            } else {
+                return nullptr;
+            }
+        }, storage_);
+    }
 };
 
 #ifdef WITH_IFCXML
@@ -742,6 +807,44 @@ IFC_PARSE_API IfcFile* parse_ifcxml(const std::string& filename);
 #endif
 
 } // namespace IfcParse
+
+template <typename T>
+T* IfcParse::impl::in_memory_file_storage::create() {
+    if constexpr (std::is_same_v<std::decay_t<std::invoke_result_t<T::Class>>, IfcParse::entity>) {
+        return file->addEntity(new T(in_memory_attribute_storage(T::Class().attribute_count())))->as<T>();
+    } else if constexpr (std::is_same_v<std::decay_t<std::invoke_result_t<T::Class>>, IfcParse::type_declaration>) {
+        return file->addEntity(new T(in_memory_attribute_storage(1)))->as<T>();
+    } else {
+        static_assert(false, "Requires and entity or type declaration");
+    }
+}
+
+IfcUtil::IfcBaseClass* IfcParse::impl::in_memory_file_storage::create(const IfcParse::declaration* decl) {
+    if (auto* ent = decl->as_entity()) {
+        return file->addEntity(file->schema()->instantiate(decl, in_memory_attribute_storage(ent->attribute_count())));
+    } else if (auto* typedecl = decl->as_type_declaration()) {
+        return file->addEntity(file->schema()->instantiate(decl, in_memory_attribute_storage(1)));
+    } else {
+        throw std::runtime_error("Requires and entity or type declaration");
+    }
+}
+
+template <typename T>
+T* IfcParse::impl::rocks_db_file_storage::create() {
+    if constexpr (std::is_same_v<std::decay_t<std::invoke_result_t<T::Class>>, IfcParse::entity> || std::is_same_v<std::decay_t<std::invoke_result_t<T::Class>>, IfcParse::type_declaration>) {
+        return file->addEntity(new T(rocks_db_attribute_storage{}))->as<T>();
+    } else {
+        static_assert(false, "Requires and entity or type declaration");
+    }
+}
+
+IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::create(const IfcParse::declaration* decl) {
+    if (decl->as_entity() || decl->as_type_declaration()) {
+        return file->addEntity(file->schema()->instantiate(decl, rocks_db_attribute_storage(this, "i|")));
+    } else {
+        throw std::runtime_error("Requires and entity or type declaration");
+    }
+}
 
 namespace std {
 template <>

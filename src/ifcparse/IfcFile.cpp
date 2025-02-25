@@ -353,7 +353,7 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(s
         size_t s;
         memcpy(&s, v.data(), sizeof(size_t));
         auto decl = file->schema()->declarations()[s];
-        IfcEntityInstanceData data(rocks_db_attribute_storage{});
+        IfcEntityInstanceData data(rocks_db_attribute_storage(this, "i|"));
         auto inst = file->schema()->instantiate(decl, std::move(data));
         inst->id_ = instanceId;
         instance_cache_.insert({ inst->identity(), inst });
@@ -361,34 +361,6 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(s
         return inst;
     }
     throw std::runtime_error("");
-}
-
-
-#include "rocksdb/merge_operator.h"
-
-namespace {
-
-    class ConcatenateIdMergeOperator : public rocksdb::AssociativeMergeOperator {
-    public:
-        virtual bool Merge(const rocksdb::Slice& key,
-            const rocksdb::Slice* existing_value,
-            const rocksdb::Slice& value,
-            std::string* new_value,
-            rocksdb::Logger* logger) const override {
-            if (existing_value) {
-                new_value->assign(existing_value->data(), existing_value->size());
-                new_value->append(value.data(), value.size());
-            } else {
-                new_value->assign(value.data(), value.size());
-            }
-            return true;
-        }
-
-        virtual const char* Name() const override {
-            return "ConcatenateIdMergeOperator";
-        }
-    };
-
 }
 
 // @todo naming
@@ -399,11 +371,15 @@ IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& 
     , byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
     , byid_(db, "d|")
     , bytype_(db, "t|")
+    , byidentity_(&byid_, [this](size_t v) { return assert_existance(v); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
 {
     rocksdb::Options options;
     options.create_if_missing = true;
     options.merge_operator.reset(new ConcatenateIdMergeOperator());
     rocksdb::Status status = rocksdb::DB::Open(options, filepath, &db);
+    if (!status.ok()) {
+        throw std::runtime_error(status.ToString());
+    }
 }
 
 IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::instance_by_id(int id)

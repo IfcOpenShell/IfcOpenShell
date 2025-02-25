@@ -30,124 +30,6 @@ public:
 };
 
 namespace {
-
-    // Trait to detect contiguous containers (vector / string)
-    template <typename T>
-    struct is_contiguous_container : std::false_type {};
-    template <typename T, typename Alloc>
-    struct is_contiguous_container<std::vector<T, Alloc>> : std::true_type {};
-    template <typename CharT, typename Traits, typename Alloc>
-    struct is_contiguous_container<std::basic_string<CharT, Traits, Alloc>> : std::true_type {};
-
-    template <typename T>
-    bool serialize(std::string& val, const T& t) {
-        return false;
-    }
-
-    template <typename T, typename std::enable_if<is_contiguous_container<T>::value, int>::type = 0>
-    bool serialize(std::string& val, const T& t) {
-        auto s = sizeof(typename T::value_type) * t.size();
-        val.resize(s);
-        val[0] = TypeEncoder::encode_type<T>();
-        memcpy(val.data() + 1, t.data(), s);
-        return true;
-    }
-
-    bool serialize(std::string& val, const IfcUtil::IfcBaseClass* t) {
-        auto s = sizeof(size_t);
-        val.resize(s + 2);
-        val[0] = TypeEncoder::encode_type<IfcUtil::IfcBaseClass*>();
-        // 1 = entity - stored by id (entity name)
-        // 2 = type - stored by identity (internal counter in class)
-        val[1] = t->declaration().as_entity() ? 1 : 2;
-        size_t iden = t->declaration().as_entity() ? t->id() : t->identity();
-        memcpy(val.data() + 2, &iden, s);
-        return true;
-    }
-
-
-    bool serialize(std::string& val, const EnumerationReference& v) {
-        auto s = sizeof(size_t);
-        val.resize(s * 2 + 1);
-        val[0] = TypeEncoder::encode_type<EnumerationReference>();
-        size_t vv = v.enumeration()->index_in_schema();
-        memcpy(val.data() + 1, &vv, sizeof(size_t));
-        vv = v.index();
-        memcpy(val.data() + 1, &vv, sizeof(size_t));
-        return true;
-    }
-
-    bool serialize(std::string& val, aggregate_of_instance::ptr& t) {
-        std::vector<size_t> ids;
-        // @nb this has to be identity, because needs to work for typedecls as well
-        std::transform(t->begin(), t->end(), std::back_inserter(ids), [](auto& x) { return x->identity(); });
-        return false;
-    }
-
-    bool serialize(std::string& val, aggregate_of_aggregate_of_instance::ptr& t) {
-        return false;
-    }
-
-    /*
-    template <typename T>
-    bool deserialize(std::string& val, const T& t) {}
-    */
-
-    template <typename T, typename std::enable_if<is_contiguous_container<T>::value, int>::type = 0>
-    bool deserialize(std::string& val, T& t) {
-        // @todo vector of vector
-        if (val[0] != TypeEncoder::encode_type<T>()) {
-            return false;
-        }
-        auto s = (val.size() - 1) / sizeof(typename T::value_type);
-        t.resize(s);
-        memcpy(t.data(), val.data() + 1, s * sizeof(typename T::value_type));
-        return true;
-    }
-
-    template <typename T, typename std::enable_if<std::is_integral_v<T> || std::is_floating_point_v<T>, int>::type = 0>
-    bool deserialize(std::string& val, T& t) {
-        if (val[0] != TypeEncoder::encode_type<T>()) {
-            return false;
-        }
-        auto s = (val.size() - 1) / sizeof(T);
-        memcpy(&t, val.data() + 1, sizeof(T));
-        return true;
-    }
-
-    bool deserialize(std::string& val, boost::logic::tribool& t) {
-        if (val[0] != TypeEncoder::encode_type<boost::logic::tribool>()) {
-            return false;
-        }
-        if (val[1] == 0) {
-            t = false;
-        } else if (val[1] == 1) {
-            t = true;
-        } else if (val[1] == 2) {
-            t = boost::logic::indeterminate;
-        } else {
-            return false;
-        }
-    }
-
-    bool deserialize(std::string& val, boost::dynamic_bitset<>& t) {
-        if (val[0] != TypeEncoder::encode_type<boost::dynamic_bitset<>>()) {
-            return false;
-        }
-        t = boost::dynamic_bitset<>(val.substr(1));
-        return true;
-    }
-
-    bool deserialize(std::string& val, aggregate_of_instance::ptr& t) {
-        return false;
-    }
-
-    bool deserialize(std::string& val, aggregate_of_aggregate_of_instance::ptr& t) {
-        return false;
-    }
-}
-
-namespace {
     template<typename T>
     inline T dispatch_get_(AttributeValue::pointer_type array_, uint8_t storage_model_, size_t instance_name_, uint8_t index_)
     {
@@ -162,7 +44,7 @@ namespace {
             {
                 std::string str;
                 array_.db_ptr->db->Get(rocksdb::ReadOptions{}, "a|" + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
-                deserialize(str, val);
+                impl::deserialize(str, val);
             }
             return val;
         }
@@ -326,3 +208,138 @@ IfcUtil::ArgumentType AttributeValue::type() const
 {
     return static_cast<IfcUtil::ArgumentType>(dispatch_index_(array_, storage_model_, instance_name_, index_));
 }
+
+bool impl::serialize(std::string& val, const IfcUtil::IfcBaseClass* t)
+{
+    auto s = sizeof(size_t);
+    val.resize(s + 2);
+    val[0] = TypeEncoder::encode_type<IfcUtil::IfcBaseClass*>();
+    // 1 = entity - stored by id (entity name)
+    // 2 = type - stored by identity (internal counter in class)
+    val[1] = t->declaration().as_entity() ? 1 : 2;
+    size_t iden = t->declaration().as_entity() ? t->id() : t->identity();
+    memcpy(val.data() + 2, &iden, s);
+    return true;
+}
+
+bool impl::serialize(std::string& val, const EnumerationReference& v)
+{
+    auto s = sizeof(size_t);
+    val.resize(s * 2 + 1);
+    val[0] = TypeEncoder::encode_type<EnumerationReference>();
+    size_t vv = v.enumeration()->index_in_schema();
+    memcpy(val.data() + 1, &vv, sizeof(size_t));
+    vv = v.index();
+    memcpy(val.data() + 1, &vv, sizeof(size_t));
+    return true;
+}
+
+bool impl::serialize(std::string& val, const aggregate_of_instance::ptr& t)
+{
+    std::vector<size_t> ids;
+    // @nb this has to be identity, because needs to work for typedecls as well
+    std::transform(t->begin(), t->end(), std::back_inserter(ids), [](auto& x) { return x->identity(); });
+    return false;
+}
+
+bool impl::serialize(std::string& val, const aggregate_of_aggregate_of_instance::ptr& t)
+{
+    return false;
+}
+
+bool impl::serialize(std::string& val, const Blank& t)
+{
+    return true;
+}
+
+bool impl::serialize(std::string& val, const Derived& t)
+{
+    return true;
+}
+
+bool impl::serialize(std::string& val, const empty_aggregate_t& t)
+{
+    return false;
+}
+
+bool impl::serialize(std::string& val, const empty_aggregate_of_aggregate_t& t)
+{
+    return false;
+}
+
+bool impl::serialize(std::string& val, const boost::logic::tribool& t)
+{
+    using T = char;
+    T tt = t == boost::logic::indeterminate ? 2 : t ? 1 : 0;
+    val.resize(sizeof(T) + 1);
+    val[0] = TypeEncoder::encode_type<T>();
+    memcpy(val.data() + 1, &tt, sizeof(T));
+    return true;
+}
+
+bool impl::serialize(std::string& val, const boost::dynamic_bitset<>& t)
+{
+    return false;
+}
+
+bool impl::deserialize(std::string& val, boost::logic::tribool& t) {
+    if (val[0] != TypeEncoder::encode_type<boost::logic::tribool>()) {
+        return false;
+    }
+    if (val[1] == 0) {
+        t = false;
+    } else if (val[1] == 1) {
+        t = true;
+    } else if (val[1] == 2) {
+        t = boost::logic::indeterminate;
+    } else {
+        return false;
+    }
+}
+
+bool impl::deserialize(std::string& val, boost::dynamic_bitset<>& t) {
+    if (val[0] != TypeEncoder::encode_type<boost::dynamic_bitset<>>()) {
+        return false;
+    }
+    t = boost::dynamic_bitset<>(val.substr(1));
+    return true;
+}
+
+bool impl::deserialize(std::string& val, aggregate_of_instance::ptr& t) {
+    return false;
+}
+
+bool impl::deserialize(std::string& val, aggregate_of_aggregate_of_instance::ptr& t) {
+    return false;
+}
+
+template<typename T>
+void rocks_db_attribute_storage::set(std::size_t index, const T& value)
+{
+    std::string v;
+    impl::serialize(v, value);
+    fs_->db->Put(rocksdb::WriteOptions{}, prefix_ + ("|" + std::to_string(index)), v);
+}
+
+template void rocks_db_attribute_storage::set<Blank>(size_t index, const Blank& value);
+template void rocks_db_attribute_storage::set<int>(size_t index, const int& value);
+template void rocks_db_attribute_storage::set<bool>(size_t index, const bool& value);
+template void rocks_db_attribute_storage::set<boost::logic::tribool>(size_t index, const boost::logic::tribool& value);
+template void rocks_db_attribute_storage::set<double>(size_t index, const double& value);
+template void rocks_db_attribute_storage::set<std::string>(size_t index, const std::string& value);
+template void rocks_db_attribute_storage::set<boost::dynamic_bitset<>>(size_t index, const boost::dynamic_bitset<>& value);
+template void rocks_db_attribute_storage::set<EnumerationReference>(size_t index, const EnumerationReference& value);
+template void rocks_db_attribute_storage::set<IfcUtil::IfcBaseClass*>(size_t index, IfcUtil::IfcBaseClass* const& value);
+template void rocks_db_attribute_storage::set<std::vector<int>>(size_t index, const std::vector<int>& value);
+template void rocks_db_attribute_storage::set<std::vector<double>>(size_t index, const std::vector<double>& value);
+template void rocks_db_attribute_storage::set<std::vector<std::string>>(size_t index, const std::vector<std::string>& value);
+template void rocks_db_attribute_storage::set<std::vector<boost::dynamic_bitset<>>>(size_t index, const std::vector<boost::dynamic_bitset<>>& value);
+template void rocks_db_attribute_storage::set<aggregate_of_instance::ptr>(size_t index, const aggregate_of_instance::ptr& value);
+template void rocks_db_attribute_storage::set<std::vector<std::vector<int>>>(size_t index, const std::vector<std::vector<int>>& value);
+template void rocks_db_attribute_storage::set<std::vector<std::vector<double>>>(size_t index, const std::vector<std::vector<double>>& value);
+template void rocks_db_attribute_storage::set<aggregate_of_aggregate_of_instance::ptr>(size_t index, const aggregate_of_aggregate_of_instance::ptr& value);
+
+// @todo why do these need to be included, but are not in BaseEntity::set()?
+template void rocks_db_attribute_storage::set<Derived>(size_t index, const Derived& value);
+template void rocks_db_attribute_storage::set<empty_aggregate_t>(size_t index, const empty_aggregate_t& value);
+template void rocks_db_attribute_storage::set<empty_aggregate_of_aggregate_t>(size_t index, const empty_aggregate_of_aggregate_t& value);
