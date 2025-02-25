@@ -155,7 +155,8 @@ class Snap(bonsai.core.tool.Snap):
 
         # Makes the snapping point more or less sticky than others
         # It changes the distance and affects how the snapping point is sorted
-        stick_factor = 0.15
+        # We multiply by the increment snap which is based on the viewport zoom
+        snap_threshold = 1 * cls.get_increment_snap_value(bpy.context)
 
         default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
@@ -195,7 +196,7 @@ class Snap(bonsai.core.tool.Snap):
             if tool_state.plane_method == "XZ":
                 proximity = rot_intersection.x
 
-            is_on_rot_axis = abs(proximity) <= stick_factor
+            is_on_rot_axis = abs(proximity) <= snap_threshold
             if is_on_rot_axis:
                 elegible_axis.append((abs(proximity), axis))
 
@@ -543,6 +544,19 @@ class Snap(bonsai.core.tool.Snap):
             filtered_groups = [group for group in detected_snaps if group["group"] in options]
             return filtered_groups
 
+        def sort_points_by_weighted_distance(snapping_points):
+            for snap in snapping_points:
+                weight_factor = 100 * cls.get_increment_snap_value(context)
+                if snap["type"] == "Vertex":
+                    snap["distance"] *= weight_factor / 12
+                if snap["type"] == "Edge":
+                    snap["distance"] *= weight_factor
+                if snap["type"] == "Edge Center":
+                    snap["distance"] *= weight_factor / 5
+                if snap["type"] == "Edge Intersection":
+                    snap["distance"] *= weight_factor / 10
+            return sorted(snapping_points, key=lambda x: x["distance"])
+
         snaps_by_group = filter_snapping_points_by_group(detected_snaps)
         edges = []  # Get edges to create edge-intersection snap
         for snapping_point in snaps_by_group:
@@ -560,30 +574,33 @@ class Snap(bonsai.core.tool.Snap):
                 snaps_by_group.insert(0, snap_point)
 
         snaps_by_type = filter_snapping_points_by_type(snaps_by_group)
-        snaps_by_type = sorted(snaps_by_type, key=lambda x: x["distance"])
+        ordered_snaps = sort_points_by_weighted_distance(snaps_by_type)
+        
+        for snap in ordered_snaps:
+            print("\n", snap["type"], snap["distance"])
 
         # Make Axis first priority
         if tool_state.lock_axis or tool_state.axis_method in {"X", "Y", "Z"}:
-            cls.update_snapping_ref(snaps_by_type[0]["point"], snaps_by_type[0]["type"])
-            for point in snaps_by_type:
+            cls.update_snapping_ref(ordered_snaps[0]["point"], ordered_snaps[0]["type"])
+            for point in ordered_snaps:
                 if point["type"] == "Axis":
-                    if snaps_by_type[0]["type"] not in {"Axis", "Plane"}:
-                        obj = snaps_by_type[0]["object"]
-                        mixed_snap = cls.mix_snap_and_axis(snaps_by_type[0]["point"], axis_start, axis_end)
+                    if ordered_snaps[0]["type"] not in {"Axis", "Plane"}:
+                        obj = ordered_snaps[0]["object"]
+                        mixed_snap = cls.mix_snap_and_axis(ordered_snaps[0]["point"], axis_start, axis_end)
                         for mixed_point in mixed_snap:
                             snap_point = {
                                 "point": mixed_point,
                                 "type": "Mix",
                                 "object": obj,
                             }
-                            snaps_by_type.insert(0, snap_point)
+                            ordered_snaps.insert(0, snap_point)
                             cls.update_snapping_point(snap_point["point"], snap_point["type"])
-                        return snaps_by_type
+                        return ordered_snaps
                     cls.update_snapping_point(point["point"], point["type"])
-                    return snaps_by_type
+                    return ordered_snaps
 
-        cls.update_snapping_point(snaps_by_type[0]["point"], snaps_by_type[0]["type"], snaps_by_type[0]["object"])
-        return snaps_by_type
+        cls.update_snapping_point(ordered_snaps[0]["point"], ordered_snaps[0]["type"], ordered_snaps[0]["object"])
+        return ordered_snaps
 
     @classmethod
     def modify_snapping_point_selection(cls, snapping_points, lock_axis=False):
