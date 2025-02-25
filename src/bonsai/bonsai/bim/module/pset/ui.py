@@ -241,12 +241,12 @@ class BIM_PT_object_psets(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
         return True
 
@@ -319,12 +319,12 @@ class BIM_PT_object_qtos(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
         return True
 

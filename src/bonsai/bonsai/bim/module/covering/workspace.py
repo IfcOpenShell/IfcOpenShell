@@ -55,7 +55,7 @@ class CoveringToolUI:
     def draw(cls, context, layout, ifc_element_type=None):
         cls.layout = layout
         cls.props = tool.Model.get_model_props()
-        cls.covering_props = context.scene.BIMCoveringProperties
+        cls.covering_props = tool.Covering.get_covering_props()
 
         row = cls.layout.row(align=True)
         if not tool.Ifc.get():
@@ -159,12 +159,11 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         return operator.description or ""
 
     def _execute(self, context):
-        #        self.props = context.scene.BIMCoveringProperties
+        self.props = tool.Covering.get_covering_props()
         getattr(self, f"hotkey_{self.hotkey}")()
 
     def invoke(self, context, event):
         # https://blender.stackexchange.com/questions/276035/how-do-i-make-operators-remember-their-property-values-when-called-from-a-hotkey
-        # self.props = context.scene.BIMSpatialProperties
         return self.execute(context)
 
     def draw(self, context):

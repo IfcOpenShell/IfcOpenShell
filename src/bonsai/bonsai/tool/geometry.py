@@ -235,7 +235,7 @@ class Geometry(bonsai.core.tool.Geometry):
                     bpy.data.objects.remove(axis_obj)
                 ifcopenshell.api.grid.remove_grid_axis(tool.Ifc.get(), axis=axis)
 
-        collection = obj.BIMObjectProperties.collection
+        collection = tool.Blender.get_object_bim_props(obj).collection
         if collection:
             parent = ifcopenshell.util.element.get_aggregate(element)
             if not parent:
@@ -243,7 +243,7 @@ class Geometry(bonsai.core.tool.Geometry):
             if parent:
                 parent_obj = tool.Ifc.get_object(parent)
                 if parent_obj:
-                    parent_collection = parent_obj.BIMObjectProperties.collection
+                    parent_collection = tool.Blender.get_object_bim_props(parent_obj).collection
                     for child in collection.children:
                         parent_collection.children.link(child)
                     for child_object in collection.objects:
@@ -557,11 +557,9 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def get_cartesian_point_offset(cls, obj: bpy.types.Object) -> npt.NDArray[np.float64] | None:
-        if (
-            obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
-            and obj.BIMObjectProperties.cartesian_point_offset
-        ):
-            return np.array(tuple(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(","))))
+        props = tool.Blender.get_object_bim_props(obj)
+        if props.blender_offset_type == "CARTESIAN_POINT" and props.cartesian_point_offset:
+            return np.array(tuple(map(float, props.cartesian_point_offset.split(","))))
 
     @classmethod
     def get_element_type(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -1084,8 +1082,9 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def record_object_position(cls, obj: bpy.types.Object) -> None:
         # These are recorded separately because they have different numerical tolerances
-        obj.BIMObjectProperties.location_checksum = repr(np.array(obj.matrix_world.translation).tobytes())
-        obj.BIMObjectProperties.rotation_checksum = repr(np.array(obj.matrix_world.to_3x3()).tobytes())
+        props = tool.Blender.get_object_bim_props(obj)
+        props.location_checksum = repr(np.array(obj.matrix_world.translation).tobytes())
+        props.rotation_checksum = repr(np.array(obj.matrix_world.to_3x3()).tobytes())
 
     @classmethod
     def remove_connection(cls, connection: ifcopenshell.entity_instance) -> None:
@@ -1570,8 +1569,9 @@ class Geometry(bonsai.core.tool.Geometry):
     def get_blender_offset_type(cls, obj: bpy.types.Object) -> Optional[str]:
         props = tool.Georeference.get_georeference_props()
         if props.has_blender_offset:
-            if (result := obj.BIMObjectProperties.blender_offset_type) == "NONE":
-                result = obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
+            props = tool.Blender.get_object_bim_props(obj)
+            if (result := props.blender_offset_type) == "NONE":
+                result = props.blender_offset_type = "OBJECT_PLACEMENT"
             return result
 
     @classmethod

@@ -146,7 +146,7 @@ class CadTool(WorkSpaceTool):
             if (
                 (RailingData.is_loaded or not RailingData.load())
                 and RailingData.data["pset_data"]
-                and obj.BIMRailingProperties.is_editing_path
+                and tool.Model.get_railing_props(obj).is_editing_path
             ):
                 add_header_apply_button(
                     layout,
@@ -159,7 +159,7 @@ class CadTool(WorkSpaceTool):
             elif (
                 (RoofData.is_loaded or not RoofData.load())
                 and RoofData.data["pset_data"]
-                and obj.BIMRoofProperties.is_editing_path
+                and tool.Model.get_roof_props(obj).is_editing_path
             ):
                 add_header_apply_button(
                     layout, "Edit Roof Path", "bim.finish_editing_roof_path", "bim.cancel_editing_roof_path", ui_context
@@ -195,12 +195,14 @@ class CadHotkey(bpy.types.Operator):
         return operator.description or ""
 
     def execute(self, context):
-        self.props = context.scene.BIMCadProperties
+        self.props = tool.Cad.get_cad_props()
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
 
     def draw(self, context):
-        props = context.scene.BIMCadProperties
+        props = tool.Cad.get_cad_props()
+        obj = context.active_object
+
         if self.hotkey == "S_C":
             if tool.Geometry.is_profile_object_active():
                 row = self.layout.row()
@@ -226,7 +228,7 @@ class CadHotkey(bpy.types.Operator):
             elif (
                 (RoofData.is_loaded or not RoofData.load())
                 and RoofData.data["pset_data"]
-                and bpy.context.active_object.BIMRoofProperties.is_editing_path
+                and tool.Model.get_roof_props(obj).is_editing_path
             ):
                 self.layout.row().prop(props, "gable_roof_edge_angle")
 
@@ -281,13 +283,17 @@ class CadHotkey(bpy.types.Operator):
             bpy.ops.bim.edit_extrusion_axis()
 
     def hotkey_S_R(self):
+        obj = bpy.context.active_object
+        if not obj:
+            return
+
         if tool.Geometry.is_profile_object_active():
             si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             bpy.ops.bim.add_rectangle(x=self.props.x / si_conversion, y=self.props.y / si_conversion)
         elif (
             (RoofData.is_loaded or not RoofData.load())
             and RoofData.data["pset_data"]
-            and bpy.context.active_object.BIMRoofProperties.is_editing_path
+            and tool.Model.get_roof_props(obj).is_editing_path
         ):
             bpy.ops.bim.set_gable_roof_edge_angle(angle=self.props.gable_roof_edge_angle)
 

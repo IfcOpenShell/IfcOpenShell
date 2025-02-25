@@ -137,7 +137,7 @@ class IfcExporter:
         return checksum != tool.Geometry.get_material_checksum(obj)
 
     def sync_object_placement(self, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        element = self.file.by_id(tool.Blender.get_object_bim_props(obj).ifc_definition_id)
         if tool.Geometry.is_scaled(obj):
             bpy.ops.bim.update_representation(obj=obj.name)
             # update_representation might not apply scale if the object has openings

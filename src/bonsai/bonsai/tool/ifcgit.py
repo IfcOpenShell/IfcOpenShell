@@ -397,9 +397,9 @@ class IfcGit:
         bpy.ops.object.select_all(action="DESELECT")
 
         for obj in bpy.context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            props = tool.Blender.get_object_bim_props(obj)
+            if not (step_id := props.ifc_definition_id):
                 continue
-            step_id = obj.BIMObjectProperties.ifc_definition_id
             if step_id in step_ids["modified"]:
                 obj.color = (0.3, 0.3, 1.0, 1)
                 obj.select_set(True)

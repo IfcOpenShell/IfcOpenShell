@@ -257,7 +257,7 @@ class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
         sources = []
 
         for obj in bpy.context.selected_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            if not tool.Blender.get_ifc_definition_id(obj):
                 continue
 
             element = tool.Ifc.get_entity(obj)

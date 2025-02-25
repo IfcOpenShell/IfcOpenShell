@@ -240,7 +240,7 @@ class TestImportUnitAttributes(NewFile):
         assert props.unit_attributes["UnitType"].enum_value == "ABSORBEDDOSEUNIT"
         assert props.unit_attributes["Prefix"].enum_value == "EXA"
         assert props.unit_attributes["Name"].enum_value == "AMPERE"
-        assert props.unit_attributes["Dimensions"] is None
+        assert "Dimensions" not in props.unit_attributes
 
 
 class TestImportUnits(NewFile):

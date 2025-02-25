@@ -351,10 +351,9 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator, tool.Ifc.Operator):
         props = context.scene.AddEditProperties
 
         for obj in tool.Blender.get_selected_objects():
-            ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
-            if not ifc_definition_id:
+            ifc_element = tool.Ifc.get_entity(obj)
+            if not ifc_element:
                 continue
-            ifc_element = tool.Ifc.get().by_id(ifc_definition_id)
 
             for prop in props:
                 value = getattr(prop, prop.get_value_name())
@@ -406,23 +405,19 @@ class BIM_OT_bulk_remove_psets(bpy.types.Operator, tool.Ifc.Operator):
         props = context.scene.DeletePsets
 
         for obj in tool.Blender.get_selected_objects():
-            ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
-            if not ifc_definition_id:
+            ifc_element = tool.Ifc.get_entity(obj)
+            if not ifc_element:
                 continue
-            ifc_element = tool.Ifc.get().by_id(ifc_definition_id)
             psets = ifcopenshell.util.element.get_psets(ifc_element)
 
             for prop in props:
                 pset = prop.pset_name
                 if pset in psets:
                     try:
-                        ifcopenshell.api.run(
-                            "pset.remove_pset",
+                        ifcopenshell.api.pset.remove_pset(
                             self.file,
-                            **{
-                                "product": self.file.by_id(ifc_definition_id),
-                                "pset": self.file.by_id(psets[pset]["id"]),
-                            },
+                            product=ifc_element,
+                            pset=self.file.by_id(psets[pset]["id"]),
                         )
                     except KeyError:
                         pass  # Sometimes the pset id is not found, I'm not sure why this happens though. - vulevukusej

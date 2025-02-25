@@ -64,14 +64,15 @@ def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -
             refresh_ui_data()
         return
 
-    if not obj.BIMObjectProperties.ifc_definition_id:
+    props = tool.Blender.get_object_bim_props(obj)
+    if not props.ifc_definition_id:
         return
 
-    if obj.BIMObjectProperties.is_renaming:
-        obj.BIMObjectProperties.is_renaming = False
+    if props.is_renaming:
+        props.is_renaming = False
         return
 
-    element = tool.Ifc.get().by_id(obj.BIMObjectProperties.ifc_definition_id)
+    element = tool.Ifc.get().by_id(props.ifc_definition_id)
     if "/" in obj.name:
         object_name = obj.name
         element_name = obj.name.split("/", 1)[1]
@@ -87,8 +88,8 @@ def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -
     if not element.is_a("IfcRoot"):
         return
     element.Name = element_name
-    if obj.BIMObjectProperties.collection:
-        obj.BIMObjectProperties.collection.name = object_name
+    if props.collection:
+        props.collection.name = object_name
     refresh_ui_data()
 
 

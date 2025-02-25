@@ -648,7 +648,8 @@ def get_opening_area(
     """
     total_opening_area = 0
     ifc = tool.Ifc.get()
-    ifc_element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
+    ifc_element = tool.Ifc.get_entity(obj)
+    assert ifc_element
     if len(openings := ifc_element.HasOpenings) != 0:
         for opening in openings:
             opening_id = opening.RelatedOpeningElement.GlobalId
@@ -887,7 +888,7 @@ def get_OBB_object(obj: bpy.types.Object) -> bpy.types.Object:
     :param blender-object obj: Blender Object
     :return blender-object: OBB of the Object
     """
-    ifc_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_id = tool.Blender.get_ifc_definition_id(obj)
     bbox = obj.bound_box
     # matrix transformation to go from obj coordinates to world coordinates:
     obb = [Vector(v) for v in bbox]
@@ -929,7 +930,7 @@ def get_AABB_object(obj: bpy.types.Object) -> bpy.types.Object:
     :param blender-object obj: Blender Object
     :return blender-object: AABB of the Object
     """
-    ifc_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_id = tool.Blender.get_ifc_definition_id(obj)
     aabb_mesh = bpy.data.meshes.new(f"OBB_{ifc_id}")
 
     x = [v.co.x for v in obj.data.vertices]
@@ -994,7 +995,7 @@ def get_bisected_obj(
     :param tuple(x,y,z) plane_no_neg: Tuple describing the normal vector of the lower bisection plane. Example: (0,0,-1)
     :return _type_: _description_
     """
-    ifc_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_id = tool.Blender.get_ifc_definition_id(obj)
 
     bis_obj = obj.copy()
     bis_obj.data = obj.data.copy()

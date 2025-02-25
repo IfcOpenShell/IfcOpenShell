@@ -718,8 +718,8 @@ def the_collection_exclude_status_is(name: str, exclude: str) -> None:
 @then(parsers.parse('the object "{name1}" and "{name2}" are different elements'))
 def the_object_name1_and_name2_are_different_elements(name1, name2):
     ifc = an_ifc_file_exists()
-    element1 = ifc.by_id(the_object_name_exists(name1).BIMObjectProperties.ifc_definition_id)
-    element2 = ifc.by_id(the_object_name_exists(name2).BIMObjectProperties.ifc_definition_id)
+    element1 = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name1)))
+    element2 = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name2)))
     assert element1 != element2, f"Objects {name1} and {name2} have same elements {element1} and {element2}"
 
 
@@ -732,7 +732,7 @@ def the_object_name_has_a_body_of_value(name, value):
 @then(parsers.parse('the object "{name}" has a "{type}" representation of "{context}"'))
 def the_object_name_has_a_representation_type_of_context(name, type, context):
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     context, subcontext, target_view = context.split("/")
     rep = ifcopenshell.util.representation.get_representation(element, context, subcontext or None, target_view or None)
     assert rep
@@ -808,7 +808,7 @@ def the_object_name_should_display_as_mode(name, mode):
 @then(parsers.parse('the object "{name}" is voided by "{void}"'))
 def the_object_name_is_voided_by_void(name, void):
     ifc = tool.Ifc.get()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     assert any((rel for rel in element.HasOpenings if rel.RelatedOpeningElement.Name == void)), "No void found"
 
 
@@ -824,7 +824,7 @@ def the_object_name_is_not_voided_by_void(name, void):
 @then(parsers.parse('the object "{name}" is not voided'))
 def the_object_name_is_not_voided(name):
     ifc = tool.Ifc.get()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     assert not element.HasOpenings, "A void was found"
 
 
@@ -832,7 +832,7 @@ def the_object_name_is_not_voided(name):
 def the_object_name_is_a_void(name):
     ifc = tool.Ifc.get()
     obj = the_object_name_exists(name)
-    element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(obj))
     assert any((element.VoidsElements)), "No void was found"
 
 
@@ -872,14 +872,14 @@ def the_object_name_is_not_visible(name):
 @then(parsers.parse('the object "{name}" is an "{ifc_class}"'))
 def the_object_name_is_an_ifc_class(name, ifc_class):
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     assert element.is_a(ifc_class), f'Object "{name}" is an {element.is_a()}'
 
 
 @then(parsers.parse('the object "{name}" is not an IFC element'))
 def the_object_name_is_not_an_ifc_element(name):
     obj = the_object_name_exists(name)
-    ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_definition_id = tool.Blender.get_ifc_definition_id(obj)
     assert ifc_definition_id == 0, f"The object {obj} has an ID of {ifc_definition_id}"
 
 
@@ -897,14 +897,14 @@ def the_object_name_has_ifc_representation_data(name):
 @then(parsers.parse('the material "{name}" is an IFC material'))
 def the_material_name_is_an_ifc_material(name):
     obj = the_material_name_exists(name)
-    ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_definition_id = tool.Blender.get_ifc_definition_id(obj)
     assert ifc_definition_id != 0, f"The material {obj} has no ID: {ifc_definition_id}"
 
 
 @then(parsers.parse('the material "{name}" is not an IFC material'))
 def the_material_name_is_not_an_ifc_material(name):
     obj = the_material_name_exists(name)
-    ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_definition_id = tool.Blender.get_ifc_definition_id(obj)
     assert ifc_definition_id == 0, f"The material {obj} has an ID of {ifc_definition_id}"
 
 
@@ -937,7 +937,7 @@ def the_object_name_has_number_vertices(name, number):
 @then(parsers.parse('the void "{name}" is filled by "{filling}"'))
 def the_void_name_is_filled_by_filling(name, filling):
     ifc = tool.Ifc.get()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     assert any((rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings)), "No filling found"
 
 
@@ -954,7 +954,7 @@ def the_void_name_is_not_filled_by_filling(name, filling):
 @then(parsers.parse('the object "{name}" is not a filling'))
 def the_object_name_is_not_a_filling(name):
     ifc = tool.Ifc.get()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     assert not any(element.FillsVoids), "A filling was found"
 
 
@@ -1010,8 +1010,9 @@ def prop_is_roughly_value(prop, value):
 def the_object_name_has_a_cartesian_point_offset_of_offset(name: str, offset: str) -> None:
     offset = replace_variables(offset)
     obj = the_object_name_exists(name)
-    assert obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
-    obj_offset = np.array(tuple(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(","))))
+    props = tool.Blender.get_object_props(obj)
+    assert props.blender_offset_type == "CARTESIAN_POINT"
+    obj_offset = np.array(tuple(map(float, props.cartesian_point_offset.split(","))))
     offset = np.array(tuple(map(float, offset.split(","))))
     assert np.allclose(obj_offset, offset)
 
@@ -1169,7 +1170,7 @@ def the_object_name_bottom_left_corner_is_at_location(name, location):
 @then(parsers.parse('the object "{name}" is contained in "{container_name}"'))
 def the_object_name_is_contained_in_container_name(name, container_name):
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     container = ifcopenshell.util.element.get_container(element)
     if not container:
         assert False, f'Object "{name}" is not in any container'
@@ -1179,7 +1180,7 @@ def the_object_name_is_contained_in_container_name(name, container_name):
 @then(parsers.parse('the object "{name}" is contained in object "{container_name}"'))
 def the_object_name_is_contained_in_object_container_name(name: str, container_name: str) -> None:
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     container = ifcopenshell.util.element.get_container(element)
     if not container:
         assert False, f'Object "{name}" is not in any container'
@@ -1190,7 +1191,7 @@ def the_object_name_is_contained_in_object_container_name(name: str, container_n
 @then(parsers.parse('the object "{name}" is aggregated by object "{aggregate_name}"'))
 def the_object_name_is_aggregated_by_object_aggregate_name(name: str, aggregate_name: str) -> None:
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     aggregate = ifcopenshell.util.element.get_aggregate(element)
     if not aggregate:
         assert False, f'Object "{name}" is not aggregated by any element'
@@ -1201,7 +1202,7 @@ def the_object_name_is_aggregated_by_object_aggregate_name(name: str, aggregate_
 @then(parsers.parse('the object "{name}" has no aggregate'))
 def the_object_name_has_no_aggregate(name: str) -> None:
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     aggregate = ifcopenshell.util.element.get_aggregate(element)
     if aggregate:
         assert False, f'Object "{name}" is aggregated by element "{aggregate}"'

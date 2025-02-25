@@ -740,15 +740,14 @@ class LoadProductCostItems(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not tool.Ifc.get() or not (obj := context.active_object) or not (obj.BIMObjectProperties.ifc_definition_id):
+        if not tool.Ifc.get() or not (obj := context.active_object) or not (tool.Blender.get_ifc_definition_id(obj)):
             cls.poll_message_set("No IFC object is active.")
             return False
         return True
 
     def execute(self, context):
-        core.load_product_cost_items(
-            tool.Cost, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
-        )
+        obj = context.active_object
+        core.load_product_cost_items(tool.Cost, product=tool.Ifc.get_entity(obj))
         return {"FINISHED"}
 
 

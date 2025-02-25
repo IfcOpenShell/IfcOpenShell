@@ -316,7 +316,8 @@ class SelectIfcClashResults(bpy.types.Operator):
                 global_ids.extend([clash["a_global_id"], clash["b_global_id"]])
 
         for obj in context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            props = tool.Blender.get_object_bim_props(obj)
+            if not props.ifc_definition_id:
                 continue
 
             ifc_file = ""
@@ -335,7 +336,7 @@ class SelectIfcClashResults(bpy.types.Operator):
                 element_file = self.file
 
             try:
-                element = element_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+                element = element_file.by_id(props.ifc_definition_id)
             except:
                 continue
 

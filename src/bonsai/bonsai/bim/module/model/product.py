@@ -718,14 +718,15 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             obj.matrix_world = newmat
 
 
-def generate_box(usecase_path, ifc_file, settings):
+def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
     box_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Box", "MODEL_VIEW")
     if not box_context:
         return
     obj = settings["blender_object"]
     if 0 in list(obj.dimensions):
         return
-    product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+    product = tool.Ifc.get_entity(obj)
+    assert product
     old_box = ifcopenshell.util.representation.get_representation(product, "Model", "Box", "MODEL_VIEW")
     if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
         if old_box:

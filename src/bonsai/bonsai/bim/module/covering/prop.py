@@ -18,9 +18,13 @@
 
 import bpy
 from bpy.types import PropertyGroup
+from typing import TYPE_CHECKING
 
 
 class BIMCoveringProperties(PropertyGroup):
     ceiling_height: bpy.props.FloatProperty(
         name="ceiling_height", default=2.7, subtype="DISTANCE", description="Ceiling height"
     )
+
+    if TYPE_CHECKING:
+        ceiling_height: float

@@ -79,18 +79,18 @@ class BIM_PT_object_constraints(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        if not tool.Ifc.get_object_by_identifier(context.active_object.BIMObjectProperties.ifc_definition_id):
-            return False
-        return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
+        props = tool.Blender.get_object_bim_props(obj)
+        return bool(tool.Ifc.get_object_by_identifier(props.ifc_definition_id))
 
     def draw(self, context):
         if not ObjectConstraintsData.is_loaded:
             ObjectConstraintsData.load()
 
         obj = context.active_object
-        self.oprops = obj.BIMObjectProperties
+        assert obj
+        self.oprops = tool.Blender.get_object_bim_props(obj)
         self.sprops = context.scene.BIMConstraintProperties
         self.props = obj.BIMObjectConstraintProperties
         self.file = tool.Ifc.get()

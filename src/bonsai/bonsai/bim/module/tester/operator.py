@@ -150,7 +150,8 @@ class SelectRequirement(bpy.types.Operator):
             area.spaces[0].shading.show_xray = True
             failed_ids = [e["id"] for e in failed_entities]
             for obj in context.scene.objects:
-                if obj.BIMObjectProperties.ifc_definition_id in failed_ids:
+                ifc_id = tool.Blender.get_ifc_definition_id(obj)
+                if ifc_id in failed_ids:
                     obj.color = (1, 0, 0, 1)
                 else:
                     obj.color = (1, 1, 1, 1)
@@ -175,7 +176,8 @@ class SelectFailedEntities(bpy.types.Operator):
 
         failed_ids = [e["id"] for e in failed_entities]
         for obj in context.scene.objects:
-            if obj.BIMObjectProperties.ifc_definition_id in failed_ids:
+            ifc_id = tool.Blender.get_ifc_definition_id(obj)
+            if ifc_id in failed_ids:
                 obj.select_set(True)
             else:
                 obj.select_set(False)

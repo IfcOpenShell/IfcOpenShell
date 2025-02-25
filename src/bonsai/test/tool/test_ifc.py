@@ -129,14 +129,16 @@ class TestGetEntity(test.bim.bootstrap.NewFile):
 
     def test_attempting_without_a_file(self):
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMObjectProperties.ifc_definition_id = 1
+        props = tool.Blender.get_object_bim_props(obj)
+        props.ifc_definition_id = 1
         assert subject.get_entity(obj) is None
 
     def test_attempting_to_get_an_invalidly_linked_object(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMObjectProperties.ifc_definition_id = 1
+        props = tool.Blender.get_object_bim_props(obj)
+        props.ifc_definition_id = 1
         assert subject.get_entity(obj) is None
 
 

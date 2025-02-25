@@ -217,7 +217,9 @@ class BIM_PT_array(bpy.types.Panel):
         if not ArrayData.is_loaded:
             ArrayData.load()
 
-        props = context.active_object.BIMArrayProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Model.get_array_props(obj)
 
         if ArrayData.data["parameters"]:
             row = self.layout.row(align=True)
@@ -291,7 +293,7 @@ class BIM_PT_stair(bpy.types.Panel):
 
         obj = context.active_object
         assert obj
-        props = obj.BIMStairProperties
+        props = tool.Model.get_stair_props(obj)
 
         if StairData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -404,7 +406,9 @@ class BIM_PT_window(bpy.types.Panel):
         if not WindowData.is_loaded:
             WindowData.load()
 
-        props = context.active_object.BIMWindowProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Model.get_window_props(obj)
 
         if WindowData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -594,7 +598,9 @@ class BIM_PT_railing(bpy.types.Panel):
         if not RailingData.is_loaded:
             RailingData.load()
 
-        props = context.active_object.BIMRailingProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Model.get_railing_props(obj)
 
         if RailingData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -659,7 +665,7 @@ class BIM_PT_roof(bpy.types.Panel):
 
         obj = context.active_object
         assert obj
-        props = obj.BIMRoofProperties
+        props = tool.Model.get_roof_props(obj)
 
         if RoofData.data["pset_data"]:
             row = self.layout.row(align=True)

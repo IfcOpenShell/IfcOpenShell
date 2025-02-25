@@ -464,7 +464,8 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         assert tool.Geometry.is_data_supported_for_adding_representation(data)
         mprops = tool.Geometry.get_mesh_props(data)
 
-        product = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        product = tool.Ifc.get_entity(obj)
+        assert product
         material = ifcopenshell.util.element.get_material(product, should_skip_usage=True)
 
         # NOTE: Currently iterator doesn't detect whether opening is actually affected the representation
@@ -903,7 +904,7 @@ class OverrideOutlinerDelete(bpy.types.Operator):
             if element := tool.Ifc.get_entity(obj):
                 if tool.Geometry.is_locked(element):
                     self.report({"ERROR"}, lock_error_message(obj.name))
-                    if collection := obj.BIMObjectProperties.collection:
+                    if collection := tool.Blender.get_object_bim_props(obj).collection:
                         collections_to_delete.discard(collection)
                     continue
                 tool.Geometry.delete_ifc_object(obj)
@@ -1067,7 +1068,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 continue
 
             # clear object's collection so it will be able to have it's own
-            new_obj.BIMObjectProperties.collection = None
+            tool.Blender.get_object_bim_props(new_obj).collection = None
             # copy the actual class
             new = bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
 

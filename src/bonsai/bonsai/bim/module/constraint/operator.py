@@ -161,8 +161,12 @@ class AssignConstraint(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        products = [self.file.by_id(obj_id) for obj in objs if (obj_id := obj.BIMObjectProperties.ifc_definition_id)]
+        objs = [bpy.data.objects[self.obj]] if self.obj else context.selected_objects
+        products = [
+            self.file.by_id(obj_id)
+            for obj in objs
+            if (obj_id := tool.Blender.get_object_bim_props(obj).ifc_definition_id)
+        ]
         if products:
             ifcopenshell.api.run(
                 "constraint.assign_constraint",
@@ -184,8 +188,12 @@ class UnassignConstraint(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        products = [self.file.by_id(obj_id) for obj in objs if (obj_id := obj.BIMObjectProperties.ifc_definition_id)]
+        objs = [bpy.data.objects[self.obj]] if self.obj else context.selected_objects
+        products = [
+            self.file.by_id(obj_id)
+            for obj in objs
+            if (obj_id := tool.Blender.get_object_bim_props(obj).ifc_definition_id)
+        ]
         if products:
             ifcopenshell.api.run(
                 "constraint.unassign_constraint",

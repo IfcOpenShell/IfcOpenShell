@@ -319,7 +319,8 @@ class TestGetDrawingCollection(NewFile):
         collection = bpy.data.collections.new("Collection")
         bpy.context.scene.collection.children.link(collection)
         collection.objects.link(obj)
-        obj.BIMObjectProperties.collection = collection
+        props = tool.Blender.get_object_bim_props(obj)
+        props.collection = collection
         collection.BIMCollectionProperties.obj = obj
 
         element = ifc.createIfcAnnotation()

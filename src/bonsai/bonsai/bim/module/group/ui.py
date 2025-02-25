@@ -91,9 +91,10 @@ class BIM_PT_object_groups(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        return tool.Ifc.get() and context.active_object.BIMObjectProperties.ifc_definition_id
+        props = tool.Blender.get_object_bim_props(obj)
+        return tool.Ifc.get() and props.ifc_definition_id
 
     def draw(self, context):
         if not ObjectGroupsData.is_loaded:

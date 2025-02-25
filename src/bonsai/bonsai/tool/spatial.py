@@ -1180,9 +1180,9 @@ class Spatial(bonsai.core.tool.Spatial):
         SpatialDecompositionData.data["default_container"] = SpatialDecompositionData.default_container()
 
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-        project_collection = project.BIMObjectProperties.collection
+        project_collection = tool.Blender.get_object_bim_props(project).collection
         obj = tool.Ifc.get_object(container)
-        if obj and (collection := obj.BIMObjectProperties.collection):
+        if obj and (collection := tool.Blender.get_object_bim_props(obj).collection):
             for layer_collection in bpy.context.view_layer.layer_collection.children:
                 if layer_collection.collection == project_collection:
                     for layer_collection2 in layer_collection.children:

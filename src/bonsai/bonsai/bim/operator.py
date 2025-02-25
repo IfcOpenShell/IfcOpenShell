@@ -857,7 +857,9 @@ class FetchObjectPassport(bpy.types.Operator):
 
     def execute(self, context):
         # TODO: this is dead code, awaiting reimplementation. See #1222.
-        for reference in context.active_object.BIMObjectProperties.document_references:
+        obj = context.active_object
+        props = tool.Blender.get_object_bim_props(obj)
+        for reference in props.document_references:
             bim_props = tool.Blender.get_bim_props()
             reference = bim_props.document_references[reference.name]
             if reference.location[-6:] == ".blend":

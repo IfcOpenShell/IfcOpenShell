@@ -442,7 +442,7 @@ class Usecase:
 
         panel_schema: list[list[int]] = self.settings["panel_schema"]
         panels: list[dict[str, Any]] = self.settings["panel_properties"]
-        accumulated_height = [0] * len(panel_schema[0])
+        accumulated_height: list[float] = [0] * len(panel_schema[0])
         built_panels: list[int] = []
         window_items: list[ifcopenshell.entity_instance] = []
         lining_items: list[ifcopenshell.entity_instance] = []

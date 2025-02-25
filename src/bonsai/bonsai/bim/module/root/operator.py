@@ -48,7 +48,8 @@ class EnableReassignClass(bpy.types.Operator):
         element = tool.Ifc.get_entity(obj)
         assert element
         ifc_class = element.is_a()
-        context.active_object.BIMObjectProperties.is_reassigning_class = True
+        props = tool.Blender.get_object_bim_props(obj)
+        props.is_reassigning_class = True
         ifc_products = tool.Root.get_ifc_products()
         schema = tool.Ifc.schema()
         declaration = schema.declaration_by_name(ifc_class)
@@ -58,10 +59,10 @@ class EnableReassignClass(bpy.types.Operator):
                 break
         else:
             self.report({"ERROR"}, f"Couldn't find matching IFC product for the selected object: '{element}'.")
-            obj.BIMObjectProperties.is_reassigning_class = False
+            props.is_reassigning_class = False
             return {"CANCELLED"}
 
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        element = self.file.by_id(tool.Blender.get_ifc_definition_id(obj))
         rprops.ifc_class = element.is_a()
         rprops.relating_class_object = None
         if hasattr(element, "PredefinedType"):
@@ -78,7 +79,8 @@ class DisableReassignClass(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.active_object.BIMObjectProperties.is_reassigning_class = False
+        props = tool.Blender.get_object_bim_props(context.active_object)
+        props.is_reassigning_class = False
         return {"FINISHED"}
 
 
@@ -127,7 +129,8 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
                     )
                     return {"CANCELLED"}
 
-            obj.BIMObjectProperties.is_reassigning_class = False
+            props = tool.Blender.get_object_bim_props(obj)
+            props.is_reassigning_class = False
             if element.is_a("IfcTypeObject"):
                 elements_to_reassign[element] = ifc_class
                 elements_to_update.update(ifcopenshell.util.element.get_types(element))

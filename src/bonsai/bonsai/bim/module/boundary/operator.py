@@ -316,7 +316,8 @@ class ColourByRelatedBuildingElement(bpy.types.Operator):
 
     def _execute(self, context):
         for obj in context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            props = tool.Blender.get_object_bim_props(obj)
+            if not props.ifc_definition_id:
                 continue
             element = tool.Ifc.get_entity(obj)
             if not element.is_a("IfcRelSpaceBoundary"):

@@ -267,7 +267,8 @@ class IfcStore:
         if element.is_a("IfcSurfaceStyle"):
             obj.BIMStyleProperties.ifc_definition_id = element.id()
         else:
-            obj.BIMObjectProperties.ifc_definition_id = element.id()
+            props = tool.Blender.get_object_bim_props(obj)
+            props.ifc_definition_id = element.id()
 
         tool.Ifc.setup_listeners(obj)
 
@@ -407,7 +408,8 @@ class IfcStore:
         if isinstance(obj, bpy.types.Material):
             obj.BIMStyleProperties.ifc_definition_id = 0
         else:  # bpy.types.Object
-            obj.BIMObjectProperties.ifc_definition_id = 0
+            props = tool.Blender.get_object_bim_props(obj)
+            props.ifc_definition_id = 0
 
     @staticmethod
     def execute_ifc_operator(

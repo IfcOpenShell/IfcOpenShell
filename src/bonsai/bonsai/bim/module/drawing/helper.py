@@ -343,7 +343,7 @@ def get_active_drawing(
     props = tool.Drawing.get_document_props()
     try:
         camera = tool.Ifc.get_object(tool.Ifc.get().by_id(props.active_drawing_id))
-        return camera.BIMObjectProperties.collection, camera
+        return tool.Blender.get_object_bim_props(camera).collection, camera
     except:
         return None, None
 

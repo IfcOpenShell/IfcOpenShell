@@ -41,7 +41,7 @@ from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, G
 from typing_extensions import assert_never
 
 if TYPE_CHECKING:
-    from bonsai.bim.prop import BIMProperties
+    from bonsai.bim.prop import BIMProperties, BIMObjectProperties
 
 
 VIEWPORT_ATTRIBUTES = [
@@ -192,7 +192,8 @@ class Blender(bonsai.core.tool.Blender):
         if context is None:
             context = bpy.context
         if obj_type == "Object":
-            return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
+            props = tool.Blender.get_object_bim_props(bpy.data.objects[obj])
+            return props.ifc_definition_id
         elif obj_type == "Material":
             props = tool.Material.get_material_props()
             return props.materials[props.active_material_index].ifc_definition_id
@@ -221,7 +222,8 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def is_ifc_object(cls, obj: bpy.types.Object) -> bool:
-        return bool(obj.BIMObjectProperties.ifc_definition_id)
+        props = tool.Blender.get_object_bim_props(obj)
+        return bool(props.ifc_definition_id)
 
     @classmethod
     def is_ifc_class_active(cls, ifc_class: str) -> bool:
@@ -880,7 +882,7 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def get_layer_collection(cls, collection: bpy.types.Collection) -> Union[bpy.types.LayerCollection, None]:
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-        project_collection = project.BIMObjectProperties.collection
+        project_collection = tool.Blender.get_object_bim_props(project).collection
         for layer_collection in bpy.context.view_layer.layer_collection.children:
             if layer_collection.collection == project_collection:
                 for layer_collection2 in layer_collection.children:
@@ -1019,23 +1021,28 @@ class Blender(bonsai.core.tool.Blender):
 
         @classmethod
         def is_editing_railing_path(cls, obj: bpy.types.Object):
-            return obj.BIMRailingProperties.is_editing_path
+            props = tool.Model.get_railing_props(obj)
+            return props.is_editing_path
 
         @classmethod
         def is_editing_roof_path(cls, obj: bpy.types.Object) -> bool:
-            return obj.BIMRoofProperties.is_editing_path
+            props = tool.Model.get_roof_props(obj)
+            return props.is_editing_path
 
         @classmethod
         def is_editing_railing_parameters(cls, obj: bpy.types.Object) -> bool:
-            return obj.BIMRailingProperties.is_editing
+            props = tool.Model.get_railing_props(obj)
+            return props.is_editing
 
         @classmethod
         def is_editing_roof_parameters(cls, obj: bpy.types.Object) -> bool:
-            return obj.BIMRoofProperties.is_editing
+            props = tool.Model.get_roof_props(obj)
+            return props.is_editing
 
         @classmethod
         def is_editing_window_parameters(cls, obj: bpy.types.Object) -> bool:
-            return obj.BIMWindowProperties.is_editing
+            props = tool.Model.get_window_props(obj)
+            return props.is_editing
 
         @classmethod
         def is_editing_door_parameters(cls, obj: bpy.types.Object) -> bool:
@@ -1044,7 +1051,8 @@ class Blender(bonsai.core.tool.Blender):
 
         @classmethod
         def is_editing_stair_parameters(cls, obj: bpy.types.Object) -> bool:
-            return obj.BIMStairProperties.is_editing
+            props = tool.Model.get_stair_props(obj)
+            return props.is_editing
 
         @classmethod
         def is_modifier_with_non_editable_path(cls, element: entity_instance) -> bool:
@@ -1545,3 +1553,11 @@ class Blender(bonsai.core.tool.Blender):
         if scene is None:
             scene = bpy.context.scene
         return scene.BIMProperties
+
+    @classmethod
+    def get_object_bim_props(cls, obj: bpy.types.Object) -> BIMObjectProperties:
+        return obj.BIMObjectProperties
+
+    @classmethod
+    def get_ifc_definition_id(cls, obj: bpy.types.Object) -> int:
+        return tool.Blender.get_object_bim_props(obj).ifc_definition_id

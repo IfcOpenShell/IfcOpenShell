@@ -215,8 +215,8 @@ class AddFilling(bpy.types.Operator, tool.Ifc.Operator):
         if opening is None:
             return {"FINISHED"}
         self.file = tool.Ifc.get()
-        element_id = obj.BIMObjectProperties.ifc_definition_id
-        opening_id = opening.BIMObjectProperties.ifc_definition_id
+        element_id = tool.Blender.get_object_bim_props(obj).ifc_definition_id
+        opening_id = tool.Blender.get_object_bim_props(opening).ifc_definition_id
         if not element_id or not opening_id or element_id == opening_id:
             return {"FINISHED"}
         ifcopenshell.api.run(

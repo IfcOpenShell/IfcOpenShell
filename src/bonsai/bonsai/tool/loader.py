@@ -929,6 +929,7 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def apply_blender_offset_to_matrix_world(cls, obj: bpy.types.Object, matrix: np.ndarray) -> Matrix:
+        oprops = tool.Blender.get_object_bim_props(obj)
         if (
             not obj.data
             and tool.Cad.is_x(matrix[0][3], 0)
@@ -939,13 +940,13 @@ class Loader(bonsai.core.tool.Loader):
             # positionally significant and is left alone. This handles
             # scenarios where often spatial elements are left at 0,0,0 and
             # everything else is at map coordinates.
-            obj.BIMObjectProperties.blender_offset_type = "NOT_APPLICABLE"
+            oprops.blender_offset_type = "NOT_APPLICABLE"
             return Matrix(matrix.tolist())
 
         if obj.data and obj.data.get("has_cartesian_point_offset", None):
-            obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
+            oprops.blender_offset_type = "CARTESIAN_POINT"
             if cartesian_point_offset := obj.data.get("cartesian_point_offset", None):
-                obj.BIMObjectProperties.cartesian_point_offset = cartesian_point_offset
+                oprops.cartesian_point_offset = cartesian_point_offset
                 offset_xyz = list(map(float, cartesian_point_offset.split(","))) + [1.0]
                 offset_xyz = matrix @ offset_xyz
                 matrix[0][3] = offset_xyz[0]
@@ -954,8 +955,8 @@ class Loader(bonsai.core.tool.Loader):
 
         props = tool.Georeference.get_georeference_props()
         if props.has_blender_offset:
-            if obj.BIMObjectProperties.blender_offset_type == "NONE":
-                obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
+            if oprops.blender_offset_type == "NONE":
+                oprops.blender_offset_type = "OBJECT_PLACEMENT"
             matrix = ifcopenshell.util.geolocation.global2local(
                 matrix,
                 float(props.blender_offset_x) * cls.unit_scale,

@@ -102,7 +102,7 @@ def block_scale(scene: bpy.types.Scene) -> None:
     import bonsai.tool as tool
 
     if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
-        if isinstance(obj, bpy.types.Object) and obj.BIMObjectProperties.ifc_definition_id:
+        if isinstance(obj, bpy.types.Object) and tool.Blender.get_ifc_definition_id(obj):
             if obj.scale != (1, 1, 1):
                 obj.scale = (1, 1, 1)
         elif isinstance(obj, bpy.types.Mesh) and tool.Geometry.get_mesh_props(obj).ifc_definition_id:

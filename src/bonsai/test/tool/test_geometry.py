@@ -170,22 +170,25 @@ class TestGetTextLiteral(NewFile):
 class TestGetCartesianPointCoordinateOffset(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
+        oprops = tool.Blender.get_object_bim_props(obj)
+        oprops.blender_offset_type = "CARTESIAN_POINT"
         props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True
-        obj.BIMObjectProperties.cartesian_point_offset = "1,2,3"
+        oprops.cartesian_point_offset = "1,2,3"
         assert np.allclose(subject.get_cartesian_point_offset(obj), np.array((1.0, 2.0, 3.0)))
 
     def test_get_null_if_not_a_cartesian_point_offset_type(self):
         obj = bpy.data.objects.new("Object", None)
         props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True
-        obj.BIMObjectProperties.cartesian_point_offset = "1,2,3"
+        oprops = tool.Blender.get_object_bim_props(obj)
+        oprops.cartesian_point_offset = "1,2,3"
         assert subject.get_cartesian_point_offset(obj) is None
 
     def test_get_null_if_no_blender_offset(self):
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
+        oprops = tool.Blender.get_object_bim_props(obj)
+        oprops.blender_offset_type = "CARTESIAN_POINT"
         props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = False
         assert subject.get_cartesian_point_offset(obj) is None
@@ -307,15 +310,16 @@ class TestRecordObjectMaterials(NewFile):
         material.BIMStyleProperties.ifc_definition_id = style.id()
         obj.data.materials.append(material)
         subject.record_object_materials(obj)
-        assert tool.Geometry.get_mesh_props(obj).material_checksum == str([style.id()])
+        assert tool.Geometry.get_mesh_props(obj.data).material_checksum == str([style.id()])
 
 
 class TestRecordObjectPosition(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
+        props = tool.Blender.get_object_bim_props(obj)
         subject.record_object_position(obj)
-        assert obj.BIMObjectProperties.location_checksum == repr(np.array(obj.matrix_world.translation).tobytes())
-        assert obj.BIMObjectProperties.rotation_checksum == repr(np.array(obj.matrix_world.to_3x3()).tobytes())
+        assert props.location_checksum == repr(np.array(obj.matrix_world.translation).tobytes())
+        assert props.rotation_checksum == repr(np.array(obj.matrix_world.to_3x3()).tobytes())
 
 
 class TestRemoveConnection(NewFile):

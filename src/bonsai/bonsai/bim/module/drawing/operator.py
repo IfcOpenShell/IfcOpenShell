@@ -246,7 +246,7 @@ class CreateDrawing(bpy.types.Operator):
     def execute(self, context):
         self.props = tool.Drawing.get_document_props()
 
-        active_drawing_id = context.scene.camera.BIMObjectProperties.ifc_definition_id
+        active_drawing_id = tool.Blender.get_ifc_definition_id(context.scene.camera)
         if self.print_all:
             original_drawing_id = active_drawing_id
             drawings_to_print = [d.ifc_definition_id for d in self.props.drawings if d.is_selected and d.is_drawing]
@@ -391,7 +391,7 @@ class CreateDrawing(bpy.types.Operator):
             bpy.ops.render.render(write_still=True)
         else:
             previous_visibility = {}
-            for obj in self.camera.BIMObjectProperties.collection.objects:
+            for obj in tool.Blender.get_object_bim_props(self.camera).collection.objects:
                 if bpy.context.view_layer.objects.get(obj.name):
                     previous_visibility[obj.name] = obj.hide_get()
                     obj.hide_set(True)
@@ -2095,7 +2095,7 @@ class ResizeText(bpy.types.Operator):
     # TODO: check undo redo
 
     def execute(self, context):
-        for obj in context.scene.camera.BIMObjectProperties.collection.objects:
+        for obj in tool.Blender.get_object_bim_props(context.scene.camera).collection.objects:
             if isinstance(obj.data, bpy.types.TextCurve):
                 annotation.Annotator.resize_text(obj)
         return {"FINISHED"}

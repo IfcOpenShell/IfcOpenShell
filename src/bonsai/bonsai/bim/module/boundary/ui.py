@@ -52,9 +52,9 @@ class BIM_PT_Boundary(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
+        props = tool.Blender.get_object_bim_props(obj)
         if not props.ifc_definition_id:
             return False
         if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
@@ -65,7 +65,7 @@ class BIM_PT_Boundary(Panel):
     def draw(self, context):
         obj = context.active_object
         assert obj
-        props = obj.BIMObjectProperties
+        props = tool.Blender.get_object_bim_props(obj)
         ifc_file = tool.Ifc.get()
         boundary = ifc_file.by_id(props.ifc_definition_id)
         self.bprops = tool.Boundary.get_object_boundary_props(obj)
@@ -128,9 +128,9 @@ class BIM_PT_SpaceBoundaries(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
+        props = tool.Blender.get_object_bim_props(obj)
         if not props.ifc_definition_id:
             return False
         if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
@@ -145,7 +145,9 @@ class BIM_PT_SpaceBoundaries(Panel):
         if not SpaceBoundariesData.is_loaded:
             SpaceBoundariesData.load()
 
-        self.props = context.active_object.BIMObjectProperties
+        obj = context.active_object
+        assert obj
+        self.props = tool.Blender.get_object_bim_props(obj)
         self.ifc_file = tool.Ifc.get()
         row = self.layout.row()
         row.operator("bim.load_space_boundaries")

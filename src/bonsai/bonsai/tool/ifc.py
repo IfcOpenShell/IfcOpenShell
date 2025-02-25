@@ -77,13 +77,14 @@ class Ifc(bonsai.core.tool.Ifc):
             return False
         if element and (element.is_a("IfcTypeProduct") or element.is_a("IfcProject")):
             return False
-        if not obj.BIMObjectProperties.location_checksum:
+        oprops = tool.Blender.get_object_bim_props(obj)
+        if not oprops.location_checksum:
             return True  # Let's be conservative
-        loc_check = np.frombuffer(eval(obj.BIMObjectProperties.location_checksum))
+        loc_check = np.frombuffer(eval(oprops.location_checksum))
         loc_real = np.array(obj.matrix_world.translation).flatten()
         if not np.allclose(loc_check, loc_real, atol=1e-4):  # 0.1 mm
             return True
-        rot_check = np.frombuffer(eval(obj.BIMObjectProperties.rotation_checksum)).reshape(3, 3)
+        rot_check = np.frombuffer(eval(oprops.rotation_checksum)).reshape(3, 3)
         rot_real = np.array(obj.matrix_world.to_3x3())
         rot_dot = np.dot(rot_check, rot_real.T)
         angle_rad = np.arccos(np.clip((np.trace(rot_dot) - 1) / 2, -1, 1))
@@ -107,7 +108,7 @@ class Ifc(bonsai.core.tool.Ifc):
 
         props = None
         if isinstance(obj, bpy.types.Object):
-            props = obj.BIMObjectProperties
+            props = tool.Blender.get_object_bim_props(obj)
         elif isinstance(obj, bpy.types.Material):
             props = obj.BIMStyleProperties
         else:

@@ -75,11 +75,13 @@ class AddStructuralMemberConnection(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        oprops = obj.BIMObjectProperties
+        assert obj
+        oprops = tool.Blender.get_object_bim_props(obj)
         props = obj.BIMStructuralProperties
         file = tool.Ifc.get()
         related_structural_connection = file.by_id(oprops.ifc_definition_id)
-        relating_structural_member = file.by_id(props.relating_structural_member.BIMObjectProperties.ifc_definition_id)
+        relating_structural_member = tool.Ifc.get_entity(props.relating_structural_member)
+        assert relating_structural_member
         if not relating_structural_member.is_a("IfcStructuralMember"):
             return {"FINISHED"}
         ifcopenshell.api.structural.add_structural_member_connection(
@@ -99,7 +101,6 @@ class EnableEditingStructuralConnectionCondition(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        oprops = obj.BIMObjectProperties
         props = obj.BIMStructuralProperties
         props.active_connects_structural_member = self.connects_structural_member
         return {"FINISHED"}
@@ -350,7 +351,8 @@ class EnableEditingStructuralItemAxis(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        oprops = obj.BIMObjectProperties
+        assert obj
+        oprops = tool.Blender.get_object_bim_props(obj)
         props = obj.BIMStructuralProperties
 
         self.file = tool.Ifc.get()
@@ -403,7 +405,8 @@ class EditStructuralItemAxis(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        oprops = obj.BIMObjectProperties
+        assert obj
+        oprops = tool.Blender.get_object_bim_props(obj)
         props = obj.BIMStructuralProperties
         relative_matrix = props.axis_empty.matrix_world @ obj.matrix_world.inverted()
         z_axis = relative_matrix.col[2][0:3]
@@ -425,11 +428,12 @@ class EnableEditingStructuralConnectionCS(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        oprops = obj.BIMObjectProperties
+        assert obj
         props = obj.BIMStructuralProperties
 
         self.file = tool.Ifc.get()
-        item = self.file.by_id(oprops.ifc_definition_id)
+        item = tool.Ifc.get_entity(obj)
+        assert item
 
         location = obj.data.vertices[0].co
         empty = bpy.data.objects.new("Item Connection CS", None)
@@ -491,16 +495,17 @@ class EditStructuralConnectionCS(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        oprops = obj.BIMObjectProperties
+        assert obj
+        item = tool.Ifc.get_entity(obj)
+        assert item
         props = obj.BIMStructuralProperties
         relative_matrix = props.ccs_empty.matrix_world @ obj.matrix_world.inverted()
         x_axis = relative_matrix.col[0][0:3]
         z_axis = relative_matrix.col[2][0:3]
         self.file = tool.Ifc.get()
-        ifcopenshell.api.run(
-            "structural.edit_structural_connection_cs",
+        ifcopenshell.api.structural.edit_structural_connection_cs(
             self.file,
-            structural_item=self.file.by_id(oprops.ifc_definition_id),
+            structural_item=item,
             axis=z_axis,
             ref_direction=x_axis,
         )
@@ -695,9 +700,9 @@ class AddStructuralActivity(bpy.types.Operator, tool.Ifc.Operator):
         self.props = context.scene.BIMStructuralProperties
         self.file = tool.Ifc.get()
         for obj in context.selected_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
                 continue
-            element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
             applied_load_class = self.props.applicable_structural_load_types
 
             allowed_load_classes = {

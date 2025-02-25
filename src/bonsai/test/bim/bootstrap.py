@@ -192,12 +192,12 @@ def the_object_name_does_not_exist(name):
 
 def the_object_name_is_an_ifc_class(name, ifc_class):
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     assert element.is_a(ifc_class), f'Object "{name}" is an {element.is_a()}'
 
 
 def the_object_name_is_not_an_ifc_element(name):
-    id = the_object_name_exists(name).BIMObjectProperties.ifc_definition_id
+    id = tool.Blender.get_ifc_definition_id(the_object_name_exists(name))
     assert id == 0, f"The ID is {id}"
 
 
@@ -229,7 +229,7 @@ def the_object_name_is_placed_in_the_collection_collection(name, collection):
 
 def the_object_name_has_a_type_representation_of_context(name, type, context):
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     context, subcontext, target_view = context.split("/")
     assert ifcopenshell.util.representation.get_representation(
         element, context, subcontext or None, target_view or None
@@ -238,7 +238,7 @@ def the_object_name_has_a_type_representation_of_context(name, type, context):
 
 def the_object_name_is_contained_in_container_name(name, container_name):
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     container = ifcopenshell.util.element.get_container(element)
     if not container:
         assert False, f'Object "{name}" is not in any container'
@@ -257,8 +257,8 @@ def i_delete_the_selected_objects():
 
 def the_object_name1_and_name2_are_different_elements(name1, name2):
     ifc = an_ifc_file_exists()
-    element1 = ifc.by_id(the_object_name_exists(name1).BIMObjectProperties.ifc_definition_id)
-    element2 = ifc.by_id(the_object_name_exists(name2).BIMObjectProperties.ifc_definition_id)
+    element1 = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name1)))
+    element2 = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name2)))
     assert element1 != element2, f"Objects {name1} and {name2} have same elements {element1} and {element2}"
 
 
@@ -284,7 +284,7 @@ def the_object_name1_has_no_boolean_difference_by_name2(name1, name2):
 
 def the_object_name_is_voided_by_void(name, void):
     ifc = tool.Ifc.get()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     for rel in element.HasOpenings:
         if rel.RelatedOpeningElement.Name == void:
             return True
@@ -293,7 +293,7 @@ def the_object_name_is_voided_by_void(name, void):
 
 def the_object_name_is_not_voided_by_void(name, void):
     ifc = tool.Ifc.get()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     for rel in element.HasOpenings:
         if rel.RelatedOpeningElement.Name == void:
             assert False, "A void was found"
@@ -301,21 +301,21 @@ def the_object_name_is_not_voided_by_void(name, void):
 
 def the_object_name_is_not_voided(name):
     ifc = tool.Ifc.get()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     if any(element.HasOpenings):
         assert False, "An opening was found"
 
 
 def the_object_name_is_not_a_void(name):
     ifc = tool.Ifc.get()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     if any(element.VoidsElements):
         assert False, "A void was found"
 
 
 def the_void_name_is_filled_by_filling(name, filling):
     ifc = tool.Ifc.get()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     if any(rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings):
         return True
     assert False, "No filling found"
@@ -323,14 +323,14 @@ def the_void_name_is_filled_by_filling(name, filling):
 
 def the_void_name_is_not_filled_by_filling(name, filling):
     ifc = tool.Ifc.get()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     if any(rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings):
         assert False, "A filling was found"
 
 
 def the_object_name_is_not_a_filling(name):
     ifc = tool.Ifc.get()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     if any(element.FillsVoids):
         assert False, "A filling was found"
 

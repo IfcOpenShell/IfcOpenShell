@@ -382,7 +382,7 @@ class InspectFromObject(bpy.types.Operator):
     def get_active_object_ifc_definition(cls, context: bpy.types.Context) -> Union[int, None]:
         obj = context.active_object
         assert obj
-        if ifc_id := obj.BIMObjectProperties.ifc_definition_id:
+        if ifc_id := tool.Blender.get_ifc_definition_id(obj):
             return ifc_id
         if (
             (data := obj.data)

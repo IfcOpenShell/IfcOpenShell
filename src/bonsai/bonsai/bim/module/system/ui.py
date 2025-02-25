@@ -187,9 +187,8 @@ class BIM_PT_ports(Panel):
             if connected_obj_name:
                 connected_obj = bpy.data.objects[connected_obj_name]
                 cols[3].operator("bim.disconnect_port", text="", icon="UNLINKED").element_id = port.id()
-                cols[4].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = (
-                    connected_obj.BIMObjectProperties.ifc_definition_id
-                )
+                ifc_id = tool.Blender.get_ifc_definition_id(connected_obj)
+                cols[4].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = ifc_id
                 cols[5].label(text=connected_obj_name)
             else:
                 cols[3].label(text="", icon="UNLINKED")
@@ -244,9 +243,8 @@ class BIM_PT_port(Panel):
         relating_object = bpy.data.objects[relating_object_name]
         row.label(text="Port located on:")
         row.label(text=relating_object_name)
-        row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = (
-            relating_object.BIMObjectProperties.ifc_definition_id
-        )
+        ifc_id = tool.Blender.get_ifc_definition_id(relating_object)
+        row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = ifc_id
 
         # object connected to the port
         row = layout.row(align=True)
@@ -255,9 +253,8 @@ class BIM_PT_port(Panel):
             connected_object = bpy.data.objects[connected_object_name]
             row.label(text="Port connected to:")
             row.label(text=connected_object_name)
-            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = (
-                connected_object.BIMObjectProperties.ifc_definition_id
-            )
+            ifc_id = tool.Blender.get_ifc_definition_id(connected_object)
+            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = ifc_id
         else:
             row.label(text="Port is not connected to any element")
 
@@ -304,9 +301,8 @@ class BIM_PT_flow_controls(Panel):
             op.flow_control = control_id
             op.flow_element = flow_element_id
             op.assign = False
-            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = (
-                displayed_object.BIMObjectProperties.ifc_definition_id
-            )
+            ifc_id = tool.Blender.get_ifc_definition_id(displayed_object)
+            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = ifc_id
             row.label(text=f"{displayed_object_name}")
 
         element = tool.Ifc.get_entity(context.active_object)

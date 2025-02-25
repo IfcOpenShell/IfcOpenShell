@@ -65,7 +65,7 @@ class VisualiseDiff(bpy.types.Operator):
                 obj.color = (0.0, 0.0, 0.7, 1.0)
                 continue
 
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            if not (ifc_id := tool.Blender.get_ifc_definition_id(obj)):
                 continue
 
             ifc_file = ""
@@ -84,7 +84,7 @@ class VisualiseDiff(bpy.types.Operator):
                 element_file = ifc_file
 
             try:
-                element = element_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+                element = element_file.by_id(ifc_id)
             except:
                 continue
             global_id = getattr(element, "GlobalId", None)
@@ -253,7 +253,7 @@ class SelectDiffObjects(bpy.types.Operator):
                 obj.select_set(True)
                 continue
 
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            if not (ifc_id := tool.Blender.get_ifc_definition_id(obj)):
                 continue
 
             ifc_file = ""
@@ -272,7 +272,7 @@ class SelectDiffObjects(bpy.types.Operator):
                 element_file = ifc_file
 
             try:
-                element = element_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+                element = element_file.by_id(ifc_id)
             except:
                 continue
             global_id = getattr(element, "GlobalId", None)

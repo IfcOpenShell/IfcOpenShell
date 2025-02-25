@@ -110,7 +110,8 @@ class Structural(bonsai.core.tool.Structural):
     def get_product_or_active_object(cls, product: str) -> Union[bpy.types.Object, None]:
         product = bpy.data.objects.get(product) if product else bpy.context.active_object
         try:
-            if product.BIMObjectProperties.ifc_definition_id:
+            props = tool.Blender.get_object_bim_props(product)
+            if props.ifc_definition_id:
                 return product
             else:
                 return None

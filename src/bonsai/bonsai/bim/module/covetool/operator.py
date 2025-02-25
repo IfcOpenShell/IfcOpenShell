@@ -181,12 +181,12 @@ class RunAnalysis(bpy.types.Operator):
             if modifier.type == "TRIANGULATE":
                 return True
 
-    def get_covetool_category(self, obj):
+    def get_covetool_category(self, obj: bpy.types.Object):
         if not hasattr(obj, "data") or not isinstance(obj.data, bpy.types.Mesh):
             return
-        if not obj.BIMObjectProperties.ifc_definition_id:
+        if not (ifc_id := tool.Blender.get_ifc_definition_id(obj)):
             return
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        element = self.file.by_id(ifc_id)
         ifc_class = element.is_a()
         if "IfcSlab" in ifc_class:
             return "floors"

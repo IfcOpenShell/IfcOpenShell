@@ -137,14 +137,14 @@ class BIM_PT_object_material(Panel):
     def poll(cls, context):
         if not tool.Blender.is_tab(context, "GEOMETRY"):
             return False
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
-        if not hasattr(tool.Ifc.get().by_id(props.ifc_definition_id), "HasAssociations"):
+        if not hasattr(tool.Ifc.get().by_id(ifc_id), "HasAssociations"):
             return False
         return True
 
@@ -152,9 +152,11 @@ class BIM_PT_object_material(Panel):
         if not ObjectMaterialData.is_loaded:
             ObjectMaterialData.load()
 
+        obj = context.active_object
+        assert obj
         self.file = tool.Ifc.get()
-        self.oprops = context.active_object.BIMObjectProperties
-        self.props = context.active_object.BIMObjectMaterialProperties
+        self.oprops = tool.Blender.get_object_bim_props(obj)
+        self.props = obj.BIMObjectMaterialProperties
         self.mprops = tool.Material.get_material_props()
 
         if not ObjectMaterialData.data["materials"]:

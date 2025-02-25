@@ -933,7 +933,8 @@ class IfcImporter:
         self.project = {"ifc": project}
         obj = tool.Ifc.get_object(project)
         if obj:
-            self.project["blender"] = obj.BIMObjectProperties.collection
+            props = tool.Blender.get_object_bim_props(obj)
+            self.project["blender"] = props.collection
             self.has_existing_project = True
             return
         self.project["blender"] = bpy.data.collections.new(
@@ -943,7 +944,8 @@ class IfcImporter:
         obj.hide_select = True
         self.project["blender"].objects.link(obj)
         self.project["blender"].BIMCollectionProperties.obj = obj
-        obj.BIMObjectProperties.collection = self.collections[project.GlobalId] = self.project["blender"]
+        props = tool.Blender.get_object_bim_props(obj)
+        props.collection = self.collections[project.GlobalId] = self.project["blender"]
 
     def create_styles(self) -> None:
         for style in self.file.by_type("IfcSurfaceStyle"):

@@ -55,7 +55,15 @@ T = TypeVar("T")
 V_ = tool.Blender.V_
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.model.prop import BIMModelProperties, BIMDoorProperties
+    from bonsai.bim.module.model.prop import (
+        BIMModelProperties,
+        BIMDoorProperties,
+        BIMArrayProperties,
+        BIMRoofProperties,
+        BIMWindowProperties,
+        BIMStairProperties,
+        BIMRailingProperties,
+    )
 
 
 class Model(bonsai.core.tool.Model):
@@ -66,6 +74,26 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_door_props(cls, obj: bpy.types.Object) -> BIMDoorProperties:
         return obj.BIMDoorProperties
+
+    @classmethod
+    def get_window_props(cls, obj: bpy.types.Object) -> BIMWindowProperties:
+        return obj.BIMWindowProperties
+
+    @classmethod
+    def get_stair_props(cls, obj: bpy.types.Object) -> BIMStairProperties:
+        return obj.BIMStairProperties
+
+    @classmethod
+    def get_roof_props(cls, obj: bpy.types.Object) -> BIMRoofProperties:
+        return obj.BIMRoofProperties
+
+    @classmethod
+    def get_railing_props(cls, obj: bpy.types.Object) -> BIMRailingProperties:
+        return obj.BIMRailingProperties
+
+    @classmethod
+    def get_array_props(cls, obj: bpy.types.Object) -> BIMArrayProperties:
+        return obj.BIMArrayProperties
 
     @classmethod
     def convert_si_to_unit(cls, value: T) -> T:
@@ -1989,9 +2017,9 @@ class Model(bonsai.core.tool.Model):
         if z < 0 and y < 0:
             y = abs(y)
             z = abs(z)
-        if z < 0 and y >=0:
+        if z < 0 and y >= 0:
             vector = Vector((0, -1))
-            
+
         x_angle = vector.angle_signed(Vector((y, z)))
 
         return x_angle

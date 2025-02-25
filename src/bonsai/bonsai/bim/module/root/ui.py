@@ -43,7 +43,9 @@ class BIM_PT_class(Panel):
     def draw(self, context):
         if not IfcClassData.is_loaded:
             IfcClassData.load()
-        props = context.active_object.BIMObjectProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Blender.get_object_bim_props(obj)
         rprops = tool.Root.get_root_props()
         if props.ifc_definition_id:
             if not IfcClassData.data["has_entity"]:

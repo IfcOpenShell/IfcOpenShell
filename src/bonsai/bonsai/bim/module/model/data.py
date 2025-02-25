@@ -385,7 +385,9 @@ class StairData:
 
     @classmethod
     def general_params(cls):
-        props = bpy.context.active_object.BIMStairProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_stair_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_props_kwargs(stair_type=data["stair_type"])
@@ -451,7 +453,9 @@ class WindowData:
 
     @classmethod
     def general_params(cls):
-        props = bpy.context.active_object.BIMWindowProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_window_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_general_kwargs()
@@ -462,7 +466,9 @@ class WindowData:
 
     @classmethod
     def lining_params(cls):
-        props = bpy.context.active_object.BIMWindowProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_window_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         lining_data = data["lining_properties"]
         lining_params = {}
@@ -474,7 +480,9 @@ class WindowData:
 
     @classmethod
     def panel_params(cls):
-        props = bpy.context.active_object.BIMWindowProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_window_props(obj)
         panel_data = cls.data["pset_data"]["data_dict"]["panel_properties"]
         panel_params = {}
         panel_props = props.get_panel_kwargs()
@@ -565,7 +573,9 @@ class RailingData:
 
     @classmethod
     def general_params(cls):
-        props = bpy.context.active_object.BIMRailingProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_railing_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_general_kwargs(railing_type=data["railing_type"])
@@ -599,7 +609,9 @@ class RoofData:
 
     @classmethod
     def general_params(cls):
-        props = bpy.context.active_object.BIMRoofProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_roof_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_general_kwargs(generation_method=data["generation_method"])

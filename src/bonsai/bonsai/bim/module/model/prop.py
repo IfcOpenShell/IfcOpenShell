@@ -28,34 +28,36 @@ from math import pi, radians
 from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
 from bonsai.bim.module.model.door import update_door_modifier_bmesh
 from bonsai.bim.module.model.window import update_window_modifier_bmesh
-from typing import TYPE_CHECKING, Literal, get_args
+from typing import TYPE_CHECKING, Literal, get_args, Union, get_args
 
 
-def get_ifc_class(self, context):
+def get_ifc_class(self: "BIMModelProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not AuthoringData.is_loaded:
         AuthoringData.load()
     return AuthoringData.data["ifc_classes"]
 
 
-def get_boundary_class(self, context):
+def get_boundary_class(self: "BIMModelProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not AuthoringData.is_loaded:
         AuthoringData.load()
     return AuthoringData.data["boundary_class"]
 
 
-def get_relating_type_id(self, context):
+def get_relating_type_id(self: "BIMModelProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not AuthoringData.is_loaded:
         AuthoringData.load()
     return AuthoringData.data["relating_type_id"]
 
 
-def get_materials(self, context):
+def get_materials(
+    self: Union["BIMWindowProperties", "BIMDoorProperties"], context: bpy.types.Context
+) -> list[tuple[str, str, str]]:
     if not AuthoringData.is_loaded:
         AuthoringData.load()
     return AuthoringData.data["materials"]
 
 
-def update_ifc_class(self, context):
+def update_ifc_class(self: "BIMModelProperties", context: bpy.types.Context) -> None:
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
     AuthoringData.data["ifc_class_current"] = self.ifc_class
     AuthoringData.data["type_elements"] = AuthoringData.type_elements()
@@ -72,46 +74,46 @@ def update_ifc_class(self, context):
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
 
 
-def update_relating_type_id(self, context):
+def update_relating_type_id(self: "BIMModelProperties", context: bpy.types.Context) -> None:
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
     AuthoringData.data["relating_type_data"] = AuthoringData.relating_type_data()
     self.type_page = [e[0] for e in AuthoringData.data["relating_type_id"]].index(self.relating_type_id) // 9 + 1
 
 
-def update_type_page(self, context):
+def update_type_page(self: "BIMModelProperties", context: bpy.types.Context) -> None:
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class, offset=9 * (self.type_page - 1), limit=9)
     self["type_page"] = min(self["type_page"], AuthoringData.data["total_pages"])
     self["type_page"] = max(self["type_page"], 1)
 
 
-def update_relating_array_from_object(self, context):
+def update_relating_array_from_object(self: "BIMArrayProperties", context: bpy.types.Context) -> None:
     bpy.ops.bim.enable_editing_array(item=self.is_editing)
     return
 
 
-def is_object_array_applicable(self, obj):
+def is_object_array_applicable(self: "BIMArrayProperties", obj: bpy.types.Object) -> bool:
     element = tool.Ifc.get_entity(obj)
     if not element:
         return False
     return ifcopenshell.util.element.get_pset(element, "BBIM_Array")
 
 
-def update_wall_axis_decorator(self, context):
+def update_wall_axis_decorator(self: "BIMModelProperties", context: bpy.types.Context) -> None:
     if self.show_wall_axis:
         WallAxisDecorator.install(bpy.context)
     else:
         WallAxisDecorator.uninstall()
 
 
-def update_slab_direction_decorator(self, context):
+def update_slab_direction_decorator(self: "BIMModelProperties", context: bpy.types.Context) -> None:
     if self.show_slab_direction:
         SlabDirectionDecorator.install(bpy.context)
     else:
         SlabDirectionDecorator.uninstall()
 
 
-def update_search_name(self, context):
+def update_search_name(self: "BIMModelProperties", context: bpy.types.Context) -> None:
     AuthoringData.load()
     # Total number of pages may decrease when using the search bar :
     if self.type_page > AuthoringData.data["total_pages"]:
@@ -119,17 +121,17 @@ def update_search_name(self, context):
     bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
 
 
-def update_x_angle(self, context):
+def update_x_angle(self: "BIMModelProperties", context: bpy.types.Context) -> None:
     angle_deg = math.degrees(self.x_angle)
     if tool.Cad.is_x(angle_deg, -90, 0.5) or tool.Cad.is_x(angle_deg, 90, 0.5):
         self.x_angle = 0
 
 
-def update_door(self, context):
+def update_door(self: "BIMDoorProperties", context: bpy.types.Context) -> None:
     update_door_modifier_bmesh(context)
 
 
-def update_window(self, context):
+def update_window(self: "BIMWindowProperties", context: bpy.types.Context) -> None:
     update_window_modifier_bmesh(context)
 
 
@@ -303,36 +305,45 @@ class BIMArrayProperties(PropertyGroup):
         poll=is_object_array_applicable,
     )
 
+    if TYPE_CHECKING:
+        is_editing: int
+        count: int
+        x: float
+        y: float
+        z: float
+        use_local_space: bool
+        method: Literal["OFFSET", "DISTRIBUTE"]
+        sync_children: bool
+        relating_array_object: Union[bpy.types.Object, None]
 
-def update_total_length_target(self, context):
+
+def update_total_length_target(self: "BIMStairProperties", context: bpy.types.Context) -> None:
     self["tread_run"] = self.total_length_target / (self.number_of_treads + 1)
 
 
-def update_tread_run(self, context):
+def update_tread_run(self: "BIMStairProperties", context: bpy.types.Context) -> None:
     if self.total_length_lock:
         self["number_of_treads"] = int((self.total_length_target / self.tread_run) - 1)
     else:
         self["total_length_target"] = (self.number_of_treads + 1) * self.tread_run
 
 
-def update_number_of_treads(self, context):
+def update_number_of_treads(self: "BIMStairProperties", context: bpy.types.Context) -> None:
     if self.total_length_lock:
         self["tread_run"] = self.total_length_target / (self.number_of_treads + 1)
     else:
         self["total_length_target"] = (self.number_of_treads + 1) * self.tread_run
 
 
+StairType = Literal["CONCRETE", "WOOD/STEEL", "GENERIC"]
+
+
 class BIMStairProperties(PropertyGroup):
-    def validate_nosing_value(self, context):
+    def validate_nosing_value(self, context: bpy.types.Context) -> None:
         if self.stair_type != "WOOD/STEEL" and self.nosing_length < 0:
             self["nosing_length"] = 0
 
     non_si_units_props = ("is_editing", "number_of_treads", "has_top_nib", "stair_type")
-    stair_types = (
-        ("CONCRETE", "Concrete", ""),
-        ("WOOD/STEEL", "Wood / Steel", ""),
-        ("GENERIC", "Generic", ""),
-    )
 
     is_editing: bpy.props.BoolProperty(default=False)
     width: bpy.props.FloatProperty(name="Width", default=1.2, soft_min=0.01, subtype="DISTANCE")
@@ -361,7 +372,10 @@ class BIMStairProperties(PropertyGroup):
     top_slab_depth: bpy.props.FloatProperty(name="Top Slab Depth", default=0.25, soft_min=0, subtype="DISTANCE")
     has_top_nib: bpy.props.BoolProperty(name="Has Top Nib", default=True)
     stair_type: bpy.props.EnumProperty(
-        name="Stair Type", items=stair_types, default="CONCRETE", update=validate_nosing_value
+        name="Stair Type",
+        items=[(i, i.replace("/", " / ").title(), "") for i in get_args(StairType)],
+        default="CONCRETE",
+        update=validate_nosing_value,
     )
     custom_first_last_tread_run: bpy.props.FloatVectorProperty(
         name="Custom First / Last Treads Widths",
@@ -384,6 +398,23 @@ class BIMStairProperties(PropertyGroup):
     nosing_depth: bpy.props.FloatProperty(
         name="Nosing Depth", description="Depth of the tread's nosing", min=0, default=0, unit="LENGTH"
     )
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        width: float
+        height: float
+        number_of_treads: int
+        total_length_target: float
+        total_length_lock: bool
+        tread_depth: float
+        tread_run: float
+        base_slab_depth: float
+        top_slab_depth: float
+        has_top_nib: bool
+        stair_type: str
+        custom_first_last_tread_run: tuple[float, float]
+        nosing_length: float
+        nosing_depth: float
 
     def get_props_kwargs(self, convert_to_project_units=False, stair_type=None):
         if not stair_type:
@@ -445,20 +476,22 @@ def window_type_prop_update(self, context):
     update_window(self, context)
 
 
+WindowType = Literal[
+    "SINGLE_PANEL",
+    "DOUBLE_PANEL_HORIZONTAL",
+    "DOUBLE_PANEL_VERTICAL",
+    "TRIPLE_PANEL_BOTTOM",
+    "TRIPLE_PANEL_TOP",
+    "TRIPLE_PANEL_LEFT",
+    "TRIPLE_PANEL_RIGHT",
+    "TRIPLE_PANEL_HORIZONTAL",
+    "TRIPLE_PANEL_VERTICAL",
+]
+
+
 # default prop values are in mm and converted later
 class BIMWindowProperties(PropertyGroup):
     non_si_units_props = ("is_editing", "window_type")
-    window_types = (
-        ("SINGLE_PANEL", "SINGLE_PANEL", ""),
-        ("DOUBLE_PANEL_HORIZONTAL", "DOUBLE_PANEL_HORIZONTAL", ""),
-        ("DOUBLE_PANEL_VERTICAL", "DOUBLE_PANEL_VERTICAL", ""),
-        ("TRIPLE_PANEL_BOTTOM", "TRIPLE_PANEL_BOTTOM", ""),
-        ("TRIPLE_PANEL_TOP", "TRIPLE_PANEL_TOP", ""),
-        ("TRIPLE_PANEL_LEFT", "TRIPLE_PANEL_LEFT", ""),
-        ("TRIPLE_PANEL_RIGHT", "TRIPLE_PANEL_RIGHT", ""),
-        ("TRIPLE_PANEL_HORIZONTAL", "TRIPLE_PANEL_HORIZONTAL", ""),
-        ("TRIPLE_PANEL_VERTICAL", "TRIPLE_PANEL_VERTICAL", ""),
-    )
 
     # number of panels and default mullion/transom values
     # fmt: off
@@ -477,7 +510,10 @@ class BIMWindowProperties(PropertyGroup):
 
     is_editing: bpy.props.BoolProperty(default=False)
     window_type: bpy.props.EnumProperty(
-        name="Window Type", items=window_types, default="SINGLE_PANEL", update=window_type_prop_update
+        name="Window Type",
+        items=[(i, i, "") for i in get_args(WindowType)],
+        default="SINGLE_PANEL",
+        update=window_type_prop_update,
     )
     overall_height: bpy.props.FloatProperty(
         name="Overall Height", default=0.9, subtype="DISTANCE", update=update_window
@@ -545,6 +581,31 @@ class BIMWindowProperties(PropertyGroup):
     lining_material: bpy.props.EnumProperty(name="Lining Material", items=get_materials, options=set())
     framing_material: bpy.props.EnumProperty(name="Framing Material", items=get_materials, options=set())
     glazing_material: bpy.props.EnumProperty(name="Glazing Material", items=get_materials, options=set())
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        window_type: WindowType
+        overall_height: float
+        overall_width: float
+        lining_depth: float
+        lining_thickness: float
+        lining_offset: float
+        lining_to_panel_offset_x: float
+        lining_to_panel_offset_y: float
+        mullion_thickness: float
+        first_mullion_offset: float
+        second_mullion_offset: float
+        first_transom_offset: float
+        second_transom_offset: float
+
+        # Panel properties.
+        frame_depth: tuple[float, float, float]
+        frame_thickness: tuple[float, float, float]
+
+        # Material properties.
+        lining_material: str
+        framing_material: str
+        glazing_material: str
 
     def get_general_kwargs(self, convert_to_project_units=False):
         kwargs = {
@@ -824,6 +885,10 @@ class BIMDoorProperties(PropertyGroup):
             setattr(self, prop_name, kwargs[prop_name])
 
 
+RailingType = Literal["FRAMELESS_PANEL", "WALL_MOUNTED_HANDRAIL"]
+CapType = Literal["TO_END_POST_AND_FLOOR", "TO_END_POST", "TO_FLOOR", "TO_WALL", "180", "NONE"]
+
+
 class BIMRailingProperties(PropertyGroup):
     non_si_units_props = (
         "is_editing",
@@ -833,23 +898,12 @@ class BIMRailingProperties(PropertyGroup):
         "path_data",
     )
 
-    railing_types = (
-        ("FRAMELESS_PANEL", "FRAMELESS_PANEL", ""),
-        ("WALL_MOUNTED_HANDRAIL", "WALL_MOUNTED_HANDRAIL", ""),
-    )
-    cap_types = (
-        ("TO_END_POST_AND_FLOOR", "TO_END_POST_AND_FLOOR", ""),
-        ("TO_END_POST", "TO_END_POST", ""),
-        ("TO_FLOOR", "TO_FLOOR", ""),
-        ("TO_WALL", "TO_WALL", ""),
-        ("180", "180", ""),
-        ("NONE", "NONE", ""),
-    )
-
     is_editing: bpy.props.BoolProperty(default=False)
     is_editing_path: bpy.props.BoolProperty(default=False)
 
-    railing_type: bpy.props.EnumProperty(name="Railing Type", items=railing_types, default="FRAMELESS_PANEL")
+    railing_type: bpy.props.EnumProperty(
+        name="Railing Type", items=[(i, i, "") for i in get_args(RailingType)], default="FRAMELESS_PANEL"
+    )
     height: bpy.props.FloatProperty(name="Height", default=1.0, subtype="DISTANCE")
     thickness: bpy.props.FloatProperty(name="Thickness", default=0.050, subtype="DISTANCE")
     spacing: bpy.props.FloatProperty(name="Spacing", default=0.050, subtype="DISTANCE")
@@ -875,7 +929,24 @@ class BIMRailingProperties(PropertyGroup):
         description="Clear width between the railing and the wall",
         subtype="DISTANCE",
     )
-    terminal_type: bpy.props.EnumProperty(name="Terminal Type", items=cap_types, default="180")
+    terminal_type: bpy.props.EnumProperty(
+        name="Terminal Type", items=[(i, i, "") for i in get_args(CapType)], default="180"
+    )
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        is_editing_path: bool
+
+        railing_type: RailingType
+        height: float
+        thickness: float
+        spacing: float
+
+        use_manual_supports: bool
+        support_spacing: float
+        railing_diameter: float
+        clear_width: float
+        terminal_type: CapType
 
     def get_general_kwargs(self, railing_type=None, convert_to_project_units=False):
         if railing_type is None:
@@ -921,11 +992,15 @@ def to_percentage(angle: float) -> float:
     return math.tan(angle) * 100
 
 
+RoofType = Literal["HIP/GABLE ROOF"]
+RoofGenerationMethod = Literal["HEIGHT", "ANGLE"]
+
+
 class BIMRoofProperties(PropertyGroup):
-    def update_angle(self, context) -> None:
+    def update_angle(self, context: bpy.types.Context) -> None:
         self["angle"] = to_angle(self.percentage)
 
-    def update_percentage(self, context) -> None:
+    def update_percentage(self, context: bpy.types.Context) -> None:
         self["percentage"] = to_percentage(self.angle)
 
     non_si_units_props = (
@@ -937,18 +1012,15 @@ class BIMRoofProperties(PropertyGroup):
         "percentage",
         "rafter_edge_angle",
     )
-    roof_types = (("HIP/GABLE ROOF", "HIP/GABLE ROOF", ""),)
-    roof_generation_methods = (
-        ("HEIGHT", "HEIGHT", ""),
-        ("ANGLE", "ANGLE", ""),
-    )
 
     is_editing: bpy.props.BoolProperty(default=False)
     is_editing_path: bpy.props.BoolProperty(default=False)
 
-    roof_type: bpy.props.EnumProperty(name="Roof Type", items=roof_types, default="HIP/GABLE ROOF")
+    roof_type: bpy.props.EnumProperty(
+        name="Roof Type", items=[(i, i, "") for i in get_args(RoofType)], default="HIP/GABLE ROOF"
+    )
     generation_method: bpy.props.EnumProperty(
-        name="Roof Generation Method", items=roof_generation_methods, default="ANGLE"
+        name="Roof Generation Method", items=[(i, i, "") for i in get_args(RoofGenerationMethod)], default="ANGLE"
     )
     height: bpy.props.FloatProperty(
         name="Height", default=1.0, description="Maximum height of the roof to be generated.", subtype="DISTANCE"
@@ -977,6 +1049,17 @@ class BIMRoofProperties(PropertyGroup):
     rafter_edge_angle: bpy.props.FloatProperty(
         name="Rafter Edge Angle", min=0, max=pi / 2, default=pi / 2, subtype="ANGLE"
     )
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        is_editing_path: bool
+        roof_type: Literal["HIP/GABLE ROOF"]
+        generation_method: Literal["HEIGHT", "ANGLE"]
+        height: float
+        angle: float
+        percentage: float
+        roof_thickness: float
+        rafter_edge_angle: float
 
     def get_general_kwargs(self, generation_method=None, convert_to_project_units=False):
         if generation_method is None:

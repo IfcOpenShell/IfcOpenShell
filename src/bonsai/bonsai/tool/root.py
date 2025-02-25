@@ -409,7 +409,8 @@ class Root(bonsai.core.tool.Root):
     def set_object_name(cls, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
         name = tool.Loader.get_name(element)
         if obj.name != name:
-            obj.BIMObjectProperties.is_renaming = True
+            props = tool.Blender.get_object_bim_props(obj)
+            props.is_renaming = True
             obj.name = name  # The handler will trigger, and reset is_renaming to False
 
     @classmethod

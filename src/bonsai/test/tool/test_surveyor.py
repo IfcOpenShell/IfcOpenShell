@@ -54,6 +54,7 @@ class TestGetGlobalMatrix(test.bim.bootstrap.NewFile):
         props.blender_x_axis_abscissa = "0"
         props.blender_x_axis_ordinate = "1"
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
+        props = tool.Blender.get_object_bim_props(obj)
+        props.blender_offset_type = "OBJECT_PLACEMENT"
         matrix = ifcopenshell.util.geolocation.local2global(np.array(obj.matrix_world), 1.0, 2.0, 3.0, 0.0, 1.0)
         assert (subject.get_absolute_matrix(obj) == matrix).all()

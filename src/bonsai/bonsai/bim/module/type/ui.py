@@ -46,7 +46,9 @@ class BIM_PT_type(Panel):
         if not TypeData.is_loaded:
             TypeData.load()
 
-        oprops = context.active_object.BIMObjectProperties
+        obj = context.active_object
+        assert obj
+        oprops = tool.Blender.get_object_bim_props(obj)
 
         if TypeData.data["is_product"]:
             self.draw_product_ui(context)
@@ -54,21 +56,19 @@ class BIM_PT_type(Panel):
             self.draw_type_ui(context)
 
     def draw_type_ui(self, context):
-        props = context.active_object.BIMTypeProperties
-        oprops = context.active_object.BIMObjectProperties
+        oprops = tool.Blender.get_object_bim_props(context.active_object)
         row = self.layout.row(align=True)
         row.label(text=f"{TypeData.data['total_instances']} Typed Objects")
         select_type_objects_row = row.row(align=True)
         select_type_objects_row.operator("bim.select_type_objects", icon="RESTRICT_SELECT_OFF", text="")
         select_type_objects_row.enabled = int(TypeData.data["total_instances"]) > 0
         op = row.operator("bim.duplicate_type", icon="DUPLICATE", text="")
-        op.element = context.active_object.BIMObjectProperties.ifc_definition_id
+        op.element = oprops.ifc_definition_id
         row.operator("bim.auto_rename_occurrences", icon="ITALIC", text="")
 
     def draw_product_ui(self, context):
         layout = self.layout
         props = context.active_object.BIMTypeProperties
-        oprops = context.active_object.BIMObjectProperties
 
         if props.is_editing_type:
             row = layout.row(align=True)

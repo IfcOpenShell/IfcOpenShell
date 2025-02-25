@@ -51,7 +51,7 @@ class Annotator:
         curve.font = font
         props = tool.Drawing.get_text_props(obj)
         props.font_size = "2.5"
-        collection = bpy.context.scene.camera.BIMObjectProperties.collection
+        collection = tool.Blender.get_object_bim_props(bpy.context.scene.camera).collection
         collection.objects.link(obj)
         Annotator.resize_text(obj)
         return obj
@@ -133,7 +133,7 @@ class Annotator:
         co1, _, _, _ = Annotator.get_placeholder_coords(camera)
         matrix_world = tool.Drawing.get_camera_matrix(camera)
         matrix_world.translation = co1
-        collection = camera.BIMObjectProperties.collection
+        collection = tool.Blender.get_object_bim_props(camera).collection
 
         if object_type == "TEXT":
             obj = bpy.data.objects.new(object_type, None)

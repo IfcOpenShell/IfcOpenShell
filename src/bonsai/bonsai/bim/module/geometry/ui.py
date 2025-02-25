@@ -334,9 +334,9 @@ class BIM_PT_connections(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        if not tool.Ifc.get_object_by_identifier(context.active_object.BIMObjectProperties.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(tool.Blender.get_ifc_definition_id(obj)):
             return False
         return tool.Ifc.get()
 
@@ -345,7 +345,6 @@ class BIM_PT_connections(Panel):
             ConnectionsData.load()
 
         layout = self.layout
-        props = context.active_object.BIMObjectProperties
 
         if not ConnectionsData.data["connections"] and not ConnectionsData.data["is_connection_realization"]:
             layout.label(text="No connections found")
@@ -480,11 +479,15 @@ class BIM_PT_placement(Panel):
 
     @classmethod
     def poll(cls, context):
-        return (obj := context.active_object) and obj.BIMObjectProperties.ifc_definition_id
+        return (obj := context.active_object) and tool.Blender.get_ifc_definition_id(obj)
 
     def draw(self, context):
         if not PlacementData.is_loaded:
             PlacementData.load()
+
+        obj = context.active_object
+        assert obj
+        props = tool.Blender.get_object_bim_props(obj)
 
         if not PlacementData.data["has_placement"]:
             row = self.layout.row()
@@ -496,12 +499,12 @@ class BIM_PT_placement(Panel):
         row = self.layout.row()
         row.prop(context.active_object, "rotation_euler", text="Rotation")
 
-        if context.active_object.BIMObjectProperties.blender_offset_type != "NONE":
+        if props.blender_offset_type != "NONE":
             row = self.layout.row(align=True)
             row.label(text="Blender Offset", icon="TRACKING_REFINE_FORWARDS")
-            row.label(text=context.active_object.BIMObjectProperties.blender_offset_type)
+            row.label(text=props.blender_offset_type)
 
-            if context.active_object.BIMObjectProperties.blender_offset_type != "NOT_APPLICABLE":
+            if props.blender_offset_type != "NOT_APPLICABLE":
                 row = self.layout.row(align=True)
                 row.label(text=PlacementData.data["original_x"], icon="EMPTY_AXIS")
                 row.label(text=PlacementData.data["original_y"])

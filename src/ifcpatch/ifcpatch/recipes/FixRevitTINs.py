@@ -96,7 +96,8 @@ class Patcher:
         angle_threshold = 0.3
 
         for obj in bpy.data.objects:
-            if not obj.BIMObjectProperties.ifc_definition_id or not obj.data:
+            ifc_id = tool.Blender.get_ifc_definition_id(obj)
+            if not ifc_id or not obj.data:
                 continue
             if not obj.data.polygons:
                 continue

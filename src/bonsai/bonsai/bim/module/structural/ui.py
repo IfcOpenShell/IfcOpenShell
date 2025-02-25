@@ -85,14 +85,14 @@ class BIM_PT_structural_boundary_conditions(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
+        if not (tool.Ifc.get_object_by_identifier(ifc_id)):
             return False
-        if not tool.Ifc.get().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
+        if not tool.Ifc.get().by_id(ifc_id).is_a("IfcStructuralConnection"):
             return False
         return True
 
@@ -120,14 +120,14 @@ class BIM_PT_connected_structural_members(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
+        if not (tool.Ifc.get_object_by_identifier(ifc_id)):
             return False
-        if not tool.Ifc.get().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
+        if not tool.Ifc.get().by_id(ifc_id).is_a("IfcStructuralConnection"):
             return False
         return True
 
@@ -173,14 +173,14 @@ class BIM_PT_structural_member(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
-        if not tool.Ifc.get().by_id(props.ifc_definition_id).is_a("IfcStructuralMember"):
+        if not tool.Ifc.get().by_id(ifc_id).is_a("IfcStructuralMember"):
             return False
         return True
 
@@ -216,14 +216,14 @@ class BIM_PT_structural_connection(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
-        if not tool.Ifc.get().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
+        if not tool.Ifc.get().by_id(ifc_id).is_a("IfcStructuralConnection"):
             return False
         return True
 
@@ -315,7 +315,6 @@ class BIM_UL_structural_analysis_models(UIList):
             row.label(text=item.name)
 
             if context.active_object:
-                oprops = context.active_object.BIMObjectProperties
                 if item.ifc_definition_id in StructuralAnalysisModelsData.data["active_model_ids"]:
                     op = row.operator(
                         "bim.unassign_structural_analysis_model", text="", icon="KEYFRAME_HLT", emboss=False

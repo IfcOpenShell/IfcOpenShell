@@ -52,8 +52,6 @@ class BIM_PT_voids(Panel):
         if not VoidsData.is_loaded:
             VoidsData.load()
 
-        props = context.active_object.BIMObjectProperties
-
         if len(context.selected_objects) >= 2:
             row = self.layout.row(align=True)
             op = row.operator("bim.add_opening", icon="ADD", text="Add Opening")

@@ -2327,11 +2327,12 @@ class RefreshClippingPlanes(bpy.types.Operator):
             else:
                 break
 
-    def is_moved(self, obj):
-        if not obj.BIMObjectProperties.location_checksum:
+    def is_moved(self, obj: bpy.types.Object) -> bool:
+        props = tool.Blender.get_object_bim_props(obj)
+        if not props.location_checksum:
             return True  # Let's be conservative
-        loc_check = np.frombuffer(eval(obj.BIMObjectProperties.location_checksum))
-        rot_check = np.frombuffer(eval(obj.BIMObjectProperties.rotation_checksum))
+        loc_check = np.frombuffer(eval(props.location_checksum))
+        rot_check = np.frombuffer(eval(props.rotation_checksum))
         loc_real = np.array(obj.matrix_world.translation).flatten()
         rot_real = np.array(obj.matrix_world.to_3x3()).flatten()
         if np.allclose(loc_check, loc_real, atol=1e-4) and np.allclose(rot_check, rot_real, atol=1e-2):

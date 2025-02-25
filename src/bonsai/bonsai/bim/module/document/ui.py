@@ -90,18 +90,20 @@ class BIM_PT_object_documents(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        if not tool.Ifc.get_object_by_identifier(context.active_object.BIMObjectProperties.ifc_definition_id):
+        if not (ifc_id := tool.Blender.get_ifc_definition_id(obj)):
             return False
-        return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
+            return False
+        return True
 
     def draw(self, context):
         if not ObjectDocumentData.is_loaded:
             ObjectDocumentData.load()
 
         obj = context.active_object
-        self.oprops = obj.BIMObjectProperties
+        self.oprops = tool.Blender.get_object_bim_props(obj)
         self.props = tool.Document.get_document_props()
         self.file = tool.Ifc.get()
 

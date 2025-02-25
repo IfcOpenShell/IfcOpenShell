@@ -1046,6 +1046,7 @@ class EditObjectUI:
 
     @classmethod
     def draw_modes(cls, context: bpy.types.Context) -> None:
+        obj = context.active_object
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
         row.separator()
@@ -1055,9 +1056,7 @@ class EditObjectUI:
             if len(context.selected_objects) == 1 and AuthoringData.data["has_extrusion"]:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(row, "Edit Profile", "S_E", "", ui_context)
-        elif (
-            tool.Model.is_parametric_railing_active() and not context.active_object.BIMRailingProperties.is_editing_path
-        ):
+        elif tool.Model.is_parametric_railing_active() and not tool.Model.get_railing_props(obj).is_editing_path:
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.operator(
                 "bim.enable_editing_railing_path",
@@ -1208,12 +1207,12 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         # and it might conflict with one of the conditions below
         if (
             tool.Model.is_parametric_railing_active()
-            and not bpy.context.active_object.BIMRailingProperties.is_editing_path
+            and not tool.Model.get_railing_props(active_object).is_editing_path
         ):
             bpy.ops.bim.enable_editing_railing_path()
             return
 
-        elif tool.Model.is_parametric_roof_active() and not bpy.context.active_object.BIMRoofProperties.is_editing_path:
+        elif tool.Model.is_parametric_roof_active() and not tool.Model.get_roof_props(active_object).is_editing_path:
             # undo the unselection done above because roof has no usage type
             bpy.ops.bim.enable_editing_roof_path()
             return

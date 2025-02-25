@@ -524,7 +524,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def get_drawing_collection(cls, drawing: ifcopenshell.entity_instance) -> Union[bpy.types.Collection, None]:
         obj = tool.Ifc.get_object(drawing)
         if obj:
-            return obj.BIMObjectProperties.collection
+            return tool.Blender.get_object_bim_props(obj).collection
 
     @classmethod
     def get_drawing_group(cls, drawing: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
@@ -1516,8 +1516,8 @@ class Drawing(bonsai.core.tool.Drawing):
             dst = src.copy()
             dst.data = dst.data.copy()
             dst.name = dst.name.replace("IfcGridAxis/", "")
-            dst.BIMObjectProperties.ifc_definition_id = 0
-            tool.Geometry.get_geometry_props(dst).ifc_definition_id = 0
+            tool.Blender.get_object_bim_props(dst).ifc_definition_id = 0
+            tool.Geometry.get_geometry_props(dst.data).ifc_definition_id = 0
             return dst
 
         def disassemble(obj: bpy.types.Object) -> tuple[bpy.types.Object, bmesh.types.BMesh]:
@@ -1888,7 +1888,7 @@ class Drawing(bonsai.core.tool.Drawing):
         return bool(
             camera is not None
             and camera.type == "CAMERA"
-            and camera.BIMObjectProperties.ifc_definition_id
+            and tool.Blender.get_ifc_definition_id(camera)
             and area is not None
         )
 
@@ -1910,11 +1910,12 @@ class Drawing(bonsai.core.tool.Drawing):
     def isolate_camera_collection(cls, camera: bpy.types.Object) -> None:
         drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
         drawing_collections = []
-        camera_collection = camera.BIMObjectProperties.collection
+        camera_collection = tool.Blender.get_object_bim_props(camera).collection
         for drawing in drawings:
             if not (drawing_obj := tool.Ifc.get_object(drawing)):
                 continue
-            if not (drawing_collection := drawing_obj.BIMObjectProperties.collection):
+            oprops = tool.Blender.get_object_bim_props(drawing_obj)
+            if not (drawing_collection := oprops.collection):
                 continue
             if drawing_obj == camera:
                 drawing_collection.hide_render = False
@@ -1922,7 +1923,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 drawing_collection.hide_render = True
 
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-        project_collection = project.BIMObjectProperties.collection
+        project_collection = tool.Blender.get_object_bim_props(project).collection
         for layer_collection in bpy.context.view_layer.layer_collection.children:
             if layer_collection.collection == project_collection:
                 for layer_collection2 in layer_collection.children:

@@ -189,7 +189,7 @@ class System(bonsai.core.tool.System):
 
         container = ifcopenshell.util.element.get_container(element)
         if container:
-            collection = tool.Ifc.get_object(container).BIMObjectProperties.collection
+            collection = tool.Blender.get_object_bim_props(tool.Ifc.get_object(container)).collection
             ifc_importer.collections[container.GlobalId] = collection
         ifc_importer.place_objects_in_collections()
 

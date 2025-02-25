@@ -374,16 +374,17 @@ class ObjectLog(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             cls.poll_message_set("No Active Object")
-        elif not context.active_object.BIMObjectProperties.ifc_definition_id:
+        elif not tool.Blender.get_ifc_definition_id(obj):
             cls.poll_message_set("Active Object doesn't have an IFC definition")
         else:
             return True
 
     def execute(self, context):
-
-        step_id = context.active_object.BIMObjectProperties.ifc_definition_id
+        obj = context.active_object
+        assert obj
+        step_id = tool.Blender.get_ifc_definition_id(obj)
         core.entity_log(tool.IfcGit, tool.Ifc, step_id, self)
         return {"FINISHED"}
 

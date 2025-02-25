@@ -29,7 +29,7 @@ class Collector(bonsai.core.tool.Collector):
         """Links an object to an appropriate Blender collection."""
         if should_clean_users_collection:
             for users_collection in obj.users_collection:
-                if obj.BIMObjectProperties.collection == users_collection:
+                if tool.Blender.get_object_bim_props(obj).collection == users_collection:
                     continue
                 # Users are free to use extra collections for their own
                 # purposes except for the reserved keyword "Ifc" and
@@ -87,7 +87,7 @@ class Collector(bonsai.core.tool.Collector):
             if collection := cls._create_own_collection(obj):
                 cls.link_collection_object_safe(collection, obj)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                cls.link_collection_child_safe(project_obj.BIMObjectProperties.collection, collection)
+                cls.link_collection_child_safe(tool.Blender.get_object_bim_props(project_obj).collection, collection)
         elif (
             tool.Ifc.get_schema() != "IFC2X3"
             and element.is_a("IfcSpatialElement")
@@ -98,21 +98,21 @@ class Collector(bonsai.core.tool.Collector):
             if collection := cls._create_own_collection(obj):
                 cls.link_collection_object_safe(collection, obj)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                cls.link_collection_child_safe(project_obj.BIMObjectProperties.collection, collection)
+                cls.link_collection_child_safe(tool.Blender.get_object_bim_props(project_obj).collection, collection)
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             if collection := cls._create_own_collection(obj):
                 cls.link_collection_object_safe(collection, obj)
                 project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-                cls.link_collection_child_safe(project_obj.BIMObjectProperties.collection, collection)
+                cls.link_collection_child_safe(tool.Blender.get_object_bim_props(project_obj).collection, collection)
         elif element.is_a("IfcAnnotation") and (drawing_obj := cls.get_annotation_drawing_obj(element)):
-            cls.link_collection_object_safe(drawing_obj.BIMObjectProperties.collection, obj)
+            cls.link_collection_object_safe(tool.Blender.get_object_bim_props(drawing_obj).collection, obj)
         elif container := ifcopenshell.util.element.get_container(element):
             while container.is_a("IfcSpace"):
                 container = ifcopenshell.util.element.get_aggregate(container)
             container_obj = tool.Ifc.get_object(container)
-            if not (collection := container_obj.BIMObjectProperties.collection):
+            if not (collection := tool.Blender.get_object_bim_props(container_obj).collection):
                 cls.assign(container_obj)
-                collection = container_obj.BIMObjectProperties.collection
+                collection = tool.Blender.get_object_bim_props(container_obj).collection
             cls.link_collection_object_safe(collection, obj)
         else:
             collection = cls._create_project_child_collection("Unsorted")
@@ -128,7 +128,7 @@ class Collector(bonsai.core.tool.Collector):
             return collection
         collection = bpy.data.collections.new(name)
         project_obj = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-        project_obj.BIMObjectProperties.collection.children.link(collection)
+        tool.Blender.get_object_bim_props(project_obj).collection.children.link(collection)
         if layer_collection := tool.Blender.get_layer_collection(collection):
             cls.set_layer_collection_visibility(layer_collection)
         return collection
@@ -136,11 +136,12 @@ class Collector(bonsai.core.tool.Collector):
     @classmethod
     def _create_own_collection(cls, obj: bpy.types.Object) -> bpy.types.Collection:
         """get or create own collection for the element"""
-        if obj.BIMObjectProperties.collection:
-            obj.BIMObjectProperties.collection.name = obj.name
+        props = tool.Blender.get_object_bim_props(obj)
+        if props.collection:
+            props.collection.name = obj.name
             return
         collection = bpy.data.collections.new(obj.name)
-        obj.BIMObjectProperties.collection = collection
+        props.collection = collection
         collection.BIMCollectionProperties.obj = obj
         return collection
 
@@ -184,7 +185,8 @@ class Collector(bonsai.core.tool.Collector):
     @classmethod
     def reset_default_visibility(cls) -> None:
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-        project_collection = project.BIMObjectProperties.collection
+        assert project
+        project_collection = tool.Blender.get_object_bim_props(project).collection
         for layer_collection in bpy.context.view_layer.layer_collection.children:
             if layer_collection.collection == project_collection:
                 for layer_collection2 in layer_collection.children:

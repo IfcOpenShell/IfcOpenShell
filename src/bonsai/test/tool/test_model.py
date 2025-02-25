@@ -383,23 +383,26 @@ class TestUsingArrays(NewFile):
 
         bpy.ops.mesh.primitive_cube_add()
         obj = bpy.context.active_object
+        assert obj
         rprops = tool.Root.get_root_props()
         rprops.ifc_product = "IfcElement"
         bpy.ops.bim.assign_class(ifc_class="IfcActuator", predefined_type="ELECTRICACTUATOR", userdefined_type="")
 
         bpy.ops.bim.add_array()
         bpy.ops.bim.enable_editing_array(item=0)
-        obj.BIMArrayProperties.count = 4
-        obj.BIMArrayProperties.x = 4
-        obj.BIMArrayProperties.sync_children = sync_children
+        props = tool.Model.get_array_props(obj)
+        props.count = 4
+        props.x = 4
+        props.sync_children = sync_children
         bpy.ops.bim.edit_array(item=0)
 
         if add_second_layer:
             bpy.ops.bim.add_array()
             bpy.ops.bim.enable_editing_array(item=1)
-            obj.BIMArrayProperties.count = 3
-            obj.BIMArrayProperties.y = 4
-            obj.BIMArrayProperties.sync_children = sync_children
+            props = tool.Model.get_array_props(obj)
+            props.count = 3
+            props.y = 4
+            props.sync_children = sync_children
             bpy.ops.bim.edit_array(item=1)
 
     def test_remove_array_last_to_first(self):
