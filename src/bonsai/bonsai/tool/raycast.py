@@ -58,6 +58,8 @@ class Raycast(bonsai.core.tool.Raycast):
         for i, axis in enumerate(zip(*transposed_bbox)):
             min_point = min(axis)
             max_point = max(axis)
+            if min_point == max_point:
+                min_point = 0
             if min_point < borders[i] and max_point > 0:
                 bbox_2d.extend([min_point, max_point])
             else:
