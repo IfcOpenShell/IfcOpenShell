@@ -24,19 +24,11 @@ from typing import Sequence
 
 
 def get_axis_subcontext(file:ifcopenshell.file):
-    axis_geom_subcontext = None
-
-    subcontexts = file.by_type("IfcGeometricRepresentationSubContext")
-    for subcontext in subcontexts:
-        if subcontext.ContextIdentifier.upper() == "AXIS" and subcontext.ContextType.upper() == "MODEL" and subcontext.TargetView.upper() == "GRAPH_VIEW":
-            axis_geom_subcontext = subcontext
-            break
-
-    if axis_geom_subcontext == None:
-        raise NotImplementedError(
-            "Expected to find IfcGeometricRepresentationSubContext (ContextIdentifier = Axis, ContextType = Model, TargetView = GRAPH_VIEW"
-        )
-    
+    axis_geom_subcontext = ifcopenshell.util.representation.get_context(file,"Model","Axis","MODEL_VIEW")
+    if(axis_geom_subcontext == None):
+        geometric_representation_context = ifcopenshell.api.context.add_context(file,context_type="Model")
+        axis_geom_subcontext = ifcopenshell.api.context.add_context(file,context_type="Model",context_identifier="Axis",target_view="MODEL_VIEW",parent=geometric_representation_context)
+   
     return axis_geom_subcontext
 
 
