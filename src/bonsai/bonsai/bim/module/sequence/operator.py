@@ -654,6 +654,75 @@ class DisableEditingWorkCalendar(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
+    bl_idname = "bim.import_alignment_csv"
+    bl_label = "Import Alignment CSV"
+    bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".csv"
+    filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            cls.poll_message_set("No IFC file is loaded.")
+            return False
+        return True
+
+    def _execute(self, context):
+        import ifcopenshell.api.alignment
+        self.file = tool.Ifc.get()
+        start = time.time()
+        alignment = ifcopenshell.api.alignment.create_alignment_from_csv(self.file,self.filepath)
+
+        # IFC 4.1.5.1 alignments cannot be contained in spatial structures, but can be referenced into them
+        sites = self.file.by_type("IfcSite")
+        for site in sites:
+            ifcopenshell.api.spatial.reference_structure(self.file,products=[alignment],relating_structure=site)
+
+        # process the generated IfcReferent for the alignment
+        for rel in alignment.IsNestedBy:
+            for referent in rel.RelatedObjects:
+                if referent.is_a().upper() == "IFCREFERENT":
+                    referent_obj = bpy.data.objects.new(tool.Loader.get_name(referent),None)
+                    tool.Geometry.link(referent,referent_obj)
+                    tool.Collector.assign(referent_obj,should_clean_users_collection=False)
+
+        # an alignment can be an aggregation of multiple child alignments (ie. multiple verticals for a single horizontal)
+        curves = []
+        for rel in alignment.IsDecomposedBy:
+            for agg in rel.RelatedObjects:
+                if agg.is_a().upper() == "IFCALIGNMENT":
+                    curves.append(agg.Representation.Representations[0].Items[0]) # 3D curve
+
+        # if there aren't any curves from aggregation, then there is only a single vertical or no vertical
+        if len(curves) == 0:
+            if len(alignment.Representation.Representations) == 1:
+                curves.append(alignment.Representation.Representations[0].Items[0]) # footprint
+            else:
+                curves.append(alignment.Representation.Representations[1].Items[0]) # 3D curve
+
+        settings = ifcopenshell.geom.settings()
+        for curve in curves:
+            shape = ifcopenshell.geom.create_shape(settings,curve)
+
+            # create a new Blender mesh
+            mesh_name = tool.Loader.get_mesh_name_from_shape(shape)
+            mesh = bpy.data.meshes.new(mesh_name)
+            m = tool.Loader.convert_geometry_to_mesh(shape,mesh)
+
+            # create a new Blender object
+            alignment_obj = bpy.data.objects.new(tool.Loader.get_name(alignment),m)
+
+            # link the blender object to with the alignment element
+            tool.Geometry.link(alignment,alignment_obj)
+
+            # assign the object to the blender collections
+            tool.Collector.assign(alignment_obj,should_clean_users_collection=False)
+
+
+        self.report({"INFO"}, "Imported in %s seconds" % (time.time() - start))
+
 class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_csv"
     bl_label = "Import CSV"
