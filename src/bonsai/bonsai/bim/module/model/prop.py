@@ -46,9 +46,6 @@ def get_boundary_class(self, context):
 def get_relating_type_id(self, context):
     if not AuthoringData.is_loaded:
         AuthoringData.load()
-    else:
-        AuthoringData.data["type_elements"] = AuthoringData.type_elements()
-        AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
     return AuthoringData.data["relating_type_id"]
 
 
