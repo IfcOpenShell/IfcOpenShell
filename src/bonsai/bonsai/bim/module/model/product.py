@@ -646,8 +646,8 @@ class LoadTypeThumbnails(bpy.types.Operator):
             queue = queue[offset : offset + 9]
 
         # The active type may be in another page than the active one :
-        if relating_type_id_current := AuthoringData.data["relating_type_id_current"]:
-            active_element = tool.Ifc.get_entity_by_id(int(relating_type_id_current))
+        if relating_type_id_current := AuthoringData.data["relating_type_data"].get("id"):
+            active_element = tool.Ifc.get_entity_by_id(relating_type_id_current)
             if active_element and active_element not in queue:
                 queue.append(active_element)
 

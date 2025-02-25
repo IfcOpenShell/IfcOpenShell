@@ -674,12 +674,13 @@ class CreateObjectUI:
         if not (ifc_class := AuthoringData.data["ifc_class_current"]):
             return
 
+        relating_type_data = AuthoringData.data["relating_type_data"]
         box = cls.layout.box()
 
         row = box.row(align=True)
-        thumbnail: int = AuthoringData.data["type_thumbnail"]
+        thumbnail: int = relating_type_data["icon_id"]
         row.template_icon(icon_value=thumbnail)
-        row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
+        row.operator("bim.launch_type_manager", text=relating_type_data["name"], emboss=False)
         row.operator(
             "bim.launch_type_manager",
             icon=tool.Blender.TYPE_MANAGER_ICON,
@@ -693,7 +694,7 @@ class CreateObjectUI:
         row.alignment = "CENTER"
         row.operator(
             "bim.launch_type_manager",
-            text=AuthoringData.data["relating_type_description"],
+            text=relating_type_data["description"],
             emboss=False,
         )
 
@@ -718,7 +719,7 @@ class CreateObjectUI:
         row.alignment = "CENTER"
         row.operator(
             "bim.launch_type_manager",
-            text=AuthoringData.data["predefined_type"],
+            text=AuthoringData.data["relating_type_data"].get("predefined_type"),
             emboss=False,
         )
 
@@ -870,7 +871,7 @@ class EditObjectUI:
             )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Rotate 90", "S_R", "Rotate the selected Element by 90 degrees", ui_context)
-            if AuthoringData.data["relating_type_material_usage"] == "LAYER3":
+            if AuthoringData.data["relating_type_data"].get("usage") == "LAYER3":
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(
                     row,
@@ -884,7 +885,7 @@ class EditObjectUI:
             if "LAYER2" in AuthoringData.data["selected_material_usages"]:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(cls.layout, "Extend Wall To Slab", "S_E", "", ui_context)
-            if AuthoringData.data["relating_type_material_usage"] == "LAYER2":
+            if AuthoringData.data["relating_type_data"].get("usage") == "LAYER2":
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(
                     row,

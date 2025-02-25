@@ -136,8 +136,8 @@ class CoveringToolUI:
         if AuthoringData.data["ifc_classes"]:
             if cls.props.ifc_class:
                 box = cls.layout.box()
-                if AuthoringData.data["type_thumbnail"]:
-                    box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
+                if thumbnail := AuthoringData.data["relating_type_data"].get("thumbnail"):
+                    box.template_icon(icon_value=thumbnail, scale=5)
                 else:
                     op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
                     op.ifc_class = cls.props.ifc_class
@@ -175,14 +175,14 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(active_obj)
         container = tool.Root.get_default_container()
 
-        if AuthoringData.data["predefined_type"] == "FLOORING":
+        if AuthoringData.data["relating_type_data"].get("predefined_type") == "FLOORING":
             if element and bpy.context.selected_objects and element.is_a("IfcWall"):
                 bpy.ops.bim.add_instance_flooring_coverings_from_walls()
             elif container:
                 bpy.ops.bim.add_instance_flooring_covering_from_cursor()
             else:
                 bpy.ops.bim.add_constr_type_instance()
-        elif AuthoringData.data["predefined_type"] == "CEILING":
+        elif AuthoringData.data["relating_type_data"].get("predefined_type") == "CEILING":
             if element and bpy.context.selected_objects and element.is_a("IfcWall"):
                 bpy.ops.bim.add_instance_ceiling_coverings_from_walls()
             elif container:

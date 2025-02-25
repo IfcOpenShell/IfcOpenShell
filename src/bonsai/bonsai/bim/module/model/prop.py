@@ -60,7 +60,7 @@ def update_ifc_class(self, context):
     AuthoringData.data["ifc_class_current"] = self.ifc_class
     AuthoringData.data["type_elements"] = AuthoringData.type_elements()
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
-    AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
+    AuthoringData.data["relating_type_data"] = AuthoringData.relating_type_data()
     if tool.Blender.get_enum_safe(self, "relating_type_id") is None:
         self["relating_type_id"] = 0
 
@@ -73,9 +73,7 @@ def update_ifc_class(self, context):
 
 def update_relating_type_id(self, context):
     AuthoringData.data["relating_type_id"] = AuthoringData.relating_type_id()
-    AuthoringData.data["relating_type_name"] = AuthoringData.relating_type_name()
-    AuthoringData.data["type_thumbnail"] = AuthoringData.type_thumbnail()
-    AuthoringData.data["predefined_type"] = AuthoringData.predefined_type()
+    AuthoringData.data["relating_type_data"] = AuthoringData.relating_type_data()
     self.type_page = [e[0] for e in AuthoringData.data["relating_type_id"]].index(self.relating_type_id) // 9 + 1
 
 

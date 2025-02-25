@@ -166,9 +166,7 @@ class LaunchTypeManager(bpy.types.Operator):
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
-                is_current_relating_type = str(relating_type["id"]) == str(
-                    AuthoringData.data["relating_type_id_current"]
-                )
+                is_current_relating_type = relating_type["id"] == AuthoringData.data["relating_type_data"].get("id")
                 if is_current_relating_type:
                     active_row = row2.row()
                     active_row.alignment = "CENTER"
