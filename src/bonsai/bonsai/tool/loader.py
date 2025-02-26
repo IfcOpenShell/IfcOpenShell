@@ -1053,7 +1053,7 @@ class Loader(bonsai.core.tool.Loader):
                 styles[style] = i
         for layer in layer_set.MaterialLayers[:-1]:
             prev_co = co.copy()
-            co.y = layer.LayerThickness * cls.unit_scale * sense_factor
+            co.y += layer.LayerThickness * cls.unit_scale * sense_factor
             bisect_geom = bmesh.ops.bisect_plane(
                 bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
             )
