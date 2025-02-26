@@ -513,6 +513,7 @@ class PrintUnusedElementStats(bpy.types.Operator):
         if self.ignore_styled_items:
             ignore_classes += ["IfcStyledItem"]
         ignore_classes += [
+            "IfcDocumentReference",  # Document references for sheet elements (drawings, schedules, etc).
             "IfcIndexedColourMap",  # Only referenced by inverse attributes.
             "IfcIndexedTextureMap",  # Only referenced by inverse attributes.
         ]
@@ -613,18 +614,30 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
             "IfcUnitAssignment",
             "IfcVirtualGridIntersection",
         ]
+        whitelist_exceptions = {
+            # Document references for sheet elements (drawings, schedules, etc).
+            "IfcExternalReference": ("IfcDocumentReference",),
+        }
 
         total_purged = 0
+        schema = tool.Ifc.schema()
         while True:
             total_batches = 0
             print("*" * 100)
             total_batch_purged = 0
             for ifc_class in whitelisted_classes:
                 total_class_purged = 0
+
+                # Ensure class is present in the schema.
                 try:
-                    elements = tool.Ifc.get().by_type(ifc_class)
-                except:
-                    continue  # Probably not in this schema?
+                    schema.declaration_by_name(ifc_class)
+                except RuntimeError:
+                    continue
+
+                elements = tool.Ifc.get().by_type(ifc_class)
+                if ifc_class in whitelist_exceptions:
+                    elements = [e for e in elements if not any(e.is_a(c) for c in whitelist_exceptions[ifc_class])]
+
                 to_purge = set()
                 for element in elements:
                     try:
