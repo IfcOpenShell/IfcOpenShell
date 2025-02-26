@@ -529,11 +529,6 @@ class Polyline(bonsai.core.tool.Polyline):
                 angle = tool.Cad.angle_3_vectors(v1, v2, v3, new_angle=None, degrees=True)
                 if tool.Cad.is_x(angle, 0):
                     return
-            # TODO move this limitation to be Wall tool specific. Right now it also affects Measure tool
-            # Avoids creating segments smaller then 0.1. This is a limitation from create_wall_from_2_points
-            length = (
-                Vector((x, y, z)) - Vector((polyline_points[-1].x, polyline_points[-1].y, polyline_points[-1].z))
-            ).length
 
         polyline_point = polyline_points.add()
         polyline_point.x = x
