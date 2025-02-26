@@ -779,11 +779,15 @@ class PurgeUnusedOpenings(Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return any(
-            [tool.Geometry.has_openings(element)]
+        poll = any(
+            tool.Geometry.has_openings(element)
             for element in [tool.Ifc.get_entity(obj) for obj in context.selected_objects]
             if element
         )
+        if not poll:
+            cls.poll_message_set("No objects with openings selected.")
+            return False
+        return True
 
     def _execute(self, context):
         bpy.ops.bim.show_openings()
