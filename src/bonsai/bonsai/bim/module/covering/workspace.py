@@ -24,6 +24,7 @@ import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.model.data import AuthoringData
 from bpy.types import WorkSpaceTool
+from functools import partial
 
 
 class CoveringTool(WorkSpaceTool):
@@ -45,9 +46,7 @@ class CoveringTool(WorkSpaceTool):
         CoveringToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
-def add_layout_hotkey(layout: bpy.types.UILayout, text: str, hotkey: str, description: str) -> None:
-    args = ("covering", layout, text, hotkey, description)
-    tool.Blender.add_layout_hotkey_operator(*args)
+add_layout_hotkey = partial(tool.Blender.add_layout_hotkey_operator, tool_name="covering", module_name=__name__)
 
 
 class CoveringToolUI:

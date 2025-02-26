@@ -23,6 +23,7 @@ import bonsai.tool as tool
 from bonsai.bim.module.model.data import AuthoringData
 from bpy.types import WorkSpaceTool
 import bonsai.core.spatial
+from functools import partial
 
 
 class SpatialTool(WorkSpaceTool):
@@ -49,9 +50,7 @@ class SpatialTool(WorkSpaceTool):
         SpatialToolUI.draw(context, layout)
 
 
-def add_layout_hotkey(layout: bpy.types.UILayout, text: str, hotkey: str, description: str) -> None:
-    args = ("spatial", layout, text, hotkey, description)
-    tool.Blender.add_layout_hotkey_operator(*args)
+add_layout_hotkey = partial(tool.Blender.add_layout_hotkey_operator, tool_name="spatial", module_name=__name__)
 
 
 class SpatialToolUI:

@@ -21,6 +21,7 @@ import os
 import bpy
 import bonsai.tool as tool
 from bpy.types import WorkSpaceTool
+from functools import partial
 
 
 class StructuralTool(WorkSpaceTool):
@@ -41,9 +42,7 @@ class StructuralTool(WorkSpaceTool):
         StructuralToolUI.draw(context, layout)
 
 
-def add_layout_hotkey(layout: bpy.types.UILayout, text: str, hotkey: str, description: str) -> None:
-    args = ("structural", layout, text, hotkey, description)
-    tool.Blender.add_layout_hotkey_operator(*args)
+add_layout_hotkey = partial(tool.Blender.add_layout_hotkey_operator, tool_name="structural", module_name=__name__)
 
 
 # NOTES before adding new operators:

@@ -23,7 +23,7 @@ import bonsai.bim.module.type.prop as type_prop
 import ifcopenshell.util.unit
 from bpy.types import WorkSpaceTool
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData
-from typing import Union
+from functools import partial
 
 
 def load_custom_icons():
@@ -330,29 +330,7 @@ def add_header_apply_button(layout, text, apply_operator, cancel_operator, ui_co
     row.label(text="Tools")
 
 
-def add_layout_hotkey_operator(
-    layout: bpy.types.UILayout, text: str, hotkey: str, description: Union[str, None], ui_context: str = ""
-) -> bpy.types.OperatorProperties:
-    parts = hotkey.split("_")
-    modifier, key = parts
-    op_text = "" if ui_context == "TOOL_HEADER" else text
-    custom_icon = custom_icon_previews.get(text.upper().replace(" ", "_"), custom_icon_previews["IFC"]).icon_id
-    modifier_icon, modifier_str = tool.Blender.KEY_MODIFIERS.get(modifier, ("NONE", ""))
-
-    row = layout if ui_context == "TOOL_HEADER" else layout.row(align=True)
-    op = row.operator("bim.cad_hotkey", text=op_text, icon_value=custom_icon)
-
-    if ui_context != "TOOL_HEADER" and len(parts) == 2:
-        layout = layout.row(align=True)  # Create a new line for hotkey display
-        layout.label(text="", icon=modifier_icon)
-        layout.label(text="", icon=f"EVENT_{key}")
-
-    hotkey_description = f"Hotkey: {modifier_str} {key}"
-    description = "\n\n".join(filter(None, [hotkey_description if description else ""]))
-    op.hotkey = hotkey
-    op.description = description or hotkey_description
-
-    return op
+add_layout_hotkey_operator = partial(tool.Blender.add_layout_hotkey_operator, tool_name="cad", module_name=__name__)
 
 
 custom_icon_previews = None

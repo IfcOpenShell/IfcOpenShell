@@ -30,6 +30,7 @@ from bonsai.bim.module.model.data import AuthoringData, ItemData
 from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
 from typing import Optional, Union
+from functools import partial
 
 
 def load_custom_icons():
@@ -365,43 +366,7 @@ class CableTool(BimTool):
     ifc_element_type = "IfcCableSegmentType"
 
 
-def add_layout_hotkey_operator(
-    layout: bpy.types.UILayout,
-    text: str,
-    hotkey: str,
-    description: Union[str, None],
-    ui_context: str = "",
-    *,
-    operator: str = "bim.hotkey",
-) -> bpy.types.OperatorProperties:
-    """
-    :param operator: Operator to display in UI. Displaying the specific operator in UI can be useful
-        to provide poll error messages.
-    """
-    parts = hotkey.split("_") if hotkey else []
-    modifier, key = (parts + ["", ""])[:2]
-
-    op_text = "" if ui_context == "TOOL_HEADER" else text
-    custom_icon = custom_icon_previews.get(text.upper().replace(" ", "_"), custom_icon_previews["IFC"]).icon_id
-    modifier_icon, modifier_str = tool.Blender.KEY_MODIFIERS.get(modifier, ("NONE", ""))
-
-    row = layout.row(align=True)
-    op = row.operator(operator, text=op_text, icon_value=custom_icon)
-
-    if ui_context != "TOOL_HEADER":
-        row.label(text="", icon=modifier_icon)
-        row.label(text="", icon=f"EVENT_{key}" if key else "BLANK1")
-
-    hotkey_description = f"Hotkey: {modifier_str} {key}".strip()
-    description = "\n\n".join(filter(None, [description, hotkey_description]))
-
-    if operator == "bim.hotkey":
-        op.hotkey = hotkey
-        if ui_context == "TOOL_HEADER":
-            op.description = text + "\n" + description
-        else:
-            op.description = description
-    return op
+add_layout_hotkey_operator = partial(tool.Blender.add_layout_hotkey_operator, tool_name="bim", module_name=__name__)
 
 
 def format_ifc_camel_case(string):

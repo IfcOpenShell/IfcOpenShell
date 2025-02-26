@@ -500,18 +500,55 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def add_layout_hotkey_operator(
-        cls, tool_name: str, layout: bpy.types.UILayout, text: str, hotkey: str, description: str
+        cls,
+        layout: bpy.types.UILayout,
+        text: str,
+        hotkey: str,
+        description: str,
+        ui_context: str = "",
+        *,
+        tool_name: str,
+        module_name: str,
+        operator: Optional[str] = None,
     ) -> tuple[bpy.types.OperatorProperties, bpy.types.UILayout]:
+        """
+        :param module_name: Provide `__name__` of the current module,
+            so method could pick up icon previews based on the module's `custom_icon_previews` attribute.
+        :param operator: Operator to display in UI. Displaying the specific operator in UI can be useful
+            to provide poll error messages.
+        """
+        if tool_name == "bim":
+            hotkey_operator = "bim.hotkey"
+        else:
+            hotkey_operator = f"bim.{tool_name}_hotkey"
+        operator_to_use = operator or hotkey_operator
+
         modifier, key = hotkey.split("_")
-
-        row = layout.row(align=True)
+        op_text = "" if ui_context == "TOOL_HEADER" else text
         modifier_icon, modifier_str = cls.KEY_MODIFIERS.get(modifier, ("NONE", ""))
-        row.label(text="", icon=modifier_icon)
-        row.label(text="", icon=f"EVENT_{key}")
 
-        op = row.operator(f"bim.{tool_name}_hotkey", text=text)
-        op.hotkey = hotkey
-        op.description = description
+        row = layout if ui_context == "TOOL_HEADER" else layout.row(align=True)
+        module = sys.modules[module_name]
+        icon_previews: Union[bpy.utils.previews.ImagePreviewCollection, None]
+        icon_previews = getattr(module, "custom_icon_previews", None)
+        if icon_previews:
+            custom_icon = icon_previews.get(text.upper().replace(" ", "_"), icon_previews["IFC"]).icon_id
+            op = row.operator(operator_to_use, text=op_text, icon_value=custom_icon)
+        else:
+            op = row.operator(operator_to_use, text=op_text)
+        if ui_context != "TOOL_HEADER":
+            row.label(text="", icon=modifier_icon)
+            row.label(text="", icon=f"EVENT_{key}")
+
+        if operator_to_use == hotkey_operator:
+            hotkey_description = f"Hotkey: {modifier_str} {key}".strip()
+            description = "\n\n".join(filter(None, [description, hotkey_description]))
+
+            op.hotkey = hotkey
+            if ui_context == "TOOL_HEADER":
+                op.description = text + "\n" + description
+            else:
+                op.description = description
         return op, row
 
     @classmethod
