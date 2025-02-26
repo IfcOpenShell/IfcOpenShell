@@ -137,9 +137,10 @@ def format_distance(
     scaleFactor = bpy.context.scene.unit_settings.scale_length
     unit_system = bpy.context.scene.unit_settings.system
     unit_length = bpy.context.scene.unit_settings.length_unit
-    area_unit_symbol = " " + ifcopenshell.util.unit.get_unit_symbol(
-        ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT")
-    )
+    if area_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT"):
+        area_unit_symbol = " " + ifcopenshell.util.unit.get_unit_symbol(area_unit)
+    else:
+        area_unit_symbol = ""
 
     value *= scaleFactor
 
