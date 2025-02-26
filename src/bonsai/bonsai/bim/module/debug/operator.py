@@ -527,7 +527,7 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Purge Unused Elements By Class"
     bl_description = (
         "Will find all elements of class that have no inverse references and will remove them, use very carefully.\n"
-        "If IFC class is provided in neighbour field, will purge only elemnts of the provided class. Otherwise will purge all white-listed elements.\n"
+        "If IFC class is provided in neighbour field, will purge only elements of the provided class. Otherwise will purge all white-listed elements.\n"
         "ALT+CLICK to provide a path where to save the IFC file with the removed elements (note changes will be applied to the current IFC too)"
     )
     bl_options = {"REGISTER", "UNDO"}
