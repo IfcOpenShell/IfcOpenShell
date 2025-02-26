@@ -1480,7 +1480,7 @@ class DumbWallJoiner:
                     results["direction"] = Vector(item.ExtrudedDirection.DirectionRatios)
                     results["x_angle"] = Vector((0, 1)).angle_signed(Vector((y, z)))
                     results["is_sloped"] = True
-                results["height"] = (item.Depth * self.unit_scale) / (1 / cos(results["x_angle"]))
+                results["height"] = (item.Depth * self.unit_scale) / abs(1 / cos(results["x_angle"]))
                 break
             elif item.is_a("IfcBooleanClippingResult"):  # should be before IfcBooleanResult check
                 item = item.FirstOperand
