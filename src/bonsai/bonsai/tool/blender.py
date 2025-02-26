@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+import sys
 import bpy
 import bmesh
 import json
@@ -490,18 +491,22 @@ class Blender(bonsai.core.tool.Blender):
         )
         return keymap
 
+    KEY_MODIFIERS = {
+        "A": ("EVENT_ALT", "OPTION" if sys.platform == "Darwin" else "ALT"),
+        "C": ("EVENT_CTRL", "CTRL"),
+        "S": ("EVENT_SHIFT", "⇧"),
+        "E": ("EVENT_PADENTER", "ENTER" if sys.platform == "Darwin" else "RETURN"),
+    }
+
     @classmethod
     def add_layout_hotkey_operator(
         cls, tool_name: str, layout: bpy.types.UILayout, text: str, hotkey: str, description: str
     ) -> tuple[bpy.types.OperatorProperties, bpy.types.UILayout]:
-        modifiers = {
-            "A": "EVENT_ALT",
-            "S": "EVENT_SHIFT",
-        }
         modifier, key = hotkey.split("_")
 
         row = layout.row(align=True)
-        row.label(text="", icon=modifiers[modifier])
+        modifier_icon, modifier_str = cls.KEY_MODIFIERS.get(modifier, ("NONE", ""))
+        row.label(text="", icon=modifier_icon)
         row.label(text="", icon=f"EVENT_{key}")
 
         op = row.operator(f"bim.{tool_name}_hotkey", text=text)

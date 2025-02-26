@@ -337,7 +337,7 @@ def add_layout_hotkey_operator(
     modifier, key = parts
     op_text = "" if ui_context == "TOOL_HEADER" else text
     custom_icon = custom_icon_previews.get(text.upper().replace(" ", "_"), custom_icon_previews["IFC"]).icon_id
-    modifier_icon, modifier_str = MODIFIERS.get(modifier, ("NONE", ""))
+    modifier_icon, modifier_str = tool.Blender.KEY_MODIFIERS.get(modifier, ("NONE", ""))
 
     row = layout if ui_context == "TOOL_HEADER" else layout.row(align=True)
     op = row.operator("bim.cad_hotkey", text=op_text, icon_value=custom_icon)
@@ -357,7 +357,3 @@ def add_layout_hotkey_operator(
 
 custom_icon_previews = None
 display_mode = None
-
-MODIFIERS = {
-    "S": ("EVENT_SHIFT", "⇧"),
-}

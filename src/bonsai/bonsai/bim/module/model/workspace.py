@@ -383,7 +383,7 @@ def add_layout_hotkey_operator(
 
     op_text = "" if ui_context == "TOOL_HEADER" else text
     custom_icon = custom_icon_previews.get(text.upper().replace(" ", "_"), custom_icon_previews["IFC"]).icon_id
-    modifier_icon, modifier_str = MODIFIERS.get(modifier, ("NONE", ""))
+    modifier_icon, modifier_str = tool.Blender.KEY_MODIFIERS.get(modifier, ("NONE", ""))
 
     row = layout.row(align=True)
     op = row.operator(operator, text=op_text, icon_value=custom_icon)
@@ -1441,10 +1441,3 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
 custom_icon_previews = None
 display_mode = None
-
-MODIFIERS = {
-    "A": ("EVENT_ALT", "OPTION" if sys.platform == "Darwin" else "ALT"),
-    "C": ("EVENT_CTRL", "CTRL"),
-    "S": ("EVENT_SHIFT", "⇧"),
-    "E": ("EVENT_PADENTER", "ENTER" if sys.platform == "Darwin" else "RETURN"),
-}
