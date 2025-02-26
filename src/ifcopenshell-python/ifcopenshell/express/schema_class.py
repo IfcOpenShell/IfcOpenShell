@@ -384,10 +384,10 @@ class SchemaClass(codegen.Base):
                 else:
                     match = re.search(r'\((\w+?_[\w+]+?_\w+?)\)', declared_type)
                     if match:
-                        old_decl = match.group(1).lower().replace(schema_name.lower() + '_', '').replace('_type', '')
-                        idx = [n.lower() for n in x.names].index(old_decl)
-                        snu = schema_name.upper()
-                        declared_type = declared_type.replace(old_decl, '%(snu)s_types[%(idx)d]' % locals())
+                        old_decl = match.group(1)
+                        name = old_decl.lower().replace(schema_name.lower() + '_', '').replace('_type', '')
+                        idx = [n.lower() for n in x.names].index(name)
+                        declared_type = declared_type.replace(old_decl, '%(schema_name)s_types[%(idx)d]' % locals())
                 return declared_type
             return wrapper if code == EarlyBoundCodeWriter else fn
 
