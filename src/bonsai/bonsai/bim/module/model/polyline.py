@@ -85,6 +85,7 @@ def get_wall_preview_data(context, relating_type):
     if x_angle > radians(90) or x_angle < radians(-90):
         height *= -1
     angle_distance = height * tan(x_angle)
+    thickness *= 1 / cos(x_angle)
 
     data = {}
     data["verts"] = []
