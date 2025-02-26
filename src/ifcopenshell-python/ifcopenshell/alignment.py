@@ -107,6 +107,7 @@ def print_structure(alignment, indent=0):
     Debugging function to print alignment decomposition
     """
     print(" " * indent, str(alignment)[0:100])
+
     for rel in alignment.IsNestedBy:
         for child in rel.RelatedObjects:
             print_structure(child, indent + 2)

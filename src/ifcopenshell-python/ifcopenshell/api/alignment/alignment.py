@@ -253,14 +253,7 @@ def create_horizontal_alignment(
         Representation=None,
     )
 
-    nests_horizontal_segments = file.create_entity(
-        type="IfcRelNests",
-        GlobalId=ifcopenshell.guid.new(),
-        OwnerHistory=None,
-        Name="Nests horizontal alignment segments under horizontal alignment",
-        RelatingObject=horizontal_alignment,
-        RelatedObjects=horizontal_segments,
-    )
+    ifcopenshell.api.nest.assign_object(file,related_objects=horizontal_segments,relating_object=horizontal_alignment)
 
     return horizontal_alignment, composite_curve
 
@@ -468,14 +461,7 @@ def create_vertical_alignment(
         Representation=None,
     )
 
-    nests_vertical_segments = file.create_entity(
-        type="IfcRelNests",
-        GlobalId=ifcopenshell.guid.new(),
-        OwnerHistory=None,
-        Name=None,
-        RelatingObject=vertical_alignment,
-        RelatedObjects=vertical_segments,
-    )
+    ifcopenshell.api.nest.assign_object(file,related_objects=vertical_segments,relating_object=vertical_alignment)
 
     return vertical_alignment, gradient_curve
 
@@ -515,14 +501,7 @@ def set_stationing(file: ifcopenshell.file,alignment: entity_instance,basis_curv
     )
     pset_stationing = ifcopenshell.api.pset.add_pset(file,product=start_referent,name="Pset_Stationing")
     ifcopenshell.api.pset.edit_pset(file,pset=pset_stationing,properties={"Station":start_station})
-    nesting_of_alignment = file.create_entity(
-        type="IfcRelNests",
-        GlobalId=ifcopenshell.guid.new(),
-        OwnerHistory=None,
-        Name=None,
-        RelatingObject=alignment,
-        RelatedObjects=(start_referent,),
-    )
+    ifcopenshell.api.nest.assign_object(file,related_objects=[start_referent],relating_object=alignment)
 
 
 def create_alignment_by_pi_method(
@@ -573,14 +552,7 @@ def create_alignment_by_pi_method(
     )
 
     # nest the horizontal and vertical under the alignment
-    nesting_of_alignment = file.create_entity(
-        type="IfcRelNests",
-        GlobalId=ifcopenshell.guid.new(),
-        OwnerHistory=None,
-        Name=None,
-        RelatingObject=alignment,
-        RelatedObjects=(horizontal_alignment, vertical_alignment,),
-    )
+    ifcopenshell.api.nest.assign_object(file,related_objects=[horizontal_alignment,vertical_alignment],relating_object=alignment)
 
     # create geometric representation
     if include_geometry:
@@ -666,14 +638,7 @@ def create_horizontal_alignment_by_pi_method(
     )
 
     # nest the horizontal under the alignment
-    nesting_of_alignment = file.create_entity(
-        type="IfcRelNests",
-        GlobalId=ifcopenshell.guid.new(),
-        OwnerHistory=None,
-        Name=None,
-        RelatingObject=alignment,
-        RelatedObjects=(horizontal_alignment,),
-    )
+    ifcopenshell.api.nest.assign_object(file,related_objects=[horizontal_alignment],relating_object=alignment)
 
     # create geometric representation
     if include_geometry:
@@ -709,89 +674,20 @@ def create_horizontal_alignment_by_pi_method(
 
 def _move_vertical_to_child_alignment(
         file:ifcopenshell.file,
-        parent_alignment: entity_instance
+        parent_alignment: entity_instance,
+        vertical_alignment: entity_instance
 ):
-    # Find the nested IfcAlignmentVertical and remove it from the parent alignment
-    vertical_alignments = [c for c in ifcopenshell.util.element.get_components(parent_alignment) if c.is_a("IfcAlignmentVertical")]
-    ifcopenshell.api.nest.unassign_object(file,related_objects=vertical_alignments)
+    ifcopenshell.api.nest.unassign_object(file,related_objects=[vertical_alignment])
 
     child_alignment = ifcopenshell.api.root.create_entity(file,ifc_class="IfcAlignment",name=f"Child of{parent_alignment.Name}")
     child_alignment.ObjectPlacement = parent_alignment.ObjectPlacement
 
-    ifcopenshell.api.nest.assign_object(file,related_objects=vertical_alignments,relating_object=child_alignment)
+    ifcopenshell.api.nest.assign_object(file,related_objects=[vertical_alignment],relating_object=child_alignment)
     ifcopenshell.api.aggregate.assign_object(file,products=[child_alignment], relating_object=parent_alignment)
 
     if axis := ifcopenshell.util.representation.get_representation(parent_alignment,"Model","Axis","MODEL_VIEW"):
         ifcopenshell.api.geometry.assign_representation(file,product=child_alignment,representation=axis)
         ifcopenshell.api.geometry.unassign_representation(file,product=parent_alignment,representation=axis)
-
-#    alignment_vertical = None
-#    for rel_nests in parent_alignment.IsNestedBy:
-#        for related_object in rel_nests.RelatedObjects:
-#            if related_object.is_a().upper() == "IFCALIGNMENTVERTICAL":
-#                # the correct IfcRelNests has been found
-#                alignment_vertical = related_object
-#                rel_nests.RelatedObjects = tuple(set(rel_nests.RelatedObjects) - {related_object})
-#                break
-#        
-#        if alignment_vertical:
-#            break # alignment_vertical found, break from outer loop
-#
-#    # Create the child IfcAlignment
-#    child_alignment = file.create_entity(
-#        type="IfcAlignment",
-#        GlobalId=ifcopenshell.guid.new(),
-#        OwnerHistory=None,
-#        Name=f"Child of {parent_alignment.Name}",
-#        Description=None,
-#        ObjectType=None,
-#        ObjectPlacement=parent_alignment.ObjectPlacement,
-#        Representation=None,
-#        PredefinedType=None,
-#    )
-#
-#    # Nest the vertical under the child alignment
-#    nesting_of_alignment = file.create_entity(
-#        type="IfcRelNests",
-#        GlobalId=ifcopenshell.guid.new(),
-#        OwnerHistory=None,
-#        Name=None,
-#        RelatingObject=child_alignment,
-#        RelatedObjects=(alignment_vertical,),
-#    )
-#
-#    # Aggregate the child alignment to the parent alignment
-#    aggregate_of_alignments = file.create_entity(
-#        type = "IfcRelAggregates",
-#        GlobalId = ifcopenshell.guid.new(),
-#        OwnerHistory = None,
-#        Name = None,
-#        RelatingObject=parent_alignment,
-#        RelatedObjects=(child_alignment,)
-#    )
-#
-#    # If the parent_alignment has a Axis, Curve3D representation, move it to the new child alignment
-#    # Get the representation
-#    if parent_alignment.Representation:
-#        for representation in parent_alignment.Representation.Representations:
-#            if representation.RepresentationIdentifier.upper() == "AXIS" and representation.RepresentationType.upper() == "CURVE3D":
-#                axis3d_shape_representation = representation
-#                break
-# 
-#     if axis3d_shape_representation:
-#        parent_alignment.Representation.Representations = tuple(set(parent_alignment.Representation.Representations) - {axis3d_shape_representation})
-#
-#        # create the child alignment product definition
-#        product_definition_shape = file.create_entity(
-#            type="IfcProductDefinitionShape",
-#            Name="Alignment Product Definition Shape",
-#            Description=None,
-#            Representations=(axis3d_shape_representation,),
-#        )
-#
-#        # add the representation to the child alignment
-#        child_alignment.Representation = product_definition_shape
-
 
 
 def add_vertical_alignment(
@@ -802,102 +698,86 @@ def add_vertical_alignment(
         ):
     
     placement = alignment.ObjectPlacement
-    composite_curve = alignment.Representation.Representations[0].Items[0]
 
-    # determine if the alignment has child alignments
-    # this would be the case if there are multiple vertical alignments
-    has_children_alignments = False
-    for rel_aggregates in alignment.IsDecomposedBy:
-        for related_object in rel_aggregates.RelatedObjects:
-            if(related_object.is_a().upper() == "IFCALIGNMENT"):
-                has_children_alignments = True
-                break
-        
-        if has_children_alignments:
-            break # break from outer loop
-    
-    # find the horizontal alignment
-    for rel_nests in alignment.IsNestedBy:
-        for related_object in rel_nests.RelatedObjects:
-            if related_object.is_a().upper() == "IFCALIGNMENTHORIZONTAL":
-                # create the new vertical alignment
-                vertical_alignment, gradient_curve = create_vertical_alignment(file,alignment.Name,composite_curve,vpoints,lengths,placement)
+    axis = ifcopenshell.util.representation.get_representation(alignment,"Model","Axis","MODEL_VIEW")
+    base_curve = axis.Items[0] # this is the IfcCompositeCurve for the horizontal alignment. it is the base curve for vertical
 
-                # if there is only one nested object and it is IfcAlignmentHorizontal
-                # and the alignment does not have aggregated children alignments
-                # then nest the IfcAlignmentVertical with the same IfcRelNests
-                # per CT 4.1.4.4.1.1 - Alignment Layout
-                if len(rel_nests.RelatedObjects) == 1 and not has_children_alignments:
-                    rel_nests.RelatedObjects += (vertical_alignment,)
+    # get all the child alignments under alignment
+    child_alignments = [c for c in ifcopenshell.util.element.get_decomposition(alignment) if c.is_a("IfcAlignment")]
 
-                    if composite_curve:
-                        axis_geom_subcontext = segments.get_axis_subcontext(file)
+    # get all the IfcAlignmentVertical that are nesting alignment (there should be 0 or 1)
+    # if 0, alignment is just horizontal and we are adding the first vertical so it will nest to the alignment, 
+    # or there are multiple vertical and they aggregate to child alignments
+    # if 1, there is one vertical alignments. move it to a child alignment
+    vertical_alignments_nesting_alignment = [c for c in ifcopenshell.util.element.get_components(alignment) if c.is_a("IfcAlignmentVertical")]
 
-                        # create the Curve3D representation
-                        axis3d_shape_representation = file.create_entity(
-                            type="IfcShapeRepresentation",
-                            ContextOfItems=axis_geom_subcontext,
-                            RepresentationIdentifier="Axis",
-                            RepresentationType="Curve3D",
-                            Items=(gradient_curve,),
-                        )
+    # move the vertical alignment to a child alignment because there is going to be more than one vertical
+    for vertical_alignment_nesting_alignment in vertical_alignments_nesting_alignment:
+        _move_vertical_to_child_alignment(file,alignment,vertical_alignment_nesting_alignment)
 
-                        alignment.Representation.Representations += (axis3d_shape_representation,)
+    # create the new vertical alignment
+    vertical_alignment, gradient_curve = create_vertical_alignment(file,alignment.Name,base_curve,vpoints,lengths,placement)
 
-                else:
-                    if not has_children_alignments:
-                        _move_vertical_to_child_alignment(file,alignment)
+    if len(child_alignments) == 0 and len(vertical_alignments_nesting_alignment) == 0:
+        # this is the first vertical alignment so nest it into alignment (IFC CT 4.1.4.4.1.1)
+        ifcopenshell.api.nest.assign_object(file,related_objects=[vertical_alignment],relating_object=alignment)
 
-                    # create the child alignment for the new vertical
-                    child_alignment = file.create_entity(
-                        type="IfcAlignment",
-                        GlobalId=ifcopenshell.guid.new(),
-                        OwnerHistory=None,
-                        Name=f"Child of {alignment.Name}",
-                        Description=None,
-                        ObjectType=None,
-                        ObjectPlacement=placement,
-                        Representation=None,
-                        PredefinedType=None,
-                    )
+        if base_curve:
+            axis_geom_subcontext = segments.get_axis_subcontext(file)
 
-                    # nest the vertical under the child alignment
-                    nesting_of_alignment = file.create_entity(
-                        type="IfcRelNests",
-                        GlobalId=ifcopenshell.guid.new(),
-                        OwnerHistory=None,
-                        Name=None,
-                        RelatingObject=child_alignment,
-                        RelatedObjects=(vertical_alignment,),
-                    )
+            # create the Curve3D representation
+            axis3d_shape_representation = file.create_entity(
+                type="IfcShapeRepresentation",
+                ContextOfItems=axis_geom_subcontext,
+                RepresentationIdentifier="Axis",
+                RepresentationType="Curve3D",
+                Items=(gradient_curve,),
+            )
 
-                    # Add the child alignment to the parent alignment IfcRelAggregates
-                    ifcopenshell.api.aggregate.assign_object(file,(child_alignment,),alignment)
+            alignment.Representation.Representations += (axis3d_shape_representation,)
+    else:
+        # there are multiple vertical reusing the horizontal (IFC CT 4.1.4.4.1.2)
+        # create a new child alignment for the new vertical
+        child_alignment = file.create_entity(
+            type="IfcAlignment",
+            GlobalId=ifcopenshell.guid.new(),
+            OwnerHistory=None,
+            Name=f"Child of {alignment.Name}",
+            Description=None,
+            ObjectType=None,
+            ObjectPlacement=placement,
+            Representation=None,
+            PredefinedType=None,
+        )
 
+        # nest the vertical under the child alignment
+        ifcopenshell.api.nest.assign_object(file,related_objects=[vertical_alignment],relating_object=child_alignment)
 
-                    if composite_curve:
-                        axis_geom_subcontext = segments.get_axis_subcontext(file)
+        # Aggregate the child alignment to the parent alignment
+        ifcopenshell.api.aggregate.assign_object(file,(child_alignment,),alignment)
 
-                        # create the Curve3D representation
-                        axis3d_shape_representation = file.create_entity(
-                            type="IfcShapeRepresentation",
-                            ContextOfItems=axis_geom_subcontext,
-                            RepresentationIdentifier="Axis",
-                            RepresentationType="Curve3D",
-                            Items=(gradient_curve,),
-                        )
+        if base_curve:
+            axis_geom_subcontext = segments.get_axis_subcontext(file)
 
-                        # create the alignment product definition
-                        product_definition_shape = file.create_entity(
-                            type="IfcProductDefinitionShape",
-                            Name="Alignment Product Definition Shape",
-                            Description=None,
-                            Representations=(axis3d_shape_representation,),
-                        )
+            # create the Curve3D representation
+            axis3d_shape_representation = file.create_entity(
+                type="IfcShapeRepresentation",
+                ContextOfItems=axis_geom_subcontext,
+                RepresentationIdentifier="Axis",
+                RepresentationType="Curve3D",
+                Items=(gradient_curve,),
+            )
 
-                        # add the representation to the alignment
-                        child_alignment.Representation = product_definition_shape
+            # create the alignment product definition
+            product_definition_shape = file.create_entity(
+                type="IfcProductDefinitionShape",
+                Name="Alignment Product Definition Shape",
+                Description=None,
+                Representations=(axis3d_shape_representation,),
+            )
 
+            # add the representation to the alignment
+            child_alignment.Representation = product_definition_shape
 
 
 
