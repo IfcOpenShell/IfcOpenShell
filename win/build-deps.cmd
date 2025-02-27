@@ -565,8 +565,9 @@ call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPEND
 
 :rocksdb
 set DEPENDENCY_NAME=rocksdb
-set DEPENDENCY_DIR=%INSTALL_DIR%\%DEPENDENCY_NAME%
-call :GitCloneAndCheckoutRevision https://github.com/facebook/rocksdb "%DEPENDENCY_DIR%" v9.9.3
+set DEPENDENCY_DIR=%DEPS_DIR%\%DEPENDENCY_NAME%
+:: this is a 3y old version due to conda-forge's python-rocksdb depending on v6
+call :GitCloneAndCheckoutRevision https://github.com/facebook/rocksdb "%DEPENDENCY_DIR%" v6.29.5
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\rocksdb" ^

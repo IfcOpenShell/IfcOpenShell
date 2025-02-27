@@ -34,18 +34,14 @@ template <>
 struct DefaultCodec<size_t> {
     std::string encode(const size_t& v) const {
         std::string s(sizeof(v), 0);
-        size_t temp = v;
-        for (size_t i = 0; i < sizeof(v); i++) {
-            s[sizeof(v) - i - 1] = static_cast<char>(temp & 0xFF);
-            temp >>= 8;
-        }
+        memcpy(s.data(), &v, sizeof(v));
         return s;
     }
     size_t decode(const std::string& s) const {
         size_t v = 0;
-        for (size_t i = 0; i < s.size(); i++) {
-            v = (v << 8) | static_cast<unsigned char>(s[i]);
-        }
+        // @todo take min of sizeof(v), len(s)
+        // @todo unify all serialization primitives
+        memcpy(&v, s.data(), sizeof(v));
         return v;
     }
 };

@@ -791,10 +791,21 @@ void IfcParse::impl::rocks_db_file_storage::register_inverse(unsigned id_from, c
     size_t v = id_from;
     s.resize(sizeof(size_t));
     memcpy(s.data(), &v, sizeof(size_t));
+    
+    /*
+    // no merges yet, because python client doesn't support them
     db->Merge(
         rocksdb::WriteOptions{}, 
-        "v|" + to_string_fixed_width(inst_id, 10) + "|" + to_string_fixed_width(from_entity->index_in_schema(), 4) + "|" + to_string_fixed_width(attribute_index, 2), 
+        , 
         s);
+    */
+    {
+        std::string current;
+        auto key = "v|" + to_string_fixed_width(inst_id, 10) + "|" + to_string_fixed_width(from_entity->index_in_schema(), 4) + "|" + to_string_fixed_width(attribute_index, 2);
+        db->Get(rocksdb::ReadOptions{}, key, &current);
+        auto new_val = current + s;
+        db->Put(rocksdb::WriteOptions{}, key, new_val);
+    }
 }
 
 void IfcParse::impl::rocks_db_file_storage::unregister_inverse(unsigned id_from, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass* inst, int attribute_index) {
@@ -813,10 +824,28 @@ void IfcParse::impl::rocks_db_file_storage::unregister_inverse(unsigned id_from,
 
 void IfcParse::impl::rocks_db_file_storage::add_type_ref(IfcUtil::IfcBaseClass* new_entity)
 {
-    size_t v = new_entity->identity();
+    if (!new_entity->declaration().as_entity()) {
+        throw std::runtime_error("Type refs are only supposed to be used for entities");
+    }
+
+    size_t v = new_entity->id();
     std::string s(sizeof(size_t), ' ');
     memcpy(s.data(), &v, sizeof(size_t));
-    db->Merge(rocksdb::WriteOptions{}, "t|" + std::to_string(new_entity->declaration().index_in_schema()), s);
+
+    // no merges yet, because the python client doesn't support them
+    // db->Merge(rocksdb::WriteOptions{}, "t|" + std::to_string(new_entity->declaration().index_in_schema()), s);
+    {
+        std::string current;
+        auto key = "t|" + std::to_string(new_entity->declaration().index_in_schema());
+        db->Get(rocksdb::ReadOptions{}, key, &current);
+        auto new_val = current + s;
+        db->Put(rocksdb::WriteOptions{}, key, new_val);
+    }
+
+    // not only mapping also register type
+    v = new_entity->declaration().index_in_schema();
+    memcpy(s.data(), &v, sizeof(size_t));
+    db->Put(rocksdb::WriteOptions{}, "i|" + std::to_string(new_entity->identity()) + "|t", s);
 }
 
 void IfcParse::impl::rocks_db_file_storage::remove_type_ref(IfcUtil::IfcBaseClass* new_entity)
@@ -826,11 +855,13 @@ void IfcParse::impl::rocks_db_file_storage::remove_type_ref(IfcUtil::IfcBaseClas
     if (db->Get(rocksdb::ReadOptions{}, key, &s).ok()) {
         std::vector<size_t> vals(s.size() / sizeof(size_t));
         memcpy(vals.data(), s.data(), s.size());
-        vals.erase(std::find(vals.begin(), vals.end(), (size_t)new_entity->identity()));
+        vals.erase(std::find(vals.begin(), vals.end(), (size_t)new_entity->id()));
         s.resize(vals.size() * sizeof(size_t));
         memcpy(s.data(), vals.data(), s.size());
         db->Put(rocksdb::WriteOptions{}, key, s);
     }
+
+    db->Delete(rocksdb::WriteOptions{}, "i|" + std::to_string(new_entity->identity()) + "|t");
 }
 
 namespace {
@@ -1032,25 +1063,26 @@ namespace {
 // Returns a string representation of the entity
 // Note that this initializes the entity if it is not initialized
 //
-void IfcEntityInstanceData::toString(std::ostream& ss, bool upper, const entity* decl) const {
+void IfcEntityInstanceData::toString(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::ostream& ss, bool upper) const {
     ss.imbue(std::locale::classic());
 
     ss << "(";
 
     StringBuilderVisitor vis(ss, upper);
 
-    for (size_t i = 0; i < size(); ++i) {
+    // @todo perhaps IfcEntityInstanceData::size() can be removed now?
+    for (size_t i = 0; i < (decl && decl->as_entity() ? decl->as_entity()->attribute_count() : 1); ++i) {
         if (i != 0) {
             ss << ",";
         }
-        if (has_attribute_value<Blank>(i)) {
-            if (decl != nullptr && decl->derived()[i]) {
+        if (has_attribute_value<Blank>(storage, decl, identity, i)) {
+            if (decl != nullptr && decl->as_entity() && decl->as_entity()->derived()[i]) {
                ss << "*";
             } else {
                ss << "$";
 	        }
         } else {
-            apply_visitor(vis, i);
+            apply_visitor(storage, decl, identity, vis, i);
         }
     }
     ss << ")";
@@ -1132,8 +1164,10 @@ class add_to_instance_list_visitor {
 class apply_individual_instance_visitor {
   private:
     boost::optional<AttributeValue> attribute_;
-    IfcEntityInstanceData* data_;
     int attribute_index_;
+
+    const IfcUtil::IfcBaseClass* inst_;
+
 
     template <typename T>
     void apply_attribute_(T& t, const AttributeValue& attr, int index) const {
@@ -1161,8 +1195,8 @@ class apply_individual_instance_visitor {
         , attribute_index_(idx)
     {}
 
-    apply_individual_instance_visitor(IfcEntityInstanceData* data)
-        : data_(data) 
+    apply_individual_instance_visitor(const IfcUtil::IfcBaseClass* data)
+        : inst_(data)
     {}
 
     template <typename T>
@@ -1170,8 +1204,9 @@ class apply_individual_instance_visitor {
         if (attribute_) {
             apply_attribute_(t, *attribute_, attribute_index_);
         } else {
-            for (size_t i = 0; i < data_->size(); ++i) {
-                auto attr = data_->get_attribute_value(i);
+            const auto& decl = inst_->declaration();
+            for (size_t i = 0; i < (decl.as_entity() ? decl.as_entity()->attribute_count() : 1); ++i) {
+                auto attr = inst_->get_attribute_value(i);
                 apply_attribute_(t, attr, (int) i);
             }
         }
@@ -1180,7 +1215,7 @@ class apply_individual_instance_visitor {
 
 template <typename T>
 void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
-    auto current_attribute = data_.get_attribute_value(i);
+    auto current_attribute = get_attribute_value(i);
     if (file_ != nullptr) {
 
         // Deregister old attribute guid in file guid map.
@@ -1188,8 +1223,11 @@ void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
             try {
                 auto guid = (std::string) current_attribute;
                 auto it = file_->internal_guid_map().find(guid);
-                if (it != file_->internal_guid_map().end() && it->second == this) {
-                    file_->internal_guid_map().erase(it);
+                if (it != file_->internal_guid_map().end()) {
+                    const std::pair<const std::string, IfcUtil::IfcBaseClass*>& p = *it;
+                    if (p.second == this) {
+                        file_->internal_guid_map().erase(it);
+                    }
                 }
             } catch (IfcParse::IfcException& e) {
                 Logger::Error(e);
@@ -1200,22 +1238,25 @@ void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
         unregister_inverse_visitor visitor(*file_, this);
         apply_individual_instance_visitor(current_attribute, (int) i).apply(visitor);
     }
-
-    if constexpr (std::is_pointer_v<T>) {
-        if (t) {
-            data_.set_attribute_value(i, t);
+    {
+        void* const storage = file_ ? std::visit([](const auto& m) { return (void*)&m; }, file_->storage_) : nullptr;
+        if constexpr (std::is_pointer_v<T>) {
+            if (t) {
+                data_.set_attribute_value(storage, &declaration(), identity(), i, t);
+            } else {
+                data_.set_attribute_value(storage, &declaration(), identity(), i, Blank{});
+            }
         } else {
-            data_.set_attribute_value(i, Blank{});
+            data_.set_attribute_value(storage, &declaration(), identity(),i, t);
         }
-    } else {
-        data_.set_attribute_value(i, t);
     }
-    auto new_attribute = data_.get_attribute_value(i);
+    auto new_attribute = get_attribute_value(i);
 
     if (file_ != nullptr) {
         // Register inverse indices in file
-        register_inverse_visitor visitor(*file_, this);
-        apply_individual_instance_visitor(new_attribute, (int) i).apply(visitor);
+        // @todo verify no longer necessary?
+        // register_inverse_visitor visitor(*file_, this);
+        // apply_individual_instance_visitor(new_attribute, (int) i).apply(visitor);
     
         // Register new attribute guid in guid map
         if (i == 0 && (file_->ifcroot_type() != nullptr) && this->declaration().is(*file_->ifcroot_type())) {
@@ -1225,7 +1266,7 @@ void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
                 if (it != file_->internal_guid_map().end()) {
                     Logger::Warning("Duplicate guid " + guid);
                 }
-                file_->internal_guid_map().insert({ guid, file_->instance_by_id(this->id()) });
+                file_->internal_guid_map().insert({ guid, this });
             } catch (IfcParse::IfcException& e) {
                 Logger::Error(e);
             }
@@ -1257,10 +1298,19 @@ IfcFile::IfcFile(const std::string& path, filetype ty) {
         // @todo assign in constructor
         std::get<impl::in_memory_file_storage>(storage_).file = this;
         std::get<impl::in_memory_file_storage>(storage_).read_from_stream(&s, schema_, max_id_);
+
+        // @todo unify these names, it's already confusing enough as it stands
+        byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
+        idenbyid_ = decltype(idenbyid_)(&std::get<impl::in_memory_file_storage>(storage_).idenbyid_);
+        byidentity_ = decltype(byidentity_)(&std::get<impl::in_memory_file_storage>(storage_).byidentity_);
     } else {
         // @todo this can only be used for databases that already exist, because otherwise there is no way to specify the schema
-        storage_ = impl::rocks_db_file_storage(path, this);
+        storage_.emplace<2>(path, this);
         std::get<impl::rocks_db_file_storage>(storage_).read_schema(schema_);
+
+        byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).byidentity_);
+        idenbyid_ = decltype(idenbyid_)(&std::get<impl::rocks_db_file_storage>(storage_).byid_);
+        byidentity_ = decltype(byidentity_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_cache_);
     }
     ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
 }
@@ -1294,8 +1344,17 @@ IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const s
 {
     if (ty == ifcspf) {
         storage_.emplace<1>();
+        std::get<impl::in_memory_file_storage>(storage_).file = this;
+
+        byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
+        idenbyid_ = decltype(idenbyid_)(&std::get<impl::in_memory_file_storage>(storage_).idenbyid_);
+        byidentity_ = decltype(byidentity_)(&std::get<impl::in_memory_file_storage>(storage_).byidentity_);
     } else {
         storage_.emplace<2>(path, this);
+
+        byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).byidentity_);
+        idenbyid_ = decltype(idenbyid_)(&std::get<impl::rocks_db_file_storage>(storage_).byid_);
+        byidentity_ = decltype(byidentity_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_cache_);
     }
     setDefaultHeaderValues();
 }
@@ -1323,7 +1382,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
 
     if (file->header().tryRead()) {
         try {
-            schemas = file->header().file_schema().schema_identifiers();
+            schemas = file->header().file_schema()->schema_identifiers();
         } catch (...) {
             // Purposely empty catch block
         }
@@ -1402,7 +1461,8 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
 
             if (instance->declaration().is(*ifcroot_type_)) {
                 try {
-                    const std::string guid = instance->data().get_attribute_value(0);
+                    // @nb here we know we're using in-memory so 'nullptr, nullptr, 0' is safe
+                    const std::string guid = instance->data().get_attribute_value(nullptr, nullptr, 0, 0);
                     if (byguid_.find(guid) != byguid_.end()) {
                         std::stringstream ss;
                         ss << "Instance encountered with non-unique GlobalId " << guid;
@@ -1488,10 +1548,10 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
                 if (it == byid_.end()) {
                     Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
                 } else {
-                    byidentity_[idenbyid_[p.first.name_]]->data().set_attribute_value(p.first.index_, it->second);
+                    byidentity_[idenbyid_[p.first.name_]]->data().set_attribute_value(nullptr, nullptr, 0, p.first.index_, it->second);
                 }
             } else if (auto* inst = boost::get<IfcUtil::IfcBaseClass*>(v)) {
-                byidentity_[idenbyid_[p.first.name_]]->data().set_attribute_value(p.first.index_, *inst);
+                byidentity_[idenbyid_[p.first.name_]]->data().set_attribute_value(nullptr, nullptr, 0, p.first.index_, *inst);
             }
         } else if (auto* v = boost::get<std::vector<reference_or_simple_type>>(&p.second)) {
             aggregate_of_instance::ptr instances(new aggregate_of_instance);
@@ -1508,7 +1568,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
                     instances->push(*inst);
                 }
             }
-            byidentity_[idenbyid_[p.first.name_]]->data().set_attribute_value(p.first.index_, instances);
+            byidentity_[idenbyid_[p.first.name_]]->data().set_attribute_value(nullptr, nullptr, 0, p.first.index_, instances);
         } else if (auto* v = boost::get<std::vector<std::vector<reference_or_simple_type>>>(&p.second)) {
             aggregate_of_aggregate_of_instance::ptr instances(new aggregate_of_aggregate_of_instance);
             for (const auto& vi : *v) {
@@ -1527,7 +1587,7 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
                 }
                 instances->push(inner);
             }
-            byidentity_[idenbyid_[p.first.name_]]->data().set_attribute_value(p.first.index_, instances);
+            byidentity_[idenbyid_[p.first.name_]]->data().set_attribute_value(nullptr, nullptr, 0, p.first.index_, instances);
         }
     }
 
@@ -1614,7 +1674,7 @@ void traverse_(IfcUtil::IfcBaseClass* instance, std::set<IfcUtil::IfcBaseClass*>
     }
 
     traversal_visitor visit(visited, list, level + 1, max_level);
-    apply_individual_instance_visitor(&instance->data()).apply(visit);
+    apply_individual_instance_visitor(instance).apply(visit);
 }
 
 void traversal_visitor::operator()(IfcUtil::IfcBaseClass* inst, int /* index */) {
@@ -1712,16 +1772,42 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
         // container and entity is created. The attribute references
         // need to be updated to point to instances in this file.
         IfcFile* other_file = entity->file_;
+        
+        auto* decl = &entity->declaration();
+        if (storage_.index() == 1) {
+            if (auto* ent = decl->as_entity()) {
+                new_entity = schema_->instantiate(decl, in_memory_attribute_storage(ent->attribute_count()));
+            } else if (auto* typedecl = decl->as_type_declaration()) {
+                new_entity = schema_->instantiate(decl, in_memory_attribute_storage(1));
+            }
+        }
+        if (storage_.index() == 2) {
+            new_entity = schema_->instantiate(decl, rocks_db_attribute_storage{});
+        }
+        new_entity->file_ = this;
 
-        IfcEntityInstanceData we(entity->data());
-        new_entity = schema()->instantiate(&entity->declaration(), std::move(we));
-
+        void* own_storage = std::visit([](const auto& m) { return (void*)&m; }, storage_);
+        void* other_storage = std::visit([](const auto& m) { return (void*)&m; }, other_file->storage_);
+        for (size_t i = 0; i < (entity->declaration().as_entity() ? entity->declaration().as_entity()->attribute_count() : 1); ++i) {
+            entity->data().apply_visitor(other_storage, decl, entity->identity(), [this, i, decl, new_entity, own_storage](const auto& v) {
+                using U = std::decay_t<decltype(v)>;
+                // only need to copy non-instance attribute values, others are assigned below after mapping
+                if constexpr (std::is_same_v<U, IfcUtil::IfcBaseClass*>) {
+                } else if constexpr (std::is_same_v<U, aggregate_of_instance::ptr>) {
+                } else if constexpr (std::is_same_v<U, aggregate_of_aggregate_of_instance::ptr>) {
+                } else {
+                    new_entity->set_attribute_value(i, v);
+                }
+            }, i);
+        }
+        
         // In case an entity is added that contains geometry, the unit
         // information needs to be accounted for for IfcLengthMeasures.
         double conversion_factor = std::numeric_limits<double>::quiet_NaN();
 
-        for (size_t i = 0; i < new_entity->data().size(); ++i) {
-            auto attr = new_entity->data().get_attribute_value(i);
+        for (size_t i = 0; i < (new_entity->declaration().as_entity() ? new_entity->declaration().as_entity()->attribute_count() : 1); ++i) {
+            // old attribute value
+            auto attr = entity->get_attribute_value(i);
             IfcUtil::ArgumentType attr_type = attr.type();
 
             IfcParse::declaration* decl = 0;
@@ -1741,8 +1827,8 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                 if (eit == entity_file_map_.end()) {
                     throw IfcParse::IfcException("Unable to map instance to file");
                 }
-                // We directly use storage set not to trigger inverse recalculation which happens at the end
-                new_entity->data().set_attribute_value(i, eit->second);
+                // @todo previously, we directly use storage::set() not to trigger inverse recalculation which happens at the end
+                new_entity->set_attribute_value(i, eit->second);
             } else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
                 aggregate_of_instance::ptr instances = attr;
                 aggregate_of_instance::ptr new_instances(new aggregate_of_instance);
@@ -1754,7 +1840,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                     new_instances->push(eit->second);
                 }
 
-                new_entity->data().set_attribute_value(i, new_instances);
+                new_entity->set_attribute_value(i, new_instances);
             } else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
                 aggregate_of_aggregate_of_instance::ptr instances = attr;
                 aggregate_of_aggregate_of_instance::ptr new_instances(new aggregate_of_aggregate_of_instance);
@@ -1770,7 +1856,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                     new_instances->push(list);
                 }
                 
-                new_entity->data().set_attribute_value(i, new_instances);
+                new_entity->set_attribute_value(i, new_instances);
             } else if ((decl != nullptr) && decl->is(*schema()->declaration_by_name("IfcLengthMeasure"))) {
                 if (boost::math::isnan(conversion_factor)) {
                     std::pair<IfcUtil::IfcBaseClass*, double> this_file_unit = {nullptr, 1.0};
@@ -1789,13 +1875,13 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                 if (attr_type == IfcUtil::Argument_DOUBLE) {
                     double v = attr;
                     v *= conversion_factor;
-                    new_entity->data().set_attribute_value(i, v);
+                    new_entity->set_attribute_value(i, v);
                 } else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_DOUBLE) {
                     std::vector<double> v = attr;
                     for (std::vector<double>::iterator it = v.begin(); it != v.end(); ++it) {
                         (*it) *= conversion_factor;
                     }
-                    new_entity->data().set_attribute_value(i, v);
+                    new_entity->set_attribute_value(i, v);
                 } else if (attr_type == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE) {
                     std::vector<std::vector<double>> v = attr;
                     for (std::vector<std::vector<double>>::iterator it = v.begin(); it != v.end(); ++it) {
@@ -1804,14 +1890,13 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
                             (*jt) *= conversion_factor;
                         }
                     }
-                    new_entity->data().set_attribute_value(i, v);
+                    new_entity->set_attribute_value(i, v);
                 }
             }
         }
 
         // A new entity instance name is generated and
         // the instance is pointed to this file.
-        new_entity->file_ = this;
         if (new_entity->declaration().as_entity() != nullptr) {
             if (id == -1) {
                 new_entity->as<IfcUtil::IfcBaseEntity>()->set_id(FreshId());
@@ -1829,7 +1914,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
     // For subtypes of IfcRoot, the GUID mapping needs to be updated.
     if (new_entity->declaration().is(*ifcroot_type_)) {
         try {
-            const std::string guid = new_entity->data().get_attribute_value(0);
+            const std::string guid = new_entity->get_attribute_value(0);
             if (byguid_.find(guid) != byguid_.end()) {
                 std::stringstream ss;
                 ss << "Overwriting entity with guid " << guid;
@@ -1884,9 +1969,12 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
         byidentity_.insert({ new_entity->identity(), new_entity });
     }
 
+    /*
+    // @todo not needed anymore, because these are now calculated by using baseclass::set() ?
     if ((ty->as_entity() != nullptr)) {
         build_inverses_(new_entity);
     }
+    */
 
     return new_entity;
 }
@@ -1930,8 +2018,9 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
                 continue;
             }
 
-            for (size_t i = 0; i < related_instance->data().size(); ++i) {
-                auto attr = related_instance->data().get_attribute_value(i);
+            const auto& decl = related_instance->declaration();
+            for (size_t i = 0; i < (decl.as_entity() ? decl.as_entity()->attribute_count() : 1); ++i) {
+                auto attr = related_instance->get_attribute_value(i);
                 if (attr.isNull()) {
                     continue;
                 }
@@ -1978,8 +2067,8 @@ void IfcFile::removeEntity(IfcUtil::IfcBaseClass* entity) {
         }
     }
 
-    if (entity->declaration().is(*ifcroot_type_) && !entity->data().get_attribute_value(0).isNull()) {
-        const std::string global_id = entity->data().get_attribute_value(0);
+    if (entity->declaration().is(*ifcroot_type_) && !entity->get_attribute_value(0).isNull()) {
+        const std::string global_id = entity->get_attribute_value(0);
         auto it = byguid_.find(global_id);
         if (it != byguid_.end()) {
             byguid_.erase(it);
@@ -2088,12 +2177,14 @@ aggregate_of_instance::ptr IfcFile::instances_by_type_excl_subtypes(const IfcPar
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
             aggregate_of_instance::ptr ret(new aggregate_of_instance);
             auto it = x.bytype_.find(t->index_in_schema());
-            const auto& s = it->second;
-            // @todo generalize this, bytype_ should be a map_adapter
-            std::vector<size_t> vals(s.size() / sizeof(size_t));
-            memcpy(vals.data(), s.data(), s.size());
-            for (auto& v : vals) {
-                ret->push(x.assert_existance(v));
+            if (it != x.bytype_.end()) {
+                const auto& s = it->second;
+                // @todo generalize this, bytype_ should be a map_adapter
+                std::vector<size_t> vals(s.size() / sizeof(size_t));
+                memcpy(vals.data(), s.data(), s.size());
+                for (auto& v : vals) {
+                    ret->push(x.assert_existance(v, IfcParse::impl::rocks_db_file_storage::by_name));
+                }
             }
             return ret;
         } else {
@@ -2360,18 +2451,18 @@ void IfcFile::setDefaultHeaderValues() {
         schema_identifiers.push_back(schema()->name());
     }
 
-    header().file_description().description(file_description);
-    header().file_description().implementation_level("2;1");
+    header().file_description()->setdescription(file_description);
+    header().file_description()->setimplementation_level("2;1");
 
-    header().file_name().name(empty_string);
-    header().file_name().time_stamp(createTimestamp());
-    header().file_name().author(string_vector);
-    header().file_name().organization(string_vector);
-    header().file_name().preprocessor_version("IfcOpenShell " IFCOPENSHELL_VERSION);
-    header().file_name().originating_system("IfcOpenShell " IFCOPENSHELL_VERSION);
-    header().file_name().authorization(empty_string);
+    header().file_name()->setname(empty_string);
+    header().file_name()->settime_stamp(createTimestamp());
+    header().file_name()->setauthor(string_vector);
+    header().file_name()->setorganization(string_vector);
+    header().file_name()->setpreprocessor_version("IfcOpenShell " IFCOPENSHELL_VERSION);
+    header().file_name()->setoriginating_system("IfcOpenShell " IFCOPENSHELL_VERSION);
+    header().file_name()->setauthorisation(empty_string);
 
-    header().file_schema().schema_identifiers(schema_identifiers);
+    header().file_schema()->setschema_identifiers(schema_identifiers);
 }
 
 std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& unit_type) {
@@ -2388,16 +2479,16 @@ std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& un
     if (projects && projects->size() == 1) {
         IfcUtil::IfcBaseClass* project = *projects->begin();
 
-        IfcUtil::IfcBaseClass* unit_assignment = project->data().get_attribute_value(
+        IfcUtil::IfcBaseClass* unit_assignment = project->get_attribute_value(
             project->declaration().as_entity()->attribute_index("UnitsInContext"));
 
-        aggregate_of_instance::ptr units = unit_assignment->data().get_attribute_value(
+        aggregate_of_instance::ptr units = unit_assignment->get_attribute_value(
             unit_assignment->declaration().as_entity()->attribute_index("Units"));
 
         for (aggregate_of_instance::it it = units->begin(); it != units->end(); ++it) {
             IfcUtil::IfcBaseClass* unit = *it;
             if (unit->declaration().is("IfcNamedUnit")) {
-                const std::string file_unit_type = unit->data().get_attribute_value(
+                const std::string file_unit_type = unit->get_attribute_value(
                     unit->declaration().as_entity()->attribute_index("UnitType"));
 
                 if (file_unit_type != unit_type) {
@@ -2406,16 +2497,16 @@ std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& un
 
                 IfcUtil::IfcBaseClass* siunit = 0;
                 if (unit->declaration().is("IfcConversionBasedUnit")) {
-                    IfcUtil::IfcBaseClass* mu = unit->data().get_attribute_value(
+                    IfcUtil::IfcBaseClass* mu = unit->get_attribute_value(
                         unit->declaration().as_entity()->attribute_index("ConversionFactor"));
 
-                    IfcUtil::IfcBaseClass* vlc = mu->data().get_attribute_value(
+                    IfcUtil::IfcBaseClass* vlc = mu->get_attribute_value(
                         mu->declaration().as_entity()->attribute_index("ValueComponent"));
 
-                    IfcUtil::IfcBaseClass* unc = mu->data().get_attribute_value(
+                    IfcUtil::IfcBaseClass* unc = mu->get_attribute_value(
                         mu->declaration().as_entity()->attribute_index("UnitComponent"));
 
-                    return_value.second *= static_cast<double>(vlc->data().get_attribute_value(0));
+                    return_value.second *= static_cast<double>(vlc->get_attribute_value(0));
                     return_value.first = unit;
 
                     if (unc->declaration().is("IfcSIUnit")) {
@@ -2427,7 +2518,7 @@ std::pair<IfcUtil::IfcBaseClass*, double> IfcFile::getUnit(const std::string& un
                 }
 
                 if (siunit != nullptr) {
-                    AttributeValue prefix = siunit->data().get_attribute_value(
+                    AttributeValue prefix = siunit->get_attribute_value(
                         siunit->declaration().as_entity()->attribute_index("Prefix"));
 
                     if (!prefix.isNull()) {
@@ -2458,7 +2549,7 @@ void IfcParse::IfcFile::build_inverses_(IfcUtil::IfcBaseClass* inst) {
         }
     };
 
-    apply_individual_instance_visitor(&inst->data()).apply(fn);
+    apply_individual_instance_visitor(inst).apply(fn);
 }
 
 void IfcParse::IfcFile::build_inverses() {
@@ -2494,11 +2585,13 @@ std::atomic_uint32_t IfcUtil::IfcBaseClass::counter_(0);
 // bool IfcParse::IfcFile::guid_map_ = true;
 
 void IfcUtil::IfcBaseClass::unset_attribute_value(size_t index) {
-    data_.set_attribute_value(index, Blank{});
+    void* storage = file_ ? std::visit([](const auto& m) { return (void*)&m; }, file_->storage_) : nullptr;
+    data_.set_attribute_value(storage, &declaration(), identity(), index, Blank{});
 }
 
 AttributeValue IfcUtil::IfcBaseClass::get_attribute_value(size_t index) const {
-    return data_.get_attribute_value(index);
+    void* storage = file_ ? std::visit([](const auto& m) { return (void*)&m; }, file_->storage_) : nullptr;
+    return data_.get_attribute_value(storage, &declaration(), identity(), index);
 }
 
 void IfcUtil::IfcBaseClass::toString(std::ostream& out, bool upper) const
@@ -2512,57 +2605,48 @@ void IfcUtil::IfcBaseClass::toString(std::ostream& out, bool upper) const
     } else {
         out << declaration().name();
     }
-    data().toString(out, upper, ent);
+    void* storage = file_ ? std::visit([](const auto& m) { return (void*)&m; }, file_->storage_) : nullptr;
+    data().toString(storage, &declaration(), identity(), out, upper);
 }
 
+/*
 IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& data)
     : storage_(data.size())
 {
-    for (size_t i = 0; i < data.size(); ++i) {
-        data.apply_visitor([this, i](const auto& v) {
-            using U = std::decay_t<decltype(v)>;
-            if constexpr (std::is_same_v<U, aggregate_of_instance::ptr>) {
-                // @todo why did we ever choose shared_ptrs for these
-                // aggregates? Now we need to explicit copies.
-                aggregate_of_instance::ptr v2(new aggregate_of_instance);
-                if (v) {
-                    v2->reserve(v->size());
-                    for (auto& i : *v) {
-                        v2->push(i);
-                    }
-                }
-                set_attribute_value(i, v2);
-            } else if constexpr (std::is_same_v<U, aggregate_of_aggregate_of_instance::ptr>) {
-                aggregate_of_aggregate_of_instance::ptr v2(new aggregate_of_aggregate_of_instance);
-                if (v) {
-                    for (auto& i : *v) {
-                        v2->push(i);
-                    }
-                }
-                set_attribute_value(i, v2);
-            } else {
-                set_attribute_value(i, v);
-            }
-        }, i);
-    }
+    
 }
+*/
 
-AttributeValue IfcEntityInstanceData::get_attribute_value(size_t index) const
+AttributeValue IfcEntityInstanceData::get_attribute_value(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const
 {
-    return std::visit([index](const auto& x) {
+    return std::visit([this, storage, decl, identity, index](const auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, in_memory_attribute_storage>) {
             return AttributeValue(&x, (uint8_t)index);
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, rocks_db_attribute_storage>) {
             // @todo
-            return AttributeValue{};
+            return AttributeValue(decl->schema(), (IfcParse::impl::rocks_db_file_storage*) storage, identity, index);
         } else {
             return AttributeValue{};
         }
     }, storage_);
 }
 
+bool IfcParse::impl::rocks_db_file_storage::read_schema(const IfcParse::schema_definition*& schema) {
+    std::string value;
+    auto key = "h|file_schema|0";
+    db->Get(rocksdb::ReadOptions{}, key, &value);
+    std::vector<std::string> strings;
+    if (::impl::deserialize(this, value, strings) && strings.size() == 1) {
+        schema = schema_by_name(strings[0]);
+        return true;
+    }
+    return false;    
+}
+
+
 
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<Blank>(size_t index, const Blank& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<Derived>(size_t index, const Derived& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<int>(size_t index, const int& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<bool>(size_t index, const bool& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<boost::logic::tribool>(size_t index, const boost::logic::tribool& value);
@@ -2581,6 +2665,7 @@ template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<std::vect
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<aggregate_of_aggregate_of_instance::ptr>(size_t index, const aggregate_of_aggregate_of_instance::ptr& value);
 
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<Blank>(const std::string& name, const Blank& value);
+template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<Derived>(const std::string& name, const Derived& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<int>(const std::string& name, const int& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<bool>(const std::string& name, const bool& value);
 template void IFC_PARSE_API IfcUtil::IfcBaseClass::set_attribute_value<boost::logic::tribool>(const std::string& name, const boost::logic::tribool& value);

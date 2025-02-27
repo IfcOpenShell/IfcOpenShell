@@ -24,15 +24,8 @@
 
 static const char* const ISO_10303_21 = "ISO-10303-21";
 static const char* const HEADER = "HEADER";
-static const char* const FILE_DESCRIPTION = "FILE_DESCRIPTION";
-static const char* const FILE_NAME = "FILE_NAME";
-static const char* const FILE_SCHEMA = "FILE_SCHEMA";
 static const char* const ENDSEC = "ENDSEC";
 static const char* const DATA = "DATA";
-// The following header entities are not normally encountered in IFC files and are not parsed.
-// static const char * const FILE_POPULATION   = "FILE_POPULATION";
-// static const char * const SECTION_LANGUAGE  = "SECTION_LANGUAGE";
-// static const char * const SECTION_CONTEXT   = "SECTION_CONTEXT";
 
 using namespace IfcParse;
 
@@ -52,37 +45,11 @@ namespace {
     }
 }
 
-HeaderEntity::HeaderEntity(const char* const datatype, size_t size, IfcFile* file)
-    : datatype_(datatype)
-    , file_(file)
-    , data_((file && file->storage_.index() == 1)
-        ? read_from_spf_file(file, size)
-        : (file && file->storage_.index() == 2)
-        ? IfcEntityInstanceData(rocks_db_attribute_storage(&std::get<IfcParse::impl::rocks_db_file_storage>(file->storage_), "h|"))
-        : IfcEntityInstanceData(in_memory_attribute_storage(size))
-    )
-{}
-
-HeaderEntity::~HeaderEntity() {
-}
-
 void IfcSpfHeader::readSemicolon() {
     std::visit([](auto& m) {
         if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
             if (!TokenFunc::isOperator(m.tokens->Next(), ';')) {
                 throw IfcException(std::string("Expected ;"));
-            }
-        } else {
-            // std::unreachable();
-        }
-    }, file_->storage_);
-}
-
-void IfcSpfHeader::readParen() {
-    std::visit([](auto& m) {
-        if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
-            if (!TokenFunc::isOperator(m.tokens->Next(), '(')) {
-                throw IfcException(std::string("Expected ("));
             }
         } else {
             // std::unreachable();
@@ -98,13 +65,34 @@ void IfcSpfHeader::readTerminal(const std::string& term, Trail trail) {
             }
             if (trail == TRAILING_SEMICOLON) {
                 readSemicolon();
-            } else if (trail == TRAILING_PAREN) {
-                readParen();
             }
         } else {
             // std::unreachable();
         }
     }, file_->storage_);    
+}
+
+IfcParse::IfcSpfHeader::IfcSpfHeader(IfcParse::IfcFile* file)
+    : file_(file),
+    file_description_(nullptr),
+    file_name_(nullptr),
+    file_schema_(nullptr)
+{
+    if (file == nullptr) {
+        // overwritten later in IfcFile::setDefaultHeaderValues() when we know the schema identifier
+        file_description_ = new Header_section_schema::file_description({}, "");
+        file_description_->file_ = file_;
+        file_name_ = new Header_section_schema::file_name("", "", {}, {}, "", "", "");
+        file_name_->file_ = file_;
+        file_schema_ = new Header_section_schema::file_schema({});
+        file_schema_->file_ = file_;
+    }
+}
+
+IfcParse::IfcSpfHeader::~IfcSpfHeader() {
+    delete file_schema_;
+    delete file_name_;
+    delete file_description_;
 }
 
 void IfcSpfHeader::read() {
@@ -121,22 +109,22 @@ void IfcSpfHeader::read() {
     //
     // ISO 10303-21 Second edition 2002-01-15 p. 16
 
-    readTerminal(FILE_DESCRIPTION, NONE);
+    readTerminal(Header_section_schema::file_description::Class().name_uc(), NONE);
     delete file_description_;
-    // readParen();
-    file_description_ = new FileDescription(file_);
+    file_description_ = new Header_section_schema::file_description(read_from_spf_file(file_, Header_section_schema::file_description::Class().attribute_count()));
+    file_description_->file_ = file_;
     readSemicolon();
 
-    readTerminal(FILE_NAME, NONE);
+    readTerminal(Header_section_schema::file_name::Class().name_uc(), NONE);
     delete file_name_;
-    // readParen();
-    file_name_ = new FileName(file_);
+    file_name_ = new Header_section_schema::file_name(read_from_spf_file(file_, Header_section_schema::file_name::Class().attribute_count()));
+    file_name_->file_ = file_;
     readSemicolon();
 
-    readTerminal(FILE_SCHEMA, NONE);
+    readTerminal(Header_section_schema::file_schema::Class().name_uc(), NONE);
     delete file_schema_;
-    // readParen();
-    file_schema_ = new FileSchema(file_);
+    file_schema_ = new Header_section_schema::file_schema(read_from_spf_file(file_, Header_section_schema::file_schema::Class().attribute_count()));
+    file_schema_->file_ = file_;
     readSemicolon();
 }
 
@@ -155,11 +143,14 @@ void IfcSpfHeader::write(std::ostream& out) const {
         << "\n";
     out << HEADER << ";"
         << "\n";
-    out << file_description().toString(true) << ";"
+    file_description()->toString(out, true);
+    out << ";"
         << "\n";
-    out << file_name().toString(true) << ";"
+    file_name()->toString(out, true);
+    out << ";"
         << "\n";
-    out << file_schema().toString(true) << ";"
+    file_schema()->toString(out, true);
+    out << ";"
         << "\n";
     out << ENDSEC << ";"
         << "\n";
@@ -167,48 +158,93 @@ void IfcSpfHeader::write(std::ostream& out) const {
         << "\n";
 }
 
-const FileDescription& IfcSpfHeader::file_description() const {
+const Header_section_schema::file_description* IfcParse::IfcSpfHeader::file_description() const { 
     if (file_description_ == nullptr) {
-        throw IfcException("File description not set");
+        std::visit([this](auto& m) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::rocks_db_file_storage>) {
+                file_description_ = new Header_section_schema::file_description(rocks_db_attribute_storage{});
+            } else if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage>) {
+                file_description_ = new Header_section_schema::file_description(in_memory_attribute_storage(Header_section_schema::file_description::Class().attribute_count()));
+            }
+        }, file_->storage_);
+        file_description_->file_ = file_;
     }
-    return *file_description_;
+    return file_description_; 
 }
 
-const FileName& IfcSpfHeader::file_name() const {
+const Header_section_schema::file_name* IfcParse::IfcSpfHeader::file_name() const {
     if (file_name_ == nullptr) {
-        throw IfcException("File name not set");
+        std::visit([this](auto& m) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::rocks_db_file_storage>) {
+                file_name_ = new Header_section_schema::file_name(rocks_db_attribute_storage{});
+            } else if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage>) {
+                file_name_ = new Header_section_schema::file_name(in_memory_attribute_storage(Header_section_schema::file_name::Class().attribute_count()));
+            }
+        }, file_->storage_);
+        file_name_->file_ = file_;
     }
-    return *file_name_;
+
+    return file_name_; 
 }
 
-const FileSchema& IfcSpfHeader::file_schema() const {
+const Header_section_schema::file_schema* IfcParse::IfcSpfHeader::file_schema() const {
     if (file_schema_ == nullptr) {
-        throw IfcException("File schema not set");
+        std::visit([this](auto& m) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::rocks_db_file_storage>) {
+                file_schema_ = new Header_section_schema::file_schema(rocks_db_attribute_storage{});
+            } else if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage>) {
+                file_schema_ = new Header_section_schema::file_schema(in_memory_attribute_storage(Header_section_schema::file_schema::Class().attribute_count()));
+            }
+        }, file_->storage_);
+        file_schema_->file_ = file_;
     }
-    return *file_schema_;
+
+    return file_schema_; 
 }
 
-FileDescription& IfcSpfHeader::file_description() {
+Header_section_schema::file_description* IfcParse::IfcSpfHeader::file_description() {
     if (file_description_ == nullptr) {
-        file_description_ = new FileDescription(file_);
+        std::visit([this](auto& m) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::rocks_db_file_storage>) {
+                file_description_ = new Header_section_schema::file_description(rocks_db_attribute_storage{});
+            } else if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage>) {
+                file_description_ = new Header_section_schema::file_description(in_memory_attribute_storage(Header_section_schema::file_description::Class().attribute_count()));
+            }
+        }, file_->storage_);
+        file_description_->file_ = file_;
     }
-    return *file_description_;
+
+    return file_description_; 
 }
 
-FileName& IfcSpfHeader::file_name() {
+Header_section_schema::file_name* IfcParse::IfcSpfHeader::file_name() {
     if (file_name_ == nullptr) {
-        file_name_ = new FileName(file_);
+        std::visit([this](auto& m) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::rocks_db_file_storage>) {
+                file_name_ = new Header_section_schema::file_name(rocks_db_attribute_storage{});
+            } else if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage>) {
+                file_name_ = new Header_section_schema::file_name(in_memory_attribute_storage(Header_section_schema::file_name::Class().attribute_count()));
+            }
+        }, file_->storage_);
+        file_name_->file_ = file_;
     }
-    return *file_name_;
+
+    return file_name_; 
 }
 
-FileSchema& IfcSpfHeader::file_schema() {
+Header_section_schema::file_schema* IfcParse::IfcSpfHeader::file_schema() {
     if (file_schema_ == nullptr) {
-        file_schema_ = new FileSchema(file_);
+        std::visit([this](auto& m) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::rocks_db_file_storage>) {
+                file_schema_ = new Header_section_schema::file_schema(rocks_db_attribute_storage{});
+            } else if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage>) {
+                file_schema_ = new Header_section_schema::file_schema(in_memory_attribute_storage(Header_section_schema::file_schema::Class().attribute_count()));
+            }
+        }, file_->storage_);
+        file_schema_->file_ = file_;
     }
-    return *file_schema_;
+
+    return file_schema_; 
 }
 
-FileDescription::FileDescription(IfcFile* file) : HeaderEntity(FILE_DESCRIPTION, 2, file) {}
-FileName::FileName(IfcFile* file) : HeaderEntity(FILE_NAME, 7, file) {}
-FileSchema::FileSchema(IfcFile* file) : HeaderEntity(FILE_SCHEMA, 1, file) {}
+static auto& _ = Header_section_schema::get_schema();
