@@ -31,7 +31,7 @@ import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import cos
+from math import cos, pi
 from mathutils import Vector, Matrix
 from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
@@ -135,7 +135,7 @@ class DumbSlabGenerator:
             matrix_world.translation.z = self.container_obj.location.z
         else:
             matrix_world.translation.z
-        obj.matrix_world = matrix_world @ Matrix.Rotation(self.x_angle, 4, "X")
+        obj.matrix_world = matrix_world
         bpy.context.view_layer.update()
 
         element = bonsai.core.root.assign_class(
@@ -170,6 +170,7 @@ class DumbSlabGenerator:
             is_global=True,
             should_sync_changes_first=False,
         )
+        obj.matrix_world = obj.matrix_world @ Matrix.Rotation(self.x_angle, 4, "X")
 
         if self.footprint_context:
             extrusion = tool.Model.get_extrusion(representation)
@@ -294,28 +295,39 @@ class DumbSlabPlaner:
         if representation:
             extrusion = tool.Model.get_extrusion(representation)
             if extrusion:
-                x, y, z = extrusion.ExtrudedDirection.DirectionRatios
                 existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
-                perpendicular_depth = thickness * (1 / cos(existing_x_angle))
-                perpendicular_offset = layer_params["offset"] * (1 / cos(existing_x_angle))
-                offset_vector = Vector((0.0, 0.0, perpendicular_offset / self.unit_scale))
-                if layer_params["direction_sense"] == "POSITIVE":
-                    y = abs(y) if existing_x_angle > 0 else -abs(y)
-                    z = abs(z)
-                elif layer_params["direction_sense"] == "NEGATIVE":
-                    y = -abs(y) if existing_x_angle > 0 else abs(y)
-                    z = -abs(z)
-                extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
+                existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
+                existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
+                direction_ratios = Vector(extrusion.ExtrudedDirection.DirectionRatios)
+                offset_direction = direction_ratios.copy()
+                perpendicular_depth = thickness * abs(1 / cos(existing_x_angle))
+                perpendicular_offset = layer_params["offset"] * abs(1 / cos(existing_x_angle)) / self.unit_scale
+
+                # Check angle and z direction to determine whether the extrusion direction is positive or negative
+                if (existing_x_angle < (pi / 2) and direction_ratios.z > 0) or (
+                    existing_x_angle > (pi / 2) and direction_ratios.z < 0
+                ):
+                    # The extrusion direction is positive. If the layer_parameter is set to negative,
+                    # then the we change the extrusion direction.
+                    # The offset direction must always be positive, so we keep it.
+                    if layer_params["direction_sense"] == "NEGATIVE":
+                        direction_ratios *= -1
+                elif (existing_x_angle > (pi / 2) and direction_ratios.z > 0) or (
+                    existing_x_angle < (pi / 2) and direction_ratios.z < 0
+                ):
+                    # The extrusion direction is negative. If the layer_parameter is set to positive,
+                    # then the we change the extrusion direction.
+                    # The offset direction must always be positive, so we change it too.
+                    if layer_params["direction_sense"] == "POSITIVE":
+                        direction_ratios *= -1
+                        offset_direction *= -1
+
+                extrusion.ExtrudedDirection.DirectionRatios = tuple(direction_ratios)
                 extrusion.Depth = perpendicular_depth
 
                 if perpendicular_offset != 0.0 and not extrusion.Position:
-                    tool.Model.add_extrusion_position(extrusion, perpendicular_offset)
-
-                # Update the extrusion's location based on its current rotation angle and offset
-                if extrusion.Position:
-                    rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
-                    rot_offset = offset_vector @ rot_matrix
-                    extrusion.Position.Location.Coordinates = tuple(rot_offset)
+                    position = offset_direction * perpendicular_offset
+                    tool.Model.add_extrusion_position(extrusion, position)
 
             else:
                 props = tool.Model.get_model_props()

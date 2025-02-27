@@ -2008,33 +2008,22 @@ class Model(bonsai.core.tool.Model):
         FilledOpeningGenerator().generate(filling_obj, voided_obj)
 
     @classmethod
-    def add_extrusion_position(cls, extrusion: ifcopenshell.entity_instance, offset: float) -> None:
+    def add_extrusion_position(cls, extrusion: ifcopenshell.entity_instance, position: tuple) -> None:
         ifc_file = tool.Ifc.get()
 
-        position = ifc_file.createIfcAxis2Placement3D(
-            ifc_file.createIfcCartesianPoint((0.0, 0.0, offset)),
+        new_position = ifc_file.createIfcAxis2Placement3D(
+            ifc_file.createIfcCartesianPoint(position),
             ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
             ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
         )
 
-        extrusion.Position = position
+        extrusion.Position = new_position
 
     @classmethod
     def get_existing_x_angle(cls, extrusion: ifcopenshell.entity_instance) -> float:
         x, y, z = extrusion.ExtrudedDirection.DirectionRatios
         vector = Vector((0, 1))
         x_angle = vector.angle_signed(Vector((y, z)))
-
-        # The extrusion direction is changed by the layer direction change
-        # So we have to adapt the values of y, z and vector accordingly
-        if z < 0 and y < 0:
-            y = abs(y)
-            z = abs(z)
-        if z < 0 and y >= 0:
-            vector = Vector((0, -1))
-
-        x_angle = vector.angle_signed(Vector((y, z)))
-
         return x_angle
 
     @classmethod

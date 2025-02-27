@@ -85,31 +85,37 @@ class Usecase:
         points = ((0.0, 0.0), (size, 0.0), (size, size), (0.0, size), (0.0, 0.0))
         if self.settings["polyline"]:
             points = [
-                (self.convert_si_to_unit(p[0]), self.convert_si_to_unit(p[1] * (1 / cos(self.settings["x_angle"]))))
+                (self.convert_si_to_unit(p[0]), self.convert_si_to_unit(p[1] * abs(1 / cos(self.settings["x_angle"]))))
                 for p in self.settings["polyline"]
             ]
         if self.file.schema == "IFC2X3":
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
             curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList2D(points))
-        if self.settings["x_angle"]:
-            extrusion_direction = self.file.createIfcDirection(
-                (0.0, sin(self.settings["x_angle"]), cos(self.settings["x_angle"]))
-            )
-            if self.settings["direction_sense"] == "NEGATIVE":
-                extrusion_direction = self.file.createIfcDirection(
-                    (0.0, -sin(self.settings["x_angle"]), -cos(self.settings["x_angle"]))
-                )
-        else:
-            extrusion_direction = self.file.createIfcDirection((0.0, 0.0, 1.0))
-            if self.settings["direction_sense"] == "NEGATIVE":
-                extrusion_direction = self.file.createIfcDirection((0.0, 0.0, -1.0))
 
+        if self.settings["x_angle"]:
+            direction_ratios = (0.0, sin(self.settings["x_angle"]), cos(self.settings["x_angle"]))
+        else:
+            direction_ratios = (0.0, 0.0, 1.0)
+
+        offset_direction = direction_ratios # offset direction doesn't change if direction_sense is negative
+        extrusion_direction = self.file.createIfcDirection(direction_ratios)
+        if self.settings["direction_sense"] == "NEGATIVE":
+            direction_ratios = tuple((-n for n in direction_ratios))
+            extrusion_direction = self.file.createIfcDirection(direction_ratios)
+
+        perpendicular_offset = self.convert_si_to_unit(self.settings["offset"]) * abs(1 / cos(self.settings["x_angle"]))
+        perpendicular_depth = self.convert_si_to_unit(self.settings["depth"]) * abs(1 / cos(self.settings["x_angle"]))
         position = None
         # default position for IFC2X3 where .Position is not optional
         if self.file.schema == "IFC2X3" or self.settings["offset"] != 0:
+            position_vector = (
+                offset_direction[0] * perpendicular_offset,
+                offset_direction[1] * perpendicular_offset,
+                offset_direction[2] * perpendicular_offset,
+            )
             position = self.file.createIfcAxis2Placement3D(
-                self.file.createIfcCartesianPoint((0.0, 0.0, self.convert_si_to_unit(self.settings["offset"]))),
+                self.file.createIfcCartesianPoint(position_vector),
                 self.file.createIfcDirection((0.0, 0.0, 1.0)),
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             )
@@ -118,7 +124,7 @@ class Usecase:
             self.file.createIfcArbitraryClosedProfileDef("AREA", None, curve),
             position,
             extrusion_direction,
-            self.convert_si_to_unit(self.settings["depth"]) * 1 / cos(self.settings["x_angle"]),
+            perpendicular_depth,
         )
         if self.settings["clippings"]:
             return self.apply_clippings(extrusion)
