@@ -46,7 +46,10 @@ class Patch(bonsai.core.tool.Patch):
 
     @classmethod
     def does_patch_has_output(cls, recipe: str) -> bool:
-        return recipe != "SplitByBuildingStorey"
+        return recipe not in (
+            "Ifc2Sql",
+            "SplitByBuildingStorey",
+        )
 
     @classmethod
     def post_process_patch_arguments(cls, recipe: str, args: list[Any]) -> list[Any]:

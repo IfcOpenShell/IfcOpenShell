@@ -34,21 +34,29 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
-from typing import Any
+from pathlib import Path
+from ifcopenshell.geom import ShapeType
+from typing import Any, TYPE_CHECKING, Literal
 
 SQLTypes = typing.Literal["SQLite", "MySQL"]
 
-try:
+if TYPE_CHECKING:
     import sqlite3
-except:
-    print("No SQLite support")
-    SQLTypes = typing.Literal["MySQL"]
-
-try:
     import mysql.connector
-except:
-    print("No MySQL support")
-    SQLTypes = typing.Literal["SQLite"]
+else:
+    try:
+        import sqlite3
+    except:
+        print("No SQLite support")
+        SQLTypes = typing.Literal["MySQL"]
+
+    try:
+        import mysql.connector
+    except:
+        print("No MySQL support")
+        SQLTypes = typing.Literal["SQLite"]
+
+DEFAULT_DATABASE_NAME = "database"
 
 
 class Patcher:
@@ -60,7 +68,7 @@ class Patcher:
         host: str = "localhost",
         username: str = "root",
         password: str = "pass",
-        database: str = "test",
+        database: str = f"{DEFAULT_DATABASE_NAME}.db",
         full_schema: bool = True,
         is_strict: bool = False,
         should_expand: bool = False,
@@ -71,29 +79,28 @@ class Patcher:
     ):
         """Convert an IFC-SPF model to SQLite or MySQL.
 
-        There are certain controls which are hardcoded in this recipe that you
-        may modify, including:
-
-        - full_schema: if True, will create tables for all IFC classes,
-          regardless if they are used or not in the dataset. If False, will
-          only create tables for classes in the dataset.
-        - is_strict: whether or not to enforce null or not null. If your
-          dataset might contain invalid data, set this to False.
-        - should_expand: if True, entities with attributes containing lists of
-          entities will be separated into multiple rows. This means the ifc_id
-          is no longer a unique primary key. If False, lists will be stored as
-          JSON.
-        - should_get_psets: if True, a separate psets table will be created to
-          make it easy to query properties. This is in addition to regular IFC
-          tables like IfcPropertySet.
-        - should_get_geometry: Whether or not to process and store explicit
-          geometry data as a blob in a separate geometry and shape table.
-        - should_skip_geometry_data: Whether or not to also create tables for
-          IfcRepresentation and IfcRepresentationItem classes. These tables are
-          unnecessary if you are not interested in geometry.
-
         :param sql_type: Choose between "SQLite" or "MySQL"
-        :type sql_type: typing.Literal["SQLite", "MySQL"]
+        :param database: Database path to save the SQL database to (already existing or not).
+            Could also be a directory, then the database will be stored
+            using default filename (e.g. 'database.db').
+        :param full_schema: if True, will create tables for all IFC classes,
+            regardless if they are used or not in the dataset. If False, will
+            only create tables for classes in the dataset.
+        :param is_strict: whether or not to enforce null or not null. If your
+            dataset might contain invalid data, set this to False.
+        :param should_expand: if True, entities with attributes containing lists of
+            entities will be separated into multiple rows. This means the ifc_id
+            is no longer a unique primary key. If False, lists will be stored as
+            JSON.
+        :param should_get_psets: if True, a separate psets table will be created to
+            make it easy to query properties. This is in addition to regular IFC
+            tables like IfcPropertySet.
+        :param should_get_geometry: Whether or not to process and store explicit
+            geometry data as a blob in a separate geometry and shape table.
+        :param should_skip_geometry_data: Whether or not to also create tables for
+            IfcRepresentation and IfcRepresentationItem classes. These tables are
+            unnecessary if you are not interested in geometry.
+
 
         Example:
 
@@ -106,7 +113,7 @@ class Patcher:
         """
         self.file = file
         self.logger = logger
-        self.sql_type = sql_type.lower()
+        self.sql_type: Literal["sqlite", "mysql"] = sql_type.lower()
         self.host = host
         self.username = username
         self.password = password
@@ -122,19 +129,26 @@ class Patcher:
         self.should_skip_geometry_data = should_skip_geometry_data
 
     def patch(self) -> None:
+        suffix = ".db" if self.sql_type == "SQLite" else ".sqlite"
+        database = Path(self.database)
+        if database.is_dir():
+            database = (database / DEFAULT_DATABASE_NAME).with_suffix(suffix)
+        elif not database.parent.exists():
+            database.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            # Assume it's a filepath - existing or not.
+            pass
+
         self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema)
 
         if self.sql_type == "sqlite":
-            db_file = self.database  # Use the given datapath
-            self.db = sqlite3.connect(db_file)
+            self.db = sqlite3.connect(database)
             self.c = self.db.cursor()
-            self.file_patched = db_file
         elif self.sql_type == "mysql":
             self.db = mysql.connector.connect(
-                host=self.host, user=self.username, password=self.password, database=self.database
+                host=self.host, user=self.username, password=self.password, database=str(database)
             )
             self.c = self.db.cursor()
-            self.file_patched = None
 
         self.create_id_map()
         self.create_metadata()
