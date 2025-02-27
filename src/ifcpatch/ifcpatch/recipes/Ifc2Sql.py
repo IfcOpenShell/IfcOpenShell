@@ -231,20 +231,22 @@ class Patcher:
                 checkpoint = time.time()
             shape = iterator.get()
             if shape:
-                if shape.geometry.id not in self.geometry_rows:
-                    v = np.array(shape.geometry.verts).tobytes()
-                    e = np.array(shape.geometry.edges).tobytes()
-                    f = np.array(shape.geometry.faces).tobytes()
-                    mids = np.array(shape.geometry.material_ids).tobytes()
+                shape_id = shape.id
+                geometry_id = shape.geometry.id
+                if geometry_id not in self.geometry_rows:
+                    geometry: ShapeType
+                    geometry = shape.geometry
+                    v = geometry.verts_buffer
+                    e = geometry.edges_buffer
+                    f = geometry.faces_buffer
+                    mids = geometry.material_ids_buffer
                     m = json.dumps([m.instance_id() for m in shape.geometry.materials])
-                    self.geometry_rows[shape.geometry.id] = [shape.geometry.id, v, e, f, mids, m]
+                    self.geometry_rows[geometry_id] = [geometry_id, v, e, f, mids, m]
                 # Copy required since otherwise it is read-only
                 m = ifcopenshell.util.shape.get_shape_matrix(shape).copy()
-                m[0][3] /= self.unit_scale
-                m[1][3] /= self.unit_scale
-                m[2][3] /= self.unit_scale
-                x, y, z = m[:, 3][0:3]
-                self.shape_rows[shape.id] = [shape.id, float(x), float(y), float(z), m.tobytes(), shape.geometry.id]
+                m[:3, 3] /= self.unit_scale
+                x, y, z = m[:, 3][0:3].tolist()
+                self.shape_rows[shape_id] = [shape_id, x, y, z, m.tobytes(), geometry_id]
             if not iterator.next():
                 break
 
@@ -469,10 +471,10 @@ class Patcher:
                         pset_rows.append([element.id(), pset_name, prop_name, value])
 
             if self.should_get_geometry:
-                if element.id() not in self.shape_rows and getattr(element, "ObjectPlacement", None):
-                    m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-                    x, y, z = m[:, 3][0:3]
-                    self.shape_rows[element.id()] = [element.id(), float(x), float(y), float(z), m.tobytes(), None]
+                if element.id() not in self.shape_rows and (placement := getattr(element, "ObjectPlacement", None)):
+                    m = ifcopenshell.util.placement.get_local_placement(placement)
+                    x, y, z = m[:, 3][0:3].tolist()
+                    self.shape_rows[element.id()] = [element.id(), x, y, z, m.tobytes(), None]
 
         if self.sql_type == "sqlite":
             if rows:
