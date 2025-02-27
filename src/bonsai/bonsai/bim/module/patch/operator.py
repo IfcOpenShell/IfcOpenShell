@@ -25,7 +25,10 @@ import bonsai.tool as tool
 import bonsai.core.patch as core
 import bonsai.bim.handler
 from pathlib import Path
-from typing import cast
+from typing import cast, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import AttributeDataType
 
 
 class SelectIfcPatchInput(bpy.types.Operator):
@@ -36,7 +39,8 @@ class SelectIfcPatchInput(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        context.scene.BIMPatchProperties.ifc_patch_input = self.filepath
+        props = tool.Patch.get_patch_props()
+        props.ifc_patch_input = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -52,7 +56,8 @@ class SelectIfcPatchOutput(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        context.scene.BIMPatchProperties.ifc_patch_output = self.filepath
+        props = tool.Patch.get_patch_props()
+        props.ifc_patch_output = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -67,7 +72,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMPatchProperties
+        props = tool.Patch.get_patch_props()
         if props.ifc_patch_recipes == "-":
             cls.poll_message_set("No recipe selected.")
             return False
@@ -77,7 +82,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
         return True
 
     def execute(self, context):
-        props = context.scene.BIMPatchProperties
+        props = tool.Patch.get_patch_props()
         recipe_name = props.ifc_patch_recipes
 
         arguments = []
@@ -121,7 +126,7 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
         if self.recipe == "-":
             print("No Recipe Selected. Impossible to load arguments")
             return {"FINISHED"}
-        patch_args = context.scene.BIMPatchProperties.ifc_patch_args_attr
+        patch_args = tool.Patch.get_patch_props().ifc_patch_args_attr
         patch_args.clear()
         docs = ifcpatch.extract_docs(self.recipe, "Patcher", "__init__", ("src", "file", "logger", "args"))
         if docs and "inputs" in docs:
@@ -141,14 +146,15 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
 
                     data_type = [dt for dt in data_type if dt != "NoneType"][0]
 
-                new_attr.data_type = {
+                data_types: dict[str, AttributeDataType] = {
                     "Literal": "enum",
                     "file": "file",
                     "str": "string",
                     "float": "float",
                     "int": "integer",
                     "bool": "boolean",
-                }[data_type]
+                }
+                new_attr.data_type = data_types[data_type]
                 new_attr.name = self.pretty_arg_name(arg_name)
                 if new_attr.data_type == "enum":
                     new_attr.enum_items = json.dumps(arg_info.get("enum_items", []))
@@ -211,7 +217,7 @@ class ExtractSelectedElements(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMPatchProperties
+        props = tool.Patch.get_patch_props()
         recipe_name = props.ifc_patch_recipes
 
         if recipe_name != "ExtractElements":

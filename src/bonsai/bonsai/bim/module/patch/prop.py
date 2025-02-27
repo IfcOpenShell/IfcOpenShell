@@ -33,6 +33,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Literal, Union
 
 
 ifcpatchrecipes_enum = []
@@ -43,7 +44,7 @@ def purge():
     ifcpatchrecipes_enum = []
 
 
-def get_ifcpatch_recipes(self, context):
+def get_ifcpatch_recipes(self: "BIMPatchProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     global ifcpatchrecipes_enum
     if len(ifcpatchrecipes_enum) < 1:
         # Have to add a blank entry because otherwise default recipe might be not loaded
@@ -61,7 +62,7 @@ def get_ifcpatch_recipes(self, context):
     return ifcpatchrecipes_enum
 
 
-def update_ifc_patch_recipe(self, context):
+def update_ifc_patch_recipe(self: "BIMPatchProperties", context: bpy.types.Context) -> None:
     bpy.ops.bim.update_ifc_patch_arguments(recipe=self.ifc_patch_recipes)
 
 
@@ -75,3 +76,10 @@ class BIMPatchProperties(PropertyGroup):
         name="Load from Memory",
         description="Use IFC file currently loaded in Bonsai",
     )
+
+    if TYPE_CHECKING:
+        ifc_patch_recipes_enum: Union[Literal["-"], str]
+        ifc_patch_input: str
+        ifc_patch_output: str
+        ifc_patch_args_attr: bpy.types.bpy_prop_collection_idprop[Attribute]
+        should_load_from_memory: bool

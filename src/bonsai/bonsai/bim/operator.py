@@ -38,7 +38,10 @@ from mathutils import Vector, Euler
 from math import radians
 from pathlib import Path
 from collections import namedtuple
-from typing import List, Iterable, Union
+from typing import List, Iterable, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import MultipleFileSelect
 
 
 class SetTab(bpy.types.Operator):
@@ -185,6 +188,9 @@ class BIM_OT_multiple_file_selector(bpy.types.Operator):
     files: bpy.props.CollectionProperty(name="File Path", type=bpy.types.OperatorFileListElement)
     filter_glob: bpy.props.StringProperty(default="*", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    if TYPE_CHECKING:
+        file_props: MultipleFileSelect
 
     @classmethod
     def poll(cls, context):

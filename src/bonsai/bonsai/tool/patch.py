@@ -16,14 +16,22 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcpatch
 import bonsai.core.tool
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.patch.prop import BIMPatchProperties
 
 
 class Patch(bonsai.core.tool.Patch):
+    @classmethod
+    def get_patch_props(cls) -> BIMPatchProperties:
+        return bpy.context.scene.BIMPatchProperties
+
     @classmethod
     def run_migrate_patch(cls, infile: str, outfile: str, schema: str) -> None:
         output = ifcpatch.execute(
