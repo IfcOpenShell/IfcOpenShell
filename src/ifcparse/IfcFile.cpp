@@ -337,7 +337,7 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::rocksdb_instance_i
         if (jt != storage_->instance_cache_.end()) {
             return jt->second;
         } else {
-            return storage_->assert_existance(it->second);
+            return storage_->assert_existance(it->first, by_name);
         }
     }
 }
@@ -346,46 +346,94 @@ const IfcParse::declaration* IfcParse::impl::rocks_db_file_storage::rocksdb_type
     return storage_->file->schema()->declarations()[*read_id_()];
 }
 
-IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(size_t instanceId) {
+IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(size_t number, instance_ref r) {
+    size_t name, identity;
     std::string v;
-    rocksdb::Status s = db->Get(rocksdb::ReadOptions{}, "i|" + std::to_string(instanceId) + "|t", &v);
+    if (r == by_identity) {
+        name = 0;
+        identity = number;
+    } else {
+        name = number;
+        auto it = byid_.find(name);
+        if (it == byid_.end()) {
+            throw std::runtime_error("Unable to lookup identity of name: #" + std::to_string(number));
+        }
+        identity = it->second;
+    }
+
+    decltype(instance_cache_)::const_iterator it = instance_cache_.find(identity);
+    if (it != instance_cache_.end()) {
+        return it->second;
+    }
+
+    rocksdb::Status s = db->Get(rocksdb::ReadOptions{}, "i|" + std::to_string(identity) + "|t", &v);
     if (s.ok()) {
         size_t s;
         memcpy(&s, v.data(), sizeof(size_t));
+        if (s >= file->schema()->declarations().size()) {
+            throw std::runtime_error("");
+        }
         auto decl = file->schema()->declarations()[s];
-        IfcEntityInstanceData data(rocks_db_attribute_storage(this, "i|"));
+        bool is_entity = decl->as_entity() != nullptr;
+        if (is_entity != (r == by_name)) {
+            throw std::runtime_error("Incorrect reference");
+        }
+        IfcEntityInstanceData data(rocks_db_attribute_storage{});
         auto inst = file->schema()->instantiate(decl, std::move(data));
-        inst->id_ = instanceId;
+        inst->id_ = name;
+        inst->file_ = file;
         instance_cache_.insert({ inst->identity(), inst });
-        byid_.insert({ inst->id(), inst->identity() });
+        if (is_entity) {
+            byid_.insert({ inst->id(), inst->identity() });
+        }
         return inst;
     }
     throw std::runtime_error("");
 }
 
+namespace {
+    rocksdb::DB* init_db(const std::string& filepath) {
+        rocksdb::DB* db;
+        rocksdb::Options options;
+        options.create_if_missing = true;
+        // options.merge_operator.reset(new ConcatenateIdMergeOperator());
+        rocksdb::Status status = rocksdb::DB::Open(options, filepath, &db);
+        if (!status.ok()) {
+            throw std::runtime_error(status.ToString());
+        }
+        return db;
+    }
+}
+
 // @todo naming
 IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& filepath, IfcParse::IfcFile* ffile)
     : file(ffile)
-    // @todo db is not initialized here yet
+    , db(init_db(filepath))
     , byguid_internal_(db, "g|")
-    , byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
+    , byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, by_name); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
     , byid_(db, "d|")
     , bytype_(db, "t|")
-    , byidentity_(&byid_, [this](size_t v) { return assert_existance(v); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
+    // @todo by_identity is probably not correct here, this mapping is Name -> Identity, so Fn should have access to full pair?
+    , byidentity_(&byid_, [this](size_t v) { return assert_existance(v, by_identity); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
+{}
+
+IfcParse::impl::rocks_db_file_storage::~rocks_db_file_storage()
 {
-    rocksdb::Options options;
-    options.create_if_missing = true;
-    options.merge_operator.reset(new ConcatenateIdMergeOperator());
-    rocksdb::Status status = rocksdb::DB::Open(options, filepath, &db);
-    if (!status.ok()) {
-        throw std::runtime_error(status.ToString());
-    }
+    rocksdb::FlushOptions flush_options;
+    flush_options.allow_write_stall = true;
+    flush_options.wait = true; // Wait until flush completes.
+    rocksdb::Status s = db->Flush(flush_options);
+    assert(s.ok());
+
+    db->Close();
+    delete db;
 }
+
 
 IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::instance_by_id(int id)
 {
     // @todo rename assert_existance() -> instance_by_id();
-    return assert_existance(id);
+    return assert_existance(id, by_name);
 }
 
 void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::IfcBaseClass* inst)

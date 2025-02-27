@@ -434,20 +434,17 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
             aggregate_of_instance::ptr related_objects(new aggregate_of_instance);
             related_objects->push(related_object);
 
-            IfcEntityInstanceData data = IfcEntityInstanceData(in_memory_attribute_storage(T::Class().attribute_count()));
-            data.set_attribute_value(0, (std::string)IfcParse::IfcGlobalId());
-            data.set_attribute_value(1, owner_hist);
+            T* t = create(&T::Class())->as<T>();
+            t->set_attribute_value(0, (std::string)IfcParse::IfcGlobalId());
+            t->set_attribute_value(1, owner_hist);
             int relating_index = 4;
             int related_index = 5;
             if (T::Class().name() == "IfcRelContainedInSpatialStructure" || std::is_base_of<typename Schema::IfcRelDefines, T>::value) {
                 // some classes have attributes reversed.
                 std::swap(relating_index, related_index);
             }
-            data.set_attribute_value(relating_index, relating_object);
-            data.set_attribute_value(related_index, related_objects);
-
-            T* t = (T*)Schema::get_schema().instantiate(&T::Class(), std::move(data));
-            addEntity(t);
+            t->set_attribute_value(relating_index, relating_object);
+            t->set_attribute_value(related_index, related_objects);
         }
     }
 

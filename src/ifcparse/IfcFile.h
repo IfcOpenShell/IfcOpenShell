@@ -37,17 +37,18 @@
 #include <iterator>
 #include <map>
 
-#include "rocksdb/merge_operator.h"
-
+// #include "rocksdb/merge_operator.h"
+/*
 namespace {
     // @todo move to a proper place
     class ConcatenateIdMergeOperator : public rocksdb::AssociativeMergeOperator {
     public:
-        virtual bool Merge(const rocksdb::Slice& key,
+        virtual bool Merge(const rocksdb::Slice&,
             const rocksdb::Slice* existing_value,
             const rocksdb::Slice& value,
             std::string* new_value,
-            rocksdb::Logger* logger) const override {
+            rocksdb::Logger*) const override
+        {
             if (existing_value) {
                 new_value->assign(existing_value->data(), existing_value->size());
                 new_value->append(value.data(), value.size());
@@ -62,6 +63,7 @@ namespace {
         }
     };
 }
+*/
 
 namespace IfcParse {
 
@@ -348,7 +350,11 @@ namespace impl {
         IfcUtil::IfcBaseClass* create(const IfcParse::declaration* decl);
     };
 
-    struct rocks_db_file_storage {
+    class rocks_db_file_storage {
+    public:
+        rocksdb::DB* db;
+        IfcParse::IfcFile* file;
+
         // to make sure that instance pointer are constant during file lifetime
         // cache instances because we want stable pointers
         // @todo this is silly, but we cannot have the same type, this should be just a pointer then on the IfcFile side?
@@ -375,20 +381,18 @@ namespace impl {
         typedef map_transformer<rocksdb_map_adapter<std::string, size_t>, std::function<IfcUtil::IfcBaseClass* (size_t)>, std::function< size_t(IfcUtil::IfcBaseClass*)>> entity_by_guid_t;
         entity_by_guid_t byguid_;
 
-        rocksdb::DB* db;
-        IfcParse::IfcFile* file;
-
         // @todo naming
-        rocks_db_file_storage(const std::string& filepath, IfcParse::IfcFile* ffile);
+        rocks_db_file_storage(const std::string& filepath, IfcParse::IfcFile* file);
+        ~rocks_db_file_storage();
 
-        bool read_schema(const IfcParse::schema_definition*& schema) {
-            // @todo
-            schema = nullptr;
-            return true;
-        }
+        bool read_schema(const IfcParse::schema_definition*& schema);
         
+        enum instance_ref {
+            by_name,
+            by_identity
+        };
 
-        IfcUtil::IfcBaseClass* assert_existance(size_t instanceId);
+        IfcUtil::IfcBaseClass* assert_existance(size_t instanceId, instance_ref r);
 
         // @todo this could be another map_adapter?
         class rocksdb_instance_iterator {
@@ -396,7 +400,7 @@ namespace impl {
             rocksdb::Iterator* state_;
             rocks_db_file_storage* storage_;
 
-            static constexpr char prefix_[] = "a|";
+            static constexpr char prefix_[] = "i|";
 
             boost::optional<size_t> read_id_() const {
                 auto sv = state_->key().ToStringView();
@@ -810,29 +814,37 @@ IFC_PARSE_API IfcFile* parse_ifcxml(const std::string& filename);
 
 template <typename T>
 T* IfcParse::impl::in_memory_file_storage::create() {
+    IfcUtil::IfcBaseClass* inst = nullptr;
     if constexpr (std::is_same_v<std::decay_t<std::invoke_result_t<T::Class>>, IfcParse::entity>) {
-        return file->addEntity(new T(in_memory_attribute_storage(T::Class().attribute_count())))->as<T>();
+        inst = new T(in_memory_attribute_storage(T::Class().attribute_count()));
     } else if constexpr (std::is_same_v<std::decay_t<std::invoke_result_t<T::Class>>, IfcParse::type_declaration>) {
-        return file->addEntity(new T(in_memory_attribute_storage(1)))->as<T>();
+        inst = new T(in_memory_attribute_storage(1));
     } else {
         static_assert(false, "Requires and entity or type declaration");
     }
+    inst->file_ = file;
+    return file->addEntity(inst)->as<T>();
 }
 
 IfcUtil::IfcBaseClass* IfcParse::impl::in_memory_file_storage::create(const IfcParse::declaration* decl) {
+    IfcUtil::IfcBaseClass* inst = nullptr;
     if (auto* ent = decl->as_entity()) {
-        return file->addEntity(file->schema()->instantiate(decl, in_memory_attribute_storage(ent->attribute_count())));
+        inst = file->schema()->instantiate(decl, in_memory_attribute_storage(ent->attribute_count()));
     } else if (auto* typedecl = decl->as_type_declaration()) {
-        return file->addEntity(file->schema()->instantiate(decl, in_memory_attribute_storage(1)));
+        inst = file->schema()->instantiate(decl, in_memory_attribute_storage(1));
     } else {
         throw std::runtime_error("Requires and entity or type declaration");
     }
+    inst->file_ = file;
+    return file->addEntity(inst);
 }
 
 template <typename T>
 T* IfcParse::impl::rocks_db_file_storage::create() {
     if constexpr (std::is_same_v<std::decay_t<std::invoke_result_t<T::Class>>, IfcParse::entity> || std::is_same_v<std::decay_t<std::invoke_result_t<T::Class>>, IfcParse::type_declaration>) {
-        return file->addEntity(new T(rocks_db_attribute_storage{}))->as<T>();
+        auto* inst = new T(rocks_db_attribute_storage{});
+        inst->file_ = file;
+        return file->addEntity(inst)->as<T>();
     } else {
         static_assert(false, "Requires and entity or type declaration");
     }
@@ -840,7 +852,9 @@ T* IfcParse::impl::rocks_db_file_storage::create() {
 
 IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::create(const IfcParse::declaration* decl) {
     if (decl->as_entity() || decl->as_type_declaration()) {
-        return file->addEntity(file->schema()->instantiate(decl, rocks_db_attribute_storage(this, "i|")));
+        auto* inst = file->schema()->instantiate(decl, rocks_db_attribute_storage{});
+        inst->file_ = file;
+        return file->addEntity(inst);
     } else {
         throw std::runtime_error("Requires and entity or type declaration");
     }

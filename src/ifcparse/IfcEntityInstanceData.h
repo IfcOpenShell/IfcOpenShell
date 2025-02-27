@@ -172,17 +172,28 @@ namespace impl {
     template <typename CharT, typename Traits, typename Alloc>
     struct is_contiguous_container<std::basic_string<CharT, Traits, Alloc>> : std::true_type {};
 
-    template <typename T, typename std::enable_if<is_contiguous_container<T>::value && is_contiguous_container<typename T::value_type>::value, int>::type = 0>
-    bool serialize(std::string& val, const T& t) {
-        return false;
-    }
-
     template <typename T, typename std::enable_if<is_contiguous_container<T>::value && !is_contiguous_container<typename T::value_type>::value, int>::type = 0>
     bool serialize(std::string& val, const T& t) {
         auto s = sizeof(typename T::value_type) * t.size();
         val.resize(s + 1);
         val[0] = TypeEncoder::encode_type<T>();
         memcpy(val.data() + 1, t.data(), s);
+        return true;
+    }
+
+    template <typename T, typename std::enable_if<is_contiguous_container<T>::value&& is_contiguous_container<typename T::value_type>::value, int>::type = 0>
+    bool serialize(std::string& val, const T& t) {
+        val = std::string(1, TypeEncoder::encode_type<T>());
+        for (auto& tt : t) {
+            std::string v2;
+            serialize(v2, tt);
+            std::string len(sizeof(size_t), 0);
+            size_t s = v2.size() - 1;
+            memcpy(len.data(), &s, sizeof(size_t));
+            // @todo horribly inefficient
+            // @todo strip off type label?
+            val += len + v2.substr(1);
+        }
         return true;
     }
 
@@ -212,20 +223,41 @@ namespace impl {
 
     bool serialize(std::string& val, const aggregate_of_aggregate_of_instance::ptr& t);
 
-    template <typename T, typename std::enable_if<is_contiguous_container<T>::value, int>::type = 0>
-    bool deserialize(std::string& val, T& t) {
-        // @todo vector of vector
-        if (val[0] != TypeEncoder::encode_type<T>()) {
+    template <typename T, typename std::enable_if<is_contiguous_container<T>::value && !is_contiguous_container<typename T::value_type>::value, int>::type = 0>
+    bool deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, T& t, bool prefixed = true) {
+        if (prefixed && val[0] != TypeEncoder::encode_type<T>()) {
             return false;
         }
-        auto s = (val.size() - 1) / sizeof(typename T::value_type);
+        auto s = (val.size() - (prefixed ? 1 : 0)) / sizeof(typename T::value_type);
         t.resize(s);
-        memcpy(t.data(), val.data() + 1, s * sizeof(typename T::value_type));
+        memcpy(t.data(), val.data() + (prefixed ? 1 : 0), s * sizeof(typename T::value_type));
+        return true;
+    }
+
+    template <typename T, typename std::enable_if<is_contiguous_container<T>::value && is_contiguous_container<typename T::value_type>::value, int>::type = 0>
+    bool deserialize(IfcParse::impl::rocks_db_file_storage* storage, const std::string& val, T& t) {
+        // @todo
+        auto ptr = val.data();
+        if (*ptr != TypeEncoder::encode_type<T>()) {
+            return false;
+        }
+        ptr++;
+        t.clear();
+        while (ptr < val.data() + val.size()) {
+            size_t s;
+            memcpy(&s, ptr, sizeof(size_t));
+            // @todo view
+            ptr += sizeof(size_t);
+            std::string part(ptr, s);
+            t.emplace_back();
+            deserialize(storage, part, t.back(), false);
+            ptr += s;
+        }
         return true;
     }
 
     template <typename T, typename std::enable_if<std::is_integral_v<T> || std::is_floating_point_v<T>, int>::type = 0>
-    bool deserialize(std::string & val, T & t) {
+    bool deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, T & t) {
         if (val[0] != TypeEncoder::encode_type<T>()) {
             return false;
         }
@@ -234,13 +266,13 @@ namespace impl {
         return true;
     }
 
-    bool deserialize(std::string& val, boost::logic::tribool& t);
+    bool deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, boost::logic::tribool& t);
 
-    bool deserialize(std::string& val, boost::dynamic_bitset<>& t);
+    bool deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, boost::dynamic_bitset<>& t);
 
-    bool deserialize(std::string& val, aggregate_of_instance::ptr& t);
+    bool deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, aggregate_of_instance::ptr& t);
 
-    bool deserialize(std::string& val, aggregate_of_aggregate_of_instance::ptr& t);
+    bool deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string& val, aggregate_of_aggregate_of_instance::ptr& t);
 }
 
 
@@ -250,7 +282,7 @@ struct AttributeValue {
     uint8_t storage_model_ = 0;
     size_t instance_name_;
     // @todo couple with db_ptr;
-    IfcParse::schema_definition* schema_;
+    const IfcParse::schema_definition* schema_;
     union pointer_type {
         const in_memory_attribute_storage* storage_ptr;
         IfcParse::impl::rocks_db_file_storage* db_ptr;
@@ -271,7 +303,7 @@ struct AttributeValue {
         , storage_model_(0)
     {}
 
-    AttributeValue(IfcParse::schema_definition* schema, IfcParse::impl::rocks_db_file_storage* db, size_t instance_name, uint8_t index)
+    AttributeValue(const IfcParse::schema_definition* schema, IfcParse::impl::rocks_db_file_storage* db, size_t instance_name, uint8_t index)
         : index_(index)
         , array_(db)
         , storage_model_(1)
@@ -307,11 +339,6 @@ struct AttributeValue {
 
 struct rocks_db_attribute_storage {
 private:
-    // @todo not needed as call always passes through EntityInstanceData
-    IfcParse::impl::rocks_db_file_storage* fs_;
-    // @todo not needed should be passed from call stack
-    const char* prefix_;
-
     template<typename Visitor, std::size_t Index>
     auto apply_visitor_impl(Visitor&& visitor, std::size_t idx, std::integral_constant<std::size_t, Index>) const {
         return apply_visitor_impl(std::forward<Visitor>(visitor), idx, std::integral_constant<std::size_t, Index - 1>{});
@@ -323,59 +350,31 @@ private:
     }
 
 public:
-    rocks_db_attribute_storage(IfcParse::impl::rocks_db_file_storage* fs, const char* const prefix)
-        : fs_(fs)
-        , prefix_(prefix)
-    {}
-
-    rocks_db_attribute_storage(rocks_db_attribute_storage& other)
-        : fs_(other.fs_)
-        , prefix_(other.prefix_)
-    {}
-
-    rocks_db_attribute_storage(rocks_db_attribute_storage&& other)
-        : fs_(other.fs_)
-        , prefix_(other.prefix_)
-    {}
-
-    rocks_db_attribute_storage& operator=(const rocks_db_attribute_storage& other) {
-        if (this != &other) {
-            fs_ = other.fs_;
-            prefix_ = other.prefix_;
-        }
-        return *this;
-    }
-
-    rocks_db_attribute_storage& operator=(const rocks_db_attribute_storage&& other) {
-        if (this != &other) {
-            fs_ = other.fs_;
-            prefix_ = other.prefix_;
-        }
-        return *this;
-    }
-
-    size_t size() const {
+    size_t size(void*, const IfcParse::declaration*, std::size_t identity) const {
         // @todo is this actually needed?
         return 8;
     }
 
+    // @todo void* is obviously very ugly here
     template<typename T>
-    void set(std::size_t index, const T& value);
+    void set(void* storage, const IfcParse::declaration*, std::size_t identity, std::size_t index, const T& value);
 
     template<typename T>
-    bool has(std::size_t index) const {
+    bool has(void* storage, const IfcParse::declaration*, std::size_t identity, std::size_t index) const {
         // @todo
         return false;
     }
 
     template<typename Visitor>
-    auto apply_visitor(Visitor&& visitor, std::size_t index) const {
+    auto apply_visitor(void* storage, const IfcParse::declaration*, std::size_t identity, std::size_t index, Visitor&& visitor) const {
         return apply_visitor_impl(std::forward<Visitor>(visitor), index, std::integral_constant<std::size_t, type_variant_parameter_pack::size>{});
     }
 };
 
 class IFC_PARSE_API IfcEntityInstanceData {
   public:
+      // @todo since rocks_db_attribute_storage has no members anymore, change to in_memory_attribute_storage*?
+      // 24 -> 8 bytes...
       std::variant<in_memory_attribute_storage, rocks_db_attribute_storage> storage_;
 
       IfcEntityInstanceData(in_memory_attribute_storage&& storage)
@@ -390,7 +389,8 @@ class IFC_PARSE_API IfcEntityInstanceData {
           : storage_(std::move(other.storage_))
       {}
 
-      IfcEntityInstanceData(const IfcEntityInstanceData& data);
+      // No copy-constructor anymore because we need the instance for storage model context
+      IfcEntityInstanceData(const IfcEntityInstanceData&) = delete;
 
       IfcEntityInstanceData& operator=(IfcEntityInstanceData&& other) {
           if (this != &other) {
@@ -399,34 +399,52 @@ class IFC_PARSE_API IfcEntityInstanceData {
           return *this;
       }
 
-    AttributeValue get_attribute_value(size_t index) const;
+    AttributeValue get_attribute_value(void* storage, const IfcParse::declaration*, std::size_t identity, size_t index) const;
 
     template<typename T>
-    void set_attribute_value(std::size_t index, T&& value) {
-        std::visit([&index, &value](auto& x) {
-            return x.set(index, value); 
+    void set_attribute_value(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index, T&& value) {
+        std::visit([&index, &value, storage, decl, identity](auto& x) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(x)>, in_memory_attribute_storage>) {
+                return x.set(index, value);
+            } else {
+                return x.set(storage, decl, identity, index, value);
+            }
         }, storage_);
     }
 
     template<typename T>
-    bool has_attribute_value(std::size_t index) const {
-        return std::visit([&index](const auto& x) {
-            return x.has<T>(index);
+    bool has_attribute_value(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index) const {
+        return std::visit([&index, storage, decl, identity](const auto& x) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(x)>, in_memory_attribute_storage>) {
+                return x.has<T>(index);
+            } else {
+                return x.has<T>(storage, decl, identity, index);
+            }
         }, storage_);
     }
 
     template<typename Visitor>
-    auto apply_visitor(Visitor&& visitor, std::size_t index) const {
-        return std::visit([&index, &visitor](const auto& x) {
-            return x.apply_visitor(std::forward<Visitor>(visitor), index);
+    auto apply_visitor(void* storage, const IfcParse::declaration* decl, std::size_t identity, Visitor&& visitor, std::size_t index) const {
+        return std::visit([&index, &visitor, storage, decl, identity](const auto& x) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(x)>, in_memory_attribute_storage>) {
+                return x.apply_visitor(std::forward<Visitor>(visitor), index);
+            } else {
+                return x.apply_visitor(storage, decl, identity, index, std::forward<Visitor>(visitor));
+            }
         }, storage_);
     }
 
-    size_t size() const {
-        return std::visit([](const auto& x) { return x.size(); }, storage_);
+    size_t size(void* storage, const IfcParse::declaration* decl, std::size_t identity) const {
+        return std::visit([storage, decl, identity](const auto& x) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(x)>, in_memory_attribute_storage>) {
+                return x.size();
+            } else {
+                return x.size(storage, decl, identity);
+            }
+        }, storage_);
     }
 
-    void toString(std::ostream&, bool upper = false, const IfcParse::entity* ent = nullptr) const;
+    void toString(void* storage, const IfcParse::declaration*, std::size_t identity, std::ostream&, bool upper = false) const;
 };
 
 #endif

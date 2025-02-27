@@ -508,7 +508,7 @@ namespace {
                             continue;
                         }
 						IfcUtil::IfcBaseClass* v = ((IfcUtil::IfcBaseEntity*) prop)->get("NominalValue");
-						auto value = v->data().get_attribute_value(0);
+						auto value = v->get_attribute_value(0);
 						if (value.type() == IfcUtil::Argument_STRING) {
 							std::string v_str = value;
 							*output_it++ = string_property{ pset_name, name, v_str };
