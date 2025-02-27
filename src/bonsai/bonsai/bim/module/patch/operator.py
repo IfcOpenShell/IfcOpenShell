@@ -136,12 +136,13 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
                 new_attr = patch_args.add()
                 data_type = arg_info.get("type", "str")
 
-                if tool.Patch.is_filepath_argument(self.recipe, arg_name):
+                is_filepath_argument = tool.Patch.is_filepath_argument(arg_info)
+                if is_filepath_argument:
                     data_type = "file"
                     new_attr.metadata = "single_file"
 
                 if isinstance(data_type, list):
-                    if "file" in data_type or tool.Patch.is_filepath_argument(self.recipe, arg_name):
+                    if "file" in data_type or is_filepath_argument:
                         data_type = ["file"]
 
                     data_type = [dt for dt in data_type if dt != "NoneType"][0]

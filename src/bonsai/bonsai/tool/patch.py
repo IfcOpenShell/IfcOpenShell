@@ -40,9 +40,9 @@ class Patch(bonsai.core.tool.Patch):
         ifcpatch.write(output, outfile)
 
     @classmethod
-    def is_filepath_argument(cls, recipe: str, arg_name: str) -> bool:
+    def is_filepath_argument(cls, arg_info: ifcpatch.InputDoc) -> bool:
         # There is probably a more explicit way to do this
-        return "filepath" in arg_name
+        return "filepath" in arg_info["name"] or "filter_glob" in arg_info
 
     @classmethod
     def does_patch_has_output(cls, recipe: str) -> bool:
