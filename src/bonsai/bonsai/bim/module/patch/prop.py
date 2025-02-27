@@ -36,7 +36,7 @@ from bpy.props import (
 from typing import TYPE_CHECKING, Literal, Union
 
 
-ifcpatchrecipes_enum = []
+ifcpatchrecipes_enum: list[tuple[str, str, str]] = []
 
 
 def purge():
@@ -57,7 +57,18 @@ def get_ifcpatch_recipes(self: "BIMPatchProperties", context: bpy.types.Context)
             if f == "__init__":
                 continue
             docs = ifcpatch.extract_docs(f, "Patcher", "__init__", ("src", "file", "logger", "args"))
-            ifcpatchrecipes_enum.append((f, f, docs.get("description", "") if docs else ""))
+            if docs is None:
+                description = ""
+            else:
+                description = docs["description"]
+                inputs = docs["inputs"]
+                if inputs:
+                    if description:
+                        description += "\n\n"
+                    description += "Parameters:"
+                    for param, input_data in inputs.items():
+                        description += f"\n\n- {param}: {input_data['description']}"
+            ifcpatchrecipes_enum.append((f, f, description))
         ifcpatchrecipes_enum.sort(key=lambda x: x[0])
     return ifcpatchrecipes_enum
 

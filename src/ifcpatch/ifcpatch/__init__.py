@@ -28,6 +28,7 @@ import inspect
 import collections
 import importlib
 import importlib.util
+import re
 from typing import Union, Iterable, Optional, Any, TypedDict, Literal, Sequence
 from typing_extensions import NotRequired
 
@@ -133,7 +134,7 @@ def write(output: Union[ifcopenshell.file, str], filepath: str) -> None:
 
 def extract_docs(
     submodule_name: str, cls_name: str, method_name: str = "__init__", boilerplate_args: Optional[Iterable[str]] = None
-) -> Union[dict[str, Any], None]:
+) -> Union["PatcherDoc", None]:
     """Extract class docstrings and method arguments
 
     :param submodule_name: Submodule from which to extract the class
@@ -155,10 +156,26 @@ def extract_docs(
         print(f"Error : IFCPatch {str(submodule)} could not load because : {str(e)}")
 
 
-def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Iterable[str], None]) -> dict[str, Any]:
-    inputs = collections.OrderedDict()
+class PatcherDoc(TypedDict):
+    class_: type
+    description: str
+    output: Union[str, None]
+    inputs: dict[str, "InputDoc"]
+
+
+class InputDoc(TypedDict):
+    name: str
+    description: str
+    type: Union[str, list[str]]
+    default: NotRequired[Any]
+    generic_type: NotRequired[str]
+    enum_items: NotRequired[list[str]]
+    filter_glob: NotRequired[str]
+
+
+def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Iterable[str], None]) -> PatcherDoc:
+    inputs: dict[str, InputDoc] = {}
     method = getattr(cls, method_name)
-    docs: dict[str, Any] = {"class": cls}
     if boilerplate_args is None:
         boilerplate_args = []
 
@@ -166,9 +183,10 @@ def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Iterable[
     for name, parameter in signature.parameters.items():
         if name == "self" or name in boilerplate_args:
             continue
-        inputs[name] = {"name": name}
+        input_doc: InputDoc = {"name": name}
+        inputs[name] = input_doc
         if isinstance(parameter.default, (str, float, int, bool)):
-            inputs[name]["default"] = parameter.default
+            input_doc["default"] = parameter.default
 
     # Parse data from type hints.
     type_hints = typing.get_type_hints(method)
@@ -193,28 +211,113 @@ def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Iterable[
 
     # Parse the docstring.
     description = ""
-    doc = method.__doc__
-    if doc is not None:
-        for i, line in enumerate(doc.split("\n")):
-            line = line.strip()
-            if i == 0:
-                docs["name"] = line
-            elif line.startswith(":return:"):
-                docs["output"] = {"name": line.split(":")[2].strip(), "description": line.split(":")[3].strip()}
-            elif line.startswith(":param"):
-                param_name = line.split(":")[1].strip().replace("param ", "")
-                if param_name in inputs:
-                    inputs[param_name]["description"] = line.split(":")[2].strip()
-            # :filter_glob is our special doc-tag.
-            elif line.startswith(":filter_glob"):
-                param_name = line.split(":")[1].strip().replace("filter_glob ", "")
-                if param_name in inputs:
-                    inputs[param_name]["filter_glob"] = line.split(":")[2].strip()
-            elif i == 2:
-                description += line
-            elif i > 2:
-                description += "\n" + line
+    # `getdoc` instead of `__doc__` for sane indentation.
+    doc = inspect.getdoc(method)
 
-        docs["description"] = description.strip()
-    docs["inputs"] = inputs
+    def is_valid_param_name(param_name: str) -> bool:
+        if param_name not in inputs:
+            print(
+                f"WARNING. Unexpected param name '{param_name}' in {cls.__name__} docstring (missing from signature)."
+            )
+            return False
+        return True
+
+    if doc is None:
+        doc_description = ""
+        doc_output = None
+    else:
+        docstring_data = parse_docstring(doc)
+        doc_description = docstring_data["description"]
+        doc_output = docstring_data["output"]
+
+        for param_name in docstring_data["param"]:
+            if not is_valid_param_name(param_name):
+                continue
+            inputs[param_name]["description"] = docstring_data["param"][param_name]
+
+        for param_name in docstring_data["filter_glob"]:
+            if not is_valid_param_name(param_name):
+                continue
+            inputs[param_name]["filter_glob"] = docstring_data["filter_glob"][param_name]
+
+    for param_name in inputs:
+        if "description" not in inputs[param_name]:
+            inputs[param_name]["description"] = "Undocumented"
+
+    docs = PatcherDoc(
+        class_=cls,
+        description=doc_description,
+        output=doc_output,
+        inputs=inputs,
+    )
     return docs
+
+
+class DocstringData(TypedDict):
+    name: str
+    description: str
+    param: dict[str, str]
+    filter_glob: dict[str, str]
+    output: Union[str, None]
+
+
+def parse_docstring(docstring: str) -> DocstringData:
+    # Keep left indentation to recognize the sections.
+    lines = docstring.split("\n")
+    result = DocstringData(
+        name=lines[0].strip(),
+        description="",
+        param={},
+        filter_glob={},
+        output=None,
+    )
+
+    current_section = None
+    last_param = None
+
+    PREFIXES = ("param", "filter_glob")
+
+    for line in lines[1:]:
+        if line.startswith(":"):
+            line = line[1:]
+            if line.startswith(PREFIXES):
+                prefix = line.split(" ")[0]
+                current_section = prefix
+                match_ = re.match(rf"{prefix}\s+(\w+):\s+(.*)", line)
+                assert match_, f"Invalid line: '{line}'."
+                param_name, param_desc = match_.groups()
+                result[prefix][param_name] = param_desc
+                last_param = param_name
+                continue
+            elif line.startswith("return:"):
+                current_section = "output"
+                match_ = re.match(r"return:\s+(.*)", line)
+                assert match_
+                result["output"] = match_.groups()[0]
+                continue
+            elif line.startswith("type"):
+                # Ignore types in favor of signature annotations.
+                continue
+        elif line.startswith("Example:"):
+            # Ignore code example at the end of the docstring.
+            break
+
+        # Multiline sections start with indentation.
+        if line.startswith(" ") and current_section:
+            line = line.lstrip()
+            if current_section == "output":
+                assert result["output"]
+                result["output"] += f"\n{line}"
+            elif current_section in PREFIXES:
+                assert last_param
+                result[current_section][last_param] += f"\n{line}"
+            continue
+
+        line = line.lstrip()
+        result["description"] += f"\n{line}"
+        current_section = None
+        last_param = None
+
+    result["description"] = result["description"].strip()
+
+    return result
