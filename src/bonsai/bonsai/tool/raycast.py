@@ -154,6 +154,24 @@ class Raycast(bonsai.core.tool.Raycast):
         except:
             loc = Vector((0, 0, 0))
 
+        # For empty object we just get the object location and return
+        if obj.type == "EMPTY":
+            v = obj.location
+            intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
+            intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
+            distance = (v - intersection).length
+            if distance < snap_threshold:
+                snap_point = {
+                    "object": obj,
+                    "type": "Vertex",
+                    "point": v.copy(),
+                    "distance": distance,
+                }
+                points.append(snap_point)
+                print("empty", snap_point)
+            return points
+
+
         if not custom_bmesh:
             bm = bmesh.new()
             if face is None:  # Object without faces

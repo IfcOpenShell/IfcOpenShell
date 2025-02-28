@@ -403,13 +403,13 @@ class Snap(bonsai.core.tool.Snap):
 
         # Edge-Vertex
         for obj in objs_to_raycast:
-            if obj.type == "MESH":
-                if len(obj.data.polygons) == 0:
-                    snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj)
-                    if snap_points:
-                        for point in snap_points:
-                            point["group"] = "Edge-Vertex"
-                            detected_snaps.append(point)
+            if obj.type in {"MESH", "EMPTY"}:
+                # if len(obj.data.polygons) == 0:
+                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj)
+                if snap_points:
+                    for point in snap_points:
+                        point["group"] = "Edge-Vertex"
+                        detected_snaps.append(point)
             if obj.type == "CURVE":
                 new_object = bpy.data.objects.new("new_object", obj.to_mesh().copy())
                 snap_points = tool.Raycast.ray_cast_by_proximity(context, event, new_object)
@@ -417,15 +417,6 @@ class Snap(bonsai.core.tool.Snap):
                     for point in snap_points:
                         point["group"] = "Edge-Vertex"
                         detected_snaps.append(point)
-            if obj.type == "EMPTY":
-                snap_point = {
-                    "type": "Vertex",
-                    "point": obj.location,
-                    "distance": 10,  # High value so it has low priority
-                    "object": obj,
-                    "group": "Edge-Vertex",
-                }
-                detected_snaps.append(snap_point)
 
         # Obj
         if (space.shading.type == "SOLID" and space.shading.show_xray) or (
