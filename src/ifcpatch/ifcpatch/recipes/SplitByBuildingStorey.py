@@ -32,6 +32,7 @@ class Patcher:
         0 and {name} is the name of the storey.
 
         :param output_dir: Specifies an output directory where the new IFC models will be saved.
+        :filter_glob output_dir: *.ifc;*.ifczip;*.ifcxml
 
         Example:
 
