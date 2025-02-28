@@ -1281,6 +1281,13 @@ class UnloadLink(bpy.types.Operator):
         # Let's assume that user might delete it.
         if empty_handle := link.empty_handle:
             bpy.data.objects.remove(empty_handle)
+
+        #following lines removes the library also when use_relative_path=True, otherwise it doesn't
+        libraries = bpy.data.libraries
+        for library in libraries:
+            if library.name == self.filepath + ".cache.blend":
+                bpy.data.libraries.remove(library)
+
         link.is_loaded = False
 
         if not any([l.is_loaded for l in links]):
@@ -1442,6 +1449,12 @@ class ReloadLink(bpy.types.Operator):
 
         for library in get_linked_ifcs():
             library.reload()
+
+        is_abs = os.path.isabs(Path(self.filepath))
+        use_relative_path = not is_abs
+        bpy.ops.bim.unlink_ifc(filepath = self.filepath)
+        status = bpy.ops.bim.link_ifc(filepath=self.filepath, use_cache=False, use_relative_path = use_relative_path)
+
         return {"FINISHED"}
 
 
