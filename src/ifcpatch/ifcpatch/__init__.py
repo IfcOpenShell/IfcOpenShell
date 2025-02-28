@@ -215,11 +215,18 @@ def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Sequence[
     doc = inspect.getdoc(method)
 
     def is_valid_param_name(param_name: str) -> bool:
-        if param_name not in inputs:
-            print(
-                f"WARNING. Unexpected param name '{param_name}' in {cls.__name__} docstring (missing from signature)."
-            )
+        assert (
+            param_name in inputs
+        ), f"Unexpected param name '{param_name}' in {cls.__name__} docstring (missing from signature)."
+        return True
+
+    def is_valid_filter_glob(filter_glob: str) -> bool:
+        # e.g. '*.ifc;*.ifczip;*.ifcxml'
+        if len(filter_glob) < 3:
             return False
+        for pattern in filter_glob.split(";"):
+            if not re.fullmatch(r"\*\.\w+", pattern):
+                return False
         return True
 
     if doc is None:
@@ -238,7 +245,9 @@ def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Sequence[
         for param_name in docstring_data["filter_glob"]:
             if not is_valid_param_name(param_name):
                 continue
-            inputs[param_name]["filter_glob"] = docstring_data["filter_glob"][param_name]
+            filter_glob = docstring_data["filter_glob"][param_name]
+            assert is_valid_filter_glob(filter_glob), f"Invalid filter_glob pattern: '{filter_glob}'."
+            inputs[param_name]["filter_glob"] = filter_glob
 
     for param_name in inputs:
         if "description" not in inputs[param_name]:
