@@ -1488,16 +1488,12 @@ class ToggleLinkVisibility(bpy.types.Operator):
         return {"FINISHED"}
 
     def toggle_wireframe(self, link: "Link") -> None:
+        link.is_wireframe = not link.is_wireframe
+        display_type = "WIRE" if link.is_wireframe else "TEXTURED"
         for collection in self.get_linked_collections():
             objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, collection.all_objects)
-            for i, obj in enumerate(objs):
-                if i == 0:
-                    if obj.display_type == "WIRE":
-                        display_type = "TEXTURED"
-                    else:
-                        display_type = "WIRE"
+            for obj in objs:
                 obj.display_type = display_type
-            link.is_wireframe = display_type == "WIRE"
 
     def toggle_visibility(self, link: "Link") -> None:
         linked_collections = self.get_linked_collections()
