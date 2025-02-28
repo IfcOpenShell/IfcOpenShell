@@ -911,7 +911,7 @@ class ChangeProfileDepth(bpy.types.Operator, tool.Ifc.Operator):
 class ChangeCardinalPoint(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_cardinal_point"
     bl_label = "Update"
-    bl_description = "Update Cardinal Point"
+    bl_description = "Update Cardinal Point for all selected objects."
     bl_options = {"REGISTER", "UNDO"}
     cardinal_point: bpy.props.IntProperty()
 
@@ -926,6 +926,8 @@ class ChangeCardinalPoint(bpy.types.Operator, tool.Ifc.Operator):
             if not element:
                 continue
             material = ifcopenshell.util.element.get_material(element, should_skip_usage=False)
+            if not material:
+                continue
             if material.is_a("IfcMaterialProfileSetUsage"):
                 material.CardinalPoint = self.cardinal_point
                 objs.append(obj)
