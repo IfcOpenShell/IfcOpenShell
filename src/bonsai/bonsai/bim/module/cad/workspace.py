@@ -116,9 +116,9 @@ class CadTool(WorkSpaceTool):
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
             add_layout_hotkey_operator(row, "Offset", "S_O", "Offset", ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Rectangle", "S_R", "Rectangle", ui_context)
+            add_layout_hotkey_operator(row, "Rectangle", "S_R", "", ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Circle", "S_C", "Circle", ui_context)
+            add_layout_hotkey_operator(row, "Circle", "S_C", bpy.ops.bim.add_ifccircle.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
             add_layout_hotkey_operator(row, "3-Point Arc", "S_V", bpy.ops.bim.set_arc_index.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
@@ -238,9 +238,8 @@ class CadHotkey(bpy.types.Operator):
                 row.prop(props, "resolution")
 
     def hotkey_S_C(self):
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         if tool.Geometry.is_profile_object_active():
-            bpy.ops.bim.add_ifccircle(radius=self.props.radius / si_conversion)
+            bpy.ops.bim.add_ifccircle(radius=self.props.radius)
         else:
             bpy.ops.bim.cad_arc_from_2_points()
 
@@ -248,15 +247,13 @@ class CadHotkey(bpy.types.Operator):
         bpy.ops.bim.cad_trim_extend()
 
     def hotkey_S_F(self):
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         if tool.Geometry.is_profile_object_active():
-            bpy.ops.bim.add_ifcarcindex_fillet(radius=self.props.radius / si_conversion)
+            bpy.ops.bim.add_ifcarcindex_fillet(radius=self.props.radius)
         else:
-            bpy.ops.bim.cad_fillet(resolution=self.props.resolution, radius=self.props.radius / si_conversion)
+            bpy.ops.bim.cad_fillet(resolution=self.props.resolution, radius=self.props.radius)
 
     def hotkey_S_O(self):
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        bpy.ops.bim.cad_offset(distance=self.props.distance / si_conversion)
+        bpy.ops.bim.cad_offset(distance=self.props.distance)
 
     def hotkey_S_Q(self):
         obj = bpy.context.active_object
@@ -288,8 +285,7 @@ class CadHotkey(bpy.types.Operator):
             return
 
         if tool.Geometry.is_profile_object_active():
-            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            bpy.ops.bim.add_rectangle(x=self.props.x / si_conversion, y=self.props.y / si_conversion)
+            bpy.ops.bim.add_rectangle(x=self.props.x, y=self.props.y)
         elif (
             (RoofData.is_loaded or not RoofData.load())
             and RoofData.data["pset_data"]

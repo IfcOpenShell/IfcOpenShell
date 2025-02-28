@@ -130,7 +130,7 @@ class CadFillet(bpy.types.Operator):
     bl_label = "CAD Fillet"
     bl_options = {"REGISTER", "UNDO"}
     resolution: bpy.props.IntProperty(name="Arc Resolution", min=0, default=1)
-    radius: bpy.props.FloatProperty(name="Radius", default=0.1)
+    radius: bpy.props.FloatProperty(name="Radius", default=0.1, subtype="DISTANCE")
 
     @classmethod
     def poll(cls, context):
@@ -143,18 +143,15 @@ class CadFillet(bpy.types.Operator):
             layout.prop(self, prop)
 
     def execute(self, context):
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        self.radius = self.radius * si_conversion
-
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.mode_set(mode="EDIT")
 
         obj = bpy.context.active_object
-        cursor = obj.matrix_world.inverted() @ bpy.context.scene.cursor.location
-        mesh = obj.data
+        assert obj and isinstance((mesh := obj.data), bpy.types.Mesh)
         bm = bmesh.from_edit_mesh(mesh)
         selected_edges = [e for e in bm.edges if e.select]
         if len(selected_edges) != 2:
+            self.report({"ERROR"}, "Exactly 2 edges should be selected.")
             return {"CANCELLED"}
 
         # Assume the user has selected two edges sharing a vert, but merge verts
@@ -235,6 +232,7 @@ class CadArcFrom2Points(bpy.types.Operator):
         if bpy.context.mode != "EDIT_MESH":
             return {"CANCELLED"}
         obj = bpy.context.active_object
+        assert obj
         region = bpy.context.region
         region_3d = bpy.context.area.spaces.active.region_3d
         cursor = bpy.context.scene.cursor.location
@@ -242,10 +240,12 @@ class CadArcFrom2Points(bpy.types.Operator):
         if not center:
             return {"CANCELLED"}
         mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
         mw = obj.matrix_world
         bm = bmesh.from_edit_mesh(mesh)
         selected_verts = [v for v in bm.verts if v.select]
         if len(selected_verts) != 2:
+            self.report({"ERROR"}, "Exactly 2 vertices should be selected.")
             return {"CANCELLED"}
         v1 = bpy_extras.view3d_utils.location_3d_to_region_2d(region, region_3d, mw @ selected_verts[0].co)
         v2 = bpy_extras.view3d_utils.location_3d_to_region_2d(region, region_3d, mw @ selected_verts[1].co)
@@ -343,10 +343,10 @@ class CadOffset(bpy.types.Operator):
     bl_idname = "bim.cad_offset"
     bl_label = "CAD Offset"
     bl_options = {"REGISTER", "UNDO"}
-    distance: bpy.props.FloatProperty(name="Distance", default=0.1)
+    distance: bpy.props.FloatProperty(name="Distance", default=0.1, subtype="DISTANCE")
 
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return context.mode == "EDIT_MESH"
 
     def draw(self, context):
@@ -368,9 +368,6 @@ class CadOffset(bpy.types.Operator):
         # dialog that Mesh Tools has. Sverchok is 2D based, but has a weird side
         # effect of converting an unclosed loop into a closed loop which is also
         # not what users expect.
-
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        self.distance = self.distance * si_conversion
 
         bpy.ops.object.mode_set(mode="OBJECT")
         bpy.ops.object.mode_set(mode="EDIT")
@@ -543,7 +540,7 @@ class CadOffset(bpy.types.Operator):
 class AddIfcCircle(bpy.types.Operator):
     bl_idname = "bim.add_ifccircle"
     bl_label = "Add IfcCircle"
-    radius: bpy.props.FloatProperty(name="Radius", default=0.5)
+    radius: bpy.props.FloatProperty(name="Radius", default=0.5, subtype="DISTANCE")
 
     @classmethod
     def poll(cls, context):
@@ -551,18 +548,19 @@ class AddIfcCircle(bpy.types.Operator):
         return bool(obj) and obj.type == "MESH"
 
     def execute(self, context):
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        self.radius = self.radius * si_conversion
-
+        obj = context.active_object
+        assert obj and isinstance((mesh := obj.data), bpy.types.Mesh)
+        self.obj = obj
+        self.mesh = mesh
         if self.has_selected_existing_circle(context):
             self.change_radius(context)
         else:
             self.create_circle(context)
         return {"FINISHED"}
 
-    def has_selected_existing_circle(self, context):
-        obj = context.active_object
-        bm = bmesh.from_edit_mesh(obj.data)
+    def has_selected_existing_circle(self, context: bpy.types.Context) -> bool:
+        obj = self.obj
+        bm = bmesh.from_edit_mesh(self, mesh)
         verts = [v for v in bm.verts if v.select and not v.hide]
         if len(verts) != 2:
             return False
@@ -575,32 +573,32 @@ class AddIfcCircle(bpy.types.Operator):
         for group in groups:
             if group in verts[0][deform_layer] and group in verts[1][deform_layer]:
                 return True
+        return False
 
-    def change_radius(self, context):
-        obj = context.active_object
-        bm = bmesh.from_edit_mesh(obj.data)
+    def change_radius(self, context: bpy.types.Object) -> None:
+        bm = bmesh.from_edit_mesh(self.mesh)
         verts = [v for v in bm.verts if v.select and not v.hide]
         center = verts[0].co.lerp(verts[1].co, 0.5)
         verts[0].co = center + ((verts[0].co - center).normalized() * self.radius)
         verts[1].co = center + ((verts[1].co - center).normalized() * self.radius)
         bm.verts.index_update()
         bm.edges.index_update()
-        bmesh.update_edit_mesh(obj.data)
+        bmesh.update_edit_mesh(self.mesh)
 
-    def create_circle(self, context):
-        obj = context.active_object
+    def create_circle(self, context: bpy.types.Context) -> None:
+        obj = self.obj
         bpy.ops.object.mode_set(mode="OBJECT")
         # The last group may be the result of a prior run of this operator.
         # I tried looping through all groups but Blender group indices seem to behave unpredictably.
         if len(obj.vertex_groups):
             last_group = obj.vertex_groups[-1]
-            verts_in_group = [v for v in obj.data.vertices if last_group.index in [vg.group for vg in v.groups]]
+            verts_in_group = [v for v in self.mesh.vertices if last_group.index in [vg.group for vg in v.groups]]
             if "IFCCIRCLE" in last_group.name and len(verts_in_group) != 2:
                 obj.vertex_groups.remove(last_group)
         group = obj.vertex_groups.new(name="IFCCIRCLE")
         bpy.ops.object.mode_set(mode="EDIT")
 
-        bm = bmesh.from_edit_mesh(obj.data)
+        bm = bmesh.from_edit_mesh(self.mesh)
 
         bm.verts.layers.deform.verify()
         deform_layer = bm.verts.layers.deform.active
@@ -617,7 +615,7 @@ class AddIfcCircle(bpy.types.Operator):
 
         bm.verts.index_update()
         bm.edges.index_update()
-        bmesh.update_edit_mesh(obj.data)
+        bmesh.update_edit_mesh(self.mesh)
 
 
 class AddIfcArcIndexFillet(bpy.types.Operator):
@@ -638,18 +636,19 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
             layout.prop(self, prop)
 
     def execute(self, context):
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        self.radius = self.radius * si_conversion
-
+        obj = context.active_object
+        assert obj and isinstance((mesh := obj.data), bpy.types.Mesh)
+        self.obj = obj
+        self.mesh = mesh
         if self.has_selected_existing_arc(context):
             self.change_radius(context)
         else:
-            self.create_arc(context)
+            return self.create_arc(context)
         return {"FINISHED"}
 
     def has_selected_existing_arc(self, context: bpy.types.Context) -> bool:
-        obj = context.active_object
-        bm = bmesh.from_edit_mesh(obj.data)
+        obj = self.obj
+        bm = bmesh.from_edit_mesh(self.mesh)
         verts = [v for v in bm.verts if v.select and not v.hide]
         if len(verts) != 3:
             return False
@@ -668,13 +667,14 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         return False
 
     def change_radius(self, context: bpy.types.Context) -> None:
-        obj = context.active_object
-        bm = bmesh.from_edit_mesh(obj.data)
+        obj = self.obj
+        bm = bmesh.from_edit_mesh(self.mesh)
         edges = [e for e in bm.edges if e.select and not e.hide]
 
         mid = list(set(edges[0].verts) & set(edges[1].verts))[0]
         v1 = edges[0].other_vert(mid)
         v2 = edges[1].other_vert(mid)
+        assert v1 and v2
         center = tool.Cad.get_center_of_arc([v1.co, mid.co, v2.co])
 
         if len(v1.link_edges) != 2 or len(v2.link_edges) != 2:
@@ -682,6 +682,7 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
 
         v3 = v1.link_edges[1].other_vert(v1) if mid in v1.link_edges[0].verts else v1.link_edges[0].other_vert(v1)
         v4 = v2.link_edges[1].other_vert(v2) if mid in v2.link_edges[0].verts else v2.link_edges[0].other_vert(v2)
+        assert v3 and v4
         dir1 = (v3.co - v1.co).normalized()
         dir2 = (v4.co - v2.co).normalized()
 
@@ -702,11 +703,10 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
 
         bm.verts.index_update()
         bm.edges.index_update()
-        bmesh.update_edit_mesh(obj.data)
+        bmesh.update_edit_mesh(self.mesh)
 
-    def create_arc(self, context):
-        obj = bpy.context.active_object
-
+    def create_arc(self, context: bpy.types.Context) -> set[str]:
+        obj = self.obj
         bpy.ops.object.mode_set(mode="OBJECT")
         # The last group may be the result of a prior run of this operator.
         # I tried looping through all groups but Blender group indices seem to behave unpredictably.
@@ -718,7 +718,7 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         group = obj.vertex_groups.new(name="IFCARCINDEX")
         bpy.ops.object.mode_set(mode="EDIT")
 
-        bm = bmesh.from_edit_mesh(obj.data)
+        bm = bmesh.from_edit_mesh(self.mesh)
 
         bm.verts.layers.deform.verify()
         deform_layer = bm.verts.layers.deform.active
@@ -737,6 +737,7 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         shared_vert = list(set(selected_edges[0].verts) & set(selected_edges[1].verts))[0]
         v1 = selected_edges[0].other_vert(shared_vert)
         v2 = selected_edges[1].other_vert(shared_vert)
+        assert v1 and v2
         dir1 = (v1.co - shared_vert.co).normalized()
         dir2 = (v2.co - shared_vert.co).normalized()
         edge_angle = dir1.angle(dir2)
@@ -770,7 +771,8 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
 
         bm.verts.index_update()
         bm.edges.index_update()
-        bmesh.update_edit_mesh(obj.data)
+        bmesh.update_edit_mesh(self.mesh)
+        return {"FINISHED"}
 
 
 class AlignViewToProfile(bpy.types.Operator):
@@ -806,8 +808,8 @@ class AlignViewToProfile(bpy.types.Operator):
 class AddRectangle(bpy.types.Operator):
     bl_idname = "bim.add_rectangle"
     bl_label = "Add Rectangle"
-    x: bpy.props.FloatProperty(name="X", default=1)
-    y: bpy.props.FloatProperty(name="Y", default=1)
+    x: bpy.props.FloatProperty(name="X", default=1, subtype="DISTANCE")
+    y: bpy.props.FloatProperty(name="Y", default=1, subtype="DISTANCE")
 
     @classmethod
     def poll(cls, context):
@@ -815,11 +817,8 @@ class AddRectangle(bpy.types.Operator):
         return bool(obj) and obj.type == "MESH"
 
     def execute(self, context):
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        self.x = self.x * si_conversion
-        self.y = self.y * si_conversion
-
         obj = context.active_object
+        assert obj and isinstance(obj.data, bpy.types.Mesh)
         bm = bmesh.from_edit_mesh(obj.data)
         cursor = obj.matrix_world.inverted() @ context.scene.cursor.location
         new_verts = [
