@@ -68,7 +68,7 @@ class Patcher:
         host: str = "localhost",
         username: str = "root",
         password: str = "pass",
-        database: str = f"{DEFAULT_DATABASE_NAME}.db",
+        database: str = f"{DEFAULT_DATABASE_NAME}.sqlite",
         full_schema: bool = True,
         is_strict: bool = False,
         should_expand: bool = False,
@@ -82,7 +82,7 @@ class Patcher:
         :param sql_type: Choose between "SQLite" or "MySQL"
         :param database: Database path to save the SQL database to (already existing or not).
             Could also be a directory, then the database will be stored
-            using default filename (e.g. 'database.db').
+            using default filename (e.g. 'database.sqlite').
         :filter_glob database: *.db;*.sqlite
         :param full_schema: if True, will create tables for all IFC classes,
             regardless if they are used or not in the dataset. If False, will
