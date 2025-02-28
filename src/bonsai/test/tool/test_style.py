@@ -47,7 +47,7 @@ class TestCanSupportRenderingStyle(NewFile):
 
 class TestDisableEditing(NewFile):
     def test_run(self):
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         props.is_editing_style = 1
         subject.disable_editing()
         assert props.is_editing_style == 0
@@ -55,14 +55,15 @@ class TestDisableEditing(NewFile):
 
 class TestDisableEditingStyles(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMStylesProperties.is_editing = True
+        props = tool.Style.get_style_props()
+        props.is_editing = True
         subject.disable_editing_styles()
-        assert bpy.context.scene.BIMStylesProperties.is_editing is False
+        assert props.is_editing is False
 
 
 class TestEnableEditing(NewFile):
     def test_run(self):
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         style = ifcopenshell.file().create_entity("IfcSurfaceStyle")
         subject.enable_editing(style)
         assert props.is_editing_style is style.id()
@@ -70,9 +71,10 @@ class TestEnableEditing(NewFile):
 
 class TestEnableEditingStyles(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMStylesProperties.is_editing = False
+        props = props = tool.Style.get_style_props()
+        props.is_editing = False
         subject.enable_editing_styles()
-        assert bpy.context.scene.BIMStylesProperties.is_editing is True
+        assert props.is_editing is True
 
 
 class TestExportSurfaceAttributes(NewFile):
@@ -85,9 +87,10 @@ class TestGetActiveStyleType(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        bpy.context.scene.BIMStylesProperties.style_type = "IfcSurfaceStyle"
+        props = tool.Style.get_style_props()
+        props.style_type = "IfcSurfaceStyle"
         assert subject.get_active_style_type() == "IfcSurfaceStyle"
-        bpy.context.scene.BIMStylesProperties.style_type = "IfcCurveStyle"
+        props.style_type = "IfcCurveStyle"
         assert subject.get_active_style_type() == "IfcCurveStyle"
 
 
@@ -378,7 +381,7 @@ class TestGetUVMaps(NewFile):
 class TestImportSurfaceAttributes(NewFile):
     def test_run(self):
         tool.Ifc.set(ifc := ifcopenshell.file())
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         style = ifc.create_entity("IfcSurfaceStyle", "Name", "BOTH")
         subject.import_surface_attributes(style)
         assert props.attributes.get("Name").string_value == "Name"
@@ -387,7 +390,7 @@ class TestImportSurfaceAttributes(NewFile):
     def test_importing_surface_attributes_twice(self):
         tool.Ifc.set(ifc := ifcopenshell.file())
         style = ifc.create_entity("IfcSurfaceStyle", "Name", "BOTH")
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         subject.import_surface_attributes(style)
         assert len(props.attributes) == 2
         assert props.attributes.get("Name").string_value == "Name"
@@ -404,7 +407,7 @@ class TestImportPresentationStyles(NewFile):
         tool.Ifc.set(ifc)
         style = ifc.createIfcCurveStyle(Name="Name")
         subject.import_presentation_styles("IfcCurveStyle")
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         assert props.styles[0].ifc_definition_id == style.id()
         assert props.styles[0].name == "Name"
         assert props.styles[0].total_elements == 0
@@ -414,7 +417,7 @@ class TestImportPresentationStyles(NewFile):
         tool.Ifc.set(ifc)
         style = ifc.createIfcFillAreaStyle(Name="Name")
         subject.import_presentation_styles("IfcFillAreaStyle")
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         assert props.styles[0].ifc_definition_id == style.id()
         assert props.styles[0].name == "Name"
         assert props.styles[0].total_elements == 0
@@ -424,7 +427,7 @@ class TestImportPresentationStyles(NewFile):
         tool.Ifc.set(ifc)
         style = ifc.createIfcSurfaceStyle(Name="Name")
         subject.import_presentation_styles("IfcSurfaceStyle")
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         assert props.styles[0].ifc_definition_id == style.id()
         assert props.styles[0].name == "Name"
         assert props.styles[0].total_elements == 0
@@ -434,7 +437,7 @@ class TestImportPresentationStyles(NewFile):
         tool.Ifc.set(ifc)
         style = ifc.createIfcTextStyle(Name="Name")
         subject.import_presentation_styles("IfcTextStyle")
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         assert props.styles[0].ifc_definition_id == style.id()
         assert props.styles[0].name == "Name"
         assert props.styles[0].total_elements == 0
@@ -442,9 +445,10 @@ class TestImportPresentationStyles(NewFile):
 
 class TestIsEditingStyles(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMStylesProperties.is_editing = False
+        props = tool.Style.get_style_props()
+        props.is_editing = False
         assert subject.is_editing_styles() is False
-        bpy.context.scene.BIMStylesProperties.is_editing = True
+        props.is_editing = True
         assert subject.is_editing_styles() is True
 
 

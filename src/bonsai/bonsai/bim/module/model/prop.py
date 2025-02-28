@@ -28,7 +28,7 @@ from math import pi, radians
 from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
 from bonsai.bim.module.model.door import update_door_modifier_bmesh
 from bonsai.bim.module.model.window import update_window_modifier_bmesh
-from typing import TYPE_CHECKING, Literal, get_args, Union, get_args
+from typing import TYPE_CHECKING, Literal, get_args, Union, get_args, Any, Optional
 
 
 def get_ifc_class(self: "BIMModelProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -607,7 +607,7 @@ class BIMWindowProperties(PropertyGroup):
         framing_material: str
         glazing_material: str
 
-    def get_general_kwargs(self, convert_to_project_units=False):
+    def get_general_kwargs(self, convert_to_project_units: bool = False) -> dict[str, Any]:
         kwargs = {
             "window_type": self.window_type,
             "overall_height": self.overall_height,
@@ -617,7 +617,9 @@ class BIMWindowProperties(PropertyGroup):
             return kwargs
         return tool.Model.convert_data_to_project_units(kwargs, ["window_type"])
 
-    def get_lining_kwargs(self, window_type=None, convert_to_project_units=False):
+    def get_lining_kwargs(
+        self, window_type: Optional[WindowType] = None, convert_to_project_units: bool = False
+    ) -> dict[str, Any]:
         if not window_type:
             window_type = self.window_type
         kwargs = {
@@ -660,7 +662,7 @@ class BIMWindowProperties(PropertyGroup):
             return kwargs
         return tool.Model.convert_data_to_project_units(kwargs)
 
-    def get_panel_kwargs(self, convert_to_project_units=False):
+    def get_panel_kwargs(self, convert_to_project_units: bool = False) -> dict[str, Any]:
         kwargs = {
             "frame_depth": self.frame_depth,
             "frame_thickness": self.frame_thickness,
@@ -669,7 +671,7 @@ class BIMWindowProperties(PropertyGroup):
             return kwargs
         return tool.Model.convert_data_to_project_units(kwargs)
 
-    def set_props_kwargs_from_ifc_data(self, kwargs):
+    def set_props_kwargs_from_ifc_data(self, kwargs: dict[str, Any]):
         kwargs = tool.Model.convert_data_to_si_units(kwargs, self.non_si_units_props)
         for prop_name in kwargs:
             setattr(self, prop_name, kwargs[prop_name])

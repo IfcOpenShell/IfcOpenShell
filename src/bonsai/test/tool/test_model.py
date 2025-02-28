@@ -484,20 +484,21 @@ class TestApplyIfcMaterialChanges(NewFile):
         red_material = ifcopenshell.api.material.add_material(ifc_file, "Red Material")
         bpy.ops.bim.load_styles(style_type="IfcSurfaceStyle")
         bpy.ops.bim.enable_adding_presentation_style()
-        bpy.data.scenes["Scene"].BIMStylesProperties.style_name = "Red"
+        sprops = tool.Style.get_style_props()
+        sprops.style_name = "Red"
         bpy.ops.bim.add_presentation_style()
         red_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Red"))
         ifcopenshell.api.style.assign_material_style(ifc_file, red_material, red_style, context)
 
         blue_material = ifcopenshell.api.material.add_material(ifc_file, "Blue Material")
         bpy.ops.bim.enable_adding_presentation_style()
-        bpy.data.scenes["Scene"].BIMStylesProperties.style_name = "Blue"
+        sprops.style_name = "Blue"
         bpy.ops.bim.add_presentation_style()
         blue_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Blue"))
         ifcopenshell.api.style.assign_material_style(ifc_file, blue_material, blue_style, context)
 
         bpy.ops.bim.enable_adding_presentation_style()
-        bpy.data.scenes["Scene"].BIMStylesProperties.style_name = "Green"
+        sprops.style_name = "Green"
         bpy.ops.bim.add_presentation_style()
 
         if and_elements:

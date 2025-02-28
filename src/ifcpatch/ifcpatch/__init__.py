@@ -133,7 +133,7 @@ def write(output: Union[ifcopenshell.file, str], filepath: str) -> None:
 
 
 def extract_docs(
-    submodule_name: str, cls_name: str, method_name: str = "__init__", boilerplate_args: Optional[Iterable[str]] = None
+    submodule_name: str, cls_name: str, method_name: str = "__init__", boilerplate_args: Optional[Sequence[str]] = None
 ) -> Union["PatcherDoc", None]:
     """Extract class docstrings and method arguments
 
@@ -173,7 +173,7 @@ class InputDoc(TypedDict):
     filter_glob: NotRequired[str]
 
 
-def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Iterable[str], None]) -> PatcherDoc:
+def _extract_docs(cls: type, method_name: str, boilerplate_args: Union[Sequence[str], None]) -> PatcherDoc:
     inputs: dict[str, InputDoc] = {}
     method = getattr(cls, method_name)
     if boilerplate_args is None:

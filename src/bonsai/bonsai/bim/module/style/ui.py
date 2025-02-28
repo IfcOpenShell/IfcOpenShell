@@ -40,7 +40,7 @@ class BIM_PT_styles(Panel):
         if not StylesData.is_loaded:
             StylesData.load()
 
-        self.props = context.scene.BIMStylesProperties
+        self.props = tool.Style.get_style_props()
 
         if not self.props.is_editing:
             row = self.layout.row(align=True)
@@ -258,7 +258,7 @@ class BIM_UL_styles(UIList):
     def draw_item(self, context, layout: bpy.types.UILayout, data, item, icon, active_data, active_property):
         if item:
             row = layout.row(align=True)
-            props = context.scene.BIMStylesProperties
+            props = tool.Style.get_style_props()
             if item.ifc_definition_id == props.is_editing_style:
                 row.label(text="", icon="GREASEPENCIL")
             row.prop(item, "name", text="", emboss=False)
@@ -330,6 +330,6 @@ def draw_asset_browser_context_menu_append(self, context):
     asset = context.asset
     if not asset or not asset.id_type == "MATERIAL":
         return
-    if not context.scene.BIMStylesProperties.is_editing:
+    if not tool.Style.get_style_props().is_editing:
         return
     self.layout.operator("bim.set_asset_material_to_external_style")

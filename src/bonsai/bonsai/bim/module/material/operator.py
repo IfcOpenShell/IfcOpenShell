@@ -576,30 +576,30 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
 
         material_set = self.file.by_id(self.material_set)
         attributes = bonsai.bim.helper.export_attributes(props.material_set_attributes)
-        ifcopenshell.api.run(
-            "material.edit_assigned_material",
+        ifcopenshell.api.material.edit_assigned_material(
             self.file,
-            **{"element": material_set, "attributes": attributes},
+            element=material_set,
+            attributes=attributes,
         )
 
         if self.material_set_usage:
             material_set_usage = self.file.by_id(self.material_set_usage)
             attributes = bonsai.bim.helper.export_attributes(props.material_set_usage_attributes)
             if material_set_usage.is_a("IfcMaterialLayerSetUsage"):
-                ifcopenshell.api.run(
-                    "material.edit_layer_usage",
+                ifcopenshell.api.material.edit_layer_usage(
                     self.file,
-                    **{"usage": material_set_usage, "attributes": attributes},
+                    usage=material_set_usage,
+                    attributes=attributes,
                 )
                 slab.DumbSlabPlaner().regenerate_from_layer_set(material_set_usage.ForLayerSet)
                 wall.DumbWallPlaner().regenerate_from_layer_set(material_set_usage.ForLayerSet)
             elif material_set_usage.is_a("IfcMaterialProfileSetUsage"):
                 if attributes.get("CardinalPoint", None):
                     attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
-                ifcopenshell.api.run(
-                    "material.edit_profile_usage",
+                ifcopenshell.api.material.edit_profile_usage(
                     self.file,
-                    **{"usage": material_set_usage, "attributes": attributes},
+                    usage=material_set_usage,
+                    attributes=attributes,
                 )
 
         bpy.ops.bim.disable_editing_assigned_material(obj=active_obj.name)

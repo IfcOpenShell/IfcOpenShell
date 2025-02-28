@@ -49,7 +49,7 @@ from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from typing import Optional, Union, TypeVar, Any, Iterable, Literal, TYPE_CHECKING
+from typing import Optional, Union, TypeVar, Any, Iterable, Literal, TYPE_CHECKING, Sequence
 
 T = TypeVar("T")
 V_ = tool.Blender.V_
@@ -108,7 +108,7 @@ class Model(bonsai.core.tool.Model):
         return value * cls.unit_scale
 
     @classmethod
-    def convert_data_to_project_units(cls, data: dict[str, Any], non_si_props: list[str] = []) -> dict[str, Any]:
+    def convert_data_to_project_units(cls, data: dict[str, Any], non_si_props: Sequence[str] = ()) -> dict[str, Any]:
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for prop_name in data:
             if prop_name in non_si_props:
@@ -121,7 +121,7 @@ class Model(bonsai.core.tool.Model):
         return data
 
     @classmethod
-    def convert_data_to_si_units(cls, data: dict[str, Any], non_si_props: list[str] = []) -> dict[str, Any]:
+    def convert_data_to_si_units(cls, data: dict[str, Any], non_si_props: Sequence[str] = ()) -> dict[str, Any]:
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for prop_name in data:
             if prop_name in non_si_props:

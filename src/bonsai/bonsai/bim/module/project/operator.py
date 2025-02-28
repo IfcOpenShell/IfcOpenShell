@@ -65,6 +65,9 @@ from bonsai.bim.module.model.decorator import PolylineDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from typing import Union, TYPE_CHECKING, Literal, get_args
 
+if TYPE_CHECKING:
+    from bonsai.bim.module.project.prop import Link
+
 
 class NewProject(bpy.types.Operator):
     bl_idname = "bim.new_project"
@@ -1484,7 +1487,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
             self.toggle_visibility(link)
         return {"FINISHED"}
 
-    def toggle_wireframe(self, link):
+    def toggle_wireframe(self, link: "Link") -> None:
         for collection in self.get_linked_collections():
             objs = filter(lambda obj: "IfcOpeningElement" not in obj.name, collection.all_objects)
             for i, obj in enumerate(objs):
@@ -1496,7 +1499,7 @@ class ToggleLinkVisibility(bpy.types.Operator):
                 obj.display_type = display_type
             link.is_wireframe = display_type == "WIRE"
 
-    def toggle_visibility(self, link):
+    def toggle_visibility(self, link: "Link") -> None:
         linked_collections = self.get_linked_collections()
 
         link.is_hidden = (is_hidden := not link.is_hidden)

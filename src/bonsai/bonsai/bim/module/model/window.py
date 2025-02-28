@@ -28,6 +28,7 @@ import bonsai.core.root
 import bonsai.core.geometry
 from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
 import ifcopenshell.api
+import ifcopenshell.api.material
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder

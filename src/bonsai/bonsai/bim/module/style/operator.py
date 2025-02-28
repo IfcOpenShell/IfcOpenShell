@@ -224,7 +224,8 @@ class UpdateCurrentStyle(bpy.types.Operator):
         current_style_type = material.BIMStyleProperties.active_style_type
 
         if self.update_all:
-            context.scene.BIMStylesProperties.active_style_type = current_style_type
+            sprops = tool.Style.get_style_props()
+            sprops.active_style_type = current_style_type
             return {"FINISHED"}
 
         updated_materials = set()
@@ -258,8 +259,9 @@ class SetAssetMaterialToExternalStyle(bpy.types.Operator):
         # the temp override to copy material node tree `right now`
         name = context.asset.name
         filepath = context.asset.full_library_path
+        props = tool.Style.get_style_props()
         bpy.app.timers.register(
-            lambda: self.execute_delayed(name, filepath, context.scene.BIMStylesProperties),
+            lambda: self.execute_delayed(name, filepath, props),
             first_interval=0.001,
         )
         return {"FINISHED"}
@@ -388,7 +390,8 @@ class BrowseExternalStyle(bpy.types.Operator):
         bpy.data.materials.remove(db["data_block"])
 
         filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
-        attributes = context.scene.BIMStylesProperties.external_style_attributes
+        props = tool.Style.get_style_props()
+        attributes = props.external_style_attributes
         attributes["Location"].string_value = filepath
         attributes["Identification"].string_value = f"{self.data_block_type}/{self.data_block}"
         attributes["Name"].string_value = self.data_block
@@ -416,7 +419,7 @@ class ActivateExternalStyle(bpy.types.Operator):
             self.report({"INFO"}, "Material '{self.material_name}' is not an IFC style.")
             return {"CANCELLED"}
 
-        props = context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         if props.is_editing_style == style.id() and props.is_editing_class == "IfcExternallyDefinedSurfaceStyle":
             location = props.external_style_attributes["Location"].string_value
             identification = props.external_style_attributes["Identification"].string_value
@@ -509,7 +512,8 @@ class LoadStyles(bpy.types.Operator):
     style_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        style_type = self.style_type if self.style_type else context.scene.BIMStylesProperties.style_type
+        props = tool.Style.get_style_props()
+        style_type = self.style_type if self.style_type else props.style_type
         core.load_styles(tool.Style, style_type=style_type)
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
@@ -561,7 +565,8 @@ class ChooseTextureMapPath(bpy.types.Operator):
             return {"CANCELLED"}
 
         filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
-        texture = context.scene.BIMStylesProperties.textures[self.texture_map_index]
+        props = tool.Style.get_style_props()
+        texture = props.textures[self.texture_map_index]
         texture.path = filepath
         return {"FINISHED"}
 
@@ -577,7 +582,7 @@ class RemoveTextureMap(bpy.types.Operator):
             self.report({"ERROR"}, "Provide a texture map index")
             return {"CANCELLED"}
 
-        props = context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         props.textures.remove(self.texture_map_index)
         # just to trigger shader graph update
         props.surface_colour = props.surface_colour
@@ -612,7 +617,8 @@ class DuplicateStyle(bpy.types.Operator, tool.Ifc.Operator):
     style: bpy.props.IntProperty(name="Style ID")
 
     def _execute(self, context):
-        style_type = context.scene.BIMStylesProperties.style_type
+        props = tool.Style.get_style_props()
+        style_type = props.style_type
         ifc_file = tool.Ifc.get()
         style = ifc_file.by_id(self.style)
         tool.Style.duplicate_style(style)
@@ -636,7 +642,7 @@ class AddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         if props.style_type == "IfcSurfaceStyle":
             style = ifcopenshell.api.run("style.add_style", tool.Ifc.get(), name=props.style_name)
 
@@ -692,7 +698,7 @@ class EnableEditingSurfaceStyle(bpy.types.Operator):
     ifc_class: bpy.props.StringProperty(default="")
 
     def execute(self, context):
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         style = tool.Ifc.get().by_id(self.style)
         style_elements = tool.Style.get_style_elements(style)
 
@@ -753,7 +759,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
     surface_style: Union[ifcopenshell.entity_instance, None]
 
     def _execute(self, context):
-        self.props = bpy.context.scene.BIMStylesProperties
+        self.props = tool.Style.get_style_props()
         self.style = tool.Ifc.get().by_id(self.props.is_editing_style)
 
         style_elements = tool.Style.get_style_elements(self.style)
@@ -950,13 +956,14 @@ class AddSurfaceTexture(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if len(context.scene.BIMStylesProperties.textures) >= 8:
+        props = tool.Style.get_style_props()
+        if len(props.textures) >= 8:
             cls.poll_message_set("Only 8 texture maps available")
             return False
         return True
 
     def execute(self, context):
-        props = context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         props.textures.add()
         return {"FINISHED"}
 
@@ -1183,7 +1190,7 @@ class SelectStyleInStylesUI(bpy.types.Operator):
     style_id: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         ifc_file = tool.Ifc.get()
         style = ifc_file.by_id(self.style_id)
         core.load_styles(tool.Style, style.is_a())
@@ -1204,7 +1211,7 @@ class RemoveSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         ifc_file = tool.Ifc.get()
-        props = context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         style = ifc_file.by_id(props.is_editing_style)
         surface_style = tool.Style.get_style_elements(style)[props.is_editing_class]
         ifcopenshell.api.style.remove_surface_style(ifc_file, surface_style)

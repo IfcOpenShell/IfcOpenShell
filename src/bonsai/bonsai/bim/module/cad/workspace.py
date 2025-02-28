@@ -311,7 +311,9 @@ class CadHotkey(bpy.types.Operator):
             bpy.ops.bim.reset_vertex()
 
 
-def add_header_apply_button(layout, text, apply_operator, cancel_operator, ui_context=""):
+def add_header_apply_button(
+    layout: bpy.types.UILayout, text: str, apply_operator: str, cancel_operator: str, ui_context: str = ""
+) -> None:
     custom_icon = custom_icon_previews.get(text.upper().replace(" ", "_"), custom_icon_previews["IFC"]).icon_id
     row = layout.row(align=True)
     row.label(text=f"{text} Mode", icon_value=custom_icon)

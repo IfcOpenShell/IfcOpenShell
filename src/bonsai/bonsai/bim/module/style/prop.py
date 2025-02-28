@@ -33,7 +33,7 @@ from bpy.props import (
 )
 
 import gettext
-from typing import Literal, Union
+from typing import Literal, Union, TYPE_CHECKING, get_args
 
 
 _ = gettext.gettext
@@ -154,6 +154,17 @@ class ColourRgb(PropertyGroup):
         return "color_value"
 
 
+SurfaceStyleClass = Literal[
+    "IfcSurfaceStyleShading",
+    "IfcSurfaceStyleRendering",
+    "IfcSurfaceStyleWithTextures",
+    "IfcSurfaceStyleLighting",
+    "IfcSurfaceStyleRefraction",
+    "IfcExternallyDefinedSurfaceStyle",
+]
+ColourClass = Literal["IfcColourRgb", "IfcNormalisedRatioMeasure"]
+
+
 class BIMStylesProperties(PropertyGroup):
     is_adding: BoolProperty(name="Is Adding", description="Is adding new IfcPresentationStyle")
     is_editing: BoolProperty(name="Is Editing", description="Is editing IfcPresentationStyle")
@@ -170,17 +181,7 @@ class BIMStylesProperties(PropertyGroup):
     style_type: EnumProperty(items=get_style_types, default=2, name="Style Type")
     style_name: StringProperty(name="Style Name")
     surface_style_class: EnumProperty(
-        items=[
-            (x, x, "")
-            for x in (
-                "IfcSurfaceStyleShading",
-                "IfcSurfaceStyleRendering",
-                "IfcSurfaceStyleWithTextures",
-                "IfcSurfaceStyleLighting",
-                "IfcSurfaceStyleRefraction",
-                "IfcExternallyDefinedSurfaceStyle",
-            )
-        ],
+        items=[(x, x, "") for x in get_args(SurfaceStyleClass)],
         name="Surface Style Class",
         default="IfcSurfaceStyleShading",
     )
@@ -200,7 +201,7 @@ class BIMStylesProperties(PropertyGroup):
     # TODO: do something on null?
     is_diffuse_colour_null: BoolProperty(name="Is Null")
     diffuse_colour_class: EnumProperty(
-        items=[(x, x, "") for x in ("IfcColourRgb", "IfcNormalisedRatioMeasure")],
+        items=[(x, x, "") for x in get_args(ColourClass)],
         name="Diffuse Colour Class",
         update=update_shader_graph,
     )
@@ -212,7 +213,7 @@ class BIMStylesProperties(PropertyGroup):
     )
     is_specular_colour_null: BoolProperty(name="Is Null")
     specular_colour_class: EnumProperty(
-        items=[(x, x, "") for x in ("IfcColourRgb", "IfcNormalisedRatioMeasure")],
+        items=[(x, x, "") for x in get_args(ColourClass)],
         name="Specular Colour Class",
         update=update_shader_graph,
         default="IfcNormalisedRatioMeasure",
@@ -269,10 +270,48 @@ class BIMStylesProperties(PropertyGroup):
     active_style_type: EnumProperty(
         name="Active Style Type",
         description="Update current blender material to match style type for all objects in the scene",
-        items=STYLE_TYPES,
+        items=[(i, i, "") for i in get_args(tool.Style.StyleType)],
         default="Shading",
         update=update_shading_styles,
     )
+
+    if TYPE_CHECKING:
+        is_adding: bool
+        is_editing: bool
+        is_editing_style: int
+        is_editing_class: str
+        is_editing_existing_style: bool
+        attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        external_style_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        refraction_style_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        lighting_style_colours: bpy.types.bpy_prop_collection_idprop[ColourRgb]
+        style_type: str
+        style_name: str
+        surface_style_class: SurfaceStyleClass
+        update_graph: bool
+
+        # Shading props.
+        surface_colour: tuple[float, float, float]
+        transparency: float
+        is_diffuse_colour_null: bool
+        diffuse_colour_class: ColourClass
+        diffuse_colour: tuple[float, float, float]
+        diffuse_colour_ratio: float
+        is_specular_colour_null: bool
+        specular_colour_class: ColourClass
+        specular_colour: tuple[float, float, float]
+        specular_colour_ratio: float
+        is_specular_highlight_null: bool
+        specular_highlight: float
+        reflectance_method: str
+
+        # Texture props.
+        textures: bpy.types.bpy_prop_collection_idprop[Texture]
+        uv_mode: Literal["UV", "Generated", "Camera"]
+
+        styles: bpy.types.bpy_prop_collection_idprop[Style]
+        active_style_index: int
+        active_style_type: tool.Style.StyleType
 
 
 def update_shading_style(self: "BIMStyleProperties", context: bpy.types.Context) -> None:
@@ -290,8 +329,13 @@ class BIMStyleProperties(PropertyGroup):
     active_style_type: EnumProperty(
         name="Active Style Type",
         description="Update current blender material to match style type",
-        items=STYLE_TYPES,
+        items=[(i, i, "") for i in get_args(tool.Style.StyleType)],
         default="Shading",
         update=update_shading_style,
     )
     is_renaming: BoolProperty(description="Used to prevent triggering handler callback.", default=False)
+
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+        active_style_type: tool.Style.StyleType
+        is_renaming: bool
