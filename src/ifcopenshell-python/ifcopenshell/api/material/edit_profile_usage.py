@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell.geom
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape
 from ifcopenshell.geom import ShapeType
 from typing import Any
 
@@ -168,62 +169,42 @@ class Usecase:
             return self.get_top_right(shape)
 
     def get_bottom_left(self, shape: ShapeType) -> ifcopenshell.entity_instance:
-        v = shape.verts
-        x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i + 1] for i in range(0, len(v), 3)]
-        width = max(x) - min(x)
-        height = max(y) - min(y)
+        width = ifcopenshell.util.shape.get_x(shape)
+        height = ifcopenshell.util.shape.get_y(shape)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((-width / 2, height / 2, 0.0)))
 
     def get_bottom_centre(self, shape: ShapeType) -> ifcopenshell.entity_instance:
-        v = shape.verts
-        y = [v[i + 1] for i in range(0, len(v), 3)]
-        height = max(y) - min(y)
+        height = ifcopenshell.util.shape.get_y(shape)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0.0, height / 2, 0.0)))
 
     def get_bottom_right(self, shape: ShapeType) -> ifcopenshell.entity_instance:
-        v = shape.verts
-        x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i + 1] for i in range(0, len(v), 3)]
-        width = max(x) - min(x)
-        height = max(y) - min(y)
+        width = ifcopenshell.util.shape.get_x(shape)
+        height = ifcopenshell.util.shape.get_y(shape)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((width / 2, height / 2, 0.0)))
 
     def get_mid_depth_left(self, shape: ShapeType) -> ifcopenshell.entity_instance:
-        v = shape.verts
-        x = [v[i] for i in range(0, len(v), 3)]
-        width = max(x) - min(x)
+        width = ifcopenshell.util.shape.get_x(shape)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((-width / 2, 0.0, 0.0)))
 
     def get_mid_depth_centre(self, shape: ShapeType) -> ifcopenshell.entity_instance:
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)))
 
     def get_mid_depth_right(self, shape: ShapeType) -> ifcopenshell.entity_instance:
-        v = shape.verts
-        x = [v[i] for i in range(0, len(v), 3)]
-        width = max(x) - min(x)
+        width = ifcopenshell.util.shape.get_x(shape)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((width / 2, 0.0, 0.0)))
 
     def get_top_left(self, shape: ShapeType) -> ifcopenshell.entity_instance:
-        v = shape.verts
-        x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i + 1] for i in range(0, len(v), 3)]
-        width = max(x) - min(x)
-        height = max(y) - min(y)
+        width = ifcopenshell.util.shape.get_x(shape)
+        height = ifcopenshell.util.shape.get_y(shape)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((-width / 2, -height / 2, 0.0)))
 
     def get_top_centre(self, shape: ShapeType) -> ifcopenshell.entity_instance:
-        v = shape.verts
-        y = [v[i + 1] for i in range(0, len(v), 3)]
-        height = max(y) - min(y)
+        height = ifcopenshell.util.shape.get_y(shape)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((0.0, -height / 2, 0.0)))
 
     def get_top_right(self, shape: ShapeType) -> ifcopenshell.entity_instance:
-        v = shape.verts
-        x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i + 1] for i in range(0, len(v), 3)]
-        width = max(x) - min(x)
-        height = max(y) - min(y)
+        width = ifcopenshell.util.shape.get_x(shape)
+        height = ifcopenshell.util.shape.get_y(shape)
         return self.file.createIfcAxis2Placement3D(self.file.createIfcCartesianPoint((width / 2, -height / 2, 0.0)))
 
     def update_representation(self, element: ifcopenshell.entity_instance) -> None:
