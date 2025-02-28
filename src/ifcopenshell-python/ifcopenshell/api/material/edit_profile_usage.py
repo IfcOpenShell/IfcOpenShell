@@ -98,6 +98,7 @@ class Usecase:
     file: ifcopenshell.file
 
     def execute(self, usage: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+        self.usage = usage
         self.attributes = attributes
         self.cardinal_point = attributes.get("CardinalPoint")
         if self.cardinal_point and self.cardinal_point != usage.CardinalPoint:
@@ -107,7 +108,7 @@ class Usecase:
             setattr(usage, name, value)
 
     def update_cardinal_point(self):
-        material_set = self.attributes["usage"].ForProfileSet
+        material_set = self.usage.ForProfileSet
         self.profile = material_set.CompositeProfile
         if not self.profile and material_set.MaterialProfiles:
             self.profile = material_set.MaterialProfiles[0].Profile
@@ -117,13 +118,13 @@ class Usecase:
         self.position = self.calculate_position()
 
         if self.file.schema == "IFC2X3":
-            for rel in self.file.get_inverse(self.attributes["usage"]):
+            for rel in self.file.get_inverse(self.usage):
                 if not rel.is_a("IfcRelAssociatesMaterial"):
                     continue
                 for element in rel.RelatedObjects:
                     self.update_representation(element)
         else:
-            for rel in self.attributes["usage"].AssociatedTo:
+            for rel in self.usage.AssociatedTo:
                 for element in rel.RelatedObjects:
                     self.update_representation(element)
 
