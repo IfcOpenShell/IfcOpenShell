@@ -2031,3 +2031,11 @@ class Model(bonsai.core.tool.Model):
         ifcopenshell.api.grid.create_axis_curve(
             tool.Ifc.get(), p1=points[0], p2=points[1], is_si=True, grid_axis=grid_axis
         )
+
+    @classmethod
+    def draw_material_ui_select(cls, layout: bpy.types.UILayout, material_id: str) -> None:
+        material_id_int = int(material_id)
+        if not material_id_int:
+            return
+        op = layout.operator("bim.material_ui_select", icon="ZOOM_SELECTED", text="")
+        op.material_id = material_id_int

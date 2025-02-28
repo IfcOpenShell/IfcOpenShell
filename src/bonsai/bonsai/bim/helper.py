@@ -293,7 +293,10 @@ def prop_with_search(
     should_click_ok: bool = False,
     original_operator_path: Optional[str] = None,
     **kwargs: Any,
-):
+) -> bpy.types.UILayout:
+    """
+    :return: Added row.
+    """
     # kwargs are layout.prop arguments (text, icon, etc.)
     row = layout.row(align=True)
     row.prop(data, prop_name, **kwargs)
@@ -307,6 +310,7 @@ def prop_with_search(
             op.original_operator_path = original_operator_path or ""
     except TypeError:  # Prop is not iterable
         pass
+    return row
 
 
 def get_enum_items(

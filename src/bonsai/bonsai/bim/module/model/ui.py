@@ -451,9 +451,12 @@ class BIM_PT_window(bpy.types.Panel):
 
                 self.layout.use_property_split = True
                 self.layout.label(text="Material Properties")
-                prop_with_search(self.layout, props, "lining_material")
-                prop_with_search(self.layout, props, "framing_material", text="Panel Material")
-                prop_with_search(self.layout, props, "glazing_material")
+                row = prop_with_search(self.layout, props, "lining_material")
+                tool.Model.draw_material_ui_select(row, props.lining_material)
+                row = prop_with_search(self.layout, props, "framing_material", text="Panel Material")
+                tool.Model.draw_material_ui_select(row, props.framing_material)
+                row = prop_with_search(self.layout, props, "glazing_material")
+                tool.Model.draw_material_ui_select(row, props.glazing_material)
             else:
                 row.operator("bim.enable_editing_window", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_window", icon="X", text="")
@@ -548,10 +551,14 @@ class BIM_PT_door(bpy.types.Panel):
 
                 self.layout.use_property_split = True
                 self.layout.label(text="Material Properties")
-                prop_with_search(self.layout, props, "lining_material")
-                prop_with_search(self.layout, props, "framing_material", text="Panel Material")
+
+                row = prop_with_search(self.layout, props, "lining_material")
+                tool.Model.draw_material_ui_select(row, props.lining_material)
+                row = prop_with_search(self.layout, props, "framing_material", text="Panel Material")
+                tool.Model.draw_material_ui_select(row, props.framing_material)
                 if props.transom_thickness:
-                    prop_with_search(self.layout, props, "glazing_material")
+                    row = prop_with_search(self.layout, props, "glazing_material")
+                    tool.Model.draw_material_ui_select(row, props.framing_material)
             else:
                 row.operator("bim.enable_editing_door", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_door", icon="X", text="")
