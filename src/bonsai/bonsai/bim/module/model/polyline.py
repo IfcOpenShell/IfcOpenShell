@@ -201,12 +201,12 @@ def get_slab_preview_data(context, relating_type):
     layers = tool.Model.get_material_layer_parameters(relating_type)
     if not layers["thickness"]:
         return
-    thickness = layers["thickness"]
+    thickness = layers["thickness"] * abs(1 / cos(x_angle))
     thickness *= direction
 
     offset_type = model_props.offset_type_horizontal
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    offset = model_props.offset * unit_scale
+    offset = model_props.offset * abs(1 / cos(x_angle)) * unit_scale
 
     data = {}
     data["verts"] = []
@@ -238,7 +238,10 @@ def get_slab_preview_data(context, relating_type):
     bm = create_bmesh_from_vertices(polyline_vertices, is_closed)
     bm.verts.ensure_lookup_table()
     if x_angle:
-        bmesh.ops.rotate(bm, cent=Vector(bm.verts[0].co), verts=bm.verts, matrix=Matrix.Rotation(x_angle, 3, "X"))
+        rot_mat = Matrix.Rotation(x_angle, 3, "X")
+        if abs(x_angle) > (pi/2):
+            rot_mat = rot_mat @ Matrix.Scale(-1, 3, (0, 1, 0))
+        bmesh.ops.rotate(bm, cent=Vector(bm.verts[0].co), verts=bm.verts, matrix=rot_mat)
     new_faces = bmesh.ops.contextual_create(bm, geom=bm.edges)
     new_faces = bmesh.ops.extrude_face_region(bm, geom=bm.edges[:] + bm.faces[:])
     new_verts = [e for e in new_faces["geom"] if isinstance(e, bmesh.types.BMVert)]
