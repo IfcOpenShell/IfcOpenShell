@@ -50,9 +50,11 @@ class Patcher:
         from shutil import copyfile
 
         if self.output_dir is None:
-            output_dir = None
+            output_dir = Path()
         else:
             output_dir = Path(self.output_dir)
+            if output_dir.is_file():
+                raise ValueError(f"Provided path is a file, not a directory: {output_dir}")
             output_dir.mkdir(parents=True, exist_ok=True)
 
         temp_file = tempfile.NamedTemporaryFile(suffix=".ifc", delete=False)
