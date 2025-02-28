@@ -477,11 +477,11 @@ class Snap(bonsai.core.tool.Snap):
         if tool_state.plane_method:
             if tool_state.plane_method in {"XY", "XZ"} and tool_state.axis_method == "X":
                 tool_state.snap_angle = 180
-            if tool_state.plane_method in {"XY", "YZ"} and tool_state.axis_method == "Y":
+            if tool_state.plane_method in {"XY"} and tool_state.axis_method == "Y":
                 tool_state.snap_angle = 90
-            if tool_state.plane_method in {"YZ"} and tool_state.axis_method == "Z":
+            if tool_state.plane_method in {"YZ"} and tool_state.axis_method == "Y":
                 tool_state.snap_angle = 180
-            if tool_state.plane_method in {"XZ"} and tool_state.axis_method == "Z":
+            if tool_state.plane_method in {"XZ", "YZ"} and tool_state.axis_method == "Z":
                 tool_state.snap_angle = 90
             if tool_state.lock_axis or tool_state.axis_method:
                 # Doesn't update snap_angle so that it keeps in the same axis
