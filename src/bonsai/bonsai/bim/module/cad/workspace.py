@@ -185,8 +185,8 @@ class CadTool(WorkSpaceTool):
 
 class CadHotkey(bpy.types.Operator):
     bl_idname = "bim.cad_hotkey"
-    bl_label = "CAD Hotkey"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_label = ""
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
 

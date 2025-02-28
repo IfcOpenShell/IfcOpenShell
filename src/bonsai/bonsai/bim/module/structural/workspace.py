@@ -85,8 +85,8 @@ class StructuralToolUI:
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.structural_hotkey"
-    bl_label = "Hotkey"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_label = ""
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
 

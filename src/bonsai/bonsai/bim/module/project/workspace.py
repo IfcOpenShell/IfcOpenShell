@@ -74,8 +74,8 @@ class ExploreTool(bpy.types.WorkSpaceTool):
 
 class ExploreHotkey(bpy.types.Operator):
     bl_idname = "bim.explore_hotkey"
-    bl_label = "Explore Hotkey"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_label = ""
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
 

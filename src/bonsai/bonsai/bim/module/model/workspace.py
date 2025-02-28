@@ -1045,8 +1045,8 @@ class EditObjectUI:
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.hotkey"
-    bl_label = "BIM Hotkey"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_label = ""
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
     x: bpy.props.FloatProperty(name="X", default=0.5)
