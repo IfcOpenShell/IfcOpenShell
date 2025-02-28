@@ -114,9 +114,9 @@ class CadTool(WorkSpaceTool):
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
             add_layout_hotkey_operator(row, "Fillet", "S_F", bpy.ops.bim.add_ifcarcindex_fillet.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Offset", "S_O", "Offset", ui_context)
+            add_layout_hotkey_operator(row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Rectangle", "S_R", "", ui_context)
+            add_layout_hotkey_operator(row, "Rectangle", "S_R", bpy.ops.bim.add_rectangle.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
             add_layout_hotkey_operator(row, "Circle", "S_C", bpy.ops.bim.add_ifccircle.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
@@ -138,9 +138,9 @@ class CadTool(WorkSpaceTool):
                 row, "Join", "S_T", "Joins two non-parallel paths at their intersection", ui_context
             )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Fillet", "S_F", "Fillet", ui_context)
+            add_layout_hotkey_operator(row, "Fillet", "S_F", bpy.ops.bim.cad_fillet.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Offset", "S_O", "Offset", ui_context)
+            add_layout_hotkey_operator(row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__, ui_context)
 
         else:
             if (
@@ -176,9 +176,9 @@ class CadTool(WorkSpaceTool):
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
             add_layout_hotkey_operator(row, "Fillet", "S_F", bpy.ops.bim.add_ifcarcindex_fillet.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Offset", "S_O", "Offset", ui_context)
+            add_layout_hotkey_operator(row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "2-Point Arc", "S_C", "2-Point Arc", ui_context)
+            add_layout_hotkey_operator(row, "2-Point Arc", "S_C", bpy.ops.bim.cad_arc_from_2_points.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
             add_layout_hotkey_operator(row, "3-Point Arc", "S_V", bpy.ops.bim.cad_arc_from_3_points.__doc__, ui_context)
 

@@ -128,6 +128,7 @@ class CadMitre(bpy.types.Operator):
 class CadFillet(bpy.types.Operator):
     bl_idname = "bim.cad_fillet"
     bl_label = "CAD Fillet"
+    bl_description = "Add fillet to the 2 selected edges."
     bl_options = {"REGISTER", "UNDO"}
     resolution: bpy.props.IntProperty(name="Arc Resolution", min=0, default=1)
     radius: bpy.props.FloatProperty(name="Radius", default=0.1, subtype="DISTANCE")
@@ -216,6 +217,7 @@ class CadFillet(bpy.types.Operator):
 class CadArcFrom2Points(bpy.types.Operator):
     bl_idname = "bim.cad_arc_from_2_points"
     bl_label = "CAD Arc from 2 Points"
+    bl_description = "Add an arc to the active mesh based on 2 selected vertices."
     bl_options = {"REGISTER", "UNDO"}
     resolution: bpy.props.IntProperty(name="Arc Resolution", min=1, default=1)
     should_flip: bpy.props.BoolProperty(name="Flip", description="Flip arc", default=False)
@@ -342,6 +344,7 @@ class CadArcFrom3Points(bpy.types.Operator):
 class CadOffset(bpy.types.Operator):
     bl_idname = "bim.cad_offset"
     bl_label = "CAD Offset"
+    bl_description = "Copy selected mesh geometry at provided offset. Mesh copied based on the current viewport angle."
     bl_options = {"REGISTER", "UNDO"}
     distance: bpy.props.FloatProperty(name="Distance", default=0.1, subtype="DISTANCE")
 
@@ -540,6 +543,7 @@ class CadOffset(bpy.types.Operator):
 class AddIfcCircle(bpy.types.Operator):
     bl_idname = "bim.add_ifccircle"
     bl_label = "Add IfcCircle"
+    bl_description = "Add IfcCircle to the currently active mesh."
     radius: bpy.props.FloatProperty(name="Radius", default=0.5, subtype="DISTANCE")
 
     @classmethod
@@ -808,6 +812,7 @@ class AlignViewToProfile(bpy.types.Operator):
 class AddRectangle(bpy.types.Operator):
     bl_idname = "bim.add_rectangle"
     bl_label = "Add Rectangle"
+    bl_description = "Add rectangle shape to the active mesh."
     x: bpy.props.FloatProperty(name="X", default=1, subtype="DISTANCE")
     y: bpy.props.FloatProperty(name="Y", default=1, subtype="DISTANCE")
 
