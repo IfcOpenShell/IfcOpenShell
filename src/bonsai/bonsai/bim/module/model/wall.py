@@ -220,7 +220,8 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         layer2_objs = []
         other_objs = []
-        x_angle = self.x_angle
+        x_angle = 0 if tool.Cad.is_x(self.x_angle, 0, tolerance=0.001) else self.x_angle
+        x_angle = 0 if tool.Cad.is_x(self.x_angle, pi, tolerance=0.001) else self.x_angle
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -232,22 +233,19 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
             extrusion = tool.Model.get_extrusion(representation)
             if not extrusion:
                 return
+            existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
+            existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
+            existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
             if tool.Model.get_usage_type(element) == "LAYER2":
                 x, y, z = extrusion.ExtrudedDirection.DirectionRatios
-                existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
-                perpendicular_depth = extrusion.Depth / (1 / cos(existing_x_angle))
-                if tool.Model.get_usage_type(element) == "LAYER2":
-                    extrusion.Depth = abs(perpendicular_depth * (1 / cos(x_angle)))
+                depth = extrusion.Depth / abs(1 / cos(existing_x_angle))
+                perpendicular_depth = depth * abs(1 / cos(x_angle))
+                print(extrusion.Depth, perpendicular_depth)
                 extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
                 layer2_objs.append(obj)
+                extrusion.Depth = perpendicular_depth
             else:
                 if tool.Model.get_usage_type(element) == "LAYER3":
-                    existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
-                    existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
-                    existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
-                    x_angle = 0 if tool.Cad.is_x(x_angle, 0, tolerance=0.001) else x_angle
-                    x_angle = 0 if tool.Cad.is_x(x_angle, pi, tolerance=0.001) else x_angle
-
                     # Reset the transformation and returns to the original points with 0 degrees
                     extrusion.SweptArea.OuterCurve.Points.CoordList = [
                         (p[0], p[1] * abs(cos(existing_x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList
