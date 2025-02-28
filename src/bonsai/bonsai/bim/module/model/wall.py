@@ -232,50 +232,66 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
             extrusion = tool.Model.get_extrusion(representation)
             if not extrusion:
                 return
-            x, y, z = extrusion.ExtrudedDirection.DirectionRatios
-            existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
-            perpendicular_depth = extrusion.Depth / (1 / cos(existing_x_angle))
             if tool.Model.get_usage_type(element) == "LAYER2":
-                extrusion.Depth = abs(perpendicular_depth * (1 / cos(x_angle)))
-            if tool.Model.get_usage_type(element) == "LAYER3":
-                # TODO support angles between 91 and 179
-                if x_angle > radians(90) or x_angle < -radians(90):
-                    return
-                extrusion.Depth = perpendicular_depth * (1 / cos(x_angle))
-            extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
-            if tool.Model.get_usage_type(element) == "LAYER2":
+                x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+                existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
+                perpendicular_depth = extrusion.Depth / (1 / cos(existing_x_angle))
+                if tool.Model.get_usage_type(element) == "LAYER2":
+                    extrusion.Depth = abs(perpendicular_depth * (1 / cos(x_angle)))
+                extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
                 layer2_objs.append(obj)
             else:
                 if tool.Model.get_usage_type(element) == "LAYER3":
+                    existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
+                    existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
+                    existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
+                    x_angle = 0 if tool.Cad.is_x(x_angle, 0, tolerance=0.001) else x_angle
+                    x_angle = 0 if tool.Cad.is_x(x_angle, pi, tolerance=0.001) else x_angle
+
                     # Reset the transformation and returns to the original points with 0 degrees
                     extrusion.SweptArea.OuterCurve.Points.CoordList = [
-                        (p[0], p[1] * (cos(existing_x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList
+                        (p[0], p[1] * abs(cos(existing_x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList
                     ]
 
                     # Apply the transformation for the new x_angle
                     extrusion.SweptArea.OuterCurve.Points.CoordList = [
-                        (p[0], p[1] * (1 / cos(x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList
+                        (p[0], p[1] * abs(1 / cos(x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList
                     ]
 
                     # The extrusion direction calculated previously default to the positive direction
                     # Here we set the extrusion direction to negative if that's the case
-                    x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+                    direction_ratios = Vector((0.0, sin(x_angle), cos(x_angle)))
+                    # direction_ratios = Vector(extrusion.ExtrudedDirection.DirectionRatios)
                     layer_params = tool.Model.get_material_layer_parameters(element)
-                    perpendicular_offset = layer_params["offset"] * (1 / cos(x_angle))
-                    offset_vector = Vector((0.0, 0.0, perpendicular_offset / unit_scale))
-                    if layer_params["direction_sense"] == "NEGATIVE":
-                        y = -abs(y) if x_angle > 0 else abs(y)
-                        z = -abs(z)
-                    extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
+                    perpendicular_depth= layer_params["thickness"] * abs(1 / cos(x_angle)) / unit_scale
+                    perpendicular_offset = layer_params["offset"] * abs(1 / cos(x_angle)) / unit_scale
+                    offset_direction = direction_ratios.copy()
 
-                    if perpendicular_offset != 0.0 and not extrusion.Position:
-                        tool.Model.add_extrusion_position(extrusion, perpendicular_offset)
+                    # Check angle and z direction to determine whether the extrusion direction is positive or negative
+                    if (abs(x_angle) < (pi / 2) and direction_ratios.z > 0) or (
+                        abs(x_angle) > (pi / 2) and direction_ratios.z < 0
+                    ):
+                        # The extrusion direction is positive. If the layer_parameter is set to negative,
+                        # then the we change the extrusion direction.
+                        # The offset direction must always be positive, so we keep it.
+                        if layer_params["direction_sense"] == "NEGATIVE":
+                            direction_ratios *= -1
+                    elif ((x_angle) > (pi / 2) and direction_ratios.z > 0) or (
+                        (x_angle) < (pi / 2) and direction_ratios.z < 0
+                    ):
+                        # The extrusion direction is negative. If the layer_parameter is set to positive,
+                        # then the we change the extrusion direction.
+                        # The offset direction must always be positive, so we change it too.
+                        if layer_params["direction_sense"] == "POSITIVE":
+                            direction_ratios *= -1
+                            offset_direction *= -1
 
-                    # Update the extrusion's location based on its current rotation angle
-                    if extrusion.Position:
-                        rot_matrix = Matrix.Rotation(x_angle, 4, "X")
-                        rot_offset = offset_vector @ rot_matrix
-                        extrusion.Position.Location.Coordinates = tuple(rot_offset)
+                    extrusion.ExtrudedDirection.DirectionRatios = tuple(direction_ratios)
+                    extrusion.Depth = perpendicular_depth
+
+                    if extrusion.Position or perpendicular_offset != 0:
+                        position = offset_direction * perpendicular_offset
+                        tool.Model.add_extrusion_position(extrusion, position)
 
                 bonsai.core.geometry.switch_representation(
                     tool.Ifc,
@@ -288,11 +304,8 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 )
 
                 # Object rotation
-                local_rot_mat = obj.rotation_euler.to_matrix()
-                rot_mat = mathutils.Matrix.Rotation(x_angle - existing_x_angle, 4, "X")
-                new_rot_mat = local_rot_mat.to_4x4() @ rot_mat
-                new_rot_euler = new_rot_mat.to_euler()
-                obj.rotation_euler = new_rot_euler
+                rot_mat = mathutils.Matrix.Rotation(x_angle, 4, "X")
+                obj.rotation_euler = rot_mat.to_euler()
 
         if layer2_objs:
             DumbWallRecalculator().recalculate(layer2_objs)

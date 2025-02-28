@@ -304,16 +304,17 @@ class DumbSlabPlaner:
                 perpendicular_offset = layer_params["offset"] * abs(1 / cos(existing_x_angle)) / self.unit_scale
 
                 # Check angle and z direction to determine whether the extrusion direction is positive or negative
-                if (existing_x_angle < (pi / 2) and direction_ratios.z > 0) or (
-                    existing_x_angle > (pi / 2) and direction_ratios.z < 0
+                if (abs(existing_x_angle) < (pi / 2) and direction_ratios.z > 0) or (
+                    abs(existing_x_angle) > (pi / 2) and direction_ratios.z < 0
                 ):
                     # The extrusion direction is positive. If the layer_parameter is set to negative,
                     # then the we change the extrusion direction.
                     # The offset direction must always be positive, so we keep it.
                     if layer_params["direction_sense"] == "NEGATIVE":
                         direction_ratios *= -1
-                elif (existing_x_angle > (pi / 2) and direction_ratios.z > 0) or (
-                    existing_x_angle < (pi / 2) and direction_ratios.z < 0
+                        # offset_direction *= -1
+                elif (abs(existing_x_angle )> (pi / 2) and direction_ratios.z > 0) or (
+                    abs(existing_x_angle )< (pi / 2) and direction_ratios.z < 0
                 ):
                     # The extrusion direction is negative. If the layer_parameter is set to positive,
                     # then the we change the extrusion direction.
