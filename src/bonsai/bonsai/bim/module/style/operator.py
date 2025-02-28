@@ -643,32 +643,48 @@ class AddPresentationStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = tool.Style.get_style_props()
+        ifc_file = tool.Ifc.get()
         if props.style_type == "IfcSurfaceStyle":
-            style = ifcopenshell.api.run("style.add_style", tool.Ifc.get(), name=props.style_name)
+
+            def get_colour_dict(name: Union[str, None], r: float, g: float, b: float) -> dict[str, Any]:
+                return {
+                    "Name": name,
+                    "Red": r,
+                    "Green": g,
+                    "Blue": b,
+                }
 
             # setup surface style element
             surface_style = None
             if props.surface_style_class in ("IfcSurfaceStyleShading", "IfcSurfaceStyleRendering"):
                 attributes = {
-                    "SurfaceColour": {
-                        "Name": None,
-                        "Red": props.surface_colour[0],
-                        "Green": props.surface_colour[1],
-                        "Blue": props.surface_colour[2],
-                    }
+                    "SurfaceColour": get_colour_dict(None, *props.surface_colour),
                 }
                 if props.surface_style_class == "IfcSurfaceStyleRendering":
                     attributes["ReflectanceMethod"] = "NOTDEFINED"
+            elif props.surface_style_class == "IfcSurfaceStyleLighting":
+                # Requires all those colors to be valid style.
+                attributes = {
+                    "DiffuseTransmissionColour": get_colour_dict(None, 0.0, 0.0, 0.0),
+                    "DiffuseReflectionColour": get_colour_dict(None, 0.0, 0.0, 0.0),
+                    "TransmissionColour": get_colour_dict(None, 0.0, 0.0, 0.0),
+                    "ReflectanceColour": get_colour_dict(None, 0.0, 0.0, 0.0),
+                }
+            elif props.surface_style_class == "IfcSurfaceStyleWithTextures":
+                # TODO: Requires textures to be valid.
+                self.report(
+                    {"ERROR"},
+                    "Adding IfcSurfaceStyleWithTextures directly is not supported yet."
+                    "You can create Rendering style and then add Texture style to it.",
+                )
+                return {"CANCELLED"}
             else:
-                # NOTE: for all other styles we produce just empty styles.
-                # In the future we might need to expose to adding presentation style UI
-                # LightingStyle colors and TextureStyle textures UI
-                # as they are required for those surface styles to keep IFC valid
+                # The rest of styles are valid even without any attributes assigned.
                 attributes = {}
 
-            surface_style = ifcopenshell.api.run(
-                "style.add_surface_style",
-                tool.Ifc.get(),
+            style = ifcopenshell.api.style.add_style(ifc_file, name=props.style_name)
+            surface_style = ifcopenshell.api.style.add_surface_style(
+                ifc_file,
                 style=style,
                 ifc_class=props.surface_style_class,
                 attributes=attributes,

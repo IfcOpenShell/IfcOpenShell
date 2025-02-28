@@ -22,11 +22,12 @@ from typing import Any, Optional, Literal
 
 
 SURFACE_STYLE_TYPES = Literal[
-    "IfcExternallyDefinedSurfaceStyle",
+    "IfcSurfaceStyleShading",
+    "IfcSurfaceStyleRendering",
+    "IfcSurfaceStyleWithTextures",
     "IfcSurfaceStyleLighting",
     "IfcSurfaceStyleRefraction",
-    "IfcSurfaceStyleShading",
-    "IfcSurfaceStyleWithTextures",
+    "IfcExternallyDefinedSurfaceStyle",
 ]
 
 
