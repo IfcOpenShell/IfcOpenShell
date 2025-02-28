@@ -929,13 +929,14 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def apply_blender_offset_to_matrix_world(cls, obj: bpy.types.Object, matrix: np.ndarray) -> Matrix:
+        """
+        :param matrix: 4x4 numpy matrix.
+        """
+        # Shouldn't mutate original matrix as we return a different object anyway.
+        M_TRANSLATION = (slice(0, 3), 3)
         oprops = tool.Blender.get_object_bim_props(obj)
-        if (
-            not obj.data
-            and tool.Cad.is_x(matrix[0][3], 0)
-            and tool.Cad.is_x(matrix[1][3], 0)
-            and tool.Cad.is_x(matrix[2][3], 0)
-        ):
+        translation = matrix[M_TRANSLATION]
+        if not obj.data and np.allclose(translation, 0.0, atol=1e-5):
             # We assume any non-geometric matrix at 0,0,0 is not
             # positionally significant and is left alone. This handles
             # scenarios where often spatial elements are left at 0,0,0 and
@@ -947,11 +948,10 @@ class Loader(bonsai.core.tool.Loader):
             oprops.blender_offset_type = "CARTESIAN_POINT"
             if cartesian_point_offset := obj.data.get("cartesian_point_offset", None):
                 oprops.cartesian_point_offset = cartesian_point_offset
+                matrix = matrix.copy()
                 offset_xyz = list(map(float, cartesian_point_offset.split(","))) + [1.0]
                 offset_xyz = matrix @ offset_xyz
-                matrix[0][3] = offset_xyz[0]
-                matrix[1][3] = offset_xyz[1]
-                matrix[2][3] = offset_xyz[2]
+                matrix[M_TRANSLATION] = offset_xyz[:3]
 
         props = tool.Georeference.get_georeference_props()
         if props.has_blender_offset:

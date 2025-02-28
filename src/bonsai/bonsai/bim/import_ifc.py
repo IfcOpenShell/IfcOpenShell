@@ -38,6 +38,7 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from bonsai.tool.loader import OBJECT_DATA_TYPE
 from typing import Dict, Union, Optional, Any, Literal
+from ifcopenshell.util.shape import MatrixType
 
 
 class MaterialCreator:
@@ -479,14 +480,16 @@ class IfcImporter:
             if grid.WAxes:
                 self.create_grid_axes(grid.WAxes, grid_obj, grid_placement)
 
-    def create_grid_axes(self, axes, grid_obj, grid_placement):
+    def create_grid_axes(
+        self, axes: list[ifcopenshell.entity_instance], grid_obj: bpy.types.Object, grid_placement: MatrixType
+    ) -> None:
         for axis in axes:
             shape = tool.Loader.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(tool.Loader.get_name(axis), mesh)
             obj.show_in_front = True
             self.link_element(axis, obj)
-            self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement.copy()))
+            self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement))
 
     def create_element_types(self):
         for element_type in self.element_types:
@@ -809,7 +812,7 @@ class IfcImporter:
 
         if shape:
             # We use numpy here because Blender mathutils.Matrix is not accurate enough
-            mat = np.array(shape.transformation.matrix).reshape((4, 4), order="F")
+            mat = ifcopenshell.util.shape.get_shape_matrix(shape)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, mat))
             assert mesh  # Type checker.
             if not materials_updated:
