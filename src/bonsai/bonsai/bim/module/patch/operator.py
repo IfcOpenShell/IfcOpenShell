@@ -96,7 +96,7 @@ class ExecuteIfcPatch(bpy.types.Operator):
 
         arguments = tool.Patch.post_process_patch_arguments(recipe_name, arguments)
         args = ifcpatch.ArgumentsDict(
-            recipe=props.ifc_patch_recipes,
+            recipe=recipe_name,
             arguments=arguments,
             log=tool.Blender.get_data_dir_path("process.log").__str__(),
         )
@@ -111,9 +111,9 @@ class ExecuteIfcPatch(bpy.types.Operator):
         ifc_patch_output = props.ifc_patch_output or props.ifc_patch_input
 
         output = ifcpatch.execute(args)
-        if tool.Patch.does_patch_has_output(props.ifc_patch_recipes):
+        if tool.Patch.does_patch_has_output(recipe_name):
             ifcpatch.write(output, ifc_patch_output)
-        self.report({"INFO"}, f"{props.ifc_patch_recipes} patch executed successfully")
+        self.report({"INFO"}, f"{recipe_name} patch executed successfully")
         return {"FINISHED"}
 
 
