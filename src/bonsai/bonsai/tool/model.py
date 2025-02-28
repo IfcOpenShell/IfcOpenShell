@@ -134,6 +134,19 @@ class Model(bonsai.core.tool.Model):
         return data
 
     @classmethod
+    def get_constituents_props_data(cls, element: ifcopenshell.entity_instance) -> dict[str, str]:
+        constituents = ("lining", "framing", "glazing")
+        props: dict[str, str] = {f"{constituent}_material": "0" for constituent in constituents}
+        material = ifcopenshell.util.element.get_material(element)
+        if not material or not material.is_a("IfcMaterialConstituentSet"):
+            return props
+        for constituent in material.MaterialConstituents:
+            name = (constituent.Name or "").lower()
+            if name in constituents:
+                props[f"{name}_material"] = str(constituent.Material.id())
+        return props
+
+    @classmethod
     def convert_mesh_to_curve(
         cls, position: Matrix, edge_indices: list[tuple[int, int]]
     ) -> ifcopenshell.entity_instance:

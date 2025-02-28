@@ -640,6 +640,7 @@ class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
+        data.update(tool.Model.get_constituents_props_data(element))
 
         # required since we could load pset from .ifc and BIMDoorProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)

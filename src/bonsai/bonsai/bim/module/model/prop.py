@@ -491,7 +491,13 @@ WindowType = Literal[
 
 # default prop values are in mm and converted later
 class BIMWindowProperties(PropertyGroup):
-    non_si_units_props = ("is_editing", "window_type")
+    non_si_units_props = (
+        "is_editing",
+        "window_type",
+        "lining_material",
+        "framing_material",
+        "glazing_material",
+    )
 
     # number of panels and default mullion/transom values
     # fmt: off
@@ -690,7 +696,14 @@ DoorType = Literal[
 
 
 class BIMDoorProperties(PropertyGroup):
-    non_si_units_props = ("is_editing", "door_type", "panel_width_ratio")
+    non_si_units_props = (
+        "is_editing",
+        "door_type",
+        "panel_width_ratio",
+        "lining_material",
+        "framing_material",
+        "glazing_material",
+    )
     is_editing: bpy.props.BoolProperty(default=False)
     door_type: bpy.props.EnumProperty(
         name="Door Operation Type",
