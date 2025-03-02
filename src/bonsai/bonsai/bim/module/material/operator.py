@@ -67,7 +67,10 @@ class SelectByMaterial(bpy.types.Operator):
         core.select_by_material(tool.Material, tool.Spatial, material=material)
 
         # copy selection query to clipboard
-        material_name = material.Name
+        if material.is_a("IfcMaterialLayerSet"):
+            material_name = material.LayerSetName
+        else:
+            material_name = material.Name
         result = f'material="{material_name}"'
         bpy.context.window_manager.clipboard = result
         self.report({"INFO"}, f"({result}) was copied to the clipboard.")
