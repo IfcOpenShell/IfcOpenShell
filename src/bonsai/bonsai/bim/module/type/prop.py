@@ -85,7 +85,7 @@ class BIMTypeProperties(PropertyGroup):
     relating_type: EnumProperty(items=get_relating_type, name="Relating Type")
     relating_type_object: PointerProperty(
         type=bpy.types.Object,
-        name="Copy Class",
+        name="Copy Type",
         update=update_relating_type_from_object,
         poll=is_object_class_applicable,
     )
