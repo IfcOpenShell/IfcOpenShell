@@ -582,26 +582,36 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
             attributes=attributes,
         )
 
+
         if self.material_set_usage:
             material_set_usage = self.file.by_id(self.material_set_usage)
             attributes = bonsai.bim.helper.export_attributes(props.material_set_usage_attributes)
+
             if material_set_usage.is_a("IfcMaterialLayerSetUsage"):
                 ifcopenshell.api.material.edit_layer_usage(
                     self.file,
                     usage=material_set_usage,
                     attributes=attributes,
                 )
-                slab.DumbSlabPlaner().regenerate_from_layer_set(material_set_usage.ForLayerSet)
-                wall.DumbWallPlaner().regenerate_from_layer_set(material_set_usage.ForLayerSet)
-            elif material_set_usage.is_a("IfcMaterialProfileSetUsage"):
-                if attributes.get("CardinalPoint", None):
-                    attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
-                ifcopenshell.api.material.edit_profile_usage(
-                    self.file,
-                    usage=material_set_usage,
-                    attributes=attributes,
-                )
 
+                layer_sets_to_regenerate = set()
+                
+                for obj in objects:
+                    obj_element = tool.Ifc.get_entity(obj)
+                    obj_material_usage = ifcopenshell.util.element.get_material(obj_element)
+
+                    if obj_material_usage and obj_material_usage.is_a("IfcMaterialLayerSetUsage"):
+                        obj_material_usage.OffsetFromReferenceLine = material.OffsetFromReferenceLine
+                        obj_material_usage.DirectionSense = material.DirectionSense  
+                        obj_material_usage.ReferenceExtent = material.ReferenceExtent
+
+                        layer_sets_to_regenerate.add(obj_material_usage.ForLayerSet)
+
+
+                for layer_set in layer_sets_to_regenerate:
+                    wall.DumbWallPlaner().regenerate_from_layer_set(layer_set)
+                    slab.DumbSlabPlaner().regenerate_from_layer_set(layer_set)
+        
         bpy.ops.bim.disable_editing_assigned_material(obj=active_obj.name)
 
 
