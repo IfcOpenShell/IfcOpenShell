@@ -38,6 +38,12 @@ MatrixType = npt.NDArray[np.float64]
 
 # NOTE: See IfcGeomRepresentation.h for ShapeType buffer types.
 
+# NOTE: For functions that return a single scalar ensure to use .item() to
+# return the Python float instead of numpy float
+# as it's less intrusive (doesn't promote numpy arrays on interactions),
+# doesn't fail saving to IFC
+# and precise enough anyway (internally Python floats are doubles).
+
 
 def is_x(value: float, x: float, tolerance: Optional[float] = None) -> bool:
     """Checks whether a value is equivalent to X given a tolerance
@@ -89,7 +95,7 @@ def get_x(geometry: ShapeType) -> float:
     :return: The X dimension
     """
     verts_flat = get_vertices(geometry).ravel()
-    return np.max(verts_flat[0::3]) - np.min(verts_flat[0::3])
+    return (np.max(verts_flat[0::3]) - np.min(verts_flat[0::3])).item()
 
 
 def get_y(geometry: ShapeType) -> float:
@@ -99,7 +105,7 @@ def get_y(geometry: ShapeType) -> float:
     :return: The Y dimension
     """
     verts_flat = get_vertices(geometry).ravel()
-    return np.max(verts_flat[1::3]) - np.min(verts_flat[1::3])
+    return (np.max(verts_flat[1::3]) - np.min(verts_flat[1::3])).item()
 
 
 def get_z(geometry: ShapeType) -> float:
@@ -109,7 +115,7 @@ def get_z(geometry: ShapeType) -> float:
     :return: The Z dimension
     """
     verts_flat = get_vertices(geometry).ravel()
-    return np.max(verts_flat[2::3]) - np.min(verts_flat[2::3])
+    return (np.max(verts_flat[2::3]) - np.min(verts_flat[2::3])).item()
 
 
 def get_max_xy(geometry: ShapeType) -> float:
@@ -351,8 +357,8 @@ def get_bottom_elevation(geometry: ShapeType) -> float:
     :param geometry: Geometry output calculated by IfcOpenShell
     :return: The Z value
     """
-    z_values = [geometry.verts[i + 2] for i in range(0, len(geometry.verts), 3)]
-    return min(z_values)
+    verts_flat = get_vertices(geometry).ravel()
+    return np.min(verts_flat[2::3]).item()
 
 
 def get_top_elevation(geometry: ShapeType) -> float:
@@ -362,7 +368,7 @@ def get_top_elevation(geometry: ShapeType) -> float:
     :return: The Z value
     """
     verts_flat = get_vertices(geometry).ravel()
-    return np.max(verts_flat[2::3])
+    return np.max(verts_flat[2::3]).item()
 
 
 def get_shape_bottom_elevation(shape: ShapeType, geometry: ShapeType) -> float:
@@ -447,7 +453,7 @@ def get_area_vf(vertices: npt.NDArray[np.float64], faces: npt.NDArray[np.int32])
     # Sum up the areas to get the total area of the mesh
     mesh_area = np.sum(triangle_areas)
 
-    return mesh_area
+    return mesh_area.item()
 
 
 def get_area(geometry: ShapeType) -> float:
@@ -674,7 +680,7 @@ def get_footprint_perimeter(geometry: ShapeType) -> float:
             else:
                 all_edges.add(edge)
 
-    return sum([np.linalg.norm(vertices[e[0]] - vertices[e[1]]) for e in (all_edges - shared_edges)])
+    return np.sum([np.linalg.norm(vertices[e[0]] - vertices[e[1]]) for e in (all_edges - shared_edges)]).item()
 
 
 def get_profiles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -723,4 +729,4 @@ def get_total_edge_length(geometry: ShapeType) -> float:
     """
     vertices = get_vertices(geometry)
     vertices = vertices[get_edges(geometry)]
-    return np.linalg.norm(vertices[:, 1] - vertices[:, 0], axis=1).sum()
+    return np.linalg.norm(vertices[:, 1] - vertices[:, 0], axis=1).sum().item()
