@@ -46,7 +46,7 @@ def edit_profile(
     .. code:: python
 
         # Let's create a material set to store our profiles.
-        material_set = ifcopenshell.api.material.add_profile_set(model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="B1", set_type="IfcMaterialProfileSet")
 
         # Create a couple steel materials.

@@ -48,7 +48,7 @@ def assign_profile(
 
         # First, let's create a material set. This will later be assigned
         # to our beam type element.
-        material_set = ifcopenshell.api.material.add_profile_set(model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="B1", set_type="IfcMaterialProfileSet")
 
         # Create a steel material.
@@ -56,7 +56,7 @@ def assign_profile(
 
         # Create an I-beam profile curve. Notice how we name our profiles
         # based on standardised steel profile names.
-        hea100 = usecase.file.create_entity(
+        hea100 = model.create_entity(
             "IfcIShapeProfileDef", ProfileName="HEA100", ProfileType="AREA",
             OverallWidth=100, OverallDepth=96, WebThickness=5, FlangeThickness=8, FilletRadius=12,
         )
@@ -84,7 +84,7 @@ def assign_profile(
         # Now let's change the profile to a HEA200 standard profile instead.
         # This will automatically change the body representation that we
         # just added as well to a HEA200 profile.
-        hea200 = usecase.file.create_entity(
+        hea200 = model.create_entity(
             "IfcIShapeProfileDef", ProfileName="HEA200", ProfileType="AREA",
             OverallWidth=200, OverallDepth=190, WebThickness=6.5, FlangeThickness=10, FilletRadius=18,
         )

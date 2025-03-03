@@ -50,7 +50,7 @@ def edit_profile_usage(
 
         # First, let's create a material set. This will later be assigned
         # to our beam type element.
-        material_set = ifcopenshell.api.material.add_profile_set(model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="B1", set_type="IfcMaterialProfileSet")
 
         # Create a steel material.
@@ -58,7 +58,7 @@ def edit_profile_usage(
 
         # Create an I-beam profile curve. Notice how we name our profiles
         # based on standardised steel profile names.
-        hea100 = usecase.file.create_entity(
+        hea100 = model.create_entity(
             "IfcIShapeProfileDef", ProfileName="HEA100", ProfileType="AREA",
             OverallWidth=100, OverallDepth=96, WebThickness=5, FlangeThickness=8, FilletRadius=12,
         )
@@ -74,7 +74,7 @@ def edit_profile_usage(
 
         # Let's create an occurrence of this beam.
         beam = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBeam", name="B1.01")
-        rel = ifcopenshell.api.material.assign_material(model,
+        rel = ifcopenshell.api.material.assign_material(model, material=material_set,
             products=[beam], type="IfcMaterialProfileSetUsage")
 
         # Let's give a 1000mm long beam body representation.
