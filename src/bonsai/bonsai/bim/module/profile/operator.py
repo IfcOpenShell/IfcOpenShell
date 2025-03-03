@@ -342,7 +342,7 @@ class SelectProfileInProfilesUI(bpy.types.Operator):
         props.active_profile_index = profile_index
         self.report(
             {"INFO"},
-            f"Profile '{profile.Name or 'Unnamed'}' is selected in Profiles UI.",
+            f"Profile '{profile.ProfileName or 'Unnamed'}' is selected in Profiles UI.",
         )
         return {"FINISHED"}
 
