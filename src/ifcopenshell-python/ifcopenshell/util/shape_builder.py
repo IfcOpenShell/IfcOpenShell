@@ -743,9 +743,7 @@ class ShapeBuilder:
         """
         if matrix is None:
             matrix = np.eye(4, dtype=float)
-        return self.create_axis2_placement_3d(
-            position=matrix[:, 3][:3].tolist(), z_axis=matrix[:, 2][:3].tolist(), x_axis=matrix[:, 0][:3].tolist()
-        )
+        return self.create_axis2_placement_3d(position=matrix[:3, 3], z_axis=matrix[:3, 2], x_axis=matrix[:3, 0])
 
     def create_axis2_placement_2d(
         self, position: VectorType = (0.0, 0.0), x_direction: Optional[VectorType] = None
