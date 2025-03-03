@@ -406,6 +406,9 @@ class EditItemUI:
             if mesh_props.item_profile == "-":
                 op = row.operator("bim.name_profile", text="", icon="TAG")
                 op.extrusion_item_obj = obj.name
+            else:
+                op = row.operator("bim.profiles_ui_select", icon="ZOOM_SELECTED", text="")
+                op.profile_id = int(mesh_props.item_profile)
 
         for item_attribute in mesh_props.item_attributes:
             row = cls.layout.row()
