@@ -89,7 +89,7 @@ class Patcher:
             shape: Union[ifcopenshell.geom.ShapeType, ifcopenshell.geom.ShapeElementType],
         ) -> None:
             geometry = getattr(shape, "geometry", shape)
-            v = [[x.tolist() for x in ifcopenshell.util.shape.get_vertices(geometry)]]
+            v = [ifcopenshell.util.shape.get_vertices(geometry).tolist()]
             f = [ifcopenshell.util.shape.get_faces(geometry).tolist()]
             replacements[element] = (v, f)
 
