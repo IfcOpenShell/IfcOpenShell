@@ -16,11 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
 from bpy.types import Panel, UIList
 from bonsai.bim.module.style.data import StylesData, BlenderMaterialStyleData
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.style.prop import BIMStylesProperties, Style
 
 
 class BIM_PT_styles(Panel):
@@ -94,7 +99,8 @@ class BIM_PT_styles(Panel):
         if active_style:
             row = self.layout.row(align=True)
             if material := style.blender_material:
-                row.prop(material.BIMStyleProperties, "active_style_type", icon="SHADING_RENDERED", text="")
+                msprops = tool.Style.get_material_style_props(material)
+                row.prop(msprops, "active_style_type", icon="SHADING_RENDERED", text="")
                 op = row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
                 op.style_id = style.ifc_definition_id
 
@@ -255,11 +261,19 @@ class BIM_PT_styles(Panel):
 
 
 class BIM_UL_styles(UIList):
-    def draw_item(self, context, layout: bpy.types.UILayout, data, item, icon, active_data, active_property):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMStylesProperties,
+        item: Style,
+        icon,
+        active_data,
+        active_property,
+    ):
         if item:
             row = layout.row(align=True)
-            props = tool.Style.get_style_props()
-            if item.ifc_definition_id == props.is_editing_style:
+            if item.ifc_definition_id == data.is_editing_style:
                 row.label(text="", icon="GREASEPENCIL")
             row.prop(item, "name", text="", emboss=False)
             if item.has_surface_colour:
@@ -295,7 +309,7 @@ class BIM_PT_style(Panel):
 
     @classmethod
     def poll(cls, context):
-        return bool(tool.Ifc.get() and (material := context.material) and material.BIMStyleProperties.ifc_definition_id)
+        return bool(tool.Ifc.get() and (material := context.material) and tool.Blender.get_ifc_definition_id(material))
 
     def draw(self, context):
         # NOTE: this UI is needed only to indicate whether blender material is linked to IFC
@@ -305,10 +319,11 @@ class BIM_PT_style(Panel):
             BlenderMaterialStyleData.load()
 
         material = context.material
-        style_id = material.BIMStyleProperties.ifc_definition_id
+        assert material
+        style_id = tool.Blender.get_ifc_definition_id(material)
         row = self.layout.row(align=True)
 
-        if style_id and not BlenderMaterialStyleData.data["is_linked_to_style"]:
+        if not BlenderMaterialStyleData.data["is_linked_to_style"]:
             row.label(text="Material has linked IFC from a different project.")
             op = row.operator("bim.unlink_style", icon="UNLINKED", text="")
             op.blender_material = material.name

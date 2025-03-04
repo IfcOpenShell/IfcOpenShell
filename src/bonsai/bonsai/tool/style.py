@@ -162,14 +162,14 @@ class Style(bonsai.core.tool.Style):
         cls, blender_material_or_style: Union[bpy.types.Material, ifcopenshell.entity_instance]
     ) -> dict[str, ifcopenshell.entity_instance]:
         if isinstance(blender_material_or_style, bpy.types.Material):
-            if not (ifc_definition_id := blender_material_or_style.BIMStyleProperties.ifc_definition_id):
+            style = tool.Ifc.get_entity(blender_material_or_style)
+            if not style:
                 return {}
-            style = tool.Ifc.get().by_id(ifc_definition_id)
         else:
             style = blender_material_or_style
         style_elements = {}
-        for style in style.Styles:
-            style_elements[style.is_a()] = style
+        for style_ in style.Styles:
+            style_elements[style_.is_a()] = style_
         return style_elements
 
     @classmethod
@@ -305,7 +305,7 @@ class Style(bonsai.core.tool.Style):
                 return next((l.from_node for l in input_pin.links if l.from_node.type == of_type), None)
             return next((l.from_node for l in input_pin.links), None)
 
-        props = obj.BIMStyleProperties
+        props = tool.Style.get_material_style_props(obj)
         transparency = 1 - obj.diffuse_color[3]
         diffuse_color = obj.diffuse_color
         viewport_color = color_to_ifc_format(obj.diffuse_color)
@@ -487,16 +487,14 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def get_surface_shading_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
-        if ifc_definition_id := obj.BIMStyleProperties.ifc_definition_id:
-            style = tool.Ifc.get().by_id(ifc_definition_id)
+        if style := tool.Ifc.get_entity(obj):
             items = [s for s in style.Styles if s.is_a() == "IfcSurfaceStyleShading"]
             if items:
                 return items[0]
 
     @classmethod
     def get_surface_texture_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
-        if ifc_definition_id := obj.BIMStyleProperties.ifc_definition_id:
-            style = tool.Ifc.get().by_id(ifc_definition_id)
+        if style := tool.Ifc.get_entity(obj):
             items = [s for s in style.Styles if s.is_a("IfcSurfaceStyleWithTextures")]
             if items:
                 return items[0]
@@ -581,7 +579,8 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def change_current_style_type(cls, blender_material: bpy.types.Material, style_type: str) -> None:
-        blender_material.BIMStyleProperties.active_style_type = style_type
+        props = cls.get_material_style_props(blender_material)
+        props.active_style_type = style_type
 
     @classmethod
     def get_styled_items(cls, style: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -632,7 +631,8 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def reload_material_from_ifc(cls, blender_material: bpy.types.Material) -> None:
-        blender_material.BIMStyleProperties.active_style_type = blender_material.BIMStyleProperties.active_style_type
+        props = cls.get_material_style_props(blender_material)
+        props.active_style_type = props.active_style_type
 
     @classmethod
     def switch_shading(cls, blender_material: bpy.types.Material, style_type: StyleType) -> None:

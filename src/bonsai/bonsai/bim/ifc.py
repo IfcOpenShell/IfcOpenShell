@@ -265,7 +265,8 @@ class IfcStore:
             IfcStore.guid_map[global_id] = obj
 
         if element.is_a("IfcSurfaceStyle"):
-            obj.BIMStyleProperties.ifc_definition_id = element.id()
+            props = tool.Style.get_material_style_props(obj)
+            props.ifc_definition_id = element.id()
         else:
             props = tool.Blender.get_object_bim_props(obj)
             props.ifc_definition_id = element.id()
@@ -406,7 +407,8 @@ class IfcStore:
     @staticmethod
     def purge_blender_ifc_data(obj: IFC_CONNECTED_TYPE) -> None:
         if isinstance(obj, bpy.types.Material):
-            obj.BIMStyleProperties.ifc_definition_id = 0
+            props = tool.Style.get_material_style_props(obj)
+            props.ifc_definition_id = 0
         else:  # bpy.types.Object
             props = tool.Blender.get_object_bim_props(obj)
             props.ifc_definition_id = 0

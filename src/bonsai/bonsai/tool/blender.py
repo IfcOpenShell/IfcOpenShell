@@ -1601,5 +1601,7 @@ class Blender(bonsai.core.tool.Blender):
         return obj.BIMObjectProperties
 
     @classmethod
-    def get_ifc_definition_id(cls, obj: bpy.types.Object) -> int:
-        return tool.Blender.get_object_bim_props(obj).ifc_definition_id
+    def get_ifc_definition_id(cls, obj: IFC_CONNECTED_TYPE) -> int:
+        if isinstance(obj, bpy.types.Object):
+            return tool.Blender.get_object_bim_props(obj).ifc_definition_id
+        return tool.Style.get_material_style_props(obj).ifc_definition_id

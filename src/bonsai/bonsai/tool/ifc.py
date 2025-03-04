@@ -110,7 +110,7 @@ class Ifc(bonsai.core.tool.Ifc):
         if isinstance(obj, bpy.types.Object):
             props = tool.Blender.get_object_bim_props(obj)
         elif isinstance(obj, bpy.types.Material):
-            props = obj.BIMStyleProperties
+            props = tool.Style.get_material_style_props(obj)
         else:
             props = tool.Geometry.get_mesh_props(obj)
 

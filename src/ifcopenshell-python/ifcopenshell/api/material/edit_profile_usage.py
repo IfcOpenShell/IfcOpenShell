@@ -149,6 +149,8 @@ class Usecase:
         self.settings_2d.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         shape = ifcopenshell.geom.create_shape(self.settings_2d, dummy_solid)
 
+        # NOTE: points do not need unit conversion
+        # as dummy file is inherently using project units.
         if self.cardinal_point == 1:
             return self.get_bottom_left(shape)
         elif self.cardinal_point == 2:

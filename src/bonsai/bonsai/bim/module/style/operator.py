@@ -118,8 +118,7 @@ class UnlinkStyle(bpy.types.Operator, tool.Ifc.Operator):
         # Don't check blender_material and style_id as this operator is only called from UI.
         assert isinstance(self.blender_material, str)  # Type checker.
         material = bpy.data.materials[self.blender_material]
-        style_id = material.BIMStyleProperties.ifc_definition_id
-        style = tool.Ifc.get_entity_by_id(style_id)
+        style = tool.Ifc.get_entity(material)
 
         # Material is linked to a style from a different project.
         if not style or tool.Ifc.get_object(style) != material:
@@ -221,18 +220,25 @@ class UpdateCurrentStyle(bpy.types.Operator):
     def execute(self, context):
         style = tool.Ifc.get().by_id(self.style_id)
         material = tool.Ifc.get_object(style)
-        current_style_type = material.BIMStyleProperties.active_style_type
+        msprops = tool.Style.get_material_style_props(material)
+        current_style_type = msprops.active_style_type
 
         if self.update_all:
             sprops = tool.Style.get_style_props()
             sprops.active_style_type = current_style_type
             return {"FINISHED"}
 
-        updated_materials = set()
+        updated_materials: set[bpy.types.Material] = set()
         for obj in context.selected_objects:
+            if not isinstance(obj.data, (bpy.types.Mesh, bpy.types.Curve)):
+                continue
             for mat in obj.data.materials:
-                if mat and mat not in updated_materials and mat.BIMStyleProperties.ifc_definition_id != 0:
-                    mat.BIMStyleProperties.active_style_type = current_style_type
+                if (
+                    mat
+                    and mat not in updated_materials
+                    and (msprops_ := tool.Style.get_material_style_props(mat)).ifc_definition_id != 0
+                ):
+                    msprops_.active_style_type = current_style_type
                     updated_materials.add(mat)
         return {"FINISHED"}
 
@@ -755,7 +761,8 @@ class EnableEditingSurfaceStyle(bpy.types.Operator):
             bonsai.bim.helper.import_attributes2(surface_style or self.ifc_class, attributes, callback)
 
         material = tool.Ifc.get_object(style)
-        active_style_type = material.BIMStyleProperties.active_style_type
+        msprops = tool.Style.get_material_style_props(material)
+        active_style_type = msprops.active_style_type
         if self.ifc_class == "IfcExternallyDefinedSurfaceStyle" and active_style_type != "External":
             if tool.Style.has_blender_external_style(style_elements):
                 tool.Style.switch_shading(material, "External")
@@ -803,9 +810,10 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         # restore selected style type
         material = tool.Ifc.get_object(self.style)
-        material.BIMStyleProperties.active_style_type = material.BIMStyleProperties.active_style_type
+        msprops = tool.Style.get_material_style_props(material)
+        msprops.active_style_type = msprops.active_style_type
 
-    def edit_existing_style(self):
+    def edit_existing_style(self) -> None:
         ifc_file = tool.Ifc.get()
         material = tool.Ifc.get_object(self.style)
         assert self.surface_style
@@ -867,7 +875,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                 attributes=bonsai.bim.helper.export_attributes(attributes),
             )
 
-    def add_new_style(self):
+    def add_new_style(self) -> None:
         material = tool.Ifc.get_object(self.style)
         if self.props.is_editing_class == "IfcSurfaceStyleShading":
             surface_style = ifcopenshell.api.run(
@@ -911,13 +919,13 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                 attributes=bonsai.bim.helper.export_attributes(attributes),
             )
 
-    def get_shading_attributes(self):
+    def get_shading_attributes(self) -> dict[str, Any]:
         return {
             "SurfaceColour": self.color_to_dict(self.props.surface_colour),
             "Transparency": self.props.transparency or None,
         }
 
-    def get_rendering_attributes(self):
+    def get_rendering_attributes(self) -> dict[str, Any]:
         if self.props.is_diffuse_colour_null:
             diffuse_colour = None
         elif self.props.diffuse_colour_class == "IfcColourRgb":
@@ -961,7 +969,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             textures.append(texture_data)
         return textures
 
-    def color_to_dict(self, x):
+    def color_to_dict(self, x: tuple[float, float, float]) -> dict[str, Any]:
         return {"Red": x[0], "Green": x[1], "Blue": x[2]}
 
 

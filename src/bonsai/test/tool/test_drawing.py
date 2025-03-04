@@ -891,11 +891,12 @@ class TestAddReferenceImage(NewFile):
         assert tool.Cad.are_vectors_equal(obj.dimensions, Vector((3.53982, 2.0, 0.0)))
 
         material = obj.active_material
+        assert material
         assert material.name == "image"
-        assert material.BIMStyleProperties.ifc_definition_id != 0
+        assert tool.Blender.get_ifc_definition_id(material) != 0
 
-        ifc_file = tool.Ifc.get()
-        style = ifc_file.by_id(material.BIMStyleProperties.ifc_definition_id)
+        style = tool.Ifc.get_entity(material)
+        assert style
         styled_items = set(tool.Style.get_styled_items(style))
         representation_items = set(tool.Geometry.get_active_representation(obj).Items)
         assert styled_items == representation_items

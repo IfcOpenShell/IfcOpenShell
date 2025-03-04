@@ -293,8 +293,19 @@ class Model(bonsai.core.tool.Model):
             else:
                 break
 
+    unit_scale: float
+    vertices: list[Vector]
+    edges: list[Sequence[int]]
+    arcs: list[Sequence[int]]
+    circles: list[Sequence[int]]
+
     @classmethod
-    def import_axis(cls, axis, obj=None, position=None):
+    def import_axis(
+        cls,
+        axis: Union[ifcopenshell.entity_instance, tuple[Vector, Vector]],
+        obj=None,
+        position: Optional[Matrix] = None,
+    ) -> bpy.types.Object:
         cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         if position is None:
@@ -305,7 +316,7 @@ class Model(bonsai.core.tool.Model):
         cls.arcs = []
         cls.circles = []
 
-        if isinstance(axis, list):
+        if isinstance(axis, tuple):
             cls.vertices.extend(
                 [
                     position @ Vector(cls.convert_unit_to_si(axis[0])).to_3d(),
@@ -478,7 +489,7 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def convert_curve_to_mesh(
         cls,
-        obj: bpy.types.Object,
+        obj: Union[bpy.types.Object, None],  # Unused argument.
         position: Matrix,
         curve: ifcopenshell.entity_instance,
         x_angle: Optional[float] = None,
@@ -1624,7 +1635,7 @@ class Model(bonsai.core.tool.Model):
         loop_edges = list(bm.edges)
 
         # Create loops from edges
-        loops = []
+        loops: list[list[bmesh.types.BMEdge]] = []
         while loop_edges:
             edge = loop_edges.pop()
             loop = [edge]
@@ -1645,19 +1656,19 @@ class Model(bonsai.core.tool.Model):
 
         tmp = ifcopenshell.file(schema=tool.Ifc.get().schema)
 
-        def is_in_group(v, group_name):
+        def is_in_group(v: bmesh.types.BMVert, group_name: str) -> bool:
             for group_index in groups[group_name]:
                 if group_index in v[deform_layer]:
                     return True
             return False
 
-        def get_group_index(v, group_name):
+        def get_group_index(v: bmesh.types.BMVert, group_name: str) -> Union[int, None]:
             for group_index in groups[group_name]:
                 if group_index in v[deform_layer]:
                     return group_index
 
         # Convert all loops into IFC curves
-        curves = []
+        curves: list[ifcopenshell.entity_instance] = []
         for loop in loops:
 
             if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
@@ -1670,7 +1681,7 @@ class Model(bonsai.core.tool.Model):
                     tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
                 )
             else:
-                loop_verts = []
+                loop_verts: list[bmesh.types.BMVert] = []
                 for i, edge in enumerate(loop):
                     if i == 0 and len(loop) == 1:
                         loop_verts.append(edge.verts[0])
@@ -1746,7 +1757,7 @@ class Model(bonsai.core.tool.Model):
                     curves.append(tmp.createIfcIndexedPolyCurve(points))
 
         # Sort IFC curves into either closed, or closed with void profile defs
-        profile_defs = []
+        profile_defs: list[ifcopenshell.entity_instance] = []
         settings = ifcopenshell.geom.settings()
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
 

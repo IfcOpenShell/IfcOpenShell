@@ -112,7 +112,8 @@ class TestGetObjectMaterialsWithoutStyles(NewFile):
         material1 = bpy.data.materials.new("Material")
         material2 = bpy.data.materials.new("Material")
         material3 = bpy.data.materials.new("Material")
-        material3.BIMStyleProperties.ifc_definition_id = 1
+        props = tool.Style.get_material_style_props(material3)
+        props.ifc_definition_id = 1
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         obj.data.materials.append(material1)
         obj.data.materials.append(material2)
@@ -307,7 +308,7 @@ class TestRecordObjectMaterials(NewFile):
         tool.Ifc.set(ifc)
         style = ifc.createIfcSurfaceStyle()
         material = bpy.data.materials.new("Material")
-        material.BIMStyleProperties.ifc_definition_id = style.id()
+        tool.Ifc.link(style, material)
         obj.data.materials.append(material)
         subject.record_object_materials(obj)
         assert tool.Geometry.get_mesh_props(obj.data).material_checksum == str([style.id()])

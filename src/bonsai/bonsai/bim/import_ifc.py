@@ -86,7 +86,7 @@ class MaterialCreator:
 
     def load_existing_materials(self) -> None:
         for material in bpy.data.materials:
-            if ifc_definition_id := material.BIMStyleProperties.ifc_definition_id:
+            if ifc_definition_id := tool.Blender.get_ifc_definition_id(material):
                 self.styles[ifc_definition_id] = material
 
     def parse_element_type_material_styles(self, element: ifcopenshell.entity_instance) -> None:
@@ -964,10 +964,11 @@ class IfcImporter:
         self.material_creator.styles[style.id()] = blender_material
 
         style_elements = tool.Style.get_style_elements(blender_material)
+        props = tool.Style.get_material_style_props(blender_material)
         if tool.Style.has_blender_external_style(style_elements):
-            blender_material.BIMStyleProperties.active_style_type = "External"
+            props.active_style_type = "External"
         else:
-            blender_material.BIMStyleProperties.active_style_type = "Shading"
+            props.active_style_type = "Shading"
 
     def place_objects_in_collections(self) -> None:
         for ifc_definition_id, obj in self.added_data.items():

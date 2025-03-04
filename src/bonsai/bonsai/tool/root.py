@@ -418,8 +418,8 @@ class Root(bonsai.core.tool.Root):
         """Rename material without triggerring name callback and unnecessary writing to IFC."""
         if material.name == name:
             return
-        props = material.BIMStyleProperties
-        props.is_renaming = True
+        msprops = tool.Style.get_material_style_props(material)
+        msprops.is_renaming = True
         material.name = name  # The handler will trigger, and reset is_renaming to False.
 
     @classmethod

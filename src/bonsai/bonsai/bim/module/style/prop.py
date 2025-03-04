@@ -39,13 +39,13 @@ from typing import Literal, Union, TYPE_CHECKING, get_args
 _ = gettext.gettext
 
 
-def get_style_types(self, context):
+def get_style_types(self: "BIMStylesProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not StylesData.is_loaded:
         StylesData.load()
     return StylesData.data["style_types"]
 
 
-def get_reflectance_methods(self, context):
+def get_reflectance_methods(self: "BIMStylesProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not StylesData.is_loaded:
         StylesData.load()
     return StylesData.data["reflectance_methods"]
@@ -77,6 +77,16 @@ class Style(PropertyGroup):
         type=bpy.types.Material,
     )
 
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+        total_elements: int
+        style_classes: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        has_surface_colour: bool
+        surface_colour: tuple[float, float, float]
+        has_diffuse_colour: bool
+        diffuse_colour: tuple[float, float, float]
+        blender_material: Union[bpy.types.Material, None]
+
 
 STYLE_TYPES = [
     ("Shading", "Shading", ""),
@@ -86,7 +96,7 @@ STYLE_TYPES = [
 
 def update_shading_styles(self: "BIMStylesProperties", context: bpy.types.Context) -> None:
     for mat in bpy.data.materials:
-        if mat.BIMStyleProperties.ifc_definition_id == 0:
+        if tool.Blender.get_ifc_definition_id(mat) == 0:
             continue
         tool.Style.change_current_style_type(mat, self.active_style_type)
 
@@ -111,7 +121,9 @@ UV_MODES = [
     ("Camera", "Camera", _("UV from position coordinate in camera space")),
 ]
 
-
+TextureMapMode = Literal[
+    "DIFFUSE", "NORMAL", "METALLICROUGHNESS", "SPECULAR", "SHININESS", "EMISSIVE", "OCCLUSION", "AMBIENT"
+]
 TEXTURE_MAPS_MODS = (
     ("DIFFUSE", "DIFFUSE", ""),
     ("NORMAL", "NORMAL", ""),
@@ -129,12 +141,20 @@ class Texture(PropertyGroup):
     # NOTE: subtype `FILE_PATH` is not used to avoid .blend relative paths
     path: StringProperty(name="Texture Path", update=update_shader_graph)
 
+    if TYPE_CHECKING:
+        mode: TextureMapMode
+        path: str
+
 
 class ColourRgb(PropertyGroup):
     name: StringProperty()
     color_value: FloatVectorProperty(size=3, subtype="COLOR", default=(1, 1, 1))
     # not exposed in the UI, here just to preserve the data
     color_name: StringProperty(name="Color Name")
+
+    if TYPE_CHECKING:
+        color_value: tuple[float, float, float]
+        color_name: str
 
     # to fit blender.bim.helper.export_attributes
     def get_value(self):

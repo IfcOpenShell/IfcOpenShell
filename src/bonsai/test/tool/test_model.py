@@ -462,7 +462,7 @@ class TestApplyIfcMaterialChanges(NewFile):
     def get_used_styles(self, obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
         return {
-            ifc_file.by_id(s.material.BIMStyleProperties.ifc_definition_id) for s in obj.material_slots if s.material
+            ifc_file.by_id(tool.Blender.get_ifc_definition_id(s.material)) for s in obj.material_slots if s.material
         }
 
     def get_mesh(self, obj: bpy.types.Object) -> bpy.types.Mesh:
