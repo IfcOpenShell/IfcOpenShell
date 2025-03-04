@@ -486,6 +486,9 @@ class Model(bonsai.core.tool.Model):
 
         return obj
 
+    class UnsupportedCurveForConversion(Exception):
+        pass
+
     @classmethod
     def convert_curve_to_mesh(
         cls,
@@ -550,6 +553,8 @@ class Model(bonsai.core.tool.Model):
             )
             cls.circles.append([offset, offset + 1])
             cls.edges.append((offset, offset + 1))
+        else:
+            raise cls.UnsupportedCurveForConversion(f"Profile has unsupported curve type: {curve}.")
 
     @classmethod
     def import_rectangle(cls, obj: bpy.types.Object, position: Matrix, profile: ifcopenshell.entity_instance) -> None:

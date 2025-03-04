@@ -234,9 +234,15 @@ class EnableEditingArbitraryProfile(bpy.types.Operator):
         props = tool.Profile.get_profile_props()
         active_profile = props.profiles[props.active_profile_index]
         profile_id = active_profile.ifc_definition_id
-        props.active_arbitrary_profile_id = profile_id
         profile = tool.Ifc.get().by_id(profile_id)
-        obj = tool.Model.import_profile(profile)
+
+        try:
+            obj = tool.Model.import_profile(profile)
+        except tool.Model.UnsupportedCurveForConversion as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+
+        props.active_arbitrary_profile_id = profile_id
         tool.Ifc.link(profile, obj)
         bpy.context.scene.collection.objects.link(obj)
         tool.Blender.select_and_activate_single_object(context, obj)
