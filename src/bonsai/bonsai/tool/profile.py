@@ -25,6 +25,8 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape
+import numpy as np
 import bonsai.core.tool
 import bonsai.tool as tool
 import PIL.ImageDraw
@@ -50,31 +52,30 @@ class Profile(bonsai.core.tool.Profile):
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         shape = ifcopenshell.geom.create_shape(settings, profile)
 
-        verts = shape.verts
-        if not verts:
+        verts = ifcopenshell.util.shape.get_vertices(shape)
+        if verts.size == 0:
             raise RuntimeError(f"Profile shape has no vertices, it probably is invalid: '{profile}'.")
 
-        edges = shape.edges
-
-        grouped_verts = [[verts[i], verts[i + 1]] for i in range(0, len(verts), 3)]
-        grouped_edges = [[edges[i], edges[i + 1]] for i in range(0, len(edges), 2)]
-
-        max_x = max([v[0] for v in grouped_verts])
-        min_x = min([v[0] for v in grouped_verts])
-        max_y = max([v[1] for v in grouped_verts])
-        min_y = min([v[1] for v in grouped_verts])
+        edges = ifcopenshell.util.shape.get_edges(shape)
+        verts_flat = verts.ravel()
+        max_x = np.max(verts_flat[0::3]).item()
+        min_x = np.min(verts_flat[0::3]).item()
+        max_y = np.max(verts_flat[1::3]).item()
+        min_y = np.min(verts_flat[1::3]).item()
 
         dim_x = max_x - min_x
         dim_y = max_y - min_y
         max_dim = max([dim_x, dim_y])
         scale = 100 / max_dim
+        dim = np.array([dim_x, dim_y])
 
-        for vert in grouped_verts:
-            vert[0] = round(scale * (vert[0] - min_x)) + ((size / 2) - scale * (dim_x / 2))
-            vert[1] = round(scale * (vert[1] - min_y)) + ((size / 2) - scale * (dim_y / 2))
-
-        for e in grouped_edges:
-            draw.line((tuple(grouped_verts[e[0]]), tuple(grouped_verts[e[1]])), fill="white", width=2)
+        verts = verts[:, :2]
+        verts = np.round(scale * (verts - [min_x, min_y]) + (size / 2) - scale * dim / 2)
+        for verts_ in verts[edges]:
+            # draw.line seem to support only tuple of tuples.
+            verts_tuple: tuple[tuple[float, ...], ...]
+            verts_tuple = tuple(tuple(i) for i in verts_)
+            draw.line(verts_tuple, fill="white", width=2)
 
     @classmethod
     def is_editing_profile(cls) -> bool:
