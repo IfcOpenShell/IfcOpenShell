@@ -1517,7 +1517,7 @@ class Drawing(bonsai.core.tool.Drawing):
             dst.data = dst.data.copy()
             dst.name = dst.name.replace("IfcGridAxis/", "")
             tool.Blender.get_object_bim_props(dst).ifc_definition_id = 0
-            tool.Geometry.get_geometry_props(dst.data).ifc_definition_id = 0
+            tool.Geometry.get_mesh_props(dst.data).ifc_definition_id = 0
             return dst
 
         def disassemble(obj: bpy.types.Object) -> tuple[bpy.types.Object, bmesh.types.BMesh]:
