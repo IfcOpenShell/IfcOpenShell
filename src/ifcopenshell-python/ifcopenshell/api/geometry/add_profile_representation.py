@@ -17,6 +17,8 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.geom
+import ifcopenshell.util.element
+import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 from ifcopenshell.util.data import Clipping
 from typing import Any, Union, Optional, Literal
@@ -145,8 +147,7 @@ class Usecase:
             settings = ifcopenshell.geom.settings()
             settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
             shape = ifcopenshell.geom.create_shape(settings, self.settings["profile"])
-            x = [shape.verts[i] for i in range(0, len(shape.verts), 3)]
-            return self.convert_si_to_unit(max(x) - min(x))
+            return self.convert_si_to_unit(ifcopenshell.util.shape.get_x(shape))
         return 0.0
 
     def get_y(self):
@@ -174,6 +175,5 @@ class Usecase:
             settings = ifcopenshell.geom.settings()
             settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
             shape = ifcopenshell.geom.create_shape(settings, self.settings["profile"])
-            y = [shape.verts[i + 1] for i in range(0, len(shape.verts), 3)]
-            return self.convert_si_to_unit(max(y) - min(y))
+            return self.convert_si_to_unit(ifcopenshell.util.shape.get_y(shape))
         return 0.0
