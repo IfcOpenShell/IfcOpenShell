@@ -497,19 +497,24 @@ class Model(bonsai.core.tool.Model):
         offset = len(cls.vertices)
 
         if curve.is_a("IfcPolyline"):
-            total_points = len(curve.Points)
-            last_index = len(curve.Points) - 1
-            for i, point in enumerate(curve.Points):
-                if i == last_index:
-                    continue
+            curve_points: tuple[ifcopenshell.entity_instance, ...] = curve.Points
+            # Polyline must have 2 points to be valid.
+            is_closed = np.allclose(curve_points[0].Coordinates, curve_points[-1].Coordinates)
+
+            points_to_add = curve_points[:-1] if is_closed else curve_points
+            for point in points_to_add:
                 global_point = position @ Vector(cls.convert_unit_to_si(point.Coordinates)).to_3d()
                 cls.vertices.append(global_point)
-            cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices))])
-            cls.edges[-1] = (len(cls.vertices) - 1, offset)  # Close the loop
+
+            cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices) - 1)])
+            if is_closed:
+                cls.edges[-1] = (len(cls.vertices) - 1, offset)  # Close the loop
+
         elif curve.is_a("IfcCompositeCurve"):
             # This is a first pass incomplete implementation only for simple polylines, and misses many details.
             for segment in curve.Segments:
                 cls.convert_curve_to_mesh(obj, position, segment.ParentCurve)
+
         elif curve.is_a("IfcIndexedPolyCurve"):
             for local_point in curve.Points.CoordList:
                 global_point = position @ Vector(cls.convert_unit_to_si(local_point)).to_3d()
