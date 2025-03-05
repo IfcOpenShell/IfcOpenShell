@@ -514,8 +514,9 @@ class IfcImporter:
                         pass
                     elif shape:
                         mesh = self.create_mesh(element, shape)
-                        tool.Loader.link_mesh(shape, mesh)
-                        self.meshes[mesh_name] = mesh
+                        if mesh is not None:
+                            tool.Loader.link_mesh(shape, mesh)
+                            self.meshes[mesh_name] = mesh
                     else:
                         self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
                 break
@@ -798,8 +799,9 @@ class IfcImporter:
             materials_updated = bool(mesh)
             if mesh is None:
                 mesh = self.create_mesh(element, shape)
-                tool.Loader.link_mesh(shape, mesh)
-                self.meshes[mesh_name] = mesh
+                if mesh is not None:
+                    tool.Loader.link_mesh(shape, mesh)
+                    self.meshes[mesh_name] = mesh
         else:
             mesh = None
 
@@ -810,11 +812,10 @@ class IfcImporter:
             if element.is_a(ifcclass):
                 obj.display_type = "WIRE"
 
-        if shape:
+        if shape and mesh:
             # We use numpy here because Blender mathutils.Matrix is not accurate enough
             mat = ifcopenshell.util.shape.get_shape_matrix(shape)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, mat))
-            assert mesh  # Type checker.
             if not materials_updated:
                 self.material_creator.create(element, obj, mesh, tool.Geometry.does_shape_has_openings(shape))
         elif mesh:  # When does this occur?
@@ -1033,7 +1034,7 @@ class IfcImporter:
         element: ifcopenshell.entity_instance,
         shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
         cartesian_point_offset: Union[npt.NDArray[np.float64], Literal[False]] = None,
-    ) -> bpy.types.Mesh:
+    ) -> Union[bpy.types.Mesh, None]:
         try:
             if hasattr(shape, "geometry"):
                 # shape is ShapeElementType
