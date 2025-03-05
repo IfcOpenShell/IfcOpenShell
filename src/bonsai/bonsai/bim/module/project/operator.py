@@ -378,6 +378,8 @@ class ChangeLibraryElement(bpy.types.Operator):
                 next(e for e in self.file.by_type("IfcMaterial") if e.Name == name)
             elif element.is_a("IfcProfileDef"):
                 next(e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == name)
+            elif element.is_a("IfcPresentationStyle"):
+                next(e for e in self.file.by_type(element.is_a()) if e.Name == name)
             else:
                 self.file.by_guid(element.GlobalId)
             new.is_appended = True
