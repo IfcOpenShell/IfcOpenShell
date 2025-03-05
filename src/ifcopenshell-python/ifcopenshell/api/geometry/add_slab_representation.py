@@ -98,7 +98,7 @@ class Usecase:
         else:
             direction_ratios = (0.0, 0.0, 1.0)
 
-        offset_direction = direction_ratios # offset direction doesn't change if direction_sense is negative
+        offset_direction = direction_ratios  # offset direction doesn't change if direction_sense is negative
         extrusion_direction = self.file.createIfcDirection(direction_ratios)
         if self.settings["direction_sense"] == "NEGATIVE":
             direction_ratios = tuple((-n for n in direction_ratios))

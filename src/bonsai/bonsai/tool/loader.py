@@ -1044,7 +1044,7 @@ class Loader(bonsai.core.tool.Loader):
         prev_co = None
         co = Vector((0.0, offset, 0.0))
         # no = Vector((0.0, 1.0, 0.0))
-        no = (cls.get_extrusion_vector(element).cross(Vector([1., 0., 0.]))).normalized()
+        no = (cls.get_extrusion_vector(element).cross(Vector([1.0, 0.0, 0.0]))).normalized()
         # Cache this
         body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         styles = {}
@@ -1097,7 +1097,7 @@ class Loader(bonsai.core.tool.Loader):
             for item in ifcopenshell.util.representation.resolve_representation(body).Items:
                 if item.is_a("IfcExtrudedAreaSolid"):
                     return Vector(item.ExtrudedDirection.DirectionRatios)
-        return Vector([0., 0., 1.])
+        return Vector([0.0, 0.0, 1.0])
 
     @classmethod
     def create_mesh_from_shape(

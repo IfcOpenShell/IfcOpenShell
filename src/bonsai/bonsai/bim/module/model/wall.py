@@ -248,7 +248,8 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 if tool.Model.get_usage_type(element) == "LAYER3":
                     # Reset the transformation and returns to the original points with 0 degrees
                     extrusion.SweptArea.OuterCurve.Points.CoordList = [
-                        (p[0], p[1] * abs(cos(existing_x_angle))) for p in extrusion.SweptArea.OuterCurve.Points.CoordList
+                        (p[0], p[1] * abs(cos(existing_x_angle)))
+                        for p in extrusion.SweptArea.OuterCurve.Points.CoordList
                     ]
 
                     # Apply the transformation for the new x_angle
@@ -261,7 +262,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     direction_ratios = Vector((0.0, sin(x_angle), cos(x_angle)))
                     # direction_ratios = Vector(extrusion.ExtrudedDirection.DirectionRatios)
                     layer_params = tool.Model.get_material_layer_parameters(element)
-                    perpendicular_depth= layer_params["thickness"] * abs(1 / cos(x_angle)) / unit_scale
+                    perpendicular_depth = layer_params["thickness"] * abs(1 / cos(x_angle)) / unit_scale
                     perpendicular_offset = layer_params["offset"] * abs(1 / cos(x_angle)) / unit_scale
                     offset_direction = direction_ratios.copy()
 

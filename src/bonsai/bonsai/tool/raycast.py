@@ -171,7 +171,6 @@ class Raycast(bonsai.core.tool.Raycast):
                 print("empty", snap_point)
             return points
 
-
         if not custom_bmesh:
             bm = bmesh.new()
             if face is None:  # Object without faces

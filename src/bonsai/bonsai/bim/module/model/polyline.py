@@ -239,7 +239,7 @@ def get_slab_preview_data(context, relating_type):
     bm.verts.ensure_lookup_table()
     if x_angle:
         rot_mat = Matrix.Rotation(x_angle, 3, "X")
-        if abs(x_angle) > (pi/2):
+        if abs(x_angle) > (pi / 2):
             rot_mat = rot_mat @ Matrix.Scale(-1, 3, (0, 1, 0))
         bmesh.ops.rotate(bm, cent=Vector(bm.verts[0].co), verts=bm.verts, matrix=rot_mat)
     new_faces = bmesh.ops.contextual_create(bm, geom=bm.edges)
