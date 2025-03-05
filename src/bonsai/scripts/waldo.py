@@ -14,6 +14,7 @@ import ifcopenshell.util.element
 # from ifcopenshell.util.shape_builder import VectorType, SequenceOfVectors
 from itertools import cycle
 from collections import namedtuple
+from math import sin, cos, radians
 
 f = ifcopenshell.api.project.create_file()
 
@@ -46,7 +47,7 @@ ifcopenshell.api.style.add_surface_style(f, style=style, ifc_class="IfcSurfaceSt
 ifcopenshell.api.style.assign_material_style(f, material=material2, style=style, context=body)
 
 
-def test_wall(offset, p1, p2, p3, p4):
+def test_wall(offset, p1, p2, p3, p4, a1=None, a2=None):
     offset *= 1.5
     wall_type_a = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWallType", name="A")
     wall_type_b = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWallType", name="B")
@@ -162,7 +163,7 @@ def test_wall(offset, p1, p2, p3, p4):
                     related_connection="ATSTART",
                 )
 
-            Foo(f, body, axis).regenerate(wall_a)
+            Foo(f, body, axis).regenerate(wall_a, angle=a1)
             Foo(f, body, axis).regenerate(wall_b)
             Foo(f, body, axis).regenerate(wall_c)
 
@@ -238,7 +239,7 @@ class Foo:
         self.body = body
         self.axis = axis
 
-    def regenerate(self, wall):
+    def regenerate(self, wall, angle=None):
         print("-" * 100)
         print(wall)
         layers = self.get_layers(wall)
@@ -246,7 +247,8 @@ class Foo:
             return
         reference = self.get_reference_line(wall)
         self.reference_p1, self.reference_p2 = reference
-        axes = self.get_axes(wall, reference, layers)
+        self.angle = angle or self.get_angle(wall)
+        axes = self.get_axes(wall, reference, layers, self.angle)
         self.miny = axes[0][0][1]
         self.maxy = axes[-1][0][1]
         self.end_point = None
@@ -342,7 +344,9 @@ class Foo:
         else:
             profile = profiles[0]
 
-        item = builder.extrude(profile, magnitude=1.0)
+        item = builder.extrude(
+            profile, magnitude=1.0, extrusion_vector=np.array([0.0, sin(self.angle), cos(self.angle)])
+        )
         rep = builder.get_representation(self.body, items=[item])
         if old_rep := ifcopenshell.util.representation.get_representation(wall, self.body):
             ifcopenshell.util.element.replace_element(old_rep, rep)
@@ -367,8 +371,8 @@ class Foo:
         # axes = self.get_axes(wall2, layers2)
         reference1 = self.get_reference_line(wall1)
         reference2 = self.get_reference_line(wall2)
-        axes1 = self.get_axes(wall1, reference1, layers1)
-        axes2 = self.get_axes(wall2, reference2, layers2)
+        axes1 = self.get_axes(wall1, reference1, layers1, self.angle)
+        axes2 = self.get_axes(wall2, reference2, layers2, self.get_angle(wall2))
         matrix1i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement))
         matrix2 = ifcopenshell.util.placement.get_local_placement(wall2.ObjectPlacement)
         print(axes1)
@@ -444,14 +448,14 @@ class Foo:
             segment = []
             for point in points:
                 segment.append(point)
-                if len(segment) == 1: # Not enough points to categorise the segment
+                if len(segment) == 1:  # Not enough points to categorise the segment
                     continue
-                elif {segment[0][1], segment[-1][1]} == split_ys: # This segment splits the wall
+                elif {segment[0][1], segment[-1][1]} == split_ys:  # This segment splits the wall
                     if segment[0][1] > segment[-1][1]:  # Go in the +Y direction
                         segment.reverse()
                     self.split_points.append(segment)
                     segment = []
-                elif segment[0][1] == segment[-1][1]: # This segment cuts some of the wall
+                elif segment[0][1] == segment[-1][1]:  # This segment cuts some of the wall
                     if segment[0][1] == self.maxy:  # Go in the +X direction
                         if segment[0][0] > segment[-1][0]:
                             segment.reverse()
@@ -577,7 +581,16 @@ class Foo:
                 return [np.array(points[1]), np.array(points[0])]
         return [np.array((0.0, 0.0)), np.array((1.0, 0.0))]
 
-    def get_axes(self, wall, reference, layers: list[PrioritisedLayer]):
+    def get_angle(self, wall):
+        if body := ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW"):
+            for item in ifcopenshell.util.representation.resolve_representation(body).Items:
+                if item.is_a("IfcExtrudedAreaSolid"):
+                    return ifcopenshell.util.shape_builder.np_angle_signed(
+                        np.array((0.0, 1.0)), np.array(item.ExtrudedDirection.DirectionRatios[1:])
+                    )
+        return 0.0
+
+    def get_axes(self, wall, reference, layers: list[PrioritisedLayer], angle: float):
         axes = [[p.copy() for p in reference]]
         # Apply usage to convert the Reference line into MlsBase
         sense_factor = 1
@@ -587,7 +600,8 @@ class Foo:
             sense_factor = 1 if usage.DirectionSense == "POSITIVE" else -1
 
         for layer in layers:
-            axes.append([p.copy() + np.array((0.0, layer.thickness * sense_factor)) for p in axes[-1]])
+            y_offset = (layer.thickness * sense_factor) / cos(angle)
+            axes.append([p.copy() + np.array((0.0, y_offset)) for p in axes[-1]])
         return axes
 
 

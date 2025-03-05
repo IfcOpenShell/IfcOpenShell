@@ -1043,7 +1043,8 @@ class Loader(bonsai.core.tool.Loader):
         bm.from_mesh(mesh)
         prev_co = None
         co = Vector((0.0, offset, 0.0))
-        no = Vector((0.0, 1.0, 0.0))
+        # no = Vector((0.0, 1.0, 0.0))
+        no = (cls.get_extrusion_vector(element).cross(Vector([1., 0., 0.]))).normalized()
         # Cache this
         body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         styles = {}
@@ -1053,7 +1054,8 @@ class Loader(bonsai.core.tool.Loader):
                 styles[style] = i
         for layer in layer_set.MaterialLayers[:-1]:
             prev_co = co.copy()
-            co.y += layer.LayerThickness * cls.unit_scale * sense_factor
+            co += no * layer.LayerThickness * cls.unit_scale * sense_factor
+            # co.y += layer.LayerThickness * cls.unit_scale * sense_factor
             bisect_geom = bmesh.ops.bisect_plane(
                 bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
             )
@@ -1064,8 +1066,9 @@ class Loader(bonsai.core.tool.Loader):
                     mesh.materials.append(tool.Ifc.get_object(style))
                 for face in bisect_geom["geom"]:
                     if isinstance(face, bmesh.types.BMFace):
-                        center = face.calc_center_bounds() * sense_factor
-                        if center.y < co.y and center.y > prev_co.y:
+                        center = face.calc_center_median()
+                        # if center.y < co.y and center.y > prev_co.y:
+                        if (center - co).dot(no) < 0 and (center - prev_co).dot(no) >= 0:
                             face.material_index = material_index
                             has_layer_styles = True
 
@@ -1077,8 +1080,9 @@ class Loader(bonsai.core.tool.Loader):
                 mesh.materials.append(tool.Ifc.get_object(style))
             for face in bisect_geom["geom"]:
                 if isinstance(face, bmesh.types.BMFace):
-                    center = face.calc_center_bounds() * sense_factor
-                    if center.y > co.y:
+                    center = face.calc_center_median() * sense_factor
+                    # if center.y > co.y:
+                    if (center - co).dot(no) >= 0:
                         face.material_index = material_index
                         has_layer_styles = True
 
@@ -1086,6 +1090,14 @@ class Loader(bonsai.core.tool.Loader):
         bm.free()
         mesh["has_layer_styles"] = has_layer_styles
         return mesh
+
+    @classmethod
+    def get_extrusion_vector(cls, wall):
+        if body := ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW"):
+            for item in ifcopenshell.util.representation.resolve_representation(body).Items:
+                if item.is_a("IfcExtrudedAreaSolid"):
+                    return Vector(item.ExtrudedDirection.DirectionRatios)
+        return Vector([0., 0., 1.])
 
     @classmethod
     def create_mesh_from_shape(
