@@ -229,7 +229,9 @@ class Usecase:
             return next((e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None)
         elif element.is_a("IfcPresentationStyle"):
             name = element.Name
-            return next((e for e in self.file.by_type("IfcPresentationStyle") if e.Name == name), None)
+            if name is None:
+                return None
+            return next((e for e in self.file.by_type(element.is_a()) if e.Name == name), None)
         else:
             return None
 
