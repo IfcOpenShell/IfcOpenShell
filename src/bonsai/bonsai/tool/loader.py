@@ -1006,11 +1006,7 @@ class Loader(bonsai.core.tool.Loader):
         else:
             edges = ifcopenshell.util.shape.get_edges(geometry)
             mesh.from_pydata(verts.tolist(), edges.tolist(), [])
-            # TODO: remove error handling after we update build in Bonsai.
-            try:
-                edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
-            except AttributeError:
-                edges_item_ids = []
+            edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
             mesh["ios_edges_item_ids"] = edges_item_ids
             tool.Blender.Attribute.fill_attribute(mesh, "ios_edges_item_ids", "EDGE", "INT", edges_item_ids)
             tool.Blender.Attribute.fill_attribute(mesh, "ios_material_ids", "EDGE", "INT", geometry.material_ids)
