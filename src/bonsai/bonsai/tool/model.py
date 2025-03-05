@@ -1002,8 +1002,11 @@ class Model(bonsai.core.tool.Model):
         obj: bpy.types.Object,
         new_representation: ifcopenshell.entity_instance,
     ) -> None:
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
         ifc_file = tool.Ifc.get()
         ifc_element = tool.Ifc.get_entity(obj)
+        assert ifc_element
         old_representation = ifcopenshell.util.representation.get_representation(
             ifc_element, ifc_context.ContextType, ifc_context.ContextIdentifier, ifc_context.TargetView
         )
@@ -1017,6 +1020,15 @@ class Model(bonsai.core.tool.Model):
             ifcopenshell.api.run(
                 "geometry.assign_representation", ifc_file, product=ifc_element, representation=new_representation
             )
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=new_representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
 
     @classmethod
     def update_thumbnail_for_element(cls, element: ifcopenshell.entity_instance, refresh: bool = False) -> None:
