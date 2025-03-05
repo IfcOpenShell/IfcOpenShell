@@ -41,6 +41,7 @@ from bonsai.bim.module.model.decorator import ProfileDecorator
 from bonsai.bim.module.boundary.decorator import BoundaryDecorator
 import bonsai.core
 import bonsai.core.geometry
+from typing import Union, Optional
 
 
 def disable_editing_boundary_geometry(context):
@@ -58,7 +59,7 @@ def disable_editing_boundary_geometry(context):
 
 
 class Loader:
-    def __init__(self, operator=None):
+    def __init__(self, operator: Optional[bpy.types.Operator] = None):
         self.operator = operator
         self.ifc_file = None
         self.logger = None
@@ -67,7 +68,7 @@ class Loader:
         self.fallback_settings = self.load_fallback_settings()
         self.load_importer()
 
-    def create_mesh(self, boundary):
+    def create_mesh(self, boundary: ifcopenshell.entity_instance) -> Union[bpy.types.Mesh, None]:
         # ConnectionGeometry is optional in IFC schema for some reasons.
         if not boundary.ConnectionGeometry:
             return None
@@ -131,7 +132,7 @@ class Loader:
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         return settings
 
-    def load_importer(self):
+    def load_importer(self) -> None:
         self.ifc_file = tool.Ifc.get()
         self.logger = logging.getLogger("ImportIFC")
         ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, IfcStore.path, self.logger)
@@ -280,7 +281,7 @@ class SelectProjectBoundaries(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def get_colour(ifc_boundary):
+def get_colour(ifc_boundary: ifcopenshell.entity_instance) -> tuple[float, float, float, float]:
     """Return a color depending on IfcClass given"""
     product_colors = {
         "IfcWall": (0.7, 0.3, 0, 1),

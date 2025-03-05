@@ -21,6 +21,7 @@ import bpy
 import bmesh
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.material
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.schema

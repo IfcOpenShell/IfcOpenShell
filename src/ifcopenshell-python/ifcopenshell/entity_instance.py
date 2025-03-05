@@ -613,7 +613,7 @@ class entity_instance:
         include_identifier: bool = True,
         recursive: bool = False,
         return_type: type[dict] = dict,
-        ignore: Iterable[str] = (),
+        ignore: Sequence[str] = (),
     ) -> dict[str, Any]:
         """More perfomant version of `.get_info()` but with limited arguments values.\n
         Method has exactly the same signature as `.get_info()` but it doesn't support getting information non-recursively.

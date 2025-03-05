@@ -26,6 +26,7 @@ import collections.abc
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
 import ifcopenshell.api.pset
 import ifcopenshell.geom
@@ -1555,12 +1556,14 @@ class Model(bonsai.core.tool.Model):
     def add_body_representation(cls, obj: bpy.types.Object) -> None:
         ifc_file = tool.Ifc.get()
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        representation = ifcopenshell.api.run(
-            "geometry.add_representation",
+        assert body
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        representation = ifcopenshell.api.geometry.add_representation(
             ifc_file,
             context=body,
             blender_object=obj,
-            geometry=obj.data,
+            geometry=mesh,
             coordinate_offset=tool.Geometry.get_cartesian_point_offset(obj),
             total_items=tool.Geometry.get_total_representation_items(obj),
             should_force_faceted_brep=tool.Geometry.should_force_faceted_brep(),
@@ -1569,6 +1572,7 @@ class Model(bonsai.core.tool.Model):
             ifc_representation_class=None,
             profile_set_usage=None,
         )
+        assert representation
         tool.Model.replace_object_ifc_representation(body, obj, representation)
 
     @classmethod
