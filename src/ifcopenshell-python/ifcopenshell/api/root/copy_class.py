@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.material
 import ifcopenshell.api.root
 import ifcopenshell.api.system
 import ifcopenshell.api.geometry
@@ -159,9 +160,7 @@ class Usecase:
                 inverse.RelatedObjects = [to_element]
             elif inverse.is_a("IfcRelAssociatesMaterial") and "Set" in inverse.RelatingMaterial.is_a():
                 inverse = ifcopenshell.util.element.copy(self.file, inverse)
-                inverse.RelatingMaterial = ifcopenshell.util.element.copy_deep(
-                    self.file, inverse.RelatingMaterial, exclude=["IfcMaterial"]
-                )
+                inverse.RelatingMaterial = ifcopenshell.api.material.copy_material(self.file, inverse.RelatingMaterial)
                 inverse.RelatedObjects = [to_element]
             else:
                 for i, value in enumerate(inverse):
