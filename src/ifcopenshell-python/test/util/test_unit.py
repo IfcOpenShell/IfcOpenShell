@@ -17,11 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
+import numpy as np
 import ifcopenshell.api.unit
 import ifcopenshell.api.root
 import ifcopenshell.api.georeference
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit as subject
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from math import pi
 
 
@@ -236,6 +238,34 @@ class TestConvertFileLengthUnits(test.bootstrap.IFC2X3):
         ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
         output = subject.convert_file_length_units(self.file, target_units="METER")
         assert subject.get_full_unit_name(subject.get_project_unit(output, "LENGTHUNIT")) == "METRE"
+
+    def test_attribute_conversion(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+
+        builder = ShapeBuilder(self.file)
+        rectangle = builder.rectangle((100, 100))
+        extrusion = builder.extrude(rectangle, 1000)
+
+        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
+        output = subject.convert_file_length_units(self.file, target_units="METER")
+        assert subject.get_full_unit_name(subject.get_project_unit(output, "LENGTHUNIT")) == "METRE"
+        extrusion = output.by_type("IfcExtrudedAreaSolid")[0]
+
+        # Simple float attribute.
+        assert extrusion.Depth == 1
+
+        # List of floats in IFC2X3 and list of lists of floats in IFC4+.
+        rectangle = extrusion.SweptArea.OuterCurve
+        expected_points = [(0.0, 0.0), (0.1, 0.0), (0.1, 0.1), (0.0, 0.1)]
+        if self.file.schema == "IFC2X3":
+            # IfcPolyline.
+            points = [p.Coordinates for p in rectangle.Points]
+            expected_points += expected_points[:1]
+        else:
+            # IfcIndexedPolyCurve.
+            points = rectangle.Points.CoordList
+        assert np.allclose(points, expected_points)
 
     def test_converting_map_conversion_if_there_is_no_map_unit(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
