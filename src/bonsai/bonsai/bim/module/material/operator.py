@@ -561,9 +561,12 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         self.file = tool.Ifc.get()
         active_obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
+        assert active_obj
         props = active_obj.BIMObjectMaterialProperties
         element = tool.Ifc.get_entity(active_obj)
+        assert element
         material = ifcopenshell.util.element.get_material(element)
+        assert material
 
         objects = tool.Blender.get_selected_objects()
 

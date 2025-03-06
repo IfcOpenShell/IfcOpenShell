@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api.pset
+import ifcopenshell.util.element
 from typing import Optional, Any
 
 

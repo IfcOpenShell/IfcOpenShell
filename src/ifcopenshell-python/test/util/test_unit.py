@@ -18,9 +18,12 @@
 
 import test.bootstrap
 import numpy as np
+import ifcopenshell.api.context
 import ifcopenshell.api.unit
 import ifcopenshell.api.root
 import ifcopenshell.api.georeference
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
 import ifcopenshell.util.geolocation
 import ifcopenshell.util.unit as subject
 from ifcopenshell.util.shape_builder import ShapeBuilder

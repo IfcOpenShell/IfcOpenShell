@@ -20,7 +20,6 @@ from fractions import Fraction
 from math import pi
 from typing import Any
 from typing import Dict
-from typing import Iterable
 from typing import Literal
 from typing import Optional
 from typing import Union
@@ -821,7 +820,8 @@ def iter_element_and_attributes_per_type(ifc_file: ifcopenshell.file, attr_type_
     for element in ifc_file:
         entity = schema.declaration_by_name(element.is_a())
         attrs = entity.all_attributes()
-        for attr, val, is_derived in zip(attrs, list(element), entity.derived()):
+        attrs_derived: tuple[bool, ...] = entity.derived()
+        for attr, val, is_derived in zip(attrs, list(element), attrs_derived):
             if is_derived:
                 continue
 
@@ -877,7 +877,7 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
         new_length = ifcopenshell.api.unit.add_conversion_based_unit(file_patched, name=target_units)
 
     # support tuple of tuples, as in IfcCartesianPointList3D.CoordList
-    def convert_value(value):
+    def convert_value(value: FloatOrSequenceOfFloats) -> FloatOrSequenceOfFloats:
         if not isinstance(value, tuple):
             return convert_unit(value, old_length, new_length)
         return tuple(convert_value(v) for v in value)

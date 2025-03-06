@@ -50,7 +50,7 @@ from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from typing import Optional, Union, TypeVar, Any, Iterable, Literal, TYPE_CHECKING, Sequence
+from typing import Optional, Union, TypeVar, Any, Iterable, Literal, TYPE_CHECKING, Sequence, TypedDict
 
 T = TypeVar("T")
 V_ = tool.Blender.V_
@@ -603,8 +603,16 @@ class Model(bonsai.core.tool.Model):
             if not openings[i].obj:
                 openings.remove(i)
 
+    class MaterialLayerParameters(TypedDict):
+        """Float values are in project units."""
+
+        layer_set_direction: Literal["AXIS1", "AXIS2", "AXIS3"]
+        thickness: float
+        offset: float
+        direction_sense: Literal["NEGATIVE", "POSITIVE"]
+
     @classmethod
-    def get_material_layer_parameters(cls, element: ifcopenshell.entity_instance) -> dict[str, Any]:
+    def get_material_layer_parameters(cls, element: ifcopenshell.entity_instance) -> MaterialLayerParameters:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         layer_set_direction = "AXIS2"
         offset = 0.0
@@ -619,12 +627,12 @@ class Model(bonsai.core.tool.Model):
                 material = material.ForLayerSet
             if material.is_a("IfcMaterialLayerSet"):
                 thickness = sum([l.LayerThickness for l in material.MaterialLayers]) * unit_scale
-        return {
-            "layer_set_direction": layer_set_direction,
-            "thickness": thickness,
-            "offset": offset,
-            "direction_sense": direction_sense,
-        }
+        return cls.MaterialLayerParameters(
+            layer_set_direction=layer_set_direction,
+            thickness=thickness,
+            offset=offset,
+            direction_sense=direction_sense,
+        )
 
     @classmethod
     def get_booleans(
@@ -2045,7 +2053,7 @@ class Model(bonsai.core.tool.Model):
         FilledOpeningGenerator().generate(filling_obj, voided_obj)
 
     @classmethod
-    def add_extrusion_position(cls, extrusion: ifcopenshell.entity_instance, position: tuple) -> None:
+    def add_extrusion_position(cls, extrusion: ifcopenshell.entity_instance, position: Vector) -> None:
         ifc_file = tool.Ifc.get()
 
         new_position = ifc_file.createIfcAxis2Placement3D(
