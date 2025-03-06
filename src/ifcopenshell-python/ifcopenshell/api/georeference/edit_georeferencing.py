@@ -46,6 +46,8 @@ def edit_georeferencing(
 
     :param coordinate_operation: The dictionary of attribute names and values
         you want to edit.
+        'MapUnit' attribute in IFC2X3 should be presented as a full unit name (string),
+        in other IFC versions it's presented an IfcNamedUnit.
     :param projected_crs: The IfcProjectedCRS dictionary of attribute
         names and values you want to edit.
 
