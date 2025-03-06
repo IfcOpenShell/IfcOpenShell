@@ -318,7 +318,7 @@ class BIM_PT_object_material(Panel):
         ):
             if "Profile" in ObjectMaterialData.data["material_class"]:
                 op = row.operator("bim.profiles_ui_select", icon="ZOOM_SELECTED", text="")
-                op.profile_id = set_item["id"]
+                op.profile_id = set_item["profile_id"]
                 op = row.operator("bim.enable_editing_material_set_item_profile", icon="ITALIC", text="")
                 op.material_set_item = set_item["id"]
             op = row.operator("bim.enable_editing_material_set_item", icon="GREASEPENCIL", text="")

@@ -274,6 +274,8 @@ class ObjectMaterialData:
                     "icon": icon,
                     "material_id": material_id,
                 }
+                if item.is_a("IfcMaterialProfile"):
+                    data["profile_id"] = item.Profile.id()
                 if item.is_a("IfcMaterialProfile") and not item.Name:
                     if item.Profile:
                         data["name"] = item.Profile.ProfileName or "Unnamed"
