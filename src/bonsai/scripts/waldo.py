@@ -11,6 +11,9 @@ import ifcopenshell.api.geometry
 import ifcopenshell.util.shape_builder
 import ifcopenshell.util.element
 
+# https://stackoverflow.com/a/9184560/9627415
+# Possible optimisation to linalg.norm?
+
 # from ifcopenshell.util.shape_builder import VectorType, SequenceOfVectors
 from itertools import cycle
 from collections import namedtuple
@@ -164,8 +167,8 @@ def test_wall(offset, p1, p2, p3, p4, a1=None, a2=None):
                 )
 
             Foo(f, body, axis).regenerate(wall_a, angle=a1)
-            Foo(f, body, axis).regenerate(wall_b)
-            Foo(f, body, axis).regenerate(wall_c)
+            Foo(f, body, axis).regenerate(wall_b, angle=a1)
+            Foo(f, body, axis).regenerate(wall_c, angle=a1)
 
 
 def create_type(name, layers):
@@ -181,7 +184,7 @@ def create_type(name, layers):
     return wall_type
 
 
-def test_atpath(offset):
+def test_atpath(offset, angle=None):
     offset *= 1.5
     wall_type_a = create_type("A", [(1, 0.05), (2, 0.1), (3, 0.05)])
     wall_a = ifcopenshell.api.root.create_entity(f, ifc_class="IfcWall", name="A123")
@@ -213,7 +216,7 @@ def test_atpath(offset):
             relating_connection="ATEND",
             related_connection="ATPATH",
         )
-        Foo(f, body, axis).regenerate(wall)
+        Foo(f, body, axis).regenerate(wall, angle=angle)
 
     create_branch("B", 1, 1, 1, 1, 1, -75)
     create_branch("C", 1, 2, 3, 2, 1, -75)
@@ -227,7 +230,7 @@ def test_atpath(offset):
     create_branch("E", 4, 4, 4, 3.5, -1, 75)
     create_branch("F", 4, 2, 4, 4.5, -1, 75)
 
-    Foo(f, body, axis).regenerate(wall_a)
+    Foo(f, body, axis).regenerate(wall_a, angle=angle)
 
 
 PrioritisedLayer = namedtuple("PrioritisedLayer", "priority thickness")
@@ -238,25 +241,32 @@ class Foo:
         self.file = file
         self.body = body
         self.axis = axis
+        self.is_angled = False
 
     def regenerate(self, wall, angle=None):
         print("-" * 100)
         print(wall)
+        self.fallback_angle = angle
         layers = self.get_layers(wall)
         if not layers:
             return
         reference = self.get_reference_line(wall)
         self.reference_p1, self.reference_p2 = reference
-        self.angle = angle or self.get_angle(wall)
-        axes = self.get_axes(wall, reference, layers, self.angle)
+        self.wall_vectors = self.get_wall_vectors(wall)
+        axes = self.get_axes(wall, reference, layers, self.wall_vectors["a"])
         self.miny = axes[0][0][1]
         self.maxy = axes[-1][0][1]
         self.end_point = None
         self.start_points = []
+        self.start_vector = np.array((0.0, 0.0, 1.0))
+        self.start_offset = 0.0
+        self.atpath_points = []
         self.split_points = []
         self.maxpath_points = []
         self.minpath_points = []
         self.end_points = []
+        self.end_vector = np.array((0.0, 0.0, 1.0))
+        self.end_offset = 0.0
         for rel in wall.ConnectedTo:
             if rel.is_a("IfcRelConnectsPathElements"):
                 wall2 = rel.RelatedElement
@@ -297,56 +307,133 @@ class Foo:
             self.end_points.reverse()
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(wall.file)
-        # A wall footprint may be multiple profiles if the wall is split into two due to an ATPATH connection
-        profiles = []
-        split_points = sorted(self.split_points, key=lambda x: x[0][0])  # Sort islands in the +X direction
-        split_points.insert(0, self.start_points)
-        split_points.append(self.end_points)
-        split_points = iter(split_points)
 
-        while True:
-            # Draw each profile as clockwise starting from (minx, miny)
-            start_split = next(split_points, None)
-            if not start_split:
-                break
-            end_split = next(split_points, None)
-            if not end_split:
-                break
-            maxy_minx = start_split[-1][0]
-            maxy_maxx = end_split[-1][0]
-            miny_minx = start_split[0][0]
-            miny_maxx = end_split[0][0]
-            # Do more defensive checks here
-            points = start_split
-            remaining_path_points = []
-            for maxpath_points in self.maxpath_points:
-                if maxpath_points[0][0] > maxy_minx and maxpath_points[-1][0] < maxy_maxx:
-                    points.extend(maxpath_points)
-                else:
-                    remaining_path_points.append(maxpath_points)
-            self.maxpath_points = remaining_path_points
-            points.extend(end_split[::-1])
-            remaining_path_points = []
-            for minpath_points in self.minpath_points:
-                if minpath_points[0][0] < miny_maxx and minpath_points[-1][0] > miny_minx:
-                    points.extend(minpath_points)
-                else:
-                    remaining_path_points.append(minpath_points)
-            self.minpath_points = remaining_path_points
+        if self.is_angled:
+            start_points = [p.copy() for p in self.start_points]
+            end_points = [p.copy() for p in self.end_points]
+            if self.end_offset > 0:
+                for point in end_points:
+                    point[0] += self.end_offset
+            if self.start_offset < 0:
+                for point in start_points:
+                    point[0] += self.start_offset
+            points = []
+            points.extend(start_points)
+            end_points.reverse()
+            points.extend(end_points)
+            item = builder.extrude(
+                builder.polyline(points, closed=True),
+                magnitude=self.wall_vectors["d"],
+                extrusion_vector=self.wall_vectors["z"],
+            )
 
-            profiles.append(builder.profile(builder.polyline(points, closed=True)))
+            operands = []
+            if not np.allclose(self.start_vector, np.array((0.0, 0.0, 1.0))):
+                points = self.start_points.copy()
+                while ifcopenshell.util.shape_builder.is_x(points[0][1], points[1][1]):
+                    points.pop(0)
+                while ifcopenshell.util.shape_builder.is_x(points[-1][1], points[-2][1]):
+                    points.pop()
+                newx = min([p[0] for p in points]) - abs(self.start_offset)
+                p1 = points[-1].copy()
+                p1[0] = newx
+                p2 = p1.copy()
+                p2[1] = points[0][1]
+                points.extend((p1, p2))
+                magnitude = np.linalg.norm(self.start_vector * (self.wall_vectors["h"] / self.start_vector[2]))
+                operands.append(
+                    builder.extrude(
+                        builder.polyline(points, closed=True), magnitude=magnitude, extrusion_vector=self.start_vector
+                    )
+                )
 
-        for points in self.maxpath_points + self.minpath_points:
-            profiles.append(builder.profile(builder.polyline(points, closed=True)))
+            if not np.allclose(self.end_vector, np.array((0.0, 0.0, 1.0))):
+                points = self.end_points.copy()
+                while ifcopenshell.util.shape_builder.is_x(points[0][1], points[1][1]):
+                    points.pop(0)
+                while ifcopenshell.util.shape_builder.is_x(points[-1][1], points[-2][1]):
+                    points.pop()
 
-        if len(profiles) > 1:
-            profile = wall.file.createIfcCompositeProfileDef("AREA", Profiles=profiles)
+                newx = max([p[0] for p in points]) + abs(self.end_offset)
+                p1 = points[-1].copy()
+                p1[0] = newx
+                p2 = p1.copy()
+                p2[1] = points[0][1]
+                points.extend((p1, p2))
+                magnitude = np.linalg.norm(self.end_vector * (self.wall_vectors["h"] / self.end_vector[2]))
+                operands.append(
+                    builder.extrude(
+                        builder.polyline(points, closed=True), magnitude=magnitude, extrusion_vector=self.end_vector
+                    )
+                )
+
+            for atpath_vector, points in self.atpath_points:
+                if len(points) <= 2:
+                    continue
+                magnitude = np.linalg.norm(atpath_vector * (self.wall_vectors["h"] / atpath_vector[2]))
+                operands.append(
+                    builder.extrude(
+                        builder.polyline(points, closed=True), magnitude=magnitude, extrusion_vector=atpath_vector
+                    )
+                )
+
+            if operands:
+                item = ifcopenshell.api.geometry.add_boolean(wall.file, first_item=item, second_items=operands)[-1]
         else:
-            profile = profiles[0]
+            # A wall footprint may be multiple profiles if the wall is split into two due to an ATPATH connection
+            profiles = []
+            split_points = sorted(self.split_points, key=lambda x: x[0][0])  # Sort islands in the +X direction
+            start_points = [p.copy() for p in self.start_points]
+            end_points = [p.copy() for p in self.end_points]
+            split_points.insert(0, start_points)
+            split_points.append(end_points)
+            split_points = iter(split_points)
 
-        item = builder.extrude(
-            profile, magnitude=1.0, extrusion_vector=np.array([0.0, sin(self.angle), cos(self.angle)])
-        )
+            while True:
+                # Draw each profile as clockwise starting from (minx, miny)
+                start_split = next(split_points, None)
+                if not start_split:
+                    break
+                end_split = next(split_points, None)
+                if not end_split:
+                    break
+                maxy_minx = start_split[-1][0]
+                maxy_maxx = end_split[-1][0]
+                miny_minx = start_split[0][0]
+                miny_maxx = end_split[0][0]
+                # Do more defensive checks here
+                points = start_split
+
+                remaining_path_points = []
+                for maxpath_points in self.maxpath_points:
+                    if maxpath_points[0][0] > maxy_minx and maxpath_points[-1][0] < maxy_maxx:
+                        print("adding maxpath points", maxpath_points)
+                        points.extend(maxpath_points)
+                    else:
+                        remaining_path_points.append(maxpath_points)
+                self.maxpath_points = remaining_path_points
+
+                points.extend(end_split[::-1])
+
+                remaining_path_points = []
+                for minpath_points in self.minpath_points:
+                    if minpath_points[0][0] < miny_maxx and minpath_points[-1][0] > miny_minx:
+                        points.extend(minpath_points)
+                    else:
+                        remaining_path_points.append(minpath_points)
+                self.minpath_points = remaining_path_points
+
+                profiles.append(builder.profile(builder.polyline(points, closed=True)))
+
+            for points in self.maxpath_points + self.minpath_points:
+                profiles.append(builder.profile(builder.polyline(points, closed=True)))
+
+            if len(profiles) > 1:
+                profile = wall.file.createIfcCompositeProfileDef("AREA", Profiles=profiles)
+            else:
+                profile = profiles[0]
+
+            item = builder.extrude(profile, magnitude=self.wall_vectors["d"], extrusion_vector=self.wall_vectors["z"])
         rep = builder.get_representation(self.body, items=[item])
         if old_rep := ifcopenshell.util.representation.get_representation(wall, self.body):
             ifcopenshell.util.element.replace_element(old_rep, rep)
@@ -371,8 +458,9 @@ class Foo:
         # axes = self.get_axes(wall2, layers2)
         reference1 = self.get_reference_line(wall1)
         reference2 = self.get_reference_line(wall2)
-        axes1 = self.get_axes(wall1, reference1, layers1, self.angle)
-        axes2 = self.get_axes(wall2, reference2, layers2, self.get_angle(wall2))
+        wall_vectors2 = self.get_wall_vectors(wall2)
+        axes1 = self.get_axes(wall1, reference1, layers1, self.wall_vectors["a"])
+        axes2 = self.get_axes(wall2, reference2, layers2, wall_vectors2["a"])
         matrix1i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall1.ObjectPlacement))
         matrix2 = ifcopenshell.util.placement.get_local_placement(wall2.ObjectPlacement)
         print(axes1)
@@ -384,6 +472,8 @@ class Foo:
             axis[1] = (matrix1i @ matrix2 @ np.concatenate((axis[1], (0, 1))))[:2]
         reference2[0] = (matrix1i @ matrix2 @ np.concatenate((reference2[0], (0, 1))))[:2]
         reference2[1] = (matrix1i @ matrix2 @ np.concatenate((reference2[1], (0, 1))))[:2]
+        wall_vectors2["z"] = (matrix1i @ matrix2 @ np.append(wall_vectors2["z"], 0.0))[:3]
+        wall_vectors2["y"] = (matrix1i @ matrix2 @ np.append(wall_vectors2["y"], 0.0))[:3]
 
         # Sort axes from interior to exterior
         if connection1 == "ATEND":
@@ -446,6 +536,8 @@ class Foo:
             # Categorise our points into a segment that either splits or cuts the wall
             split_ys = {first_y, last_y}
             segment = []
+            atpath_vector = self.get_join_vector(self.wall_vectors["y"], wall_vectors2["y"])
+            self.atpath_points.append((atpath_vector, points))
             for point in points:
                 segment.append(point)
                 if len(segment) == 1:  # Not enough points to categorise the segment
@@ -488,9 +580,13 @@ class Foo:
 
             if connection1 == "ATSTART":
                 self.start_points = points
+                self.start_vector = self.get_join_vector(self.wall_vectors["y"], wall_vectors2["y"])
+                self.start_offset = (self.start_vector * (self.wall_vectors["h"] / self.start_vector[2]))[0]
                 self.reference_p1[0] = self.intersect_axis(*reference2, y=reference1[0][1])
             elif connection1 == "ATEND":
                 self.end_points = points
+                self.end_vector = self.get_join_vector(self.wall_vectors["y"], wall_vectors2["y"])
+                self.end_offset = (self.end_vector * (self.wall_vectors["h"] / self.end_vector[2]))[0]
                 self.reference_p2[0] = self.intersect_axis(*reference2, y=reference1[0][1])
         else:
             last_y = axes1[-1][0][1]
@@ -532,9 +628,13 @@ class Foo:
 
             if connection1 == "ATSTART":
                 self.start_points = points
+                self.start_vector = self.get_join_vector(self.wall_vectors["y"], wall_vectors2["y"])
+                self.start_offset = (self.start_vector * (self.wall_vectors["h"] / self.start_vector[2]))[0]
                 self.reference_p1[0] = self.intersect_axis(*reference2, y=reference1[0][1])
             elif connection1 == "ATEND":
                 self.end_points = points
+                self.end_vector = self.get_join_vector(self.wall_vectors["y"], wall_vectors2["y"])
+                self.end_offset = (self.end_vector * (self.wall_vectors["h"] / self.end_vector[2]))[0]
                 self.reference_p2[0] = self.intersect_axis(*reference2, y=reference1[0][1])
 
     def get_layers(self, wall) -> list:
@@ -581,14 +681,38 @@ class Foo:
                 return [np.array(points[1]), np.array(points[0])]
         return [np.array((0.0, 0.0)), np.array((1.0, 0.0))]
 
-    def get_angle(self, wall):
+    def get_wall_vectors(self, wall):
         if body := ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW"):
             for item in ifcopenshell.util.representation.resolve_representation(body).Items:
+                while item.is_a("IfcBooleanResult"):
+                    item = item.FirstOperand
                 if item.is_a("IfcExtrudedAreaSolid"):
-                    return ifcopenshell.util.shape_builder.np_angle_signed(
-                        np.array((0.0, 1.0)), np.array(item.ExtrudedDirection.DirectionRatios[1:])
-                    )
-        return 0.0
+                    z = np.array(item.ExtrudedDirection.DirectionRatios)
+                    z /= np.linalg.norm(z)
+                    y = np.cross(z, np.array((1.0, 0.0, 0.0)))
+                    d = item.Depth
+                    h = (z * d)[2]
+                    a = ifcopenshell.util.shape_builder.np_angle_signed(np.array((0.0, 1.0)), z[1:])
+                    if not ifcopenshell.util.shape_builder.is_x(a, 0):
+                        self.is_angled = True
+                    return {"z": z, "y": y, "a": a, "d": d, "h": h}
+        elif self.fallback_angle:
+            a = self.fallback_angle
+            z = np.array([0.0, sin(a), cos(a)])
+            y = np.cross(z, np.array((1.0, 0.0, 0.0)))
+            h = 1.0  # unit scale
+            d = np.linalg.norm(z * (h / z[2]))
+            if not ifcopenshell.util.shape_builder.is_x(a, 0):
+                self.is_angled = True
+            return {"z": z, "y": y, "a": a, "d": d, "h": h}
+        # unit scale
+        return {"z": np.array((0.0, 0.0, 1.0)), "y": np.array((0.0, 1.0, 0.0)), "a": 0.0, "d": 1.0, "h": 1.0}
+
+    def get_join_vector(self, y1, y2):
+        result = np.cross(y1, y2)
+        if result[2] < 0:
+            return result * -1
+        return result
 
     def get_axes(self, wall, reference, layers: list[PrioritisedLayer], angle: float):
         axes = [[p.copy() for p in reference]]
@@ -605,13 +729,13 @@ class Foo:
         return axes
 
 
-test_wall(0, 1, 1, 1, 1)
-test_wall(1, 2, 1, 1, 2)
-test_wall(2, 2, 1, 1, 1)
-test_wall(3, 1, 2, 1, 1)
-test_wall(4, 1, 2, 1, 2)
-test_wall(5, 3, 1, 2, 4)
-test_atpath(7)
+test_wall(0, 1, 1, 1, 1, radians(10))
+test_wall(1, 2, 1, 1, 2, radians(10))
+test_wall(2, 2, 1, 1, 1, radians(10))
+test_wall(3, 1, 2, 1, 1, radians(10))
+test_wall(4, 1, 2, 1, 2, radians(10))
+test_wall(5, 3, 1, 2, 4, radians(10))
+test_atpath(7, radians(10))
 
 
 f.write("/home/dion/wall.ifc")
