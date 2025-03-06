@@ -283,6 +283,7 @@ class DumbSlabPlaner:
         if tool.Model.get_usage_type(element) != "LAYER3":
             return
         layer_params = tool.Model.get_material_layer_parameters(element)
+        ifc_file = tool.Ifc.get()
         body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         obj = tool.Ifc.get_object(element)
         if not obj:
@@ -326,9 +327,18 @@ class DumbSlabPlaner:
                 extrusion.ExtrudedDirection.DirectionRatios = tuple(direction_ratios)
                 extrusion.Depth = perpendicular_depth
 
-                if perpendicular_offset != 0.0 and not extrusion.Position:
+                ifc_position = extrusion.Position
+                if perpendicular_offset == 0.0:
+                    # Clean up possible previous offset.
+                    if ifc_position:
+                        extrusion.Position = None
+                        ifcopenshell.util.element.remove_deep2(ifc_file, ifc_position)
+                else:
                     position = offset_direction * perpendicular_offset
-                    tool.Model.add_extrusion_position(extrusion, position)
+                    if ifc_position:
+                        ifc_position.Location.Coordinates = position
+                    else:
+                        tool.Model.add_extrusion_position(extrusion, position)
 
             else:
                 props = tool.Model.get_model_props()
