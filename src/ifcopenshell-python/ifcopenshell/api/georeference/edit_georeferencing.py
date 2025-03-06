@@ -33,7 +33,7 @@ def edit_georeferencing(
     surveyor, and a third-party digital engineer with expertise in IFC to
     moderate. For more information, read the Bonsai documentation
     for Georeferencing:
-    https://docs.bonsaibim.org/guides/advanced/georeferencing.html
+    https://docs.bonsaibim.org/guides/authoring/georeferencing.html
 
     For more information about the attributes and data types of an
     IfcCoordinateOperation, consult the IFC documentation.
