@@ -247,6 +247,32 @@ class TestConvertFileLengthUnits(test.bootstrap.IFC2X3):
         rectangle = builder.rectangle((100, 100))
         extrusion = builder.extrude(rectangle, 1000)
 
+        # IfcLengthMeasure entities.
+        product = ifcopenshell.api.root.create_entity(self.file, "IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(self.file, product, "TestPset")
+        # Consider weird case when same entity is reused.
+        length_measure = self.file.create_entity("IfcLengthMeasure", 50.0)
+        enum_property = self.file.create_entity(
+            "IfcPropertyEnumeratedValue",
+            Name="Enum",
+            # Not entirely sure if there are real life cases when mixed typed entities used in the list
+            # but just to be safe.
+            EnumerationValues=[
+                length_measure,
+                self.file.create_entity("IfcLabel", "TEXT"),
+                self.file.create_entity("IfcLengthMeasure", 250.0),
+                length_measure,
+            ],
+        )
+        ifcopenshell.api.pset.edit_pset(
+            self.file,
+            pset,
+            properties={
+                "Length": self.file.create_entity("IfcLengthMeasure", 25.0),
+                "Enum": enum_property,
+            },
+        )
+
         ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
         output = subject.convert_file_length_units(self.file, target_units="METER")
         assert subject.get_full_unit_name(subject.get_project_unit(output, "LENGTHUNIT")) == "METRE"
@@ -266,6 +292,12 @@ class TestConvertFileLengthUnits(test.bootstrap.IFC2X3):
             # IfcIndexedPolyCurve.
             points = rectangle.Points.CoordList
         assert np.allclose(points, expected_points)
+
+        # IfcLengthMeasure entities.
+        product = output.by_type("IfcWall")[0]
+        pset_data = ifcopenshell.util.element.get_pset(product, "TestPset")
+        assert pset_data["Length"] == 0.025
+        assert pset_data["Enum"] == [0.05, "TEXT", 0.25, 0.05]
 
     def test_converting_map_conversion_if_there_is_no_map_unit(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")

@@ -24,6 +24,7 @@ from typing import Iterable
 from typing import Literal
 from typing import Optional
 from typing import Union
+from typing import Generator
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
@@ -803,9 +804,18 @@ def is_attr_type(
     return None
 
 
-def iter_element_and_attributes_per_type(
-    ifc_file: ifcopenshell.file, attr_type_name: str
-) -> Iterable[tuple[ifcopenshell.entity_instance, ifcopenshell_wrapper.attribute, Any]]:
+FloatOrSequenceOfFloats = Union[float, tuple["FloatOrSequenceOfFloats", ...]]
+
+
+def iter_element_and_attributes_per_type(ifc_file: ifcopenshell.file, attr_type_name: str) -> Generator[
+    tuple[
+        ifcopenshell.entity_instance,
+        ifcopenshell_wrapper.attribute,
+        Union[FloatOrSequenceOfFloats, ifcopenshell.entity_instance],
+    ],
+    None,
+    None,
+]:
     schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
 
     for element in ifc_file:
@@ -826,6 +836,17 @@ def iter_element_and_attributes_per_type(
 
             if isinstance(val, ifcopenshell.entity_instance) and not val.is_a(attr_type_name):
                 continue
+            elif isinstance(val, tuple):
+                if not val:
+                    continue
+                val_ = val[0]
+                # If it's a tuple of entities, just yield the entities we need to edit.
+                if isinstance(val_, ifcopenshell.entity_instance):
+                    for val_ in val:
+                        if not val_.is_a(attr_type_name):
+                            continue
+                        yield element, attr, val_
+                    continue
 
             yield element, attr, val
 
@@ -863,9 +884,10 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
 
     # Traverse all elements and their nested attributes in the file and convert them
     for element, attr, val in iter_element_and_attributes_per_type(file_patched, "IfcLengthMeasure"):
+        # NOTE: There is no risk of editing same entities twice as they're all recreated
+        # after file is reloaded as `file_patched`.
         if isinstance(val, ifcopenshell.entity_instance):
-            new_value = convert_value(val.wrappedValue)
-            getattr(element, attr.name()).wrappedValue = new_value
+            val.wrappedValue = convert_value(val.wrappedValue)
         else:
             new_value = convert_value(val)
             setattr(element, attr.name(), new_value)
