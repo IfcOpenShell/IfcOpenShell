@@ -229,7 +229,7 @@ class TestIsAttrType(test.bootstrap.IFC4):
         assert not subject.is_attr_type(nominal_value, "IfcLengthMeasure", include_select_types=False)
 
 
-class TestConvertFileLengthUnits(test.bootstrap.IFC4):
+class TestConvertFileLengthUnits(test.bootstrap.IFC2X3):
     def test_run(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
@@ -246,7 +246,12 @@ class TestConvertFileLengthUnits(test.bootstrap.IFC4):
         ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
         output = subject.convert_file_length_units(self.file, target_units="METER")
         assert subject.get_full_unit_name(subject.get_project_unit(output, "LENGTHUNIT")) == "METRE"
-        assert output.by_type("IfcMapConversion")[0].Eastings == 10
+        if self.file.schema == "IFC2X3":
+            parameters = ifcopenshell.util.geolocation.get_helmert_transformation_parameters(output)
+            assert parameters
+            assert parameters.e == 10
+        else:
+            assert output.by_type("IfcMapConversion")[0].Eastings == 10
 
     def test_preserving_enh_if_there_is_a_map_unit(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
@@ -254,67 +259,67 @@ class TestConvertFileLengthUnits(test.bootstrap.IFC4):
         meter = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
         ifcopenshell.api.context.add_context(self.file, "Model")
         ifcopenshell.api.georeference.add_georeferencing(self.file)
+        map_unit = subject.get_full_unit_name(meter) if self.file.schema == "IFC2X3" else meter
         ifcopenshell.api.georeference.edit_georeferencing(
-            self.file, projected_crs={"MapUnit": meter}, coordinate_operation={"Eastings": 10, "Scale": 0.001}
+            self.file,
+            projected_crs={"MapUnit": map_unit},
+            coordinate_operation={"Eastings": 10, "Scale": 0.001},
         )
         ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
         output = subject.convert_file_length_units(self.file, target_units="METER")
         assert subject.get_full_unit_name(subject.get_project_unit(output, "LENGTHUNIT")) == "METRE"
-        assert output.by_type("IfcMapConversion")[0].Eastings == 10
-        assert output.by_type("IfcMapConversion")[0].Northings == 0
-        assert output.by_type("IfcMapConversion")[0].Scale == 1
-        assert subject.get_full_unit_name(output.by_type("IfcProjectedCRS")[0].MapUnit) == "METRE"
+        if self.file.schema == "IFC2X3":
+            parameters = ifcopenshell.util.geolocation.get_helmert_transformation_parameters(output)
+            assert parameters
+            assert parameters.e == 10
+            assert parameters.n == 0
+            assert parameters.scale == 1
+            crs = ifcopenshell.util.element.get_pset(output.by_type("IfcProject")[0], name="ePSet_ProjectedCRS")
+            assert crs["MapUnit"] == "METRE"
+        else:
+            map_conversion = output.by_type("IfcMapConversion")[0]
+            assert map_conversion.Eastings == 10
+            assert map_conversion.Northings == 0
+            assert map_conversion.Scale == 1
+            assert subject.get_full_unit_name(output.by_type("IfcProjectedCRS")[0].MapUnit) == "METRE"
 
     def test_preserving_enh_if_there_is_a_map_unit_which_is_also_the_project_default(self):
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         meter = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
         ifcopenshell.api.context.add_context(self.file, "Model")
         ifcopenshell.api.georeference.add_georeferencing(self.file)
+        map_unit = subject.get_full_unit_name(meter) if self.file.schema == "IFC2X3" else meter
         ifcopenshell.api.georeference.edit_georeferencing(
-            self.file, projected_crs={"MapUnit": meter}, coordinate_operation={"Eastings": 10, "Scale": 1}
+            self.file,
+            projected_crs={"MapUnit": map_unit},
+            coordinate_operation={"Eastings": 10, "Scale": 1},
         )
         ifcopenshell.api.unit.assign_unit(self.file, units=[meter])
         output = subject.convert_file_length_units(self.file, target_units="MILLIMETER")
         assert subject.get_full_unit_name(subject.get_project_unit(output, "LENGTHUNIT")) == "MILLIMETRE"
-        assert output.by_type("IfcMapConversion")[0].Eastings == 10
-        assert output.by_type("IfcMapConversion")[0].Northings == 0
-        assert output.by_type("IfcMapConversion")[0].Scale == 0.001
-        assert subject.get_full_unit_name(output.by_type("IfcProjectedCRS")[0].MapUnit) == "METRE"
+        if self.file.schema == "IFC2X3":
+            parameters = ifcopenshell.util.geolocation.get_helmert_transformation_parameters(output)
+            assert parameters
+            assert parameters.e == 10
+            assert parameters.n == 0
+            assert parameters.scale == 1
+            crs = ifcopenshell.util.element.get_pset(output.by_type("IfcProject")[0], name="ePSet_ProjectedCRS")
+            assert crs["MapUnit"] == "METRE"
+        else:
+            map_conversion = output.by_type("IfcMapConversion")[0]
+            assert map_conversion.Eastings == 10
+            assert map_conversion.Northings == 0
+            assert map_conversion.Scale == 0.001
+            assert subject.get_full_unit_name(output.by_type("IfcProjectedCRS")[0].MapUnit) == "METRE"
 
         unit_assignment = subject.get_unit_assignment(output)
+        assert unit_assignment
         assert len(unit_assignment.Units) == 1
 
 
-class TestConvertFileLengthUnitsIFC2X3(test.bootstrap.IFC2X3):
-    def test_converting_map_conversion_if_there_is_no_map_unit(self):
-        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
-        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
-        ifcopenshell.api.context.add_context(self.file, "Model")
-        ifcopenshell.api.georeference.add_georeferencing(self.file)
-        ifcopenshell.api.georeference.edit_georeferencing(self.file, coordinate_operation={"Eastings": 10000})
-        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
-        output = subject.convert_file_length_units(self.file, target_units="METER")
-        assert subject.get_full_unit_name(subject.get_project_unit(output, "LENGTHUNIT")) == "METRE"
-        parameters = ifcopenshell.util.geolocation.get_helmert_transformation_parameters(output)
-        assert parameters.e == 10
+class TestConvertFileLengthUnitsIFC4(test.bootstrap.IFC4, TestConvertFileLengthUnits):
+    pass
 
-    def test_preserving_enh_if_there_is_a_map_unit(self):
-        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
-        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
-        meter = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT")
-        ifcopenshell.api.context.add_context(self.file, "Model")
-        ifcopenshell.api.georeference.add_georeferencing(self.file)
-        ifcopenshell.api.georeference.edit_georeferencing(
-            self.file,
-            projected_crs={"MapUnit": subject.get_full_unit_name(meter)},
-            coordinate_operation={"Eastings": 10, "Scale": 0.001},
-        )
-        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
-        output = subject.convert_file_length_units(self.file, target_units="METER")
-        assert subject.get_full_unit_name(subject.get_project_unit(output, "LENGTHUNIT")) == "METRE"
-        parameters = ifcopenshell.util.geolocation.get_helmert_transformation_parameters(output)
-        assert parameters.e == 10
-        assert parameters.n == 0
-        assert parameters.scale == 1
-        crs = ifcopenshell.util.element.get_pset(output.by_type("IfcProject")[0], name="ePSet_ProjectedCRS")
-        assert crs["MapUnit"] == "METRE"
+
+class TestConvertFileLengthUnitsIFC4X3(test.bootstrap.IFC4X3, TestConvertFileLengthUnits):
+    pass
