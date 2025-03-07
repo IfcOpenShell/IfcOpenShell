@@ -1735,7 +1735,18 @@ class DumbWallJoiner:
         extrusion = self.get_extrusion_data(representation)
         wall_dir = wall1.matrix_world.to_quaternion() @ extrusion["direction"]
 
-        slab_pt = slab2.matrix_world @ Vector((0, 0, 0))
+        slab_element = tool.Ifc.get_entity(slab2)
+        slab_params = tool.Model.get_material_layer_parameters(slab_element)
+        slab_representation = ifcopenshell.util.representation.get_representation(slab_element, "Model", "Body", "MODEL_VIEW")
+        assert slab_representation
+        slab_extrusion = tool.Model.get_extrusion(slab_representation)
+        existing_x_angle = tool.Model.get_existing_x_angle(slab_extrusion)
+        existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
+        existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
+        offset = slab_params["offset"]
+        if slab_params["direction_sense"] == "NEGATIVE":
+            offset -= slab_params["thickness"]
+        slab_pt = slab2.matrix_world @ Vector((0, 0, 0)) + Vector((0, 0, offset * abs(1 / cos(existing_x_angle))))
         slab_dir = slab2.matrix_world.to_quaternion() @ Vector((0, 0, -1))
 
         tops = [mathutils.geometry.intersect_line_plane(b, b + wall_dir, slab_pt, slab_dir) for b in bases]
