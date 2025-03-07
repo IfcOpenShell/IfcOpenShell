@@ -90,7 +90,7 @@ class DisableEditingSystem(bpy.types.Operator):
     bl_label = "Disable Editing System"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_system(tool.System)
         return {"FINISHED"}
 
@@ -334,7 +334,7 @@ class LoadZones(bpy.types.Operator):
     bl_label = "Load Zones"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         props = tool.System.get_zone_props()
         props.zones.clear()
         for zone in tool.Ifc.get().by_type("IfcZone"):
@@ -351,7 +351,7 @@ class UnloadZones(bpy.types.Operator):
     bl_label = "Unload Zones"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         props = tool.System.get_zone_props()
         props.is_loaded = False
         return {"FINISHED"}
