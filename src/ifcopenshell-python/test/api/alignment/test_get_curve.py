@@ -40,7 +40,7 @@ def test_horizontal():
     radii = [(1000.0), (1250.0), (950.0)]
 
     alignment = ifcopenshell.api.alignment.create_alignment_by_pi_method(file, "TestAlignment", coordinates, radii)
-    ifcopenshell.api.alignment.create_geometric_representation(file,alignment)
+    ifcopenshell.api.alignment.create_geometric_representation(file, alignment)
     curve = ifcopenshell.api.alignment.get_curve(alignment)
     assert curve.is_a("IfcCompositeCurve")
 
@@ -65,6 +65,6 @@ def test_horizontal_and_vertical():
     alignment = ifcopenshell.api.alignment.create_alignment_by_pi_method(
         file, "TestAlignment", coordinates, radii, vpoints, lengths
     )
-    ifcopenshell.api.alignment.create_geometric_representation(file,alignment)
+    ifcopenshell.api.alignment.create_geometric_representation(file, alignment)
     curve = ifcopenshell.api.alignment.get_curve(alignment)
     assert curve.is_a("IfcGradientCurve")

@@ -35,7 +35,7 @@ def create_geometric_representation(file: ifcopenshell.file, alignment: entity_i
     3) Horizontal + Vertical + Cant
     4) Vertical only (this occurs when horizontal is reused from a parent alignment)
     5) Vertical + Cant (this occurs when horizontal is reused from a parent alignment)
-    
+
     :param alignment: The alignment for which the representation is being created
     :return: None
     """

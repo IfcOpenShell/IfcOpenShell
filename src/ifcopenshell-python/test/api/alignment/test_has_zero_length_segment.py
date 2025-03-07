@@ -60,13 +60,14 @@ def _test_business_definition():
 
     assert True == ifcopenshell.api.alignment.has_zero_length_segment(horizontal)
 
-    zero_length_segment = ifcopenshell.api.alignment.remove_zero_length_segment(file,horizontal)
+    zero_length_segment = ifcopenshell.api.alignment.remove_zero_length_segment(file, horizontal)
     assert len(horizontal.IsNestedBy[0].RelatedObjects) == 1
     assert False == ifcopenshell.api.alignment.has_zero_length_segment(horizontal)
 
-    ifcopenshell.api.alignment.add_segment_to_layout(file,horizontal,zero_length_segment)
+    ifcopenshell.api.alignment.add_segment_to_layout(file, horizontal, zero_length_segment)
     assert len(horizontal.IsNestedBy[0].RelatedObjects) == 2
     assert True == ifcopenshell.api.alignment.has_zero_length_segment(horizontal)
+
 
 def _test_geometric_definition():
     file = ifcopenshell.file(schema="IFC4X3_ADD2")
@@ -104,11 +105,11 @@ def _test_geometric_definition():
 
     assert len(composite_curve.Segments) == 2
 
-    zero_length_segment = ifcopenshell.api.alignment.remove_zero_length_segment(file,composite_curve)
+    zero_length_segment = ifcopenshell.api.alignment.remove_zero_length_segment(file, composite_curve)
     assert len(composite_curve.Segments) == 1
     assert False == ifcopenshell.api.alignment.has_zero_length_segment(composite_curve)
 
-    ifcopenshell.api.alignment.add_segment_to_curve(file,zero_length_segment,composite_curve)
+    ifcopenshell.api.alignment.add_segment_to_curve(file, zero_length_segment, composite_curve)
     assert len(composite_curve.Segments) == 2
     assert True == ifcopenshell.api.alignment.has_zero_length_segment(composite_curve)
 

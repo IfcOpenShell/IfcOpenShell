@@ -24,7 +24,7 @@ from typing import Sequence
 def name_segments(prefix: str, alignment: entity_instance) -> None:
     """
     Sets the segment name like ("H1" for horizontal, "V1" for vertical, "C1" for cant)
-    
+
     :param prefix: The naming prefix
     :param alignment: The alignment whose segments are to be named. This should be a IfcAlignmentHorizontal, IfcAlignmentVertical or IfcAlignmentCant
     """

@@ -37,7 +37,7 @@ def add_vertical_alignment_by_pi_method(
 
     When the second vertical alignment is added, the structure of the IFC model must transition from one concept template to the other.
     Specifically, the following occurs:
-    
+
     1) The first child IfcAlignment is created and is IfcRelAggregates with the parent alignment.
     2) The first vertical alignment is unassigned from the IfcRelNests of the parent alignment and assigned to the new child alignment IfcRelNests
     3) A second child IfcAlignment is created and it is IfcRelAggregates with the parent alignment.

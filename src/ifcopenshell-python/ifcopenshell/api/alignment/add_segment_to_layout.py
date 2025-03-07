@@ -26,7 +26,7 @@ from typing import Sequence
 def add_segment_to_layout(file: ifcopenshell.file, alignment: entity_instance, segment: entity_instance) -> None:
     """
     Adds a segment to a layout alignment (horizontal, vertical, or cant)
-    
+
     :param alignment: The alignment
     :param segment: The segment to be appended
     :return: None

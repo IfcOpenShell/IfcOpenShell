@@ -39,6 +39,7 @@ from bpy_extras.io_utils import ImportHelper
 from typing import get_args, TYPE_CHECKING
 from typing_extensions import assert_never
 
+
 class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_alignment_csv"
     bl_label = "Import Alignment CSV"
@@ -52,31 +53,32 @@ class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         if ifc_file is None:
             cls.poll_message_set("No IFC file is loaded.")
             return False
-        elif ifc_file.schema != 'IFC4X3':
+        elif ifc_file.schema != "IFC4X3":
             cls.poll_message_set("Schema must be IFC4x3.")
             return False
         return True
 
     def _execute(self, context):
         import ifcopenshell.api.alignment
+
         self.file = tool.Ifc.get()
         start = time.time()
-        alignment = ifcopenshell.api.alignment.create_alignment_from_csv(self.file,self.filepath)
-        ifcopenshell.api.alignment.create_geometric_representation(self.file,alignment)
-        ifcopenshell.api.alignment.add_stationing_to_alignment(self.file,alignment=alignment,start_station=0.0)
+        alignment = ifcopenshell.api.alignment.create_alignment_from_csv(self.file, self.filepath)
+        ifcopenshell.api.alignment.create_geometric_representation(self.file, alignment)
+        ifcopenshell.api.alignment.add_stationing_to_alignment(self.file, alignment=alignment, start_station=0.0)
 
         # IFC 4.1.5.1 alignments cannot be contained in spatial structures, but can be referenced into them
         sites = self.file.by_type("IfcSite")
         for site in sites:
-            ifcopenshell.api.spatial.reference_structure(self.file,products=[alignment],relating_structure=site)
+            ifcopenshell.api.spatial.reference_structure(self.file, products=[alignment], relating_structure=site)
 
         # process the generated IfcReferent for the alignment
         for rel in alignment.IsNestedBy:
             for referent in rel.RelatedObjects:
                 if referent.is_a("IfcReferent"):
-                    referent_obj = bpy.data.objects.new(tool.Loader.get_name(referent),None)
-                    tool.Geometry.link(referent,referent_obj)
-                    tool.Collector.assign(referent_obj,should_clean_users_collection=False)
+                    referent_obj = bpy.data.objects.new(tool.Loader.get_name(referent), None)
+                    tool.Geometry.link(referent, referent_obj)
+                    tool.Collector.assign(referent_obj, should_clean_users_collection=False)
 
         # an alignment can be an aggregation of multiple child alignments (ie. multiple verticals for a single horizontal)
         # get all the alignment curves
@@ -84,7 +86,7 @@ class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         for rel in alignment.IsDecomposedBy:
             for agg in rel.RelatedObjects:
                 if agg.is_a("IfcAlignment"):
-                    curves.append(ifcopenshell.api.alignment.get_curve(agg)) # 3D curve
+                    curves.append(ifcopenshell.api.alignment.get_curve(agg))  # 3D curve
 
         # if there aren't any curves from aggregation, then there is only a single vertical or no vertical
         if len(curves) == 0:
@@ -92,22 +94,20 @@ class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 
         settings = ifcopenshell.geom.settings()
         for curve in curves:
-            shape = ifcopenshell.geom.create_shape(settings,curve)
+            shape = ifcopenshell.geom.create_shape(settings, curve)
 
             # create a new Blender mesh
             mesh_name = tool.Loader.get_mesh_name_from_shape(shape)
             mesh = bpy.data.meshes.new(mesh_name)
-            m = tool.Loader.convert_geometry_to_mesh(shape,mesh)
+            m = tool.Loader.convert_geometry_to_mesh(shape, mesh)
 
             # create a new Blender object
-            alignment_obj = bpy.data.objects.new(tool.Loader.get_name(alignment),m)
+            alignment_obj = bpy.data.objects.new(tool.Loader.get_name(alignment), m)
 
             # link the blender object to with the alignment element
-            tool.Geometry.link(alignment,alignment_obj)
+            tool.Geometry.link(alignment, alignment_obj)
 
             # assign the object to the blender collections
-            tool.Collector.assign(alignment_obj,should_clean_users_collection=False)
-
+            tool.Collector.assign(alignment_obj, should_clean_users_collection=False)
 
         self.report({"INFO"}, "Imported in %s seconds" % (time.time() - start))
-

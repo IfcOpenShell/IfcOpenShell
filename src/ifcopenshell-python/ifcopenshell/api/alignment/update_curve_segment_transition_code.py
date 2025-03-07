@@ -48,7 +48,7 @@ def update_curve_segment_transition_code(prev_segment: entity_instance, segment:
         raise TypeError("Both segments must belong to the same curve")
 
     settings = ifcopenshell.geom.settings()
-    settings.set("COMPUTE_CURVATURE",True)
+    settings.set("COMPUTE_CURVATURE", True)
 
     prev_segment_fn = ifcopenshell_wrapper.map_shape(settings, prev_segment.wrapped_data)
     prev_segment_evaluator = ifcopenshell_wrapper.function_item_evaluator(settings, prev_segment_fn)

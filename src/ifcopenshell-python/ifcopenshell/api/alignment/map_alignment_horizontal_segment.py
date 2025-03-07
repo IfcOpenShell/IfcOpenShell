@@ -200,24 +200,23 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
     transition = "DISCONTINUOUS"
     f = _get_curve_factor(design_parameters)
 
-    a0_1 = 0.0 * f + length / start_radius if start_radius != 0 else 0.0 # constant term, first half
-    a1_1 = 0.0 * f                                                       # linear term, first half
-    a2_1 = 2.0 * f                                                       # quadratic term, first half
+    a0_1 = 0.0 * f + length / start_radius if start_radius != 0 else 0.0  # constant term, first half
+    a1_1 = 0.0 * f  # linear term, first half
+    a2_1 = 2.0 * f  # quadratic term, first half
 
-    A0_1 = length * math.pow(math.fabs(a0_1), -1. / 1.) * a0_1 / math.fabs(a0_1) if a0_1 != 0.0 else 0.0
-    A1_1 = length * math.pow(math.fabs(a1_1), -1. / 2.) * a1_1 / math.fabs(a1_1) if a1_1 != 0.0 else 0.0
-    A2_1 = length * math.pow(math.fabs(a2_1), -1. / 3.) * a2_1 / math.fabs(a2_1) if a2_1 != 0.0 else 0.0
+    A0_1 = length * math.pow(math.fabs(a0_1), -1.0 / 1.0) * a0_1 / math.fabs(a0_1) if a0_1 != 0.0 else 0.0
+    A1_1 = length * math.pow(math.fabs(a1_1), -1.0 / 2.0) * a1_1 / math.fabs(a1_1) if a1_1 != 0.0 else 0.0
+    A2_1 = length * math.pow(math.fabs(a2_1), -1.0 / 3.0) * a2_1 / math.fabs(a2_1) if a2_1 != 0.0 else 0.0
 
-    x1,y1,angle1 = ifcopenshell_wrapper.helmert_curve_point(A0_1,A1_1,A2_1,length/2)
+    x1, y1, angle1 = ifcopenshell_wrapper.helmert_curve_point(A0_1, A1_1, A2_1, length / 2)
 
     parent_curve1 = file.createIfcSecondOrderPolynomialSpiral(
-        Position = file.createIfcAxis2Placement2D(
-            Location=file.createIfcCartesianPoint((0.0,0.0)),
-            RefDirection=file.createIfcDirection((1.0,0.0))
+        Position=file.createIfcAxis2Placement2D(
+            Location=file.createIfcCartesianPoint((0.0, 0.0)), RefDirection=file.createIfcDirection((1.0, 0.0))
         ),
-        QuadraticTerm = A2_1,
-        LinearTerm = A1_1 if A1_1 != 0.0 else None,
-        ConstantTerm = A0_1 if A0_1 != 0.0 else None
+        QuadraticTerm=A2_1,
+        LinearTerm=A1_1 if A1_1 != 0.0 else None,
+        ConstantTerm=A0_1 if A0_1 != 0.0 else None,
     )
 
     curve_segment1 = file.create_entity(
@@ -229,31 +228,31 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
             RefDirection=file.createIfcDirection((math.cos(start_direction), math.sin(start_direction))),
         ),
         SegmentStart=file.createIfcLengthMeasure(0.0),
-        SegmentLength=file.createIfcLengthMeasure(length/2),
+        SegmentLength=file.createIfcLengthMeasure(length / 2),
         ParentCurve=parent_curve1,
     )
 
-    a0_2 = -1.0 * f + (length/start_radius if start_radius != 0.0 else 0.0) # constant term, second half
-    a1_2 =  4.0 * f                                                         # linear term, second half
-    a2_2 = -2.0 * f                                                         # quadratic term, second half
+    a0_2 = -1.0 * f + (length / start_radius if start_radius != 0.0 else 0.0)  # constant term, second half
+    a1_2 = 4.0 * f  # linear term, second half
+    a2_2 = -2.0 * f  # quadratic term, second half
 
-    A0_2 = length*math.pow(math.fabs(a0_2), -1./1.)*(a0_2/math.fabs(a0_2)) if a0_2 != 0.0 else 0.0
-    A1_2 = length*math.pow(math.fabs(a1_2), -1./2.)*(a1_2/math.fabs(a1_2)) if a1_2 != 0.0 else 0.0
-    A2_2 = length*math.pow(math.fabs(a2_2), -1./3.)*(a2_2/math.fabs(a2_2)) if a2_2 != 0.0 else 0.0
+    A0_2 = length * math.pow(math.fabs(a0_2), -1.0 / 1.0) * (a0_2 / math.fabs(a0_2)) if a0_2 != 0.0 else 0.0
+    A1_2 = length * math.pow(math.fabs(a1_2), -1.0 / 2.0) * (a1_2 / math.fabs(a1_2)) if a1_2 != 0.0 else 0.0
+    A2_2 = length * math.pow(math.fabs(a2_2), -1.0 / 3.0) * (a2_2 / math.fabs(a2_2)) if a2_2 != 0.0 else 0.0
 
-    x2,y2,angle2 = ifcopenshell_wrapper.helmert_curve_point(A0_2,A1_2,A2_2,length/2)
+    x2, y2, angle2 = ifcopenshell_wrapper.helmert_curve_point(A0_2, A1_2, A2_2, length / 2)
     anglep = angle1 - angle2
-    xp = x1 - x2*math.cos(anglep) + y2*math.sin(anglep)
-    yp = y1 - x2*math.sin(anglep) - y2*math.cos(anglep)
+    xp = x1 - x2 * math.cos(anglep) + y2 * math.sin(anglep)
+    yp = y1 - x2 * math.sin(anglep) - y2 * math.cos(anglep)
 
     parent_curve2 = file.createIfcSecondOrderPolynomialSpiral(
-        Position = file.createIfcAxis2Placement2D(
-            Location=file.createIfcCartesianPoint((xp,yp)),
-            RefDirection=file.createIfcDirection((math.cos(anglep),math.sin(anglep)))
+        Position=file.createIfcAxis2Placement2D(
+            Location=file.createIfcCartesianPoint((xp, yp)),
+            RefDirection=file.createIfcDirection((math.cos(anglep), math.sin(anglep))),
         ),
-        QuadraticTerm = A2_2,
-        LinearTerm = A1_2 if A1_2 != 0.0 else None,
-        ConstantTerm = A0_2 if A0_2 != 0.0 else None
+        QuadraticTerm=A2_2,
+        LinearTerm=A1_2 if A1_2 != 0.0 else None,
+        ConstantTerm=A0_2 if A0_2 != 0.0 else None,
     )
 
     curve_segment2 = file.create_entity(
@@ -261,15 +260,15 @@ def _map_helmert_curve(file: ifcopenshell.file, design_parameters: entity_instan
         Transition=transition,
         Placement=file.create_entity(
             type="IfcAxis2Placement2D",
-            Location=file.createIfcCartesianPoint((x1,y1)),
+            Location=file.createIfcCartesianPoint((x1, y1)),
             RefDirection=file.createIfcDirection((math.cos(angle1), math.sin(angle1))),
         ),
-        SegmentStart=file.createIfcLengthMeasure(length/2),
-        SegmentLength=file.createIfcLengthMeasure(length/2),
+        SegmentStart=file.createIfcLengthMeasure(length / 2),
+        SegmentLength=file.createIfcLengthMeasure(length / 2),
         ParentCurve=parent_curve2,
     )
 
-    return curve_segment1,curve_segment2
+    return curve_segment1, curve_segment2
 
 
 def _map_bloss_curve(file: ifcopenshell.file, design_parameters: entity_instance) -> Sequence[entity_instance]:
@@ -281,25 +280,24 @@ def _map_bloss_curve(file: ifcopenshell.file, design_parameters: entity_instance
     transition = "DISCONTINUOUS"
     f = _get_curve_factor(design_parameters)
 
-    a0 = length / start_radius if start_radius != 0.0 else 0.0 # constant term
-    a1 = 0.0 # linear term
-    a2 = 3.0*f # quadratic term
-    a3 = -2.0*f # cubic term
+    a0 = length / start_radius if start_radius != 0.0 else 0.0  # constant term
+    a1 = 0.0  # linear term
+    a2 = 3.0 * f  # quadratic term
+    a3 = -2.0 * f  # cubic term
 
-    A0 = length*math.pow(math.fabs(a0),-1./1.)*(a0/math.fabs(a0)) if a0 != 0.0 else 0.0
-    A1 = length*math.pow(math.fabs(a1),-1./2.)*(a1/math.fabs(a1)) if a1 != 0.0 else 0.0
-    A2 = length*math.pow(math.fabs(a2),-1./3.)*(a2/math.fabs(a2)) if a2 != 0.0 else 0.0
-    A3 = length*math.pow(math.fabs(a3),-1./4.)*(a3/math.fabs(a3)) if a3 != 0.0 else 0.0
+    A0 = length * math.pow(math.fabs(a0), -1.0 / 1.0) * (a0 / math.fabs(a0)) if a0 != 0.0 else 0.0
+    A1 = length * math.pow(math.fabs(a1), -1.0 / 2.0) * (a1 / math.fabs(a1)) if a1 != 0.0 else 0.0
+    A2 = length * math.pow(math.fabs(a2), -1.0 / 3.0) * (a2 / math.fabs(a2)) if a2 != 0.0 else 0.0
+    A3 = length * math.pow(math.fabs(a3), -1.0 / 4.0) * (a3 / math.fabs(a3)) if a3 != 0.0 else 0.0
 
     parent_curve = file.createIfcThirdOrderPolynomialSpiral(
-        Position = file.createIfcAxis2Placement2D(
-            Location=file.createIfcCartesianPoint((0.0,0.0)),
-            RefDirection=file.createIfcDirection((1.0,0.0))
+        Position=file.createIfcAxis2Placement2D(
+            Location=file.createIfcCartesianPoint((0.0, 0.0)), RefDirection=file.createIfcDirection((1.0, 0.0))
         ),
-        CubicTerm = A3,
-        QuadraticTerm = A2 if A2 != 0.0 else None,
-        LinearTerm = A1 if A1 != 0.0 else None,
-        ConstantTerm = A0 if A0 != 0.0 else None
+        CubicTerm=A3,
+        QuadraticTerm=A2 if A2 != 0.0 else None,
+        LinearTerm=A1 if A1 != 0.0 else None,
+        ConstantTerm=A0 if A0 != 0.0 else None,
     )
 
     curve_segment = file.create_entity(
@@ -315,7 +313,6 @@ def _map_bloss_curve(file: ifcopenshell.file, design_parameters: entity_instance
         ParentCurve=parent_curve,
     )
     return (curve_segment, None)
-
 
 
 def _map_cosine_curve(file: ifcopenshell.file, design_parameters: entity_instance) -> Sequence[entity_instance]:

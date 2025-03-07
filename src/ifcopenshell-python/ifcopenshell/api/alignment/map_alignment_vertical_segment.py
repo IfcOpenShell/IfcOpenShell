@@ -22,7 +22,8 @@ from ifcopenshell import entity_instance
 from typing import Sequence
 import math
 
-def _polynomial_length(A:float,B:float,C:float,L:float)->float:
+
+def _polynomial_length(A: float, B: float, C: float, L: float) -> float:
     # closed form solultion for length of parabolic curve.
     # see https://www.integral-table.com, equation #37
     # Parabolic curve equation: y = A + Bx + Cx^2
@@ -31,19 +32,22 @@ def _polynomial_length(A:float,B:float,C:float,L:float)->float:
     # y'^2 = 4C^2x^2 + 4BCx + B^2
     # Substituting,  Length of a curve = Integral[0,L]( (4C^2)x^2 + (4BC)x + (B^2 + 1)) dx)
     # for eq. #37 cited above, a = 4C^2, b = 4BC, c = B^2 + 1
-    a = 4.*C*C
-    b = 4.*B*C
-    c = B*B + 1
+    a = 4.0 * C * C
+    b = 4.0 * B * C
+    c = B * B + 1
 
-    v1 = lambda a,b,c,x : (b+2.*a*x)/(4.*a)
-    v2 = lambda a,b,c,x : math.sqrt(a*x*x + b*x + c)
-    v3 = lambda a,b,c,x : (4.*a*c-b*b)/(8.*math.pow(a,1.5))
-    v4 = lambda a,b,c,x : math.log(math.fabs(2.*a*x+b+2.*math.sqrt(a*(a*x*x + b*x + c))))
+    v1 = lambda a, b, c, x: (b + 2.0 * a * x) / (4.0 * a)
+    v2 = lambda a, b, c, x: math.sqrt(a * x * x + b * x + c)
+    v3 = lambda a, b, c, x: (4.0 * a * c - b * b) / (8.0 * math.pow(a, 1.5))
+    v4 = lambda a, b, c, x: math.log(math.fabs(2.0 * a * x + b + 2.0 * math.sqrt(a * (a * x * x + b * x + c))))
 
-    fn = lambda a,b,c,x : v1(a,b,c,x)*v2(a,b,c,x) + v3(a,b,c,x)*v4(a,b,c,x)
+    fn = lambda a, b, c, x: v1(a, b, c, x) * v2(a, b, c, x) + v3(a, b, c, x) * v4(a, b, c, x)
 
-    curve_length = fn(a,b,c,L) - fn(a,b,c,0) # remember when evaluating an integral, it must be evaluated at end points (L and 0)
+    curve_length = fn(a, b, c, L) - fn(
+        a, b, c, 0
+    )  # remember when evaluating an integral, it must be evaluated at end points (L and 0)
     return curve_length
+
 
 def _map_constant_gradient(file: ifcopenshell.file, design_parameters: entity_instance) -> Sequence[entity_instance]:
     start_distance_along = design_parameters.StartDistAlong
@@ -117,7 +121,7 @@ def _map_parabolic_arc(file: ifcopenshell.file, design_parameters: entity_instan
 
     dx = math.cos(math.atan(start_gradient))
     dy = math.sin(math.atan(start_gradient))
-    curve_segment_length = _polynomial_length(A,B,C,horizontal_length)
+    curve_segment_length = _polynomial_length(A, B, C, horizontal_length)
 
     curve_segment = file.create_entity(
         type="IfcCurveSegment",
@@ -149,20 +153,20 @@ def _map_circular_arc(file: ifcopenshell.file, design_parameters: entity_instanc
     dy = math.sin(start_angle)
     if start_angle < end_angle:
         radius = horizontal_length / (math.sin(end_angle) - math.sin(start_angle))
-        x = -radius*math.sin(start_angle)
-        y = radius*math.cos(start_angle)
-        start_angle += 3.*math.pi/2.
-        end_angle += 3.*math.pi/2.
+        x = -radius * math.sin(start_angle)
+        y = radius * math.cos(start_angle)
+        start_angle += 3.0 * math.pi / 2.0
+        end_angle += 3.0 * math.pi / 2.0
     else:
         radius = horizontal_length / (math.sin(start_angle) - math.sin(end_angle))
-        x = radius*math.sin(start_angle)
-        y = -radius*math.cos(start_angle)
-        start_angle += math.pi/2.
-        end_angle += math.pi/2.
+        x = radius * math.sin(start_angle)
+        y = -radius * math.cos(start_angle)
+        start_angle += math.pi / 2.0
+        end_angle += math.pi / 2.0
 
     parent_curve = file.createIfcCircle(
         Position=file.createIfcAxis2Placement2D(
-            Location=file.createIfcCartesianPoint((x,y)),
+            Location=file.createIfcCartesianPoint((x, y)),
             RefDirection=file.createIfcDirection((1.0, 0.0)),
         ),
         Radius=radius,
@@ -176,11 +180,11 @@ def _map_circular_arc(file: ifcopenshell.file, design_parameters: entity_instanc
         Placement=file.createIfcAxis2Placement2D(
             Location=file.createIfcCartesianPoint((start_distance_along, start_height)),
             RefDirection=file.createIfcDirection(
-                (dx,dy),
+                (dx, dy),
             ),
         ),
-        SegmentStart=file.createIfcLengthMeasure(radius*start_angle),
-        SegmentLength=file.createIfcLengthMeasure(radius*(end_angle - start_angle)),
+        SegmentStart=file.createIfcLengthMeasure(radius * start_angle),
+        SegmentLength=file.createIfcLengthMeasure(radius * (end_angle - start_angle)),
         ParentCurve=parent_curve,
     )
     return (curve_segment, None)

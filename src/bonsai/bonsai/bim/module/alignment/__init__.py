@@ -17,13 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-#from . import ui, prop, operator
+
+# from . import ui, prop, operator
 from . import operator
 
-classes = (
-    operator.ImportAlignmentCSV,
-)
-
+classes = (operator.ImportAlignmentCSV,)
 
 
 def menu_func_import(self, context):

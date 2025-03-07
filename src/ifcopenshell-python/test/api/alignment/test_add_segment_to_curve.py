@@ -63,10 +63,10 @@ def test_add_segment_to_curve():
 
     composite_curve = file.createIfcCompositeCurve(SelfIntersect=False)
 
-    ifcopenshell.api.alignment.add_segment_to_curve(file,circular_arc, composite_curve)
+    ifcopenshell.api.alignment.add_segment_to_curve(file, circular_arc, composite_curve)
     assert circular_arc.UsingCurves[0] == composite_curve
     assert composite_curve.Segments[-1] == circular_arc
 
-    ifcopenshell.api.alignment.add_segment_to_curve(file,line, composite_curve)
+    ifcopenshell.api.alignment.add_segment_to_curve(file, line, composite_curve)
     assert line.UsingCurves[0] == composite_curve
     assert composite_curve.Segments[-1] == line

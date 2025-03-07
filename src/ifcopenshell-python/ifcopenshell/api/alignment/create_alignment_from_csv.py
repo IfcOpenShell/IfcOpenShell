@@ -62,7 +62,7 @@ def create_alignment_from_csv(file: ifcopenshell.file, filepath: str) -> entity_
         R1 and Rn, as well as L1 and Ln are placeholders and not used. The are recommended to have values of 0.0.
 
         R2 and Rn-2 are the radii of the first and last horizontal curves.
-        
+
         L2 and Ln-2 are the length of the first and last vertical curves.
 
     The CSV file contains one horizontal alignment, zero, one, or more vertical alignments
@@ -75,8 +75,10 @@ def create_alignment_from_csv(file: ifcopenshell.file, filepath: str) -> entity_
         row_count = 0
         for row in reader:
             data = list(map(float, row))  # Convert all values to float
-            coordinates: list[list[float]] = [] # horizontal coordinates for first row, vertical coordinates for subsequent rows
-            radii: list[float] = [] # horizontal curve radii for first row, vertical curve length for subsequent rows
+            coordinates: list[list[float]] = (
+                []
+            )  # horizontal coordinates for first row, vertical coordinates for subsequent rows
+            radii: list[float] = []  # horizontal curve radii for first row, vertical curve length for subsequent rows
 
             row_count += 1
 

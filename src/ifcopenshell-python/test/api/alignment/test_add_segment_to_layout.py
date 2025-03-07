@@ -48,7 +48,7 @@ def test_add_segment_to_layout():
         type="IfcAlignmentHorizontalSegment",
         StartTag=None,
         EndTag=None,
-        StartPoint=file.createIfcCartesianPoint(Coordinates=((0.0,0.0))),
+        StartPoint=file.createIfcCartesianPoint(Coordinates=((0.0, 0.0))),
         StartDirection=0.0,
         StartRadiusOfCurvature=0.0,
         EndRadiusOfCurvature=0.0,
