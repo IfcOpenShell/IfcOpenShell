@@ -249,6 +249,23 @@ def np_intersect_line_line(
     return point_on_line1, point_on_line2
 
 
+def intersect_x_axis_2d(p1: VectorType, p2: VectorType, y=0) -> Optional[float]:
+    """Intersect a line defined by 2 points to a horizontal line defined by y
+
+    Useful for axis-aligned intersection checks.
+
+    :param p1: First 2D point of the line, order doesn't matter
+    :param p2: Second 2D point of the line, order doesn't matter
+    :param y: Intersect at this y value (i.e. defaults to y=0)
+    """
+    x1, y1 = p1
+    x2, y2 = p2
+    if is_x(y1, y2):  # Parallel
+        return
+    t = (y - y1) / (y2 - y1)
+    return x1 + t * (x2 - x1)
+
+
 # Note: using ShapeBuilder try not to reuse IFC elements in the process
 # otherwise you might run into situation where builder.mirror or other operation
 # is applied twice during one run to the same element
