@@ -34,7 +34,7 @@ from bpy.props import (
 from typing import TYPE_CHECKING
 
 
-def get_system_class(self, context):
+def get_system_class(self: "BIMSystemProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not SystemData.is_loaded:
         SystemData.load()
     return SystemData.data["system_class"]
@@ -45,13 +45,20 @@ class System(PropertyGroup):
     ifc_class: StringProperty(name="IFC Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
+    if TYPE_CHECKING:
+        ifc_class: str
+        ifc_definition_id: int
+
 
 class Zone(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
+    if TYPE_CHECKING:
+        ifc_definition_id: int
 
-def toggle_decorations(self, context):
+
+def toggle_decorations(self: "BIMSystemProperties", context: bpy.types.Context) -> None:
     toggle = self.should_draw_decorations
     if toggle:
         decorator.SystemDecorator.install(context)

@@ -50,7 +50,8 @@ class AddSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.add_system(tool.Ifc, tool.System, ifc_class=context.scene.BIMSystemProperties.system_class)
+        props = tool.System.get_system_props()
+        core.add_system(tool.Ifc, tool.System, ifc_class=props.system_class)
 
 
 class EditSystem(bpy.types.Operator, tool.Ifc.Operator):
@@ -59,9 +60,8 @@ class EditSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_system(
-            tool.Ifc, tool.System, system=tool.Ifc.get().by_id(context.scene.BIMSystemProperties.edited_system_id)
-        )
+        props = tool.System.get_system_props()
+        core.edit_system(tool.Ifc, tool.System, system=tool.Ifc.get().by_id(props.edited_system_id))
 
 
 class RemoveSystem(bpy.types.Operator, tool.Ifc.Operator):

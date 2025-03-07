@@ -75,7 +75,7 @@ class Message:
     translations: Optional[Dict[str, str]] = field(default_factory=dict)
 
 
-def bonsai_strings_parse(addon_directory=None, po_directory=None):
+def bonsai_strings_parse(addon_directory: Optional[Path] = None, po_directory: Optional[Path] = None):
     # NOTE: we decided to use our own parser due bug in Blender parser
     # as it tends to pick up strings from other addons and other Blender parts
     # and this bug probably would be to low of a priority for Blender to fix
@@ -153,7 +153,7 @@ def bonsai_strings_parse(addon_directory=None, po_directory=None):
 def update_translations_from_po(po_directory: Path, translations_module: Path):
     translation_data: Dict[str, Message] = dict()
 
-    def process_po_entry(language, current_chunk: list[str]):
+    def process_po_entry(language: str, current_chunk: list[str]) -> None:
         sources = []
         msgid = None
         msgstr = None
@@ -171,6 +171,7 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
             elif line.startswith("#:"):
                 sources.append(line.removeprefix("# ").strip())
 
+        assert msgid is not None and msgstr is not None
         msg = translation_data.get(msgid)
         if msg is None:
             msg = Message(msgid, msgctxt, sources, {language: msgstr})
@@ -179,8 +180,8 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
             msg.sources.extend(sources)
             msg.translations[language] = msgstr
 
-    # load data from .po files
-    langs = set()
+    # load data from .po files to translation_data.
+    langs: set[str] = set()
     for po_file_path in po_directory.glob("**/*.po"):
         lang = po_file_path.stem
         langs.add(lang)

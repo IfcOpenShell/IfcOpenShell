@@ -284,8 +284,8 @@ class BIMStylesProperties(PropertyGroup):
     active_style_index: IntProperty(name="Active Style Index")
 
     @property
-    def active_style(self):
-        return self.styles[self.active_style_index] if 0 <= self.active_style_index < len(self.styles) else None
+    def active_style(self) -> Union[Style, None]:
+        return tool.Blender.get_active_uilist_element(self.styles, self.active_style_index)
 
     active_style_type: EnumProperty(
         name="Active Style Type",

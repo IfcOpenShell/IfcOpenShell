@@ -30,12 +30,11 @@ import re
 from math import pi, cos, sin
 from mathutils import Matrix, Vector
 from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
-from bonsai.bim.module.drawing.decoration import profile_consequential
 from enum import Enum
 from typing import TYPE_CHECKING, Optional, Any, Union
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties
+    from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties, BIMZoneProperties
 
 
 class System(bonsai.core.tool.System):
