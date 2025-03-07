@@ -318,6 +318,11 @@ class BIMProjectProperties(PropertyGroup):
         default=30,
         description="Maxium number of openings that object can have. If object has more openings, it will be loaded without openings",
     )
+    style_limit: IntProperty(
+        name="Style Limit",
+        default=300,
+        description="Maxium number of styles before styles are automatically merged",
+    )
     distance_limit: FloatProperty(name="Distance Limit", default=1000, subtype="DISTANCE")
     false_origin_mode: bpy.props.EnumProperty(
         items=[
@@ -454,6 +459,7 @@ class BIMProjectProperties(PropertyGroup):
         deflection_tolerance: float
         angular_tolerance: float
         void_limit: int
+        style_limit: int
         distance_limit: float
         false_origin_mode: Literal["AUTOMATIC", "MANUAL", "DISABLED"]
         false_origin: str

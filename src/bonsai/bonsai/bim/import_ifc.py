@@ -20,6 +20,7 @@ from __future__ import annotations
 import bpy
 import time
 import json
+import ifcpatch
 import logging
 import traceback
 import mathutils
@@ -952,7 +953,12 @@ class IfcImporter:
         props.collection = self.collections[project.GlobalId] = self.project["blender"]
 
     def create_styles(self) -> None:
-        for style in self.file.by_type("IfcSurfaceStyle"):
+        styles = self.file.by_type("IfcSurfaceStyle")
+        if len(styles) > self.ifc_import_settings.style_limit:  # Probably something strange happening
+            print("Warning! Excessive styles were found and merged where applicable.")
+            ifcpatch.execute({"file": self.file, "recipe": "MergeStyles", "arguments": []})
+            styles = self.file.by_type("IfcSurfaceStyle")
+        for style in styles:
             self.create_style(style)
 
     def create_style(self, style: ifcopenshell.entity_instance) -> None:
@@ -1132,6 +1138,7 @@ class IfcImportSettings:
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
         self.void_limit = 30
+        self.style_limit = 300
         # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
         # Users can configure this if they have to handle larger sites but beware of surveying precision
         self.distance_limit = 1000
@@ -1169,6 +1176,7 @@ class IfcImportSettings:
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
         settings.void_limit = props.void_limit
+        settings.style_limit = props.style_limit
         settings.distance_limit = props.distance_limit
         settings.false_origin_mode = props.false_origin_mode
         try:

@@ -213,6 +213,8 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "void_limit")
         row = self.layout.row()
+        row.prop(pprops, "style_limit")
+        row = self.layout.row()
         row.prop(pprops, "distance_limit")
         row = self.layout.row()
         row.prop(pprops, "false_origin_mode")
