@@ -48,6 +48,7 @@ from .disconnect_element import disconnect_element
 from .disconnect_path import disconnect_path
 from .edit_object_placement import edit_object_placement
 from .map_representation import map_representation
+from .regenerate_wall_representation import regenerate_wall_representation
 from .remove_boolean import remove_boolean
 from .remove_representation import remove_representation
 from .unassign_representation import unassign_representation
@@ -76,6 +77,7 @@ __all__ = [
     "disconnect_path",
     "edit_object_placement",
     "map_representation",
+    "regenerate_wall_representation",
     "remove_boolean",
     "remove_representation",
     "unassign_representation",
