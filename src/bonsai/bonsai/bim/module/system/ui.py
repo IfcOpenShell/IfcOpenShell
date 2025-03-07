@@ -39,6 +39,7 @@ SYSTEM_ICONS = {
     "IfcBuiltSystem": "MOD_BUILD",
     "IfcZone": "CUBE",
 }
+SYSTEM_ICONS["IfcElectricalCircuit"] = SYSTEM_ICONS["IfcDistributionCircuit"]
 
 
 class BIM_PT_systems(Panel):
