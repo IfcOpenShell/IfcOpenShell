@@ -1017,8 +1017,6 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def slice_layerset_mesh(cls, element: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> bpy.types.Mesh:
-        if True:  # This feature is still experimental
-            return mesh
         if not (material := ifcopenshell.util.element.get_material(element)):
             return mesh
         elif material.is_a("IfcMaterialLayerSetUsage"):
