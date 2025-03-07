@@ -456,7 +456,7 @@ def get_project_unit(
 
 
 def get_property_unit(
-    prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file, use_cache: bool = False
+    prop: ifcopenshell.entity_instance, ifc_file: Union[ifcopenshell.file, None], use_cache: bool = False
 ) -> Union[ifcopenshell.entity_instance, None]:
     """Gets the unit definition of a property or quantity
 
@@ -499,11 +499,13 @@ def get_property_unit(
             measure_class = value.is_a()
 
     if measure_class and (unit_type := get_measure_unit_type(measure_class)):
+        if not ifc_file:
+            ifc_file = prop.file
         return get_project_unit(ifc_file, unit_type, use_cache=use_cache)
 
 
 def get_property_table_unit(
-    prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file, use_cache: bool = False
+    prop: ifcopenshell.entity_instance, ifc_file: Union[ifcopenshell.file, None], use_cache: bool = False
 ) -> Dict[str, Union[ifcopenshell.entity_instance, None]]:
     """
     Gets the unit definition of a property table
@@ -523,6 +525,8 @@ def get_property_table_unit(
         If a unit-entity is missing,
         the value associated to the key is `null`.
     """
+    if not ifc_file:
+        ifc_file = prop.file
     defining_unit = None
     if unit := prop.DefiningUnit:
         defining_unit = unit

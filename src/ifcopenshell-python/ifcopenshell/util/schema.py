@@ -140,7 +140,7 @@ def get_subtypes(
 
 
 def reassign_class(
-    ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance, new_class: str
+    ifc_file: Union[ifcopenshell.file, None], element: ifcopenshell.entity_instance, new_class: str
 ) -> ifcopenshell.entity_instance:
     """
     Attempts to change the class (entity name) of `element` to `new_class` by
@@ -155,6 +155,9 @@ def reassign_class(
 
     It's unlikely that this affects real-world usage of this function.
     """
+
+    if not ifc_file:
+        ifc_file = element.file
 
     schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
     try:

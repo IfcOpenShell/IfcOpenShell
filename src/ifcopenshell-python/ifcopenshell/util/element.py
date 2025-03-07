@@ -689,7 +689,7 @@ def get_styles(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entit
 # TODO: ifc_file argument is unnecessary for some methods now
 # since we have entity_instance.file, so we can deprecate it.
 def get_elements_by_material(
-    ifc_file: ifcopenshell.file, material: ifcopenshell.entity_instance
+    ifc_file: Union[ifcopenshell.file, None], material: ifcopenshell.entity_instance
 ) -> set[ifcopenshell.entity_instance]:
     """Retrieves the elements related to a material.
 
@@ -707,6 +707,8 @@ def get_elements_by_material(
         material = file.by_type("IfcMaterial")[0]
         elements = ifcopenshell.util.element.get_elements_by_material(file, material)
     """
+    if not ifc_file:
+        ifc_file = material.file
     results = set()
     for inverse in ifc_file.get_inverse(material):
         if inverse.is_a("IfcRelAssociatesMaterial"):
@@ -730,7 +732,7 @@ def get_elements_by_material(
 
 
 def get_elements_by_style(
-    ifc_file: ifcopenshell.file, style: ifcopenshell.entity_instance
+    ifc_file: Union[ifcopenshell.file, None], style: ifcopenshell.entity_instance
 ) -> set[ifcopenshell.entity_instance]:
     """Retrieves the elements whose geometric representation uses a style
 
@@ -745,6 +747,8 @@ def get_elements_by_style(
         style = file.by_type("IfcSurfaceStyle")[0]
         elements = ifcopenshell.util.element.get_elements_by_style(file, style)
     """
+    if not ifc_file:
+        ifc_file = style.file
     results = set()
     inverses = list(ifc_file.get_inverse(style))
     while inverses:
@@ -778,7 +782,7 @@ def get_elements_by_style(
 
 
 def get_elements_by_representation(
-    ifc_file: ifcopenshell.file, representation: ifcopenshell.entity_instance
+    ifc_file: Union[ifcopenshell.file, None], representation: ifcopenshell.entity_instance
 ) -> set[ifcopenshell.entity_instance]:
     """Gets all elements using a geometric representation
 
@@ -793,6 +797,8 @@ def get_elements_by_representation(
         representation = file.by_type("IfcShapeRepresentation")[0]
         elements = ifcopenshell.util.element.get_elements_by_representation(file, representation)
     """
+    if not ifc_file:
+        ifc_file = representation.file
     results = set()
     [results.update(pr.ShapeOfProduct) for pr in representation.OfProductRepresentation]
     for rep_map in representation.RepresentationMap:
@@ -838,7 +844,7 @@ def get_elements_by_profile(profile: ifcopenshell.entity_instance) -> set[ifcope
 
 
 def get_elements_by_layer(
-    ifc_file: ifcopenshell.file, layer: ifcopenshell.entity_instance
+    ifc_file: Union[ifcopenshell.file, None], layer: ifcopenshell.entity_instance
 ) -> set[ifcopenshell.entity_instance]:
     """Get all the elements that are used by a presentation layer
 
@@ -846,6 +852,8 @@ def get_elements_by_layer(
     :param layer: The IfcPresentationLayerAssignment layer
     :return: The elements using the geometric representation
     """
+    if not ifc_file:
+        ifc_file = layer.file
     results = set()
     for item in layer.AssignedItems or []:
         if item.is_a("IfcShapeRepresentation"):
@@ -858,7 +866,7 @@ def get_elements_by_layer(
 
 
 def get_layers(
-    ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance
+    ifc_file: Union[ifcopenshell.file, None], element: ifcopenshell.entity_instance
 ) -> list[ifcopenshell.entity_instance]:
     """Get the CAD layers that an element is part of
 
@@ -876,6 +884,8 @@ def get_layers(
         element = ifcopenshell.by_type("IfcWall")[0]
         layers = ifcopenshell.util.element.get_layers(element)
     """
+    if not ifc_file:
+        ifc_file = element.file
     layers = []
     representations = []
     if representation := getattr(element, "Representation", None):
@@ -1352,12 +1362,14 @@ def has_element_reference(value: Any, element: ifcopenshell.entity_instance) -> 
     return value == element
 
 
-def remove_deep(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> None:
+def remove_deep(ifc_file: Union[ifcopenshell.file, None], element: ifcopenshell.entity_instance) -> None:
     """Recursively purges a subgraph safely.
 
     Do not use, use remove_deep2() instead.
     """
     # @todo maybe some sort of try-finally mechanism.
+    if not ifc_file:
+        ifc_file = element.file
     ifc_file.batch()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph_set = set(subgraph)
@@ -1431,7 +1443,7 @@ def unbatch_remove_deep2(ifc_file: ifcopenshell.file) -> ifcopenshell.file:
 
 
 def remove_deep2(
-    ifc_file: ifcopenshell.file,
+    ifc_file: Union[ifcopenshell.file, None],
     element: ifcopenshell.entity_instance,
     also_consider: list[ifcopenshell.entity_instance] = [],
     do_not_delete: set[ifcopenshell.entity_instance] = set(),
@@ -1468,6 +1480,8 @@ def remove_deep2(
     :param element: The starting element that defines the subgraph
     """
     # ifc_file.batch()
+    if not ifc_file:
+        ifc_file = element.file
     total_inverses = ifc_file.get_total_inverses(element)
     if total_inverses > 0:
 
@@ -1527,7 +1541,9 @@ def remove_deep2(
     # ifc_file.unbatch()
 
 
-def copy(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+def copy(
+    ifc_file: Union[ifcopenshell.file, None], element: ifcopenshell.entity_instance
+) -> ifcopenshell.entity_instance:
     """
     Copy a single element. Any referenced elements are not copied.
 
@@ -1537,6 +1553,8 @@ def copy(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> 
     :param element: The IFC element to copy
     :return: The newly copied element
     """
+    if not ifc_file:
+        ifc_file = element.file
     new = ifc_file.create_entity(element.is_a())
     for i, attribute in enumerate(element):
         if attribute is None:
@@ -1549,7 +1567,7 @@ def copy(ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance) -> 
 
 
 def copy_deep(
-    ifc_file: ifcopenshell.file,
+    ifc_file: Union[ifcopenshell.file, None],
     element: ifcopenshell.entity_instance,
     exclude: Optional[Sequence[str]] = None,
     exclude_callback: Optional[Callable[[ifcopenshell.entity_instance], bool]] = None,
@@ -1572,6 +1590,8 @@ def copy_deep(
         be left as None.
     :return: The newly copied element
     """
+    if not ifc_file:
+        ifc_file = element.file
     if copied_entities is None:
         copied_entities = {}
     else:
