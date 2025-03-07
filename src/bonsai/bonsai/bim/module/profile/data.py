@@ -21,6 +21,7 @@ import bpy.utils
 import bpy.utils.previews
 import ifcopenshell.util.doc
 import bonsai.tool as tool
+from typing import Any
 
 
 def refresh():
@@ -28,7 +29,7 @@ def refresh():
 
 
 class ProfileData:
-    data = {}
+    data: dict[str, Any] = {}
     failed_previews: set[int] = set()
     preview_collection = bpy.utils.previews.new()
     is_loaded = False
@@ -37,6 +38,7 @@ class ProfileData:
     def load(cls):
         cls.data = {
             "total_profiles": cls.total_profiles(),
+            "does_active_profile_exist": cls.does_active_profile_exist(),
             "active_profile_users": cls.active_profile_users(),
             "profile_classes": cls.profile_classes(),
             "is_arbitrary_profile": cls.is_arbitrary_profile(),
@@ -50,12 +52,30 @@ class ProfileData:
         return len([p for p in tool.Ifc.get().by_type("IfcProfileDef") if p.ProfileName])
 
     @classmethod
-    def active_profile_users(cls):
-        profiles_props = tool.Profile.get_profile_props()
-        if profiles_props.active_profile_index >= len(profiles_props.profiles):
+    def update_active_profile_data(cls) -> None:
+        cls.data["does_active_profile_exist"] = cls.does_active_profile_exist()
+        cls.data["active_profile_users"] = cls.active_profile_users()
+
+    @classmethod
+    def does_active_profile_exist(cls) -> bool:
+        """
+        Currently not sure if our UI is always preserving existing named profiles,
+        so this check is added to avoid breaking UI in case of a missing profile.
+        """
+        active_profile = tool.Profile.get_active_profile_ui()
+        if active_profile is None:
+            return False
+        profile_ifc = tool.Ifc.get_entity_by_id(active_profile.ifc_definition_id)
+        return profile_ifc is not None
+
+    @classmethod
+    def active_profile_users(cls) -> int:
+        active_profile = tool.Profile.get_active_profile_ui()
+        if active_profile is None:
             return 0
-        profile_prop = profiles_props.profiles[profiles_props.active_profile_index]
-        profile_ifc = tool.Ifc.get().by_id(profile_prop.ifc_definition_id)
+        profile_ifc = tool.Ifc.get_entity_by_id(active_profile.ifc_definition_id)
+        if profile_ifc is None:
+            return 0
         return tool.Ifc.get().get_total_inverses(profile_ifc)
 
     @classmethod

@@ -46,7 +46,9 @@ def get_profile_classes(self: "BIMProfileProperties", context: bpy.types.Context
 def update_profile_name(self: "Profile", context: bpy.types.Context) -> None:
     from bonsai.bim.handler import refresh_ui_data
 
-    profile = tool.Ifc.get().by_id(self.ifc_definition_id)
+    profile = tool.Ifc.get_entity_by_id(self.ifc_definition_id)
+    if not profile:
+        return
     profile.ProfileName = self.name
     refresh_ui_data()
 
@@ -63,15 +65,17 @@ class Profile(PropertyGroup):
 
 
 def update_active_profile_index(self: "BIMProfileProperties", context: bpy.types.Context) -> None:
-    ProfileData.data["active_profile_users"] = ProfileData.active_profile_users()
+    ProfileData.update_active_profile_data()
 
 
 class BIMProfileProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     profiles: CollectionProperty(name="Profiles", type=Profile)
     active_profile_index: IntProperty(name="Active Profile Index", update=update_active_profile_index)
-    active_profile_id: IntProperty(name="Active Profile Id")
-    active_arbitrary_profile_id: IntProperty(name="Active Arbitrary Profile Id")
+    active_profile_id: IntProperty(name="Active Profile Id", description="Currently edited profile ID (attributes).")
+    active_arbitrary_profile_id: IntProperty(
+        name="Active Arbitrary Profile Id", description="Currently edited arbitrary profile ID."
+    )
     profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
     profile_classes: EnumProperty(items=get_profile_classes, name="Profile Classes")
     is_filtering_material_profiles: bpy.props.BoolProperty(
