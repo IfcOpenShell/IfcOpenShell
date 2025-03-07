@@ -459,7 +459,8 @@ class BIM_PT_material_set_item_psets(Panel):
 
         obj = context.active_object
         assert obj
-        if not obj.BIMObjectMaterialProperties.active_material_set_item_id:
+        omprops = tool.Material.get_object_material_props(obj)
+        if not omprops.active_material_set_item_id:
             self.layout.label(text="No Material Set Item Edited.")
             return
 

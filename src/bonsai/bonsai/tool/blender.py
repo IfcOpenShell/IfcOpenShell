@@ -44,6 +44,7 @@ from typing_extensions import assert_never
 if TYPE_CHECKING:
     from bonsai.bim.prop import BIMProperties, BIMObjectProperties
 
+    T = TypeVar("T")
 
 VIEWPORT_ATTRIBUTES = [
     "view_matrix",
@@ -199,7 +200,9 @@ class Blender(bonsai.core.tool.Blender):
             props = tool.Material.get_material_props()
             return props.materials[props.active_material_index].ifc_definition_id
         elif obj_type == "MaterialSetItem":
-            return bpy.data.objects.get(obj).BIMObjectMaterialProperties.active_material_set_item_id
+            obj_ = bpy.data.objects[obj]
+            omprops = tool.Material.get_object_material_props(obj_)
+            return omprops.active_material_set_item_id
         elif obj_type == "Task":
             tprops = tool.Sequence.get_task_tree_props()
             return tprops.tasks[context.scene.BIMWorkScheduleProperties.active_task_index].ifc_definition_id
@@ -1466,9 +1469,9 @@ class Blender(bonsai.core.tool.Blender):
     def set_prop_from_path(cls, bpy_object: bpy.types.bpy_struct, prop_path: str, value: Any) -> None:
         """Set `data_block` property value using path from `path_from_id`."""
 
-        T = TypeVar("T", bound=bpy.types.bpy_struct)
+        T_ = TypeVar("T_", bound=bpy.types.bpy_struct)
 
-        def path_resolve(obj: T, prop_path: str) -> tuple[T, str]:
+        def path_resolve(obj: T_, prop_path: str) -> tuple[T_, str]:
             if "." in prop_path:
                 extra_path, prop_path = prop_path.rsplit(".", 1)
                 obj = obj.path_resolve(extra_path)
@@ -1605,3 +1608,11 @@ class Blender(bonsai.core.tool.Blender):
         if isinstance(obj, bpy.types.Object):
             return tool.Blender.get_object_bim_props(obj).ifc_definition_id
         return tool.Style.get_material_style_props(obj).ifc_definition_id
+
+    @classmethod
+    def get_active_uilist_element(
+        cls, collection: bpy.types.bpy_prop_collection_idprop[T], index: int
+    ) -> Union[T, None]:
+        if 0 <= index < len(collection):
+            return collection[index]
+        return None

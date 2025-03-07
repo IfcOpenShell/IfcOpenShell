@@ -27,10 +27,11 @@ def add_slab_representation(
     file: ifcopenshell.file,
     context: ifcopenshell.entity_instance,
     depth: float = 0.2,
+    # TODO: document remaining args.
     direction_sense: str = "POSITIVE",
     offset: float = 0.0,
     x_angle: float = 0.0,
-    clippings: Optional[list[Union[Clipping, dict[str, Any]]]] = None,
+    clippings: Optional[list[Union[Clipping, ifcopenshell.entity_instance]]] = None,
     polyline: Optional[list[tuple[float, float]]] = None,
 ) -> ifcopenshell.entity_instance:
     """
@@ -55,60 +56,74 @@ def add_slab_representation(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "context": context,
-        "depth": depth,
-        "direction_sense": direction_sense,
-        "offset": offset,
-        "x_angle": x_angle,
-        "clippings": clippings if clippings is not None else [],
-        "polyline": polyline,
-    }
-    return usecase.execute()
+    return usecase.execute(
+        context,
+        depth,
+        direction_sense,
+        offset,
+        x_angle,
+        clippings if clippings is not None else [],
+        polyline,
+    )
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
-        self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        return self.file.createIfcShapeRepresentation(
-            self.settings["context"],
-            self.settings["context"].ContextIdentifier,
-            "Clipping" if self.settings["clippings"] else "SweptSolid",
+    def execute(
+        self,
+        context: ifcopenshell.entity_instance,
+        depth: float,
+        direction_sense: str,
+        offset: float,
+        x_angle: float,
+        clippings: list[Union[Clipping, ifcopenshell.entity_instance]],
+        polyline: Optional[list[tuple[float, float]]],
+    ) -> ifcopenshell.entity_instance:
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        self.clippings = clippings
+        self.depth = depth
+        self.direction_sense = direction_sense
+        self.offset = offset
+        self.x_angle = x_angle
+        self.polyline = polyline
+        return self.file.create_entity(
+            "IfcShapeRepresentation",
+            context,
+            context.ContextIdentifier,
+            "Clipping" if self.clippings else "SweptSolid",
             [self.create_item()],
         )
 
-    def create_item(self):
+    def create_item(self) -> ifcopenshell.entity_instance:
         size = self.convert_si_to_unit(1)
         points = ((0.0, 0.0), (size, 0.0), (size, size), (0.0, size), (0.0, 0.0))
-        if self.settings["polyline"]:
+        if self.polyline:
             points = [
-                (self.convert_si_to_unit(p[0]), self.convert_si_to_unit(p[1] * abs(1 / cos(self.settings["x_angle"]))))
-                for p in self.settings["polyline"]
+                (self.convert_si_to_unit(p[0]), self.convert_si_to_unit(p[1] * abs(1 / cos(self.x_angle))))
+                for p in self.polyline
             ]
         if self.file.schema == "IFC2X3":
             curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
         else:
             curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList2D(points))
 
-        if self.settings["x_angle"]:
-            direction_ratios = (0.0, sin(self.settings["x_angle"]), cos(self.settings["x_angle"]))
+        if self.x_angle:
+            direction_ratios = (0.0, sin(self.x_angle), cos(self.x_angle))
         else:
             direction_ratios = (0.0, 0.0, 1.0)
 
         offset_direction = direction_ratios  # offset direction doesn't change if direction_sense is negative
         extrusion_direction = self.file.createIfcDirection(direction_ratios)
-        if self.settings["direction_sense"] == "NEGATIVE":
+        if self.direction_sense == "NEGATIVE":
             direction_ratios = tuple((-n for n in direction_ratios))
             extrusion_direction = self.file.createIfcDirection(direction_ratios)
 
-        perpendicular_offset = self.convert_si_to_unit(self.settings["offset"]) * abs(1 / cos(self.settings["x_angle"]))
-        perpendicular_depth = self.convert_si_to_unit(self.settings["depth"]) * abs(1 / cos(self.settings["x_angle"]))
+        perpendicular_offset = self.convert_si_to_unit(self.offset) * abs(1 / cos(self.x_angle))
+        perpendicular_depth = self.convert_si_to_unit(self.depth) * abs(1 / cos(self.x_angle))
         position = None
         # default position for IFC2X3 where .Position is not optional
-        if self.file.schema == "IFC2X3" or self.settings["offset"] != 0:
+        if self.file.schema == "IFC2X3" or self.offset != 0:
             position_vector = (
                 offset_direction[0] * perpendicular_offset,
                 offset_direction[1] * perpendicular_offset,
@@ -120,26 +135,27 @@ class Usecase:
                 self.file.createIfcDirection((1.0, 0.0, 0.0)),
             )
 
-        extrusion = self.file.createIfcExtrudedAreaSolid(
+        extrusion = self.file.create_entity(
+            "IfcExtrudedAreaSolid",
             self.file.createIfcArbitraryClosedProfileDef("AREA", None, curve),
             position,
             extrusion_direction,
             perpendicular_depth,
         )
-        if self.settings["clippings"]:
+        if self.clippings:
             return self.apply_clippings(extrusion)
         return extrusion
 
-    def apply_clippings(self, first_operand):
-        while self.settings["clippings"]:
-            clipping = self.settings["clippings"].pop()
+    def apply_clippings(self, first_operand: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        while self.clippings:
+            clipping = self.clippings.pop()
             if isinstance(clipping, ifcopenshell.entity_instance):
                 new = ifcopenshell.util.element.copy(self.file, clipping)
                 new.FirstOperand = first_operand
                 first_operand = new
             else:  # Clipping
-                first_operand = clipping.apply(self.file, first_operand, self.settings["unit_scale"])
+                first_operand = clipping.apply(self.file, first_operand, self.unit_scale)
         return first_operand
 
-    def convert_si_to_unit(self, co):
-        return co / self.settings["unit_scale"]
+    def convert_si_to_unit(self, co: float) -> float:
+        return co / self.unit_scale

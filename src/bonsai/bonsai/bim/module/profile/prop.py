@@ -37,7 +37,7 @@ from bpy.props import (
 from typing import TYPE_CHECKING, Union
 
 
-def get_profile_classes(self, context):
+def get_profile_classes(self: "BIMProfileProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not ProfileData.is_loaded:
         ProfileData.load()
     return ProfileData.data["profile_classes"]
@@ -62,7 +62,7 @@ class Profile(PropertyGroup):
         ifc_definition_id: int
 
 
-def update_active_profile_index(self, context):
+def update_active_profile_index(self: "BIMProfileProperties", context: bpy.types.Context) -> None:
     ProfileData.data["active_profile_users"] = ProfileData.active_profile_users()
 
 

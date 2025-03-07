@@ -156,7 +156,7 @@ class BIM_PT_object_material(Panel):
         assert obj
         self.file = tool.Ifc.get()
         self.oprops = tool.Blender.get_object_bim_props(obj)
-        self.props = obj.BIMObjectMaterialProperties
+        self.props = tool.Material.get_object_material_props(obj)
         self.mprops = tool.Material.get_material_props()
 
         if not ObjectMaterialData.data["materials"]:

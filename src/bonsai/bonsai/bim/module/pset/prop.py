@@ -109,10 +109,12 @@ def get_material_set_pset_names(self, context):
     return psetnames[ifc_class]
 
 
-def get_material_set_item_pset_names(self, context):
+def get_material_set_item_pset_names(self, context) -> list[tuple[str, str, str]]:
     global psetnames
-    ifc_definition_id = context.active_object.BIMObjectMaterialProperties.active_material_set_item_id
-    if not ifc_definition_id:
+    obj = context.active_object
+    assert obj
+    omprops = tool.Material.get_object_material_props(obj)
+    if not omprops.active_material_set_item_id:
         return []
     ifc_class = tool.Ifc.get().by_id(ifc_definition_id).is_a()
     if ifc_class not in psetnames:

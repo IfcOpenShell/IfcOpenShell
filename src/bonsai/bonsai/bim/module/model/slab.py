@@ -21,6 +21,7 @@ import json
 import bmesh
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -343,8 +344,7 @@ class DumbSlabPlaner:
             else:
                 props = tool.Model.get_model_props()
                 x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
-                new_rep = ifcopenshell.api.run(
-                    "geometry.add_slab_representation",
+                new_rep = ifcopenshell.api.geometry.add_slab_representation(
                     tool.Ifc.get(),
                     context=body_context,
                     depth=thickness * self.unit_scale,
@@ -368,15 +368,14 @@ class DumbSlabPlaner:
         else:
             props = tool.Model.get_model_props()
             x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
-            representation = ifcopenshell.api.run(
-                "geometry.add_slab_representation",
+            representation = ifcopenshell.api.geometry.add_slab_representation(
                 tool.Ifc.get(),
                 context=body_context,
                 depth=thickness * self.unit_scale,
                 x_angle=x_angle,
             )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
+            ifcopenshell.api.geometry.assign_representation(
+                tool.Ifc.get(), product=element, representation=representation
             )
 
         bonsai.core.geometry.switch_representation(

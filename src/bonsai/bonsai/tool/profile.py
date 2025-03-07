@@ -123,16 +123,13 @@ class Profile(bonsai.core.tool.Profile):
     @classmethod
     def get_active_profile_ui(cls) -> Union[bonsai.bim.module.profile.prop.Profile, None]:
         props = cls.get_profile_props()
-        index = props.active_profile_index
-        if len(props.profiles) > index >= 0:
-            return props.profiles[index]
+        return tool.Blender.get_active_uilist_element(props.profiles, props.active_profile_index)
 
     # Lengths are in meters.
     DEFAULT_PROFILE_ATTRS = {
         "IfcCircleProfileDef": {
             "Radius": 0.05,
         },
-        # TODO: test after debug
         "IfcAsymmetricIShapeProfileDef": {
             "BottomFlangeWidth": 0.1,
             "BottomFlangeThickness": 0.01,
