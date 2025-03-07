@@ -2065,6 +2065,21 @@ class Model(bonsai.core.tool.Model):
         extrusion.Position = new_position
 
     @classmethod
+    def reset_extrusion_position(cls, extrusion: ifcopenshell.entity_instance) -> None:
+        ifc_file = extrusion.file
+
+        if ifc_file.schema == "IFC2X3":
+            # Position is not optional.
+            extrusion.Position.Location.Coordinates = (0.0, 0.0, 0.0)
+            return
+
+        position = extrusion.Position
+        if position is None:
+            return
+        extrusion.Position = None
+        ifcopenshell.util.element.remove_deep2(ifc_file, position)
+
+    @classmethod
     def get_existing_x_angle(cls, extrusion: ifcopenshell.entity_instance) -> float:
         x, y, z = extrusion.ExtrudedDirection.DirectionRatios
         vector = Vector((0, 1))

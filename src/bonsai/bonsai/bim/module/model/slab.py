@@ -331,9 +331,7 @@ class DumbSlabPlaner:
                 ifc_position = extrusion.Position
                 if perpendicular_offset == 0.0:
                     # Clean up possible previous offset.
-                    if ifc_position:
-                        extrusion.Position = None
-                        ifcopenshell.util.element.remove_deep2(ifc_file, ifc_position)
+                    tool.Model.reset_extrusion_position(extrusion)
                 else:
                     position = offset_direction * perpendicular_offset
                     if ifc_position:
