@@ -718,7 +718,7 @@ std::pair<Ifc4x3_add2::IfcCurveSegment*, Ifc4x3_add2::IfcCurveSegment*> mapAlign
         // dy/dx = B + 2Cx
         auto dx = cos(atan(start_gradient));
         auto dy = sin(atan(start_gradient));
-        auto curve_length_fn = [B, C](double x) { return sqrt(1 + pow(B + C * x, 2)); };
+        auto curve_length_fn = [B, C](double x) { return sqrt(1 + pow(B + 2*C * x, 2)); };
         auto segment_curve_length = boost::math::quadrature::trapezoidal(curve_length_fn, 0.0, horizontal_length);
 
         auto curve_segment = new Ifc4x3_add2::IfcCurveSegment(

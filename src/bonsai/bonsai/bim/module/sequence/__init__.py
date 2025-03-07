@@ -81,7 +81,6 @@ classes = (
     operator.GenerateGanttChart,
     operator.GuessDateRange,
     operator.GoToTask,
-    operator.ImportAlignmentCSV,
     operator.ImportCSV,
     operator.ImportMSP,
     operator.ImportP6,
@@ -163,7 +162,6 @@ def menu_func_export(self, context):
 
 
 def menu_func_import(self, context):
-    self.layout.operator(operator.ImportAlignmentCSV.bl_idname, text="Alignment (.csv)")
     self.layout.operator(operator.ImportCSV.bl_idname, text="Work Schedule (.csv)")
     self.layout.operator(operator.ImportP6.bl_idname, text="P6 (.xml)")
     self.layout.operator(operator.ImportP6XER.bl_idname, text="P6 (.xer)")

@@ -1,5 +1,5 @@
 # IfcOpenShell - IFC toolkit and geometry engine
-# Copyright (C) 2021 Thomas Krijnen <thomas@aecgeeks.com>
+# Copyright (C) 2025 Thomas Krijnen <thomas@aecgeeks.com>
 #
 # This file is part of IfcOpenShell.
 #
@@ -16,7 +16,8 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-
+import ifcopenshell
+import ifcopenshell.api.alignment
 import math
 from typing import Sequence
 
@@ -35,8 +36,9 @@ import ifcopenshell.util.stationing
 def evaluate_representation(shape_rep: entity_instance, dist_along: float) -> np.ndarray:
     """
     Calculate the 4x4 geometric transform at a point on an alignment segment
-    @param shape_rep: The representation shape (composite curve, gradient curve, or segmented reference curve) to evaluate
-    @param dist_along: The distance along this representation at the point of interest (point to be calculated)
+
+    :param shape_rep: The representation shape (composite curve, gradient curve, or segmented reference curve) to evaluate
+    :param dist_along: The distance along this representation at the point of interest (point to be calculated)
     """
     supported_rep_types = ["IFCCOMPOSITECURVE", "IFCGRADIENTCURVE", "IFCSEGMENTEDREFERENCECURVE"]
     shape_rep_type = shape_rep.is_a().upper()
@@ -59,8 +61,9 @@ def evaluate_representation(shape_rep: entity_instance, dist_along: float) -> np
 def evaluate_segment(segment: entity_instance, dist_along: float) -> np.ndarray:
     """
     Calculate the 4x4 geometric transform at a point on an alignment segment
-    @param segment: The segment containing the point that we would like to
-    @param dist_along: The distance along this segment at the point of interest (point to be calculated)
+
+    :param segment: The segment containing the point that we would like to
+    :param dist_along: The distance along this segment at the point of interest (point to be calculated)
     """
     supported_segment_types = ["IFCCURVESEGMENT"]
     segment_type = segment.is_a().upper()
@@ -82,14 +85,18 @@ def generate_vertices(rep_curve: entity_instance, distance_interval: float = 5.0
     """
     Generate vertices along an alignment
 
-    @param rep_curve: The alignment's representation curve to use to generate vertices.
-
-    Note: rep_curve must be IfcCompositeCurve, IfcGradientCurve, or IfcSegmentedReferenceCurve
-
-    @param distance_interval: The distance between points along the alignment at which to generate the points
+    :param rep_curve: The alignment's representation curve to use to generate vertices.
+    :param distance_interval: The distance between points along the alignment at which to generate the points
     """
     if rep_curve is None:
         raise ValueError("Alignment representation not found.")
+
+    supported_rep_types = ["IFCCOMPOSITECURVE", "IFCGRADIENTCURVE", "IFCSEGMENTEDREFERENCECURVE"]
+    shape_rep_type = rep_curve.is_a().upper()
+    if not shape_rep_type in supported_rep_types:
+        raise NotImplementedError(
+            f"Expected entity type to be one of {[_ for _ in supported_rep_types]}, got '{shape_rep_type}"
+        )
 
     s = ifcopenshell.geom.settings()
     s.set("piecewise-step-type", 0)  # 0 = step-size is maximum step size, 1 = step-size is mininimum number of steps
@@ -102,25 +109,26 @@ def generate_vertices(rep_curve: entity_instance, distance_interval: float = 5.0
     return np.array(vertices).reshape((-1, 3))
 
 
-def print_structure(alignment, indent=0):
+def print_alignment(alignment, indent=0):
     """
     Debugging function to print alignment decomposition
     """
-    print(" " * indent, str(alignment)[0:100])
+    print(" " * indent, alignment)
 
     for rel in alignment.IsNestedBy:
         for child in rel.RelatedObjects:
-            print_structure(child, indent + 2)
+            print_alignment(child, indent + 2)
 
     for agg in alignment.IsDecomposedBy:
         for child in agg.RelatedObjects:
-            print_structure(child, indent + 2)
+            print_alignment(child, indent + 2)
 
 
-def name_segments(prefix: str, segments: Sequence[entity_instance]) -> None:
+def print_composite_curve(curve):
     """
-    Sets the segment name like ("H1" for horizontal, "V1" for vertical, "C1" for cant)
+    Debugging function to print composite curve segments
     """
-    for i, segment in enumerate(segments):
-        segment.Name = f"{prefix}{i + 1}"
+    print(str(curve)[0:100])
 
+    for segment in curve.Segments:
+        print(" " * 2, segment)
