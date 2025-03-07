@@ -200,7 +200,8 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
     for lang in langs:
         ret.append(f'{tab}"{lang}": {{')
         for msgid, msg in translation_data.items():
-            if (msgstr := msg.translations[lang]) in (None, ""):
+            # World isn't perfect and .po files can get out of sync, so let's make it permissive.
+            if (msgstr := msg.translations.get(lang)) in (None, ""):
                 continue
             msgctxt = msg.msgctxt
             if not msgctxt:
