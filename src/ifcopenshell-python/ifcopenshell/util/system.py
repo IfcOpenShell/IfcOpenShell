@@ -39,6 +39,12 @@ group_types: dict[str, tuple[str, ...]] = {
     "IfcSystem": ("IfcProduct",),
     "IfcGroup": ("IfcObjectDefinition",),
 }
+# Subclasses.
+group_types["IfcDistributionCircuit"] = group_types["IfcDistributionSystem"]
+# Replaced by IfcDistributionCircuit in IFC4, though it wasn't limited to IfcDistributionElements:
+# "Usage of IfcElectricalCircuit is as for the supertype IfcSystem".
+group_types["IfcElectricalCircuit"] = group_types["IfcSystem"]
+
 
 FLOW_DIRECTION = Literal["SINK", "SOURCE", "SOURCEANDSINK", "NOTEDEFINED"]
 
