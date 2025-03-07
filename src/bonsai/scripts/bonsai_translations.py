@@ -184,7 +184,7 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
     for po_file_path in po_directory.glob("**/*.po"):
         lang = po_file_path.stem
         langs.add(lang)
-        with open(po_file_path, "r") as po_file:
+        with open(po_file_path, "r", encoding="utf-8") as po_file:
             current_chunk = []
             for line in po_file:
                 current_chunk.append(line)
@@ -210,7 +210,7 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
 
     ret.append("}")
 
-    with open(translations_module / "translations.py", "w") as fo:
+    with open(translations_module / "translations.py", "w", encoding="utf-8") as fo:
         fo.write("\n".join(ret))
 
 
