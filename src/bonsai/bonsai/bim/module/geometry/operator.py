@@ -2257,6 +2257,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 return
 
             old_profile = item.SweptArea
+            profile.ProfileName = old_profile.ProfileName
             for inverse in tool.Ifc.get().get_inverse(old_profile):
                 ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
             ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
