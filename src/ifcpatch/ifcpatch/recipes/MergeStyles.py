@@ -43,7 +43,7 @@ class Patcher:
             i = 0
             for element in self.file.by_type(ifc_class):
                 data = "-".join([str(a) for a in element])
-                if (unique := uniques.get(data, None)):
+                if unique := uniques.get(data, None):
                     ifcopenshell.util.element.replace_element(element, unique)
                     self.file.remove(element)
                     i += 1
