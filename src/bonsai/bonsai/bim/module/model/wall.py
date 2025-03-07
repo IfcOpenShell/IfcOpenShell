@@ -264,7 +264,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     layer_params = tool.Model.get_material_layer_parameters(element)
                     perpendicular_depth = layer_params["thickness"] * abs(1 / cos(x_angle)) / unit_scale
                     perpendicular_offset = layer_params["offset"] * abs(1 / cos(x_angle)) / unit_scale
-                    offset_direction = direction_ratios.copy()
+                    offset_direction = Vector((abs(direction_ratios.x), abs(direction_ratios.y), abs(direction_ratios.z))) # The offset direction doesn't change with direction sense
 
                     # Check angle and z direction to determine whether the extrusion direction is positive or negative
                     if (abs(x_angle) < (pi / 2) and direction_ratios.z > 0) or (
@@ -272,7 +272,6 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     ):
                         # The extrusion direction is positive. If the layer_parameter is set to negative,
                         # then the we change the extrusion direction.
-                        # The offset direction must always be positive, so we keep it.
                         if layer_params["direction_sense"] == "NEGATIVE":
                             direction_ratios *= -1
                     elif ((x_angle) > (pi / 2) and direction_ratios.z > 0) or (
@@ -280,10 +279,8 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     ):
                         # The extrusion direction is negative. If the layer_parameter is set to positive,
                         # then the we change the extrusion direction.
-                        # The offset direction must always be positive, so we change it too.
                         if layer_params["direction_sense"] == "POSITIVE":
                             direction_ratios *= -1
-                            offset_direction *= -1
 
                     extrusion.ExtrudedDirection.DirectionRatios = tuple(direction_ratios)
                     extrusion.Depth = perpendicular_depth

@@ -39,7 +39,7 @@ import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.core.geometry as geometry
-from math import atan, cos, degrees, radians
+from math import atan, cos, degrees, radians, pi
 from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
@@ -2084,7 +2084,7 @@ class Model(bonsai.core.tool.Model):
         x, y, z = extrusion.ExtrudedDirection.DirectionRatios
         vector = Vector((0, 1))
         x_angle = vector.angle_signed(Vector((y, z)))
-        return x_angle
+        return x_angle if z > 0 else (x_angle + pi)
 
     @classmethod
     def create_axis_curve(cls, obj: bpy.types.Object, grid_axis: ifcopenshell.entity_instance) -> None:
