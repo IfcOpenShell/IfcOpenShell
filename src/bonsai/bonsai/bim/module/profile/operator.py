@@ -44,7 +44,9 @@ class LoadProfiles(bpy.types.Operator):
         for profile in tool.Ifc.get().by_type("IfcProfileDef"):
             if filter_material_profiles:
                 inverse_references = tool.Ifc.get().get_inverse(profile)
-                related_material_profiles = [ref for ref in inverse_references if ref.is_a("IfcMaterialProfile")]
+                related_material_profiles = next(
+                    (ref for ref in inverse_references if ref.is_a("IfcMaterialProfile")), None
+                )
                 if not related_material_profiles:
                     continue
             if not profile.ProfileName:
