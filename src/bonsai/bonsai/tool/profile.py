@@ -125,6 +125,14 @@ class Profile(bonsai.core.tool.Profile):
         props = cls.get_profile_props()
         return tool.Blender.get_active_uilist_element(props.profiles, props.active_profile_index)
 
+    @classmethod
+    def replace_profile_in_profiles_ui(cls, old_profile_id: int, new_profile_id: int) -> None:
+        props = cls.get_profile_props()
+        for profile in props.profiles:
+            if profile.ifc_definition_id == old_profile_id:
+                profile.ifc_definition_id = new_profile_id
+                return
+
     # Lengths are in meters.
     DEFAULT_PROFILE_ATTRS = {
         "IfcCircleProfileDef": {

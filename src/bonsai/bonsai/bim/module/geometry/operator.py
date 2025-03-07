@@ -2260,6 +2260,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
             profile.ProfileName = old_profile.ProfileName
             for inverse in tool.Ifc.get().get_inverse(old_profile):
                 ifcopenshell.util.element.replace_attribute(inverse, old_profile, profile)
+            tool.Profile.replace_profile_in_profiles_ui(old_profile.id(), profile.id())
             ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_profile)
 
             tool.Geometry.reload_representation(props.representation_obj)
