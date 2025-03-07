@@ -913,12 +913,12 @@ class PolylineOperator:
             data = get_generic_product_preview_data(context, relating_type)
 
         # Update properties so it can be used by the decorator
-        if not data:
-            return
         props = context.scene.BIMProductPreviewProperties
         props.verts.clear()
         props.edges.clear()
         props.tris.clear()
+        if not data:
+            return
 
         for vert in data["verts"]:
             v = props.verts.add()
