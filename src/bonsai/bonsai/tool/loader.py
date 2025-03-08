@@ -1036,9 +1036,13 @@ class Loader(bonsai.core.tool.Loader):
         bm = bmesh.new()
         bm.from_mesh(mesh)
         prev_co = None
-        co = Vector((0.0, offset, 0.0))
         # no = Vector((0.0, 1.0, 0.0))
-        no = (cls.get_extrusion_vector(element).cross(Vector([1.0, 0.0, 0.0]))).normalized()
+        no = cls.get_extrusion_vector(element).normalized()
+        if usage and usage.LayerSetDirection == "AXIS2":
+            co = Vector((0.0, offset, 0.0))
+            no = no.cross(Vector([1.0, 0.0, 0.0]))
+        else:
+            co = Vector((0.0, 0.0, offset))
         # Cache this
         body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         styles = {}
