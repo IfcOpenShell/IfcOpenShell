@@ -637,14 +637,6 @@ class DumbWallGenerator:
         elif insertion_type == "CURSOR":
             return self.derive_from_cursor()
 
-    def has_sketch(self):
-        return (
-            bpy.context.scene.grease_pencil
-            and len(bpy.context.scene.grease_pencil.layers) == 1
-            and bpy.context.scene.grease_pencil.layers[0].info == "Note"
-            and bpy.context.scene.grease_pencil.layers[0].active_frame.strokes
-        )
-
     def derive_from_polyline(self) -> tuple[list[Union[dict[str, Any], None]], bool]:
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
@@ -676,7 +668,6 @@ class DumbWallGenerator:
         polyline_points = [slab_obj.matrix_world @ Vector((p[0], p[1], elevation)) for p in polyline_points]
         if not tool.Cad.is_counter_clockwise_order(polyline_points[0], polyline_points[1], polyline_points[2]):
             polyline_points = polyline_points[::-1]
-        is_polyline_closed = True
         walls = []
         for i in range(len(polyline_points) - 1):
             vec1 = polyline_points[i]
@@ -684,39 +675,6 @@ class DumbWallGenerator:
             coords = (vec1, vec2)
             walls.append(self.create_wall_from_2_points(coords))
         return walls
-
-    def derive_from_sketch(self):
-        objs = []
-        strokes = []
-        layer = bpy.context.scene.grease_pencil.layers[0]
-
-        for stroke in layer.active_frame.strokes:
-            if len(stroke.points) == 1:
-                continue
-            data = self.create_wall_from_2_points((stroke.points[0].co, stroke.points[-1].co), round=True)
-            if data:
-                strokes.append(data)
-                objs.append(data["obj"])
-
-        if len(objs) < 2:
-            return objs
-
-        l_joins = set()
-        for stroke in strokes:
-            if not stroke["obj"]:
-                continue
-            for stroke2 in strokes:
-                if stroke2 == stroke or not stroke2["obj"]:
-                    continue
-                if self.has_nearby_ends(stroke, stroke2):
-                    wall_join = "-JOIN-".join(sorted([stroke["obj"].name, stroke2["obj"].name]))
-                    if wall_join not in l_joins:
-                        l_joins.add(wall_join)
-                        DumbWallJoiner(stroke["obj"], stroke2["obj"]).join_L()
-                elif self.has_end_near_stroke(stroke, stroke2):
-                    DumbWallJoiner(stroke["obj"], stroke2["obj"]).join_T()
-        bpy.context.scene.grease_pencil.layers.remove(layer)
-        return objs
 
     def create_wall_from_2_points(self, coords, should_round=False) -> Union[dict[str, Any], None]:
         direction = coords[1] - coords[0]
@@ -734,25 +692,6 @@ class DumbWallGenerator:
         self.location = coords[0]
         data["obj"] = self.create_wall()
         return data
-
-    def has_end_near_stroke(self, stroke, stroke2):
-        point, distance = mathutils.geometry.intersect_point_line(stroke["coords"][0], *stroke2["coords"])
-        if distance > 0 and distance < 1 and self.is_near(point, stroke["coords"][0]):
-            return True
-        point, distance = mathutils.geometry.intersect_point_line(stroke["coords"][1], *stroke2["coords"])
-        if distance > 0 and distance < 1 and self.is_near(point, stroke["coords"][1]):
-            return True
-
-    def has_nearby_ends(self, stroke, stroke2):
-        return (
-            self.is_near(stroke["coords"][0], stroke2["coords"][0])
-            or self.is_near(stroke["coords"][0], stroke2["coords"][1])
-            or self.is_near(stroke["coords"][1], stroke2["coords"][0])
-            or self.is_near(stroke["coords"][1], stroke2["coords"][1])
-        )
-
-    def is_near(self, point1, point2):
-        return (point1 - point2).length < 0.1
 
     def derive_from_cursor(self) -> bpy.types.Object:
         RAYCAST_PRECISION = 0.01
