@@ -60,10 +60,7 @@ def join_walls_LV(
     for obj in selected_objs:
         geometry.clear_scale(obj)
 
-    if join_type == "L":
-        joiner.join_L(another_selected_object, active_obj)
-    elif join_type == "V":
-        joiner.join_V(another_selected_object, active_obj)
+    joiner.connect(another_selected_object, active_obj)
 
 
 def join_walls_TZ(ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner, model: tool.Model) -> None:

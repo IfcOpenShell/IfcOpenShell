@@ -823,11 +823,7 @@ class EditObjectUI:
             add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(
-                row, "Butt", "S_T", "Intersects two non-parallel elements to a butt corner junction", ui_context
-            )
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            add_layout_hotkey_operator(
-                row, "Mitre", "S_Y", "Intersects two non-parallel elements to a mitred corner junction", ui_context
+                row, "Trim", "S_T", "Connects and trims two non-parallel elements into a joint", ui_context
             )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Unjoin Walls", "S_U", "", ui_context)
@@ -1336,7 +1332,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             try:
-                core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model, join_type="L")
+                core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
             except core.RequireTwoWallsError as e:
                 self.report({"ERROR"}, str(e))
         elif self.active_material_usage == "PROFILE":
@@ -1362,12 +1358,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_Y(self):
         if not bpy.context.selected_objects:
             return
-        if self.active_material_usage == "LAYER2":
-            try:
-                core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model, join_type="V")
-            except core.RequireTwoWallsError as e:
-                self.report({"ERROR"}, str(e))
-        elif self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
+        if self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
             bpy.ops.bim.fit_flow_segments()
         elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="V")
