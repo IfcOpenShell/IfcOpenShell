@@ -34,6 +34,27 @@ def edit_object_placement(
     is_si: bool = True,
     should_transform_children: bool = False,
 ) -> ifcopenshell.entity_instance:
+    """Changes the object placement matrix of an element
+
+    The placement matrix is a 4x4 matrix describing the location and
+    orientation of an element in 3D. See
+    https://docs.ifcopenshell.org/ifcopenshell-python/geometry_creation.html#object-placements
+    for more details.
+
+    This only supports local placements. Grid and linear placements are not
+    supported.
+
+    :param matrix: A 4x4 matrix in numpy. If left blank, it is the identity
+        matrix (equivalent to ``np.eye(4)``).
+    :param is_si: If True, the matrix is given in SI units. If false, in
+        project units.
+    :param should_transform_children: A child element is a nested element,
+        opening, filling, etc. If true, child elements will move along with the
+        parent. If false, child elements will stay where they are. Because most
+        placements in IFC are relative, this means that if a child moves, we
+        actually don't change their placement.
+    :return: The new or updated IfcLocalPlacement entity
+    """
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {

@@ -1008,7 +1008,6 @@ class DumbWallJoiner:
         ifcopenshell.api.geometry.edit_object_placement(
             tool.Ifc.get(), product=element1, matrix=matrix, is_si=False, should_transform_children=False
         )
-        self.import_position(element1, wall1)
         self.recreate_wall(element1, wall1)
 
     def merge(self, wall1, wall2):
@@ -1111,13 +1110,6 @@ class DumbWallJoiner:
         else:
             ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=rep)
 
-    def import_position(self, element, obj):
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-        matrix[:, 3] *= unit_scale
-        obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix)
-        tool.Geometry.record_object_position(obj)
-
     def join_E(self, wall1, target):
         if tool.Ifc.is_moved(wall1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
@@ -1198,6 +1190,12 @@ class DumbWallJoiner:
             should_sync_changes_first=False,
         )
         tool.Geometry.record_object_materials(obj)
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        matrix[:, 3] *= unit_scale
+        obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix)
+        tool.Geometry.record_object_position(obj)
         return
 
         wall_moved = tool.Ifc.is_moved(obj)

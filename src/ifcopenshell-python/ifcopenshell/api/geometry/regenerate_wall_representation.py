@@ -19,9 +19,10 @@
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api.geometry
-import ifcopenshell.util.shape_builder
-import ifcopenshell.util.element
 import ifcopenshell.util.unit
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.shape_builder
 from collections import namedtuple
 from math import sin, cos
 from typing import Optional
@@ -62,6 +63,14 @@ def regenerate_wall_representation(
     For sloped walls, a basic rectangular 2D profile is extruded, and then
     additional extrusions are generated for each connection that boolean
     difference the base extrusion.
+
+    This will also update the axis line representation (e.g. trim the axis line
+    to any connections).
+
+    The wall's object placement will also be updated such that the placement is
+    equivalent to the axis line's start point (which therefore becomes (0.0,
+    0.0)). This is a logical, consistent, and useful placement coordinate
+    (especially for apps that can pivot using this point).
 
     :param wall: The IfcWall for the representation,
         only Model/Body/MODEL_VIEW type of representations are currently supported.
@@ -165,7 +174,7 @@ class Regenerator:
             end_points.reverse()
             points.extend(end_points)
             item = builder.extrude(
-                builder.polyline(points, closed=True),
+                builder.polyline(points, closed=True, position_offset=self.reference_p1 * -1),
                 magnitude=self.wall_vectors["d"],
                 extrusion_vector=self.wall_vectors["z"],
             )
@@ -186,7 +195,9 @@ class Regenerator:
                 magnitude = np.linalg.norm(self.start_vector * (self.wall_vectors["h"] / self.start_vector[2]))
                 operands.append(
                     builder.extrude(
-                        builder.polyline(points, closed=True), magnitude=magnitude, extrusion_vector=self.start_vector
+                        builder.polyline(points, closed=True, position_offset=self.reference_p1 * -1),
+                        magnitude=magnitude,
+                        extrusion_vector=self.start_vector,
                     )
                 )
 
@@ -206,7 +217,9 @@ class Regenerator:
                 magnitude = np.linalg.norm(self.end_vector * (self.wall_vectors["h"] / self.end_vector[2]))
                 operands.append(
                     builder.extrude(
-                        builder.polyline(points, closed=True), magnitude=magnitude, extrusion_vector=self.end_vector
+                        builder.polyline(points, closed=True, position_offset=self.reference_p1 * -1),
+                        magnitude=magnitude,
+                        extrusion_vector=self.end_vector,
                     )
                 )
 
@@ -216,7 +229,9 @@ class Regenerator:
                 magnitude = np.linalg.norm(atpath_vector * (self.wall_vectors["h"] / atpath_vector[2]))
                 operands.append(
                     builder.extrude(
-                        builder.polyline(points, closed=True), magnitude=magnitude, extrusion_vector=atpath_vector
+                        builder.polyline(points, closed=True, position_offset=self.reference_p1 * -1),
+                        magnitude=magnitude,
+                        extrusion_vector=atpath_vector,
                     )
                 )
 
@@ -265,10 +280,14 @@ class Regenerator:
                         remaining_path_points.append(minpath_points)
                 self.minpath_points = remaining_path_points
 
-                profiles.append(builder.profile(builder.polyline(points, closed=True)))
+                profiles.append(
+                    builder.profile(builder.polyline(points, closed=True, position_offset=self.reference_p1 * -1))
+                )
 
             for points in self.maxpath_points + self.minpath_points:
-                profiles.append(builder.profile(builder.polyline(points, closed=True)))
+                profiles.append(
+                    builder.profile(builder.polyline(points, closed=True, position_offset=self.reference_p1 * -1))
+                )
 
             if len(profiles) > 1:
                 profile = self.file.createIfcCompositeProfileDef("AREA", Profiles=profiles)
@@ -283,13 +302,21 @@ class Regenerator:
         else:
             ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=body_rep)
 
-        item = builder.polyline([self.reference_p1, self.reference_p2])
+        item = builder.polyline([self.reference_p1, self.reference_p2], position_offset=self.reference_p1 * -1)
         axis_rep = builder.get_representation(self.axis, items=[item])
         if old_rep := ifcopenshell.util.representation.get_representation(wall, self.axis):
             ifcopenshell.util.element.replace_element(old_rep, axis_rep)
             ifcopenshell.util.element.remove_deep2(self.file, old_rep)
         else:
             ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=axis_rep)
+
+        if not np.allclose(self.reference_p1, np.array((0.0, 0.0))):
+            matrix = ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement)
+            matrix[:, 3] = matrix @ np.concatenate((self.reference_p1, (0, 1)))
+            ifcopenshell.api.geometry.edit_object_placement(
+                self.file, product=wall, matrix=matrix, is_si=False, should_transform_children=False
+            )
+
         return body_rep
 
     def join(self, wall1, wall2, layers1, layers2, connection1, connection2):
