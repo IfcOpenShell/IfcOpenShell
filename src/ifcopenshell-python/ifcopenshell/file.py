@@ -674,7 +674,20 @@ class file:
             model.write("path/to/model.anyextension", format=".ifcXML")
         """
         path = Path(path)
-        path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Check if we have necessary write permissions
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+        except PermissionError:
+            raise PermissionError(f"No permission to create directories at '{path.parent}', check folder permissions.")
+
+        if path.exists():
+            if not os.access(path, os.W_OK):
+                raise PermissionError(f"No write permission for existing file '{path}', check file permissions.")
+        else:
+            if not os.access(path.parent, os.W_OK):
+                raise PermissionError(f"No write permission for directory '{path.parent}', check folder permissions.")
+
         if format == None:
             format = ifcopenshell.guess_format(path)
         if format == ".ifcXML":
@@ -690,8 +703,7 @@ class file:
         if format == ".ifcZIP":
             return self.write(path, ".ifc", zipped=True)
         self.wrapped_data.write(str(path))
-        if not path.exists():
-            raise PermissionError(f"Failed to write to '{path}', check folder permissions.")
+        
         if zipped:
             unzipped_path = path.with_suffix(format)
             path.rename(unzipped_path)
