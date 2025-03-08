@@ -461,3 +461,22 @@ def get_material_style(
                     for style in item.Styles:
                         if style.is_a(ifc_class):
                             return style
+
+
+def get_reference_line(wall: ifcopenshell.entity_instance, fallback_length: float = 1.0):
+    """Fetch the reference axis that goes in the +X direction
+
+    :param wall: ifcopenshell.entity_instance
+    """
+    if axis := ifcopenshell.util.representation.get_representation(wall, "Plan", "Axis", "GRAPH_VIEW"):
+        for item in ifcopenshell.util.representation.resolve_representation(axis).Items:
+            if item.is_a("IfcPolyline"):
+                points = item.Points
+            elif item.is_a("IfcIndexedPolyCurve"):
+                points = item.Points.CoordList
+            else:
+                continue
+            if points[0][0] < points[1][0]:  # An axis always goes in the +X direction
+                return [np.array(points[0]), np.array(points[1])]
+            return [np.array(points[1]), np.array(points[0])]
+    return [np.array((0.0, 0.0)), np.array((fallback_length, 0.0))]

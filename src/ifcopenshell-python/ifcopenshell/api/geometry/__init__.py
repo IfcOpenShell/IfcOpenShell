@@ -43,6 +43,7 @@ from .add_window_representation import add_window_representation
 from .assign_representation import assign_representation
 from .connect_element import connect_element
 from .connect_path import connect_path
+from .connect_wall import connect_wall
 from .create_2pt_wall import create_2pt_wall
 from .disconnect_element import disconnect_element
 from .disconnect_path import disconnect_path
@@ -72,6 +73,7 @@ __all__ = [
     "assign_representation",
     "connect_element",
     "connect_path",
+    "connect_wall",
     "create_2pt_wall",
     "disconnect_element",
     "disconnect_path",

@@ -93,7 +93,7 @@ class Regenerator:
         layers = self.get_layers(wall)
         if not layers:
             return
-        reference = self.get_reference_line(wall)
+        reference = ifcopenshell.util.representation.get_reference_line(wall, self.fallback_length)
         self.reference_p1, self.reference_p2 = reference
         self.wall_vectors = self.get_wall_vectors(wall)
         axes = self.get_axes(wall, reference, layers, self.wall_vectors["a"])
@@ -300,8 +300,8 @@ class Regenerator:
         print("joining", wall1, layers1, connection1)
         print("to", wall2, layers2, connection2)
 
-        reference1 = self.get_reference_line(wall1)
-        reference2 = self.get_reference_line(wall2)
+        reference1 = ifcopenshell.util.representation.get_reference_line(wall1, self.fallback_length)
+        reference2 = ifcopenshell.util.representation.get_reference_line(wall2, self.fallback_length)
         wall_vectors2 = self.get_wall_vectors(wall2)
         axes1 = self.get_axes(wall1, reference1, layers1, self.wall_vectors["a"])
         axes2 = self.get_axes(wall2, reference2, layers2, wall_vectors2["a"])
@@ -516,20 +516,6 @@ class Regenerator:
                 results.append(layer)
         return results
 
-    def get_reference_line(self, wall):
-        if axis := ifcopenshell.util.representation.get_representation(wall, "Plan", "Axis", "GRAPH_VIEW"):
-            for item in ifcopenshell.util.representation.resolve_representation(axis).Items:
-                if item.is_a("IfcPolyline"):
-                    points = item.Points
-                elif item.is_a("IfcIndexedPolyCurve"):
-                    points = item.Points.CoordList
-                else:
-                    continue
-                if points[0][0] < points[1][0]:  # An axis always goes in the +X direction
-                    return [np.array(points[0]), np.array(points[1])]
-                return [np.array(points[1]), np.array(points[0])]
-        return [np.array((0.0, 0.0)), np.array((self.fallback_length, 0.0))]
-
     def get_wall_vectors(self, wall):
         if body := ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW"):
             for item in ifcopenshell.util.representation.resolve_representation(body).Items:
@@ -572,7 +558,7 @@ class Regenerator:
         axes = [[p.copy() for p in reference]]
         # Apply usage to convert the Reference line into MlsBase
         sense_factor = 1
-        if (usage := ifcopenshell.util.element.get_material(wall)) and usage.is_a("IfcMaterialLayerSetUage"):
+        if (usage := ifcopenshell.util.element.get_material(wall)) and usage.is_a("IfcMaterialLayerSetUsage"):
             for point in axes[0]:
                 point[1] += usage.OffsetFromReferenceLine
             sense_factor = 1 if usage.DirectionSense == "POSITIVE" else -1
