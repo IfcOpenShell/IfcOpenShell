@@ -155,9 +155,9 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.add_element()
 
 
-class AddOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
-    bl_idname = "bim.add_occurrence"
-    bl_label = "Add Occurrence"
+class DrawOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
+    bl_idname = "bim.draw_occurrence"
+    bl_label = "Draw Occurrence"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -194,7 +194,7 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
         context.scene.cursor.location = Vector((point.x, point.y, point.z))
         tool.Polyline.clear_polyline()
 
-        bpy.ops.bim.add_constr_type_instance("INVOKE_DEFAULT")
+        bpy.ops.bim.add_occurrence("INVOKE_DEFAULT")
 
         if snap_obj:
             snap_obj.select_set(False)
@@ -265,8 +265,8 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
         return {"RUNNING_MODAL"}
 
 
-class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_constr_type_instance"
+class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_occurrence"
     bl_label = "Add Type Occurrence"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add Type Instance"

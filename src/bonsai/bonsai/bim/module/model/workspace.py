@@ -1136,7 +1136,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             "IfcPileType",
         ):
             return bpy.ops.bim.draw_polyline_profile("INVOKE_DEFAULT")
-        return bpy.ops.bim.add_occurrence("INVOKE_DEFAULT")
+        return bpy.ops.bim.draw_occurrence("INVOKE_DEFAULT")
 
     def hotkey_S_Q(self):
         if not bpy.context.selected_objects:

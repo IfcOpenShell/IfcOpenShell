@@ -87,7 +87,7 @@ class CoveringToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_A")
-            row.operator("bim.add_constr_type_instance", text="Add")
+            row.operator("bim.add_occurrence", text="Add")
 
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -179,16 +179,16 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             elif container:
                 bpy.ops.bim.add_instance_flooring_covering_from_cursor()
             else:
-                bpy.ops.bim.add_constr_type_instance()
+                bpy.ops.bim.add_occurrence()
         elif AuthoringData.data["relating_type_data"].get("predefined_type") == "CEILING":
             if element and bpy.context.selected_objects and element.is_a("IfcWall"):
                 bpy.ops.bim.add_instance_ceiling_coverings_from_walls()
             elif container:
                 bpy.ops.bim.add_instance_ceiling_covering_from_cursor()
             else:
-                bpy.ops.bim.add_constr_type_instance()
+                bpy.ops.bim.add_occurrence()
         else:
-            bpy.ops.bim.add_constr_type_instance()
+            bpy.ops.bim.add_occurrence()
 
     def hotkey_S_G(self):
         active_obj = bpy.context.active_object

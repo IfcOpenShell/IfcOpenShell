@@ -1248,7 +1248,7 @@ def i_display_the_construction_type_browser():
 @when("I add the construction type")
 def i_add_the_active_construction_type():
     props = tool.Model.get_model_props()
-    bpy.ops.bim.add_constr_type_instance(relating_type_id=int(props.relating_type_id))
+    bpy.ops.bim.add_occurrence(relating_type_id=int(props.relating_type_id))
 
 
 @then(parsers.parse("construction type is {relating_type_name}"))

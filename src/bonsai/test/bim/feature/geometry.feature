@@ -33,8 +33,8 @@ Scenario: Add representation - add a new representation to a typed instance
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
     And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
     And I press "bim.assign_class"
-    And I press "bim.add_constr_type_instance"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
+    And I press "bim.add_occurrence"
     Then the object "IfcWall/Wall" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcWall/Wall.001" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     When the object "IfcWall/Wall" is selected
@@ -127,8 +127,8 @@ Scenario: Remove representation - remove an instanced representation from an act
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
-    And I press "bim.add_constr_type_instance"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
+    And I press "bim.add_occurrence"
     And the object "IfcWallType/Cube" is selected
     When the variable "representation_body" is "{ifc}.by_type('IfcWallType')[0].RepresentationMaps[0].MappedRepresentation.id()"
     And I press "bim.remove_representation(representation_id={representation_body})"
@@ -146,8 +146,8 @@ Scenario: Remove representation - remove an instanced representation from an act
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
-    And I press "bim.add_constr_type_instance"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
+    And I press "bim.add_occurrence"
     And the object "IfcWall/Wall" is selected
     When the variable "representation_body" is "{ifc}.by_type('IfcWall')[0].Representation.Representations[0].id()"
     And I press "bim.remove_representation(representation_id={representation_body})"
@@ -339,7 +339,7 @@ Scenario: Override duplicate move - copying a type instance with a representatio
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And the object "IfcWall/Wall" is selected
     When I duplicate the selected objects
     Then the object "IfcWall/Wall.001" exists
@@ -425,14 +425,14 @@ Scenario: Override duplicate move - copying objects with connection
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
-    When I press "bim.add_constr_type_instance"
+    When I press "bim.add_occurrence"
     Then the object "IfcWall/Wall" is an "IfcWall"
     And the object "IfcWall/Wall" dimensions are "1,0.1,3"
     And the object "IfcWall/Wall" bottom left corner is at "0,0,0"
     When I set "scene.BIMModelProperties.ifc_class" to "IfcSlabType"
     And the variable "element_type" is "[e for e in {ifc}.by_type('IfcSlabType') if e.Name == 'FLR200'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
-    When I press "bim.add_constr_type_instance"
+    When I press "bim.add_occurrence"
     Then the object "IfcSlab/Slab" is an "IfcSlab"
     When the object "IfcSlab/Slab" is selected
     And the object "IfcSlab/Slab" is moved to "0,0,4"

@@ -517,12 +517,12 @@ class TestApplyIfcMaterialChanges(NewFile):
 
         # Setup occurrences.
         relating_type_id = element_type.id()
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
         simple = bpy.context.active_object
         simple.name = "Simple"
 
         # Occurrence with an opening.
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
         with_opening = bpy.context.active_object
         with_opening.name = "With Opening"
         props = tool.Root.get_root_props()
@@ -530,7 +530,7 @@ class TestApplyIfcMaterialChanges(NewFile):
         bpy.ops.bim.add_element(ifc_product="IfcFeatureElement", ifc_class="IfcOpeningElement")
 
         # Occurrence with a material override.
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
         with_material = bpy.context.active_object
         with_material.name = "With Material"
         tool.Blender.set_objects_selection(bpy.context, active_object=with_material, selected_objects=[with_material])

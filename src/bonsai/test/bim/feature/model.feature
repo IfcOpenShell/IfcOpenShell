@@ -11,7 +11,7 @@ Scenario: Add type instance - add from a mesh
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
-    When I press "bim.add_constr_type_instance"
+    When I press "bim.add_occurrence"
     Then the object "IfcWall/Wall" exists
 
 Scenario: Add type instance - add from an empty
@@ -24,7 +24,7 @@ Scenario: Add type instance - add from an empty
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "empty" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{empty}"
-    When I press "bim.add_constr_type_instance"
+    When I press "bim.add_occurrence"
     Then the object "IfcWall/Wall" exists
 
 Scenario: Add type instance - add a mesh where existing instances have changed context
@@ -37,14 +37,14 @@ Scenario: Add type instance - add a mesh where existing instances have changed c
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "cube" is "{ifc}.by_type('IfcWallType')[0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{cube}"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And the object "IfcWall/Wall" data is a "Tessellation" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcWall/Wall" is selected
     And the variable "context" is "[c for c in {ifc}.by_type('IfcGeometricRepresentationSubContext') if c.ContextType == 'Plan' and c.ContextIdentifier == 'Body' and c.TargetView == 'PLAN_VIEW'][0].id()"
     And I set "active_object.BIMGeometryProperties.contexts" to "{context}"
     And I press "bim.add_representation"
     And the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Body/PLAN_VIEW"
-    When I press "bim.add_constr_type_instance"
+    When I press "bim.add_occurrence"
     Then the object "IfcWall/Wall" data is a "Annotation2D" representation of "Plan/Body/PLAN_VIEW"
     And the object "IfcWall/Wall.001" data is a "Annotation2D" representation of "Plan/Body/PLAN_VIEW"
 
@@ -72,7 +72,7 @@ Scenario: Add a wall
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
-    When I press "bim.add_constr_type_instance"
+    When I press "bim.add_occurrence"
     Then the object "IfcWall/Wall" is an "IfcWall"
     And the object "IfcWall/Wall" dimensions are "1,0.1,3"
     And the object "IfcWall/Wall" bottom left corner is at "0,0,0"
@@ -525,11 +525,11 @@ Scenario: Create a MEP transition
 
     And I set "scene.BIMModelProperties.ifc_class" to "IfcDuctSegmentType"
     And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/RectSegment"
 
     And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[1]"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/CircleSegment"
 
     And the object "IfcDuctSegment/RectSegment" is moved to "0,0,0"
@@ -555,11 +555,11 @@ Scenario: Create a MEP bend between intersecting with different locations
     And I set "scene.BIMModelProperties.ifc_class" to "IfcDuctSegmentType"
     And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
     And I set "scene.BIMModelProperties.extrusion_depth" to "5.0"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/Seg1"
 
     And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/Seg2"
     And the object "IfcDuctSegment/Seg2" is rotated by "0,0,90" deg
 
@@ -585,11 +585,11 @@ Scenario: Create a MEP bend between intersecting segments at the same location
     And I set "scene.BIMModelProperties.ifc_class" to "IfcDuctSegmentType"
     And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
     And I set "scene.BIMModelProperties.extrusion_depth" to "5.0"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/Seg1"
 
     And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/Seg2"
     And the object "IfcDuctSegment/Seg2" is rotated by "0,0,90" deg
 
