@@ -25,9 +25,17 @@
 #include <iterator>
 #include <cstddef>
 
+template <typename T>
+struct is_std_tuple : std::false_type {};
+
+template <typename... Ts>
+struct is_std_tuple<std::tuple<Ts...>> : std::true_type {};
+
 // Serialization and deserialization primitives
 template <typename T>
 struct DefaultCodec;
+
+// @todo specialize for integral types in one go
 
 // Specialization for size_t.
 template <>
@@ -43,6 +51,38 @@ struct DefaultCodec<size_t> {
         // @todo unify all serialization primitives
         memcpy(&v, s.data(), sizeof(v));
         return v;
+    }
+};
+
+// Specialization for uint32_t.
+template <>
+struct DefaultCodec<uint32_t> {
+    std::string encode(const uint32_t& v) const {
+        std::string s(sizeof(v), 0);
+        memcpy(s.data(), &v, sizeof(v));
+        return s;
+    }
+    uint32_t decode(const std::string& s) const {
+        uint32_t v = 0;
+        // @todo take min of sizeof(v), len(s)
+        // @todo unify all serialization primitives
+        memcpy(&v, s.data(), sizeof(v));
+        return v;
+    }
+};
+
+// Specialization for std::vector<int>.
+template <>
+struct DefaultCodec<std::vector<uint32_t>> {
+    std::string encode(const std::vector<uint32_t>& vs) const {
+        std::string s(sizeof(uint32_t) * vs.size(), 0);
+        memcpy(s.data(), vs.data(), s.size());
+        return s;
+    }
+    std::vector<uint32_t> decode(const std::string& s) const {
+        std::vector<uint32_t> vs(s.size() / sizeof(uint32_t), 0);
+        memcpy(vs.data(), s.data(), s.size());
+        return vs;
     }
 };
 
@@ -67,7 +107,7 @@ std::string key_to_string(const KeyT& key) {
 }
 
 // Convert from a string to a key. For non-string types, we assume numeric keys.
-template <typename KeyT>
+template <typename KeyT, typename std::enable_if<!is_std_tuple<KeyT>::value, int>::type = 0>
 KeyT key_from_string(const std::string& s) {
     // @todo tuples
     if constexpr (std::is_same_v<KeyT, std::string>) {
@@ -77,6 +117,51 @@ KeyT key_from_string(const std::string& s) {
     } else {
         static_assert(sizeof(KeyT) == 0, "key_from_string not implemented for this type");
     }
+}
+
+template<typename Tuple, std::size_t... Is>
+std::string tuple_to_string_impl(const Tuple& t, std::index_sequence<Is...>) {
+    std::ostringstream oss;
+    // Unpack the tuple; add a pipe before each element except the first.
+    ((oss << (Is == 0 ? "" : "|") << std::to_string(std::get<Is>(t))), ...);
+    return oss.str();
+}
+
+template<typename... Ts>
+std::string key_to_string(const std::tuple<Ts...>& key) {
+    return tuple_to_string_impl(key, std::index_sequence_for<Ts...>{});
+}
+
+// Helper: Convert a string token to the desired numeric type.
+template<typename T>
+T convert_string(const std::string& token) {
+    if constexpr (std::is_integral_v<T>) {
+        return static_cast<T>(std::stoll(token));
+    } else if constexpr (std::is_floating_point_v<T>) {
+        return static_cast<T>(std::stod(token));
+    } else {
+        static_assert(sizeof(T) == 0, "convert_string not implemented for this type");
+    }
+}
+
+// Helper: Build a tuple from a vector of string tokens.
+template <typename TupleT, std::size_t... Is>
+TupleT tuple_from_string_impl(const std::vector<std::string>& tokens, std::index_sequence<Is...>) {
+    return std::make_tuple(convert_string<std::tuple_element_t<Is, TupleT>>(tokens[Is])...);
+}
+
+template <typename TupleT, typename std::enable_if<is_std_tuple<TupleT>::value, int>::type = 0>
+TupleT key_from_string(const std::string& s) {
+    std::vector<std::string> tokens;
+    std::istringstream iss(s);
+    std::string token;
+    while (std::getline(iss, token, '|')) {
+        tokens.push_back(token);
+    }
+    if (tokens.size() != std::tuple_size<TupleT>::value) {
+        throw std::runtime_error("Invalid tuple format");
+    }
+    return tuple_from_string_impl<TupleT>(tokens, std::make_index_sequence<std::tuple_size<TupleT>::value>{});
 }
 
 // rocksdb_map_adapter: a std::map-like interface on a RocksDB keyspace with a given prefix.

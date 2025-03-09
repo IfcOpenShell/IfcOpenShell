@@ -329,6 +329,7 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
     return IfcEntityInstanceData(std::move(storage));
 }
 
+/*
 IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::rocksdb_instance_iterator::operator*() const {
     auto it = storage_->byid_.find(*read_id_());
     if (it != storage_->byid_.end()) {
@@ -341,32 +342,22 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::rocksdb_instance_i
         }
     }
 }
+*/
 
 const IfcParse::declaration* IfcParse::impl::rocks_db_file_storage::rocksdb_types_iterator::operator*() const {
     return storage_->file->schema()->declarations()[*read_id_()];
 }
 
 IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(size_t number, instance_ref r) {
-    size_t name, identity;
-    std::string v;
-    if (r == by_identity) {
-        name = 0;
-        identity = number;
-    } else {
-        name = number;
-        auto it = byid_.find(name);
-        if (it == byid_.end()) {
-            throw std::runtime_error("Unable to lookup identity of name: #" + std::to_string(number));
-        }
-        identity = it->second;
-    }
-
-    decltype(instance_cache_)::const_iterator it = instance_cache_.find(identity);
+    decltype(instance_cache_)::const_iterator it = instance_cache_.find({ r, number });
     if (it != instance_cache_.end()) {
         return it->second;
     }
+    
+    std::string v;
 
-    rocksdb::Status s = db->Get(rocksdb::ReadOptions{}, "i|" + std::to_string(identity) + "|t", &v);
+    // @todo should always be name, as we can/should not assign to identity
+    rocksdb::Status s = db->Get(rocksdb::ReadOptions{}, (r == entityinstance_ref ? "i|" : "t|") + std::to_string(number) + "|_", &v);
     if (s.ok()) {
         size_t s;
         memcpy(&s, v.data(), sizeof(size_t));
@@ -375,17 +366,14 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(s
         }
         auto decl = file->schema()->declarations()[s];
         bool is_entity = decl->as_entity() != nullptr;
-        if (is_entity != (r == by_name)) {
+        if (is_entity != (r == entityinstance_ref)) {
             throw std::runtime_error("Incorrect reference");
         }
         IfcEntityInstanceData data(rocks_db_attribute_storage{});
         auto inst = file->schema()->instantiate(decl, std::move(data));
-        inst->id_ = name;
+        inst->id_ = number;
         inst->file_ = file;
-        instance_cache_.insert({ inst->identity(), inst });
-        if (is_entity) {
-            byid_.insert({ inst->id(), inst->identity() });
-        }
+        instance_cache_.insert({ {r, number}, inst });
         return inst;
     }
     throw std::runtime_error("");
@@ -410,11 +398,13 @@ IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& 
     : file(ffile)
     , db(init_db(filepath))
     , byguid_internal_(db, "g|")
-    , byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, by_name); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
-    , byid_(db, "d|")
+    , byguid_(&byguid_internal_, [this](size_t v) { return assert_existance(v, entityinstance_ref); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
+    , instance_ids_(db, "i|")
+    , instance_by_name_(&instance_ids_, [this](size_t v) { return assert_existance(v, entityinstance_ref); })
     , bytype_(db, "t|")
+    , byref_excl_(db, "v|")
     // @todo by_identity is probably not correct here, this mapping is Name -> Identity, so Fn should have access to full pair?
-    , byidentity_(&byid_, [this](size_t v) { return assert_existance(v, by_identity); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
+    // , byidentity_(&byid_, [this](size_t v) { return assert_existance(v, by_identity); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
 {}
 
 IfcParse::impl::rocks_db_file_storage::~rocks_db_file_storage()
@@ -433,7 +423,8 @@ IfcParse::impl::rocks_db_file_storage::~rocks_db_file_storage()
 IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::instance_by_id(int id)
 {
     // @todo rename assert_existance() -> instance_by_id();
-    return assert_existance(id, by_name);
+    // - no cannot be done, because it needs to differentiate between entity instances and typedecls
+    return assert_existance(id, entityinstance_ref);
 }
 
 void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::IfcBaseClass* inst)
@@ -441,8 +432,8 @@ void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::If
     auto id = inst->id();
 
     {
-        // compute next prefix that does not start with v|{id}
-        auto prefix = "v|" + id;
+        // compute next prefix that does not start with v|{id}|
+        auto prefix = "v|" + std::to_string(id) + "|";
         auto it = db->NewIterator(rocksdb::ReadOptions());
         it->Seek(prefix);
         while (it->Valid()) {
@@ -472,7 +463,7 @@ void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::If
             // and update inverses from entity into other
 
             {
-                auto prefix = "v|" + name;
+                auto prefix = "v|" + std::to_string(name) + "|";
                 auto it = db->NewIterator(rocksdb::ReadOptions());
                 it->Seek(prefix);
                 while (it->Valid() && it->key().starts_with(prefix)) {
@@ -498,4 +489,11 @@ IfcUtil::IfcBaseClass* IfcParse::impl::in_memory_file_storage::instance_by_id(in
         throw IfcException("Instance #" + boost::lexical_cast<std::string>(id) + " not found");
     }
     return it->second;
+}
+
+IfcParse::IfcFile::~IfcFile() {
+    // @todo this does not make sense for rocksdb, because it would assert existance for the entire lazy model only to free the instances again
+    for (const auto& p : byid_) {
+        delete p.second;
+    }
 }
