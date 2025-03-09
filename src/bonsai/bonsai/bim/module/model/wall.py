@@ -1011,62 +1011,58 @@ class DumbWallJoiner:
         self.recreate_wall(element1, wall1)
 
     def merge(self, wall1, wall2):
+        if tool.Ifc.is_moved(wall1):
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
+        if tool.Ifc.is_moved(wall2):
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall2)
+
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
-        axis1 = tool.Model.get_wall_axis(wall1)
-        axis2 = tool.Model.get_wall_axis(wall2)
 
-        angle = tool.Cad.angle_edges(axis1["reference"], axis2["reference"], signed=False, degrees=True)
-        if not tool.Cad.is_x(angle, 0, tolerance=0.001):
+        p1, p2 = ifcopenshell.util.representation.get_reference_line(element1)
+        p3, p4 = ifcopenshell.util.representation.get_reference_line(element2)
+
+        matrix1i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(element1.ObjectPlacement))
+        matrix2 = ifcopenshell.util.placement.get_local_placement(element2.ObjectPlacement)
+
+        p3 = (matrix1i @ matrix2 @ np.concatenate((p3, (0, 1))))[:2]
+        p4 = (matrix1i @ matrix2 @ np.concatenate((p4, (0, 1))))[:2]
+
+        if not np.isclose(p1[1], p4[1]) or not np.isclose(p3[1], p4[1]):
             return
 
-        intersect1, connection1 = mathutils.geometry.intersect_point_line(axis2["reference"][0], *axis1["reference"])
-        if not tool.Cad.is_x((intersect1 - axis2["reference"][0]).length, 0):
-            return
-
-        intersect2, connection2 = mathutils.geometry.intersect_point_line(axis2["reference"][1], *axis1["reference"])
-        if not tool.Cad.is_x((intersect2 - axis2["reference"][1]).length, 0):
-            return
-
-        changed_connections = set()
-
-        if connection1 < 0:
-            changed_connections.add("ATSTART")
-            axis1["reference"][0] = intersect2 if connection2 < connection1 else intersect1
-        elif connection1 > 1:
-            changed_connections.add("ATEND")
-            axis1["reference"][1] = intersect2 if connection2 > connection1 else intersect1
-
-        for connection in changed_connections:
-            ifcopenshell.api.run(
-                "geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection
-            )
+        x_ordinates = tuple(co[0] for co in (p1, p2, p3, p4))
+        p1[0] = min(x_ordinates)
+        p2[0] = max(x_ordinates)
+        self.set_axis(element1, p1, p2)
 
         for rel in element2.ConnectedTo:
-            if rel.RelatingConnectionType in changed_connections:
-                other = tool.Ifc.get_object(rel.RelatedElement)
-                ifcopenshell.api.run(
-                    "geometry.connect_path",
-                    tool.Ifc.get(),
-                    relating_element=element1,
-                    related_element=rel.RelatedElement,
-                    relating_connection=rel.RelatingConnectionType,
-                    related_connection=rel.RelatedConnectionType,
-                )
+            ifcopenshell.api.geometry.disconnect_path(
+                tool.Ifc.get(), element=element1, connection_type=rel.RelatingConnectionType
+            )
+            ifcopenshell.api.geometry.connect_path(
+                tool.Ifc.get(),
+                relating_element=element1,
+                related_element=rel.RelatedElement,
+                relating_connection=rel.RelatingConnectionType,
+                related_connection=rel.RelatedConnectionType,
+            )
 
         for rel in element2.ConnectedFrom:
-            if rel.RelatedConnectionType in changed_connections:
-                ifcopenshell.api.run(
-                    "geometry.connect_path",
-                    tool.Ifc.get(),
-                    relating_element=rel.RelatingElement,
-                    related_element=element1,
-                    relating_connection=rel.RelatingConnectionType,
-                    related_connection=rel.RelatedConnectionType,
-                )
+            ifcopenshell.api.geometry.disconnect_path(
+                tool.Ifc.get(), element=element1, connection_type=rel.RelatedConnectionType
+            )
+            ifcopenshell.api.geometry.connect_path(
+                tool.Ifc.get(),
+                relating_element=rel.RelatingElement,
+                related_element=element1,
+                relating_connection=rel.RelatingConnectionType,
+                related_connection=rel.RelatedConnectionType,
+            )
 
-        self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
-        bpy.data.objects.remove(wall2)
+        self.recreate_wall(element1, wall1)
+
+        tool.Geometry.delete_ifc_object(wall2)
 
     def duplicate_wall(self, wall1):
         wall2 = wall1.copy()
