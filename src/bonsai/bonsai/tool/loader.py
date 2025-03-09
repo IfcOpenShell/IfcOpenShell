@@ -1042,6 +1042,7 @@ class Loader(bonsai.core.tool.Loader):
             co = Vector((0.0, offset, 0.0))
             no = no.cross(Vector([1.0, 0.0, 0.0]))
         else:
+            sense_factor = 1  # If it isn't AXIS2, then the normal points in the direction sense
             co = Vector((0.0, 0.0, offset))
         # Cache this
         body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
