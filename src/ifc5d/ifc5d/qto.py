@@ -255,7 +255,7 @@ class IfcOpenShell:
                 tasks.append((iterator, gross_qtos))
 
         if net_qtos:
-            for iterator in IfcOpenShell.create_iterators(ifc_file, cls.gross_settings, list(elements)):
+            for iterator in IfcOpenShell.create_iterators(ifc_file, cls.net_settings, list(elements)):
                 tasks.append((iterator, net_qtos))
 
         cls.unit_converter = SI2ProjectUnitConverter(ifc_file)
