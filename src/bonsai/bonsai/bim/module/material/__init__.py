@@ -66,6 +66,7 @@ classes = (
     ui.BIM_PT_materials,
     ui.BIM_PT_object_material,
     ui.BIM_UL_materials,
+    ui.BIM_MT_material_context_menu
 )
 
 

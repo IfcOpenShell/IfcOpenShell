@@ -62,6 +62,14 @@ class SelectByMaterial(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     material: bpy.props.IntProperty()
 
+    def invoke(self, context, event):
+        if event.type == 'RIGHTMOUSE':  
+            if not hasattr(context.scene, "select_by_material_id"):
+                context.scene["select_by_material_id"] = self.material
+            bpy.ops.wm.call_menu(name="BIM_MT_material_context_menu")
+            return {"CANCELLED"}  # Don't run execute()
+        return self.execute(context)
+
     def execute(self, context):
         material = tool.Ifc.get().by_id(self.material)
         core.select_by_material(tool.Material, tool.Spatial, material=material)

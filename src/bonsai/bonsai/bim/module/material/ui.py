@@ -20,7 +20,7 @@ from __future__ import annotations
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bpy
-from bpy.types import Panel, UIList
+from bpy.types import Panel, UIList, Operator, Menu
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
@@ -374,6 +374,9 @@ class BIM_PT_object_material(Panel):
 
         self.layerset_bounds(box, active_object, location="Bottom_Exterior")
 
+
+    
+
     def layerset_bounds(self, layout, obj, location="Top_Interior"):
         set_usage = ObjectMaterialData.data.get("set_usage", {})
         layer_set_direction = set_usage.get("layer_set_direction")
@@ -437,3 +440,18 @@ class BIM_UL_materials(UIList):
                 if item.has_style:
                     row2.label(text="", icon="SHADING_RENDERED")
                 row2.label(text=str(item.total_elements))
+
+
+
+
+
+class BIM_MT_material_context_menu(bpy.types.Menu):
+    bl_label = "Material Context Menu"
+
+    def draw(self, context):
+        layout = self.layout
+        op = layout.operator("bim.material_ui_select", text="Select by Material", icon="RESTRICT_SELECT_OFF")
+        op.material = context.scene.select_by_material_id  # Use stored material
+
+
+
