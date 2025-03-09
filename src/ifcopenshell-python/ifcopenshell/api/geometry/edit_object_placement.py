@@ -155,7 +155,7 @@ class Usecase:
                 elif obj.is_a("IfcFeatureElement"):
                     # Feature elements affect the geometry of their parent, and
                     # so logically should always move with the parent. However,
-                    # subchildren shouldn't move.
+                    # subchildren (fillings) shouldn't move.
                     placement2 = obj.ObjectPlacement
                     for referenced_placement2 in placement2.ReferencedByPlacements:
                         matrix2 = ifcopenshell.util.placement.get_local_placement(referenced_placement2)

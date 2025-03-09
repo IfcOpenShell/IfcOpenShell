@@ -1106,7 +1106,7 @@ class DumbWallJoiner:
         else:
             ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=rep)
 
-    def join_E(self, wall1, target):
+    def extend(self, wall1, target):
         if tool.Ifc.is_moved(wall1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
         element1 = tool.Ifc.get_entity(wall1)
@@ -1192,54 +1192,6 @@ class DumbWallJoiner:
         matrix[:, 3] *= unit_scale
         obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix)
         tool.Geometry.record_object_position(obj)
-        return
-
-        wall_moved = tool.Ifc.is_moved(obj)
-        if wall_moved:
-            # Openings should move with the host overall ...
-            # ... except their position should stay the same along the local X axis of the wall
-            for opening in [
-                r.RelatedOpeningElement for r in element.HasOpenings if not r.RelatedOpeningElement.HasFillings
-            ]:
-                percent = tool.Cad.edge_percent(
-                    self.body[0], (previous_origin, (previous_matrix @ Vector((1, 0, 0))).to_2d())
-                )
-                is_x_offset_increased = True if percent < 0 else False
-
-                change_in_x = (self.body[0] - previous_origin).length / self.unit_scale
-                coordinates = list(opening.ObjectPlacement.RelativePlacement.Location.Coordinates)
-                if is_x_offset_increased:
-                    coordinates[0] += change_in_x
-                else:
-                    coordinates[0] -= change_in_x
-                opening.ObjectPlacement.RelativePlacement.Location.Coordinates = coordinates
-
-            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-
-        # If opening has filling then stick to the filling's position
-        # We're applying new openings position only after wall position is applied
-        for opening in [r.RelatedOpeningElement for r in element.HasOpenings if r.RelatedOpeningElement.HasFillings]:
-            similar_openings = bonsai.core.geometry.get_similar_openings(tool.Ifc, opening)
-            filling_obj = tool.Ifc.get_object(opening.HasFillings[0].RelatedBuildingElement)
-            filling_moved = tool.Ifc.is_moved(filling_obj)
-            if filling_moved:
-                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=filling_obj)
-            if filling_moved or wall_moved:
-                ifcopenshell.api.run(
-                    "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=filling_obj.matrix_world
-                )
-                bonsai.core.geometry.edit_similar_opening_placement(tool.Geometry, opening, similar_openings)
-
-        bonsai.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=new_body,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
-        tool.Geometry.record_object_materials(obj)
 
     def create_matrix(self, p, x, y, z):
         return Matrix([x, y, z, p]).to_4x4().transposed()

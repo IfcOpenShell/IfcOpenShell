@@ -311,11 +311,23 @@ class Regenerator:
             ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=axis_rep)
 
         if not np.allclose(self.reference_p1, np.array((0.0, 0.0))):
+            children = []
+            for referenced_placement in wall.ObjectPlacement.ReferencedByPlacements:
+                matrix = ifcopenshell.util.placement.get_local_placement(referenced_placement)
+                children.append((matrix, referenced_placement.PlacesObject))
+
             matrix = ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement)
             matrix[:, 3] = matrix @ np.concatenate((self.reference_p1, (0, 1)))
             ifcopenshell.api.geometry.edit_object_placement(
-                self.file, product=wall, matrix=matrix, is_si=False, should_transform_children=False
+                self.file, product=wall, matrix=matrix, is_si=False, should_transform_children=True
             )
+
+            # Restore children to their previous location
+            for matrix, elements in children:
+                for element in elements:
+                    ifcopenshell.api.geometry.edit_object_placement(
+                        self.file, product=element, matrix=matrix, is_si=False, should_transform_children=True
+                    )
 
         return body_rep
 

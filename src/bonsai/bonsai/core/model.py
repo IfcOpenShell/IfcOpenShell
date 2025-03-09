@@ -35,7 +35,7 @@ def extend_walls(
         if not (element := ifc.get_entity(obj)) or model.get_usage_type(element) != "LAYER2":
             continue
         geometry.clear_scale(obj)
-        joiner.join_E(obj, target)
+        joiner.extend(obj, target)
 
 
 def join_walls_LV(
