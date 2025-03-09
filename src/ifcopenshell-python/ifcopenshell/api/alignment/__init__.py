@@ -17,7 +17,27 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Manages alignment and alignment geometry
+Manages alignment layout (business logical) and alignment geometry (geometric representations).
+
+This API does not determine alignment parameters based on rules, such as minimum curve radius as a function of design speed or sight distance.
+
+This API is under development and subject to code breaking changes in the future.
+
+Presently, this API supports:
+    1. Creating alignments, both horizontal and vertical, using the PI method. Alignment definition can be read from a CSV file.
+    2. Adding business logic and geometric segments to the end of an alignment
+    3. Adding and removing the zero length segment at the end of alignments
+    4. Creating geometric representations from a business logical definition
+    5. Mapping individual business logical segments to geometric segments (complete for horizontal, missing clothoid for vertical, not implemented for cant)
+    6. Using curve geometry to determine IfcCurveSegment.Transition transition code.
+    7. Utility functions for printing business logical and geometric representations, as well as minimumal geometry evaluations
+
+Future versions of this API will support:
+    1. Defining alignments using the PI method, including transition spirals
+    2. Updating horizontal curve definitions by revising transition spiral parameters and circular curve radii
+    3. Updating vertical curve definitions by revising horizontal length of curves
+    4. Removing a segment at any location along a curve
+    5. Adding a segment at any location along a curve
 """
 
 from .add_segment_to_curve import add_segment_to_curve

@@ -59,7 +59,7 @@ def create_alignment_from_csv(file: ifcopenshell.file, filepath: str) -> entity_
 
         L is the horizontal length of a parabolic vertical transition curve
 
-        R1 and Rn, as well as L1 and Ln are placeholders and not used. The are recommended to have values of 0.0.
+        R1 and Rn, as well as L1 and Ln are placeholders and not used. They are recommended to have values of 0.0.
 
         R2 and Rn-2 are the radii of the first and last horizontal curves.
 

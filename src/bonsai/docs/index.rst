@@ -68,6 +68,7 @@ and data-rich OpenBIM with Blender :)
       reference/interface
       reference/topbar
       reference/properties
+      reference/alignment/index
 
 Need more help? Join the `live chat <https://osarch.org/chat/>`__ or `community
 forums <https://community.osarch.org>`__. Something strange happening? Please
