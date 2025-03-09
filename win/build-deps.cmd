@@ -195,6 +195,8 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 )
 
+goto :rocksdb
+
 :proj
 
 IF EXIST "%INSTALL_DIR%\proj-9.2.1" (

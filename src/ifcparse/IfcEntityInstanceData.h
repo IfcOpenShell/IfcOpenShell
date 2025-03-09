@@ -280,9 +280,8 @@ namespace impl {
 struct AttributeValue {
     uint8_t index_;
     uint8_t storage_model_ = 0;
+    uint8_t entity_or_type_ = 0;
     size_t instance_name_;
-    // @todo couple with db_ptr;
-    const IfcParse::schema_definition* schema_;
     union pointer_type {
         const in_memory_attribute_storage* storage_ptr;
         IfcParse::impl::rocks_db_file_storage* db_ptr;
@@ -303,12 +302,12 @@ struct AttributeValue {
         , storage_model_(0)
     {}
 
-    AttributeValue(const IfcParse::schema_definition* schema, IfcParse::impl::rocks_db_file_storage* db, size_t instance_name, uint8_t index)
+    AttributeValue(IfcParse::impl::rocks_db_file_storage* db, size_t instance_name, uint8_t entity_or_type, uint8_t index)
         : index_(index)
         , array_(db)
         , storage_model_(1)
         , instance_name_(instance_name)
-        , schema_(schema)
+        , entity_or_type_(entity_or_type)
     {}
 
     operator int() const;

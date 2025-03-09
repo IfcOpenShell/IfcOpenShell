@@ -97,12 +97,7 @@ protected:
     IfcEntityInstanceData data_;
 
 public:
-    IfcBaseClass(IfcEntityInstanceData&& data)
-        : identity_(counter_++)
-        , id_(0)
-        , file_(nullptr)
-        , data_(std::move(data))
-    {}
+    IfcBaseClass(IfcEntityInstanceData&& data);
 
     const IfcEntityInstanceData& data() const { return data_; }
     IfcEntityInstanceData& data() { return data_; }

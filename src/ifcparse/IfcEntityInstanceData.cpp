@@ -31,7 +31,7 @@ public:
 
 namespace {
     template<typename T>
-    inline T dispatch_get_(AttributeValue::pointer_type array_, uint8_t storage_model_, size_t instance_name_, uint8_t index_)
+    inline T dispatch_get_(AttributeValue::pointer_type array_, uint8_t storage_model_, size_t instance_name_, bool is_entity, uint8_t index_)
     {
         if (storage_model_ == 0) {
             return array_.storage_ptr->get<T>(index_);
@@ -43,7 +43,7 @@ namespace {
                 !std::is_same_v<std::remove_cv_t<std::remove_pointer_t<T>>, IfcUtil::IfcBaseClass>)
             {
                 std::string str;
-                array_.db_ptr->db->Get(rocksdb::ReadOptions{}, "i|" + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
+                array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (is_entity ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
                 impl::deserialize(array_.db_ptr, str, val);
             }
             return val;
@@ -51,24 +51,29 @@ namespace {
     }
 
     template<typename T>
-    inline bool dispatch_has_(AttributeValue::pointer_type array_, uint8_t storage_model_, size_t instance_name_, uint8_t index_)
+    inline bool dispatch_has_(AttributeValue::pointer_type array_, uint8_t storage_model_, size_t instance_name_, bool is_entity, uint8_t index_)
     {
         if (storage_model_ == 0) {
             return array_.storage_ptr->has<T>(index_);
         } else {
             std::string str;
-            array_.db_ptr->db->Get(rocksdb::ReadOptions{}, "i|" + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
+            array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (is_entity ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
+            if constexpr (std::is_same_v<T, Blank>) {
+                if (str.size() == 0) {
+                    return true;
+                }
+            }
             return str[0] == TypeEncoder::encode_type<T>();
         }
     }
 
-    inline size_t dispatch_index_(AttributeValue::pointer_type array_, uint8_t storage_model_, size_t instance_name_, uint8_t index_)
+    inline size_t dispatch_index_(AttributeValue::pointer_type array_, uint8_t storage_model_, size_t instance_name_, bool is_entity, uint8_t index_)
     {
         if (storage_model_ == 0) {
             return array_.storage_ptr->index(index_);
         } else {
             std::string str;
-            array_.db_ptr->db->Get(rocksdb::ReadOptions{}, "i|" + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
+            array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (is_entity ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
             return (size_t) str[0] - 'A';
         }
     }
@@ -77,57 +82,57 @@ namespace {
 
 AttributeValue::operator int() const
 {
-    return dispatch_get_<int>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<int>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 AttributeValue::operator bool() const
 {
-    return dispatch_get_<bool>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<bool>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 AttributeValue::operator double() const
 {
-    return dispatch_get_<double>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<double>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 AttributeValue::operator boost::logic::tribool() const
 {
-    if (dispatch_has_<bool>(array_, storage_model_, instance_name_, index_)) {
-        return dispatch_get_<bool>(array_, storage_model_, instance_name_, index_);
+    if (dispatch_has_<bool>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_)) {
+        return dispatch_get_<bool>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
     }
-    return dispatch_get_<boost::logic::tribool>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<boost::logic::tribool>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 AttributeValue::operator std::string() const
 {
-    if (dispatch_has_<EnumerationReference>(array_, storage_model_, instance_name_, index_)) {
+    if (dispatch_has_<EnumerationReference>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_)) {
         // @todo this is silly, but the way things currently work,
         // @todo also we don't really need to store a reference to the enumeration type, when this same type is already stored on the definition of the entity and no other value can be provided.
         if (storage_model_ == 0) {
-            return dispatch_get_<EnumerationReference>(array_, storage_model_, instance_name_, index_).value();
+            return dispatch_get_<EnumerationReference>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_).value();
         } else {
             std::string str;
-            array_.db_ptr->db->Get(rocksdb::ReadOptions{}, "i|" + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
+            array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (entity_or_type_ == 1 ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
             size_t v;
             memcpy(&v, str.data() + 1, sizeof(size_t));
-            auto decl = schema_->declarations()[v]->as_enumeration_type();
+            auto decl = array_.db_ptr->file->schema()->declarations()[v]->as_enumeration_type();
             memcpy(&v, str.data() + 1 + sizeof(size_t), sizeof(size_t));
             return decl->lookup_enum_value(v);
         }
     }
-    return dispatch_get_<std::string>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<std::string>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 AttributeValue::operator EnumerationReference() const
 {
     if (storage_model_ == 0) {
-        return dispatch_get_<EnumerationReference>(array_, storage_model_, instance_name_, index_);
+        return dispatch_get_<EnumerationReference>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
     } else {
         std::string str;
-        array_.db_ptr->db->Get(rocksdb::ReadOptions{}, "i|" + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
+        array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (entity_or_type_ == 1 ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
         size_t v;
         memcpy(&v, str.data() + 1, sizeof(size_t));
-        auto decl = schema_->declarations()[v]->as_enumeration_type();
+        auto decl = array_.db_ptr->file->schema()->declarations()[v]->as_enumeration_type();
         memcpy(&v, str.data() + 5, sizeof(size_t));
         return EnumerationReference(decl, v);
     }
@@ -135,24 +140,24 @@ AttributeValue::operator EnumerationReference() const
 
 AttributeValue::operator boost::dynamic_bitset<>() const
 {
-    return dispatch_get_<boost::dynamic_bitset<>>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<boost::dynamic_bitset<>>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 AttributeValue::operator IfcUtil::IfcBaseClass* () const
 {
     if (storage_model_ == 0) {
-        return dispatch_get_<IfcUtil::IfcBaseClass*>(array_, storage_model_, instance_name_, index_);
+        return dispatch_get_<IfcUtil::IfcBaseClass*>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
     } else {
         std::string str;
-        array_.db_ptr->db->Get(rocksdb::ReadOptions{}, "i|" + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
+        array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (entity_or_type_ == 1 ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
         size_t v;
         memcpy(&v, str.data() + 2, sizeof(size_t));
-        if (str[1] == 'e') {
+        if (str[1] == 'i') {
             // entity reference, by #Name
-            return array_.db_ptr->assert_existance(v, IfcParse::impl::rocks_db_file_storage::by_name);
+            return array_.db_ptr->assert_existance(v, IfcParse::impl::rocks_db_file_storage::entityinstance_ref);
         } else if (str[1] == 't') {
             // type reference by Identity
-            return array_.db_ptr->assert_existance(v, IfcParse::impl::rocks_db_file_storage::by_identity);
+            return array_.db_ptr->assert_existance(v, IfcParse::impl::rocks_db_file_storage::typedecl_ref);
         }
         
     }
@@ -160,47 +165,47 @@ AttributeValue::operator IfcUtil::IfcBaseClass* () const
 
 AttributeValue::operator std::vector<int>() const
 {
-    return dispatch_get_<std::vector<int>>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<std::vector<int>>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 AttributeValue::operator std::vector<double>() const
 {
-    return dispatch_get_<std::vector<double>>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<std::vector<double>>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 AttributeValue::operator std::vector<std::string>() const
 {
-    return dispatch_get_<std::vector<std::string>>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<std::vector<std::string>>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 AttributeValue::operator std::vector<boost::dynamic_bitset<>>() const
 {
-    return dispatch_get_<std::vector<boost::dynamic_bitset<>>>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<std::vector<boost::dynamic_bitset<>>>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 AttributeValue::operator boost::shared_ptr<aggregate_of_instance>() const
 {
-    return dispatch_get_<boost::shared_ptr<aggregate_of_instance>>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<boost::shared_ptr<aggregate_of_instance>>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 AttributeValue::operator std::vector<std::vector<int>>() const
 {
-    return dispatch_get_<std::vector<std::vector<int>>>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<std::vector<std::vector<int>>>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 AttributeValue::operator std::vector<std::vector<double>>() const
 {
-    return dispatch_get_<std::vector<std::vector<double>>>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<std::vector<std::vector<double>>>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 AttributeValue::operator boost::shared_ptr<aggregate_of_aggregate_of_instance>() const
 {
-    return dispatch_get_<boost::shared_ptr<aggregate_of_aggregate_of_instance>>(array_, storage_model_, instance_name_, index_);
+    return dispatch_get_<boost::shared_ptr<aggregate_of_aggregate_of_instance>>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 bool AttributeValue::isNull() const
 {
-    return dispatch_has_<Blank>(array_, storage_model_, instance_name_, index_);
+    return dispatch_has_<Blank>(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_);
 }
 
 unsigned int AttributeValue::size() const
@@ -211,7 +216,7 @@ unsigned int AttributeValue::size() const
 
 IfcUtil::ArgumentType AttributeValue::type() const
 {
-    return static_cast<IfcUtil::ArgumentType>(dispatch_index_(array_, storage_model_, instance_name_, index_));
+    return static_cast<IfcUtil::ArgumentType>(dispatch_index_(array_, storage_model_, instance_name_, entity_or_type_ == 1 ? true : false, index_));
 }
 
 bool impl::serialize(std::string& val, const IfcUtil::IfcBaseClass* t)
@@ -221,8 +226,8 @@ bool impl::serialize(std::string& val, const IfcUtil::IfcBaseClass* t)
     val[0] = TypeEncoder::encode_type<IfcUtil::IfcBaseClass*>();
     // 1 = entity - stored by id (entity name)
     // 2 = type - stored by identity (internal counter in class)
-    val[1] = t->declaration().as_entity() ? 'e' : 't';
-    size_t iden = t->declaration().as_entity() ? t->id() : t->identity();
+    val[1] = t->declaration().as_entity() ? 'i' : 't';
+    size_t iden = t->id() ? t->id() : t->identity();
     memcpy(val.data() + 2, &iden, s);
     return true;
 }
@@ -243,12 +248,12 @@ bool impl::serialize(std::string& val, const aggregate_of_instance::ptr& t)
 {
     // no attempt at alignment
     val.resize(t->size() * (sizeof(size_t) + 1) + 1);
-    val[0] = TypeEncoder::encode_type<EnumerationReference>();
+    val[0] = TypeEncoder::encode_type<aggregate_of_instance::ptr>();
     char* ptr = val.data() + 1;
     for (auto it = t->begin(); it != t->end(); ++it) {
-        *ptr = (*it)->declaration().as_entity() ? 'e' : 't';
+        *ptr = (*it)->declaration().as_entity() ? 'i' : 't';
         ptr++;
-        size_t iden = (*it)->declaration().as_entity() ? (*it)->id() : (*it)->identity();
+        size_t iden = (*it)->id() ? (*it)->id() : (*it)->identity();
         memcpy(ptr, &iden, sizeof(size_t));
         ptr += sizeof(size_t);
     }
@@ -328,10 +333,10 @@ bool impl::deserialize(IfcParse::impl::rocks_db_file_storage* storage, const std
         ptr++;
         size_t v;
         memcpy(&v, ptr, sizeof(size_t));
-        if (tt == 'e') {
-            t->push(storage->assert_existance(v, IfcParse::impl::rocks_db_file_storage::by_name));
+        if (tt == 'i') {
+            t->push(storage->assert_existance(v, IfcParse::impl::rocks_db_file_storage::entityinstance_ref));
         } else if (tt == 't') {
-            t->push(storage->assert_existance(v, IfcParse::impl::rocks_db_file_storage::by_identity));
+            t->push(storage->assert_existance(v, IfcParse::impl::rocks_db_file_storage::typedecl_ref));
         } else {
             throw std::runtime_error("");
         }
@@ -352,7 +357,7 @@ void rocks_db_attribute_storage::set(void* storage, const IfcParse::declaration*
     impl::serialize(v, value);
     rdb_storage->db->Put(
         rocksdb::WriteOptions{}, 
-        (is_header ? "h|" : "i|") + 
+        (is_header ? "h|" : (decl->as_entity() ? "i|" : "t|")) +
         (is_header ? decl->name() : std::to_string(identity)) + "|" + 
         std::to_string(index), v);
 }

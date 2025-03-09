@@ -25,8 +25,10 @@
 #include "IfcSchema.h"
 #include "IfcSpfHeader.h"
 #include "rocksdb_map_adapter.h"
+#include "rocksdb_set_view.h"
 #include "map_variant.h"
 #include "map_transformer.h"
+#include "set_to_map_transformer.h"
 
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/random_access_index.hpp>
@@ -213,35 +215,24 @@ namespace impl {
     struct in_memory_file_storage {
         IfcParse::IfcSpfLexer* tokens;
         IfcParse::IfcSpfStream* stream;
-
         IfcParse::IfcFile* file;
 
         unresolved_references references_to_resolve;
 
         typedef std::map<const IfcParse::declaration*, aggregate_of_instance::ptr> entities_by_type_t;
-        typedef boost::unordered_map<size_t, size_t> identity_by_id_t;
-        typedef boost::unordered_map<uint32_t, IfcUtil::IfcBaseClass*> entity_by_iden_t;
-        typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_by_guid_t;
+        typedef boost::unordered_map<uint32_t, IfcUtil::IfcBaseClass*> entity_instance_by_name_t;
+        typedef boost::unordered_map<uint32_t, IfcUtil::IfcBaseClass*> type_instance_by_name_t;
+        typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_instance_by_guid_t;
         typedef std::tuple<int, short, short> inverse_attr_record;
         enum INVERSE_ATTR {
             INSTANCE_ID,
             INSTANCE_TYPE,
             ATTRIBUTE_INDEX
         };
-        typedef std::map<inverse_attr_record, std::vector<int>> entities_by_ref_t;
-        typedef std::map<int, std::vector<int>> entities_by_ref_excl_t;
-        typedef std::map<unsigned int, aggregate_of_instance::ptr> ref_map_t;
-        typedef map_transformer<identity_by_id_t, std::function<IfcUtil::IfcBaseClass* (size_t)>, std::function<size_t(IfcUtil::IfcBaseClass*)>> entity_by_id_t;
-        typedef entity_by_id_t::iterator iterator;
+        typedef std::map<inverse_attr_record, std::vector<uint32_t>> entities_by_ref_t;
+        typedef entity_instance_by_name_t::iterator iterator;
 
-        in_memory_file_storage()
-            : byid_(
-                &idenbyid_, 
-                [this](size_t v) { return byidentity_[v]; }, 
-                [](IfcUtil::IfcBaseClass* inst) { return inst->identity(); }
-            )
-        {}
-
+        in_memory_file_storage() : tokens(nullptr), stream(nullptr), file(nullptr) {}
         in_memory_file_storage(const in_memory_file_storage&) = delete;
         in_memory_file_storage(const in_memory_file_storage&&) = delete;
 
@@ -289,15 +280,11 @@ namespace impl {
         static bool guid_map() { return guid_map_; }
         static void guid_map(bool b) { guid_map_ = b; }
 
-        // this is for simple types
-        entity_by_iden_t byidentity_;
-        // entities_by_type_t bytype_;
+        entity_instance_by_name_t byid_;
+        type_instance_by_name_t tbyid_;
         entities_by_type_t bytype_excl_;
-        // entities_by_ref_t byref_;
         entities_by_ref_t byref_excl_;
-        entity_by_guid_t byguid_;
-        identity_by_id_t idenbyid_;
-        entity_by_id_t byid_;
+        entity_instance_by_guid_t byguid_;
 
         void load(unsigned entity_instance_name, const IfcParse::entity* entity, parse_context&, int attribute_index = -1);
         void try_read_semicolon() const;
@@ -315,31 +302,24 @@ namespace impl {
 
         void add_type_ref(IfcUtil::IfcBaseClass* new_entity) {
             auto ty = new_entity->declaration().as_entity();
-            if (bytype_excl_.find(ty) == bytype_excl_.end()) {
-                bytype_excl_[ty].reset(new aggregate_of_instance());
+            if (ty) {
+                if (bytype_excl_.find(ty) == bytype_excl_.end()) {
+                    bytype_excl_[ty].reset(new aggregate_of_instance());
+                }
+                bytype_excl_[ty]->push(new_entity);
             }
-            bytype_excl_[ty]->push(new_entity);
         }
         void remove_type_ref(IfcUtil::IfcBaseClass* new_entity) {
             auto ty = new_entity->declaration().as_entity();
-            auto it = bytype_excl_.find(ty);
-            if (it != bytype_excl_.end()) {
-                it->second->remove(new_entity);
-                if (it->second->size() == 0) {
-                    bytype_excl_.erase(ty);
+            if (ty) {
+                auto it = bytype_excl_.find(ty);
+                if (it != bytype_excl_.end()) {
+                    it->second->remove(new_entity);
+                    if (it->second->size() == 0) {
+                        bytype_excl_.erase(ty);
+                    }
                 }
             }
-        }
-
-        void add_inverse_ref(IfcUtil::IfcBaseClass* new_entity) {
-            auto ty = new_entity->declaration().as_entity();
-            if (bytype_excl_.find(ty) == bytype_excl_.end()) {
-                bytype_excl_[ty].reset(new aggregate_of_instance());
-            }
-            bytype_excl_[ty]->push(new_entity);
-        }
-        void remove_inverse_ref(IfcUtil::IfcBaseClass* new_entity) {
-            // @todo
         }
 
         void process_deletion_inverse(IfcUtil::IfcBaseClass* inst);
@@ -355,19 +335,30 @@ namespace impl {
         rocksdb::DB* db;
         IfcParse::IfcFile* file;
 
+        enum instance_ref {
+            typedecl_ref,
+            entityinstance_ref
+        };
+
         // to make sure that instance pointer are constant during file lifetime
         // cache instances because we want stable pointers
         // @todo this is silly, but we cannot have the same type, this should be just a pointer then on the IfcFile side?
-        typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_by_iden_cache_t;
+        typedef std::map<std::pair<instance_ref, uint32_t>, IfcUtil::IfcBaseClass*> entity_by_iden_cache_t;
         entity_by_iden_cache_t instance_cache_;
-        
-        // lookup id->identity
-        typedef rocksdb_map_adapter<size_t, size_t> identity_by_id_t;
-        identity_by_id_t byid_;
+                
+        // @todo all these size_ts should probably be uint32_t for consistency with in-mem storage
 
-        typedef map_transformer<rocksdb_map_adapter<size_t, size_t>, std::function<IfcUtil::IfcBaseClass*(size_t)>, std::function<size_t(IfcUtil::IfcBaseClass*)>> entity_by_id_t;
+        // lookup id->identity
+        // typedef rocksdb_map_adapter<size_t, size_t> identity_by_id_t;
+        // identity_by_id_t byid_;
+        typedef rocksdb_set_view<size_t> instance_name_view_t;
+        instance_name_view_t instance_ids_;
+        typedef set_to_map_transformer<instance_name_view_t, std::function<IfcUtil::IfcBaseClass* (size_t)>> entity_instance_by_name_t;
+        entity_instance_by_name_t instance_by_name_;
+
+        // typedef map_transformer<rocksdb_map_adapter<size_t, size_t>, std::function<IfcUtil::IfcBaseClass*(size_t)>, std::function<size_t(IfcUtil::IfcBaseClass*)>> entity_by_id_t;
         // storage is now Instance name -> Identity -> Pointer (cached)
-        entity_by_id_t byidentity_;
+        // entity_by_id_t byidentity_;
 
         // index in schema to binary serialized ids
         typedef rocksdb_map_adapter<size_t, std::string> instance_id_str_by_type_t;
@@ -378,23 +369,28 @@ namespace impl {
         instance_id_by_guid_str_t byguid_internal_;
 
         // guid -> id -> instance
-        typedef map_transformer<rocksdb_map_adapter<std::string, size_t>, std::function<IfcUtil::IfcBaseClass* (size_t)>, std::function< size_t(IfcUtil::IfcBaseClass*)>> entity_by_guid_t;
-        entity_by_guid_t byguid_;
+        typedef map_transformer<rocksdb_map_adapter<std::string, size_t>, std::function<IfcUtil::IfcBaseClass* (size_t)>, std::function< size_t(IfcUtil::IfcBaseClass*)>> entity_instance_by_guid_t;
+        entity_instance_by_guid_t byguid_;
+
+        typedef std::tuple<int, int, int> inverse_attr_record;
+        enum INVERSE_ATTR {
+            INSTANCE_ID,
+            INSTANCE_TYPE,
+            ATTRIBUTE_INDEX
+        };
+        typedef rocksdb_map_adapter<inverse_attr_record, std::vector<uint32_t>> entities_by_ref_t;
+        entities_by_ref_t byref_excl_;
 
         // @todo naming
         rocks_db_file_storage(const std::string& filepath, IfcParse::IfcFile* file);
         ~rocks_db_file_storage();
 
         bool read_schema(const IfcParse::schema_definition*& schema);
-        
-        enum instance_ref {
-            by_name,
-            by_identity
-        };
 
         IfcUtil::IfcBaseClass* assert_existance(size_t instanceId, instance_ref r);
 
         // @todo this could be another map_adapter?
+        /*
         class rocksdb_instance_iterator {
         private:
             rocksdb::Iterator* state_;
@@ -467,6 +463,7 @@ namespace impl {
 
             IfcUtil::IfcBaseClass* operator*() const;
         };
+        */
 
         // @todo merge iterators (template?)
         class rocksdb_types_iterator {
@@ -554,7 +551,7 @@ namespace impl {
         };
 
         // @todo rocksdb_instance_iterator?
-        using const_iterator = rocksdb_types_iterator;
+        using const_iterator = entity_instance_by_name_t::iterator;
 
         void register_inverse(unsigned, const IfcParse::entity* from_entity, int inst_id, int attribute_index);
         void unregister_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
@@ -634,11 +631,7 @@ private:
     // @nb path is only used in rocksdb mode, for spf file is in-memory only until write() is called
     IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"), filetype ty = ifcspf, const std::string& path = "");
 
-    ~IfcFile() {
-        for (const auto& p : byidentity_) {
-            delete p.second;
-        }
-    }
+    ~IfcFile();
 
     file_open_status good() const { return good_; }
 
@@ -761,18 +754,14 @@ private:
     void register_inverse(unsigned, const IfcParse::entity* from_entity, int inst_id, int attribute_index);
     void unregister_inverse(unsigned, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass*, int attribute_index);
 
-    typedef VariantMap<impl::in_memory_file_storage::entity_by_guid_t, impl::rocks_db_file_storage::entity_by_guid_t> entity_by_guid_t;
-    entity_by_guid_t byguid_;
-    typedef VariantMap<impl::in_memory_file_storage::entity_by_id_t, impl::rocks_db_file_storage::entity_by_id_t> entity_by_id_t;
+    typedef VariantMap<impl::in_memory_file_storage::entity_instance_by_guid_t, impl::rocks_db_file_storage::entity_instance_by_guid_t> entity_instance_by_guid_t;
+    entity_instance_by_guid_t byguid_;
+    typedef VariantMap<impl::in_memory_file_storage::entity_instance_by_name_t, impl::rocks_db_file_storage::entity_instance_by_name_t> entity_by_id_t;
     entity_by_id_t byid_;
-    typedef VariantMap<impl::in_memory_file_storage::entity_by_iden_t, impl::rocks_db_file_storage::entity_by_iden_cache_t> entity_by_iden_t;
-    entity_by_iden_t byidentity_;
-    typedef VariantMap<impl::in_memory_file_storage::identity_by_id_t, impl::rocks_db_file_storage::identity_by_id_t> identity_by_id_t;
-    identity_by_id_t idenbyid_;
+    typedef VariantMap<impl::in_memory_file_storage::entities_by_ref_t, impl::rocks_db_file_storage::entities_by_ref_t> entities_by_ref_t;
+    entities_by_ref_t byref_excl_;
 
-
-    // @todo
-    entity_by_guid_t internal_guid_map() { return byguid_; };
+    entity_instance_by_guid_t internal_guid_map() { return byguid_; };
 
     void add_type_ref(IfcUtil::IfcBaseClass* new_entity);
     void remove_type_ref(IfcUtil::IfcBaseClass* new_entity);
