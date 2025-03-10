@@ -544,8 +544,8 @@ class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = tool.Model.get_model_props()
-        bpy.ops.bim.load_type_thumbnails(ifc_class=props.ifc_class, offset=9 * (self.page - 1), limit=9)
         props.type_page = self.page
+        bpy.ops.bim.load_type_thumbnails()
         return {"FINISHED"}
 
 
@@ -623,29 +623,18 @@ class LoadTypeThumbnails(bpy.types.Operator):
     bl_idname = "bim.load_type_thumbnails"
     bl_label = "Load Type Thumbnails"
     bl_options = {"REGISTER", "UNDO"}
-    ifc_class: bpy.props.StringProperty()
-    limit: bpy.props.IntProperty()
-    offset: bpy.props.IntProperty()
 
     def execute(self, context):
         if bpy.app.background:
             return {"FINISHED"}
 
-        props = tool.Model.get_model_props()
         # Only process at most one paginated class at a time.
         # Large projects have hundreds of types which can lead to unnecessary lag.
         if not AuthoringData.is_loaded:
             AuthoringData.load()
-        queue = AuthoringData.data["type_elements_filtered"]
-        if self.limit:
-            queue = queue[self.offset : self.offset + self.limit]
-        else:
-            offset = 9 * (props.type_page - 1)
-            if offset < 0:
-                offset = 0
-            queue = queue[offset : offset + 9]
+        queue = [tool.Ifc.get().by_id(t["id"]) for t in AuthoringData.data["paginated_relating_types"]]
 
-        # The active type may be in another page than the active one :
+        # The active type may be in another page than the active one:
         if relating_type_id_current := AuthoringData.data["relating_type_data"].get("id"):
             active_element = tool.Ifc.get_entity_by_id(relating_type_id_current)
             if active_element and active_element not in queue:

@@ -58,7 +58,7 @@ def get_materials(
 
 
 def update_ifc_class(self: "BIMModelProperties", context: bpy.types.Context) -> None:
-    bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
+    bpy.ops.bim.load_type_thumbnails()
     AuthoringData.data["ifc_class_current"] = self.ifc_class
     AuthoringData.data["type_elements"] = AuthoringData.type_elements()
     AuthoringData.data["type_elements_filtered"] = AuthoringData.type_elements_filtered()
@@ -82,7 +82,7 @@ def update_relating_type_id(self: "BIMModelProperties", context: bpy.types.Conte
 
 def update_type_page(self: "BIMModelProperties", context: bpy.types.Context) -> None:
     AuthoringData.data["paginated_relating_types"] = AuthoringData.paginated_relating_types()
-    bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class, offset=9 * (self.type_page - 1), limit=9)
+    bpy.ops.bim.load_type_thumbnails()
     self["type_page"] = min(self["type_page"], AuthoringData.data["total_pages"])
     self["type_page"] = max(self["type_page"], 1)
 
@@ -118,7 +118,7 @@ def update_search_name(self: "BIMModelProperties", context: bpy.types.Context) -
     # Total number of pages may decrease when using the search bar :
     if self.type_page > AuthoringData.data["total_pages"]:
         self.type_page = max(1, AuthoringData.data["total_pages"])
-    bpy.ops.bim.load_type_thumbnails(ifc_class=self.ifc_class)
+    bpy.ops.bim.load_type_thumbnails()
 
 
 def update_x_angle(self: "BIMModelProperties", context: bpy.types.Context) -> None:

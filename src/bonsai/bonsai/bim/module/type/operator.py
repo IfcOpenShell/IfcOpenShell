@@ -325,7 +325,7 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
             new_obj.data = obj.data.copy()
         new = bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
         new.Name += " Copy"
-        bpy.ops.bim.load_type_thumbnails(ifc_class=new.is_a())
+        bpy.ops.bim.load_type_thumbnails()
         if obj in context.selectable_objects:
             tool.Blender.select_and_activate_single_object(context, new_obj)
         else:

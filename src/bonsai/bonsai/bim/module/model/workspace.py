@@ -646,7 +646,7 @@ class CreateObjectUI:
         box = cls.layout.box()
 
         row = box.row(align=True)
-        thumbnail: int = relating_type_data["icon_id"]
+        thumbnail: int = AuthoringData.type_thumbnails.get(relating_type_data["id"], 0)
         row.template_icon(icon_value=thumbnail)
         row.operator("bim.launch_type_manager", text=relating_type_data["name"], emboss=False)
         row.operator(
