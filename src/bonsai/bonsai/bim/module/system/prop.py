@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bonsai.bim.module.system.data import SystemData
 import bonsai.bim.module.system.decorator as decorator
 from bonsai.bim.prop import StrProperty, Attribute
@@ -31,7 +32,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 
 def get_system_class(self: "BIMSystemProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -89,6 +90,10 @@ class BIMSystemProperties(PropertyGroup):
         edited_system_id: int
         system_class: str
         should_draw_decorations: bool
+
+    @property
+    def active_system_ui_item(self) -> Union[System, None]:
+        return tool.Blender.get_active_uilist_element(self.systems, self.active_system_index)
 
 
 class BIMZoneProperties(PropertyGroup):

@@ -75,6 +75,7 @@ class BIM_PT_systems(Panel):
             op.system = system_id
 
         self.props = tool.System.get_system_props()
+        active_system_item = self.props.active_system_ui_item
         row = self.layout.row(align=True)
         row.prop(self.props, "should_draw_decorations")
 
@@ -103,6 +104,20 @@ class BIM_PT_systems(Panel):
             row = self.layout.row(align=True)
             prop_with_search(row, self.props, "system_class", text="")
             row.operator("bim.add_system", text="", icon="ADD")
+            if active_system_item:
+                system_id = active_system_item.ifc_definition_id
+                op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
+                op.system = system_id
+                row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = system_id
+                row.operator("bim.unassign_system", text="", icon="KEYFRAME").system = system_id
+                if self.props.edited_system_id == system_id:
+                    row.operator("bim.edit_system", text="", icon="CHECKMARK")
+                    row.operator("bim.disable_editing_system", text="", icon="CANCEL")
+                else:
+                    op = row.operator("bim.enable_editing_system", text="", icon="GREASEPENCIL")
+                    op.system = system_id
+                    op = row.operator("bim.remove_system", text="", icon="X")
+                    op.system = system_id
         else:
             row.operator("bim.load_systems", text="", icon="IMPORT")
 
@@ -422,26 +437,10 @@ class BIM_UL_systems(UIList):
     ):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name, icon=SYSTEM_ICONS[item.ifc_class])
             system_id = item.ifc_definition_id
-            row.operator("bim.assign_system", text="", icon="ADD").system = item.ifc_definition_id
             if data.edited_system_id == system_id:
-                op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.system = system_id
-                row.operator("bim.edit_system", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_system", text="", icon="CANCEL")
-            elif data.edited_system_id:
-                op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.system = system_id
-                op = row.operator("bim.remove_system", text="", icon="X")
-                op.system = system_id
-            else:
-                op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.system = system_id
-                op = row.operator("bim.enable_editing_system", text="", icon="GREASEPENCIL")
-                op.system = system_id
-                op = row.operator("bim.remove_system", text="", icon="X")
-                op.system = system_id
+                row.label(text="", icon="GREASEPENCIL")
+            row.label(text=item.name, icon=SYSTEM_ICONS[item.ifc_class])
 
 
 class BIM_UL_zones(UIList):
