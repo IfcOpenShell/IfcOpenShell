@@ -240,4 +240,10 @@ class BIM_PT_solar(bpy.types.Panel):
         row.prop(context.scene.display.shading, "shadow_intensity", text="Shadow Intensity")
 
         row = self.layout.row(align=True)
+        row.prop(props, "traverse_transparent", icon="SHADING_RENDERED")
+        if props.traverse_transparent:
+            row = self.layout.row(align=True)
+            row.prop(context.scene.sun_pos_properties.sun_object.data , "energy", text="Sun Intensity")
+
+        row = self.layout.row(align=True)
         row.operator("bim.view_from_sun", icon="LIGHT_HEMI")
