@@ -308,6 +308,8 @@ class Project(bonsai.core.tool.Project):
 
     @classmethod
     def get_project_library_rels(cls, ifc_file: ifcopenshell.file) -> set[ifcopenshell.entity_instance]:
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return set()
         return set(rel for lib in ifc_file.by_type("IfcProjectLibrary") for rel in lib.Declares)
 
     @classmethod
@@ -361,6 +363,8 @@ class Project(bonsai.core.tool.Project):
 
         """
         hierarchy: HiearchyDict = defaultdict(dict)
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return hierarchy
         for project_library in ifc_file.by_type("IfcProjectLibrary"):
             parent_library = cls.get_parent_library(project_library)
             hierarchy[parent_library][project_library] = hierarchy[project_library]
