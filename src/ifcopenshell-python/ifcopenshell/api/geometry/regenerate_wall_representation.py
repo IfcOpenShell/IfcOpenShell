@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api.geometry
@@ -119,6 +120,8 @@ class Regenerator:
         self.end_points = []
         self.end_vector = np.array((0.0, 0.0, 1.0))
         self.end_offset = 0.0
+        manual_booleans = self.get_manual_booleans(wall)
+
         for rel in wall.ConnectedTo:
             if rel.is_a("IfcRelConnectsPathElements"):
                 wall2 = rel.RelatedElement
@@ -160,6 +163,9 @@ class Regenerator:
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(self.file)
 
+        # Don't offset wall if there are manual booleans, because that'll also shift operands
+        offset = None if manual_booleans else self.reference_p1 * -1
+
         if self.is_angled:
             start_points = [p.copy() for p in self.start_points]
             end_points = [p.copy() for p in self.end_points]
@@ -174,7 +180,7 @@ class Regenerator:
             end_points.reverse()
             points.extend(end_points)
             item = builder.extrude(
-                builder.polyline(points, closed=True, position_offset=self.reference_p1 * -1),
+                builder.polyline(points, closed=True, position_offset=offset),
                 magnitude=self.wall_vectors["d"],
                 extrusion_vector=self.wall_vectors["z"],
             )
@@ -195,7 +201,7 @@ class Regenerator:
                 magnitude = np.linalg.norm(self.start_vector * (self.wall_vectors["h"] / self.start_vector[2]))
                 operands.append(
                     builder.extrude(
-                        builder.polyline(points, closed=True, position_offset=self.reference_p1 * -1),
+                        builder.polyline(points, closed=True, position_offset=offset),
                         magnitude=magnitude,
                         extrusion_vector=self.start_vector,
                     )
@@ -217,7 +223,7 @@ class Regenerator:
                 magnitude = np.linalg.norm(self.end_vector * (self.wall_vectors["h"] / self.end_vector[2]))
                 operands.append(
                     builder.extrude(
-                        builder.polyline(points, closed=True, position_offset=self.reference_p1 * -1),
+                        builder.polyline(points, closed=True, position_offset=offset),
                         magnitude=magnitude,
                         extrusion_vector=self.end_vector,
                     )
@@ -229,7 +235,7 @@ class Regenerator:
                 magnitude = np.linalg.norm(atpath_vector * (self.wall_vectors["h"] / atpath_vector[2]))
                 operands.append(
                     builder.extrude(
-                        builder.polyline(points, closed=True, position_offset=self.reference_p1 * -1),
+                        builder.polyline(points, closed=True, position_offset=offset),
                         magnitude=magnitude,
                         extrusion_vector=atpath_vector,
                     )
@@ -286,14 +292,10 @@ class Regenerator:
                         remaining_path_points.append(minpath_points)
                 self.minpath_points = remaining_path_points
 
-                profiles.append(
-                    builder.profile(builder.polyline(points, closed=True, position_offset=self.reference_p1 * -1))
-                )
+                profiles.append(builder.profile(builder.polyline(points, closed=True, position_offset=offset)))
 
             for points in self.maxpath_points + self.minpath_points:
-                profiles.append(
-                    builder.profile(builder.polyline(points, closed=True, position_offset=self.reference_p1 * -1))
-                )
+                profiles.append(builder.profile(builder.polyline(points, closed=True, position_offset=offset)))
 
             if len(profiles) > 1:
                 profile = self.file.createIfcCompositeProfileDef("AREA", Profiles=profiles)
@@ -301,6 +303,10 @@ class Regenerator:
                 profile = profiles[0]
 
             item = builder.extrude(profile, magnitude=self.wall_vectors["d"], extrusion_vector=self.wall_vectors["z"])
+        for boolean in self.get_manual_booleans(wall):
+            boolean.FirstOperand = item
+            item = boolean
+
         body_rep = builder.get_representation(self.body, items=[item])
         if old_rep := ifcopenshell.util.representation.get_representation(wall, self.body):
             ifcopenshell.util.element.replace_element(old_rep, body_rep)
@@ -308,7 +314,7 @@ class Regenerator:
         else:
             ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=body_rep)
 
-        item = builder.polyline([self.reference_p1, self.reference_p2], position_offset=self.reference_p1 * -1)
+        item = builder.polyline([self.reference_p1, self.reference_p2], position_offset=offset)
         axis_rep = builder.get_representation(self.axis, items=[item])
         if old_rep := ifcopenshell.util.representation.get_representation(wall, self.axis):
             ifcopenshell.util.element.replace_element(old_rep, axis_rep)
@@ -316,7 +322,7 @@ class Regenerator:
         else:
             ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=axis_rep)
 
-        if not np.allclose(self.reference_p1, np.array((0.0, 0.0))):
+        if not np.allclose(self.reference_p1, np.array((0.0, 0.0))) and not manual_booleans:
             children = []
             for referenced_placement in wall.ObjectPlacement.ReferencedByPlacements:
                 matrix = ifcopenshell.util.placement.get_local_placement(referenced_placement)
@@ -599,7 +605,7 @@ class Regenerator:
             return result * -1
         return result
 
-    def get_axes(self, wall, reference, layers: list[PrioritisedLayer], angle: float):
+    def get_axes(self, wall: ifcopenshell.entity_instance, reference, layers: list[PrioritisedLayer], angle: float):
         axes = [[p.copy() for p in reference]]
         # Apply usage to convert the Reference line into MlsBase
         sense_factor = 1
@@ -612,3 +618,11 @@ class Regenerator:
             y_offset = (layer.thickness * sense_factor) / cos(angle)
             axes.append([p.copy() + np.array((0.0, y_offset)) for p in axes[-1]])
         return axes
+
+    def get_manual_booleans(self, element: ifcopenshell.entity_instance):
+        if pset := ifcopenshell.util.element.get_pset(element, "BBIM_Boolean"):
+            try:
+                return [self.file.by_id(boolean_id) for boolean_id in json.loads(pset["Data"])]
+            except:
+                return []
+        return []
