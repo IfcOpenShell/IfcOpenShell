@@ -235,12 +235,12 @@ def guess_type(items: Sequence[ifcopenshell.entity_instance]) -> Union[str, None
         ]
     ):
         return "SurfaceModel"
-    elif all([True if i.is_a("IfcSolidModel") else False for i in items]):
-        return "SolidModel"
     elif all(
         [True if i.is_a() == "IfcExtrudedAreaSolid" or i.is_a() == "IfcRevolvedAreaSolid" else False for i in items]
     ):
         return "SweptSolid"
+    elif all([True if i.is_a("IfcSolidModel") else False for i in items]):
+        return "SolidModel"
     elif all(
         [
             (

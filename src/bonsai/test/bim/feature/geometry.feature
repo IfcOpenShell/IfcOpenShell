@@ -189,8 +189,7 @@ Scenario: Update representation - updating a layered extrusion
     And I press "bim.edit_material_set_item(material_set_item={layer})"
     And I press "bim.edit_assigned_material(material_set={layer_set})"
     And the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
-    And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
-    When I press "bim.update_representation(obj='IfcWall/Cube')"
+    When I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
 
 Scenario: Update representation - updating a profiled extrusion

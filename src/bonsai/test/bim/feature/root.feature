@@ -1,6 +1,70 @@
 @root
 Feature: Root
 
+Scenario: Add element - a type with no geometry
+    Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Name" property to "Foo"
+    And I set the "Description" property to "Bar"
+    And I set the "Definition" property to "IfcElementType"
+    And I set the "Class" property to "IfcFurnitureType"
+    And I set the "Predefined Type" property to "SOFA"
+    And I set the "Representation" property to "No Geometry"
+    When I click "OK"
+    Then the object "IfcFurnitureType/Foo" exists
+    And the object "IfcFurnitureType/Foo" has no data
+
+Scenario: Add element - an element with no geometry
+    Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Definition" property to "IfcElement"
+    And I set the "Class" property to "IfcFurniture"
+    And I set the "Predefined Type" property to "SOFA"
+    And I set the "Representation" property to "Custom Extruded Solid"
+    When I click "OK"
+    And I select the object "IfcFurniture/Unnamed"
+    And I toggle edit mode
+    Then the object "Item/IfcExtrudedAreaSolid/77" exists
+
+Scenario: Add element - an element with extrusion geometry
+    Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Definition" property to "IfcElement"
+    And I set the "Class" property to "IfcFurniture"
+    And I set the "Predefined Type" property to "SOFA"
+    And I set the "Representation" property to "Custom Extruded Solid"
+    When I click "OK"
+    And I select the object "IfcFurniture/Unnamed"
+    And I toggle edit mode
+    Then the object "Item/IfcExtrudedAreaSolid/77" exists
+
+Scenario: Add element - an element with custom tessellation geometry
+    Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Definition" property to "IfcElement"
+    And I set the "Class" property to "IfcFurniture"
+    And I set the "Predefined Type" property to "SOFA"
+    And I set the "Representation" property to "Custom Tessellation"
+    When I click "OK"
+    And I select the object "IfcFurniture/Unnamed"
+    And I toggle edit mode
+    Then the object "Item/IfcPolygonalFaceSet/76" exists
+
+Scenario: Add element - an element with tessellation geometry from an object
+    Given an empty IFC project
+    And I add a cube
+    And I trigger "Add Element"
+    And I set the "Definition" property to "IfcElement"
+    And I set the "Class" property to "IfcFurniture"
+    And I set the "Predefined Type" property to "SOFA"
+    And I set the "Representation" property to "Tessellation From Object"
+    And I set the "Object" property to "Cube"
+    When I click "OK"
+    And I select the object "IfcFurniture/Unnamed"
+    And I toggle edit mode
+    Then the object "Item/IfcPolygonalFaceSet/76" exists
+    And the object "Item/IfcPolygonalFaceSet/76" dimensions are "2,2,2"
+
 Scenario: Reassign class
     Given an empty IFC project
     And I add a cube
@@ -77,7 +141,7 @@ Scenario: Assign a spatial class to a cube already in a collection
     And I set "scene.BIMRootProperties.ifc_class" to "IfcSpace"
     And I press "bim.assign_class"
     Then the object "IfcSpace/Cube" is an "IfcSpace"
-    And the object "IfcSpace/Cube" is in the collection "IfcSpace/Cube"
+    And the object "IfcSpace/Cube" is in the collection "IfcSpace"
     And the object "IfcSpace/Cube" has a "Tessellation" representation of "Model/Body/MODEL_VIEW"
 
 Scenario: Assign a class to a cube in a collection
@@ -103,7 +167,7 @@ Scenario: Copy a wall
 Scenario: Copy a storey - when locked
     Given an empty IFC project
     And the object "IfcBuildingStorey/My Storey" is selected
-    When I duplicate the selected objects
+    Then I expect an error "Error: 'IfcBuildingStorey/My Storey' is locked. Unlock it via the Spatial panel in the Project Overview tab." when "i_duplicate_the_selected_objects()"
     Then the object "IfcBuildingStorey/My Storey.001" does not exist
 
 Scenario: Copy a storey - when unlocked
