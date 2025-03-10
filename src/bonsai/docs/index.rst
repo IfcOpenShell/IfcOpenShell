@@ -56,6 +56,7 @@ and data-rich OpenBIM with Blender :)
       guides/authoring/georeferencing
       guides/authoring/git_support
       guides/development/index
+      guides/alignment
       guides/authoring/other_addons
       guides/troubleshooting
       guides/debugging
@@ -68,7 +69,6 @@ and data-rich OpenBIM with Blender :)
       reference/interface
       reference/topbar
       reference/properties
-      reference/alignment/index
 
 Need more help? Join the `live chat <https://osarch.org/chat/>`__ or `community
 forums <https://community.osarch.org>`__. Something strange happening? Please
