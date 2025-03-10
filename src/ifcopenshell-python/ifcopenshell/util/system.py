@@ -66,13 +66,8 @@ def get_system_elements(system: ifcopenshell.entity_instance) -> list[ifcopenshe
 def get_element_systems(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     results = []
     for rel in element.HasAssignments:
-        if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a() in (
-            "IfcSystem",
-            "IfcDistributionSystem",
-            "IfcBuildingSystem",
-            "IfcZone",
-        ):
-            results.append(rel.RelatingGroup)
+        if rel.is_a("IfcRelAssignsToGroup") and (group := rel.RelatingGroup).is_a("IfcSystem"):
+            results.append(group)
     return results
 
 
