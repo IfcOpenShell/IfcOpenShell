@@ -1282,7 +1282,7 @@ class UnloadLink(bpy.types.Operator):
         if empty_handle := link.empty_handle:
             bpy.data.objects.remove(empty_handle)
 
-        #following lines removes the library also when use_relative_path=True, otherwise it doesn't
+        # following lines removes the library also when use_relative_path=True, otherwise it doesn't
         libraries = bpy.data.libraries
         for library in libraries:
             if library.name == self.filepath + ".cache.blend":
@@ -1452,8 +1452,8 @@ class ReloadLink(bpy.types.Operator):
 
         is_abs = os.path.isabs(Path(self.filepath))
         use_relative_path = not is_abs
-        bpy.ops.bim.unlink_ifc(filepath = self.filepath)
-        status = bpy.ops.bim.link_ifc(filepath=self.filepath, use_cache=False, use_relative_path = use_relative_path)
+        bpy.ops.bim.unlink_ifc(filepath=self.filepath)
+        status = bpy.ops.bim.link_ifc(filepath=self.filepath, use_cache=False, use_relative_path=use_relative_path)
 
         return {"FINISHED"}
 
