@@ -336,6 +336,7 @@ class Blender:
         "get_gross_perimeter": Function("IfcLengthMeasure", "Gross Perimeter", ""),
         "get_height": Function("IfcLengthMeasure", "Height", ""),
         "get_length": Function("IfcLengthMeasure", "Length", ""),
+        "get_x": Function("IfcLengthMeasure", "Length", ""),
         "get_opening_depth": Function("IfcLengthMeasure", "Opening Depth", ""),
         "get_opening_height": Function("IfcLengthMeasure", "Opening Height", ""),
         "get_rectangular_perimeter": Function("IfcLengthMeasure", "Rectangular Perimeter", ""),
