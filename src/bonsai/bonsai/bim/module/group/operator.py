@@ -35,9 +35,12 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
         self.expanded_groups = json.loads(context.scene.ExpandedGroups.json_string)
         self.props.groups.clear()
 
-        for group in tool.Ifc.get().by_type("IfcGroup", include_subtypes=False):
-            if not group.HasAssignments:
-                self.load_group(group)
+        groups = [group for group in tool.Ifc.get().by_type("IfcGroup", include_subtypes=False) if not group.HasAssignments]
+        sorted_groups = sorted(groups, key=lambda group: group.Name or "Unnamed")
+
+        for group in sorted_groups:
+            self.load_group(group)
+
 
         self.props.is_editing = True
         bpy.ops.bim.disable_editing_group()
@@ -51,14 +54,14 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
         new.has_children = False
         new.is_expanded = group.id() in self.expanded_groups
 
-        for rel in group.IsGroupedBy or []:
-            for related_object in rel.RelatedObjects:
-                if not related_object.is_a("IfcGroup"):
-                    continue
-                new.has_children = True
-                if not new.is_expanded:
-                    return
-                self.load_group(related_object, tree_depth=tree_depth + 1)
+        related_groups = [related_object for rel in group.IsGroupedBy or [] for related_object in rel.RelatedObjects if related_object.is_a("IfcGroup")]
+        sorted_related_groups = sorted(related_groups, key=lambda group: group.Name or "Unnamed")
+
+        for related_group in sorted_related_groups:
+            new.has_children = True
+            if not new.is_expanded:
+                return
+            self.load_group(related_group, tree_depth=tree_depth + 1)
 
 
 class ToggleGroup(bpy.types.Operator, tool.Ifc.Operator):
