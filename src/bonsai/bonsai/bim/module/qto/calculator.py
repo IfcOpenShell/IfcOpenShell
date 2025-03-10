@@ -63,12 +63,12 @@ def get_linear_length(o: bpy.types.Object) -> float:
     return max(x, y, z)
 
 
-def get_length(o: bpy.types.Object, vg_index: Optional[int] = None, main_axis: str = "x") -> float:
+def get_length(o: bpy.types.Object, vg_index: Optional[int] = None) -> float:
     if vg_index is None:
         x = get_x(o)
         y = get_y(o)
         z = get_z(o)
-        if get_object_main_axis(o) == "x" or main_axis == "x":
+        if get_object_main_axis(o) == "x":
             return max(x, y)
         if get_object_main_axis(o) == "z":
             return max(z, x)
