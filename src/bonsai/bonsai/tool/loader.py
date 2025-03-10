@@ -1036,18 +1036,22 @@ class Loader(bonsai.core.tool.Loader):
         bm = bmesh.new()
         bm.from_mesh(mesh)
         prev_co = None
-        # no = Vector((0.0, 1.0, 0.0))
         if not usage:
             sense_factor = 1  # Assume the extrusion vector points in the direction sense
             no = cls.get_extrusion_vector(element).normalized()
             co = Vector((0.0, 0.0, offset))
         elif usage.LayerSetDirection == "AXIS2":
             co = Vector((0.0, offset, 0.0))
+            no = cls.get_extrusion_vector(element).normalized()
             no = no.cross(Vector([1.0, 0.0, 0.0]))
         elif usage.LayerSetDirection == "AXIS3":
             co = Vector((0.0, 0.0, offset))
             no = cls.get_extrusion_vector(element).normalized()
             no = Vector([0.0, 0.0, 1.0 if no.z > 0 else -1.0])
+        elif usage.LayerSetDirection == "AXIS3":
+            co = Vector((0.0, 0.0, offset))
+            no = cls.get_extrusion_vector(element).normalized()
+            no = Vector([1.0 if no.x > 0 else -1.0, 0.0, 0.0])
         # Cache this
         body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         styles = {}
