@@ -569,22 +569,6 @@ class Polyline(bonsai.core.tool.Polyline):
         polyline_data.total_length = total_length
 
     @classmethod
-    def close_polyline(cls) -> None:
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
-        polyline_points = polyline_data[0].polyline_points if polyline_data else []
-        if len(polyline_points) > 2:
-            first_point = polyline_points[0]
-            last_point = polyline_points[-1]
-            if not (first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z):
-                polyline_point = polyline_points.add()
-                polyline_point.x = first_point.x
-                polyline_point.y = first_point.y
-                polyline_point.z = first_point.z
-                polyline_point.dim = first_point.dim
-                polyline_point.angle = first_point.angle
-                polyline_point.position = first_point.position
-
-    @classmethod
     def clear_polyline(cls) -> None:
         bpy.context.scene.BIMPolylineProperties.insertion_polyline.clear()
 

@@ -803,7 +803,23 @@ class PolylineOperator:
             tool.Blender.update_viewport()
 
         if event.value == "PRESS" and event.type == "C":
-            tool.Polyline.close_polyline()
+            # Get the first point coordinates to close the polyline
+            polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+            polyline_points = polyline_data[0].polyline_points if polyline_data else []
+            if len(polyline_points) > 2:
+                first_point = polyline_points[0]
+                last_point = polyline_points[-1]
+                if not (first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z):
+                    self.input_ui.set_value("X", first_point.x)
+                    self.input_ui.set_value("Y", first_point.y)
+                    if self.input_ui.get_number_value("Z") is not None:
+                        self.input_ui.set_value("Z", first_point.z)
+                    else:
+                        self.input_ui.set_value("Z", 0)
+            result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+            if result:
+                self.report({"WARNING"}, result)
+
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
