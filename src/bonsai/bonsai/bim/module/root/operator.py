@@ -626,9 +626,13 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
 
 class LaunchAddElement(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.launch_add_element"
-    bl_label = "Add Element"
+    bl_label = "Launch Add Element"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add an IFC physical product, construction type, and more"
+
+    @classmethod
+    def poll(cls, context):
+        return tool.Ifc.get()
 
     def execute(self, context):
         # This stub operator is needed because operators from menu skip the invoke call
