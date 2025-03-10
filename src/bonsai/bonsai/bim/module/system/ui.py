@@ -440,7 +440,7 @@ class BIM_UL_systems(UIList):
             system_id = item.ifc_definition_id
             if data.edited_system_id == system_id:
                 row.label(text="", icon="GREASEPENCIL")
-            row.label(text=item.name, icon=SYSTEM_ICONS[item.ifc_class])
+            row.prop(item, "name", text="", icon=SYSTEM_ICONS[item.ifc_class], emboss=False)
 
 
 class BIM_UL_zones(UIList):
@@ -456,4 +456,4 @@ class BIM_UL_zones(UIList):
     ):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
+            row.prop(item, "name", text="", emboss=False)

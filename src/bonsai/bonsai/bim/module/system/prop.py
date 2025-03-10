@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.bim.handler
 import bonsai.tool as tool
 from bonsai.bim.module.system.data import SystemData
 import bonsai.bim.module.system.decorator as decorator
@@ -41,14 +42,30 @@ def get_system_class(self: "BIMSystemProperties", context: bpy.types.Context) ->
     return SystemData.data["system_class"]
 
 
+def update_system_name(self: "System", context: bpy.types.Context) -> None:
+    system = tool.Ifc.get().by_id(self.ifc_definition_id)
+    if system.Name == self.name:
+        return
+    system.Name = self.name
+    bonsai.bim.handler.refresh_ui_data()
+
+
 class System(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=update_system_name)
     ifc_class: StringProperty(name="IFC Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
     if TYPE_CHECKING:
         ifc_class: str
         ifc_definition_id: int
+
+
+def update_zone_name(self: "Zone", context: bpy.types.Context) -> None:
+    zone = tool.Ifc.get().by_id(self.ifc_definition_id)
+    if zone.Name == self.name:
+        return
+    zone.Name = self.name
+    bonsai.bim.handler.refresh_ui_data()
 
 
 class Zone(PropertyGroup):

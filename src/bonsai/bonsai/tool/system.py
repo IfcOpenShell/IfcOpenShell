@@ -164,7 +164,7 @@ class System(bonsai.core.tool.System):
                 continue
             new = props.systems.add()
             new.ifc_definition_id = system.id()
-            new.name = system.Name or "Unnamed"
+            new["name"] = system.Name or "Unnamed"
             new.ifc_class = system.is_a()
 
     @classmethod

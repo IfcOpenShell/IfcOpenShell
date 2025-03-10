@@ -374,7 +374,7 @@ class LoadZones(bpy.types.Operator):
         for zone in tool.Ifc.get().by_type("IfcZone"):
             new = props.zones.add()
             new.ifc_definition_id = zone.id()
-            new.name = zone.Name or "Unnamed"
+            new["name"] = zone.Name or "Unnamed"
         props.is_loaded = True
         props.is_editing = 0
         return {"FINISHED"}
