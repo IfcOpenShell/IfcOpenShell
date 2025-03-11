@@ -161,7 +161,10 @@ class Snap(bonsai.core.tool.Snap):
         # We multiply by the increment snap which is based on the viewport zoom
         snap_threshold = 1 * cls.get_increment_snap_value(bpy.context)
 
-        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        if tool.Ifc.get():
+            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        else:
+            default_container_elevation = 0.0
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         if polyline_points:
