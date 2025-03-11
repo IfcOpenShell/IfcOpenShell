@@ -23,7 +23,7 @@ import ifcopenshell.util.system
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_entity_doc
 import bonsai.tool as tool
-from typing import Any
+from typing import Any, Union
 
 
 def refresh():
@@ -44,6 +44,7 @@ class SystemData:
         cls.data = {
             "system_class": cls.system_class(),
             "total_systems": cls.total_systems(),
+            "active_system": cls.active_system(),
         }
         cls.is_loaded = True
 
@@ -63,6 +64,13 @@ class SystemData:
     @classmethod
     def total_systems(cls):
         return len(tool.System.get_systems())
+
+    @classmethod
+    def active_system(cls) -> Union[dict[str, Any], None]:
+        active_system = tool.System.get_active_system()
+        if not active_system:
+            return None
+        return {"id": active_system.id(), "Name": active_system.Name, "ifc_class": active_system.is_a()}
 
 
 class ObjectSystemData:

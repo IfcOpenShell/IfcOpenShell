@@ -22,7 +22,7 @@ import ifcopenshell.util.system
 import bonsai.tool as tool
 import bonsai.core.system as core
 import bonsai.bim.helper
-from bonsai.bim.module.system.data import PortData
+from bonsai.bim.module.system.data import PortData, SystemData
 
 
 class LoadSystems(bpy.types.Operator):
@@ -157,12 +157,13 @@ class UnassignSystem(bpy.types.Operator, tool.Ifc.Operator):
 
 class SelectSystemProducts(bpy.types.Operator):
     bl_idname = "bim.select_system_products"
-    bl_label = "Select System Products"
+    bl_label = "Select System Products And Set Active System"
     bl_options = {"REGISTER", "UNDO"}
     system: bpy.props.IntProperty()
 
     def execute(self, context):
         core.select_system_products(tool.System, system=tool.Ifc.get().by_id(self.system))
+        SystemData.data["active_system"] = SystemData.active_system()
         return {"FINISHED"}
 
 

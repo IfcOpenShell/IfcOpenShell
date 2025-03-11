@@ -72,9 +72,11 @@ class BIM_PT_systems(Panel):
         row.prop(self.props, "should_draw_decorations")
 
         row = self.layout.row()
-        if active_system := tool.System.get_active_system():
+        if active_system := SystemData.data["active_system"]:
             row.label(text=f"Active system:")
-            tool.System.draw_system_ui(self.layout, active_system.id(), active_system.Name, active_system.is_a())
+            tool.System.draw_system_ui(
+                self.layout, active_system["id"], active_system["Name"], active_system["ifc_class"]
+            )
         else:
             row.label(text="No active system is selected")
 
