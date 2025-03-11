@@ -340,32 +340,37 @@ class System(bonsai.core.tool.System):
 
                 # for now it's hardcoded to local Y axis to avoid using viewport data
                 # for performance reasons
-                edge_ortho = obj.matrix_world.col[1].to_3d().normalized()
-                second_ortho = edge_dir.cross(edge_ortho)
-                edge_ortho = second_ortho.cross(edge_dir)
-
-                # direction lines should be around the edge center
-                n_direction_lines, start_offset = divmod(edge_length, direction_lines_offset)
-                n_direction_lines = int(n_direction_lines) + 1
-                start_offset /= 2
-                start_offset = edge_dir * start_offset + base_vert
-                cur_vert_index = start_vert_i + len(port_data)
-
-                for i in range(n_direction_lines):
-                    cur_offset = start_offset + edge_dir * i * direction_lines_offset
+                for j in range(2):
+                    edge_ortho = obj.matrix_world.col[j].to_3d().normalized()
+                    second_ortho = edge_dir.cross(edge_ortho)
+                    edge_ortho = second_ortho.cross(edge_dir)
+    
+                    # direction lines should be around the edge center
+                    n_direction_lines, start_offset = divmod(edge_length, direction_lines_offset)
+                    n_direction_lines = int(n_direction_lines) + 1
+                    start_offset /= 2
+                    start_offset = edge_dir * start_offset + base_vert
+                    
                     if both_directions:
-                        verts_pos.append(cur_offset + edge_ortho * direction_lines_width)
-                        verts_pos.append(cur_offset - edge_ortho * direction_lines_width)
-                        edges.append((cur_vert_index, cur_vert_index + 1))
-                        cur_vert_index += 2
+                        cur_vert_index = start_vert_i + len(port_data) + j * 2 * n_direction_lines
                     else:
-                        arrow_base = cur_offset - edge_dir * direction_lines_width
-                        verts_pos.append(arrow_base + edge_ortho * direction_lines_width)
-                        verts_pos.append(cur_offset)
-                        verts_pos.append(arrow_base - edge_ortho * direction_lines_width)
-                        edges.append((cur_vert_index, cur_vert_index + 1))
-                        edges.append((cur_vert_index + 1, cur_vert_index + 2))
-                        cur_vert_index += 3
+                        cur_vert_index = start_vert_i + len(port_data) + j * 3 * n_direction_lines
+
+                    for i in range(n_direction_lines):
+                        cur_offset = start_offset + edge_dir * i * direction_lines_offset
+                        if both_directions:
+                            verts_pos.append(cur_offset + edge_ortho * direction_lines_width)
+                            verts_pos.append(cur_offset - edge_ortho * direction_lines_width)
+                            edges.append((cur_vert_index, cur_vert_index + 1))
+                            cur_vert_index += 2
+                        else:
+                            arrow_base = cur_offset - edge_dir * direction_lines_width
+                            verts_pos.append(arrow_base + edge_ortho * direction_lines_width)
+                            verts_pos.append(cur_offset)
+                            verts_pos.append(arrow_base - edge_ortho * direction_lines_width)
+                            edges.append((cur_vert_index, cur_vert_index + 1))
+                            edges.append((cur_vert_index + 1, cur_vert_index + 2))
+                            cur_vert_index += 3
 
             all_vertices.extend(verts_pos)
 
