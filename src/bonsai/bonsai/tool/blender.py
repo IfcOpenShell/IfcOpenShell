@@ -1616,3 +1616,16 @@ class Blender(bonsai.core.tool.Blender):
         if 0 <= index < len(collection):
             return collection[index]
         return None
+
+    @classmethod
+    def clear_undo_history(cls) -> None:
+        """Clears the Blender history, Bonsai history, and IfcOpenShell history"""
+        old_undo_steps = bpy.context.preferences.edit.undo_steps
+        bpy.context.preferences.edit.undo_steps = 2
+        for i in range(3):
+            bpy.ops.ed.undo_push(message="Undo history cleared")
+        bpy.context.preferences.edit.undo_steps = old_undo_steps
+        tool.Ifc.clear_history()
+        old_history_size = tool.Ifc.get().history_size
+        tool.Ifc.get().set_history_size(0)
+        tool.Ifc.get().set_history_size(old_history_size)

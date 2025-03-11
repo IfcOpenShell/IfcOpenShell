@@ -985,8 +985,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
             if not self.is_advanced and not self.should_start_fresh_session:
                 bpy.ops.bim.convert_to_blender()
 
-            bim_props = tool.Blender.get_bim_props()
-            bim_props.ifc_file = filepath
+            tool.Ifc.set_path(filepath)
             if not tool.Ifc.get():
                 self.report(
                     {"ERROR"},
@@ -1650,7 +1649,7 @@ class ExportIFC(bpy.types.Operator):
             output_file = os.path.relpath(output_file, bpy.path.abspath("//"))
         bim_props = tool.Blender.get_bim_props()
         if bim_props.ifc_file != output_file and extension not in ("ifczip", "ifcjson"):
-            bim_props.ifc_file = output_file
+            tool.Ifc.set_path(output_file)
         save_blend_file = bool(bpy.data.is_saved and bpy.data.is_dirty and bpy.data.filepath)
         if save_blend_file:
             bpy.ops.wm.save_mainfile(filepath=bpy.data.filepath)

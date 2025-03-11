@@ -137,12 +137,6 @@ def update_cache_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
     bonsai.bim.schema.ifc.cache_dir = bim_props.cache_dir
 
 
-def update_ifc_file(self: "BIMProperties", context: bpy.types.Context) -> None:
-    bim_props = tool.Blender.get_bim_props()
-    if bim_props.ifc_file:
-        bonsai.bim.handler.loadIfcStore(context.scene)
-
-
 def update_section_color(self: "BIMProperties", context: bpy.types.Context) -> None:
     section_node_group = bpy.data.node_groups.get("Section Override")
     if section_node_group is None:
@@ -506,7 +500,7 @@ class BIMProperties(PropertyGroup):
     )
     has_blend_warning: BoolProperty(name="Has Blend Warning", default=False)
     pset_dir: StringProperty(default=os.path.join("psets") + os.path.sep, name="Default Psets Directory")
-    ifc_file: StringProperty(name="IFC File", update=update_ifc_file)
+    ifc_file: StringProperty(name="IFC File")
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
     section_plane_colour: FloatVectorProperty(
