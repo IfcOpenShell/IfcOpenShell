@@ -198,4 +198,25 @@ class TestReassignClass(test.bootstrap.IFC4):
 
 
 class TestReassignClassIFC2X3(test.bootstrap.IFC2X3, TestReassignClass):
-    pass
+    def test_providing_occurrence_class(self):
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1], relating_type=element_type)
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element2], relating_type=element_type)
+
+        new_element_type = ifcopenshell.api.root.reassign_class(
+            self.file,
+            product=element_type,
+            ifc_class="IfcBuildingElementProxyType",
+            occurrence_class="IfcRoof",
+        )
+        assert new_element_type.is_a("IfcBuildingElementProxyType")
+        occurrences = ifcopenshell.util.element.get_types(new_element_type)
+        assert len(occurrences) == 2
+        # Assign IfcRoof instead of IfcBuildingElementProxy.
+        assert all(o.is_a("IfcRoof") for o in occurrences)
+
+        # original clases are gone
+        assert len(self.file.by_type("IfcWall")) == 0
+        assert len(self.file.by_type("IfcWallType")) == 0

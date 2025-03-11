@@ -157,6 +157,9 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
                 product=element,
                 ifc_class=ifc_class_,
                 predefined_type=predefined_type,
+                # Provide occurrence class in all cases as it won't really matter
+                # for non-IfcTypeProducts.
+                occurrence_class=ifc_class,
             )
             reassigned_elements.add(element)
 

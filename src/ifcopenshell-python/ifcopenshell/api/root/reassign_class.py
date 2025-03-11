@@ -35,6 +35,7 @@ def reassign_class(
     product: ifcopenshell.entity_instance,
     ifc_class: str = "IfcBuildingElementProxy",
     predefined_type: Optional[str] = None,
+    occurrence_class: Optional[str] = None,
 ) -> ifcopenshell.entity_instance:
     """Changes the class of a product
 
@@ -59,6 +60,11 @@ def reassign_class(
     :param ifc_class: The new IFC class you want to change it to.
     :param predefined_type: In case you want to change the predefined type
         too. User defined types are also allowed, just type what you want.
+    :param occurrence_class: IFC class to assign to occurrences in case
+        if provided ``ifc_class`` is IfcTypeProduct.
+        If omitted, class will be deduced automatically from the type.
+        Only really needed in IFC2X3, since in IFC4+ there is no ambiguity on
+        what class to assign to occurrences.
     :return: The newly modified product.
 
     Example:
@@ -76,15 +82,20 @@ def reassign_class(
     """
     usecase = Usecase()
     usecase.file = file
-    return usecase.execute(product, ifc_class, predefined_type)
+    return usecase.execute(product, ifc_class, predefined_type, occurrence_class)
 
 
 class Usecase:
     file: ifcopenshell.file
 
     def execute(
-        self, product: ifcopenshell.entity_instance, ifc_class: str, predefined_type: Union[str, None]
+        self,
+        product: ifcopenshell.entity_instance,
+        ifc_class: str,
+        predefined_type: Union[str, None],
+        occurrence_class: Union[str, None],
     ) -> ifcopenshell.entity_instance:
+        self.occurrence_class = occurrence_class
         was_type_product_before = product.is_a("IfcTypeProduct")
         schema = ifcopenshell.schema_by_name(self.file.schema)
         is_type_product_after: bool
@@ -154,7 +165,7 @@ class Usecase:
         for rep in representations:
             ifcopenshell.api.geometry.assign_representation(self.file, product=element, representation=rep)
 
-        # Keep IFC valid.
+        # Keep IFC valid (PlacementForShapeRepresentation).
         if switch_type == "type_to_occurrence" and representations:
             ifcopenshell.api.geometry.edit_object_placement(self.file, product=element)
 
@@ -169,7 +180,10 @@ class Usecase:
         element = self.reassign_class(element, ifc_class, predefined_type)
         if element.is_a("IfcTypeProduct"):
             for occurrence in ifcopenshell.util.element.get_types(element):
-                ifc_class_ = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
+                if self.occurrence_class:
+                    ifc_class_ = self.occurrence_class
+                else:
+                    ifc_class_ = next(iter(ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)))
                 self.reassign_class(occurrence, ifc_class_, predefined_type)
         else:
             element_type = ifcopenshell.util.element.get_type(element)
