@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import pytest
 import traceback
 import webbrowser
 import numpy as np
@@ -542,6 +543,7 @@ def i_press_operator(operator):
 
 @given(parsers.parse('I click "{button}"'))
 @when(parsers.parse('I click "{button}"'))
+@then(parsers.parse('I click "{button}"'))
 def i_click_button(button):
     panel_spy.refresh_spy()
     for spied_operator in panel_spy.spied_operators:
@@ -559,6 +561,8 @@ def i_click_button(button):
         # Clicked confirm on an operator's draw dialog
         return i_press_operator(panel_spy.panel.bl_idname)
     debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
+    if not debug:
+        debug = f"No buttons were found, here is the text we see: {panel_spy.spied_labels}"
     assert False, f"Could not find {button}:\n{debug}"
 
 
@@ -603,6 +607,7 @@ def i_refresh_the_selected_objects():
     bonsai.bim.handler.active_object_callback()
 
 
+@given("I deselect all objects")
 @when("I deselect all objects")
 def i_deselect_all_objects():
     bpy.context.view_layer.objects.active = None
@@ -668,7 +673,9 @@ def then_the_object_name_is_placed_in_the_collection_collection(name: str, colle
 def additionally_the_object_name_is_selected(name):
     obj = bpy.context.scene.objects.get(name)
     if not obj:
-        assert False, f'The object "{name}" could not be selected'
+        total = len(bpy.context.scene.objects)
+        debug = "\n".join([o.name for o in bpy.context.scene.objects])
+        assert False, f'The object "{name}" could not be selected. Available objects ({total} total):\n{debug}'
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
 
@@ -729,6 +736,8 @@ def nothing_happens():
     pass
 
 
+@given(parsers.parse('the object "{name}" exists'))
+@when(parsers.parse('the object "{name}" exists'))
 @then(parsers.parse('the object "{name}" exists'))
 def the_object_name_exists(name: str) -> bpy.types.Object:
     # Some objects from linked collections may share the same name. This disambiguates them.
@@ -1335,10 +1344,14 @@ def construction_type(relating_type_name):
 @when("I toggle edit mode")
 @then("I toggle edit mode")
 def i_toggle_edit_mode():
+    props = tool.Geometry.get_geometry_props()
+    print(f"Toggling from {bpy.context.mode} / {props.mode} ...")
+    print("Selected items:", bpy.context.active_object, bpy.context.selected_objects)
     if bpy.context.mode == "OBJECT":
         bpy.ops.bim.override_mode_set_edit()
     else:
         bpy.ops.bim.override_mode_set_object()
+    print(f"... mode is now {bpy.context.mode} / {props.mode}")
 
 
 @when("I move the cursor to the bottom left corner")
@@ -1357,8 +1370,10 @@ def prepare_undo():
 @when(parsers.parse("I undo"))
 @then(parsers.parse("I undo"))
 def hit_undo():
-    bpy.ops.ed.undo_push(message="UNDO STEP")
-    bpy.ops.ed.undo()
+    # bpy.ops.ed.undo_push(message="UNDO STEP")
+    override = tool.Blender.get_viewport_context()
+    with bpy.context.temp_override(**override):
+        bpy.ops.ed.undo()
 
 
 @then(parsers.parse('the object "{obj_name1}" has a connection with "{obj_name2}"'))
