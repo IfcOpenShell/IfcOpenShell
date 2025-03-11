@@ -23,6 +23,7 @@ import ifcopenshell.util.system
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_entity_doc
 import bonsai.tool as tool
+from typing import Any
 
 
 def refresh():
@@ -266,9 +267,15 @@ class ActiveObjectZonesData:
         cls.is_loaded = True
 
     @classmethod
-    def zones(cls):
+    def zones(cls) -> list[dict[str, Any]]:
         obj = bpy.context.active_object
         assert obj
         element = tool.Ifc.get_entity(obj)
         assert element
-        return [z.Name or "Unnamed" for z in ifcopenshell.util.system.get_element_zones(element)]
+        return [
+            {
+                "id": z.id(),
+                "Name": (z.Name or "Unnamed"),
+            }
+            for z in ifcopenshell.util.system.get_element_zones(element)
+        ]

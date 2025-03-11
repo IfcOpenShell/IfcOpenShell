@@ -426,3 +426,14 @@ class System(bonsai.core.tool.System):
         if not element.AssignedToFlowElement:
             return
         return element.AssignedToFlowElement[0].RelatingFlowElement
+
+    @classmethod
+    def draw_system_ui(cls, layout: bpy.types.UILayout, system_id: int, system_name: str, system_class: str) -> None:
+        from bonsai.bim.module.system.ui import SYSTEM_ICONS
+
+        row = layout.row(align=True)
+        row.label(text=system_name, icon=SYSTEM_ICONS[system_class])
+        op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
+        op.system = system_id
+        op = row.operator("bim.unassign_system", text="", icon="X")
+        op.system = system_id

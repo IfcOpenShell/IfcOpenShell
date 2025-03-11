@@ -66,14 +66,6 @@ class BIM_PT_systems(Panel):
         if not ObjectSystemData.is_loaded:
             ObjectSystemData.load()
 
-        def draw_system_ui(row, system_id, system_name, system_class):
-            row = self.layout.row(align=True)
-            row.label(text=system_name, icon=SYSTEM_ICONS[system_class])
-            op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-            op.system = system_id
-            op = row.operator("bim.unassign_system", text="", icon="X")
-            op.system = system_id
-
         self.props = tool.System.get_system_props()
         active_system_item = self.props.active_system_ui_item
         row = self.layout.row(align=True)
@@ -82,8 +74,7 @@ class BIM_PT_systems(Panel):
         row = self.layout.row()
         if active_system := tool.System.get_active_system():
             row.label(text=f"Active system:")
-            row = self.layout.row(align=True)
-            draw_system_ui(row, active_system.id(), active_system.Name, active_system.is_a())
+            tool.System.draw_system_ui(self.layout, active_system.id(), active_system.Name, active_system.is_a())
         else:
             row.label(text="No active system is selected")
 
@@ -91,8 +82,7 @@ class BIM_PT_systems(Panel):
             row = self.layout.row()
             row.label(text="Active object systems:")
             for system in ObjectSystemData.data["systems"]:
-                row = self.layout.row(align=True)
-                draw_system_ui(row, system["id"], system["name"], system["ifc_class"])
+                tool.System.draw_system_ui(self.layout, system["id"], system["name"], system["ifc_class"])
         else:
             self.layout.label(text="No System associated with active object")
 
@@ -416,8 +406,7 @@ class BIM_PT_active_object_zones(Panel):
         self.props = tool.System.get_zone_props()
 
         for zone in ActiveObjectZonesData.data["zones"]:
-            row = self.layout.row()
-            row.label(text=zone, icon="SEQ_STRIP_META")
+            tool.System.draw_system_ui(self.layout, zone["id"], zone["Name"], "IfcZone")
 
         if not ActiveObjectZonesData.data["zones"]:
             row = self.layout.row()
