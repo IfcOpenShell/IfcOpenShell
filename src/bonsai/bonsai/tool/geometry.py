@@ -1394,6 +1394,9 @@ class Geometry(bonsai.core.tool.Geometry):
         also_consider = list(consider_inverses)
         ifcopenshell.util.element.remove_deep2(ifc_file, representation_item, also_consider=also_consider)
 
+        props = tool.Geometry.get_geometry_props()
+        rep_element = tool.Ifc.get_entity(props.representation_obj)
+        tool.Model.unmark_manual_booleans(rep_element, [b.id() for b in boolean_results_to_remove])
         for boolean_result in boolean_results_to_remove:
             cls.remove_representation_item(boolean_result)
 
