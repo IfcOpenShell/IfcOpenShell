@@ -376,7 +376,7 @@ class Snap(bonsai.core.tool.Snap):
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d, offset):
                     if obj.visible_in_viewport_get(
                         context.space_data
-                    ):  # Check for local view and local collections for this viewport and object
+                    ) or obj.library:  # Check for local view and local collections for this viewport and object
                         objs_to_raycast.append(obj)
 
         # Polyline
