@@ -102,6 +102,7 @@ class BIMObjectAggregateProperties(PropertyGroup):
 class Objects(bpy.types.PropertyGroup):
     obj: PointerProperty(type=bpy.types.Object)
     previous_display_type: bpy.props.StringProperty(default="TEXTURED")
+    previous_hide_select: bpy.props.BoolProperty(default=False)
 
 
 class BIMAggregateProperties(PropertyGroup):
