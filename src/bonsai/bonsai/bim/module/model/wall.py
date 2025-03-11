@@ -304,6 +304,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
 
                 # Object rotation
                 rot_mat = mathutils.Matrix.Rotation(x_angle, 4, "X")
+                rot_mat = obj.matrix_world @ rot_mat
                 obj.rotation_euler = rot_mat.to_euler()
 
         if layer2_objs:
