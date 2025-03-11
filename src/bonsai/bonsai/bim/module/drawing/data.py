@@ -386,6 +386,8 @@ class DecoratorData:
         suppress_zero_inches = pset_data.get("SuppressZeroInches", False)
         text_prefix = pset_data.get("TextPrefix", None) or ""
         text_suffix = pset_data.get("TextSuffix", None) or ""
+        custom_unit_list = pset_data.get("CustomUnit", None) or ""
+        custom_unit = custom_unit_list[0] if custom_unit_list else ""
 
         dimension_data = {
             "dimension_style": dimension_style,
@@ -394,6 +396,7 @@ class DecoratorData:
             "text_prefix": text_prefix,
             "text_suffix": text_suffix,
             "fill_bg": fill_bg,
+            "custom_unit": custom_unit,
         }
         cls.data[obj.name] = dimension_data
         return dimension_data

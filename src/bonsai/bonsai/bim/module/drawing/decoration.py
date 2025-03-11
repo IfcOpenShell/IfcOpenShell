@@ -495,14 +495,14 @@ class BaseDecorator:
         self.draw_label(context, text=text, line_no=line_number_start, multiline=True, **draw_label_kwargs)
 
     @lru_cache(maxsize=None)
-    def format_value(self, context, value):
+    def format_value(self, context, value, custom_unit=None):
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
         precision = drawing_pset_data.get("MetricPrecision", None)
         if not precision:
             precision = drawing_pset_data.get("ImperialPrecision", None)
 
         decimal_places = drawing_pset_data.get("DecimalPlaces", None)
-        return format_distance(value, precision=precision, decimal_places=decimal_places)
+        return format_distance(value, precision=precision, decimal_places=decimal_places, suppress_zero_inches=True, custom_unit=custom_unit)
 
     def draw_asterisk(self, context: bpy.types.Context, pos: Vector, rotation: float = 0.0, scale: float = 1.0) -> None:
         """`pos` is a world space position\n
@@ -737,7 +737,7 @@ class DimensionDecorator(BaseDecorator):
 
             if not show_description_only:
                 length = (v1 - v0).length
-                text = self.format_value(context, length)
+                text = self.format_value(context, length, custom_unit=dimension_data["custom_unit"])
                 if isinstance(self, DiameterDecorator):
                     text = "D" + text
                 text = text_prefix + text + text_suffix
@@ -946,7 +946,7 @@ class RadiusDecorator(BaseDecorator):
 
         def get_text():
             length = (spline_points[-1] - spline_points[-2]).length
-            return "R" + self.format_value(context, length)
+            return "R" + self.format_value(context, length, custom_unit=dimension_data["custom_unit"])
 
         self.draw_dimension_text(
             context, get_text, description, dimension_data, pos=pos, text_dir=Vector((1, 0)), box_alignment="center"

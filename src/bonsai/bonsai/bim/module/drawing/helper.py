@@ -130,29 +130,51 @@ def format_distance(
     decimal_places=None,
     suppress_zero_inches=False,
     in_unit_length=False,
+    custom_unit=None,
 ):
     # Get Blender Scene Unit Settings
     unit_scale = bpy.context.scene.unit_settings.scale_length
     unit_system = bpy.context.scene.unit_settings.system
     unit_length = bpy.context.scene.unit_settings.length_unit
     area_unit_symbol = " m2" if unit_system == "METRIC" else " ft2"
+
     # Get IFC Unit Settings
     if tool.Ifc.get():
+        unit_scale = 1
         if length_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT"):
             unit_system = "METRIC" if length_unit.Name == "METRE" else "IMPERIAL"
             unit_length = length_unit.Name
             if hasattr(length_unit, "Prefix") and length_unit.Prefix:
                 unit_length = length_unit.Prefix + length_unit.Name
-            string_conversion = {
+            unit_length_mapping = {
                 "foot": "FEET",
                 "inch": "INCHES",
                 "METRE": "METERS",
+                "DECIMETRE": "DECIMETERS",
                 "CENTIMETRE": "CENTIMETERS",
                 "MILLIMETRE": "MILLIMETERS",
             }
-            unit_length = string_conversion[unit_length]
+            unit_length = unit_length_mapping[unit_length]
+        # For now we only format area in IFC Units
         if area_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT"):
             area_unit_symbol = " " + ifcopenshell.util.unit.get_unit_symbol(area_unit)
+
+    unit_fraction = True if unit_system == "IMPERIAL" else False
+
+    # Custom Unit Settings
+    if custom_unit:
+        unit_mapping = {
+        "Feet and Inches - Fractional": ("IMPERIAL", "FEET", True),
+        "Feet - Decimal": ("IMPERIAL", "FEET", False),
+        "Inches - Fractional": ("IMPERIAL", "INCHES", True),
+        "Inches - Decimal": ("IMPERIAL", "INCHES", False),
+        "Meters": ("METRIC", "METERS", False),
+        "Decimeters": ("METRIC", "DECIMETERS", False),
+        "Centimeters": ("METRIC", "CENTIMETERS", False),
+        "Millimeters": ("METRIC", "MILLIMETERS", False),
+    }
+        if custom_unit in unit_mapping:
+            unit_system, unit_length, unit_fraction = unit_mapping[custom_unit]
 
     value *= unit_scale
 
@@ -181,8 +203,11 @@ def format_distance(
         decInches = value * toInches
 
         # Separate ft and inches
-        # Unless Inches are the specified Length Unit
-        if unit_length != "INCHES":
+        # Unless Inches are the specified Length Unit or unit_fraction is False
+        if (unit_length == "FEET" and not unit_fraction):
+            feet = round(decInches / inPerFoot, 3)  # keep decimal
+            decInches = 0
+        elif unit_length != "INCHES":
             feet = int(decInches / inPerFoot)  # remove decimal
             decInches -= feet * inPerFoot
         else:
@@ -217,6 +242,10 @@ def format_distance(
                 feet += 1
                 inches = 0
 
+        # Check whether decimal or fractional
+        if not unit_fraction:
+            inches = round(decInches, 3)
+            frac = None
         if not isArea:
             add_inches = bool(inches) or not suppress_zero_inches or (inches == 0 and frac)
             tx_dist = ""
@@ -265,6 +294,8 @@ def format_distance(
     # METRIC FORMATTING
     elif unit_system == "METRIC":
         if in_unit_length:
+            if unit_length == "DECIMETERS":
+                value = value / 10
             if unit_length == "CENTIMETERS":
                 value = value / 100
             if unit_length == "MILLIMETERS":
@@ -283,6 +314,14 @@ def format_distance(
             if hide_units is False:
                 fmt += " m"
             tx_dist = fmt % value
+        # Decimeters
+        elif unit_length == "DECIMETERS":
+            if decimal_places is None:
+                fmt = "%1.1f"
+            if hide_units is False:
+                fmt += " dm"
+            d_dm = value * (10)
+            tx_dist = fmt % d_dm
         # Centimeters
         elif unit_length == "CENTIMETERS":
             if decimal_places is None:
