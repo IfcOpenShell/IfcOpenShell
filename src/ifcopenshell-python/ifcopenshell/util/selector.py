@@ -347,6 +347,8 @@ def _get_element_value(element: ifcopenshell.entity_instance, keys: list[str]) -
             value = ifcopenshell.util.element.get_groups(value)
         elif key == "system":
             value = ifcopenshell.util.system.get_element_systems(value)
+        elif key == "zone":
+            value = ifcopenshell.util.system.get_element_zones(value)
         elif key in ("x", "y", "z", "easting", "northing", "elevation") and hasattr(value, "ObjectPlacement"):
             if getattr(value, "ObjectPlacement", None):
                 matrix = ifcopenshell.util.placement.get_local_placement(value.ObjectPlacement)

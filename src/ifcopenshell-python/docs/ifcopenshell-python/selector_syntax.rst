@@ -194,6 +194,7 @@ Valid keys are:
     "``classification``", "Gets the element's classification reference(s)"
     "``group``", "Gets the element's group(s)"
     "``system``", "Gets the element's system(s). This is a subset of group(s)."
+    "``zone``", "Gets the element's zone(s). This is a subset of group(s)."
     "``material`` or ``mat``", "Gets the assigned material, which may be a material set."
     "``item`` or ``i``", "If the previous key returns a material set, gets the relevant material set items"
     "``materials`` or ``mats``", "Gets a list of IfcMaterials assigned directly or indirectly (such as via a material set) to the element"

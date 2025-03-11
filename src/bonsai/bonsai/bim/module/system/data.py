@@ -267,5 +267,8 @@ class ActiveObjectZonesData:
 
     @classmethod
     def zones(cls):
-        systems = ifcopenshell.util.system.get_element_systems(tool.Ifc.get_entity(bpy.context.active_object))
-        return [s.Name or "Unnamed" for s in systems if s.is_a("IfcZone")]
+        obj = bpy.context.active_object
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        return [z.Name or "Unnamed" for z in ifcopenshell.util.system.get_element_zones(element)]
