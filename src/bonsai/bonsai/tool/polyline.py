@@ -113,15 +113,23 @@ class Polyline(bonsai.core.tool.Polyline):
         cls, context: bpy.types.Context, input_ui: PolylineUI, tool_state: ToolState, should_round: bool = False
     ) -> None:
 
-        try:
-            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        if len(polyline_data) > 0:
+            polyline_data = polyline_data[0]
             polyline_points = polyline_data.polyline_points
-            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
-            last_point_data = polyline_points[len(polyline_points) - 1]
-        except:
+            if len(polyline_points) > 0:
+                last_point_data = polyline_points[len(polyline_points) - 1]
+            else:
+                last_point_data = None
+        else:
             polyline_points = []
-            default_container_elevation = 0
             last_point_data = None
+
+        if tool.Ifc.get():
+            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        else:
+            default_container_elevation = 0
+
 
         mouse_point = context.scene.BIMPolylineProperties.snap_mouse_point[0]
 
@@ -253,16 +261,23 @@ class Polyline(bonsai.core.tool.Polyline):
 
     @classmethod
     def calculate_x_y_and_z(cls, context: bpy.types.Context, input_ui: PolylineUI, tool_state: ToolState) -> None:
-        try:
+        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        if len(polyline_data) > 0:
             polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
             polyline_points = polyline_data.polyline_points
-            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
-            last_point_data = polyline_points[len(polyline_points) - 1]
-            last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
-        except:
+            if len(polyline_points) > 0:
+                last_point_data = polyline_points[len(polyline_points) - 1]
+                last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
+            else:
+                last_point = Vector((0, 0, 0))
+        else:
             polyline_points = []
-            default_container_elevation = 0
             last_point = Vector((0, 0, 0))
+            
+        if tool.Ifc.get():
+            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        else:
+            default_container_elevation = 0
 
         snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
         snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
@@ -440,7 +455,10 @@ class Polyline(bonsai.core.tool.Polyline):
                     return dimension * unit_scale
 
         try:
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            if tool.Ifc.get():
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            else:
+                unit_scale = tool.Blender.get_unit_scale()
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
                 parser = Lark(grammar_imperial)
             else:
@@ -461,14 +479,15 @@ class Polyline(bonsai.core.tool.Polyline):
 
     @classmethod
     def format_input_ui_units(cls, value: float, is_area: bool = False) -> str:
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        if tool.Ifc.get():
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        else:
+            unit_scale = tool.Blender.get_unit_scale()
         if bpy.context.scene.unit_settings.system == "IMPERIAL":
             dprops = tool.Drawing.get_document_props()
             precision = dprops.imperial_precision
             if is_area:
-                props = tool.Blender.get_bim_props()
-                area_unit = props.area_unit
-                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get(), unit_type=area_unit)
+                unit_scale = 1
         else:
             precision = None
 

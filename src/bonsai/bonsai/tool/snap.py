@@ -53,7 +53,10 @@ class Snap(bonsai.core.tool.Snap):
         distances = [3, 5, 15, 30]
 
         unit_system = tool.Drawing.get_unit_system()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        if tool.Ifc.get():
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        else:
+            unit_scale = tool.Blender.get_unit_scale()
         if unit_system == "IMPERIAL":
             factor = unit_scale
             fractions = [24, 12, 6, 2]
@@ -452,7 +455,10 @@ class Snap(bonsai.core.tool.Snap):
                     detected_snaps.append(snap_point)
 
         # Axis and Plane
-        elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        if tool.Ifc.get():
+            elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        else:
+            elevation = 0.0
 
         plane_origin, plane_normal = select_plane_method()
         tool_state.plane_origin = plane_origin  # This will be used along with plane method

@@ -131,18 +131,30 @@ def format_distance(
     suppress_zero_inches=False,
     in_unit_length=False,
 ):
-    s_code = "\u00b2"  # Superscript two THIS IS LEGACY (but being kept for when Area Measurements are re-implimented)
-
-    # Get Scene Unit Settings
-    scaleFactor = bpy.context.scene.unit_settings.scale_length
+    # Get Blender Scene Unit Settings
+    unit_scale = bpy.context.scene.unit_settings.scale_length
     unit_system = bpy.context.scene.unit_settings.system
     unit_length = bpy.context.scene.unit_settings.length_unit
-    if area_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT"):
-        area_unit_symbol = " " + ifcopenshell.util.unit.get_unit_symbol(area_unit)
-    else:
-        area_unit_symbol = ""
+    area_unit_symbol = " m2" if unit_system == "METRIC" else " ft2"
+    # Get IFC Unit Settings
+    if tool.Ifc.get():
+        if length_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT"):
+            unit_system = "METRIC" if length_unit.Name == "METRE" else "IMPERIAL"
+            unit_length = length_unit.Name
+            if hasattr(length_unit, "Prefix") and length_unit.Prefix:
+                unit_length = length_unit.Prefix + length_unit.Name
+            string_conversion = {
+                "foot": "FEET",
+                "inch": "INCHES",
+                "METRE": "METERS",
+                "CENTIMETRE": "CENTIMETERS",
+                "MILLIMETRE": "MILLIMETERS",
+            }
+            unit_length = string_conversion[unit_length]
+        if area_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT"):
+            area_unit_symbol = " " + ifcopenshell.util.unit.get_unit_symbol(area_unit)
 
-    value *= scaleFactor
+    value *= unit_scale
 
     # Imperial Formatting
     if unit_system == "IMPERIAL":

@@ -637,7 +637,10 @@ class PolylineDecorator:
         mouse_point = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
 
         # Plane Method or Default Container
-        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        if tool.Ifc.get():
+            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        else:
+            default_container_elevation = 0.0
         projection_point = []
         if not self.tool_state:
             pass

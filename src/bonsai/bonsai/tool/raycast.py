@@ -155,7 +155,8 @@ class Raycast(bonsai.core.tool.Raycast):
             loc = Vector((0, 0, 0))
 
         # For empty object we just get the object location and return
-        if obj.type == "EMPTY":
+
+        if obj and obj.type == "EMPTY":
             v = obj.location
             intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
             intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
@@ -168,7 +169,6 @@ class Raycast(bonsai.core.tool.Raycast):
                     "distance": distance,
                 }
                 points.append(snap_point)
-                print("empty", snap_point)
             return points
 
         if not custom_bmesh:
@@ -292,7 +292,10 @@ class Raycast(bonsai.core.tool.Raycast):
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
 
-        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        if tool.Ifc.get():
+            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        else:
+            default_container_elevation = 0.0
         intersection = Vector((0, 0, default_container_elevation))
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)

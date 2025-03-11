@@ -558,7 +558,6 @@ class PolylineOperator:
         return context.space_data.type == "VIEW_3D"
 
     def __init__(self):
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.mousemove_count = 0
         self.action_count = 0
         self.visible_objs = []
@@ -950,6 +949,7 @@ class PolylineOperator:
         elif getattr(props, offset_type) in {"INTERIOR", "TOP"}:
             self.offset = -thickness * direction
 
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         props.offset = self.offset / self.unit_scale
         tool.Blender.update_viewport()
 

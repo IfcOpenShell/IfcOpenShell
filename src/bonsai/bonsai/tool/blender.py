@@ -1629,3 +1629,16 @@ class Blender(bonsai.core.tool.Blender):
         old_history_size = tool.Ifc.get().history_size
         tool.Ifc.get().set_history_size(0)
         tool.Ifc.get().set_history_size(old_history_size)
+
+    @classmethod
+    def get_unit_scale(cls):
+        unit_length = bpy.context.scene.unit_settings.length_unit
+        unit_scale = 1.0
+        if unit_length == "CENTIMETERS":
+            unit_scale = 0.01
+        if unit_length == "MILLIMETERS":
+            unit_scale = 0.001
+        if unit_length == "FEET":
+            unit_scale = 0.3048
+
+        return unit_scale
