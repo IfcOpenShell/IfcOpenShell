@@ -21,6 +21,7 @@ import bmesh
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
+import ifcopenshell.api.root
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 import ifcopenshell.util.shape_builder
@@ -149,10 +150,9 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
         elements_to_update = elements_to_update | set(elements_to_reassign)
         objects_to_update = set(o for e in elements_to_update if (o := tool.Ifc.get_object(e)))
 
-        reassigned_elements = set()
+        reassigned_elements: set[ifcopenshell.entity_instance] = set()
         for element, ifc_class_ in elements_to_reassign.items():
-            element = ifcopenshell.api.run(
-                "root.reassign_class",
+            element = ifcopenshell.api.root.reassign_class(
                 self.file,
                 product=element,
                 ifc_class=ifc_class_,

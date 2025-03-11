@@ -27,7 +27,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
-from typing import Optional, Union, Literal, Any
+from typing import Optional, Union, Literal
 
 
 def reassign_class(
@@ -56,7 +56,6 @@ def reassign_class(
     Reassigning type class to occurrence (and vice versa) is supported.
 
     :param product: The IfcProduct that you want to change the class of.
-    :type product: ifcopenshell.entity_instance
     :param ifc_class: The new IFC class you want to change it to.
     :param predefined_type: In case you want to change the predefined type
         too. User defined types are also allowed, just type what you want.
@@ -77,25 +76,18 @@ def reassign_class(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "product": product,
-        "ifc_class": ifc_class,
-        "predefined_type": predefined_type,
-    }
-    return usecase.execute()
+    return usecase.execute(product, ifc_class, predefined_type)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
-        ifc_class: str = self.settings["ifc_class"]
-        product: ifcopenshell.entity_instance = self.settings["product"]
-        predefined_type: Union[str, None] = self.settings["predefined_type"]
-
+    def execute(
+        self, product: ifcopenshell.entity_instance, ifc_class: str, predefined_type: Union[str, None]
+    ) -> ifcopenshell.entity_instance:
         was_type_product_before = product.is_a("IfcTypeProduct")
         schema = ifcopenshell.schema_by_name(self.file.schema)
+        is_type_product_after: bool
         is_type_product_after = schema.declaration_by_name(ifc_class)._is("IfcTypeProduct")
 
         if was_type_product_before == is_type_product_after:

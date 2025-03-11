@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import bpy
 import datetime
@@ -29,6 +30,7 @@ import bonsai.core.tool
 import bonsai.tool as tool
 from pathlib import Path
 from contextlib import contextmanager
+from typing import Generator, Any, Union, TYPE_CHECKING
 
 try:
     import brickschema
@@ -41,6 +43,11 @@ except:
     # See #1860
     print("Warning: brickschema not available.")
 
+if TYPE_CHECKING:
+    import brickschema
+    from rdflib import Literal, URIRef, Namespace, BNode
+    from bonsai.bim.module.brick.prop import BIMBrickProperties
+
 # silence known rdflib_sqlalchemy TypeError warning
 # see https://github.com/BrickSchema/Brick/issues/513#issuecomment-1558493675
 import logging
@@ -51,7 +58,11 @@ logger.setLevel(logging.ERROR)
 
 class Brick(bonsai.core.tool.Brick):
     @classmethod
-    def add_brick(cls, namespace, brick_class, label):
+    def get_brick_props(cls) -> BIMBrickProperties:
+        return bpy.context.scene.BIMBrickProperties
+
+    @classmethod
+    def add_brick(cls, namespace: str, brick_class: str, label: str) -> str:
         ns = Namespace(namespace)
         brick = ns[ifcopenshell.guid.expand(ifcopenshell.guid.new())]
         with BrickStore.new_changeset() as cs:
@@ -60,8 +71,8 @@ class Brick(bonsai.core.tool.Brick):
         return str(brick)
 
     @classmethod
-    def add_brick_breadcrumb(cls, split_screen=False):
-        props = bpy.context.scene.BIMBrickProperties
+    def add_brick_breadcrumb(cls, split_screen: bool = False) -> None:
+        props = tool.Brick.get_brick_props()
         if split_screen:
             new = props.split_screen_brick_breadcrumbs.add()
             new.name = props.split_screen_active_brick_class
@@ -70,7 +81,7 @@ class Brick(bonsai.core.tool.Brick):
             new.name = props.active_brick_class
 
     @classmethod
-    def add_brick_from_element(cls, element, namespace, brick_class):
+    def add_brick_from_element(cls, element: ifcopenshell.entity_instance, namespace: str, brick_class: str) -> str:
         ns = Namespace(namespace)
         brick = ns[element.GlobalId]
         with BrickStore.new_changeset() as cs:
@@ -82,7 +93,7 @@ class Brick(bonsai.core.tool.Brick):
         return str(brick)
 
     @classmethod
-    def add_brickifc_project(cls, namespace):
+    def add_brickifc_project(cls, namespace: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
         ns = Namespace(namespace)
         brick_project = ns[project.GlobalId]
@@ -96,7 +107,7 @@ class Brick(bonsai.core.tool.Brick):
         return str(brick_project)
 
     @classmethod
-    def add_brickifc_reference(cls, brick, element, project):
+    def add_brickifc_reference(cls, brick: str, element: ifcopenshell.entity_instance, project: str) -> None:
         with BrickStore.new_changeset() as cs:
             bnode = BNode()
             cs.add((URIRef(brick), REF.hasExternalReference, bnode))
@@ -107,23 +118,24 @@ class Brick(bonsai.core.tool.Brick):
                 cs.add((bnode, REF.ifcName, Literal(element.Name)))
 
     @classmethod
-    def add_relation(cls, brick_uri, predicate, object):
+    def add_relation(cls, brick_uri: str, predicate: str, object: str) -> None:
+        props = tool.Brick.get_brick_props()
         if predicate == "http://www.w3.org/2000/01/rdf-schema#label":
             with BrickStore.new_changeset() as cs:
                 cs.add((URIRef(brick_uri), URIRef(predicate), Literal(object)))
-            bpy.context.scene.BIMBrickProperties.new_brick_relation_type = BrickStore.relationships[0]
-            bpy.context.scene.BIMBrickProperties.add_brick_relation_failed = False
+            props.new_brick_relation_type = BrickStore.relationships[0]
+            props.add_brick_relation_failed = False
             return
         query = BrickStore.graph.query("ASK { <{object_uri}> a ?o . }".replace("{object_uri}", object))
         if query:
             with BrickStore.new_changeset() as cs:
                 cs.add((URIRef(brick_uri), URIRef(predicate), URIRef(object)))
-            bpy.context.scene.BIMBrickProperties.add_brick_relation_failed = False
+            props.add_brick_relation_failed = False
         else:
-            bpy.context.scene.BIMBrickProperties.add_brick_relation_failed = True
+            props.add_brick_relation_failed = True
 
     @classmethod
-    def remove_relation(cls, brick_uri, predicate, object):
+    def remove_relation(cls, brick_uri: str, predicate: str, object: str) -> None:
         with BrickStore.new_changeset() as cs:
             for s, p, o in BrickStore.graph.triples((brick_uri, predicate, object)):
                 cs.remove((s, p, o))
@@ -132,21 +144,22 @@ class Brick(bonsai.core.tool.Brick):
                         cs.remove(triple)
 
     @classmethod
-    def clear_brick_browser(cls, split_screen=False):
-        props = bpy.context.scene.BIMBrickProperties
+    def clear_brick_browser(cls, split_screen: bool = False) -> None:
+        props = cls.get_brick_props()
         if split_screen:
             props.split_screen_bricks.clear()
         else:
             props.bricks.clear()
 
     @classmethod
-    def clear_project(cls):
+    def clear_project(cls) -> None:
         BrickStore.purge()
-        bpy.context.scene.BIMBrickProperties.active_brick_class == ""
-        bpy.context.scene.BIMBrickProperties.split_screen_active_brick_class == ""
+        props = cls.get_brick_props()
+        props.active_brick_class = ""
+        props.split_screen_active_brick_class = ""
 
     @classmethod
-    def export_brick_attributes(cls, brick_uri):
+    def export_brick_attributes(cls, brick_uri: str) -> dict[str, Any]:
         query = BrickStore.graph.query(
             """
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -169,13 +182,14 @@ class Brick(bonsai.core.tool.Brick):
             return {"Identification": brick_uri, "Name": name}
 
     @classmethod
-    def get_active_brick_class(cls, split_screen=False):
+    def get_active_brick_class(cls, split_screen: bool = False) -> str:
+        props = cls.get_brick_props()
         if split_screen:
-            return bpy.context.scene.BIMBrickProperties.split_screen_active_brick_class
-        return bpy.context.scene.BIMBrickProperties.active_brick_class
+            return props.split_screen_active_brick_class
+        return props.active_brick_class
 
     @classmethod
-    def get_brick(cls, element):
+    def get_brick(cls, element: ifcopenshell.entity_instance) -> Union[str, None]:
         for rel in element.HasAssociations:
             if rel.is_a("IfcRelAssociatesLibrary"):
                 if tool.Ifc.get_schema() == "IFC2X3" and "#" in rel.RelatingLibrary.ItemReference:
@@ -184,21 +198,21 @@ class Brick(bonsai.core.tool.Brick):
                     return rel.RelatingLibrary.Identification
 
     @classmethod
-    def get_brick_class(cls, element):
+    def get_brick_class(cls, element: ifcopenshell.entity_instance) -> Union[str, None]:
         return ifcopenshell.util.brick.get_brick_type(element)
 
     @classmethod
-    def get_brick_path(cls):
+    def get_brick_path(cls) -> Union[str, None]:
         return BrickStore.path
 
     @classmethod
-    def get_brick_path_name(cls):
+    def get_brick_path_name(cls) -> str:
         if BrickStore.path:
             return os.path.basename(BrickStore.path)
         return "Unnamed"
 
     @classmethod
-    def get_brickifc_project(cls):
+    def get_brickifc_project(cls) -> Union[str, None]:
         project = tool.Ifc.get().by_type("IfcProject")[0]
         query = BrickStore.graph.query(
             """
@@ -217,45 +231,46 @@ class Brick(bonsai.core.tool.Brick):
             return results[0][0].toPython()
 
     @classmethod
-    def get_convertable_brick_elements(cls):
+    def get_convertable_brick_elements(cls) -> set[ifcopenshell.entity_instance]:
         equipment = set(tool.Ifc.get().by_type("IfcDistributionElement"))
         equipment -= set(tool.Ifc.get().by_type("IfcFlowSegment"))
         equipment -= set(tool.Ifc.get().by_type("IfcFlowFitting"))
         return equipment
 
     @classmethod
-    def get_convertable_brick_spaces(cls):
+    def get_convertable_brick_spaces(cls) -> set[ifcopenshell.entity_instance]:
         if tool.Ifc.get_schema() == "IFC2X3":
             return set(tool.Ifc.get().by_type("IfcSpatialStructureElement"))
         return set(tool.Ifc.get().by_type("IfcSpatialElement"))
 
     @classmethod
-    def get_convertable_brick_systems(cls):
+    def get_convertable_brick_systems(cls) -> set[ifcopenshell.entity_instance]:
         systems = set(tool.Ifc.get().by_type("IfcSystem"))
         systems -= set(tool.Ifc.get().by_type("IfcStructuralAnalysisModel"))
         systems -= set(tool.Ifc.get().by_type("IfcZone"))
         return systems
 
     @classmethod
-    def get_parent_space(cls, space):
+    def get_parent_space(cls, space: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         element = ifcopenshell.util.element.get_aggregate(space)
+        assert element
         if not element.is_a("IfcProject"):
             return element
 
     @classmethod
-    def get_element_container(cls, element):
+    def get_element_container(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.element.get_container(element)
 
     @classmethod
-    def get_element_systems(cls, element):
+    def get_element_systems(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.system.get_element_systems(element)
 
     @classmethod
-    def get_element_feeds(cls, element):
+    def get_element_feeds(cls, element: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
         return ifcopenshell.util.brick.get_element_feeds(element)
 
     @classmethod
-    def get_item_class(cls, item):
+    def get_item_class(cls, item: str) -> Union[str, None]:
         query = BrickStore.graph.query(
             """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
@@ -271,7 +286,9 @@ class Brick(bonsai.core.tool.Brick):
             return row.get("class").toPython().split("#")[-1]
 
     @classmethod
-    def get_library_brick_reference(cls, library, brick_uri):
+    def get_library_brick_reference(
+        cls, library: ifcopenshell.entity_instance, brick_uri: str
+    ) -> Union[ifcopenshell.entity_instance, None]:
         if tool.Ifc.get_schema() == "IFC2X3":
             for reference in library.LibraryReference or []:
                 if reference.ItemReference == brick_uri:
@@ -282,11 +299,11 @@ class Brick(bonsai.core.tool.Brick):
                     return reference
 
     @classmethod
-    def get_namespace(cls, uri):
+    def get_namespace(cls, uri: str) -> str:
         return uri.split("#")[0] + "#"
 
     @classmethod
-    def import_brick_classes(cls, brick_class, split_screen=False):
+    def import_brick_classes(cls, brick_class: str, split_screen: bool = False) -> None:
         query = BrickStore.graph.query(
             """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
@@ -305,10 +322,11 @@ class Brick(bonsai.core.tool.Brick):
                 "{brick_class}", brick_class
             )
         )
+        props = tool.Brick.get_brick_props()
         if split_screen:
-            bricks = bpy.context.scene.BIMBrickProperties.split_screen_bricks
+            bricks = props.split_screen_bricks
         else:
-            bricks = bpy.context.scene.BIMBrickProperties.bricks
+            bricks = props.bricks
         for row in query:
             new = bricks.add()
             label = row.get("label")
@@ -319,7 +337,7 @@ class Brick(bonsai.core.tool.Brick):
             new.total_items = row.get("total_items").toPython()
 
     @classmethod
-    def import_brick_items(cls, brick_class, split_screen=False):
+    def import_brick_items(cls, brick_class: str, split_screen: bool = False) -> None:
         query = BrickStore.graph.query(
             """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
@@ -336,10 +354,11 @@ class Brick(bonsai.core.tool.Brick):
                 "{brick_class}", brick_class
             )
         )
+        props = tool.Brick.get_brick_props()
         if split_screen:
-            bricks = bpy.context.scene.BIMBrickProperties.split_screen_bricks
+            bricks = props.split_screen_bricks
         else:
-            bricks = bpy.context.scene.BIMBrickProperties.bricks
+            bricks = props.bricks
         for row in query:
             new = bricks.add()
             label = row.get("label")
@@ -349,7 +368,7 @@ class Brick(bonsai.core.tool.Brick):
             new.uri = row.get("item").toPython()
 
     @classmethod
-    def load_brick_file(cls, filepath):
+    def load_brick_file(cls, filepath: str) -> None:
         if not BrickStore.schema:  # important check for running under test cases
             BrickStore.schema = tool.Blender.get_data_dir_path(Path("brick", "Brick.ttl"))
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
@@ -365,7 +384,7 @@ class Brick(bonsai.core.tool.Brick):
         BrickStore.load_relationships()
 
     @classmethod
-    def new_brick_file(cls):
+    def new_brick_file(cls) -> None:
         if not BrickStore.schema:  # important check for running under test cases
             BrickStore.schema = tool.Blender.get_data_dir_path(Path("brick", "Brick.ttl"))
         BrickStore.graph = brickschema.persistent.VersionedGraphCollection("sqlite://")
@@ -378,8 +397,8 @@ class Brick(bonsai.core.tool.Brick):
         BrickStore.load_relationships()
 
     @classmethod
-    def pop_brick_breadcrumb(cls, split_screen=False):
-        props = bpy.context.scene.BIMBrickProperties
+    def pop_brick_breadcrumb(cls, split_screen: bool = False) -> str:
+        props = cls.get_brick_props()
         if split_screen:
             breadcrumbs = props.split_screen_brick_breadcrumbs
         else:
@@ -391,7 +410,7 @@ class Brick(bonsai.core.tool.Brick):
         return name
 
     @classmethod
-    def remove_brick(cls, brick_uri):
+    def remove_brick(cls, brick_uri: str) -> None:
         with BrickStore.new_changeset() as cs:
             for s, p, o in BrickStore.graph.triples((URIRef(brick_uri), None, None)):
                 cs.remove((s, p, o))
@@ -406,51 +425,55 @@ class Brick(bonsai.core.tool.Brick):
         )
 
     @classmethod
-    def run_refresh_brick_viewer(cls):
+    def run_refresh_brick_viewer(cls) -> None:
         return bonsai.core.brick.refresh_brick_viewer(tool.Brick)
 
     @classmethod
-    def run_view_brick_class(cls, brick_class=None, split_screen=False):
+    def run_view_brick_class(cls, brick_class: Union[str, None] = None, split_screen: bool = False) -> None:
         return bonsai.core.brick.view_brick_class(tool.Brick, brick_class=brick_class, split_screen=split_screen)
 
     @classmethod
-    def select_browser_item(cls, item, split_screen=False):
+    def select_browser_item(cls, item: str, split_screen: bool = False) -> None:
         name = item.split("#")[-1]
-        props = bpy.context.scene.BIMBrickProperties
+        props = cls.get_brick_props()
         if split_screen:
             props.split_screen_active_brick_index = props.split_screen_bricks.find(name)
         else:
             props.active_brick_index = props.bricks.find(name)
 
     @classmethod
-    def set_active_brick_class(cls, brick_class, split_screen=False):
-        props = bpy.context.scene.BIMBrickProperties
+    def set_active_brick_class(cls, brick_class: str, split_screen: bool = False) -> None:
+        props = cls.get_brick_props()
         if split_screen:
             props.split_screen_active_brick_class = brick_class
         else:
             props.active_brick_class = brick_class
 
     @classmethod
-    def serialize_brick(cls):
+    def serialize_brick(cls) -> None:
         BrickStore.get_project().serialize(destination=BrickStore.path, format="turtle")
         BrickStore.set_last_saved()
 
     @classmethod
-    def add_namespace(cls, alias, uri):
+    def add_namespace(cls, alias: str, uri: str) -> None:
+        assert BrickStore.graph
         BrickStore.graph.bind(alias, Namespace(uri))
         BrickStore.load_namespaces()
 
     @classmethod
-    def clear_breadcrumbs(cls, split_screen=False):
+    def clear_breadcrumbs(cls, split_screen: bool = False) -> None:
+        props = cls.get_brick_props()
         if split_screen:
-            bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs.clear()
+            props.split_screen_brick_breadcrumbs.clear()
         else:
-            bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.clear()
+            props.brick_breadcrumbs.clear()
 
 
 class BrickStore:
     schema = None  # this is now a os path
+    path: Union[str, None]
     path = None  # file path if the project was loaded in
+    graph: Union[brickschema.persistent.VersionedGraphCollection, None]
     graph = None  # this is the VersionedGraphCollection with 2 arbitrarily named graphs: "schema" and "project"
     # "SCHEMA" holds the Brick.ttl metadata; "PROJECT" holds all the authored entities
     last_saved = None
@@ -475,11 +498,11 @@ class BrickStore:
         BrickStore.relationships = []
 
     @classmethod
-    def get_project(cls):
+    def get_project(cls) -> brickschema.graph.Graph:
         return BrickStore.graph.graph_at(graph="PROJECT")
 
     @classmethod
-    def load_sub_roots(cls):
+    def load_sub_roots(cls) -> None:
         query = BrickStore.graph.query(
             """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
@@ -505,7 +528,7 @@ class BrickStore:
             BrickStore.root_classes.append(sub_root)
 
     @classmethod
-    def load_namespaces(cls):
+    def load_namespaces(cls) -> None:
         BrickStore.namespaces = []
         keyword_filter = [
             "brickschema.org",
@@ -529,7 +552,7 @@ class BrickStore:
                 BrickStore.namespaces.append((alias, str(uri)))
 
     @classmethod
-    def load_entity_classes(cls):
+    def load_entity_classes(cls) -> None:
         for root_class in BrickStore.root_classes:
             query = BrickStore.graph.query(
                 """
@@ -551,7 +574,7 @@ class BrickStore:
                 BrickStore.entity_classes[root_class].append(uri)
 
     @classmethod
-    def load_relationships(cls):
+    def load_relationships(cls) -> None:
         query = BrickStore.graph.query(
             """
             PREFIX brick: <https://brickschema.org/schema/Brick#>
@@ -565,30 +588,30 @@ class BrickStore:
             BrickStore.relationships.append(uri)
 
     @classmethod
-    def set_history_size(cls, size):
+    def set_history_size(cls, size: int) -> None:
         cls.history_size = size
         while len(cls.history) > cls.history_size:
             cls.history.pop(0)
 
     @classmethod
-    def begin_transaction(cls):
+    def begin_transaction(cls) -> None:
         cls.current_changesets = 0
 
     @classmethod
-    def end_transaction(cls):
+    def end_transaction(cls) -> None:
         cls.history.append(cls.current_changesets)
         if len(cls.history) > cls.history_size:
             cls.history.pop(0)
 
     @classmethod
     @contextmanager
-    def new_changeset(cls):
+    def new_changeset(cls) -> Generator[Any, None, None]:
         cls.current_changesets += 1
         with BrickStore.graph.new_changeset("PROJECT") as cs:
             yield cs
 
     @classmethod
-    def undo(cls):
+    def undo(cls) -> None:
         if not BrickStore.graph or not BrickStore.history:
             return
         total_changesets = BrickStore.history.pop()
@@ -597,7 +620,7 @@ class BrickStore:
         BrickStore.future.append(total_changesets)
 
     @classmethod
-    def redo(cls):
+    def redo(cls) -> None:
         if not BrickStore.graph or not BrickStore.future:
             return
         total_changesets = BrickStore.future.pop()
@@ -606,7 +629,7 @@ class BrickStore:
         BrickStore.history.append(total_changesets)
 
     @classmethod
-    def set_last_saved(cls):
+    def set_last_saved(cls) -> None:
         save = os.path.getmtime(BrickStore.path)
         save = datetime.datetime.fromtimestamp(save)
         BrickStore.last_saved = f"{save.year}-{save.month}-{save.day} {save.hour}:{save.minute}"

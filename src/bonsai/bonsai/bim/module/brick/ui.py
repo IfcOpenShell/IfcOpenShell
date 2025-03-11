@@ -45,7 +45,7 @@ class BIM_PT_brickschema_project_info(Panel):
     bl_parent_id = "BIM_PT_brickschema"
 
     def draw(self, context):
-        self.props = context.scene.BIMBrickProperties
+        self.props = tool.Brick.get_brick_props()
 
         if not BrickschemaData.data["is_loaded"]:
             row = self.layout.row(align=True)
@@ -87,7 +87,7 @@ class BIM_PT_brickschema_namespaces(Panel):
         return BrickStore.graph != None
 
     def draw(self, context):
-        self.props = context.scene.BIMBrickProperties
+        self.props = tool.Brick.get_brick_props()
 
         row = self.layout.row(align=True)
         row.label(text="Active Namespace:")
@@ -122,7 +122,7 @@ class BIM_PT_brickschema_create_entity(Panel):
         return BrickStore.graph != None
 
     def draw(self, context):
-        self.props = context.scene.BIMBrickProperties
+        self.props = tool.Brick.get_brick_props()
         # TO DO: hide this if selected entity already has a reference, or something similar
 
         row = self.layout.row(align=True)
@@ -156,7 +156,7 @@ class BIM_PT_brickschema_viewport(Panel):
         return BrickStore.graph != None
 
     def draw(self, context):
-        self.props = context.scene.BIMBrickProperties
+        self.props = tool.Brick.get_brick_props()
 
         row = self.layout.row(align=True)
         row.column().alignment = "RIGHT"
@@ -292,7 +292,7 @@ class BIM_PT_ifc_brickschema_references(Panel):
     def draw(self, context):
         if not BrickschemaReferencesData.is_loaded:
             BrickschemaReferencesData.load()
-        self.props = context.scene.BIMBrickProperties
+        self.props = tool.Brick.get_brick_props()
 
         if not BrickschemaReferencesData.data["is_loaded"]:
             row = self.layout.row()
