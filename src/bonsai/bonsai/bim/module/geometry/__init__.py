@@ -118,6 +118,7 @@ def register():
     operator.OverrideDuplicateMoveLinkedMacro.define("BIM_OT_override_object_duplicate_move_linked")
     operator.OverrideDuplicateMoveLinkedMacro.define("TRANSFORM_OT_translate")
     operator.DuplicateMoveLinkedAggregateMacro.define("BIM_OT_object_duplicate_move_linked_aggregate")
+    operator.DuplicateMoveLinkedAggregateMacro.define("BIM_OT_override_move")
     operator.DuplicateMoveLinkedAggregateMacro.define("TRANSFORM_OT_translate")
     operator.OverrideMoveMacro.define("BIM_OT_override_move")
     operator.OverrideMoveMacro.define("TRANSFORM_OT_translate")
