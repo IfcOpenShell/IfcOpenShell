@@ -324,7 +324,9 @@ class BIM_PT_project(Panel):
         row.label(text=ProjectData.data["last_saved"])
 
         row = self.layout.row(align=True)
-        row.prop(props, "ifc_file", text="")
+        col = row.column()
+        col.enabled = False
+        col.prop(props, "ifc_file", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
 
