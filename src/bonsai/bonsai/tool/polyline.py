@@ -379,7 +379,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
         FORMULA: "="
 
-        metric: NUMBER "mm"? "m"? "°"?
+        metric: NUMBER "mm"? "cm"? "dm"? "m"? "°"?
 
         expr: (ADD | SUB | MUL | DIV) dim
 
