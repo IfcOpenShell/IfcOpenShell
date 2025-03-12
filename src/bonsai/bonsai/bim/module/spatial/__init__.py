@@ -26,7 +26,6 @@ classes = (
     operator.DeleteContainer,
     operator.DereferenceStructure,
     operator.DisableEditingContainer,
-    operator.EditContainerAttributes,
     operator.EnableEditingContainer,
     operator.ExpandContainer,
     operator.ImportSpatialDecomposition,

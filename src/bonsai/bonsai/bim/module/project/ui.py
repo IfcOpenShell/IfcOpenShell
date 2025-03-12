@@ -28,7 +28,7 @@ from bonsai.bim.module.project.data import ProjectData, LinksData
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.project.prop import LibraryElement, BIMProjectProperties
+    from bonsai.bim.module.project.prop import LibraryElement, BIMProjectProperties, FilterCategory, Link
 
 
 def file_import_menu(self, context):
@@ -151,9 +151,9 @@ class BIM_PT_project(Panel):
 
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
-        props = context.scene.BIMProperties
+        props = tool.Blender.get_bim_props()
         pprops = self.props = tool.Project.get_project_props()
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         if pprops.is_loading:
             self.draw_advanced_loading_ui(context)
         elif self.file or props.ifc_file:
@@ -213,6 +213,8 @@ class BIM_PT_project(Panel):
         row = self.layout.row()
         row.prop(pprops, "void_limit")
         row = self.layout.row()
+        row.prop(pprops, "style_limit")
+        row = self.layout.row()
         row.prop(pprops, "distance_limit")
         row = self.layout.row()
         row.prop(pprops, "false_origin_mode")
@@ -247,7 +249,7 @@ class BIM_PT_project(Panel):
 
     def draw_editing_buttons(self, context, row):
         pprops = self.props
-        if IfcStore.get_file():
+        if tool.Ifc.get():
             if pprops.is_editing:
                 row.operator("bim.edit_header", icon="CHECKMARK", text="")
                 row.operator("bim.disable_editing_header", icon="CANCEL", text="")
@@ -257,10 +259,10 @@ class BIM_PT_project(Panel):
     def draw_editable_file_info(self, context):
         pprops = self.props
 
-        if IfcStore.get_file():
+        if tool.Ifc.get():
             row = self.layout.row(align=True)
             row.label(text="IFC Schema", icon="FILE_CACHE")
-            row.label(text=IfcStore.get_file().schema)
+            row.label(text=tool.Ifc.get().schema)
 
             if pprops.is_editing:
                 row = self.layout.row(align=True)
@@ -281,7 +283,7 @@ class BIM_PT_project(Panel):
             else:
                 row = self.layout.row(align=True)
                 row.label(text="IFC MVD", icon="FILE_HIDDEN")
-                mvd = "".join(IfcStore.get_file().wrapped_data.header.file_description.description)
+                mvd = "".join(tool.Ifc.get().wrapped_data.header.file_description.description)
                 if "[" in mvd:
                     mvd = mvd.split("[")[1][0:-1]
                 row.label(text=mvd)
@@ -305,7 +307,7 @@ class BIM_PT_project(Panel):
 
     def draw_loaded_project_ui(self, context):
         # file name row
-        props = context.scene.BIMProperties
+        props = tool.Blender.get_bim_props()
         file_name_row = self.layout.row(align=True)
         file_name_row.label(text=os.path.basename(props.ifc_file), icon="FILE")
         self.draw_editing_buttons(context, file_name_row)
@@ -315,14 +317,16 @@ class BIM_PT_project(Panel):
 
         # file path row and actions section
         row = self.layout.row(align=True)
-        if context.scene.BIMProperties.is_dirty:
+        if props.is_dirty:
             row.label(text="Saved*", icon="EXPORT")
         else:
             row.label(text="Saved", icon="EXPORT")
         row.label(text=ProjectData.data["last_saved"])
 
         row = self.layout.row(align=True)
-        row.prop(props, "ifc_file", text="")
+        col = row.column()
+        col.enabled = False
+        col.prop(props, "ifc_file", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
 
@@ -339,7 +343,7 @@ class BIM_PT_new_project_wizard(Panel):
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
 
-        props = context.scene.BIMProperties
+        props = tool.Blender.get_bim_props()
         pprops = tool.Project.get_project_props()
         prop_with_search(self.layout, pprops, "export_schema")
         row = self.layout.row()
@@ -512,7 +516,7 @@ class BIM_UL_library(UIList):
     ):
         if item:
             row = layout.row(align=True)
-            if item.element_type != "ASSET" and item.asset_count > 0:
+            if item.element_type != "ASSET" and (item.asset_count > 0 or item.has_sublibraries):
                 op = row.operator("bim.change_library_element", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
                 op.element_name = item.name
                 op.breadcrumb_type = item.element_type
@@ -542,7 +546,16 @@ class BIM_UL_library(UIList):
 
 
 class BIM_UL_filter_categories(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMProjectProperties,
+        item: FilterCategory,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
             row.label(text=f"{item.name} ({item.total_elements})")
@@ -556,7 +569,17 @@ class BIM_UL_filter_categories(UIList):
 
 
 class BIM_UL_links(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMProjectProperties,
+        item: Link,
+        icon,
+        active_data,
+        active_propname,
+        index,
+    ):
         if item:
             row = layout.row(align=True)
             if item.is_loaded:

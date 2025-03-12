@@ -208,7 +208,7 @@ Ifc4x3_add2::IfcAlignment* addHorizontalAlignment(IfcHierarchyHelper<Ifc4x3_add2
 
        placement = file.addLocalPlacement();
 
-       // the alignment has two representations, a plan view footprint
+       // the alignment has a plan view footprint representation
        typename aggregate_of<Ifc4x3_add2::IfcRepresentation>::ptr alignment_representations(new aggregate_of<Ifc4x3_add2::IfcRepresentation>());
        alignment_representations->push(footprint_shape_representation); // 2D footprint
 
@@ -258,7 +258,6 @@ std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typenam
 
         // create gradient
         {
-            file.addDoublet<Ifc4x3_add2::IfcCartesianPoint>(xPBG, yPBG);
             auto gradient_length = dxBG - length/2;
             auto design_parameters = new Ifc4x3_add2::IfcAlignmentVerticalSegment(boost::none, boost::none, xPBG, gradient_length, yPBG, start_slope, start_slope, boost::none, Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT);
             auto alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
@@ -273,8 +272,6 @@ std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typenam
             double k = (end_slope - start_slope) / length;
             double xBVC = xPVI - length / 2;
             double yBVC = yPVI - start_slope * length / 2;
-
-            file.addDoublet<Ifc4x3_add2::IfcCartesianPoint>(xBVC, yBVC);
 
             auto design_parameters = new Ifc4x3_add2::IfcAlignmentVerticalSegment(boost::none, boost::none, xBVC, length, yBVC, start_slope, end_slope, 1 / k, Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_PARABOLICARC);
             auto alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
@@ -296,7 +293,6 @@ std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typenam
     auto slope = tan(atan2(dy,dx));
     auto gradient_length = dx;
 
-    file.addDoublet<Ifc4x3_add2::IfcCartesianPoint>(xPBG, yPBG);
     auto design_parameters = new Ifc4x3_add2::IfcAlignmentVerticalSegment(boost::none, boost::none, xPBG, gradient_length, yPBG, slope, slope, boost::none, Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT);
     auto alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
     vertical_segments->push(alignment_segment);
@@ -305,7 +301,6 @@ std::tuple<typename aggregate_of<Ifc4x3_add2::IfcObjectDefinition>::ptr, typenam
     }
 
     // create zero length terminator segment
-    file.addDoublet<Ifc4x3_add2::IfcCartesianPoint>(xPVI, yPVI);
     design_parameters = new Ifc4x3_add2::IfcAlignmentVerticalSegment(boost::none, boost::none, xPVI, 0.0, yPVI, slope, slope, boost::none, Ifc4x3_add2::IfcAlignmentVerticalSegmentTypeEnum::IfcAlignmentVerticalSegmentType_CONSTANTGRADIENT);
     alignment_segment = new Ifc4x3_add2::IfcAlignmentSegment(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, boost::none, nullptr, nullptr, design_parameters);
     vertical_segments->push(alignment_segment);
@@ -358,13 +353,13 @@ Ifc4x3_add2::IfcAlignment* addAlignment(IfcHierarchyHelper<Ifc4x3_add2>& file, c
         typename aggregate_of<Ifc4x3_add2::IfcRepresentationItem>::ptr alignment_representation_items(new aggregate_of<Ifc4x3_add2::IfcRepresentationItem>());
         alignment_representation_items->push(composite_curve);
 
-        // create the footprint representation
-        auto footprint_shape_representation = new Ifc4x3_add2::IfcShapeRepresentation(axis_model_representation_subcontext, std::string("FootPrint"), std::string("Curve2D"), alignment_representation_items);
-        file.addEntity(footprint_shape_representation);
-
         // the gradient curve is a representation item
         typename aggregate_of<typename Ifc4x3_add2::IfcRepresentationItem>::ptr profile_representation_items(new aggregate_of<Ifc4x3_add2::IfcRepresentationItem>());
         profile_representation_items->push(gradient_curve);
+
+        // create footprint representation
+        auto footprint_shape_representation = new Ifc4x3_add2::IfcShapeRepresentation(axis_model_representation_subcontext, std::string("FootPrint"), std::string("Curve2D"), alignment_representation_items);
+        file.addEntity(footprint_shape_representation);
 
         // create the axis representation
         auto axis3d_shape_representation = new Ifc4x3_add2::IfcShapeRepresentation(axis_model_representation_subcontext, std::string("Axis"), std::string("Curve3D"), profile_representation_items);
@@ -375,10 +370,10 @@ Ifc4x3_add2::IfcAlignment* addAlignment(IfcHierarchyHelper<Ifc4x3_add2>& file, c
         _createSegmentRepresentations(file, placement, axis_model_representation_subcontext, horizontal_curve_segments, horizontal_segments);
         _createSegmentRepresentations(file, placement, axis_model_representation_subcontext, vertical_curve_segments, vertical_segments);
 
-       // the alignment has two representations, a plan view footprint and a 3d curve
+       // the alignment has a 3d curve representation
         typename aggregate_of<typename Ifc4x3_add2::IfcRepresentation>::ptr alignment_representations(new aggregate_of<Ifc4x3_add2::IfcRepresentation>());
-        alignment_representations->push(footprint_shape_representation); // 2D footprint
-        alignment_representations->push(axis3d_shape_representation);    // 3D curve
+        alignment_representations->push(footprint_shape_representation); // 2D curve
+        alignment_representations->push(axis3d_shape_representation); // 3D curve
 
         // create the alignment product definition
         product_definition_shape = new Ifc4x3_add2::IfcProductDefinitionShape(std::string("Alignment Product Definition Shape"), boost::none, alignment_representations);

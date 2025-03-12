@@ -122,15 +122,16 @@ class AuginCreateNewModel(bpy.types.Operator):
         context.scene.render.image_settings.file_format = old_file_format
         context.scene.render.filepath = old_filepath
 
-        client.upload_file(context.scene.BIMProperties.ifc_file, result["s3_bucket"], result["model_path"])
+        bim_props = tool.Blender.get_bim_props()
+        client.upload_file(bim_props.ifc_file, result["s3_bucket"], result["model_path"])
         client.upload_file(thumb_path, result["s3_bucket"], result["thumb_path"])
 
         # Notify done
         url = "https://server.auge.pro.br/API/v3/augin_rest.php/files_uploaded"
         payload = {
             "user_token": props.token,
-            "ifc_filesize": os.path.getsize(context.scene.BIMProperties.ifc_file),
-            "model_filesize": os.path.getsize(context.scene.BIMProperties.ifc_file),
+            "ifc_filesize": os.path.getsize(bim_props.ifc_file),
+            "model_filesize": os.path.getsize(bim_props.ifc_file),
             "thumb_filesize": os.path.getsize(thumb_path),
             "model_upload_path": result["model_path"],
             "thumb_upload_path": result["thumb_path"],

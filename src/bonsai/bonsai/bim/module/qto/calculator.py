@@ -63,12 +63,12 @@ def get_linear_length(o: bpy.types.Object) -> float:
     return max(x, y, z)
 
 
-def get_length(o: bpy.types.Object, vg_index: Optional[int] = None, main_axis: str = "x") -> float:
+def get_length(o: bpy.types.Object, vg_index: Optional[int] = None) -> float:
     if vg_index is None:
         x = get_x(o)
         y = get_y(o)
         z = get_z(o)
-        if get_object_main_axis(o) == "x" or main_axis == "x":
+        if get_object_main_axis(o) == "x":
             return max(x, y)
         if get_object_main_axis(o) == "z":
             return max(z, x)
@@ -451,7 +451,8 @@ def get_side_area(o: bpy.types.Object) -> float:
 
 
 def get_cross_section_area(obj: bpy.types.Object) -> float:
-    representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+    representation = tool.Geometry.get_active_representation(obj)
+    assert representation
     item = representation.Items[0]
     while True:
         if item.is_a("IfcExtrudedAreaSolid"):
@@ -647,7 +648,8 @@ def get_opening_area(
     """
     total_opening_area = 0
     ifc = tool.Ifc.get()
-    ifc_element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
+    ifc_element = tool.Ifc.get_entity(obj)
+    assert ifc_element
     if len(openings := ifc_element.HasOpenings) != 0:
         for opening in openings:
             opening_id = opening.RelatedOpeningElement.GlobalId
@@ -886,7 +888,7 @@ def get_OBB_object(obj: bpy.types.Object) -> bpy.types.Object:
     :param blender-object obj: Blender Object
     :return blender-object: OBB of the Object
     """
-    ifc_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_id = tool.Blender.get_ifc_definition_id(obj)
     bbox = obj.bound_box
     # matrix transformation to go from obj coordinates to world coordinates:
     obb = [Vector(v) for v in bbox]
@@ -928,7 +930,7 @@ def get_AABB_object(obj: bpy.types.Object) -> bpy.types.Object:
     :param blender-object obj: Blender Object
     :return blender-object: AABB of the Object
     """
-    ifc_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_id = tool.Blender.get_ifc_definition_id(obj)
     aabb_mesh = bpy.data.meshes.new(f"OBB_{ifc_id}")
 
     x = [v.co.x for v in obj.data.vertices]
@@ -993,7 +995,7 @@ def get_bisected_obj(
     :param tuple(x,y,z) plane_no_neg: Tuple describing the normal vector of the lower bisection plane. Example: (0,0,-1)
     :return _type_: _description_
     """
-    ifc_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_id = tool.Blender.get_ifc_definition_id(obj)
 
     bis_obj = obj.copy()
     bis_obj.data = obj.data.copy()

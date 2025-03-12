@@ -407,7 +407,11 @@ namespace ifcopenshell {
 				static constexpr TriangulationMethod defaultvalue = TRIANGLE_MESH;
 			};
 
-
+			struct CgalEmitOriginalEdges : public SettingBase<CgalEmitOriginalEdges, bool> {
+				static constexpr const char* const name = "cgal-original-edges";
+				static constexpr const char* const description = "Try to emit original edge face boundary edges instead of recomputed ones based on face normal. Falls back to triangulated data in case of boolean operands and faces with holes.";
+				static constexpr bool defaultvalue = false;
+			};
 		}
 
 		template <typename settings_t>
@@ -500,7 +504,7 @@ namespace ifcopenshell {
 		};
 
 		class IFC_GEOM_API Settings : public SettingsContainer<
-                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, FunctionStepType, FunctionStepParam, NoParallelMapping, ModelOffset, ModelRotation, TriangulationType>
+                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, FunctionStepType, FunctionStepParam, NoParallelMapping, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges>
 		>
 		{};
 }

@@ -76,12 +76,11 @@ def edit_surface_style(
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
     def execute(self, style: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
         self.style = style
 
-        attributes = {}
+        attribute_types: dict[str, str] = {}
         for attribute in style.wrapped_data.declaration().as_entity().all_attributes():
             attribute_type = attribute.type_of_attribute()
             if attribute_type.as_aggregation_type() is None:
@@ -89,10 +88,10 @@ class Usecase:
             else:
                 # doesn't have .declared_type()
                 attribute_type = attribute_type.type_of_element()
-            attributes[attribute.name()] = attribute_type
+            attribute_types[attribute.name()] = attribute_type
 
         for key, value in attributes.items():
-            attribute_class = attributes.get(key)
+            attribute_class = attribute_types.get(key)
             if attribute_class == "IfcColourRgb":
                 self.edit_colour_rgb(key, value)
             elif key == "SpecularHighlight":
@@ -100,7 +99,7 @@ class Usecase:
             elif attribute_class == "IfcColourOrFactor":
                 self.edit_colour_or_factor(key, value)
             else:
-                setattr(self.settings["style"], key, value)
+                setattr(style, key, value)
 
     def edit_colour_rgb(self, name: str, value: dict[str, Any]):
         if (attribute := getattr(self.style, name)) is None:

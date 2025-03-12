@@ -31,6 +31,6 @@ def edit_structural_item_axis(
         Defaults to (0., 0., 1.).
     :return: None
     """
-    if len(file.get_inverse(axis_dir := structural_item.Axis)) == 1:
+    if file.get_total_inverses(axis_dir := structural_item.Axis) == 1:
         file.remove(axis_dir)
     structural_item.Axis = file.create_entity("IfcDirection", ifc_safe_vector_type(axis))

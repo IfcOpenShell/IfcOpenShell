@@ -16,10 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 from bpy.types import Panel, UIList
 from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
 import bonsai.tool as tool
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.spatial.prop import BIMSpatialDecompositionProperties, BIMContainer, Element
 
 
 class BIM_PT_spatial(Panel):
@@ -40,7 +45,9 @@ class BIM_PT_spatial(Panel):
         if not SpatialData.is_loaded:
             SpatialData.load()
 
-        osprops = context.active_object.BIMObjectSpatialProperties
+        obj = context.active_object
+        assert obj
+        osprops = tool.Spatial.get_object_spatial_props(obj)
 
         if osprops.is_editing:
             if SpatialData.data["default_container"]:
@@ -103,7 +110,7 @@ class BIM_PT_spatial_decomposition(Panel):
         return tool.Ifc.get()
 
     def draw_header(self, context):
-        props = context.scene.BIMSpatialDecompositionProperties
+        props = tool.Spatial.get_spatial_props()
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
         icon = "HIDE_OFF" if props.is_visible else "HIDE_ON"
@@ -114,7 +121,7 @@ class BIM_PT_spatial_decomposition(Panel):
     def draw(self, context):
         if not SpatialDecompositionData.is_loaded:
             SpatialDecompositionData.load()
-        self.props = context.scene.BIMSpatialDecompositionProperties
+        self.props = tool.Spatial.get_spatial_props()
 
         if SpatialDecompositionData.data["default_container"]:
             row = self.layout.row(align=True)
@@ -233,7 +240,7 @@ class BIM_PT_grids(Panel):
         self.layout.row().operator("mesh.add_grid", icon="ADD", text="Add Grids")
 
     def draw_header(self, context):
-        props = context.scene.BIMGridProperties
+        props = tool.Spatial.get_grid_props()
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
         icon = "HIDE_OFF" if props.is_visible else "HIDE_ON"
@@ -243,25 +250,36 @@ class BIM_PT_grids(Panel):
 
 
 class BIM_UL_containers_manager(UIList):
+    icon_by_class = {
+        "IfcProject": "FILE",
+        "IfcSite": "WORLD",
+        "IfcBuilding": "HOME",
+        "IfcBuildingStorey": "LINENUMBERS_OFF",
+        "IfcSpace": "ANTIALIASED",
+        "IfcFacilityPart": "MOD_FLUID",
+        "IfcBridgePart": "MOD_FLUID",
+        "IfcFacilityPartCommon": "MOD_FLUID",
+        "IfcMarinePart": "MOD_FLUID",
+        "IfcRailwayPart": "MOD_FLUID",
+        "IfcRoadPart": "MOD_FLUID",
+    }
+
     def __init__(self):
         self.use_filter_show = True
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMSpatialDecompositionProperties,
+        item: BIMContainer,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
-            icon = {
-                "IfcProject": "FILE",
-                "IfcSite": "WORLD",
-                "IfcBuilding": "HOME",
-                "IfcBuildingStorey": "LINENUMBERS_OFF",
-                "IfcSpace": "ANTIALIASED",
-                "IfcFacilityPart": "MOD_FLUID",
-                "IfcBridgePart": "MOD_FLUID",
-                "IfcFacilityPartCommon": "MOD_FLUID",
-                "IfcMarinePart": "MOD_FLUID",
-                "IfcRailwayPart": "MOD_FLUID",
-                "IfcRoadPart": "MOD_FLUID",
-            }.get(item.ifc_class, "META_PLANE")
+            icon = self.icon_by_class.get(item.ifc_class, "META_PLANE")
             split = row.split(factor=0.85)
             if item.long_name:
                 split2 = split.split(factor=0.7)
@@ -275,7 +293,7 @@ class BIM_UL_containers_manager(UIList):
                 row.prop(item, "name", emboss=False, text="", icon=icon)
             split.prop(item, "elevation", emboss=False, text="")
 
-    def draw_hierarchy(self, row, item):
+    def draw_hierarchy(self, row: bpy.types.UILayout, item: BIMContainer) -> None:
         if item.level_index:
             for i in range(0, item.level_index - 1):
                 row.label(text="", icon="BLANK1")
@@ -293,11 +311,12 @@ class BIM_UL_containers_manager(UIList):
 
     def draw_filter(self, context, layout):
         row = layout.row()
-        row.prop(context.scene.BIMSpatialDecompositionProperties, "container_filter", text="", icon="VIEWZOOM")
+        props = tool.Spatial.get_spatial_props()
+        row.prop(props, "container_filter", text="", icon="VIEWZOOM")
 
-    def filter_items(self, context, data, propname):
+    def filter_items(self, context: bpy.types.Context, data: BIMSpatialDecompositionProperties, propname: str):
         items = getattr(data, propname)
-        filter_name = context.scene.BIMSpatialDecompositionProperties.container_filter.lower()
+        filter_name = data.container_filter.lower()
         filter_flags = [self.bitflag_filter_item] * len(items)
 
         for idx, item in enumerate(items):
@@ -313,7 +332,7 @@ class BIM_UL_containers_manager(UIList):
         return filter_flags, []
 
         items = getattr(data, propname)
-        filter_name = context.scene.BIMSpatialDecompositionProperties.container_filter
+        filter_name = data.container_filter
         filtered = bpy.types.UI_UL_list.filter_items_by_name(filter_name, self.bitflag_filter_item, items, "name")
         return filtered, []
 
@@ -326,7 +345,18 @@ class BIM_UL_elements(UIList):
         icon_id = "DISCLOSURE_TRI_DOWN" if is_expanded else "DISCLOSURE_TRI_RIGHT"
         row.operator("bim.toggle_container_element", text="", emboss=False, icon=icon_id).element_index = index
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, fit_flag):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMSpatialDecompositionProperties,
+        item: Element,
+        icon,
+        active_data,
+        active_propname,
+        index,
+        fit_flag,
+    ):
         if item:
             row = layout.row(align=True)
             for _ in range(item.level):
@@ -341,11 +371,12 @@ class BIM_UL_elements(UIList):
 
     def draw_filter(self, context, layout):
         row = layout.row()
-        row.prop(context.scene.BIMSpatialDecompositionProperties, "element_filter", text="", icon="VIEWZOOM")
+        props = tool.Spatial.get_spatial_props()
+        row.prop(props, "element_filter", text="", icon="VIEWZOOM")
 
-    def filter_items(self, context, data, propname):
+    def filter_items(self, context: bpy.types.Context, data: BIMSpatialDecompositionProperties, propname: str):
         items = getattr(data, propname)
-        filter_name = context.scene.BIMSpatialDecompositionProperties.element_filter
+        filter_name = data.element_filter
         filtered = bpy.types.UI_UL_list.filter_items_by_name(filter_name, self.bitflag_filter_item, items, "name")
         return filtered, []
 

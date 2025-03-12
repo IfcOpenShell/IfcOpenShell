@@ -40,7 +40,7 @@ def remove_profile(
     .. code:: python
 
         # First, let's create a material set.
-        material_set = ifcopenshell.api.material.add_profile_set(model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="B1", set_type="IfcMaterialProfileSet")
 
         # Create a steel material.

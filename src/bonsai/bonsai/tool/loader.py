@@ -89,7 +89,7 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def get_mesh_name(cls, representation: ifcopenshell.entity_instance) -> str:
-        context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
+        context_id = context.id() if (context := getattr(representation, "ContextOfItems", None)) else 0
         return "{}/{}".format(context_id, representation.id())
 
     @classmethod
@@ -105,7 +105,7 @@ class Loader(bonsai.core.tool.Loader):
         mesh: tool.Geometry.TYPES_WITH_MESH_PROPERTIES,
     ) -> None:
         geometry = shape.geometry if hasattr(shape, "geometry") else shape
-        mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = int(geometry.id.split("-")[0])
 
     @classmethod
     def create_surface_style_shading(
@@ -698,7 +698,7 @@ class Loader(bonsai.core.tool.Loader):
             project_north = 0
 
         if has_offset or has_rotation:
-            props = bpy.context.scene.BIMGeoreferenceProperties
+            props = tool.Georeference.get_georeference_props()
             props.blender_offset_x = str(model_offset[0])
             props.blender_offset_y = str(model_offset[1])
             props.blender_offset_z = str(model_offset[2])
@@ -747,7 +747,7 @@ class Loader(bonsai.core.tool.Loader):
         cls, element: ifcopenshell.entity_instance, is_gross: bool = False
     ) -> Union[ifcopenshell.geom.ShapeElementType, None]:
         context_settings = cls.settings.gross_context_settings if is_gross else cls.settings.context_settings
-        geometry_library = bpy.context.scene.BIMProjectProperties.geometry_library
+        geometry_library = tool.Project.get_project_props().geometry_library
         for settings in context_settings:
             try:
                 result = ifcopenshell.geom.create_shape(settings, element, geometry_library=geometry_library)
@@ -929,33 +929,34 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def apply_blender_offset_to_matrix_world(cls, obj: bpy.types.Object, matrix: np.ndarray) -> Matrix:
-        if (
-            not obj.data
-            and tool.Cad.is_x(matrix[0][3], 0)
-            and tool.Cad.is_x(matrix[1][3], 0)
-            and tool.Cad.is_x(matrix[2][3], 0)
-        ):
+        """
+        :param matrix: 4x4 numpy matrix.
+        """
+        # Shouldn't mutate original matrix as we return a different object anyway.
+        M_TRANSLATION = (slice(0, 3), 3)
+        oprops = tool.Blender.get_object_bim_props(obj)
+        translation = matrix[M_TRANSLATION]
+        if not obj.data and np.allclose(translation, 0.0, atol=1e-5):
             # We assume any non-geometric matrix at 0,0,0 is not
             # positionally significant and is left alone. This handles
             # scenarios where often spatial elements are left at 0,0,0 and
             # everything else is at map coordinates.
-            obj.BIMObjectProperties.blender_offset_type = "NOT_APPLICABLE"
+            oprops.blender_offset_type = "NOT_APPLICABLE"
             return Matrix(matrix.tolist())
 
         if obj.data and obj.data.get("has_cartesian_point_offset", None):
-            obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
+            oprops.blender_offset_type = "CARTESIAN_POINT"
             if cartesian_point_offset := obj.data.get("cartesian_point_offset", None):
-                obj.BIMObjectProperties.cartesian_point_offset = cartesian_point_offset
+                oprops.cartesian_point_offset = cartesian_point_offset
+                matrix = matrix.copy()
                 offset_xyz = list(map(float, cartesian_point_offset.split(","))) + [1.0]
                 offset_xyz = matrix @ offset_xyz
-                matrix[0][3] = offset_xyz[0]
-                matrix[1][3] = offset_xyz[1]
-                matrix[2][3] = offset_xyz[2]
+                matrix[M_TRANSLATION] = offset_xyz[:3]
 
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if props.has_blender_offset:
-            if obj.BIMObjectProperties.blender_offset_type == "NONE":
-                obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
+            if oprops.blender_offset_type == "NONE":
+                oprops.blender_offset_type = "OBJECT_PLACEMENT"
             matrix = ifcopenshell.util.geolocation.global2local(
                 matrix,
                 float(props.blender_offset_x) * cls.unit_scale,
@@ -1005,11 +1006,7 @@ class Loader(bonsai.core.tool.Loader):
         else:
             edges = ifcopenshell.util.shape.get_edges(geometry)
             mesh.from_pydata(verts.tolist(), edges.tolist(), [])
-            # TODO: remove error handling after we update build in Bonsai.
-            try:
-                edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
-            except AttributeError:
-                edges_item_ids = []
+            edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
             mesh["ios_edges_item_ids"] = edges_item_ids
             tool.Blender.Attribute.fill_attribute(mesh, "ios_edges_item_ids", "EDGE", "INT", edges_item_ids)
             tool.Blender.Attribute.fill_attribute(mesh, "ios_material_ids", "EDGE", "INT", geometry.material_ids)
@@ -1017,6 +1014,98 @@ class Loader(bonsai.core.tool.Loader):
         mesh["ios_materials"] = [m.instance_id() for m in ifcopenshell.util.shape.get_shape_material_styles(geometry)]
         mesh["ios_material_ids"] = ifcopenshell.util.shape.get_faces_material_style_ids(geometry).tolist()
         return mesh
+
+    @classmethod
+    def slice_layerset_mesh(cls, element: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> bpy.types.Mesh:
+        if not (material := ifcopenshell.util.element.get_material(element)):
+            return mesh
+        elif material.is_a("IfcMaterialLayerSetUsage"):
+            usage = material
+            layer_set = material.ForLayerSet
+            offset = usage.OffsetFromReferenceLine * cls.unit_scale
+            sense_factor = 1 if usage.DirectionSense == "POSITIVE" else -1
+        elif material.is_a("IfcMaterialLayerSet"):
+            usage = None
+            layer_set = material
+            offset = 0
+            sense_factor = 1
+        else:
+            return mesh
+        if len(layer_set.MaterialLayers) == 1:
+            return mesh
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        prev_co = None
+        if not usage:
+            sense_factor = 1  # Assume the extrusion vector points in the direction sense
+            no = cls.get_extrusion_vector(element).normalized()
+            co = Vector((0.0, 0.0, offset))
+        elif usage.LayerSetDirection == "AXIS2":
+            co = Vector((0.0, offset, 0.0))
+            no = cls.get_extrusion_vector(element).normalized()
+            no = no.cross(Vector([1.0, 0.0, 0.0]))
+        elif usage.LayerSetDirection == "AXIS3":
+            co = Vector((0.0, 0.0, offset))
+            no = cls.get_extrusion_vector(element).normalized()
+            no = Vector([0.0, 0.0, 1.0])
+        elif usage.LayerSetDirection == "AXIS1":
+            co = Vector((0.0, 0.0, offset))
+            no = cls.get_extrusion_vector(element).normalized()
+            no = Vector([1.0, 0.0, 0.0])
+        no *= sense_factor
+        # Cache this
+        body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        styles = {}
+        has_layer_styles = False
+        for i, material in mesh.materials:
+            if style := tool.Ifc.get_entity(material):
+                styles[style] = i
+        for layer in layer_set.MaterialLayers[:-1]:
+            prev_co = co.copy()
+            co += no * layer.LayerThickness * cls.unit_scale
+            bisect_geom = bmesh.ops.bisect_plane(
+                bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
+            )
+            bmesh.ops.duplicate(bm, geom=bisect_geom["geom_cut"])
+            if style := ifcopenshell.util.representation.get_material_style(layer.Material, body):
+                if (material_index := styles.get(style, None)) is None:
+                    material_index = len(mesh.materials)
+                    mesh.materials.append(tool.Ifc.get_object(style))
+                for face in bisect_geom["geom"]:
+                    if isinstance(face, bmesh.types.BMFace):
+                        center = face.calc_center_median()
+                        if (center - co).dot(no) < 0 and (center - prev_co).dot(no) >= 0:
+                            face.material_index = material_index
+                            has_layer_styles = True
+
+        # Last layer
+        layer = layer_set.MaterialLayers[-1]
+        if style := ifcopenshell.util.representation.get_material_style(layer.Material, body):
+            if (material_index := styles.get(style, None)) is None:
+                material_index = len(mesh.materials)
+                mesh.materials.append(tool.Ifc.get_object(style))
+            for face in bisect_geom["geom"]:
+                if isinstance(face, bmesh.types.BMFace):
+                    center = face.calc_center_median()
+                    # if center.y > co.y:
+                    if (center - co).dot(no) >= 0:
+                        face.material_index = material_index
+                        has_layer_styles = True
+
+        bm.to_mesh(mesh)
+        bm.free()
+        mesh["has_layer_styles"] = has_layer_styles
+        return mesh
+
+    @classmethod
+    def get_extrusion_vector(cls, wall):
+        if body := ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW"):
+            for item in ifcopenshell.util.representation.resolve_representation(body).Items:
+                while item.is_a("IfcBooleanResult"):
+                    item = item.FirstOperand
+                if item.is_a("IfcExtrudedAreaSolid"):
+                    return Vector(item.ExtrudedDirection.DirectionRatios)
+        return Vector([0.0, 0.0, 1.0])
 
     @classmethod
     def create_mesh_from_shape(

@@ -181,7 +181,7 @@ def create_ifc_window(
     glass_thickness: float,
     position: np.ndarray,
     x_offsets: Optional[list[float]] = None,
-) -> tuple[list[ifcopenshell.entity_instance], list[ifcopenshell.entity_instance], list[ifcopenshell.entity_instance]]:
+) -> dict[str, list[ifcopenshell.entity_instance]]:
     """`lining_thickness` and `x_offsets` are expected to be defined as a list,
     similarly to `create_ifc_window_frame_simple` `thickness` argument"""
     lining_items: list[ifcopenshell.entity_instance] = []
@@ -442,7 +442,7 @@ class Usecase:
 
         panel_schema: list[list[int]] = self.settings["panel_schema"]
         panels: list[dict[str, Any]] = self.settings["panel_properties"]
-        accumulated_height = [0] * len(panel_schema[0])
+        accumulated_height: list[float] = [0] * len(panel_schema[0])
         built_panels: list[int] = []
         window_items: list[ifcopenshell.entity_instance] = []
         lining_items: list[ifcopenshell.entity_instance] = []

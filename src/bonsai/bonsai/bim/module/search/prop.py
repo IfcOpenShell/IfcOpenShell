@@ -33,33 +33,34 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING
 
 
-def get_element_key(self, context):
+def get_element_key(self: "BIMSearchProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not SelectSimilarData.is_loaded:
         SelectSimilarData.load()
     return SelectSimilarData.data["element_key"]
 
 
-def get_colourscheme_key(self, context):
+def get_colourscheme_key(self: "BIMSearchProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not ColourByPropertyData.is_loaded:
         ColourByPropertyData.load()
     return ColourByPropertyData.data["colourscheme_key"]
 
 
-def get_saved_searches(self, context):
+def get_saved_searches(self: "BIMSearchProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not SearchData.is_loaded:
         SearchData.load()
     return SearchData.data["saved_searches"]
 
 
-def get_saved_colourschemes(self, context):
+def get_saved_colourschemes(self: "BIMSearchProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not ColourByPropertyData.is_loaded:
         ColourByPropertyData.load()
     return ColourByPropertyData.data["saved_colourschemes"]
 
 
-def update_is_class_selected(self, context):
+def update_is_class_selected(self: "BIMFilterClasses", context: bpy.types.Context) -> None:
     if self.is_selected:
         for obj in self.unselected_objects:
             obj.obj.select_set(True)
@@ -73,7 +74,7 @@ def update_is_class_selected(self, context):
                 new.obj = obj
 
 
-def update_is_container_selected(self, context):
+def update_is_container_selected(self: "BIMFilterBuildingStoreys", context: bpy.types.Context) -> None:
     if self.is_selected:
         for obj in self.unselected_objects:
             obj.obj.select_set(True)
@@ -87,15 +88,15 @@ def update_is_container_selected(self, context):
                 new.obj = obj
 
 
-def update_show_flat_colours(self, context):
+def update_show_flat_colours(self: "BIMSearchProperties", context: bpy.types.Context) -> None:
+    space = tool.Blender.get_view3d_space()
+    assert space
     if self.show_flat_colours:
-        space = tool.Blender.get_view3d_space()
         space.shading.light = "FLAT"
         space.shading.color_type = "OBJECT"
         space.shading.show_object_outline = True
         space.shading.show_cavity = True
     else:
-        space = tool.Blender.get_view3d_space()
         space.shading.type = "SOLID"
         space.shading.light = "STUDIO"
         space.shading.show_object_outline = True
@@ -108,6 +109,11 @@ class BIMFilterClasses(PropertyGroup):
     total: IntProperty(name="Total")
     unselected_objects: CollectionProperty(type=ObjProperty, name="Unfiltered Objects")
 
+    if TYPE_CHECKING:
+        is_selected: bool
+        total: int
+        unselected_objects: bpy.types.bpy_prop_collection_idprop[ObjProperty]
+
 
 class BIMFilterBuildingStoreys(PropertyGroup):
     name: StringProperty(name="Name")
@@ -115,11 +121,20 @@ class BIMFilterBuildingStoreys(PropertyGroup):
     total: IntProperty(name="Total")
     unselected_objects: CollectionProperty(type=ObjProperty, name="Unfiltered Objects")
 
+    if TYPE_CHECKING:
+        is_selected: bool
+        total: int
+        unselected_objects: bpy.types.bpy_prop_collection_idprop[ObjProperty]
+
 
 class BIMColour(PropertyGroup):
     name: StringProperty(name="Name")
     total: IntProperty(name="Total")
     colour: FloatVectorProperty(name="Colour", subtype="COLOR", default=(1, 0, 0), min=0.0, max=1.0)
+
+    if TYPE_CHECKING:
+        total: int
+        colour: tuple[float, float, float]
 
 
 class BIMSearchProperties(PropertyGroup):
@@ -188,6 +203,29 @@ class BIMSearchProperties(PropertyGroup):
     filter_container: CollectionProperty(type=BIMFilterBuildingStoreys, name="Filter Level")
     filter_container_index: IntProperty(name="Filter Level Index")
     show_flat_colours: BoolProperty(name="Flat Colours", default=False, update=update_show_flat_colours)
+
+    if TYPE_CHECKING:
+        element_key: str
+        filter_query: str
+        filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
+        facet: str
+        saved_searches: str
+        saved_colourschemes: str
+        colourscheme_key: str
+        colourscheme_query: str
+        palette: str
+        min_mode: Literal["AUTO", "MANUAL"]
+        max_mode: Literal["AUTO", "MANUAL"]
+        min_value: float
+        max_value: float
+        colourscheme: bpy.types.bpy_prop_collection_idprop[BIMColour]
+        active_colourscheme_index: int
+        filter_type: str
+        filter_classes: bpy.types.bpy_prop_collection_idprop[BIMFilterClasses]
+        filter_classes_index: int
+        filter_container: bpy.types.bpy_prop_collection_idprop[BIMFilterBuildingStoreys]
+        filter_container_index: int
+        show_flat_colours: bool
 
 
 def get_classes(self, ifc_product):

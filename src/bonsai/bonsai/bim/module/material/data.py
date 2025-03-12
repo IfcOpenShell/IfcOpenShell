@@ -244,6 +244,8 @@ class ObjectMaterialData:
             items = []
             if cls.material.is_a("IfcMaterialLayerSetUsage"):
                 items = cls.material.ForLayerSet.MaterialLayers
+                if cls.material.DirectionSense == "POSITIVE":
+                    items = reversed(items)
             elif cls.material.is_a("IfcMaterialProfileSetUsage"):
                 items = cls.material.ForProfileSet.MaterialProfiles
             elif cls.material.is_a("IfcMaterialLayerSet"):
@@ -274,6 +276,8 @@ class ObjectMaterialData:
                     "icon": icon,
                     "material_id": material_id,
                 }
+                if item.is_a("IfcMaterialProfile"):
+                    data["profile_id"] = item.Profile.id()
                 if item.is_a("IfcMaterialProfile") and not item.Name:
                     if item.Profile:
                         data["name"] = item.Profile.ProfileName or "Unnamed"
@@ -282,8 +286,9 @@ class ObjectMaterialData:
                 if item.is_a("IfcMaterialLayer"):
                     total_thickness = item.LayerThickness
                     unit_system = bpy.context.scene.unit_settings.system
+                    props = tool.Drawing.get_document_props()
                     if unit_system == "IMPERIAL":
-                        precision = bpy.context.scene.DocProperties.imperial_precision
+                        precision = props.imperial_precision
                     else:
                         precision = None
                     formatted_thickness = format_distance(
@@ -305,7 +310,13 @@ class ObjectMaterialData:
                 layers = cls.material.ForLayerSet.MaterialLayers
             elif cls.material.is_a("IfcMaterialLayerSet"):
                 layers = cls.material.MaterialLayers
-            return sum([l.LayerThickness for l in layers or []])
+            thickness = sum([l.LayerThickness for l in layers or []])
+            props = tool.Drawing.get_document_props()
+            unit_system = bpy.context.scene.unit_settings.system
+            precision = None
+            if unit_system == "IMPERIAL":
+                precision = props.imperial_precision
+            return format_distance(thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True)
 
     @classmethod
     def set_item_name(cls) -> Union[str, None]:

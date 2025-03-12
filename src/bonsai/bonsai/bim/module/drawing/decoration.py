@@ -423,7 +423,8 @@ class BaseDecorator:
         # font_size = 16 <-- this is a good default
         # TODO: need to synchronize it better with svg
 
-        magic_font_scale = bpy.context.scene.DocProperties.magic_font_scale
+        props = tool.Drawing.get_document_props()
+        magic_font_scale = props.magic_font_scale
         font_size_px = int(magic_font_scale * mm_to_px) * font_size_mm / 2.5
         pos = pos - line_no * font_size_px * rotation_matrix[1]
 
@@ -494,14 +495,20 @@ class BaseDecorator:
         self.draw_label(context, text=text, line_no=line_number_start, multiline=True, **draw_label_kwargs)
 
     @lru_cache(maxsize=None)
-    def format_value(self, context, value):
+    def format_value(self, context, value, custom_unit=None):
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
         precision = drawing_pset_data.get("MetricPrecision", None)
         if not precision:
             precision = drawing_pset_data.get("ImperialPrecision", None)
 
         decimal_places = drawing_pset_data.get("DecimalPlaces", None)
-        return format_distance(value, precision=precision, decimal_places=decimal_places)
+        return format_distance(
+            value,
+            precision=precision,
+            decimal_places=decimal_places,
+            suppress_zero_inches=True,
+            custom_unit=custom_unit,
+        )
 
     def draw_asterisk(self, context: bpy.types.Context, pos: Vector, rotation: float = 0.0, scale: float = 1.0) -> None:
         """`pos` is a world space position\n
@@ -736,7 +743,7 @@ class DimensionDecorator(BaseDecorator):
 
             if not show_description_only:
                 length = (v1 - v0).length
-                text = self.format_value(context, length)
+                text = self.format_value(context, length, custom_unit=dimension_data["custom_unit"])
                 if isinstance(self, DiameterDecorator):
                     text = "D" + text
                 text = text_prefix + text + text_suffix
@@ -945,7 +952,7 @@ class RadiusDecorator(BaseDecorator):
 
         def get_text():
             length = (spline_points[-1] - spline_points[-2]).length
-            return "R" + self.format_value(context, length)
+            return "R" + self.format_value(context, length, custom_unit=dimension_data["custom_unit"])
 
         self.draw_dimension_text(
             context, get_text, description, dimension_data, pos=pos, text_dir=Vector((1, 0)), box_alignment="center"
@@ -976,6 +983,7 @@ class FallDecorator(BaseDecorator):
         # same function as in svgwriter.py
         def get_label_text():
             element = tool.Ifc.get_entity(obj)
+            assert element
             B, A = [v.co.xyz for v in spline_points[:2]]
             rise = abs(A.z - B.z)
             O = A.copy()
@@ -988,13 +996,14 @@ class FallDecorator(BaseDecorator):
                 angle = 90
 
             # ues SLOPE_ANGLE as default
-            if element.ObjectType in ("FALL", "SLOPE_ANGLE"):
+            object_type = ifcopenshell.util.element.get_predefined_type(element)
+            if object_type in ("FALL", "SLOPE_ANGLE"):
                 return f"{angle}°"
-            elif element.ObjectType == "SLOPE_FRACTION":
+            elif object_type == "SLOPE_FRACTION":
                 if angle == 90:
                     return "-"
                 return f"{self.format_value(context, rise)} / {self.format_value(context, run)}"
-            elif element.ObjectType == "SLOPE_PERCENT":
+            elif object_type == "SLOPE_PERCENT":
                 if angle == 90:
                     return "-"
                 return f"{round(angle_tg * 100)} %"
@@ -2022,7 +2031,8 @@ class DecorationsHandler:
         for object_type in ("SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT"):
             self.decorators[object_type] = self.decorators["FALL"]
         self.decorators["MULTI_SYMBOL"] = self.decorators["SYMBOL"]
-        if drawing_font := bpy.context.scene.DocProperties.drawing_font:
+        props = tool.Drawing.get_document_props()
+        if drawing_font := props.drawing_font:
             drawing_font_path = tool.Blender.get_data_dir_path(Path("fonts") / drawing_font)
             if drawing_font_path.is_file():
                 font_id = blf.load(drawing_font_path.__str__())
@@ -2045,7 +2055,7 @@ class DecorationsHandler:
             if not element.is_a("IfcAnnotation"):
                 continue
 
-            object_type: Union[str, None] = element.ObjectType
+            object_type: Union[str, None] = ifcopenshell.util.element.get_predefined_type(element)
             if object_type == "DRAWING":
                 continue
 

@@ -43,11 +43,13 @@ from .add_window_representation import add_window_representation
 from .assign_representation import assign_representation
 from .connect_element import connect_element
 from .connect_path import connect_path
+from .connect_wall import connect_wall
 from .create_2pt_wall import create_2pt_wall
 from .disconnect_element import disconnect_element
 from .disconnect_path import disconnect_path
 from .edit_object_placement import edit_object_placement
 from .map_representation import map_representation
+from .regenerate_wall_representation import regenerate_wall_representation
 from .remove_boolean import remove_boolean
 from .remove_representation import remove_representation
 from .unassign_representation import unassign_representation
@@ -71,11 +73,13 @@ __all__ = [
     "assign_representation",
     "connect_element",
     "connect_path",
+    "connect_wall",
     "create_2pt_wall",
     "disconnect_element",
     "disconnect_path",
     "edit_object_placement",
     "map_representation",
+    "regenerate_wall_representation",
     "remove_boolean",
     "remove_representation",
     "unassign_representation",

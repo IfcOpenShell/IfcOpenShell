@@ -21,7 +21,6 @@ import ifcopenshell
 import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.core.nest as core
-from bonsai.bim.ifc import IfcStore
 
 
 class BIM_OT_nest_assign_object(bpy.types.Operator, tool.Ifc.Operator):
@@ -113,7 +112,7 @@ class BIM_OT_select_components(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         obj = bpy.data.objects.get(self.obj) or context.active_object
         components = ifcopenshell.util.element.get_components(tool.Ifc.get_entity(obj))
         component_objs = set(tool.Ifc.get_object(c) for c in components)
@@ -132,7 +131,7 @@ class BIM_OT_select_nest(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         obj = bpy.data.objects.get(self.obj) or context.active_object
         nest = ifcopenshell.util.element.get_nest(tool.Ifc.get_entity(obj))
         nest_obj = tool.Ifc.get_object(nest)

@@ -25,6 +25,7 @@ import math
 import mathutils
 from mathutils import Matrix, Vector
 from lark import Lark, Transformer
+from typing import Union
 
 
 class Snap(bonsai.core.tool.Snap):
@@ -52,7 +53,10 @@ class Snap(bonsai.core.tool.Snap):
         distances = [3, 5, 15, 30]
 
         unit_system = tool.Drawing.get_unit_system()
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        if tool.Ifc.get():
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        else:
+            unit_scale = tool.Blender.get_unit_scale()
         if unit_system == "IMPERIAL":
             factor = unit_scale
             fractions = [24, 12, 6, 2]
@@ -154,9 +158,13 @@ class Snap(bonsai.core.tool.Snap):
 
         # Makes the snapping point more or less sticky than others
         # It changes the distance and affects how the snapping point is sorted
-        stick_factor = 0.15
+        # We multiply by the increment snap which is based on the viewport zoom
+        snap_threshold = 1 * cls.get_increment_snap_value(bpy.context)
 
-        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        if tool.Ifc.get():
+            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        else:
+            default_container_elevation = 0.0
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
         if polyline_points:
@@ -192,9 +200,9 @@ class Snap(bonsai.core.tool.Snap):
             rot_intersection = rot_mat @ translated_intersection
             proximity = rot_intersection.y
             if tool_state.plane_method == "XZ":
-                proximity = rot_intersection.z
+                proximity = rot_intersection.x
 
-            is_on_rot_axis = abs(proximity) <= stick_factor
+            is_on_rot_axis = abs(proximity) <= snap_threshold
             if is_on_rot_axis:
                 elegible_axis.append((abs(proximity), axis))
 
@@ -207,10 +215,14 @@ class Snap(bonsai.core.tool.Snap):
         # If lock axis is on it will use the snap angle so there is no need to search for eligible axis
         if elegible_axis or tool_state.lock_axis:
             # Adapt axis to make snap angle work with other plane method
-            if tool_state.plane_method == "XZ":
-                axis = -axis
-            if tool_state.plane_method == "YZ":
-                axis = 90 - (axis * -1)
+            if elegible_axis:
+                if tool_state.plane_method == "XZ":
+                    axis = 90 - (axis * -1)
+            else:
+                if tool_state.plane_method == "XZ":
+                    axis = -axis
+                if tool_state.plane_method == "YZ":
+                    axis = 90 - (axis * -1)
             rot_mat = Matrix.Rotation(math.radians(360 - axis), 3, pivot_axis)
             rot_mat = tool.Polyline.use_transform_orientations(rot_mat)
             rot_intersection = rot_mat @ translated_intersection
@@ -313,7 +325,9 @@ class Snap(bonsai.core.tool.Snap):
             plane_normal = tool.Polyline.use_transform_orientations(plane_normal)
             return plane_origin, plane_normal
 
-        def cast_rays_to_single_object(obj, mouse_pos):
+        def cast_rays_to_single_object(
+            obj: bpy.types.Object, mouse_pos: tuple[int, int]
+        ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
             if obj.type != "MESH":
                 return None, None, None
             hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
@@ -332,7 +346,9 @@ class Snap(bonsai.core.tool.Snap):
             else:
                 return None, None, None
 
-        def cast_rays_and_get_best_object(objs_to_raycast, mouse_pos):
+        def cast_rays_and_get_best_object(
+            objs_to_raycast: list[bpy.types.Object], mouse_pos: tuple[int, int]
+        ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
             best_length_squared = 1.0
             best_obj = None
             best_hit = None
@@ -361,8 +377,8 @@ class Snap(bonsai.core.tool.Snap):
         for obj, bbox_2d in objs_2d_bbox:
             if obj.type in {"MESH", "EMPTY", "CURVE"} and bbox_2d:
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d, offset):
-                    if obj.visible_in_viewport_get(
-                        context.space_data
+                    if (
+                        obj.visible_in_viewport_get(context.space_data) or obj.library
                     ):  # Check for local view and local collections for this viewport and object
                         objs_to_raycast.append(obj)
 
@@ -393,13 +409,13 @@ class Snap(bonsai.core.tool.Snap):
 
         # Edge-Vertex
         for obj in objs_to_raycast:
-            if obj.type == "MESH":
-                if len(obj.data.polygons) == 0:
-                    snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj)
-                    if snap_points:
-                        for point in snap_points:
-                            point["group"] = "Edge-Vertex"
-                            detected_snaps.append(point)
+            if obj.type in {"MESH", "EMPTY"}:
+                # if len(obj.data.polygons) == 0:
+                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj)
+                if snap_points:
+                    for point in snap_points:
+                        point["group"] = "Edge-Vertex"
+                        detected_snaps.append(point)
             if obj.type == "CURVE":
                 new_object = bpy.data.objects.new("new_object", obj.to_mesh().copy())
                 snap_points = tool.Raycast.ray_cast_by_proximity(context, event, new_object)
@@ -407,15 +423,6 @@ class Snap(bonsai.core.tool.Snap):
                     for point in snap_points:
                         point["group"] = "Edge-Vertex"
                         detected_snaps.append(point)
-            if obj.type == "EMPTY":
-                snap_point = {
-                    "type": "Vertex",
-                    "point": obj.location,
-                    "distance": 10,  # High value so it has low priority
-                    "object": obj,
-                    "group": "Edge-Vertex",
-                }
-                detected_snaps.append(snap_point)
 
         # Obj
         if (space.shading.type == "SOLID" and space.shading.show_xray) or (
@@ -451,7 +458,10 @@ class Snap(bonsai.core.tool.Snap):
                     detected_snaps.append(snap_point)
 
         # Axis and Plane
-        elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        if tool.Ifc.get():
+            elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        else:
+            elevation = 0.0
 
         plane_origin, plane_normal = select_plane_method()
         tool_state.plane_origin = plane_origin  # This will be used along with plane method
@@ -476,11 +486,11 @@ class Snap(bonsai.core.tool.Snap):
         if tool_state.plane_method:
             if tool_state.plane_method in {"XY", "XZ"} and tool_state.axis_method == "X":
                 tool_state.snap_angle = 180
-            if tool_state.plane_method in {"XY", "YZ"} and tool_state.axis_method == "Y":
+            if tool_state.plane_method in {"XY"} and tool_state.axis_method == "Y":
                 tool_state.snap_angle = 90
-            if tool_state.plane_method in {"YZ"} and tool_state.axis_method == "Z":
+            if tool_state.plane_method in {"YZ"} and tool_state.axis_method == "Y":
                 tool_state.snap_angle = 180
-            if tool_state.plane_method in {"XZ"} and tool_state.axis_method == "Z":
+            if tool_state.plane_method in {"XZ", "YZ"} and tool_state.axis_method == "Z":
                 tool_state.snap_angle = 90
             if tool_state.lock_axis or tool_state.axis_method:
                 # Doesn't update snap_angle so that it keeps in the same axis
@@ -534,6 +544,19 @@ class Snap(bonsai.core.tool.Snap):
             filtered_groups = [group for group in detected_snaps if group["group"] in options]
             return filtered_groups
 
+        def sort_points_by_weighted_distance(snapping_points):
+            for snap in snapping_points:
+                weight_factor = 100 * cls.get_increment_snap_value(context)
+                if snap["type"] == "Vertex":
+                    snap["distance"] *= weight_factor / 12
+                if snap["type"] == "Edge":
+                    snap["distance"] *= weight_factor
+                if snap["type"] == "Edge Center":
+                    snap["distance"] *= weight_factor / 5
+                if snap["type"] == "Edge Intersection":
+                    snap["distance"] *= weight_factor / 10
+            return sorted(snapping_points, key=lambda x: x["distance"])
+
         snaps_by_group = filter_snapping_points_by_group(detected_snaps)
         edges = []  # Get edges to create edge-intersection snap
         for snapping_point in snaps_by_group:
@@ -551,30 +574,30 @@ class Snap(bonsai.core.tool.Snap):
                 snaps_by_group.insert(0, snap_point)
 
         snaps_by_type = filter_snapping_points_by_type(snaps_by_group)
-        snaps_by_type = sorted(snaps_by_type, key=lambda x: x["distance"])
+        ordered_snaps = sort_points_by_weighted_distance(snaps_by_type)
 
         # Make Axis first priority
         if tool_state.lock_axis or tool_state.axis_method in {"X", "Y", "Z"}:
-            cls.update_snapping_ref(snaps_by_type[0]["point"], snaps_by_type[0]["type"])
-            for point in snaps_by_type:
+            cls.update_snapping_ref(ordered_snaps[0]["point"], ordered_snaps[0]["type"])
+            for point in ordered_snaps:
                 if point["type"] == "Axis":
-                    if snaps_by_type[0]["type"] not in {"Axis", "Plane"}:
-                        obj = snaps_by_type[0]["object"]
-                        mixed_snap = cls.mix_snap_and_axis(snaps_by_type[0]["point"], axis_start, axis_end)
+                    if ordered_snaps[0]["type"] not in {"Axis", "Plane"}:
+                        obj = ordered_snaps[0]["object"]
+                        mixed_snap = cls.mix_snap_and_axis(ordered_snaps[0]["point"], axis_start, axis_end)
                         for mixed_point in mixed_snap:
                             snap_point = {
                                 "point": mixed_point,
                                 "type": "Mix",
                                 "object": obj,
                             }
-                            snaps_by_type.insert(0, snap_point)
-                        cls.update_snapping_point(snap_point["point"], snap_point["type"])
-                        return snaps_by_type
+                            ordered_snaps.insert(0, snap_point)
+                            cls.update_snapping_point(snap_point["point"], snap_point["type"])
+                        return ordered_snaps
                     cls.update_snapping_point(point["point"], point["type"])
-                    return snaps_by_type
+                    return ordered_snaps
 
-        cls.update_snapping_point(snaps_by_type[0]["point"], snaps_by_type[0]["type"], snaps_by_type[0]["object"])
-        return snaps_by_type
+        cls.update_snapping_point(ordered_snaps[0]["point"], ordered_snaps[0]["type"], ordered_snaps[0]["object"])
+        return ordered_snaps
 
     @classmethod
     def modify_snapping_point_selection(cls, snapping_points, lock_axis=False):

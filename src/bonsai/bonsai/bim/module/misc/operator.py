@@ -257,7 +257,7 @@ class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
         sources = []
 
         for obj in bpy.context.selected_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            if not tool.Blender.get_ifc_definition_id(obj):
                 continue
 
             element = tool.Ifc.get_entity(obj)
@@ -299,7 +299,7 @@ class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
         tool.Blender.select_and_activate_single_object(context, curve)
 
     def get_absolute_matrix(self, matrix):
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if props.has_blender_offset:
             matrix = np.array(
                 ifcopenshell.util.geolocation.global2local(

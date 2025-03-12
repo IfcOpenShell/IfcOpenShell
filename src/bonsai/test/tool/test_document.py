@@ -36,13 +36,13 @@ class TestAddBreadcrumb(NewFile):
         tool.Ifc().set(ifc)
         document = ifc.createIfcDocumentInformation()
         subject.add_breadcrumb(document)
-        props = bpy.context.scene.BIMDocumentProperties
+        props = tool.Document.get_document_props()
         assert props.breadcrumbs[0].name == str(document.id())
 
 
 class TestClearBreadcrumbs(NewFile):
     def test_run(self):
-        props = bpy.context.scene.BIMDocumentProperties
+        props = tool.Document.get_document_props()
         props.breadcrumbs.add()
         subject.clear_breadcrumbs()
         assert len(props.breadcrumbs) == 0
@@ -50,7 +50,7 @@ class TestClearBreadcrumbs(NewFile):
 
 class TestClearDocumentTree(NewFile):
     def test_run(self):
-        props = bpy.context.scene.BIMDocumentProperties
+        props = tool.Document.get_document_props()
         new = props.documents.add()
         subject.clear_document_tree()
         assert len(props.documents) == 0
@@ -58,23 +58,26 @@ class TestClearDocumentTree(NewFile):
 
 class TestDisableEditingDocument(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMDocumentProperties.active_document_id = 1
+        props = tool.Document.get_document_props()
+        props.active_document_id = 1
         subject.disable_editing_document()
-        assert bpy.context.scene.BIMDocumentProperties.active_document_id == 0
+        assert props.active_document_id == 0
 
 
 class TestDisableEditingUI(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMDocumentProperties.is_editing = True
+        props = tool.Document.get_document_props()
+        props.is_editing = True
         subject.disable_editing_ui()
-        assert bpy.context.scene.BIMDocumentProperties.is_editing == False
+        assert props.is_editing == False
 
 
 class TestEnableEditingUI(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMDocumentProperties.is_editing = False
+        props = tool.Document.get_document_props()
+        props.is_editing = False
         subject.enable_editing_ui()
-        assert bpy.context.scene.BIMDocumentProperties.is_editing == True
+        assert props.is_editing == True
 
 
 class TestExportDocumentAttributes(NewFile):
@@ -129,22 +132,22 @@ class TestImportDocumentAttributes(NewFile):
         document.Confidentiality = "CONFIDENTIAL"
         document.Status = "DRAFT"
         subject().import_document_attributes(document)
-        props = bpy.context.scene.BIMDocumentProperties
-        assert props.document_attributes.get("Identification").string_value == "Identification"
-        assert props.document_attributes.get("Name").string_value == "Name"
-        assert props.document_attributes.get("Description").string_value == "Description"
-        assert props.document_attributes.get("Location").string_value == "Location"
-        assert props.document_attributes.get("Purpose").string_value == "Purpose"
-        assert props.document_attributes.get("IntendedUse").string_value == "IntendedUse"
-        assert props.document_attributes.get("Scope").string_value == "Scope"
-        assert props.document_attributes.get("Revision").string_value == "Revision"
-        assert props.document_attributes.get("CreationTime").string_value == "CreationTime"
-        assert props.document_attributes.get("LastRevisionTime").string_value == "LastRevisionTime"
-        assert props.document_attributes.get("ElectronicFormat").string_value == "ElectronicFormat"
-        assert props.document_attributes.get("ValidFrom").string_value == "ValidFrom"
-        assert props.document_attributes.get("ValidUntil").string_value == "ValidUntil"
-        assert props.document_attributes.get("Confidentiality").enum_value == "CONFIDENTIAL"
-        assert props.document_attributes.get("Status").enum_value == "DRAFT"
+        props = tool.Document.get_document_props()
+        assert props.document_attributes["Identification"].string_value == "Identification"
+        assert props.document_attributes["Name"].string_value == "Name"
+        assert props.document_attributes["Description"].string_value == "Description"
+        assert props.document_attributes["Location"].string_value == "Location"
+        assert props.document_attributes["Purpose"].string_value == "Purpose"
+        assert props.document_attributes["IntendedUse"].string_value == "IntendedUse"
+        assert props.document_attributes["Scope"].string_value == "Scope"
+        assert props.document_attributes["Revision"].string_value == "Revision"
+        assert props.document_attributes["CreationTime"].string_value == "CreationTime"
+        assert props.document_attributes["LastRevisionTime"].string_value == "LastRevisionTime"
+        assert props.document_attributes["ElectronicFormat"].string_value == "ElectronicFormat"
+        assert props.document_attributes["ValidFrom"].string_value == "ValidFrom"
+        assert props.document_attributes["ValidUntil"].string_value == "ValidUntil"
+        assert props.document_attributes["Confidentiality"].enum_value == "CONFIDENTIAL"
+        assert props.document_attributes["Status"].enum_value == "DRAFT"
 
     def test_importing_reference(self):
         ifc = ifcopenshell.file()
@@ -155,11 +158,11 @@ class TestImportDocumentAttributes(NewFile):
         document.Name = "Name"
         document.Description = "Description"
         subject().import_document_attributes(document)
-        props = bpy.context.scene.BIMDocumentProperties
-        assert props.document_attributes.get("Location").string_value == "Location"
-        assert props.document_attributes.get("Identification").string_value == "Identification"
-        assert props.document_attributes.get("Name").string_value == "Name"
-        assert props.document_attributes.get("Description").string_value == "Description"
+        props = tool.Document.get_document_props()
+        assert props.document_attributes["Location"].string_value == "Location"
+        assert props.document_attributes["Identification"].string_value == "Identification"
+        assert props.document_attributes["Name"].string_value == "Name"
+        assert props.document_attributes["Description"].string_value == "Description"
 
 
 class TestImportProjectDocuments(NewFile):
@@ -169,7 +172,7 @@ class TestImportProjectDocuments(NewFile):
         ifc.createIfcProject()
         document = ifcopenshell.api.run("document.add_information", ifc)
         subject.import_project_documents()
-        props = bpy.context.scene.BIMDocumentProperties
+        props = tool.Document.get_document_props()
         assert len(props.documents) == 1
         assert props.documents[0].ifc_definition_id == document.id()
         assert props.documents[0].name == "Unnamed"
@@ -185,7 +188,7 @@ class TestImportReferences(NewFile):
         document = ifcopenshell.api.run("document.add_information", ifc)
         reference = ifcopenshell.api.run("document.add_reference", ifc, information=document)
         subject.import_references(document)
-        props = bpy.context.scene.BIMDocumentProperties
+        props = tool.Document.get_document_props()
         assert len(props.documents) == 1
         assert props.documents[0].ifc_definition_id == reference.id()
         assert props.documents[0].name == "Unnamed"
@@ -201,7 +204,7 @@ class TestImportSubdocuments(NewFile):
         document = ifcopenshell.api.run("document.add_information", ifc)
         subdocument = ifcopenshell.api.run("document.add_information", ifc, parent=document)
         subject.import_subdocuments(document)
-        props = bpy.context.scene.BIMDocumentProperties
+        props = tool.Document.get_document_props()
         assert len(props.documents) == 1
         assert props.documents[0].ifc_definition_id == subdocument.id()
         assert props.documents[0].name == "Unnamed"
@@ -220,7 +223,7 @@ class TestIsDocumentInformation(NewFile):
 
 class TestRemoveLatestBreadcrumb(NewFile):
     def test_run(self):
-        props = bpy.context.scene.BIMDocumentProperties
+        props = tool.Document.get_document_props()
         props.breadcrumbs.add()
         props.breadcrumbs.add()
         subject.remove_latest_breadcrumb()
@@ -232,4 +235,5 @@ class TestSetActiveDocument(NewFile):
         ifc = ifcopenshell.file()
         document = ifc.createIfcDocumentInformation()
         subject.set_active_document(document)
-        assert bpy.context.scene.BIMDocumentProperties.active_document_id == document.id()
+        props = tool.Document.get_document_props()
+        assert props.active_document_id == document.id()

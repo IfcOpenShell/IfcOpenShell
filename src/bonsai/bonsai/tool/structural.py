@@ -23,8 +23,6 @@ import json
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
-from pprint import pprint
 from typing import Union, Any
 
 
@@ -112,7 +110,8 @@ class Structural(bonsai.core.tool.Structural):
     def get_product_or_active_object(cls, product: str) -> Union[bpy.types.Object, None]:
         product = bpy.data.objects.get(product) if product else bpy.context.active_object
         try:
-            if product.BIMObjectProperties.ifc_definition_id:
+            props = tool.Blender.get_object_bim_props(product)
+            if props.ifc_definition_id:
                 return product
             else:
                 return None
@@ -129,7 +128,8 @@ class Structural(bonsai.core.tool.Structural):
     def load_structural_analysis_model_attributes(cls, data: dict[str, Any]) -> None:
         props = bpy.context.scene.BIMStructuralProperties
         props.structural_analysis_model_attributes.clear()
-        for attribute in IfcStore.get_schema().declaration_by_name("IfcStructuralAnalysisModel").all_attributes():
+        schema = tool.Ifc.schema()
+        for attribute in schema.declaration_by_name("IfcStructuralAnalysisModel").all_attributes():
             data_type = str(attribute.type_of_attribute)
             if "<entity" in data_type:
                 continue

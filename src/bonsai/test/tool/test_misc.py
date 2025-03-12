@@ -24,7 +24,6 @@ import test.bim.bootstrap
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.misc import Misc as subject
-from bonsai.bim.ifc import IfcStore
 
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):

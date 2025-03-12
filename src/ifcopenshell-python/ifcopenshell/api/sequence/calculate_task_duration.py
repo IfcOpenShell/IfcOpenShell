@@ -143,5 +143,5 @@ class Usecase:
 
     def set_task_duration(self, duration: float) -> None:
         if not (task_time := self.task.TaskTime):
-            ifcopenshell.api.sequence.add_task_time(self.file, task=self.task)
+            task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=self.task)
         task_time.ScheduleDuration = f"P{duration}D"

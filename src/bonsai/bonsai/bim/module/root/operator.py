@@ -21,6 +21,7 @@ import bmesh
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
+import ifcopenshell.api.root
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 import ifcopenshell.util.shape_builder
@@ -42,32 +43,34 @@ class EnableReassignClass(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        rprops = tool.Root.get_root_props()
         obj = context.active_object
         self.file = tool.Ifc.get()
-        ifc_class = obj.name.split("/")[0]
-        context.active_object.BIMObjectProperties.is_reassigning_class = True
-        ifc_products = [
-            "IfcElement",
-            "IfcElementType",
-            "IfcSpatialElement",
-            "IfcGroup",
-            "IfcStructural",
-            "IfcPositioningElement",
-            "IfcContext",
-            "IfcAnnotation",
-            "IfcRelSpaceBoundary",
-        ]
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        ifc_class = element.is_a()
+        props = tool.Blender.get_object_bim_props(obj)
+        props.is_reassigning_class = True
+        ifc_products = tool.Root.get_ifc_products()
+        schema = tool.Ifc.schema()
+        declaration = schema.declaration_by_name(ifc_class)
         for ifc_product in ifc_products:
-            if ifcopenshell.util.schema.is_a(IfcStore.get_schema().declaration_by_name(ifc_class), ifc_product):
-                context.scene.BIMRootProperties.ifc_product = ifc_product
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
-        context.scene.BIMRootProperties.ifc_class = element.is_a()
-        context.scene.BIMRootProperties.relating_class_object = None
+            if ifcopenshell.util.schema.is_a(declaration, ifc_product):
+                rprops.ifc_product = ifc_product
+                break
+        else:
+            self.report({"ERROR"}, f"Couldn't find matching IFC product for the selected object: '{element}'.")
+            props.is_reassigning_class = False
+            return {"CANCELLED"}
+
+        element = self.file.by_id(tool.Blender.get_ifc_definition_id(obj))
+        rprops.ifc_class = element.is_a()
+        rprops.relating_class_object = None
         if hasattr(element, "PredefinedType"):
             if element.PredefinedType:
-                context.scene.BIMRootProperties.ifc_predefined_type = element.PredefinedType
+                rprops.ifc_predefined_type = element.PredefinedType
             userdefined_type = ifcopenshell.util.element.get_predefined_type(element)
-            context.scene.BIMRootProperties.ifc_userdefined_type = userdefined_type or ""
+            rprops.ifc_userdefined_type = userdefined_type or ""
         return {"FINISHED"}
 
 
@@ -77,7 +80,8 @@ class DisableReassignClass(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.active_object.BIMObjectProperties.is_reassigning_class = False
+        props = tool.Blender.get_object_bim_props(context.active_object)
+        props.is_reassigning_class = False
         return {"FINISHED"}
 
 
@@ -94,9 +98,9 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
         else:
             objects = set(context.selected_objects + [context.active_object])
         self.file = tool.Ifc.get()
-        root_props = context.scene.BIMRootProperties
-        ifc_product: str = root_props.ifc_product
-        ifc_class: str = root_props.ifc_class
+        root_props = tool.Root.get_root_props()
+        ifc_product = root_props.ifc_product
+        ifc_class = root_props.ifc_class
         type_ifc_class = next(iter(ifcopenshell.util.type.get_applicable_types(ifc_class, self.file.schema)), None)
 
         predefined_type = root_props.ifc_predefined_type
@@ -126,7 +130,8 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
                     )
                     return {"CANCELLED"}
 
-            obj.BIMObjectProperties.is_reassigning_class = False
+            props = tool.Blender.get_object_bim_props(obj)
+            props.is_reassigning_class = False
             if element.is_a("IfcTypeObject"):
                 elements_to_reassign[element] = ifc_class
                 elements_to_update.update(ifcopenshell.util.element.get_types(element))
@@ -145,14 +150,16 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
         elements_to_update = elements_to_update | set(elements_to_reassign)
         objects_to_update = set(o for e in elements_to_update if (o := tool.Ifc.get_object(e)))
 
-        reassigned_elements = set()
+        reassigned_elements: set[ifcopenshell.entity_instance] = set()
         for element, ifc_class_ in elements_to_reassign.items():
-            element = ifcopenshell.api.run(
-                "root.reassign_class",
+            element = ifcopenshell.api.root.reassign_class(
                 self.file,
                 product=element,
                 ifc_class=ifc_class_,
                 predefined_type=predefined_type,
+                # Provide occurrence class in all cases as it won't really matter
+                # for non-IfcTypeProducts.
+                occurrence_class=ifc_class,
             )
             reassigned_elements.add(element)
 
@@ -176,7 +183,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
     ifc_representation_class: bpy.props.StringProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMRootProperties
+        props = tool.Root.get_root_props()
         objects: list[bpy.types.Object] = []
         if self.obj:
             objects = [bpy.data.objects[self.obj]]
@@ -358,7 +365,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
 
     def _invoke(self, context, event):
-        props = context.scene.BIMRootProperties
+        props = tool.Root.get_root_props()
         # For convenience, preselect OBJs if applicable
         if props.ifc_product == "IfcFeatureElement":
             if (obj := tool.Blender.get_active_object(is_selected=True)) and obj.type == "MESH":
@@ -376,7 +383,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def _execute(self, context):
-        props = context.scene.BIMRootProperties
+        props = tool.Root.get_root_props()
         predefined_type = (
             props.ifc_userdefined_type if props.ifc_predefined_type == "USERDEFINED" else props.ifc_predefined_type
         )
@@ -500,7 +507,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 material = ifcopenshell.api.run("material.add_material", tool.Ifc.get(), name="Unknown")
             if representation_template == "PROFILESET":
-                profile_id = tool.Blender.get_enum_safe(context.scene.BIMRootProperties, "profile")
+                profile_id = tool.Blender.get_enum_safe(props, "profile")
                 if profile_id in ("-", None):
                     profile = next((p for p in ifc_file.by_type("IfcProfileDef") if p.ProfileName), None)
                     if profile is None:
@@ -589,7 +596,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         tool.Blender.set_active_object(obj)
 
     def draw(self, context):
-        props = context.scene.BIMRootProperties
+        props = tool.Root.get_root_props()
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
         row = self.layout.row()
@@ -600,7 +607,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             if not self.ifc_product:
                 prop_with_search(self.layout, props, "ifc_product", text="Definition", should_click_ok=True)
             prop_with_search(self.layout, props, "ifc_class", should_click_ok=True)
-        ifc_predefined_types = root_prop.get_ifc_predefined_types(context.scene.BIMRootProperties, context)
+        ifc_predefined_types = root_prop.get_ifc_predefined_types(props, context)
         if ifc_predefined_types:
             prop_with_search(self.layout, props, "ifc_predefined_type", should_click_ok=True)
             if props.ifc_predefined_type == "USERDEFINED":
@@ -618,15 +625,3 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             row.prop(props, "profile", text="Profile")
         if props.representation_template != "EMPTY":
             prop_with_search(self.layout, props, "contexts", should_click_ok=True)
-
-
-class LaunchAddElement(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.launch_add_element"
-    bl_label = "Add Element"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Add an IFC physical product, construction type, and more"
-
-    def execute(self, context):
-        # This stub operator is needed because operators from menu skip the invoke call
-        bpy.ops.bim.add_element("INVOKE_DEFAULT")
-        return {"FINISHED"}

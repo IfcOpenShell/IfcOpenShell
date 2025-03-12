@@ -32,8 +32,8 @@ class Surveyor(bonsai.core.tool.Surveyor):
     def get_absolute_matrix(cls, obj: bpy.types.Object) -> npt.NDArray[np.float64]:
         M_TRANSLATION = (slice(0, 3), 3)
         matrix = np.array(obj.matrix_world)
-        props = bpy.context.scene.BIMGeoreferenceProperties
-        if props.has_blender_offset and obj.BIMObjectProperties.blender_offset_type != "NOT_APPLICABLE":
+        props = tool.Georeference.get_georeference_props()
+        if props.has_blender_offset and tool.Blender.get_object_bim_props(obj).blender_offset_type != "NOT_APPLICABLE":
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             coordinate_offset = tool.Geometry.get_cartesian_point_offset(obj)
             if coordinate_offset is not None:

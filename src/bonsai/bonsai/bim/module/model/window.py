@@ -28,6 +28,7 @@ import bonsai.core.root
 import bonsai.core.geometry
 from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
 import ifcopenshell.api
+import ifcopenshell.api.material
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
@@ -41,8 +42,10 @@ V_ = tool.Blender.V_
 
 def update_window_modifier_representation(context: bpy.types.Context) -> None:
     obj = context.active_object
+    assert obj
     element = tool.Ifc.get_entity(obj)
-    props = obj.BIMWindowProperties
+    assert element
+    props = tool.Model.get_window_props(obj)
     ifc_file = tool.Ifc.get()
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
@@ -258,7 +261,8 @@ def create_bm_window(
 
 def update_window_modifier_bmesh(context: bpy.types.Context) -> None:
     obj = context.active_object
-    props = obj.BIMWindowProperties
+    assert obj
+    props = tool.Model.get_window_props(obj)
     panel_schema = DEFAULT_PANEL_SCHEMAS[props.window_type]
     accumulated_height = [0] * len(panel_schema[0])
     built_panels = []
@@ -447,8 +451,10 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMWindowProperties
+        assert element
+        props = tool.Model.get_window_props(obj)
 
         window_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
@@ -477,11 +483,13 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         element = tool.Ifc.get_entity(obj)
+        assert element
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Window", "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
-        props = obj.BIMWindowProperties
+        props = tool.Model.get_window_props(obj)
         props.set_props_kwargs_from_ifc_data(data)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
@@ -506,8 +514,10 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMWindowProperties
+        assert element
+        props = tool.Model.get_window_props(obj)
 
         window_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
@@ -533,11 +543,14 @@ class EnableEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        props = obj.BIMWindowProperties
+        assert obj
+        props = tool.Model.get_window_props(obj)
         element = tool.Ifc.get_entity(obj)
+        assert element
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Window", "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
+        data.update(tool.Model.get_constituents_props_data(element))
 
         # required since we could load pset from .ifc and BIMWindowProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
@@ -553,9 +566,11 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        props = obj.BIMWindowProperties
+        assert obj
         element = tool.Ifc.get_entity(obj)
-        obj.BIMWindowProperties.is_editing = False
+        assert element
+        props = tool.Model.get_window_props(obj)
+        props.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)

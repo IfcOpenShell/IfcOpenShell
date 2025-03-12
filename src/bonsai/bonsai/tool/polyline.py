@@ -20,6 +20,7 @@ import bpy
 import bmesh
 import math
 import ifcopenshell
+import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
@@ -112,15 +113,22 @@ class Polyline(bonsai.core.tool.Polyline):
         cls, context: bpy.types.Context, input_ui: PolylineUI, tool_state: ToolState, should_round: bool = False
     ) -> None:
 
-        try:
-            polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
+        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        if len(polyline_data) > 0:
+            polyline_data = polyline_data[0]
             polyline_points = polyline_data.polyline_points
-            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
-            last_point_data = polyline_points[len(polyline_points) - 1]
-        except:
+            if len(polyline_points) > 0:
+                last_point_data = polyline_points[len(polyline_points) - 1]
+            else:
+                last_point_data = None
+        else:
             polyline_points = []
-            default_container_elevation = 0
             last_point_data = None
+
+        if tool.Ifc.get():
+            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        else:
+            default_container_elevation = 0
 
         mouse_point = context.scene.BIMPolylineProperties.snap_mouse_point[0]
 
@@ -252,24 +260,41 @@ class Polyline(bonsai.core.tool.Polyline):
 
     @classmethod
     def calculate_x_y_and_z(cls, context: bpy.types.Context, input_ui: PolylineUI, tool_state: ToolState) -> None:
-        try:
+        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        if len(polyline_data) > 0:
             polyline_data = context.scene.BIMPolylineProperties.insertion_polyline[0]
             polyline_points = polyline_data.polyline_points
-            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
-            last_point_data = polyline_points[len(polyline_points) - 1]
-            last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
-        except:
+            if len(polyline_points) > 0:
+                last_point_data = polyline_points[len(polyline_points) - 1]
+                last_point = Vector((last_point_data.x, last_point_data.y, last_point_data.z))
+            else:
+                last_point = Vector((0, 0, 0))
+        else:
             polyline_points = []
-            default_container_elevation = 0
             last_point = Vector((0, 0, 0))
+
+        if tool.Ifc.get():
+            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        else:
+            default_container_elevation = 0
 
         snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
         snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
-        if tool_state.use_default_container:
-            snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
+        if tool_state.is_input_on:
+            if tool_state.use_default_container:
+                mouse_vector = Vector(
+                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), default_container_elevation)
+                )
+            else:
+                mouse_vector = Vector(
+                    (input_ui.get_number_value("X"), input_ui.get_number_value("Y"), input_ui.get_number_value("Z"))
+                )
         else:
-            snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
+            if tool_state.use_default_container:
+                snap_vector = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
+            else:
+                snap_vector = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
 
         if len(polyline_points) > 1:
             second_to_last_point_data = polyline_points[len(polyline_points) - 2]
@@ -353,7 +378,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
         FORMULA: "="
 
-        metric: NUMBER "mm"? "m"? "°"?
+        metric: NUMBER "mm"? "cm"? "dm"? "m"? "°"?
 
         expr: (ADD | SUB | MUL | DIV) dim
 
@@ -429,7 +454,10 @@ class Polyline(bonsai.core.tool.Polyline):
                     return dimension * unit_scale
 
         try:
-            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            if tool.Ifc.get():
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            else:
+                unit_scale = tool.Blender.get_unit_scale()
             if bpy.context.scene.unit_settings.system == "IMPERIAL":
                 parser = Lark(grammar_imperial)
             else:
@@ -450,12 +478,15 @@ class Polyline(bonsai.core.tool.Polyline):
 
     @classmethod
     def format_input_ui_units(cls, value: float, is_area: bool = False) -> str:
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        if tool.Ifc.get():
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        else:
+            unit_scale = tool.Blender.get_unit_scale()
         if bpy.context.scene.unit_settings.system == "IMPERIAL":
-            precision = bpy.context.scene.DocProperties.imperial_precision
+            dprops = tool.Drawing.get_document_props()
+            precision = dprops.imperial_precision
             if is_area:
-                area_unit = bpy.context.scene.BIMProperties.area_unit
-                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get(), unit_type=area_unit)
+                unit_scale = 1
         else:
             precision = None
 
@@ -508,17 +539,14 @@ class Polyline(bonsai.core.tool.Polyline):
             for point in polyline_points[1:]:  # The first can be repeated to form a wall loop
                 if (x, y, z) == (point.x, point.y, point.z):
                     return "Cannot create two points at the same location"
-            # Avoids duplicating an edge
+            # Avoids creating overlapping edges
             if len(polyline_points) > 1:
-                if Vector((x, y, z)) == Vector((polyline_points[-2].x, polyline_points[-2].y, polyline_points[-2].z)):
+                v1 = Vector((x, y, z))
+                v2 = Vector((polyline_points[-1].x, polyline_points[-1].y, polyline_points[-1].z))
+                v3 = Vector((polyline_points[-2].x, polyline_points[-2].y, polyline_points[-2].z))
+                angle = tool.Cad.angle_3_vectors(v1, v2, v3, new_angle=None, degrees=True)
+                if tool.Cad.is_x(angle, 0):
                     return
-            # TODO move this limitation to be Wall tool specific. Right now it also affects Measure tool
-            # Avoids creating segments smaller then 0.1. This is a limitation from create_wall_from_2_points
-            length = (
-                Vector((x, y, z)) - Vector((polyline_points[-1].x, polyline_points[-1].y, polyline_points[-1].z))
-            ).length
-            if round(length, 4) < 0.1:
-                return "Cannot create a segment smaller then 10cm"
 
         polyline_point = polyline_points.add()
         polyline_point.x = x
@@ -538,22 +566,6 @@ class Polyline(bonsai.core.tool.Polyline):
             total_length += dim
         total_length = tool.Polyline.format_input_ui_units(total_length)
         polyline_data.total_length = total_length
-
-    @classmethod
-    def close_polyline(cls) -> None:
-        polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
-        polyline_points = polyline_data[0].polyline_points if polyline_data else []
-        if len(polyline_points) > 2:
-            first_point = polyline_points[0]
-            last_point = polyline_points[-1]
-            if not (first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z):
-                polyline_point = polyline_points.add()
-                polyline_point.x = first_point.x
-                polyline_point.y = first_point.y
-                polyline_point.z = first_point.z
-                polyline_point.dim = first_point.dim
-                polyline_point.angle = first_point.angle
-                polyline_point.position = first_point.position
 
     @classmethod
     def clear_polyline(cls) -> None:

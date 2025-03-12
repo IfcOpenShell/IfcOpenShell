@@ -21,7 +21,6 @@ import ifcopenshell
 import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty, Attribute
 from bonsai.bim.module.profile.data import ProfileData
 from bpy.types import PropertyGroup
@@ -38,7 +37,7 @@ from bpy.props import (
 from typing import TYPE_CHECKING, Union
 
 
-def get_profile_classes(self, context):
+def get_profile_classes(self: "BIMProfileProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not ProfileData.is_loaded:
         ProfileData.load()
     return ProfileData.data["profile_classes"]
@@ -47,7 +46,9 @@ def get_profile_classes(self, context):
 def update_profile_name(self: "Profile", context: bpy.types.Context) -> None:
     from bonsai.bim.handler import refresh_ui_data
 
-    profile = tool.Ifc.get().by_id(self.ifc_definition_id)
+    profile = tool.Ifc.get_entity_by_id(self.ifc_definition_id)
+    if not profile:
+        return
     profile.ProfileName = self.name
     refresh_ui_data()
 
@@ -63,16 +64,18 @@ class Profile(PropertyGroup):
         ifc_definition_id: int
 
 
-def update_active_profile_index(self, context):
-    ProfileData.data["active_profile_users"] = ProfileData.active_profile_users()
+def update_active_profile_index(self: "BIMProfileProperties", context: bpy.types.Context) -> None:
+    ProfileData.update_active_profile_data()
 
 
 class BIMProfileProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     profiles: CollectionProperty(name="Profiles", type=Profile)
     active_profile_index: IntProperty(name="Active Profile Index", update=update_active_profile_index)
-    active_profile_id: IntProperty(name="Active Profile Id")
-    active_arbitrary_profile_id: IntProperty(name="Active Arbitrary Profile Id")
+    active_profile_id: IntProperty(name="Active Profile Id", description="Currently edited profile ID (attributes).")
+    active_arbitrary_profile_id: IntProperty(
+        name="Active Arbitrary Profile Id", description="Currently edited arbitrary profile ID."
+    )
     profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
     profile_classes: EnumProperty(items=get_profile_classes, name="Profile Classes")
     is_filtering_material_profiles: bpy.props.BoolProperty(

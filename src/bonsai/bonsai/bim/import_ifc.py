@@ -20,6 +20,7 @@ from __future__ import annotations
 import bpy
 import time
 import json
+import ifcpatch
 import logging
 import traceback
 import mathutils
@@ -38,6 +39,7 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from bonsai.tool.loader import OBJECT_DATA_TYPE
 from typing import Dict, Union, Optional, Any, Literal
+from ifcopenshell.util.shape import MatrixType
 
 
 class MaterialCreator:
@@ -69,6 +71,9 @@ class MaterialCreator:
         if isinstance(mesh, bpy.types.Curve):
             return
 
+        if mesh.get("has_layer_styles", None) == True:
+            return
+
         self.mesh = mesh
         self.obj = obj
         if element.is_a("IfcTypeProduct"):
@@ -82,7 +87,7 @@ class MaterialCreator:
 
     def load_existing_materials(self) -> None:
         for material in bpy.data.materials:
-            if ifc_definition_id := material.BIMStyleProperties.ifc_definition_id:
+            if ifc_definition_id := tool.Blender.get_ifc_definition_id(material):
                 self.styles[ifc_definition_id] = material
 
     def parse_element_type_material_styles(self, element: ifcopenshell.entity_instance) -> None:
@@ -90,7 +95,8 @@ class MaterialCreator:
             return  # Already has materials assign to the representation itself
         # Otherwise, we need to check for material styles on the element, since
         # create_shape on types only works on representations.
-        context = tool.Ifc.get().by_id(self.mesh.BIMMeshProperties.ifc_definition_id).ContextOfItems
+        mprops = tool.Geometry.get_mesh_props(self.mesh)
+        context = tool.Ifc.get().by_id(mprops.ifc_definition_id).ContextOfItems
         for material in ifcopenshell.util.element.get_materials(element):
             if style := ifcopenshell.util.representation.get_material_style(material, context):
                 self.mesh["ios_materials"] = (style.id(),)
@@ -218,7 +224,7 @@ class IfcImporter:
         self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
-        classes_to_wireframe_str = bpy.context.scene.DocProperties.classes_to_wireframe
+        classes_to_wireframe_str = tool.Drawing.get_document_props().classes_to_wireframe
         self.classes_to_wireframe_list = [word.strip() for word in classes_to_wireframe_str.split(",")]
 
     def profile_code(self, message: str) -> None:
@@ -434,7 +440,7 @@ class IfcImporter:
         return False
 
     def calculate_model_offset(self) -> None:
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if self.ifc_import_settings.false_origin_mode == "MANUAL":
             tool.Loader.set_manual_blender_offset(self.file)
         elif self.ifc_import_settings.false_origin_mode == "AUTOMATIC":
@@ -475,14 +481,16 @@ class IfcImporter:
             if grid.WAxes:
                 self.create_grid_axes(grid.WAxes, grid_obj, grid_placement)
 
-    def create_grid_axes(self, axes, grid_obj, grid_placement):
+    def create_grid_axes(
+        self, axes: list[ifcopenshell.entity_instance], grid_obj: bpy.types.Object, grid_placement: MatrixType
+    ) -> None:
         for axis in axes:
             shape = tool.Loader.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(tool.Loader.get_name(axis), mesh)
             obj.show_in_front = True
             self.link_element(axis, obj)
-            self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement.copy()))
+            self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement))
 
     def create_element_types(self):
         for element_type in self.element_types:
@@ -507,8 +515,9 @@ class IfcImporter:
                         pass
                     elif shape:
                         mesh = self.create_mesh(element, shape)
-                        tool.Loader.link_mesh(shape, mesh)
-                        self.meshes[mesh_name] = mesh
+                        if mesh is not None:
+                            tool.Loader.link_mesh(shape, mesh)
+                            self.meshes[mesh_name] = mesh
                     else:
                         self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
                 break
@@ -791,8 +800,9 @@ class IfcImporter:
             materials_updated = bool(mesh)
             if mesh is None:
                 mesh = self.create_mesh(element, shape)
-                tool.Loader.link_mesh(shape, mesh)
-                self.meshes[mesh_name] = mesh
+                if mesh is not None:
+                    tool.Loader.link_mesh(shape, mesh)
+                    self.meshes[mesh_name] = mesh
         else:
             mesh = None
 
@@ -803,11 +813,10 @@ class IfcImporter:
             if element.is_a(ifcclass):
                 obj.display_type = "WIRE"
 
-        if shape:
+        if shape and mesh:
             # We use numpy here because Blender mathutils.Matrix is not accurate enough
-            mat = np.array(shape.transformation.matrix).reshape((4, 4), order="F")
+            mat = ifcopenshell.util.shape.get_shape_matrix(shape)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, mat))
-            assert mesh  # Type checker.
             if not materials_updated:
                 self.material_creator.create(element, obj, mesh, tool.Geometry.does_shape_has_openings(shape))
         elif mesh:  # When does this occur?
@@ -878,17 +887,19 @@ class IfcImporter:
 
     def load_file(self):
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)
-        if not bpy.context.scene.BIMProperties.ifc_file:
-            bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
-        self.file = IfcStore.get_file()
+        props = tool.Blender.get_bim_props()
+        if not props.ifc_file:
+            props.ifc_file = self.ifc_import_settings.input_file
+        self.file = tool.Ifc.get()
 
     def calculate_unit_scale(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         tool.Loader.set_unit_scale(self.unit_scale)
 
-    def set_units(self):
+    def set_units(self) -> None:
         if not (assignment := self.file.by_type("IfcProject")[0].UnitsInContext):
             return  # Geometry is optional in IFC
+        props = tool.Blender.get_bim_props()
         for unit in assignment.Units:
             if unit.is_a("IfcNamedUnit") and unit.UnitType == "LENGTHUNIT":
                 if unit.is_a("IfcSIUnit"):
@@ -908,26 +919,27 @@ class IfcImporter:
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "AREAUNIT":
                 name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
                 try:
-                    bpy.context.scene.BIMProperties.area_unit = "{}{}".format(
+                    props.area_unit = "{}{}".format(
                         unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
                     )
                 except:  # Probably an invalid unit.
-                    bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
+                    props.area_unit = "SQUARE_METRE"
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "VOLUMEUNIT":
                 name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
                 try:
-                    bpy.context.scene.BIMProperties.volume_unit = "{}{}".format(
+                    props.volume_unit = "{}{}".format(
                         unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
                     )
                 except:  # Probably an invalid unit.
-                    bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+                    props.volume_unit = "CUBIC_METRE"
 
     def create_project(self):
         project = self.file.by_type("IfcProject")[0]
         self.project = {"ifc": project}
         obj = tool.Ifc.get_object(project)
         if obj:
-            self.project["blender"] = obj.BIMObjectProperties.collection
+            props = tool.Blender.get_object_bim_props(obj)
+            self.project["blender"] = props.collection
             self.has_existing_project = True
             return
         self.project["blender"] = bpy.data.collections.new(
@@ -937,10 +949,16 @@ class IfcImporter:
         obj.hide_select = True
         self.project["blender"].objects.link(obj)
         self.project["blender"].BIMCollectionProperties.obj = obj
-        obj.BIMObjectProperties.collection = self.collections[project.GlobalId] = self.project["blender"]
+        props = tool.Blender.get_object_bim_props(obj)
+        props.collection = self.collections[project.GlobalId] = self.project["blender"]
 
     def create_styles(self) -> None:
-        for style in self.file.by_type("IfcSurfaceStyle"):
+        styles = self.file.by_type("IfcSurfaceStyle")
+        if len(styles) > self.ifc_import_settings.style_limit:  # Probably something strange happening
+            print("Warning! Excessive styles were found and merged where applicable.")
+            ifcpatch.execute({"file": self.file, "recipe": "MergeStyles", "arguments": []})
+            styles = self.file.by_type("IfcSurfaceStyle")
+        for style in styles:
             self.create_style(style)
 
     def create_style(self, style: ifcopenshell.entity_instance) -> None:
@@ -953,10 +971,11 @@ class IfcImporter:
         self.material_creator.styles[style.id()] = blender_material
 
         style_elements = tool.Style.get_style_elements(blender_material)
+        props = tool.Style.get_material_style_props(blender_material)
         if tool.Style.has_blender_external_style(style_elements):
-            blender_material.BIMStyleProperties.active_style_type = "External"
+            props.active_style_type = "External"
         else:
-            blender_material.BIMStyleProperties.active_style_type = "Shading"
+            props.active_style_type = "Shading"
 
     def place_objects_in_collections(self) -> None:
         for ifc_definition_id, obj in self.added_data.items():
@@ -964,10 +983,10 @@ class IfcImporter:
                 tool.Collector.assign(obj, should_clean_users_collection=False)
 
     def is_curve_annotation(self, element: ifcopenshell.entity_instance) -> bool:
-        object_type = element.ObjectType
+        object_type = ifcopenshell.util.element.get_predefined_type(element)
         return (
             object_type in tool.Drawing.ANNOTATION_TYPES_DATA
-            and tool.Drawing.ANNOTATION_TYPES_DATA[object_type][3] == "curve"
+            and tool.Drawing.ANNOTATION_TYPES_DATA[object_type].data_type == "curve"
         )
 
     def get_drawing_group(self, element):
@@ -1021,7 +1040,7 @@ class IfcImporter:
         element: ifcopenshell.entity_instance,
         shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
         cartesian_point_offset: Union[npt.NDArray[np.float64], Literal[False]] = None,
-    ) -> bpy.types.Mesh:
+    ) -> Union[bpy.types.Mesh, None]:
         try:
             if hasattr(shape, "geometry"):
                 # shape is ShapeElementType
@@ -1056,12 +1075,13 @@ class IfcImporter:
             else:
                 mesh["has_cartesian_point_offset"] = False
 
-            return tool.Loader.convert_geometry_to_mesh(
+            mesh = tool.Loader.convert_geometry_to_mesh(
                 geometry,
                 mesh,
                 verts=verts,
                 load_indexed_maps=self.ifc_import_settings.load_indexed_maps,
             )
+            return tool.Loader.slice_layerset_mesh(element, mesh)
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
             import traceback
@@ -1069,9 +1089,10 @@ class IfcImporter:
             print(traceback.format_exc())
 
     def set_default_context(self):
+        rprops = tool.Root.get_root_props()
         for subcontext in self.file.by_type("IfcGeometricRepresentationSubContext"):
             if subcontext.ContextIdentifier == "Body":
-                bpy.context.scene.BIMRootProperties.contexts = str(subcontext.id())
+                rprops.contexts = str(subcontext.id())
                 break
 
     def link_element(self, element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:
@@ -1117,6 +1138,7 @@ class IfcImportSettings:
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
         self.void_limit = 30
+        self.style_limit = 300
         # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
         # Users can configure this if they have to handle larger sites but beware of surveying precision
         self.distance_limit = 1000
@@ -1154,6 +1176,7 @@ class IfcImportSettings:
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
         settings.void_limit = props.void_limit
+        settings.style_limit = props.style_limit
         settings.distance_limit = props.distance_limit
         settings.false_origin_mode = props.false_origin_mode
         try:

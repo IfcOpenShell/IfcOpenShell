@@ -17,6 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.bim.handler
+import bonsai.tool as tool
 from bonsai.bim.module.system.data import SystemData
 import bonsai.bim.module.system.decorator as decorator
 from bonsai.bim.prop import StrProperty, Attribute
@@ -31,27 +33,50 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 
-def get_system_class(self, context):
+def get_system_class(self: "BIMSystemProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not SystemData.is_loaded:
         SystemData.load()
     return SystemData.data["system_class"]
 
 
+def update_system_name(self: "System", context: bpy.types.Context) -> None:
+    system = tool.Ifc.get().by_id(self.ifc_definition_id)
+    if system.Name == self.name:
+        return
+    system.Name = self.name
+    bonsai.bim.handler.refresh_ui_data()
+
+
 class System(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=update_system_name)
     ifc_class: StringProperty(name="IFC Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+    if TYPE_CHECKING:
+        ifc_class: str
+        ifc_definition_id: int
+
+
+def update_zone_name(self: "Zone", context: bpy.types.Context) -> None:
+    zone = tool.Ifc.get().by_id(self.ifc_definition_id)
+    if zone.Name == self.name:
+        return
+    zone.Name = self.name
+    bonsai.bim.handler.refresh_ui_data()
 
 
 class Zone(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
+    if TYPE_CHECKING:
+        ifc_definition_id: int
 
-def toggle_decorations(self, context):
+
+def toggle_decorations(self: "BIMSystemProperties", context: bpy.types.Context) -> None:
     toggle = self.should_draw_decorations
     if toggle:
         decorator.SystemDecorator.install(context)
@@ -82,6 +107,10 @@ class BIMSystemProperties(PropertyGroup):
         edited_system_id: int
         system_class: str
         should_draw_decorations: bool
+
+    @property
+    def active_system_ui_item(self) -> Union[System, None]:
+        return tool.Blender.get_active_uilist_element(self.systems, self.active_system_index)
 
 
 class BIMZoneProperties(PropertyGroup):

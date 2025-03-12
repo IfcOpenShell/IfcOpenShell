@@ -133,7 +133,8 @@ class PsetTemplate(bonsai.core.tool.PsetTemplate):
         for f in tool.Blender.get_data_dir_paths("pset", "*.ifc"):
             paths.append((f, "Global Pset Template"))
 
-        pset_dir = Path(tool.Ifc.resolve_uri(bpy.context.scene.BIMProperties.pset_dir))
+        props = tool.Blender.get_bim_props()
+        pset_dir = Path(tool.Ifc.resolve_uri(props.pset_dir))
         if pset_dir.is_dir():
             for path in Path(pset_dir).glob("*.ifc"):
                 paths.append((path, "Project Pset Template"))

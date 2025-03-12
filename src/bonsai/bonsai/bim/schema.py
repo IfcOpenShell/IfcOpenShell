@@ -19,6 +19,8 @@
 import ifcopenshell
 import ifcopenshell.util.pset
 import bonsai.tool as tool
+import bpy
+import bpy_restrict_state
 
 
 class IfcSchema:
@@ -47,10 +49,16 @@ class IfcSchema:
         self.psetqto.get_applicable.cache_clear()
         self.psetqto.get_applicable_names.cache_clear()
         self.psetqto.get_by_name.cache_clear()
+
+        # During register we cannot access the context either way.
+        if isinstance(bpy.context, bpy_restrict_state._RestrictContext):
+            return
         for path in tool.Blender.get_data_dir_paths("pset", "*.ifc"):
             self.psetqto.templates.append(ifcopenshell.open(path))
 
 
+# TODO: do we really need to load it on module import?
+# Loading it on IFC load should be enough.
 ifc = IfcSchema()
 
 

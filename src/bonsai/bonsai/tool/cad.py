@@ -28,7 +28,7 @@
 #  - An arc is reconstructed from 3 points instead of a full circle
 #  - You can now derive the center from an arc without generating geometry
 
-
+from __future__ import annotations
 import sys
 import bpy
 import math
@@ -36,12 +36,20 @@ import bmesh
 import mathutils.geometry
 from mathutils import Vector, Matrix, geometry
 import itertools
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.cad.prop import BIMCadProperties
 
 
 VTX_PRECISION = 1.0e-5
 
 
 class Cad:
+    @classmethod
+    def get_cad_props(cls) -> BIMCadProperties:
+        return bpy.context.scene.BIMCadProperties
+
     @classmethod
     def is_point_on_edge(cls, p, edge):
         """

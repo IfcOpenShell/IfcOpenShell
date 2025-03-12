@@ -58,7 +58,8 @@ class AddEmptyType(bpy.types.Operator, AddObjectHelper):
     def execute(self, context):
         obj = bpy.data.objects.new("TYPEX", None)
         context.scene.collection.objects.link(obj)
-        context.scene.BIMRootProperties.ifc_product = "IfcElementType"
+        rprops = tool.Root.get_root_props()
+        rprops.ifc_product = "IfcElementType"
         tool.Blender.select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
@@ -71,7 +72,7 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
     ifc_element_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMRootProperties
+        props = tool.Root.get_root_props()
         props.ifc_product = "IfcElementType"
         props.ifc_class = self.ifc_element_type
         if self.ifc_element_type == "IfcWallType":
@@ -154,9 +155,9 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.add_element()
 
 
-class AddOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
-    bl_idname = "bim.add_occurrence"
-    bl_label = "Add Occurrence"
+class DrawOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
+    bl_idname = "bim.draw_occurrence"
+    bl_label = "Draw Occurrence"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -193,7 +194,7 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
         context.scene.cursor.location = Vector((point.x, point.y, point.z))
         tool.Polyline.clear_polyline()
 
-        bpy.ops.bim.add_constr_type_instance("INVOKE_DEFAULT")
+        bpy.ops.bim.add_occurrence("INVOKE_DEFAULT")
 
         if snap_obj:
             snap_obj.select_set(False)
@@ -264,8 +265,8 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
         return {"RUNNING_MODAL"}
 
 
-class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_constr_type_instance"
+class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_occurrence"
     bl_label = "Add Type Occurrence"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add Type Instance"
@@ -363,7 +364,7 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
             )
             bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
-            rprops = context.scene.BIMRootProperties
+            rprops = tool.Root.get_root_props()
             ifc_context = None
             if get_enum_items(rprops, "contexts", context):
                 ifc_context = int(rprops.contexts or "0") or None
@@ -543,8 +544,8 @@ class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = tool.Model.get_model_props()
-        bpy.ops.bim.load_type_thumbnails(ifc_class=props.ifc_class, offset=9 * (self.page - 1), limit=9)
         props.type_page = self.page
+        bpy.ops.bim.load_type_thumbnails()
         return {"FINISHED"}
 
 
@@ -622,31 +623,20 @@ class LoadTypeThumbnails(bpy.types.Operator):
     bl_idname = "bim.load_type_thumbnails"
     bl_label = "Load Type Thumbnails"
     bl_options = {"REGISTER", "UNDO"}
-    ifc_class: bpy.props.StringProperty()
-    limit: bpy.props.IntProperty()
-    offset: bpy.props.IntProperty()
 
     def execute(self, context):
         if bpy.app.background:
             return {"FINISHED"}
 
-        props = tool.Model.get_model_props()
         # Only process at most one paginated class at a time.
         # Large projects have hundreds of types which can lead to unnecessary lag.
         if not AuthoringData.is_loaded:
             AuthoringData.load()
-        queue = AuthoringData.data["type_elements_filtered"]
-        if self.limit:
-            queue = queue[self.offset : self.offset + self.limit]
-        else:
-            offset = 9 * (props.type_page - 1)
-            if offset < 0:
-                offset = 0
-            queue = queue[offset : offset + 9]
+        queue = [tool.Ifc.get().by_id(t["id"]) for t in AuthoringData.data["paginated_relating_types"]]
 
-        # The active type may be in another page than the active one :
-        if relating_type_id_current := AuthoringData.data["relating_type_id_current"]:
-            active_element = tool.Ifc.get_entity_by_id(int(relating_type_id_current))
+        # The active type may be in another page than the active one:
+        if relating_type_id_current := AuthoringData.data["relating_type_data"].get("id"):
+            active_element = tool.Ifc.get_entity_by_id(relating_type_id_current)
             if active_element and active_element not in queue:
                 queue.append(active_element)
 
@@ -717,14 +707,15 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             obj.matrix_world = newmat
 
 
-def generate_box(usecase_path, ifc_file, settings):
+def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
     box_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Box", "MODEL_VIEW")
     if not box_context:
         return
     obj = settings["blender_object"]
     if 0 in list(obj.dimensions):
         return
-    product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+    product = tool.Ifc.get_entity(obj)
+    assert product
     old_box = ifcopenshell.util.representation.get_representation(product, "Model", "Box", "MODEL_VIEW")
     if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
         if old_box:
@@ -757,7 +748,7 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
                 elements.append(element)
 
     for element in elements:
-        obj = IfcStore.get_element(element.id())
+        obj = tool.Ifc.get_object_by_identifier(element.id())
         if not obj:
             continue
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")

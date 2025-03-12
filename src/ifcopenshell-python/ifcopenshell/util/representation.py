@@ -235,12 +235,12 @@ def guess_type(items: Sequence[ifcopenshell.entity_instance]) -> Union[str, None
         ]
     ):
         return "SurfaceModel"
-    elif all([True if i.is_a("IfcSolidModel") else False for i in items]):
-        return "SolidModel"
     elif all(
         [True if i.is_a() == "IfcExtrudedAreaSolid" or i.is_a() == "IfcRevolvedAreaSolid" else False for i in items]
     ):
         return "SweptSolid"
+    elif all([True if i.is_a("IfcSolidModel") else False for i in items]):
+        return "SolidModel"
     elif all(
         [
             (
@@ -461,3 +461,31 @@ def get_material_style(
                     for style in item.Styles:
                         if style.is_a(ifc_class):
                             return style
+
+
+def get_reference_line(wall: ifcopenshell.entity_instance, fallback_length: float = 1.0) -> list[npt.NDArray]:
+    """Fetch the reference axis that goes in the +X direction
+
+    A base line will then be offset from this reference line based on the
+    material usage. From that base line, the layer thicknesses will offset
+    again, and be extruded to form the body representation.
+
+    :param wall: ifcopenshell.entity_instance
+    :param fallback_length: If there is no reference axis, assume it starts at
+        the object placement (i.e. 0.0, 0.0) and extends for this fallback
+        length along the +X axis.
+    :return: A list of two 2D coordinates representing the start and end of the
+        axis. The axis always goes in the +X direction.
+    """
+    if axis := ifcopenshell.util.representation.get_representation(wall, "Plan", "Axis", "GRAPH_VIEW"):
+        for item in ifcopenshell.util.representation.resolve_representation(axis).Items:
+            if item.is_a("IfcPolyline"):
+                points = item.Points
+            elif item.is_a("IfcIndexedPolyCurve"):
+                points = item.Points.CoordList
+            else:
+                continue
+            if points[0][0] < points[1][0]:  # An axis always goes in the +X direction
+                return [np.array(points[0]), np.array(points[1])]
+            return [np.array(points[1]), np.array(points[0])]
+    return [np.array((0.0, 0.0)), np.array((fallback_length, 0.0))]

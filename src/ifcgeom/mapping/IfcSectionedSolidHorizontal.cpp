@@ -31,10 +31,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 	std::vector<cross_section> cross_sections;
 
 	auto dir = map(inst->Directrix());
-	auto pwf = taxonomy::dcast<taxonomy::piecewise_function>(dir);
-	if (!pwf) {
+	auto fn = taxonomy::dcast<taxonomy::function_item>(dir);
+	if (!fn) {
 		// Only implement on alignment curves
-        Logger::Warning("IfcSectionedSolidHorizontal is only implemented for piecewise function Directrix curves", inst);
+        Logger::Warning("IfcSectionedSolidHorizontal is only implemented for Directrix curves based on taxonomy::function_item", inst);
         return nullptr;
 	}
 
@@ -70,9 +70,6 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 
 		profile_offsets.push_back(po);
 	}
-#else
-	return nullptr;
-#endif
 	if (faces.size() != profile_offsets.size()) {
 		Logger::Warning("Expected CrossSections and CrossSectionPositions to be equal length, but got " + std::to_string(faces.size()) + " and " + std::to_string(profile_offsets.size()) + " respectively", inst);
 		return nullptr;
@@ -85,9 +82,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 	for (size_t i = 0; i < faces.size(); ++i) {
 		cross_sections.push_back({ longitudes[i], faces[i], profile_offsets[i] });
 	}
-	}
+#else
+    return nullptr;
+#endif
+   }
 
-	return make_loft(settings_, inst, pwf, cross_sections);
+	return make_loft(settings_, inst, fn, cross_sections);
 }
 
 #endif

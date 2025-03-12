@@ -36,8 +36,7 @@ class BIM_PT_patch(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        scene = context.scene
-        props = scene.BIMPatchProperties
+        props = tool.Patch.get_patch_props()
         row = layout.row()
         prop_with_search(row, props, "ifc_patch_recipes")
 

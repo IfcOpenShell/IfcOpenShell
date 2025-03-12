@@ -139,13 +139,13 @@ Scenario: Connect MEP elements
     And I set "scene.BIMModelProperties.ifc_class" to "IfcDuctSegmentType"
     And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
     And I set "scene.BIMModelProperties.extrusion_depth" to "5.0"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/Seg1"
 
     # actuator
     And I set "scene.BIMModelProperties.ifc_class" to "IfcActuatorType"
     And I set "scene.BIMModelProperties.relating_type_id" to "{actuator_type_id}"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And the object "IfcActuator/Actuator" is moved to "10,0,0"
 
     # connect actuator
@@ -169,12 +169,12 @@ Scenario: Connect MEP elements and regenerate
     And I set "scene.BIMModelProperties.ifc_class" to "IfcDuctSegmentType"
     And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
     And I set "scene.BIMModelProperties.extrusion_depth" to "5.0"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/Seg1"
 
     # segment2
     And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/Seg2"
     And the object "IfcDuctSegment/Seg2" is rotated by "0,0,90" deg
 
@@ -186,7 +186,7 @@ Scenario: Connect MEP elements and regenerate
     # actuator
     And I set "scene.BIMModelProperties.ifc_class" to "IfcActuatorType"
     And I set "scene.BIMModelProperties.relating_type_id" to "{actuator_type_id}"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And the object "IfcActuator/Actuator" is moved to "10,0,0"
 
     # connect actuator

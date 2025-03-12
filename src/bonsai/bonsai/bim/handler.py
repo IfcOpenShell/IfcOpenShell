@@ -24,17 +24,15 @@ import ifcopenshell.util.unit
 import ifcopenshell.api.owner.settings
 import bonsai.bim
 import bonsai.tool as tool
-import bonsai.core.owner as core_owner
 from bpy.app.handlers import persistent
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.owner.prop import get_user_person, get_user_organisation
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
 from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
 from bonsai.bim.module.nest.decorator import NestDecorator
 from mathutils import Vector
-from math import cos, degrees
+from math import cos
 from typing import Union, Callable
 
 
@@ -55,23 +53,24 @@ def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -
         return
 
     if isinstance(obj, bpy.types.Material):
-        props = obj.BIMStyleProperties
+        props = tool.Style.get_material_style_props(obj)
         if ifc_definition_id := props.ifc_definition_id:
             if props.is_renaming:
-                props.is_renmaing = False
+                props.is_renaming = False
                 return
-            IfcStore.get_file().by_id(ifc_definition_id).Name = obj.name
+            tool.Ifc.get().by_id(ifc_definition_id).Name = obj.name
             refresh_ui_data()
         return
 
-    if not obj.BIMObjectProperties.ifc_definition_id:
+    props = tool.Blender.get_object_bim_props(obj)
+    if not props.ifc_definition_id:
         return
 
-    if obj.BIMObjectProperties.is_renaming:
-        obj.BIMObjectProperties.is_renaming = False
+    if props.is_renaming:
+        props.is_renaming = False
         return
 
-    element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+    element = tool.Ifc.get().by_id(props.ifc_definition_id)
     if "/" in obj.name:
         object_name = obj.name
         element_name = obj.name.split("/", 1)[1]
@@ -87,8 +86,8 @@ def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -
     if not element.is_a("IfcRoot"):
         return
     element.Name = element_name
-    if obj.BIMObjectProperties.collection:
-        obj.BIMObjectProperties.collection.name = object_name
+    if props.collection:
+        props.collection.name = object_name
     refresh_ui_data()
 
 
@@ -221,35 +220,38 @@ def refresh_ui_data():
     if isinstance(tool.Ifc.get(), ifcopenshell.sqlite):
         tool.Ifc.get().clear_cache()
 
-    bpy.context.scene.DocProperties.should_draw_decorations = bpy.context.scene.DocProperties.should_draw_decorations
+    props = tool.Drawing.get_document_props()
+    props.should_draw_decorations = props.should_draw_decorations
     if bpy.context.scene.WebProperties.is_connected:
         tool.Web.send_webui_data()
 
 
 @persistent
-def loadIfcStore(scene):
+def loadIfcStore(scene: bpy.types.Scene) -> None:
     IfcStore.purge()
     refresh_ui_data()
-    if not IfcStore.get_file():
+    if not tool.Ifc.get():
         return
-    IfcStore.get_schema()
+    tool.Ifc.schema()
     IfcStore.relink_all_objects()
 
 
 @persistent
-def undo_post(scene):
-    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
-        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
-        IfcStore.undo(until_key=bpy.context.scene.BIMProperties.last_transaction)
+def undo_post(scene: bpy.types.Scene) -> None:
+    props = tool.Blender.get_bim_props()
+    if IfcStore.last_transaction != props.last_transaction:
+        IfcStore.last_transaction = props.last_transaction
+        IfcStore.undo(until_key=props.last_transaction)
         refresh_ui_data()
     tool.Ifc.rebuild_element_maps()
 
 
 @persistent
-def redo_post(scene):
-    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
-        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
-        IfcStore.redo(until_key=bpy.context.scene.BIMProperties.last_transaction)
+def redo_post(scene: bpy.types.Scene) -> None:
+    props = tool.Blender.get_bim_props()
+    if IfcStore.last_transaction != props.last_transaction:
+        IfcStore.last_transaction = props.last_transaction
+        IfcStore.redo(until_key=props.last_transaction)
         refresh_ui_data()
     tool.Ifc.rebuild_element_maps()
 
@@ -282,10 +284,10 @@ def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None
         return pao
 
 
-def viewport_shading_changed_callback(area):
+def viewport_shading_changed_callback(area: bpy.types.Area) -> None:
     shading = area.spaces.active.shading.type
     if shading == "RENDERED":
-        bpy.context.scene.BIMStylesProperties.active_style_type = "External"
+        tool.Style.get_style_props().active_style_type = "Internal"
 
 
 def subscribe_to_viewport_shading_changes():
@@ -340,10 +342,11 @@ def load_post(scene):
     tool.Blender.setup_tabs()
 
     if tool.Ifc.get() and bpy.data.is_saved:
-        bpy.context.scene.BIMProperties.has_blend_warning = True
+        props = tool.Blender.get_bim_props()
+        props.has_blend_warning = True
 
     # Bonsai overlays
-    georeference_props = bpy.context.scene.BIMGeoreferenceProperties
+    georeference_props = tool.Georeference.get_georeference_props()
     aggregate_props = bpy.context.scene.BIMAggregateProperties
     nest_props = bpy.context.scene.BIMNestProperties
     model_props = tool.Model.get_model_props()

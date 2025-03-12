@@ -20,8 +20,6 @@ import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.type
 from bonsai.bim.module.type.data import TypeData
-from bonsai.bim.prop import StrProperty, Attribute
-from bonsai.bim.ifc import IfcStore
 import bonsai.tool as tool
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -87,7 +85,7 @@ class BIMTypeProperties(PropertyGroup):
     relating_type: EnumProperty(items=get_relating_type, name="Relating Type")
     relating_type_object: PointerProperty(
         type=bpy.types.Object,
-        name="Copy Class",
+        name="Copy Type",
         update=update_relating_type_from_object,
         poll=is_object_class_applicable,
     )

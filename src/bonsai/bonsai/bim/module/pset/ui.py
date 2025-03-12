@@ -20,7 +20,6 @@ from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 from bpy.types import Panel
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import prop_with_search, get_display_value
 from bonsai.bim.module.pset.data import (
     ObjectPsetsData,
@@ -242,12 +241,12 @@ class BIM_PT_object_psets(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
         return True
 
@@ -320,12 +319,12 @@ class BIM_PT_object_qtos(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
         return True
 
@@ -460,7 +459,8 @@ class BIM_PT_material_set_item_psets(Panel):
 
         obj = context.active_object
         assert obj
-        if not obj.BIMObjectMaterialProperties.active_material_set_item_id:
+        omprops = tool.Material.get_object_material_props(obj)
+        if not omprops.active_material_set_item_id:
             self.layout.label(text="No Material Set Item Edited.")
             return
 

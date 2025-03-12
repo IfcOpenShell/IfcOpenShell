@@ -144,10 +144,15 @@ ifcopenshell::geometry::CgalShape::CgalShape(const cgal_shape_t& shape, bool con
 	}
 
 	if (shape.size_of_facets() != 1) {
-		// this is for handling the specical case of storing a single point in a polyhedron,
+		// the size_of_facets() == 1 check is for handling the specical case of
+		// storing a single point in a polyhedron as a degenerate triangle
+		// 
 		// @todo come up with a proper variant for storing lower dimensional entities
-		CGAL::Polygon_mesh_processing::triangulate_faces(*shape_);
-		CGAL::Polygon_mesh_processing::remove_degenerate_faces(*shape_);
+		
+		// @todo we don't have access to settings here so we don't know whether we should triangulate
+		// remove_degenerate_faces() is also called in the triangulate() call below though...
+		// CGAL::Polygon_mesh_processing::triangulate_faces(*shape_);
+		// CGAL::Polygon_mesh_processing::remove_degenerate_faces(*shape_);
 	}
 }
 
@@ -183,6 +188,15 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	// ... also becuase of transforming the vertex positions, right?
 	cgal_shape_t s = *this;
 
+	const bool setting_use_original_edges = settings.get<ifcopenshell::geometry::settings::CgalEmitOriginalEdges>().get();
+	
+	std::set<std::set<Kernel_::Point_3>> original_edges;
+	if (setting_use_original_edges) {
+		for (auto it = s.edges_begin(); it != s.edges_end(); ++it) {
+			original_edges.insert({ it->vertex()->point(), it->prev()->vertex()->point() });
+		}
+	}
+
 	if (!place.is_identity()) {
 		const auto& m = place.ccomponents();
 
@@ -199,13 +213,10 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 	}
 
 	if (!std::all_of(s.facets_begin(), s.facets_end(), [](auto f) { return f.is_triangle(); })) {
-
 		if (!s.is_valid()) {
 			Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (before triangulation)");
 			return;
 		}
-
-		CGAL::Polygon_mesh_processing::remove_degenerate_faces(s);
 
 		bool success = false;
 		try {
@@ -215,27 +226,29 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 			return;
 		}
 
+		CGAL::Polygon_mesh_processing::remove_degenerate_faces(s);
+
 		if (!success) {
 			Logger::Message(Logger::LOG_ERROR, "Triangulation failed");
 			return;
 		}
-		//    std::cout << "Triangulated model: " << s.size_of_facets() << " facets and " << s.size_of_vertices() << " vertices" << std::endl;
 
 		if (!s.is_valid()) {
 			Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (after triangulation)");
 			// return;
 		}
-
 	}
 
 	// Facet -> planar component map for determining which
 	// edges are to be registered.
 	std::vector<std::set<Facet_const_handle>> components;
-	partition_coplanar_components(s, components);
 	std::map<Facet_const_handle, typename decltype(components)::const_iterator> facet_to_component;
-	for (auto it = components.begin(); it != components.end(); ++it) {
-		for (auto& f : *it) {
-			facet_to_component[f] = it;
+	if (!setting_use_original_edges) {
+		partition_coplanar_components(s, components);
+		for (auto it = components.begin(); it != components.end(); ++it) {
+			for (auto& f : *it) {
+				facet_to_component[f] = it;
+			}
 		}
 	}
 
@@ -305,8 +318,10 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 			}
 
 			vertexidx[i] = (int)vidx;
-			is_face_boundary[i] = facet_to_component[face] != facet_to_component[current_halfedge->opposite()->face()];
-
+			is_face_boundary[i] = setting_use_original_edges
+				? original_edges.find({ current_halfedge->vertex()->point(), current_halfedge->prev()->vertex()->point() }) != original_edges.end()
+				: facet_to_component[face] != facet_to_component[current_halfedge->opposite()->face()];
+				
 			++i;
 			++num_vertices;
 			++current_halfedge;

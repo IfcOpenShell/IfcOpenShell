@@ -75,6 +75,8 @@ class BIM_PT_profiles(Panel):
         if not self.props.is_editing:
             return
 
+        does_active_profile_exist: bool = ProfileData.data["does_active_profile_exist"]
+
         row = self.layout.row(align=True)
         if self.props.profile_classes == "IfcArbitraryClosedProfileDef":
             split = row.split(factor=0.5, align=True)
@@ -86,7 +88,14 @@ class BIM_PT_profiles(Panel):
             row.prop(self.props, "profile_classes", text="")
         row.operator("bim.add_profile_def", text="", icon="ADD")
 
-        if active_profile:
+        if active_profile and not does_active_profile_exist:
+            box = self.layout.box()
+            box.label(icon="ERROR", text=f"Active profile is missing from IFC project.")
+            row = box.row(align=True)
+            row.label(text="Reload Profiles UI.")
+            row.operator("bim.load_profiles", text="", icon="FILE_REFRESH")
+
+        elif active_profile and does_active_profile_exist:
             row = self.layout.row(align=True)
             row.alignment = "RIGHT"
 
@@ -122,7 +131,7 @@ class BIM_PT_profiles(Panel):
         row = self.layout.row()
         row.prop(self.props, "is_filtering_material_profiles", text="Filter Material Profiles")
 
-        if active_profile:
+        if active_profile and does_active_profile_exist:
             users_of_profile = ProfileData.data["active_profile_users"]
             self.layout.label(icon="INFO", text=f"Profile has {users_of_profile} inverse relationship(s) in project")
 

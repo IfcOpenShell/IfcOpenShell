@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import json
 import numpy as np
@@ -27,24 +28,34 @@ import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
-from typing import Any, Union, Literal
+from typing import Any, Union, Literal, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.georeference.prop import BIMGeoreferenceProperties
 
 
 class Georeference(bonsai.core.tool.Georeference):
     COORDINATE_TYPE = Literal["blender", "local", "map"]
 
     @classmethod
+    def get_georeference_props(cls) -> BIMGeoreferenceProperties:
+        return bpy.context.scene.BIMGeoreferenceProperties
+
+    @classmethod
     def add_georeferencing(cls) -> None:
+        props = cls.get_georeference_props()
         tool.Ifc.run(
             "georeference.add_georeferencing",
-            ifc_class=bpy.context.scene.BIMGeoreferenceProperties.coordinate_operation_class,
+            ifc_class=props.coordinate_operation_class,
         )
 
     @classmethod
     def import_projected_crs(cls) -> None:
+        props = tool.Georeference.get_georeference_props()
+
         def callback(name, prop, data):
             if name == "MapUnit":
-                new = bpy.context.scene.BIMGeoreferenceProperties.projected_crs.add()
+                new = props.projected_crs.add()
                 new.name = name
                 new.data_type = "enum"
                 new.is_null = data[name] is None
@@ -61,7 +72,6 @@ class Georeference(bonsai.core.tool.Georeference):
                 new.update = "tool.Georeference.update_map_unit"
                 return True
 
-        props = bpy.context.scene.BIMGeoreferenceProperties
         props.projected_crs.clear()
 
         if tool.Ifc.get_schema() == "IFC2X3":
@@ -84,7 +94,8 @@ class Georeference(bonsai.core.tool.Georeference):
                 result = 1.0
         else:
             result = 1.0
-        for attribute in bpy.context.scene.BIMGeoreferenceProperties.coordinate_operation:
+        props = cls.get_georeference_props()
+        for attribute in props.coordinate_operation:
             if attribute.name == "Scale":
                 attribute.set_value(str(result))
 
@@ -92,7 +103,7 @@ class Georeference(bonsai.core.tool.Georeference):
     def import_coordinate_operation(cls) -> None:
         def callback(name, prop, data):
             if name in ("FirstCoordinate", "SecondCoordinate"):
-                props = bpy.context.scene.BIMGeoreferenceProperties
+                props = cls.get_georeference_props()
                 if name == "FirstCoordinate":
                     new = props.coordinate_operation.add()
                     new.name = "Measure Type"
@@ -110,7 +121,7 @@ class Georeference(bonsai.core.tool.Georeference):
                 prop.string_value = "" if prop.is_null else str(data[name].wrappedValue)
                 return True
             elif name == "XAxisAbscissa":
-                props = bpy.context.scene.BIMGeoreferenceProperties
+                props = cls.get_georeference_props()
                 props.is_changing_angle = True
                 if data["XAxisAbscissa"] is None or data["XAxisOrdinate"] is None:
                     props.x_axis_is_null = True
@@ -132,7 +143,7 @@ class Georeference(bonsai.core.tool.Georeference):
                 prop.string_value = "" if prop.is_null else str(data[name])
                 return True
 
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = cls.get_georeference_props()
         props.coordinate_operation.clear()
 
         if tool.Ifc.get_schema() == "IFC2X3":
@@ -151,7 +162,7 @@ class Georeference(bonsai.core.tool.Georeference):
         if tool.Ifc.get_schema() == "IFC2X3":
             return
 
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = cls.get_georeference_props()
         props.is_changing_angle = True
         props.true_north_abscissa = "0"
         props.true_north_ordinate = "1"
@@ -175,7 +186,7 @@ class Georeference(bonsai.core.tool.Georeference):
                 attributes[prop.name] = tool.Ifc.get().by_id(int(prop.enum_value))
                 return True
 
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = cls.get_georeference_props()
         return bonsai.bim.helper.export_attributes(props.projected_crs, callback=callback)
 
     @classmethod
@@ -191,7 +202,7 @@ class Georeference(bonsai.core.tool.Georeference):
                 attributes[prop.name] = tool.Ifc.get().create_entity(measure_type, float(prop.string_value))
                 return True
             elif prop.name == "XAxisAbscissa":
-                props = bpy.context.scene.BIMGeoreferenceProperties
+                props = cls.get_georeference_props()
                 if props.x_axis_is_null:
                     attributes["XAxisAbscissa"] = None
                     attributes["XAxisOrdinate"] = None
@@ -206,12 +217,12 @@ class Georeference(bonsai.core.tool.Georeference):
                 attributes[prop.name] = float(prop.string_value)
                 return True
 
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = cls.get_georeference_props()
         return bonsai.bim.helper.export_attributes(props.coordinate_operation, callback=callback)
 
     @classmethod
     def get_true_north_attributes(cls) -> Union[list[float], None]:
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = cls.get_georeference_props()
         try:
             return [float(props.true_north_abscissa), float(props.true_north_ordinate)]
         except ValueError:
@@ -219,36 +230,42 @@ class Georeference(bonsai.core.tool.Georeference):
 
     @classmethod
     def enable_editing(cls) -> None:
-        bpy.context.scene.BIMGeoreferenceProperties.is_editing = True
+        props = cls.get_georeference_props()
+        props.is_editing = True
 
     @classmethod
     def disable_editing(cls) -> None:
-        bpy.context.scene.BIMGeoreferenceProperties.is_editing = False
+        props = cls.get_georeference_props()
+        props.is_editing = False
 
     @classmethod
     def enable_editing_wcs(cls) -> None:
-        bpy.context.scene.BIMGeoreferenceProperties.is_editing_wcs = True
+        props = cls.get_georeference_props()
+        props.is_editing_wcs = True
 
     @classmethod
     def disable_editing_wcs(cls) -> None:
-        bpy.context.scene.BIMGeoreferenceProperties.is_editing_wcs = False
+        props = cls.get_georeference_props()
+        props.is_editing_wcs = False
 
     @classmethod
     def enable_editing_true_north(cls) -> None:
-        bpy.context.scene.BIMGeoreferenceProperties.is_editing_true_north = True
+        props = cls.get_georeference_props()
+        props.is_editing_true_north = True
 
     @classmethod
     def disable_editing_true_north(cls) -> None:
-        bpy.context.scene.BIMGeoreferenceProperties.is_editing_true_north = False
+        props = cls.get_georeference_props()
+        props.is_editing_true_north = False
 
     @classmethod
     def set_coordinates(cls, io: COORDINATE_TYPE, coordinates: list[float]) -> None:
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = cls.get_georeference_props()
         setattr(props, f"{io}_coordinates", ",".join([str(o) for o in coordinates]))
 
     @classmethod
     def get_coordinates(cls, io: COORDINATE_TYPE) -> list[float]:
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = cls.get_georeference_props()
         return [float(co) for co in getattr(props, f"{io}_coordinates").split(",")]
 
     @classmethod
@@ -260,7 +277,7 @@ class Georeference(bonsai.core.tool.Georeference):
     def xyz2enh(
         cls, coordinates: tuple[float, float, float], should_return_in_map_units: bool = True
     ) -> tuple[float, float, float]:
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = cls.get_georeference_props()
         if props.has_blender_offset:
             coordinates = ifcopenshell.util.geolocation.xyz2enh(
                 coordinates[0],
@@ -279,7 +296,7 @@ class Georeference(bonsai.core.tool.Georeference):
     @classmethod
     def enh2xyz(cls, coordinates: tuple[float, float, float]) -> tuple[float, float, float]:
         coordinates = ifcopenshell.util.geolocation.auto_enh2xyz(tool.Ifc.get(), *coordinates)
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = cls.get_georeference_props()
         if props.has_blender_offset:
             coordinates = ifcopenshell.util.geolocation.enh2xyz(
                 coordinates[0],
@@ -329,7 +346,7 @@ class Georeference(bonsai.core.tool.Georeference):
 
     @classmethod
     def import_wcs(cls) -> None:
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = cls.get_georeference_props()
         wcs = None
         for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             wcs = context.WorldCoordinateSystem
@@ -346,7 +363,7 @@ class Georeference(bonsai.core.tool.Georeference):
 
     @classmethod
     def export_wcs(cls) -> dict[str, float]:
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = cls.get_georeference_props()
         return {
             "x": float(props.wcs_x),
             "y": float(props.wcs_y),
@@ -361,7 +378,7 @@ class Georeference(bonsai.core.tool.Georeference):
     @classmethod
     def set_model_origin(cls) -> None:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        gprops = bpy.context.scene.BIMGeoreferenceProperties
+        gprops = tool.Georeference.get_georeference_props()
         e, n, h = cls.xyz2enh((0, 0, 0), should_return_in_map_units=False)
         gprops.model_origin = f"{e},{n},{h}"
         gprops.model_origin_si = f"{e * unit_scale},{n * unit_scale},{h * unit_scale}"
@@ -375,4 +392,4 @@ class Georeference(bonsai.core.tool.Georeference):
 
     @classmethod
     def has_blender_offset(cls) -> bool:
-        return bpy.context.scene.BIMGeoreferenceProperties.has_blender_offset
+        return tool.Georeference.get_georeference_props().has_blender_offset

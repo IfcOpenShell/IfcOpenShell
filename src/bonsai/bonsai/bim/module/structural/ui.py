@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 import bonsai.bim.helper
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import draw_attributes, prop_with_search
 from bonsai.bim.module.structural.data import (
     StructuralBoundaryConditionsData,
@@ -85,14 +85,14 @@ class BIM_PT_structural_boundary_conditions(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not (tool.Ifc.get_object_by_identifier(ifc_id)):
             return False
-        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
+        if not tool.Ifc.get().by_id(ifc_id).is_a("IfcStructuralConnection"):
             return False
         return True
 
@@ -120,14 +120,14 @@ class BIM_PT_connected_structural_members(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not (tool.Ifc.get_object_by_identifier(ifc_id)):
             return False
-        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
+        if not tool.Ifc.get().by_id(ifc_id).is_a("IfcStructuralConnection"):
             return False
         return True
 
@@ -173,14 +173,14 @@ class BIM_PT_structural_member(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
-        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralMember"):
+        if not tool.Ifc.get().by_id(ifc_id).is_a("IfcStructuralMember"):
             return False
         return True
 
@@ -216,14 +216,14 @@ class BIM_PT_structural_connection(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
-        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
+        if not tool.Ifc.get().by_id(ifc_id).is_a("IfcStructuralConnection"):
             return False
         return True
 
@@ -274,7 +274,7 @@ class BIM_PT_structural_analysis_models(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
@@ -315,7 +315,6 @@ class BIM_UL_structural_analysis_models(UIList):
             row.label(text=item.name)
 
             if context.active_object:
-                oprops = context.active_object.BIMObjectProperties
                 if item.ifc_definition_id in StructuralAnalysisModelsData.data["active_model_ids"]:
                     op = row.operator(
                         "bim.unassign_structural_analysis_model", text="", icon="KEYFRAME_HLT", emboss=False
@@ -348,7 +347,7 @@ class BIM_PT_structural_load_cases(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
@@ -443,7 +442,7 @@ class BIM_PT_show_structural_activities(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
@@ -474,7 +473,7 @@ class BIM_PT_structural_loads(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
@@ -543,7 +542,7 @@ class BIM_PT_boundary_conditions(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):

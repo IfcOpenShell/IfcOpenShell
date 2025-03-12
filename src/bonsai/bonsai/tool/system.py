@@ -30,12 +30,11 @@ import re
 from math import pi, cos, sin
 from mathutils import Matrix, Vector
 from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
-from bonsai.bim.module.drawing.decoration import profile_consequential
 from enum import Enum
 from typing import TYPE_CHECKING, Optional, Any, Union
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties
+    from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties, BIMZoneProperties
 
 
 class System(bonsai.core.tool.System):
@@ -165,7 +164,7 @@ class System(bonsai.core.tool.System):
                 continue
             new = props.systems.add()
             new.ifc_definition_id = system.id()
-            new.name = system.Name or "Unnamed"
+            new["name"] = system.Name or "Unnamed"
             new.ifc_class = system.is_a()
 
     @classmethod
@@ -189,7 +188,7 @@ class System(bonsai.core.tool.System):
 
         container = ifcopenshell.util.element.get_container(element)
         if container:
-            collection = tool.Ifc.get_object(container).BIMObjectProperties.collection
+            collection = tool.Blender.get_object_bim_props(tool.Ifc.get_object(container)).collection
             ifc_importer.collections[container.GlobalId] = collection
         ifc_importer.place_objects_in_collections()
 
@@ -427,3 +426,14 @@ class System(bonsai.core.tool.System):
         if not element.AssignedToFlowElement:
             return
         return element.AssignedToFlowElement[0].RelatingFlowElement
+
+    @classmethod
+    def draw_system_ui(cls, layout: bpy.types.UILayout, system_id: int, system_name: str, system_class: str) -> None:
+        from bonsai.bim.module.system.ui import SYSTEM_ICONS
+
+        row = layout.row(align=True)
+        row.label(text=system_name, icon=SYSTEM_ICONS[system_class])
+        op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
+        op.system = system_id
+        op = row.operator("bim.unassign_system", text="", icon="X")
+        op.system = system_id

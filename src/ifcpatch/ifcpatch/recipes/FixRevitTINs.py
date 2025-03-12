@@ -84,7 +84,8 @@ class Patcher:
         import bonsai.tool as tool
         from math import degrees
 
-        bpy.context.scene.BIMProjectProperties.should_use_native_meshes = True
+        props = tool.Project.get_project_props()
+        props.should_use_native_meshes = True
         bpy.ops.bim.load_project(filepath=self.filepath)
 
         old_history_size = tool.Ifc.get().history_size
@@ -95,7 +96,8 @@ class Patcher:
         angle_threshold = 0.3
 
         for obj in bpy.data.objects:
-            if not obj.BIMObjectProperties.ifc_definition_id or not obj.data:
+            ifc_id = tool.Blender.get_ifc_definition_id(obj)
+            if not ifc_id or not obj.data:
                 continue
             if not obj.data.polygons:
                 continue

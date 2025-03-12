@@ -22,6 +22,7 @@ import bmesh
 import mathutils.geometry
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
@@ -47,6 +48,7 @@ class DumbProfileGenerator:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     def generate(self, insertion_type="CURSOR"):
+        self.insertion_type = insertion_type
         self.file = tool.Ifc.get()
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         material = ifcopenshell.util.element.get_material(self.relating_type)
@@ -69,9 +71,9 @@ class DumbProfileGenerator:
         self.rotation = 0
         self.location = Vector((0, 0, 0))
         self.cardinal_point = int(props.cardinal_point)
-        if insertion_type == "POLYLINE":
+        if self.insertion_type == "POLYLINE":
             return self.derive_from_polyline()
-        elif insertion_type == "CURSOR":
+        elif self.insertion_type == "CURSOR":
             return self.derive_from_cursor()
 
     def derive_from_polyline(self) -> tuple[list[Union[dict[str, Any], None]], bool]:
@@ -106,13 +108,16 @@ class DumbProfileGenerator:
 
         matrix_world = Matrix()
         if self.relating_type.is_a() not in ("IfcColumnType", "IfcPileType"):
-            matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
-            matrix_world = Matrix.Rotation(self.rotation, 4, "Z") @ matrix_world
+            if self.insertion_type not in {"POLYLINE"}:
+                matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
+                matrix_world = Matrix.Rotation(self.rotation, 4, "Z") @ matrix_world
+            else:
+                rotation_matrix = self.direction.to_track_quat("Z", "Y")
+                matrix_world = rotation_matrix.to_matrix().to_4x4() @ matrix_world
 
         matrix_world.translation = self.location
-        if self.container_obj:
+        if self.insertion_type not in {"POLYLINE"} and self.container_obj:
             matrix_world.translation.z = self.container_obj.location.z
-
         element = bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
@@ -170,19 +175,19 @@ class DumbProfileGenerator:
         return obj
 
     def create_profile_from_2_points(self, coords, should_round=False) -> Union[dict[str, Any], None]:
-        direction = coords[1] - coords[0]
-        length = direction.length
+        self.direction = coords[1] - coords[0]
+        length = self.direction.length
         if round(length, 4) < 0.1:
             return
         data = {"coords": coords}
 
         self.depth = length
-        self.rotation = atan2(direction[1], direction[0])
+        self.rotation = atan2(self.direction[1], self.direction[0])
         if should_round:
             # Round to nearest 50mm (yes, metric for now)
             self.length = 0.05 * round(length / 0.05)
             # Round to nearest 5 degrees
-            nearest_degree = (math.pi / 180) * 5
+            nearest_degree = (pi / 180) * 5
             self.rotation = nearest_degree * round(self.rotation / nearest_degree)
         self.location = coords[0]
         data["obj"] = self.create_profile()
@@ -265,7 +270,7 @@ class DumbProfileRegenerator:
 
     def _regenerate_from_type(self, related_object: ifcopenshell.entity_instance) -> None:
         obj = tool.Ifc.get_object(related_object)
-        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+        if not obj or not tool.Geometry.get_active_representation(obj):
             return
         DumbProfileRecalculator().recalculate([obj])
 
@@ -501,7 +506,9 @@ class DumbProfileJoiner:
                     "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_axis
                 )
 
-        def get_placement_axes(body_representation):
+        def get_placement_axes(
+            body_representation: Union[ifcopenshell.entity_instance, None],
+        ) -> Union[tuple[tuple[float, float, float], tuple[float, float, float]], tuple[None, None]]:
             if not body_representation:
                 return None, None
             extrusion = tool.Model.get_extrusion(body_representation)
@@ -513,8 +520,7 @@ class DumbProfileJoiner:
             return ((0.0, 0.0, 1.0), (1.0, 0.0, 0.0))
 
         old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        new_body = ifcopenshell.api.run(
-            "geometry.add_profile_representation",
+        new_body = ifcopenshell.api.geometry.add_profile_representation(
             tool.Ifc.get(),
             context=self.body_context,
             profile=self.profile,
@@ -527,8 +533,9 @@ class DumbProfileJoiner:
         if old_body:
             for inverse in tool.Ifc.get().get_inverse(old_body):
                 ifcopenshell.util.element.replace_attribute(inverse, old_body, new_body)
-            obj.data.BIMMeshProperties.ifc_definition_id = int(new_body.id())
-            obj.data.name = f"{self.body_context.id()}/{new_body.id()}"
+            assert isinstance(mesh := obj.data, bpy.types.Mesh)
+            tool.Ifc.link(new_body, mesh)
+            mesh.name = tool.Loader.get_mesh_name(new_body)
             bonsai.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_body)
         else:
             ifcopenshell.api.run(
@@ -904,7 +911,7 @@ class ChangeProfileDepth(bpy.types.Operator, tool.Ifc.Operator):
 class ChangeCardinalPoint(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_cardinal_point"
     bl_label = "Update"
-    bl_description = "Update Cardinal Point"
+    bl_description = "Update Cardinal Point for all selected objects."
     bl_options = {"REGISTER", "UNDO"}
     cardinal_point: bpy.props.IntProperty()
 
@@ -919,6 +926,8 @@ class ChangeCardinalPoint(bpy.types.Operator, tool.Ifc.Operator):
             if not element:
                 continue
             material = ifcopenshell.util.element.get_material(element, should_skip_usage=False)
+            if not material:
+                continue
             if material.is_a("IfcMaterialProfileSetUsage"):
                 material.CardinalPoint = self.cardinal_point
                 objs.append(obj)
@@ -1010,7 +1019,7 @@ class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
                 position = Matrix()
 
             direction = Vector(extrusion.ExtrudedDirection.DirectionRatios).normalized()
-            tool.Model.import_axis([Vector((0, 0, 0)), direction * extrusion.Depth], obj=obj, position=position)
+            tool.Model.import_axis((Vector((0, 0, 0)), direction * extrusion.Depth), obj=obj, position=position)
 
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_extrusion_axis(context))
@@ -1119,6 +1128,8 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
 
     def __init__(self):
         super().__init__()
+        self.input_ui = tool.Polyline.create_input_ui(init_z=True)
+        self.input_options = ["D", "A", "X", "Y", "Z"]
         self.relating_type = None
         props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
@@ -1163,7 +1174,9 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
 
         self.handle_mouse_move(context, event, should_round=True)
 
-        self.choose_axis(event)
+        self.choose_axis(event, z=True)
+
+        self.choose_plane(event)
 
         self.handle_snap_selection(context, event)
 
@@ -1199,6 +1212,6 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
     def _invoke(self, context, event):
         super().invoke(context, event)
         ProductDecorator.install(context)
-        self.tool_state.use_default_container = True
-        self.tool_state.plane_method = "XY"
+        self.tool_state.use_default_container = False
+        self.tool_state.plane_method = None
         return {"RUNNING_MODAL"}

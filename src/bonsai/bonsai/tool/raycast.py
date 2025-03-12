@@ -58,6 +58,8 @@ class Raycast(bonsai.core.tool.Raycast):
         for i, axis in enumerate(zip(*transposed_bbox)):
             min_point = min(axis)
             max_point = max(axis)
+            if min_point == max_point:
+                min_point = 0
             if min_point < borders[i] and max_point > 0:
                 bbox_2d.extend([min_point, max_point])
             else:
@@ -140,15 +142,34 @@ class Raycast(bonsai.core.tool.Raycast):
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
         points = []
 
-        # Makes the snapping point more or less sticky then others
+        # Makes the snapping point more or less sticky than others
         # It changes the distance and affects how the snapping point are sorted
-        reference = 0.2
-        stick_factor = 0.02
+        # We multiply by the increment snap which is based on the viewport zoom
+        snap_threshold = 10 * tool.Snap.get_increment_snap_value(bpy.context)
+        if face:
+            snap_threshold = tool.Snap.get_increment_snap_value(bpy.context)
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
         except:
             loc = Vector((0, 0, 0))
+
+        # For empty object we just get the object location and return
+
+        if obj and obj.type == "EMPTY":
+            v = obj.location
+            intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
+            intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
+            distance = (v - intersection).length
+            if distance < snap_threshold:
+                snap_point = {
+                    "object": obj,
+                    "type": "Vertex",
+                    "point": v.copy(),
+                    "distance": distance,
+                }
+                points.append(snap_point)
+            return points
 
         if not custom_bmesh:
             bm = bmesh.new()
@@ -167,12 +188,12 @@ class Raycast(bonsai.core.tool.Raycast):
                 v = obj.matrix_world.copy() @ v
             intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
             distance = (v - intersection).length
-            if distance < 0.2:
+            if distance < snap_threshold:
                 snap_point = {
                     "object": obj,
                     "type": "Vertex",
                     "point": v.copy(),
-                    "distance": distance - stick_factor,
+                    "distance": distance,
                 }
                 points.append(snap_point)
 
@@ -186,7 +207,7 @@ class Raycast(bonsai.core.tool.Raycast):
 
             intersection = tool.Cad.point_on_edge(division_point, (ray_target, loc))
             distance = (division_point - intersection).length
-            if distance < 0.2:
+            if distance < snap_threshold:
                 snap_point = {
                     "object": obj,
                     "type": "Edge Center",
@@ -199,13 +220,13 @@ class Raycast(bonsai.core.tool.Raycast):
             if intersection[0]:
                 if tool.Cad.is_point_on_edge(intersection[1], (v1, v2)):
                     distance = (intersection[1] - intersection[0]).length
-                    if distance < 0.2:
+                    if distance < snap_threshold:
                         snap_point = {
                             "object": obj,
                             "type": "Edge",
                             "point": intersection[1].copy(),
                             "edge_verts": (v1, v2),
-                            "distance": distance + 2 * stick_factor,
+                            "distance": distance,
                         }
                         points.append(snap_point)
         bm.free()
@@ -218,6 +239,7 @@ class Raycast(bonsai.core.tool.Raycast):
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+        snap_threshold = tool.Snap.get_increment_snap_value(bpy.context)
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
@@ -235,7 +257,7 @@ class Raycast(bonsai.core.tool.Raycast):
 
             intersection, _ = mathutils.geometry.intersect_point_line(vertex, ray_target, loc)
             distance = (vertex - intersection).length
-            if distance < 0.2:
+            if distance < snap_threshold:
                 snap_point = {
                     "type": "Vertex",
                     "point": vertex,
@@ -270,7 +292,10 @@ class Raycast(bonsai.core.tool.Raycast):
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
 
-        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        if tool.Ifc.get():
+            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        else:
+            default_container_elevation = 0.0
         intersection = Vector((0, 0, default_container_elevation))
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
@@ -289,6 +314,7 @@ class Raycast(bonsai.core.tool.Raycast):
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+        snap_threshold = tool.Snap.get_increment_snap_value(bpy.context)
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
@@ -303,7 +329,7 @@ class Raycast(bonsai.core.tool.Raycast):
                         edge_intersection[1], ray_target, loc
                     )
                     distance = (edge_intersection[1] - mouse_intersection).length
-                    if distance < 0.2:
+                    if distance < snap_threshold:
                         snap_point = {
                             "object": None,
                             "type": "Edge Intersection",

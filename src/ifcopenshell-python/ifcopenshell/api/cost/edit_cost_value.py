@@ -58,6 +58,6 @@ def edit_cost_value(
                     value["ValueComponent"],
                 )
                 value = file.create_entity("IfcMeasureWithUnit", value_component, value["UnitComponent"])
-            if old_unit_basis and len(file.get_inverse(old_unit_basis)) == 0:
+            if old_unit_basis and file.get_total_inverses(old_unit_basis) == 0:
                 ifcopenshell.util.element.remove_deep(file, old_unit_basis)
         setattr(cost_value, name, value)

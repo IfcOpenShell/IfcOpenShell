@@ -44,7 +44,9 @@ class LoadProfiles(bpy.types.Operator):
         for profile in tool.Ifc.get().by_type("IfcProfileDef"):
             if filter_material_profiles:
                 inverse_references = tool.Ifc.get().get_inverse(profile)
-                related_material_profiles = [ref for ref in inverse_references if ref.is_a("IfcMaterialProfile")]
+                related_material_profiles = next(
+                    (ref for ref in inverse_references if ref.is_a("IfcMaterialProfile")), None
+                )
                 if not related_material_profiles:
                     continue
             if not profile.ProfileName:
@@ -234,9 +236,15 @@ class EnableEditingArbitraryProfile(bpy.types.Operator):
         props = tool.Profile.get_profile_props()
         active_profile = props.profiles[props.active_profile_index]
         profile_id = active_profile.ifc_definition_id
-        props.active_arbitrary_profile_id = profile_id
         profile = tool.Ifc.get().by_id(profile_id)
-        obj = tool.Model.import_profile(profile)
+
+        try:
+            obj = tool.Model.import_profile(profile)
+        except tool.Model.UnsupportedCurveForConversion as e:
+            self.report({"ERROR"}, str(e))
+            return {"CANCELLED"}
+
+        props.active_arbitrary_profile_id = profile_id
         tool.Ifc.link(profile, obj)
         bpy.context.scene.collection.objects.link(obj)
         tool.Blender.select_and_activate_single_object(context, obj)
@@ -248,7 +256,12 @@ class EnableEditingArbitraryProfile(bpy.types.Operator):
 
 def disable_editing_arbitrary_profile(context):
     obj = context.active_object
-    if obj and obj.type == "MESH" and obj.data and obj.data.BIMMeshProperties.subshape_type == "PROFILE":
+    if (
+        obj
+        and (mesh := obj.data)
+        and isinstance(mesh, bpy.types.Mesh)
+        and tool.Geometry.get_mesh_props(mesh).subshape_type == "PROFILE"
+    ):
         ProfileDecorator.uninstall()
         bpy.ops.object.mode_set(mode="OBJECT")
         profile_mesh = obj.data
@@ -337,7 +350,7 @@ class SelectProfileInProfilesUI(bpy.types.Operator):
         props.active_profile_index = profile_index
         self.report(
             {"INFO"},
-            f"Profile '{profile.Name or 'Unnamed'}' is selected in Profiles UI.",
+            f"Profile '{profile.ProfileName or 'Unnamed'}' is selected in Profiles UI.",
         )
         return {"FINISHED"}
 

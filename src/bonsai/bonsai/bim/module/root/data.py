@@ -54,32 +54,14 @@ class IfcClassData:
 
     @classmethod
     def ifc_products(cls):
-        products = [
-            "IfcElementType",
-            "IfcElement",
-            "IfcFeatureElement",
-            "IfcSpatialElement",
-            "IfcSpatialElementType",
-            "IfcStructuralItem",
-            "IfcAnnotation",
-            "IfcRelSpaceBoundary",
-        ]
+        products = tool.Root.get_ifc_products()
         version = tool.Ifc.get_schema()
-        if version == "IFC2X3":
-            products = [
-                "IfcElementType",
-                "IfcElement",
-                "IfcFeatureElement",
-                "IfcSpatialStructureElement",
-                "IfcStructuralItem",
-                "IfcAnnotation",
-                "IfcRelSpaceBoundary",
-            ]
         return [(e, e, (get_entity_doc(version, e) or {}).get("description", "")) for e in products]
 
     @classmethod
     def ifc_classes(cls):
-        ifc_product = bpy.context.scene.BIMRootProperties.ifc_product
+        rprops = tool.Root.get_root_props()
+        ifc_product = rprops.ifc_product
         declaration = tool.Ifc.schema().declaration_by_name(ifc_product)
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
@@ -99,7 +81,8 @@ class IfcClassData:
     @classmethod
     def ifc_predefined_types(cls):
         types_enum = []
-        ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
+        rprops = tool.Root.get_root_props()
+        ifc_class = rprops.ifc_class
         declaration = tool.Ifc.schema().declaration_by_name(ifc_class)
         version = tool.Ifc.get_schema()
         for attribute in declaration.attributes():
@@ -114,7 +97,7 @@ class IfcClassData:
         return types_enum
 
     @classmethod
-    def ifc_classes_suggestions(cls):
+    def ifc_classes_suggestions(cls) -> dict[str, list[dict[str, Union[str, None]]]]:
         # suggestions : dict[class_name: list[dict[predefined_type, name(optional)]]]
         suggestions = defaultdict(list)
         version = tool.Ifc.get_schema()
@@ -133,7 +116,8 @@ class IfcClassData:
 
     @classmethod
     def representation_template(cls):
-        ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
+        rprops = tool.Root.get_root_props()
+        ifc_class = rprops.ifc_class
         templates = [
             ("EMPTY", "No Geometry", "Start with an empty object"),
             None,
@@ -186,7 +170,7 @@ class IfcClassData:
             templates.extend([None, ("STAIR", "Stair", "Parametric stair")])
         elif ifc_class in ("IfcRailingType", "IfcRailing"):
             templates.extend([None, ("RAILING", "Railing", "Parametric railing")])
-        elif ifc_class in ("IfcRoofType", "IfcRoof"):
+        elif ifc_class in ("IfcRoofType", "IfcRoof", "IfcSlabType", "IfcSlab", "IfcCovering", "IfcCoveringType"):
             templates.extend([None, ("ROOF", "Roof", "Parametric roof with a constant pitch")])
         elif ifc_class and "Segment" in ifc_class:
             templates.extend(

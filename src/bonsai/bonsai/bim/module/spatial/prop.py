@@ -36,15 +36,18 @@ import bonsai.core.geometry
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
+from typing import TYPE_CHECKING, Union, Literal
 
 
-def get_subelement_class(self, context):
+def get_subelement_class(
+    self: "BIMSpatialDecompositionProperties", context: bpy.types.Context
+) -> list[tuple[str, str, str]]:
     if not SpatialDecompositionData.is_loaded:
         SpatialDecompositionData.load()
     return SpatialDecompositionData.data["subelement_class"]
 
 
-def update_elevation(self, context):
+def update_elevation(self: "BIMContainer", context: bpy.types.Context) -> None:
     try:
         elevation = float(self.elevation)
         if self.elevation != str(elevation):
@@ -91,7 +94,7 @@ def update_element_mode(self: "BIMSpatialDecompositionProperties", context: bpy.
     tool.Spatial.load_contained_elements()
 
 
-def update_grid_is_locked(self, context):
+def update_grid_is_locked(self: "BIMGridProperties", context: bpy.types.Context) -> None:
     if not tool.Ifc.get():
         return
     if tool.Ifc.get().schema in ("IFC2X3", "IFC4"):
@@ -108,7 +111,7 @@ def update_grid_is_locked(self, context):
     bonsai.bim.handler.refresh_ui_data()
 
 
-def update_spatial_is_locked(self, context):
+def update_spatial_is_locked(self: "BIMSpatialDecompositionProperties", context: bpy.types.Context) -> None:
     if not tool.Ifc.get():
         return
     if tool.Ifc.get().schema == "IFC2X3":
@@ -150,6 +153,10 @@ class BIMObjectSpatialProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     container_obj: PointerProperty(type=bpy.types.Object, name="Container", poll=poll_container_obj)
 
+    if TYPE_CHECKING:
+        is_editing: bool
+        container_obj: Union[bpy.types.Object, None]
+
 
 class BIMContainer(PropertyGroup):
     name: StringProperty(name="Name", update=update_name)
@@ -161,6 +168,16 @@ class BIMContainer(PropertyGroup):
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+    if TYPE_CHECKING:
+        ifc_class: str
+        description: str
+        long_name: str
+        elevation: str
+        level_index: int
+        has_children: bool
+        is_expanded: bool
+        ifc_definition_id: int
 
 
 class Element(PropertyGroup):
@@ -184,6 +201,16 @@ class Element(PropertyGroup):
             ("OCCURRENCE", "OCCURRENCE", "OCCURRENCE"),
         ),
     )
+
+    if TYPE_CHECKING:
+        ifc_class: str
+        identification: str
+        ifc_definition_id: int
+        level: int
+        has_children: bool
+        total: int
+        is_expanded: bool
+        type: Literal["CLASS", "TYPE", "CLASSIFICATION", "OCCURRENCE"]
 
 
 class BIMSpatialDecompositionProperties(PropertyGroup):
@@ -223,6 +250,23 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
         name="Should Include Children", default=True, update=update_should_include_children
     )
 
+    if TYPE_CHECKING:
+        is_locked: bool
+        is_visible: bool
+        container_filter: str
+        containers: bpy.types.bpy_prop_collection_idprop[BIMContainer]
+        contracted_containers: str
+        active_container_index: int
+        element_filter: str
+        elements: bpy.types.bpy_prop_collection_idprop[Element]
+        expanded_elements: str
+        active_element_index: int
+        total_elements: int
+        element_mode: Literal["TYPE", "DECOMPOSITION", "CLASSIFICATION"]
+        subelement_class: str
+        default_container: int
+        should_include_children: bool
+
     @property
     def active_container(self):
         if self.containers and self.active_container_index < len(self.containers):
@@ -248,3 +292,8 @@ class BIMGridProperties(PropertyGroup):
         update=update_grid_is_visible,
     )
     grid_axes: CollectionProperty(name="Grid Axes", type=ObjProperty)
+
+    if TYPE_CHECKING:
+        is_locked: bool
+        is_visible: bool
+        grid_axes: bpy.types.bpy_prop_collection_idprop[ObjProperty]

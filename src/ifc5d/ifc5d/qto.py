@@ -255,7 +255,7 @@ class IfcOpenShell:
                 tasks.append((iterator, gross_qtos))
 
         if net_qtos:
-            for iterator in IfcOpenShell.create_iterators(ifc_file, cls.gross_settings, list(elements)):
+            for iterator in IfcOpenShell.create_iterators(ifc_file, cls.net_settings, list(elements)):
                 tasks.append((iterator, net_qtos))
 
         cls.unit_converter = SI2ProjectUnitConverter(ifc_file)
@@ -336,6 +336,7 @@ class Blender:
         "get_gross_perimeter": Function("IfcLengthMeasure", "Gross Perimeter", ""),
         "get_height": Function("IfcLengthMeasure", "Height", ""),
         "get_length": Function("IfcLengthMeasure", "Length", ""),
+        "get_x": Function("IfcLengthMeasure", "Length", ""),
         "get_opening_depth": Function("IfcLengthMeasure", "Opening Depth", ""),
         "get_opening_height": Function("IfcLengthMeasure", "Opening Height", ""),
         "get_rectangular_perimeter": Function("IfcLengthMeasure", "Rectangular Perimeter", ""),
@@ -380,24 +381,27 @@ class Blender:
         import bonsai.bim.module.qto.calculator as calculator
 
         unit_converter = SI2ProjectUnitConverter(ifc_file)
-        formula_functions = {}
+        formula_functions: dict[str, types.FunctionType] = {}
 
         for element in elements:
             obj = tool.Ifc.get_object(element)
             if not obj or obj.type != "MESH":
                 continue
-            results.setdefault(element, {})
+            element_results = {}
             for name, quantities in qtos.items():
-                results[element].setdefault(name, {})
+                qto_results = {}
                 for quantity, formula in quantities.items():
                     if not formula:
                         continue
                     if not (formula_function := formula_functions.get(formula)):
                         formula_function = formula_functions[formula] = getattr(calculator, formula)
                     if (value := formula_function(obj)) is not None:
-                        results[element][name][quantity] = unit_converter.convert(
-                            value, Blender.functions[formula].measure
-                        )
+                        qto_results[quantity] = unit_converter.convert(value, Blender.functions[formula].measure)
+                if qto_results:
+                    element_results[name] = qto_results
+            # Avoid adding empty qsets if nothing was calculated.
+            if element_results:
+                results[element] = element_results
 
 
 calculators = {"Blender": Blender, "IfcOpenShell": IfcOpenShell}

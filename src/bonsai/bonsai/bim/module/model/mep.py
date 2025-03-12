@@ -580,7 +580,7 @@ class MEPGenerator:
         profile_joiner = DumbProfileJoiner()
         # create obstruction occurrence and setup it's length and port
         # NOTE: at this point we loose current blender objects selection
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=obstruction_type.id())
+        bpy.ops.bim.add_occurrence(relating_type_id=obstruction_type.id())
         obstruction_obj = bpy.context.active_object
         obstruction_obj.matrix_world = segment_matrix
 
@@ -859,7 +859,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
 
         # NOTE: at this point we loose current blender objects selection
         # create transition element
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=transition_type.id())
+        bpy.ops.bim.add_occurrence(relating_type_id=transition_type.id())
         transition_obj = bpy.context.active_object
 
         # adjust transition segment rotation and location
@@ -1210,7 +1210,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
         # NOTE: at this point we loose current blender objects selection
         # create transition element
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=bend_type.id())
+        bpy.ops.bim.add_occurrence(relating_type_id=bend_type.id())
         fitting_obj = bpy.context.active_object
 
         # adjust fitting object rotation and location

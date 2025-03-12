@@ -300,7 +300,7 @@ class SelectIfcClashResults(bpy.types.Operator):
 
     def execute(self, context):
         # TODO refactor into new clash results system
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
         with open(self.filepath) as f:
             clash_sets = json.load(f)
@@ -316,13 +316,15 @@ class SelectIfcClashResults(bpy.types.Operator):
                 global_ids.extend([clash["a_global_id"], clash["b_global_id"]])
 
         for obj in context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            props = tool.Blender.get_object_bim_props(obj)
+            if not props.ifc_definition_id:
                 continue
 
             ifc_file = ""
             for scene in obj.users_scene:
-                if scene.BIMProperties.ifc_file:
-                    ifc_file = scene.BIMProperties.ifc_file
+                bim_props = tool.Blender.get_bim_props(scene)
+                if bim_props.ifc_file:
+                    ifc_file = bim_props.ifc_file
                     if scene.library:
                         break
 
@@ -334,7 +336,7 @@ class SelectIfcClashResults(bpy.types.Operator):
                 element_file = self.file
 
             try:
-                element = element_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+                element = element_file.by_id(props.ifc_definition_id)
             except:
                 continue
 
@@ -478,7 +480,7 @@ class SelectSmartGroup(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file() and context.visible_objects and context.scene.BIMClashProperties.active_smart_group
+        return tool.Ifc.get() and context.visible_objects and context.scene.BIMClashProperties.active_smart_group
 
     def execute(self, context):
         selected_smart_group = context.scene.BIMClashProperties.active_smart_group

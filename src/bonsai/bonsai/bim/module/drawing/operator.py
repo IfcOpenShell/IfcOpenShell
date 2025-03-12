@@ -134,19 +134,19 @@ class AddDrawing(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Add a drawing view to the IFC project"
 
     def _execute(self, context):
-        self.props = context.scene.DocProperties
-        hint = self.props.location_hint
-        if self.props.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
+        props = tool.Drawing.get_document_props()
+        hint = props.location_hint
+        if props.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
             hint = int(hint)
         core.add_drawing(
             tool.Ifc,
             tool.Collector,
             tool.Drawing,
-            target_view=self.props.target_view,
+            target_view=props.target_view,
             location_hint=hint,
         )
         try:
-            drawing = tool.Ifc.get().by_id(self.props.active_drawing_id)
+            drawing = tool.Ifc.get().by_id(props.active_drawing_id)
             core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
         except:
             pass
@@ -162,7 +162,7 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
@@ -176,7 +176,7 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
         row.prop(self, "should_duplicate_annotations")
 
     def _execute(self, context):
-        self.props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         core.duplicate_drawing(
             tool.Ifc,
             tool.Drawing,
@@ -184,7 +184,7 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
             should_duplicate_annotations=self.should_duplicate_annotations,
         )
         try:
-            drawing = tool.Ifc.get().by_id(self.props.active_drawing_id)
+            drawing = tool.Ifc.get().by_id(props.active_drawing_id)
             core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
         except:
             pass
@@ -244,9 +244,9 @@ class CreateDrawing(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
 
-        active_drawing_id = context.scene.camera.BIMObjectProperties.ifc_definition_id
+        active_drawing_id = tool.Blender.get_ifc_definition_id(context.scene.camera)
         if self.print_all:
             original_drawing_id = active_drawing_id
             drawings_to_print = [d.ifc_definition_id for d in self.props.drawings if d.is_selected and d.is_drawing]
@@ -261,7 +261,7 @@ class CreateDrawing(bpy.types.Operator):
             self.camera = context.scene.camera
             self.camera_element = tool.Ifc.get_entity(self.camera)
             self.camera_document = tool.Drawing.get_drawing_document(self.camera_element)
-            self.file = IfcStore.get_file()
+            self.file = tool.Ifc.get()
 
             with profile("Drawing generation process"):
                 with profile("Initialize drawing generation process"):
@@ -385,13 +385,13 @@ class CreateDrawing(bpy.types.Operator):
             obj.hide_render = obj.name not in visible_object_names
 
         context.scene.render.filepath = str(Path(svg_path).with_suffix(".png"))
-        drawing_style = context.scene.DocProperties.drawing_styles[self.cprops.active_drawing_style_index]
+        drawing_style = self.props.drawing_styles[self.cprops.active_drawing_style_index]
 
         if drawing_style.render_type == "DEFAULT":
             bpy.ops.render.render(write_still=True)
         else:
             previous_visibility = {}
-            for obj in self.camera.BIMObjectProperties.collection.objects:
+            for obj in tool.Blender.get_object_bim_props(self.camera).collection.objects:
                 if bpy.context.view_layer.objects.get(obj.name):
                     previous_visibility[obj.name] = obj.hide_get()
                     obj.hide_set(True)
@@ -712,9 +712,11 @@ class CreateDrawing(bpy.types.Operator):
             }
         cached_linework -= edited_guids
 
-        files = {context.scene.BIMProperties.ifc_file: tool.Ifc.get()}
+        bim_props = tool.Blender.get_bim_props()
+        files = {bim_props.ifc_file: tool.Ifc.get()}
 
-        for link in context.scene.BIMProjectProperties.links:
+        props = tool.Project.get_project_props()
+        for link in props.links:
             if link.name not in IfcStore.session_files:
                 IfcStore.session_files[link.name] = ifcopenshell.open(link.name)
             files[link.name] = IfcStore.session_files[link.name]
@@ -729,7 +731,7 @@ class CreateDrawing(bpy.types.Operator):
             # Don't use draw.main() just whilst we're prototyping and experimenting
             # TODO: hash paths are never used
             ifc_hash = hashlib.md5(ifc_path.encode("utf-8")).hexdigest()
-            ifc_cache_path = os.path.join(context.scene.BIMProperties.cache_dir, f"{ifc_hash}.h5")
+            ifc_cache_path = os.path.join(bim_props.cache_dir, f"{ifc_hash}.h5")
 
             self.serialiser.setFile(ifc)
             drawing_elements = tool.Drawing.get_drawing_elements(self.camera_element, ifc_file=ifc)
@@ -1141,7 +1143,8 @@ class CreateDrawing(bpy.types.Operator):
         try:
             return tool.Ifc.get().by_guid(guid)
         except:
-            for link in bpy.context.scene.BIMProjectProperties.links:
+            props = tool.Project.get_project_props()
+            for link in props.links:
                 if link.name not in IfcStore.session_files:
                     IfcStore.session_files[link.name] = ifcopenshell.open(link.name)
                 try:
@@ -1367,7 +1370,11 @@ class CreateDrawing(bpy.types.Operator):
         elements = list(elements | filtered_drawing_annotations)
 
         annotations = sorted(
-            elements, key=lambda a: (tool.Drawing.get_annotation_z_index(a), 1 if a.ObjectType == "TEXT" else 0)
+            elements,
+            key=lambda a: (
+                tool.Drawing.get_annotation_z_index(a),
+                1 if ifcopenshell.util.element.get_predefined_type(a) == "TEXT" else 0,
+            ),
         )
 
         precision = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "MetricPrecision")
@@ -1458,7 +1465,8 @@ class AddSheet(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Add a sheet to the project"
 
     def _execute(self, context):
-        core.add_sheet(tool.Ifc, tool.Drawing, titleblock=context.scene.DocProperties.titleblock)
+        props = tool.Drawing.get_document_props()
+        core.add_sheet(tool.Ifc, tool.Drawing, titleblock=props.titleblock)
 
 
 class DuplicateSheet(bpy.types.Operator, tool.Ifc.Operator):
@@ -1474,7 +1482,7 @@ class DuplicateSheet(bpy.types.Operator, tool.Ifc.Operator):
         cls.poll_message_set("Not implemented yet.")
         return False
 
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
@@ -1483,7 +1491,7 @@ class DuplicateSheet(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         pass
         """
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
         core.duplicate_sheet(
             tool.Ifc,
             tool.Drawing,
@@ -1508,7 +1516,7 @@ class OpenLayout(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
         sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.update_sheet_drawing_sizes(sheet)
@@ -1530,7 +1538,8 @@ class SelectAllSheets(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
-        for sheet in context.scene.DocProperties.sheets:
+        props = tool.Drawing.get_document_props()
+        for sheet in props.sheets:
             if sheet.is_selected != self.select_all:
                 sheet.is_selected = self.select_all
         return {"FINISHED"}
@@ -1550,7 +1559,7 @@ class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         if not tool.Drawing.get_active_sheet_item(is_sheet=True):
             cls.poll_message_set("No sheet selected.")
             return False
@@ -1564,7 +1573,7 @@ class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def execute(self, context):
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
         svg2pdf_command = tool.Blender.get_addon_preferences().svg2pdf_command
 
         if self.open_all:
@@ -1612,9 +1621,10 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         # Won't be visible in UI anyway.
-        if not props.sheets or not context.scene.BIMProperties.data_dir:
+        bim_props = tool.Blender.get_bim_props()
+        if not props.sheets or not bim_props.data_dir:
             return False
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
@@ -1622,8 +1632,8 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
-        props = context.scene.DocProperties
-        active_drawing = tool.Drawing.get_active_drawing_item()
+        props = tool.Drawing.get_document_props()
+        active_drawing = props.drawings[props.active_drawing_index]
         assert active_drawing
 
         active_sheet = tool.Drawing.get_active_sheet(context)
@@ -1680,7 +1690,7 @@ class RemoveDrawingFromSheet(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         active_item = tool.Drawing.get_active_sheet_item()
         if active_item is None:
             return False
@@ -1714,11 +1724,12 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         if not tool.Drawing.get_active_sheet_item(is_sheet=True):
             cls.poll_message_set("No sheet selected.")
             return False
-        return props.sheets and context.scene.BIMProperties.data_dir
+        bim_props = tool.Blender.get_bim_props()
+        return props.sheets and bim_props.data_dir
 
     def invoke(self, context, event):
         # opening all sheets on shift+click
@@ -1731,7 +1742,7 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         scene = context.scene
-        props = scene.DocProperties
+        props = tool.Drawing.get_document_props()
         svg2pdf_command = tool.Blender.get_addon_preferences().svg2pdf_command
         svg2dxf_command = tool.Blender.get_addon_preferences().svg2dxf_command
 
@@ -1838,7 +1849,8 @@ class SelectAllDrawings(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
-        for drawing in context.scene.DocProperties.drawings:
+        props = tool.Drawing.get_document_props()
+        for drawing in props.drawings:
             if drawing.is_selected != self.select_all:
                 drawing.is_selected = self.select_all
         return {"FINISHED"}
@@ -1857,7 +1869,7 @@ class OpenDrawing(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
@@ -1871,7 +1883,7 @@ class OpenDrawing(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
         if self.open_all:
             drawings = [
                 tool.Ifc.get().by_id(d.ifc_definition_id) for d in self.props.drawings if d.is_drawing and d.is_selected
@@ -1907,7 +1919,7 @@ class ActivateModel(bpy.types.Operator):
     bl_description = "Activate the model view, hide all annotations"
 
     def execute(self, context):
-        dprops = bpy.context.scene.DocProperties
+        dprops = tool.Drawing.get_document_props()
         dprops.active_drawing_id = 0
 
         CutDecorator.uninstall()
@@ -1971,11 +1983,12 @@ class ActivateDrawingBase:
         return self.execute(context)
 
     def execute(self, context):
-        if bpy.context.scene.DocProperties.is_editing_drawings == False:
+        props = tool.Drawing.get_document_props()
+        if props.is_editing_drawings == False:
             bpy.ops.bim.load_drawings()
 
         drawing = tool.Ifc.get().by_id(self.drawing)
-        dprops = bpy.context.scene.DocProperties
+        dprops = tool.Drawing.get_document_props()
 
         if self.use_quick_preview:
             tool.Blender.activate_camera(tool.Drawing.import_temporary_drawing_camera(drawing))
@@ -2027,7 +2040,7 @@ class ActivateDrawing(bpy.types.Operator, ActivateDrawingBase):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
@@ -2050,7 +2063,7 @@ class ActivateDrawingFromSheet(bpy.types.Operator, ActivateDrawingBase):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         if not tool.Drawing.get_active_sheet_item(reference_type="DRAWING"):
             cls.poll_message_set("No drawing selected.")
             return False
@@ -2066,7 +2079,8 @@ class SelectDocIfcFile(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        context.scene.DocProperties.ifc_files[self.index].name = self.filepath
+        props = tool.Drawing.get_document_props()
+        props.ifc_files[self.index].name = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -2081,7 +2095,7 @@ class ResizeText(bpy.types.Operator):
     # TODO: check undo redo
 
     def execute(self, context):
-        for obj in context.scene.camera.BIMObjectProperties.collection.objects:
+        for obj in tool.Blender.get_object_bim_props(context.scene.camera).collection.objects:
             if isinstance(obj.data, bpy.types.TextCurve):
                 annotation.Annotator.resize_text(obj)
         return {"FINISHED"}
@@ -2098,7 +2112,7 @@ class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
@@ -2112,12 +2126,10 @@ class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         if self.remove_all:
             drawings = [
-                tool.Ifc.get().by_id(d.ifc_definition_id)
-                for d in context.scene.DocProperties.drawings
-                if d.is_drawing and d.is_selected
+                tool.Ifc.get().by_id(d.ifc_definition_id) for d in props.drawings if d.is_drawing and d.is_selected
             ]
         else:
             if not self.drawing:
@@ -2187,7 +2199,8 @@ class ReloadDrawingStyles(bpy.types.Operator):
         with open(json_path, "r") as fi:
             shading_styles_json = json.load(fi)
 
-        drawing_styles = context.scene.DocProperties.drawing_styles
+        props = tool.Drawing.get_document_props()
+        drawing_styles = props.drawing_styles
         drawing_styles.clear()
         styles = [style for style in shading_styles_json]
         for style_name in styles:
@@ -2212,7 +2225,8 @@ class AddDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        drawing_styles = context.scene.DocProperties.drawing_styles
+        props = tool.Drawing.get_document_props()
+        drawing_styles = props.drawing_styles
         new = drawing_styles.add()
         # drawing style is saved to ifc on rename
         new.name = tool.Blender.ensure_unique_name("New Drawing Style", drawing_styles)
@@ -2227,7 +2241,8 @@ class RemoveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        context.scene.DocProperties.drawing_styles.remove(self.index)
+        props = tool.Drawing.get_document_props()
+        props.drawing_styles.remove(self.index)
         context.scene.camera.data.BIMCameraProperties.active_drawing_style_index = max(self.index - 1, 0)
         bpy.ops.bim.save_drawing_styles_data()
         return {"FINISHED"}
@@ -2283,7 +2298,8 @@ class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
             index = int(self.index)
         else:
             index = context.scene.camera.data.BIMCameraProperties.active_drawing_style_index
-        scene.DocProperties.drawing_styles[index].raster_style = json.dumps(style)
+        props = tool.Drawing.get_document_props()
+        props.drawing_styles[index].raster_style = json.dumps(style)
 
         bpy.ops.bim.save_drawing_styles_data()
         return {"FINISHED"}
@@ -2309,7 +2325,8 @@ class SaveDrawingStylesData(bpy.types.Operator, tool.Ifc.Operator):
         if not DrawingsData.is_loaded:
             DrawingsData.load()
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
-        drawing_styles = context.scene.DocProperties.drawing_styles
+        props = tool.Drawing.get_document_props()
+        drawing_styles = props.drawing_styles
 
         rel_path = drawing_pset_data["ShadingStyles"]
         current_style = drawing_pset_data.get("CurrentShadingStyle", None)
@@ -2338,7 +2355,7 @@ class SaveDrawingStylesData(bpy.types.Operator, tool.Ifc.Operator):
                 new_style_name = None
 
             ifc_file = tool.Ifc.get()
-            drawing = ifc_file.by_id(context.scene.DocProperties.active_drawing_id)
+            drawing = ifc_file.by_id(props.active_drawing_id)
             pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
             ifcopenshell.api.run(
                 "pset.edit_pset", ifc_file, pset=pset, properties={"CurrentShadingStyle": new_style_name}
@@ -2357,17 +2374,18 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         scene = context.scene
         ifc_file = tool.Ifc.get()
         active_drawing_style_index = scene.camera.data.BIMCameraProperties.active_drawing_style_index
+        props = tool.Drawing.get_document_props()
 
-        if active_drawing_style_index >= len(scene.DocProperties.drawing_styles):
+        if active_drawing_style_index >= len(props.drawing_styles):
             self.report({"ERROR"}, "Could not find active drawing style")
             return {"CANCELLED"}
 
-        self.drawing_style = scene.DocProperties.drawing_styles[active_drawing_style_index]
+        self.drawing_style = props.drawing_styles[active_drawing_style_index]
 
         self.set_raster_style(context)
         self.set_query(context)
 
-        drawing = ifc_file.by_id(scene.DocProperties.active_drawing_id)
+        drawing = ifc_file.by_id(props.active_drawing_id)
         pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
         ifcopenshell.api.run(
             "pset.edit_pset", ifc_file, pset=pset, properties={"CurrentShadingStyle": self.drawing_style.name}
@@ -2392,7 +2410,8 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     def set_query(self, context: bpy.types.Context) -> None:
         self.include_global_ids = []
         self.exclude_global_ids = []
-        for ifc_file in context.scene.DocProperties.ifc_files:
+        props = tool.Drawing.get_document_props()
+        for ifc_file in props.ifc_files:
             try:
                 ifc = ifcopenshell.open(ifc_file.name)
             except:
@@ -2507,14 +2526,15 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         if not props.schedules:
             cls.poll_message_set("No schedule selected.")
             return False
-        return props.schedules and props.sheets and context.scene.BIMProperties.data_dir
+        bim_props = tool.Blender.get_bim_props()
+        return props.schedules and props.sheets and bim_props.data_dir
 
     def _execute(self, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         active_schedule = props.schedules[props.active_schedule_index]
         active_sheet = tool.Drawing.get_active_sheet(context)
         schedule = tool.Ifc.get().by_id(active_schedule.ifc_definition_id)
@@ -2573,14 +2593,15 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         if not props.references:
             cls.poll_message_set("No reference selected.")
             return False
-        return props.references and props.sheets and context.scene.BIMProperties.data_dir
+        bim_props = tool.Blender.get_bim_props()
+        return props.references and props.sheets and bim_props.data_dir
 
     def _execute(self, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         active_reference = props.references[props.active_reference_index]
         active_sheet = tool.Drawing.get_active_sheet(context)
         extref = tool.Ifc.get().by_id(active_reference.ifc_definition_id)
@@ -2682,7 +2703,8 @@ class AddDrawingStyleAttribute(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.camera.data.BIMCameraProperties
-        context.scene.DocProperties.drawing_styles[props.active_drawing_style_index].attributes.add()
+        dprops = tool.Drawing.get_document_props()
+        dprops.drawing_styles[props.active_drawing_style_index].attributes.add()
         return {"FINISHED"}
 
 
@@ -2695,7 +2717,8 @@ class RemoveDrawingStyleAttribute(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.camera.data.BIMCameraProperties
-        context.scene.DocProperties.drawing_styles[props.active_drawing_style_index].attributes.remove(self.index)
+        dprops = tool.Drawing.get_document_props()
+        dprops.drawing_styles[props.active_drawing_style_index].attributes.remove(self.index)
         return {"FINISHED"}
 
 
@@ -2979,7 +3002,7 @@ class LoadSheets(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         core.load_sheets(tool.Drawing)
 
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         sheets_not_found = []
         for sheet_prop in props.sheets:
             if not sheet_prop.is_sheet:
@@ -3009,7 +3032,7 @@ class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
     document_type: Literal["SHEET", "TITLEBLOCK", "EMBEDDED"]
 
     def invoke(self, context, event):
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
         sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
         if sheet.is_a("IfcDocumentInformation"):
             self.document_type = "SHEET"
@@ -3023,6 +3046,7 @@ class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
+        props = tool.Drawing.get_document_props()
         if self.document_type == "SHEET":
             row = self.layout.row()
             row.prop(self, "identification", text="Identification")
@@ -3030,13 +3054,13 @@ class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
             row.prop(self, "name", text="Name")
         elif self.document_type == "TITLEBLOCK":
             row = self.layout.row()
-            row.prop(context.scene.DocProperties, "titleblock", text="Titleblock")
+            row.prop(props, "titleblock", text="Titleblock")
         elif self.document_type == "EMBEDDED":
             row = self.layout.row()
             row.prop(self, "identification", text="Identification")
 
     def _execute(self, context):
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
         sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
         if self.document_type == "SHEET":
             core.rename_sheet(tool.Ifc, tool.Drawing, sheet=sheet, identification=self.identification, name=self.name)
@@ -3134,7 +3158,7 @@ class ExpandTargetView(bpy.types.Operator):
     target_view: bpy.props.StringProperty()
 
     def execute(self, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         for drawing in [d for d in props.drawings if d.target_view == self.target_view]:
             drawing.is_expanded = True
         core.load_drawings(tool.Drawing)
@@ -3150,7 +3174,7 @@ class ContractTargetView(bpy.types.Operator):
     target_view: bpy.props.StringProperty()
 
     def execute(self, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         for drawing in [d for d in props.drawings if d.target_view == self.target_view]:
             drawing.is_expanded = False
         core.load_drawings(tool.Drawing)
@@ -3166,7 +3190,7 @@ class ExpandSheet(bpy.types.Operator):
     sheet: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         for sheet in [s for s in props.sheets if s.ifc_definition_id == self.sheet]:
             sheet.is_expanded = True
         core.load_sheets(tool.Drawing)
@@ -3182,7 +3206,7 @@ class ContractSheet(bpy.types.Operator):
     sheet: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         for sheet in [s for s in props.sheets if s.ifc_definition_id == self.sheet]:
             sheet.is_expanded = False
         core.load_sheets(tool.Drawing)
@@ -3329,7 +3353,8 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator):
         obj.material_slots[0].material = material
         bpy.ops.bim.add_style()
 
-        style = ifc_file.by_id(material.BIMStyleProperties.ifc_definition_id)
+        style = tool.Ifc.get_entity(material)
+        assert style
         tool.Style.assign_style_to_object(style, obj)
 
         # TODO: IfcSurfaceStyleRendering is unnecessary here, added it only because
@@ -3373,7 +3398,7 @@ class ConvertSVGToDXF(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
@@ -3387,14 +3412,13 @@ class ConvertSVGToDXF(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
+        props = tool.Drawing.get_document_props()
         if self.convert_all:
             drawings = [
-                tool.Ifc.get().by_id(d.ifc_definition_id)
-                for d in context.scene.DocProperties.drawings
-                if d.is_drawing and d.is_selected
+                tool.Ifc.get().by_id(d.ifc_definition_id) for d in props.drawings if d.is_drawing and d.is_selected
             ]
         else:
-            drawings = [tool.Ifc.get().by_id(context.scene.DocProperties.drawings.get(self.view).ifc_definition_id)]
+            drawings = [tool.Ifc.get().by_id(props.drawings.get(self.view).ifc_definition_id)]
 
         drawing_uris: list[Path] = []
         drawings_not_found: list[str] = []

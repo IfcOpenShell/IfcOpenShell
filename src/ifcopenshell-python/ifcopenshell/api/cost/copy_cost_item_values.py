@@ -30,11 +30,8 @@ def copy_cost_item_values(
     parametrically linked, so if one value changes, the other will not.
 
     :param source: The IfcCostItem to copy cost values from
-    :type source: ifcopenshell.entity_instance
     :param destination: The IfcCostItem to copy cost values from
-    :type destination: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -53,11 +50,9 @@ def copy_cost_item_values(
         # Let's copy the value from one item to another
         ifcopenshell.api.cost.copy_cost_item_values(model, source=item1, destination=item2)
     """
-    settings = {"source": source, "destination": destination}
-
-    for cost_value in settings["destination"].CostValues or []:
+    for cost_value in destination.CostValues or []:
         ifcopenshell.api.cost.remove_cost_item_value(file, cost_value=cost_value)
     copied_cost_values = []
-    for cost_value in settings["source"].CostValues or []:
+    for cost_value in source.CostValues or []:
         copied_cost_values.append(ifcopenshell.util.element.copy_deep(file, cost_value))
-    settings["destination"].CostValues = copied_cost_values
+    destination.CostValues = copied_cost_values

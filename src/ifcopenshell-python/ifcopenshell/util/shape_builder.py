@@ -249,6 +249,23 @@ def np_intersect_line_line(
     return point_on_line1, point_on_line2
 
 
+def intersect_x_axis_2d(p1: VectorType, p2: VectorType, y=0) -> Optional[float]:
+    """Intersect a line defined by 2 points to a horizontal line defined by y
+
+    Useful for axis-aligned intersection checks.
+
+    :param p1: First 2D point of the line, order doesn't matter
+    :param p2: Second 2D point of the line, order doesn't matter
+    :param y: Intersect at this y value (i.e. defaults to y=0)
+    """
+    x1, y1 = p1
+    x2, y2 = p2
+    if is_x(y1, y2):  # Parallel
+        return
+    t = (y - y1) / (y2 - y1)
+    return x1 + t * (x2 - x1)
+
+
 # Note: using ShapeBuilder try not to reuse IFC elements in the process
 # otherwise you might run into situation where builder.mirror or other operation
 # is applied twice during one run to the same element
@@ -743,9 +760,7 @@ class ShapeBuilder:
         """
         if matrix is None:
             matrix = np.eye(4, dtype=float)
-        return self.create_axis2_placement_3d(
-            position=matrix[:, 3][:3].tolist(), z_axis=matrix[:, 2][:3].tolist(), x_axis=matrix[:, 0][:3].tolist()
-        )
+        return self.create_axis2_placement_3d(position=matrix[:3, 3], z_axis=matrix[:3, 2], x_axis=matrix[:3, 0])
 
     def create_axis2_placement_2d(
         self, position: VectorType = (0.0, 0.0), x_direction: Optional[VectorType] = None
@@ -1363,7 +1378,7 @@ class ShapeBuilder:
 
         # prevent mutating arguments, deepcopy doesn't work
         start_points = np.array(points)
-        if offset:
+        if offset is not None and offset.any():
             start_points += offset
         extrusion_offset = np.multiply(extrusion_vector, magnitude)
         end_points = start_points + extrusion_offset
@@ -1558,7 +1573,7 @@ class ShapeBuilder:
                 circle_points += end_extrusion_offset
 
             # circle verts are 0-15, rect verts are 16-19
-            points = circle_points + rect_points
+            points = np.concatenate((circle_points, rect_points))
             transition_faces = [
                 (0, 19, 16),  # base
                 (0, 16, 1),

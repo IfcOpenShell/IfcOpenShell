@@ -57,6 +57,12 @@ class Ifc(bonsai.core.tool.Ifc):
         return IfcStore.get_file()
 
     @classmethod
+    def set_path(cls, value: str) -> None:
+        bim_props = tool.Blender.get_bim_props()
+        bim_props.ifc_file = value
+        IfcStore.set_path(value)
+
+    @classmethod
     def get_path(cls) -> str:
         """Get absolute filepath to the IFC file, return empty string if file is not saved."""
         return IfcStore.path
@@ -65,6 +71,12 @@ class Ifc(bonsai.core.tool.Ifc):
     def get_schema(cls) -> ifcopenshell.util.schema.IFC_SCHEMA:
         if IfcStore.get_file():
             return IfcStore.get_file().schema
+
+    @classmethod
+    def clear_history(cls) -> None:
+        IfcStore.last_transaction = ""
+        IfcStore.history = []
+        IfcStore.future = []
 
     @classmethod
     def is_edited(cls, obj: bpy.types.Object, *, ignore_scale: bool = False) -> bool:
@@ -77,13 +89,14 @@ class Ifc(bonsai.core.tool.Ifc):
             return False
         if element and (element.is_a("IfcTypeProduct") or element.is_a("IfcProject")):
             return False
-        if not obj.BIMObjectProperties.location_checksum:
+        oprops = tool.Blender.get_object_bim_props(obj)
+        if not oprops.location_checksum:
             return True  # Let's be conservative
-        loc_check = np.frombuffer(eval(obj.BIMObjectProperties.location_checksum))
+        loc_check = np.frombuffer(eval(oprops.location_checksum))
         loc_real = np.array(obj.matrix_world.translation).flatten()
         if not np.allclose(loc_check, loc_real, atol=1e-4):  # 0.1 mm
             return True
-        rot_check = np.frombuffer(eval(obj.BIMObjectProperties.rotation_checksum)).reshape(3, 3)
+        rot_check = np.frombuffer(eval(oprops.rotation_checksum)).reshape(3, 3)
         rot_real = np.array(obj.matrix_world.to_3x3())
         rot_dot = np.dot(rot_check, rot_real.T)
         angle_rad = np.arccos(np.clip((np.trace(rot_dot) - 1) / 2, -1, 1))
@@ -107,11 +120,11 @@ class Ifc(bonsai.core.tool.Ifc):
 
         props = None
         if isinstance(obj, bpy.types.Object):
-            props = obj.BIMObjectProperties
+            props = tool.Blender.get_object_bim_props(obj)
         elif isinstance(obj, bpy.types.Material):
-            props = obj.BIMStyleProperties
+            props = tool.Style.get_material_style_props(obj)
         else:
-            props = obj.BIMMeshProperties
+            props = tool.Geometry.get_mesh_props(obj)
 
         if props and (ifc_definition_id := props.ifc_definition_id):
             try:
@@ -129,8 +142,12 @@ class Ifc(bonsai.core.tool.Ifc):
             return None
 
     @classmethod
-    def get_object(cls, element: ifcopenshell.entity_instance) -> IFC_CONNECTED_TYPE:
+    def get_object(cls, element: ifcopenshell.entity_instance) -> Union[IFC_CONNECTED_TYPE, None]:
         return IfcStore.get_element(element.id())
+
+    @classmethod
+    def get_object_by_identifier(cls, id_or_guid: Union[int, str]) -> Union[IFC_CONNECTED_TYPE, None]:
+        return IfcStore.get_element(id_or_guid)
 
     @classmethod
     def rebuild_element_maps(cls) -> None:
@@ -180,7 +197,7 @@ class Ifc(bonsai.core.tool.Ifc):
             cls.setup_listeners(obj)
 
         IfcStore.edited_objs = set()
-        edited_objs = bpy.context.scene.BIMProjectProperties.edited_objs
+        edited_objs = tool.Project.get_project_props().edited_objs
         for i in range(len(edited_objs))[::-1]:
             obj = edited_objs[i].obj
             if obj:
@@ -220,7 +237,7 @@ class Ifc(bonsai.core.tool.Ifc):
         """
         if obj in IfcStore.edited_objs:
             return
-        edited_objs = bpy.context.scene.BIMProjectProperties.edited_objs
+        edited_objs = tool.Project.get_project_props().edited_objs
         edited_objs.add().obj = obj
         IfcStore.edited_objs.add(obj)
         IfcStore.history_edit_object(obj, finish_editing=False)
@@ -233,7 +250,7 @@ class Ifc(bonsai.core.tool.Ifc):
         """
         if obj not in IfcStore.edited_objs:
             return
-        edited_objs = bpy.context.scene.BIMProjectProperties.edited_objs
+        edited_objs = tool.Project.get_project_props().edited_objs
         edited_objs.remove(next(i for i, o in enumerate(edited_objs) if o.obj == obj))
         IfcStore.edited_objs.discard(obj)
         IfcStore.history_edit_object(obj, finish_editing=True)

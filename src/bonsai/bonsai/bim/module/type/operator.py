@@ -29,7 +29,6 @@ import bonsai.tool as tool
 import bonsai.core.geometry
 import bonsai.core.type as core
 import bonsai.core.root
-from bonsai.bim.ifc import IfcStore
 
 
 class AssignType(bpy.types.Operator, tool.Ifc.Operator):
@@ -66,7 +65,7 @@ class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
         def exclude_callback(attribute):
             return attribute.is_a("IfcProfileDef") and attribute.ProfileName
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         objs = [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
@@ -187,7 +186,7 @@ class SelectSimilarType(bpy.types.Operator):
     related_object: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         objects = bpy.context.selected_objects
 
         # store relating types to avoid selecting same elements multiple times
@@ -229,7 +228,7 @@ class SelectTypeObjects(bpy.types.Operator):
     relating_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         relating_type = bpy.data.objects.get(self.relating_type) if self.relating_type else context.active_object
         at_least_one_selectable_typed_object = False
         for element in ifcopenshell.util.element.get_types(tool.Ifc.get_entity(relating_type)):
@@ -280,19 +279,6 @@ class RenameType(bpy.types.Operator, tool.Ifc.Operator):
         self.layout.prop(self, "name")
 
 
-class LaunchRenameType(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.launch_rename_type"
-    bl_label = "Launch Rename Type"
-    bl_options = {"REGISTER", "UNDO"}
-    element: bpy.props.IntProperty()
-    name: bpy.props.StringProperty(name="Name")
-
-    def execute(self, context):
-        # This stub operator is needed because operators from menu skip the invoke call
-        bpy.ops.bim.rename_type("INVOKE_DEFAULT", element=self.element, name=self.name)
-        return {"FINISHED"}
-
-
 class AutoRenameOccurrences(bpy.types.Operator):
     bl_idname = "bim.auto_rename_occurrences"
     bl_label = "Auto Rename Occurrences"
@@ -326,7 +312,7 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
             new_obj.data = obj.data.copy()
         new = bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
         new.Name += " Copy"
-        bpy.ops.bim.load_type_thumbnails(ifc_class=new.is_a())
+        bpy.ops.bim.load_type_thumbnails()
         if obj in context.selectable_objects:
             tool.Blender.select_and_activate_single_object(context, new_obj)
         else:
@@ -338,5 +324,5 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
         # Set duplicated type as active in current tool.
         if ifc_class in (i[0] for i in (bonsai.bim.helper.get_enum_items(props, "ifc_class", context) or ()) if i):
             props.ifc_class = new.is_a()
-            props.relating_type_id = str(new_obj.BIMObjectProperties.ifc_definition_id)
+            props.relating_type_id = str(tool.Blender.get_ifc_definition_id(new_obj))
         return {"FINISHED"}

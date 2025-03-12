@@ -33,13 +33,17 @@ from typing_extensions import assert_never
 if TYPE_CHECKING:
     # Avoid circular imports.
     from bonsai.bim.module.material.prop import Material as MaterialItem
-    from bonsai.bim.module.material.prop import BIMMaterialProperties
+    from bonsai.bim.module.material.prop import BIMMaterialProperties, BIMObjectMaterialProperties
 
 
 class Material(bonsai.core.tool.Material):
     @classmethod
     def get_material_props(cls) -> BIMMaterialProperties:
         return bpy.context.scene.BIMMaterialProperties
+
+    @classmethod
+    def get_object_material_props(cls, obj: bpy.types.Object) -> BIMObjectMaterialProperties:
+        return obj.BIMObjectMaterialProperties
 
     @classmethod
     def disable_editing_materials(cls) -> None:
@@ -203,11 +207,14 @@ class Material(bonsai.core.tool.Material):
     @classmethod
     def get_object_ui_material_type(cls) -> str:
         active_obj = bpy.context.active_object
-        return active_obj.BIMObjectMaterialProperties.material_type
+        assert active_obj
+        return tool.Material.get_object_material_props(active_obj).material_type
 
     @classmethod
     def get_object_ui_active_material(cls) -> ifcopenshell.entity_instance:
-        return tool.Ifc.get().by_id(int(bpy.context.active_object.BIMObjectMaterialProperties.material))
+        obj = bpy.context.active_object
+        assert obj
+        return tool.Ifc.get().by_id(int(tool.Material.get_object_material_props(obj).material))
 
     @classmethod
     def get_material(
