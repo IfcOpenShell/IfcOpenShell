@@ -168,7 +168,7 @@ class PortData:
         return tool.Ifc.get_object(connected_element).name
 
     @classmethod
-    def located_ports_data(cls):
+    def located_ports_data(cls) -> list[dict[str, Any]]:
         ports = ifcopenshell.util.system.get_ports(cls.element)
 
         data = []
@@ -181,17 +181,24 @@ class PortData:
             else:
                 connected_obj_name = None
 
-            data.append((port, port_obj_name, connected_obj_name))
+            data.append(
+                {
+                    "id": port.id(),
+                    "FlowDirection": port.FlowDirection,
+                    "port_obj_name": port_obj_name,
+                    "connected_obj_name": connected_obj_name,
+                }
+            )
         return data
 
     @classmethod
-    def selected_objects_flow_direction(cls):
-        for port, _, connected_obj_name in cls.data["located_ports_data"]:
-            if connected_obj_name is None:
+    def selected_objects_flow_direction(cls) -> Union[str, None]:
+        for port_data in cls.data["located_ports_data"]:
+            if port_data["connected_obj_name"] is None:
                 continue
-            connected_obj = bpy.data.objects[connected_obj_name]
+            connected_obj = bpy.data.objects[port_data["connected_obj_name"]]
             if connected_obj in bpy.context.selected_objects:
-                return port.FlowDirection
+                return port_data["FlowDirection"]
 
 
 class SystemDecorationData:

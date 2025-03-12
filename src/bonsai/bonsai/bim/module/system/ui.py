@@ -186,24 +186,23 @@ class BIM_PT_ports(Panel):
         row = self.layout.row(align=True)
         cols = [row.column(align=True) for i in range(6)]
 
-        for i, port_data in enumerate(PortData.data["located_ports_data"]):
-            port, port_obj_name, connected_obj_name = port_data
-            flow_direction_icon = FLOW_DIRECTION_TO_ICON[port.FlowDirection or "NOTDEFINED"]
-            if port_obj_name:
+        for port_data in PortData.data["located_ports_data"]:
+            flow_direction_icon = FLOW_DIRECTION_TO_ICON[port_data["FlowDirection"] or "NOTDEFINED"]
+            if port_data["port_obj_name"]:
                 cols[0].label(text="", icon=flow_direction_icon)
-                cols[1].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = port.id()
-                cols[2].label(text=port_obj_name)
+                cols[1].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = port_data["id"]
+                cols[2].label(text=port_data["port_obj_name"])
             else:
                 cols[0].label(text="", icon=flow_direction_icon)
                 cols[1].label(text="", icon="HIDE_ON")
                 cols[2].label(text="Port is hidden")
 
-            if connected_obj_name:
-                connected_obj = bpy.data.objects[connected_obj_name]
-                cols[3].operator("bim.disconnect_port", text="", icon="UNLINKED").element_id = port.id()
+            if port_data["connected_obj_name"]:
+                connected_obj = bpy.data.objects[port_data["connected_obj_name"]]
+                cols[3].operator("bim.disconnect_port", text="", icon="UNLINKED").element_id = port_data["id"]
                 ifc_id = tool.Blender.get_ifc_definition_id(connected_obj)
                 cols[4].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = ifc_id
-                cols[5].label(text=connected_obj_name)
+                cols[5].label(text=port_data["connected_obj_name"])
             else:
                 cols[3].label(text="", icon="UNLINKED")
                 cols[4].label(text="", icon="BLANK1")
