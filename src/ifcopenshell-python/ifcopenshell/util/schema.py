@@ -166,6 +166,9 @@ def reassign_class(
     :raises ValueError: If ``new_class`` does not exist in the provided file schema.
     """
 
+    if element.is_a() == new_class:
+        return element
+
     if not ifc_file:
         ifc_file = element.file
 
