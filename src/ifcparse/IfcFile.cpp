@@ -57,8 +57,10 @@ namespace {
     void dispatch_token(int instance_id, int attribute_id, IfcParse::Token t, IfcParse::declaration* decl, Fn fn) {
         if (t.type == IfcParse::Token_BINARY) {
             fn(IfcParse::TokenFunc::asBinary(t));
-        } else if (t.type == IfcParse::Token_BOOL) {
+        } else if (IfcParse::TokenFunc::isBool(t)) {
             fn(IfcParse::TokenFunc::asBool(t));
+        } else if (IfcParse::TokenFunc::isLogical(t)) {
+            fn(IfcParse::TokenFunc::asLogical(t));
         } else if (t.type == IfcParse::Token_ENUMERATION) {
             auto& s = IfcParse::TokenFunc::asStringRef(t);
             if (decl && decl->as_enumeration_type()) {

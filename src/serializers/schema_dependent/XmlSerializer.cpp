@@ -82,9 +82,10 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 	}
 
 	switch(argument_type) {
-		case IfcUtil::Argument_BOOL: {
-			const bool b = argument;
-			value = b ? "true" : "false";
+		case IfcUtil::Argument_BOOL:
+		case IfcUtil::Argument_LOGICAL:{
+			const boost::logic::tribool b = argument;
+			value = b.value == boost::logic::tribool::indeterminate_value ? "unknown" : b ? "true" : "false";
 			break; }
 		case IfcUtil::Argument_DOUBLE: {
 			const double d = argument;
