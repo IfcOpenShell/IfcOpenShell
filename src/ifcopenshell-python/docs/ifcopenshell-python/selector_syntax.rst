@@ -163,6 +163,7 @@ without needing to write complex code for it.
     "``materials.count``", "Count the number of materials assigned to an element."
     "``material.Name``", "Get the name of the assigned material."
     "``material.item.0.Name``", "Get the name of the first item in a material set (e.g. the first material layer)"
+    "``material.item.Material.Name.0``", "Get the name of the material in the first item in a material set"
 
 The element value syntax works by specifying one or more query keys separated
 by a ``.`` character. Each query key returns data based of the results of the
