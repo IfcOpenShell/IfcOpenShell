@@ -161,9 +161,9 @@ without needing to write complex code for it.
     "``types.count``", "Count the number of occurrences of a type."
     "``storey.Name``", "Get the ``Name`` attribute of the storey that the element is contained in."
     "``materials.count``", "Count the number of materials assigned to an element."
-    "``material.Name``", "Get the name of the assigned material."
-    "``material.item.0.Name``", "Get the name of the first item in a material set (e.g. the first material layer)"
-    "``material.item.Material.Name.0``", "Get the name of the material in the first item in a material set"
+    "``material.Name``", "**IfcMaterial**: The name of the assigned material. **IfcMaterialLayerSet**: name of the LayerSetName. **IfcMaterialProfileSet**: The name of the overall material profile set. **IfcMaterialConstituent**: The name of the overall material constituent set."
+    "``material.item.0.Name``", "**IfcMaterial**: N/A. **IfcMaterialLayerSet**: The name of the 1st material layer. **IfcMaterialProfileSet**: The name of the 1st material profile. **IfcMaterialConstituent**: The name of the 1st material constituent."
+    "``material.item.Material.Name.0``", "**IfcMaterial**: The assigned material name. **IfcMaterialLayerSet**: The material name of the 1st material layer. **IfcMaterialProfileSet**: The material name of the 1st material profile. **IfcMaterialConstituent**: The material name of the 1st material constituent."
 
 The element value syntax works by specifying one or more query keys separated
 by a ``.`` character. Each query key returns data based of the results of the
