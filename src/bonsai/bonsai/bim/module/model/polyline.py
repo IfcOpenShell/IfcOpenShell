@@ -986,12 +986,9 @@ class PolylineOperator:
         self.tool_state.plane_method = None
         self.tool_state.mode = "Mouse"
         self.visible_objs = tool.Raycast.get_visible_objects(context)
-        # print(self.visible_objs)
         for obj in self.visible_objs:
             self.objs_2d_bbox.append(tool.Raycast.get_on_screen_2d_bounding_boxes(context, obj))
-            print(self.objs_2d_bbox)
         detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
-        print("detected_snaps", detected_snaps)
         self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
         tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
 
