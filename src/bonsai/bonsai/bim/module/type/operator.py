@@ -279,19 +279,6 @@ class RenameType(bpy.types.Operator, tool.Ifc.Operator):
         self.layout.prop(self, "name")
 
 
-class LaunchRenameType(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.launch_rename_type"
-    bl_label = "Launch Rename Type"
-    bl_options = {"REGISTER", "UNDO"}
-    element: bpy.props.IntProperty()
-    name: bpy.props.StringProperty(name="Name")
-
-    def execute(self, context):
-        # This stub operator is needed because operators from menu skip the invoke call
-        bpy.ops.bim.rename_type("INVOKE_DEFAULT", element=self.element, name=self.name)
-        return {"FINISHED"}
-
-
 class AutoRenameOccurrences(bpy.types.Operator):
     bl_idname = "bim.auto_rename_occurrences"
     bl_label = "Auto Rename Occurrences"

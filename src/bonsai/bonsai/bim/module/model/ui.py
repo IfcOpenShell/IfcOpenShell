@@ -54,7 +54,8 @@ class BIM_MT_type_menu(bpy.types.Menu):
     def draw(self, context):
         props = tool.Model.get_model_props()
         layout = self.layout
-        op = layout.operator("bim.launch_rename_type", icon="GREASEPENCIL", text="Rename Type")
+        layout.operator_context = "INVOKE_REGION_WIN"
+        op = layout.operator("bim.rename_type", icon="GREASEPENCIL", text="Rename Type")
         op.element = props.menu_relating_type_id
         op = layout.operator("bim.select_type", icon="OBJECT_DATA")
         op.relating_type = props.menu_relating_type_id
@@ -699,6 +700,7 @@ class BIM_PT_roof(bpy.types.Panel):
             row.operator("bim.add_roof", icon="ADD", text="")
 
 
-def add_menu(self, context):
-    self.layout.operator("bim.launch_add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")
+def add_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
+    self.layout.operator_context = "INVOKE_REGION_WIN"
+    self.layout.operator("bim.add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")
     self.layout.separator()

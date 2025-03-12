@@ -625,19 +625,3 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             row.prop(props, "profile", text="Profile")
         if props.representation_template != "EMPTY":
             prop_with_search(self.layout, props, "contexts", should_click_ok=True)
-
-
-class LaunchAddElement(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.launch_add_element"
-    bl_label = "Launch Add Element"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Add an IFC physical product, construction type, and more"
-
-    @classmethod
-    def poll(cls, context):
-        return tool.Ifc.get()
-
-    def execute(self, context):
-        # This stub operator is needed because operators from menu skip the invoke call
-        bpy.ops.bim.add_element("INVOKE_DEFAULT")
-        return {"FINISHED"}
