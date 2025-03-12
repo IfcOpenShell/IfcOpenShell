@@ -425,8 +425,14 @@ def update_roof_modifier_ifc_data(context: bpy.types.Context) -> None:
         return False
 
     # type attributes
-    if props.roof_type == "HIP/GABLE ROOF":
-        element.PredefinedType = "GABLE_ROOF" if roof_is_gabled() else "HIP_ROOF"
+    ifc_class = element.is_a()
+    if ifc_class in ("IfcRoof", "IfcRoofType"):
+        if props.roof_type == "HIP/GABLE ROOF":
+            element.PredefinedType = "GABLE_ROOF" if roof_is_gabled() else "HIP_ROOF"
+    elif ifc_class in ("IfcSlab", "IfcSlabType"):
+        element.PredefinedType = "ROOF"
+    elif ifc_class in ("IfcCoveringType", "IfcCoveringType"):
+        element.PredefinedType = "ROOFING"
 
     tool.Model.add_body_representation(obj)
 
