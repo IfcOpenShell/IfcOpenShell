@@ -159,7 +159,6 @@ class Raycast(bonsai.core.tool.Raycast):
         if obj and obj.type == "EMPTY":
             v = obj.location
             intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
-            intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
             distance = (v - intersection).length
             if distance < snap_threshold:
                 snap_point = {
