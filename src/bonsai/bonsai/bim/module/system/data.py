@@ -130,7 +130,10 @@ class PortData:
 
     @classmethod
     def load(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        obj = bpy.context.active_object
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        assert element
         cls.element = element
         is_port = cls.is_port()
         cls.data = {
@@ -145,19 +148,19 @@ class PortData:
         cls.is_loaded = True
 
     @classmethod
-    def total_ports(cls):
+    def total_ports(cls) -> int:
         return len(ifcopenshell.util.system.get_ports(cls.element))
 
     @classmethod
-    def is_port(cls):
-        return cls.element and cls.element.is_a("IfcDistributionPort")
+    def is_port(cls) -> bool:
+        return bool(cls.element and cls.element.is_a("IfcDistributionPort"))
 
     @classmethod
-    def port_relating_object_name(cls):
+    def port_relating_object_name(cls) -> str:
         return tool.Ifc.get_object(tool.System.get_port_relating_element(cls.element)).name
 
     @classmethod
-    def port_connected_object_name(cls):
+    def port_connected_object_name(cls) -> Union[str, None]:
         connected_port = tool.System.get_connected_port(cls.element)
         if not connected_port:
             return

@@ -30,13 +30,21 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 IFC_SCHEMA = Literal["IFC2X3", "IFC4", "IFC4X3"]
 
 
-def get_fallback_schema(version: str) -> str:
-    """fallback to the schema version we do have docs and mapping for,
-    needed to support IFC versions like 4X3_RC1, 4X1 etc"""
+def get_fallback_schema(version: str) -> IFC_SCHEMA:
+    """Fallback to the schema version we do have docs and mapping for.
+
+    Needed to support IFC versions like 4X3_RC1, 4X1 etc.
+
+    :param version: Typically a string from ``ifcopenshell.file.schema_identifier``, e.g. IFC4X3_ADD2
+    """
     if version.startswith("IFC4X3"):
         version = "IFC4X3"
     elif version.startswith("IFC4"):
         version = "IFC4"
+    elif version.startswith("IFC2X3"):
+        version = "IFC2X3"
+    else:
+        assert False, f"Unexpected schema version: {version}."
     return version
 
 
