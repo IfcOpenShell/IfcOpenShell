@@ -128,7 +128,7 @@ class CalculateSingleQuantity(bpy.types.Operator, tool.Ifc.Operator):
 
         props = context.scene.BIMQtoProperties
         elements = set()
-        for obj in context.selected_objects:
+        for obj in tool.Blender.get_selected_objects(include_active=False):
             element = tool.Ifc.get_entity(obj)
             if element:
                 elements.add(element)

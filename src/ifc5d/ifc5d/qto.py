@@ -47,10 +47,12 @@ for name in get_args(RULE_SET):
 
 
 def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], rules: dict) -> ResultsDict:
-    """
+    """Quantify elements from a rules using preset quantification rules
+
+    Rules placed as a JSON configuration file in the ``ifc5d`` folder will be
+    autodetected and loaded with the module for convenience.
 
     :param rules: Set of rules from `ifc5d.qto.rules`.
-
     """
     results: ResultsDict = {}
     elements_by_classes: defaultdict[str, set[ifcopenshell.entity_instance]] = defaultdict(set)
@@ -59,13 +61,8 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
 
     for calculator, queries in rules["calculators"].items():
         calculator = calculators[calculator]
-        for ifc_class, qtos in queries.items():
-            filtered_elements = set()
-            ifc_classes = [ifc_class] + ifcopenshell.util.type.get_applicable_types(ifc_class, ifc_file.schema)
-            for ifc_class in ifc_classes:
-                if ifc_class not in elements_by_classes:
-                    continue
-                filtered_elements.update(elements_by_classes[ifc_class])
+        for query, qtos in queries.items():
+            filtered_elements = ifcopenshell.util.selector.filter_elements(ifc_file, query, elements)
             if filtered_elements:
                 calculator.calculate(ifc_file, filtered_elements, qtos, results)
     return results

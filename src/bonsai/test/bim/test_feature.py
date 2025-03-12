@@ -1097,7 +1097,7 @@ def prop_is_roughly_value(prop, value):
 def the_object_name_has_a_cartesian_point_offset_of_offset(name: str, offset: str) -> None:
     offset = replace_variables(offset)
     obj = the_object_name_exists(name)
-    props = tool.Blender.get_object_props(obj)
+    props = tool.Blender.get_object_bim_props(obj)
     assert props.blender_offset_type == "CARTESIAN_POINT"
     obj_offset = np.array(tuple(map(float, props.cartesian_point_offset.split(","))))
     offset = np.array(tuple(map(float, offset.split(","))))
