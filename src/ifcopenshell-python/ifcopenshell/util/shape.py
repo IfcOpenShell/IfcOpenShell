@@ -721,6 +721,26 @@ def get_extrusions(element: ifcopenshell.entity_instance) -> Union[list[ifcopens
     return extrusions
 
 
+def get_base_extrusions(element: ifcopenshell.entity_instance) -> Union[list[ifcopenshell.entity_instance], None]:
+    """Gets all base extrusions used to define an element's model body geometry
+
+    A base extrusion is assumed to be an extrusion prior to all boolean
+    results.
+
+    :param element: The element occurrence
+    :return: A list of extrusion representation items or `None` if element has no representation.
+    """
+    if not (rep := ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")):
+        return
+    extrusions = []
+    for item in ifcopenshell.util.representation.resolve_representation(rep).Items:
+        while item.is_a("IfcBooleanResult"):
+            item = item.FirstOperand
+        if item.is_a("IfcExtrudedAreaSolid"):
+            extrusions.append(item)
+    return extrusions
+
+
 def get_total_edge_length(geometry: ShapeType) -> float:
     """Calculates the total length of edges in a given geometry.
 

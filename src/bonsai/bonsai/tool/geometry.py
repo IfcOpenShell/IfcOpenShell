@@ -1986,3 +1986,7 @@ class Geometry(bonsai.core.tool.Geometry):
         bm = tool.Blender.get_bmesh_for_mesh(obj.data)
         bm.transform(obj.matrix_world)
         return BVHTree.FromBMesh(bm)
+
+    @classmethod
+    def run_edit_object_placement(cls, obj: bpy.types.Object) -> None:
+        return bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)

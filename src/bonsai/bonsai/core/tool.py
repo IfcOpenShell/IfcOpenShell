@@ -432,6 +432,7 @@ class Geometry:
     def rename_object(cls, obj, name): pass
     def replace_object_data_globally(cls, old_data, new_data): pass
     def resolve_mapped_representation(cls, representation): pass
+    def run_edit_object_placement(cls, obj=None): pass
     def run_geometry_update_representation(cls, obj=None): pass
     def run_style_add_style(cls, obj=None): pass
     def select_connection(cls, connection): pass
@@ -562,22 +563,26 @@ class Misc:
 
 @interface
 class Model:
+    def clip_wall_to_slab(cls, element, bm): pass
+    def connect_wall_to_slab(cls, wall, slab): pass
     def convert_si_to_unit(cls, value): pass
     def convert_unit_to_si(cls, value): pass
     def export_points(cls, position, indices): pass
     def export_profile(cls, obj, position=None): pass
     def generate_occurrence_name(cls, element_type, ifc_class): pass
     def get_extrusion(cls, representation): pass
-    def import_profile(cls, profile, obj=None, position=None): pass
+    def get_manual_booleans(cls, element): pass
+    def get_material_layer_parameters(cls, element): pass
+    def get_slab_clipping_bmesh(cls, obj): pass
+    def get_usage_type(cls, element): pass
+    def get_wall_axis(cls, obj, layers=None): pass
     def import_curve(cls, curve, obj=None, position=None): pass
+    def import_profile(cls, profile, obj=None, position=None): pass
     def import_rectangle(cls, obj, position, profile): pass
     def load_openings(cls, openings): pass
     def purge_scene_openings(cls): pass
-    def get_usage_type(cls, element): pass
-    def get_material_layer_parameters(cls, element): pass
-    def get_manual_booleans(cls, element): pass
-    def get_wall_axis(cls, obj, layers=None): pass
     def regenerate_array(cls, parent, data): pass
+    def reload_body_representation(cls, obj_or_objects): pass
     def replace_object_ifc_representation(cls, ifc_file, ifc_context, obj, new_representation): pass
 
 

@@ -64,6 +64,16 @@ class Debug(bonsai.core.tool.Debug):
                 pass
 
     @classmethod
+    def debug_bmesh(
+        cls, bm: bpy.types.BMesh, name: str = "Debug"
+    ) -> bpy.types.Object:
+        mesh = bpy.data.meshes.new("Debug")
+        bm.to_mesh(mesh)
+        obj = bpy.data.objects.new(name, mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        return obj
+
+    @classmethod
     def debug_geometry(
         cls, verts: list[Vector] = [], edges: list[tuple[int, int]] = [], name: str = "Debug"
     ) -> bpy.types.Object:

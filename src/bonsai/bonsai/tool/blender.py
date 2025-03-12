@@ -154,15 +154,22 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_active_object(cls, is_selected: bool = False) -> Union[bpy.types.Object, None]:
-        obj = getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active
-        if not is_selected:
-            return obj
-        if obj in cls.get_selected_objects(include_active=False):
-            return obj
+        """Gets the active object
+
+        :param is_selected: If true, the active object also needs to be selected.
+        """
+        if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
+            if not is_selected:
+                return obj
+            if obj.select_get():
+                return obj
 
     @classmethod
     def get_selected_objects(cls, include_active: bool = True) -> set[bpy.types.Object]:
-        """Get selected objects including active object."""
+        """Get selected objects
+
+        :param include_active: If true, the active object is included regardless if it is also selected.
+        """
         if selected_objects := getattr(bpy.context, "selected_objects", None):
             if include_active and (active_obj := cls.get_active_object()):
                 return set(selected_objects + [active_obj])

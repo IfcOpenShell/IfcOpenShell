@@ -1241,10 +1241,17 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             # Extend LAYER2s to LAYER3
             [o.select_set(False) for o in selected_usages.get("PROFILE", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER3", []) if o != bpy.context.active_object]
-            try:
-                core.join_walls_TZ(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
-            except core.RequireAtLeastTwoLayeredElements as e:
-                self.report({"ERROR"}, str(e))
+            slab = None
+            walls = []
+            if (obj := tool.Blender.get_active_object(is_selected=True)) and (element := tool.Ifc.get_entity(obj)) and tool.Model.get_usage_type(element) == "LAYER3":
+                slab = obj
+            for obj in tool.Blender.get_selected_objects(include_active=False):
+                if (element := tool.Ifc.get_entity(obj)) and tool.Model.get_usage_type(element) == "LAYER2":
+                    walls.append(obj)
+            if slab and walls:
+                core.extend_wall_to_slab(tool.Ifc, tool.Geometry, tool.Model, slab, walls)
+            else:
+                self.report({"ERROR"}, "Please select at least one LAYER2 element and an active LAYER3 element")
 
         elif self.active_material_usage == "LAYER2":
             # Extend LAYER2s to LAYER2
