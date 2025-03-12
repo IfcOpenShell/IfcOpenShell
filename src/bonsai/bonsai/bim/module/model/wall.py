@@ -78,6 +78,46 @@ class ExtendWallsToUnderside(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "Please select at least one LAYER2 element and an active element")
 
 
+class ExtendWallsToWall(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.extend_walls_to_wall"
+    bl_label = "Extend Walls To Wall"
+    bl_description = "Extend and trim selected walls to another wall"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        target_obj = None
+        objs = []
+        if (
+            (obj := tool.Blender.get_active_object(is_selected=True))
+            and (element := tool.Ifc.get_entity(obj))
+            and tool.Model.get_usage_type(element) == "LAYER2"
+        ):
+            target_obj = obj
+        for obj in tool.Blender.get_selected_objects(include_active=False):
+            if (
+                obj != target_obj
+                and (element := tool.Ifc.get_entity(obj))
+                and tool.Model.get_usage_type(element) == "LAYER2"
+            ):
+                objs.append(obj)
+        if target_obj and objs:
+            if tool.Ifc.is_moved(target_obj):
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=target_obj)
+            joiner = DumbWallJoiner()
+            target_element = tool.Ifc.get_entity(target_obj)
+            for obj in objs:
+                if tool.Ifc.is_moved(obj):
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                element = tool.Ifc.get_entity(obj)
+                ifcopenshell.api.geometry.connect_wall(
+                    tool.Ifc.get(), wall1=element, wall2=target_element, is_atpath=True
+                )
+                joiner.recreate_wall(element, obj)
+            joiner.recreate_wall(target_element, target_obj)
+        else:
+            self.report({"ERROR"}, "Please select at least one LAYER2 element and one active LAYER2 element")
+
+
 class AlignWall(bpy.types.Operator):
     bl_idname = "bim.align_wall"
     bl_label = "Align Wall"

@@ -453,14 +453,14 @@ Scenario: Override duplicate move - copying walls with mitre joint
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
-    And I press "bim.hotkey(hotkey='S_A')"
+    And I press "bim.add_occurrence"
     And the cursor is at "0.5,0,0"
-    And I press "bim.hotkey(hotkey='S_A')"
+    And I press "bim.add_occurrence"
     And the object "IfcWall/Wall.001" is selected
     And additionally the object "IfcWall/Wall" is selected
-    When I press "bim.hotkey(hotkey='S_Y')"
-    Then the object "IfcWall/Wall" dimensions are "0.5,0.1,3"
-    And the object "IfcWall/Wall" bottom left corner is at "0.5,0,0"
+    When I press "bim.hotkey(hotkey='S_T')"
+    Then the object "IfcWall/Wall" dimensions are "0.6,0.1,3"
+    And the object "IfcWall/Wall" bottom left corner is at "0,0,0"
     And the object "IfcWall/Wall.001" dimensions are "1.1,0.1,3"
     And the object "IfcWall/Wall.001" bottom left corner is at "0.5,0.1,0"
     And the object "IfcWall/Wall.001" top right corner is at "0.6,-1,3"
@@ -549,10 +549,11 @@ Scenario: Refresh linked aggregate
     When I deselect all objects
     And the object "IfcWall/Wall_01.001" is selected
     When the object layer length is set to "3"
-    Then the object "IfcWall/Wall_01.001" dimensions are "3,0.1,3"
+    # Extra 0.1 due to mitre
+    Then the object "IfcWall/Wall_01.001" dimensions are "3.1,0.1,3"
     When I refresh linked aggregate the selected object
     Then the object "IfcWall/Wall_01" exists
-    And the object "IfcWall/Wall_01" dimensions are "3,0.1,3"
+    And the object "IfcWall/Wall_01" dimensions are "3.1,0.1,3"
 
 Scenario: Refresh linked aggregate - after deleting an object
     Given I load the IFC test file "/test/files/linked-aggregates.ifc"

@@ -73,6 +73,7 @@ classes = (
     wall.ChangeLayerLength,
     wall.DrawPolylineWall,
     wall.ExtendWallsToUnderside,
+    wall.ExtendWallsToWall,
     wall.FlipWall,
     wall.MergeWall,
     wall.RecalculateWall,

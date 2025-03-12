@@ -1217,13 +1217,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.extend_profile(join_type="T")
 
         elif self.active_material_usage == "LAYER2":
-            # Extend LAYER2s to LAYER2
-            [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
-            [o.select_set(False) for o in selected_usages.get("PROFILE", [])]
-            try:
-                core.join_walls_TZ(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
-            except core.RequireAtLeastTwoLayeredElements as e:
-                self.report({"ERROR"}, str(e))
+            bpy.ops.bim.extend_walls_to_wall()
 
         elif self.active_material_usage == "PROFILE":
             # Extend PROFILEs to PROFILE

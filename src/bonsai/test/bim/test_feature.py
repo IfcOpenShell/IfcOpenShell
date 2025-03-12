@@ -1228,7 +1228,7 @@ def the_object_name_dimensions_are_dimensions(name, dimensions):
     actual_dimensions = list(the_object_name_exists(name).dimensions)
     expected_dimensions = [float(co) for co in dimensions.split(",")]
     for i, number in enumerate(actual_dimensions):
-        assert is_x(number, expected_dimensions[i]), f"Expected {expected_dimensions[i]} but got {number}"
+        assert is_x(number, expected_dimensions[i]), f"Expected {expected_dimensions} but got {actual_dimensions}"
 
 
 @then(parsers.parse('the object "{name}" top right corner is at "{location}"'))
@@ -1237,7 +1237,7 @@ def the_object_name_top_right_corner_is_at_location(name, location):
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[6])
     assert (
         obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object has top right corner {obj_corner}"
+    ).length < 0.1, f"Object has top right corner {obj_corner} instead of {location}"
 
 
 @then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
@@ -1246,7 +1246,7 @@ def the_object_name_bottom_left_corner_is_at_location(name, location):
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[0])
     assert (
         obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object has bottom left corner {obj_corner}"
+    ).length < 0.1, f"Object has bottom left corner {obj_corner} instead of {location}"
 
 
 @then(parsers.parse('the object "{name}" is contained in "{container_name}"'))
@@ -1305,7 +1305,7 @@ def the_object_name_has_no_modifiers(name):
 @given(parsers.parse('I load the IFC test file "{filepath}"'))
 def i_load_the_ifc_test_file(filepath):
     filepath = f"{variables['cwd']}{filepath}"
-    bpy.ops.bim.load_project(filepath=filepath, use_relative_path=True)
+    bpy.ops.bim.load_project(filepath=filepath)
 
 
 @given("I load the demo construction library")
@@ -1370,10 +1370,11 @@ def prepare_undo():
 @when(parsers.parse("I undo"))
 @then(parsers.parse("I undo"))
 def hit_undo():
-    # bpy.ops.ed.undo_push(message="UNDO STEP")
-    override = tool.Blender.get_viewport_context()
-    with bpy.context.temp_override(**override):
-        bpy.ops.ed.undo()
+    bpy.ops.ed.undo_push(message="UNDO STEP")
+    bpy.ops.ed.undo()
+    # override = tool.Blender.get_viewport_context()
+    # with bpy.context.temp_override(**override):
+    #     bpy.ops.ed.undo()
 
 
 @then(parsers.parse('the object "{obj_name1}" has a connection with "{obj_name2}"'))
@@ -1431,9 +1432,6 @@ def the_obj_layer_lenght_is_set_to(value):
         eval("bpy.context.scene.BIMModelProperties.length")
     except:
         assert False, f"Property BIMModelProperties.length does not exist when trying to set to value {value}"
-
-    print(50 * "@", bpy.context.selected_objects)
-
     props = tool.Model.get_model_props()
     props.length = value
     bpy.ops.bim.change_layer_length(length=value)
