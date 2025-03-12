@@ -569,6 +569,8 @@ class Snap(bonsai.core.tool.Snap):
                     snap["distance"] *= weight_factor / 5
                 if snap["type"] == "Edge Intersection":
                     snap["distance"] *= weight_factor / 10
+                if snap["type"] in ["Plane", "Axis", "Face"]: 
+                    snap["distance"] = weight_factor / 50
             return sorted(snapping_points, key=lambda x: x["distance"])
 
         snaps_by_group = filter_snapping_points_by_group(detected_snaps)
