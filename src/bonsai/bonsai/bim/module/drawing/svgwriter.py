@@ -1128,7 +1128,12 @@ class SvgWriter:
 
             def get_text():
                 radius = (points[-1].co - points[-2].co).length
-                radius = helper.format_distance(radius, precision=self.precision, decimal_places=self.decimal_places, custom_unit=dimension_data["custom_unit"])
+                radius = helper.format_distance(
+                    radius,
+                    precision=self.precision,
+                    decimal_places=self.decimal_places,
+                    custom_unit=dimension_data["custom_unit"],
+                )
                 text = f"R{radius}"
                 return text
 
@@ -1256,7 +1261,7 @@ class SvgWriter:
                     text_prefix=dimension_data["text_prefix"],
                     text_suffix=dimension_data["text_suffix"],
                     fill_bg=dimension_data["fill_bg"],
-                    custom_unit=dimension_data["custom_unit"]
+                    custom_unit=dimension_data["custom_unit"],
                 )
 
     def draw_dimension_annotations(self, obj):

@@ -809,7 +809,9 @@ class PolylineOperator:
             if len(polyline_points) > 2:
                 first_point = polyline_points[0]
                 last_point = polyline_points[-1]
-                if not (first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z):
+                if not (
+                    first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z
+                ):
                     self.input_ui.set_value("X", first_point.x)
                     self.input_ui.set_value("Y", first_point.y)
                     if self.input_ui.get_number_value("Z") is not None:

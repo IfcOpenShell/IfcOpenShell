@@ -130,7 +130,6 @@ class Polyline(bonsai.core.tool.Polyline):
         else:
             default_container_elevation = 0
 
-
         mouse_point = context.scene.BIMPolylineProperties.snap_mouse_point[0]
 
         if last_point_data:
@@ -273,7 +272,7 @@ class Polyline(bonsai.core.tool.Polyline):
         else:
             polyline_points = []
             last_point = Vector((0, 0, 0))
-            
+
         if tool.Ifc.get():
             default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
         else:

@@ -502,7 +502,13 @@ class BaseDecorator:
             precision = drawing_pset_data.get("ImperialPrecision", None)
 
         decimal_places = drawing_pset_data.get("DecimalPlaces", None)
-        return format_distance(value, precision=precision, decimal_places=decimal_places, suppress_zero_inches=True, custom_unit=custom_unit)
+        return format_distance(
+            value,
+            precision=precision,
+            decimal_places=decimal_places,
+            suppress_zero_inches=True,
+            custom_unit=custom_unit,
+        )
 
     def draw_asterisk(self, context: bpy.types.Context, pos: Vector, rotation: float = 0.0, scale: float = 1.0) -> None:
         """`pos` is a world space position\n

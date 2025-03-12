@@ -164,15 +164,15 @@ def format_distance(
     # Custom Unit Settings
     if custom_unit:
         unit_mapping = {
-        "Feet and Inches - Fractional": ("IMPERIAL", "FEET", True),
-        "Feet - Decimal": ("IMPERIAL", "FEET", False),
-        "Inches - Fractional": ("IMPERIAL", "INCHES", True),
-        "Inches - Decimal": ("IMPERIAL", "INCHES", False),
-        "Meters": ("METRIC", "METERS", False),
-        "Decimeters": ("METRIC", "DECIMETERS", False),
-        "Centimeters": ("METRIC", "CENTIMETERS", False),
-        "Millimeters": ("METRIC", "MILLIMETERS", False),
-    }
+            "Feet and Inches - Fractional": ("IMPERIAL", "FEET", True),
+            "Feet - Decimal": ("IMPERIAL", "FEET", False),
+            "Inches - Fractional": ("IMPERIAL", "INCHES", True),
+            "Inches - Decimal": ("IMPERIAL", "INCHES", False),
+            "Meters": ("METRIC", "METERS", False),
+            "Decimeters": ("METRIC", "DECIMETERS", False),
+            "Centimeters": ("METRIC", "CENTIMETERS", False),
+            "Millimeters": ("METRIC", "MILLIMETERS", False),
+        }
         if custom_unit in unit_mapping:
             unit_system, unit_length, unit_fraction = unit_mapping[custom_unit]
 
@@ -204,7 +204,7 @@ def format_distance(
 
         # Separate ft and inches
         # Unless Inches are the specified Length Unit or unit_fraction is False
-        if (unit_length == "FEET" and not unit_fraction):
+        if unit_length == "FEET" and not unit_fraction:
             feet = round(decInches / inPerFoot, 3)  # keep decimal
             decInches = 0
         elif unit_length != "INCHES":
