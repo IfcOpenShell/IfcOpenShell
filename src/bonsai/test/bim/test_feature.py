@@ -417,20 +417,25 @@ def i_create_default_mep_types():
     model_props = tool.Model.get_model_props()
 
     # add couple segments types
-    model_props.type_class = "IfcDuctSegmentType"
-    model_props.type_name = "RECT1"
-    model_props.type_template = "FLOW_SEGMENT_RECTANGULAR"
-    bpy.ops.bim.add_type()
+    i_trigger_operator("Add Element")
+    i_set_the_prop_property_to_value("Name", "RECT1")
+    i_set_the_prop_property_to_value("Class", "IfcDuctSegmentType")
+    i_set_the_prop_property_to_value("Representation", "Rectangular Distribution Segment")
+    i_click_button("OK")
 
-    model_props.type_template = "FLOW_SEGMENT_CIRCULAR"
-    model_props.type_name = "CIRCLE1"
-    bpy.ops.bim.add_type()
+    i_trigger_operator("Add Element")
+    i_set_the_prop_property_to_value("Name", "CIRCLE1")
+    i_set_the_prop_property_to_value("Class", "IfcDuctSegmentType")
+    i_set_the_prop_property_to_value("Representation", "Circular Distribution Segment")
+    i_click_button("OK")
 
     # add an actuator type
-    model_props.type_class = "IfcActuatorType"
-    model_props.type_template = "MESH"  # cube representation
-    model_props.type_name = "ACTUATOR"
-    bpy.ops.bim.add_type()
+    i_trigger_operator("Add Element")
+    i_set_the_prop_property_to_value("Name", "ACTUATOR")
+    i_set_the_prop_property_to_value("Class", "IfcActuatorType")
+    i_set_the_prop_property_to_value("Representation", "Custom Tessellation")
+    i_click_button("OK")
+
     with bpy.context.temp_override(active_object=bpy.data.objects["IfcActuatorType/ACTUATOR"]):
         bpy.ops.bim.add_port()
         # port at cube's left side
