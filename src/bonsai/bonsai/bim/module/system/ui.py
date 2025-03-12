@@ -375,10 +375,10 @@ class BIM_PT_zones(Panel):
         row.operator("bim.add_zone", text="", icon="ADD")
         if self.props.zones and self.props.active_zone_index < len(self.props.zones):
             ifc_definition_id = self.props.zones[self.props.active_zone_index].ifc_definition_id
-            row.operator("bim.enable_editing_zone", text="", icon="GREASEPENCIL").zone = ifc_definition_id
             row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF").system = ifc_definition_id
             row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = ifc_definition_id
             row.operator("bim.unassign_system", text="", icon="KEYFRAME").system = ifc_definition_id
+            row.operator("bim.enable_editing_zone", text="", icon="GREASEPENCIL").zone = ifc_definition_id
             row.operator("bim.remove_zone", text="", icon="X").zone = ifc_definition_id
 
         self.layout.template_list("BIM_UL_zones", "", self.props, "zones", self.props, "active_zone_index")
