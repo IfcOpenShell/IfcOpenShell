@@ -197,6 +197,10 @@ class TestReassignClass(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcSlab")) == 1
 
 
+class TestReassignClassIFC4X3(test.bootstrap.IFC4X3, TestReassignClass):
+    pass
+
+
 class TestReassignClassIFC2X3(test.bootstrap.IFC2X3, TestReassignClass):
     def test_providing_occurrence_class(self):
         element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")

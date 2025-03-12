@@ -162,16 +162,20 @@ def reassign_class(
       (such as IfcRelNests)
 
     It's unlikely that this affects real-world usage of this function.
+
+    :raises ValueError: If ``new_class`` does not exist in the provided file schema.
     """
 
     if not ifc_file:
         ifc_file = element.file
 
-    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
     try:
         declaration = schema.declaration_by_name(new_class)
-    except:
-        raise Exception(f"Class of {element} could not be changed to {new_class} as the class does not exist")
+    except RuntimeError:
+        raise ValueError(
+            f"Class of {element} could not be changed to {new_class} as the class does not exist in schema {ifc_file.schema_identifier}."
+        )
 
     info = element.get_info()
 
