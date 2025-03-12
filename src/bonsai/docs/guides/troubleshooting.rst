@@ -131,6 +131,25 @@ incompatible features may result in data loss.
    objects that have been scaled in object mode will have their scale reset to
    1, and scaling an object may result in unpredictable operations. Instead,
    scale objects within edit mode.
+3. **Copy and Paste for IFC objects**. Copying and pasting objects preserving their IFC data
+   is not currently supported as pasting object may be unsafe:
+   object may come from a different Blender session or from current session but it's earlier state.
+
+   If you copy and paste IFC object, you will find that pasted IFC object is unlinked to any IFC data
+   to keep it safe.
+
+   Current workarounds:
+
+   - copying IFC objects in current session instead use "IFC Duplicate Object" operator (:kbd:`Ctrl+D`).
+
+   - copying IFC occurrences objects from other projects - link IFC project, 
+     query element using Explore Tool and then append it from Links UI.
+   - copying any IFC objects to a new separate project - use IfcPatch with ExtractElements recipe.
+
+   - copying IFC types from a different project use Project Library UI.
+
+   WARNING. Manually using Blender's "Paste Objects" operator instead of "IFC Paste BIM Objects" to paste IFC objects
+   will have unpredictable results and will lead to data corruption.
 
 Where is the add-on installed?
 ------------------------------
