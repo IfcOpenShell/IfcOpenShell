@@ -36,7 +36,7 @@ import bonsai.core.geometry
 import bonsai.core.model as core
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import pi, sin, cos, degrees, radians
+from math import pi, sin, cos, degrees
 from mathutils import Vector, Matrix
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
@@ -56,6 +56,26 @@ class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.unjoin_walls(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
+
+
+class ExtendWallsToUnderside(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.extend_walls_to_underside"
+    bl_label = "Extend Walls To Underside"
+    bl_description = "Extend and clip selected walls at the bottom faces of an object"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def _execute(self, context):
+        slab = None
+        walls = []
+        if (obj := tool.Blender.get_active_object(is_selected=True)) and (element := tool.Ifc.get_entity(obj)):
+            slab = obj
+        for obj in tool.Blender.get_selected_objects(include_active=False):
+            if (element := tool.Ifc.get_entity(obj)) and tool.Model.get_usage_type(element) == "LAYER2":
+                walls.append(obj)
+        if slab and walls:
+            core.extend_wall_to_slab(tool.Ifc, tool.Geometry, tool.Model, slab, walls)
+        else:
+            self.report({"ERROR"}, "Please select at least one LAYER2 element and an active element")
 
 
 class AlignWall(bpy.types.Operator):
