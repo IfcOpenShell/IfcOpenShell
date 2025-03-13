@@ -842,6 +842,12 @@ class PolylineOperator:
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
+        if not self.tool_state.is_input_on:
+            if event.value == "RELEASE" and event.type == "BACK_SPACE":
+                tool.Polyline.remove_last_polyline_point()
+                tool.Blender.update_viewport()
+
+
     def handle_snap_selection(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         if not self.tool_state.is_input_on and event.value == "PRESS" and event.type == "M":
             self.snapping_points = tool.Snap.modify_snapping_point_selection(
@@ -908,10 +914,6 @@ class PolylineOperator:
 
                 tool.Blender.update_viewport()
                 return {"RUNNING_MODAL"}
-
-            if event.value == "RELEASE" and event.type == "BACK_SPACE":
-                tool.Polyline.remove_last_polyline_point()
-                tool.Blender.update_viewport()
 
     def get_product_preview_data(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_isntance):
         if tool.Model.get_usage_type(relating_type) == "PROFILE":
