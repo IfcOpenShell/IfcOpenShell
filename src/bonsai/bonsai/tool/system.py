@@ -242,7 +242,7 @@ class System(bonsai.core.tool.System):
 
     @classmethod
     def get_decoration_data(cls) -> dict[str, Any]:
-        print("get_decoration_data")
+        print("get_decoration_data in system.py")
         all_vertices = []
         preview_edges = []
         special_vertices = []
