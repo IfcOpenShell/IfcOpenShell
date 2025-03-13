@@ -170,8 +170,8 @@ class BIM_PT_styles(Panel):
         row.prop(self.props, "reflectance_method")
 
         if self.props.reflectance_method not in ("PHYSICAL", "NOTDEFINED", "FLAT"):
-            self.layout.label(text=f"Supported reflectance methods are:")
-            self.layout.label(text=f"PHYSICAL / NOTDEFINED / FLAT")
+            self.layout.label(text="Supported reflectance methods are:")
+            self.layout.label(text="PHYSICAL / NOTDEFINED / FLAT")
 
         row = self.layout.row(align=True)
         row.label(text="Emissive" if self.props.reflectance_method == "FLAT" else "Diffuse")

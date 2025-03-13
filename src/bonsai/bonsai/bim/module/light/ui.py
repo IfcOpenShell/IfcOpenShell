@@ -236,7 +236,6 @@ class BIM_PT_solar(bpy.types.Panel):
             row.operator("bim.move_sun_path_to_3d_cursor")
 
         row = self.layout.row(align=True)
-        # row.prop(props, "display_shadows", icon="SHADING_RENDERED")
         row.prop(props, "shadow_mode", icon="SHADING_RENDERED", expand=True)
 
         if props.shadow_mode == "SHADING":
