@@ -29,7 +29,7 @@ from typing import Union
 
 class Raycast(bonsai.core.tool.Raycast):
     @classmethod
-    def get_visible_objects(cls, context):
+    def get_visible_objects(cls, context: bpy.types.Context):
         depsgraph = context.evaluated_depsgraph_get()
         all_objs = []
         for dup in depsgraph.object_instances:
@@ -42,7 +42,7 @@ class Raycast(bonsai.core.tool.Raycast):
         return all_objs
 
     @classmethod
-    def get_on_screen_2d_bounding_boxes(cls, context, obj):
+    def get_on_screen_2d_bounding_boxes(cls, context: bpy.types.Context, obj: bpy.types.Object):
         obj_matrix = obj.matrix_world.copy()
         bbox = [obj_matrix @ Vector(v) for v in obj.bound_box]
 
@@ -69,7 +69,11 @@ class Raycast(bonsai.core.tool.Raycast):
         return (obj, bbox_2d)
 
     @classmethod
-    def intersect_mouse_2d_bounding_box(cls, mouse_pos, bbox, offset=None):
+    def intersect_mouse_2d_bounding_box(
+        cls, mouse_pos: tuple[int, int], bbox: list[float, float, float, float], offset: int = None
+    ):
+        print("bbox", type(bbox))
+        print(bbox)
         x, y = mouse_pos
         xmin, xmax, ymin, ymax = bbox
 
@@ -86,7 +90,9 @@ class Raycast(bonsai.core.tool.Raycast):
             return False
 
     @classmethod
-    def get_viewport_ray_data(cls, context, event, mouse_pos=None):
+    def get_viewport_ray_data(
+        cls, context: bpy.types.Context, event: bpy.types.Event, mouse_pos: tuple[int, int] = None
+    ):
         region = context.region
         rv3d = context.region_data
         original_perspective = rv3d.view_perspective
@@ -109,7 +115,13 @@ class Raycast(bonsai.core.tool.Raycast):
         return ray_origin, ray_target, ray_direction
 
     @classmethod
-    def get_object_ray_data(cls, context, event, obj_matrix, mouse_pos=None):
+    def get_object_ray_data(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        obj_matrix: mathutils.Matrix,
+        mouse_pos: tuple[int, int] = None,
+    ):
         if mouse_pos:
             ray_origin, ray_target, _ = cls.get_viewport_ray_data(context, event, mouse_pos)
         else:
@@ -122,7 +134,13 @@ class Raycast(bonsai.core.tool.Raycast):
         return ray_origin_obj, ray_target_obj, ray_direction_obj
 
     @classmethod
-    def obj_ray_cast(cls, context, event, obj, mouse_pos=None):
+    def obj_ray_cast(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        obj: bpy.types.Object,
+        mouse_pos: tuple[int, int] = None,
+    ):
         if mouse_pos:
             ray_origin_obj, _, ray_direction_obj = cls.get_object_ray_data(
                 context, event, obj.matrix_world.copy(), mouse_pos
@@ -136,7 +154,14 @@ class Raycast(bonsai.core.tool.Raycast):
             return None, None, None
 
     @classmethod
-    def ray_cast_by_proximity(cls, context, event, obj, face=None, custom_bmesh=None):
+    def ray_cast_by_proximity(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        obj: bpy.types.Object,
+        face: bpy.types.MeshPolygon = None,
+        custom_bmesh: bmesh.types.BMesh = None,
+    ):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
@@ -234,7 +259,7 @@ class Raycast(bonsai.core.tool.Raycast):
         return points
 
     @classmethod
-    def ray_cast_to_polyline(cls, context, event):
+    def ray_cast_to_polyline(cls, context: bpy.types.Context, event: bpy.types.Event):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
@@ -269,7 +294,7 @@ class Raycast(bonsai.core.tool.Raycast):
         return polyline_verts
 
     @classmethod
-    def ray_cast_to_measure(cls, context, event, points):
+    def ray_cast_to_measure(cls, context: bpy.types.Context, event: bpy.types.Event, points: bpy.types.Collection):
         bm = bmesh.new()
         bm.verts.index_update()
         bm.edges.index_update()
@@ -286,7 +311,9 @@ class Raycast(bonsai.core.tool.Raycast):
         return snapping_points
 
     @classmethod
-    def ray_cast_to_plane(cls, context, event, plane_origin, plane_normal):
+    def ray_cast_to_plane(
+        cls, context: bpy.types.Context, event: bpy.types.Event, plane_origin: Vector, plane_normal: Vector
+    ):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
@@ -309,7 +336,7 @@ class Raycast(bonsai.core.tool.Raycast):
         return intersection
 
     @classmethod
-    def ray_cast_to_edge_intersection(cls, context, event, edges):
+    def ray_cast_to_edge_intersection(cls, context: bpy.types.Context, event: bpy.types.Event, edges: list[dict]):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
