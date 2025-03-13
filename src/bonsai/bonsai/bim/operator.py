@@ -1203,3 +1203,25 @@ class CopyTextToClipboard(bpy.types.Operator):
     def execute(self, context):
         context.window_manager.clipboard = self.text
         return {"FINISHED"}
+<<<<<<< HEAD
+
+class VIEW3D_OT_localview_custom(bpy.types.Operator):
+    """Toggle Local View and BIM Grid Visibility"""
+    bl_idname = "view3d.localview_custom"
+    bl_label = "Local View with BIM Grid Toggle"
+
+    def execute(self, context):
+        # Call the original Local View operator
+        bpy.ops.view3d.localview()
+
+        # Toggle the BIMGridProperties.is_visible property
+        scene = context.scene
+        if hasattr(scene, "BIMGridProperties"):
+            scene.BIMGridProperties.is_visible = not scene.BIMGridProperties.is_visible
+        else:
+            print("BIMGridProperties not found in scene.")
+
+        return {'FINISHED'}
+
+=======
+>>>>>>> 41188e26e1fba582e63b4acac22b5ed625db0fa8

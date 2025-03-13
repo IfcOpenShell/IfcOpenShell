@@ -1307,3 +1307,10 @@ class BIM_PT_snappping(Panel):
         row.prop(groups, "object", toggle=True)
         row.prop(groups, "polyline", toggle=True)
         row.prop(groups, "measure", toggle=True)
+<<<<<<< HEAD
+        row = layout.row(align=True)
+        row.label(text="Bonsai Custom Operators")
+        row = layout.row(align=True)
+        row.operator("view3d.localview_custom", text="Toggle Local View (Custom)")
+=======
+>>>>>>> 41188e26e1fba582e63b4acac22b5ed625db0fa8

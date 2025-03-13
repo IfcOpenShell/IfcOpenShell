@@ -269,6 +269,24 @@ def register():
     # RestrictedContext doesn't allow accessing scene attribute, postpone it for a bit.
     bpy.app.timers.register(tool.Blender.setup_user_data_dir, first_interval=0.1)
 
+<<<<<<< HEAD
+    from .operator import VIEW3D_OT_localview_custom
+    bpy.utils.register_class(VIEW3D_OT_localview_custom)
+    print("Bonsai VIEW3D_OT_localview_custom registered")
+    # Replace the default Local View keybinding (NUMPAD /)
+    kc = bpy.context.window_manager.keyconfigs.addon
+    if kc:
+        km = kc.keymaps.get("3D View", None)
+        if km:
+            # Remove existing Local View keybinding
+            for kmi in km.keymap_items:
+                if kmi.idname == "view3d.localview":
+                    km.keymap_items.remove(kmi)
+            # Add new keybinding for the custom operator
+            km.keymap_items.new("view3d.localview_custom", 'NUMPAD_SLASH', 'PRESS')
+            print("Local View with BIM Grid Toggle keybinding added")
+=======
+>>>>>>> 41188e26e1fba582e63b4acac22b5ed625db0fa8
 
 def unregister():
     global icons
@@ -311,3 +329,10 @@ def unregister():
         tool.Blender.remove_scene_panel_override(panel)
 
     bpy.app.translations.unregister("bonsai")
+<<<<<<< HEAD
+
+    from .operator import VIEW3D_OT_localview_custom
+    bpy.utils.unregister_class(VIEW3D_OT_localview_custom)
+    print("Bonsai VIEW3D_OT_localview_custom unregistered")
+=======
+>>>>>>> 41188e26e1fba582e63b4acac22b5ed625db0fa8
