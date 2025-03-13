@@ -82,9 +82,7 @@ class Raycast(bonsai.core.tool.Raycast):
         return (obj, bbox_2d)
 
     @classmethod
-    def intersect_mouse_2d_bounding_box(
-        cls, mouse_pos: tuple[int, int], bbox: list[float, float, float, float]
-    ):
+    def intersect_mouse_2d_bounding_box(cls, mouse_pos: tuple[int, int], bbox: list[float, float, float, float]):
         x, y = mouse_pos
         xmin, xmax, ymin, ymax = bbox
 
@@ -438,7 +436,7 @@ class Raycast(bonsai.core.tool.Raycast):
         context: bpy.types.Context,
         event: bpy.types.Event,
         objs_to_raycast: list[bpy.types.Object],
-        include_wireframes: bool=True,
+        include_wireframes: bool = True,
     ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
         best_length_squared = 1.0
         best_obj = None

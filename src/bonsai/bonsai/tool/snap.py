@@ -310,67 +310,6 @@ class Snap(bonsai.core.tool.Snap):
             plane_normal = tool.Polyline.use_transform_orientations(plane_normal)
             return plane_origin, plane_normal
 
-        def cast_rays_to_single_object(
-            obj: bpy.types.Object, mouse_pos: tuple[int, int]
-        ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
-            hit = None
-            face_index = None
-            # Wireframes
-            if obj.type in {"EMPTY", "CURVE"} or (hasattr(obj.data, "polygons") and len(obj.data.polygons) == 0) :
-                snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj)
-                if snap_points:
-                    hit = sorted(snap_points, key=lambda x: x["distance"])[0]["point"]
-                    if hit:
-                        hit_world = obj.original.matrix_world @ hit
-                        return obj, hit_world, face_index
-                return None, None, None
-            # Meshes
-            else:
-                hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
-                if hit is None:
-                    # Tried original mouse position. Now it will try the offsets.
-                    original_mouse_pos = mouse_pos
-                    for value in mouse_offset:
-                        mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
-                        hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj, mouse_pos)
-                        if hit:
-                            break
-                    mouse_pos = original_mouse_pos
-                if hit:
-                    hit_world = obj.original.matrix_world @ hit
-                    return obj, hit_world, face_index
-                else:
-                    return None, None, None
-
-        def cast_rays_and_get_best_object(
-            objs_to_raycast: list[bpy.types.Object], mouse_pos: tuple[int, int]
-        ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
-            best_length_squared = 1.0
-            best_obj = None
-            best_hit = None
-            best_face_index = None
-
-            for obj in objs_to_raycast:
-                snap_obj, hit, face_index = cast_rays_to_single_object(obj, mouse_pos)
-
-                if hit is not None:
-                    length_squared = (hit - ray_origin).length_squared
-                    if best_obj is None or length_squared < best_length_squared:
-                        best_length_squared = length_squared
-                        best_obj = snap_obj
-                        best_hit = hit
-                        best_face_index = face_index
-
-            if best_obj is not None:
-                return best_obj, best_hit, best_face_index
-
-            else:
-                return None, None, None
-
-        ray_origin, ray_target, ray_direction = tool.Raycast.get_viewport_ray_data(context, event)
-
-        objs_to_raycast = cls.filter_objects_to_raycast(context, objs_2d_bbox, mouse_pos, offset)
-
         # Polyline
         try:
             polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline[0]
