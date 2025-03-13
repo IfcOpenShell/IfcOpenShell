@@ -24,6 +24,7 @@ import bonsai.core.tool
 import bonsai.tool as tool
 import mathutils
 from mathutils import Vector
+from typing import Union
 
 
 class Raycast(bonsai.core.tool.Raycast):
@@ -336,3 +337,93 @@ class Raycast(bonsai.core.tool.Raycast):
                             "distance": distance,
                         }
                         return snap_point
+
+    @classmethod
+    def filter_objects_to_raycast(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        objs_2d_bbox: Union[tuple[bpy.types.Object, list[float]]],
+        offset: int = None,
+    ) -> list[bpy.types.Object]:
+        mouse_pos = event.mouse_region_x, event.mouse_region_y
+        objs_to_raycast = []
+        for obj, bbox_2d in objs_2d_bbox:
+            if obj.type in {"MESH", "EMPTY", "CURVE"} and bbox_2d:
+                if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d, offset):
+                    if (
+                        obj.visible_in_viewport_get(bpy.context.space_data) or obj.library
+                    ):  # Check for local view and local collections for this viewport and object
+                        objs_to_raycast.append(obj)
+        return objs_to_raycast
+
+    @classmethod
+    def cast_rays_to_single_object(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        obj: bpy.types.Object,
+        mouse_offset: tuple[tuple[int, int]] = None,
+    ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
+
+        mouse_pos = event.mouse_region_x, event.mouse_region_y
+        hit = None
+        face_index = None
+        # Wireframes
+        if obj.type in {"EMPTY", "CURVE"} or (hasattr(obj.data, "polygons") and len(obj.data.polygons) == 0):
+            snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj)
+            if snap_points:
+                hit = sorted(snap_points, key=lambda x: x["distance"])[0]["point"]
+                if hit:
+                    hit_world = obj.original.matrix_world @ hit
+                    return obj, hit_world, face_index
+            return None, None, None
+        # Meshes
+        else:
+            hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
+            if hit is None:
+                # Tried original mouse position. Now it will try the offsets.
+                original_mouse_pos = mouse_pos
+                for value in mouse_offset:
+                    mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
+                    hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj, mouse_pos)
+                    if hit:
+                        break
+                mouse_pos = original_mouse_pos
+            if hit:
+                hit_world = obj.original.matrix_world @ hit
+                return obj, hit_world, face_index
+            else:
+                return None, None, None
+
+    @classmethod
+    def cast_rays_and_get_best_object(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        objs_to_raycast: list[bpy.types.Object],
+        mouse_offset: tuple[tuple[int, int]] = None,
+    ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
+        best_length_squared = 1.0
+        best_obj = None
+        best_hit = None
+        best_face_index = None
+
+        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+
+        for obj in objs_to_raycast:
+            snap_obj, hit, face_index = cls.cast_rays_to_single_object(context, event, obj, mouse_offset)
+
+            if hit is not None:
+                length_squared = (hit - ray_origin).length_squared
+                if best_obj is None or length_squared < best_length_squared:
+                    best_length_squared = length_squared
+                    best_obj = snap_obj
+                    best_hit = hit
+                    best_face_index = face_index
+
+        if best_obj is not None:
+            return best_obj, best_hit, best_face_index
+
+        else:
+            return None, None, None

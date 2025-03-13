@@ -270,24 +270,6 @@ class Snap(bonsai.core.tool.Snap):
         return sorted_intersections
 
     @classmethod
-    def filter_objects_to_raycast(
-        cls,
-        context: bpy.types.Context,
-        objs_2d_bbox: Union[tuple[bpy.types.Object, list[float]]],
-        mouse_pos: tuple[int, int],
-        offset: int = None,
-    ) -> list[bpy.types.Object]:
-        objs_to_raycast = []
-        for obj, bbox_2d in objs_2d_bbox:
-            if obj.type in {"MESH", "EMPTY", "CURVE"} and bbox_2d:
-                if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d, offset):
-                    if (
-                        obj.visible_in_viewport_get(bpy.context.space_data) or obj.library
-                    ):  # Check for local view and local collections for this viewport and object
-                        objs_to_raycast.append(obj)
-        return objs_to_raycast
-
-    @classmethod
     def detect_snapping_points(cls, context: bpy.types.Context, event: bpy.types.Event, objs_2d_bbox, tool_state):
         rv3d = context.region_data
         space = context.space_data
@@ -349,7 +331,7 @@ class Snap(bonsai.core.tool.Snap):
             hit = None
             face_index = None
             # Wireframes
-            if obj.type in {"EMPTY", "CURVE"} or (hasattr(obj.data, "polygons") and len(obj.data.polygons) == 0):
+            if obj.type in {"EMPTY", "CURVE"} or (hasattr(obj.data, "polygons") and len(obj.data.polygons) == 0) :
                 snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj)
                 if snap_points:
                     hit = sorted(snap_points, key=lambda x: x["distance"])[0]["point"]
@@ -430,15 +412,16 @@ class Snap(bonsai.core.tool.Snap):
                     detected_snaps.append(point)
 
         # Objects
+        objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, objs_2d_bbox, offset)
         if (space.shading.type == "SOLID" and space.shading.show_xray) or (
             space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe
         ):
             results = []
             for obj in objs_to_raycast:
-                results.append(cast_rays_to_single_object(obj, mouse_pos))
+                results.append(tool.Raycast.cast_rays_to_single_object(context, event, obj, mouse_offset))
         else:
             results = []
-            results.append(cast_rays_and_get_best_object(objs_to_raycast, mouse_pos))
+            results.append(tool.Raycast.cast_rays_and_get_best_object(context, event, objs_to_raycast, mouse_offset))
 
         for result in results:
             snap_obj = result[0]
