@@ -28,6 +28,19 @@ from typing import Union
 
 
 class Raycast(bonsai.core.tool.Raycast):
+    offset = 10
+    mouse_offset = (
+        (-offset, offset),
+        (0, offset),
+        (offset, offset),
+        (-offset, 0),
+        (0, 0),
+        (offset, 0),
+        (-offset, -offset),
+        (0, -offset),
+        (offset, -offset),
+    )
+
     @classmethod
     def get_visible_objects(cls, context: bpy.types.Context):
         depsgraph = context.evaluated_depsgraph_get()
@@ -70,19 +83,17 @@ class Raycast(bonsai.core.tool.Raycast):
 
     @classmethod
     def intersect_mouse_2d_bounding_box(
-        cls, mouse_pos: tuple[int, int], bbox: list[float, float, float, float], offset: int = None
+        cls, mouse_pos: tuple[int, int], bbox: list[float, float, float, float]
     ):
-        print("bbox", type(bbox))
-        print(bbox)
         x, y = mouse_pos
         xmin, xmax, ymin, ymax = bbox
 
         # extends bbox boundaries to improve snap
-        if offset:
-            xmin -= offset
-            xmax += offset
-            ymin -= offset
-            ymax += offset
+        if cls.offset:
+            xmin -= cls.offset
+            xmax += cls.offset
+            ymin -= cls.offset
+            ymax += cls.offset
 
         if xmin < x < xmax and ymin < y < ymax:
             return True
@@ -371,13 +382,12 @@ class Raycast(bonsai.core.tool.Raycast):
         context: bpy.types.Context,
         event: bpy.types.Event,
         objs_2d_bbox: Union[tuple[bpy.types.Object, list[float]]],
-        offset: int = None,
     ) -> list[bpy.types.Object]:
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         objs_to_raycast = []
         for obj, bbox_2d in objs_2d_bbox:
             if obj.type in {"MESH", "EMPTY", "CURVE"} and bbox_2d:
-                if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d, offset):
+                if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d):
                     if (
                         obj.visible_in_viewport_get(bpy.context.space_data) or obj.library
                     ):  # Check for local view and local collections for this viewport and object
@@ -390,7 +400,6 @@ class Raycast(bonsai.core.tool.Raycast):
         context: bpy.types.Context,
         event: bpy.types.Event,
         obj: bpy.types.Object,
-        mouse_offset: tuple[tuple[int, int]] = None,
     ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
 
         mouse_pos = event.mouse_region_x, event.mouse_region_y
@@ -411,7 +420,7 @@ class Raycast(bonsai.core.tool.Raycast):
             if hit is None:
                 # Tried original mouse position. Now it will try the offsets.
                 original_mouse_pos = mouse_pos
-                for value in mouse_offset:
+                for value in cls.mouse_offset:
                     mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
                     hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj, mouse_pos)
                     if hit:
@@ -429,7 +438,7 @@ class Raycast(bonsai.core.tool.Raycast):
         context: bpy.types.Context,
         event: bpy.types.Event,
         objs_to_raycast: list[bpy.types.Object],
-        mouse_offset: tuple[tuple[int, int]] = None,
+        include_wireframes: bool=True,
     ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
         best_length_squared = 1.0
         best_obj = None
@@ -439,7 +448,12 @@ class Raycast(bonsai.core.tool.Raycast):
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
 
         for obj in objs_to_raycast:
-            snap_obj, hit, face_index = cls.cast_rays_to_single_object(context, event, obj, mouse_offset)
+            if not include_wireframes and (
+                obj.type in {"EMPTY", "CURVE"} or (hasattr(obj.data, "polygons") and len(obj.data.polygons) == 0)
+            ):
+                continue
+
+            snap_obj, hit, face_index = cls.cast_rays_to_single_object(context, event, obj)
 
             if hit is not None:
                 length_squared = (hit - ray_origin).length_squared

@@ -273,22 +273,7 @@ class Snap(bonsai.core.tool.Snap):
     def detect_snapping_points(cls, context: bpy.types.Context, event: bpy.types.Event, objs_2d_bbox, tool_state):
         rv3d = context.region_data
         space = context.space_data
-        mouse_pos = event.mouse_region_x, event.mouse_region_y
         detected_snaps = []
-
-        snap_threshold = 0.3
-        offset = 10
-        mouse_offset = (
-            (-offset, offset),
-            (0, offset),
-            (offset, offset),
-            (-offset, 0),
-            (0, 0),
-            (offset, 0),
-            (-offset, -offset),
-            (0, -offset),
-            (offset, -offset),
-        )
 
         def select_plane_method():
             if not last_polyline_point:
@@ -412,16 +397,16 @@ class Snap(bonsai.core.tool.Snap):
                     detected_snaps.append(point)
 
         # Objects
-        objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, objs_2d_bbox, offset)
+        objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, objs_2d_bbox)
         if (space.shading.type == "SOLID" and space.shading.show_xray) or (
             space.shading.type == "WIREFRAME" and space.shading.show_xray_wireframe
         ):
             results = []
             for obj in objs_to_raycast:
-                results.append(tool.Raycast.cast_rays_to_single_object(context, event, obj, mouse_offset))
+                results.append(tool.Raycast.cast_rays_to_single_object(context, event, obj))
         else:
             results = []
-            results.append(tool.Raycast.cast_rays_and_get_best_object(context, event, objs_to_raycast, mouse_offset))
+            results.append(tool.Raycast.cast_rays_and_get_best_object(context, event, objs_to_raycast))
 
         for result in results:
             snap_obj = result[0]
