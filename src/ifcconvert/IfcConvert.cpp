@@ -206,7 +206,7 @@ size_t read_filters_from_file(const std::string&, inclusion_filter&, inclusion_t
 void parse_filter(geom_filter &, const std::vector<std::string>&);
 std::vector<IfcGeom::filter_t> setup_filters(const std::vector<geom_filter>&, const std::string&);
 
-bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap, bool rocksdb);
+bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap);
 
 // from https://stackoverflow.com/questions/31696328/boost-program-options-using-zero-parameter-options-multiple-times
 struct verbosity_counter {
@@ -239,7 +239,6 @@ int main(int argc, char** argv) {
 	path_t cache_file;
 	std::string log_format;
 	std::string geometry_kernel;
-	std::string input_format;
 
     po::options_description generic_options("Command line options");
 	verbosity_counter vcounter;
@@ -255,7 +254,6 @@ int main(int argc, char** argv) {
 		("yes,y", "answer 'yes' automatically to possible confirmation queries (e.g. overwriting an existing output file)")
 		("no-progress", "suppress possible progress bar type of prints that use carriage return")
 		("log-format", po::value<std::string>(&log_format), "log format: plain or json")
-		("input-format", po::value<std::string>(&input_format), "input format: ifcspf, ifcxml, rocksdb")
 		("log-file", new po::typed_value<path_t, char_t>(&log_file), "redirect log output to file");
 
     po::options_description fileio_options;
@@ -662,7 +660,7 @@ int main(int argc, char** argv) {
 	if (output_extension == XML) {
 		int exit_code = EXIT_FAILURE;
 		try {
-			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap, input_format=="rocksdb")) {
+			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
 				time_t start, end;
 				time(&start);
 				XmlSerializer s(ifc_file, IfcUtil::path::to_utf8(output_temp_filename));
@@ -682,7 +680,7 @@ int main(int argc, char** argv) {
 	} else if (output_extension == IFC) {
 		int exit_code = EXIT_FAILURE;
 		try {
-			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap, input_format == "rocksdb")) {
+			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
                 time_t start, end;
 				time(&start);
 				std::ofstream fs(output_filename.c_str());
@@ -708,7 +706,7 @@ int main(int argc, char** argv) {
 	else if (output_extension == RDB) {
 		int exit_code = EXIT_FAILURE;
 		try {
-			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap, input_format == "rocksdb")) {
+			if (init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
 				time_t start, end;
 				time(&start);
 				RocksDbSerializer s(ifc_file, IfcUtil::path::to_utf8(output_filename));
@@ -941,7 +939,7 @@ int main(int argc, char** argv) {
 	time_t start,end;
 	time(&start);
 	
-    if (!init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap, input_format == "rocksdb")) {
+    if (!init_input_file(IfcUtil::path::to_utf8(input_filename), ifc_file, no_progress || quiet, mmap)) {
         write_log(!quiet);
 		serializer.reset();
         IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename)); /**< @todo Windows Unicode support */
@@ -1274,7 +1272,7 @@ void write_log(bool header) {
 
 #include <boost/algorithm/string/predicate.hpp>
 
-bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap, bool rocksdb) {
+bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, bool no_progress, bool mmap) {
     time_t start, end;
 
     // Prevent IfcFile::Init() prints by setting output to null temporarily
@@ -1293,7 +1291,7 @@ bool init_input_file(const std::string& filename, IfcParse::IfcFile*& ifc_file, 
 		ifc_file = new IfcParse::IfcFile(filename, mmap);
 #else
 		(void)mmap;
-		ifc_file = new IfcParse::IfcFile(filename, rocksdb ? IfcParse::rocksdb : IfcParse::ifcspf);
+		ifc_file = new IfcParse::IfcFile(filename);
 #endif
 	}
 
