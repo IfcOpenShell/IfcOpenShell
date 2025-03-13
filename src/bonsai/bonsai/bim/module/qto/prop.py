@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 import ifc5d.qto
 from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
@@ -33,8 +34,12 @@ from bpy.props import (
 
 
 def get_qto_rule(self, context):
+    ifc_file = tool.Ifc.get()
+    is_ifc4x3 = ifc_file.schema == "IFC4X3"
     results = []
     for rule_id, rule in ifc5d.qto.rules.items():
+        if rule_id.startswith("IFC4X3") != is_ifc4x3:
+            continue
         results.append((rule_id, rule["name"], rule["description"]))
     return results
 

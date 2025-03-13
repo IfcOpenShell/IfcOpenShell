@@ -19,6 +19,7 @@
 """Run this test from src/ifcopenshell-python folder: pytest --durations=0 ifcopenshell/util/test_pset.py"""
 from ifcopenshell.util import pset
 from ifcopenshell import util
+from ifcopenshell.util.pset import ApplicableEntity
 
 
 class TestPsetQto:
@@ -66,3 +67,72 @@ class TestPsetQto:
         assert "Pset_MaterialConcrete" not in names
         names = self.pset_qto.get_applicable_names("IfcMaterial", "concrete")
         assert "Pset_MaterialConcrete" in names
+
+
+class TestParseApplicableEntity:
+    def test_run(self):
+        assert pset.parse_applicable_entity("IfcBoilerType") == [
+            ApplicableEntity("IfcBoilerType", "IfcBoilerType", None, False)
+        ]
+
+    def test_two_entities(self):
+        assert pset.parse_applicable_entity("IfcBoilerType,IfcWallType") == [
+            ApplicableEntity("IfcBoilerType", "IfcBoilerType", None, False),
+            ApplicableEntity("IfcWallType", "IfcWallType", None, False),
+        ]
+
+    def test_two_entities_with_performance_history(self):
+        assert pset.parse_applicable_entity("IfcBoilerType[PerformanceHistory],IfcWallType") == [
+            ApplicableEntity("IfcBoilerType[PerformanceHistory]", "IfcBoilerType", None, True),
+            ApplicableEntity("IfcWallType", "IfcWallType", None, False),
+        ]
+
+    def test_two_entities_with_predefined_type(self):
+        assert pset.parse_applicable_entity("IfcBoilerType/STEAM,IfcWallType") == [
+            ApplicableEntity("IfcBoilerType/STEAM", "IfcBoilerType", "STEAM", False),
+            ApplicableEntity("IfcWallType", "IfcWallType", None, False),
+        ]
+
+    def test_two_entities_with_predefined_type_and_performance_history(self):
+        assert pset.parse_applicable_entity("IfcBoilerType[PerformanceHistory]/STEAM,IfcWallType") == [
+            ApplicableEntity("IfcBoilerType[PerformanceHistory]/STEAM", "IfcBoilerType", "STEAM", True),
+            ApplicableEntity("IfcWallType", "IfcWallType", None, False),
+        ]
+
+
+class TestConvertApplicableEntitiesToQuery:
+    def test_run(self):
+        entities = [ApplicableEntity("IfcBoilerType", "IfcBoilerType", None, False)]
+        assert pset.convert_applicable_entities_to_query(entities) == "IfcBoilerType"
+
+    def test_two_entities(self):
+        entities = [
+            ApplicableEntity("IfcBoilerType", "IfcBoilerType", None, False),
+            ApplicableEntity("IfcWallType", "IfcWallType", None, False),
+        ]
+        assert pset.convert_applicable_entities_to_query(entities) == "IfcBoilerType + IfcWallType"
+
+    def test_two_entities_with_performance_history(self):
+        entities = [
+            ApplicableEntity("IfcBoilerType[PerformanceHistory]", "IfcBoilerType", None, True),
+            ApplicableEntity("IfcWallType", "IfcWallType", None, False),
+        ]
+        assert pset.convert_applicable_entities_to_query(entities) == "IfcBoilerType + IfcWallType"
+
+    def test_two_entities_with_predefined_type(self):
+        entities = [
+            ApplicableEntity("IfcBoilerType/STEAM", "IfcBoilerType", "STEAM", False),
+            ApplicableEntity("IfcWallType", "IfcWallType", None, False),
+        ]
+        assert (
+            pset.convert_applicable_entities_to_query(entities) == 'IfcBoilerType, PredefinedType="STEAM" + IfcWallType'
+        )
+
+    def test_two_entities_with_predefined_type_and_performance_history(self):
+        entities = [
+            ApplicableEntity("IfcBoilerType[PerformanceHistory]/STEAM", "IfcBoilerType", "STEAM", True),
+            ApplicableEntity("IfcWallType", "IfcWallType", None, False),
+        ]
+        assert (
+            pset.convert_applicable_entities_to_query(entities) == 'IfcBoilerType, PredefinedType="STEAM" + IfcWallType'
+        )

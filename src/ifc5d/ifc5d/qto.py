@@ -35,7 +35,12 @@ from typing import Any, Literal, get_args, Union, Iterable
 
 
 Function = namedtuple("Function", ["measure", "name", "description"])
-RULE_SET = Literal["IFC4QtoBaseQuantities", "IFC4QtoBaseQuantitiesBlender"]
+RULE_SET = Literal[
+    "IFC4QtoBaseQuantities",
+    "IFC4QtoBaseQuantitiesBlender",
+    "IFC4X3QtoBaseQuantities",
+    "IFC4X3QtoBaseQuantitiesBlender",
+]
 rules: dict[RULE_SET, dict[str, Any]] = {}
 ResultsDict = dict[ifcopenshell.entity_instance, dict[str, dict[str, float]]]
 QtosFormulas = dict[str, dict[str, str]]
