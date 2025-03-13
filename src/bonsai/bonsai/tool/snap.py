@@ -270,6 +270,24 @@ class Snap(bonsai.core.tool.Snap):
         return sorted_intersections
 
     @classmethod
+    def filter_objects_to_raycast(
+        cls,
+        context: bpy.types.Context,
+        objs_2d_bbox: Union[tuple[bpy.types.Object, list[float]]],
+        mouse_pos: tuple[int, int],
+        offset: int = None,
+    ) -> list[bpy.types.Object]:
+        objs_to_raycast = []
+        for obj, bbox_2d in objs_2d_bbox:
+            if obj.type in {"MESH", "EMPTY", "CURVE"} and bbox_2d:
+                if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d, offset):
+                    if (
+                        obj.visible_in_viewport_get(bpy.context.space_data) or obj.library
+                    ):  # Check for local view and local collections for this viewport and object
+                        objs_to_raycast.append(obj)
+        return objs_to_raycast
+
+    @classmethod
     def detect_snapping_points(cls, context: bpy.types.Context, event: bpy.types.Event, objs_2d_bbox, tool_state):
         rv3d = context.region_data
         space = context.space_data
@@ -384,14 +402,7 @@ class Snap(bonsai.core.tool.Snap):
 
         ray_origin, ray_target, ray_direction = tool.Raycast.get_viewport_ray_data(context, event)
 
-        objs_to_raycast = []
-        for obj, bbox_2d in objs_2d_bbox:
-            if obj.type in {"MESH", "EMPTY", "CURVE"} and bbox_2d:
-                if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d, offset):
-                    if (
-                        obj.visible_in_viewport_get(context.space_data) or obj.library
-                    ):  # Check for local view and local collections for this viewport and object
-                        objs_to_raycast.append(obj)
+        objs_to_raycast = cls.filter_objects_to_raycast(context, objs_2d_bbox, mouse_pos, offset)
 
         # Polyline
         try:
