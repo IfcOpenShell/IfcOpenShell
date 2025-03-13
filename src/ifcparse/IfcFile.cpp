@@ -356,7 +356,6 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(s
     
     std::string v;
 
-    // @todo should always be name, as we can/should not assign to identity
     rocksdb::Status s = db->Get(rocksdb::ReadOptions{}, (r == entityinstance_ref ? "i|" : "t|") + std::to_string(number) + "|_", &v);
     if (s.ok()) {
         size_t s;
@@ -375,8 +374,9 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(s
         inst->file_ = file;
         instance_cache_.insert({ {r, number}, inst });
         return inst;
+    } else {
+        throw IfcException("Instance #" + boost::lexical_cast<std::string>(number) + " not found");
     }
-    throw std::runtime_error("");
 }
 
 namespace {
@@ -476,6 +476,8 @@ void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::If
                     s.resize(vals.size() * sizeof(size_t));
                     memcpy(s.data(), vals.data(), s.size());
                     db->Put(rocksdb::WriteOptions{}, it->key(), s);
+
+                    it->Next();
                 }
             }
         }
