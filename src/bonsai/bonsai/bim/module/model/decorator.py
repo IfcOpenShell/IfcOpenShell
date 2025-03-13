@@ -410,6 +410,7 @@ class PolylineDecorator:
             "X": "X coord: ",
             "Y": "Y coord: ",
             "Z": "Z coord:",
+            "AREA": "Area:",
         }
         try:
             mouse_pos = self.event.mouse_region_x, self.event.mouse_region_y
@@ -425,11 +426,14 @@ class PolylineDecorator:
         color = self.addon_prefs.decorations_colour
         color_highlight = self.addon_prefs.decorator_color_special
         offset = 20
-        new_line = 20
+        new_line = 0
         for i, (key, field_name) in enumerate(texts.items()):
-
             formatted_value = None
             if self.input_ui:
+                # Controls which options are displayed in the UI
+                if key not in self.input_ui.input_options:
+                    continue
+                new_line += 20
                 if self.tool_state and key != self.tool_state.input_type:
                     formatted_value = self.input_ui.get_formatted_value(key)
                 else:
@@ -441,7 +445,7 @@ class PolylineDecorator:
                 blf.color(self.font_id, *color_highlight)
             else:
                 blf.color(self.font_id, *color)
-            blf.position(self.font_id, mouse_pos[0] + offset, mouse_pos[1] - (new_line * i), 0)
+            blf.position(self.font_id, mouse_pos[0] + offset, mouse_pos[1] - (new_line), 0)
             blf.draw(self.font_id, field_name + formatted_value)
         blf.disable(self.font_id, blf.SHADOW)
 

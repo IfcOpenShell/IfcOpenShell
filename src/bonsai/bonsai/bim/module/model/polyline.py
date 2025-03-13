@@ -550,9 +550,6 @@ class PolylineOperator:
     # TODO Fill doc strings
     """ """
 
-    number_input: list[str]
-    input_type: tool.Polyline.InputType
-
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return context.space_data.type == "VIEW_3D"
@@ -589,7 +586,7 @@ class PolylineOperator:
         self.input_options = ["D", "A", "X", "Y"]
         self.input_type = None
         self.input_value_xy = [None, None]
-        self.input_ui = tool.Polyline.create_input_ui()
+        self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
         self.is_typing = False
         self.snap_angle = None
         self.snapping_points = []

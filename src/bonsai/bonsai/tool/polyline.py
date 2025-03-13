@@ -24,7 +24,7 @@ import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from lark import Lark, Transformer
 from math import degrees, radians, sin, cos, tan
 from mathutils import Vector, Matrix
@@ -39,16 +39,9 @@ class Polyline(bonsai.core.tool.Polyline):
         _WORLD_ANGLE: str = ""  # Relative to World Origin. Only used for specific operation. Not used on the UI.
         _X: str = ""
         _Y: str = ""
-        _Z: Optional[str] = None
-        _AREA: Optional[str] = None
-        init_z: bool = False
-        init_area: bool = False
-
-        def __post_init__(self):
-            if self.init_z:
-                self._Z = ""
-            if self.init_area:
-                self._AREA = "0"
+        _Z: str = ""
+        _AREA: str = "0"
+        input_options: List[str] = field(default_factory=list)
 
         def set_value(self, attribute_name, value):
             value = str(value)
@@ -76,8 +69,6 @@ class Polyline(bonsai.core.tool.Polyline):
             else:
                 return Polyline.format_input_ui_units(value)
 
-    InputType = Literal["D", "A", "X", "Y", None]
-
     @dataclass
     class ToolState:
         use_default_container: bool = None
@@ -101,8 +92,8 @@ class Polyline(bonsai.core.tool.Polyline):
         input_type: "Polyline.InputType" = None
 
     @classmethod
-    def create_input_ui(cls, init_z: bool = False, init_area: bool = False) -> PolylineUI:
-        return cls.PolylineUI(init_z=init_z, init_area=init_area)
+    def create_input_ui(cls, input_options: List[str] = []) -> PolylineUI:
+        return cls.PolylineUI(input_options=input_options)
 
     @classmethod
     def create_tool_state(cls) -> ToolState:
@@ -343,7 +334,7 @@ class Polyline(bonsai.core.tool.Polyline):
         return
 
     @classmethod
-    def validate_input(cls, input_number: str, input_type: InputType) -> tuple[bool, str]:
+    def validate_input(cls, input_number: str, input_type: str) -> tuple[bool, str]:
         """
         :return: Tuple with a boolean indicating if the input is valid
             and the final string output.

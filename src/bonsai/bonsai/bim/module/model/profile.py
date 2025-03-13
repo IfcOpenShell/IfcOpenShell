@@ -1128,8 +1128,8 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
 
     def __init__(self):
         super().__init__()
-        self.input_ui = tool.Polyline.create_input_ui(init_z=True)
         self.input_options = ["D", "A", "X", "Y", "Z"]
+        self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
         self.relating_type = None
         props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id

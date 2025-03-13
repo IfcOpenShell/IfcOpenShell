@@ -2600,11 +2600,8 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
 
     def __init__(self):
         super().__init__()
-        if self.measure_type == "AREA":
-            self.input_ui = tool.Polyline.create_input_ui(init_z=True, init_area=True)
-        else:
-            self.input_ui = tool.Polyline.create_input_ui(init_z=True)
         self.input_options = ["D", "A", "X", "Y", "Z"]
+        self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
 
     def modal(self, context, event):
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
