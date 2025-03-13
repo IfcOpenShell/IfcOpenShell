@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bl_ui_utils
 import bonsai.bim
 import bonsai.tool as tool
 from bpy.types import Panel, Menu
@@ -54,9 +55,9 @@ class BIM_MT_type_menu(bpy.types.Menu):
     def draw(self, context):
         props = tool.Model.get_model_props()
         layout = self.layout
-        layout.operator_context = "INVOKE_REGION_WIN"
-        op = layout.operator("bim.rename_type", icon="GREASEPENCIL", text="Rename Type")
-        op.element = props.menu_relating_type_id
+        with bl_ui_utils.layout.operator_context(layout, "INVOKE_REGION_WIN"):
+            op = layout.operator("bim.rename_type", icon="GREASEPENCIL", text="Rename Type")
+            op.element = props.menu_relating_type_id
         op = layout.operator("bim.select_type", icon="OBJECT_DATA")
         op.relating_type = props.menu_relating_type_id
         op = layout.operator("bim.duplicate_type", icon="DUPLICATE")
