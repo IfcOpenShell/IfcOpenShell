@@ -61,7 +61,7 @@ from ifcopenshell.geom import ShapeElementType
 from bonsai.bim.module.project.data import LinksData, ProjectLibraryData
 from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneDecorator, MeasureDecorator
 from bonsai.bim.module.project.prop import BreadcrumbType
-from bonsai.bim.module.model.decorator import PolylineDecorator
+from bonsai.bim.module.model.decorator import PolylineDecorator, FaceAreaDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from typing import Union, TYPE_CHECKING, Literal, get_args
 
@@ -2678,6 +2678,97 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
 
     def invoke(self, context, event):
         super().invoke(context, event)
+        return {"RUNNING_MODAL"}
+
+
+class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
+    bl_idname = "bim.measure_face_area_tool"
+    bl_label = "Measure Face Area Tool"
+    bl_options = {"REGISTER", "UNDO"}
+
+    measure_type: bpy.props.StringProperty()
+
+    @classmethod
+    def poll(cls, context):
+        return context.space_data.type == "VIEW_3D"
+
+    def __init__(self):
+        super().__init__()
+        self.input_options = ["AREA"]
+        self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
+        self.clicked_faces = []
+        self.total_area = 0
+        if tool.Ifc.get():
+            self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        else:
+            self.unit_scale = tool.Blender.get_unit_scale()
+
+    def modal(self, context, event):
+        def select_face(mouse_pos):
+            objs_to_raycast = tool.Raycast.filter_objects_to_raycast(context, event, self.objs_2d_bbox)
+            obj, _, face_index = tool.Raycast.cast_rays_and_get_best_object(
+                context, event, objs_to_raycast, include_wireframes=False
+            )
+            if face_index:
+                return obj, face_index
+            return None, None
+
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        self.handle_mouse_move(context, event)
+
+        if event.value == "PRESS" and event.type == "LEFTMOUSE":
+            tool.Blender.update_viewport()
+            mouse_pos = event.mouse_region_x, event.mouse_region_y
+            obj, face_index = select_face(mouse_pos)
+            if face_index:
+                if obj.data.polygons[face_index] not in self.clicked_faces:
+                    self.clicked_faces.append(obj.data.polygons[face_index])
+                    self.total_area += obj.data.polygons[face_index].area
+                    self.input_ui.set_value("AREA", self.total_area)
+                    polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline.add()
+                    polyline_data.id = obj.name + str(face_index)
+                    for v_id in obj.data.polygons[face_index].vertices:
+                        vertex = obj.matrix_world @ obj.data.vertices[v_id].co
+                        polyline_point = polyline_data.polyline_points.add()
+                        polyline_point.x = vertex.x
+                        polyline_point.y = vertex.y
+                        polyline_point.z = vertex.z
+            tool.Blender.update_viewport()
+
+        if event.shift and (event.value == "PRESS" and event.type == "LEFTMOUSE"):
+            mouse_pos = event.mouse_region_x, event.mouse_region_y
+            obj, face_index = select_face(mouse_pos)
+            if face_index:
+                if obj.data.polygons[face_index] in self.clicked_faces:
+                    self.clicked_faces.remove(obj.data.polygons[face_index])
+                    self.total_area -= obj.data.polygons[face_index].area
+                    self.input_ui.set_value("AREA", self.total_area)
+                    polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+                    for i, polyline in enumerate(polyline_data):
+                        if polyline.id == obj.name + str(face_index):
+                            polyline_data.remove(i)
+            tool.Blender.update_viewport()
+
+        if event.value == "RELEASE" and event.type in {"ESC", "RIGHTMOUSE"}:
+            bpy.context.scene.BIMPolylineProperties.insertion_polyline.clear()
+            PolylineDecorator.uninstall()
+            FaceAreaDecorator.uninstall()
+            tool.Blender.update_viewport()
+            return {"CANCELLED"}
+
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+        super().invoke(context, event)
+        PolylineDecorator.uninstall()
+        PolylineDecorator.install(context, ui_only=True)
+        FaceAreaDecorator.install(context)
         return {"RUNNING_MODAL"}
 
 

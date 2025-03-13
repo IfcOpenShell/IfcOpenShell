@@ -66,6 +66,8 @@ class Polyline(bonsai.core.tool.Polyline):
             if attribute_name == "A":
                 value = float(self.get_text_value(attribute_name))
                 return f"{value:.2f}°"
+            if attribute_name == "AREA":
+                return Polyline.format_input_ui_units(value, True)
             else:
                 return Polyline.format_input_ui_units(value)
 

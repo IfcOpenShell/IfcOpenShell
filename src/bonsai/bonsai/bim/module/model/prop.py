@@ -1119,6 +1119,7 @@ class PolylinePoint(PropertyGroup):
 
 
 class Polyline(PropertyGroup):
+    id: bpy.props.StringProperty(name="Id")
     polyline_points: bpy.props.CollectionProperty(type=PolylinePoint)
     measurement_type: bpy.props.StringProperty(name="Measurement Type")
     area: bpy.props.StringProperty(name="Measured Area")

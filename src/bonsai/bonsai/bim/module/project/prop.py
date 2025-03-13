@@ -499,7 +499,8 @@ class MeasureToolSettings(PropertyGroup):
     measurement_type_items = [
         ("SINGLE", "SINGLE", "Single", "FIXED_SIZE", 1),
         ("POLYLINE", "POLYLINE", "Polyline", "DRIVER_ROTATIONAL_DIFFERENCE", 2),
-        ("AREA", "AREA", "Area", "OUTLINER_DATA_LIGHTPROBE", 3),
+        ("POLY_AREA", "POLY_AREA", "Poyline Area", "OUTLINER_DATA_LIGHTPROBE", 3),
+        ("FACE_AREA", "FACE_AREA", "Face Area", "FACESEL", 4),
     ]
 
     measurement_type: bpy.props.EnumProperty(items=measurement_type_items, default="POLYLINE")
