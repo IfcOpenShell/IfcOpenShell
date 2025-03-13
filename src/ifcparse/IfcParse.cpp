@@ -1296,7 +1296,10 @@ IfcFile::IfcFile(const std::string& fn, bool mmap) {
 #else
 IfcFile::IfcFile(const std::string& path, filetype ty) {
     // @todo allow for rocksdb from path
-    if (ty == ifcspf) {
+    if (ty == FT_AUTODETECT) {
+        ty = guess_file_type(path);
+    }
+    if (ty == FT_IFCSPF) {
         IfcSpfStream s(path);
         storage_.emplace<1>(); // impl::in_memory_file_storage{};
         // @todo assign in constructor
@@ -1307,7 +1310,7 @@ IfcFile::IfcFile(const std::string& path, filetype ty) {
         byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
         byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
         // byidentity_ = decltype(byidentity_)(&std::get<impl::in_memory_file_storage>(storage_).byidentity_);
-    } else {
+    } else if (ty == FT_ROCKSDB) {
         // @todo this can only be used for databases that already exist, because otherwise there is no way to specify the schema
         storage_.emplace<2>(path, this);
         std::get<impl::rocks_db_file_storage>(storage_).read_schema(schema_);
@@ -1315,6 +1318,8 @@ IfcFile::IfcFile(const std::string& path, filetype ty) {
         byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_by_name_);
         byref_excl_ = decltype(byref_excl_)(&std::get<impl::rocks_db_file_storage>(storage_).byref_excl_);
         // byidentity_ = decltype(byidentity_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_cache_);
+    } else {
+        throw std::runtime_error("Unsupported file format");
     }
     ifcroot_type_ = schema_->declaration_by_name("IfcRoot");
 }
@@ -1344,21 +1349,26 @@ IfcFile::IfcFile(const IfcParse::schema_definition* schema, filetype ty, const s
     : schema_(schema)
     , ifcroot_type_(schema_->declaration_by_name("IfcRoot"))
     , max_id_(0)
-    , _header(ty == rocksdb ? this : nullptr)
+    , _header(ty == FT_ROCKSDB ? this : nullptr)
 {
-    if (ty == ifcspf) {
+    if (ty == FT_AUTODETECT) {
+        ty = guess_file_type(path);
+    }
+    if (ty == FT_IFCSPF) {
         storage_.emplace<1>();
         std::get<impl::in_memory_file_storage>(storage_).file = this;
 
         byid_ = decltype(byid_)(&std::get<impl::in_memory_file_storage>(storage_).byid_);
         byref_excl_ = decltype(byref_excl_)(&std::get<impl::in_memory_file_storage>(storage_).byref_excl_);
         // byidentity_ = decltype(byidentity_)(&std::get<impl::in_memory_file_storage>(storage_).byidentity_);
-    } else {
+    } else if (ty == FT_ROCKSDB) {
         storage_.emplace<2>(path, this);
 
         byid_ = decltype(byid_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_by_name_);
         byref_excl_ = decltype(byref_excl_)(&std::get<impl::rocks_db_file_storage>(storage_).byref_excl_);
         // byidentity_ = decltype(byidentity_)(&std::get<impl::rocks_db_file_storage>(storage_).instance_cache_);
+    } else {
+        throw std::runtime_error("Unsupported file format");
     }
     setDefaultHeaderValues();
 }

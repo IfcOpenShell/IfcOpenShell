@@ -572,11 +572,15 @@ namespace impl {
 }
 
 enum filetype {
-    ifcspf,
-    ifcxml,
-    rocksdb,
-    autodetect
+    FT_IFCSPF,
+    FT_IFCXML,
+    FT_IFCZIP,
+    FT_ROCKSDB,
+    FT_UNKNOWN,
+    FT_AUTODETECT
 };
+
+filetype guess_file_type(const std::string& fn);
 
 /// This class provides access to the entity instances in an IFC file
 /// The file takes ownership of instances added to this file and deletes them when the file is deleted.
@@ -623,13 +627,13 @@ private:
 #ifdef USE_MMAP
     IfcFile(const std::string& path, bool mmap = false);
 #else
-    IfcFile(const std::string& path, filetype ty=ifcspf);
+    IfcFile(const std::string& path, filetype ty=FT_AUTODETECT);
 #endif
     IfcFile(std::istream& stream, int length);
     IfcFile(void* data, int length);
     IfcFile(IfcParse::IfcSpfStream* stream);
     // @nb path is only used in rocksdb mode, for spf file is in-memory only until write() is called
-    IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"), filetype ty = ifcspf, const std::string& path = "");
+    IfcFile(const IfcParse::schema_definition* schema = IfcParse::schema_by_name("IFC4"), filetype ty = FT_AUTODETECT, const std::string& path = "");
 
     ~IfcFile();
 

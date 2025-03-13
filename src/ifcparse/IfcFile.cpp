@@ -499,3 +499,43 @@ IfcParse::IfcFile::~IfcFile() {
         delete p.second;
     }
 }
+
+#include <filesystem>
+#include <fstream>
+
+IfcParse::filetype IfcParse::guess_file_type(const std::string& fn) {
+    namespace fs = std::filesystem;
+
+    if (!fs::exists(fn)) {
+        // @todo this is just weird, but for consistency with earlier behaviour
+        // for now the only intent for this function is to auto-detect RocksDB
+        return FT_IFCSPF;
+    }
+
+    if (fs::is_directory(fn)) {
+        // Typical RocksDB file to look for
+        auto currentFile = fs::path(fn) / "CURRENT";
+
+        if (!fs::exists(currentFile) || !fs::is_regular_file(currentFile)) {
+            return FT_UNKNOWN;
+        }
+
+        std::ifstream infile(currentFile);
+        if (!infile) {
+            return FT_UNKNOWN;
+        }
+
+        std::string line;
+        if (!std::getline(infile, line)) {
+            return FT_UNKNOWN;
+        }
+
+        // RocksDB's CURRENT file typically contains a line like "MANIFEST-000001".
+        if (line.find("MANIFEST-") == 0) {
+            return FT_ROCKSDB;
+        }
+    } else {
+        // @todo just return SPF for now, but ideally this will be augmented with all other options
+        return FT_IFCSPF;
+    }
+}
