@@ -331,7 +331,7 @@ class Snap(bonsai.core.tool.Snap):
             hit = None
             face_index = None
             # Wireframes
-            if obj.type in {"EMPTY", "CURVE"} or (hasattr(obj.data, "polygons") and len(obj.data.polygons) == 0) :
+            if obj.type in {"EMPTY", "CURVE"} or (hasattr(obj.data, "polygons") and len(obj.data.polygons) == 0):
                 snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj)
                 if snap_points:
                     hit = sorted(snap_points, key=lambda x: x["distance"])[0]["point"]
@@ -569,7 +569,7 @@ class Snap(bonsai.core.tool.Snap):
                     snap["distance"] *= weight_factor / 5
                 if snap["type"] == "Edge Intersection":
                     snap["distance"] *= weight_factor / 10
-                if snap["type"] in ["Plane", "Axis", "Face"]: 
+                if snap["type"] in ["Plane", "Axis", "Face"]:
                     snap["distance"] = weight_factor / 50
             return sorted(snapping_points, key=lambda x: x["distance"])
 

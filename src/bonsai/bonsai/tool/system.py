@@ -344,13 +344,13 @@ class System(bonsai.core.tool.System):
                     edge_ortho = obj.matrix_world.col[j].to_3d().normalized()
                     second_ortho = edge_dir.cross(edge_ortho)
                     edge_ortho = second_ortho.cross(edge_dir)
-    
+
                     # direction lines should be around the edge center
                     n_direction_lines, start_offset = divmod(edge_length, direction_lines_offset)
                     n_direction_lines = int(n_direction_lines) + 1
                     start_offset /= 2
                     start_offset = edge_dir * start_offset + base_vert
-                    
+
                     if both_directions:
                         cur_vert_index = start_vert_i + len(port_data) + j * 2 * n_direction_lines
                     else:
