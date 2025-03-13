@@ -130,11 +130,9 @@ class PortData:
 
     @classmethod
     def load(cls):
-        obj = bpy.context.active_object
-        assert obj
-        element = tool.Ifc.get_entity(obj)
-        assert element
-        cls.element = element
+        cls.element = None
+        if obj := bpy.context.active_object:
+            cls.element = tool.Ifc.get_entity(obj)
         is_port = cls.is_port()
         cls.data = {
             "total_ports": cls.total_ports(),

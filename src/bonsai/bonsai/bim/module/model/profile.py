@@ -1154,10 +1154,11 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
                     if element1.is_a("IfcFlowSegment") or element1.is_a("IfcFlowFitting"):
                         # lazy import to avoid circular import errors
                         from bonsai.bim.module.model.mep import MEPGenerator
+
                         MEPGenerator().setup_ports(profile1["obj"])
-                else:                
-                for profile1, profile2 in zip(profiles[:-1], profiles[1:]):
-                    DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
+                else:
+                    for profile1, profile2 in zip(profiles[:-1], profiles[1:]):
+                        DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
 
     def modal(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
