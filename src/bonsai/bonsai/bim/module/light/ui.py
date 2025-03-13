@@ -236,14 +236,15 @@ class BIM_PT_solar(bpy.types.Panel):
             row.operator("bim.move_sun_path_to_3d_cursor")
 
         row = self.layout.row(align=True)
-        row.prop(props, "display_shadows", icon="SHADING_RENDERED")
-        row.prop(context.scene.display.shading, "shadow_intensity", text="Shadow Intensity")
+        # row.prop(props, "display_shadows", icon="SHADING_RENDERED")
+        row.prop(props, "shadow_mode", icon="SHADING_RENDERED", expand=True)
 
-        row = self.layout.row(align=True)
-        row.prop(props, "traverse_transparent", icon="SHADING_RENDERED")
-        if props.traverse_transparent:
-            row = self.layout.row(align=True)
-            row.prop(context.scene.sun_pos_properties.sun_object.data , "energy", text="Sun Intensity")
+        if props.shadow_mode == "SHADING":
+            row = self.layout.row()
+            row.prop(context.scene.display.shading, "shadow_intensity", text="Shadow Intensity")
+        elif props.shadow_mode == "RENDERING":
+            row = self.layout.row()
+            row.prop(context.scene.sun_pos_properties.sun_object.data, "energy", text="Sun Intensity")
 
         row = self.layout.row(align=True)
         row.operator("bim.view_from_sun", icon="LIGHT_HEMI")

@@ -71,10 +71,8 @@ def update_sun_path_size(self, context):
     update_sun_path(self)
 
 
-def update_display_shadows(self, context):
-    if self.display_shadows:
-        if context.scene.BIMSolarProperties.traverse_transparent:
-            context.scene.BIMSolarProperties.traverse_transparent = False
+def update_shadow_mode(self, context):
+    if self.shadow_mode == "SHADING":
         update_sun_path(self)
         context.scene.render.engine = "BLENDER_WORKBENCH"
         context.scene.display.shading.light = "FLAT"
@@ -84,14 +82,7 @@ def update_display_shadows(self, context):
         context.scene.view_settings.view_transform = "Standard"  # Preserve shading colours
         space = tool.Blender.get_view3d_space()
         space.shading.type = "RENDERED"
-    else:
-        space = tool.Blender.get_view3d_space()
-        space.shading.type = "SOLID"
-
-def update_traverse_transparent(self, context):
-    if self.traverse_transparent:
-        if context.scene.BIMSolarProperties.display_shadows:
-            context.scene.BIMSolarProperties.display_shadows = False
+    elif self.shadow_mode == "RENDERING":
         if context.scene.sun_pos_properties.sun_object is None:
             bpy.ops.object.light_add(type="SUN", radius=1, align="WORLD", location=(0, 0, 0), scale=(1, 1, 1))
             bpy.ops.object.move_to_collection(collection_index=0)
@@ -106,9 +97,9 @@ def update_traverse_transparent(self, context):
         space = tool.Blender.get_view3d_space()
         space.shading.type = "RENDERED"
     else:
-        context.scene.render.engine = "BLENDER_WORKBENCH"
         space = tool.Blender.get_view3d_space()
         space.shading.type = "SOLID"
+
 
 def update_display_sun_path(self, context):
     if self.display_sun_path:
@@ -417,20 +408,28 @@ class BIMSolarProperties(PropertyGroup):
     azimuth: FloatProperty(name="Azimuth")
     elevation: FloatProperty(name="Elevation")
     UTC_zone: FloatProperty(name="UTC Zone")
-    display_shadows: BoolProperty(
-        name="Display Shadows",
-        default=False,
-        description="Enables a visual style to display shadows easily",
-        update=update_display_shadows,
+    shadow_mode: bpy.props.EnumProperty(
+        items=(
+            ("NONE", "No Shadows", "No shadows"),
+            (
+                "SHADING",
+                "Shaded",
+                "Fast shadows sufficient for external shadow analysis based on shading styles",
+                "SHADING_SOLID",
+                1,
+            ),
+            (
+                "RENDERING",
+                "Rendered",
+                "Raycast (Eevee) shadows considering transparency based on rendering styles",
+                "SHADING_RENDERED",
+                2,
+            ),
+        ),
+        name="Shadow Mode",
+        description="How to display shadows in the scene",
+        update=update_shadow_mode,
     )
-
-    traverse_transparent: BoolProperty(
-        name="Enable Sun: Shadows and Light traversal of transparent objects",
-        default=False,
-        description="Enables a visual style so Sun light can traverse transparent objects and cast shadows (it toggles the render engine to EEVEE)",
-        update=update_traverse_transparent,
-    )
-
     display_sun_path: BoolProperty(
         name="Display Sun Path",
         default=False,
