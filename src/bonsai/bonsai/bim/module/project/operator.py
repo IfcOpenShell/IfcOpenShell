@@ -2709,7 +2709,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
             obj, _, face_index = tool.Raycast.cast_rays_and_get_best_object(
                 context, event, objs_to_raycast, include_wireframes=False
             )
-            if face_index:
+            if face_index is not None:
                 return obj, face_index
             return None, None
 
@@ -2726,7 +2726,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
             tool.Blender.update_viewport()
             mouse_pos = event.mouse_region_x, event.mouse_region_y
             obj, face_index = select_face(mouse_pos)
-            if face_index:
+            if face_index is not None:
                 if obj.data.polygons[face_index] not in self.clicked_faces:
                     self.clicked_faces.append(obj.data.polygons[face_index])
                     self.total_area += obj.data.polygons[face_index].area
