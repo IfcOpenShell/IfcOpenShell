@@ -566,8 +566,7 @@ def i_click_button(button):
         # Clicked confirm on an operator's draw dialog
         return i_press_operator(panel_spy.panel.bl_idname)
     debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
-    if not debug:
-        debug = f"No buttons were found, here is the text we see: {panel_spy.spied_labels}"
+    debug += f"\nHere is the text we see: {panel_spy.spied_labels}"
     assert False, f"Could not find {button}:\n{debug}"
 
 
