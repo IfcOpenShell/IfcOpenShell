@@ -385,17 +385,6 @@ struct AttributeValue {
 };
 
 struct rocks_db_attribute_storage {
-private:
-    template<typename Visitor, std::size_t Index>
-    auto apply_visitor_impl(Visitor&& visitor, std::size_t idx, std::integral_constant<std::size_t, Index>) const {
-        return apply_visitor_impl(std::forward<Visitor>(visitor), idx, std::integral_constant<std::size_t, Index - 1>{});
-    }
-
-    template<typename Visitor>
-    void apply_visitor_impl(Visitor&&, std::size_t, std::integral_constant<std::size_t, 0>) const {
-        throw std::runtime_error("Invalid variant index");
-    }
-
 public:
     size_t size(void*, const IfcParse::declaration*, std::size_t identity) const {
         // @todo is this actually needed?
@@ -407,14 +396,12 @@ public:
     void set(void* storage, const IfcParse::declaration*, std::size_t identity, std::size_t index, const T& value);
 
     template<typename T>
-    bool has(void* storage, const IfcParse::declaration*, std::size_t identity, std::size_t index) const {
-        // @todo
-        return false;
-    }
+    bool has(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index) const;
 
     template<typename Visitor>
-    auto apply_visitor(void* storage, const IfcParse::declaration*, std::size_t identity, std::size_t index, Visitor&& visitor) const {
-        return apply_visitor_impl(std::forward<Visitor>(visitor), index, std::integral_constant<std::size_t, type_variant_parameter_pack::size>{});
+    auto apply_visitor(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index, Visitor&& visitor) const {
+        // @todo do we need visitation on all data/storage/attribute levels?
+        AttributeValue((IfcParse::impl::rocks_db_file_storage*)storage, identity, decl->as_entity() ? 1 : 0, index).apply_visitor(std::forward<Visitor>(visitor));
     }
 };
 
