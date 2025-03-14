@@ -158,8 +158,8 @@ def open(
         print(products[0] == model[122] == model["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
     path = Path(path)
-    if not path.is_file():
-        raise FileNotFoundError(f"File does not exist: '{path}'.")
+    if not path.exists():
+        raise FileNotFoundError(f"Path does not exist: '{path}'.")
     if format is None:
         format = guess_format(path)
     if format == ".ifcXML":
@@ -273,7 +273,9 @@ def guess_format(path: Path) -> Union[str, None]:
     :return: Either .ifc, .ifcZIP, .ifcXML, .ifcJSON, .ifcSQLite, or None.
     """
     suffix = path.suffix.lower()
-    if suffix == ".ifc":
+    if path.is_dir():
+        return "rocksdb"
+    elif suffix == ".ifc":
         return ".ifc"
     elif suffix in (".ifczip", ".zip"):
         return ".ifcZIP"
