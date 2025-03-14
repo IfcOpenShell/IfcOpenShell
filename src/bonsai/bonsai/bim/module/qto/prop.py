@@ -38,12 +38,8 @@ CALCULATOR_FUNCTION_ENUM_ITEMS: list[Union[tuple[str, str, str], None]] = []
 
 
 def get_qto_rule(self: "BIMQtoProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
-    ifc_file = tool.Ifc.get()
-    is_ifc4x3 = ifc_file.schema == "IFC4X3"
     results: list[tuple[str, str, str]] = []
-    for rule_id, rule in ifc5d.qto.rules.items():
-        if rule_id.startswith("IFC4X3") != is_ifc4x3:
-            continue
+    for rule_id, rule in tool.Qto.get_qto_rules().items():
         results.append((rule_id, rule["name"], rule["description"]))
     return results
 

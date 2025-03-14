@@ -25,7 +25,7 @@ import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 from mathutils import Vector
-from typing import Optional, Union, Literal, TYPE_CHECKING
+from typing import Optional, Union, Literal, TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from bonsai.bim.module.qto.prop import BIMQtoProperties
@@ -167,6 +167,14 @@ class Qto(bonsai.core.tool.Qto):
                             }
                         )
         return result
+
+    @classmethod
+    def get_qto_rules(cls) -> dict[str, dict[str, Any]]:
+        import ifc5d.qto
+
+        ifc_file = tool.Ifc.get()
+        is_ifc4x3 = ifc_file.schema == "IFC4X3"
+        return {rule_id: rule for rule_id, rule in ifc5d.qto.rules.items() if rule_id.startswith("IFC4X3") == is_ifc4x3}
 
     @classmethod
     def get_not_quantified_elements_message(cls, not_quantified_elements: set[ifcopenshell.entity_instance]) -> str:

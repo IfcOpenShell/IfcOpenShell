@@ -191,7 +191,7 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
 
         not_quantified_elements = run_quantification(props.qto_rule, elements)
         if props.fallback and not_quantified_elements:
-            alternative_rules = next(rule for rule in ifc5d.qto.rules if rule != props.qto_rule)
+            alternative_rules = next(rule for rule in tool.Qto.get_qto_rules() if rule != props.qto_rule)
             not_quantified_elements = run_quantification(alternative_rules, not_quantified_elements)
 
         not_quantified_message = tool.Qto.get_not_quantified_elements_message(not_quantified_elements)
