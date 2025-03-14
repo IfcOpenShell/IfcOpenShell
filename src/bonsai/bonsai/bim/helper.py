@@ -278,9 +278,9 @@ def get_display_value(value: str, float_decimal_precision: int = 6) -> str:
     """
     try:
         digits = len(value.split(".")[1])
-        value = float(value)
-        if digits > 6:  # Maximal decimal float precision
-            value = round(value, float_decimal_precision)
+        fvalue = float(value)
+        if digits > float_decimal_precision:  # Maximal decimal float precision
+            value = round(fvalue, float_decimal_precision)
     except (ValueError, IndexError):  # Not castable to a float or no decimal places (eg integer)
         pass
     return str(value)
