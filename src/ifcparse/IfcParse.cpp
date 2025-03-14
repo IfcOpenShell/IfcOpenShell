@@ -2310,12 +2310,11 @@ IfcUtil::IfcBaseClass* IfcFile::instance_by_guid(const std::string& guid) {
 IfcFile::type_iterator IfcFile::types_begin() const {
     return std::visit([](const auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
-            throw std::runtime_error("Storage not initialized");
-            return (IfcFile::type_iterator) impl::rocks_db_file_storage::rocksdb_types_iterator{};
+            return IfcFile::type_iterator{ impl::rocks_db_file_storage::rocksdb_types_iterator{} };
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            return (IfcFile::type_iterator) x.bytype_excl_.begin();
+            return IfcFile::type_iterator{ x.bytype_excl_.begin() };
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
-            return (IfcFile::type_iterator) impl::rocks_db_file_storage::rocksdb_types_iterator(&x);
+            return IfcFile::type_iterator{ impl::rocks_db_file_storage::rocksdb_types_iterator(&x) };
         }
     }, storage_);
 }
@@ -2323,12 +2322,11 @@ IfcFile::type_iterator IfcFile::types_begin() const {
 IfcFile::type_iterator IfcFile::types_end() const {
     return std::visit([](const auto& x) {
         if constexpr (std::is_same_v<std::decay_t<decltype(x)>, std::monostate>) {
-            throw std::runtime_error("Storage not initialized");
-            return (IfcFile::type_iterator)impl::rocks_db_file_storage::rocksdb_types_iterator{};
+            return IfcFile::type_iterator{ impl::rocks_db_file_storage::rocksdb_types_iterator{} };
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::in_memory_file_storage>) {
-            return (IfcFile::type_iterator)x.bytype_excl_.end();
+            return IfcFile::type_iterator{ x.bytype_excl_.end() };
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
-            return (IfcFile::type_iterator)impl::rocks_db_file_storage::rocksdb_types_iterator{};
+            return IfcFile::type_iterator{ impl::rocks_db_file_storage::rocksdb_types_iterator{} };
         }
     }, storage_);
 }

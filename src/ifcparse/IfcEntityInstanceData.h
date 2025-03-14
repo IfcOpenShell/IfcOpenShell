@@ -334,6 +334,54 @@ struct AttributeValue {
     unsigned int size() const;
 
     IfcUtil::ArgumentType type() const;
+
+    template<typename Visitor>
+    auto apply_visitor(Visitor&& visitor) const {
+        switch (type()) {
+            case IfcUtil::Argument_DERIVED:
+                return visitor(Derived{});
+            case IfcUtil::Argument_INT:
+                return visitor((int)*this);
+            case IfcUtil::Argument_BOOL:
+                return visitor((bool)*this);
+            case IfcUtil::Argument_LOGICAL: {
+                boost::logic::tribool tb = *this;
+                return visitor(tb);
+            }
+            case IfcUtil::Argument_DOUBLE:
+                return visitor((double)*this);
+            case IfcUtil::Argument_STRING:
+                return visitor((std::string)*this);
+            case IfcUtil::Argument_BINARY:
+                return visitor((boost::dynamic_bitset<>)*this);
+            case IfcUtil::Argument_ENUMERATION:
+                return visitor((EnumerationReference)*this);
+            case IfcUtil::Argument_ENTITY_INSTANCE:
+                return visitor((IfcUtil::IfcBaseClass*)*this);
+            case IfcUtil::Argument_AGGREGATE_OF_INT:
+                return visitor((std::vector<int>)*this);
+            case IfcUtil::Argument_AGGREGATE_OF_DOUBLE:
+                return visitor((std::vector<double>)*this);
+            case IfcUtil::Argument_AGGREGATE_OF_STRING:
+                return visitor((std::vector<std::string>)*this);
+            case IfcUtil::Argument_AGGREGATE_OF_BINARY:
+                return visitor((std::vector<boost::dynamic_bitset<>>)*this);
+            case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE:
+                return visitor((boost::shared_ptr<aggregate_of_instance>)*this);
+            case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_INT:
+                return visitor((std::vector<std::vector<int>>)*this);
+            case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_DOUBLE:
+                return visitor((std::vector<std::vector<double>>)*this);
+            case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE:
+                return visitor((boost::shared_ptr<aggregate_of_aggregate_of_instance>)*this);
+            case IfcUtil::Argument_EMPTY_AGGREGATE:
+                return visitor(empty_aggregate_t{});
+            case IfcUtil::Argument_AGGREGATE_OF_EMPTY_AGGREGATE:
+                return visitor(empty_aggregate_of_aggregate_t{});
+            default:
+                return visitor(Blank{});
+        }
+    }
 };
 
 struct rocks_db_attribute_storage {

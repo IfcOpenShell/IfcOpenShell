@@ -14,7 +14,7 @@ RocksDbSerializer::RocksDbSerializer(IfcParse::IfcFile* file, const std::string&
 	options.create_if_missing = true;
 	options.merge_operator.reset(new ConcatenateIdMergeOperator());
 	rocksdb::Status status = rocksdb::DB::Open(options, rocksdb_filename, &db_);*/
-	output_file_ = new IfcParse::IfcFile(file_->schema(), IfcParse::rocksdb, rocksdb_filename_);
+	output_file_ = new IfcParse::IfcFile(file_->schema(), IfcParse::FT_ROCKSDB, rocksdb_filename_);
 }
 
 void RocksDbSerializer::finalize()

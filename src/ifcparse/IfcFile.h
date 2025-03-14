@@ -135,6 +135,8 @@ struct parse_context {
 #include <vector>
 #include <list>
 
+#ifndef SWIG
+
 template <typename... Iterators>
 class variant_iterator {
 public:
@@ -211,6 +213,8 @@ private:
     variant_type it_;
 };
 
+#endif
+
 namespace impl {
     struct in_memory_file_storage {
         IfcParse::IfcSpfLexer* tokens;
@@ -236,7 +240,7 @@ namespace impl {
         in_memory_file_storage(const in_memory_file_storage&) = delete;
         in_memory_file_storage(const in_memory_file_storage&&) = delete;
 
-        class type_iterator : private entities_by_type_t::const_iterator {
+        class type_iterator : public entities_by_type_t::const_iterator {
         public:
             using iterator_category = std::forward_iterator_tag;
             using value_type = entities_by_type_t::key_type;
@@ -266,12 +270,6 @@ namespace impl {
                 type_iterator tmp(*this);
                 operator++();
                 return tmp;
-            }
-
-            bool operator!=(const type_iterator& other) const {
-                const entities_by_type_t::const_iterator& self_ = *this;
-                const entities_by_type_t::const_iterator& other_ = other;
-                return self_ != other_;
             }
         };
 
@@ -547,7 +545,11 @@ namespace impl {
                 return !(*this == other);
             }
 
-            const IfcParse::declaration* operator*() const;
+            value_type const& operator*() const;
+
+            value_type const* operator->() const {
+                return &operator*();
+            }
         };
 
         // @todo rocksdb_instance_iterator?
