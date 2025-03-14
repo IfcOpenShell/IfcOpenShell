@@ -234,12 +234,23 @@ class IfcOpenShell(QtoCalculator):
         ),
         # IfcVolumeMeasure
         "get_volume": Function("IfcVolumeMeasure", "Volume", "Calculates the volume of a manifold shape"),
+        # IfcMassMeasure
+        "get_weight": Function(
+            "IfcMassMeasure",
+            "Weight",
+            "The weight of the object based on it's volume and material density (from Pset_MaterialCommon.MassDensity).",
+        ),
     }
 
     functions = {}
     for k, v in raw_functions.items():
         functions[f"gross_{k}"] = Function(v.measure, f"Gross {v.name}", v.description)
         functions[f"net_{k}"] = Function(v.measure, f"Net {v.name}", v.description)
+
+    internal_functions = (
+        "get_segment_length",
+        "get_weight",
+    )
 
     @classmethod
     def calculate(cls, ifc_file, elements, qtos, results):
@@ -258,7 +269,7 @@ class IfcOpenShell(QtoCalculator):
                 if not formula:
                     continue
                 gross_or_net_qtos = gross_qtos if formula.startswith("gross_") else net_qtos
-                if formula.endswith("get_segment_length"):
+                if formula.endswith(cls.internal_functions):
                     gross_or_net_qtos.setdefault(name, {})[quantity] = formula.partition("_")[2]
                 elif formula.startswith(("gross_", "net_")):
                     formula = formula.partition("_")[2]
@@ -280,6 +291,7 @@ class IfcOpenShell(QtoCalculator):
         for iterator, qtos_ in tasks:
             if iterator.initialize():
                 while True:
+                    geometry: ifcopenshell.geom.main.ShapeType
                     if isinstance(iterator, ifcopenshell.geom.iterator):
                         shape = iterator.get()
                         geometry = shape.geometry
@@ -293,11 +305,15 @@ class IfcOpenShell(QtoCalculator):
                         for quantity, formula in quantities.items():
                             if formula == "get_segment_length":
                                 results[element][name][quantity] = cls.get_segment_length(element)
+                            elif formula == "get_weight":
+                                value = cls.get_weight(element, geometry)
+                                if value is None:
+                                    continue
                             else:
-                                results[element][name][quantity] = cls.unit_converter.convert(
-                                    formula_functions[formula](geometry),
-                                    IfcOpenShell.raw_functions[formula].measure,
-                                )
+                                value = formula_functions[formula](geometry)
+                                assert isinstance(value, (float, int))
+                                value = cls.unit_converter.convert(value, IfcOpenShell.raw_functions[formula].measure)
+                            results[element][name][quantity] = value
                     if not iterator.next():
                         break
 
@@ -340,6 +356,23 @@ class IfcOpenShell(QtoCalculator):
             y = ifcopenshell.util.shape.get_y(area_shape.geometry) / cls.unit_scale
             z = item.Depth
             return max([x, y, z])
+
+    @classmethod
+    def get_weight(
+        cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType
+    ) -> Union[float, None]:
+        """Get element's weight.
+
+        :param element: IFC element entity.
+        :return: ``float`` weight in project units
+            or ``None`` if mass density calculation for this element is not supported.
+        """
+
+        density = ifcopenshell.util.element.get_element_mass_density(element)
+        if density is None:
+            return
+        volume = ifcopenshell.util.shape.get_volume(geometry)
+        return volume * density
 
 
 class Blender(QtoCalculator):

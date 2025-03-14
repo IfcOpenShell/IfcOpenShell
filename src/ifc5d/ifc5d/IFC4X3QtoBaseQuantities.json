@@ -40,11 +40,11 @@
                     "CrossSectionArea": null,
                     "GrossSurfaceArea": "gross_get_area",
                     "GrossVolume": "gross_get_volume",
-                    "GrossWeight": null,
+                    "GrossWeight": "gross_get_weight",
                     "Length": "net_get_max_xyz",
                     "NetSurfaceArea": "net_get_area",
                     "NetVolume": "net_get_volume",
-                    "NetWeight": null,
+                    "NetWeight": "net_get_weight",
                     "OuterSurfaceArea": "net_get_outer_surface_area"
                 }
             },
@@ -140,11 +140,11 @@
                     "CrossSectionArea": null,
                     "GrossSurfaceArea": "gross_get_area",
                     "GrossVolume": "gross_get_volume",
-                    "GrossWeight": null,
+                    "GrossWeight": "gross_get_weight",
                     "Length": "net_get_max_xyz",
                     "NetSurfaceArea": "net_get_area",
                     "NetVolume": "net_get_volume",
-                    "NetWeight": null,
+                    "NetWeight": "net_get_weight",
                     "OuterSurfaceArea": "net_get_outer_surface_area"
                 }
             },
@@ -362,11 +362,11 @@
                     "CrossSectionArea": null,
                     "GrossSurfaceArea": null,
                     "GrossVolume": null,
-                    "GrossWeight": null,
+                    "GrossWeight": "gross_get_weight",
                     "Height": "net_get_z",
                     "Length": "net_get_max_xy",
                     "NetVolume": "net_get_volume",
-                    "NetWeight": null,
+                    "NetWeight": "net_get_weight",
                     "OuterSurfaceArea": null,
                     "Width": null
                 }
@@ -457,11 +457,11 @@
                     "CrossSectionArea": null,
                     "GrossSurfaceArea": "gross_get_area",
                     "GrossVolume": "gross_get_volume",
-                    "GrossWeight": null,
+                    "GrossWeight": "gross_get_weight",
                     "Length": "net_get_max_xyz",
                     "NetSurfaceArea": "net_get_area",
                     "NetVolume": "net_get_volume",
-                    "NetWeight": null,
+                    "NetWeight": "net_get_weight",
                     "OuterSurfaceArea": "net_get_outer_surface_area"
                 }
             },
@@ -500,10 +500,10 @@
                     "CrossSectionArea": null,
                     "GrossSurfaceArea": null,
                     "GrossVolume": null,
-                    "GrossWeight": null,
+                    "GrossWeight": "gross_get_weight",
                     "Length": "net_get_z",
                     "NetVolume": null,
-                    "NetWeight": null,
+                    "NetWeight": "net_get_weight",
                     "OuterSurfaceArea": null
                 }
             },
@@ -521,10 +521,10 @@
                 "Qto_PipeSegmentBaseQuantities": {
                     "FootPrintArea": null,
                     "GrossCrossSectionArea": null,
-                    "GrossWeight": null,
+                    "GrossWeight": "gross_get_weight",
                     "Length": "net_get_segment_length",
                     "NetCrossSectionArea": null,
-                    "NetWeight": null,
+                    "NetWeight": "net_get_weight",
                     "OuterSurfaceArea": null
                 }
             },
@@ -532,10 +532,10 @@
                 "Qto_PlateBaseQuantities": {
                     "GrossArea": "gross_get_max_side_area",
                     "GrossVolume": "gross_get_volume",
-                    "GrossWeight": null,
+                    "GrossWeight": "gross_get_weight",
                     "NetArea": "net_get_max_side_area",
                     "NetVolume": "net_get_volume",
-                    "NetWeight": null,
+                    "NetWeight": "net_get_weight",
                     "Perimeter": null,
                     "Width": "net_get_min_xyz"
                 }
@@ -656,11 +656,11 @@
                     "Depth": "net_get_z",
                     "GrossArea": "gross_get_footprint_area",
                     "GrossVolume": "gross_get_volume",
-                    "GrossWeight": null,
+                    "GrossWeight": "gross_get_weight",
                     "Length": "net_get_x",
                     "NetArea": "net_get_footprint_area",
                     "NetVolume": "net_get_volume",
-                    "NetWeight": null,
+                    "NetWeight": "net_get_weight",
                     "Perimeter": "net_get_footprint_perimeter",
                     "Width": "net_get_y"
                 }
@@ -782,13 +782,13 @@
                     "GrossFootPrintArea": null,
                     "GrossSideArea": "gross_get_side_area",
                     "GrossVolume": "gross_get_volume",
-                    "GrossWeight": null,
+                    "GrossWeight": "gross_get_weight",
                     "Height": "net_get_z",
                     "Length": "net_get_x",
                     "NetFootPrintArea": null,
                     "NetSideArea": "net_get_side_area",
                     "NetVolume": "net_get_volume",
-                    "NetWeight": null,
+                    "NetWeight": "net_get_weight",
                     "Width": "net_get_y"
                 }
             },
