@@ -39,18 +39,34 @@
 #include <iterator>
 #include <map>
 
-// #include "rocksdb/merge_operator.h"
-/*
+#include "rocksdb/merge_operator.h"
+
 namespace {
     // @todo move to a proper place
     class ConcatenateIdMergeOperator : public rocksdb::AssociativeMergeOperator {
     public:
+
+        virtual bool FullMergeV2(const MergeOperator::MergeOperationInput& merge_in,
+            MergeOperator::MergeOperationOutput* merge_out) const {
+            // Log(InfoLogLevel::INFO_LEVEL, merge_in.logger, "FullMergeV2 new_value size:%ld", merge_out->new_value.size());
+            if (merge_in.existing_value) {
+                merge_out->new_value.append(merge_in.existing_value->data(), merge_in.existing_value->size());
+            }
+            for (auto& operand : merge_in.operand_list) {
+                merge_out->new_value.append(operand.data(), operand.size());
+            }
+            return true;
+        }
+
+
         virtual bool Merge(const rocksdb::Slice&,
             const rocksdb::Slice* existing_value,
             const rocksdb::Slice& value,
             std::string* new_value,
             rocksdb::Logger*) const override
         {
+            return false;
+            /*
             if (existing_value) {
                 new_value->assign(existing_value->data(), existing_value->size());
                 new_value->append(value.data(), value.size());
@@ -58,6 +74,7 @@ namespace {
                 new_value->assign(value.data(), value.size());
             }
             return true;
+            */
         }
 
         virtual const char* Name() const override {
@@ -65,7 +82,6 @@ namespace {
         }
     };
 }
-*/
 
 namespace IfcParse {
 
@@ -331,6 +347,8 @@ namespace impl {
     class rocks_db_file_storage {
     public:
         rocksdb::DB* db;
+        rocksdb::WriteOptions wopts;
+        rocksdb::ReadOptions ropts;
         IfcParse::IfcFile* file;
 
         enum instance_ref {
