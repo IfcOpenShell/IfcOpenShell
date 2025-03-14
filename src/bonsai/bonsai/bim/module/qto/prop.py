@@ -48,6 +48,8 @@ def get_calculator(self: "BIMQtoProperties", context: bpy.types.Context) -> list
     results: list[tuple[str, str, str]] = []
     for name, calculator in ifc5d.qto.calculators.items():
         results.append((name, name, calculator.__doc__ or ""))
+    # Make IfcOpenShell appear first.
+    results.sort(key=lambda x: x[0] == "IfcOpenShell", reverse=True)
     return results
 
 
