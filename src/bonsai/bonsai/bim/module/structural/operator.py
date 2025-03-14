@@ -52,7 +52,11 @@ class ShowLoads(bpy.types.Operator):
         return {"PASS_THROUGH"}
 
     def invoke(self, context, event):
-        collection = bpy.data.collections["IfcStructuralItem"]
+        collection = bpy.data.collections.get("IfcStructuralItem")
+        if collection is None:
+            self.report({"ERROR"}, "No IfcStructuralItems found.")
+            return {"CANCELLED"}
+
         collection.hide_viewport = False
         context.window.cursor_modal_set("WAIT")
         try:
