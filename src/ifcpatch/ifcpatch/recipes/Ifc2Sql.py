@@ -140,7 +140,7 @@ class Patcher:
             # Assume it's a filepath - existing or not.
             pass
 
-        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema)
+        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema_identifier)
 
         if self.sql_type == "sqlite":
             self.db = sqlite3.connect(database)
