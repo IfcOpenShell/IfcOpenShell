@@ -99,6 +99,8 @@ class BIM_PT_qto_simple(bpy.types.Panel):
         row.operator("bim.calculate_object_volumes")
         row = layout.row()
         row.operator("bim.calculate_formwork_area")
+        row = layout.row()
+        row.operator("bim.calculate_side_formwork_area")
 
 
 class BIM_PT_qto_cost(bpy.types.Panel):
