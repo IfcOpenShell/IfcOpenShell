@@ -646,7 +646,7 @@ class CreateObjectUI:
         box = cls.layout.box()
 
         row = box.row(align=True)
-        thumbnail: int = relating_type_data["icon_id"]
+        thumbnail: int = AuthoringData.type_thumbnails.get(relating_type_data["id"], 0)
         row.template_icon(icon_value=thumbnail)
         row.operator("bim.launch_type_manager", text=relating_type_data["name"], emboss=False)
         row.operator(
@@ -675,13 +675,12 @@ class CreateObjectUI:
             for _ in range(4):
                 row2.operator("bim.launch_type_manager", text="", emboss=False)
         else:
-            op = box.operator(
+            box.operator(
                 "bim.load_type_thumbnails",
                 text="",
                 icon="FILE_REFRESH",
                 emboss=False,
             )
-            op.ifc_class = ifc_class
 
         row = box.row(align=True)
         row.alignment = "CENTER"
@@ -823,11 +822,7 @@ class EditObjectUI:
             add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(
-                row, "Butt", "S_T", "Intersects two non-parallel elements to a butt corner junction", ui_context
-            )
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            add_layout_hotkey_operator(
-                row, "Mitre", "S_Y", "Intersects two non-parallel elements to a mitred corner junction", ui_context
+                row, "Trim", "S_T", "Connects and trims two non-parallel elements into a joint", ui_context
             )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Unjoin Walls", "S_U", "", ui_context)
@@ -852,7 +847,7 @@ class EditObjectUI:
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             if "LAYER2" in AuthoringData.data["selected_material_usages"]:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-                add_layout_hotkey_operator(cls.layout, "Extend Wall To Slab", "S_E", "", ui_context)
+                add_layout_hotkey_operator(cls.layout, "Extend To Underside", "S_E", "", ui_context)
             if AuthoringData.data["relating_type_data"].get("usage") == "LAYER2":
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(
@@ -910,6 +905,11 @@ class EditObjectUI:
                 add_layout_hotkey_operator(row, "Mitre", "S_Y", "", ui_context)
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(row, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__, ui_context)
+
+        else:
+            if "LAYER2" in AuthoringData.data["selected_material_usages"]:
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(cls.layout, "Extend To Undersideb", "S_E", "", ui_context)
 
         if AuthoringData.data["is_flippable_element"]:
             cls.draw_flip(ui_context, row)
@@ -1140,7 +1140,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             "IfcPileType",
         ):
             return bpy.ops.bim.draw_polyline_profile("INVOKE_DEFAULT")
-        return bpy.ops.bim.add_occurrence("INVOKE_DEFAULT")
+        return bpy.ops.bim.draw_occurrence("INVOKE_DEFAULT")
 
     def hotkey_S_Q(self):
         if not bpy.context.selected_objects:
@@ -1171,23 +1171,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects or not (active_object := bpy.context.active_object):
             return
 
-        # NOTE: placing it before the other operations because railing can also be SweptSolid
-        # and it might conflict with one of the conditions below
-        if (
-            tool.Model.is_parametric_railing_active()
-            and not tool.Model.get_railing_props(active_object).is_editing_path
-        ):
-            bpy.ops.bim.enable_editing_railing_path()
-            return
-
-        elif tool.Model.is_parametric_roof_active() and not tool.Model.get_roof_props(active_object).is_editing_path:
-            # undo the unselection done above because roof has no usage type
-            bpy.ops.bim.enable_editing_roof_path()
-            return
-
-        elif tool.Model.is_parametric_window_active() or tool.Model.is_parametric_door_active():
-            return
-
         selected_usages: dict[str, list[bpy.types.Object]] = {}
         for obj in bpy.context.selected_objects:
             element = tool.Ifc.get_entity(obj)
@@ -1198,11 +1181,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             if not usage:
                 representation = tool.Geometry.get_active_representation(obj)
                 representation = tool.Geometry.resolve_mapped_representation(representation)
-                if representation and representation.RepresentationType == "SweptSolid":
-                    usage = "SWEPTSOLID"
-                else:
-                    obj.select_set(False)
-                    continue
             selected_usages.setdefault(usage, []).append(obj)
 
         if len(bpy.context.selected_objects) == 1:
@@ -1231,9 +1209,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             elif self.active_material_usage == "PROFILE":
                 # Extend PROFILE to cursor
                 bpy.ops.bim.extend_profile(join_type="T")
-            else:
-                # Edit SWEPTSOLID profile (assuming single profile for now)
-                bpy.ops.bim.enable_editing_extrusion_profile()
 
         elif self.active_material_usage == "LAYER2" and selected_usages.get("PROFILE", []):
             # Extend PROFILEs to LAYER2
@@ -1241,29 +1216,17 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             [o.select_set(False) for o in selected_usages.get("LAYER2", []) if o != bpy.context.active_object]
             bpy.ops.bim.extend_profile(join_type="T")
 
-        elif self.active_material_usage == "LAYER3" and selected_usages.get("LAYER2", []):
-            # Extend LAYER2s to LAYER3
-            [o.select_set(False) for o in selected_usages.get("PROFILE", [])]
-            [o.select_set(False) for o in selected_usages.get("LAYER3", []) if o != bpy.context.active_object]
-            try:
-                core.join_walls_TZ(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
-            except core.RequireAtLeastTwoLayeredElements as e:
-                self.report({"ERROR"}, str(e))
-
         elif self.active_material_usage == "LAYER2":
-            # Extend LAYER2s to LAYER2
-            [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
-            [o.select_set(False) for o in selected_usages.get("PROFILE", [])]
-            try:
-                core.join_walls_TZ(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
-            except core.RequireAtLeastTwoLayeredElements as e:
-                self.report({"ERROR"}, str(e))
+            bpy.ops.bim.extend_walls_to_wall()
 
         elif self.active_material_usage == "PROFILE":
             # Extend PROFILEs to PROFILE
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER2", [])]
             bpy.ops.bim.extend_profile(join_type="T")
+
+        else:
+            bpy.ops.bim.extend_walls_to_underside()
 
     def hotkey_S_F(self):
         if not bpy.context.selected_objects:
@@ -1336,7 +1299,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             try:
-                core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model, join_type="L")
+                core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
             except core.RequireTwoWallsError as e:
                 self.report({"ERROR"}, str(e))
         elif self.active_material_usage == "PROFILE":
@@ -1362,12 +1325,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     def hotkey_S_Y(self):
         if not bpy.context.selected_objects:
             return
-        if self.active_material_usage == "LAYER2":
-            try:
-                core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model, join_type="V")
-            except core.RequireTwoWallsError as e:
-                self.report({"ERROR"}, str(e))
-        elif self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
+        if self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
             bpy.ops.bim.fit_flow_segments()
         elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="V")

@@ -2888,6 +2888,15 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
         else:
             assert False, "Unexpected mesh type."
 
+        if not item_ids:
+            # It is possible that the user has created a shape that
+            # IfcOpenShell cannot render (i.e. boolean clipped everything), but
+            # we still want to edit items. I'm not sure the best way to handle
+            # this, but for now perhaps we can detect when there are no
+            # item_ids at all.
+            representation = tool.Ifc.get_entity(data)
+            item_ids = [i["item"].id() for i in ifcopenshell.util.representation.resolve_items(representation)]
+
         queue = list(set(item_ids))
         processed_ids = set()
         boolean_ids = set()

@@ -380,7 +380,7 @@ class BIM_PT_object_qtos(Panel):
                     filter_keyword=context.scene.GlobalPsetProperties.qto_filter,
                 )
         layout = self.layout
-        qtoprops = context.scene.BIMQtoProperties
+        qtoprops = tool.Qto.get_qto_props()
         row = layout.row(align=True)
         row.prop(qtoprops, "qto_rule", text="")
         # A bit confusing as we typically use this icon for is_null.

@@ -1128,8 +1128,8 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
 
     def __init__(self):
         super().__init__()
-        self.input_ui = tool.Polyline.create_input_ui(init_z=True)
         self.input_options = ["D", "A", "X", "Y", "Z"]
+        self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
         self.relating_type = None
         props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
@@ -1148,8 +1148,17 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
                 for profile1, profile2 in zip(profiles, profiles[1:] + [profiles[0]]):
                     DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
             else:
-                for profile1, profile2 in zip(profiles[:-1], profiles[1:]):
-                    DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
+                if len(profiles) == 1:
+                    profile1 = profiles[0]
+                    element1 = tool.Ifc.get_entity(profile1["obj"])
+                    if element1.is_a("IfcFlowSegment") or element1.is_a("IfcFlowFitting"):
+                        # lazy import to avoid circular import errors
+                        from bonsai.bim.module.model.mep import MEPGenerator
+
+                        MEPGenerator().setup_ports(profile1["obj"])
+                else:
+                    for profile1, profile2 in zip(profiles[:-1], profiles[1:]):
+                        DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
 
     def modal(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")

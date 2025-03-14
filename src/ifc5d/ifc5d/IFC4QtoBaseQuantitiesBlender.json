@@ -611,7 +611,7 @@
                     "GrossVolume": "get_gross_volume",
                     "GrossWeight": "get_gross_weight",
                     "Height": "get_height",
-                    "Length": "get_length",
+                    "Length": "get_x",
                     "NetFootprintArea": "get_net_footprint_area",
                     "NetSideArea": "get_net_side_area",
                     "NetVolume": "get_net_volume",

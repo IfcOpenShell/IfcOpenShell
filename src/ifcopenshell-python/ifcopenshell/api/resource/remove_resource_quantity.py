@@ -22,6 +22,9 @@ import ifcopenshell.util.element
 def remove_resource_quantity(file: ifcopenshell.file, resource: ifcopenshell.entity_instance) -> None:
     """Removes the base quantity of a resource
 
+    :param resource: The IfcConstructionResource to remove the quantity from.
+    :return: None
+
     Example:
 
     .. code:: python
@@ -41,9 +44,7 @@ def remove_resource_quantity(file: ifcopenshell.file, resource: ifcopenshell.ent
         # let's clean up our mess and remove the quantity.
         ifcopenshell.api.resource.remove_resource_quantity(model, resource=labour)
     """
-    settings = {"resource": resource}
-
-    old_quantity = settings["resource"].BaseQuantity
-    settings["resource"].BaseQuantity = None
+    old_quantity = resource.BaseQuantity
+    resource.BaseQuantity = None
     if old_quantity:
         ifcopenshell.util.element.remove_deep(file, old_quantity)

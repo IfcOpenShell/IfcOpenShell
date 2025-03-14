@@ -39,7 +39,7 @@ import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.core.geometry as geometry
-from math import atan, cos, degrees, radians, pi
+from math import atan, cos, degrees, pi, inf
 from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
@@ -284,7 +284,7 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def get_extrusion(cls, representation: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
-        """return first found IfcExtrudedAreaSolid"""
+        """Return first found IfcExtrudedAreaSolid"""
         item = representation.Items[0]
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):
@@ -2101,3 +2101,83 @@ class Model(bonsai.core.tool.Model):
             return
         op = layout.operator("bim.material_ui_select", icon="ZOOM_SELECTED", text="")
         op.material_id = material_id_int
+
+    @classmethod
+    def get_slab_clipping_bmesh(cls, obj: bpy.types.Object) -> bpy.types.BMesh | None:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bm.faces.ensure_lookup_table()
+
+        clipping_bm = bmesh.new()
+        vertex_map = {}
+
+        for face in bm.faces:
+            face.normal_update()
+            normal = face.normal.to_4d()
+            normal.w = 0
+            if (obj.matrix_world @ normal).z >= 0:
+                continue
+            new_verts = []
+            for vert in face.verts:
+                if not (new_vert := vertex_map.get(vert.index, None)):
+                    new_vert = clipping_bm.verts.new(obj.matrix_world @ vert.co / unit_scale)
+                    vertex_map[vert.index] = new_vert
+                new_verts.append(new_vert)
+            clipping_bm.faces.new(new_verts)
+
+        if not len(clipping_bm.faces):
+            return
+
+        return clipping_bm  # clipping_bm is in project units
+
+    @classmethod
+    def clip_wall_to_slab(cls, wall: ifcopenshell.entity_instance, clipping_bm: bpy.types.BMesh) -> None:
+        matrix_i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement))
+        bm = clipping_bm.copy()
+        bmesh.ops.transform(bm, matrix=Matrix(matrix_i.tolist()), verts=bm.verts)
+
+        bm.verts.ensure_lookup_table()
+        zs = [v.co.z for v in bm.verts]
+        min_z = min(zs)
+        max_z = max(zs)
+
+        operand = None
+        if (z := max_z - min_z) and not np.isclose(z, 0.0):
+            builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+
+            result = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
+            extruded_verts = [elem for elem in result["geom"] if isinstance(elem, bmesh.types.BMVert)]
+            bmesh.ops.translate(bm, verts=extruded_verts, vec=(0, 0, z))
+
+            verts = [v.co for v in bm.verts]
+            faces = [[v.index for v in p.verts] for p in bm.faces]
+            operand = builder.mesh(verts, faces)
+
+        for extrusion in ifcopenshell.util.shape.get_base_extrusions(wall) or []:
+            if extrusion.Position:
+                position = ifcopenshell.util.placement.get_axis2placement(extrusion.Position)
+            else:
+                position = np.eye(4)
+
+            direction = np.array(extrusion.ExtrudedDirection[0])
+            direction /= np.linalg.norm(direction)
+            direction = position @ np.append(direction, 0.0)
+
+            if direction[2] <= 0 or position[2][3] > max_z:
+                continue
+
+            extrusion.Depth = max_z / direction[2]
+
+            if operand:
+                booleans = ifcopenshell.api.geometry.add_boolean(
+                    tool.Ifc.get(), first_item=extrusion, second_items=[operand]
+                )
+                tool.Model.mark_manual_booleans(wall, booleans)
+
+    @classmethod
+    def connect_wall_to_slab(cls, wall: ifcopenshell.entity_instance, slab: ifcopenshell.entity_instance) -> None:
+        ifcopenshell.api.geometry.connect_element(
+            tool.Ifc.get(), relating_element=slab, related_element=wall, description="TOP"
+        )

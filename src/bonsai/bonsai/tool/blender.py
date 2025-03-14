@@ -154,15 +154,22 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_active_object(cls, is_selected: bool = False) -> Union[bpy.types.Object, None]:
-        obj = getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active
-        if not is_selected:
-            return obj
-        if obj in cls.get_selected_objects(include_active=False):
-            return obj
+        """Gets the active object
+
+        :param is_selected: If true, the active object also needs to be selected.
+        """
+        if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
+            if not is_selected:
+                return obj
+            if obj.select_get():
+                return obj
 
     @classmethod
     def get_selected_objects(cls, include_active: bool = True) -> set[bpy.types.Object]:
-        """Get selected objects including active object."""
+        """Get selected objects
+
+        :param include_active: If true, the active object is included regardless if it is also selected.
+        """
         if selected_objects := getattr(bpy.context, "selected_objects", None):
             if include_active and (active_obj := cls.get_active_object()):
                 return set(selected_objects + [active_obj])
@@ -1616,3 +1623,29 @@ class Blender(bonsai.core.tool.Blender):
         if 0 <= index < len(collection):
             return collection[index]
         return None
+
+    @classmethod
+    def clear_undo_history(cls) -> None:
+        """Clears the Blender history, Bonsai history, and IfcOpenShell history"""
+        old_undo_steps = bpy.context.preferences.edit.undo_steps
+        bpy.context.preferences.edit.undo_steps = 2
+        for i in range(3):
+            bpy.ops.ed.undo_push(message="Undo history cleared")
+        bpy.context.preferences.edit.undo_steps = old_undo_steps
+        tool.Ifc.clear_history()
+        old_history_size = tool.Ifc.get().history_size
+        tool.Ifc.get().set_history_size(0)
+        tool.Ifc.get().set_history_size(old_history_size)
+
+    @classmethod
+    def get_unit_scale(cls):
+        unit_length = bpy.context.scene.unit_settings.length_unit
+        unit_scale = 1.0
+        if unit_length == "CENTIMETERS":
+            unit_scale = 0.01
+        if unit_length == "MILLIMETERS":
+            unit_scale = 0.001
+        if unit_length == "FEET":
+            unit_scale = 0.3048
+
+        return unit_scale

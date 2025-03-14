@@ -24,17 +24,15 @@ import ifcopenshell.util.unit
 import ifcopenshell.api.owner.settings
 import bonsai.bim
 import bonsai.tool as tool
-import bonsai.core.owner as core_owner
 from bpy.app.handlers import persistent
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.owner.prop import get_user_person, get_user_organisation
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
 from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
 from bonsai.bim.module.nest.decorator import NestDecorator
 from mathutils import Vector
-from math import cos, degrees
+from math import cos
 from typing import Union, Callable
 
 

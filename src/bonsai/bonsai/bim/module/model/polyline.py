@@ -550,15 +550,11 @@ class PolylineOperator:
     # TODO Fill doc strings
     """ """
 
-    number_input: list[str]
-    input_type: tool.Polyline.InputType
-
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return context.space_data.type == "VIEW_3D"
 
     def __init__(self):
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.mousemove_count = 0
         self.action_count = 0
         self.visible_objs = []
@@ -590,7 +586,7 @@ class PolylineOperator:
         self.input_options = ["D", "A", "X", "Y"]
         self.input_type = None
         self.input_value_xy = [None, None]
-        self.input_ui = tool.Polyline.create_input_ui()
+        self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
         self.is_typing = False
         self.snap_angle = None
         self.snapping_points = []
@@ -666,7 +662,7 @@ class PolylineOperator:
                 tool.Blender.update_viewport()
 
     def handle_instructions(
-        self, context: bpy.types.Context, custom_instructions: dict = {}, custom_info: str = ""
+        self, context: bpy.types.Context, custom_instructions: dict = {}, custom_info: str = "", overwrite: bool = False
     ) -> None:
         self.info = [
             f"Axis: {self.tool_state.axis_method}",
@@ -674,8 +670,11 @@ class PolylineOperator:
             f"Snap: {self.snapping_points[0]['type']}",
         ]
         instructions = self.instructions | custom_instructions if custom_instructions else self.instructions
-
         infos = self.info + custom_info if custom_info else self.info
+
+        if overwrite:
+            instructions = custom_instructions
+            infos = custom_info
 
         def draw_instructions(self: bpy.types.Header, context: bpy.types.Context) -> None:
             for action, settings in instructions.items():
@@ -687,10 +686,10 @@ class PolylineOperator:
                     key = settings["keys"][0]
                     self.layout.label(text=key + action)
 
-            self.layout.label(text="|")
-
-            for info in infos:
-                self.layout.label(text=info)
+            if infos:
+                self.layout.label(text="|")
+                for info in infos:
+                    self.layout.label(text=info)
 
         context.workspace.status_text_set(draw_instructions)
 
@@ -804,7 +803,25 @@ class PolylineOperator:
             tool.Blender.update_viewport()
 
         if event.value == "PRESS" and event.type == "C":
-            tool.Polyline.close_polyline()
+            # Get the first point coordinates to close the polyline
+            polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+            polyline_points = polyline_data[0].polyline_points if polyline_data else []
+            if len(polyline_points) > 2:
+                first_point = polyline_points[0]
+                last_point = polyline_points[-1]
+                if not (
+                    first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z
+                ):
+                    self.input_ui.set_value("X", first_point.x)
+                    self.input_ui.set_value("Y", first_point.y)
+                    if self.input_ui.get_number_value("Z") is not None:
+                        self.input_ui.set_value("Z", first_point.z)
+                    else:
+                        self.input_ui.set_value("Z", 0)
+            result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+            if result:
+                self.report({"WARNING"}, result)
+
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
@@ -827,6 +844,11 @@ class PolylineOperator:
             self.number_output = ""
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
+
+        if not self.tool_state.is_input_on:
+            if event.value == "RELEASE" and event.type == "BACK_SPACE":
+                tool.Polyline.remove_last_polyline_point()
+                tool.Blender.update_viewport()
 
     def handle_snap_selection(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         if not self.tool_state.is_input_on and event.value == "PRESS" and event.type == "M":
@@ -895,10 +917,6 @@ class PolylineOperator:
                 tool.Blender.update_viewport()
                 return {"RUNNING_MODAL"}
 
-            if event.value == "RELEASE" and event.type == "BACK_SPACE":
-                tool.Polyline.remove_last_polyline_point()
-                tool.Blender.update_viewport()
-
     def get_product_preview_data(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_isntance):
         if tool.Model.get_usage_type(relating_type) == "PROFILE":
             if relating_type.is_a() in {"IfcColumnType", "IfcPileType"}:
@@ -950,6 +968,7 @@ class PolylineOperator:
         elif getattr(props, offset_type) in {"INTERIOR", "TOP"}:
             self.offset = -thickness * direction
 
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         props.offset = self.offset / self.unit_scale
         tool.Blender.update_viewport()
 

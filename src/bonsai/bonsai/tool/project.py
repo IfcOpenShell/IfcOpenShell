@@ -35,7 +35,7 @@ from collections import defaultdict
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
 from pathlib import Path
-from typing import Optional, Union, TYPE_CHECKING, Generator, Callable
+from typing import Optional, Union, TYPE_CHECKING, Generator
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties
@@ -65,8 +65,7 @@ class Project(bonsai.core.tool.Project):
     @classmethod
     def load_default_thumbnails(cls):
         if tool.Ifc.get().by_type("IfcElementType"):
-            ifc_class = sorted(tool.Ifc.get().by_type("IfcElementType"), key=lambda e: e.is_a())[0].is_a()
-            bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
+            bpy.ops.bim.load_type_thumbnails()
 
     @classmethod
     def load_pset_templates(cls):
@@ -309,6 +308,8 @@ class Project(bonsai.core.tool.Project):
 
     @classmethod
     def get_project_library_rels(cls, ifc_file: ifcopenshell.file) -> set[ifcopenshell.entity_instance]:
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return set()
         return set(rel for lib in ifc_file.by_type("IfcProjectLibrary") for rel in lib.Declares)
 
     @classmethod
@@ -362,6 +363,8 @@ class Project(bonsai.core.tool.Project):
 
         """
         hierarchy: HiearchyDict = defaultdict(dict)
+        if tool.Ifc.get_schema() == "IFC2X3":
+            return hierarchy
         for project_library in ifc_file.by_type("IfcProjectLibrary"):
             parent_library = cls.get_parent_library(project_library)
             hierarchy[parent_library][project_library] = hierarchy[project_library]

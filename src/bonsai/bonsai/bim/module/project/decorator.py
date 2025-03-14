@@ -323,7 +323,7 @@ class MeasureDecorator:
 
             all_positions = []
             for i in range(len(polyline_points)):
-                if i < 2 and measure_type == "AREA":
+                if i < 1 and measure_type == "AREA":
                     continue
                 if i == 0:
                     continue

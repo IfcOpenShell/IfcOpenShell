@@ -30,6 +30,7 @@ import webbrowser
 import ifcopenshell
 import bonsai.bim
 import bonsai.tool as tool
+import bonsai.bim.handler
 from bonsai.bim import import_ifc
 from bonsai.bim.prop import StrProperty
 from bonsai.bim.ui import IFCFileSelector
@@ -222,6 +223,8 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
         if self.is_existing_ifc_file():
             props = tool.Blender.get_bim_props()
             props.ifc_file = self.get_filepath()
+            bonsai.bim.handler.loadIfcStore(bpy.context.scene)
+            tool.Blender.clear_undo_history()
         return {"FINISHED"}
 
     def invoke(self, context, event):

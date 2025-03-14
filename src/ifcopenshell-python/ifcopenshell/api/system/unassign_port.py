@@ -19,7 +19,6 @@
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.util.element
-from typing import Any
 
 
 def unassign_port(
@@ -32,11 +31,8 @@ def unassign_port(
     port for cleaning or patchin purposes.
 
     :param element: The IfcDistributionElement to unassign the port from.
-    :type element: ifcopenshell.entity_instance
     :param port: The IfcDistributionPort you want to unassign.
-    :type port: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -55,23 +51,20 @@ def unassign_port(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "element": element,
-        "port": port,
-    }
-    return usecase.execute()
+    return usecase.execute(element, port)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
+    def execute(self, element: ifcopenshell.entity_instance, port: ifcopenshell.entity_instance) -> None:
         if self.file.schema == "IFC2X3":
+            self.element = element
+            self.port = port
             return self.execute_ifc2x3()
 
-        for rel in self.settings["element"].IsNestedBy or []:
-            if self.settings["port"] in rel.RelatedObjects:
+        for rel in element.IsNestedBy or []:
+            if port in rel.RelatedObjects:
                 if len(rel.RelatedObjects) == 1:
                     history = rel.OwnerHistory
                     self.file.remove(rel)
@@ -79,13 +72,13 @@ class Usecase:
                         ifcopenshell.util.element.remove_deep2(self.file, history)
                     return
                 related_objects = set(rel.RelatedObjects) or set()
-                related_objects.remove(self.settings["port"])
+                related_objects.remove(port)
                 rel.RelatedObjects = list(related_objects)
                 ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
 
-    def execute_ifc2x3(self):
-        for rel in self.settings["element"].HasPorts or []:
-            if rel.RelatingPort == self.settings["port"]:
+    def execute_ifc2x3(self) -> None:
+        for rel in self.element.HasPorts or []:
+            if rel.RelatingPort == self.port:
                 history = rel.OwnerHistory
                 self.file.remove(rel)
                 if history:

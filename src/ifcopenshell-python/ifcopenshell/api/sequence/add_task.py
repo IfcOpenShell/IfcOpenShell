@@ -69,23 +69,16 @@ def add_task(
     :param work_schedule: The work schedule to group the task in, if the
         task is to be a top-level or root task. This is mutually exclusive
         with the parent_task parameter.
-    :type work_schedule: ifcopenshell.entity_instance, optional
     :param parent_task: The parent task, if the task is to be a subtask or
         child task. This is mutually exclusive with the work_schedule
         parameter.
-    :type parent_task: ifcopenshell.entity_instance, optioanl
     :param name: The name of the task.
-    :type name: str,optional
     :param description: The description of the task.
-    :type description: str,optional
     :param identification: The identification code of the task.
-    :type identification: str,optional
     :param predefined_type: The predefined type of the task. Common ones
         include CONSTRUCTION, DEMOLITION, or MAINTENANCE. Consultant the
         IFC documentation for IfcTaskTypeEnum for more information.
-    :type predefined_type: str
     :return: The newly created IfcTask
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -139,39 +132,28 @@ def add_task(
         ifcopenshell.api.sequence.add_task(model, parent_task=cleaning, identification="3",
             description="Setup the water pressure by tapping to a water supply and connecting to a ...")
     """
-    settings = {
-        "work_schedule": work_schedule,
-        "parent_task": parent_task,
-        "name": name,
-        "description": description,
-        "identification": identification,
-        "predefined_type": predefined_type,
-    }
-
-    task = ifcopenshell.api.root.create_entity(
-        file, ifc_class="IfcTask", name=settings["name"], predefined_type=settings["predefined_type"]
-    )
-    if settings["description"]:
-        task.Description = settings["description"]
-    if settings["identification"]:
-        task.Identification = settings["identification"]
+    task = ifcopenshell.api.root.create_entity(file, ifc_class="IfcTask", name=name, predefined_type=predefined_type)
+    if description:
+        task.Description = description
+    if identification:
+        task.Identification = identification
     task.IsMilestone = False
-    if settings["work_schedule"]:
+    if work_schedule:
         file.create_entity(
             "IfcRelAssignsToControl",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
                 "RelatedObjects": [task],
-                "RelatingControl": settings["work_schedule"],
+                "RelatingControl": work_schedule,
             }
         )
-    elif settings["parent_task"]:
+    elif parent_task:
         rel = ifcopenshell.api.nest.assign_object(
             file,
             related_objects=[task],
-            relating_object=settings["parent_task"],
+            relating_object=parent_task,
         )
-        if file.schema != "IFC2X3" and settings["parent_task"].Identification:
-            task.Identification = settings["parent_task"].Identification + "." + str(len(rel.RelatedObjects))
+        if file.schema != "IFC2X3" and parent_task.Identification:
+            task.Identification = parent_task.Identification + "." + str(len(rel.RelatedObjects))
     return task

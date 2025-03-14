@@ -62,12 +62,16 @@ def disable_editing_system(system: tool.System) -> None:
     system.disable_editing_system()
 
 
-def assign_system(ifc: tool.Ifc, system: ifcopenshell.entity_instance, product: ifcopenshell.entity_instance) -> None:
-    ifc.run("system.assign_system", products=[product], system=system)
+def assign_system(
+    ifc: tool.Ifc, system: ifcopenshell.entity_instance, products: list[ifcopenshell.entity_instance]
+) -> None:
+    ifc.run("system.assign_system", products=products, system=system)
 
 
-def unassign_system(ifc: tool.Ifc, system: ifcopenshell.entity_instance, product: ifcopenshell.entity_instance) -> None:
-    ifc.run("system.unassign_system", products=[product], system=system)
+def unassign_system(
+    ifc: tool.Ifc, system: ifcopenshell.entity_instance, products: list[ifcopenshell.entity_instance]
+) -> None:
+    ifc.run("system.unassign_system", products=products, system=system)
 
 
 def select_system_products(system_tool: tool.System, system: ifcopenshell.entity_instance) -> None:

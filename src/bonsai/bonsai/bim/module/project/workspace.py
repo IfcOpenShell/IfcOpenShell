@@ -106,4 +106,7 @@ class ExploreHotkey(bpy.types.Operator):
         for obj in tool.Blender.get_selected_objects():
             obj.select_set(False)
         measure_type = bpy.context.scene.MeasureToolSettings.measurement_type
-        bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type=measure_type)
+        if measure_type == "FACE_AREA":
+            bpy.ops.bim.measure_face_area_tool("INVOKE_DEFAULT")
+        else:
+            bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type=measure_type)

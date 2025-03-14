@@ -460,6 +460,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
                 for prop in blender_properties:
                     properties[prop.name] = prop.get_value()
 
+                # TODO: is this still the correct approach?
                 if classification_pset.name == "undefined_set":
                     if "ObjectType" in properties:
                         if hasattr(element, "ObjectType"):

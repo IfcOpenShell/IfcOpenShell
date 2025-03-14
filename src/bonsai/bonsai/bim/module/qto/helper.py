@@ -51,6 +51,7 @@ def calculate_mesh_quantity(
     result = 0
     edit_mode = context.active_object.mode == "EDIT"
     for obj in objs:
+        assert isinstance(obj.data, bpy.types.Mesh)
         if edit_mode:
             bm = bmesh.from_edit_mesh(obj.data)
             result += operation(bm)

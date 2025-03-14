@@ -21,6 +21,7 @@ import ifcopenshell.guid
 import ifcopenshell.api.nest
 import ifcopenshell.api.owner
 import ifcopenshell.api.sequence
+import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.sequence
 from typing import Union, Any
@@ -155,7 +156,9 @@ class Usecase:
                                 duration_type=inverse.TimeLag.DurationType,
                             )
 
-    def create_object_reference(self, relating_object, related_object):
+    def create_object_reference(
+        self, relating_object: ifcopenshell.entity_instance, related_object: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         referenced_by = None
         if relating_object.Declares:
             referenced_by = relating_object.Declares[0]

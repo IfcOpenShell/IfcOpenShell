@@ -16,8 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional, Union
 
-def load_brick_project(brick, filepath=None, brick_root=None):
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import bonsai.tool as tool
+
+
+def load_brick_project(brick: tool.Brick, filepath: str, brick_root: str) -> None:
     brick.load_brick_file(filepath)
     brick.import_brick_classes(brick_root)
     brick.import_brick_classes(brick_root, split_screen=True)
@@ -25,7 +33,7 @@ def load_brick_project(brick, filepath=None, brick_root=None):
     brick.set_active_brick_class(brick_root, split_screen=True)
 
 
-def new_brick_file(brick, brick_root=None):
+def new_brick_file(brick: tool.Brick, brick_root: str) -> None:
     brick.new_brick_file()
     brick.import_brick_classes(brick_root)
     brick.import_brick_classes(brick_root, split_screen=True)
@@ -33,7 +41,7 @@ def new_brick_file(brick, brick_root=None):
     brick.set_active_brick_class(brick_root, split_screen=True)
 
 
-def view_brick_class(brick, brick_class=None, split_screen=False):
+def view_brick_class(brick: tool.Brick, brick_class: str, split_screen: bool = False) -> None:
     brick.add_brick_breadcrumb(split_screen=split_screen)
     brick.clear_brick_browser(split_screen=split_screen)
     brick.import_brick_classes(brick_class, split_screen=split_screen)
@@ -41,13 +49,13 @@ def view_brick_class(brick, brick_class=None, split_screen=False):
     brick.set_active_brick_class(brick_class, split_screen=split_screen)
 
 
-def view_brick_item(brick, item=None, split_screen=False):
+def view_brick_item(brick: tool.Brick, item: str, split_screen: bool = False) -> None:
     brick_class = brick.get_item_class(item)
     brick.run_view_brick_class(brick_class=brick_class, split_screen=split_screen)
     brick.select_browser_item(item, split_screen=split_screen)
 
 
-def rewind_brick_class(brick, split_screen=False):
+def rewind_brick_class(brick: tool.Brick, split_screen: bool = False) -> None:
     previous_class = brick.pop_brick_breadcrumb(split_screen=split_screen)
     brick.clear_brick_browser(split_screen=split_screen)
     brick.import_brick_classes(previous_class, split_screen=split_screen)
@@ -55,7 +63,7 @@ def rewind_brick_class(brick, split_screen=False):
     brick.set_active_brick_class(previous_class, split_screen=split_screen)
 
 
-def close_brick_project(brick):
+def close_brick_project(brick: tool.Brick) -> None:
     brick.clear_project()
     brick.clear_brick_browser()
     brick.clear_brick_browser(split_screen=True)
@@ -63,13 +71,19 @@ def close_brick_project(brick):
     brick.clear_breadcrumbs(split_screen=True)
 
 
-def convert_brick_project(ifc, brick):
+def convert_brick_project(ifc: tool.Ifc, brick: tool.Brick) -> None:
     library = ifc.run("library.add_library", name=brick.get_brick_path_name())
     if ifc.get_schema() != "IFC2X3":
         ifc.run("library.edit_library", library=library, attributes={"Location": brick.get_brick_path()})
 
 
-def assign_brick_reference(ifc, brick, element=None, library=None, brick_uri=None):
+def assign_brick_reference(
+    ifc: tool.Ifc,
+    brick: tool.Brick,
+    element: ifcopenshell.entity_instance,
+    library: ifcopenshell.entity_instance,
+    brick_uri: str,
+) -> None:
     reference = brick.get_library_brick_reference(library, brick_uri)
     if not reference:
         reference = ifc.run("library.add_reference", library=library)
@@ -81,7 +95,15 @@ def assign_brick_reference(ifc, brick, element=None, library=None, brick_uri=Non
     brick.add_brickifc_reference(brick_uri, element, project)
 
 
-def add_brick(ifc, brick, element=None, namespace=None, brick_class=None, library=None, label="Unnamed"):
+def add_brick(
+    ifc: tool.Ifc,
+    brick: tool.Brick,
+    element: Union[ifcopenshell.entity_instance, None],
+    namespace: str,
+    brick_class: str,
+    library: Union[str, None],
+    label: str = "Unnamed",
+) -> None:
     if element:
         brick_uri = brick.add_brick_from_element(element, namespace, brick_class)
         if library:
@@ -91,12 +113,12 @@ def add_brick(ifc, brick, element=None, namespace=None, brick_class=None, librar
     brick.run_refresh_brick_viewer()
 
 
-def add_brick_relation(brick, brick_uri=None, predicate=None, object=None):
+def add_brick_relation(brick: tool.Brick, brick_uri: str, predicate: str, object: str) -> None:
     brick.add_relation(brick_uri, predicate, object)
     brick.run_refresh_brick_viewer()
 
 
-def convert_ifc_to_brick(brick, namespace=None, library=None):
+def convert_ifc_to_brick(brick: tool.Brick, namespace: str, library: Union[ifcopenshell.entity_instance, None]) -> None:
     # convert spaces to brick
     spaces = brick.get_convertable_brick_spaces()
     space_uris = {}
@@ -141,14 +163,14 @@ def convert_ifc_to_brick(brick, namespace=None, library=None):
     brick.run_refresh_brick_viewer()
 
 
-def refresh_brick_viewer(brick):
+def refresh_brick_viewer(brick: tool.Brick) -> None:
     brick.run_view_brick_class(brick_class=brick.get_active_brick_class())
     brick.pop_brick_breadcrumb()
     brick.run_view_brick_class(brick_class=brick.get_active_brick_class(split_screen=True), split_screen=True)
     brick.pop_brick_breadcrumb(split_screen=True)
 
 
-def remove_brick(ifc, brick, library=None, brick_uri=None):
+def remove_brick(ifc: tool.Ifc, brick: tool.Brick, library: ifcopenshell.entity_instance, brick_uri: str) -> None:
     if library:
         reference = brick.get_library_brick_reference(library, brick_uri)
         if reference:
@@ -157,18 +179,18 @@ def remove_brick(ifc, brick, library=None, brick_uri=None):
     brick.run_refresh_brick_viewer()
 
 
-def serialize_brick(brick):
+def serialize_brick(brick: tool.Brick) -> None:
     brick.serialize_brick()
 
 
-def add_brick_namespace(brick, alias=None, uri=None):
+def add_brick_namespace(brick: tool.Brick, alias: str, uri: str) -> None:
     brick.add_namespace(alias, uri)
 
 
-def set_brick_list_root(brick, brick_root=None, split_screen=False):
+def set_brick_list_root(brick: tool.Brick, brick_root: str, split_screen: bool = False) -> None:
     brick.run_view_brick_class(brick_class=brick_root, split_screen=split_screen)
     brick.clear_breadcrumbs(split_screen=split_screen)
 
 
-def remove_brick_relation(brick, brick_uri=None, predicate=None, object=None):
+def remove_brick_relation(brick: tool.Brick, brick_uri: str, predicate: str, object: str) -> None:
     brick.remove_relation(brick_uri, predicate, object)

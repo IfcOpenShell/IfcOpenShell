@@ -83,6 +83,7 @@ modules = {
     "covering": None,
     "web": None,
     "light": None,
+    "alignment": None,
     # Uncomment this line to enable loading of the demo module. Happy hacking!
     # The name "demo" must correlate to a folder name in `bim/module/`.
     # "demo": None,

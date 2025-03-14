@@ -36,7 +36,7 @@ class LoadBrickProject(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         if os.path.exists(self.filepath) and "ttl" in os.path.splitext(self.filepath)[1].lower():
-            root = context.scene.BIMBrickProperties.brick_list_root
+            root = tool.Brick.get_brick_props().brick_list_root
             core.load_brick_project(tool.Brick, filepath=self.filepath, brick_root=root)
         else:
             self.report({"ERROR"}, f"Failed to load {self.filepath}")
@@ -111,10 +111,10 @@ class AssignBrickReference(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Assign the selected Ifc entity to the selected Brick entity"
 
     def _execute(self, context):
-        if not context.active_object:
+        if not (obj := context.active_object) or not (element := tool.Ifc.get_entity(obj)):
             self.report({"ERROR"}, f"No Ifc selected")
             return
-        props = context.scene.BIMBrickProperties
+        props = tool.Brick.get_brick_props()
         try:
             props.bricks[props.active_brick_index]
         except:
@@ -123,7 +123,7 @@ class AssignBrickReference(bpy.types.Operator, tool.Ifc.Operator):
         core.assign_brick_reference(
             tool.Ifc,
             tool.Brick,
-            element=tool.Ifc.get_entity(context.active_object),
+            element=element,
             library=tool.Ifc.get().by_id(int(props.libraries)),
             brick_uri=props.bricks[props.active_brick_index].uri,
         )
@@ -136,7 +136,7 @@ class AddBrick(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Create the Brick entity"
 
     def _execute(self, context):
-        props = context.scene.BIMBrickProperties
+        props = tool.Brick.get_brick_props()
         core.add_brick(
             tool.Ifc,
             tool.Brick,
@@ -155,7 +155,7 @@ class AddBrickRelation(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Create the Brick relationship"
 
     def _execute(self, context):
-        props = context.scene.BIMBrickProperties
+        props = tool.Brick.get_brick_props()
         brick = props.bricks[props.active_brick_index]
         if props.new_brick_relation_type == "http://www.w3.org/2000/01/rdf-schema#label":
             object = props.new_brick_relation_object
@@ -173,7 +173,7 @@ class ConvertIfcToBrick(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Convert Ifc entities and relations to Brick entities and relations"
 
     def _execute(self, context):
-        props = context.scene.BIMBrickProperties
+        props = tool.Brick.get_brick_props()
         library = None
         if props.libraries:
             library = tool.Ifc.get().by_id(int(props.libraries))
@@ -201,7 +201,8 @@ class NewBrickFile(bpy.types.Operator):
         return {"FINISHED"}
 
     def _execute(self, context):
-        root = context.scene.BIMBrickProperties.brick_list_root
+        props = tool.Brick.get_brick_props()
+        root = props.brick_list_root
         core.new_brick_file(tool.Brick, brick_root=root)
 
     def rollback(self, data):
@@ -230,7 +231,7 @@ class RemoveBrick(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Delete this entity"
 
     def _execute(self, context):
-        props = context.scene.BIMBrickProperties
+        props = tool.Brick.get_brick_props()
         core.remove_brick(
             tool.Ifc,
             tool.Brick,
@@ -273,7 +274,7 @@ class AddBrickNamespace(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Bind a new namespace to the Brick project"
 
     def _execute(self, context):
-        props = context.scene.BIMBrickProperties
+        props = tool.Brick.get_brick_props()
         alias = props.new_brick_namespace_alias
         uri = props.new_brick_namespace_uri
         core.add_brick_namespace(tool.Brick, alias=alias, uri=uri)
@@ -288,6 +289,6 @@ class RemoveBrickRelation(bpy.types.Operator, tool.Ifc.Operator):
     object: bpy.props.StringProperty(name="Object")
 
     def _execute(self, context):
-        props = context.scene.BIMBrickProperties
+        props = tool.Brick.get_brick_props()
         brick = props.bricks[props.active_brick_index]
         core.remove_brick_relation(tool.Brick, brick_uri=brick.uri, predicate=self.predicate, object=self.object)

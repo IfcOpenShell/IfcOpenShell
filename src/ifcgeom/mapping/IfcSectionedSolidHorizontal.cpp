@@ -43,7 +43,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 	auto csps = inst->CrossSectionPositions();
 	std::vector<taxonomy::face::ptr> faces;
 
-	// The PointByDistanceExpressesions are factored out into (a) a cartesian offset relative to the
+	// The PointByDistanceExpressions are factored out into (a) a cartesian offset relative to the
 	// reference frame along a certain curve location (b) the longitude.
 
 	// The longitudes determine the range of the sweep and the offsets are interpolated in between

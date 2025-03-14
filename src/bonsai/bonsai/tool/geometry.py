@@ -1394,6 +1394,9 @@ class Geometry(bonsai.core.tool.Geometry):
         also_consider = list(consider_inverses)
         ifcopenshell.util.element.remove_deep2(ifc_file, representation_item, also_consider=also_consider)
 
+        props = tool.Geometry.get_geometry_props()
+        rep_element = tool.Ifc.get_entity(props.representation_obj)
+        tool.Model.unmark_manual_booleans(rep_element, [b.id() for b in boolean_results_to_remove])
         for boolean_result in boolean_results_to_remove:
             cls.remove_representation_item(boolean_result)
 
@@ -1983,3 +1986,7 @@ class Geometry(bonsai.core.tool.Geometry):
         bm = tool.Blender.get_bmesh_for_mesh(obj.data)
         bm.transform(obj.matrix_world)
         return BVHTree.FromBMesh(bm)
+
+    @classmethod
+    def run_edit_object_placement(cls, obj: bpy.types.Object) -> None:
+        return bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)

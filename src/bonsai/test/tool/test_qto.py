@@ -42,7 +42,8 @@ class TestGetRadiusOfSelectedVertices(test.bim.bootstrap.NewFile):
 class TestSetQtoResult(test.bim.bootstrap.NewFile):
     def test_run(self):
         subject.set_qto_result(123.4567)
-        assert bpy.context.scene.BIMQtoProperties.qto_result == "123.457"
+        props = tool.Qto.get_qto_props()
+        assert props.qto_result == "123.457"
 
 
 class TestGetRoundedValue(test.bim.bootstrap.NewFile):

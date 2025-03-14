@@ -170,7 +170,7 @@ class IfcClassData:
             templates.extend([None, ("STAIR", "Stair", "Parametric stair")])
         elif ifc_class in ("IfcRailingType", "IfcRailing"):
             templates.extend([None, ("RAILING", "Railing", "Parametric railing")])
-        elif ifc_class in ("IfcRoofType", "IfcRoof"):
+        elif ifc_class in ("IfcRoofType", "IfcRoof", "IfcSlabType", "IfcSlab", "IfcCovering", "IfcCoveringType"):
             templates.extend([None, ("ROOF", "Roof", "Parametric roof with a constant pitch")])
         elif ifc_class and "Segment" in ifc_class:
             templates.extend(

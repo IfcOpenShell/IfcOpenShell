@@ -24,7 +24,6 @@ from bpy.types import Panel, UIList
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
-from bonsai.bim.module.drawing.helper import format_distance
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -336,38 +335,28 @@ class BIM_PT_object_material(Panel):
         if ObjectMaterialData.data["material_class"] != "IfcMaterialList":
             row = self.layout.row(align=True)
             set_name = ObjectMaterialData.data["set"]["name"]
-            row.label(text=f"     Name: {set_name}")
+            row.label(text="Name")
+            row.label(text=set_name)
 
-        if ObjectMaterialData.data["set"]["description"]:
-            set_description = ObjectMaterialData.data["set"]["description"]
+        if value := ObjectMaterialData.data["set"]["description"]:
             row = self.layout.row(align=True)
-            row.label(text=f"     Description: {set_description}")
+            row.label(text="Description")
+            row.label(text=value)
 
         if ObjectMaterialData.data["material_class"] == "IfcMaterialProfileSetUsage":
-            if ObjectMaterialData.data["set_usage"].get("cardinal_point"):
-                cardinal_point = ObjectMaterialData.data["set_usage"]["cardinal_point"]
+            if value := ObjectMaterialData.data["set_usage"].get("cardinal_point"):
                 row = self.layout.row(align=True)
-                row.label(text=f"     Cardinal Point: {cardinal_point}")
+                row.label(text="Cardinal Point")
+                row.label(text=value)
 
         if ObjectMaterialData.data["total_thickness"]:
-            total_thickness = ObjectMaterialData.data["total_thickness"]
-            unit_system = bpy.context.scene.unit_settings.system
-            props = tool.Drawing.get_document_props()
-
-            if unit_system == "IMPERIAL":
-                precision = props.imperial_precision
-            else:
-                precision = None
-            formatted_thickness = format_distance(
-                total_thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True
-            )
             row = self.layout.row(align=True)
-            row.label(text=f"     Total Thickness: {formatted_thickness}")
+            row.label(text="Total Thickness*")
+            row.label(text=ObjectMaterialData.data["total_thickness"])
 
-        layout = self.layout
-        box = layout.box()
+        box = self.layout.box()
         active_object = bpy.context.active_object
-        self.layerset_bounds(box, active_object, location="Top_Exterior")
+        self.layerset_bounds(box, active_object, location="Top_Interior")
 
         for set_item in ObjectMaterialData.data["set_items"]:
             material_name = set_item["material"]
@@ -383,22 +372,25 @@ class BIM_PT_object_material(Panel):
                 op = row.operator("bim.select_by_material", text=material_name, emboss=False)
                 op.material = material_id
 
-        self.layerset_bounds(box, active_object, location="Bottom_Interior")
+        self.layerset_bounds(box, active_object, location="Bottom_Exterior")
 
-    def layerset_bounds(self, box, obj, location="Top_Exterior"):
+    def layerset_bounds(self, layout, obj, location="Top_Interior"):
         set_usage = ObjectMaterialData.data.get("set_usage", {})
         layer_set_direction = set_usage.get("layer_set_direction")
         if layer_set_direction:
-            if location == "Top_Exterior":
+            row = layout.row()
+            row.alignment = "CENTER"
+            row.enabled = False
+            if location == "Top_Interior":
                 if layer_set_direction == "AXIS3":
-                    box.label(text="----- Top -----")
+                    row.label(text="Top")
                 else:
-                    box.label(text="----- Exterior -----")
-            if location == "Bottom_Interior":
+                    row.label(text="Interior")
+            elif location == "Bottom_Exterior":
                 if layer_set_direction == "AXIS3":
-                    box.label(text="----- Bottom -----")
+                    row.label(text="Bottom")
                 else:
-                    box.label(text="----- Interior -----")
+                    row.label(text="Exterior")
 
 
 class BIM_UL_materials(UIList):

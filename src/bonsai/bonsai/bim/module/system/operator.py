@@ -18,10 +18,11 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.util.system
 import bonsai.tool as tool
 import bonsai.core.system as core
 import bonsai.bim.helper
-from bonsai.bim.module.system.data import PortData
+from bonsai.bim.module.system.data import PortData, SystemData
 
 
 class LoadSystems(bpy.types.Operator):
@@ -50,7 +51,8 @@ class AddSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.add_system(tool.Ifc, tool.System, ifc_class=context.scene.BIMSystemProperties.system_class)
+        props = tool.System.get_system_props()
+        core.add_system(tool.Ifc, tool.System, ifc_class=props.system_class)
 
 
 class EditSystem(bpy.types.Operator, tool.Ifc.Operator):
@@ -59,9 +61,8 @@ class EditSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_system(
-            tool.Ifc, tool.System, system=tool.Ifc.get().by_id(context.scene.BIMSystemProperties.edited_system_id)
-        )
+        props = tool.System.get_system_props()
+        core.edit_system(tool.Ifc, tool.System, system=tool.Ifc.get().by_id(props.edited_system_id))
 
 
 class RemoveSystem(bpy.types.Operator, tool.Ifc.Operator):
@@ -98,37 +99,71 @@ class DisableEditingSystem(bpy.types.Operator):
 class AssignSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_system"
     bl_label = "Assign System"
+    bl_description = "Assign system to the selected objects.\n\nIf object is not assignable to this type of system, it will be skiped."
     bl_options = {"REGISTER", "UNDO"}
     system: bpy.props.IntProperty()
 
+    @classmethod
+    def poll(cls, context):
+        if not context.selected_objects:
+            cls.poll_message_set("No objects selected.")
+            return False
+        return True
+
     def _execute(self, context):
-        for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if element:
-                core.assign_system(tool.Ifc, system=tool.Ifc.get().by_id(self.system), product=element)
+        elements = [e for o in context.selected_objects if (e := tool.Ifc.get_entity(o))]
+        if not elements:
+            self.report({"ERROR"}, "No IFC elements selected.")
+            return {"CANCELLED"}
+        system = tool.Ifc.get().by_id(self.system)
+        assignable_elements = [e for e in elements if ifcopenshell.util.system.is_assignable(e, system)]
+        if not assignable_elements:
+            supported_elements_str = ", ".join(ifcopenshell.util.system.group_types[system.is_a()])
+            self.report(
+                {"ERROR"},
+                f"No elements assignable to {system.is_a()} is selected.\n"
+                f"Assignable elements types are: {supported_elements_str}.",
+            )
+            return {"CANCELLED"}
+        core.assign_system(tool.Ifc, system=system, products=assignable_elements)
+        self.report({"INFO"}, f"System assigned to {len(assignable_elements)} elements.")
+        return {"FINISHED"}
 
 
 class UnassignSystem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_system"
     bl_label = "Unassign System"
+    bl_description = "Unassign system from the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     system: bpy.props.IntProperty()
 
+    @classmethod
+    def poll(cls, context):
+        if not context.selected_objects:
+            cls.poll_message_set("No objects selected.")
+            return False
+        return True
+
     def _execute(self, context):
-        for obj in context.selected_objects:
-            element = tool.Ifc.get_entity(obj)
-            if element:
-                core.unassign_system(tool.Ifc, system=tool.Ifc.get().by_id(self.system), product=element)
+        elements = [e for o in context.selected_objects if (e := tool.Ifc.get_entity(o))]
+        if not elements:
+            self.report({"ERROR"}, "No IFC elements selected.")
+            return {"CANCELLED"}
+        system = tool.Ifc.get().by_id(self.system)
+        core.unassign_system(tool.Ifc, system=system, products=elements)
+        self.report({"INFO"}, f"System unassigned from {len(elements)} elements.")
+        return {"FINISHED"}
 
 
 class SelectSystemProducts(bpy.types.Operator):
     bl_idname = "bim.select_system_products"
-    bl_label = "Select System Products"
+    bl_label = "Select System Products And Set Active System"
     bl_options = {"REGISTER", "UNDO"}
     system: bpy.props.IntProperty()
 
     def execute(self, context):
         core.select_system_products(tool.System, system=tool.Ifc.get().by_id(self.system))
+        SystemData.data["active_system"] = SystemData.active_system()
         return {"FINISHED"}
 
 
@@ -340,7 +375,7 @@ class LoadZones(bpy.types.Operator):
         for zone in tool.Ifc.get().by_type("IfcZone"):
             new = props.zones.add()
             new.ifc_definition_id = zone.id()
-            new.name = zone.Name or "Unnamed"
+            new["name"] = zone.Name or "Unnamed"
         props.is_loaded = True
         props.is_editing = 0
         return {"FINISHED"}

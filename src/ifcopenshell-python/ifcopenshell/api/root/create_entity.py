@@ -71,48 +71,44 @@ def create_entity(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "ifc_class": ifc_class,
-        "predefined_type": predefined_type,
-        "name": name,
-    }
-    return usecase.execute()
+    return usecase.execute(ifc_class, predefined_type, name)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
+    def execute(
+        self, ifc_class: str, predefined_type: Optional[str] = None, name: Optional[str] = None
+    ) -> ifcopenshell.entity_instance:
         element = self.file.create_entity(
-            self.settings["ifc_class"],
+            ifc_class,
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
             }
         )
-        element.Name = self.settings["name"] or None
-        if self.settings["predefined_type"]:
+        element.Name = name or None
+        if predefined_type:
             if hasattr(element, "PredefinedType"):
                 try:
-                    element.PredefinedType = self.settings["predefined_type"]
+                    element.PredefinedType = predefined_type
                 except:
                     element.PredefinedType = "USERDEFINED"
                     if hasattr(element, "ObjectType"):
-                        element.ObjectType = self.settings["predefined_type"]
+                        element.ObjectType = predefined_type
                     elif hasattr(element, "ElementType"):
-                        element.ElementType = self.settings["predefined_type"]
+                        element.ElementType = predefined_type
                     elif hasattr(element, "ProcessType"):
-                        element.ProcessType = self.settings["predefined_type"]
+                        element.ProcessType = predefined_type
             elif hasattr(element, "ObjectType"):
-                element.ObjectType = self.settings["predefined_type"]
+                element.ObjectType = predefined_type
         if self.file.schema == "IFC2X3":
             self.handle_2x3_defaults(element)
         else:
             self.handle_4_defaults(element)
         return element
 
-    def handle_2x3_defaults(self, element):
+    def handle_2x3_defaults(self, element: ifcopenshell.entity_instance) -> None:
         if element.is_a("IfcElementType"):
             if hasattr(element, "PredefinedType") and not element.PredefinedType:
                 element.PredefinedType = "NOTDEFINED"
@@ -129,7 +125,7 @@ class Usecase:
             element.ParameterTakesPrecedence = False
             element.Sizeable = False
 
-    def handle_4_defaults(self, element):
+    def handle_4_defaults(self, element: ifcopenshell.entity_instance) -> None:
         if element.is_a("IfcElementType"):
             if hasattr(element, "PredefinedType") and not element.PredefinedType:
                 element.PredefinedType = "NOTDEFINED"

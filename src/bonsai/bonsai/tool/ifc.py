@@ -57,6 +57,12 @@ class Ifc(bonsai.core.tool.Ifc):
         return IfcStore.get_file()
 
     @classmethod
+    def set_path(cls, value: str) -> None:
+        bim_props = tool.Blender.get_bim_props()
+        bim_props.ifc_file = value
+        IfcStore.set_path(value)
+
+    @classmethod
     def get_path(cls) -> str:
         """Get absolute filepath to the IFC file, return empty string if file is not saved."""
         return IfcStore.path
@@ -65,6 +71,12 @@ class Ifc(bonsai.core.tool.Ifc):
     def get_schema(cls) -> ifcopenshell.util.schema.IFC_SCHEMA:
         if IfcStore.get_file():
             return IfcStore.get_file().schema
+
+    @classmethod
+    def clear_history(cls) -> None:
+        IfcStore.last_transaction = ""
+        IfcStore.history = []
+        IfcStore.future = []
 
     @classmethod
     def is_edited(cls, obj: bpy.types.Object, *, ignore_scale: bool = False) -> bool:

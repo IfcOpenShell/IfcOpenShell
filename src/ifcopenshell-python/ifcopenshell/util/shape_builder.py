@@ -1378,7 +1378,7 @@ class ShapeBuilder:
 
         # prevent mutating arguments, deepcopy doesn't work
         start_points = np.array(points)
-        if offset:
+        if offset is not None and offset.any():
             start_points += offset
         extrusion_offset = np.multiply(extrusion_vector, magnitude)
         end_points = start_points + extrusion_offset
@@ -1573,7 +1573,7 @@ class ShapeBuilder:
                 circle_points += end_extrusion_offset
 
             # circle verts are 0-15, rect verts are 16-19
-            points = circle_points + rect_points
+            points = np.concatenate((circle_points, rect_points))
             transition_faces = [
                 (0, 19, 16),  # base
                 (0, 16, 1),

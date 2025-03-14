@@ -19,6 +19,7 @@
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
 import os
+
 import bpy
 import json
 import time
@@ -652,7 +653,6 @@ class DisableEditingWorkCalendar(bpy.types.Operator):
     def execute(self, context):
         core.disable_editing_work_calendar(tool.Sequence)
         return {"FINISHED"}
-
 
 class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_csv"

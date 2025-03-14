@@ -16,12 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import json
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api.geometry
-import ifcopenshell.util.shape_builder
-import ifcopenshell.util.element
 import ifcopenshell.util.unit
+import ifcopenshell.util.element
+import ifcopenshell.util.placement
+import ifcopenshell.util.shape_builder
 from collections import namedtuple
 from math import sin, cos
 from typing import Optional
@@ -62,6 +64,14 @@ def regenerate_wall_representation(
     For sloped walls, a basic rectangular 2D profile is extruded, and then
     additional extrusions are generated for each connection that boolean
     difference the base extrusion.
+
+    This will also update the axis line representation (e.g. trim the axis line
+    to any connections).
+
+    The wall's object placement will also be updated such that the placement is
+    equivalent to the axis line's start point (which therefore becomes (0.0,
+    0.0)). This is a logical, consistent, and useful placement coordinate
+    (especially for apps that can pivot using this point).
 
     :param wall: The IfcWall for the representation,
         only Model/Body/MODEL_VIEW type of representations are currently supported.
@@ -110,6 +120,8 @@ class Regenerator:
         self.end_points = []
         self.end_vector = np.array((0.0, 0.0, 1.0))
         self.end_offset = 0.0
+        manual_booleans = self.get_manual_booleans(wall)
+
         for rel in wall.ConnectedTo:
             if rel.is_a("IfcRelConnectsPathElements"):
                 wall2 = rel.RelatedElement
@@ -151,6 +163,9 @@ class Regenerator:
 
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(self.file)
 
+        # Don't offset wall if there are manual booleans, because that'll also shift operands
+        offset = None if manual_booleans else self.reference_p1 * -1
+
         if self.is_angled:
             start_points = [p.copy() for p in self.start_points]
             end_points = [p.copy() for p in self.end_points]
@@ -165,7 +180,7 @@ class Regenerator:
             end_points.reverse()
             points.extend(end_points)
             item = builder.extrude(
-                builder.polyline(points, closed=True),
+                builder.polyline(points, closed=True, position_offset=offset),
                 magnitude=self.wall_vectors["d"],
                 extrusion_vector=self.wall_vectors["z"],
             )
@@ -186,7 +201,9 @@ class Regenerator:
                 magnitude = np.linalg.norm(self.start_vector * (self.wall_vectors["h"] / self.start_vector[2]))
                 operands.append(
                     builder.extrude(
-                        builder.polyline(points, closed=True), magnitude=magnitude, extrusion_vector=self.start_vector
+                        builder.polyline(points, closed=True, position_offset=offset),
+                        magnitude=magnitude,
+                        extrusion_vector=self.start_vector,
                     )
                 )
 
@@ -206,7 +223,9 @@ class Regenerator:
                 magnitude = np.linalg.norm(self.end_vector * (self.wall_vectors["h"] / self.end_vector[2]))
                 operands.append(
                     builder.extrude(
-                        builder.polyline(points, closed=True), magnitude=magnitude, extrusion_vector=self.end_vector
+                        builder.polyline(points, closed=True, position_offset=offset),
+                        magnitude=magnitude,
+                        extrusion_vector=self.end_vector,
                     )
                 )
 
@@ -216,7 +235,9 @@ class Regenerator:
                 magnitude = np.linalg.norm(atpath_vector * (self.wall_vectors["h"] / atpath_vector[2]))
                 operands.append(
                     builder.extrude(
-                        builder.polyline(points, closed=True), magnitude=magnitude, extrusion_vector=atpath_vector
+                        builder.polyline(points, closed=True, position_offset=offset),
+                        magnitude=magnitude,
+                        extrusion_vector=atpath_vector,
                     )
                 )
 
@@ -225,7 +246,13 @@ class Regenerator:
         else:
             # A wall footprint may be multiple profiles if the wall is split into two due to an ATPATH connection
             profiles = []
-            split_points = sorted(self.split_points, key=lambda x: x[0][0])  # Sort islands in the +X direction
+            minx = max([p[0] for p in self.start_points])
+            maxx = min([p[0] for p in self.end_points])
+            split_points = []
+            for points in sorted(self.split_points, key=lambda x: x[0][0]):  # Sort islands in the +X direction
+                if any([p[0] > maxx or p[0] < minx for p in points]):  # Can't have anything outside our start/end
+                    continue
+                split_points.append(points)
             start_points = [p.copy() for p in self.start_points]
             end_points = [p.copy() for p in self.end_points]
             split_points.insert(0, start_points)
@@ -244,7 +271,7 @@ class Regenerator:
                 maxy_maxx = end_split[-1][0]
                 miny_minx = start_split[0][0]
                 miny_maxx = end_split[0][0]
-                # Do more defensive checks here
+                # Do more defensive checks here?
                 points = start_split
 
                 remaining_path_points = []
@@ -265,10 +292,10 @@ class Regenerator:
                         remaining_path_points.append(minpath_points)
                 self.minpath_points = remaining_path_points
 
-                profiles.append(builder.profile(builder.polyline(points, closed=True)))
+                profiles.append(builder.profile(builder.polyline(points, closed=True, position_offset=offset)))
 
             for points in self.maxpath_points + self.minpath_points:
-                profiles.append(builder.profile(builder.polyline(points, closed=True)))
+                profiles.append(builder.profile(builder.polyline(points, closed=True, position_offset=offset)))
 
             if len(profiles) > 1:
                 profile = self.file.createIfcCompositeProfileDef("AREA", Profiles=profiles)
@@ -276,6 +303,10 @@ class Regenerator:
                 profile = profiles[0]
 
             item = builder.extrude(profile, magnitude=self.wall_vectors["d"], extrusion_vector=self.wall_vectors["z"])
+        for boolean in self.get_manual_booleans(wall):
+            boolean.FirstOperand = item
+            item = boolean
+
         body_rep = builder.get_representation(self.body, items=[item])
         if old_rep := ifcopenshell.util.representation.get_representation(wall, self.body):
             ifcopenshell.util.element.replace_element(old_rep, body_rep)
@@ -283,13 +314,33 @@ class Regenerator:
         else:
             ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=body_rep)
 
-        item = builder.polyline([self.reference_p1, self.reference_p2])
+        item = builder.polyline([self.reference_p1, self.reference_p2], position_offset=offset)
         axis_rep = builder.get_representation(self.axis, items=[item])
         if old_rep := ifcopenshell.util.representation.get_representation(wall, self.axis):
             ifcopenshell.util.element.replace_element(old_rep, axis_rep)
             ifcopenshell.util.element.remove_deep2(self.file, old_rep)
         else:
             ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=axis_rep)
+
+        if not np.allclose(self.reference_p1, np.array((0.0, 0.0))) and not manual_booleans:
+            children = []
+            for referenced_placement in wall.ObjectPlacement.ReferencedByPlacements:
+                matrix = ifcopenshell.util.placement.get_local_placement(referenced_placement)
+                children.append((matrix, referenced_placement.PlacesObject))
+
+            matrix = ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement)
+            matrix[:, 3] = matrix @ np.concatenate((self.reference_p1, (0, 1)))
+            ifcopenshell.api.geometry.edit_object_placement(
+                self.file, product=wall, matrix=matrix, is_si=False, should_transform_children=True
+            )
+
+            # Restore children to their previous location
+            for matrix, elements in children:
+                for element in elements:
+                    ifcopenshell.api.geometry.edit_object_placement(
+                        self.file, product=element, matrix=matrix, is_si=False, should_transform_children=True
+                    )
+
         return body_rep
 
     def join(self, wall1, wall2, layers1, layers2, connection1, connection2):
@@ -554,7 +605,7 @@ class Regenerator:
             return result * -1
         return result
 
-    def get_axes(self, wall, reference, layers: list[PrioritisedLayer], angle: float):
+    def get_axes(self, wall: ifcopenshell.entity_instance, reference, layers: list[PrioritisedLayer], angle: float):
         axes = [[p.copy() for p in reference]]
         # Apply usage to convert the Reference line into MlsBase
         sense_factor = 1
@@ -567,3 +618,11 @@ class Regenerator:
             y_offset = (layer.thickness * sense_factor) / cos(angle)
             axes.append([p.copy() + np.array((0.0, y_offset)) for p in axes[-1]])
         return axes
+
+    def get_manual_booleans(self, element: ifcopenshell.entity_instance):
+        if pset := ifcopenshell.util.element.get_pset(element, "BBIM_Boolean"):
+            try:
+                return [self.file.by_id(boolean_id) for boolean_id in json.loads(pset["Data"])]
+            except:
+                return []
+        return []

@@ -33,7 +33,7 @@ import bonsai.bim.handler
 import bonsai.tool as tool
 from pathlib import Path
 from bonsai.tool.brick import BrickStore
-from typing import Set, Union, Optional, TypedDict, Callable, NotRequired, cast
+from typing import Set, Union, Optional, TypedDict, Callable, NotRequired
 
 
 IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
@@ -106,16 +106,20 @@ class IfcStore:
     def get_file():
         if IfcStore.file is None:
             props = tool.Blender.get_bim_props()
-            IfcStore.path = props.ifc_file
-            # Interpret relative paths as relative to .blend file.
-            if IfcStore.path and not os.path.isabs(IfcStore.path):
-                IfcStore.path = os.path.abspath(os.path.join(bpy.path.abspath("//"), IfcStore.path))
+            IfcStore.set_path(props.ifc_file)
             if IfcStore.path:
                 try:
                     IfcStore.load_file(IfcStore.path)
                 except Exception as e:
                     print(f"Failed to load file {IfcStore.path}. Error details: {e}")
         return IfcStore.file
+
+    @staticmethod
+    def set_path(value):
+        IfcStore.path = value
+        # Interpret relative paths as relative to .blend file.
+        if IfcStore.path and not os.path.isabs(IfcStore.path):
+            IfcStore.path = os.path.abspath(os.path.join(bpy.path.abspath("//"), IfcStore.path))
 
     @staticmethod
     def get_cache():

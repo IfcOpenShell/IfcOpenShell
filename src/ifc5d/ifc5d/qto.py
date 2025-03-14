@@ -30,12 +30,22 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import multiprocessing
-from collections import namedtuple, defaultdict
-from typing import Any, Literal, get_args, Union, Iterable
+from collections import defaultdict
+from typing import Any, Literal, get_args, Union, Iterable, NamedTuple
 
 
-Function = namedtuple("Function", ["measure", "name", "description"])
-RULE_SET = Literal["IFC4QtoBaseQuantities", "IFC4QtoBaseQuantitiesBlender"]
+class Function(NamedTuple):
+    measure: str
+    name: str
+    description: str
+
+
+RULE_SET = Literal[
+    "IFC4QtoBaseQuantities",
+    "IFC4QtoBaseQuantitiesBlender",
+    "IFC4X3QtoBaseQuantities",
+    "IFC4X3QtoBaseQuantitiesBlender",
+]
 rules: dict[RULE_SET, dict[str, Any]] = {}
 ResultsDict = dict[ifcopenshell.entity_instance, dict[str, dict[str, float]]]
 QtosFormulas = dict[str, dict[str, str]]
@@ -47,10 +57,12 @@ for name in get_args(RULE_SET):
 
 
 def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_instance], rules: dict) -> ResultsDict:
-    """
+    """Quantify elements from a rules using preset quantification rules
+
+    Rules placed as a JSON configuration file in the ``ifc5d`` folder will be
+    autodetected and loaded with the module for convenience.
 
     :param rules: Set of rules from `ifc5d.qto.rules`.
-
     """
     results: ResultsDict = {}
     elements_by_classes: defaultdict[str, set[ifcopenshell.entity_instance]] = defaultdict(set)
@@ -59,13 +71,8 @@ def quantify(ifc_file: ifcopenshell.file, elements: set[ifcopenshell.entity_inst
 
     for calculator, queries in rules["calculators"].items():
         calculator = calculators[calculator]
-        for ifc_class, qtos in queries.items():
-            filtered_elements = set()
-            ifc_classes = [ifc_class] + ifcopenshell.util.type.get_applicable_types(ifc_class, ifc_file.schema)
-            for ifc_class in ifc_classes:
-                if ifc_class not in elements_by_classes:
-                    continue
-                filtered_elements.update(elements_by_classes[ifc_class])
+        for query, qtos in queries.items():
+            filtered_elements = ifcopenshell.util.selector.filter_elements(ifc_file, query, elements)
             if filtered_elements:
                 calculator.calculate(ifc_file, filtered_elements, qtos, results)
     return results
@@ -159,7 +166,23 @@ class IteratorForTypes:
         return True
 
 
-class IfcOpenShell:
+class QtoCalculator:
+    """Abstract class for Qto calculators."""
+
+    functions: dict[str, Function]
+
+    @classmethod
+    def calculate(
+        cls,
+        ifc_file: ifcopenshell.file,
+        elements: set[ifcopenshell.entity_instance],
+        qtos: dict[str, dict[str, Union[str, None]]],
+        results: ResultsDict,
+    ) -> None:
+        raise NotImplementedError
+
+
+class IfcOpenShell(QtoCalculator):
     """Calculates Model body context geometry using the default IfcOpenShell
     iterator on triangulation elements."""
 
@@ -211,6 +234,12 @@ class IfcOpenShell:
         ),
         # IfcVolumeMeasure
         "get_volume": Function("IfcVolumeMeasure", "Volume", "Calculates the volume of a manifold shape"),
+        # IfcMassMeasure
+        "get_weight": Function(
+            "IfcMassMeasure",
+            "Weight",
+            "The weight of the object based on it's volume and material density (from Pset_MaterialCommon.MassDensity).",
+        ),
     }
 
     functions = {}
@@ -218,14 +247,13 @@ class IfcOpenShell:
         functions[f"gross_{k}"] = Function(v.measure, f"Gross {v.name}", v.description)
         functions[f"net_{k}"] = Function(v.measure, f"Net {v.name}", v.description)
 
+    internal_functions = (
+        "get_segment_length",
+        "get_weight",
+    )
+
     @classmethod
-    def calculate(
-        cls,
-        ifc_file: ifcopenshell.file,
-        elements: set[ifcopenshell.entity_instance],
-        qtos: dict[str, dict[str, Union[str, None]]],
-        results: ResultsDict,
-    ) -> None:
+    def calculate(cls, ifc_file, elements, qtos, results):
         formula_functions: dict[str, types.FunctionType] = {}
 
         cls.gross_settings = ifcopenshell.geom.settings()
@@ -241,7 +269,7 @@ class IfcOpenShell:
                 if not formula:
                     continue
                 gross_or_net_qtos = gross_qtos if formula.startswith("gross_") else net_qtos
-                if formula.endswith("get_segment_length"):
+                if formula.endswith(cls.internal_functions):
                     gross_or_net_qtos.setdefault(name, {})[quantity] = formula.partition("_")[2]
                 elif formula.startswith(("gross_", "net_")):
                     formula = formula.partition("_")[2]
@@ -255,7 +283,7 @@ class IfcOpenShell:
                 tasks.append((iterator, gross_qtos))
 
         if net_qtos:
-            for iterator in IfcOpenShell.create_iterators(ifc_file, cls.gross_settings, list(elements)):
+            for iterator in IfcOpenShell.create_iterators(ifc_file, cls.net_settings, list(elements)):
                 tasks.append((iterator, net_qtos))
 
         cls.unit_converter = SI2ProjectUnitConverter(ifc_file)
@@ -263,6 +291,7 @@ class IfcOpenShell:
         for iterator, qtos_ in tasks:
             if iterator.initialize():
                 while True:
+                    geometry: ifcopenshell.geom.main.ShapeType
                     if isinstance(iterator, ifcopenshell.geom.iterator):
                         shape = iterator.get()
                         geometry = shape.geometry
@@ -275,12 +304,18 @@ class IfcOpenShell:
                         results[element].setdefault(name, {})
                         for quantity, formula in quantities.items():
                             if formula == "get_segment_length":
-                                results[element][name][quantity] = cls.get_segment_length(element)
+                                value = cls.get_segment_length(element)
+                                if value is None:
+                                    continue
+                            elif formula == "get_weight":
+                                value = cls.get_weight(element, geometry)
+                                if value is None:
+                                    continue
                             else:
-                                results[element][name][quantity] = cls.unit_converter.convert(
-                                    formula_functions[formula](geometry),
-                                    IfcOpenShell.raw_functions[formula].measure,
-                                )
+                                value = formula_functions[formula](geometry)
+                                assert isinstance(value, (float, int))
+                                value = cls.unit_converter.convert(value, IfcOpenShell.raw_functions[formula].measure)
+                            results[element][name][quantity] = value
                     if not iterator.next():
                         break
 
@@ -301,7 +336,13 @@ class IfcOpenShell:
         return iterators
 
     @classmethod
-    def get_segment_length(cls, element: ifcopenshell.entity_instance) -> float:
+    def get_segment_length(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+        """Get segment length.
+
+        :param element: IFC element entity.
+        :return: ``float`` segment length in project units
+            or ``None`` if element doesn't have a representation or it's not supported.
+        """
         rep = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if rep and len(rep.Items or []) == 1 and rep.Items[0].is_a("IfcExtrudedAreaSolid"):
             item = rep.Items[0]
@@ -324,12 +365,33 @@ class IfcOpenShell:
             z = item.Depth
             return max([x, y, z])
 
+    @classmethod
+    def get_weight(
+        cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType
+    ) -> Union[float, None]:
+        """Get element's weight.
 
-class Blender:
+        :param element: IFC element entity.
+        :return: ``float`` weight in project units
+            or ``None`` if mass density calculation for this element is not supported.
+        """
+
+        density = ifcopenshell.util.element.get_element_mass_density(element)
+        if density is None:
+            return
+        volume = ifcopenshell.util.shape.get_volume(geometry)
+        return volume * density
+
+
+class Blender(QtoCalculator):
     """Calculates geometry based on currently loaded Blender objects."""
 
+    # Implementations are located in bonsai.bim.module.qto.calculator.
     functions = {
         # IfcLengthMeasure
+        "get_x": Function("IfcLengthMeasure", "X", ""),
+        "get_y": Function("IfcLengthMeasure", "Y", ""),
+        "get_z": Function("IfcLengthMeasure", "Z", ""),
         "get_covering_width": Function("IfcLengthMeasure", "Covering Width", ""),
         "get_finish_ceiling_height": Function("IfcLengthMeasure", "Finish Ceiling Height", ""),
         "get_finish_floor_height": Function("IfcLengthMeasure", "Finish Floor Height", ""),
@@ -369,13 +431,27 @@ class Blender:
         "get_net_weight": Function("IfcMassMeasure", "Net Weight", ""),
     }
 
-    @staticmethod
-    def calculate(
-        ifc_file: ifcopenshell.file,
-        elements: set[ifcopenshell.entity_instance],
-        qtos: dict[str, dict[str, Union[str, None]]],
-        results: ResultsDict,
-    ) -> None:
+    description_populated = False
+
+    @classmethod
+    def populate_descriptions(cls) -> None:
+        """Populate the descriptions based on the function docstrings.
+
+        The action is postponed to ensure ifc5d package works without Blender.
+        """
+        if cls.description_populated:
+            return
+
+        import bonsai.bim.module.qto.calculator as calculator
+
+        for function in cls.functions:
+            doc = getattr(calculator, function).__doc__ or ""
+            doc = doc[: doc.find(":param")].strip()
+            old_function = cls.functions[function]
+            cls.functions[function] = Function(old_function.measure, old_function.name, doc)
+
+    @classmethod
+    def calculate(cls, ifc_file, elements, qtos, results):
         import bonsai.tool as tool
         import bonsai.bim.module.qto.calculator as calculator
 
@@ -403,4 +479,7 @@ class Blender:
                 results[element] = element_results
 
 
-calculators = {"Blender": Blender, "IfcOpenShell": IfcOpenShell}
+calculators: dict[str, type[QtoCalculator]] = {
+    "Blender": Blender,
+    "IfcOpenShell": IfcOpenShell,
+}

@@ -16,12 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search, draw_attributes
 from bpy.types import Panel, UIList
 from bonsai.bim.module.system.data import SystemData, ZonesData, ActiveObjectZonesData, ObjectSystemData, PortData
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.system.prop import BIMSystemProperties, System, BIMZoneProperties, Zone
 
 
 FLOW_DIRECTION_TO_ICON = {
@@ -61,23 +66,17 @@ class BIM_PT_systems(Panel):
         if not ObjectSystemData.is_loaded:
             ObjectSystemData.load()
 
-        def draw_system_ui(row, system_id, system_name, system_class):
-            row = self.layout.row(align=True)
-            row.label(text=system_name, icon=SYSTEM_ICONS[system_class])
-            op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-            op.system = system_id
-            op = row.operator("bim.unassign_system", text="", icon="X")
-            op.system = system_id
-
-        self.props = context.scene.BIMSystemProperties
+        self.props = tool.System.get_system_props()
+        active_system_item = self.props.active_system_ui_item
         row = self.layout.row(align=True)
         row.prop(self.props, "should_draw_decorations")
 
         row = self.layout.row()
-        if active_system := tool.System.get_active_system():
+        if active_system := SystemData.data["active_system"]:
             row.label(text=f"Active system:")
-            row = self.layout.row(align=True)
-            draw_system_ui(row, active_system.id(), active_system.Name, active_system.is_a())
+            tool.System.draw_system_ui(
+                self.layout, active_system["id"], active_system["Name"], active_system["ifc_class"]
+            )
         else:
             row.label(text="No active system is selected")
 
@@ -85,8 +84,7 @@ class BIM_PT_systems(Panel):
             row = self.layout.row()
             row.label(text="Active object systems:")
             for system in ObjectSystemData.data["systems"]:
-                row = self.layout.row(align=True)
-                draw_system_ui(row, system["id"], system["name"], system["ifc_class"])
+                tool.System.draw_system_ui(self.layout, system["id"], system["name"], system["ifc_class"])
         else:
             self.layout.label(text="No System associated with active object")
 
@@ -98,6 +96,20 @@ class BIM_PT_systems(Panel):
             row = self.layout.row(align=True)
             prop_with_search(row, self.props, "system_class", text="")
             row.operator("bim.add_system", text="", icon="ADD")
+            if active_system_item:
+                system_id = active_system_item.ifc_definition_id
+                op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
+                op.system = system_id
+                row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = system_id
+                row.operator("bim.unassign_system", text="", icon="KEYFRAME").system = system_id
+                if self.props.edited_system_id == system_id:
+                    row.operator("bim.edit_system", text="", icon="CHECKMARK")
+                    row.operator("bim.disable_editing_system", text="", icon="CANCEL")
+                else:
+                    op = row.operator("bim.enable_editing_system", text="", icon="GREASEPENCIL")
+                    op.system = system_id
+                    op = row.operator("bim.remove_system", text="", icon="X")
+                    op.system = system_id
         else:
             row.operator("bim.load_systems", text="", icon="IMPORT")
 
@@ -142,7 +154,8 @@ class BIM_PT_ports(Panel):
     def draw(self, context):
         if not PortData.is_loaded:
             PortData.load()
-        self.props = context.scene.BIMSystemProperties
+
+        self.props = tool.System.get_system_props()
 
         row = self.layout.row(align=True)
         total_ports = PortData.data["total_ports"]
@@ -173,24 +186,23 @@ class BIM_PT_ports(Panel):
         row = self.layout.row(align=True)
         cols = [row.column(align=True) for i in range(6)]
 
-        for i, port_data in enumerate(PortData.data["located_ports_data"]):
-            port, port_obj_name, connected_obj_name = port_data
-            flow_direction_icon = FLOW_DIRECTION_TO_ICON[port.FlowDirection or "NOTDEFINED"]
-            if port_obj_name:
+        for port_data in PortData.data["located_ports_data"]:
+            flow_direction_icon = FLOW_DIRECTION_TO_ICON[port_data["FlowDirection"] or "NOTDEFINED"]
+            if port_data["port_obj_name"]:
                 cols[0].label(text="", icon=flow_direction_icon)
-                cols[1].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = port.id()
-                cols[2].label(text=port_obj_name)
+                cols[1].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = port_data["id"]
+                cols[2].label(text=port_data["port_obj_name"])
             else:
                 cols[0].label(text="", icon=flow_direction_icon)
                 cols[1].label(text="", icon="HIDE_ON")
                 cols[2].label(text="Port is hidden")
 
-            if connected_obj_name:
-                connected_obj = bpy.data.objects[connected_obj_name]
-                cols[3].operator("bim.disconnect_port", text="", icon="UNLINKED").element_id = port.id()
+            if port_data["connected_obj_name"]:
+                connected_obj = bpy.data.objects[port_data["connected_obj_name"]]
+                cols[3].operator("bim.disconnect_port", text="", icon="UNLINKED").element_id = port_data["id"]
                 ifc_id = tool.Blender.get_ifc_definition_id(connected_obj)
                 cols[4].operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = ifc_id
-                cols[5].label(text=connected_obj_name)
+                cols[5].label(text=port_data["connected_obj_name"])
             else:
                 cols[3].label(text="", icon="UNLINKED")
                 cols[4].label(text="", icon="BLANK1")
@@ -217,7 +229,7 @@ class BIM_PT_port(Panel):
         return True
 
     def draw(self, context):
-        self.props = context.scene.BIMSystemProperties
+        self.props = tool.System.get_system_props()
 
         layout = self.layout
         row = layout.row(align=True)
@@ -295,7 +307,7 @@ class BIM_PT_flow_controls(Panel):
         if not ObjectSystemData.is_loaded:
             ObjectSystemData.load()
 
-        def display_element(control_id, flow_element_id, displayed_object_name):
+        def display_element(control_id: int, flow_element_id: int, displayed_object_name: str) -> None:
             displayed_object = bpy.data.objects[displayed_object_name]
             row = self.layout.row(align=True)
             op = row.operator("bim.assign_unassign_flow_control", text="", icon="X")
@@ -355,16 +367,17 @@ class BIM_PT_zones(Panel):
             row.operator("bim.load_zones", text="", icon="IMPORT")
             return
 
-        row.operator("bim.add_zone", text="", icon="ADD")
         row.operator("bim.unload_zones", text="", icon="CANCEL")
 
+        row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
+        row.operator("bim.add_zone", text="", icon="ADD")
         if self.props.zones and self.props.active_zone_index < len(self.props.zones):
-            row = self.layout.row(align=True)
             ifc_definition_id = self.props.zones[self.props.active_zone_index].ifc_definition_id
-            row.operator("bim.enable_editing_zone", text="Edit Zone", icon="GREASEPENCIL").zone = ifc_definition_id
             row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF").system = ifc_definition_id
             row.operator("bim.assign_system", text="", icon="KEYFRAME_HLT").system = ifc_definition_id
             row.operator("bim.unassign_system", text="", icon="KEYFRAME").system = ifc_definition_id
+            row.operator("bim.enable_editing_zone", text="", icon="GREASEPENCIL").zone = ifc_definition_id
             row.operator("bim.remove_zone", text="", icon="X").zone = ifc_definition_id
 
         self.layout.template_list("BIM_UL_zones", "", self.props, "zones", self.props, "active_zone_index")
@@ -394,8 +407,7 @@ class BIM_PT_active_object_zones(Panel):
         self.props = tool.System.get_zone_props()
 
         for zone in ActiveObjectZonesData.data["zones"]:
-            row = self.layout.row()
-            row.label(text=zone, icon="SEQ_STRIP_META")
+            tool.System.draw_system_ui(self.layout, zone["id"], zone["Name"], "IfcZone")
 
         if not ActiveObjectZonesData.data["zones"]:
             row = self.layout.row()
@@ -403,33 +415,35 @@ class BIM_PT_active_object_zones(Panel):
 
 
 class BIM_UL_systems(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMSystemProperties,
+        item: System,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name, icon=SYSTEM_ICONS[item.ifc_class])
             system_id = item.ifc_definition_id
-            row.operator("bim.assign_system", text="", icon="ADD").system = item.ifc_definition_id
-            if context.scene.BIMSystemProperties.edited_system_id == system_id:
-                op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.system = system_id
-                row.operator("bim.edit_system", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_system", text="", icon="CANCEL")
-            elif context.scene.BIMSystemProperties.edited_system_id:
-                op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.system = system_id
-                op = row.operator("bim.remove_system", text="", icon="X")
-                op.system = system_id
-            else:
-                op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
-                op.system = system_id
-                op = row.operator("bim.enable_editing_system", text="", icon="GREASEPENCIL")
-                op.system = system_id
-                op = row.operator("bim.remove_system", text="", icon="X")
-                op.system = system_id
+            if data.edited_system_id == system_id:
+                row.label(text="", icon="GREASEPENCIL")
+            row.prop(item, "name", text="", icon=SYSTEM_ICONS[item.ifc_class], emboss=False)
 
 
 class BIM_UL_zones(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMZoneProperties,
+        item: Zone,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
+            row.prop(item, "name", text="", emboss=False)

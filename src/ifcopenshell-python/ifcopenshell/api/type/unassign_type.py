@@ -28,9 +28,7 @@ def unassign_type(file: ifcopenshell.file, related_objects: list[ifcopenshell.en
     and material usages associated with the previously assigned type.
 
     :param related_objects: List of IfcElement occurrences.
-    :type related_objects: list[ifcopenshell.entity_instance]
     :return: None
-    :rtype: None
 
     Example:
 
@@ -50,23 +48,21 @@ def unassign_type(file: ifcopenshell.file, related_objects: list[ifcopenshell.en
         # Change our mind. Maybe it's a different type?
         ifcopenshell.api.type.unassign_type(model, related_objects=[furniture])
     """
-    settings = {"related_objects": related_objects}
-
-    related_objects = set(settings["related_objects"])
+    related_objects_set = set(related_objects)
 
     if file.schema == "IFC2X3":
         rels = set(
             rel
-            for object in related_objects
+            for object in related_objects_set
             if (rel := next((rel for rel in object.IsDefinedBy if rel.is_a("IfcRelDefinesByType")), None))
         )
     else:
-        rels = set(rel for object in related_objects if (rel := next((rel for rel in object.IsTypedBy), None)))
+        rels = set(rel for object in related_objects_set if (rel := next((rel for rel in object.IsTypedBy), None)))
 
     for rel in rels:
-        related_objects = set(rel.RelatedObjects) - related_objects
-        if related_objects:
-            rel.RelatedObjects = list(related_objects)
+        related_objects_set = set(rel.RelatedObjects) - related_objects_set
+        if related_objects_set:
+            rel.RelatedObjects = list(related_objects_set)
             ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
         else:
             history = rel.OwnerHistory

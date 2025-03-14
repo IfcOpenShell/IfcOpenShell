@@ -111,10 +111,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
                 possible_values = [v["value"] for v in possible_values]
 
             description = prop.get("description", "")
-            # Prefer propertyCode as it's later will be used to set properties,
-            # so name should be exact. Fallback to name as propertyCode is nullable.
-            prop_name = prop.get("propertyCode") or prop["name"]
-            psets[pset][prop_name] = {
+            psets[pset][prop["name"]] = {
                 "data_type": prop.get("dataType"),
                 "possible_values": possible_values,
                 "description": description,

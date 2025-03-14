@@ -36,14 +36,17 @@ VectorTuple = tuple[float, float, float]
 
 
 def get_x(o: bpy.types.Object) -> float:
+    """Calculate the length along the local X axis."""
     return o.bound_box[6][0] - o.bound_box[0][0]
 
 
 def get_y(o: bpy.types.Object) -> float:
+    """Calculate the length along the local Y axis."""
     return o.bound_box[6][1] - o.bound_box[0][1]
 
 
 def get_z(o: bpy.types.Object) -> float:
+    """Calculate the length along the local Z axis."""
     return o.bound_box[6][2] - o.bound_box[0][2]
 
 
@@ -63,12 +66,13 @@ def get_linear_length(o: bpy.types.Object) -> float:
     return max(x, y, z)
 
 
-def get_length(o: bpy.types.Object, vg_index: Optional[int] = None, main_axis: str = "x") -> float:
+def get_length(o: bpy.types.Object, vg_index: Optional[int] = None) -> float:
+    """Calculate the object length trying to guess the main axis."""
     if vg_index is None:
         x = get_x(o)
         y = get_y(o)
         z = get_z(o)
-        if get_object_main_axis(o) == "x" or main_axis == "x":
+        if get_object_main_axis(o) == "x":
             return max(x, y)
         if get_object_main_axis(o) == "z":
             return max(z, x)
@@ -76,6 +80,7 @@ def get_length(o: bpy.types.Object, vg_index: Optional[int] = None, main_axis: s
             return max(y, z)
 
     length = 0
+    assert isinstance(o.data, bpy.types.Mesh)
     edges = [
         e
         for e in o.data.edges
@@ -157,6 +162,8 @@ def get_covering_width(obj: bpy.types.Object) -> float:
 def get_width(o: bpy.types.Object) -> float:
     """_summary_: Returns the width of the object bounding box
 
+    Min value between X and Y axes lengths.
+
     :param blender-object o: blender object
     :return float: width
     """
@@ -167,6 +174,8 @@ def get_width(o: bpy.types.Object) -> float:
 
 def get_height(o: bpy.types.Object) -> float:
     """_summary_: Returns the height of the object bounding box
+
+    Based on the the length along the local Z axis.
 
     :param blender-object o: blender object
     :return float: height
@@ -269,6 +278,7 @@ def get_net_perimeter(o: bpy.types.Object) -> float:
 
 def get_gross_perimeter(o: bpy.types.Object) -> float:
     element = tool.Ifc.get_entity(o)
+    assert element
     mesh = get_gross_element_mesh(element)
     gross_obj = bpy.data.objects.new("GrossObj", mesh)
     gross_perimeter = get_net_perimeter(gross_obj)
@@ -420,6 +430,7 @@ def get_gross_footprint_area(o: bpy.types.Object) -> float:
         return get_net_footprint_area(o)
 
     element = tool.Ifc.get_entity(o)
+    assert element
     mesh = get_gross_element_mesh(element)
     gross_obj = bpy.data.objects.new("GrossObj", mesh)
     gross_footprint_area = get_net_footprint_area(gross_obj)
@@ -474,6 +485,7 @@ def get_gross_surface_area(o: bpy.types.Object, vg_index: Optional[int] = None) 
             return get_net_surface_area(o)
 
         element = tool.Ifc.get_entity(o)
+        assert element
         mesh = get_gross_element_mesh(element)
         area = get_mesh_area(mesh)
         bpy.data.meshes.remove(mesh)
@@ -506,6 +518,7 @@ def is_polygon_in_vg(polygon: bpy.types.MeshPolygon, vertices_in_vg: list[bpy.ty
 
 
 def get_net_volume(o: bpy.types.Object) -> float:
+    assert isinstance(o.data, bpy.types.Mesh)
     o_mesh = bmesh.new()
     o_mesh.from_mesh(o.data)
     volume = o_mesh.calc_volume()
@@ -518,6 +531,7 @@ def get_gross_volume(o: bpy.types.Object) -> float:
         return get_net_volume(o)
 
     element = tool.Ifc.get_entity(o)
+    assert element
     mesh = get_gross_element_mesh(element)
     bm = get_bmesh_from_mesh(mesh)
 
@@ -543,6 +557,7 @@ def get_obj_decompositions(obj: bpy.types.Object) -> set[ifcopenshell.entity_ins
 
 
 def get_gross_weight(obj: bpy.types.Object) -> Union[float, None]:
+    """Get gross weight of the object (based on gross volume and Pset_MaterialCommon.MassDensity)"""
     obj_mass_density = get_obj_mass_density(obj)
     if not obj_mass_density:
         return
@@ -552,6 +567,7 @@ def get_gross_weight(obj: bpy.types.Object) -> Union[float, None]:
 
 
 def get_net_weight(obj: bpy.types.Object) -> Union[float, None]:
+    """Get net weight of the object (based on net volume and Pset_MaterialCommon.MassDensity)"""
     obj_mass_density = get_obj_mass_density(obj)
     if not obj_mass_density:
         return
@@ -561,50 +577,10 @@ def get_net_weight(obj: bpy.types.Object) -> Union[float, None]:
 
 
 def get_obj_mass_density(obj: bpy.types.Object) -> Union[float, None]:
+    """Calculate object mass density based on Pset_MaterialCommon.MassDensity."""
     entity = tool.Ifc.get_entity(obj)
-    material = ifcopenshell.util.element.get_material(entity)
-    if material is None:
-        return
-
-    if (
-        material.is_a("IfcMaterialLayerSet")
-        or material.is_a("IfcMaterialProfileSet")
-        or material.is_a("IfcMaterialConstituentSet")
-    ):
-        return
-
-    if material.is_a("IfcMaterial"):
-        material_mass_density = ifcopenshell.util.element.get_pset(material, "Pset_MaterialCommon", "MassDensity")
-        return material_mass_density
-
-    if material.is_a("IfcMaterialLayerSetUsage"):
-        material_layers = material.ForLayerSet.MaterialLayers
-        densities = []
-        thicknesses = []
-        obj_mass_density = 0
-        for material_layer in material_layers:
-            material_mass_density = ifcopenshell.util.element.get_pset(
-                material_layer.Material, "Pset_MaterialCommon", "MassDensity"
-            )
-            if material_mass_density is None:
-                return
-            densities.append(material_mass_density)
-            thickness = material_layer.LayerThickness
-            thicknesses.append(thickness)
-            obj_mass_density = obj_mass_density + (material_mass_density * thickness)
-        total_thickness = sum(thicknesses)
-        obj_mass_density = obj_mass_density / total_thickness
-        return obj_mass_density
-
-    if material.is_a("IfcMaterialProfileSetUsage"):
-        material_profiles = material.ForProfileSet.MaterialProfiles
-        if len(material_profiles) == 1:
-            material_mass_density = ifcopenshell.util.element.get_pset(
-                material_profiles[0].Material, "Pset_MaterialCommon", "MassDensity"
-            )
-            return material_mass_density
-        else:
-            return
+    assert entity
+    return ifcopenshell.util.element.get_element_mass_density(entity)
 
 
 def get_opening_type(opening: bpy.types.Object, obj: bpy.types.Object) -> Literal["OPENING", "RECESS"]:
@@ -764,6 +740,7 @@ def get_outer_surface_area(obj: bpy.types.Object) -> float:
 
 def get_end_area(obj: bpy.types.Object) -> float:
     element = tool.Ifc.get_entity(obj)
+    assert element
     gross_mesh = get_gross_element_mesh(element)
     gross_obj = bpy.data.objects.new("MyObject", gross_mesh)
 

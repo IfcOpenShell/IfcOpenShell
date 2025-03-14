@@ -300,9 +300,11 @@ class DumbSlabPlaner:
                 existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
-                existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 2*pi, tolerance=0.001) else existing_x_angle
+                existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 2 * pi, tolerance=0.001) else existing_x_angle
                 direction_ratios = Vector(extrusion.ExtrudedDirection.DirectionRatios)
-                offset_direction = Vector((abs(direction_ratios.x), abs(direction_ratios.y), abs(direction_ratios.z))) # The offset direction doesn't change with direction sense
+                offset_direction = Vector(
+                    (abs(direction_ratios.x), abs(direction_ratios.y), abs(direction_ratios.z))
+                )  # The offset direction doesn't change with direction sense
                 perpendicular_depth = thickness * abs(1 / cos(existing_x_angle))
                 perpendicular_offset = layer_params["offset"] * abs(1 / cos(existing_x_angle)) / self.unit_scale
 

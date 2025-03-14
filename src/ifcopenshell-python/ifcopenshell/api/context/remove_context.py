@@ -29,9 +29,7 @@ def remove_context(file: ifcopenshell.file, context: ifcopenshell.entity_instanc
     removed. If a context is removed, then any subcontexts are also removed.
 
     :param context: The IfcGeometricRepresentationContext entity to remove
-    :type context: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -46,22 +44,20 @@ def remove_context(file: ifcopenshell.file, context: ifcopenshell.entity_instanc
         # Let's just get rid of it completely
         ifcopenshell.api.context.remove_context(model, context=body)
     """
-    settings = {"context": context}
-
-    for subcontext in settings["context"].HasSubContexts:
+    for subcontext in context.HasSubContexts:
         ifcopenshell.api.context.remove_context(file, context=subcontext)
 
-    if getattr(settings["context"], "ParentContext", None):
-        new = settings["context"].ParentContext
-        for inverse in file.get_inverse(settings["context"]):
+    if getattr(context, "ParentContext", None):
+        new = context.ParentContext
+        for inverse in file.get_inverse(context):
             if inverse.is_a("IfcCoordinateOperation"):
                 inverse.SourceCRS = inverse.TargetCRS
                 ifcopenshell.util.element.remove_deep(file, inverse)
             else:
-                ifcopenshell.util.element.replace_attribute(inverse, settings["context"], new)
-        file.remove(settings["context"])
+                ifcopenshell.util.element.replace_attribute(inverse, context, new)
+        file.remove(context)
     else:
-        representations_in_context = settings["context"].RepresentationsInContext
-        file.remove(settings["context"])
+        representations_in_context = context.RepresentationsInContext
+        file.remove(context)
         for element in representations_in_context:
             ifcopenshell.api.geometry.remove_representation(file, representation=element)

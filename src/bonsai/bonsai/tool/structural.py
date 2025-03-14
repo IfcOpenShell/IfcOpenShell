@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcopenshell.util.representation
@@ -23,30 +24,46 @@ import json
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Union, Any
+from typing import Union, Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.structural.prop import BIMStructuralProperties, BIMObjectStructuralProperties
 
 
 class Structural(bonsai.core.tool.Structural):
     @classmethod
+    def get_structural_props(cls) -> BIMStructuralProperties:
+        return bpy.context.scene.BIMStructuralProperties
+
+    @classmethod
+    def get_object_structural_props(cls, obj: bpy.types.Object) -> BIMObjectStructuralProperties:
+        return obj.BIMStructuralProperties
+
+    @classmethod
     def disable_editing_structural_analysis_model(cls) -> None:
-        bpy.context.scene.BIMStructuralProperties.active_structural_analysis_model_id = 0
+        props = cls.get_structural_props()
+        props.active_structural_analysis_model_id = 0
 
     @classmethod
     def disable_structural_analysis_model_editing_ui(cls) -> None:
-        bpy.context.scene.BIMStructuralProperties.is_editing = False
+        props = cls.get_structural_props()
+        props.is_editing = False
 
     @classmethod
     def enable_editing_structural_analysis_model(cls, model: Union[int, None]) -> None:
         if model:
-            bpy.context.scene.BIMStructuralProperties.active_structural_analysis_model_id = model
+            props = cls.get_structural_props()
+            props.active_structural_analysis_model_id = model
 
     @classmethod
     def enable_structural_analysis_model_editing_ui(cls) -> None:
-        bpy.context.scene.BIMStructuralProperties.is_editing = True
+        props = cls.get_structural_props()
+        props.is_editing = True
 
     @classmethod
     def enabled_structural_analysis_model_editing_ui(cls) -> bool:
-        return bpy.context.scene.BIMStructuralProperties.is_editing
+        props = cls.get_structural_props()
+        return props.is_editing
 
     @classmethod
     def ensure_representation_contexts(cls) -> None:
@@ -71,7 +88,7 @@ class Structural(bonsai.core.tool.Structural):
 
     @classmethod
     def get_active_structural_analysis_model(cls) -> ifcopenshell.entity_instance:
-        props = bpy.context.scene.BIMStructuralProperties
+        props = cls.get_structural_props()
         model = tool.Ifc.get().by_id(props.active_structural_analysis_model_id)
         return model
 
@@ -120,13 +137,13 @@ class Structural(bonsai.core.tool.Structural):
 
     @classmethod
     def get_structural_analysis_model_attributes(cls) -> dict[str, Any]:
-        props = bpy.context.scene.BIMStructuralProperties
+        props = cls.get_structural_props()
         attributes = bonsai.bim.helper.export_attributes(props.structural_analysis_model_attributes)
         return attributes
 
     @classmethod
     def load_structural_analysis_model_attributes(cls, data: dict[str, Any]) -> None:
-        props = bpy.context.scene.BIMStructuralProperties
+        props = cls.get_structural_props()
         props.structural_analysis_model_attributes.clear()
         schema = tool.Ifc.schema()
         for attribute in schema.declaration_by_name("IfcStructuralAnalysisModel").all_attributes():
@@ -149,7 +166,7 @@ class Structural(bonsai.core.tool.Structural):
     @classmethod
     def load_structural_analysis_models(cls) -> None:
         models = tool.Structural.get_ifc_structural_analysis_models()
-        props = bpy.context.scene.BIMStructuralProperties
+        props = cls.get_structural_props()
         props.structural_analysis_models.clear()
         for ifc_definition_id, model in models.items():
             new = props.structural_analysis_models.add()

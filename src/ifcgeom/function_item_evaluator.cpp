@@ -5,12 +5,21 @@
 
 using namespace ifcopenshell::geometry;
 
-double ifcopenshell::geometry::polynomial_length(double A, double B, double C, double horizontal_length) {
-    auto fn = [A, B, C](double x) -> double { return sqrt(pow(B + 2 * C * x, 2.0) + 1.0); };
-    auto l = boost::math::quadrature::trapezoidal(fn, 0.0, horizontal_length);
-    return l;
-}
+std::vector<double> ifcopenshell::geometry::helmert_curve_point(double A0, double A1, double A2, double s) {
+    auto theta = [A0, A1, A2](double t) -> double {
+       auto a0 = A0 ? t / A0 : 0.0;
+       auto a1 = A1 ? A1 * std::pow(t, 2) / (2 * fabs(std::pow(A1, 3))) : 0.0;
+       auto a2 = A2 ? std::pow(t, 3) / (3 * std::pow(A2, 3)) : 0.0;
+       return a0 + a1 + a2;
+    };
 
+    auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
+    auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
+    auto x = boost::math::quadrature::trapezoidal(fn_x, 0.0, s);
+    auto y = boost::math::quadrature::trapezoidal(fn_y, 0.0, s);
+    auto angle = theta(x);
+    return {x, y, angle};
+}
 
 struct functor_fn_evaluator : public fn_evaluator {
     functor_fn_evaluator(taxonomy::functor_item::const_ptr fn, const ifcopenshell::geometry::Settings& settings) : fn_evaluator(settings),
@@ -97,12 +106,27 @@ struct gradient_fn_evaluator : public fn_evaluator {
         auto xy = horizontal_evaluator_.evaluate(u + start_);
         auto uz = vertical_evaluator_.evaluate(u);
 
-        uz.col(3)(0) = 0.0;        // x is distance along. zero it out so it doesn't add to the x from horizontal
+        // curvature is stored in row 3 - capture it and remove it from the xy and uz matrices
+        // so the matrix operations (ie multiplication) works correct.y
+        auto horizontal_curvature = xy.row(3);
+        xy.row(3) = Eigen::Vector4d(0, 0, 0, 1);
+
+        auto vertical_curvature = uz.row(3);
+        uz.row(3) = Eigen::Vector4d(0, 0, 0, 1);
+
+        uz(0, 3) = 0.0;      // x is distance along. zero it out so it doesn't add to the x from horizontal
         uz.col(1).swap(uz.col(2)); // uz is 2D in distance along - y plane, swap y and z so elevations become z
         uz.row(1).swap(uz.row(2));
 
         Eigen::Matrix4d m;
         m = xy * uz; // combine horizontal and vertical
+
+        // Put curvature back into the solution matrix
+        // curvature for vertical is in column 0, need it to be in column 1
+        // so it doesn't add to curvature for horizontal
+        std::swap(vertical_curvature(3, 0), vertical_curvature(3, 1));
+        m.row(3) = horizontal_curvature + vertical_curvature;
+
         return m;
     }
 
@@ -129,6 +153,15 @@ struct cant_fn_evaluator : public fn_evaluator {
         auto g = gradient_evaluator_.evaluate(u + start_);
         auto c = cant_evaluator_.evaluate(u);
 
+        
+        // curvature is stored in row 3 - capture it and remove it from the xy and uz matrices
+        // so the matrix operations (ie multiplication) works correctly
+        auto gradient_curvature = g.row(3);
+        g.row(3) = Eigen::Vector4d(0, 0, 0, 1);
+
+        auto cant_curvature = c.row(3);
+        c.row(3) = Eigen::Vector4d(0, 0, 0, 1);
+
         // Need to multiply g and c so the axis vectors
         // from cant have the correct rotation applied so
         // they are relative to the gradient curve coordinate system
@@ -154,6 +187,11 @@ struct cant_fn_evaluator : public fn_evaluator {
         m(0, 3) = x;
         m(1, 3) = y;
         m(2, 3) = z + s;
+
+        // reinstate values for curvature.
+        // cant_curvature is cant alone. this needs to be combined with gradient in column 3
+        gradient_curvature[3] = gradient_curvature[2] + cant_curvature[3];
+        m.row(3) = gradient_curvature;
 
         return m;
    }
@@ -274,5 +312,9 @@ taxonomy::item::ptr function_item_evaluator::evaluate(const std::vector<double>&
 }
 
 Eigen::Matrix4d function_item_evaluator::evaluate(double u) const {
-    return fn_evaluator_->evaluate(u);
+    Eigen::Matrix4d m = fn_evaluator_->evaluate(u);
+    if (!fn_evaluator_->settings_.get<ifcopenshell::geometry::settings::ComputeCurvature>().get()) {
+        m.row(3) = Eigen::Vector4d(0, 0, 0, 1);
+    }
+    return m;
 }

@@ -37,52 +37,62 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Union
 
 
-def get_load_groups_to_show(self, context):
+def get_load_groups_to_show(self: "BIMStructuralProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not LoadGroupDecorationData.is_loaded:
         LoadGroupDecorationData.load()
     return LoadGroupDecorationData.data["load_groups_to_show"]
 
 
-def update_activity_type(self, context):
+def update_activity_type(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
     LoadGroupDecorationData.is_loaded = False
 
 
-def get_applicable_structural_load_types(self, context):
+def get_applicable_structural_load_types(
+    self: "BIMStructuralProperties", context: bpy.types.Context
+) -> list[tuple[str, str, str]]:
     if not StructuralLoadCasesData.is_loaded:
         StructuralLoadCasesData.load()
     return StructuralLoadCasesData.data["applicable_structural_load_types"]
 
 
-def updateApplicableStructuralLoadTypes(self, context):
+def updateApplicableStructuralLoadTypes(self: "BIMStructuralProperties", context: bpy.types.Context) -> None:
     StructuralLoadCasesData.data["applicable_structural_load_types"] = (
         StructuralLoadCasesData.applicable_structural_load_types()
     )
 
 
-def get_applicable_structural_loads(self, context):
+def get_applicable_structural_loads(
+    self: "BIMStructuralProperties", context: bpy.types.Context
+) -> list[tuple[str, str, str]]:
     if not StructuralLoadCasesData.is_loaded:
         StructuralLoadCasesData.load()
     return StructuralLoadCasesData.data["applicable_structural_loads"]
 
 
-def get_structural_load_types(self, context):
+def get_structural_load_types(
+    self: "BIMStructuralProperties", context: bpy.types.Context
+) -> list[tuple[str, str, str]]:
     if not StructuralLoadsData.is_loaded:
         StructuralLoadsData.load()
     return StructuralLoadsData.data["structural_load_types"]
 
 
-def get_boundary_condition_types(self, context):
+def get_boundary_condition_types(
+    self: "BIMStructuralProperties", context: bpy.types.Context
+) -> list[tuple[str, str, str]]:
     if not BoundaryConditionsData.is_loaded:
         BoundaryConditionsData.load()
     return BoundaryConditionsData.data["boundary_condition_types"]
 
 
-def updateAxisAngle(self, context):
+def updateAxisAngle(self: "BIMObjectStructuralProperties", context: bpy.types.Context) -> None:
     if not self.axis_empty:
         return
     obj = context.active_object
+    assert obj and isinstance(obj.data, bpy.types.Mesh)
     empty = self.axis_empty
     x_axis = obj.data.vertices[1].co - obj.data.vertices[0].co
     empty.location = obj.data.vertices[0].co
@@ -92,10 +102,11 @@ def updateAxisAngle(self, context):
     empty.rotation_euler[0] = radians(self.axis_angle)
 
 
-def updateConnectionCS(self, context):
+def updateConnectionCS(self: "BIMObjectStructuralProperties", context: bpy.types.Context) -> None:
     if not self.ccs_empty:
         return
     obj = context.active_object
+    assert obj and isinstance(obj.data, bpy.types.Mesh)
     empty = self.ccs_empty
     empty.location = obj.data.vertices[0].co
     empty.rotation_mode = "XYZ"
@@ -108,11 +119,18 @@ class StructuralAnalysisModel(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+
 
 class StructuralActivity(PropertyGroup):
     name: StringProperty(name="Name")
     applied_load_class: StringProperty(name="Applied Load Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+    if TYPE_CHECKING:
+        applied_load_class: str
+        ifc_definition_id: int
 
 
 class StructuralLoad(PropertyGroup):
@@ -120,11 +138,19 @@ class StructuralLoad(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     number_of_inverse_references: IntProperty(name="Number of Inverse References")
 
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+        number_of_inverse_references: int
+
 
 class BoundaryCondition(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     number_of_inverse_references: IntProperty(name="Number of Inverse References")
+
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+        number_of_inverse_references: int
 
 
 class BIMStructuralProperties(PropertyGroup):
@@ -187,6 +213,45 @@ class BIMStructuralProperties(PropertyGroup):
     )
     load_group_to_show: EnumProperty(items=get_load_groups_to_show, name="Load Groups")
 
+    if TYPE_CHECKING:
+        structural_analysis_model_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        is_editing: bool
+        structural_analysis_models: bpy.types.bpy_prop_collection_idprop[StructuralAnalysisModel]
+        active_structural_analysis_model_index: int
+        active_structural_analysis_model_id: int
+        load_case_editing_type: str
+        load_case_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        active_load_case_id: int
+        load_group_editing_type: str
+        active_load_group_id: int
+        applicable_structural_load_types: str
+        applicable_structural_loads: str
+        load_group_activities: bpy.types.bpy_prop_collection_idprop[StructuralActivity]
+        active_load_group_activity_index: int
+
+        structural_loads: bpy.types.bpy_prop_collection_idprop[StructuralLoad]
+        active_structural_load_index: int
+        active_structural_load_id: int
+        is_editing_loads: bool
+        structural_load_types: str
+        structural_load_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        filtered_structural_loads: bool
+
+        boundary_conditions: bpy.types.bpy_prop_collection_idprop[BoundaryCondition]
+        active_boundary_condition_index: int
+        active_boundary_condition_id: int
+        is_editing_boundary_conditions: bool
+        boundary_condition_types: str
+        boundary_condition_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        filtered_boundary_conditions: bool
+
+        show_loads: bool
+        update_load_repr: bool
+        enable_repr_auto_update: bool
+        reference_frame: str
+        activity_type: str
+        load_group_to_show: str
+
 
 class BIMObjectStructuralProperties(PropertyGroup):
     boundary_condition_attributes: CollectionProperty(name="Boundary Condition Attributes", type=Attribute)
@@ -203,3 +268,19 @@ class BIMObjectStructuralProperties(PropertyGroup):
     ccs_y_angle: FloatProperty(name="Connection CS Y Angle", update=updateConnectionCS)
     ccs_z_angle: FloatProperty(name="Connection CS Z Angle", update=updateConnectionCS)
     ccs_empty: PointerProperty(name="CCS Empty", type=bpy.types.Object)
+
+    if TYPE_CHECKING:
+        boundary_condition_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        active_boundary_condition: int
+        active_connects_structural_member: int
+        relating_structural_member: Union[bpy.types.Object, None]
+        is_editing_axis: bool
+        axis_angle: float
+        axis_empty: Union[bpy.types.Object, None]
+
+        # relating_structural_activity: Union[bpy.types.Object, None]
+        is_editing_connection_cs: bool
+        ccs_x_angle: float
+        ccs_y_angle: float
+        ccs_z_angle: float
+        ccs_empty: Union[bpy.types.Object, None]

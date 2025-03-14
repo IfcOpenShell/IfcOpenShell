@@ -50,9 +50,7 @@ def create_file(version: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4") -> ifcope
 
         # ... and off we go!
     """
-    settings = {"version": version}
-
-    file = ifcopenshell.file(schema=settings["version"])
+    file = ifcopenshell.file(schema=version)
     file.wrapped_data.header.file_name.name = "/dev/null"  # Hehehe
     file.wrapped_data.header.file_name.time_stamp = (
         datetime.datetime.utcnow().replace(tzinfo=datetime.timezone.utc).astimezone().replace(microsecond=0).isoformat()

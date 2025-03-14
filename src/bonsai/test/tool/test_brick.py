@@ -59,16 +59,18 @@ class TestAddBrickBreadcrumb(NewFile):
     def test_run(self):
         subject.set_active_brick_class("brick_class")
         subject.add_brick_breadcrumb()
-        assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[0].name == "brick_class"
+        props = tool.Brick.get_brick_props()
+        assert props.brick_breadcrumbs[0].name == "brick_class"
         subject.add_brick_breadcrumb()
-        assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[1].name == "brick_class"
+        assert props.brick_breadcrumbs[1].name == "brick_class"
 
     def test_run_split_screen(self):
         subject.set_active_brick_class("brick_class", split_screen=True)
         subject.add_brick_breadcrumb(split_screen=True)
-        assert bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs[0].name == "brick_class"
+        props = tool.Brick.get_brick_props()
+        assert props.split_screen_brick_breadcrumbs[0].name == "brick_class"
         subject.add_brick_breadcrumb(split_screen=True)
-        assert bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs[1].name == "brick_class"
+        assert props.split_screen_brick_breadcrumbs[1].name == "brick_class"
 
 
 class TestAddBrickFromElement(NewFile):
@@ -188,25 +190,28 @@ class TestRemoveRelation(NewFile):
 
 class TestClearBrickBrowser(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMBrickProperties.bricks.add()
+        props = tool.Brick.get_brick_props()
+        props.bricks.add()
         subject.clear_brick_browser()
-        assert len(bpy.context.scene.BIMBrickProperties.bricks) == 0
+        assert len(props.bricks) == 0
 
     def test_run_split_screen(self):
-        bpy.context.scene.BIMBrickProperties.split_screen_bricks.add()
+        props = tool.Brick.get_brick_props()
+        props.split_screen_bricks.add()
         subject.clear_brick_browser(split_screen=True)
-        assert len(bpy.context.scene.BIMBrickProperties.split_screen_bricks) == 0
+        assert len(props.split_screen_bricks) == 0
 
 
 class TestClearProject(NewFile):
     def test_run(self):
         BrickStore.graph = "graph"
-        bpy.context.scene.BIMBrickProperties.active_brick_class == "brick_class"
-        bpy.context.scene.BIMBrickProperties.split_screen_active_brick_class == "brick_class2"
+        props = tool.Brick.get_brick_props()
+        props.active_brick_class = "brick_class"
+        props.split_screen_active_brick_class = "brick_class2"
         subject.clear_project()
         assert BrickStore.graph is None
-        assert bpy.context.scene.BIMBrickProperties.active_brick_class == ""
-        assert bpy.context.scene.BIMBrickProperties.split_screen_active_brick_class == ""
+        assert props.active_brick_class == ""
+        assert props.split_screen_active_brick_class == ""
 
 
 class TestExportBrickAttributes(NewFile):
@@ -374,13 +379,14 @@ class TestImportBrickClasses(NewFile):
     def test_run(self):
         TestLoadBrickFile().test_run()
         subject.import_brick_classes("Class")
-        assert len(bpy.context.scene.BIMBrickProperties.bricks) == 2
-        brick = bpy.context.scene.BIMBrickProperties.bricks[0]
+        props = tool.Brick.get_brick_props()
+        assert len(props.bricks) == 2
+        brick = props.bricks[0]
         assert brick.name == "Building"
         assert brick.uri == "https://brickschema.org/schema/Brick#Building"
         assert brick.total_items == 1
         assert not brick.label
-        brick = bpy.context.scene.BIMBrickProperties.bricks[1]
+        brick = props.bricks[1]
         assert brick.name == "Location"
         assert brick.uri == "https://brickschema.org/schema/Brick#Location"
         assert brick.total_items == 1
@@ -389,13 +395,14 @@ class TestImportBrickClasses(NewFile):
     def test_run_split_sccreen(self):
         TestLoadBrickFile().test_run()
         subject.import_brick_classes("Class", split_screen=True)
-        assert len(bpy.context.scene.BIMBrickProperties.split_screen_bricks) == 2
-        brick = bpy.context.scene.BIMBrickProperties.split_screen_bricks[0]
+        props = tool.Brick.get_brick_props()
+        assert len(props.split_screen_bricks) == 2
+        brick = props.split_screen_bricks[0]
         assert brick.name == "Building"
         assert brick.uri == "https://brickschema.org/schema/Brick#Building"
         assert brick.total_items == 1
         assert not brick.label
-        brick = bpy.context.scene.BIMBrickProperties.split_screen_bricks[1]
+        brick = props.split_screen_bricks[1]
         assert brick.name == "Location"
         assert brick.uri == "https://brickschema.org/schema/Brick#Location"
         assert brick.total_items == 1
@@ -406,8 +413,9 @@ class TestImportBrickItems(NewFile):
     def test_run(self):
         TestLoadBrickFile().test_run()
         subject.import_brick_items("Building")
-        assert len(bpy.context.scene.BIMBrickProperties.bricks) == 1
-        brick = bpy.context.scene.BIMBrickProperties.bricks[0]
+        props = tool.Brick.get_brick_props()
+        assert len(props.bricks) == 1
+        brick = props.bricks[0]
         assert brick.name == "bldg"
         assert brick.label == "My Building"
         assert brick.uri == "https://example.org/digitaltwin#bldg"
@@ -416,8 +424,9 @@ class TestImportBrickItems(NewFile):
     def test_run_split_screen(self):
         TestLoadBrickFile().test_run()
         subject.import_brick_items("Building", split_screen=True)
-        assert len(bpy.context.scene.BIMBrickProperties.split_screen_bricks) == 1
-        brick = bpy.context.scene.BIMBrickProperties.split_screen_bricks[0]
+        props = tool.Brick.get_brick_props()
+        assert len(props.split_screen_bricks) == 1
+        brick = props.split_screen_bricks[0]
         assert brick.name == "bldg"
         assert brick.label == "My Building"
         assert brick.uri == "https://example.org/digitaltwin#bldg"
@@ -456,18 +465,20 @@ class TestNewBrickFile(NewFile):
 
 class TestPopBrickBreadcrumb(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.add().name = "foo"
-        bpy.context.scene.BIMBrickProperties.brick_breadcrumbs.add().name = "bar"
+        props = tool.Brick.get_brick_props()
+        props.brick_breadcrumbs.add().name = "foo"
+        props.brick_breadcrumbs.add().name = "bar"
         assert subject.pop_brick_breadcrumb() == "bar"
-        assert len(bpy.context.scene.BIMBrickProperties.brick_breadcrumbs) == 1
-        assert bpy.context.scene.BIMBrickProperties.brick_breadcrumbs[0].name == "foo"
+        assert len(props.brick_breadcrumbs) == 1
+        assert props.brick_breadcrumbs[0].name == "foo"
 
     def test_run_split_screen(self):
-        bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs.add().name = "foo"
-        bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs.add().name = "bar"
+        props = tool.Brick.get_brick_props()
+        props.split_screen_brick_breadcrumbs.add().name = "foo"
+        props.split_screen_brick_breadcrumbs.add().name = "bar"
         assert subject.pop_brick_breadcrumb(split_screen=True) == "bar"
-        assert len(bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs) == 1
-        assert bpy.context.scene.BIMBrickProperties.split_screen_brick_breadcrumbs[0].name == "foo"
+        assert len(props.split_screen_brick_breadcrumbs) == 1
+        assert props.split_screen_brick_breadcrumbs[0].name == "foo"
 
 
 class TestRemoveBrick(NewFile):
@@ -512,19 +523,22 @@ class TestRunViewBrickClass(NewFile):
 class TestSelectBrowserItem(NewFile):
     def test_run(self):
         subject.set_active_brick_class("brick_class")
-        assert bpy.context.scene.BIMBrickProperties.active_brick_class == "brick_class"
+        props = tool.Brick.get_brick_props()
+        assert props.active_brick_class == "brick_class"
 
     def test_run(self):
         subject.set_active_brick_class("brick_class", split_screen=True)
-        assert bpy.context.scene.BIMBrickProperties.split_screen_active_brick_class == "brick_class"
+        props = tool.Brick.get_brick_props()
+        assert props.split_screen_active_brick_class == "brick_class"
 
 
 class TestSetActiveBrickClass(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMBrickProperties.bricks.add().name = "foo"
-        bpy.context.scene.BIMBrickProperties.bricks.add().name = "bar"
+        props = tool.Brick.get_brick_props()
+        props.bricks.add().name = "foo"
+        props.bricks.add().name = "bar"
         subject.select_browser_item("namespace#bar")
-        assert bpy.context.scene.BIMBrickProperties.active_brick_index == 1
+        assert props.active_brick_index == 1
 
 
 class TestSerializeBrick(NewFile):

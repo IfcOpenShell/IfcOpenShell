@@ -21,6 +21,7 @@ import bmesh
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
+import ifcopenshell.api.root
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
 import ifcopenshell.util.shape_builder
@@ -149,14 +150,16 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
         elements_to_update = elements_to_update | set(elements_to_reassign)
         objects_to_update = set(o for e in elements_to_update if (o := tool.Ifc.get_object(e)))
 
-        reassigned_elements = set()
+        reassigned_elements: set[ifcopenshell.entity_instance] = set()
         for element, ifc_class_ in elements_to_reassign.items():
-            element = ifcopenshell.api.run(
-                "root.reassign_class",
+            element = ifcopenshell.api.root.reassign_class(
                 self.file,
                 product=element,
                 ifc_class=ifc_class_,
                 predefined_type=predefined_type,
+                # Provide occurrence class in all cases as it won't really matter
+                # for non-IfcTypeProducts.
+                occurrence_class=ifc_class,
             )
             reassigned_elements.add(element)
 
@@ -622,15 +625,3 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             row.prop(props, "profile", text="Profile")
         if props.representation_template != "EMPTY":
             prop_with_search(self.layout, props, "contexts", should_click_ok=True)
-
-
-class LaunchAddElement(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.launch_add_element"
-    bl_label = "Add Element"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Add an IFC physical product, construction type, and more"
-
-    def execute(self, context):
-        # This stub operator is needed because operators from menu skip the invoke call
-        bpy.ops.bim.add_element("INVOKE_DEFAULT")
-        return {"FINISHED"}

@@ -24,6 +24,7 @@ from mathutils import Vector
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.attribute
+import ifcopenshell.util.placement
 import ifcopenshell.util.unit as ifcunit
 import bonsai.tool as tool
 from bonsai.bim.module.structural.shader import DecorationShader
@@ -304,7 +305,7 @@ class ShaderInfo:
                                         populate_members_dict("surface_members", element, activity, factor)
                     recursive_subgroups(subgorups, rec_limit - 1, activity_type, factor=factor)
 
-        props = bpy.context.scene.BIMStructuralProperties
+        props = tool.Structural.get_structural_props()
         group_definition_id = int(props.load_group_to_show)
         file = tool.Ifc.get()
         groups = [file.by_id(group_definition_id)]
@@ -327,7 +328,7 @@ class ShaderInfo:
                 maximum = max([abs(float(i)) for i in values])
                 if maximum == 0:
                     continue
-            props = bpy.context.scene.BIMStructuralProperties
+            props = tool.Structural.get_structural_props()
             reference_frame = props.reference_frame
             orientation = np.eye(3)
             if reference_frame == "LOCAL_COORDS":
@@ -435,7 +436,7 @@ class ShaderInfo:
     ) -> np.ndarray:
         "provides the transformation matrix to convert between reference frames"
         global_or_local = activity.GlobalOrLocal
-        props = bpy.context.scene.BIMStructuralProperties
+        props = tool.Structural.get_structural_props()
         reference_frame = props.reference_frame
         transform_matrix = np.eye(3)
         if reference_frame == "LOCAL_COORDS" and global_or_local != reference_frame:
@@ -473,7 +474,7 @@ class ShaderInfo:
             "mz": (np.array((1, 0, 0)), np.array((0, 1, 0))),
         }
         keys = ["fx", "fy", "fz", "mx", "my", "mz"]
-        props = bpy.context.scene.BIMStructuralProperties
+        props = tool.Structural.get_structural_props()
         reference_frame = props.reference_frame
         if reference_frame == "LOCAL_COORDS":
             for key in keys:
@@ -591,7 +592,7 @@ class ShaderInfo:
             z_axis = x_axis.cross(y_axis).normalized()
             rotation = self.get_curve_member_rotation(member)
 
-            props = bpy.context.scene.BIMStructuralProperties
+            props = tool.Structural.get_structural_props()
             reference_frame = props.reference_frame
             is_local = reference_frame == "LOCAL_COORDS"
             x_match = abs(Vector((1, 0, 0)).dot(x_axis)) > 0.99

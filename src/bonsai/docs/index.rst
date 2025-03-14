@@ -56,6 +56,7 @@ and data-rich OpenBIM with Blender :)
       guides/authoring/georeferencing
       guides/authoring/git_support
       guides/development/index
+      guides/alignment
       guides/authoring/other_addons
       guides/troubleshooting
       guides/debugging

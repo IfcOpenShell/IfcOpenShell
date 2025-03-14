@@ -1036,13 +1036,23 @@ class Loader(bonsai.core.tool.Loader):
         bm = bmesh.new()
         bm.from_mesh(mesh)
         prev_co = None
-        # no = Vector((0.0, 1.0, 0.0))
-        no = cls.get_extrusion_vector(element).normalized()
-        if usage and usage.LayerSetDirection == "AXIS2":
-            co = Vector((0.0, offset, 0.0))
-            no = no.cross(Vector([1.0, 0.0, 0.0]))
-        else:
+        if not usage:
+            sense_factor = 1  # Assume the extrusion vector points in the direction sense
+            no = cls.get_extrusion_vector(element).normalized()
             co = Vector((0.0, 0.0, offset))
+        elif usage.LayerSetDirection == "AXIS2":
+            co = Vector((0.0, offset, 0.0))
+            no = cls.get_extrusion_vector(element).normalized()
+            no = no.cross(Vector([1.0, 0.0, 0.0]))
+        elif usage.LayerSetDirection == "AXIS3":
+            co = Vector((0.0, 0.0, offset))
+            no = cls.get_extrusion_vector(element).normalized()
+            no = Vector([0.0, 0.0, 1.0])
+        elif usage.LayerSetDirection == "AXIS1":
+            co = Vector((0.0, 0.0, offset))
+            no = cls.get_extrusion_vector(element).normalized()
+            no = Vector([1.0, 0.0, 0.0])
+        no *= sense_factor
         # Cache this
         body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         styles = {}
@@ -1052,8 +1062,7 @@ class Loader(bonsai.core.tool.Loader):
                 styles[style] = i
         for layer in layer_set.MaterialLayers[:-1]:
             prev_co = co.copy()
-            co += no * layer.LayerThickness * cls.unit_scale * sense_factor
-            # co.y += layer.LayerThickness * cls.unit_scale * sense_factor
+            co += no * layer.LayerThickness * cls.unit_scale
             bisect_geom = bmesh.ops.bisect_plane(
                 bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
             )
@@ -1065,7 +1074,6 @@ class Loader(bonsai.core.tool.Loader):
                 for face in bisect_geom["geom"]:
                     if isinstance(face, bmesh.types.BMFace):
                         center = face.calc_center_median()
-                        # if center.y < co.y and center.y > prev_co.y:
                         if (center - co).dot(no) < 0 and (center - prev_co).dot(no) >= 0:
                             face.material_index = material_index
                             has_layer_styles = True
@@ -1078,7 +1086,7 @@ class Loader(bonsai.core.tool.Loader):
                 mesh.materials.append(tool.Ifc.get_object(style))
             for face in bisect_geom["geom"]:
                 if isinstance(face, bmesh.types.BMFace):
-                    center = face.calc_center_median() * sense_factor
+                    center = face.calc_center_median()
                     # if center.y > co.y:
                     if (center - co).dot(no) >= 0:
                         face.material_index = material_index

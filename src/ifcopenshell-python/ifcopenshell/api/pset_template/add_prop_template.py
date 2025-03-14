@@ -110,5 +110,6 @@ def add_prop_template(
     )
     has_property_templates = list(pset_template.HasPropertyTemplates or [])
     has_property_templates.append(prop_template)
+    has_property_templates.sort(key=lambda pt: pt.Name)
     pset_template.HasPropertyTemplates = has_property_templates
     return prop_template

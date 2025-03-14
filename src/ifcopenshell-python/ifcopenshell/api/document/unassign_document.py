@@ -30,12 +30,9 @@ def unassign_document(
 
     :param product: The list of objects that the document reference or information is
         related to.
-    :type product: list[ifcopenshell.entity_instance]
     :param document: The IfcDocumentReference (typically) or in rare cases
         the IfcDocumentInformation that is associated with the product
-    :type document: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -54,27 +51,21 @@ def unassign_document(
         # Now let's change our mind and remove the association
         ifcopenshell.api.document.unassign_document(model, products=[storey], document=reference)
     """
-    settings = {
-        "products": products,
-        "document": document,
-    }
 
     # TODO: do we need to support non-ifcroot elements like we do in classification.add_reference?
     # NOTE: reuses code from `library.un assign_reference`
 
     reference_rels: set[ifcopenshell.entity_instance] = set()
-    products = set(settings["products"])
-    for product in products:
+    products_set = set(products)
+    for product in products_set:
         reference_rels.update(product.HasAssociations)
 
     reference_rels = {
-        rel
-        for rel in reference_rels
-        if rel.is_a("IfcRelAssociatesDocument") and rel.RelatingDocument == settings["document"]
+        rel for rel in reference_rels if rel.is_a("IfcRelAssociatesDocument") and rel.RelatingDocument == document
     }
 
     for rel in reference_rels:
-        related_objects = set(rel.RelatedObjects) - products
+        related_objects = set(rel.RelatedObjects) - products_set
         if related_objects:
             rel.RelatedObjects = list(related_objects)
             ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})

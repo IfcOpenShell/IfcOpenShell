@@ -30,13 +30,21 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 IFC_SCHEMA = Literal["IFC2X3", "IFC4", "IFC4X3"]
 
 
-def get_fallback_schema(version: str) -> str:
-    """fallback to the schema version we do have docs and mapping for,
-    needed to support IFC versions like 4X3_RC1, 4X1 etc"""
+def get_fallback_schema(version: str) -> IFC_SCHEMA:
+    """Fallback to the schema version we do have docs and mapping for.
+
+    Needed to support IFC versions like 4X3_RC1, 4X1 etc.
+
+    :param version: Typically a string from ``ifcopenshell.file.schema_identifier``, e.g. IFC4X3_ADD2
+    """
     if version.startswith("IFC4X3"):
         version = "IFC4X3"
     elif version.startswith("IFC4"):
         version = "IFC4"
+    elif version.startswith("IFC2X3"):
+        version = "IFC2X3"
+    else:
+        assert False, f"Unexpected schema version: {version}."
     return version
 
 
@@ -154,16 +162,23 @@ def reassign_class(
       (such as IfcRelNests)
 
     It's unlikely that this affects real-world usage of this function.
+
+    :raises ValueError: If ``new_class`` does not exist in the provided file schema.
     """
+
+    if element.is_a() == new_class:
+        return element
 
     if not ifc_file:
         ifc_file = element.file
 
-    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
     try:
         declaration = schema.declaration_by_name(new_class)
-    except:
-        raise Exception(f"Class of {element} could not be changed to {new_class} as the class does not exist")
+    except RuntimeError:
+        raise ValueError(
+            f"Class of {element} could not be changed to {new_class} as the class does not exist in schema {ifc_file.schema_identifier}."
+        )
 
     info = element.get_info()
 

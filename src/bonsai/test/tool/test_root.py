@@ -184,9 +184,9 @@ class TestReassignClass(NewFile):
         n_slab_types = len(ifc_file.by_type("IfcSlabType"))
 
         # create 3 slabs
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
 
         slabs = [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSlab")]
         assert len(slabs) == 3

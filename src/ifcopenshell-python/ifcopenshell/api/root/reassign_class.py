@@ -27,7 +27,7 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
-from typing import Optional, Union, Literal, Any
+from typing import Optional, Union, Literal
 
 
 def reassign_class(
@@ -35,6 +35,7 @@ def reassign_class(
     product: ifcopenshell.entity_instance,
     ifc_class: str = "IfcBuildingElementProxy",
     predefined_type: Optional[str] = None,
+    occurrence_class: Optional[str] = None,
 ) -> ifcopenshell.entity_instance:
     """Changes the class of a product
 
@@ -56,10 +57,14 @@ def reassign_class(
     Reassigning type class to occurrence (and vice versa) is supported.
 
     :param product: The IfcProduct that you want to change the class of.
-    :type product: ifcopenshell.entity_instance
     :param ifc_class: The new IFC class you want to change it to.
     :param predefined_type: In case you want to change the predefined type
         too. User defined types are also allowed, just type what you want.
+    :param occurrence_class: IFC class to assign to occurrences in case
+        if provided ``ifc_class`` is IfcTypeProduct.
+        If omitted, class will be deduced automatically from the type.
+        Only really needed in IFC2X3, since in IFC4+ there is no ambiguity on
+        what class to assign to occurrences.
     :return: The newly modified product.
 
     Example:
@@ -77,25 +82,23 @@ def reassign_class(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "product": product,
-        "ifc_class": ifc_class,
-        "predefined_type": predefined_type,
-    }
-    return usecase.execute()
+    return usecase.execute(product, ifc_class, predefined_type, occurrence_class)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
-        ifc_class: str = self.settings["ifc_class"]
-        product: ifcopenshell.entity_instance = self.settings["product"]
-        predefined_type: Union[str, None] = self.settings["predefined_type"]
-
+    def execute(
+        self,
+        product: ifcopenshell.entity_instance,
+        ifc_class: str,
+        predefined_type: Union[str, None],
+        occurrence_class: Union[str, None],
+    ) -> ifcopenshell.entity_instance:
+        self.occurrence_class = occurrence_class
         was_type_product_before = product.is_a("IfcTypeProduct")
         schema = ifcopenshell.schema_by_name(self.file.schema)
+        is_type_product_after: bool
         is_type_product_after = schema.declaration_by_name(ifc_class)._is("IfcTypeProduct")
 
         if was_type_product_before == is_type_product_after:
@@ -162,7 +165,7 @@ class Usecase:
         for rep in representations:
             ifcopenshell.api.geometry.assign_representation(self.file, product=element, representation=rep)
 
-        # Keep IFC valid.
+        # Keep IFC valid (PlacementForShapeRepresentation).
         if switch_type == "type_to_occurrence" and representations:
             ifcopenshell.api.geometry.edit_object_placement(self.file, product=element)
 
@@ -177,7 +180,14 @@ class Usecase:
         element = self.reassign_class(element, ifc_class, predefined_type)
         if element.is_a("IfcTypeProduct"):
             for occurrence in ifcopenshell.util.element.get_types(element):
-                ifc_class_ = ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)[0]
+                if self.occurrence_class:
+                    ifc_class_ = self.occurrence_class
+                else:
+                    # NOTE: in theory we can skip reassignment in IFC2X3 in some cases
+                    # e.g. if occurrence is IfcRoof and we're reassigning to IfcBuildingElementProxyType
+                    # but currently type_to_entity_map doesn't completely match entity_to_type_map,
+                    # see type.py for more details.
+                    ifc_class_ = next(iter(ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)))
                 self.reassign_class(occurrence, ifc_class_, predefined_type)
         else:
             element_type = ifcopenshell.util.element.get_type(element)

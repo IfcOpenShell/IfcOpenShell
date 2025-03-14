@@ -51,20 +51,15 @@ def add_resource(
 
     :param parent_resource: If this is a child resource (typically to a crew
         resource), then nominate the parent IfcConstructionResource here.
-    :type parent_resource: ifcopenshell.entity_instance, optional
     :param ifc_class: The class of resource chosen from
         IfcConstructionEquipmentResource, IfcConstructionMaterialResource,
         IfcConstructionProductResource, IfcCrewResource, IfcLaborResource,
         or IfcSubContractResource.
-    :type ifc_class: str,optional
     :param name: The name of the resource
-    :type name: str,optional
     :param predefined_type: Consult the IFC documentation for the valid
         predefined types for each type of resource class.
-    :type predefined_type: str,optional
     :return: The newly created resource depending on the nominated IFC
         class.
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -76,25 +71,17 @@ def add_resource(
         # Add some labour to our crew.
         ifcopenshell.api.resource.add_resource(model, parent_resource=crew, ifc_class="IfcLaborResource")
     """
-    settings = {
-        "parent_resource": parent_resource,
-        "ifc_class": ifc_class,
-        "name": name,
-        "predefined_type": predefined_type,
-    }
 
     resource = ifcopenshell.api.root.create_entity(
         file,
-        ifc_class=settings["ifc_class"],
-        predefined_type=settings["predefined_type"],
-        name=settings["name"] or "Unnamed",
+        ifc_class=ifc_class,
+        predefined_type=predefined_type,
+        name=name or "Unnamed",
     )
     # TODO: this is an ambiguity by buildingSMART: Can we nest an IfcCrewResource under an IfcCrewResource ?
     # https://forums.buildingsmart.org/t/what-are-allowed-to-be-root-level-construction-resources/3550
-    if settings["parent_resource"]:
-        ifcopenshell.api.nest.assign_object(
-            file, related_objects=[resource], relating_object=settings["parent_resource"]
-        )
+    if parent_resource:
+        ifcopenshell.api.nest.assign_object(file, related_objects=[resource], relating_object=parent_resource)
     elif file.schema != "IFC2X3":
         context = file.by_type("IfcContext")[0]
         ifcopenshell.api.project.assign_declaration(file, definitions=[resource], relating_context=context)

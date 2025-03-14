@@ -24,11 +24,25 @@ import bonsai.core.tool
 import bonsai.tool as tool
 import mathutils
 from mathutils import Vector
+from typing import Union
 
 
 class Raycast(bonsai.core.tool.Raycast):
+    offset = 10
+    mouse_offset = (
+        (-offset, offset),
+        (0, offset),
+        (offset, offset),
+        (-offset, 0),
+        (0, 0),
+        (offset, 0),
+        (-offset, -offset),
+        (0, -offset),
+        (offset, -offset),
+    )
+
     @classmethod
-    def get_visible_objects(cls, context):
+    def get_visible_objects(cls, context: bpy.types.Context):
         depsgraph = context.evaluated_depsgraph_get()
         all_objs = []
         for dup in depsgraph.object_instances:
@@ -41,7 +55,7 @@ class Raycast(bonsai.core.tool.Raycast):
         return all_objs
 
     @classmethod
-    def get_on_screen_2d_bounding_boxes(cls, context, obj):
+    def get_on_screen_2d_bounding_boxes(cls, context: bpy.types.Context, obj: bpy.types.Object):
         obj_matrix = obj.matrix_world.copy()
         bbox = [obj_matrix @ Vector(v) for v in obj.bound_box]
 
@@ -68,16 +82,16 @@ class Raycast(bonsai.core.tool.Raycast):
         return (obj, bbox_2d)
 
     @classmethod
-    def intersect_mouse_2d_bounding_box(cls, mouse_pos, bbox, offset=None):
+    def intersect_mouse_2d_bounding_box(cls, mouse_pos: tuple[int, int], bbox: list[float, float, float, float]):
         x, y = mouse_pos
         xmin, xmax, ymin, ymax = bbox
 
         # extends bbox boundaries to improve snap
-        if offset:
-            xmin -= offset
-            xmax += offset
-            ymin -= offset
-            ymax += offset
+        if cls.offset:
+            xmin -= cls.offset
+            xmax += cls.offset
+            ymin -= cls.offset
+            ymax += cls.offset
 
         if xmin < x < xmax and ymin < y < ymax:
             return True
@@ -85,7 +99,9 @@ class Raycast(bonsai.core.tool.Raycast):
             return False
 
     @classmethod
-    def get_viewport_ray_data(cls, context, event, mouse_pos=None):
+    def get_viewport_ray_data(
+        cls, context: bpy.types.Context, event: bpy.types.Event, mouse_pos: tuple[int, int] = None
+    ):
         region = context.region
         rv3d = context.region_data
         original_perspective = rv3d.view_perspective
@@ -108,7 +124,13 @@ class Raycast(bonsai.core.tool.Raycast):
         return ray_origin, ray_target, ray_direction
 
     @classmethod
-    def get_object_ray_data(cls, context, event, obj_matrix, mouse_pos=None):
+    def get_object_ray_data(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        obj_matrix: mathutils.Matrix,
+        mouse_pos: tuple[int, int] = None,
+    ):
         if mouse_pos:
             ray_origin, ray_target, _ = cls.get_viewport_ray_data(context, event, mouse_pos)
         else:
@@ -121,7 +143,13 @@ class Raycast(bonsai.core.tool.Raycast):
         return ray_origin_obj, ray_target_obj, ray_direction_obj
 
     @classmethod
-    def obj_ray_cast(cls, context, event, obj, mouse_pos=None):
+    def obj_ray_cast(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        obj: bpy.types.Object,
+        mouse_pos: tuple[int, int] = None,
+    ):
         if mouse_pos:
             ray_origin_obj, _, ray_direction_obj = cls.get_object_ray_data(
                 context, event, obj.matrix_world.copy(), mouse_pos
@@ -135,7 +163,14 @@ class Raycast(bonsai.core.tool.Raycast):
             return None, None, None
 
     @classmethod
-    def ray_cast_by_proximity(cls, context, event, obj, face=None, custom_bmesh=None):
+    def ray_cast_by_proximity(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        obj: bpy.types.Object,
+        face: bpy.types.MeshPolygon = None,
+        custom_bmesh: bmesh.types.BMesh = None,
+    ):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
@@ -155,9 +190,9 @@ class Raycast(bonsai.core.tool.Raycast):
             loc = Vector((0, 0, 0))
 
         # For empty object we just get the object location and return
-        if obj.type == "EMPTY":
+
+        if obj and obj.type == "EMPTY":
             v = obj.location
-            intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
             intersection = tool.Cad.point_on_edge(v, (ray_target, loc))
             distance = (v - intersection).length
             if distance < snap_threshold:
@@ -168,7 +203,6 @@ class Raycast(bonsai.core.tool.Raycast):
                     "distance": distance,
                 }
                 points.append(snap_point)
-                print("empty", snap_point)
             return points
 
         if not custom_bmesh:
@@ -234,7 +268,7 @@ class Raycast(bonsai.core.tool.Raycast):
         return points
 
     @classmethod
-    def ray_cast_to_polyline(cls, context, event):
+    def ray_cast_to_polyline(cls, context: bpy.types.Context, event: bpy.types.Event):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
@@ -269,7 +303,7 @@ class Raycast(bonsai.core.tool.Raycast):
         return polyline_verts
 
     @classmethod
-    def ray_cast_to_measure(cls, context, event, points):
+    def ray_cast_to_measure(cls, context: bpy.types.Context, event: bpy.types.Event, points: bpy.types.Collection):
         bm = bmesh.new()
         bm.verts.index_update()
         bm.edges.index_update()
@@ -286,13 +320,18 @@ class Raycast(bonsai.core.tool.Raycast):
         return snapping_points
 
     @classmethod
-    def ray_cast_to_plane(cls, context, event, plane_origin, plane_normal):
+    def ray_cast_to_plane(
+        cls, context: bpy.types.Context, event: bpy.types.Event, plane_origin: Vector, plane_normal: Vector
+    ):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
 
-        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        if tool.Ifc.get():
+            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        else:
+            default_container_elevation = 0.0
         intersection = Vector((0, 0, default_container_elevation))
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
@@ -306,7 +345,7 @@ class Raycast(bonsai.core.tool.Raycast):
         return intersection
 
     @classmethod
-    def ray_cast_to_edge_intersection(cls, context, event, edges):
+    def ray_cast_to_edge_intersection(cls, context: bpy.types.Context, event: bpy.types.Event, edges: list[dict]):
         region = context.region
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
@@ -334,3 +373,96 @@ class Raycast(bonsai.core.tool.Raycast):
                             "distance": distance,
                         }
                         return snap_point
+
+    @classmethod
+    def filter_objects_to_raycast(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        objs_2d_bbox: Union[tuple[bpy.types.Object, list[float]]],
+    ) -> list[bpy.types.Object]:
+        mouse_pos = event.mouse_region_x, event.mouse_region_y
+        objs_to_raycast = []
+        for obj, bbox_2d in objs_2d_bbox:
+            if obj.type in {"MESH", "EMPTY", "CURVE"} and bbox_2d:
+                if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d):
+                    if (
+                        obj.visible_in_viewport_get(bpy.context.space_data) or obj.library
+                    ):  # Check for local view and local collections for this viewport and object
+                        objs_to_raycast.append(obj)
+        return objs_to_raycast
+
+    @classmethod
+    def cast_rays_to_single_object(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        obj: bpy.types.Object,
+    ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
+
+        mouse_pos = event.mouse_region_x, event.mouse_region_y
+        hit = None
+        face_index = None
+        # Wireframes
+        if obj.type in {"EMPTY", "CURVE"} or (hasattr(obj.data, "polygons") and len(obj.data.polygons) == 0):
+            snap_points = tool.Raycast.ray_cast_by_proximity(context, event, obj)
+            if snap_points:
+                hit = sorted(snap_points, key=lambda x: x["distance"])[0]["point"]
+                if hit:
+                    hit_world = obj.original.matrix_world @ hit
+                    return obj, hit_world, face_index
+            return None, None, None
+        # Meshes
+        else:
+            hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj)
+            if hit is None:
+                # Tried original mouse position. Now it will try the offsets.
+                original_mouse_pos = mouse_pos
+                for value in cls.mouse_offset:
+                    mouse_pos = tuple(x + y for x, y in zip(original_mouse_pos, value))
+                    hit, normal, face_index = tool.Raycast.obj_ray_cast(context, event, obj, mouse_pos)
+                    if hit:
+                        break
+                mouse_pos = original_mouse_pos
+            if hit:
+                hit_world = obj.original.matrix_world @ hit
+                return obj, hit_world, face_index
+            else:
+                return None, None, None
+
+    @classmethod
+    def cast_rays_and_get_best_object(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        objs_to_raycast: list[bpy.types.Object],
+        include_wireframes: bool = True,
+    ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
+        best_length_squared = 1.0
+        best_obj = None
+        best_hit = None
+        best_face_index = None
+
+        ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
+
+        for obj in objs_to_raycast:
+            if not include_wireframes and (
+                obj.type in {"EMPTY", "CURVE"} or (hasattr(obj.data, "polygons") and len(obj.data.polygons) == 0)
+            ):
+                continue
+
+            snap_obj, hit, face_index = cls.cast_rays_to_single_object(context, event, obj)
+
+            if hit is not None:
+                length_squared = (hit - ray_origin).length_squared
+                if best_obj is None or length_squared < best_length_squared:
+                    best_length_squared = length_squared
+                    best_obj = snap_obj
+                    best_hit = hit
+                    best_face_index = face_index
+
+        if best_obj is not None:
+            return best_obj, best_hit, best_face_index
+
+        else:
+            return None, None, None

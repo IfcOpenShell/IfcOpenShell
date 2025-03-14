@@ -23,9 +23,7 @@ def remove_time_period(file: ifcopenshell.file, time_period: ifcopenshell.entity
     """Removes a time period
 
     :param time_period: The IfcTimePeriod to remove.
-    :type time_period: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -55,6 +53,4 @@ def remove_time_period(file: ifcopenshell.file, time_period: ifcopenshell.entity
         # Let's take the afternoon off!
         ifcopenshell.api.sequence.remove_time_period(model, time_period=afternoon)
     """
-    settings = {"time_period": time_period}
-
-    file.remove(settings["time_period"])
+    file.remove(time_period)

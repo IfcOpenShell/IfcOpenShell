@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bl_ui_utils
 import bonsai.bim
 import bonsai.tool as tool
 from bpy.types import Panel, Menu
@@ -31,7 +32,6 @@ from bonsai.bim.module.model.data import (
     RailingData,
     RoofData,
 )
-from bonsai.bim.module.model.prop import get_ifc_class
 from bonsai.bim.module.model.stair import regenerate_stair_mesh
 from bonsai.bim.module.model.railing import update_railing_modifier_bmesh
 from bonsai.bim.module.model.roof import update_roof_modifier_bmesh
@@ -55,8 +55,9 @@ class BIM_MT_type_menu(bpy.types.Menu):
     def draw(self, context):
         props = tool.Model.get_model_props()
         layout = self.layout
-        op = layout.operator("bim.launch_rename_type", icon="GREASEPENCIL", text="Rename Type")
-        op.element = props.menu_relating_type_id
+        with bl_ui_utils.layout.operator_context(layout, "INVOKE_REGION_WIN"):
+            op = layout.operator("bim.rename_type", icon="GREASEPENCIL", text="Rename Type")
+            op.element = props.menu_relating_type_id
         op = layout.operator("bim.select_type", icon="OBJECT_DATA")
         op.relating_type = props.menu_relating_type_id
         op = layout.operator("bim.duplicate_type", icon="DUPLICATE")
@@ -90,14 +91,7 @@ class LaunchTypeManager(bpy.types.Operator):
     def invoke(self, context, event):
         props = tool.Model.get_model_props()
         props.type_page = 1
-        if get_ifc_class(None, context):
-            ifc_class = AuthoringData.data["ifc_class_current"] or AuthoringData.data["ifc_element_type"]
-        else:
-            ifc_class = AuthoringData.data["ifc_element_type"]
-
-        # will be None if project has no types
-        if ifc_class is not None:
-            bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
+        bpy.ops.bim.load_type_thumbnails()
         return context.window_manager.invoke_props_dialog(self, width=550, title="Type Manager", confirm_text="Close")
 
     def draw(self, context):
@@ -157,11 +151,11 @@ class LaunchTypeManager(bpy.types.Operator):
             op = row.operator("bim.set_active_type", text=relating_type["description"], emboss=False)
             op.relating_type = relating_type["id"]
 
-            if relating_type["icon_id"]:
+            if icon_id := AuthoringData.type_thumbnails.get(relating_type["id"], 0):
                 # Yep, that's EXACTLY how it's done. And I'm proud of it.
                 row1 = box.row()
                 row1.ui_units_y = 0.01
-                row1.template_icon(icon_value=relating_type["icon_id"], scale=4)
+                row1.template_icon(icon_value=icon_id, scale=4)
                 row2 = box.column(align=True)
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
@@ -175,8 +169,7 @@ class LaunchTypeManager(bpy.types.Operator):
                     row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
             else:
                 row = box.row()
-                op = box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH", emboss=False)
-                op.ifc_class = AuthoringData.data["ifc_class_current"]
+                box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH")
 
             row = box.row()
             row.alignment = "CENTER"
@@ -708,6 +701,7 @@ class BIM_PT_roof(bpy.types.Panel):
             row.operator("bim.add_roof", icon="ADD", text="")
 
 
-def add_menu(self, context):
-    self.layout.operator("bim.launch_add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")
+def add_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
+    self.layout.operator_context = "INVOKE_REGION_WIN"
+    self.layout.operator("bim.add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")
     self.layout.separator()

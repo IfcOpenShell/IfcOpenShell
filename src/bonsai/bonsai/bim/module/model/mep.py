@@ -580,7 +580,7 @@ class MEPGenerator:
         profile_joiner = DumbProfileJoiner()
         # create obstruction occurrence and setup it's length and port
         # NOTE: at this point we loose current blender objects selection
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=obstruction_type.id())
+        bpy.ops.bim.add_occurrence(relating_type_id=obstruction_type.id())
         obstruction_obj = bpy.context.active_object
         obstruction_obj.matrix_world = segment_matrix
 
@@ -859,7 +859,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
 
         # NOTE: at this point we loose current blender objects selection
         # create transition element
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=transition_type.id())
+        bpy.ops.bim.add_occurrence(relating_type_id=transition_type.id())
         transition_obj = bpy.context.active_object
 
         # adjust transition segment rotation and location
@@ -921,11 +921,11 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             start_element = tool.Ifc.get_entity(start_object)
             end_element = tool.Ifc.get_entity(end_object)
             if not start_element or not end_element:
-                self.report({"ERROR"}, f"Two IFC elements should be selected for the bend.")
+                self.report({"ERROR"}, "Two IFC elements should be selected for the bend.")
                 return {"CANCELLED"}
 
         else:
-            self.report({"ERROR"}, f"Two IFC elements should be provided for the bend.")
+            self.report({"ERROR"}, "Two IFC elements should be provided for the bend.")
             return {"CANCELLED"}
 
         # check rotation difference
@@ -1210,7 +1210,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
         # NOTE: at this point we loose current blender objects selection
         # create transition element
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=bend_type.id())
+        bpy.ops.bim.add_occurrence(relating_type_id=bend_type.id())
         fitting_obj = bpy.context.active_object
 
         # adjust fitting object rotation and location
@@ -1248,10 +1248,14 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             return matrix
 
         fitting_obj.matrix_world = get_fitting_matrix()
+        tool.Model.sync_object_ifc_position(fitting_obj)
 
         # add ports and connect them
         ports = tool.System.get_ports(tool.Ifc.get_entity(fitting_obj))
-        if not start_port_match:
+        start_co = ifcopenshell.util.placement.get_local_placement(start_port.ObjectPlacement)[:, 3]
+        port0_co = ifcopenshell.util.placement.get_local_placement(ports[0].ObjectPlacement)[:, 3]
+        # We cannot use start_port_match because tool.System.get_ports is unordered
+        if not np.allclose(start_co, port0_co):
             start_port, end_port = end_port, start_port
         tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")
         tool.Ifc.run("system.connect_port", port1=ports[1], port2=end_port, direction="NOTDEFINED")

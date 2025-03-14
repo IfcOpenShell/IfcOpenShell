@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.tool as tool
-from typing import Literal
+from typing import Literal, Iterable
 
 
 def unjoin_walls(ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner, model: tool.Model) -> None:
@@ -35,7 +35,7 @@ def extend_walls(
         if not (element := ifc.get_entity(obj)) or model.get_usage_type(element) != "LAYER2":
             continue
         geometry.clear_scale(obj)
-        joiner.join_E(obj, target)
+        joiner.extend(obj, target)
 
 
 def join_walls_LV(
@@ -60,10 +60,22 @@ def join_walls_LV(
     for obj in selected_objs:
         geometry.clear_scale(obj)
 
-    if join_type == "L":
-        joiner.join_L(another_selected_object, active_obj)
-    elif join_type == "V":
-        joiner.join_V(another_selected_object, active_obj)
+    joiner.connect(another_selected_object, active_obj)
+
+
+def extend_wall_to_slab(
+    ifc: tool.Ifc, geometry: tool.Geometry, model: tool.Model, slab_obj, wall_objs: Iterable
+) -> None:
+    if not (clip := model.get_slab_clipping_bmesh(slab_obj)):
+        return  # Nothing to clip?
+    slab = ifc.get_entity(slab_obj)
+    for obj in wall_objs:
+        if ifc.is_moved(obj):
+            geometry.run_edit_object_placement(obj=obj)
+        wall = ifc.get_entity(obj)
+        model.clip_wall_to_slab(wall, clip)
+        model.connect_wall_to_slab(wall, slab)
+    model.reload_body_representation(wall_objs)
 
 
 def join_walls_TZ(ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner, model: tool.Model) -> None:

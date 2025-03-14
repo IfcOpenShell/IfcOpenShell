@@ -103,8 +103,7 @@ Scenario: Select similar container
 
 Scenario: Execute generate space from cursor position
     Given an empty IFC project
-    When I press "bim.generate_space"
-    Then nothing happens
+    Then I press "bim.generate_space" and expect error "Error: Couldn't find any polygons to form the space shape. Perhaps, RL value need to be adjusted."
 
 Scenario: Execute generate spaces from walls
     Given an empty IFC project
@@ -112,7 +111,7 @@ Scenario: Execute generate spaces from walls
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
     And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And the object "IfcWall/Wall" is selected
     When I press "bim.generate_spaces_from_walls"
     Then nothing happens
@@ -133,6 +132,11 @@ Scenario: Spatial decomposition - see panel
 
 Scenario: Isolate spatial container
     Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Definition" property to "IfcElement"
+    And I set the "Class" property to "IfcFurniture"
+    And I set the "Representation" property to "No Geometry"
+    And I click "OK"
     And I look at the "Spatial Decomposition" panel
     When I select the "My Site" item in the "BIM_UL_containers_manager" list
     And I click "Isolate"
@@ -140,6 +144,11 @@ Scenario: Isolate spatial container
 
 Scenario: Show spatial container
     Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Definition" property to "IfcElement"
+    And I set the "Class" property to "IfcFurniture"
+    And I set the "Representation" property to "No Geometry"
+    And I click "OK"
     And I look at the "Spatial Decomposition" panel
     When I select the "My Site" item in the "BIM_UL_containers_manager" list
     And I click "HIDE_OFF"
@@ -147,6 +156,11 @@ Scenario: Show spatial container
 
 Scenario: Hide spatial container
     Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Definition" property to "IfcElement"
+    And I set the "Class" property to "IfcFurniture"
+    And I set the "Representation" property to "No Geometry"
+    And I click "OK"
     And I look at the "Spatial Decomposition" panel
     When I select the "My Site" item in the "BIM_UL_containers_manager" list
     And I click "HIDE_ON"
