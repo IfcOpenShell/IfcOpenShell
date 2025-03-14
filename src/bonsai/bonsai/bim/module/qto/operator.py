@@ -27,6 +27,7 @@ from bonsai.bim.module.qto import helper
 class CalculateCircleRadius(bpy.types.Operator):
     bl_idname = "bim.calculate_circle_radius"
     bl_label = "Calculate Circle Radius"
+    bl_description = "Calculate circle radius for the selected object's selected vertices."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -41,6 +42,7 @@ class CalculateCircleRadius(bpy.types.Operator):
 class CalculateEdgeLengths(bpy.types.Operator):
     bl_idname = "bim.calculate_edge_lengths"
     bl_label = "Calculate Edge Lengths"
+    bl_description = "Calculate edge lengths for the selected mesh objects."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -56,6 +58,7 @@ class CalculateEdgeLengths(bpy.types.Operator):
 class CalculateFaceAreas(bpy.types.Operator):
     bl_idname = "bim.calculate_face_areas"
     bl_label = "Calculate Face Areas"
+    bl_description = "Calculate face areas for the selected mesh objects."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -71,6 +74,7 @@ class CalculateFaceAreas(bpy.types.Operator):
 class CalculateObjectVolumes(bpy.types.Operator):
     bl_idname = "bim.calculate_object_volumes"
     bl_label = "Calculate Object Volumes"
+    bl_description = "Calculate volumes for the selected mesh objects."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -86,6 +90,7 @@ class CalculateObjectVolumes(bpy.types.Operator):
 class CalculateFormworkArea(bpy.types.Operator):
     bl_idname = "bim.calculate_formwork_area"
     bl_label = "Calculate Formwork Area"
+    bl_description = "Calculate formwork area for the selected mesh objects."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -101,6 +106,7 @@ class CalculateFormworkArea(bpy.types.Operator):
 class CalculateSideFormworkArea(bpy.types.Operator):
     bl_idname = "bim.calculate_side_formwork_area"
     bl_label = "Calculate Side Formwork Area"
+    bl_description = "Calculate side formwork area for the selected mesh objects."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
