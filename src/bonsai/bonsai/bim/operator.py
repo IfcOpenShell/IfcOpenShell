@@ -707,13 +707,14 @@ class BIM_OT_remove_section_plane(bpy.types.Operator):
             (
                 n
                 for n in section_override.nodes
-                if isinstance(n, bpy.types.ShaderNodeTexCoord) and n.object.name == name
+                if isinstance(n, bpy.types.ShaderNodeTexCoord) and n.object and n.object.name == name
             ),
             None,
         )
         if tex_coords is not None:
             section_compare = tex_coords.outputs["Object"].links[0].to_node
-            if section_compare.inputs[0].links:
+
+            if section_compare.inputs[0].links and section_compare.outputs[0].links:
                 previous_section_compare = section_compare.inputs[0].links[0].from_node
                 next_section_compare = section_compare.outputs[0].links[0].to_node
                 section_override.links.new(previous_section_compare.outputs[0], next_section_compare.inputs[0])
