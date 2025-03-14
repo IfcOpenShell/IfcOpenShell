@@ -454,6 +454,58 @@ def get_elements_by_pset(pset: ifcopenshell.entity_instance) -> set[ifcopenshell
     return elements
 
 
+def get_element_mass_density(element: ifcopenshell.entity_instance) -> Union[float, None]:
+    """Calculate object mass density based on material's Pset_MaterialCommon.MassDensity.
+
+    :param element: IFC element entity.
+    :return: ``float`` mass density in project units if calculation was successful, ``None`` if element either
+        doesn't have a material or this type of material is not supported.
+    """
+    material = ifcopenshell.util.element.get_material(element)
+    if material is None:
+        return
+
+    if (
+        material.is_a("IfcMaterialLayerSet")
+        or material.is_a("IfcMaterialProfileSet")
+        or material.is_a("IfcMaterialConstituentSet")
+    ):
+        return
+
+    if material.is_a("IfcMaterial"):
+        material_mass_density = ifcopenshell.util.element.get_pset(material, "Pset_MaterialCommon", "MassDensity")
+        return material_mass_density
+
+    if material.is_a("IfcMaterialLayerSetUsage"):
+        material_layers = material.ForLayerSet.MaterialLayers
+        densities = []
+        thicknesses = []
+        obj_mass_density = 0
+        for material_layer in material_layers:
+            material_mass_density = ifcopenshell.util.element.get_pset(
+                material_layer.Material, "Pset_MaterialCommon", "MassDensity"
+            )
+            if material_mass_density is None:
+                return
+            densities.append(material_mass_density)
+            thickness = material_layer.LayerThickness
+            thicknesses.append(thickness)
+            obj_mass_density = obj_mass_density + (material_mass_density * thickness)
+        total_thickness = sum(thicknesses)
+        obj_mass_density = obj_mass_density / total_thickness
+        return obj_mass_density
+
+    if material.is_a("IfcMaterialProfileSetUsage"):
+        material_profiles = material.ForProfileSet.MaterialProfiles
+        if len(material_profiles) == 1:
+            material_mass_density = ifcopenshell.util.element.get_pset(
+                material_profiles[0].Material, "Pset_MaterialCommon", "MassDensity"
+            )
+            return material_mass_density
+        else:
+            return
+
+
 def get_predefined_type(element: ifcopenshell.entity_instance) -> Union[str, None]:
     """Retrieves the PrefefinedType attribute of an element.
 
