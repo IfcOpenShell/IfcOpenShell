@@ -66,6 +66,7 @@ SETTING = Literal[
     "apply-default-materials",
     "boolean-attempt-2d",
     "building-local-placement",
+    "cgal-original-edges",
     "circle-segments",
     "context-identifiers",
     "context-ids",
