@@ -70,7 +70,7 @@ def get_calculator_function(
             CALCULATOR_FUNCTION_ENUM_ITEMS.append(None)
         description = function.description
         description += f"\n\nInternal function id: '{function_id}'."
-        CALCULATOR_FUNCTION_ENUM_ITEMS.append((function_id, f"{measure}: {function.name}", function.description))
+        CALCULATOR_FUNCTION_ENUM_ITEMS.append((function_id, f"{measure}: {function.name}", description))
         previous_measure = measure
     return CALCULATOR_FUNCTION_ENUM_ITEMS
 
