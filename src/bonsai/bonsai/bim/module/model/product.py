@@ -495,15 +495,16 @@ class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
                 elif props.rl_mode == "CURSOR":
                     pass
 
+        tool.Model.sync_object_ifc_position(obj)
+
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for port in ifcopenshell.util.system.get_ports(relating_type):
             mat = Matrix(ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement))
             mat.translation *= unit_scale
             mat = obj.matrix_world @ mat
-            new_port = tool.Ifc.run("root.create_entity", ifc_class="IfcDistributionPort")
+            new_port = tool.Ifc.run("system.add_port", element=element)
             new_port.PredefinedType = port.PredefinedType
             new_port.SystemType = port.SystemType
-            tool.Ifc.run("system.assign_port", element=element, port=new_port)
             tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
 
         if ifc_class == "IfcDoorType" and len(context.selected_objects) >= 1:

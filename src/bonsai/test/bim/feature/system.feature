@@ -159,6 +159,45 @@ Scenario: Connect MEP elements
     And the object "IfcActuator/Actuator" is at "5.5,0.0,1.0"
     And the variable "connected_elements" is "set(tool.System.get_connected_elements({ifc}.by_type('IfcActuator')[0]))"
 
+Scenario: Add bend - and regenerate with no changes
+    Given an empty IFC project
+    And I create default MEP types
+    And the variable "segment_types" is "[str(e.id()) for e in {ifc}.by_type('IfcDuctSegmentType')]"
+    And the variable "actuator_type_id" is "{ifc}.by_type('IfcActuatorType')[0].id()"
+
+    # segment1
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcDuctSegmentType"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
+    And I set "scene.BIMModelProperties.extrusion_depth" to "5.0"
+    And I press "bim.add_occurrence"
+    And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/Seg1"
+
+    # segment2
+    And I set "scene.BIMModelProperties.relating_type_id" to "{segment_types}[0]"
+    And I press "bim.add_occurrence"
+    And I rename the object "IfcDuctSegment/DuctSegment" to "IfcDuctSegment/Seg2"
+    And the object "IfcDuctSegment/Seg2" is rotated by "0,0,90" deg
+
+    # bend between segments 1 and 2
+    When the object "IfcDuctSegment/Seg1" is selected
+    And additionally the object "IfcDuctSegment/Seg2" is selected
+    And I press "bim.mep_add_bend"
+
+    Then the object "IfcDuctSegment/Seg1" is at "0.5,0,1"
+    And the object "IfcDuctSegment/Seg2" is at "0,0.5,1"
+    And the object "IfcDuctFitting/DuctFitting" is at "0,0.5,1"
+    And the object "IfcDuctFitting/DuctFitting" dimensions are "0.7,0.2,0.7"
+    And the object "IfcDuctSegment/Seg1" dimensions are "0.4,0.2,4.5"
+    And the object "IfcDuctSegment/Seg2" dimensions are "0.4,0.2,4.5"
+
+    When I press "bim.regenerate_distribution_element"
+    Then the object "IfcDuctSegment/Seg1" is at "0.5,0,1"
+    And the object "IfcDuctSegment/Seg2" is at "0,0.5,1"
+    And the object "IfcDuctFitting/DuctFitting" is at "0,0.5,1"
+    And the object "IfcDuctFitting/DuctFitting" dimensions are "0.7,0.2,0.7"
+    And the object "IfcDuctSegment/Seg1" dimensions are "0.4,0.2,4.5"
+    And the object "IfcDuctSegment/Seg2" dimensions are "0.4,0.2,4.5"
+
 Scenario: Connect MEP elements and regenerate
     Given an empty IFC project
     And I create default MEP types

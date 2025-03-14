@@ -1200,7 +1200,7 @@ def the_object_name_is_at_location(name, location):
     obj_location = the_object_name_exists(name).location
     assert (
         obj_location - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object is at {obj_location}"
+    ).length < 0.1, f"Object is at {obj_location} instead of {location}"
 
 
 @then(parsers.parse('the object "{name}" has a vertex at "{location}"'))
@@ -1449,6 +1449,13 @@ def the_obj_layer_lenght_is_set_to(value):
 @then(parsers.parse("I run test code"))
 def run_test_code():
     pass
+
+
+@given(parsers.parse("I fail"))
+@when(parsers.parse("I fail"))
+@then(parsers.parse("I fail"))
+def i_fail():
+    assert False
 
 
 @given(parsers.parse("I save sample test files"))

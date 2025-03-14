@@ -921,11 +921,11 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             start_element = tool.Ifc.get_entity(start_object)
             end_element = tool.Ifc.get_entity(end_object)
             if not start_element or not end_element:
-                self.report({"ERROR"}, f"Two IFC elements should be selected for the bend.")
+                self.report({"ERROR"}, "Two IFC elements should be selected for the bend.")
                 return {"CANCELLED"}
 
         else:
-            self.report({"ERROR"}, f"Two IFC elements should be provided for the bend.")
+            self.report({"ERROR"}, "Two IFC elements should be provided for the bend.")
             return {"CANCELLED"}
 
         # check rotation difference
@@ -1248,10 +1248,14 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             return matrix
 
         fitting_obj.matrix_world = get_fitting_matrix()
+        tool.Model.sync_object_ifc_position(fitting_obj)
 
         # add ports and connect them
         ports = tool.System.get_ports(tool.Ifc.get_entity(fitting_obj))
-        if not start_port_match:
+        start_co = ifcopenshell.util.placement.get_local_placement(start_port.ObjectPlacement)[:,3]
+        port0_co = ifcopenshell.util.placement.get_local_placement(ports[0].ObjectPlacement)[:,3]
+        # We cannot use start_port_match because tool.System.get_ports is unordered
+        if not np.allclose(start_co, port0_co):
             start_port, end_port = end_port, start_port
         tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")
         tool.Ifc.run("system.connect_port", port1=ports[1], port2=end_port, direction="NOTDEFINED")
