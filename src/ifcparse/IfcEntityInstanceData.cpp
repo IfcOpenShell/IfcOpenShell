@@ -378,7 +378,7 @@ void rocks_db_attribute_storage::set(void* storage, const IfcParse::declaration*
     std::string v;
     impl::serialize(v, value);
     rdb_storage->db->Put(
-        rocksdb::WriteOptions{}, 
+        rdb_storage->wopts,
         (is_header ? "h|" : (decl->as_entity() ? "i|" : "t|")) +
         (is_header ? decl->name() : std::to_string(identity)) + "|" + 
         std::to_string(index), v);

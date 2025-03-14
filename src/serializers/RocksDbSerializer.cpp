@@ -74,18 +74,29 @@ void RocksDbSerializer::finalize()
 	}
 
 	// Add them in topological order, so that add() never recurses into something not previously visited
+	size_t n = 0;
 	for (auto& i : deps_topo_order) {
+		if (((n++) % 1000) == 0) {
+			std::wcout << n * 100 / deps_topo_order.size() << "%";
+		}
 		output_file_->addEntity(file_->instance_by_id(i), i);
 	}
 
 	// Copy inverses
+	/* 
+	// These are now back to being added in addEntity() / set_attribute_value()
 	std::visit([this](const auto& m) {
 		if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
 			for (auto& p : m.byref_excl_) {
+				// This is much slower than need be, because:
+				//  - insert() first checks for existance [we know it does not] because insert() should not overwrite
+				//  - insert() returns an pair<iterator, bool> [which is not used] which requires an expensive seek after the put.
+				// This is left as-is for now, because anyway we want to build a streaming converter
 				std::get<IfcParse::impl::rocks_db_file_storage>(output_file_->storage_).byref_excl_.insert(p);
 			}
 		}
 	}, file_->storage_);
+	*/
 
 	delete output_file_;
 }

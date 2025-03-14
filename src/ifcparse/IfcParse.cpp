@@ -789,24 +789,22 @@ namespace {
 
 void IfcParse::impl::rocks_db_file_storage::register_inverse(unsigned id_from, const IfcParse::entity* from_entity, int inst_id, int attribute_index) {
     static std::string s;
-    size_t v = id_from;
-    s.resize(sizeof(size_t));
-    memcpy(s.data(), &v, sizeof(size_t));
+    uint32_t v = id_from;
+    s.resize(sizeof(uint32_t));
+    memcpy(s.data(), &v, sizeof(uint32_t));
     
+    auto key = "v|" + to_string_fixed_width(inst_id, 10) + "|" + to_string_fixed_width(from_entity->index_in_schema(), 4) + "|" + to_string_fixed_width(attribute_index, 2);
+
+    db->Merge(wopts, key, s);
     /*
-    // no merges yet, because python client doesn't support them
-    db->Merge(
-        rocksdb::WriteOptions{}, 
-        , 
-        s);
-    */
+    // Python client does not support merges
+    // @todo turn this into a setting
     {
         std::string current;
-        auto key = "v|" + to_string_fixed_width(inst_id, 10) + "|" + to_string_fixed_width(from_entity->index_in_schema(), 4) + "|" + to_string_fixed_width(attribute_index, 2);
         db->Get(rocksdb::ReadOptions{}, key, &current);
         auto new_val = current + s;
-        db->Put(rocksdb::WriteOptions{}, key, new_val);
-    }
+        db->Put(wopts, key, new_val);
+    }*/
 }
 
 void IfcParse::impl::rocks_db_file_storage::unregister_inverse(unsigned id_from, const IfcParse::entity* from_entity, IfcUtil::IfcBaseClass* inst, int attribute_index) {
@@ -814,12 +812,12 @@ void IfcParse::impl::rocks_db_file_storage::unregister_inverse(unsigned id_from,
     auto inst_id = inst->id();
     auto key = "v|" + to_string_fixed_width(inst_id, 10) + "|" + to_string_fixed_width(from_entity->index_in_schema(), 4) + "|" + to_string_fixed_width(attribute_index, 2);
     if (db->Get(rocksdb::ReadOptions{}, key, &s).ok()) {
-        std::vector<size_t> vals(s.size() / sizeof(size_t));
+        std::vector<uint32_t> vals(s.size() / sizeof(uint32_t));
         memcpy(vals.data(), s.data(), s.size());
-        vals.erase(std::find(vals.begin(), vals.end(), (size_t)id_from));
-        s.resize(vals.size() * sizeof(size_t));
+        vals.erase(std::find(vals.begin(), vals.end(), (uint32_t)id_from));
+        s.resize(vals.size() * sizeof(uint32_t));
         memcpy(s.data(), vals.data(), s.size());
-        db->Put(rocksdb::WriteOptions{}, key, s);
+        db->Put(wopts, key, s);
     }
 }
 
@@ -833,21 +831,22 @@ void IfcParse::impl::rocks_db_file_storage::add_type_ref(IfcUtil::IfcBaseClass* 
         memcpy(s.data(), &v, sizeof(size_t));
 
         // no merges yet, because the python client doesn't support them
-        // db->Merge(rocksdb::WriteOptions{}, "t|" + std::to_string(new_entity->declaration().index_in_schema()), s);
-        {
+        db->Merge(rocksdb::WriteOptions{}, "t|" + std::to_string(new_entity->declaration().index_in_schema()), s);
+        
+        /*{
             std::string current;
             // @todo this uses the same key-namespace as typedecl instances, not a direct conflict, but also not very clear
             auto key = "t|" + std::to_string(new_entity->declaration().index_in_schema());
             db->Get(rocksdb::ReadOptions{}, key, &current);
             auto new_val = current + s;
-            db->Put(rocksdb::WriteOptions{}, key, new_val);
-        }
+            db->Put(wopts, key, new_val);
+        }*/ 
     }
 
     // not only mapping also register type
     v = new_entity->declaration().index_in_schema();
     memcpy(s.data(), &v, sizeof(size_t));
-    db->Put(rocksdb::WriteOptions{}, (new_entity->declaration().as_entity() ? "i|" : "t|") + std::to_string(new_entity->id() ? new_entity->id() : new_entity->identity()) + "|_", s);
+    db->Put(wopts, (new_entity->declaration().as_entity() ? "i|" : "t|") + std::to_string(new_entity->id() ? new_entity->id() : new_entity->identity()) + "|_", s);
 }
 
 void IfcParse::impl::rocks_db_file_storage::remove_type_ref(IfcUtil::IfcBaseClass* new_entity)
@@ -861,11 +860,11 @@ void IfcParse::impl::rocks_db_file_storage::remove_type_ref(IfcUtil::IfcBaseClas
             vals.erase(std::find(vals.begin(), vals.end(), (size_t)new_entity->id()));
             s.resize(vals.size() * sizeof(size_t));
             memcpy(s.data(), vals.data(), s.size());
-            db->Put(rocksdb::WriteOptions{}, key, s);
+            db->Put(wopts, key, s);
         }
     }
 
-    db->Delete(rocksdb::WriteOptions{}, (new_entity->declaration().as_entity() ? "i|" : "t|") + std::to_string(new_entity->id() ? new_entity->id() : new_entity->identity()) + "|_");
+    db->Delete(wopts, (new_entity->declaration().as_entity() ? "i|" : "t|") + std::to_string(new_entity->id() ? new_entity->id() : new_entity->identity()) + "|_");
 }
 
 namespace {
@@ -1175,24 +1174,32 @@ class apply_individual_instance_visitor {
 
     template <typename T>
     void apply_attribute_(T& t, const AttributeValue& attr, int index) const {
-        if (attr.type() == IfcUtil::Argument_ENTITY_INSTANCE) {
+        switch (attr.type()) {
+        case IfcUtil::Argument_ENTITY_INSTANCE: {
             IfcUtil::IfcBaseClass* inst = attr;
             t(inst, index);
-        } else if (attr.type() == IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE) {
+            break;
+        }
+        case IfcUtil::Argument_AGGREGATE_OF_ENTITY_INSTANCE: {
             aggregate_of_instance::ptr entity_list_attribute = attr;
             for (aggregate_of_instance::it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
                 t(*it, index);
             }
-        } else if (attr.type() == IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE) {
+            break;
+        }
+        case IfcUtil::Argument_AGGREGATE_OF_AGGREGATE_OF_ENTITY_INSTANCE: {
             aggregate_of_aggregate_of_instance::ptr entity_list_attribute = attr;
             for (aggregate_of_aggregate_of_instance::outer_it it = entity_list_attribute->begin(); it != entity_list_attribute->end(); ++it) {
                 for (aggregate_of_aggregate_of_instance::inner_it jt = it->begin(); jt != it->end(); ++jt) {
                     t(*jt, index);
                 }
             }
+            break;
         }
-    };
-
+        default:
+            break;
+        }
+    }
   public:
     apply_individual_instance_visitor(const AttributeValue& attribute, int idx)
         : attribute_(attribute)
@@ -1238,9 +1245,11 @@ void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
             }
         }
 
-        // Deregister inverse indices in file
-        unregister_inverse_visitor visitor(*file_, this);
-        apply_individual_instance_visitor(current_attribute, (int) i).apply(visitor);
+        if constexpr (std::is_same_v<T, IfcUtil::IfcBaseClass*> || std::is_same_v<T, aggregate_of_instance::ptr> || std::is_same_v<T, aggregate_of_aggregate_of_instance::ptr> || std::is_same_v<T, Blank>) {
+            // Deregister inverse indices in file
+            unregister_inverse_visitor visitor(*file_, this);
+            apply_individual_instance_visitor(current_attribute, (int)i).apply(visitor);
+        }
     }
     {
         void* const storage = file_ ? std::visit([](const auto& m) { return (void*)&m; }, file_->storage_) : nullptr;
@@ -1258,9 +1267,10 @@ void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
 
     if (file_ != nullptr) {
         // Register inverse indices in file
-        // @todo verify no longer necessary?
-        // register_inverse_visitor visitor(*file_, this);
-        // apply_individual_instance_visitor(new_attribute, (int) i).apply(visitor);
+        if constexpr (std::is_same_v<T, IfcUtil::IfcBaseClass*> || std::is_same_v<T, aggregate_of_instance::ptr> || std::is_same_v<T, aggregate_of_aggregate_of_instance::ptr>) {
+            register_inverse_visitor visitor(*file_, this);
+            apply_individual_instance_visitor(new_attribute, (int)i).apply(visitor);
+        }
     
         // Register new attribute guid in guid map
         if (i == 0 && (file_->ifcroot_type() != nullptr) && this->declaration().is(*file_->ifcroot_type())) {
@@ -1820,7 +1830,8 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
 
         void* own_storage = std::visit([](const auto& m) { return (void*)&m; }, storage_);
         void* other_storage = std::visit([](const auto& m) { return (void*)&m; }, other_file->storage_);
-        for (size_t i = 0; i < (entity->declaration().as_entity() ? entity->declaration().as_entity()->attribute_count() : 1); ++i) {
+        auto num_attributes = (entity->declaration().as_entity() ? entity->declaration().as_entity()->attribute_count() : 1);
+        for (size_t i = 0; i < num_attributes; ++i) {
             entity->data().apply_visitor(other_storage, decl, entity->id() ? entity->id() : entity->identity(), [this, i, decl, new_entity, own_storage](const auto& v) {
                 using U = std::decay_t<decltype(v)>;
                 // only need to copy non-instance attribute values, others are assigned below after mapping
@@ -1970,18 +1981,20 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
             new_id = new_entity->id();
         }
 
+        /*
         if (byid_.find(new_id) != byid_.end()) {
             // This should not happen
             std::stringstream ss;
             ss << "Overwriting entity with id " << new_id;
             Logger::Message(Logger::LOG_WARNING, ss.str());
         }
+        */
 
         // rocksdb instances are assumed to be create with file.create();
         std::visit([new_entity](auto& m) {
             if constexpr (std::is_same_v<std::decay_t<decltype(m)>, impl::in_memory_file_storage>) {
                 // @todo not freed yet
-                m.byid_.insert({ new_entity->identity(), new_entity });
+                m.byid_.insert({ new_entity->id(), new_entity });
             }
         }, storage_);
     } else if (new_entity->file_ == nullptr) {
@@ -2246,7 +2259,18 @@ aggregate_of_instance::ptr IfcFile::instances_by_reference(int t) {
                 }
             }
         } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, impl::rocks_db_file_storage>) {
-            // @todo
+            // @todo no lower/upper_bounds() implemented yet
+            auto prefix = "v|" + std::to_string(t) + "|";
+            auto it = x.db->NewIterator(rocksdb::ReadOptions());
+            it->Seek(prefix);
+            while (it->Valid() && it->key().starts_with(prefix)) {
+                std::vector<uint32_t> vals(it->value().size() / sizeof(uint32_t));
+                memcpy(vals.data(), it->value().data(), it->value().size());
+                for (auto& v : vals) {
+                    ret->push(instance_by_id(v));
+                }
+                it->Next();
+            }
         } else {
             throw std::runtime_error("Storage not initialized");
         }

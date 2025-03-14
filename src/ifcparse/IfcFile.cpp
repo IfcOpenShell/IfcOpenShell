@@ -383,8 +383,9 @@ namespace {
     rocksdb::DB* init_db(const std::string& filepath) {
         rocksdb::DB* db;
         rocksdb::Options options;
+        // options.disable_auto_compactions = true;
         options.create_if_missing = true;
-        // options.merge_operator.reset(new ConcatenateIdMergeOperator());
+        options.merge_operator.reset(new ConcatenateIdMergeOperator());
         rocksdb::Status status = rocksdb::DB::Open(options, filepath, &db);
         if (!status.ok()) {
             throw std::runtime_error(status.ToString());
@@ -405,7 +406,9 @@ IfcParse::impl::rocks_db_file_storage::rocks_db_file_storage(const std::string& 
     , byref_excl_(db, "v|")
     // @todo by_identity is probably not correct here, this mapping is Name -> Identity, so Fn should have access to full pair?
     // , byidentity_(&byid_, [this](size_t v) { return assert_existance(v, by_identity); }, [](IfcUtil::IfcBaseClass* v) { return v->identity(); })
-{}
+{
+    // wopts.disableWAL = true;
+}
 
 IfcParse::impl::rocks_db_file_storage::~rocks_db_file_storage()
 {
@@ -413,6 +416,10 @@ IfcParse::impl::rocks_db_file_storage::~rocks_db_file_storage()
     flush_options.allow_write_stall = true;
     flush_options.wait = true; // Wait until flush completes.
     rocksdb::Status s = db->Flush(flush_options);
+
+    // compact entire db
+    db->CompactRange(rocksdb::CompactRangeOptions{}, nullptr, nullptr);
+
     assert(s.ok());
 
     db->Close();
@@ -445,7 +452,7 @@ void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::If
 
         rocksdb::WriteBatch batch;
         batch.DeleteRange(prefix, it->key());
-        db->Write(rocksdb::WriteOptions{}, &batch);
+        db->Write(wopts, &batch);
     }
 
     // This is based on traversal which needs instances to still be contained in the map.
@@ -475,7 +482,7 @@ void IfcParse::impl::rocks_db_file_storage::process_deletion_inverse(IfcUtil::If
                     vals.erase(std::find(vals.begin(), vals.end(), (size_t)id));
                     s.resize(vals.size() * sizeof(size_t));
                     memcpy(s.data(), vals.data(), s.size());
-                    db->Put(rocksdb::WriteOptions{}, it->key(), s);
+                    db->Put(wopts, it->key(), s);
 
                     it->Next();
                 }
