@@ -181,7 +181,7 @@ def get_element_bbox_centroid(element: ifcopenshell.entity_instance, geometry: S
     """Calculates the element's bounding box centroid
 
     The centroid is in global coordinates. Note that if you have the shape, it
-    is more efficient to use ``get_shape_bbox_centroid``.
+    is more efficient to use :func:`get_shape_bbox_centroid`.
 
     :param element: The element occurrence
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -198,7 +198,7 @@ def get_shape_bbox_centroid(shape: ShapeElementType, geometry: ShapeType) -> npt
     """Calculates the shape's bounding box centroid
 
     The centroid is in global coordinates. Note that if you do not have the
-    shape, you can use ``get_element_bbox_centroid``.
+    shape, you can use :func:`get_element_bbox_centroid`.
 
     :param shape: Shape output calculated by IfcOpenShell
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -243,7 +243,7 @@ def get_faces(geometry: ShapeType) -> npt.NDArray[np.int32]:
     """Get all the faces as a numpy array
 
     Faces are always triangulated. If the shape is a BRep and you want to get
-    the original untriangulated output, refer to ``get_edges``.
+    the original untriangulated output, refer to :func:`get_edges`.
 
     Results are a nested numpy array e.g. [[f1v1, f1v2, f1v3], [f2v1, f2v2, f2v3], ...]
 
@@ -318,7 +318,7 @@ def get_shape_vertices(shape: ShapeElementType, geometry: ShapeType) -> npt.NDAr
     """Get the shape's vertices as a numpy array
 
     Vertices are in global coordinates. If you do not have the shape, you can
-    use ``get_element_vertices``.
+    use :func:`get_element_vertices`.
 
     Results are a nested numpy array e.g. [[v1x, v1y, v1z], [v2x, v2y, v2z], ...]
 
@@ -336,7 +336,7 @@ def get_element_vertices(element: ifcopenshell.entity_instance, geometry: ShapeT
     """Get the element's vertices as a numpy array
 
     Vertices are in global coordinates. Note that if you have the shape, it is
-    more efficient to use ``get_shape_vertices``.
+    more efficient to use :func:`get_shape_vertices`.
 
     Results are a nested numpy array e.g. [[v1x, v1y, v1z], [v2x, v2y, v2z], ...]
 
@@ -374,7 +374,7 @@ def get_top_elevation(geometry: ShapeType) -> float:
 def get_shape_bottom_elevation(shape: ShapeType, geometry: ShapeType) -> float:
     """Gets the lowest global Z ordinate of the shape
 
-    If you do not have the shape, you can use ``get_element_bottom_elevation``
+    If you do not have the shape, you can use :func:`get_element_bottom_elevation`
     instead.
 
     :param shape: Shape output calculated by IfcOpenShell
@@ -387,7 +387,7 @@ def get_shape_bottom_elevation(shape: ShapeType, geometry: ShapeType) -> float:
 def get_shape_top_elevation(shape: ShapeType, geometry: ShapeType) -> float:
     """Gets the highest global Z ordinate of the shape
 
-    If you do not have the shape, you can use ``get_element_top_elevation``
+    If you do not have the shape, you can use :func:`get_element_top_elevation`
     instead.
 
     :param shape: Shape output calculated by IfcOpenShell
@@ -401,7 +401,7 @@ def get_element_bottom_elevation(element: ifcopenshell.entity_instance, geometry
     """Gets the lowest global Z ordinate of the element
 
     Note that if you have the shape, it is more efficient to use
-    ``get_shape_bottom_elevation``.
+    :func:`get_shape_bottom_elevation`.
 
     :param element: The element occurrence
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -414,7 +414,7 @@ def get_element_top_elevation(element: ifcopenshell.entity_instance, geometry: S
     """Gets the highest global Z ordinate of the element
 
     Note that if you have the shape, it is more efficient to use
-    ``get_shape_top_elevation``.
+    :func:`get_shape_top_elevation`.
 
     :param element: The element occurrence
     :param geometry: Geometry output calculated by IfcOpenShell
@@ -484,7 +484,7 @@ def get_side_area(
     axis.
 
     Note that this calculates the actual area, not the projected 2D area. If
-    you want the projected area, use ``get_footprint_area``.
+    you want the projected area, use :func:`get_footprint_area`.
 
     :param geometry: Geometry output calculated by IfcOpenShell
     :param axis: Either X, Y, or Z. Defaults to Y, which is used for standard
@@ -549,7 +549,7 @@ def get_footprint_area(
     axis.
 
     Note that this calculates the 2D projected area, not the actual surface
-    area. If you want the actual area, use ``get_side_area``.
+    area. If you want the actual area, use :func:`get_side_area`.
 
     :param geometry: Geometry output calculated by IfcOpenShell
     :param axis: Either X, Y, or Z. Defaults to Z.
