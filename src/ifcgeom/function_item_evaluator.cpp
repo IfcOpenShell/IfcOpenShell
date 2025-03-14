@@ -155,7 +155,7 @@ struct cant_fn_evaluator : public fn_evaluator {
 
         
         // curvature is stored in row 3 - capture it and remove it from the xy and uz matrices
-        // so the matrix operations (ie multiplication) works correct.y
+        // so the matrix operations (ie multiplication) works correctly
         auto gradient_curvature = g.row(3);
         g.row(3) = Eigen::Vector4d(0, 0, 0, 1);
 
