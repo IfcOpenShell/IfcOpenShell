@@ -677,13 +677,13 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
             if material.node_tree.nodes.get("Section Override"):
                 continue
             # In EEVEE rendering engine, `blend_mode` is deprecated and replaced by `surface_render_method`
+            # https://developer.blender.org/docs/release_notes/4.2/eevee_migration/#materials
             if (hasattr(material, "surface_render_method")):
                 material.surface_render_method = "DITHERED"
             else:
                 material.blend_method = "HASHED"
             
-            # https://developer.blender.org/docs/release_notes/4.2/eevee_migration/#materials
-            # TODO: Find an alternative for EEVEE engine
+            # TODO: Find an alternative to `shadow_method` for EEVEE engine
             if (hasattr(material, "shadow_method")):
                 material.shadow_method = "HASHED"
 
