@@ -288,7 +288,7 @@ AttributeSpecialType = Literal["", "DATE", "DATETIME", "LENGTH", "AREA", "VOLUME
 class Attribute(PropertyGroup):
     tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
     name: StringProperty(name="Name")  # type: ignore [reportRedeclaration]
-    display_name: StringProperty(name="Display Name", get=get_display_name)
+    display_name: StringProperty(name="Display Name", get=get_display_name) # type: ignore [reportRedeclaration]
     description: StringProperty(name="Description")  # type: ignore [reportRedeclaration]
     ifc_class: StringProperty(name="Ifc Class")  # type: ignore [reportRedeclaration]
     data_type: EnumProperty(  # type: ignore [reportRedeclaration]
@@ -366,7 +366,32 @@ class Attribute(PropertyGroup):
             return self.string_value.replace("\\n", "\n")
         if self.data_type == "file":
             return [f.name for f in self.filepath_value.file_list]
+            
         value = getattr(self, str(self.get_value_name()), None)
+        
+        if self.data_type == "float":
+            import math
+
+            # Handle float precision based on model settings
+            precision = 1e-6  # Default precision
+            model_context = None
+            try:
+                import ifcopenshell.util.representation
+                import ifcopenshell.util.unit
+
+                ifc_file = tool.Ifc.get()
+                model_context = ifcopenshell.util.representation.get_context(ifc_file, "Model")
+                unit_scale = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+
+                if model_context and model_context.Precision is not None:
+                    precision = model_context.Precision * unit_scale
+                else:
+                    precision = precision * unit_scale
+            except (ImportError, AttributeError):
+                pass
+            if value is not None:
+                return round(value, -int(math.log10(precision)))
+        
         if self.special_type == "LOGICAL" and value != "UNKNOWN":
             # IfcOpenShell expects bool if IfcLogical is True/False.
             value = value == "TRUE"
