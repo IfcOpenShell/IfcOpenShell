@@ -25,9 +25,7 @@ def remove_application(file: ifcopenshell.file, application: ifcopenshell.entity
     Check whether or not the application is used anywhere prior to removal.
 
     :param address: The IfcApplication to remove.
-    :type address: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -36,6 +34,4 @@ def remove_application(file: ifcopenshell.file, application: ifcopenshell.entity
         application = ifcopenshell.api.owner.add_application(model)
         ifcopenshell.api.owner.remove_address(model, application=application)
     """
-    settings = {"application": application}
-
-    file.remove(settings["application"])
+    file.remove(application)

@@ -30,9 +30,7 @@ def add_parameterized_profile(file: ifcopenshell.file, ifc_class: str) -> ifcope
 
     :param ifc_class: The subclass of IfcParameterizedProfileDef that you'd
         like to create.
-    :type ifc_class: str
     :return: The newly created element depending on the specified ifc_class.
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -42,6 +40,4 @@ def add_parameterized_profile(file: ifcopenshell.file, ifc_class: str) -> ifcope
             ifc_class="IfcCircleProfileDef")
         circle.Radius = 1.
     """
-    settings = {"ifc_class": ifc_class}
-
-    return file.create_entity(settings["ifc_class"])
+    return file.create_entity(ifc_class)

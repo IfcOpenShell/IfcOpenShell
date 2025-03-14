@@ -49,7 +49,7 @@ class CalculateEdgeLengths(bpy.types.Operator):
 
     def execute(self, context):
         result = helper.calculate_edges_lengths([o for o in context.selected_objects if o.type == "MESH"], context)
-        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        tool.Qto.set_qto_result(result)
         return {"FINISHED"}
 
 
@@ -64,7 +64,7 @@ class CalculateFaceAreas(bpy.types.Operator):
 
     def execute(self, context):
         result = helper.calculate_faces_areas([o for o in context.selected_objects if o.type == "MESH"], context)
-        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        tool.Qto.set_qto_result(result)
         return {"FINISHED"}
 
 
@@ -79,7 +79,7 @@ class CalculateObjectVolumes(bpy.types.Operator):
 
     def execute(self, context):
         result = helper.calculate_volumes([o for o in context.selected_objects if o.type == "MESH"], context)
-        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        tool.Qto.set_qto_result(result)
         return {"FINISHED"}
 
 
@@ -94,7 +94,7 @@ class CalculateFormworkArea(bpy.types.Operator):
 
     def execute(self, context):
         result = helper.calculate_formwork_area([o for o in context.selected_objects if o.type == "MESH"], context)
-        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        tool.Qto.set_qto_result(result)
         return {"FINISHED"}
 
 
@@ -109,7 +109,7 @@ class CalculateSideFormworkArea(bpy.types.Operator):
 
     def execute(self, context):
         result = helper.calculate_side_formwork_area([o for o in context.selected_objects if o.type == "MESH"], context)
-        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        tool.Qto.set_qto_result(result)
         return {"FINISHED"}
 
 
@@ -126,7 +126,7 @@ class CalculateSingleQuantity(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         import ifc5d.qto
 
-        props = context.scene.BIMQtoProperties
+        props = tool.Qto.get_qto_props()
         elements = set()
         for obj in tool.Blender.get_selected_objects(include_active=False):
             element = tool.Ifc.get_entity(obj)
@@ -163,7 +163,7 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         import ifc5d.qto
 
-        props = context.scene.BIMQtoProperties
+        props = tool.Qto.get_qto_props()
 
         elements: set[ifcopenshell.entity_instance]
         if context.selected_objects:

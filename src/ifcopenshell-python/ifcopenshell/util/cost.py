@@ -280,7 +280,7 @@ def get_cost_values(cost_item: ifcopenshell.entity_instance) -> list[dict[str, s
     return results
 
 
-def get_cost_schedule_types(file):
+def get_cost_schedule_types(file: ifcopenshell.file) -> list[dict[str, str]]:
     schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(file.schema)
     results = []
     declaration = schema.declaration_by_name("IfcCostSchedule")

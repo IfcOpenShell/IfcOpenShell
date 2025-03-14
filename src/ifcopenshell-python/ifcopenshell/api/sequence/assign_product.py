@@ -41,12 +41,9 @@ def assign_product(
 
     :param relating_product: The IfcProduct that was constructed as a result
         of the task.
-    :type relating_product: ifcopenshell.entity_instance
     :param related_object: The IfcProcess (typically IfcTask) of the
         construction task.
-    :type related_object: ifcopenshell.entity_instance
     :return: The newly created IfcRelAssignsToProduct relationship
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -67,23 +64,18 @@ def assign_product(
         # Let's construct that wall!
         ifcopenshell.api.sequence.assign_product(model, relating_product=wall, related_object=task)
     """
-    settings = {
-        "relating_product": relating_product,
-        "related_object": related_object,
-    }
-
-    if settings["related_object"].HasAssignments:
-        for assignment in settings["related_object"].HasAssignments:
-            if assignment.is_a("IfcRelAssignsToProduct") and assignment.RelatingProduct == settings["relating_product"]:
+    if related_object.HasAssignments:
+        for assignment in related_object.HasAssignments:
+            if assignment.is_a("IfcRelAssignsToProduct") and assignment.RelatingProduct == relating_product:
                 return assignment
 
     referenced_by = None
-    if settings["relating_product"].ReferencedBy:
-        referenced_by = settings["relating_product"].ReferencedBy[0]
+    if relating_product.ReferencedBy:
+        referenced_by = relating_product.ReferencedBy[0]
 
     if referenced_by:
         related_objects = list(referenced_by.RelatedObjects)
-        related_objects.append(settings["related_object"])
+        related_objects.append(related_object)
         referenced_by.RelatedObjects = related_objects
         ifcopenshell.api.owner.update_owner_history(file, **{"element": referenced_by})
     else:
@@ -92,8 +84,8 @@ def assign_product(
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": [settings["related_object"]],
-                "RelatingProduct": settings["relating_product"],
+                "RelatedObjects": [related_object],
+                "RelatingProduct": relating_product,
             }
         )
     return referenced_by

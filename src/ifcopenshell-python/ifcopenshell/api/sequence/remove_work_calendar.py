@@ -30,9 +30,7 @@ def remove_work_calendar(file: ifcopenshell.file, work_calendar: ifcopenshell.en
     calendar.
 
     :param work_calendar: The IfcWorkCalendar to remove
-    :type work_calendar: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -44,32 +42,30 @@ def remove_work_calendar(file: ifcopenshell.file, work_calendar: ifcopenshell.en
         # And remove it immediately
         ifcopenshell.api.sequence.remove_work_calendar(model, work_calendar=calendar)
     """
-    settings = {"work_calendar": work_calendar}
-
     # TODO: do a deep purge
     ifcopenshell.api.project.unassign_declaration(
         file,
-        definitions=[settings["work_calendar"]],
+        definitions=[work_calendar],
         relating_context=file.by_type("IfcContext")[0],
     )
-    if settings["work_calendar"].Controls:
-        for rel in settings["work_calendar"].Controls:
+    if work_calendar.Controls:
+        for rel in work_calendar.Controls:
             for related_object in rel.RelatedObjects:
                 ifcopenshell.api.control.unassign_control(
                     file,
-                    relating_control=settings["work_calendar"],
+                    relating_control=work_calendar,
                     related_object=related_object,
                 )
 
     # Currently in API work times are created already attached
     # to the work calendar, so they are never reused.
-    for working_time in settings["work_calendar"].WorkingTimes or []:
+    for working_time in work_calendar.WorkingTimes or []:
         ifcopenshell.api.sequence.remove_work_time(file, work_time=working_time)
 
-    for exception_time in settings["work_calendar"].ExceptionTimes or []:
+    for exception_time in work_calendar.ExceptionTimes or []:
         ifcopenshell.api.sequence.remove_work_time(file, work_time=exception_time)
 
-    history = settings["work_calendar"].OwnerHistory
-    file.remove(settings["work_calendar"])
+    history = work_calendar.OwnerHistory
+    file.remove(work_calendar)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)

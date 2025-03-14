@@ -34,9 +34,7 @@ def add_system(file: ifcopenshell.file, ifc_class: str = "IfcDistributionSystem"
         security systems. Alternatively you may choose IfcBuildingSystem for
         specialised building facade systems or similar. For IFC2X3, choose
         IfcSystem.
-    :type ifc_class: str
     :return: The newly created IfcSystem.
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -45,9 +43,7 @@ def add_system(file: ifcopenshell.file, ifc_class: str = "IfcDistributionSystem"
         # A completely empty distribution system
         system = ifcopenshell.api.system.add_system(model)
     """
-    settings = {"ifc_class": ifc_class}
-
-    ifc_class = settings["ifc_class"]
+    ifc_class = ifc_class
     # workaround for failing default argument in ifc2x3
     if file.schema == "IFC2X3" and ifc_class == "IfcDistributionSystem":
         ifc_class = "IfcSystem"

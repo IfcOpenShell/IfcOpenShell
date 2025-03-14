@@ -31,11 +31,8 @@ def unassign_reference(
     If the product isn't assigned to the reference, nothing will happen.
 
     :param reference: The IfcLibraryReference to unassign from
-    :type reference: ifcopenshell.entity_instance
     :param products: A list of IfcProduct elements to unassign from the reference
-    :type products: list[ifcopenshell.entity_instance]
     :return: None
-    :rtype: None
 
     Example:
 
@@ -58,24 +55,19 @@ def unassign_reference(
         # Let's change our mind and unassign it.
         ifcopenshell.api.library.unassign_reference(model, reference=reference, products=[ahu])
     """
-
-    settings = {"reference": reference, "products": products}
-
     # TODO: do we need to support non-ifcroot elements like we do in classification.add_reference?
 
     reference_rels: set[ifcopenshell.entity_instance] = set()
-    products = set(settings["products"])
-    for product in products:
+    products_set = set(products)
+    for product in products_set:
         reference_rels.update(product.HasAssociations)
 
     reference_rels = {
-        rel
-        for rel in reference_rels
-        if rel.is_a("IfcRelAssociatesLibrary") and rel.RelatingLibrary == settings["reference"]
+        rel for rel in reference_rels if rel.is_a("IfcRelAssociatesLibrary") and rel.RelatingLibrary == reference
     }
 
     for rel in reference_rels:
-        related_objects = set(rel.RelatedObjects) - products
+        related_objects = set(rel.RelatedObjects) - products_set
         if related_objects:
             rel.RelatedObjects = list(related_objects)
             ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})

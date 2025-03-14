@@ -31,12 +31,16 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Union
 
 
-def get_qto_rule(self, context):
+CALCULATOR_FUNCTION_ENUM_ITEMS: list[Union[tuple[str, str, str], None]] = []
+
+
+def get_qto_rule(self: "BIMQtoProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     ifc_file = tool.Ifc.get()
     is_ifc4x3 = ifc_file.schema == "IFC4X3"
-    results = []
+    results: list[tuple[str, str, str]] = []
     for rule_id, rule in ifc5d.qto.rules.items():
         if rule_id.startswith("IFC4X3") != is_ifc4x3:
             continue
@@ -44,14 +48,16 @@ def get_qto_rule(self, context):
     return results
 
 
-def get_calculator(self, context):
-    results = []
+def get_calculator(self: "BIMQtoProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    results: list[tuple[str, str, str]] = []
     for name, calculator in ifc5d.qto.calculators.items():
-        results.append((name, name, calculator.__doc__))
+        results.append((name, name, calculator.__doc__ or ""))
     return results
 
 
-def get_calculator_function(self, context):
+def get_calculator_function(
+    self: "BIMQtoProperties", context: bpy.types.Context
+) -> list[Union[tuple[str, str, str], None]]:
     global CALCULATOR_FUNCTION_ENUM_ITEMS
     calculator = ifc5d.qto.calculators[self.calculator]
     CALCULATOR_FUNCTION_ENUM_ITEMS = []
@@ -60,6 +66,8 @@ def get_calculator_function(self, context):
         measure = function.measure.split("Measure")[0][3:]
         if previous_measure is not None and measure != previous_measure:
             CALCULATOR_FUNCTION_ENUM_ITEMS.append(None)
+        description = function.description
+        description += f"\n\nInternal function id: '{function_id}'."
         CALCULATOR_FUNCTION_ENUM_ITEMS.append((function_id, f"{measure}: {function.name}", function.description))
         previous_measure = measure
     return CALCULATOR_FUNCTION_ENUM_ITEMS
@@ -80,3 +88,12 @@ class BIMQtoProperties(PropertyGroup):
         ),
         default=False,
     )
+
+    if TYPE_CHECKING:
+        qto_rule: str
+        calculator: str
+        calculator_function: str
+        qto_result: str
+        qto_name: str
+        prop_name: str
+        fallback: bool

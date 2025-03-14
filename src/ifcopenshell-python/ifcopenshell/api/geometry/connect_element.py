@@ -29,20 +29,14 @@ def connect_element(
     related_element: ifcopenshell.entity_instance,
     description: Optional[str] = None,
 ) -> ifcopenshell.entity_instance:
-    settings = {
-        "relating_element": relating_element,
-        "related_element": related_element,
-        "description": description,
-    }
-
     incompatible_connections = []
 
-    for rel in settings["relating_element"].ConnectedFrom:
-        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatingElement == settings["related_element"]:
+    for rel in relating_element.ConnectedFrom:
+        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatingElement == related_element:
             incompatible_connections.append(rel)
 
-    for rel in settings["related_element"].ConnectedTo:
-        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement == settings["relating_element"]:
+    for rel in related_element.ConnectedTo:
+        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement == relating_element:
             incompatible_connections.append(rel)
 
     if incompatible_connections:
@@ -52,15 +46,15 @@ def connect_element(
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
 
-    for rel in settings["relating_element"].ConnectedTo:
-        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement == settings["related_element"]:
-            rel.Description = settings["description"]
+    for rel in relating_element.ConnectedTo:
+        if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement == related_element:
+            rel.Description = description
             return rel
 
     return file.createIfcRelConnectsElements(
         ifcopenshell.guid.new(),
         OwnerHistory=ifcopenshell.api.owner.create_owner_history(file),
-        Description=settings["description"],
-        RelatingElement=settings["relating_element"],
-        RelatedElement=settings["related_element"],
+        Description=description,
+        RelatingElement=relating_element,
+        RelatedElement=related_element,
     )

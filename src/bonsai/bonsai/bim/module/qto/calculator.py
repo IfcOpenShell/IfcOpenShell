@@ -76,6 +76,7 @@ def get_length(o: bpy.types.Object, vg_index: Optional[int] = None) -> float:
             return max(y, z)
 
     length = 0
+    assert isinstance(o.data, bpy.types.Mesh)
     edges = [
         e
         for e in o.data.edges
@@ -269,6 +270,7 @@ def get_net_perimeter(o: bpy.types.Object) -> float:
 
 def get_gross_perimeter(o: bpy.types.Object) -> float:
     element = tool.Ifc.get_entity(o)
+    assert element
     mesh = get_gross_element_mesh(element)
     gross_obj = bpy.data.objects.new("GrossObj", mesh)
     gross_perimeter = get_net_perimeter(gross_obj)
@@ -420,6 +422,7 @@ def get_gross_footprint_area(o: bpy.types.Object) -> float:
         return get_net_footprint_area(o)
 
     element = tool.Ifc.get_entity(o)
+    assert element
     mesh = get_gross_element_mesh(element)
     gross_obj = bpy.data.objects.new("GrossObj", mesh)
     gross_footprint_area = get_net_footprint_area(gross_obj)
@@ -474,6 +477,7 @@ def get_gross_surface_area(o: bpy.types.Object, vg_index: Optional[int] = None) 
             return get_net_surface_area(o)
 
         element = tool.Ifc.get_entity(o)
+        assert element
         mesh = get_gross_element_mesh(element)
         area = get_mesh_area(mesh)
         bpy.data.meshes.remove(mesh)
@@ -506,6 +510,7 @@ def is_polygon_in_vg(polygon: bpy.types.MeshPolygon, vertices_in_vg: list[bpy.ty
 
 
 def get_net_volume(o: bpy.types.Object) -> float:
+    assert isinstance(o.data, bpy.types.Mesh)
     o_mesh = bmesh.new()
     o_mesh.from_mesh(o.data)
     volume = o_mesh.calc_volume()
@@ -518,6 +523,7 @@ def get_gross_volume(o: bpy.types.Object) -> float:
         return get_net_volume(o)
 
     element = tool.Ifc.get_entity(o)
+    assert element
     mesh = get_gross_element_mesh(element)
     bm = get_bmesh_from_mesh(mesh)
 
@@ -562,6 +568,7 @@ def get_net_weight(obj: bpy.types.Object) -> Union[float, None]:
 
 def get_obj_mass_density(obj: bpy.types.Object) -> Union[float, None]:
     entity = tool.Ifc.get_entity(obj)
+    assert entity
     material = ifcopenshell.util.element.get_material(entity)
     if material is None:
         return
@@ -764,6 +771,7 @@ def get_outer_surface_area(obj: bpy.types.Object) -> float:
 
 def get_end_area(obj: bpy.types.Object) -> float:
     element = tool.Ifc.get_entity(obj)
+    assert element
     gross_mesh = get_gross_element_mesh(element)
     gross_obj = bpy.data.objects.new("MyObject", gross_mesh)
 

@@ -31,11 +31,8 @@ def unassign_process(
     See ifcopenshell.api.sequence.assign_process for details.
 
     :param relating_process: The IfcTask in the relationship.
-    :type relating_process: ifcopenshell.entity_instance
     :param related_object: The related object.
-    :type related_object: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -59,13 +56,8 @@ def unassign_process(
         # Change our mind.
         ifcopenshell.api.sequence.unassign_process(model, relating_process=task, related_object=wall)
     """
-    settings = {
-        "relating_process": relating_process,
-        "related_object": related_object,
-    }
-
-    for rel in settings["related_object"].HasAssignments or []:
-        if not rel.is_a("IfcRelAssignsToProcess") or rel.RelatingProcess != settings["relating_process"]:
+    for rel in related_object.HasAssignments or []:
+        if not rel.is_a("IfcRelAssignsToProcess") or rel.RelatingProcess != relating_process:
             continue
         if len(rel.RelatedObjects) == 1:
             history = rel.OwnerHistory
@@ -74,7 +66,7 @@ def unassign_process(
                 ifcopenshell.util.element.remove_deep2(file, history)
             return
         related_objects = list(rel.RelatedObjects)
-        related_objects.remove(settings["related_object"])
+        related_objects.remove(related_object)
         rel.RelatedObjects = related_objects
         ifcopenshell.api.owner.update_owner_history(file, element=rel)
         return rel

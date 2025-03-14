@@ -30,11 +30,16 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import multiprocessing
-from collections import namedtuple, defaultdict
-from typing import Any, Literal, get_args, Union, Iterable
+from collections import defaultdict
+from typing import Any, Literal, get_args, Union, Iterable, NamedTuple
 
 
-Function = namedtuple("Function", ["measure", "name", "description"])
+class Function(NamedTuple):
+    measure: str
+    name: str
+    description: str
+
+
 RULE_SET = Literal[
     "IFC4QtoBaseQuantities",
     "IFC4QtoBaseQuantitiesBlender",
@@ -161,7 +166,23 @@ class IteratorForTypes:
         return True
 
 
-class IfcOpenShell:
+class QtoCalculator:
+    """Abstract class for Qto calculators."""
+
+    functions: dict[str, Function]
+
+    @classmethod
+    def calculate(
+        cls,
+        ifc_file: ifcopenshell.file,
+        elements: set[ifcopenshell.entity_instance],
+        qtos: dict[str, dict[str, Union[str, None]]],
+        results: ResultsDict,
+    ) -> None:
+        raise NotImplementedError
+
+
+class IfcOpenShell(QtoCalculator):
     """Calculates Model body context geometry using the default IfcOpenShell
     iterator on triangulation elements."""
 
@@ -221,13 +242,7 @@ class IfcOpenShell:
         functions[f"net_{k}"] = Function(v.measure, f"Net {v.name}", v.description)
 
     @classmethod
-    def calculate(
-        cls,
-        ifc_file: ifcopenshell.file,
-        elements: set[ifcopenshell.entity_instance],
-        qtos: dict[str, dict[str, Union[str, None]]],
-        results: ResultsDict,
-    ) -> None:
+    def calculate(cls, ifc_file, elements, qtos, results):
         formula_functions: dict[str, types.FunctionType] = {}
 
         cls.gross_settings = ifcopenshell.geom.settings()
@@ -327,9 +342,10 @@ class IfcOpenShell:
             return max([x, y, z])
 
 
-class Blender:
+class Blender(QtoCalculator):
     """Calculates geometry based on currently loaded Blender objects."""
 
+    # Implementations are located in bonsai.bim.module.qto.calculator.
     functions = {
         # IfcLengthMeasure
         "get_covering_width": Function("IfcLengthMeasure", "Covering Width", ""),
@@ -372,13 +388,8 @@ class Blender:
         "get_net_weight": Function("IfcMassMeasure", "Net Weight", ""),
     }
 
-    @staticmethod
-    def calculate(
-        ifc_file: ifcopenshell.file,
-        elements: set[ifcopenshell.entity_instance],
-        qtos: dict[str, dict[str, Union[str, None]]],
-        results: ResultsDict,
-    ) -> None:
+    @classmethod
+    def calculate(cls, ifc_file, elements, qtos, results):
         import bonsai.tool as tool
         import bonsai.bim.module.qto.calculator as calculator
 
@@ -406,4 +417,7 @@ class Blender:
                 results[element] = element_results
 
 
-calculators = {"Blender": Blender, "IfcOpenShell": IfcOpenShell}
+calculators: dict[str, type[QtoCalculator]] = {
+    "Blender": Blender,
+    "IfcOpenShell": IfcOpenShell,
+}

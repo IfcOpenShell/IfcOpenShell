@@ -54,7 +54,7 @@ class StructuralToolUI:
     @classmethod
     def draw(cls, context, layout):
         cls.layout = layout
-        # cls.props = context.scene.BIMStructuralProperties
+        cls.props = tool.Structural.get_structural_props()
 
         row = cls.layout.row(align=True)
         if not tool.Ifc.get():
@@ -99,12 +99,12 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         return operator.description or ""
 
     def _execute(self, context):
-        # self.props = context.scene.BIMStructuralProperties
+        # self.props = tool.Structural.get_structural_props()
         getattr(self, f"hotkey_{self.hotkey}")()
 
     def invoke(self, context, event):
         # https://blender.stackexchange.com/questions/276035/how-do-i-make-operators-remember-their-property-values-when-called-from-a-hotkey
-        # self.props = context.scene.BIMStructuralProperties
+        # self.props = tool.Structural.get_structural_props()
         return self.execute(context)
 
     def draw(self, context):

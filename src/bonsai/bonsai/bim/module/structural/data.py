@@ -59,7 +59,7 @@ class LoadGroupDecorationData:
             return ret
 
         m = models[0]
-        props = bpy.context.scene.BIMStructuralProperties
+        props = tool.Structural.get_structural_props()
         if props.activity_type == "Action":
             groups = m.LoadedBy or []
             for g in groups:
@@ -128,7 +128,8 @@ class ConnectedStructuralMembersData:
         if not element:
             return []
         results = []
-        props = bpy.context.active_object.BIMStructuralProperties
+        assert obj
+        props = tool.Structural.get_object_structural_props(obj)
         for rel in element.ConnectsStructuralMembers or []:
             condition = rel.AppliedCondition
             if condition:
@@ -257,7 +258,7 @@ class StructuralLoadCasesData:
 
     @classmethod
     def applicable_structural_loads(cls):
-        props = bpy.context.scene.BIMStructuralProperties
+        props = tool.Structural.get_structural_props()
         results = []
         for load in tool.Ifc.get().by_type("IfcStructuralLoad"):
             if not load.Name or not load.is_a(props.applicable_structural_load_types):
