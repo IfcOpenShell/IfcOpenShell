@@ -20,7 +20,7 @@ RocksDbSerializer::RocksDbSerializer(IfcParse::IfcFile* file, const std::string&
 void RocksDbSerializer::finalize()
 {
 	// Build a map of instances and their references/dependencies
-	std::map<uint32_t, std::set<uint32_t>> dependencies;
+	std::map<uint32_t, std::set<uint32_t>> dependencies, dependencies_inv;
 	std::visit([&dependencies](const auto& m) {
 		if constexpr (std::is_same_v<std::decay_t<decltype(m)>, IfcParse::impl::in_memory_file_storage>) {
 			for (const auto& ps : m.byref_excl_) {
@@ -33,6 +33,12 @@ void RocksDbSerializer::finalize()
 	// Add bottom-rank nodes, inv mapping does not contain them
 	for (const auto& p : *file_) {
 		dependencies[p.first];
+	}
+
+	for (auto& ps : dependencies) {
+		for (auto& p : ps.second) {
+			dependencies_inv[p].insert(ps.first);
+		}
 	}
 
 	// Do a topological sort over the nodes
@@ -57,9 +63,12 @@ void RocksDbSerializer::finalize()
 		for (auto& i : no_deps) {
 			dependencies.erase(i);
 		}
-		for (auto& p : dependencies) {
-			for (auto& i : no_deps) {
-				p.second.erase(i);
+		for (auto& i : no_deps) {
+			for (auto& j : dependencies_inv[i]) {
+				auto it = dependencies.find(j);
+				if (it != dependencies.end()) {
+					it->second.erase(i);
+				}
 			}
 		}
 	}
