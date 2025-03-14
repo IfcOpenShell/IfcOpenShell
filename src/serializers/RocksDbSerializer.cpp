@@ -15,6 +15,11 @@ RocksDbSerializer::RocksDbSerializer(IfcParse::IfcFile* file, const std::string&
 	options.merge_operator.reset(new ConcatenateIdMergeOperator());
 	rocksdb::Status status = rocksdb::DB::Open(options, rocksdb_filename, &db_);*/
 	output_file_ = new IfcParse::IfcFile(file_->schema(), IfcParse::FT_ROCKSDB, rocksdb_filename_);
+
+	// We promise never to add the same instance twice
+	output_file_->check_existance_before_adding = false;
+	// We only copy one file into an empty container so units will match
+	output_file_->calculate_unit_factors = false;
 }
 
 void RocksDbSerializer::finalize()
@@ -74,11 +79,7 @@ void RocksDbSerializer::finalize()
 	}
 
 	// Add them in topological order, so that add() never recurses into something not previously visited
-	size_t n = 0;
 	for (auto& i : deps_topo_order) {
-		if (((n++) % 1000) == 0) {
-			std::wcout << n * 100 / deps_topo_order.size() << "%";
-		}
 		output_file_->addEntity(file_->instance_by_id(i), i);
 	}
 
