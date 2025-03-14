@@ -348,13 +348,15 @@ class Blender(QtoCalculator):
     # Implementations are located in bonsai.bim.module.qto.calculator.
     functions = {
         # IfcLengthMeasure
+        "get_x": Function("IfcLengthMeasure", "X", ""),
+        "get_y": Function("IfcLengthMeasure", "Y", ""),
+        "get_z": Function("IfcLengthMeasure", "Z", ""),
         "get_covering_width": Function("IfcLengthMeasure", "Covering Width", ""),
         "get_finish_ceiling_height": Function("IfcLengthMeasure", "Finish Ceiling Height", ""),
         "get_finish_floor_height": Function("IfcLengthMeasure", "Finish Floor Height", ""),
         "get_gross_perimeter": Function("IfcLengthMeasure", "Gross Perimeter", ""),
         "get_height": Function("IfcLengthMeasure", "Height", ""),
         "get_length": Function("IfcLengthMeasure", "Length", ""),
-        "get_x": Function("IfcLengthMeasure", "Length", ""),
         "get_opening_depth": Function("IfcLengthMeasure", "Opening Depth", ""),
         "get_opening_height": Function("IfcLengthMeasure", "Opening Height", ""),
         "get_rectangular_perimeter": Function("IfcLengthMeasure", "Rectangular Perimeter", ""),
