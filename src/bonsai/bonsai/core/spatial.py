@@ -121,11 +121,6 @@ def import_spatial_decomposition(spatial: tool.Spatial) -> None:
     spatial.import_spatial_decomposition()
 
 
-def create_orientation_slots(ifc: tool.Ifc, spatial: tool.Spatial) -> None:
-    products = ifc.get().by_type("IfcSpatialElement")
-    spatial.create_orientation_slots(products, use=False)
-
-
 def set_orientation_slot(spatial: tool.Spatial, product: ifcopenshell.entity_instance) -> None:
     spatial.create_orientation_slots([product], use=True)
 

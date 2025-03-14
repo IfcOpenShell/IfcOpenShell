@@ -239,7 +239,6 @@ class ImportSpatialDecomposition(bpy.types.Operator):
 
     def execute(self, context):
         core.import_spatial_decomposition(tool.Spatial)
-        core.create_orientation_slots(ifc=tool.Ifc, spatial=tool.Spatial)
         return {"FINISHED"}
 
 
