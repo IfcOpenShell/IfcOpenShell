@@ -73,7 +73,9 @@ namespace {
             return array_.storage_ptr->index(index_);
         } else {
             std::string str;
-            array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (is_entity ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str);
+            if (!array_.db_ptr->db->Get(rocksdb::ReadOptions{}, (is_entity ? "i|" : "t|") + std::to_string(instance_name_) + "|" + std::to_string(index_), &str).ok()) {
+                return TypeEncoder::encode_type<boost::blank>() - 'A';
+            }
             return (size_t) str[0] - 'A';
         }
     }

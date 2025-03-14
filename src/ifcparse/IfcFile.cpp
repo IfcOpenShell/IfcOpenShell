@@ -344,7 +344,7 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::rocksdb_instance_i
 }
 */
 
-const IfcParse::declaration* IfcParse::impl::rocks_db_file_storage::rocksdb_types_iterator::operator*() const {
+IfcParse::impl::rocks_db_file_storage::rocksdb_types_iterator::value_type const& IfcParse::impl::rocks_db_file_storage::rocksdb_types_iterator::operator*() const {
     return storage_->file->schema()->declarations()[*read_id_()];
 }
 

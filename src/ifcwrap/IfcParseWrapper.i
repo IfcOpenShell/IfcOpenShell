@@ -29,6 +29,13 @@ private:
 %ignore IfcParse::IfcFile::schema;
 %ignore IfcParse::IfcFile::begin;
 %ignore IfcParse::IfcFile::end;
+%ignore IfcParse::IfcFile::types_begin;
+%ignore IfcParse::IfcFile::types_end;
+%ignore IfcParse::IfcFile::internal_guid_map;
+%ignore IfcParse::IfcFile::storage_;
+
+%ignore in_memory_file_storage;
+%ignore rocks_db_file_storage;
 
 %ignore parse_context;
 
@@ -154,7 +161,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	std::vector<unsigned> entity_names() const {
 		std::vector<unsigned> keys;
 		keys.reserve(std::distance($self->begin(), $self->end()));
-		for (IfcParse::IfcFile::entity_by_id_t::const_iterator it = $self->begin(); it != $self->end(); ++ it) {
+		for (auto it = $self->begin(); it != $self->end(); ++ it) {
 			keys.push_back(it->first);
 		}
 		return keys;
@@ -286,7 +293,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	}
 
 	AttributeValue get_argument(unsigned i) {
-		return $self->data().get_attribute_value(i);
+		return $self->get_attribute_value(i);
 	}
 
 	AttributeValue get_argument(const std::string& a) {
@@ -294,7 +301,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		if (i == -1) {
 			throw std::runtime_error("Attribute '" + a + "' not found on entity named " + $self->declaration().name());
 		}
-		return $self->data().get_attribute_value((unsigned)i);
+		return $self->get_attribute_value((unsigned)i);
 	}
 
 	bool __eq__(IfcUtil::IfcBaseClass* other) const {
@@ -595,7 +602,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	IfcUtil::IfcBaseClass* new_IfcBaseClass(const std::string& schema_identifier, const std::string& name) {
 		const IfcParse::schema_definition* schema = IfcParse::schema_by_name(schema_identifier);
 		const IfcParse::declaration* decl = schema->declaration_by_name(name);
-        IfcEntityInstanceData data(storage_t(decl->as_entity() ? decl->as_entity()->attribute_count() : 1));
+        IfcEntityInstanceData data(in_memory_attribute_storage(decl->as_entity() ? decl->as_entity()->attribute_count() : 1));
 		auto inst = schema->instantiate(decl, std::move(data));
 		if (auto entinst = inst->as<IfcUtil::IfcBaseEntity>()) {
             entinst->populate_derived();
@@ -763,8 +770,8 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 
 	// @todo refactor this to remove duplication with the typemap. 
 	// except this is calls the above function in case of instances.
-	PyObject* convert_cpp_attribute_to_python(AttributeValue arg, bool include_identifier = true) {
-		return arg.array_->apply_visitor([include_identifier](auto& v){
+	PyObject* convert_cpp_attribute_to_python(IfcUtil::IfcBaseClass* instance, size_t attribute_index, bool include_identifier = true) {
+		return instance->get_attribute_value(attribute_index).apply_visitor([include_identifier](const auto& v){
 			using U = std::decay_t<decltype(v)>;
             if constexpr (is_std_vector_v<U>) {
 				return pythonize_vector(v);
@@ -802,7 +809,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
             } else {
 				return pythonize(v);
 			}
-		}, arg.index_);
+		});
 	}
 %}
 %inline %{
@@ -819,7 +826,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 				auto attr_type = *dit
 					? IfcUtil::Argument_DERIVED
 					: IfcUtil::from_parameter_type((*it)->type_of_attribute());
-				auto value_cpp = v->data().get_attribute_value(std::distance(attrs.begin(), it));
+				auto value_cpp = v->get_attribute_value(std::distance(attrs.begin(), it));
 				auto value_py = convert_cpp_attribute_to_python(value_cpp, include_identifier);
 				PyDict_SetItem(d, name_py, value_py);
 				Py_DECREF(name_py);
@@ -836,7 +843,7 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 		} else {
 			const std::string& name_cpp = "wrappedValue";
 			auto name_py = pythonize(name_cpp);
-			auto value_cpp = v->data().get_attribute_value(0);
+			auto value_cpp = v->get_attribute_value(0);
 			auto value_py = convert_cpp_attribute_to_python(value_cpp, include_identifier);
 			PyDict_SetItem(d, name_py, value_py);
 			Py_DECREF(name_py);
