@@ -304,7 +304,9 @@ class IfcOpenShell(QtoCalculator):
                         results[element].setdefault(name, {})
                         for quantity, formula in quantities.items():
                             if formula == "get_segment_length":
-                                results[element][name][quantity] = cls.get_segment_length(element)
+                                value = cls.get_segment_length(element)
+                                if value is None:
+                                    continue
                             elif formula == "get_weight":
                                 value = cls.get_weight(element, geometry)
                                 if value is None:
@@ -334,7 +336,13 @@ class IfcOpenShell(QtoCalculator):
         return iterators
 
     @classmethod
-    def get_segment_length(cls, element: ifcopenshell.entity_instance) -> float:
+    def get_segment_length(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+        """Get segment length.
+
+        :param element: IFC element entity.
+        :return: ``float`` segment length in project units
+            or ``None`` if element doesn't have a representation or it's not supported.
+        """
         rep = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if rep and len(rep.Items or []) == 1 and rep.Items[0].is_a("IfcExtrudedAreaSolid"):
             item = rep.Items[0]
