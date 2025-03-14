@@ -127,7 +127,7 @@ class CalculateSingleQuantity(bpy.types.Operator, tool.Ifc.Operator):
         import ifc5d.qto
 
         props = tool.Qto.get_qto_props()
-        elements = set()
+        elements: set[ifcopenshell.entity_instance] = set()
         for obj in tool.Blender.get_selected_objects(include_active=False):
             element = tool.Ifc.get_entity(obj)
             if element:
@@ -144,6 +144,10 @@ class CalculateSingleQuantity(bpy.types.Operator, tool.Ifc.Operator):
         ifc_file = tool.Ifc.get()
         results = ifc5d.qto.quantify(ifc_file, elements, rules)
         ifc5d.qto.edit_qtos(ifc_file, results)
+
+        not_quantified_elements = elements - set(results.keys())
+        not_quantified_message = tool.Qto.get_not_quantified_elements_message(not_quantified_elements)
+        self.report({"INFO"}, f"Quantity was calculated for {len(elements)} elements.{not_quantified_message}")
         return {"FINISHED"}
 
 
@@ -190,14 +194,6 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
             alternative_rules = next(rule for rule in ifc5d.qto.rules if rule != props.qto_rule)
             not_quantified_elements = run_quantification(alternative_rules, not_quantified_elements)
 
-        not_quantified_message = ""
-        if not_quantified_elements:
-            print("Elements that were not quantified:")
-            for element in not_quantified_elements:
-                print(f"- {element}")
-            not_quantified_message = (
-                f" {len(not_quantified_elements)} of them were not quantified, see system console for the details."
-            )
-
+        not_quantified_message = tool.Qto.get_not_quantified_elements_message(not_quantified_elements)
         self.report({"INFO"}, f"Quantities are calculated for {len(elements)} elements.{not_quantified_message}")
         return {"FINISHED"}

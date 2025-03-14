@@ -167,3 +167,15 @@ class Qto(bonsai.core.tool.Qto):
                             }
                         )
         return result
+
+    @classmethod
+    def get_not_quantified_elements_message(cls, not_quantified_elements: set[ifcopenshell.entity_instance]) -> str:
+        not_quantified_message = ""
+        if not_quantified_elements:
+            print("Elements that were not quantified:")
+            for element in not_quantified_elements:
+                print(f"- {element}")
+            not_quantified_message = (
+                f" {len(not_quantified_elements)} of them were not quantified, see system console for the details."
+            )
+        return not_quantified_message
