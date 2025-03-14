@@ -1252,8 +1252,8 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
         # add ports and connect them
         ports = tool.System.get_ports(tool.Ifc.get_entity(fitting_obj))
-        start_co = ifcopenshell.util.placement.get_local_placement(start_port.ObjectPlacement)[:,3]
-        port0_co = ifcopenshell.util.placement.get_local_placement(ports[0].ObjectPlacement)[:,3]
+        start_co = ifcopenshell.util.placement.get_local_placement(start_port.ObjectPlacement)[:, 3]
+        port0_co = ifcopenshell.util.placement.get_local_placement(ports[0].ObjectPlacement)[:, 3]
         # We cannot use start_port_match because tool.System.get_ports is unordered
         if not np.allclose(start_co, port0_co):
             start_port, end_port = end_port, start_port

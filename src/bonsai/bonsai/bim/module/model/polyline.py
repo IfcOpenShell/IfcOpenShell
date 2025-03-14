@@ -850,7 +850,6 @@ class PolylineOperator:
                 tool.Polyline.remove_last_polyline_point()
                 tool.Blender.update_viewport()
 
-
     def handle_snap_selection(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         if not self.tool_state.is_input_on and event.value == "PRESS" and event.type == "M":
             self.snapping_points = tool.Snap.modify_snapping_point_selection(

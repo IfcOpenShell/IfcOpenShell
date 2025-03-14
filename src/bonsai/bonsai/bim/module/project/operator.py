@@ -2718,7 +2718,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
 
         custom_instructions = {
             "Select Face": {"icons": True, "keys": ["MOUSE_LMB"]},
-            "Deselect Face": {"icons": True, "keys": ["EVENT_SHIFT", "MOUSE_LMB"]}
+            "Deselect Face": {"icons": True, "keys": ["EVENT_SHIFT", "MOUSE_LMB"]},
         }
         custom_info = []
         self.handle_instructions(context, custom_instructions, custom_info, overwrite=True)
