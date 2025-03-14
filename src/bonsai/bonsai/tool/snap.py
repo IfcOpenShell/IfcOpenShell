@@ -243,13 +243,18 @@ class Snap(bonsai.core.tool.Snap):
     def mix_snap_and_axis(cls, snap_point, axis_start, axis_end):
         # Creates a mixed snap point between the locked axis and the object snap
         # Then it sorts them to get the shortest first
-        x_axis = tool.Polyline.use_transform_orientations(Vector((1, 0, 0)))
-        y_axis = tool.Polyline.use_transform_orientations(Vector((0, 1, 0)))
-        z_axis = tool.Polyline.use_transform_orientations(Vector((0, 0, 1)))
         intersections = []
-        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point, x_axis))
-        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point, y_axis))
-        intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point, z_axis))
+        if snap_point["type"] == "Face":
+            face_normal = snap_point["object"].rotation_euler.to_matrix() @ snap_point["object"].data.polygons[snap_point["face_index"]].normal
+            if face_normal.z == 0:
+                intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point["point"], face_normal.normalized()))
+        if not intersections:
+            x_axis = tool.Polyline.use_transform_orientations(Vector((1, 0, 0)))
+            y_axis = tool.Polyline.use_transform_orientations(Vector((0, 1, 0)))
+            z_axis = tool.Polyline.use_transform_orientations(Vector((0, 0, 1)))
+            intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point["point"], x_axis))
+            intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point["point"], y_axis))
+            intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point["point"], z_axis))
 
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
@@ -517,7 +522,7 @@ class Snap(bonsai.core.tool.Snap):
                 if point["type"] == "Axis":
                     if ordered_snaps[0]["type"] not in {"Axis", "Plane"}:
                         obj = ordered_snaps[0]["object"]
-                        mixed_snap = cls.mix_snap_and_axis(ordered_snaps[0]["point"], axis_start, axis_end)
+                        mixed_snap = cls.mix_snap_and_axis(ordered_snaps[0], axis_start, axis_end)
                         for mixed_point in mixed_snap:
                             snap_point = {
                                 "point": mixed_point,
