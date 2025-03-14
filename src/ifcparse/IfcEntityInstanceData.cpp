@@ -351,6 +351,26 @@ bool impl::deserialize(IfcParse::impl::rocks_db_file_storage*, const std::string
 }
 
 template<typename T>
+bool rocks_db_attribute_storage::has(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index) const
+{
+    // @todo unify with other implementation functions
+    const bool is_header = decl->schema() == &Header_section_schema::get_schema();
+    IfcParse::impl::rocks_db_file_storage* rdb_storage = (IfcParse::impl::rocks_db_file_storage*)storage;
+    std::string v;
+    auto success = rdb_storage->db->Get(
+        rocksdb::ReadOptions{},
+        (is_header ? "h|" : (decl->as_entity() ? "i|" : "t|")) +
+        (is_header ? decl->name() : std::to_string(identity)) + "|" +
+        std::to_string(index), &v);
+    if constexpr (std::is_same_v<std::decay_t<T>, Blank>) {
+        if (!success.ok()) {
+            return true;
+        }
+    }
+    return v.size() && v[0] == TypeEncoder::encode_type<T>();
+}
+
+template<typename T>
 void rocks_db_attribute_storage::set(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index, const T& value)
 {
     const bool is_header = decl->schema() == &Header_section_schema::get_schema();
@@ -386,3 +406,28 @@ template void rocks_db_attribute_storage::set<aggregate_of_aggregate_of_instance
 template void rocks_db_attribute_storage::set<Derived>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const Derived& value);
 template void rocks_db_attribute_storage::set<empty_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const empty_aggregate_t& value);
 template void rocks_db_attribute_storage::set<empty_aggregate_of_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index, const empty_aggregate_of_aggregate_t& value);
+
+
+
+template bool rocks_db_attribute_storage::has<Blank>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<int>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<bool>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<boost::logic::tribool>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<double>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<std::string>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<boost::dynamic_bitset<>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<EnumerationReference>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<IfcUtil::IfcBaseClass*>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<std::vector<int>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<std::vector<double>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<std::vector<std::string>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<std::vector<boost::dynamic_bitset<>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<aggregate_of_instance::ptr>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<std::vector<std::vector<int>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<std::vector<std::vector<double>>>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<aggregate_of_aggregate_of_instance::ptr>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+
+// @todo why do these need to be included, but are not in BaseEntity::set()?
+template bool rocks_db_attribute_storage::has<Derived>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<empty_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
+template bool rocks_db_attribute_storage::has<empty_aggregate_of_aggregate_t>(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const;
