@@ -36,6 +36,7 @@ class ShowLoads(bpy.types.Operator):
 
     bl_idname = "bim.show_loads"
     bl_label = "Show Loads in 3D View"
+    bl_options = {"REGISTER", "UNDO"}
 
     def modal(self, context, event):
         if event.type == "F5":
