@@ -662,7 +662,7 @@ class PolylineOperator:
                 tool.Blender.update_viewport()
 
     def handle_instructions(
-        self, context: bpy.types.Context, custom_instructions: dict = {}, custom_info: str = ""
+        self, context: bpy.types.Context, custom_instructions: dict = {}, custom_info: str = "", overwrite: bool = False
     ) -> None:
         self.info = [
             f"Axis: {self.tool_state.axis_method}",
@@ -670,8 +670,11 @@ class PolylineOperator:
             f"Snap: {self.snapping_points[0]['type']}",
         ]
         instructions = self.instructions | custom_instructions if custom_instructions else self.instructions
-
         infos = self.info + custom_info if custom_info else self.info
+
+        if overwrite:
+            instructions = custom_instructions
+            infos = custom_info
 
         def draw_instructions(self: bpy.types.Header, context: bpy.types.Context) -> None:
             for action, settings in instructions.items():
@@ -683,10 +686,10 @@ class PolylineOperator:
                     key = settings["keys"][0]
                     self.layout.label(text=key + action)
 
-            self.layout.label(text="|")
-
-            for info in infos:
-                self.layout.label(text=info)
+            if infos:
+                self.layout.label(text="|")
+                for info in infos:
+                    self.layout.label(text=info)
 
         context.workspace.status_text_set(draw_instructions)
 

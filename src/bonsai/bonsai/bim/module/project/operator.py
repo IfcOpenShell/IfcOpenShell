@@ -2716,6 +2716,13 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
         PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
         tool.Blender.update_viewport()
 
+        custom_instructions = {
+            "Select Face": {"icons": True, "keys": ["MOUSE_LMB"]},
+            "Deselect Face": {"icons": True, "keys": ["EVENT_SHIFT", "MOUSE_LMB"]}
+        }
+        custom_info = []
+        self.handle_instructions(context, custom_instructions, custom_info, overwrite=True)
+
         if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
             self.handle_mouse_move(context, event)
             return {"PASS_THROUGH"}
@@ -2757,6 +2764,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
 
         if event.value == "RELEASE" and event.type in {"ESC", "RIGHTMOUSE"}:
             bpy.context.scene.BIMPolylineProperties.insertion_polyline.clear()
+            context.workspace.status_text_set(text=None)
             PolylineDecorator.uninstall()
             FaceAreaDecorator.uninstall()
             tool.Blender.update_viewport()
