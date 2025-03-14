@@ -1741,8 +1741,10 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
     if (id != -1) {
         bool id_already_exists = false;
         try {
-            instance_by_id(id);
-            id_already_exists = true;
+            if (check_existance_before_adding) {
+                instance_by_id(id);
+                id_already_exists = true;
+            }
         } catch (...) {}
         if (id_already_exists) {
             throw IfcParse::IfcException("An instance with id " + boost::lexical_cast<std::string>(id) + " is already part of this file");
@@ -1846,7 +1848,7 @@ IfcUtil::IfcBaseClass* IfcFile::addEntity(IfcUtil::IfcBaseClass* entity, int id)
         
         // In case an entity is added that contains geometry, the unit
         // information needs to be accounted for for IfcLengthMeasures.
-        double conversion_factor = std::numeric_limits<double>::quiet_NaN();
+        double conversion_factor = calculate_unit_factors ? std::numeric_limits<double>::quiet_NaN() : 1.0;
 
         for (size_t i = 0; i < (new_entity->declaration().as_entity() ? new_entity->declaration().as_entity()->attribute_count() : 1); ++i) {
             // old attribute value

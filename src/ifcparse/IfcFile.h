@@ -616,6 +616,10 @@ public:
     using const_iterator = variant_iterator<impl::in_memory_file_storage::iterator, impl::rocks_db_file_storage::const_iterator>;
     using type_iterator = variant_iterator<impl::in_memory_file_storage::type_iterator, impl::rocks_db_file_storage::rocksdb_types_iterator>;
     using storage_t = std::variant<std::monostate, impl::in_memory_file_storage, impl::rocks_db_file_storage>;
+
+    bool check_existance_before_adding = true;
+    bool calculate_unit_factors = true;
+
     // @todo temporarily public for header
     storage_t storage_;
 private:
