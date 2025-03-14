@@ -100,18 +100,15 @@ typedef boost::mpl::vector<
 struct parent_curve_function {
     parent_curve_function() = default;
     parent_curve_function(const parent_curve_function&) = default;
-    parent_curve_function(std::function<Eigen::Matrix4d(double)> fn) : fn_(fn) {
-    }
-
-    parent_curve_function& operator=(std::function<Eigen::Matrix4d(double)> fn) {
-        fn_ = fn;
-        return *this;
+    parent_curve_function(std::function<Eigen::Matrix4d(double)> fn, std::function<Eigen::Matrix4d(double)> cfn) : fn_(fn), cfn_(cfn) {
     }
 
     virtual Eigen::Matrix4d operator()(double u) const { return fn_(u); }
+    virtual Eigen::Matrix4d curvature(double u) const { return cfn_(u); }
 
     private:
     std::function<Eigen::Matrix4d(double)> fn_;
+    std::function<Eigen::Matrix4d(double)> cfn_;
 };
 
 struct polynomial_parent_curve : public parent_curve_function {
@@ -142,7 +139,7 @@ struct curve_segment_function {
     Eigen::Matrix4d operator()(double u) const {
         Eigen::Matrix4d parent_curve_point = (*parent_curve_fn_)(u);
         Eigen::Matrix4d curve_segment_point = curve_segment_placement_ * remove_parent_curve_rotation_ * remove_parent_curve_translation_ * parent_curve_point;
-        return curve_segment_point;
+        return curve_segment_point + parent_curve_fn_->curvature(u);
     }
 
   private:
@@ -167,7 +164,7 @@ struct cant_curve_segment_function {
         Eigen::Matrix4d parent_curve_point = (*parent_curve_fn_)(u);
         Eigen::Matrix4d cant_increment = parent_curve_point - parent_curve_start_point_;
         Eigen::Matrix4d curve_segment_point = curve_segment_placement_ + cant_increment;
-        return curve_segment_point;
+        return curve_segment_point + parent_curve_fn_->curvature(u);
     }
 
   private:
@@ -246,7 +243,7 @@ class curve_segment_evaluator {
             Logger::Error(std::runtime_error("multiple uses of IfcSegmentCurve not supported"), inst_);
         }
 
-        segment_type_ = is_horizontal ? ST_HORIZONTAL : is_vertical ? ST_VERTICAL : ST_CANT;
+        segment_type_ = is_horizontal ? ST_HORIZONTAL : is_vertical ? ST_VERTICAL : is_cant  ? ST_CANT : ST_HORIZONTAL;
 
 
         start_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentStart()) * length_unit;
@@ -336,7 +333,7 @@ class curve_segment_evaluator {
         }
     }
 
-    void set_spiral_function(double s, std::function<double(double)> fnX, std::function<double(double)> fnY) {
+    void set_spiral_function(double s, std::function<double(double)> fnX, std::function<double(double)> fnY, std::function<double(double)> curvature) {
         if (segment_type_ == ST_HORIZONTAL || segment_type_ == ST_VERTICAL) {
             // start of trimmed curve
             double pcStartX = 0.0, pcStartY = 0.0;
@@ -381,24 +378,32 @@ class curve_segment_evaluator {
                  };
             }
 
-            parent_curve_fn_ = std::make_shared<spiral_parent_curve>([start=start_, s, convert_u, fnX, fnY](double u) {
-                u = convert_u(u+start);
+            parent_curve_fn_ = std::make_shared<spiral_parent_curve>(
+               [start=start_, s, convert_u, fnX, fnY](double u)->Eigen::Matrix4d {
+                   u = convert_u(u+start);
 
-                // integration limits, integrate from a to b
-                auto b = s ? u / s : 0.0;
+                   // integration limits, integrate from a to b
+                   auto b = s ? u / s : 0.0;
 
-                // point on parent curve
-                auto x = boost::math::quadrature::trapezoidal(fnX, 0.0, b);
-                auto y = boost::math::quadrature::trapezoidal(fnY, 0.0, b);
-                auto dx = s ? fnX(b) / s : 1.0;
-                auto dy = s ? fnY(b) / s : 0.0;
+                   // point on parent curve
+                   auto x = boost::math::quadrature::trapezoidal(fnX, 0.0, b);
+                   auto y = boost::math::quadrature::trapezoidal(fnY, 0.0, b);
+                   auto dx = s ? fnX(b) / s : 1.0;
+                   auto dy = s ? fnY(b) / s : 0.0;
 
-                Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-                m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
-                m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
-                m.col(3) = Eigen::Vector4d(x, y, 0, 1);
-                return m;
-            });
+                   Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+                   m.col(0) = Eigen::Vector4d(dx, dy, 0, 0);
+                   m.col(1) = Eigen::Vector4d(-dy, dx, 0, 0);
+                   m.col(3) = Eigen::Vector4d(x, y, 0, 1);
+                   return m;
+               },
+                [start = start_, convert_u, curvature](double u) -> Eigen::Matrix4d {
+                    u = convert_u(u + start);
+                    Eigen::Matrix4d c = Eigen::Matrix4d::Zero();
+                    c(3, 0) = curvature(u);
+                    return c;
+               }
+            );
 
             if (segment_type_ == ST_VERTICAL) {
                // for vertical, the input curve length is measured along the spiral.
@@ -428,10 +433,16 @@ class curve_segment_evaluator {
             }
         } else if (segment_type_ == ST_CANT) {
             Logger::Error(std::runtime_error("Unexpected segment type encountered - cant is handled in set_cant_spiral_function - should never get here"));
-            parent_curve_fn_ = std::make_shared<parent_curve_function>([](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
+            parent_curve_fn_ = std::make_shared<parent_curve_function>(
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); }
+             );
         } else {
             Logger::Error(std::runtime_error("Unexpected segment type encountered"));
-            parent_curve_fn_ = std::make_shared<parent_curve_function>([](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
+            parent_curve_fn_ = std::make_shared<parent_curve_function>(
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); }
+            );
         }
     }
 
@@ -450,33 +461,40 @@ class curve_segment_evaluator {
         auto end_cant = Cant(/* start_ + */ length_);
         auto delta_cant = end_cant - start_cant;
 
-       parent_curve_fn_ = std::make_shared<spiral_parent_curve>([start_angle,delta_angle,start_cant,delta_cant,Superelevation, SuperelevationSlope, Cant](double u) -> Eigen::Matrix4d {
-           // departure of the curve segment from the base curve (superelevation)
-           auto super_elevation = Superelevation(u);
-           auto slope = SuperelevationSlope(u);
+       parent_curve_fn_ = std::make_shared<spiral_parent_curve>(
+          [start_angle,delta_angle,start_cant,delta_cant,Superelevation, SuperelevationSlope, Cant](double u) -> Eigen::Matrix4d {
+              // departure of the curve segment from the base curve (superelevation)
+              auto super_elevation = Superelevation(u);
+              auto slope = SuperelevationSlope(u);
 
-           // direction along curve segment
-           auto angle = atan(slope);
-           auto dx = cos(angle);
-           auto dy = sin(angle);
-           Eigen::Vector4d ref_dir(dx, dy, 0.0, 0.0);
+              // direction along curve segment
+              auto angle = atan(slope);
+              auto dx = cos(angle);
+              auto dy = sin(angle);
+              Eigen::Vector4d ref_dir(dx, dy, 0.0, 0.0);
 
-           // tilt angle in the plane of the cross section
-           auto cant = Cant(u);
-           auto tilt_angle = start_angle + delta_angle * (cant - start_cant) / delta_cant;
-           Eigen::Vector4d z(0.0, cos(tilt_angle), sin(tilt_angle), 0.0);
+              // tilt angle in the plane of the cross section
+              auto cant = Cant(u);
+              auto tilt_angle = start_angle + delta_angle * (cant - start_cant) / delta_cant;
+              Eigen::Vector4d z(0.0, cos(tilt_angle), sin(tilt_angle), 0.0);
 
-           // compute axis direction
-           Eigen::Vector4d y = z.cross3(ref_dir);
-           Eigen::Vector4d axis = ref_dir.cross3(y);
+              // compute axis direction
+              Eigen::Vector4d y = z.cross3(ref_dir);
+              Eigen::Vector4d axis = ref_dir.cross3(y);
 
-           Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-           m.col(0) = ref_dir;
-           m.col(1) = y;
-           m.col(2) = axis;
-           m.col(3) = Eigen::Vector4d(u, super_elevation, 0.0, 1.0);
-           return m;
-        });
+              Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+              m.col(0) = ref_dir;
+              m.col(1) = y;
+              m.col(2) = axis;
+              m.col(3) = Eigen::Vector4d(u, super_elevation, 0.0, 1.0);
+              return m;
+          },
+          [Cant](double u) -> Eigen::Matrix4d {
+                Eigen::Matrix4d c = Eigen::Matrix4d::Zero();
+                c(3, 0) = Cant(u);
+                return c;
+          }
+        );
 
         parent_curve_start_point_ = (*parent_curve_fn_)(0.0);
     }
@@ -526,7 +544,8 @@ class curve_segment_evaluator {
             auto s = fabs(A * sqrt(PI)); // curve length when u = 1.0
             auto fn_x = [A, s](double t) -> double { return A ? s * cos(PI * A * t * t / (2 * fabs(A))) : 0.0; };
             auto fn_y = [A, s](double t) -> double { return A ? s * sin(PI * A * t * t / (2 * fabs(A))) : 0.0; };
-            set_spiral_function(s, fn_x, fn_y);
+            auto curvature = [A](double t) -> double { return A ? A * t / fabs(A * A * A) : 0.0; };
+            set_spiral_function(s, fn_x, fn_y, curvature);
         }
     }
 #endif
@@ -548,8 +567,13 @@ class curve_segment_evaluator {
             };
             auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
             auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
+            auto curvature = [constant_term, cosine_term, L](double t) -> double {
+                auto a0 = constant_term.has_value() ? L / constant_term.value() : 0.0;
+                auto a1 = (L / cosine_term) * cos((PI / L) * t);
+                return a0 + a1;
+            };
             double s = 1.0;
-            set_spiral_function(s, fn_x, fn_y);
+            set_spiral_function(s, fn_x, fn_y, curvature);
         } else if (segment_type_ == ST_CANT) {
             boost::optional<std::function<double(double)>> super, slope;
             std::tie(super, slope) = get_superelevation_functions();
@@ -574,10 +598,16 @@ class curve_segment_evaluator {
             set_cant_spiral_function(*super, *slope, cant);
         } else if (segment_type_ == ST_VERTICAL) {
             Logger::Error(std::runtime_error("IfcCosineSpiral cannot be used for vertical alignment"));
-            parent_curve_fn_ = std::make_shared<parent_curve_function>([](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
+            parent_curve_fn_ = std::make_shared<parent_curve_function>(
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); }
+            );
         } else {
             Logger::Error(std::runtime_error("Unexpected segment type encountered"));
-            parent_curve_fn_ = std::make_shared<parent_curve_function>([](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
+            parent_curve_fn_ = std::make_shared<parent_curve_function>(
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); }
+            );
         }
     }
 #endif
@@ -603,8 +633,14 @@ class curve_segment_evaluator {
             };
             auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
             auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
+            auto curvature = [constant_term, linear_term, sine_term, L](double t) -> double {
+                auto a0 = constant_term.has_value() ? L / constant_term.value() : 0.0;
+                auto a1 = linear_term.has_value() ? sign(linear_term.value()) * pow(L / linear_term.value(), 2.0)*(t/L) : 0.0;
+                auto a2 = (L / sine_term) * sin(2 * PI * t / L);
+                return a0 + a1 + a2;
+            };
             double s = 1.0;
-            set_spiral_function(s, fn_x, fn_y);
+            set_spiral_function(s, fn_x, fn_y, curvature);
         } else if (segment_type_ == ST_CANT) {
             boost::optional<std::function<double(double)>> super, slope;
             std::tie(super, slope) = get_superelevation_functions();
@@ -631,16 +667,20 @@ class curve_segment_evaluator {
             set_cant_spiral_function(*super, *slope, cant);
         } else if (segment_type_ == ST_VERTICAL) {
             Logger::Error(std::runtime_error("IfcSineSpiral cannot be used for vertical alignment"));
-            parent_curve_fn_ = std::make_shared<parent_curve_function>([](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
+            parent_curve_fn_ = std::make_shared<parent_curve_function>(
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         } else {
             Logger::Error(std::runtime_error("Unexpected segment type encountered"));
-            parent_curve_fn_ = std::make_shared<parent_curve_function>([](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
+            parent_curve_fn_ = std::make_shared<parent_curve_function>(
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         }
     }
 #endif
 
     void polynomial_spiral(boost::optional<double> A0, boost::optional<double> A1, boost::optional<double> A2, boost::optional<double> A3, boost::optional<double> A4, boost::optional<double> A5, boost::optional<double> A6, boost::optional<double> A7) {
-        auto theta = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_ * length_unit_, lu = length_unit_](double t) {
+        auto theta = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_ * length_unit_, lu = length_unit_](double t) -> double {
             auto a0 = A0.has_value() ? t / (A0.value() * lu) : 0.0;
             auto a1 = A1.has_value() ? A1.value() * lu * std::pow(t, 2) / (2 * fabs(std::pow(A1.value() * lu, 3))) : 0.0;
             auto a2 = A2.has_value() ? std::pow(t, 3) / (3 * std::pow(A2.value() * lu, 3)) : 0.0;
@@ -655,15 +695,31 @@ class curve_segment_evaluator {
         auto fn_x = [theta](double t) -> double { return cos(theta(t)); };
         auto fn_y = [theta](double t) -> double { return sin(theta(t)); };
 
+
+        // this is same as cant function in polynomial_cant_spiral
+        auto curvature = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_, L = length_, lu = length_unit_, length = length_](double t) -> double {
+            t += start;
+            auto a0 = A0.has_value() ? 1 / (A0.value() * lu) : 0.0;
+            auto a1 = A1.has_value() ? A1.value() * lu * t / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
+            auto a2 = A2.has_value() ? std::pow(t, 2) / std::pow(A2.value() * lu, 3) : 0.0;
+            auto a3 = A3.has_value() ? A3.value() * lu * std::pow(t, 3) / fabs(std::pow(A3.value() * lu, 5)) : 0.0;
+            auto a4 = A4.has_value() ? std::pow(t, 4) / std::pow(A4.value() * lu, 5) : 0.0;
+            auto a5 = A5.has_value() ? A5.value() * lu * std::pow(t, 5) / fabs(std::pow(A5.value() * lu, 7)) : 0.0;
+            auto a6 = A6.has_value() ? std::pow(t, 6) / std::pow(A6.value() * lu, 7) : 0.0;
+            auto a7 = A7.has_value() ? A7.value() * lu * std::pow(t, 7) / fabs(std::pow(A7.value() * lu, 9)) : 0.0;
+            return L * (a0 + a1 + a2 + a3 + a4 + a5 + a6 + a7);
+        };
+
+
         double s = 1.0;
-        set_spiral_function(s, fn_x, fn_y);
+        set_spiral_function(s, fn_x, fn_y, curvature);
     }
 
     void polynomial_cant_spiral(boost::optional<double> A0, boost::optional<double> A1, boost::optional<double> A2, boost::optional<double> A3, boost::optional<double> A4, boost::optional<double> A5, boost::optional<double> A6, boost::optional<double> A7) {
         boost::optional<std::function<double(double)>> super, slope;
         std::tie(super, slope) = get_superelevation_functions();
 
-        auto cant = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_, L = length_, lu = length_unit_, length = length_](double t) {
+        auto cant = [A0, A1, A2, A3, A4, A5, A6, A7, start = start_, L = length_, lu = length_unit_, length = length_](double t) -> double {
             t += start;
             auto a0 = A0.has_value() ? 1 / (A0.value() * lu) : 0.0;
             auto a1 = A1.has_value() ? A1.value() * lu * t / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
@@ -681,7 +737,7 @@ class curve_segment_evaluator {
         }
 
         if (!slope.has_value()) {
-            slope = [A1, A2, A3, A4, A5, A6, A7, start = start_, L = length_, lu = length_unit_, length = length_](double t) {
+            slope = [A1, A2, A3, A4, A5, A6, A7, start = start_, L = length_, lu = length_unit_, length = length_](double t) -> double {
                 t += start;
                 auto a1 = A1.has_value() ? A1.value() * lu / fabs(std::pow(A1.value() * lu, 3)) : 0.0;
                 auto a2 = A2.has_value() ? 2 * t / std::pow(A2.value() * lu, 3) : 0.0;
@@ -813,29 +869,36 @@ class curve_segment_evaluator {
                 };
             }
 
-            parent_curve_fn_ = std::make_shared<circle_parent_curve>([segment_type = segment_type_, R, pcCenterX, pcCenterY, start_angle, sign_l, convert_u](double u) {
-                u = convert_u(u);
+            parent_curve_fn_ = std::make_shared<circle_parent_curve>(
+               [segment_type = segment_type_, R, pcCenterX, pcCenterY, start_angle, sign_l, convert_u](double u)->Eigen::Matrix4d {
+                   u = convert_u(u);
 
-                // u is measured along the circle
-                // angle from the X=0 axis to the current point
-                auto delta = R ? sign_l * u / R : 0.0;
-                auto sweep_angle = start_angle + delta;
-                auto cos_sweep_angle = cos(sweep_angle);
-                auto sin_sweep_angle = sin(sweep_angle);
+                   // u is measured along the circle
+                   // angle from the X=0 axis to the current point
+                   auto delta = R ? sign_l * u / R : 0.0;
+                   auto sweep_angle = start_angle + delta;
+                   auto cos_sweep_angle = cos(sweep_angle);
+                   auto sin_sweep_angle = sin(sweep_angle);
 
-                // point on the parent curve
-                auto pcX = R * cos_sweep_angle + pcCenterX;
-                auto pcY = R * sin_sweep_angle + pcCenterY;
+                   // point on the parent curve
+                   auto pcX = R * cos_sweep_angle + pcCenterX;
+                   auto pcY = R * sin_sweep_angle + pcCenterY;
 
-                auto pcDx = -sign_l * sin_sweep_angle;
-                auto pcDy =  sign_l * cos_sweep_angle;
+                   auto pcDx = -sign_l * sin_sweep_angle;
+                   auto pcDy =  sign_l * cos_sweep_angle;
 
-                Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-                m.col(0) = Eigen::Vector4d(pcDx, pcDy, 0, 0);
-                m.col(1) = Eigen::Vector4d(-pcDy, pcDx, 0, 0);
-                m.col(3) = Eigen::Vector4d(pcX, pcY, 0.0, 1.0);
-                return m;
-            });
+                   Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+                   m.col(0) = Eigen::Vector4d(pcDx, pcDy, 0, 0);
+                   m.col(1) = Eigen::Vector4d(-pcDy, pcDx, 0, 0);
+                   m.col(3) = Eigen::Vector4d(pcX, pcY, 0.0, 1.0);
+                   return m;
+               },
+               [R](double) -> Eigen::Matrix4d {
+                    Eigen::Matrix4d c = Eigen::Matrix4d::Zero();
+                    c(3, 0) = 1 / R;
+                    return c;
+               }
+            );
 
             if (segment_type_ == ST_HORIZONTAL) {
                 parent_curve_start_point_ = (*parent_curve_fn_)(start_);
@@ -865,10 +928,14 @@ class curve_segment_evaluator {
 
         } else if (segment_type_ == ST_CANT) {
             Logger::Warning(std::runtime_error("Use of IfcCircle for cant is not supported"));
-            parent_curve_fn_ = std::make_shared<parent_curve_function>([](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
+            parent_curve_fn_ = std::make_shared<parent_curve_function>(
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         } else {
             Logger::Error(std::runtime_error("Unexpected segment type encountered"));
-            parent_curve_fn_ = std::make_shared<parent_curve_function>([](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
+            parent_curve_fn_ = std::make_shared<parent_curve_function>(
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         }
     }
     
@@ -916,23 +983,32 @@ class curve_segment_evaluator {
               convert_u = [pcDx](double u) { return u/pcDx; };
           }
 
-          parent_curve_fn_ = std::make_shared<line_parent_curve>([pcX, pcY, pcDx, pcDy, convert_u](double u) {
-              u = convert_u(u);
+          parent_curve_fn_ = std::make_shared<line_parent_curve>(
+              [pcX, pcY, pcDx, pcDy, convert_u](double u)->Eigen::Matrix4d {
+                  u = convert_u(u);
 
-              auto x = pcX + pcDx * u;
-              auto y = pcY + pcDy * u;
+                  auto x = pcX + pcDx * u;
+                  auto y = pcY + pcDy * u;
 
-              Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-              m.col(0) = Eigen::Vector4d(pcDx, pcDy, 0, 0);
-              m.col(1) = Eigen::Vector4d(-pcDy, pcDx, 0, 0);
-              m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
-              return m;
-          });
+                  Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+                  m.col(0) = Eigen::Vector4d(pcDx, pcDy, 0, 0);
+                  m.col(1) = Eigen::Vector4d(-pcDy, pcDx, 0, 0);
+                  m.col(3) = Eigen::Vector4d(x, y, 0.0, 1.0);
+                  return m;
+              },
+              [](double /*u*/) -> Eigen::Matrix4d {
+                  // curvature is zero for a line. identity initializes c(3,0) = 0
+                  Eigen::Matrix4d c = Eigen::Matrix4d::Zero();
+                  return c;
+              }
+          );
 
           parent_curve_start_point_ = (*parent_curve_fn_)(start_);
        } else {
-            Logger::Warning(std::runtime_error("Unexpected segment type encountered"));
-           parent_curve_fn_ = std::make_shared<parent_curve_function>([](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
+           Logger::Warning(std::runtime_error("Unexpected segment type encountered"));
+           parent_curve_fn_ = std::make_shared<parent_curve_function>(
+               [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
+               [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
        }
     }
 
@@ -1022,50 +1098,62 @@ class curve_segment_evaluator {
             }
 
             // This functor evaluates the polynomial at a distance u along the curve
-            parent_curve_fn_ = std::make_shared<polynomial_parent_curve>([start = start_, lu = length_unit_, coeffX, coeffY, convert_u](double u)->Eigen::Matrix4d {
-                auto x = convert_u(u + start); // find x for u
-                // evaluate the polynomial at x
-                std::array<const std::vector<double>*, 2> coefficients{&coeffX, &coeffY};
-                std::array<double, 2> position{0.0, 0.0}; // = SUM(coeff*u^pos)
-                std::array<double, 2> slope{0.0, 0.0};    // slope is derivative of the curve = SUM( coeff*pos*u^(pos-1) )
-                for (int i = 0; i < 2; i++) {             // loop over X and Y
-                    auto begin = coefficients[i]->cbegin();
-                    auto end = coefficients[i]->cend();
-                    for (auto iter = begin; iter != end; iter++) {
-                        auto exp = std::distance(begin, iter);
-                        auto coeff = (*iter);
-                        position[i] += coeff * pow(lu, 1-exp) * pow(x, exp);
+            parent_curve_fn_ = std::make_shared<polynomial_parent_curve>(
+                     [start = start_, lu = length_unit_, coeffX, coeffY, convert_u](double u)->Eigen::Matrix4d {
+                     auto x = convert_u(u + start); // find x for u
+                     // evaluate the polynomial at x
+                     std::array<const std::vector<double>*, 2> coefficients{&coeffX, &coeffY};
+                     std::array<double, 2> position{0.0, 0.0}; // = SUM(coeff*u^pos)
+                     std::array<double, 2> slope{0.0, 0.0};    // slope is derivative of the curve = SUM( coeff*pos*u^(pos-1) )
+                     for (int i = 0; i < 2; i++) {             // loop over X and Y
+                         auto begin = coefficients[i]->cbegin();
+                         auto end = coefficients[i]->cend();
+                         for (auto iter = begin; iter != end; iter++) {
+                             auto exp = std::distance(begin, iter);
+                             auto coeff = (*iter);
+                             position[i] += coeff * pow(lu, 1-exp) * pow(x, exp);
 
-                        if (iter != begin) {
-                            slope[i] += exp * coeff * pow(lu, 1-exp) * pow(x, exp - 1);
-                        }
-                    }
+                             if (iter != begin) {
+                                 slope[i] += exp * coeff * pow(lu, 1-exp) * pow(x, exp - 1);
+                             }
+                         }
+                     }
+
+                     auto X = position[0];
+                     auto Y = position[1];
+
+                     auto Dx = slope[0];
+                     auto Dy = slope[1];
+
+                     auto angle = atan2(Dy, Dx);
+                     Dx = cos(angle);
+                     Dy = sin(angle);
+
+                     Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
+                     m.col(0) = Eigen::Vector4d(Dx, Dy, 0, 0);
+                     m.col(1) = Eigen::Vector4d(-Dy, Dx, 0, 0);
+                     m.col(3) = Eigen::Vector4d(X, Y, 0.0, 1.0);
+                     return m;
+                },
+                [start = start_, lu = length_unit_, coeffX, coeffY, convert_u](double u) -> Eigen::Matrix4d { 
+                     auto x = convert_u(u + start); // find x for u
+                    Eigen::Matrix4d c = Eigen::Matrix4d::Zero();
+                    c(3, 0) = coeffY[2]; // this may need a unit conversion (also assume there is only 3 coefficients)
+                     return c;
                 }
-
-                auto X = position[0];
-                auto Y = position[1];
-
-                auto Dx = slope[0];
-                auto Dy = slope[1];
-
-                auto angle = atan2(Dy, Dx);
-                Dx = cos(angle);
-                Dy = sin(angle);
-
-                Eigen::Matrix4d m = Eigen::Matrix4d::Identity();
-                m.col(0) = Eigen::Vector4d(Dx, Dy, 0, 0);
-                m.col(1) = Eigen::Vector4d(-Dy, Dx, 0, 0);
-                m.col(3) = Eigen::Vector4d(X, Y, 0.0, 1.0);
-                return m;
-            });
+            );
 
             parent_curve_start_point_ = (*parent_curve_fn_)(0.0); // start is added to u in parent_curve_fn_, so use 0.0 here
         } else if (segment_type_ == ST_CANT) {
             Logger::Warning(std::runtime_error("Use of IfcPolynomialCurve for cant is not supported"));
-            parent_curve_fn_ = std::make_shared<parent_curve_function>([](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
+            parent_curve_fn_ = std::make_shared<parent_curve_function>(
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         } else {
             Logger::Error(std::runtime_error("Unexpected segment type encountered"));
-            parent_curve_fn_ = std::make_shared<parent_curve_function>([](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
+            parent_curve_fn_ = std::make_shared<parent_curve_function>(
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); },
+                [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         }
     }
 };

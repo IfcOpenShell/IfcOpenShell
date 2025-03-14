@@ -7,16 +7,9 @@
 
 namespace ifcopenshell { namespace geometry {
 
-/// @brief Computes the curve length of a polynomial of the form y = A + Bx + Cx^2
-///    This function is needed on the python side. To do this computation, a large library like scipy
-///    is needed. That is too much overhead. For this reason, a simple function is here on the C++ side
-///    that the python side can call
-/// @param A constant term
-/// @param B linear term
-/// @param C quadradic term
-/// @param horizontal_length length of the polynomal projected onto the horizontal axis
-/// @return curve length
-double polynomial_length(double A, double B, double C,double horizontal_length);
+/// @brief Computes a point on a helmert curve at s.
+/// Returns (x,y,theta) at L/2. The results are in a vector so they can be returned to python
+std::vector<double> helmert_curve_point(double A0, double A1, double A2, double s);
 
 /// @brief Abstract class for evaluating a function_item. This class is specialized for each of the function_item types.
 struct fn_evaluator {
@@ -66,7 +59,7 @@ class function_item_evaluator {
 
     /// @brief evaluates the function at u
     /// @param u u is constrained to be between start_ and start_+length
-    /// @return 4x4 placement matrix
+    /// @return 4x4 placement matrix. Curvature values for horizontal, vertical, and vertical + cant are stored in the last row.
     Eigen::Matrix4d evaluate(double u) const;
 
   private:

@@ -68,6 +68,7 @@ SETTING = Literal[
     "building-local-placement",
     "cgal-original-edges",
     "circle-segments",
+    "compute-curvature",
     "context-identifiers",
     "context-ids",
     "context-types",
