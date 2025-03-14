@@ -388,6 +388,25 @@ class Blender(QtoCalculator):
         "get_net_weight": Function("IfcMassMeasure", "Net Weight", ""),
     }
 
+    description_populated = False
+
+    @classmethod
+    def populate_descriptions(cls) -> None:
+        """Populate the descriptions based on the function docstrings.
+
+        The action is postponed to ensure ifc5d package works without Blender.
+        """
+        if cls.description_populated:
+            return
+
+        import bonsai.bim.module.qto.calculator as calculator
+
+        for function in cls.functions:
+            doc = getattr(calculator, function).__doc__ or ""
+            doc = doc[: doc.find(":param")].strip()
+            old_function = cls.functions[function]
+            cls.functions[function] = Function(old_function.measure, old_function.name, doc)
+
     @classmethod
     def calculate(cls, ifc_file, elements, qtos, results):
         import bonsai.tool as tool

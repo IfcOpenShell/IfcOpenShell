@@ -36,14 +36,17 @@ VectorTuple = tuple[float, float, float]
 
 
 def get_x(o: bpy.types.Object) -> float:
+    """Calculate the length along the local X axis."""
     return o.bound_box[6][0] - o.bound_box[0][0]
 
 
 def get_y(o: bpy.types.Object) -> float:
+    """Calculate the length along the local Y axis."""
     return o.bound_box[6][1] - o.bound_box[0][1]
 
 
 def get_z(o: bpy.types.Object) -> float:
+    """Calculate the length along the local Z axis."""
     return o.bound_box[6][2] - o.bound_box[0][2]
 
 
@@ -64,6 +67,7 @@ def get_linear_length(o: bpy.types.Object) -> float:
 
 
 def get_length(o: bpy.types.Object, vg_index: Optional[int] = None) -> float:
+    """Calculate the object length trying to guess the main axis."""
     if vg_index is None:
         x = get_x(o)
         y = get_y(o)
@@ -158,6 +162,8 @@ def get_covering_width(obj: bpy.types.Object) -> float:
 def get_width(o: bpy.types.Object) -> float:
     """_summary_: Returns the width of the object bounding box
 
+    Min value between X and Y axes lengths.
+
     :param blender-object o: blender object
     :return float: width
     """
@@ -168,6 +174,8 @@ def get_width(o: bpy.types.Object) -> float:
 
 def get_height(o: bpy.types.Object) -> float:
     """_summary_: Returns the height of the object bounding box
+
+    Based on the the length along the local Z axis.
 
     :param blender-object o: blender object
     :return float: height
@@ -549,6 +557,7 @@ def get_obj_decompositions(obj: bpy.types.Object) -> set[ifcopenshell.entity_ins
 
 
 def get_gross_weight(obj: bpy.types.Object) -> Union[float, None]:
+    """Get gross weight of the object (based on gross volume and Pset_MaterialCommon.MassDensity)"""
     obj_mass_density = get_obj_mass_density(obj)
     if not obj_mass_density:
         return
@@ -558,6 +567,7 @@ def get_gross_weight(obj: bpy.types.Object) -> Union[float, None]:
 
 
 def get_net_weight(obj: bpy.types.Object) -> Union[float, None]:
+    """Get net weight of the object (based on net volume and Pset_MaterialCommon.MassDensity)"""
     obj_mass_density = get_obj_mass_density(obj)
     if not obj_mass_density:
         return
@@ -567,6 +577,7 @@ def get_net_weight(obj: bpy.types.Object) -> Union[float, None]:
 
 
 def get_obj_mass_density(obj: bpy.types.Object) -> Union[float, None]:
+    """Calculate object mass density based on Pset_MaterialCommon.MassDensity."""
     entity = tool.Ifc.get_entity(obj)
     assert entity
     material = ifcopenshell.util.element.get_material(entity)

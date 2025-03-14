@@ -58,6 +58,10 @@ def get_calculator_function(
 ) -> list[Union[tuple[str, str, str], None]]:
     global CALCULATOR_FUNCTION_ENUM_ITEMS
     calculator = ifc5d.qto.calculators[self.calculator]
+
+    if calculator is ifc5d.qto.Blender:
+        calculator.populate_descriptions()
+
     CALCULATOR_FUNCTION_ENUM_ITEMS = []
     previous_measure = None
     for function_id, function in calculator.functions.items():
