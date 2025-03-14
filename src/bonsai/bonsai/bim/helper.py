@@ -276,14 +276,15 @@ def get_display_value(value: str, float_decimal_precision: int = 6) -> str:
     """
     This will get rid of the floating point precision artifacts in float values stored as a string
     """
+    fvalue = value
     try:
         digits = len(value.split(".")[1])
         fvalue = float(value)
         if digits > float_decimal_precision:  # Maximal decimal float precision
-            value = round(fvalue, float_decimal_precision)
+            fvalue = round(fvalue, float_decimal_precision)
     except (ValueError, IndexError):  # Not castable to a float or no decimal places (eg integer)
         pass
-    return str(value)
+    return str(fvalue)
 
 
 def prop_with_search(
