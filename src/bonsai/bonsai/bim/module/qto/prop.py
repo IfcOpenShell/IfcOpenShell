@@ -74,7 +74,14 @@ def get_calculator_function(
 class BIMQtoProperties(PropertyGroup):
     qto_rule: EnumProperty(items=get_qto_rule, name="Qto Rule")
     calculator: EnumProperty(items=get_calculator, name="Calculator")
-    calculator_function: EnumProperty(items=get_calculator_function, name="Calculator Function")
+    calculator_function: EnumProperty(
+        items=get_calculator_function,
+        name="Calculator Function",
+        description=(
+            "Gross functions calculate the measure for the original element's geometry, without openings.\n"
+            "Net functions include the openings substractions.\n\nCurrently selected function"
+        ),
+    )
     qto_result: StringProperty(default="", name="Qto Result")
     qto_name: StringProperty(name="Qto Name", default="My_Qto")
     prop_name: StringProperty(name="Prop Name", default="MyDimension")
