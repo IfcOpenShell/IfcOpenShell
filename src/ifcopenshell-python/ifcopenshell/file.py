@@ -674,19 +674,7 @@ class file:
             model.write("path/to/model.anyextension", format=".ifcXML")
         """
         path = Path(path)
-
-        # Check if we have necessary write permissions
-        try:
-            path.parent.mkdir(parents=True, exist_ok=True)
-        except PermissionError:
-            raise PermissionError(f"No permission to create directories at '{path.parent}', check folder permissions.")
-
-        if path.exists():
-            if not os.access(path, os.W_OK):
-                raise PermissionError(f"No write permission for existing file '{path}', check file permissions.")
-        else:
-            if not os.access(path.parent, os.W_OK):
-                raise PermissionError(f"No write permission for directory '{path.parent}', check folder permissions.")
+        path.parent.mkdir(parents=True, exist_ok=True)
 
         if format == None:
             format = ifcopenshell.guess_format(path)
