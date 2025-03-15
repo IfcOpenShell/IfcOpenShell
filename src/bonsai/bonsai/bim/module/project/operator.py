@@ -2299,6 +2299,7 @@ class RefreshClippingPlanes(bpy.types.Operator):
 
     def __init__(self):
         self.total_planes = 0
+        self.camera = None
 
     def invoke(self, context, event):
         context.window_manager.modal_handler_add(self)
@@ -2311,9 +2312,14 @@ class RefreshClippingPlanes(bpy.types.Operator):
         self.clean_deleted_planes(context)
 
         for clipping_plane in props.clipping_planes:
-            if clipping_plane.obj and self.is_moved(clipping_plane.obj):
+            if clipping_plane.obj and tool.Ifc.is_moved(clipping_plane.obj, ifc_only=False):
                 should_refresh = True
                 break
+
+        if self.camera != context.scene.camera:
+            should_refresh = True
+        elif self.camera and tool.Ifc.is_moved(self.camera, ifc_only=False):
+            should_refresh = True
 
         total_planes = len(props.clipping_planes)
         if should_refresh or total_planes != self.total_planes:
@@ -2321,6 +2327,7 @@ class RefreshClippingPlanes(bpy.types.Operator):
             for clipping_plane in props.clipping_planes:
                 if clipping_plane.obj:
                     tool.Geometry.record_object_position(clipping_plane.obj)
+            self.camera = context.scene.camera
             self.total_planes = total_planes
         return {"PASS_THROUGH"}
 
@@ -2340,18 +2347,6 @@ class RefreshClippingPlanes(bpy.types.Operator):
             else:
                 break
 
-    def is_moved(self, obj: bpy.types.Object) -> bool:
-        props = tool.Blender.get_object_bim_props(obj)
-        if not props.location_checksum:
-            return True  # Let's be conservative
-        loc_check = np.frombuffer(eval(props.location_checksum))
-        rot_check = np.frombuffer(eval(props.rotation_checksum))
-        loc_real = np.array(obj.matrix_world.translation).flatten()
-        rot_real = np.array(obj.matrix_world.to_3x3()).flatten()
-        if np.allclose(loc_check, loc_real, atol=1e-4) and np.allclose(rot_check, rot_real, atol=1e-2):
-            return False
-        return True
-
     def refresh_clipping_planes(self, context):
         import bmesh
         from itertools import cycle
@@ -2360,8 +2355,9 @@ class RefreshClippingPlanes(bpy.types.Operator):
         region = next(r for r in area.regions if r.type == "WINDOW")
         data = region.data
 
+        camera = context.scene.camera
         props = tool.Project.get_project_props()
-        if not len(props.clipping_planes):
+        if not len(props.clipping_planes) and not camera:
             data.use_clip_planes = False
         else:
             with bpy.context.temp_override(area=area, region=region):
@@ -2389,6 +2385,14 @@ class RefreshClippingPlanes(bpy.types.Operator):
                     clip_plane = (normal.x, normal.y, normal.z, distance)
                     clip_planes.append(clip_plane)
                     bm.free()
+
+                if camera:
+                    normal = camera.matrix_world.col[2].to_3d()
+                    normal *= -1
+                    center = camera.matrix_world.translation
+                    distance = -center.dot(normal)
+                    clip_plane = (normal.x, normal.y, normal.z, distance)
+                    clip_planes.append(clip_plane)
 
                 clip_planes = cycle(clip_planes)
                 data.clip_planes = [tuple(next(clip_planes)) for i in range(0, 6)]

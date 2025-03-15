@@ -1801,7 +1801,6 @@ class CutDecorator:
                 )
                 edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
                 fill = bmesh.ops.edgenet_fill(bm_fill, edges=edges)
-                print("test FILL1", fill)
             if i != 0:
                 geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
                 bisect = bmesh.ops.bisect_plane(
@@ -1809,10 +1808,8 @@ class CutDecorator:
                 )
                 edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
                 fill = bmesh.ops.edgenet_fill(bm_fill, edges=edges)
-                print("test FILL2", fill)
 
             geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
-            print("gonna bisect mesh tris", geom)
             verts, tris = self.bisect_mesh_tris(obj, bm_fill, geom, context.scene.camera)
             DecoratorData.fill_cache[element_id].setdefault(colour, []).append((verts, tris))
 

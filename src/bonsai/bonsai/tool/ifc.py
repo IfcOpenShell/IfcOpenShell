@@ -83,12 +83,13 @@ class Ifc(bonsai.core.tool.Ifc):
         return (not ignore_scale and tool.Geometry.is_scaled(obj)) or obj in IfcStore.edited_objs
 
     @classmethod
-    def is_moved(cls, obj: bpy.types.Object) -> bool:
-        element = cls.get_entity(obj)
-        if not element and not tool.Geometry.is_representation_item(obj):
-            return False
-        if element and (element.is_a("IfcTypeProduct") or element.is_a("IfcProject")):
-            return False
+    def is_moved(cls, obj: bpy.types.Object, ifc_only: bool = True) -> bool:
+        if ifc_only:
+            element = cls.get_entity(obj)
+            if not element and not tool.Geometry.is_representation_item(obj):
+                return False
+            if element and (element.is_a("IfcTypeProduct") or element.is_a("IfcProject")):
+                return False
         oprops = tool.Blender.get_object_bim_props(obj)
         if not oprops.location_checksum:
             return True  # Let's be conservative
