@@ -204,6 +204,8 @@ class Raycast(bonsai.core.tool.Raycast):
                 }
                 points.append(snap_point)
             return points
+        if obj and obj.type == "CURVE":
+            obj = bpy.data.objects.new("new_object", obj.to_mesh().copy())
 
         if not custom_bmesh:
             bm = bmesh.new()

@@ -358,20 +358,13 @@ class Snap(bonsai.core.tool.Snap):
             face_index = result[2]
             if hit is not None:
                 # Wireframes
-                if snap_obj.type == "EMPTY" or (snap_obj.type == "MESH" and len(snap_obj.data.polygons) == 0):
+                if snap_obj.type in {"EMPTY", "CURVE"} or (snap_obj.type == "MESH" and len(snap_obj.data.polygons) == 0):
                     snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap_obj)
                     if snap_points:
                         for point in snap_points:
                             point["group"] = "Wireframe"
                             detected_snaps.append(point)
 
-                elif snap_obj.type == "CURVE":
-                    new_object = bpy.data.objects.new("new_object", obj.to_mesh().copy())
-                    snap_points = tool.Raycast.ray_cast_by_proximity(context, event, new_object)
-                    if snap_points:
-                        for point in snap_points:
-                            point["group"] = "Wireframe"
-                            detected_snaps.append(point)
                 # Meshes
                 else:
                     # Add face snap
