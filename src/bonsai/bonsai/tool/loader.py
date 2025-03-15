@@ -20,7 +20,6 @@ from __future__ import annotations
 import os
 import re
 import bpy
-import math
 import bmesh
 import logging
 import ifcopenshell.geom
@@ -36,6 +35,7 @@ import bonsai.bim.import_ifc
 import numpy as np
 import numpy.typing as npt
 from ifcopenshell.util.shape_builder import np_to_4d
+from math import atan, radians
 from mathutils import Vector, Matrix
 from pathlib import Path
 from typing import Union, Any, Optional
@@ -857,9 +857,9 @@ class Loader(bonsai.core.tool.Loader):
             camera.BIMCameraProperties.height = height
 
             if width > height:
-                fov = 2 * math.atan(width / (2 * abs_min_z))
+                fov = 2 * atan(width / (2 * abs_min_z))
             else:
-                fov = 2 * math.atan(height / (2 * abs_min_z))
+                fov = 2 * atan(height / (2 * abs_min_z))
 
             camera.angle = fov
 
@@ -1060,13 +1060,15 @@ class Loader(bonsai.core.tool.Loader):
         for i, material in enumerate(mesh.materials):
             if style := tool.Ifc.get_entity(material):
                 styles[style] = i
-        for layer in layer_set.MaterialLayers[:-1]:
+        last_i = len(layer_set.MaterialLayers) - 1
+        for i, layer in enumerate(layer_set.MaterialLayers):
             prev_co = co.copy()
             co += no * layer.LayerThickness * cls.unit_scale
-            bisect_geom = bmesh.ops.bisect_plane(
-                bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
-            )
-            bmesh.ops.duplicate(bm, geom=bisect_geom["geom_cut"])
+            if i != last_i:
+                bisect_geom = bmesh.ops.bisect_plane(
+                    bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
+                )
+                bmesh.ops.duplicate(bm, geom=bisect_geom["geom_cut"])
             if style := ifcopenshell.util.representation.get_material_style(layer.Material, body):
                 if (material_index := styles.get(style, None)) is None:
                     material_index = len(mesh.materials)
@@ -1078,19 +1080,8 @@ class Loader(bonsai.core.tool.Loader):
                             face.material_index = material_index
                             has_layer_styles = True
 
-        # Last layer
-        layer = layer_set.MaterialLayers[-1]
-        if style := ifcopenshell.util.representation.get_material_style(layer.Material, body):
-            if (material_index := styles.get(style, None)) is None:
-                material_index = len(mesh.materials)
-                mesh.materials.append(tool.Ifc.get_object(style))
-            for face in bisect_geom["geom"]:
-                if isinstance(face, bmesh.types.BMFace):
-                    center = face.calc_center_median()
-                    # if center.y > co.y:
-                    if (center - co).dot(no) >= 0:
-                        face.material_index = material_index
-                        has_layer_styles = True
+        bmesh.ops.dissolve_limit(bm, angle_limit=radians(1), verts=bm.verts, edges=bm.edges, delimit={"MATERIAL"})
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
 
         bm.to_mesh(mesh)
         bm.free()

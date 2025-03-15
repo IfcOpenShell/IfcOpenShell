@@ -38,15 +38,12 @@ import ifcopenshell.util.unit
 import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
-import bonsai.core.geometry as geometry
-from math import atan, cos, degrees, pi, inf
+from math import atan, cos, degrees, pi, radians
 from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
 from bonsai.bim import import_ifc
 
-# TODO: This line is somehow keeping the world from falling apart with a circular import error.
-from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import ShapeBuilder
@@ -2108,6 +2105,7 @@ class Model(bonsai.core.tool.Model):
 
         bm = bmesh.new()
         bm.from_mesh(obj.data)
+        bmesh.ops.dissolve_limit(bm, angle_limit=radians(1), verts=bm.verts, edges=bm.edges)
         bm.faces.ensure_lookup_table()
 
         clipping_bm = bmesh.new()
@@ -2117,7 +2115,7 @@ class Model(bonsai.core.tool.Model):
             face.normal_update()
             normal = face.normal.to_4d()
             normal.w = 0
-            if (obj.matrix_world @ normal).z >= 0:
+            if (obj.matrix_world @ normal).z >= -0.5:
                 continue
             new_verts = []
             for vert in face.verts:
@@ -2130,6 +2128,7 @@ class Model(bonsai.core.tool.Model):
         if not len(clipping_bm.faces):
             return
 
+        bmesh.ops.recalc_face_normals(clipping_bm, faces=clipping_bm.faces)
         return clipping_bm  # clipping_bm is in project units
 
     @classmethod
