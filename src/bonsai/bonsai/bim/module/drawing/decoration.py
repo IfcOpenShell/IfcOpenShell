@@ -1614,38 +1614,45 @@ class CutDecorator:
 
         self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
+        self.fallback_colour = (0.3, 0.3, 0.3, 1)
 
         all_vertices = []
         all_edges = []
         selected_vertices = []
         selected_edges = []
-        layer_vertices = []
-        layer_edges = []
         fills = {}
-        self.layer_fills = {}
         all_vertex_i_offset = 0
         selected_vertex_i_offset = 0
-        layer_vertex_i_offset = 0
 
         for obj in [o for o in bpy.context.visible_objects if o.type == "MESH"]:
-            verts, edges = self.decorate(context, obj)
-            if not verts:
+            if not (element := tool.Ifc.get_entity(obj)):
                 continue
+            self.decorate(context, obj, element)
 
-            obj_layer_verts, obj_layer_edges = self.slice_layersets(context, obj, verts, edges)
-            if obj_layer_verts:
-                layer_vertices.extend(obj_layer_verts)
-                layer_edges.extend([[vi + layer_vertex_i_offset for vi in e] for e in obj_layer_edges])
-                layer_vertex_i_offset += len(obj_layer_verts)
+            verts, edges = DecoratorData.cut_cache[element.id()]
+            if verts:
+                if obj.select_get():
+                    selected_vertices.extend(verts)
+                    selected_edges.extend([[vi + selected_vertex_i_offset for vi in e] for e in edges])
+                    selected_vertex_i_offset += len(verts)
+                else:
+                    all_vertices.extend(verts)
+                    all_edges.extend([[vi + all_vertex_i_offset for vi in e] for e in edges])
+                    all_vertex_i_offset += len(verts)
 
-            if obj.select_get():
-                selected_vertices.extend(verts)
-                selected_edges.extend([[vi + selected_vertex_i_offset for vi in e] for e in edges])
-                selected_vertex_i_offset += len(verts)
-            else:
-                all_vertices.extend(verts)
-                all_edges.extend([[vi + all_vertex_i_offset for vi in e] for e in edges])
-                all_vertex_i_offset += len(verts)
+            verts, edges = DecoratorData.slice_cache.get(element.id(), (None, None))
+            if verts:
+                if obj.select_get():
+                    selected_vertices.extend(verts)
+                    selected_edges.extend([[vi + selected_vertex_i_offset for vi in e] for e in edges])
+                    selected_vertex_i_offset += len(verts)
+                else:
+                    all_vertices.extend(verts)
+                    all_edges.extend([[vi + all_vertex_i_offset for vi in e] for e in edges])
+                    all_vertex_i_offset += len(verts)
+
+            for colour, element_fills in DecoratorData.fill_cache[element.id()].items():
+                fills.setdefault(colour, []).append(element_fills)
 
         gpu.state.point_size_set(1)
         gpu.state.blend_set("ALPHA")
@@ -1663,13 +1670,10 @@ class CutDecorator:
 
         black = (0, 0, 0, 1)
 
-        if layer_vertices:
-            self.draw_batch("LINES", layer_vertices, black, layer_edges)
-            self.draw_batch("POINTS", layer_vertices, black)
-
-        for colour, fills in self.layer_fills.items():
-            for fill in fills:
-                self.draw_batch("TRIS", fill[0], colour, fill[1])
+        for colour, element_fills in fills.items():
+            for verts_tris in element_fills:
+                for verts, tris in verts_tris:
+                    self.draw_batch("TRIS", verts, colour, tris)
 
         gpu.state.point_size_set(2)
         self.line_shader.uniform_float("lineWidth", 3.0)
@@ -1687,65 +1691,56 @@ class CutDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def decorate(self, context, obj):
-        element = tool.Ifc.get_entity(obj)
-        if not element:
-            return None, None
+    def decorate(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
+        has_cut_cache = element.id() in DecoratorData.cut_cache
+        has_fill_cache = element.id() in DecoratorData.fill_cache
 
-        # Currently selected objects shall not be cached as they may be being moved / edited.
-        # If the camera is selected, we also disable the cache as the user may be moving the camera.
-        if obj.select_get() or context.scene.camera.select_get():
-            verts, edges = None, None
-        else:
-            verts, edges = DecoratorData.cut_cache.get(element.id(), (None, None))
+        # Currently selected objects must be recalculated as they may be being moved / edited.
+        # If the camera is selected, we also recalculate as the user may be moving the camera.
 
-        if verts is False:
-            return None, None
-        elif verts:
-            return verts, edges
+        if not has_cut_cache or obj.select_get() or context.scene.camera.select_get():
+            self.recalculate_cut(context, obj, element)
+        if not has_fill_cache or obj.select_get() or context.scene.camera.select_get():
+            self.recalculate_fill(context, obj, element)
 
+    def recalculate_cut(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
         if not tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
             DecoratorData.cut_cache[element.id()] = (False, False)
-            return None, None
-
-        if verts is None:
+        else:
             verts, edges = tool.Drawing.bisect_mesh(obj, context.scene.camera)
             DecoratorData.cut_cache[element.id()] = (verts, edges)
-        return verts, edges
 
-    def slice_layersets(self, context, obj, cut_verts, cut_edges):
-        element = tool.Ifc.get_entity(obj)
-
-        # Currently selected objects shall not be cached as they may be being moved / edited.
-        # If the camera is selected, we also disable the cache as the user may be moving the camera.
-        if obj.select_get() or context.scene.camera.select_get():
-            verts, edges = None, None
-        else:
-            verts, edges = DecoratorData.layerset_cache.get(element.id(), (None, None))
-
-        if verts is False:
-            return None, None
-        elif verts is not None:
-            return verts, edges
+    def recalculate_fill(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
+        element_id = element.id()
 
         if not tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
-            DecoratorData.layerset_cache[element.id()] = (False, False)
-            return None, None
+            DecoratorData.fill_cache[element_id] = {}
+            return
 
-        if tool.Model.get_usage_type(element) != "LAYER2":
-            DecoratorData.layerset_cache[element.id()] = (False, False)
-            return None, None
+        DecoratorData.fill_cache[element_id] = {}
 
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        layers = self.get_layer_data(element)
-
-        if not layers:
-            DecoratorData.layerset_cache[element.id()] = (False, False)
-            return None, None
+        mesh = obj.data
+        bm_original = bmesh.new()
+        bm_original.from_mesh(mesh)
 
         if not (material := ifcopenshell.util.element.get_material(element)):
-            return None, None
-        elif material.is_a("IfcMaterialLayerSetUsage"):
+            geom = bm_original.verts[:] + bm_original.edges[:] + bm_original.faces[:]
+            verts, tris = self.bisect_mesh_tris(obj, bm_original, geom, context.scene.camera)
+            DecoratorData.fill_cache[element_id].setdefault(self.fallback_colour, []).append((verts, tris))
+            return
+
+        if material.is_a() not in ("IfcMaterialLayerSet", "IfcMaterialLayerSetUsage"):
+            # Constituents, lists, and item styles not supported yet
+            material = ifcopenshell.util.element.get_materials(element)[0]
+            geom = bm_original.verts[:] + bm_original.edges[:] + bm_original.faces[:]
+            verts, tris = self.bisect_mesh_tris(obj, bm_original, geom, context.scene.camera)
+            colour = self.get_material_colour(material)
+            DecoratorData.fill_cache[element_id].setdefault(colour, []).append((verts, tris))
+            return
+
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        if material.is_a("IfcMaterialLayerSetUsage"):
             usage = material
             layer_set = material.ForLayerSet
             offset = usage.OffsetFromReferenceLine * self.unit_scale
@@ -1755,15 +1750,15 @@ class CutDecorator:
             layer_set = material
             offset = 0
             sense_factor = 1
-        else:
-            return None, None
 
         if len(layer_set.MaterialLayers) == 1:
-            return None, None
+            material = layer_set.MaterialLayers[0].Material
+            geom = bm_original.verts[:] + bm_original.edges[:] + bm_original.faces[:]
+            verts, tris = self.bisect_mesh_tris(obj, bm_original, geom, context.scene.camera)
+            colour = self.get_material_colour(material)
+            DecoratorData.fill_cache[element_id].setdefault(colour, []).append((verts, tris))
+            return
 
-        mesh = obj.data
-        bm_original = bmesh.new()
-        bm_original.from_mesh(mesh)
         bm = bm_original.copy()
         prev_co = None
         if not usage:
@@ -1783,8 +1778,6 @@ class CutDecorator:
             no = self.get_extrusion_vector(element).normalized()
             no = Vector([1.0, 0.0, 0.0])
         no *= sense_factor
-        # Cache this
-        body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         slice_plane_geom = []
         last_i = len(layer_set.MaterialLayers) - 1
         for i, layer in enumerate(layer_set.MaterialLayers):
@@ -1798,36 +1791,44 @@ class CutDecorator:
                 edges = [g for g in bisect_geom["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
                 fill = bmesh.ops.edgenet_fill(bm, edges=edges)
                 slice_plane_geom.extend(fill["faces"])
-            if style := ifcopenshell.util.representation.get_material_style(layer.Material, body):
-                if not (styles := [s for s in style.Styles if s.is_a("IfcSurfaceStyleShading")]):
-                    continue
-                colour = styles[0].SurfaceColour
-                colour = (colour.Red, colour.Green, colour.Blue, 1)
-                bm_fill = bm_original.copy()
-                if i != last_i:
-                    geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
-                    bisect = bmesh.ops.bisect_plane(
-                        bm_fill, geom=geom, dist=0.0001, plane_co=co, plane_no=no, clear_outer=True
-                    )
-                    edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
-                    fill = bmesh.ops.edgenet_fill(bm_fill, edges=edges)
-                if i != 0:
-                    geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
-                    bisect = bmesh.ops.bisect_plane(
-                        bm_fill, geom=geom, dist=0.0001, plane_co=prev_co, plane_no=no, clear_inner=True
-                    )
-                    edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
-                    fill = bmesh.ops.edgenet_fill(bm_fill, edges=edges)
 
+            colour = self.get_material_colour(layer.Material)
+            bm_fill = bm_original.copy()
+            if i != last_i:
                 geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
-                verts, tris = self.bisect_mesh_tris(obj, bm_fill, geom, context.scene.camera)
-                self.layer_fills.setdefault(colour, []).append((verts, tris))
+                bisect = bmesh.ops.bisect_plane(
+                    bm_fill, geom=geom, dist=0.0001, plane_co=co, plane_no=no, clear_outer=True
+                )
+                edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
+                fill = bmesh.ops.edgenet_fill(bm_fill, edges=edges)
+                print("test FILL1", fill)
+            if i != 0:
+                geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
+                bisect = bmesh.ops.bisect_plane(
+                    bm_fill, geom=geom, dist=0.0001, plane_co=prev_co, plane_no=no, clear_inner=True
+                )
+                edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
+                fill = bmesh.ops.edgenet_fill(bm_fill, edges=edges)
+                print("test FILL2", fill)
+
+            geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
+            print("gonna bisect mesh tris", geom)
+            verts, tris = self.bisect_mesh_tris(obj, bm_fill, geom, context.scene.camera)
+            DecoratorData.fill_cache[element_id].setdefault(colour, []).append((verts, tris))
 
         verts, edges = self.bisect_mesh(obj, bm, slice_plane_geom, context.scene.camera)
+        DecoratorData.slice_cache[element.id()] = (verts, edges)
         bm_original.free()
 
-        DecoratorData.layerset_cache[element.id()] = (verts, edges)
-        return verts, edges
+    def get_material_colour(self, material: ifcopenshell.entity_instance) -> tuple[float, float, float, float]:
+        body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        style = ifcopenshell.util.representation.get_material_style(material, body)
+        if not style:
+            return self.fallback_colour
+        if not (styles := [s for s in style.Styles if s.is_a("IfcSurfaceStyleShading")]):
+            return self.fallback_colour
+        colour = styles[0].SurfaceColour
+        return (colour.Red, colour.Green, colour.Blue, 1)
 
     def get_extrusion_vector(self, wall):
         if body := ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW"):
@@ -1894,130 +1895,6 @@ class CutDecorator:
             tris.append(tri)
 
         return verts, tris
-
-    def get_layer_data(self, element):
-        usage = ifcopenshell.util.element.get_material(element)
-        offset = usage.OffsetFromReferenceLine * self.unit_scale
-        layer_set = usage.ForLayerSet
-
-        if len(layer_set.MaterialLayers) == 1:
-            return  # No use slicing if there's only one layer
-
-        total_thickness = layer_set.TotalThickness
-        half_thickness = total_thickness / 2
-        min_layers = []
-        max_layers = []
-        current_thickness = 0
-        for layer in layer_set.MaterialLayers:
-            current_thickness += layer.LayerThickness
-            if current_thickness / total_thickness < 0.5:
-                min_layers.append((half_thickness - current_thickness) * self.unit_scale)
-            else:
-                max_layers.append((current_thickness - half_thickness) * self.unit_scale)
-        min_layers.reverse()
-        max_layers.pop()
-        if usage.DirectionSense == "NEGATIVE":
-            total_thickness *= -1
-            offset *= -1
-            min_layers = [l * -1 for l in min_layers]
-            max_layers = [l * -1 for l in max_layers]
-        return {
-            "offset": offset,
-            "min_layers": min_layers,
-            "max_layers": max_layers,
-            "thickness": total_thickness * self.unit_scale,
-        }
-
-    def get_segments(self, connections, centerline, start_point, end_point):
-        segments = []
-        total_connections = len(connections)
-        if total_connections:
-            for i in range(0, total_connections + 1):
-                if i == 0:
-                    connection = connections[i]
-                    segments.append([centerline[0], connection["intersection"], connection["out_point"]])
-                elif i == total_connections:
-                    segments.append([segments[-1][-1], segments[-1][-2], centerline[1]])
-                else:
-                    connection = connections[i]
-                    segments.append(
-                        [segments[-1][-1], segments[-1][-2], connection["intersection"], connection["out_point"]]
-                    )
-        else:
-            segments.append([centerline[0], centerline[1]])
-        if start_point:
-            segments[0].insert(0, start_point)
-        if end_point:
-            segments[-1].append(end_point)
-        return segments
-
-    def get_connections(self, wall, obj, centerline, min_edge, max_edge):
-        connections = {"ATEND": None, "ATSTART": None, "ATPATH": [], "MINPATH": [], "MAXPATH": []}
-        for rel in wall.ConnectedTo:
-            # How do you join to a non layered element? Not sure.
-            if tool.Model.get_usage_type(rel.RelatedElement) != "LAYER2":
-                continue
-            if rel.RelatingConnectionType == "ATPATH":
-                metadata = self.get_connection_metadata(obj, rel.RelatedElement, centerline, min_edge, max_edge)
-                if not metadata:
-                    continue
-                connections["ATPATH"].append(metadata)
-            else:
-                metadata = self.get_connection_metadata(obj, rel.RelatedElement, centerline, min_edge, max_edge)
-                if not metadata:
-                    continue
-                connections[rel.RelatingConnectionType] = metadata
-        for rel in wall.ConnectedFrom:
-            if tool.Model.get_usage_type(rel.RelatingElement) != "LAYER2":
-                continue
-            # We only consider ATPATH since in this situation, we have the
-            # priority. The non-priority wall never has any layers that need to
-            # "turn a corner".
-            if rel.RelatedConnectionType == "ATPATH":
-                metadata = self.get_connection_metadata(obj, rel.RelatingElement, centerline, min_edge, max_edge)
-                if not metadata:
-                    continue
-                connections["ATPATH"].append(metadata)
-        connections["ATPATH"] = sorted(connections["ATPATH"], key=lambda c: c["intersection"].x)
-        for connection in connections["ATPATH"]:
-            if connection["angle"] > 0:
-                connections["MINPATH"].append(connection)
-            else:
-                connections["MAXPATH"].append(connection)
-        return connections
-
-    def get_connection_metadata(self, obj, rel_element, centerline, min_edge, max_edge):
-        rel_obj = tool.Ifc.get_object(rel_element)
-        layers = self.get_layer_data(rel_element)
-        if not layers:
-            return
-        minx = min([co[0] for co in rel_obj.bound_box])
-        maxx = max([co[0] for co in rel_obj.bound_box])
-        rel_centerline = [
-            Vector((minx, layers["offset"] + layers["thickness"] / 2)),
-            Vector((maxx, layers["offset"] + layers["thickness"] / 2)),
-        ]
-        rel_centerline = [obj.matrix_world.inverted() @ rel_obj.matrix_world @ v.to_3d() for v in rel_centerline]
-        rel_centerline = [v.to_2d() for v in rel_centerline]
-        intersection = tool.Cad.intersect_edges(centerline, rel_centerline)
-        if intersection:
-            intersection, _ = intersection
-        else:
-            return
-        closest_centerline_point = tool.Cad.closest_vector(intersection, tuple(rel_centerline))
-        if closest_centerline_point == rel_centerline[1]:
-            rel_centerline = [rel_centerline[1], rel_centerline[0]]
-        angle = tool.Cad.angle_edges(centerline, rel_centerline, signed=True)
-        # A little extreme, but maybe it's OK?
-        out_point = tool.Cad.furthest_vector(intersection, tuple(rel_centerline))
-        return {
-            "element": rel_element,
-            "obj": rel_obj,
-            "centerline": rel_centerline,
-            "intersection": intersection,
-            "angle": angle,
-            "out_point": out_point,
-        }
 
 
 class DecorationsHandler:

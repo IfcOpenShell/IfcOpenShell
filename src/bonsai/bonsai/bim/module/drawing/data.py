@@ -236,7 +236,8 @@ class DecoratorData:
     # stores 1 type of data per object
     data = {}
     cut_cache = {}
-    layerset_cache = {}
+    slice_cache = {}
+    fill_cache = {}
 
     @classmethod
     def get_batting_thickness(cls, obj):

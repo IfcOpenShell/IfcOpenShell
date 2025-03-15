@@ -1057,7 +1057,7 @@ class Loader(bonsai.core.tool.Loader):
         body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         styles = {}
         has_layer_styles = False
-        for i, material in mesh.materials:
+        for i, material in enumerate(mesh.materials):
             if style := tool.Ifc.get_entity(material):
                 styles[style] = i
         for layer in layer_set.MaterialLayers[:-1]:
