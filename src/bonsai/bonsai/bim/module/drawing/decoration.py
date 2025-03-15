@@ -1609,6 +1609,9 @@ class CutDecorator:
         cls.installed = None
 
     def __call__(self, context):
+        if not context.scene.camera:
+            return
+
         self.addon_prefs = tool.Blender.get_addon_preferences()
         selected_elements_color = self.addon_prefs.decorator_color_selected
 
