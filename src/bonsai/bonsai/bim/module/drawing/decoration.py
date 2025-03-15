@@ -1621,6 +1621,8 @@ class CutDecorator:
         selected_edges = []
         layer_vertices = []
         layer_edges = []
+        fills = {}
+        self.layer_fills = {}
         all_vertex_i_offset = 0
         selected_vertex_i_offset = 0
         layer_vertex_i_offset = 0
@@ -1664,6 +1666,10 @@ class CutDecorator:
         if layer_vertices:
             self.draw_batch("LINES", layer_vertices, black, layer_edges)
             self.draw_batch("POINTS", layer_vertices, black)
+
+        for colour, fills in self.layer_fills.items():
+            for fill in fills:
+                self.draw_batch("TRIS", fill[0], colour, fill[1])
 
         gpu.state.point_size_set(2)
         self.line_shader.uniform_float("lineWidth", 3.0)
@@ -1737,104 +1743,102 @@ class CutDecorator:
             DecoratorData.layerset_cache[element.id()] = (False, False)
             return None, None
 
-        minx = min([co[0] for co in obj.bound_box])
-        maxx = max([co[0] for co in obj.bound_box])
-        min_edge = [Vector((minx, layers["offset"])), Vector((maxx, layers["offset"]))]
-        max_edge = [
-            Vector((minx, layers["offset"] + layers["thickness"])),
-            Vector((maxx, layers["offset"] + layers["thickness"])),
-        ]
-        centerline = [
-            Vector((minx, layers["offset"] + layers["thickness"] / 2)),
-            Vector((maxx, layers["offset"] + layers["thickness"] / 2)),
-        ]
-        connections = self.get_connections(element, obj, centerline, min_edge, max_edge)
+        if not (material := ifcopenshell.util.element.get_material(element)):
+            return None, None
+        elif material.is_a("IfcMaterialLayerSetUsage"):
+            usage = material
+            layer_set = material.ForLayerSet
+            offset = usage.OffsetFromReferenceLine * self.unit_scale
+            sense_factor = 1 if usage.DirectionSense == "POSITIVE" else -1
+        elif material.is_a("IfcMaterialLayerSet"):
+            usage = None
+            layer_set = material
+            offset = 0
+            sense_factor = 1
+        else:
+            return None, None
 
-        start_point = None
-        end_point = None
-        if connections["ATSTART"]:
-            boundary_edge = min_edge if connections["ATSTART"]["angle"] > 0 else max_edge
-            rel_dir = connections["ATSTART"]["centerline"][1] - connections["ATSTART"]["centerline"][0]
-            offset, _ = tool.Cad.intersect_edges(boundary_edge, [centerline[0], centerline[0] + rel_dir])
-            offset_x = (offset - centerline[0]).length + abs(offset.x)
-            intersect, _ = tool.Cad.intersect_edges(boundary_edge, connections["ATSTART"]["centerline"])
-            if tool.Cad.is_point_on_edge(intersect, boundary_edge):
-                centerline[0] = centerline[0] + Vector((offset_x, 0))
-                start_point = centerline[0] + rel_dir
-        if connections["ATEND"]:
-            boundary_edge = min_edge if connections["ATEND"]["angle"] > 0 else max_edge
-            rel_dir = connections["ATEND"]["centerline"][1] - connections["ATEND"]["centerline"][0]
-            offset, _ = tool.Cad.intersect_edges(boundary_edge, [centerline[1], centerline[1] + rel_dir])
+        if len(layer_set.MaterialLayers) == 1:
+            return None, None
 
-            offset_x = (offset - centerline[1]).length + abs((maxx - abs(offset.x)))
-            intersect, _ = tool.Cad.intersect_edges(boundary_edge, connections["ATEND"]["centerline"])
-            if tool.Cad.is_point_on_edge(intersect, boundary_edge):
-                centerline[1] = centerline[1] - Vector((offset_x, 0))
-                end_point = centerline[1] + rel_dir
+        mesh = obj.data
+        bm_original = bmesh.new()
+        bm_original.from_mesh(mesh)
+        bm = bm_original.copy()
+        prev_co = None
+        if not usage:
+            sense_factor = 1  # Assume the extrusion vector points in the direction sense
+            no = self.get_extrusion_vector(element).normalized()
+            co = Vector((0.0, 0.0, offset))
+        elif usage.LayerSetDirection == "AXIS2":
+            co = Vector((0.0, offset, 0.0))
+            no = self.get_extrusion_vector(element).normalized()
+            no = no.cross(Vector([1.0, 0.0, 0.0]))
+        elif usage.LayerSetDirection == "AXIS3":
+            co = Vector((0.0, 0.0, offset))
+            no = self.get_extrusion_vector(element).normalized()
+            no = Vector([0.0, 0.0, 1.0])
+        elif usage.LayerSetDirection == "AXIS1":
+            co = Vector((0.0, 0.0, offset))
+            no = self.get_extrusion_vector(element).normalized()
+            no = Vector([1.0, 0.0, 0.0])
+        no *= sense_factor
+        # Cache this
+        body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        slice_plane_geom = []
+        last_i = len(layer_set.MaterialLayers) - 1
+        for i, layer in enumerate(layer_set.MaterialLayers):
+            prev_co = co.copy()
+            co += no * layer.LayerThickness * self.unit_scale
+            if i != last_i:
+                bisect_geom = bmesh.ops.bisect_plane(
+                    bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
+                )
+                slice_plane_geom.extend(bisect_geom["geom_cut"])
+                edges = [g for g in bisect_geom["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
+                fill = bmesh.ops.edgenet_fill(bm, edges=edges)
+                slice_plane_geom.extend(fill["faces"])
+            if style := ifcopenshell.util.representation.get_material_style(layer.Material, body):
+                if not (styles := [s for s in style.Styles if s.is_a("IfcSurfaceStyleShading")]):
+                    continue
+                colour = styles[0].SurfaceColour
+                colour = (colour.Red, colour.Green, colour.Blue, 1)
+                bm_fill = bm_original.copy()
+                if i != last_i:
+                    geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
+                    bisect = bmesh.ops.bisect_plane(
+                        bm_fill, geom=geom, dist=0.0001, plane_co=co, plane_no=no, clear_outer=True
+                    )
+                    edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
+                    fill = bmesh.ops.edgenet_fill(bm_fill, edges=edges)
+                if i != 0:
+                    geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
+                    bisect = bmesh.ops.bisect_plane(
+                        bm_fill, geom=geom, dist=0.0001, plane_co=prev_co, plane_no=no, clear_inner=True
+                    )
+                    edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
+                    fill = bmesh.ops.edgenet_fill(bm_fill, edges=edges)
 
-        min_segments = self.get_segments(connections["MINPATH"], centerline, start_point, end_point)
-        max_segments = self.get_segments(connections["MAXPATH"], centerline, start_point, end_point)
+                geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
+                verts, tris = self.bisect_mesh_tris(obj, bm_fill, geom, context.scene.camera)
+                self.layer_fills.setdefault(colour, []).append((verts, tris))
 
-        final_segments = []
-        for segment in min_segments:
-            segment_line = shapely.LineString([co for co in segment])
-            for distance in layers["min_layers"]:
-                distance *= -1
-                layer_line = shapely.offset_curve(segment_line, distance, join_style=shapely.BufferJoinStyle.mitre)
-                final_segments.append(list(layer_line.coords))
-        for segment in max_segments:
-            segment_line = shapely.LineString([co for co in segment])
-            for distance in layers["max_layers"]:
-                layer_line = shapely.offset_curve(segment_line, distance, join_style=shapely.BufferJoinStyle.mitre)
-                final_segments.append(list(layer_line.coords))
-
-        # Extrude and bisect layers
-        bm = bmesh.new()
-        verts = []
-        edges = []
-        offset = 0
-        for segment in final_segments:
-            if not segment:
-                # Why does this occur?
-                continue
-            if isinstance(segment[0], tuple):
-                segment = [Vector(co) for co in segment]
-            verts.extend([bm.verts.new(co.to_3d()) for co in segment])
-            [bm.edges.new((verts[i + offset], verts[i + 1 + offset])) for i in range(0, len(segment) - 1)]
-            offset += len(segment)
-
-        extrusion_dir = (0, 0, 3)
-        extruded_geom = bmesh.ops.extrude_edge_only(bm, edges=bm.edges[:])
-        bmesh.ops.translate(
-            bm, vec=extrusion_dir, verts=[v for v in extruded_geom["geom"] if isinstance(v, bmesh.types.BMVert)]
-        )
-
-        verts, edges = self.bisect_mesh(obj, bm, context.scene.camera)
-        layer_linestrings = [shapely.LineString((verts[e[0]], verts[e[1]])) for e in edges]
-
-        clipped_linestrings = []
-
-        polygons = shapely.polygonize([shapely.LineString((cut_verts[e[0]], cut_verts[e[1]])) for e in cut_edges])
-        for polygon in polygons.geoms:
-            clipped_linestrings.extend([polygon.intersection(ls) for ls in layer_linestrings])
-
-        verts = []
-        edges = []
-        offset = 0
-        for linestring in clipped_linestrings:
-            try:
-                linestring = list(linestring.coords)
-            except:
-                print("Failed ... ", linestring)
-                continue
-            verts.extend(linestring)
-            edges.extend([(i + offset, i + 1 + offset) for i in range(0, len(linestring) - 1)])
-            offset += len(linestring)
+        verts, edges = self.bisect_mesh(obj, bm, slice_plane_geom, context.scene.camera)
+        bm_original.free()
 
         DecoratorData.layerset_cache[element.id()] = (verts, edges)
         return verts, edges
 
-    def bisect_mesh(self, obj, bm, camera):
+    def get_extrusion_vector(self, wall):
+        if body := ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW"):
+            for item in ifcopenshell.util.representation.resolve_representation(body).Items:
+                while item.is_a("IfcBooleanResult"):
+                    item = item.FirstOperand
+                if item.is_a("IfcExtrudedAreaSolid"):
+                    return Vector(item.ExtrudedDirection.DirectionRatios)
+        return Vector([0.0, 0.0, 1.0])
+
+    def bisect_mesh(self, obj, bm, geom, camera):
         camera_matrix = obj.matrix_world.inverted() @ camera.matrix_world
         plane_co = camera_matrix.translation
         plane_no = camera_matrix.col[2].xyz
@@ -1842,7 +1846,6 @@ class CutDecorator:
         global_offset = camera.matrix_world.col[2].xyz * -camera.data.clip_start
 
         # Run the bisect operation
-        geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
         results = bmesh.ops.bisect_plane(bm, geom=geom, dist=0.0001, plane_co=plane_co, plane_no=plane_no)
 
         vert_map = {}
@@ -1858,9 +1861,39 @@ class CutDecorator:
                 # It seems as though edges always appear after verts
                 edges.append([vert_map[v.index] for v in geom.verts])
 
-        bm.free()
-
         return verts, edges
+
+    def bisect_mesh_tris(self, obj, bm, geom, camera):
+        camera_matrix = obj.matrix_world.inverted() @ camera.matrix_world
+        plane_co = camera_matrix.translation
+        plane_no = camera_matrix.col[2].xyz
+
+        global_offset = camera.matrix_world.col[2].xyz * -camera.data.clip_start
+
+        bmesh.ops.bisect_plane(
+            bm, geom=geom, dist=0.0001, plane_co=plane_co, plane_no=plane_no, clear_inner=True, clear_outer=True
+        )
+        bmesh.ops.remove_doubles(bm, verts=bm.verts[:])
+        fill = bmesh.ops.edgenet_fill(bm, edges=bm.edges[:])
+        triangulate = bmesh.ops.triangulate(bm, faces=fill["faces"])
+
+        vert_map = {}
+        verts = []
+        tris = []
+        i = 0
+        for face in triangulate["faces"]:
+            tri = []
+            for vert in face.verts:
+                if index := vert_map.get(vert.index, None):
+                    tri.append(index)
+                else:
+                    verts.append(tuple((obj.matrix_world @ vert.co) + global_offset))
+                    vert_map[vert.index] = i
+                    tri.append(i)
+                    i += 1
+            tris.append(tri)
+
+        return verts, tris
 
     def get_layer_data(self, element):
         usage = ifcopenshell.util.element.get_material(element)
