@@ -297,14 +297,16 @@ class DumbSlabPlaner:
         if representation:
             extrusion = tool.Model.get_extrusion(representation)
             if extrusion:
-                existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
+                # TODO Right now we don't have a reliable way to calculate the existing x_angle only based solely on the extrusion direction.
+                # For instances, a 30 degrees angled extrusion with positive direction has the same extrusion direction as a
+                # -150 degrees angled extrusion with negative direction. The difference lies in the object's rotation.
+                # This means that things can get messy if the user changes the object x angle somehow. We have to figure out an alternative approach.
+                existing_x_angle = obj.rotation_euler.x
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
                 existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 2 * pi, tolerance=0.001) else existing_x_angle
                 direction_ratios = Vector(extrusion.ExtrudedDirection.DirectionRatios)
-                offset_direction = Vector(
-                    (abs(direction_ratios.x), abs(direction_ratios.y), abs(direction_ratios.z))
-                )  # The offset direction doesn't change with direction sense
+                offset_direction = direction_ratios.copy()
                 perpendicular_depth = thickness * abs(1 / cos(existing_x_angle))
                 perpendicular_offset = layer_params["offset"] * abs(1 / cos(existing_x_angle)) / self.unit_scale
 
@@ -320,7 +322,9 @@ class DumbSlabPlaner:
                     abs(existing_x_angle) < (pi / 2) and direction_ratios.z < 0
                 ):
                     # The extrusion direction is negative. If the layer_parameter is set to positive,
-                    # then the we change the extrusion direction.
+                    # then the we change the extrusion direction. And the offset direction should remain positive 
+                    # for either direction sense, so we change it.
+                    offset_direction *= -1
                     if layer_params["direction_sense"] == "POSITIVE":
                         direction_ratios *= -1
 

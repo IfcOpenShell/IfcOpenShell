@@ -307,6 +307,9 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 extrusion.Depth = perpendicular_depth
             else:
                 if tool.Model.get_usage_type(element) == "LAYER3":
+                    existing_x_angle = obj.rotation_euler.x
+                    existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
+                    existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
                     # Reset the transformation and returns to the original points with 0 degrees
                     extrusion.SweptArea.OuterCurve.Points.CoordList = [
                         (p[0], p[1] * abs(cos(existing_x_angle)))
@@ -325,9 +328,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     layer_params = tool.Model.get_material_layer_parameters(element)
                     perpendicular_depth = layer_params["thickness"] * abs(1 / cos(x_angle)) / unit_scale
                     perpendicular_offset = layer_params["offset"] * abs(1 / cos(x_angle)) / unit_scale
-                    offset_direction = Vector(
-                        (abs(direction_ratios.x), abs(direction_ratios.y), abs(direction_ratios.z))
-                    )  # The offset direction doesn't change with direction sense
+                    offset_direction = direction_ratios.copy()
 
                     # Check angle and z direction to determine whether the extrusion direction is positive or negative
                     if (abs(x_angle) < (pi / 2) and direction_ratios.z > 0) or (
@@ -342,6 +343,9 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     ):
                         # The extrusion direction is negative. If the layer_parameter is set to positive,
                         # then the we change the extrusion direction.
+                        # then the we change the extrusion direction. And the offset direction should remain positive 
+                        # for either direction sense, so we change it.
+                        offset_direction *= -1
                         if layer_params["direction_sense"] == "POSITIVE":
                             direction_ratios *= -1
 
@@ -363,9 +367,10 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 )
 
                 # Object rotation
+                current_z_rot = obj.rotation_euler.z
                 rot_mat = mathutils.Matrix.Rotation(x_angle, 4, "X")
-                rot_mat = obj.matrix_world @ rot_mat
                 obj.rotation_euler = rot_mat.to_euler()
+                obj.rotation_euler.z = current_z_rot
 
         if layer2_objs:
             DumbWallRecalculator().recalculate(layer2_objs)

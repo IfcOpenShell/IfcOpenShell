@@ -178,6 +178,10 @@ class Geometry(bonsai.core.tool.Geometry):
         obj.lock_scale = (False, False, False)
 
     @classmethod
+    def lock_rotation(cls, obj: bpy.types.Object, x: bool=False, y: bool=False, z: bool=False,) -> None:
+        obj.lock_rotation = (x, y, z)
+
+    @classmethod
     def unlock_scale_object_with_openings(cls, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
         queue = {element}
