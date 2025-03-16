@@ -564,7 +564,7 @@ class AddIfcCircle(bpy.types.Operator):
 
     def has_selected_existing_circle(self, context: bpy.types.Context) -> bool:
         obj = self.obj
-        bm = bmesh.from_edit_mesh(self, mesh)
+        bm = bmesh.from_edit_mesh(self.mesh)
         verts = [v for v in bm.verts if v.select and not v.hide]
         if len(verts) != 2:
             return False
