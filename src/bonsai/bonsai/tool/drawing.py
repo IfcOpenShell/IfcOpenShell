@@ -2112,6 +2112,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def bisect_mesh(cls, obj: bpy.types.Object, camera: bpy.types.Object) -> tuple[list[Vector], list[list[int]]]:
+        # TODO consolidate with other bisect functions
         camera_matrix = obj.matrix_world.inverted() @ camera.matrix_world
         plane_co = camera_matrix.translation
         plane_no = camera_matrix.col[2].xyz
@@ -2122,9 +2123,37 @@ class Drawing(bonsai.core.tool.Drawing):
         return cls.bisect_mesh_with_plane(obj, plane_co, plane_no, global_offset=global_offset)
 
     @classmethod
+    def bisect_bmesh(cls, obj, bm, geom, camera):
+        # TODO consolidate with other bisect functions
+        camera_matrix = obj.matrix_world.inverted() @ camera.matrix_world
+        plane_co = camera_matrix.translation
+        plane_no = camera_matrix.col[2].xyz
+
+        global_offset = camera.matrix_world.col[2].xyz * -camera.data.clip_start
+
+        # Run the bisect operation
+        results = bmesh.ops.bisect_plane(bm, geom=geom, dist=0.0001, plane_co=plane_co, plane_no=plane_no)
+
+        vert_map = {}
+        verts = []
+        edges = []
+        i = 0
+        for geom in results["geom_cut"]:
+            if isinstance(geom, bmesh.types.BMVert):
+                verts.append(tuple((obj.matrix_world @ geom.co) + global_offset))
+                vert_map[geom.index] = i
+                i += 1
+            else:
+                # It seems as though edges always appear after verts
+                edges.append([vert_map[v.index] for v in geom.verts])
+
+        return verts, edges
+
+    @classmethod
     def bisect_mesh_with_plane(
         cls, obj: bpy.types.Object, plane_co: Vector, plane_no: Vector, global_offset: Optional[Vector] = None
     ) -> tuple[list[Vector], list[list[int]]]:
+        # TODO consolidate with other bisect functions
         if global_offset is None:
             global_offset = Vector()
 
@@ -2151,6 +2180,16 @@ class Drawing(bonsai.core.tool.Drawing):
         bm.free()
 
         return verts, edges
+
+    @classmethod
+    def get_extrusion_vector(cls, wall):
+        if body := ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW"):
+            for item in ifcopenshell.util.representation.resolve_representation(body).Items:
+                while item.is_a("IfcBooleanResult"):
+                    item = item.FirstOperand
+                if item.is_a("IfcExtrudedAreaSolid"):
+                    return Vector(item.ExtrudedDirection.DirectionRatios)
+        return Vector([0.0, 0.0, 1.0])
 
     @classmethod
     def get_scale_ratio(cls, scale: str) -> float:

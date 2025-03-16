@@ -562,6 +562,105 @@ class CreateDrawing(bpy.types.Operator):
                 path.attrib["d"] = d
             group.append(g)
 
+    def generate_wall_layers(self, context: bpy.types.Context, root):
+        for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
+            if "projection" in el.get("class", "").split():
+                continue
+            element = self.get_element_by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
+            if not (obj := tool.Ifc.get_object(element)):
+                continue
+            if not (material := ifcopenshell.util.element.get_material(element)):
+                continue
+            if material.is_a() not in ("IfcMaterialLayerSet", "IfcMaterialLayerSetUsage"):
+                continue
+
+            self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+            if material.is_a("IfcMaterialLayerSetUsage"):
+                usage = material
+                layer_set = material.ForLayerSet
+                offset = usage.OffsetFromReferenceLine * self.unit_scale
+                sense_factor = 1 if usage.DirectionSense == "POSITIVE" else -1
+            elif material.is_a("IfcMaterialLayerSet"):
+                usage = None
+                layer_set = material
+                offset = 0
+                sense_factor = 1
+
+            camera_matrix_i = context.scene.camera.matrix_world.inverted()
+
+            group = root.find("{http://www.w3.org/2000/svg}g")
+            raw_width, raw_height = self.get_camera_dimensions()
+            x_offset = raw_width / 2
+            y_offset = raw_height / 2
+            svg_scale = self.scale * 1000  # IFC is in meters, SVG is in mm
+
+            mesh = obj.data
+            bm = bmesh.new()
+            bm.from_mesh(mesh)
+
+            prev_co = None
+            if not usage:
+                sense_factor = 1  # Assume the extrusion vector points in the direction sense
+                no = tool.Drawing.get_extrusion_vector(element).normalized()
+                co = Vector((0.0, 0.0, offset))
+            elif usage.LayerSetDirection == "AXIS2":
+                co = Vector((0.0, offset, 0.0))
+                no = tool.Drawing.get_extrusion_vector(element).normalized()
+                no = no.cross(Vector([1.0, 0.0, 0.0]))
+            elif usage.LayerSetDirection == "AXIS3":
+                co = Vector((0.0, 0.0, offset))
+                no = tool.Drawing.get_extrusion_vector(element).normalized()
+                no = Vector([0.0, 0.0, 1.0])
+            elif usage.LayerSetDirection == "AXIS1":
+                co = Vector((0.0, 0.0, offset))
+                no = tool.Drawing.get_extrusion_vector(element).normalized()
+                no = Vector([1.0, 0.0, 0.0])
+            no *= sense_factor
+            last_i = len(layer_set.MaterialLayers) - 1
+            for i, layer in enumerate(layer_set.MaterialLayers):
+                prev_co = co.copy()
+                co += no * layer.LayerThickness * self.unit_scale
+
+                bm_fill = bm.copy()
+                if i != last_i:
+                    geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
+                    bisect = bmesh.ops.bisect_plane(
+                        bm_fill, geom=geom, dist=0.0001, plane_co=co, plane_no=no, clear_outer=True
+                    )
+                    edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
+                    bmesh.ops.edgenet_fill(bm_fill, edges=edges)
+                if i != 0:
+                    geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
+                    bisect = bmesh.ops.bisect_plane(
+                        bm_fill, geom=geom, dist=0.0001, plane_co=prev_co, plane_no=no, clear_inner=True
+                    )
+                    edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
+                    bmesh.ops.edgenet_fill(bm_fill, edges=edges)
+
+                geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
+                verts, edges = tool.Drawing.bisect_bmesh(obj, bm_fill, geom, context.scene.camera)
+
+                g = etree.SubElement(root, "{http://www.w3.org/2000/svg}g")
+                g.attrib["{http://www.ifcopenshell.org/ns}guid"] = element.GlobalId
+                g.attrib["{http://www.ifcopenshell.org/ns}name"] = element.Name or ""
+                g.attrib["{http://www.ifcopenshell.org/ns}layer-id"] = str(layer.id())
+
+                lines = []
+                for edge in edges:
+                    start = [o for o in (camera_matrix_i @ Vector(verts[edge[0]])).xy]
+                    end = [o for o in (camera_matrix_i @ Vector(verts[edge[1]])).xy]
+                    coords = [start, end]
+                    d = " ".join(
+                        ["L{},{}".format((x_offset + p[0]) * svg_scale, (y_offset - p[1]) * svg_scale) for p in coords]
+                    )
+                    d = "M{}".format(d[1:])
+                    path = etree.SubElement(g, "{http://www.w3.org/2000/svg}path")
+                    path.attrib["d"] = d
+                group.append(g)
+
+            bm.free()
+
     def generate_freestyle_linework(self, context: bpy.types.Context) -> str | None:
         if not ifcopenshell.util.element.get_pset(self.drawing, "EPset_Drawing", "HasLinework"):
             return
@@ -769,10 +868,12 @@ class CreateDrawing(bpy.types.Operator):
         if self.camera.data.BIMCameraProperties.cut_mode == "BISECT":
             self.remove_cut_linework(root)
             self.generate_bisect_linework(context, root)
+            self.generate_wall_layers(context, root)
             self.merge_linework_and_add_metadata(root)
             self.move_elements_to_top(root)
         elif self.camera.data.BIMCameraProperties.cut_mode == "OPENCASCADE":
             self.move_projection_to_bottom(root)
+            self.generate_wall_layers(context, root)
             self.merge_linework_and_add_metadata(root)
             self.move_elements_to_top(root)
 
@@ -1101,7 +1202,7 @@ class CreateDrawing(bpy.types.Operator):
         # the style of the face when running tree.select_ray()
         # tree.enable_face_styles(True)
 
-    def get_svg_classes(self, element):
+    def get_svg_classes(self, element, layer=None):
         classes = [element.is_a()]
         material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
         material_name = ""
@@ -1113,7 +1214,13 @@ class CreateDrawing(bpy.types.Operator):
             material_name = tool.Drawing.canonicalise_class_name(material_name)
             classes.append(f"material-{material_name}")
         else:
-            classes.append(f"material-null")
+            classes.append("material-null")
+
+        if layer:
+            classes.append(layer.is_a())
+            material_name = layer.Material.Name or "null"
+            material_name = tool.Drawing.canonicalise_class_name(material_name)
+            classes.append(f"layer-material-{material_name}")
 
         for key in self.metadata:
             value = ifcopenshell.util.selector.get_element_value(element, key)
@@ -1152,6 +1259,23 @@ class CreateDrawing(bpy.types.Operator):
                 except:
                     continue
 
+    def get_element_by_id(self, step_id):
+        try:
+            step_id = int(step_id)
+        except:
+            return
+        try:
+            return tool.Ifc.get().by_id(step_id)
+        except:
+            props = tool.Project.get_project_props()
+            for link in props.links:
+                if link.name not in IfcStore.session_files:
+                    IfcStore.session_files[link.name] = ifcopenshell.open(link.name)
+                try:
+                    return IfcStore.session_files[link.name].by_id(step_id)
+                except:
+                    continue
+
     def remove_cut_linework(self, root):
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
             if "projection" not in el.get("class", "").split():
@@ -1163,15 +1287,15 @@ class CreateDrawing(bpy.types.Operator):
             join_criteria = join_criteria.split(",")
         else:
             # Drawing convention states that same objects classes with the same material are merged when cut.
-            join_criteria = ["class", "material.Name", "/Pset_.*Common/.Status", "EPset_Status.Status"]
+            join_criteria = ["class", "material.Name", "/Pset_.*Common/.Status", "EPset_Status.Status", "Material.Name"]
 
         group = root.find("{http://www.w3.org/2000/svg}g")
         joined_paths = {}
         self.is_manifold_cache = {}
 
-        ifc = tool.Ifc.get()
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
             element = self.get_element_by_guid(el.get("{http://www.ifcopenshell.org/ns}guid"))
+            layer = self.get_element_by_id(el.get("{http://www.ifcopenshell.org/ns}layer-id"))
 
             if "projection" in el.get("class", "").split():
                 classes = self.get_svg_classes(element)
@@ -1179,7 +1303,7 @@ class CreateDrawing(bpy.types.Operator):
                 el.set("class", " ".join(classes))
                 continue
             else:
-                classes = self.get_svg_classes(element)
+                classes = self.get_svg_classes(element, layer)
                 classes.append("cut")
                 el.set("class", " ".join(classes))
 
@@ -1188,7 +1312,12 @@ class CreateDrawing(bpy.types.Operator):
             if not obj:  # This is a linked model object. For now, do nothing.
                 continue
 
-            if not self.is_manifold(obj):
+            if (material := ifcopenshell.util.element.get_material(element)) and material.is_a() in (
+                "IfcMaterialLayerSet",
+                "IfcMaterialLayerSetUsage",
+            ):
+                pass  # These are always manifold
+            elif not self.is_manifold(obj):
                 continue
 
             # An element group will contain a bunch of paths representing the
@@ -1273,6 +1402,15 @@ class CreateDrawing(bpy.types.Operator):
                 else:
                     keys.append(key)
 
+            if layer:
+                for query in join_criteria:
+                    key = ifcopenshell.util.selector.get_element_value(layer, query)
+                    print("got layer key", query, key)
+                    if isinstance(key, (list, tuple)):
+                        keys.extend(key)
+                    else:
+                        keys.append(key)
+
             hash_keys = hash(tuple(keys))
 
             if el.findall("{http://www.w3.org/2000/svg}path"):
@@ -1289,7 +1427,8 @@ class CreateDrawing(bpy.types.Operator):
                 for path in el.findall("{http://www.w3.org/2000/svg}path"):
                     for subpath in path.attrib["d"].split("M")[1:]:
                         subpath_co = "M" + subpath.strip(" Z")
-                        coords = [[float(o) for o in co[1:].split(",")] for co in subpath_co.split()]
+                        # Round due to inaccuracies from Blender meshes and bisection
+                        coords = [[round(float(o), 3) for o in co[1:].split(",")] for co in subpath_co.split()]
                         if subpath.strip().lower().endswith("z"):
                             coords.append(coords[0])
                         if len(coords) > 2 and coords[0] == coords[-1]:

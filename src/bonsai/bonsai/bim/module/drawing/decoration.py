@@ -1760,19 +1760,19 @@ class CutDecorator:
         prev_co = None
         if not usage:
             sense_factor = 1  # Assume the extrusion vector points in the direction sense
-            no = self.get_extrusion_vector(element).normalized()
+            no = tool.Drawing.get_extrusion_vector(element).normalized()
             co = Vector((0.0, 0.0, offset))
         elif usage.LayerSetDirection == "AXIS2":
             co = Vector((0.0, offset, 0.0))
-            no = self.get_extrusion_vector(element).normalized()
+            no = tool.Drawing.get_extrusion_vector(element).normalized()
             no = no.cross(Vector([1.0, 0.0, 0.0]))
         elif usage.LayerSetDirection == "AXIS3":
             co = Vector((0.0, 0.0, offset))
-            no = self.get_extrusion_vector(element).normalized()
+            no = tool.Drawing.get_extrusion_vector(element).normalized()
             no = Vector([0.0, 0.0, 1.0])
         elif usage.LayerSetDirection == "AXIS1":
             co = Vector((0.0, 0.0, offset))
-            no = self.get_extrusion_vector(element).normalized()
+            no = tool.Drawing.get_extrusion_vector(element).normalized()
             no = Vector([1.0, 0.0, 0.0])
         no *= sense_factor
         slice_plane_geom = []
@@ -1797,19 +1797,19 @@ class CutDecorator:
                     bm_fill, geom=geom, dist=0.0001, plane_co=co, plane_no=no, clear_outer=True
                 )
                 edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
-                fill = bmesh.ops.edgenet_fill(bm_fill, edges=edges)
+                bmesh.ops.edgenet_fill(bm_fill, edges=edges)
             if i != 0:
                 geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
                 bisect = bmesh.ops.bisect_plane(
                     bm_fill, geom=geom, dist=0.0001, plane_co=prev_co, plane_no=no, clear_inner=True
                 )
                 edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
-                fill = bmesh.ops.edgenet_fill(bm_fill, edges=edges)
+                bmesh.ops.edgenet_fill(bm_fill, edges=edges)
 
             verts, tris = self.bisect_mesh_tris(obj, bm_fill, context.scene.camera)
             DecoratorData.fill_cache[element_id].setdefault(colour, []).append((verts, tris))
 
-        verts, edges = self.bisect_mesh(obj, bm, slice_plane_geom, context.scene.camera)
+        verts, edges = tool.Drawing.bisect_bmesh(obj, bm, slice_plane_geom, context.scene.camera)
         DecoratorData.slice_cache[element.id()] = (verts, edges)
         bm_original.free()
 
@@ -1822,40 +1822,6 @@ class CutDecorator:
             return self.fallback_colour
         colour = styles[0].SurfaceColour
         return (colour.Red, colour.Green, colour.Blue, 1)
-
-    def get_extrusion_vector(self, wall):
-        if body := ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW"):
-            for item in ifcopenshell.util.representation.resolve_representation(body).Items:
-                while item.is_a("IfcBooleanResult"):
-                    item = item.FirstOperand
-                if item.is_a("IfcExtrudedAreaSolid"):
-                    return Vector(item.ExtrudedDirection.DirectionRatios)
-        return Vector([0.0, 0.0, 1.0])
-
-    def bisect_mesh(self, obj, bm, geom, camera):
-        camera_matrix = obj.matrix_world.inverted() @ camera.matrix_world
-        plane_co = camera_matrix.translation
-        plane_no = camera_matrix.col[2].xyz
-
-        global_offset = camera.matrix_world.col[2].xyz * -camera.data.clip_start
-
-        # Run the bisect operation
-        results = bmesh.ops.bisect_plane(bm, geom=geom, dist=0.0001, plane_co=plane_co, plane_no=plane_no)
-
-        vert_map = {}
-        verts = []
-        edges = []
-        i = 0
-        for geom in results["geom_cut"]:
-            if isinstance(geom, bmesh.types.BMVert):
-                verts.append(tuple((obj.matrix_world @ geom.co) + global_offset))
-                vert_map[geom.index] = i
-                i += 1
-            else:
-                # It seems as though edges always appear after verts
-                edges.append([vert_map[v.index] for v in geom.verts])
-
-        return verts, edges
 
     def bisect_mesh_tris(self, obj, bm, camera):
         camera_matrix = obj.matrix_world.inverted() @ camera.matrix_world
