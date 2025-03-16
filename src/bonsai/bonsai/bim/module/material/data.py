@@ -244,8 +244,6 @@ class ObjectMaterialData:
             items = []
             if cls.material.is_a("IfcMaterialLayerSetUsage"):
                 items = cls.material.ForLayerSet.MaterialLayers
-                if cls.material.DirectionSense == "POSITIVE":
-                    items = reversed(items)
             elif cls.material.is_a("IfcMaterialProfileSetUsage"):
                 items = cls.material.ForProfileSet.MaterialProfiles
             elif cls.material.is_a("IfcMaterialLayerSet"):
@@ -300,6 +298,18 @@ class ObjectMaterialData:
                 else:
                     data["material"] = item.Material.Name or "Unnamed"
                 results.append(data)
+        should_reverse = cls.material.DirectionSense == "POSITIVE"
+        last_i = len(results) - 1
+        for i, result in enumerate(results):
+            result["index"] = i
+            if should_reverse:
+                result["index_up"] = i + 1 if i != last_i else None
+                result["index_down"] = i - 1 if i != 0 else None
+            else:
+                result["index_down"] = i + 1 if i != last_i else None
+                result["index_up"] = i - 1 if i != 0 else None
+        if should_reverse:
+            return list(reversed(results))
         return results
 
     @classmethod

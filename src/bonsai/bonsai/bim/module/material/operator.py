@@ -382,7 +382,7 @@ class AddLayer(bpy.types.Operator, tool.Ifc.Operator):
 class ReorderMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.reorder_material_set_item"
     bl_label = "Reorder Material Set Item"
-    bl_description = "The List is Ordered From Origin Point"
+    bl_description = "Change the order of materials"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     old_index: bpy.props.IntProperty()
@@ -390,17 +390,12 @@ class ReorderMaterialSetItem(bpy.types.Operator, tool.Ifc.Operator):
     material_set: bpy.props.IntProperty()
 
     def _execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
         self.file = tool.Ifc.get()
-        material_set = self.file.by_id(self.material_set)
-        ifcopenshell.api.run(
-            "material.reorder_set_item",
+        ifcopenshell.api.material.reorder_set_item(
             self.file,
-            **{
-                "material_set": material_set,
-                "old_index": self.old_index,
-                "new_index": self.new_index,
-            },
+            material_set=self.file.by_id(self.material_set),
+            old_index=self.old_index,
+            new_index=self.new_index,
         )
 
 

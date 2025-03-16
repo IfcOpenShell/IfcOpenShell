@@ -253,7 +253,7 @@ class BIM_PT_object_material(Panel):
         active_object = bpy.context.active_object
         self.layerset_bounds(box, active_object, location="Top_Exterior")
 
-        for index, set_item in enumerate(ObjectMaterialData.data["set_items"]):
+        for set_item in ObjectMaterialData.data["set_items"]:
             if (
                 len(self.props.material_set_item_profile_attributes)
                 and self.props.active_material_set_item_id == set_item["id"]
@@ -262,9 +262,7 @@ class BIM_PT_object_material(Panel):
             elif self.props.active_material_set_item_id == set_item["id"]:
                 self.draw_editable_set_item_ui(box, set_item)
             else:
-                self.draw_read_only_set_item_ui(
-                    box, set_item, index, is_first=index == 0, is_last=index == total_items - 1
-                )
+                self.draw_read_only_set_item_ui(box, set_item)
 
         self.layerset_bounds(box, active_object, location="Bottom_Interior")
 
@@ -291,7 +289,7 @@ class BIM_PT_object_material(Panel):
             row = box.row()
             prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="Profile")
 
-    def draw_read_only_set_item_ui(self, box, set_item, index, is_first=False, is_last=False):
+    def draw_read_only_set_item_ui(self, box, set_item):
         if ObjectMaterialData.data["material_class"] == "IfcMaterialList":
             row = box.row(align=True)
             row.label(text="IfcMaterial", icon="LAYER_ACTIVE")
@@ -301,15 +299,15 @@ class BIM_PT_object_material(Panel):
             row.label(text=set_item["name"], icon=set_item["icon"])
             row.label(text=set_item["material"], icon="MATERIAL")
 
-        if not is_first:
-            op = row.operator(f"bim.reorder_material_set_item", icon="TRIA_UP", text="")
-            op.old_index = index
-            op.new_index = index - 1
+        if set_item["index_up"] is not None:
+            op = row.operator("bim.reorder_material_set_item", icon="TRIA_UP", text="")
+            op.old_index = set_item["index"]
+            op.new_index = set_item["index_up"]
             setattr(op, "material_set", ObjectMaterialData.data["set"]["id"])
-        if not is_last:
-            op = row.operator(f"bim.reorder_material_set_item", icon="TRIA_DOWN", text="")
-            op.old_index = index
-            op.new_index = index + 1
+        if set_item["index_down"] is not None:
+            op = row.operator("bim.reorder_material_set_item", icon="TRIA_DOWN", text="")
+            op.old_index = set_item["index"]
+            op.new_index = set_item["index_down"]
             setattr(op, "material_set", ObjectMaterialData.data["set"]["id"])
         if (
             not self.props.active_material_set_item_id
@@ -329,7 +327,7 @@ class BIM_PT_object_material(Panel):
             setattr(op, "list_item_set", ObjectMaterialData.data["set"]["id"])
         setattr(op, ObjectMaterialData.data["set_item_name"], set_item["id"])
         if hasattr(op, f"{ObjectMaterialData.data['set_item_name']}_index"):
-            setattr(op, f"{ObjectMaterialData.data['set_item_name']}_index", index)
+            setattr(op, f"{ObjectMaterialData.data['set_item_name']}_index", set_item["index"])
 
     def draw_read_only_set_ui(self):
         if ObjectMaterialData.data["material_class"] != "IfcMaterialList":
