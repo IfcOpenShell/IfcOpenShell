@@ -291,7 +291,7 @@ def get_space_net_perimeter(obj: bpy.types.Object) -> float:
 
 
 def get_rectangular_perimeter(obj: bpy.types.Object) -> float:
-    length = get_length(obj, main_axis="x")
+    length = get_length(obj)
     height = get_height(obj)
     return (length + height) * 2
 
