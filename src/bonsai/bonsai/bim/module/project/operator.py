@@ -2316,18 +2316,23 @@ class RefreshClippingPlanes(bpy.types.Operator):
                 should_refresh = True
                 break
 
-        if self.camera != context.scene.camera:
+        if context.scene.camera.visible_get() and tool.Ifc.get_entity(context.scene.camera):
+            camera = context.scene.camera
+        else:
+            camera = None
+
+        if self.camera != camera:
             should_refresh = True
         elif self.camera and tool.Ifc.is_moved(self.camera, ifc_only=False):
             should_refresh = True
 
         total_planes = len(props.clipping_planes)
         if should_refresh or total_planes != self.total_planes:
+            self.camera = camera
             self.refresh_clipping_planes(context)
             for clipping_plane in props.clipping_planes:
                 if clipping_plane.obj:
                     tool.Geometry.record_object_position(clipping_plane.obj)
-            self.camera = context.scene.camera
             self.total_planes = total_planes
         return {"PASS_THROUGH"}
 
@@ -2355,9 +2360,8 @@ class RefreshClippingPlanes(bpy.types.Operator):
         region = next(r for r in area.regions if r.type == "WINDOW")
         data = region.data
 
-        camera = context.scene.camera
         props = tool.Project.get_project_props()
-        if not len(props.clipping_planes) and not camera:
+        if not len(props.clipping_planes) and not self.camera:
             data.use_clip_planes = False
         else:
             with bpy.context.temp_override(area=area, region=region):
@@ -2386,10 +2390,10 @@ class RefreshClippingPlanes(bpy.types.Operator):
                     clip_planes.append(clip_plane)
                     bm.free()
 
-                if camera:
-                    normal = camera.matrix_world.col[2].to_3d()
+                if self.camera:
+                    normal = self.camera.matrix_world.col[2].to_3d()
                     normal *= -1
-                    center = camera.matrix_world.translation
+                    center = self.camera.matrix_world.translation
                     distance = -center.dot(normal)
                     clip_plane = (normal.x, normal.y, normal.z, distance)
                     clip_planes.append(clip_plane)
