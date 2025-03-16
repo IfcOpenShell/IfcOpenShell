@@ -1724,16 +1724,14 @@ class CutDecorator:
         bm_original.from_mesh(mesh)
 
         if not (material := ifcopenshell.util.element.get_material(element)):
-            geom = bm_original.verts[:] + bm_original.edges[:] + bm_original.faces[:]
-            verts, tris = self.bisect_mesh_tris(obj, bm_original, geom, context.scene.camera)
+            verts, tris = self.bisect_mesh_tris(obj, bm_original, context.scene.camera)
             DecoratorData.fill_cache[element_id].setdefault(self.fallback_colour, []).append((verts, tris))
             return
 
         if material.is_a() not in ("IfcMaterialLayerSet", "IfcMaterialLayerSetUsage"):
             # Constituents, lists, and item styles not supported yet
             material = ifcopenshell.util.element.get_materials(element)[0]
-            geom = bm_original.verts[:] + bm_original.edges[:] + bm_original.faces[:]
-            verts, tris = self.bisect_mesh_tris(obj, bm_original, geom, context.scene.camera)
+            verts, tris = self.bisect_mesh_tris(obj, bm_original, context.scene.camera)
             colour = self.get_material_colour(material)
             DecoratorData.fill_cache[element_id].setdefault(colour, []).append((verts, tris))
             return
@@ -1753,8 +1751,7 @@ class CutDecorator:
 
         if len(layer_set.MaterialLayers) == 1:
             material = layer_set.MaterialLayers[0].Material
-            geom = bm_original.verts[:] + bm_original.edges[:] + bm_original.faces[:]
-            verts, tris = self.bisect_mesh_tris(obj, bm_original, geom, context.scene.camera)
+            verts, tris = self.bisect_mesh_tris(obj, bm_original, context.scene.camera)
             colour = self.get_material_colour(material)
             DecoratorData.fill_cache[element_id].setdefault(colour, []).append((verts, tris))
             return
@@ -1809,8 +1806,7 @@ class CutDecorator:
                 edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
                 fill = bmesh.ops.edgenet_fill(bm_fill, edges=edges)
 
-            geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
-            verts, tris = self.bisect_mesh_tris(obj, bm_fill, geom, context.scene.camera)
+            verts, tris = self.bisect_mesh_tris(obj, bm_fill, context.scene.camera)
             DecoratorData.fill_cache[element_id].setdefault(colour, []).append((verts, tris))
 
         verts, edges = self.bisect_mesh(obj, bm, slice_plane_geom, context.scene.camera)
@@ -1861,18 +1857,19 @@ class CutDecorator:
 
         return verts, edges
 
-    def bisect_mesh_tris(self, obj, bm, geom, camera):
+    def bisect_mesh_tris(self, obj, bm, camera):
         camera_matrix = obj.matrix_world.inverted() @ camera.matrix_world
         plane_co = camera_matrix.translation
         plane_no = camera_matrix.col[2].xyz
 
         global_offset = camera.matrix_world.col[2].xyz * -camera.data.clip_start
 
+        geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
         bmesh.ops.bisect_plane(
             bm, geom=geom, dist=0.0001, plane_co=plane_co, plane_no=plane_no, clear_inner=True, clear_outer=True
         )
-        bmesh.ops.remove_doubles(bm, verts=bm.verts[:])
-        fill = bmesh.ops.edgenet_fill(bm, edges=bm.edges[:])
+        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-6)
+        fill = bmesh.ops.edgenet_fill(bm, edges=bm.edges)
         triangulate = bmesh.ops.triangulate(bm, faces=fill["faces"])
 
         vert_map = {}

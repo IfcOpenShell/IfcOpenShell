@@ -1062,17 +1062,26 @@ class Loader(bonsai.core.tool.Loader):
                 styles[style] = i
         last_i = len(layer_set.MaterialLayers) - 1
         for i, layer in enumerate(layer_set.MaterialLayers):
-            prev_co = co.copy()
-            co += no * layer.LayerThickness * cls.unit_scale
             if i != last_i:
+                prev_co = co.copy()
+                co += no * layer.LayerThickness * cls.unit_scale
                 bisect_geom = bmesh.ops.bisect_plane(
                     bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
                 )
                 bmesh.ops.duplicate(bm, geom=bisect_geom["geom_cut"])
-            if style := ifcopenshell.util.representation.get_material_style(layer.Material, body):
-                if (material_index := styles.get(style, None)) is None:
-                    material_index = len(mesh.materials)
-                    mesh.materials.append(tool.Ifc.get_object(style))
+            if not (style := ifcopenshell.util.representation.get_material_style(layer.Material, body)):
+                continue
+            if (material_index := styles.get(style, None)) is None:
+                material_index = len(mesh.materials)
+                mesh.materials.append(tool.Ifc.get_object(style))
+            if i == last_i:
+                for face in bisect_geom["geom"]:
+                    if isinstance(face, bmesh.types.BMFace):
+                        center = face.calc_center_median()
+                        if (center - co).dot(no) >= 0:
+                            face.material_index = material_index
+                            has_layer_styles = True
+            else:
                 for face in bisect_geom["geom"]:
                     if isinstance(face, bmesh.types.BMFace):
                         center = face.calc_center_median()
