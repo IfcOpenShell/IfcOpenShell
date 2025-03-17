@@ -287,7 +287,7 @@ def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None
 def viewport_shading_changed_callback(area: bpy.types.Area) -> None:
     shading = area.spaces.active.shading.type
     if shading == "RENDERED":
-        tool.Style.get_style_props().active_style_type = "Internal"
+        tool.Style.get_style_props().active_style_type = "External"
 
 
 def subscribe_to_viewport_shading_changes():
