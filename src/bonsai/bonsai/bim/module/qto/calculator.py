@@ -71,16 +71,7 @@ def get_linear_length(o: bpy.types.Object) -> float:
 def get_length(o: bpy.types.Object, vg_index: Optional[int] = None) -> float:
     """Calculate the object length trying to guess the main axis."""
     if vg_index is None:
-        x = get_x(o)
-        y = get_y(o)
-        z = get_z(o)
-        main_axis_guess = get_object_main_axis(o)
-        if main_axis_guess == "x":
-            return max(x, y)
-        elif main_axis_guess == "z":
-            return max(z, x)
-        elif main_axis_guess == "y":
-            return max(y, z)
+        return get_linear_length(o)
 
     length = 0
     assert isinstance(o.data, bpy.types.Mesh)
@@ -1223,21 +1214,18 @@ def get_bmesh_from_mesh(mesh: bpy.types.Mesh) -> bmesh.types.BMesh:
 def get_object_main_axis(o: bpy.types.Object) -> AxisType:
     """_summary_: Returns the main object axis. Useful for profile-defined objects.
 
+    Main axis is the axis with the largest dimension.
+
     :param blender-object o: Blender Object
     :return str: main axis x or y or z
     """
-    x = get_x(o)
-    y = get_y(o)
-    z = get_z(o)
 
-    if x >= y and x > z:
-        return "x"
-    if y > z and y > x:
-        return "y"
-    if z > x and z > y:
-        return "z"
-    else:
-        return "x"
+    axes: list[tuple[AxisType, float]] = [
+        ("x", get_x(o)),
+        ("y", get_y(o)),
+        ("z", get_z(o)),
+    ]
+    return max(axes, key=lambda x: x[1])[0]
 
 
 def is_opening_horizontal(o: bpy.types.Object) -> bool:
