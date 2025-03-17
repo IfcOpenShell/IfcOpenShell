@@ -3298,14 +3298,22 @@ class DisableEditingDrawings(bpy.types.Operator, tool.Ifc.Operator):
 class ExpandTargetView(bpy.types.Operator):
     bl_idname = "bim.expand_target_view"
     bl_label = "Expand Target View"
-    bl_description = "Show views in this category"
+    bl_description = "\nSHIFT+CLICK to expand all view categories "
 
     bl_options = {"REGISTER", "UNDO"}
     target_view: bpy.props.StringProperty()
-
+    expand_all: bpy.props.BoolProperty(name="Expand All", default=False, options={"SKIP_SAVE"})
+    
+    def invoke(self, context, event):
+        # Expanding all categories on shift+click.
+        # Make sure to use SKIP_SAVE on property, otherwise it might get stuck (copied from #4771).
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.expand_all = True
+        return self.execute(context)
+    
     def execute(self, context):
         props = tool.Drawing.get_document_props()
-        for drawing in [d for d in props.drawings if d.target_view == self.target_view]:
+        for drawing in [d for d in props.drawings if self.expand_all or d.target_view == self.target_view]:
             drawing.is_expanded = True
         core.load_drawings(tool.Drawing)
         return {"FINISHED"}
@@ -3314,14 +3322,22 @@ class ExpandTargetView(bpy.types.Operator):
 class ContractTargetView(bpy.types.Operator):
     bl_idname = "bim.contract_target_view"
     bl_label = "Contract Target View"
-    bl_description = "Hide views in this category"
+    bl_description = "\n\nSHIFT+CLICK to hide all view categories"
 
     bl_options = {"REGISTER", "UNDO"}
     target_view: bpy.props.StringProperty()
+    contract_all: bpy.props.BoolProperty(name="Contract All", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        # Contracting all categories on shift+click.
+        # Make sure to use SKIP_SAVE on property, otherwise it might get stuck (copied from #4771).
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.contract_all = True
+        return self.execute(context)
 
     def execute(self, context):
         props = tool.Drawing.get_document_props()
-        for drawing in [d for d in props.drawings if d.target_view == self.target_view]:
+        for drawing in [d for d in props.drawings if self.contract_all or d.target_view == self.target_view]:
             drawing.is_expanded = False
         core.load_drawings(tool.Drawing)
         return {"FINISHED"}
@@ -3330,14 +3346,20 @@ class ContractTargetView(bpy.types.Operator):
 class ExpandSheet(bpy.types.Operator):
     bl_idname = "bim.expand_sheet"
     bl_label = "Expand Sheet"
-    bl_description = "Show views, schedules, references etc\nplaced on this sheet"
-
+    bl_description = "Show views, schedules, references etc\nplaced on this sheet.\n\nShift+click to expand all sheets."
     bl_options = {"REGISTER", "UNDO"}
+    
     sheet: bpy.props.IntProperty()
+    expand_all: bpy.props.BoolProperty(name="Expand All", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.expand_all = True
+        return self.execute(context)
 
     def execute(self, context):
         props = tool.Drawing.get_document_props()
-        for sheet in [s for s in props.sheets if s.ifc_definition_id == self.sheet]:
+        for sheet in [s for s in props.sheets if self.expand_all or s.ifc_definition_id == self.sheet]:
             sheet.is_expanded = True
         core.load_sheets(tool.Drawing)
         return {"FINISHED"}
@@ -3346,14 +3368,20 @@ class ExpandSheet(bpy.types.Operator):
 class ContractSheet(bpy.types.Operator):
     bl_idname = "bim.contract_sheet"
     bl_label = "Contract Sheet"
-    bl_description = "Hide views, schedules, references etc\nplaced on this sheet"
-
+    bl_description = "Hide views, schedules, references etc\nplaced on this sheet.\n\nShift+click to contract all sheets."
     bl_options = {"REGISTER", "UNDO"}
+    
     sheet: bpy.props.IntProperty()
+    expand_all: bpy.props.BoolProperty(name="Expand All", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.shift:
+            self.expand_all = True
+        return self.execute(context)
 
     def execute(self, context):
         props = tool.Drawing.get_document_props()
-        for sheet in [s for s in props.sheets if s.ifc_definition_id == self.sheet]:
+        for sheet in [s for s in props.sheets if self.expand_all or s.ifc_definition_id == self.sheet]:
             sheet.is_expanded = False
         core.load_sheets(tool.Drawing)
         return {"FINISHED"}
