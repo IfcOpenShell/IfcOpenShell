@@ -1595,6 +1595,9 @@ class CutDecorator:
 
     @classmethod
     def install(cls, context):
+        DecoratorData.cut_cache.clear()
+        DecoratorData.slice_cache.clear()
+        DecoratorData.fill_cache.clear()
         if cls.installed:
             cls.uninstall()
         handler = cls()

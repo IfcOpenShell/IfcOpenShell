@@ -2180,7 +2180,6 @@ class ActivateDrawing(bpy.types.Operator, ActivateDrawingBase):
 
     @classmethod
     def poll(cls, context):
-        props = tool.Drawing.get_document_props()
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
