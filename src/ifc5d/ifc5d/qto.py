@@ -238,7 +238,9 @@ class IfcOpenShell(QtoCalculator):
         "get_weight": Function(
             "IfcMassMeasure",
             "Weight",
-            "The weight of the object based on it's volume and material density (from Pset_MaterialCommon.MassDensity).",
+            "The weight of the object based on it's length and Pset_ProfileMechanical.MassPerLength "
+            "(for profile based objects, though objects with openings are not supported for net calculations)"
+            "or it's volume and material density (from Pset_MaterialCommon.MassDensity).",
         ),
     }
 
@@ -308,7 +310,8 @@ class IfcOpenShell(QtoCalculator):
                                 if value is None:
                                     continue
                             elif formula == "get_weight":
-                                value = cls.get_weight(element, geometry)
+                                calculation_type = "GROSS" if iterator.settings is cls.gross_settings else "NET"
+                                value = cls.get_weight(element, geometry, calculation_type)
                                 if value is None:
                                     continue
                             else:
@@ -367,7 +370,10 @@ class IfcOpenShell(QtoCalculator):
 
     @classmethod
     def get_weight(
-        cls, element: ifcopenshell.entity_instance, geometry: ifcopenshell.geom.ShapeType
+        cls,
+        element: ifcopenshell.entity_instance,
+        geometry: ifcopenshell.geom.ShapeType,
+        calculation_type: Literal["GROSS", "NET"],
     ) -> Union[float, None]:
         """Get element's weight.
 
@@ -376,11 +382,43 @@ class IfcOpenShell(QtoCalculator):
             or ``None`` if mass density calculation for this element is not supported.
         """
 
+        if calculation_type == "gross" or not ifcopenshell.util.element.has_openings(element):
+            weight = cls.get_weight_profile_based(element)
+            if weight is not None:
+                return weight
+
         density = ifcopenshell.util.element.get_element_mass_density(element)
         if density is None:
             return
         volume = ifcopenshell.util.shape.get_volume(geometry)
         return volume * density
+
+    @classmethod
+    def get_weight_profile_based(cls, element: ifcopenshell.entity_instance) -> Union[float, None]:
+        """Get weight of the profile based element.
+
+        :return: A float weight value if calculation was successful
+            or ``None`` if it's either not profile based object
+            or it's not supported.
+        """
+        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if not representation:
+            return None
+        items = representation.Items
+        if not all(item.is_a("IfcExtrudedAreaSolid") for item in items):
+            return None
+        mass = 0.0
+        for item in items:
+            profile = item.SweptArea
+            # TODO: there are also bunch of other similar props we will need to consider in the future.
+            # Examples:
+            # - Pset_CableSegmentTypeBusBarSegment.MassPerLength
+            # - Pset_CableCarrierSegmentTypeCatenaryWire.MassPerLength
+            mass_per_length = ifcopenshell.util.element.get_pset(profile, "Pset_ProfileMechanical", "MassPerLength")
+            if not isinstance(mass_per_length, float):
+                return None
+            mass += mass_per_length * item.Depth
+        return mass
 
 
 class Blender(QtoCalculator):

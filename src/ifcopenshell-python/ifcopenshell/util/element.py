@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from typing import Any, Callable, Optional, Union, Literal, overload, Sequence
+from typing import Any, Callable, Optional, Union, Literal, overload, Sequence, Generator
 from collections import namedtuple
 
 
@@ -1720,3 +1720,27 @@ def has_property(product: ifcopenshell.entity_instance, property_name: str) -> b
         return True
     qtos = get_psets(product, qtos_only=True)
     return any(property_name in quantities.keys() for quantities in qtos.values())
+
+
+def get_openings(element: ifcopenshell.entity_instance) -> Generator[ifcopenshell.entity_instance, None, None]:
+    """Get element openings as IfcRelVoidsElements.
+
+    Use `.RelatedOpeningElement` to get the opening element.
+
+    :param element: IfcElement.
+    :return: Generator of IfcRelVoidsElements.
+    """
+    for element_rel in getattr(element, "HasOpenings", ()):
+        yield element_rel
+
+    if aggregate := get_aggregate(element):
+        yield from get_openings(aggregate)
+
+
+def has_openings(element: ifcopenshell.entity_instance) -> bool:
+    """Check if the element has openings.
+
+    :param element: IfcElement.
+    :return: True if element has openings.
+    """
+    return bool(next(get_openings(element), False))
