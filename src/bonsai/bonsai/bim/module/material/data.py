@@ -300,7 +300,7 @@ class ObjectMaterialData:
                 else:
                     data["material"] = item.Material.Name or "Unnamed"
                 results.append(data)
-        should_reverse = cls.material.DirectionSense == "POSITIVE"
+        should_reverse = cls.material.is_a("IfcMaterialLayerSetUsage") and cls.material.DirectionSense == "POSITIVE"
         last_i = len(results) - 1
         for i, result in enumerate(results):
             result["index"] = i
