@@ -245,9 +245,14 @@ class Snap(bonsai.core.tool.Snap):
         # Then it sorts them to get the shortest first
         intersections = []
         if snap_point["type"] == "Face":
-            face_normal = snap_point["object"].rotation_euler.to_matrix() @ snap_point["object"].data.polygons[snap_point["face_index"]].normal
+            face_normal = (
+                snap_point["object"].rotation_euler.to_matrix()
+                @ snap_point["object"].data.polygons[snap_point["face_index"]].normal
+            )
             if face_normal.z == 0:
-                intersections.append(tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point["point"], face_normal.normalized()))
+                intersections.append(
+                    tool.Cad.intersect_edge_plane(axis_start, axis_end, snap_point["point"], face_normal.normalized())
+                )
         if not intersections:
             x_axis = tool.Polyline.use_transform_orientations(Vector((1, 0, 0)))
             y_axis = tool.Polyline.use_transform_orientations(Vector((0, 1, 0)))
@@ -358,7 +363,9 @@ class Snap(bonsai.core.tool.Snap):
             face_index = result[2]
             if hit is not None:
                 # Wireframes
-                if snap_obj.type in {"EMPTY", "CURVE"} or (snap_obj.type == "MESH" and len(snap_obj.data.polygons) == 0):
+                if snap_obj.type in {"EMPTY", "CURVE"} or (
+                    snap_obj.type == "MESH" and len(snap_obj.data.polygons) == 0
+                ):
                     snap_points = tool.Raycast.ray_cast_by_proximity(context, event, snap_obj)
                     if snap_points:
                         for point in snap_points:

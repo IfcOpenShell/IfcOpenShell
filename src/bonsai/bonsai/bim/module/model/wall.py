@@ -343,7 +343,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                     ):
                         # The extrusion direction is negative. If the layer_parameter is set to positive,
                         # then the we change the extrusion direction.
-                        # then the we change the extrusion direction. And the offset direction should remain positive 
+                        # then the we change the extrusion direction. And the offset direction should remain positive
                         # for either direction sense, so we change it.
                         offset_direction *= -1
                         if layer_params["direction_sense"] == "POSITIVE":

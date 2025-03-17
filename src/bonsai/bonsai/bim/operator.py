@@ -678,13 +678,13 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
                 continue
             # In EEVEE rendering engine, `blend_mode` is deprecated and replaced by `surface_render_method`
             # https://developer.blender.org/docs/release_notes/4.2/eevee_migration/#materials
-            if (hasattr(material, "surface_render_method")):
+            if hasattr(material, "surface_render_method"):
                 material.surface_render_method = "DITHERED"
             else:
                 material.blend_method = "HASHED"
-            
+
             # TODO: Find an alternative to `shadow_method` for EEVEE engine
-            if (hasattr(material, "shadow_method")):
+            if hasattr(material, "shadow_method"):
                 material.shadow_method = "HASHED"
 
             material_output = tool.Blender.get_material_node(material, "OUTPUT_MATERIAL", {"is_active_output": True})

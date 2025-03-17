@@ -47,7 +47,6 @@ class Collector(bonsai.core.tool.Collector):
         if element.is_a("IfcSlab"):
             tool.Geometry.lock_rotation(obj, x=True)
 
-
         if element.is_a("IfcGridAxis"):
             if tool.Geometry.is_locked(element):
                 tool.Geometry.lock_object(obj)

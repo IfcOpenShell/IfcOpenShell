@@ -654,6 +654,7 @@ class DisableEditingWorkCalendar(bpy.types.Operator):
         core.disable_editing_work_calendar(tool.Sequence)
         return {"FINISHED"}
 
+
 class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_csv"
     bl_label = "Import CSV"
