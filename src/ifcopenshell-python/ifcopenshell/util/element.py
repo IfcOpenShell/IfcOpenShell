@@ -591,10 +591,16 @@ def get_types(type: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_in
     return []
 
 
-def get_shape_aspects(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+def get_shape_aspects(
+    element: ifcopenshell.entity_instance,
+    should_inherit: bool = True,
+) -> list[ifcopenshell.entity_instance]:
     """Get element's shape aspects.
 
     :param element: IfcProduct or IfcTypeProduct.
+    :param should_inherit: If True, the shape aspects of the element's type will be considered.
+        Useful in cases when IfcShapeAspects are assigned to the type's IfcRepresentationMap
+        instead of the element's IfcProductDefinitionShape.
     :return: The associated shape aspects of the element.
 
     Example:
@@ -607,7 +613,11 @@ def get_shape_aspects(element: ifcopenshell.entity_instance) -> list[ifcopenshel
 
     # IfcProduct
     if (representation := getattr(element, "Representation", ...)) != ...:
-        return representation.HasShapeAspects
+        shape_aspects: list[ifcopenshell.entity_instance] = []
+        if should_inherit and (element_type := get_type(element)):
+            shape_aspects.extend(get_shape_aspects(element_type))
+        shape_aspects.extend(representation.HasShapeAspects)
+        return shape_aspects
 
     if element.file.schema == "IFC2X3":
         return []

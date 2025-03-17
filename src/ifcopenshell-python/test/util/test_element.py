@@ -387,6 +387,25 @@ class TestGetShapeAspects(test.bootstrap.IFC4):
         shape_aspect.PartOfProductDefinitionShape = product_shape
         assert tuple(subject.get_shape_aspects(element)) == (shape_aspect,)
 
+    def test_getting_the_shape_aspects_of_a_product_with_inheritance(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+
+        # Setup type shape aspect.
+        type_shape_aspect = self.file.create_entity("IfcShapeAspect")
+        representation_map = self.file.create_entity("IfcRepresentationMap")
+        element_type.RepresentationMaps = (representation_map,)
+        type_shape_aspect.PartOfProductDefinitionShape = representation_map
+
+        # Setup occurrence shape aspect.
+        occurrence_shape_aspect = self.file.create_entity("IfcShapeAspect")
+        product_shape = self.file.create_entity("IfcProductDefinitionShape")
+        element.Representation = product_shape
+        occurrence_shape_aspect.PartOfProductDefinitionShape = product_shape
+
+        assert subject.get_shape_aspects(element) == [type_shape_aspect, occurrence_shape_aspect]
+
 
 class TestGetMaterial(test.bootstrap.IFC4):
     def test_getting_the_material_of_a_product(self):
