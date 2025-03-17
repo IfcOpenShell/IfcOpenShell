@@ -96,6 +96,7 @@ def get_debug_info():
         "blender_version": bpy.app.version_string,
         "bonsai_version": bbim_version,
         "bonsai_commit_hash": get_last_commit_hash(),
+        "bonsai_commit_date": last_commit_date,
         "last_actions": last_actions,
         "last_error": last_error,
     }
@@ -218,6 +219,7 @@ if IN_BLENDER:
         path = Path(__file__).resolve().parent
         repo = git.Repo(str(path), search_parent_directories=True)
         last_commit_hash = repo.head.object.hexsha
+        last_commit_date = repo.head.object.committed_datetime.strftime("%Y-%m-%d %H:%M:%S")
     except:
         pass
 
