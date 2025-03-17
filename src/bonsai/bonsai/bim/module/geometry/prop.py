@@ -121,7 +121,7 @@ def get_layers_no_active(self, context):
     return LayersData.data["layers_enum_no_active"]
 
 
-def update_shape_aspect(self, context):
+def update_shape_aspect(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
     shape_aspect_id = self.representation_item_shape_aspect
     attrs = self.shape_aspect_attrs
 
@@ -250,9 +250,8 @@ class BIMObjectGeometryProperties(PropertyGroup):
     representation_item_layer: EnumProperty(items=get_layers, name="Representation Item's Layer")
 
     @property
-    def active_item(self):
-        if 0 <= self.active_item_index < len(self.items):
-            return self.items[self.active_item_index]
+    def active_item(self) -> Union[RepresentationItem, None]:
+        return tool.Blender.get_active_uilist_element(self.items, self.active_item_index)
 
     if TYPE_CHECKING:
         contexts: str

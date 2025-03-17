@@ -20,6 +20,7 @@ import bpy
 import math
 import mathutils.geometry
 import ifcopenshell
+import ifcopenshell.util.unit
 import bonsai.tool as tool
 from mathutils import Vector
 from typing import Union

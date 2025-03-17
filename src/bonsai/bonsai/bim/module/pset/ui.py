@@ -237,7 +237,8 @@ class BIM_PT_object_psets(Panel):
     def draw_header(self, context):
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
-        row.prop(context.scene.GlobalPsetProperties, "pset_filter", text="", icon="VIEWZOOM")
+        global_props = tool.Pset.get_global_pset_props()
+        row.prop(global_props, "pset_filter", text="", icon="VIEWZOOM")
 
     @classmethod
     def poll(cls, context):
@@ -261,6 +262,7 @@ class BIM_PT_object_psets(Panel):
         op.obj = context.active_object.name
         op.obj_type = "Object"
 
+        global_props = tool.Pset.get_global_pset_props()
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
             draw_psetqto_ui(
                 context,
@@ -269,7 +271,7 @@ class BIM_PT_object_psets(Panel):
                 props,
                 self.layout,
                 "Object",
-                filter_keyword=context.scene.GlobalPsetProperties.pset_filter,
+                filter_keyword=global_props.pset_filter,
             )
 
         if ObjectPsetsData.data["psets"]:
@@ -285,7 +287,7 @@ class BIM_PT_object_psets(Panel):
                     props,
                     self.layout,
                     "Object",
-                    filter_keyword=context.scene.GlobalPsetProperties.pset_filter,
+                    filter_keyword=global_props.pset_filter,
                 )
 
         if ObjectPsetsData.data["inherited_psets"]:
@@ -299,7 +301,7 @@ class BIM_PT_object_psets(Panel):
                     self.layout,
                     "Object",
                     allow_removing=False,
-                    filter_keyword=context.scene.GlobalPsetProperties.pset_filter,
+                    filter_keyword=global_props.pset_filter,
                 )
 
 
@@ -315,7 +317,8 @@ class BIM_PT_object_qtos(Panel):
     def draw_header(self, context):
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
-        row.prop(context.scene.GlobalPsetProperties, "qto_filter", text="", icon="VIEWZOOM")
+        global_props = tool.Pset.get_global_pset_props()
+        row.prop(global_props, "qto_filter", text="", icon="VIEWZOOM")
 
     @classmethod
     def poll(cls, context):
@@ -339,6 +342,7 @@ class BIM_PT_object_qtos(Panel):
         op.obj = context.active_object.name
         op.obj_type = "Object"
 
+        global_props = tool.Pset.get_global_pset_props()
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "QTO":
             draw_psetqto_ui(
                 context,
@@ -347,7 +351,7 @@ class BIM_PT_object_qtos(Panel):
                 props,
                 self.layout,
                 "Object",
-                filter_keyword=context.scene.GlobalPsetProperties.qto_filter,
+                filter_keyword=global_props.qto_filter,
             )
 
         if ObjectQtosData.data["qtos"]:
@@ -363,7 +367,7 @@ class BIM_PT_object_qtos(Panel):
                     props,
                     self.layout,
                     "Object",
-                    filter_keyword=context.scene.GlobalPsetProperties.qto_filter,
+                    filter_keyword=global_props.qto_filter,
                 )
 
         if ObjectQtosData.data["inherited_qsets"]:
@@ -377,7 +381,7 @@ class BIM_PT_object_qtos(Panel):
                     self.layout,
                     "Object",
                     allow_removing=False,
-                    filter_keyword=context.scene.GlobalPsetProperties.qto_filter,
+                    filter_keyword=global_props.qto_filter,
                 )
         layout = self.layout
         qtoprops = tool.Qto.get_qto_props()

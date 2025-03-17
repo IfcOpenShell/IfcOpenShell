@@ -157,15 +157,17 @@ class RepresentationsData:
         if not cls.data["representations"]:
             return []
         obj = tool.Geometry.get_active_or_representation_obj()
+        assert obj
         if not obj.data:
             return []
         element = tool.Ifc.get_entity(obj)
+        assert element
         base_representation = tool.Geometry.get_active_representation(obj)
         if not base_representation:
             return []  # Maybe in profile editing mode
 
         # shape aspects matching context of the active representation
-        matching_shape_aspects = []
+        matching_shape_aspects: list[ifcopenshell.entity_instance] = []
         for shape_aspect in ifcopenshell.util.element.get_shape_aspects(element):
             matching_representation = tool.Geometry.get_shape_aspect_representation(shape_aspect, base_representation)
             if matching_representation:
