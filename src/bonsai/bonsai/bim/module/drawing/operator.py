@@ -3303,14 +3303,14 @@ class ExpandTargetView(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     target_view: bpy.props.StringProperty()
     expand_all: bpy.props.BoolProperty(name="Expand All", default=False, options={"SKIP_SAVE"})
-    
+
     def invoke(self, context, event):
         # Expanding all categories on shift+click.
         # Make sure to use SKIP_SAVE on property, otherwise it might get stuck (copied from #4771).
         if event.type == "LEFTMOUSE" and event.shift:
             self.expand_all = True
         return self.execute(context)
-    
+
     def execute(self, context):
         props = tool.Drawing.get_document_props()
         for drawing in [d for d in props.drawings if self.expand_all or d.target_view == self.target_view]:
@@ -3348,7 +3348,7 @@ class ExpandSheet(bpy.types.Operator):
     bl_label = "Expand Sheet"
     bl_description = "Show views, schedules, references etc\nplaced on this sheet.\n\nShift+click to expand all sheets."
     bl_options = {"REGISTER", "UNDO"}
-    
+
     sheet: bpy.props.IntProperty()
     expand_all: bpy.props.BoolProperty(name="Expand All", default=False, options={"SKIP_SAVE"})
 
@@ -3368,9 +3368,11 @@ class ExpandSheet(bpy.types.Operator):
 class ContractSheet(bpy.types.Operator):
     bl_idname = "bim.contract_sheet"
     bl_label = "Contract Sheet"
-    bl_description = "Hide views, schedules, references etc\nplaced on this sheet.\n\nShift+click to contract all sheets."
+    bl_description = (
+        "Hide views, schedules, references etc\nplaced on this sheet.\n\nShift+click to contract all sheets."
+    )
     bl_options = {"REGISTER", "UNDO"}
-    
+
     sheet: bpy.props.IntProperty()
     expand_all: bpy.props.BoolProperty(name="Expand All", default=False, options={"SKIP_SAVE"})
 

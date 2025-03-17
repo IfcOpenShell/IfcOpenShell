@@ -691,7 +691,7 @@ class file:
         if format == ".ifcZIP":
             return self.write(path, ".ifc", zipped=True)
         self.wrapped_data.write(str(path))
-        
+
         if zipped:
             unzipped_path = path.with_suffix(format)
             path.rename(unzipped_path)
