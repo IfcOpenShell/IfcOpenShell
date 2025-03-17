@@ -143,12 +143,12 @@ def format_distance(
         unit_scale = 1
         if length_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT"):
             unit_system = "METRIC" if length_unit.Name == "METRE" else "IMPERIAL"
-            unit_length = length_unit.Name
+            unit_length = length_unit.Name.upper()
             if hasattr(length_unit, "Prefix") and length_unit.Prefix:
                 unit_length = length_unit.Prefix + length_unit.Name
             unit_length_mapping = {
-                "foot": "FEET",
-                "inch": "INCHES",
+                "FOOT": "FEET",
+                "INCH": "INCHES",
                 "METRE": "METERS",
                 "DECIMETRE": "DECIMETERS",
                 "CENTIMETRE": "CENTIMETERS",
