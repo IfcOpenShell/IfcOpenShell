@@ -238,8 +238,10 @@ class ObjectMaterialData:
         return results
 
     @classmethod
-    def set_items(cls):
+    def set_items(cls) -> list[dict[str, Any]]:
         results = []
+        if cls.material is None:
+            return results
         if cls.material:
             items = []
             if cls.material.is_a("IfcMaterialLayerSetUsage"):
