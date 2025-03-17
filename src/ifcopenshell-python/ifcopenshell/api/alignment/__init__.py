@@ -51,6 +51,7 @@ from .create_alignment_from_csv import create_alignment_from_csv
 from .create_horizontal_alignment_by_pi_method import create_horizontal_alignment_by_pi_method
 from .create_geometric_representation import create_geometric_representation
 from .create_vertical_alignment_by_pi_method import create_vertical_alignment_by_pi_method
+from .distance_along_from_station import distance_along_from_station
 from .get_alignment_layouts import get_alignment_layouts
 from .get_axis_subcontext import get_axis_subcontext
 from .get_basis_curve import get_basis_curve
