@@ -386,11 +386,6 @@ struct AttributeValue {
 
 struct rocks_db_attribute_storage {
 public:
-    size_t size(void*, const IfcParse::declaration*, std::size_t identity) const {
-        // @todo is this actually needed?
-        return 8;
-    }
-
     // @todo void* is obviously very ugly here
     template<typename T>
     void set(void* storage, const IfcParse::declaration*, std::size_t identity, std::size_t index, const T& value);
@@ -407,20 +402,19 @@ public:
 
 class IFC_PARSE_API IfcEntityInstanceData {
   public:
-      // @todo since rocks_db_attribute_storage has no members anymore, change to in_memory_attribute_storage*?
-      // 24 -> 8 bytes...
-      std::variant<in_memory_attribute_storage, rocks_db_attribute_storage> storage_;
+      // Since rocks_db_attribute_storage has no members this is not a variant<in_memory, rocks> but in_memory*, where nullptr means a rocks_db_attribute_storage is constructed on the fly given the context from instance data.
+      in_memory_attribute_storage* storage_;
 
       IfcEntityInstanceData(in_memory_attribute_storage&& storage)
-          : storage_(std::move(storage))
+          : storage_(new in_memory_attribute_storage(std::move(storage)))
       {}
 
-      IfcEntityInstanceData(rocks_db_attribute_storage&& storage)
-          : storage_(std::move(storage))
+      IfcEntityInstanceData(rocks_db_attribute_storage&&)
+          : storage_(nullptr)
       {}
 
       IfcEntityInstanceData(IfcEntityInstanceData&& other) noexcept
-          : storage_(std::move(other.storage_))
+          : storage_(other.storage_)
       {}
 
       // No copy-constructor anymore because we need the instance for storage model context
@@ -428,7 +422,7 @@ class IFC_PARSE_API IfcEntityInstanceData {
 
       IfcEntityInstanceData& operator=(IfcEntityInstanceData&& other) {
           if (this != &other) {
-              storage_ = std::move(other.storage_);
+              storage_ = other.storage_;
           }
           return *this;
       }
@@ -437,45 +431,29 @@ class IFC_PARSE_API IfcEntityInstanceData {
 
     template<typename T>
     void set_attribute_value(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index, T&& value) {
-        std::visit([&index, &value, storage, decl, identity](auto& x) {
-            if constexpr (std::is_same_v<std::decay_t<decltype(x)>, in_memory_attribute_storage>) {
-                return x.set(index, value);
-            } else {
-                return x.set(storage, decl, identity, index, value);
-            }
-        }, storage_);
+        if (storage_) {
+            storage_->set(index, value);
+        } else {
+            rocks_db_attribute_storage{}.set(storage, decl, identity, index, value);
+        }
     }
 
     template<typename T>
     bool has_attribute_value(void* storage, const IfcParse::declaration* decl, std::size_t identity, std::size_t index) const {
-        return std::visit([&index, storage, decl, identity](const auto& x) {
-            if constexpr (std::is_same_v<std::decay_t<decltype(x)>, in_memory_attribute_storage>) {
-                return x.has<T>(index);
-            } else {
-                return x.has<T>(storage, decl, identity, index);
-            }
-        }, storage_);
+        if (storage_) {
+            return storage_->has<T>(index);
+        } else {
+            return rocks_db_attribute_storage{}.has<T>(storage, decl, identity, index);
+        }
     }
 
     template<typename Visitor>
     auto apply_visitor(void* storage, const IfcParse::declaration* decl, std::size_t identity, Visitor&& visitor, std::size_t index) const {
-        return std::visit([&index, &visitor, storage, decl, identity](const auto& x) {
-            if constexpr (std::is_same_v<std::decay_t<decltype(x)>, in_memory_attribute_storage>) {
-                return x.apply_visitor(std::forward<Visitor>(visitor), index);
-            } else {
-                return x.apply_visitor(storage, decl, identity, index, std::forward<Visitor>(visitor));
-            }
-        }, storage_);
-    }
-
-    size_t size(void* storage, const IfcParse::declaration* decl, std::size_t identity) const {
-        return std::visit([storage, decl, identity](const auto& x) {
-            if constexpr (std::is_same_v<std::decay_t<decltype(x)>, in_memory_attribute_storage>) {
-                return x.size();
-            } else {
-                return x.size(storage, decl, identity);
-            }
-        }, storage_);
+        if (storage_) {
+            return storage_->apply_visitor(std::forward<Visitor>(visitor), index);
+        } else {
+            return rocks_db_attribute_storage{}.apply_visitor(storage, decl, identity, index, std::forward<Visitor>(visitor));
+        }
     }
 
     void toString(void* storage, const IfcParse::declaration*, std::size_t identity, std::ostream&, bool upper = false) const;

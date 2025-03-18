@@ -264,6 +264,7 @@ bool impl::serialize(std::string& val, const aggregate_of_instance::ptr& t)
 
 bool impl::serialize(std::string& val, const aggregate_of_aggregate_of_instance::ptr& t)
 {
+    // @todo
     return false;
 }
 

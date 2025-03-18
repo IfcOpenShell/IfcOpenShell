@@ -60,21 +60,12 @@ namespace {
 
 
         virtual bool Merge(const rocksdb::Slice&,
-            const rocksdb::Slice* existing_value,
-            const rocksdb::Slice& value,
-            std::string* new_value,
+            const rocksdb::Slice*,
+            const rocksdb::Slice&,
+            std::string*,
             rocksdb::Logger*) const override
         {
             return false;
-            /*
-            if (existing_value) {
-                new_value->assign(existing_value->data(), existing_value->size());
-                new_value->append(value.data(), value.size());
-            } else {
-                new_value->assign(value.data(), value.size());
-            }
-            return true;
-            */
         }
 
         virtual const char* Name() const override {
@@ -359,8 +350,8 @@ namespace impl {
         // to make sure that instance pointer are constant during file lifetime
         // cache instances because we want stable pointers
         // @todo this is silly, but we cannot have the same type, this should be just a pointer then on the IfcFile side?
-        typedef std::map<std::pair<instance_ref, uint32_t>, IfcUtil::IfcBaseClass*> entity_by_iden_cache_t;
-        entity_by_iden_cache_t instance_cache_;
+        typedef std::map<uint32_t, IfcUtil::IfcBaseClass*> entity_by_iden_cache_t;
+        entity_by_iden_cache_t instance_cache_, type_instance_cache_;
                 
         // @todo all these size_ts should probably be uint32_t for consistency with in-mem storage
 
@@ -619,6 +610,7 @@ public:
 
     bool check_existance_before_adding = true;
     bool calculate_unit_factors = true;
+    bool instantiate_typed_instances = true;
 
     // @todo temporarily public for header
     storage_t storage_;
