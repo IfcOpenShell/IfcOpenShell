@@ -667,6 +667,10 @@ namespace IfcGeom {
 		/// Use get() to retrieve the created geometry.
 		const IfcUtil::IfcBaseClass* next() {
 			using std::chrono::high_resolution_clock;
+
+			delete *task_result_iterator_;
+			delete *native_task_result_iterator_;
+
 			if (num_threads_ != 1) {
 				if (!wait_for_element()) {
 					Logger::SetProduct(boost::none);
@@ -889,19 +893,9 @@ namespace IfcGeom {
 					init_future_.wait();
 				}
 			}
-
-			if (settings_.get<ifcopenshell::geometry::settings::IteratorOutput>().get() != ifcopenshell::geometry::settings::NATIVE) {
-				for (auto& p : all_processed_native_elements_) {
-					delete p;
-				}
-			}
 			
 			for (auto& k : kernel_pool) {
 				delete k;
-			}
-			
-			for (auto& p : all_processed_elements_) {
-				delete p;
 			}
 		}
 	};
