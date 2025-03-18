@@ -5,6 +5,13 @@ This is a mini-guide to setting up an IDE and configuring it to debug Bonsai
 more easily. It is currently specific to this writers own system (Ubuntu) but
 this can be expanded by others.
 
+.. warning::
+   Attaching debugger to Blender may significantly decrease performance due to
+   the debugger overhead.
+
+VSCode Extension
+--------------
+
 1. **Install VSCode/VSCodium**: This will be system specific. I used the
    available snap package.
 
@@ -126,3 +133,19 @@ this can be expanded by others.
 If you get to this point, congratulations! You will now be 1000% more effective
 when troubleshooting issues, and able to make many more contributions, fixes
 and patches.
+
+Blender Addon + VS Code Debugger
+------------------------------
+
+Setting up debugging with Blender Addon is a bit simpler as it doesn't require Blender to be started in a special way
+and debugger can be always attached later when it's needed.
+
+1. Install Hextant Python Debugger Blender addon from `official repository <https://github.com/hextantstudios/hextant_python_debugger#installation>`_.
+
+2. Open IfcOpenShell repository in VS Code and setup configuration for attaching debugger `per the instructions <https://github.com/hextantstudios/hextant_python_debugger#debug-a-blender-add-on-from-visual-studio-code>`_.
+
+3. Start Debug Server in Blender (Blender -> System -> Start Debug Server)
+
+4. VS Code -> Run and Debug -> "Python Debugger: Remote Attach" in dropdown -> Start Debugging
+
+5. Now debugger is attached to Blender. You can set breakpoints in VS Code and use Debug Console.
