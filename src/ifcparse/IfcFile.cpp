@@ -349,9 +349,16 @@ IfcParse::impl::rocks_db_file_storage::rocksdb_types_iterator::value_type const&
 }
 
 IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(size_t number, instance_ref r) {
-    decltype(instance_cache_)::const_iterator it = instance_cache_.find({ r, number });
-    if (it != instance_cache_.end()) {
-        return it->second;
+    if (r == IfcParse::impl::rocks_db_file_storage::entityinstance_ref) {
+        auto it = instance_cache_.find(number);
+        if (it != instance_cache_.end()) {
+            return it->second;
+        }
+    } else {
+        auto it = type_instance_cache_.find(number);
+        if (it != type_instance_cache_.end()) {
+            return it->second;
+        }
     }
     
     std::string v;
@@ -369,10 +376,19 @@ IfcUtil::IfcBaseClass* IfcParse::impl::rocks_db_file_storage::assert_existance(s
             throw std::runtime_error("Incorrect reference");
         }
         IfcEntityInstanceData data(rocks_db_attribute_storage{});
-        auto inst = file->schema()->instantiate(decl, std::move(data));
+        IfcUtil::IfcBaseClass* inst;
+        if (file->instantiate_typed_instances) {
+            inst = file->schema()->instantiate(decl, std::move(data));
+        } else {
+            inst = new IfcUtil::IfcLateBoundEntity(decl, std::move(data));
+        }
         inst->id_ = number;
         inst->file_ = file;
-        instance_cache_.insert({ {r, number}, inst });
+        if (r == IfcParse::impl::rocks_db_file_storage::entityinstance_ref) {
+            instance_cache_.insert({ number, inst });
+        } else {
+            type_instance_cache_.insert({ number, inst });
+        }
         return inst;
     } else {
         throw IfcException("Instance #" + boost::lexical_cast<std::string>(number) + " not found");

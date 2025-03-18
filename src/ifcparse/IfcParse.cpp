@@ -2694,15 +2694,11 @@ IfcEntityInstanceData::IfcEntityInstanceData(const IfcEntityInstanceData& data)
 
 AttributeValue IfcEntityInstanceData::get_attribute_value(void* storage, const IfcParse::declaration* decl, std::size_t identity, size_t index) const
 {
-    return std::visit([this, storage, decl, identity, index](const auto& x) {
-        if constexpr (std::is_same_v<std::decay_t<decltype(x)>, in_memory_attribute_storage>) {
-            return AttributeValue(&x, (uint8_t)index);
-        } else if constexpr (std::is_same_v<std::decay_t<decltype(x)>, rocks_db_attribute_storage>) {
-            return AttributeValue((IfcParse::impl::rocks_db_file_storage*) storage, identity, decl->as_entity() ? 1 : 0, index);
-        } else {
-            return AttributeValue{};
-        }
-    }, storage_);
+    if (storage_) {
+        return AttributeValue(storage_, (uint8_t)index);
+    } else {
+        return AttributeValue((IfcParse::impl::rocks_db_file_storage*)storage, identity, decl->as_entity() ? 1 : 0, index);
+    }
 }
 
 bool IfcParse::impl::rocks_db_file_storage::read_schema(const IfcParse::schema_definition*& schema) {
