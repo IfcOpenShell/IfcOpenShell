@@ -27,7 +27,8 @@ from sverchok.data_structure import updateNode
 
 class SvIfcCreateFileRefresh(bpy.types.Operator):
     bl_idname = "node.sv_ifc_create_file_refresh"
-    bl_label = "LB Out"
+    bl_label = "File Refresh"
+    bl_description = "Create new IFC file."
 
     tree_name: StringProperty(default="")
     node_name: StringProperty(default="")
