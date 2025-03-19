@@ -37,8 +37,9 @@ def update_usecase(self, context):
 
 class SvIfcTooltip(bpy.types.Operator):
     bl_idname = "node.sv_ifc_tooltip"
-    bl_label = "IFC Info"
+    bl_label = ""
     tooltip: bpy.props.StringProperty()
+    bl_options = {"INTERNAL"}
 
     @classmethod
     def description(cls, context, properties):
