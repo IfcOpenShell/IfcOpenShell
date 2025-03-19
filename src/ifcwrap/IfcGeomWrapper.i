@@ -394,6 +394,9 @@ assign_matrix_access(revolve);
 	std::vector<std::string> setting_names() {
 		return $self->setting_names();
 	}
+	std::string get_type(const std::string& name) {
+		return $self->get_type(name);
+	}
 }
 
 %extend ifcopenshell::geometry::SerializerSettings {
@@ -417,6 +420,9 @@ assign_matrix_access(revolve);
 	}
 	std::vector<std::string> setting_names() {
 		return $self->setting_names();
+	}
+	std::string get_type(const std::string& name) {
+		return $self->get_type(name);
 	}
 }
 

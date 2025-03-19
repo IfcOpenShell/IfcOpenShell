@@ -422,6 +422,68 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = false;
 			};
 		}
+		
+		namespace impl {
+			template <typename T>
+			struct readable_name {
+				static constexpr const char* name = "Unknown Type";
+			};
+
+			template <>
+			struct readable_name<bool> {
+				static constexpr const char* name = "bool";
+			};
+
+			template <>
+			struct readable_name<int> {
+				static constexpr const char* name = "int";
+			};
+
+			template <>
+			struct readable_name<double> {
+				static constexpr const char* name = "double";
+			};
+
+			template <>
+			struct readable_name<std::string> {
+				static constexpr const char* name = "std::string";
+			};
+
+			template <>
+			struct readable_name<std::set<int>> {
+				static constexpr const char* name = "std::set<int>";
+			};
+
+			template <>
+			struct readable_name<std::set<std::string>> {
+				static constexpr const char* name = "std::set<std::string>";
+			};
+
+			template <>
+			struct readable_name<std::vector<double>> {
+				static constexpr const char* name = "std::vector<double>";
+			};
+
+			template <>
+			struct readable_name<IteratorOutputOptions> {
+				static constexpr const char* name = "IteratorOutputOptions";
+			};
+
+			template <>
+			struct readable_name<FunctionStepMethod> {
+				static constexpr const char* name = "FunctionStepMethod";
+			};
+
+			template <>
+			struct readable_name<OutputDimensionalityTypes> {
+				static constexpr const char* name = "OutputDimensionalityTypes";
+			};
+
+			template <>
+			struct readable_name<TriangulationMethod> {
+				static constexpr const char* name = "TriangulationMethod";
+			};
+		}
 
 		template <typename settings_t>
 		class IFC_GEOM_API SettingsContainer {
@@ -451,16 +513,33 @@ namespace ifcopenshell {
 			}
 
 			template <std::size_t Index>
+			std::string get_type_(const std::string& name) const {
+				if (std::tuple_element_t<Index, settings_t>::name == name) {
+					return impl::readable_name<typename std::tuple_element_t<Index, settings_t>::base_type>::name;
+				}
+				if constexpr (Index + 1 < std::tuple_size_v<settings_t>) {
+					return get_type_<Index + 1>(name);
+				} else {
+					throw std::runtime_error("Setting not available");
+				}
+			}
+
+			template <std::size_t Index>
 			void set_option_(const std::string& name, const value_variant_t& val) {
 				if (std::tuple_element_t<Index, settings_t>::name == name) {
 					if constexpr (std::is_enum_v<typename std::tuple_element_t<Index, settings_t>::base_type>) {
-						if (val.which() == 1) {
-							auto val_as_enum = (typename std::tuple_element_t<Index, settings_t>::base_type) boost::get<int>(val);
+						if (auto* val_ptr = boost::get<int>(&val)) {
+							auto val_as_enum = (typename std::tuple_element_t<Index, settings_t>::base_type) *val_ptr;
 							std::get<Index>(settings).value = val_as_enum;
 							return;
 						}
 					}
-					std::get<Index>(settings).value = boost::get<typename std::tuple_element_t<Index, settings_t>::base_type>(val);
+					try {
+						std::get<Index>(settings).value = boost::get<typename std::tuple_element_t<Index, settings_t>::base_type>(val);
+					} catch (const boost::bad_get&) {
+						std::string ty = impl::readable_name<typename std::tuple_element_t<Index, settings_t>::base_type>::name;
+						throw std::runtime_error("Expected a value of type <" + ty + "> for setting '" + name + "'");
+					}
 				} else if constexpr (Index + 1 < std::tuple_size_v<settings_t>) {
 					set_option_<Index + 1>(name, val);
 				} else {
@@ -503,6 +582,10 @@ namespace ifcopenshell {
 
 			void set(const std::string& name, value_variant_t val) {
 				set_option_<0>(name, val);
+			}
+
+			std::string get_type(const std::string& name) {
+				return get_type_<0>(name);
 			}
 
 			std::vector<std::string> setting_names() const {
