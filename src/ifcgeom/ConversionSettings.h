@@ -47,7 +47,9 @@ namespace ifcopenshell {
 				// boost program options does not seem to handle optional<vector> types, so in case
 				// of vector settings we need to strip away the optional and detect argument presence
 				// with !vector::empty()
-				std::conditional_t<std::is_same_v<T, std::vector<double>>, T, boost::optional<T>> value;
+				// tfk: we no longer do this because negative values can not be passed like this as boost confuses them with options
+				// std::conditional_t<std::is_same_v<T, std::vector<double>>, T, boost::optional<T>> value;
+				boost::optional<T> value;
 
 				SettingBase() {}
 
@@ -64,14 +66,15 @@ namespace ifcopenshell {
 						value.emplace();
 						desc.add_options()(Derived::name, apply_default(po::bool_switch(&*value)), Derived::description);
 					} else if constexpr (std::is_same_v<T, std::vector<double>>) {
-						desc.add_options()(Derived::name, apply_default(po::value(&value)->multitoken()), Derived::description);
+						// these options have to be supplied manually in IfcConvert.cpp
+						// desc.add_options()(Derived::name, apply_default(po::value(&value)->multitoken()), Derived::description);
 					} else {
 						desc.add_options()(Derived::name, apply_default(po::value(&value)), Derived::description);
 					}
 				}
 
 				T get() const {
-					if constexpr (std::is_same_v<T, std::vector<double>>) {
+					if constexpr (false && std::is_same_v<T, std::vector<double>>) {
 						return value;
 					} else {
 						if (value) {
@@ -85,7 +88,7 @@ namespace ifcopenshell {
 				}
 
 				bool has() const {
-					if constexpr (std::is_same_v<T, std::vector<double>>) {
+					if constexpr (false && std::is_same_v<T, std::vector<double>>) {
 						return !value.empty();
 					} else {
 						// @todo this is not reliable, better use vmap[...].defaulted()
@@ -391,12 +394,12 @@ namespace ifcopenshell {
 
 			struct ModelOffset : public SettingBase<ModelOffset, std::vector<double>> {
 				static constexpr const char* const name = "model-offset";
-				static constexpr const char* const description = "Applies an arbitrary offset of form 'x,y,z' to all placements.";
+				static constexpr const char* const description = "Applies an arbitrary offset of form x,y,z to all placements.";
 			};
 
 			struct ModelRotation : public SettingBase<ModelRotation, std::vector<double>> {
 				static constexpr const char* const name = "model-rotation";
-				static constexpr const char* const description = "Applies an arbitrary quaternion rotation of form 'x,y,z,w' to all placements.";
+				static constexpr const char* const description = "Applies an arbitrary quaternion rotation of form x,y,z,w to all placements.";
 			};
 
 			enum TriangulationMethod {

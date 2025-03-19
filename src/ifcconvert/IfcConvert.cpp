@@ -298,6 +298,10 @@ int main(int argc, char** argv) {
             "Can take several minutes on large models.")
 		("center-model-geometry",
             "Centers the elements by applying the center point of all mesh vertices as an offset.")
+		("model-offset", po::value<std::string>(&offset_str),
+			"Applies an arbitrary offset of form 'x;y;z' to all placements.")
+		("model-rotation", po::value<std::string>(&rotation_str),
+			"Applies an arbitrary quaternion rotation of form 'x;y;z;w' to all placements.")
 		("include", po::value<inclusion_filter>(&include_filter)->multitoken(),
 			"Specifies that the instances that match a specific filtering criteria are to be included in the geometrical output:\n"
 			"1) 'entities': the following list of types should be included. SVG output defaults "
@@ -448,6 +452,8 @@ int main(int argc, char** argv) {
 
 	const bool center_model = vmap.count("center-model") != 0;
 	const bool center_model_geometry = vmap.count("center-model-geometry") != 0;
+	const bool model_offset = vmap.count("model-offset") != 0;
+	const bool model_rotation = vmap.count("model-rotation") != 0;
 
     if (!quiet || vmap.count("version")) {
 		print_version();
@@ -924,6 +930,44 @@ int main(int argc, char** argv) {
 	} else {
 		Logger::SetOutput(quiet ? nullptr : &cout_, vcounter.count > 1 ? &cout_ : &log_stream);
 	}
+
+	if (model_rotation) {
+		std::vector<double> rotation(4);
+		int n = 0;
+		if (sscanf(rotation_str.c_str(), "%lf;%lf;%lf;%lf %n", &rotation[0], &rotation[1], &rotation[2], &rotation[3], &n) != 4 || n != rotation_str.size()) {
+			cerr_ << "[Error] Invalid use of --model-rotation\n";
+			IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+			print_options(serializer_options);
+			return EXIT_FAILURE;
+		}
+
+		std::stringstream msg;
+		msg << "Using model rotation (" << rotation[0] << "," << rotation[1] << "," << rotation[2] << "," << rotation[3] << ")";
+		Logger::Notice(msg.str());
+
+		geometry_settings.get<ifcopenshell::geometry::settings::ModelRotation>().value = rotation;
+	}
+
+	if (model_offset && (center_model || center_model_geometry)) {
+		Logger::Notice("--model-offset ignored with --center-model or --center-model-geometry");
+	}
+
+	if (model_offset && !(center_model || center_model_geometry)) {
+		std::vector<double> offset(3);
+		int n = 0;
+		if (sscanf(offset_str.c_str(), "%lf;%lf;%lf %n", &offset[0], &offset[1], &offset[2], &n) != 3 || n != offset_str.size()) {
+			cerr_ << "[Error] Invalid use of --model-offset\n";
+			IfcUtil::path::delete_file(IfcUtil::path::to_utf8(output_temp_filename));
+			print_options(serializer_options);
+			return EXIT_FAILURE;
+		}
+
+		std::stringstream msg;
+		msg << std::setprecision(std::numeric_limits<double>::max_digits10) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
+		Logger::Notice(msg.str());
+
+		geometry_settings.get<ifcopenshell::geometry::settings::ModelOffset>().value = offset;
+	}
 	
     if (is_tesselated && (center_model || center_model_geometry)) {
 		std::vector<double> offset(3);
@@ -957,7 +1001,7 @@ int main(int argc, char** argv) {
         offset[2] = -center(2);
 
         std::stringstream msg;
-        msg << std::setprecision (std::numeric_limits< double >::max_digits10) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
+        msg << std::setprecision (std::numeric_limits<double>::max_digits10) << "Using model offset (" << offset[0] << "," << offset[1] << "," << offset[2] << ")";
         Logger::Notice(msg.str());
 
 		geometry_settings.get<ifcopenshell::geometry::settings::ModelOffset>().value = offset;
