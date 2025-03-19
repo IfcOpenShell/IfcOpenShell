@@ -17,13 +17,17 @@
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell
 from sverchok.data_structure import zip_long_repeat
+from typing import Any
 
-ifc_files = {}
+ifc_files: dict[str, ifcopenshell.file] = {}
 
 
 class SvIfcCore:
-    def process(self):
+    sv_input_names: list[str]
+
+    def process(self) -> None:
         sv_inputs_nested = []
         for name in self.sv_input_names:
             sv_inputs_nested.append(self.inputs[name].sv_get())
@@ -31,3 +35,6 @@ class SvIfcCore:
             for sv_input in zip_long_repeat(*sv_input_nested):
                 sv_input = list(sv_input)
                 self.process_ifc(*sv_input)
+
+    def process_ifc(self, *args: Any, **kwargs: Any) -> None:
+        raise NotImplementedError

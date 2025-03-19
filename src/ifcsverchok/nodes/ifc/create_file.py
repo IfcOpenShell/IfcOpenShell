@@ -34,6 +34,7 @@ class SvIfcCreateFileRefresh(bpy.types.Operator):
     has_baked: bpy.props.BoolProperty(name="Has Baked", default=False)
 
     def execute(self, context):
+        node: SvIfcCreateFile
         node = bpy.data.node_groups[self.tree_name].nodes[self.node_name]
         node.process()
         return {"FINISHED"}
@@ -55,7 +56,7 @@ class SvIfcCreateFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.S
         self.sv_input_names = ["schema"]
         super().process()
 
-    def process_ifc(self, schema):
+    def process_ifc(self, schema: str) -> None:
         guid = ifcopenshell.guid.new()
         ifcsverchok.helper.ifc_files[guid] = ifcopenshell.file(schema=schema)
         self.outputs["file"].sv_set([[ifcsverchok.helper.ifc_files[guid]]])

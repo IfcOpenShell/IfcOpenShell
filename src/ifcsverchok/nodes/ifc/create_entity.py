@@ -19,6 +19,7 @@
 import bpy
 from mathutils import Matrix
 import ifcopenshell
+import ifcopenshell.api
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
 
