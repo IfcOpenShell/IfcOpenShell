@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import bl_ui_utils
+import bl_ui_utils.layout
 import bonsai.bim
 import bonsai.tool as tool
 from bpy.types import Panel, Menu
