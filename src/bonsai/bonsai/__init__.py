@@ -40,6 +40,7 @@ from typing import Union, Any, Generator
 
 
 last_commit_hash = "8888888"
+last_commit_date = None
 
 
 def get_last_commit_hash() -> Union[str, None]:
