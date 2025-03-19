@@ -79,7 +79,6 @@ class SvIfcStore:
             # TODO change units to imperial
             pass
         model = ifcopenshell.util.representation.get_context(file, context="Model")
-        print("model: ", model)
         context = ifcopenshell.api.run(
             "context.add_context",
             file,
