@@ -264,7 +264,8 @@ class BIM_UL_containers_manager(UIList):
         "IfcRoadPart": "MOD_FLUID",
     }
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.use_filter_show = True
 
     def draw_item(
@@ -338,7 +339,8 @@ class BIM_UL_containers_manager(UIList):
 
 
 class BIM_UL_elements(UIList):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.use_filter_show = True
 
     def draw_toggle(self, row: bpy.types.UILayout, is_expanded: bool, index: int):

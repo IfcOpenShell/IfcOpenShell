@@ -708,18 +708,16 @@ class BIM_UL_cost_items_trait:
 
 
 class BIM_UL_cost_items(BIM_UL_cost_items_trait, UIList):
-    def __init__(self):
-        self.contract_operator = "bim.contract_cost_item"
-        self.expand_operator = "bim.expand_cost_item"
+    contract_operator = "bim.contract_cost_item"
+    expand_operator = "bim.expand_cost_item"
 
 
 class BIM_UL_cost_item_rates(BIM_UL_cost_items_trait, UIList):
     # A schedule of rates UIList is identical to a regular cost items UIList but
     # we want a separate UIList instance so that you can browse both lists
     # independently in Blender. So we use a trait.
-    def __init__(self):
-        self.contract_operator = "bim.contract_cost_item_rate"
-        self.expand_operator = "bim.expand_cost_item_rate"
+    contract_operator = "bim.contract_cost_item_rate"
+    expand_operator = "bim.expand_cost_item_rate"
 
     def draw_quantity_column(self, layout, cost_item):
         self.draw_uom_column(layout, cost_item)
