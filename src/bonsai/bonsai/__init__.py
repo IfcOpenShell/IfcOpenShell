@@ -40,7 +40,7 @@ from typing import Union, Any, Generator
 
 
 last_commit_hash = "8888888"
-last_commit_date = None
+last_commit_date = "9999999"
 
 
 def get_last_commit_hash() -> Union[str, None]:
@@ -50,6 +50,12 @@ def get_last_commit_hash() -> Union[str, None]:
     if last_commit_hash == str(8_888888):
         return None
     return last_commit_hash[:7]
+
+
+def get_last_commit_date() -> Union[str, None]:
+    if last_commit_date == str(9_999999):
+        return None
+    return last_commit_date
 
 
 # Accessed from bonsai extension:
@@ -97,7 +103,7 @@ def get_debug_info():
         "blender_version": bpy.app.version_string,
         "bonsai_version": bbim_version,
         "bonsai_commit_hash": get_last_commit_hash(),
-        "bonsai_commit_date": last_commit_date,
+        "bonsai_commit_date": get_last_commit_date(),
         "last_actions": last_actions,
         "last_error": last_error,
     }
@@ -220,7 +226,7 @@ if IN_BLENDER:
         path = Path(__file__).resolve().parent
         repo = git.Repo(str(path), search_parent_directories=True)
         last_commit_hash = repo.head.object.hexsha
-        last_commit_date = repo.head.object.committed_datetime.strftime("%Y-%m-%d %H:%M:%S")
+        last_commit_date = repo.head.object.committed_datetime.isoformat()
     except:
         pass
 
