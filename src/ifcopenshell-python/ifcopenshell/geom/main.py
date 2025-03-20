@@ -225,6 +225,55 @@ class settings_mixin:
         else:
             raise AttributeError("'Settings' object has no attribute '%s'" % k)
 
+    def build_parser(self, parser) -> None:
+        """
+        Accepts an argparse.ArgumentParser object, enumerates the settings in this container and
+        adds argument parser rules for each.
+        """
+        type_factories = {
+            "bool": bool,
+            "int": int,
+            "double": float,
+            "std::string": str,
+            "std::set<int>": lambda s: list(map(int, s.split(";"))),
+            "std::set<std::string>": lambda s: s.split(";"),
+            "std::vector<double>": lambda s: list(map(float, s.split(";"))),
+            "IteratorOutputOptions": int,
+            "FunctionStepMethod": int,
+            "OutputDimensionalityTypes": int,
+            "TriangulationMethod": int,
+        }
+        for nm in self.setting_names():
+            if nm == "use-python-opencascade":
+                ty == "bool"
+            else:
+                ty = self.get_type(nm)
+            if ty == "bool":
+                group = parser.add_mutually_exclusive_group()
+                group.add_argument(
+                    f"--{nm}",
+                    dest=nm,
+                    action="store_true",
+                )
+                group.add_argument(
+                    f"--no-{nm}",
+                    dest=nm,
+                    action="store_false",
+                )
+                parser.set_defaults(**{nm: None})
+            else:
+                parser.add_argument(f"--{nm}", dest=nm, type=type_factories[ty])
+
+    def apply_namespace(self, namespace) -> None:
+        """
+        Accepts an argparse.Namespace object, enumerates over the values in this namespace and
+        writes them to the settings when available
+        """
+        names = set(self.setting_names())
+        for k, v in namespace._get_kwargs():
+            if k in names and v is not None:
+                self.set(k, v)
+
 
 class serializer_settings(settings_mixin, ifcopenshell_wrapper.SerializerSettings):
     pass
