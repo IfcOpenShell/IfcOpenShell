@@ -76,7 +76,7 @@
             const micropip = pyodide.pyimport("micropip");
             await micropip.install("typing-extensions");
             document.querySelector("#status2").innerHTML = "Loading IfcOpenShell";
-            await micropip.install("wheels/ifcopenshell-0.8.1+latest-cp312-cp312-emscripten_3_1_58_wasm32.whl");
+            await micropip.install("wheels/ifcopenshell-0.8.2+d50e806-cp312-cp312-emscripten_3_1_58_wasm32.whl");
 
             document.body.className = '';
 
