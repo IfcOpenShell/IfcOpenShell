@@ -180,6 +180,7 @@ class IFC_Sv_write_file(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "File path to write to."
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
     node_group: bpy.props.StringProperty(default="")
     force_mode: bpy.props.BoolProperty(default=False)
 
