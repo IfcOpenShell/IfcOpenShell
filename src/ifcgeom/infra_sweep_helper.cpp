@@ -63,31 +63,37 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 			auto relative_dist_along = (dist_along - *profile_index) / (*(profile_index + 1) - *profile_index);
 			const auto& profile_a = cross_sections[std::distance(longitudes.begin(), profile_index)].section_geometry;
 			const auto& offset_a = cross_sections[std::distance(longitudes.begin(), profile_index)].offset;
+			const auto& rotation_a = cross_sections[std::distance(longitudes.begin(), profile_index)].rotation;
 
 			taxonomy::geom_item::ptr interpolated = nullptr;
 
 			// Only interpolate if:
 			//  - there is a profile ahead of us, and
-			//  - we're not exactly at the location of the current profile or whether there is an offset involved.
+			//  - we're not exactly at the location of the current profile or whether there is an offset involved
 			bool should_interpolate =
 				(profile_index + 1 < longitudes.end()) &&
-				(relative_dist_along >= 1.e-9 || offset_a.cwiseAbs().maxCoeff() > 0.);
+				(relative_dist_along >= 1.e-9 || offset_a.cwiseAbs().maxCoeff() > 0. || rotation_a);
+
+			boost::optional<Eigen::Matrix3d> interpolated_rotation;
 
 			if (should_interpolate) {
 				taxonomy::geom_item::ptr profile_b;
 				Eigen::Vector3d offset_b;
+				boost::optional<Eigen::Matrix3d> rotation_b;
 				if ((profile_index + 1 < longitudes.end())) {
 					profile_b = cross_sections[std::distance(longitudes.begin(), profile_index) + 1].section_geometry;
 					offset_b = cross_sections[std::distance(longitudes.begin(), profile_index) + 1].offset;
+					rotation_b = cross_sections[std::distance(longitudes.begin(), profile_index) + 1].rotation;
 				} else {
 					profile_b = profile_a;
 					offset_b = offset_a;
+					rotation_b = rotation_a;
 				}
 
 				// Only interpolate if the profiles are different or either of the offsets is non-zero
 				bool should_interpolate2 =
 					(profile_a->instance != profile_b->instance) ||
-					(offset_a.cwiseAbs().maxCoeff() > 0. || offset_b.cwiseAbs().maxCoeff() > 0.);
+					(offset_a.cwiseAbs().maxCoeff() > 0. || offset_b.cwiseAbs().maxCoeff() > 0. || rotation_b);
 
 				if (should_interpolate2) {
 
@@ -130,6 +136,13 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 					}
 					
 					auto interpolated_offset = lerp(offset_a, offset_b, relative_dist_along);
+					if (rotation_a && rotation_b) {
+						// @todo we don't support an overridden rotation on only one of the placements
+						// in which case we would need to lerp with the rotation component below in m4b.
+						interpolated_rotation = lerp(*rotation_a, *rotation_b, relative_dist_along);
+					} else {
+						Logger::Error("Direction vectors on cross section placements only supported when used consistently");
+					}
 					taxonomy::loop::ptr w1, w2;
 					taxonomy::edge::ptr e1, e2;
 					for (auto tmp_ : boost::combine(loops_a, loops_b)) {
@@ -149,6 +162,7 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 							auto& p2 = boost::get<taxonomy::point3::ptr>(e2->start);
 
 							auto p3 = (lerp(p1->ccomponents(), p2->ccomponents(), relative_dist_along) + interpolated_offset).eval();
+							// auto p4 = (interpolated_rotation * p3).eval();
 							points.push_back(taxonomy::make<taxonomy::point3>(p3));
 						}
 						if (!points.empty()) {
@@ -173,9 +187,16 @@ taxonomy::loft::ptr ifcopenshell::geometry::make_loft(const Settings& settings_,
 			}*/
 
 			Eigen::Matrix4d m4b = Eigen::Matrix4d::Identity();
-			m4b.col(0).head<3>() = m4.col(1).head<3>().normalized();
-			m4b.col(1).head<3>() = m4.col(2).head<3>().normalized();
-			m4b.col(2).head<3>() = m4.col(0).head<3>().normalized();
+			if (interpolated_rotation) {
+				// direction vectors on the linear placement overwrite the placement otherwise inferred from the tangent
+				m4b.col(0).head<3>() = interpolated_rotation->col(1);
+				m4b.col(1).head<3>() = interpolated_rotation->col(2);
+				m4b.col(2).head<3>() = interpolated_rotation->col(0);
+			} else {
+				m4b.col(0).head<3>() = m4.col(1).head<3>().normalized();
+				m4b.col(1).head<3>() = m4.col(2).head<3>().normalized();
+				m4b.col(2).head<3>() = m4.col(0).head<3>().normalized();
+			}
 			m4b.col(3).head<3>() = m4.col(3).head<3>();
 
 			if (interpolated) {
