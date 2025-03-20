@@ -73,6 +73,7 @@
             document.querySelector("#status2").innerHTML = "Loading dependencies";
             await pyodide.loadPackage("micropip");
             await pyodide.loadPackage("numpy");
+            await pyodide.loadPackage("shapely");
             const micropip = pyodide.pyimport("micropip");
             await micropip.install("typing-extensions");
             document.querySelector("#status2").innerHTML = "Loading IfcOpenShell";
