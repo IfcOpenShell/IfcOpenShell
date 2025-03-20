@@ -150,10 +150,6 @@ namespace IfcGeom {
 		int done;
 		int total;
 
-		// @todo these appear uninitialized?
-		std::string unit_name_;
-		double unit_magnitude_;
-
 		ifcopenshell::geometry::taxonomy::point3 bounds_min_;
 		ifcopenshell::geometry::taxonomy::point3 bounds_max_;
 
@@ -166,8 +162,8 @@ namespace IfcGeom {
 	public:
 		void set_cache(GeometrySerializer* cache) { cache_ = cache; }
 
-		const std::string& unit_name() const { return unit_name_; }
-		double unit_magnitude() const { return unit_magnitude_; }
+		const std::string& unit_name() const { return converter_->mapping()->get_length_unit_name(); }
+		double unit_magnitude() const { return converter_->mapping()->get_length_unit(); }
 		// Check if error occurred during iterator initialization or iteration over elements.
 		bool had_error_processing_elements() const { return had_error_processing_elements_; }
 
@@ -903,6 +899,8 @@ namespace IfcGeom {
 			for (auto& p : all_processed_elements_) {
 				delete p;
 			}
+
+			delete converter_;
 		}
 	};
 }
