@@ -1170,7 +1170,7 @@ class DumbWallJoiner:
             ifcopenshell.util.element.replace_element(old_rep, rep)
             ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), old_rep)
         else:
-            ifcopenshell.api.geometry.assign_representation(self.file, product=wall, representation=rep)
+            ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), product=wall, representation=rep)
 
     def extend(self, wall1, target):
         if tool.Ifc.is_moved(wall1):

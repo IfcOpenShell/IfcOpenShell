@@ -73,6 +73,9 @@ def regenerate_wall_representation(
     0.0)). This is a logical, consistent, and useful placement coordinate
     (especially for apps that can pivot using this point).
 
+    All this functionality relies on the Plan/Axis/GRAPH_VIEW representation
+    context. It will be created if it does not exist.
+
     :param wall: The IfcWall for the representation,
         only Model/Body/MODEL_VIEW type of representations are currently supported.
     :param length: If the wall doesn't have an axis length, this is the default
@@ -93,6 +96,13 @@ class Regenerator:
         self.axis = ifcopenshell.util.representation.get_context(file, "Plan", "Axis", "GRAPH_VIEW")
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
         self.is_angled = False
+
+        if not self.axis:
+            if not (plan := ifcopenshell.util.representation.get_context(file, "Plan")):
+                plan = ifcopenshell.api.context.add_context(file, context_type="Plan")
+            self.axis = ifcopenshell.api.context.add_context(
+                file, context_type="Plan", context_identifier="Axis", target_view="GRAPH_VIEW", parent=plan
+            )
 
     def regenerate(self, wall, length=1.0, height=1.0, angle=None):
         print("-" * 100)
