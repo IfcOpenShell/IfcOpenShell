@@ -548,7 +548,7 @@ class Regenerator:
         material = ifcopenshell.util.element.get_material(wall, should_skip_usage=True)
         if not material or not material.is_a("IfcMaterialLayerSet"):
             return []
-        return [PrioritisedLayer(l.Priority or 0, l.LayerThickness) for l in material.MaterialLayers]
+        return [PrioritisedLayer(getattr(l, "Priority", 0) or 0, l.LayerThickness) for l in material.MaterialLayers]
 
     def combine_layers(self, layers, override_priorities):
         results = []

@@ -480,7 +480,7 @@ def get_reference_line(wall: ifcopenshell.entity_instance, fallback_length: floa
     if axis := ifcopenshell.util.representation.get_representation(wall, "Plan", "Axis", "GRAPH_VIEW"):
         for item in ifcopenshell.util.representation.resolve_representation(axis).Items:
             if item.is_a("IfcPolyline"):
-                points = item.Points
+                points = [p[0] for p in item.Points]
             elif item.is_a("IfcIndexedPolyCurve"):
                 points = item.Points.CoordList
             else:
