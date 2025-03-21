@@ -32,7 +32,8 @@ from sverchok.data_structure import updateNode, ensure_min_nesting
 class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     """
     Triggers: Sv to Ifc Repr
-    Tooltip: Sverchok geometry to Ifc Shape Representation
+    Tooltip: Add Sverchok geometry as IfcShapeRepresentations
+        to the transient IFC file.
     """
 
     bl_idname = "SvIfcSverchokToIfcRepr"

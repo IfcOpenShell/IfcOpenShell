@@ -30,6 +30,7 @@ from sverchok.data_structure import updateNode, flatten_data
 class SvIfcByGuid(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcByGuid"
     bl_label = "IFC By Guid"
+    bl_description = "Get IFC elements by guid from the transient IFC file."
     n_id: StringProperty(default="")
     guid: StringProperty(name="Guid(s)", update=updateNode)
     id_iter = itertools.count()

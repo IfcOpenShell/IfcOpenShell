@@ -48,7 +48,8 @@ from mathutils import Matrix
 class SvIfcBMeshToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     """
     Triggers: BMesh to Ifc Repr
-    Tooltip: Blender mesh to Ifc Shape Representation
+    Tooltip: Add Blender mesh objects as IfcShapeRepresentations
+        to the transient IFC file.
     """
 
     bl_idname = "SvIfcBMeshToIfcRepr"

@@ -28,6 +28,7 @@ from sverchok.data_structure import updateNode
 class SvIfcReadFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcReadFile"
     bl_label = "IFC Read File"
+    bl_description = "Read an IFC file from the provided path."
     path: StringProperty(name="path", update=updateNode)
 
     def sv_init(self, context):

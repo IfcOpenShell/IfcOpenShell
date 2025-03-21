@@ -44,6 +44,7 @@ class SvIfcCreateFileRefresh(bpy.types.Operator):
 class SvIfcCreateFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcCreateFile"
     bl_label = "IFC Create File"
+    bl_description = "Create a new IFC file."
     schema: StringProperty(name="schema", update=updateNode, default="IFC4")
 
     def sv_init(self, context):

@@ -31,7 +31,7 @@ from sverchok.data_structure import updateNode, flatten_data
 class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     """
     Triggers: Ifc write to file
-    Tooltip: Write active Sverchok Ifc file to path
+    Tooltip: Write transient Ifc file to path
     """
 
     def refresh_node_local(self, context):

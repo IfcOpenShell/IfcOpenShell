@@ -27,6 +27,7 @@ from sverchok.data_structure import updateNode
 class SvIfcAdd(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcAdd"
     bl_label = "IFC Add"
+    bl_description = "Add an entity to the provided IFC file."
     file: StringProperty(name="file", update=updateNode)
     entity: StringProperty(name="entity", update=updateNode)
 

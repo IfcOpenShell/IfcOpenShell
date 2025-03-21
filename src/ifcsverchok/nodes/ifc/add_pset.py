@@ -36,6 +36,7 @@ from sverchok.data_structure import updateNode, flatten_data
 class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcAddPset"
     bl_label = "IFC Add Pset"
+    bl_description = "Add/edit a property set for the provided element ids in the transient IFC file."
     Name: StringProperty(
         name="Name",
         description="Name of the property set. Eg. Pset_WallCommon.",
