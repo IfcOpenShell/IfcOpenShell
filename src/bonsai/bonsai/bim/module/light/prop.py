@@ -72,7 +72,6 @@ def update_sun_path_size(self, context):
 
 
 def update_shadow_mode(self, context):
-    print("Shadow mode", self.shadow_mode)
     if self.shadow_mode == "SHADING":
         update_sun_path(self)
         context.scene.render.engine = "BLENDER_WORKBENCH"

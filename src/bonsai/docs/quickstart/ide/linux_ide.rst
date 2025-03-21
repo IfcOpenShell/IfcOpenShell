@@ -419,18 +419,42 @@ Integrated Development Environment (IDE) and we will create a dedicated user for
           :width: 1000 px
 
     g. Commit the changes.
-    
+       First provide your user name and email to Git.
+
+       .. image:: images/git-user-email.png
+          :width: 1000 px
+
+       Then commit the changes by clicking in the check mark in the Source Control tool.
+
        .. image:: images/commit-changes.png
           :width: 1000 px
 
-    h. Push the changes to our project fork.
-    
-       .. image:: images/push-changes.png
+       Accept the staging of the changes prior to commit.
+
+       .. image:: images/staging-prior-commit.png
           :width: 1000 px
+
+    h. Push the changes to our new brnach in the github project fork.
+    
+       .. image:: images/push-to-private-fork-new-branch.png
+          :width: 1000 px
+
+       Check that the changes are in the project fork in GitHub. You can see that the directory *ide* has been added, for example.
+
+       .. image:: images/private-fork-new-branch-updated.png
+          :width: 1000 px
+
 
     i. Create a Pull Request to the upstream main branch of the IfcOpenShell project.
-    
-       .. image:: images/create-pull-request.png
+       Go to your GitHub page and you will see that the new branch has 1 commit ahead of the upstream main branch. Click in the *Compare & pull request* button.
+
+       .. image:: images/compare-and-pull-request.png
           :width: 1000 px
 
+       Verify that the changes are correct, add a description and click in the *Create pull request* button.
+
+       .. image:: images/pull-request.png
+          :width: 1000 px
+
+    CONGRATULATIONS! You have now made a change in the Bonsai project and created a Pull Request to the main branch of the project. Happy coding and documenting!
 
