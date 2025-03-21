@@ -19,6 +19,7 @@
 import bpy
 from . import ui, prop, operator
 from bpy.app.handlers import persistent
+import ifcopenshell.util.element
 
 classes = (
     operator.AddCurvelikeItem,
@@ -103,8 +104,13 @@ def block_scale(scene: bpy.types.Scene) -> None:
 
     if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
         if isinstance(obj, bpy.types.Object) and tool.Blender.get_ifc_definition_id(obj):
-            if obj.scale != (1, 1, 1):
-                obj.scale = (1, 1, 1)
+            if obj.type == 'CAMERA':
+                camera = tool.Ifc.get_entity(obj)
+                if ifcopenshell.util.element.get_pset(camera, "EPset_Drawing", "TargetView") == "REFLECTED_PLAN_VIEW":
+                    obj.scale = (-1, -1, -1)
+            else:
+                if obj.scale != (1, 1, 1):
+                    obj.scale = (1, 1, 1)
         elif isinstance(obj, bpy.types.Mesh) and tool.Geometry.get_mesh_props(obj).ifc_definition_id:
             if obj.scale != (1, 1, 1):
                 obj.scale = (1, 1, 1)
