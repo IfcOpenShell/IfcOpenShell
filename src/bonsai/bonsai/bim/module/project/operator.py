@@ -51,7 +51,6 @@ from bonsai.bim.ifc import IfcStore
 from bonsai.bim.ui import IFCFileSelector
 from bonsai.bim import import_ifc
 from bonsai.bim import export_ifc
-from collections import defaultdict
 from math import radians
 from pathlib import Path
 from collections import defaultdict
@@ -63,7 +62,7 @@ from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneD
 from bonsai.bim.module.project.prop import BreadcrumbType
 from bonsai.bim.module.model.decorator import PolylineDecorator, FaceAreaDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Union, TYPE_CHECKING, Literal, get_args
+from typing import Union, TYPE_CHECKING, get_args
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import Link
@@ -2316,7 +2315,7 @@ class RefreshClippingPlanes(bpy.types.Operator):
                 should_refresh = True
                 break
 
-        if context.scene.camera.visible_get() and tool.Ifc.get_entity(context.scene.camera):
+        if (camera := context.scene.camera) and camera.visible_get() and tool.Ifc.get_entity(camera):
             camera = context.scene.camera
         else:
             camera = None
