@@ -897,6 +897,13 @@ namespace IfcGeom {
 			for (auto& k : kernel_pool) {
 				delete k;
 			}
+
+			if (task_result_ptr_initialized) {
+				while (task_result_iterator_ != --all_processed_elements_.end()) {
+					delete *task_result_iterator_++;
+					delete *native_task_result_iterator_++;
+				}
+			}
 		}
 	};
 }
