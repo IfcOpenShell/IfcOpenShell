@@ -38,25 +38,25 @@ class SvIfcQuickProjectSetup(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
 
     def sv_init(self, context):
         input_socket = self.inputs.new("SvStringsSocket", "filename")
-        input_socket.tooltip = "Ifc file name"
+        input_socket.description = "Ifc file name"
         input_socket = self.inputs.new("SvStringsSocket", "timestring")
-        input_socket.tooltip = "Timestring, default = current time"
+        input_socket.description = "Timestring, default = current time"
         input_socket = self.inputs.new("SvStringsSocket", "organization")
-        input_socket.tooltip = "Organization"
+        input_socket.description = "Organization"
         input_socket = self.inputs.new("SvStringsSocket", "creator")
-        input_socket.tooltip = "creator"
+        input_socket.description = "creator"
         input_socket = self.inputs.new("SvStringsSocket", "schema_identifier")
-        input_socket.tooltip = "Schema, default = 'IFC4'"
+        input_socket.description = "Schema, default = 'IFC4'"
         input_socket = self.inputs.new("SvStringsSocket", "application_version")
-        input_socket.tooltip = "Application version"
+        input_socket.description = "Application version"
         input_socket = self.inputs.new("SvStringsSocket", "timestamp")
-        input_socket.tooltip = "Timestamp, default = current time"
+        input_socket.description = "Timestamp, default = current time"
         input_socket = self.inputs.new("SvStringsSocket", "application")
-        input_socket.tooltip = "Application, default = 'IfcOpenShell'"
+        input_socket.description = "Application, default = 'IfcOpenShell'"
         input_socket = self.inputs.new("SvStringsSocket", "project_globalid")
-        input_socket.tooltip = "Project GlobalId"
+        input_socket.description = "Project GlobalId"
         input_socket = self.inputs.new("SvStringsSocket", "project_name")
-        input_socket.tooltip = "Project name"
+        input_socket.description = "Project name"
         self.outputs.new("SvVerticesSocket", "file")
 
     def draw_buttons(self, context, layout):

@@ -29,9 +29,9 @@ class SvIfcCreateProject(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
 
     def sv_init(self, context):
         input_socket = self.inputs.new("SvStringsSocket", "file")
-        input_socket.tooltip = "ifc file to add the project to"
+        input_socket.description = "ifc file to add the project to"
         input_socket = self.inputs.new("SvStringsSocket", "project_name")
-        input_socket.tooltip = "Project name"
+        input_socket.description = "Project name"
         self.outputs.new("SvVerticesSocket", "file")
 
     def draw_buttons(self, context, layout):
