@@ -107,3 +107,4 @@ src/bonsai/bonsai/bim/schema/Brick.ttl
 
 bonsaiDecoratorForLoads.code-workspace
 dev_environment.bat
+*.so
