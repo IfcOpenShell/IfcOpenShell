@@ -186,6 +186,7 @@
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"
+	#include "../serializers/ColladaSerializer.h"
 	#include "../serializers/HdfSerializer.h"
 	
 #ifdef HAS_SCHEMA_2x3
@@ -282,6 +283,7 @@ constexpr bool is_std_vector_vector_v = is_std_vector_vector<T>::value;
 
 	#include "../serializers/SvgSerializer.h"
 	#include "../serializers/WavefrontObjSerializer.h"
+	#include "../serializers/ColladaSerializer.h"
 	#include "../serializers/HdfSerializer.h"
 	#include "../serializers/XmlSerializer.h"
 	#include "../serializers/GltfSerializer.h"

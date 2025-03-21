@@ -260,6 +260,7 @@ namespace {
 %include "../serializers/SvgSerializer.h"
 %include "../serializers/HdfSerializer.h"
 %include "../serializers/WavefrontObjSerializer.h"
+%include "../serializers/ColladaSerializer.h"
 %include "../serializers/XmlSerializer.h"
 %include "../serializers/GltfSerializer.h"
 %include "../serializers/TtlWktSerializer.h"

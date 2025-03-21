@@ -641,7 +641,10 @@ class serializers:
         hdf5 = ifcopenshell_wrapper.HdfSerializer
     except:
         pass
-
+    try:
+        collada = ifcopenshell_wrapper.ColladaSerializer
+    except:
+        pass
     # ttl is always available since it doesn't depend on any C++ libraries,
     # just people might be using an outdated binary
     if hasattr(ifcopenshell_wrapper, "TtlWktSerializer"):
