@@ -25,6 +25,8 @@ from ifcsverchok.ifcstore import SvIfcStore
 import bpy
 import json
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.api.pset
 
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
@@ -80,12 +82,13 @@ class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
 
         self.outputs["Entity"].sv_set([element])
 
-    def create(self, name, properties, elements):
+    def create(
+        self, name: str, properties: str, elements: list[ifcopenshell.entity_instance]
+    ) -> list[ifcopenshell.entity_instance]:
         results = []
         for element in elements:
-            result = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name=name)
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            result = ifcopenshell.api.pset.add_pset(self.file, product=element, name=name)
+            ifcopenshell.api.pset.edit_pset(
                 self.file,
                 pset=result,
                 properties=json.loads(properties),
@@ -94,13 +97,14 @@ class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
             results.append(result)
         return results
 
-    def edit(self, name, properties, elements):
+    def edit(
+        self, name: str, properties: str, elements: list[ifcopenshell.entity_instance]
+    ) -> list[ifcopenshell.entity_instance]:
         result_ids = SvIfcStore.id_map[self.node_id]
-        results = []
+        results: list[ifcopenshell.entity_instance] = []
         for result_id in result_ids:
             result = self.file.by_id(result_id)
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            ifcopenshell.api.pset.edit_pset(
                 self.file,
                 pset=result,
                 name=name,

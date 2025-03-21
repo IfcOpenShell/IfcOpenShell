@@ -38,7 +38,7 @@ class SvIfcReadFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvI
         self.sv_input_names = ["path"]
         super().process()
 
-    def process_ifc(self, path):
+    def process_ifc(self, path: str) -> None:
         guid = ifcopenshell.guid.new()
         ifcsverchok.helper.ifc_files[guid] = ifcopenshell.open(path)
         self.outputs["file"].sv_set([[ifcsverchok.helper.ifc_files[guid]]])

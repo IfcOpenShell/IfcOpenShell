@@ -77,7 +77,8 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
             file.write(path)
         self.outputs["output"].sv_set(f"File written successfully to: {path}.")
 
-    def ensure_hirarchy(self, file):
+    def ensure_hirarchy(self, file: ifcopenshell.file) -> None:
+        # TODO: same code as ifc.write_file_panel?
         elements_in_buildings = []
         if not 0 <= 0 < len(file.by_type("IfcBuilding")):
             my_building = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcBuilding", name="My Building")

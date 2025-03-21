@@ -22,6 +22,7 @@ import ifcsverchok.helper
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
+from typing import Union
 
 
 class SvIfcRemove(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
@@ -36,12 +37,20 @@ class SvIfcRemove(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
         self.outputs.new("SvStringsSocket", "file")
 
     def process(self):
+        file: ifcopenshell.file
         file = self.inputs["file"].sv_get()[0][0]
         self.new_file = ifcopenshell.file.from_string(file.wrapped_data.to_string())
         self.remove_entity(self.inputs["entity"].sv_get())
         self.outputs["file"].sv_set([[self.new_file]])
 
-    def remove_entity(self, entity):
+    def remove_entity(
+        self,
+        entity: Union[
+            list[list[ifcopenshell.entity_instance]],
+            list[ifcopenshell.entity_instance],
+            ifcopenshell.entity_instance,
+        ],
+    ) -> None:
         if isinstance(entity, (tuple, list)):
             for e in entity:
                 self.remove_entity(e)

@@ -161,9 +161,12 @@ class IFC_Sv_UpdateCurrent(bpy.types.Operator):
     # infra-related spatial structure elements, such as IfcBridge.
     # https://github.com/IfcOpenShell/IfcOpenShell/pull/2576#discussion_r1016261407
     def execute(self, context):
+        import sverchok.node_tree
+
         self.file = SvIfcStore.purge()
         node_tree = context.space_data.node_tree
         if node_tree:
+            assert isinstance(node_tree, sverchok.node_tree.SverchCustomTree)
             if self.force_mode or node_tree.sv_process:
                 try:
                     bpy.context.window.cursor_set("WAIT")

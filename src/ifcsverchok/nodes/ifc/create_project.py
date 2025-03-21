@@ -38,7 +38,6 @@ class SvIfcCreateProject(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
         op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
             "Adds project, unit and context to IFC file"
         )
-        # op.tooltip = self.tooltip
 
     def process(self):
         # file

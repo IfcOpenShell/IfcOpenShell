@@ -63,7 +63,6 @@ class SvIfcQuickProjectSetup(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
             "Quick Project Setup: creates Ifc file and sets up a basic project"
         )
-        # op.tooltip = self.tooltip
 
     def process(self):
         self.sv_input_names = [i.name for i in self.inputs]

@@ -21,7 +21,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.representation
 from ifcopenshell import template
-from typing import Union
+from typing import Union, Any
 
 
 class SvIfcStore:
@@ -30,7 +30,8 @@ class SvIfcStore:
     schema = None
     cache = None
     cache_path = None
-    id_map = {}
+    id_map: dict[str, Any] = {}
+    """Mapping `{node_id: Any}`"""
     guid_map = {}
     deleted_ids = set()
     edited_objs = set()

@@ -33,6 +33,7 @@ class SvIfcByGuid(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
     n_id: StringProperty(default="")
     guid: StringProperty(name="Guid(s)", update=updateNode)
     id_iter = itertools.count()
+    guids: list[str]
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "guid").prop_name = "guid"

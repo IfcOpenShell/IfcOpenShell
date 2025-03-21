@@ -24,11 +24,12 @@ from bpy.props import StringProperty, EnumProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
 import logging
+from typing import Union, Any
 
 logger = logging.getLogger("sverchok.ifc")
 
 
-def update_usecase(self, context):
+def update_usecase(self: "SvIfcApi", context: bpy.types.Context) -> None:
     module_usecase = self.get_module_usecase()
     if module_usecase:
         self.generate_node(*module_usecase)
@@ -68,12 +69,12 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
             self.sv_input_names = [i.name for i in self.inputs]
             super().process()
 
-    def get_module_usecase(self):
+    def get_module_usecase(self) -> Union[list[str], None]:
         usecase = self.inputs["usecase"].sv_get()[0][0]
         if usecase:
             return usecase.split(".")
 
-    def generate_node(self, module, usecase):
+    def generate_node(self, module: str, usecase: str) -> None:
         try:
             node_data = ifcopenshell.api.extract_docs(module, usecase)
         except:
@@ -92,7 +93,7 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
                 self.tooltip = f"{name}: {data['description']}\n"
         self.tooltip = self.tooltip.strip()
 
-    def process_ifc(self, usecase, *setting_values):
+    def process_ifc(self, usecase: Union[str, None], *setting_values: Any) -> None:
         if usecase:
             settings = dict(zip(self.sv_input_names[1:], setting_values))
             settings = {k: v for k, v in settings.items() if v != ""}

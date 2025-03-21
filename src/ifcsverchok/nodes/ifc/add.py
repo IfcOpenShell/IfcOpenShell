@@ -38,13 +38,13 @@ class SvIfcAdd(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
 
     def process(self):
         self.sv_input_names = ["file", "entity"]
-        self.file_out = []
-        self.entity_out = []
+        self.file_out: list[ifcopenshell.file] = []
+        self.entity_out: list[ifcopenshell.entity_instance] = []
         super().process()
         self.outputs["file"].sv_set([self.file_out])
         self.outputs["entity"].sv_set([self.entity_out])
 
-    def process_ifc(self, file, entity):
+    def process_ifc(self, file: ifcopenshell.file, entity: ifcopenshell.entity_instance) -> None:
         self.entity_out.append(file.add(entity))
         self.file_out.append(file)
 

@@ -20,6 +20,9 @@ import bpy
 from mathutils import Matrix
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
+import ifcopenshell.api.root
+import ifcopenshell.util.schema
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
 
@@ -149,21 +152,20 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
 
         self.outputs["Entities"].sv_set(entities)
 
-    def create(self, index=None):
-        entities_ids = []
+    def create(self, index=None) -> list[list[int]]:
+        entities_ids: list[list[int]] = []
         iterator1 = range(len(self.names))
         if index is not None:
             iterator1 = [index[0]]
         for i in iterator1:
             group = self.names[i]
-            group_entities_ids = []
+            group_entities_ids: list[int] = []
             iterator2 = range(len(group))
             if index is not None:
                 iterator2 = [index[1]]
             for j in iterator2:
                 try:
-                    entity = ifcopenshell.api.run(
-                        "root.create_entity",
+                    entity = ifcopenshell.api.root.create_entity(
                         self.file,
                         ifc_class=self.ifc_class,
                         name=self.names[i][j],
@@ -172,8 +174,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
                     try:
                         for repr in self.representations[i][j]:
                             if repr:
-                                ifcopenshell.api.run(
-                                    "geometry.assign_representation",
+                                ifcopenshell.api.geometry.assign_representation(
                                     self.file,
                                     product=entity,
                                     representation=repr,
@@ -183,8 +184,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
                     try:
                         for loc in self.locations[i][j]:
                             if isinstance(loc, Matrix):
-                                ifcopenshell.api.run(
-                                    "geometry.edit_object_placement",
+                                ifcopenshell.api.geometry.edit_object_placement(
                                     self.file,
                                     product=entity,
                                     matrix=loc,
@@ -198,11 +198,11 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
             entities_ids.append(group_entities_ids)
         return entities_ids
 
-    def edit(self):
-        entities_ids = []
+    def edit(self) -> list[list[int]]:
+        entities_ids: list[list[int]] = []
         id_map_copy = SvIfcStore.id_map[self.node_id].copy()
         for i, group in enumerate(self.names):
-            group_entities_ids = []
+            group_entities_ids: list[int] = []
             for j, _ in enumerate(group):
                 try:
                     step_id = id_map_copy[i][j]
@@ -219,8 +219,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
                         if repr and repr.is_a("IfcProductDefinitionShape"):
                             entity.Representation = repr
                         elif repr:
-                            ifcopenshell.api.run(
-                                "geometry.assign_representation",
+                            ifcopenshell.api.geometry.assign_representation(
                                 self.file,
                                 product=entity,
                                 representation=repr,
@@ -230,8 +229,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
                 try:
                     for loc in self.locations[i][j]:
                         if isinstance(loc, Matrix):
-                            ifcopenshell.api.run(
-                                "geometry.edit_object_placement",
+                            ifcopenshell.api.geometry.edit_object_placement(
                                 self.file,
                                 product=entity,
                                 matrix=loc,
@@ -263,7 +261,6 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         try:
             del SvIfcStore.id_map[self.node_id]
             del self.node_dict[hash(self)]
-            # print('Node was deleted')
         except KeyError or AttributeError:
             pass
 

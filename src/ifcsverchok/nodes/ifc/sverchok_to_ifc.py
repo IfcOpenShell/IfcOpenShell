@@ -16,15 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with IfcSverchok.  If not, see <http://www.gnu.org/licenses/>.
 
-from copy import deepcopy
 import bpy
 import ifcopenshell
 import ifcsverchok.helper
 import ifcopenshell.api
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
 import ifcopenshell.util.representation
 from ifcsverchok.ifcstore import SvIfcStore
-import bonsai.tool as tool
-import bonsai.core.geometry as core
 from bpy.props import StringProperty, EnumProperty, IntProperty, FloatVectorProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode, ensure_min_nesting
@@ -142,8 +141,7 @@ class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         for obj in geo_data:
             representations_ids_obj = []
             for item in obj:
-                representation = ifcopenshell.api.run(
-                    "geometry.add_mesh_representation",
+                representation = ifcopenshell.api.geometry.add_mesh_representation(
                     self.file,
                     should_run_listeners=False,
                     context=self.context,
@@ -165,8 +163,7 @@ class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
             return
         for obj in SvIfcStore.id_map[self.node_id]["Representations"]:
             for step_id in obj:
-                ifcopenshell.api.run(
-                    "geometry.remove_representation",
+                ifcopenshell.api.geometry.remove_representation(
                     self.file,
                     representation=self.file.by_id(step_id[0]),
                 )
@@ -180,9 +177,8 @@ class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         if not context:
             parent = ifcopenshell.util.representation.get_context(self.file, self.context_type)
             if not parent:
-                parent = ifcopenshell.api.run("context.add_context", self.file, context_type=self.context_type)
-            context = ifcopenshell.api.run(
-                "context.add_context",
+                parent = ifcopenshell.api.context.add_context(self.file, context_type=self.context_type)
+            context = ifcopenshell.api.context.add_context(
                 self.file,
                 context_type=self.context_type,
                 context_identifier=self.context_identifier,
@@ -197,8 +193,7 @@ class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
             self.file = SvIfcStore.get_file()
             if "Representations" in SvIfcStore.id_map[self.node_id]:
                 for step_id in SvIfcStore.id_map[self.node_id]["Representations"]:
-                    ifcopenshell.api.run(
-                        "geometry.remove_representation",
+                    ifcopenshell.api.geometry.remove_representation(
                         self.file,
                         representation=self.file.by_id(step_id[0]),
                     )
@@ -209,15 +204,13 @@ class SvIfcSverchokToIfcRepr(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
                     if not self.file.get_inverse(context):
                         if self.file.by_id(context_id).ParentContext:
                             parent = self.file.by_id(context_id).ParentContext
-                        ifcopenshell.api.run("context.remove_context", self.file, context=context)
+                        ifcopenshell.api.context.remove_context(self.file, context=context)
                         if parent:
                             if not self.file.get_inverse(parent):
-                                ifcopenshell.api.run("context.remove_context", self.file, context=parent)
-                        # print("Removed context with step ID: ", context_id)
+                                ifcopenshell.api.context.remove_context(self.file, context=parent)
                         SvIfcStore.id_map[self.node_id]["Contexts"].remove(context_id)
             del SvIfcStore.id_map[self.node_id]
             del self.node_dict[hash(self)]
-            # print('Node was deleted')
         except KeyError or AttributeError:
             pass
 
