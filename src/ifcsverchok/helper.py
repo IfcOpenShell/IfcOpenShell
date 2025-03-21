@@ -51,6 +51,21 @@ class SvIfcCore:
         raise NotImplementedError
 
 
+def get_selected_nodes() -> list[bpy.types.Node]:
+    """Get nodes selected in the currently opened editor.
+
+    Mainly for debugging.
+    """
+    screen = bpy.context.screen
+    assert screen
+    area = next(a for a in screen.areas if a.type == "NODE_EDITOR")
+    space = area.spaces.active
+    assert isinstance(space, bpy.types.SpaceNodeEditor)
+    node_tree = space.node_tree
+    assert node_tree
+    return [n for n in node_tree.nodes if n.select]
+
+
 def create_socket(
     inputs_or_outputs: Union[bpy.types.NodeInputs, bpy.types.NodeOutputs],
     name: str,
