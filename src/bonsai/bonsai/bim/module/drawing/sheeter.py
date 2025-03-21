@@ -32,6 +32,7 @@ from mathutils import Vector
 import re
 
 VIEW_TITLE_OFFSET_Y = 5
+DRAWING_PADDING = 10
 DEFAULT_POSITION = Vector((30, 30))
 SVG = "{http://www.w3.org/2000/svg}"
 XLINK = "{http://www.w3.org/1999/xlink}"
@@ -113,13 +114,15 @@ class SheetBuilder:
         view_width = self.convert_to_mm(view_root.attrib.get("width"))
         view_height = self.convert_to_mm(view_root.attrib.get("height"))
 
+        x, y = self.next_drawing_location(layout_root, view_width)
+
         # add background
         if os.path.isfile(underlay_path):
             background = ET.SubElement(view, "image")
             background.attrib["data-type"] = "background"
             background.attrib["xlink:href"] = os.path.relpath(underlay_path, layout_dir)
-            background.attrib["x"] = str(DEFAULT_POSITION.x)
-            background.attrib["y"] = str(DEFAULT_POSITION.y)
+            background.attrib["x"] = str(x)
+            background.attrib["y"] = str(y)
             background.attrib["width"] = str(view_width)
             background.attrib["height"] = str(view_height)
 
@@ -128,15 +131,48 @@ class SheetBuilder:
             foreground = ET.SubElement(view, "image")
             foreground.attrib["data-type"] = "foreground"
             foreground.attrib["xlink:href"] = os.path.relpath(drawing_path, layout_dir)
-            foreground.attrib["x"] = str(DEFAULT_POSITION.x)
-            foreground.attrib["y"] = str(DEFAULT_POSITION.y)
+            foreground.attrib["x"] = str(x)
+            foreground.attrib["y"] = str(y)
             foreground.attrib["width"] = str(view_width)
             foreground.attrib["height"] = str(view_height)
 
-        self.add_view_title(
-            DEFAULT_POSITION.x, view_height + DEFAULT_POSITION.y + VIEW_TITLE_OFFSET_Y, view, layout_dir
-        )
+        self.add_view_title(x, view_height + y + VIEW_TITLE_OFFSET_Y, view, layout_dir)
         layout_tree.write(layout_path)
+
+    def next_drawing_location(self, layout_root: ET.Element, next_width: float) -> list:
+        titleblocks = layout_root.findall(f'{SVG}g[@data-type="titleblock"]')
+        drawings = layout_root.findall(f'{SVG}g[@data-type="drawing"]')
+
+        # how wide is the title block frame
+        try:
+            titleblock_width = self.convert_to_mm(titleblocks[0][0].attrib.get("width"))
+        except (IndexError, AttributeError):
+            titleblock_width = 840.0
+
+        # where does the last drawing finish
+        try:
+            last = drawings[-1][0]
+            last_width = self.convert_to_mm(last.attrib.get("width"))
+            last_x = self.convert_to_mm(last.attrib.get("x"))
+            last_y = self.convert_to_mm(last.attrib.get("y"))
+        except (IndexError, AttributeError):
+            return [DEFAULT_POSITION.x, DEFAULT_POSITION.y]
+
+        # check if the new drawing fits in the current row
+        if last_x + last_width + DRAWING_PADDING + next_width + DEFAULT_POSITION.x < titleblock_width:
+            return [last_x + last_width + DRAWING_PADDING, last_y]
+
+        # start a new row, find the y
+        for drawing in drawings:
+            for image in drawing:
+                try:
+                    image_y = self.convert_to_mm(image.attrib.get("y"))
+                    image_height = self.convert_to_mm(image.attrib.get("height"))
+                except AttributeError:
+                    return [DEFAULT_POSITION.x, DEFAULT_POSITION.y]
+                if image_y + image_height + DRAWING_PADDING > last_y:
+                    last_y = image_y + image_height + DRAWING_PADDING
+        return [DEFAULT_POSITION.x, last_y]
 
     def update_sheet_drawing_sizes(self, sheet: ifcopenshell.entity_instance) -> None:
         ET.register_namespace("", "http://www.w3.org/2000/svg")
@@ -221,6 +257,8 @@ class SheetBuilder:
         view_width = self.convert_to_mm(view_root.attrib.get("width"))
         view_height = self.convert_to_mm(view_root.attrib.get("height"))
 
+        x, y = self.next_drawing_location(layout_root, view_width)
+
         view = ET.SubElement(layout_root, "g")
         view.attrib["data-id"] = str(reference.id())
         view.attrib["data-type"] = document.Scope.lower()
@@ -229,14 +267,12 @@ class SheetBuilder:
         foreground = ET.SubElement(view, "image")
         foreground.attrib["data-type"] = "content"
         foreground.attrib["xlink:href"] = os.path.relpath(view_path, layout_dir)
-        foreground.attrib["x"] = str(DEFAULT_POSITION.x)
-        foreground.attrib["y"] = str(DEFAULT_POSITION.y)
+        foreground.attrib["x"] = str(x)
+        foreground.attrib["y"] = str(y)
         foreground.attrib["width"] = str(view_width)
         foreground.attrib["height"] = str(view_height)
 
-        self.add_view_title(
-            DEFAULT_POSITION.x, view_height + DEFAULT_POSITION.y + VIEW_TITLE_OFFSET_Y, view, layout_dir
-        )
+        self.add_view_title(x, view_height + y + VIEW_TITLE_OFFSET_Y, view, layout_dir)
         layout_tree.write(layout_path)
 
     def add_view_title(self, x: float, y: float, parent: ET.Element, layout_dir: str) -> None:
