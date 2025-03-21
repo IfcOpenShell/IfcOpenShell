@@ -29,7 +29,6 @@ logger = logging.getLogger("sverchok.ifc")
 
 
 def update_usecase(self, context):
-    print("API - running update usecase!")
     module_usecase = self.get_module_usecase()
     if module_usecase:
         self.generate_node(*module_usecase)
@@ -64,7 +63,6 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
         op.tooltip = self.tooltip
 
     def process(self):
-        print("process")
         module_usecase = self.get_module_usecase()
         if module_usecase:
             self.sv_input_names = [i.name for i in self.inputs]
