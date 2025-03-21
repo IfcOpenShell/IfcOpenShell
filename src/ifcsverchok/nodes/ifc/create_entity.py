@@ -24,6 +24,7 @@ import ifcopenshell.api.geometry
 import ifcopenshell.api.root
 import ifcopenshell.util.schema
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from ifcsverchok.ifcstore import SvIfcStore
 
 from bpy.props import StringProperty, BoolProperty
@@ -79,7 +80,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         self.inputs.new("SvStringsSocket", "Representations").prop_name = "Representations"
         self.inputs.new("SvMatrixSocket", "Locations").is_mandatory = False
         # self.inputs.new("SvStringsSocket", "Properties").prop_name = "Properties"
-        self.outputs.new("SvStringsSocket", "Entities")
+        helper.create_socket(self.outputs, "Entities", description="Created entities ids.", data_type="list[list[int]]")
         self.node_dict[hash(self)] = {}
 
     def draw_buttons(self, context, layout):

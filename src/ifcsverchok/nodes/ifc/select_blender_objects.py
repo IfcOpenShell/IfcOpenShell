@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.util.selector
 import bonsai.tool as tool
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
@@ -50,7 +51,13 @@ class SvIfcSelectBlenderObjects(bpy.types.Node, SverchCustomTreeNode, ifcsvercho
     query: StringProperty(name="query", update=updateNode)
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "entities").prop_name = "entities"
+        helper.create_socket(
+            self.inputs,
+            "entities",
+            description="IFC entities to select Bonsai Blender objects for (selects only objects by matching GlobalId).",
+            data_type="list[list[ifcopenshell.entity_instance]]",
+            prop_name="entities",
+        )
 
     def draw_buttons(self, context, layout):
         self.wrapper_tracked_ui_draw_op(

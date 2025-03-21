@@ -22,6 +22,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from ifcsverchok.ifcstore import SvIfcStore
 from bpy.props import StringProperty, BoolProperty
 from sverchok.node_tree import SverchCustomTreeNode
@@ -39,7 +40,9 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
             self.process()
             self.refresh_local = False
 
-    refresh_local: BoolProperty(name="Write", description="Write to file", update=refresh_node_local)
+    refresh_local: BoolProperty(
+        name="Write", description="Write to file when changed to True.", update=refresh_node_local
+    )
 
     bl_idname = "SvIfcWriteFile"
     bl_label = "IFC Write File"
@@ -50,8 +53,20 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
     )
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "path").prop_name = "path"
-        self.outputs.new("SvStringsSocket", "output")
+        helper.create_socket(
+            self.inputs,
+            "path",
+            description="File path to write to. Can be relative.",
+            data_type="str",
+            prop_name="path",
+        )
+        helper.create_socket(
+            self.outputs,
+            "output",
+            description="Node result output message.",
+            data_type="str",
+            prop_name="output",
+        )
 
     def draw_buttons(self, context, layout):
         row = layout.row(align=True)

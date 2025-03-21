@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.guid
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
@@ -32,8 +33,12 @@ class SvIfcReadFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvI
     path: StringProperty(name="path", update=updateNode)
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "path").prop_name = "path"
-        self.outputs.new("SvVerticesSocket", "file")
+        helper.create_socket(
+            self.inputs, "path", description="Path to IFC file.", data_type="list[list[str]]", prop_name="path"
+        )
+        helper.create_socket(
+            self.outputs, "file", description="Opened IFC file.", data_type="list[list[ifcopenshell.file]]"
+        )
 
     def process(self):
         self.sv_input_names = ["path"]

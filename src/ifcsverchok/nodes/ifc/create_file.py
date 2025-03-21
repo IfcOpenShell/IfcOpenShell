@@ -20,6 +20,8 @@ import bpy
 import ifcopenshell
 import ifcopenshell.guid
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
+import sverchok.core.sockets
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
@@ -48,8 +50,16 @@ class SvIfcCreateFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.S
     schema: StringProperty(name="schema", update=updateNode, default="IFC4")
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "schema").prop_name = "schema"
-        self.outputs.new("SvVerticesSocket", "file")
+        helper.create_socket(
+            self.inputs, "schema", description="IFC schema to use.", data_type="str", prop_name="schema"
+        )
+        helper.create_socket(
+            self.outputs,
+            "file",
+            description="Opened IFC file.",
+            data_type="list[list[ifcopenshell.file]]",
+            socket_type=sverchok.core.sockets.SvVerticesSocket,
+        )
 
     def draw_buttons(self, context, layout):
         self.wrapper_tracked_ui_draw_op(layout, "node.sv_ifc_create_file_refresh", icon="FILE_REFRESH", text="Refresh")

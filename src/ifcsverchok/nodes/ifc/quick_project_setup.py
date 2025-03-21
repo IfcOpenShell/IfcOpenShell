@@ -20,7 +20,9 @@
 from email.mime import application
 import bpy
 import ifcopenshell
+import sverchok.core.sockets
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
@@ -57,7 +59,13 @@ class SvIfcQuickProjectSetup(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         input_socket.description = "Project GlobalId"
         input_socket = self.inputs.new("SvStringsSocket", "project_name")
         input_socket.description = "Project name"
-        self.outputs.new("SvVerticesSocket", "file")
+        helper.create_socket(
+            self.outputs,
+            "file",
+            description="New IFC file with the project added.",
+            data_type="list[list[ifcopenshell.file]]",
+            socket_type=sverchok.core.sockets.SvVerticesSocket,
+        )
 
     def draw_buttons(self, context, layout):
         op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (

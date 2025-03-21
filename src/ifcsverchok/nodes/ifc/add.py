@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
@@ -32,10 +33,26 @@ class SvIfcAdd(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
     entity: StringProperty(name="entity", update=updateNode)
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "file").prop_name = "file"
-        self.inputs.new("SvStringsSocket", "entity").prop_name = "entity"
-        self.outputs.new("SvStringsSocket", "file")
-        self.outputs.new("SvStringsSocket", "entity")
+        helper.create_socket(
+            self.inputs,
+            "file",
+            description="File to add entity to.",
+            data_type="list[list[ifcopenshell.file]]",
+            prop_name="file",
+        )
+        helper.create_socket(
+            self.inputs,
+            "entity",
+            description="Entity to add to file.",
+            data_type="list[list[ifcopenshell.entity_instance]]",
+            prop_name="entity",
+        )
+        helper.create_socket(
+            self.outputs, "file", description="File with added entity.", data_type="list[list[ifcopenshell.file]]"
+        )
+        helper.create_socket(
+            self.outputs, "entity", description="Added entity.", data_type="list[list[ifcopenshell.entity_instance]]"
+        )
 
     def process(self):
         self.sv_input_names = ["file", "entity"]

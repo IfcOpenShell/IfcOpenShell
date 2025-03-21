@@ -19,7 +19,9 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import sverchok.core.sockets
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from bpy.props import StringProperty, EnumProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
@@ -56,8 +58,20 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
     usecase: StringProperty(name="Usecase", update=update_usecase)
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "usecase").prop_name = "usecase"
-        self.outputs.new("SvVerticesSocket", "file")
+        helper.create_socket(
+            self.inputs,
+            "usecase",
+            description="Usecase to run.",
+            data_type="list[list[str]]",
+            prop_name="usecase",
+        )
+        helper.create_socket(
+            self.outputs,
+            "file",
+            description="Use case output.",
+            data_type="list[Any]",
+            socket_type=sverchok.core.sockets.SvVerticesSocket,
+        )
 
     def draw_buttons(self, context, layout):
         op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False)

@@ -18,8 +18,11 @@
 
 import bpy
 import ifcopenshell
+import sverchok.core.sockets
 from sverchok.data_structure import zip_long_repeat
-from typing import Any
+from typing import Any, Union, TypeVar
+
+T_socket = TypeVar("T_socket", bound=sverchok.core.sockets.SvSocketCommon)
 
 ifc_files: dict[str, ifcopenshell.file] = {}
 
@@ -28,6 +31,14 @@ class SvIfcCore:
     sv_input_names: list[str]
 
     def process(self) -> None:
+        """Process inputs from `self.sv_input_names` and call `process_ifc()`.
+
+        For `process()` inputs are supposed to be double nested.
+        E.g. file input should have type `list[list[ifcopenshell.file]]`.
+
+        Similarly, outputs should also be double nested,
+        so they can be easily passed as inputs to other nodes.
+        """
         sv_inputs_nested = []
         for name in self.sv_input_names:
             sv_inputs_nested.append(self.inputs[name].sv_get())
@@ -38,3 +49,25 @@ class SvIfcCore:
 
     def process_ifc(self, *args: Any, **kwargs: Any) -> None:
         raise NotImplementedError
+
+
+def create_socket(
+    inputs_or_outputs: Union[bpy.types.NodeInputs, bpy.types.NodeOutputs],
+    name: str,
+    *,
+    description: str = "",
+    data_type: str = "",
+    prop_name: str = "",
+    socket_type: type[T_socket] = sverchok.core.sockets.SvStringsSocket,
+) -> T_socket:
+    socket = inputs_or_outputs.new(socket_type.bl_idname, name)
+    assert isinstance(socket, socket_type)
+
+    if data_type:
+        data_type = f"Type: `{data_type}`."
+    description = "\n\n".join(filter(None, [description, data_type]))
+    socket.description = description
+
+    if prop_name:
+        socket.prop_name = prop_name
+    return socket

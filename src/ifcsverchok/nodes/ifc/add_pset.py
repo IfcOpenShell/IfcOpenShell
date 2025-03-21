@@ -19,10 +19,11 @@
 import bpy
 
 import ifcopenshell
+import sverchok.core.sockets
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from ifcsverchok.ifcstore import SvIfcStore
 
-import bpy
 import json
 import ifcopenshell
 import ifcopenshell.api
@@ -52,10 +53,26 @@ class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
     Elements: StringProperty(name="Element Ids", update=updateNode)
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "Name").prop_name = "Name"
-        self.inputs.new("SvTextSocket", "Properties").prop_name = "Properties"
-        self.inputs.new("SvStringsSocket", "Elements").prop_name = "Elements"
-        self.outputs.new("SvStringsSocket", "Entity")
+        helper.create_socket(
+            self.inputs, "Name", description="Name of the property set.", data_type="list[list[str]]", prop_name="Name"
+        )
+        helper.create_socket(
+            self.inputs,
+            "Properties",
+            description="Properties in a JSON format.",
+            data_type="list[list[str]]",
+            prop_name="Properties",
+            socket_type=sverchok.core.sockets.SvTextSocket,
+        )
+        helper.create_socket(
+            self.inputs, "Elements", description="Element Ids.", data_type="list[list[str]]", prop_name="Elements"
+        )
+        helper.create_socket(
+            self.outputs,
+            "Entity",
+            description="Added/edited psets.",
+            data_type="list[list[ifcopenshell.entity_instance]]]",
+        )
 
     def draw_buttons(self, context, layout):
         layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
