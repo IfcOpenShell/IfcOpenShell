@@ -1126,8 +1126,9 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
         self.input_options = ["D", "A", "X", "Y", "Z"]
         self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
         self.relating_type = None

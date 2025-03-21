@@ -2190,7 +2190,8 @@ class EnableCulling(bpy.types.Operator):
     bl_label = "Enable Culling"
     bl_options = {"REGISTER"}
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.last_view_corners = None
         self.total_mousemoves = 0
         self.cullable_objects = []
@@ -2296,7 +2297,8 @@ class RefreshClippingPlanes(bpy.types.Operator):
     bl_label = "Refresh Clipping Planes"
     bl_options = {"REGISTER"}
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.total_planes = 0
         self.camera = None
 
@@ -2605,8 +2607,9 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
         self.input_options = ["D", "A", "X", "Y", "Z"]
         self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
 
@@ -2699,8 +2702,9 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
         self.input_options = ["AREA"]
         self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
         self.clicked_faces = []

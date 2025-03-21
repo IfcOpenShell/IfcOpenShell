@@ -164,8 +164,9 @@ class DrawOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
 
     def create_occurrence(self, context, event):
         if not self.relating_type:
