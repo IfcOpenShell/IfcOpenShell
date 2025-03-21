@@ -655,3 +655,22 @@ class serializers:
         ) -> ifcopenshell_wrapper.SvgSerializer:
             out_filename = transform_string(out_filename)
             return ifcopenshell_wrapper.TtlWktSerializer(out_filename, geometry_settings, settings)
+
+    @classmethod
+    def guess_from_extension(cls, filepath: str):
+        ext = filepath.split(".")[-1]
+        mapping = {
+            "glb": "gltf",
+            "hdf": "hdf5",
+            "h5": "hdf5",
+            "hdf5": "hdf5",
+            "obj": "obj",
+            "svg": "svg",
+            "ttl": "ttl",
+            "xml": "xml",
+            "dae": "collada",
+        }
+        serializer_name = mapping.get(ext)
+        if not serializer_name:
+            raise ValueError(f"No serializer available for .{ext} file")
+        return getattr(cls, serializer_name)
