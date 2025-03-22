@@ -272,6 +272,8 @@ def format_distance(
                 tx_dist += str(frac) + "/" + str(base)
             if add_inches or frac:
                 tx_dist += '"'
+            if precision == "12":
+                tx_dist = str(feet) + "'"
         else:
             fmt = "%1.3f"
             sq_feet = round(value * toInches / inPerFoot, 4)
