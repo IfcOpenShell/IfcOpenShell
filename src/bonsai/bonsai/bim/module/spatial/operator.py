@@ -334,6 +334,7 @@ class SetDefaultContainer(bpy.types.Operator):
 
     def execute(self, context):
         core.set_default_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        core.set_orientation_slot(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
         return {"FINISHED"}
 
 
