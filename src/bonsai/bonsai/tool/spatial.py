@@ -547,15 +547,6 @@ class Spatial(bonsai.core.tool.Spatial):
             bpy.context.view_layer.objects.active = active_object
 
     @classmethod
-    def edit_container_attributes(cls, entity: ifcopenshell.entity_instance) -> None:
-        # TODO
-        obj = tool.Ifc.get_object(entity)
-        bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-        name = bpy.context.scene.BIMSpatialDecompositionProperties.container_name
-        if name != entity.Name:
-            cls.edit_container_name(entity, name)
-
-    @classmethod
     def edit_container_name(cls, container: ifcopenshell.entity_instance, name: str) -> None:
         tool.Ifc.run("attribute.edit_attributes", product=container, attributes={"Name": name})
 
