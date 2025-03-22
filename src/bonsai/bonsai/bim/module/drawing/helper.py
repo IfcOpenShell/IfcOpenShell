@@ -202,6 +202,7 @@ def format_distance(
 
         base = int(precision)
         decInches = value * toInches
+        decFeet = decInches/12
 
         # Separate ft and inches
         # Unless Inches are the specified Length Unit or unit_fraction is False
@@ -272,8 +273,8 @@ def format_distance(
                 tx_dist += str(frac) + "/" + str(base)
             if add_inches or frac:
                 tx_dist += '"'
-            if precision == "12":
-                tx_dist = str(feet) + "'"
+            if precision == "12" and unit_system == "IMPERIAL":
+                tx_dist = str(round(decFeet)) + "'"
         else:
             fmt = "%1.3f"
             sq_feet = round(value * toInches / inPerFoot, 4)
