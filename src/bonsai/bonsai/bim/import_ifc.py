@@ -300,6 +300,20 @@ class IfcImporter:
         bpy.context.window_manager.progress_end()
 
     def process_context_filter(self) -> None:
+        contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        if len(contexts) > 100:  # Probably something strange happening. Encountered from Revizto.
+            print("Warning! Excessive contexts were found and merged where applicable.")
+            uniques = {}
+            i = 0
+            for element in contexts:
+                data = "-".join([str(a) for a in element])
+                if unique := uniques.get(data, None):
+                    ifcopenshell.util.element.replace_element(element, unique)
+                    self.file.remove(element)
+                    i += 1
+                else:
+                    uniques[data] = element
+            print(f"Replaced {i} IfcGeometricRepresentationContext")
         tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(self.file)
         tool.Loader.settings.context_settings = tool.Loader.create_settings()
         tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
