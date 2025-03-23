@@ -15,12 +15,12 @@ ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library
 
 ifcopenshell::geometry::Converter::~Converter()
 {
-    if (kernel_ != nullptr) {
-        delete kernel_;
-    }
-    if (mapping_ != nullptr) {
-        delete mapping_;
-    }
+	if (kernel_ != nullptr) {
+		delete kernel_;
+	}
+	if (mapping_ != nullptr) {
+		delete mapping_;
+	}
 }
 
 namespace {
