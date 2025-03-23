@@ -31,7 +31,7 @@ Scenario: Resize to storey
     When I press "bim.resize_to_storey(total_storeys=1)"
     Then nothing happens
 
-Scenario: Split along edge
+Scenario: Split along edge - boolean mode
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
@@ -41,13 +41,24 @@ Scenario: Split along edge
     And I add a plane of size "4" at "0,0,0"
     And the object "IfcWall/Cube" is selected
     And additionally the object "Plane" is selected
-    When I press "bim.split_along_edge"
+    And I look at the "Miscellaneous" panel
+    When I click "Split Along Edge"
     Then the object "IfcWall/Cube" is an "IfcWall"
     And the object "IfcWall/Cube.001" is an "IfcWall"
 
-Scenario: Enabling and disabling IFC Sverchok
+Scenario: Split along edge - bisect mode
     Given an empty IFC project
-    And I press "preferences.addon_enable(module="sverchok")"
-    And I press "preferences.addon_enable(module="ifcsverchok")"
-    And I press "preferences.addon_disable(module="sverchok")"
-    And I press "preferences.addon_disable(module="ifcsverchok")"
+    And I add a cube
+    And the object "Cube" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
+    And I press "bim.assign_class"
+    And I add a plane of size "4" at "0,0,0"
+    And the object "IfcWall/Cube" is selected
+    And additionally the object "Plane" is selected
+    And I look at the "Miscellaneous" panel
+    When I click "Bisect At Faces"
+    Then the object "IfcWall/Cube" is an "IfcWall"
+    And the object "IfcWall/Cube.001" is an "IfcWall"
+
+
