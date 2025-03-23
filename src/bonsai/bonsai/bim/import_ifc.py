@@ -761,12 +761,9 @@ class IfcImporter:
     def create_pointclouds(self, products: set[ifcopenshell.entity_instance]) -> set[ifcopenshell.entity_instance]:
         result = set()
         for product in products:
-            representation = self.get_pointcloud_representation(product)
-            if representation is not None:
-                pointcloud = self.create_pointcloud(product, representation)
-                if pointcloud is not None:
+            if representation := self.get_pointcloud_representation(product):
+                if pointcloud := self.create_pointcloud(product, representation):
                     result.add(pointcloud)
-
         return result
 
     def create_pointcloud(

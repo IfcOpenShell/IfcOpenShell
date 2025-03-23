@@ -549,3 +549,51 @@ class TestSetupActiveBsddClassification(NewFile):
 
     def test_set_load_and_set_active_bsdd_ifc4x3(self):
         self.run_test("IFC4X3")
+
+
+class TestCreatePointCloudMesh(NewFile):
+    def test_cartesian_point_list_3d(self):
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        coords = ((1., 2., 3.), (4., 5., 6.))
+        item = ifc_file.createIfcCartesianPointList3D(coords)
+        rep = ifc_file.createIfcShapeRepresentation(Items=[item])
+        mesh = subject.create_point_cloud_mesh(rep)
+        assert len(mesh.vertices) == 2
+        verts = np.array([v.co for v in mesh.vertices])
+        assert np.allclose(verts, np.array([np.array(c) for c in coords]))
+
+    def test_cartesian_point_list_2d(self):
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        coords = ((1., 2.), (4., 5.))
+        coords3d = ((1., 2., 0.), (4., 5., 0.))
+        item = ifc_file.createIfcCartesianPointList2D(coords)
+        rep = ifc_file.createIfcShapeRepresentation(Items=[item])
+        mesh = subject.create_point_cloud_mesh(rep)
+        assert len(mesh.vertices) == 2
+        verts = np.array([v.co for v in mesh.vertices])
+        assert np.allclose(verts, np.array([np.array(c) for c in coords3d]))
+
+    def test_point_3d(self):
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        coords = ((1., 2., 0.),)
+        item = ifc_file.createIfcCartesianPoint(Coordinates=coords[0])
+        rep = ifc_file.createIfcShapeRepresentation(Items=[item])
+        mesh = subject.create_point_cloud_mesh(rep)
+        assert len(mesh.vertices) == 1
+        verts = np.array([v.co for v in mesh.vertices])
+        assert np.allclose(verts, np.array([np.array(c) for c in coords]))
+
+    def test_point_2d(self):
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        coords = ((1., 2.),)
+        coords3d = ((1., 2., 0.),)
+        item = ifc_file.createIfcCartesianPoint(Coordinates=coords[0])
+        rep = ifc_file.createIfcShapeRepresentation(Items=[item])
+        mesh = subject.create_point_cloud_mesh(rep)
+        assert len(mesh.vertices) == 1
+        verts = np.array([v.co for v in mesh.vertices])
+        assert np.allclose(verts, np.array([np.array(c) for c in coords3d]))
