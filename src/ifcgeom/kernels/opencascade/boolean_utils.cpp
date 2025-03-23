@@ -978,6 +978,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	if (b.Extent() == 0) {
 		Logger::Warning("No other operands remaining, using first operand");
 		result = a;
+        delete builder;
 		return true;
 	}
 
@@ -1130,6 +1131,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 						} else {
 							Logger::Notice("Processed fully in 2D");
 							result = mp.Shape();
+                            delete builder;
 							return true;
 						}
 					} else {

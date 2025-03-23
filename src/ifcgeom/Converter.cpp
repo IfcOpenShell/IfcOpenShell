@@ -13,6 +13,16 @@ ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library
 	settings_ = mapping_->settings();
 }
 
+ifcopenshell::geometry::Converter::~Converter()
+{
+    if (kernel_ != nullptr) {
+        delete kernel_;
+    }
+    if (mapping_ != nullptr) {
+        delete mapping_;
+    }
+}
+
 namespace {
 	void substitute_with_box_based_on_density(IfcGeom::ConversionResults& items, double& density) {
 		int nv = 0;
