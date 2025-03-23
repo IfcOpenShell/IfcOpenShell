@@ -490,11 +490,15 @@ def get_reference_line(wall: ifcopenshell.entity_instance, fallback_length: floa
                 return [np.array(points[0]), np.array(points[1])]
             return [np.array(points[1]), np.array(points[0])]
     elif extrusions := ifcopenshell.util.shape.get_base_extrusions(wall):
-        for item in extrusions:
-            if item.is_a("IfcPolyline"):
-                x = [p[0][0] for p in item.Points]
-            elif item.is_a("IfcIndexedPolyCurve"):
-                x = [p[0] for p in item.Points.CoordList]
+        for extrusion in extrusions:
+            profile = extrusion.SweptArea
+            curve = getattr(profile, "OuterCurve", None)
+            if not curve:
+                continue
+            elif curve.is_a("IfcPolyline"):
+                x = [p[0][0] for p in curve.Points]
+            elif curve.is_a("IfcIndexedPolyCurve"):
+                x = [p[0] for p in curve.Points.CoordList]
             else:
                 continue
             return [np.array((min(x), 0.0)), np.array((max(x), 0.0))]

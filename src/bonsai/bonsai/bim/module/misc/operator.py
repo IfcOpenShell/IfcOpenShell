@@ -125,7 +125,7 @@ class SplitAlongEdge(bpy.types.Operator, tool.Ifc.Operator):
         "Will unassign element from a type if type has a representation."
     )
     bl_options = {"REGISTER", "UNDO"}
-    mode: bpy.props.StringProperty()
+    mode: bpy.props.StringProperty(default="BOOLEAN")
 
     @classmethod
     def poll(cls, context):

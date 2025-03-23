@@ -370,24 +370,36 @@ class IfcGit:
         return step_ids
 
     @classmethod
-    def get_modified_shape_object_step_ids(cls, step_ids: STEP_IDS) -> STEP_IDS:
+    def get_modified_step_ids(cls, step_ids: STEP_IDS) -> STEP_IDS:
         model = tool.Ifc.get()
-        modified_shape_object_step_ids = {"modified": []}
+        modified_step_ids = {"modified": set()}
 
-        for step_id in step_ids["modified"]:
-            if model.by_id(step_id).is_a() == "IfcProductDefinitionShape":
-                product = model.by_id(step_id).ShapeOfProduct[0]
-                modified_shape_object_step_ids["modified"].append(product.id())
+        for step_id in step_ids["modified"] | step_ids["added"]:
+            try:
+                entity = model.by_id(step_id)
+            except:
+                continue
+            if entity.is_a("IfcProductDefinitionShape"):
+                for product in entity.ShapeOfProduct:
+                    modified_step_ids["modified"].add(product.id())
+            elif entity.is_a("IfcObjectPlacement"):
+                for product in entity.PlacesObject:
+                    modified_step_ids["modified"].add(product.id())
+            elif entity.is_a("IfcTypeProduct") and entity.Types:
+                for related_object in entity.Types[0].RelatedObjects:
+                    modified_step_ids["modified"].add(related_object.id())
 
-        return modified_shape_object_step_ids
+        return modified_step_ids
 
     @classmethod
-    def update_step_ids(cls, step_ids: STEP_IDS, modified_shape_object_step_ids: STEP_IDS) -> STEP_IDS:
+    def update_step_ids(cls, step_ids: STEP_IDS, modified_step_ids: STEP_IDS) -> STEP_IDS:
 
         final_step_ids = {}
         final_step_ids["added"] = step_ids["added"]
         final_step_ids["removed"] = step_ids["removed"]
-        final_step_ids["modified"] = step_ids["modified"].union(modified_shape_object_step_ids["modified"])
+        final_step_ids["modified"] = (
+            step_ids["modified"].union(modified_step_ids["modified"]).difference(step_ids["added"])
+        )
         return final_step_ids
 
     @classmethod

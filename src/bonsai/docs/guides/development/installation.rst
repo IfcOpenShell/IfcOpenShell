@@ -83,7 +83,7 @@ that they are typically updated every day. To install the **Unstable** version:
 .. warning::
 
    Make sure the extension you install has ``raw.githubusercontent.com`` as
-   it's "Repository" (not ``extensions.blender.org``).
+   the "Repository" (not ``extensions.blender.org``).
 
    .. image:: images/unstable-repo.png
 
@@ -143,19 +143,14 @@ and install.
 Live development environment
 ----------------------------
 
-One option for developers who want to actively develop from source is to follow
-the instructions from :ref:`guides/development/installation:Bundling for Blender`. However,
-creating a build, uninstalling the old add-on, and installing a new build is a
-slow process.  Although it works, it is very slow, so we do not recommend it.
+First, install using the :ref:`guides/development/installation:Unstable
+installation` method. This will provide all compiled dependencies for you out
+of the box.
 
-A more rapid approach is to follow the
-:ref:`guides/development/installation:Unstable installation` method, as this
-provides all dependencies for you out of the box.
-
-Once you've done this, you can replace certain Python files that tend to be
-updated frequently with those from the Git repository. We're going to use
-symbolic links, so we can code in our Git repository, and see the changes in
-our Blender installation (you will need to restart Blender to see changes).
+Once you've done this, we'll replace the installed Python files with those from
+our Git repository. We're going to use symbolic links, so we can code in our
+Git repository, and see the changes in our Blender installation (you will need
+to restart Blender to see changes).
 
 For Linux or Mac:
 
@@ -163,9 +158,8 @@ For Linux or Mac:
    :language: bash
    :caption: dev_environment.sh
 
-Or, if you're on Windows, you can use the batch script below. You need to run
-it as an administrator. Before running it follow the instructions descibed
-in the `rem` tags.
+For Windows, run this batch script as an administrator. Before running it
+follow the instructions descibed in the `rem` tags.
 
 .. literalinclude:: ../../../scripts/installation/dev_environment.bat
    :language: bat
@@ -174,16 +168,16 @@ in the `rem` tags.
 After you modify your code in the Git repository, you will need to restart
 Blender for the changes to take effect.
 
+Note that this only links Python code to the Git repository. If there are any
+major changes such as new dependencies or newly compiled C++ code, you will
+need to make the updates manually. This is relatively rare. Reviewing the
+`Makefile history
+<https://github.com/IfcOpenShell/IfcOpenShell/commits/v0.8.0/src/bonsai/Makefile>`__,
+is one quick way to see if a dependency has changed.
+
 If there are changes to the IfcOpenShell binaries, you may replace the two
 ``*ifcopenshell_wrapper*`` files with new ones downloaded from the automated
 `IfcOpenShell builds directory <https://builds.ifcopenshell.org/>`__.
-
-The downside with this approach is that if a new dependency is added, or a
-compiled dependency has changed (that is not available via the build
-directory), or the build system changes, you'll need to fix your setup
-manually. But this is relatively rare. Reviewing the Makefile history, `here
-<https://github.com/IfcOpenShell/IfcOpenShell/commits/v0.8.0/src/bonsai/Makefile>`__,
-is one quick way to see if a dependency has changed.
 
 .. seealso::
 
