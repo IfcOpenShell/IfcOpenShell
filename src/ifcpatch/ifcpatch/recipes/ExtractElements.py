@@ -55,7 +55,7 @@ class Patcher:
     def patch(self):
         self.contained_ins: dict[str, set[ifcopenshell.entity_instance]] = {}
         self.aggregates: dict[str, set[ifcopenshell.entity_instance]] = {}
-        self.new = ifcopenshell.file(schema=self.file.schema_identifier)
+        self.new = ifcopenshell.file(schema_version=self.file.schema_version)
         self.owner_history = None
         self.reuse_identities: dict[int, ifcopenshell.entity_instance] = {}
         for owner_history in self.file.by_type("IfcOwnerHistory"):
