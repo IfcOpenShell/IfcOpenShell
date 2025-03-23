@@ -206,8 +206,8 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 			}
 #endif
 			if (kernels.size() != n + 1) {
-                for (auto k : kernels)
-                    delete k;
+				for (auto k : kernels)
+					delete k;
 				throw IfcParse::IfcException("Invalid hybrid kernel " + geometry_library);
 			}
 		}
