@@ -33,9 +33,7 @@ class BIM_PT_ifccsv(Panel):
 
     def draw(self, context):
         layout = self.layout
-
-        scene = context.scene
-        props = scene.CsvProperties
+        props = tool.Blender.get_csv_props()
 
         if tool.Ifc.get():
             row = layout.row(align=True)

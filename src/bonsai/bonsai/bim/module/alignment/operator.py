@@ -31,6 +31,8 @@ import isodate
 import bonsai.core.sequence as core
 import bonsai.tool as tool
 import bonsai.bim.module.sequence.helper as helper
+import ifcopenshell.api.spatial
+import ifcopenshell.geom
 import ifcopenshell.util.sequence
 import ifcopenshell.util.selector
 from datetime import datetime
@@ -59,8 +61,6 @@ class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         return True
 
     def _execute(self, context):
-        import ifcopenshell.api.alignment
-
         self.file = tool.Ifc.get()
         start = time.time()
         alignment = ifcopenshell.api.alignment.create_alignment_from_csv(self.file, self.filepath)

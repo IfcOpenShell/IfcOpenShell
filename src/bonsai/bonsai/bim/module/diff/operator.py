@@ -36,7 +36,8 @@ class SelectDiffJsonFile(bpy.types.Operator):
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
 
     def execute(self, context):
-        context.scene.DiffProperties.diff_json_file = self.filepath
+        props = tool.Blender.get_diff_props()
+        props.diff_json_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -51,7 +52,8 @@ class VisualiseDiff(bpy.types.Operator):
 
     def execute(self, context):
         ifc_file = tool.Ifc.get()
-        with open(context.scene.DiffProperties.diff_json_file, "r") as file:
+        props = tool.Blender.get_diff_props()
+        with open(props.diff_json_file, "r") as file:
             diff = json.load(file)
         for obj in context.visible_objects:
             obj.color = (1.0, 1.0, 1.0, 1.0)
@@ -111,7 +113,8 @@ class SelectDiffOldFile(bpy.types.Operator):
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
 
     def execute(self, context):
-        context.scene.DiffProperties.old_file = self.filepath
+        props = tool.Blender.get_diff_props()
+        props.old_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -128,7 +131,8 @@ class SelectDiffNewFile(bpy.types.Operator):
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
 
     def execute(self, context):
-        context.scene.DiffProperties.new_file = self.filepath
+        props = tool.Blender.get_diff_props()
+        props.new_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -153,7 +157,7 @@ class ExecuteIfcDiff(bpy.types.Operator):
     def execute(self, context):
         import ifcdiff
 
-        self.props = context.scene.DiffProperties
+        self.props = tool.Blender.get_diff_props()
 
         if tool.Ifc.get():
             if self.props.active_file == "NONE":
@@ -242,7 +246,8 @@ class SelectDiffObjects(bpy.types.Operator):
 
     def execute(self, context):
         ifc_file = tool.Ifc.get()
-        with open(context.scene.DiffProperties.diff_json_file, "r") as file:
+        props = tool.Blender.get_diff_props()
+        with open(props.diff_json_file, "r") as file:
             diff = json.load(file)
         for obj in context.visible_objects:
             obj.select_set(False)

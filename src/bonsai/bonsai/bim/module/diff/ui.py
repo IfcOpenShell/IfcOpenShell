@@ -37,9 +37,7 @@ class BIM_PT_diff(Panel):
 
         layout = self.layout
         layout.use_property_split = True
-
-        scene = context.scene
-        props = scene.DiffProperties
+        props = tool.Blender.get_diff_props()
 
         layout.label(text="IFC Diff Setup:")
 

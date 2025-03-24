@@ -1170,7 +1170,7 @@ class IfcImportSettings:
 
     @staticmethod
     def factory(context=None, input_file=None, logger=None):
-        scene_diff = bpy.context.scene.DiffProperties
+        scene_diff = tool.Blender.get_diff_props()
         props = tool.Project.get_project_props()
         settings = IfcImportSettings()
         settings.input_file = input_file

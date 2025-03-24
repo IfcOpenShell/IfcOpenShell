@@ -69,9 +69,10 @@ class ImportClashSets(bpy.types.Operator):
 
     def execute(self, context):
         tool.Clash.load_clash_sets(self.filepath)
-        context.scene.BIMClashProperties.clash_sets.clear()
+        props = tool.Clash.get_clash_props()
+        props.clash_sets.clear()
         for clash_set in tool.Clash.get_clash_sets():
-            new = context.scene.BIMClashProperties.clash_sets.add()
+            new = props.clash_sets.add()
             new.name = clash_set["name"]
             new.mode = clash_set["mode"]
             if new.mode == "intersection":
@@ -106,7 +107,8 @@ class AddClashSet(bpy.types.Operator):
     bl_description = "Add a clash set"
 
     def execute(self, context):
-        new = context.scene.BIMClashProperties.clash_sets.add()
+        props = tool.Clash.get_clash_props()
+        new = props.clash_sets.add()
         new.name = "New Clash Set"
         return {"FINISHED"}
 
@@ -119,7 +121,8 @@ class RemoveClashSet(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        context.scene.BIMClashProperties.clash_sets.remove(self.index)
+        props = tool.Clash.get_clash_props()
+        props.clash_sets.remove(self.index)
         return {"FINISHED"}
 
 
@@ -131,7 +134,8 @@ class AddClashSource(bpy.types.Operator):
     group: bpy.props.StringProperty()
 
     def execute(self, context):
-        clash_set = context.scene.BIMClashProperties.active_clash_set
+        props = tool.Clash.get_clash_props()
+        clash_set = props.active_clash_set
         source = getattr(clash_set, self.group).add()
         return {"FINISHED"}
 
@@ -145,7 +149,8 @@ class RemoveClashSource(bpy.types.Operator):
     group: bpy.props.StringProperty()
 
     def execute(self, context):
-        clash_set = context.scene.BIMClashProperties.active_clash_set
+        props = tool.Clash.get_clash_props()
+        clash_set = props.active_clash_set
         getattr(clash_set, self.group).remove(self.index)
         return {"FINISHED"}
 
@@ -161,7 +166,8 @@ class SelectClashSource(bpy.types.Operator):
     group: bpy.props.StringProperty()
 
     def execute(self, context):
-        clash_set = context.scene.BIMClashProperties.active_clash_set
+        props = tool.Clash.get_clash_props()
+        clash_set = props.active_clash_set
         getattr(clash_set, self.group)[self.index].name = self.filepath
         return {"FINISHED"}
 
@@ -178,7 +184,8 @@ class SelectClashResults(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        context.scene.BIMClashProperties.clash_results_path = self.filepath
+        props = tool.Clash.get_clash_props()
+        props.clash_results_path = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -194,7 +201,8 @@ class SelectSmartGroupedClashesPath(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        context.scene.BIMClashProperties.smart_grouped_clashes_path = self.filepath
+        props = tool.Clash.get_clash_props()
+        props.smart_grouped_clashes_path = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
@@ -218,7 +226,7 @@ class ExecuteIfcClash(bpy.types.Operator):
     def execute(self, context):
         from ifcclash import ifcclash
 
-        self.props = context.scene.BIMClashProperties
+        self.props = tool.Clash.get_clash_props()
 
         _, extension = os.path.splitext(self.filepath)
         if extension != ".bcf":
@@ -306,7 +314,9 @@ class SelectIfcClashResults(bpy.types.Operator):
         self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
         with open(self.filepath) as f:
             clash_sets = json.load(f)
-        clash_set_name = context.scene.BIMClashProperties.active_clash_set.name
+        clash_props = tool.Clash.get_clash_props()
+        assert clash_props.active_clash_set
+        clash_set_name = clash_props.active_clash_set.name
         global_ids = []
         for clash_set in clash_sets:
             if clash_set["name"] != clash_set_name:
@@ -358,7 +368,7 @@ class SelectClash(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        self.props = context.scene.BIMClashProperties
+        self.props = tool.Clash.get_clash_props()
         clash_set = tool.Clash.get_clash_set(self.props.active_clash_set.name)
         active_clash = self.props.active_clash
         clash = tool.Clash.get_clash(clash_set, active_clash.a_global_id, active_clash.b_global_id)
@@ -392,13 +402,15 @@ class SmartClashGroup(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.BIMClashProperties.clash_results_path
+        props = tool.Clash.get_clash_props()
+        return bool(props.clash_results_path)
 
     def execute(self, context):
         from ifcclash import ifcclash
 
         settings = ifcclash.ClashSettings()
-        self.filepath = bpy.path.ensure_ext(context.scene.BIMClashProperties.clash_results_path, ".json")
+        props = tool.Clash.get_clash_props()
+        self.filepath = bpy.path.ensure_ext(props.clash_results_path, ".json")
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
         settings.logger.setLevel(logging.DEBUG)
@@ -408,19 +420,18 @@ class SmartClashGroup(bpy.types.Operator):
             clash_sets = json.load(f)
 
         # execute the smart grouping
-        save_path = bpy.path.ensure_ext(context.scene.BIMClashProperties.smart_grouped_clashes_path, ".json")
-        smart_grouped_clashes = ifc_clasher.smart_group_clashes(
-            clash_sets, context.scene.BIMClashProperties.smart_clash_grouping_max_distance
-        )
+        save_path = bpy.path.ensure_ext(props.smart_grouped_clashes_path, ".json")
+        smart_grouped_clashes = ifc_clasher.smart_group_clashes(clash_sets, props.smart_clash_grouping_max_distance)
 
         # save smart_groups to json
         with open(save_path, "w") as f:
             f.write(json.dumps(smart_grouped_clashes))
 
-        clash_set_name = context.scene.BIMClashProperties.active_clash_set.name
+        assert props.active_clash_set
+        clash_set_name = props.active_clash_set.name
 
         # Reset the list of smart_clash_groups for the UI
-        context.scene.BIMClashProperties.smart_clash_groups.clear()
+        props.smart_clash_groups.clear()
 
         for clash_set, smart_groups in smart_grouped_clashes.items():
             # Only select the clashes that correspond to the actively selected IFC Clash Set
@@ -428,7 +439,7 @@ class SmartClashGroup(bpy.types.Operator):
                 continue
             else:
                 for smart_group, global_id_pairs in smart_groups[0].items():
-                    new_group = context.scene.BIMClashProperties.smart_clash_groups.add()
+                    new_group = props.smart_clash_groups.add()
                     new_group.number = f"{smart_group}"
 
                     for pair in global_id_pairs:
@@ -446,18 +457,21 @@ class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.scene.BIMClashProperties.active_clash_set
+        props = tool.Clash.get_clash_props()
+        return bool(props.active_clash_set)
 
     def execute(self, context):
-        smart_groups_path = bpy.path.ensure_ext(context.scene.BIMClashProperties.smart_grouped_clashes_path, ".json")
+        props = tool.Clash.get_clash_props()
+        smart_groups_path = bpy.path.ensure_ext(props.smart_grouped_clashes_path, ".json")
 
-        clash_set_name = context.scene.BIMClashProperties.active_clash_set.name
+        assert props.active_clash_set
+        clash_set_name = props.active_clash_set.name
 
         with open(smart_groups_path) as f:
             smart_grouped_clashes = json.load(f)
 
         # Reset the list of smart_clash_groups for the UI
-        context.scene.BIMClashProperties.smart_clash_groups.clear()
+        props.smart_clash_groups.clear()
 
         for clash_set, smart_groups in smart_grouped_clashes.items():
             # Only select the clashes that correspond to the actively selected IFC Clash Set
@@ -465,7 +479,7 @@ class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
                 continue
             else:
                 for smart_group, global_id_pairs in smart_groups[0].items():
-                    new_group = context.scene.BIMClashProperties.smart_clash_groups.add()
+                    new_group = props.smart_clash_groups.add()
                     new_group.number = f"{smart_group}"
                     for pair in global_id_pairs:
                         for guid in pair:
@@ -482,11 +496,14 @@ class SelectSmartGroup(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get() and context.visible_objects and context.scene.BIMClashProperties.active_smart_group
+        props = tool.Clash.get_clash_props()
+        return tool.Ifc.get() and context.visible_objects and props.active_smart_group
 
     def execute(self, context):
-        selected_smart_group = context.scene.BIMClashProperties.active_smart_group
-        products = []
+        props = tool.Clash.get_clash_props()
+        selected_smart_group = props.active_smart_group
+        assert selected_smart_group
+        products: list[ifcopenshell.entity_instance] = []
         for global_id in selected_smart_group.global_ids:
             try:
                 products.append(tool.Ifc.get().by_guid(global_id.guid))

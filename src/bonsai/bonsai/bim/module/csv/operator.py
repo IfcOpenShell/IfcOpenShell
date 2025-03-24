@@ -42,7 +42,8 @@ class AddCsvAttribute(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        attribute = context.scene.CsvProperties.csv_attributes.add()
+        props = tool.Blender.get_csv_props()
+        props.csv_attributes.add()
         return {"FINISHED"}
 
 
@@ -53,7 +54,8 @@ class RemoveCsvAttribute(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        context.scene.CsvProperties.csv_attributes.remove(self.index)
+        props = tool.Blender.get_csv_props()
+        props.csv_attributes.remove(self.index)
         return {"FINISHED"}
 
 
@@ -64,7 +66,8 @@ class RemoveAllCsvAttributes(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.CsvProperties.csv_attributes.clear()
+        props = tool.Blender.get_csv_props()
+        props.csv_attributes.clear()
         return {"FINISHED"}
 
 
@@ -76,8 +79,9 @@ class ReorderCsvAttribute(bpy.types.Operator):
     new_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        old = context.scene.CsvProperties.csv_attributes[self.old_index]
-        new = context.scene.CsvProperties.csv_attributes[self.new_index]
+        props = tool.Blender.get_csv_props()
+        old = props.csv_attributes[self.old_index]
+        new = props.csv_attributes[self.new_index]
         props = ["name", "header", "sort", "group", "varies_value", "summary", "formatting"]
         for prop in props:
             value = getattr(new, prop)
@@ -95,7 +99,7 @@ class ImportCsvAttributes(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
         data = json.load(open(self.filepath))
         tool.Search.import_filter_query(data["query"], props.filter_groups)
 
@@ -136,7 +140,7 @@ class ExportCsvAttributes(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
 
         settings = {}
         for prop in [
@@ -191,14 +195,14 @@ class ExportIfcCsv(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
         if not props.should_load_from_memory and not props.csv_ifc_file:
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
         return True
 
     def invoke(self, context, event):
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
         if props.format == "web":
             return self.execute(context)
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, f".{props.format}")
@@ -209,7 +213,7 @@ class ExportIfcCsv(bpy.types.Operator):
     def execute(self, context):
         import ifccsv
 
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
         self.filepath = bpy.path.ensure_ext(self.filepath, f".{props.format}")
         if props.should_load_from_memory:
             ifc_file = tool.Ifc.get()
@@ -298,7 +302,7 @@ class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
         if not props.should_load_from_memory and not props.csv_ifc_file:
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
@@ -313,7 +317,7 @@ class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         import ifccsv
 
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
         if props.should_load_from_memory:
             ifc_file = tool.Ifc.get()
         else:
@@ -349,7 +353,8 @@ class SelectCsvIfcFile(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        context.scene.CsvProperties.csv_ifc_file = self.filepath
+        props = tool.Blender.get_csv_props()
+        props.csv_ifc_file = self.filepath
         return {"FINISHED"}
 
     def invoke(self, context, event):
