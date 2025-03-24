@@ -184,6 +184,7 @@ class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
 class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.import_sverchok_graph"
     bl_label = "Import Sverchok Graph"
+    bl_description = "Import Sverchok graph from a json file."
     bl_options = {"REGISTER"}
 
     filepath: bpy.props.StringProperty(
@@ -226,6 +227,7 @@ class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
 class ExportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.export_sverchok_graph"
     bl_label = "Export Sverchok Graph"
+    bl_description = "Export Sverchok graph to a json file."
     bl_options = {"REGISTER"}
 
     filepath: bpy.props.StringProperty(

@@ -185,6 +185,7 @@ class ExportCsvAttributes(bpy.types.Operator):
 class ExportIfcCsv(bpy.types.Operator):
     bl_idname = "bim.export_ifccsv"
     bl_label = "Export IFC"
+    bl_description = "Export IFC data as a spreadsheet."
     filename_ext = ".csv"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -290,6 +291,7 @@ class ExportIfcCsv(bpy.types.Operator):
 class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.import_ifccsv"
     bl_label = "Import to IFC"
+    bl_description = "Import IFC data from a spreadsheet."
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.csv;*.ods;*.xlsx", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -340,6 +342,7 @@ class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator):
 class SelectCsvIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_csv_ifc_file"
     bl_label = "Select CSV IFC File"
+    bl_description = "Select IFC file for spreadsheet import/export."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})

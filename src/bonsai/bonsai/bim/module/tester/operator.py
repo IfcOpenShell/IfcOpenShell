@@ -189,6 +189,7 @@ class SelectFailedEntities(bpy.types.Operator):
 class ExportBcf(bpy.types.Operator):
     bl_idname = "bim.export_bcf"
     bl_label = "Export BCF"
+    bl_description = "Save ifctester BCF report by the provided filepath."
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.bcf", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")

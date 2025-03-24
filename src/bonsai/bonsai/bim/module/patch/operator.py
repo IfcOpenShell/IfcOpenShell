@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 class SelectIfcPatchInput(bpy.types.Operator):
     bl_idname = "bim.select_ifc_patch_input"
     bl_label = "Select IFC Patch Input"
+    bl_description = "Select filepath for IFC patch input."
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifcZIP;*.ifcXML", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -51,6 +52,7 @@ class SelectIfcPatchInput(bpy.types.Operator):
 class SelectIfcPatchOutput(bpy.types.Operator):
     bl_idname = "bim.select_ifc_patch_output"
     bl_label = "Select IFC Patch Output"
+    bl_description = "Select filepath for IFC patch output."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")

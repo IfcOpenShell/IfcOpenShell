@@ -29,6 +29,7 @@ import bonsai.tool as tool
 class ExecuteIfcFM(bpy.types.Operator):
     bl_idname = "bim.execute_ifcfm"
     bl_label = "Execute IfcFM"
+    bl_description = "Export IfcFM data as a spreadsheet."
     file_format: bpy.props.StringProperty()
     filter_glob: bpy.props.StringProperty(default="*.csv;*.ods;*.xlsx", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -85,6 +86,7 @@ class ExecuteIfcFM(bpy.types.Operator):
 class SelectFMSpreadsheetFiles(bpy.types.Operator):
     bl_idname = "bim.select_fm_spreadsheet_files"
     bl_label = "Select FM Spreadsheet Files"
+    bl_description = "Select FM spreadsheets to merge."
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xlsx", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -107,6 +109,7 @@ class SelectFMSpreadsheetFiles(bpy.types.Operator):
 class ExecuteIfcFMFederate(bpy.types.Operator):
     bl_idname = "bim.execute_ifcfm_federate"
     bl_label = "Merge IfcFM SpreadSheets"
+    bl_description = "Merge added IfcFM spreadsheets."
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xlsx", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 

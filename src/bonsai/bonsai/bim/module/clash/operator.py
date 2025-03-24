@@ -173,6 +173,7 @@ class SelectClashSource(bpy.types.Operator):
 class SelectClashResults(bpy.types.Operator):
     bl_idname = "bim.select_clash_results"
     bl_label = "Select Clash Results"
+    bl_description = "Select filepath for clash results."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -188,6 +189,7 @@ class SelectClashResults(bpy.types.Operator):
 class SelectSmartGroupedClashesPath(bpy.types.Operator):
     bl_idname = "bim.select_smart_grouped_clashes_path"
     bl_label = "Select Smart-Grouped Clashes Path"
+    bl_description = "Select filepath for smart-grouped clashes."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 

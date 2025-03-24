@@ -276,6 +276,7 @@ class SetAssetMaterialToExternalStyle(bpy.types.Operator):
 class BrowseExternalStyle(bpy.types.Operator):
     bl_idname = "bim.browse_external_style"
     bl_label = "Browse External Style"
+    bl_description = "Select filepath for an external style."
     bl_options = {"REGISTER", "UNDO"}
 
     filepath: bpy.props.StringProperty(
@@ -540,6 +541,7 @@ class SelectByStyle(bpy.types.Operator):
 class ChooseTextureMapPath(bpy.types.Operator):
     bl_idname = "bim.choose_texture_map_path"
     bl_label = "Choose Texture Map Path"
+    bl_description = "Select filepath for a texture map."
     bl_options = {"REGISTER", "UNDO", "INTERNAL"}
     texture_map_index: bpy.props.IntProperty(default=-1, options={"SKIP_SAVE"})
 

@@ -31,6 +31,7 @@ from bonsai.bim.ifc import IfcStore
 class LoadClassificationLibrary(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.load_classification_library"
     bl_label = "Load Classification Library"
+    bl_description = "Load classification library from the provided filepath."
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")

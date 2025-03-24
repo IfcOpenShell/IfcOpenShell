@@ -1547,6 +1547,8 @@ class SelectLinkHandle(bpy.types.Operator):
 class ExportIFC(bpy.types.Operator):
     bl_idname = "bim.save_project"
     bl_label = "Save IFC"
+    # Prevents crash on Blender 4.4.0.
+    bl_description = "Save active IFC file by the provided filepath."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})

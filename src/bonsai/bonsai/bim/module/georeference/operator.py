@@ -91,7 +91,7 @@ class ImportPlot(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.import_plot"
     bl_label = "Import Plot"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Import plot"
+    bl_description = "Import plot from a csv file."
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
 

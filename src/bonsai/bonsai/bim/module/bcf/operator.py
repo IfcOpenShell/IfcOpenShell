@@ -66,6 +66,7 @@ class NewBcfProject(bpy.types.Operator):
 class LoadBcfProject(bpy.types.Operator):
     bl_idname = "bim.load_bcf_project"
     bl_label = "Load BCF Project"
+    bl_description = "Load the BCF file."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
     filter_glob: bpy.props.StringProperty(default="*.bcf;*.bcfzip", options={"HIDDEN"})
@@ -344,6 +345,7 @@ class EditBcfTopic(bpy.types.Operator):
 class SaveBcfProject(bpy.types.Operator):
     bl_idname = "bim.save_bcf_project"
     bl_label = "Save BCF Project"
+    bl_description = "Save active BCF project by the provided filepath."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.bcf;*.bcfzip", options={"HIDDEN"})
@@ -1537,6 +1539,7 @@ class OpenBcfReferenceLink(bpy.types.Operator):
 class SelectBcfHeaderFile(bpy.types.Operator):
     bl_idname = "bim.select_bcf_header_file"
     bl_label = "Select BCF Header File"
+    bl_description = "Select filepath for BCF header reference."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
@@ -1555,6 +1558,7 @@ class SelectBcfHeaderFile(bpy.types.Operator):
 class SelectBcfBimSnippetReference(bpy.types.Operator):
     bl_idname = "bim.select_bcf_bim_snippet_reference"
     bl_label = "Select BCF BIM Snippet Reference"
+    bl_description = "Select filepath for BCF snippet reference."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
@@ -1572,6 +1576,7 @@ class SelectBcfBimSnippetReference(bpy.types.Operator):
 class SelectBcfDocumentReference(bpy.types.Operator):
     bl_idname = "bim.select_bcf_document_reference"
     bl_label = "Select BCF Document Reference"
+    bl_description = "Select filepath for BCF document reference."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 

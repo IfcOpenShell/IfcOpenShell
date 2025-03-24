@@ -2216,6 +2216,7 @@ class ActivateDrawingFromSheet(bpy.types.Operator, ActivateDrawingBase):
         return True
 
 
+# TODO: not exposed to the UI.
 class SelectDocIfcFile(bpy.types.Operator):
     bl_idname = "bim.select_doc_ifc_file"
     bl_label = "Select Documentation IFC File"

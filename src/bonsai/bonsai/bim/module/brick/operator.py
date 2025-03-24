@@ -243,6 +243,8 @@ class RemoveBrick(bpy.types.Operator, tool.Ifc.Operator):
 class SerializeBrick(bpy.types.Operator):
     bl_idname = "bim.serialize_brick"
     bl_label = "Serialize Brick"
+    # Prevents crash on Blender 4.4.0.
+    bl_description = "Save active Brick project by the provided filepath."
     filter_glob: bpy.props.StringProperty(default="*.ttl", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})

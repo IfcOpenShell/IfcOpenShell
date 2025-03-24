@@ -30,6 +30,7 @@ from bonsai.bim.ifc import IfcStore
 class SelectDiffJsonFile(bpy.types.Operator):
     bl_idname = "bim.select_diff_json_file"
     bl_label = "Select Diff JSON File"
+    bl_description = "Select filepath for IFC diff results."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
@@ -104,6 +105,7 @@ class VisualiseDiff(bpy.types.Operator):
 class SelectDiffOldFile(bpy.types.Operator):
     bl_idname = "bim.select_diff_old_file"
     bl_label = "Select Diff Old File"
+    bl_description = "Select filepath for an old IFC file to compare."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
@@ -120,6 +122,7 @@ class SelectDiffOldFile(bpy.types.Operator):
 class SelectDiffNewFile(bpy.types.Operator):
     bl_idname = "bim.select_diff_new_file"
     bl_label = "Select Diff New File"
+    bl_description = "Select filepath for a new IFC file to compare."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
@@ -136,6 +139,7 @@ class SelectDiffNewFile(bpy.types.Operator):
 class ExecuteIfcDiff(bpy.types.Operator):
     bl_idname = "bim.execute_ifc_diff"
     bl_label = "Execute IFC Diff"
+    bl_description = "Compare two IFC files and save a json diff report by the provided filepath."
     filename_ext = ".json"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
