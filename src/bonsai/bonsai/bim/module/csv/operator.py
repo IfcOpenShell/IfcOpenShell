@@ -201,6 +201,13 @@ class ExportIfcCsv(bpy.types.Operator):
             return False
         return True
 
+    @classmethod
+    def description(cls, context, properties):
+        props = tool.Blender.get_csv_props()
+        if props.format == "web":
+            return "Open Web UI for spreadsheet data export."
+        return f"Export IFC data as a spreadsheet by the provided filepath in '{props.format}' format ."
+
     def invoke(self, context, event):
         props = tool.Blender.get_csv_props()
         if props.format == "web":
