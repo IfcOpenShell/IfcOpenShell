@@ -21,7 +21,7 @@
 import bpy
 import ifcopenshell.api
 import bonsai.tool as tool
-from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 import bonsai.tool as tool
 import bonsai.core.cost as core
 from typing import get_args, TYPE_CHECKING
@@ -678,7 +678,7 @@ class CalculateCostItemResourceValue(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class ExportCostSchedules(bpy.types.Operator):
+class ExportCostSchedules(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_cost_schedules"
     bl_label = "Export Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
@@ -701,9 +701,7 @@ class ExportCostSchedules(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        wm = context.window_manager
-        wm.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ExportHelper.invoke(self, context, event)
 
     def draw(self, context):
         self.layout.label(text="Choose a format")

@@ -24,25 +24,19 @@ import logging
 import numpy as np
 import ifcopenshell
 import bonsai.tool as tool
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 from math import radians
 from mathutils import Matrix, Vector
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.clash.decorator import ClashDecorator
 
 
-class ExportClashSets(bpy.types.Operator):
+class ExportClashSets(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_clash_sets"
     bl_label = "Export Clash Sets"
     bl_description = "Export clash sets to a selected file"
     filename_ext = ".json"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
-
-    def invoke(self, context, event):
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
     def execute(self, context):
         self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
@@ -52,20 +46,17 @@ class ExportClashSets(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ImportClashSets(bpy.types.Operator):
+class ImportClashSets(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.import_clash_sets"
     bl_label = "Import Clash Sets"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Import clash sets from a selected file"
     filename_ext = ".json"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
 
     def invoke(self, context, event):
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ImportHelper.invoke(self, context, event)
 
     def execute(self, context):
         tool.Clash.load_clash_sets(self.filepath)
@@ -155,15 +146,15 @@ class RemoveClashSource(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectClashSource(bpy.types.Operator):
+class SelectClashSource(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_clash_source"
     bl_label = "Select Clash Source"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select an IFC file to add as a clash source"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
     index: bpy.props.IntProperty()
     group: bpy.props.StringProperty()
+    filename_ext = ".ifc"
 
     def execute(self, context):
         props = tool.Clash.get_clash_props()
@@ -171,46 +162,32 @@ class SelectClashSource(bpy.types.Operator):
         getattr(clash_set, self.group)[self.index].name = self.filepath
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class SelectClashResults(bpy.types.Operator):
+class SelectClashResults(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_clash_results"
     bl_label = "Select Clash Results"
     bl_description = "Select filepath for clash results."
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
         props = tool.Clash.get_clash_props()
         props.clash_results_path = self.filepath
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class SelectSmartGroupedClashesPath(bpy.types.Operator):
+class SelectSmartGroupedClashesPath(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_smart_grouped_clashes_path"
     bl_label = "Select Smart-Grouped Clashes Path"
     bl_description = "Select filepath for smart-grouped clashes."
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
         props = tool.Clash.get_clash_props()
         props.smart_grouped_clashes_path = self.filepath
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class ExecuteIfcClash(bpy.types.Operator):
+class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.execute_ifc_clash"
     bl_label = "Execute IFC Clash"
     bl_description = "Execute clash detection and save the information to a .bcf or .json file"
@@ -220,8 +197,7 @@ class ExecuteIfcClash(bpy.types.Operator):
     def invoke(self, context, event):
         if self.filepath:
             return self.execute(context)
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):
         from ifcclash import ifcclash
@@ -294,19 +270,17 @@ class ExecuteIfcClash(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectIfcClashResults(bpy.types.Operator):
+class SelectIfcClashResults(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_ifc_clash_results"
     bl_label = "Select IFC Clash Results"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select the clashing IFC geometry stored in a file"
+    filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
     filename_ext = ".json"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def invoke(self, context, event):
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ImportHelper.invoke(self, context, event)
 
     def execute(self, context):
         # TODO refactor into new clash results system

@@ -24,25 +24,22 @@ import ifcopenshell
 import bonsai.bim.handler
 import bonsai.bim.import_ifc
 import bonsai.tool as tool
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bonsai.bim.ifc import IfcStore
 
 
-class SelectDiffJsonFile(bpy.types.Operator):
+class SelectDiffJsonFile(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_diff_json_file"
     bl_label = "Select Diff JSON File"
     bl_description = "Select filepath for IFC diff results."
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
+    filename_ext = ".json"
 
     def execute(self, context):
         props = tool.Blender.get_diff_props()
         props.diff_json_file = self.filepath
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class VisualiseDiff(bpy.types.Operator):
@@ -104,55 +101,40 @@ class VisualiseDiff(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectDiffOldFile(bpy.types.Operator):
+class SelectDiffOldFile(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_diff_old_file"
     bl_label = "Select Diff Old File"
     bl_description = "Select filepath for an old IFC file to compare."
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
+    filename_ext = ".ifc"
 
     def execute(self, context):
         props = tool.Blender.get_diff_props()
         props.old_file = self.filepath
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class SelectDiffNewFile(bpy.types.Operator):
+class SelectDiffNewFile(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_diff_new_file"
     bl_label = "Select Diff New File"
     bl_description = "Select filepath for a new IFC file to compare."
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
+    filename_ext = ".ifc"
 
     def execute(self, context):
         props = tool.Blender.get_diff_props()
         props.new_file = self.filepath
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class ExecuteIfcDiff(bpy.types.Operator):
+class ExecuteIfcDiff(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.execute_ifc_diff"
     bl_label = "Execute IFC Diff"
     bl_description = "Compare two IFC files and save a json diff report by the provided filepath."
     filename_ext = ".json"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
-
-    def invoke(self, context, event):
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
     def execute(self, context):
         import ifcdiff

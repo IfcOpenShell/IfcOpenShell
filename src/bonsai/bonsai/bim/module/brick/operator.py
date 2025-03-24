@@ -22,17 +22,18 @@ import ifcopenshell.api
 import bonsai.tool as tool
 import bonsai.core.brick as core
 import bonsai.bim.handler
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bonsai.bim.ifc import IfcStore
 from bonsai.tool.brick import BrickStore
 
 
-class LoadBrickProject(bpy.types.Operator, tool.Ifc.Operator):
+class LoadBrickProject(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.load_brick_project"
     bl_label = "Load Brickschema Project"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Load in a Brick project from a file"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ttl", options={"HIDDEN"})
+    filename_ext = ".ttl"
 
     def _execute(self, context):
         if os.path.exists(self.filepath) and "ttl" in os.path.splitext(self.filepath)[1].lower():
@@ -40,10 +41,6 @@ class LoadBrickProject(bpy.types.Operator, tool.Ifc.Operator):
             core.load_brick_project(tool.Brick, filepath=self.filepath, brick_root=root)
         else:
             self.report({"ERROR"}, f"Failed to load {self.filepath}")
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class ViewBrickClass(bpy.types.Operator, tool.Ifc.Operator):
@@ -240,7 +237,7 @@ class RemoveBrick(bpy.types.Operator, tool.Ifc.Operator):
         )
 
 
-class SerializeBrick(bpy.types.Operator):
+class SerializeBrick(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.serialize_brick"
     bl_label = "Serialize Brick"
     # Prevents crash on Blender 4.4.0.
@@ -251,9 +248,7 @@ class SerializeBrick(bpy.types.Operator):
 
     def invoke(self, context, event):
         if self.should_save_as or not BrickStore.path:
-            WindowManager = context.window_manager
-            WindowManager.fileselect_add(self)
-            return {"RUNNING_MODAL"}
+            return ExportHelper.invoke(self, context, event)
         else:
             return self.execute(context)
 

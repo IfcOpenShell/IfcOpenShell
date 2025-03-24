@@ -20,6 +20,7 @@ import bpy
 
 import bonsai.tool as tool
 import bonsai.core.georeference as core
+from bpy_extras.io_utils import ImportHelper
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
 
 
@@ -87,21 +88,17 @@ class GetCursorLocation(bpy.types.Operator, tool.Ifc.Operator):
         core.get_cursor_location(tool.Georeference)
 
 
-class ImportPlot(bpy.types.Operator, tool.Ifc.Operator):
+class ImportPlot(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_plot"
     bl_label = "Import Plot"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Import plot from a csv file."
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
+    filename_ext = ".csv"
 
-    def execute(self, context):
+    def _execute(self, context):
         core.import_plot(tool.Georeference, filepath=self.filepath)
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class EnableEditingWCS(bpy.types.Operator, tool.Ifc.Operator):

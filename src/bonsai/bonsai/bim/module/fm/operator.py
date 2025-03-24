@@ -24,15 +24,15 @@ import logging
 import tempfile
 import ifcopenshell
 import bonsai.tool as tool
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 
 
-class ExecuteIfcFM(bpy.types.Operator):
+class ExecuteIfcFM(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.execute_ifcfm"
     bl_label = "Execute IfcFM"
     bl_description = "Export IfcFM data as a spreadsheet."
     file_format: bpy.props.StringProperty()
     filter_glob: bpy.props.StringProperty(default="*.csv;*.ods;*.xlsx", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     @classmethod
     def poll(cls, context):
@@ -45,9 +45,7 @@ class ExecuteIfcFM(bpy.types.Operator):
     def invoke(self, context, event):
         props = context.scene.BIMFMProperties
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, f".{props.format}")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):
         props = context.scene.BIMFMProperties
@@ -83,13 +81,12 @@ class ExecuteIfcFM(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectFMSpreadsheetFiles(bpy.types.Operator):
+class SelectFMSpreadsheetFiles(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_fm_spreadsheet_files"
     bl_label = "Select FM Spreadsheet Files"
     bl_description = "Select FM spreadsheets to merge."
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xlsx", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     files: bpy.props.CollectionProperty(name="File Path", type=bpy.types.OperatorFileListElement)
 
     def execute(self, context):
@@ -101,17 +98,12 @@ class SelectFMSpreadsheetFiles(bpy.types.Operator):
             new.name = os.path.join(dirname, f.name)
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class ExecuteIfcFMFederate(bpy.types.Operator):
+class ExecuteIfcFMFederate(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.execute_ifcfm_federate"
     bl_label = "Merge IfcFM SpreadSheets"
     bl_description = "Merge added IfcFM spreadsheets."
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xlsx", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     @classmethod
     def poll(cls, context):
@@ -124,9 +116,7 @@ class ExecuteIfcFMFederate(bpy.types.Operator):
     def invoke(self, context, event):
         props = context.scene.BIMFMProperties
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, f".{props.format}")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):
         props = context.scene.BIMFMProperties

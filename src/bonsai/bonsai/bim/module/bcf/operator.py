@@ -42,6 +42,7 @@ import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.bim.module.bcf.prop as bcf_prop
 import bonsai.bim.module.bcf.bcfstore as bcfstore
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from pathlib import Path
 from math import radians, degrees, atan, tan, cos, sin
 from mathutils import Vector, Matrix, Euler, geometry
@@ -63,13 +64,14 @@ class NewBcfProject(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadBcfProject(bpy.types.Operator):
+class LoadBcfProject(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.load_bcf_project"
     bl_label = "Load BCF Project"
     bl_description = "Load the BCF file."
     bl_options = {"REGISTER", "UNDO"}
     filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
     filter_glob: bpy.props.StringProperty(default="*.bcf;*.bcfzip", options={"HIDDEN"})
+    filename_ext = ".bcf"
 
     def execute(self, context):
         # Operator is also used when new project is created by not yet saved.
@@ -108,10 +110,6 @@ class LoadBcfProject(bpy.types.Operator):
         bpy.ops.bim.load_bcf_topics()
         self.report({"INFO"}, f"BCF Project '{Path(self.filepath).name}' is loaded.")
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class UnloadBcfProject(bpy.types.Operator):
@@ -342,7 +340,7 @@ class EditBcfTopic(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SaveBcfProject(bpy.types.Operator):
+class SaveBcfProject(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.save_bcf_project"
     bl_label = "Save BCF Project"
     bl_description = "Save active BCF project by the provided filepath."
@@ -350,6 +348,7 @@ class SaveBcfProject(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.bcf;*.bcfzip", options={"HIDDEN"})
     save_current_bcf: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+    filename_ext = ".bcf"
 
     def execute(self, context):
         bcfxml = bcfstore.BcfStore.get_bcfxml()
@@ -366,8 +365,7 @@ class SaveBcfProject(bpy.types.Operator):
                 self.filepath = str(path)
                 return self.execute(context)
 
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ExportHelper.invoke(self, context, event)
 
 
 class AddBcfTopic(bpy.types.Operator):
@@ -1536,13 +1534,13 @@ class OpenBcfReferenceLink(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectBcfHeaderFile(bpy.types.Operator):
+class SelectBcfHeaderFile(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_bcf_header_file"
     bl_label = "Select BCF Header File"
     bl_description = "Select filepath for BCF header reference."
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
+    filename_ext = ".ifc"
 
     def execute(self, context):
         if self.filepath:
@@ -1550,17 +1548,12 @@ class SelectBcfHeaderFile(bpy.types.Operator):
             props.file_reference = self.filepath
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class SelectBcfBimSnippetReference(bpy.types.Operator):
+class SelectBcfBimSnippetReference(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_bcf_bim_snippet_reference"
     bl_label = "Select BCF BIM Snippet Reference"
     bl_description = "Select filepath for BCF snippet reference."
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
         if self.filepath:
@@ -1568,27 +1561,18 @@ class SelectBcfBimSnippetReference(bpy.types.Operator):
             props.bim_snippet_reference = self.filepath
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class SelectBcfDocumentReference(bpy.types.Operator):
+class SelectBcfDocumentReference(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_bcf_document_reference"
     bl_label = "Select BCF Document Reference"
     bl_description = "Select filepath for BCF document reference."
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
         if self.filepath:
             props = tool.Bcf.get_bcf_props()
             props.document_reference = self.filepath
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class LoadBcfHeaderIfcFile(bpy.types.Operator):

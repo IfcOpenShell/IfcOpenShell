@@ -24,6 +24,7 @@ import ifcpatch
 import bonsai.tool as tool
 import bonsai.core.patch as core
 import bonsai.bim.handler
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from pathlib import Path
 from typing import cast, TYPE_CHECKING
 
@@ -31,40 +32,32 @@ if TYPE_CHECKING:
     from bonsai.bim.prop import AttributeDataType
 
 
-class SelectIfcPatchInput(bpy.types.Operator):
+class SelectIfcPatchInput(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_ifc_patch_input"
     bl_label = "Select IFC Patch Input"
     bl_description = "Select filepath for IFC patch input."
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifcZIP;*.ifcXML", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filename_ext = ".ifc"
 
     def execute(self, context):
         props = tool.Patch.get_patch_props()
         props.ifc_patch_input = self.filepath
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class SelectIfcPatchOutput(bpy.types.Operator):
+class SelectIfcPatchOutput(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.select_ifc_patch_output"
     bl_label = "Select IFC Patch Output"
     bl_description = "Select filepath for IFC patch output."
     bl_options = {"REGISTER", "UNDO"}
+    filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifcZIP;*.ifcXML", options={"HIDDEN"})
     filename_ext = ".ifc"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
         props = tool.Patch.get_patch_props()
         props.ifc_patch_output = self.filepath
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class ExecuteIfcPatch(bpy.types.Operator):

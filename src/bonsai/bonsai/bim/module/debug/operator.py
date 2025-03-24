@@ -36,6 +36,7 @@ import bonsai.core.profile
 import bonsai.core.type
 import bonsai.bim.handler
 import bonsai.bim.import_ifc as import_ifc
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from pathlib import Path
 from bonsai import get_debug_info, format_debug_info
 from bonsai.bim.ifc import IfcStore
@@ -446,12 +447,11 @@ class ParseExpress(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectExpressFile(bpy.types.Operator):
+class SelectExpressFile(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_express_file"
     bl_label = "Select Express File"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select an IFC EXPRESS definition"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.exp", options={"HIDDEN"})
 
     def execute(self, context):
@@ -459,10 +459,6 @@ class SelectExpressFile(bpy.types.Operator):
         if os.path.exists(self.filepath) and "exp" in os.path.splitext(self.filepath)[1]:
             props.express_file = self.filepath
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class PurgeHdf5Cache(bpy.types.Operator):
@@ -523,7 +519,7 @@ class PrintUnusedElementStats(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
+class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator, ExportHelper):
     bl_idname = "bim.purge_unused_elements_by_class"
     bl_label = "Purge Unused Elements By Class"
     bl_description = (
@@ -537,7 +533,7 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.alt:
-            context.window_manager.fileselect_add(self)
+            return ExportHelper.invoke(self, context, event)
         return self.execute(context)
 
     @classmethod

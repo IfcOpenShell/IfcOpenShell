@@ -32,7 +32,7 @@ import ifcopenshell.util.sequence
 import ifcopenshell.util.selector
 from datetime import datetime
 from dateutil import parser, relativedelta
-from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from typing import get_args, TYPE_CHECKING
 from typing_extensions import assert_never
 
@@ -794,7 +794,7 @@ class ImportMSP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
 
 
-class ExportMSP(bpy.types.Operator, ImportHelper):
+class ExportMSP(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_msp"
     bl_label = "Export MSP"
     bl_options = {"REGISTER", "UNDO"}
@@ -827,7 +827,7 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
-class ExportP6(bpy.types.Operator, ImportHelper):
+class ExportP6(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_p6"
     bl_label = "Export P6"
     bl_options = {"REGISTER", "UNDO"}

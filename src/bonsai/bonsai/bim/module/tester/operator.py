@@ -28,6 +28,7 @@ import ifctester.reporter
 import ifcopenshell
 import bonsai.tool as tool
 import bonsai.bim.handler
+from bpy_extras.io_utils import ExportHelper
 from pathlib import Path
 from typing import Union
 
@@ -186,13 +187,13 @@ class SelectFailedEntities(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ExportBcf(bpy.types.Operator):
+class ExportBcf(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_bcf"
     bl_label = "Export BCF"
     bl_description = "Save ifctester BCF report by the provided filepath."
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.bcf", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filename_ext = ".bcf"
 
     def execute(self, context):
         bcf_reporter = ifctester.reporter.Bcf(tool.Tester.specs)
@@ -200,7 +201,3 @@ class ExportBcf(bpy.types.Operator):
         bcf_reporter.to_file(self.filepath)
         self.report({"INFO"}, "Finished exporting!")
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}

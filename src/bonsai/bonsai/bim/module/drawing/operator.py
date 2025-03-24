@@ -43,6 +43,7 @@ import bonsai.bim.module.drawing.svgwriter as svgwriter
 import bonsai.bim.module.drawing.annotation as annotation
 import bonsai.bim.module.drawing.sheeter as sheeter
 import bonsai.bim.export_ifc
+from bpy_extras.io_utils import ImportHelper
 from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 from typing import NamedTuple, List, Union, Optional, Literal
@@ -2217,22 +2218,18 @@ class ActivateDrawingFromSheet(bpy.types.Operator, ActivateDrawingBase):
 
 
 # TODO: not exposed to the UI.
-class SelectDocIfcFile(bpy.types.Operator):
+class SelectDocIfcFile(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_doc_ifc_file"
     bl_label = "Select Documentation IFC File"
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filename_ext = ".ifc"
     index: bpy.props.IntProperty()
 
     def execute(self, context):
         props = tool.Drawing.get_document_props()
         props.ifc_files[self.index].name = self.filepath
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class ResizeText(bpy.types.Operator):
@@ -2612,23 +2609,18 @@ class RemoveSheet(bpy.types.Operator, tool.Ifc.Operator):
         core.remove_sheet(tool.Ifc, tool.Drawing, sheet=tool.Ifc.get().by_id(self.sheet))
 
 
-class AddSchedule(bpy.types.Operator, tool.Ifc.Operator):
+class AddSchedule(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.add_schedule"
     bl_label = "Add Schedule"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add an .ods, .xls or .xlsx file as a schedule"
 
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xls;*.xlsx", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
 
     def _execute(self, context):
         filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
         core.add_document(tool.Ifc, tool.Drawing, "SCHEDULE", uri=filepath)
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class RemoveSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -2799,23 +2791,19 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
         tool.Drawing.import_sheets()
 
 
-class AddReference(bpy.types.Operator, tool.Ifc.Operator):
+class AddReference(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.add_reference"
     bl_label = "Add Reference"
     bl_description = "Import a .svg file to the project as a reference"
-
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
     filter_glob: bpy.props.StringProperty(default="*.svg", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
+    filename_ext = ".svg"
 
     def _execute(self, context):
         filepath = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
         core.add_document(tool.Ifc, tool.Drawing, "REFERENCE", uri=filepath)
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class RemoveReference(bpy.types.Operator, tool.Ifc.Operator):
@@ -3445,7 +3433,7 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.activate_drawing(drawing=element.id(), should_view_from_camera=False)
 
 
-class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator):
+class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.add_reference_image"
     bl_label = "Add Reference Image"
     bl_description = "Add or import reference image to the IFC project"
@@ -3453,9 +3441,6 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=True)
-    filepath: bpy.props.StringProperty(
-        name="File Path", description="Filepath used to import from", maxlen=1024, default="", subtype="FILE_PATH"
-    )
     filter_image: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
     filter_folder: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
 
@@ -3482,10 +3467,6 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator):
             layout.label(text="to use relative paths.")
         layout.prop(self, "override_existing_image")
         layout.prop(self, "use_existing_object_by_name")
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
     def _execute(self, context):
         abs_path = Path(self.filepath).absolute().resolve()

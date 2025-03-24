@@ -25,6 +25,7 @@ import ifcopenshell.api
 import ifcopenshell.api.style
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
+from bpy_extras.io_utils import ImportHelper
 from pathlib import Path
 from mathutils import Vector
 from typing import Any, Union
@@ -273,15 +274,11 @@ class SetAssetMaterialToExternalStyle(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class BrowseExternalStyle(bpy.types.Operator):
+class BrowseExternalStyle(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.browse_external_style"
     bl_label = "Browse External Style"
     bl_description = "Select filepath for an external style."
     bl_options = {"REGISTER", "UNDO"}
-
-    filepath: bpy.props.StringProperty(
-        name="File Path", description="Filepath used to import from", maxlen=1024, default="", subtype="FILE_PATH"
-    )
 
     filter_glob: bpy.props.StringProperty(
         default="*.blend",
@@ -357,8 +354,7 @@ class BrowseExternalStyle(bpy.types.Operator):
             if data_block in data_blocks:
                 self.data_block = data_block
 
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ImportHelper.invoke(self, context, event)
 
     def draw(self, context):
         layout = self.layout
@@ -538,7 +534,7 @@ class SelectByStyle(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ChooseTextureMapPath(bpy.types.Operator):
+class ChooseTextureMapPath(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.choose_texture_map_path"
     bl_label = "Choose Texture Map Path"
     bl_description = "Select filepath for a texture map."
@@ -547,9 +543,6 @@ class ChooseTextureMapPath(bpy.types.Operator):
 
     use_relative_path: bpy.props.BoolProperty(
         name="Use Relative Path", description="Save path relative to IFC file", default=True
-    )
-    filepath: bpy.props.StringProperty(
-        name="File Path", description="Filepath used to import from", maxlen=1024, default="", subtype="FILE_PATH"
     )
     filter_image: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
     filter_folder: bpy.props.BoolProperty(default=True, options={"HIDDEN", "SKIP_SAVE"})
@@ -562,10 +555,6 @@ class ChooseTextureMapPath(bpy.types.Operator):
             self.use_relative_path = False
             layout.label(text="Save the .ifc file first ")
             layout.label(text="to use relative paths.")
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
     def execute(self, context):
         if self.texture_map_index < 0:
