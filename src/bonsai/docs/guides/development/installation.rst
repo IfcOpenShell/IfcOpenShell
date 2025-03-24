@@ -159,7 +159,7 @@ For Linux or Mac:
    :caption: dev_environment.sh
 
 For Windows, run this batch script as an administrator. Before running it
-follow the instructions descibed in the `rem` tags.
+follow the instructions described in the `rem` tags.
 
 .. literalinclude:: ../../../scripts/installation/dev_environment.bat
    :language: bat
