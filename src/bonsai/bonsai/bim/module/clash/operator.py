@@ -484,7 +484,7 @@ class LoadSmartGroupsForActiveClashSet(bpy.types.Operator):
                     for pair in global_id_pairs:
                         for guid in pair:
                             new_global_id = new_group.global_ids.add()
-                            new_global_id.guid = guid
+                            new_global_id.name = guid
 
         return {"FINISHED"}
 
@@ -500,14 +500,15 @@ class SelectSmartGroup(bpy.types.Operator):
         return tool.Ifc.get() and context.visible_objects and props.active_smart_group
 
     def execute(self, context):
+        ifc_file = tool.Ifc.get()
         props = tool.Clash.get_clash_props()
         selected_smart_group = props.active_smart_group
         assert selected_smart_group
         products: list[ifcopenshell.entity_instance] = []
         for global_id in selected_smart_group.global_ids:
             try:
-                products.append(tool.Ifc.get().by_guid(global_id.guid))
-            except:
+                products.append(ifc_file.by_guid(global_id.name))
+            except RuntimeError:
                 continue
         tool.Spatial.select_products(products, unhide=True)
         context_override = tool.Blender.get_viewport_context()
