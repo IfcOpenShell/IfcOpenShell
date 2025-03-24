@@ -75,12 +75,12 @@ bool is_valid_for_kernel(const ifcopenshell::geometry::kernels::AbstractKernel* 
 }
 
 class HybridKernel : public ifcopenshell::geometry::kernels::AbstractKernel {
-	std::vector<AbstractKernel*> kernels_;
+	std::vector<std::unique_ptr<AbstractKernel>> kernels_;
 	ifcopenshell::geometry::abstract_mapping* mapping_;
 public:
-	HybridKernel(const std::string& name, IfcParse::IfcFile* file, Settings& settings, std::vector<AbstractKernel*> kernels)
+	HybridKernel(const std::string& name, IfcParse::IfcFile* file, Settings& settings, std::vector<std::unique_ptr<AbstractKernel>>&& kernels)
 		: AbstractKernel(name, settings)
-		, kernels_(kernels)
+		, kernels_(std::move(kernels))
 		, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings))
 	{}
 	virtual bool convert(const taxonomy::ptr item, IfcGeom::ConversionResults& rs) {
@@ -88,7 +88,7 @@ public:
 		bool has_openings = ops && ops->size();
 		for (auto& k : kernels_) {
 #ifdef IFOPSH_WITH_CGAL
-			if (has_openings && dynamic_cast<ifcopenshell::geometry::kernels::SimpleCgalKernel*>(k)) {
+			if (has_openings && dynamic_cast<ifcopenshell::geometry::kernels::SimpleCgalKernel*>(k.get())) {
 				// @todo this would fail later on in the find_openings() call, because we have a
 				// SimpleCgalShape which cannot be used on a kernel that supports booleans.
 				// @todo 1 implement the translation between various conversion result shapes
@@ -138,7 +138,7 @@ public:
 		for (auto& k : kernels_) {
 			bool is_valid = true;
 			for (auto& s : entity_shapes) {
-				if (!is_valid_for_kernel(k, s)) {
+				if (!is_valid_for_kernel(k.get(), s)) {
 					is_valid = false;
 					break;
 				}
@@ -179,7 +179,7 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 
 	if (geometry_library_lower.rfind("hybrid-", 0) == 0) {
 		geometry_library_lower = geometry_library_lower.substr(strlen("hybrid"));
-		std::vector<AbstractKernel*> kernels;
+		std::vector<std::unique_ptr<AbstractKernel>> kernels;
 		while (!geometry_library_lower.empty()) {
 			if (geometry_library_lower.find("-", 0) == 0) {
 				geometry_library_lower = geometry_library_lower.substr(strlen("-"));
@@ -189,25 +189,23 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 			auto n = kernels.size();
 #ifdef IFOPSH_WITH_OPENCASCADE
 			if (geometry_library_lower.find("opencascade", 0) == 0) {
-				kernels.push_back(new IfcGeom::OpenCascadeKernel(conv_settings));
+				kernels.emplace_back(new IfcGeom::OpenCascadeKernel(conv_settings));
 				geometry_library_lower = geometry_library_lower.substr(strlen("opencascade"));
 			}
 #endif
 
 #ifdef IFOPSH_WITH_CGAL
 			if (geometry_library_lower.find("cgal-simple", 0) == 0) {
-				kernels.push_back(new SimpleCgalKernel(conv_settings));
+				kernels.emplace_back(new SimpleCgalKernel(conv_settings));
 				geometry_library_lower = geometry_library_lower.substr(strlen("cgal-simple"));
 			}
 
 			if (geometry_library_lower.find("cgal", 0) == 0) {
-				kernels.push_back(new CgalKernel(conv_settings));
+				kernels.emplace_back(new CgalKernel(conv_settings));
 				geometry_library_lower = geometry_library_lower.substr(strlen("cgal"));
 			}
 #endif
 			if (kernels.size() != n + 1) {
-				for (auto k : kernels)
-					delete k;
 				throw IfcParse::IfcException("Invalid hybrid kernel " + geometry_library);
 			}
 		}
@@ -217,7 +215,7 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 		}
 
 		if (!kernels.empty()) {
-			return new HybridKernel(geometry_library, file, conv_settings, kernels);
+			return new HybridKernel(geometry_library, file, conv_settings, std::move(kernels));
 		}
 	}
 	

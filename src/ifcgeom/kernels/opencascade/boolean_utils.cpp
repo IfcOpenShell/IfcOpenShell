@@ -929,11 +929,11 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	bool is_2d = count(a, TopAbs_FACE) > 0 && count(a, TopAbs_SHELL) == 0;
 
 	bool success = false;
-	BRepAlgoAPI_BooleanOperation* builder;
+	std::unique_ptr<BRepAlgoAPI_BooleanOperation> builder;
 	TopTools_ListOfShape b_tmp;
 
 	if (op == BOPAlgo_CUT) {
-		builder = new BRepAlgoAPI_Cut();
+		builder.reset(new BRepAlgoAPI_Cut());
 
 		if (do_subtraction_eliminate_disjoint_bbox) {
 			PERF("boolean subtraction: eliminate disjoint bbox");
@@ -968,9 +968,9 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		}
 
 	} else if (op == BOPAlgo_COMMON) {
-		builder = new BRepAlgoAPI_Common();
+		builder.reset(new BRepAlgoAPI_Common());
 	} else if (op == BOPAlgo_FUSE) {
-		builder = new BRepAlgoAPI_Fuse();
+		builder.reset(new BRepAlgoAPI_Fuse());
 	} else {
 		return false;
 	}
@@ -978,7 +978,6 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	if (b.Extent() == 0) {
 		Logger::Warning("No other operands remaining, using first operand");
 		result = a;
-		delete builder;
 		return true;
 	}
 
@@ -1131,7 +1130,6 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 						} else {
 							Logger::Notice("Processed fully in 2D");
 							result = mp.Shape();
-							delete builder;
 							return true;
 						}
 					} else {
@@ -1431,7 +1429,6 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 			Logger::Notice(str_str);
 		}
 	}
-	delete builder;
 	if (!success) {
 		if (allow_retry) {
 			return boolean_operation(settings, a, b, op, result, new_fuzziness);
