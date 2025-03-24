@@ -104,7 +104,7 @@ def block_scale(scene: bpy.types.Scene) -> None:
 
     if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
         if isinstance(obj, bpy.types.Object) and tool.Blender.get_ifc_definition_id(obj):
-            if obj.type == 'CAMERA':
+            if obj.type == "CAMERA":
                 camera = tool.Ifc.get_entity(obj)
                 if ifcopenshell.util.element.get_pset(camera, "EPset_Drawing", "TargetView") == "REFLECTED_PLAN_VIEW":
                     obj.scale = (-1, -1, -1)

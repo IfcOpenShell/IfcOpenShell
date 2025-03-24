@@ -555,7 +555,7 @@ class TestCreatePointCloudMesh(NewFile):
     def test_cartesian_point_list_3d(self):
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
-        coords = ((1., 2., 3.), (4., 5., 6.))
+        coords = ((1.0, 2.0, 3.0), (4.0, 5.0, 6.0))
         item = ifc_file.createIfcCartesianPointList3D(coords)
         rep = ifc_file.createIfcShapeRepresentation(Items=[item])
         mesh = subject.create_point_cloud_mesh(rep)
@@ -566,8 +566,8 @@ class TestCreatePointCloudMesh(NewFile):
     def test_cartesian_point_list_2d(self):
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
-        coords = ((1., 2.), (4., 5.))
-        coords3d = ((1., 2., 0.), (4., 5., 0.))
+        coords = ((1.0, 2.0), (4.0, 5.0))
+        coords3d = ((1.0, 2.0, 0.0), (4.0, 5.0, 0.0))
         item = ifc_file.createIfcCartesianPointList2D(coords)
         rep = ifc_file.createIfcShapeRepresentation(Items=[item])
         mesh = subject.create_point_cloud_mesh(rep)
@@ -578,7 +578,7 @@ class TestCreatePointCloudMesh(NewFile):
     def test_point_3d(self):
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
-        coords = ((1., 2., 0.),)
+        coords = ((1.0, 2.0, 0.0),)
         item = ifc_file.createIfcCartesianPoint(Coordinates=coords[0])
         rep = ifc_file.createIfcShapeRepresentation(Items=[item])
         mesh = subject.create_point_cloud_mesh(rep)
@@ -589,8 +589,8 @@ class TestCreatePointCloudMesh(NewFile):
     def test_point_2d(self):
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
-        coords = ((1., 2.),)
-        coords3d = ((1., 2., 0.),)
+        coords = ((1.0, 2.0),)
+        coords3d = ((1.0, 2.0, 0.0),)
         item = ifc_file.createIfcCartesianPoint(Coordinates=coords[0])
         rep = ifc_file.createIfcShapeRepresentation(Items=[item])
         mesh = subject.create_point_cloud_mesh(rep)

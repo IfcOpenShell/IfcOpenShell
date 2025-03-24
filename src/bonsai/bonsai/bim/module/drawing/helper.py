@@ -202,7 +202,7 @@ def format_distance(
 
         base = int(precision)
         decInches = value * toInches
-        decFeet = decInches/12
+        decFeet = decInches / 12
 
         # Separate ft and inches
         # Unless Inches are the specified Length Unit or unit_fraction is False
