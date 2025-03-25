@@ -32,18 +32,14 @@ def add_structural_boundary_condition(
     edge condition, and surface connections will have a face condition.
 
     :param name: The name of the boundary condition.
-    :type name: str,optional
     :param connection: The IfcStructuralConnection to apply the boundary
         condition to. This will determine the type of condition that is
         created. If no connection is supplied, an orphan boundary condition
         will be created using the ifc_class that you specify.
-    :type connection: ifcopenshell.entity_instance,optional
     :param ifc_class: The class of IfcBoundaryCondition to create, only
         relevant if you do not specify a connection and want to create an
         orphaned boundary condition.
-    :type ifc_class: str,optional
     :return: The newly created IfcBoundaryCondition
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -51,14 +47,12 @@ def add_structural_boundary_condition(
 
         ifcopenshell.api.structural.add_structural_boundary_condition(model, connection=connection)
     """
-    settings = {"name": name, "connection": connection, "ifc_class": ifc_class}
-
-    if settings["connection"]:
+    if connection:
         # assign boundary condition to a connection
-        if settings["connection"].is_a("IfcRelConnectsStructuralMember"):
-            related_connection = settings["connection"].RelatedStructuralConnection
+        if connection.is_a("IfcRelConnectsStructuralMember"):
+            related_connection = connection.RelatedStructuralConnection
         else:
-            related_connection = settings["connection"]
+            related_connection = connection
 
         if related_connection.is_a("IfcStructuralPointConnection"):
             boundary_class = "IfcBoundaryNodeCondition"
@@ -67,9 +61,9 @@ def add_structural_boundary_condition(
         elif related_connection.is_a("IfcStructuralSurfaceConnection"):
             boundary_class = "IfcBoundaryFaceCondition"
 
-        condition = file.create_entity(boundary_class, Name=settings["name"])
-        settings["connection"].AppliedCondition = condition
+        condition = file.create_entity(boundary_class, Name=name)
+        connection.AppliedCondition = condition
         return condition
     else:
         # add an orphan boundary condition
-        return file.create_entity(settings["ifc_class"], Name=settings["name"])
+        return file.create_entity(ifc_class, Name=name)

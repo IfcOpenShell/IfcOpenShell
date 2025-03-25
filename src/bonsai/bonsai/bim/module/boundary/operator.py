@@ -25,6 +25,7 @@ import mathutils
 import numpy as np
 import multiprocessing
 import ifcopenshell.api
+import ifcopenshell.api.boundary
 import ifcopenshell.geom
 import ifcopenshell.util.unit
 import ifcopenshell.util.shape
@@ -40,6 +41,7 @@ from bonsai.bim.module.model.decorator import ProfileDecorator
 from bonsai.bim.module.boundary.decorator import BoundaryDecorator
 import bonsai.core
 import bonsai.core.geometry
+from typing import Union, Optional
 
 
 def disable_editing_boundary_geometry(context):
@@ -57,7 +59,7 @@ def disable_editing_boundary_geometry(context):
 
 
 class Loader:
-    def __init__(self, operator=None):
+    def __init__(self, operator: Optional[bpy.types.Operator] = None):
         self.operator = operator
         self.ifc_file = None
         self.logger = None
@@ -66,7 +68,7 @@ class Loader:
         self.fallback_settings = self.load_fallback_settings()
         self.load_importer()
 
-    def create_mesh(self, boundary):
+    def create_mesh(self, boundary: ifcopenshell.entity_instance) -> Union[bpy.types.Mesh, None]:
         # ConnectionGeometry is optional in IFC schema for some reasons.
         if not boundary.ConnectionGeometry:
             return None
@@ -113,7 +115,7 @@ class Loader:
                 bm.edges.new((verts[-1], verts[0]))
             bm.to_mesh(mesh)
             bm.free()
-            mesh.BIMMeshProperties.ifc_definition_id = surface.id()
+            tool.Ifc.link(surface, mesh)
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             matrix = mathutils.Matrix(
                 ifcopenshell.util.placement.get_axis2placement(surface.BasisSurface.Position).tolist()
@@ -130,7 +132,7 @@ class Loader:
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
         return settings
 
-    def load_importer(self):
+    def load_importer(self) -> None:
         self.ifc_file = tool.Ifc.get()
         self.logger = logging.getLogger("ImportIFC")
         ifc_import_settings = import_ifc.IfcImportSettings.factory(bpy.context, IfcStore.path, self.logger)
@@ -279,7 +281,7 @@ class SelectProjectBoundaries(bpy.types.Operator):
         return {"FINISHED"}
 
 
-def get_colour(ifc_boundary):
+def get_colour(ifc_boundary: ifcopenshell.entity_instance) -> tuple[float, float, float, float]:
     """Return a color depending on IfcClass given"""
     product_colors = {
         "IfcWall": (0.7, 0.3, 0, 1),
@@ -315,7 +317,8 @@ class ColourByRelatedBuildingElement(bpy.types.Operator):
 
     def _execute(self, context):
         for obj in context.visible_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            props = tool.Blender.get_object_bim_props(obj)
+            if not props.ifc_definition_id:
                 continue
             element = tool.Ifc.get_entity(obj)
             if not element.is_a("IfcRelSpaceBoundary"):
@@ -416,7 +419,7 @@ class UpdateBoundaryGeometry(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         tool.Boundary.move_origin_to_space_origin(context.active_object)
         settings = tool.Boundary.get_assign_connection_geometry_settings(context.active_object)
-        ifcopenshell.api.run("boundary.assign_connection_geometry", tool.Ifc.get(), **settings)
+        ifcopenshell.api.boundary.assign_connection_geometry(tool.Ifc.get(), **settings)
         return {"FINISHED"}
 
 

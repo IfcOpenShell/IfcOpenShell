@@ -58,8 +58,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSweptDiskSolid* inst) {
 	auto ep = inst->EndParam();
 #else
 	boost::optional<double> sp, ep;
-	sp = inst->StartParam();
-	ep = inst->EndParam();
+	try {
+		sp = inst->StartParam();
+		ep = inst->EndParam();
+	} catch (const IfcParse::IfcException& e) {
+		Logger::Warning(e);
+	}
 #endif
 
 	const double tol = settings_.get<settings::Precision>().get();

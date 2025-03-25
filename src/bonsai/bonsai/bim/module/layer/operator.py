@@ -24,7 +24,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.attribute
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 
 
 class LoadLayers(bpy.types.Operator):
@@ -33,7 +32,7 @@ class LoadLayers(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         props = context.scene.BIMLayerProperties
         props.layers.clear()
         for layer in tool.Ifc.get().by_type("IfcPresentationLayerAssignment"):
@@ -126,7 +125,7 @@ class RemovePresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMLayerProperties
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         ifcopenshell.api.run("layer.remove_layer", self.file, **{"layer": self.file.by_id(self.layer)})
         bpy.ops.bim.load_layers()
         return {"FINISHED"}
@@ -142,12 +141,12 @@ class AssignPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         item = bpy.data.meshes.get(self.item) if self.item else context.active_object.data
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         ifcopenshell.api.run(
             "layer.assign_layer",
             self.file,
             **{
-                "items": [self.file.by_id(item.BIMMeshProperties.ifc_definition_id)],
+                "items": [self.file.by_id(tool.Geometry.get_mesh_props(item).ifc_definition_id)],
                 "layer": self.file.by_id(self.layer),
             },
         )
@@ -164,15 +163,10 @@ class UnassignPresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         item = bpy.data.meshes.get(self.item) if self.item else context.active_object.data
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "layer.unassign_layer",
-            self.file,
-            **{
-                "items": [self.file.by_id(item.BIMMeshProperties.ifc_definition_id)],
-                "layer": self.file.by_id(self.layer),
-            },
-        )
+        ifc_file = tool.Ifc.get()
+        representation = tool.Geometry.get_data_representation(item)
+        assert representation
+        ifcopenshell.api.layer.unassign_layer(ifc_file, items=[representation], layer=ifc_file.by_id(self.layer))
         return {"FINISHED"}
 
 

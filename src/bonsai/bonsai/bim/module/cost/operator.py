@@ -21,7 +21,7 @@
 import bpy
 import ifcopenshell.api
 import bonsai.tool as tool
-from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 import bonsai.tool as tool
 import bonsai.core.cost as core
 from typing import get_args, TYPE_CHECKING
@@ -678,7 +678,7 @@ class CalculateCostItemResourceValue(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class ExportCostSchedules(bpy.types.Operator):
+class ExportCostSchedules(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_cost_schedules"
     bl_label = "Export Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
@@ -701,9 +701,7 @@ class ExportCostSchedules(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        wm = context.window_manager
-        wm.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ExportHelper.invoke(self, context, event)
 
     def draw(self, context):
         self.layout.label(text="Choose a format")
@@ -740,15 +738,14 @@ class LoadProductCostItems(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not tool.Ifc.get() or not (obj := context.active_object) or not (obj.BIMObjectProperties.ifc_definition_id):
+        if not tool.Ifc.get() or not (obj := context.active_object) or not (tool.Blender.get_ifc_definition_id(obj)):
             cls.poll_message_set("No IFC object is active.")
             return False
         return True
 
     def execute(self, context):
-        core.load_product_cost_items(
-            tool.Cost, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
-        )
+        obj = context.active_object
+        core.load_product_cost_items(tool.Cost, product=tool.Ifc.get_entity(obj))
         return {"FINISHED"}
 
 

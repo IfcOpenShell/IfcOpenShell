@@ -127,26 +127,14 @@ class BooleansData:
     def booleans(cls):
         props = tool.Geometry.get_geometry_props()
         obj = props.representation_obj or bpy.context.active_object
-        if (
-            not obj.data
-            or not hasattr(obj.data, "BIMMeshProperties")
-            or not obj.data.BIMMeshProperties.ifc_definition_id
-        ):
+        if not (representation := tool.Geometry.get_active_representation(obj)):
             return []
-
-        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         return tool.Model.get_booleans(representation=representation)
 
     @classmethod
     def manual_booleans(cls):
         props = tool.Geometry.get_geometry_props()
         obj = props.representation_obj or bpy.context.active_object
-        if (
-            not obj.data
-            or not hasattr(obj.data, "BIMMeshProperties")
-            or not obj.data.BIMMeshProperties.ifc_definition_id
-        ):
+        if not (representation := tool.Geometry.get_active_representation(obj)):
             return []
-
-        representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
         return tool.Model.get_manual_booleans(tool.Ifc.get_entity(obj), representation=representation)

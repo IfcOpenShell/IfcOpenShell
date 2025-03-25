@@ -30,6 +30,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING
 
 
 def update_document_name(self: "Document", context: bpy.types.Context) -> None:
@@ -57,6 +58,11 @@ class Document(PropertyGroup):
     )
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
+    if TYPE_CHECKING:
+        identification: str
+        is_information: bool
+        ifc_definition_id: int
+
 
 class BIMDocumentProperties(PropertyGroup):
     document_attributes: CollectionProperty(name="Document Attributes", type=Attribute)
@@ -65,3 +71,11 @@ class BIMDocumentProperties(PropertyGroup):
     breadcrumbs: CollectionProperty(name="Breadcrumbs", type=StrProperty)
     active_document_index: IntProperty(name="Active Document Index")
     is_editing: BoolProperty(name="Is Editing", default=False)
+
+    if TYPE_CHECKING:
+        document_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        active_document_id: int
+        documents: bpy.types.bpy_prop_collection_idprop[Document]
+        breadcrumbs: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        active_document_index: int
+        is_editing: bool

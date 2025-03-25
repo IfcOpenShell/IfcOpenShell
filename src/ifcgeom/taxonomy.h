@@ -892,7 +892,7 @@ typedef item const* ptr;
 				DECLARE_PTR(loop)
 
 				boost::optional<bool> external, closed;
-				boost::optional<taxonomy::piecewise_function::ptr> pwf;
+				boost::optional<taxonomy::function_item::ptr> fi;
 
 				bool is_polyhedron() const {
 					for (auto& e : children) {
@@ -1374,27 +1374,27 @@ typedef item const* ptr;
 				}
 			};
 
-			boost::optional<piecewise_function::ptr> loop_to_piecewise_function_upgrade_impl(ptr item);
+			boost::optional<function_item::ptr> loop_to_function_item_upgrade_impl(ptr item);
             template <typename T>
-            class loop_to_piecewise_function_upgrade {
+            class loop_to_function_item_upgrade {
               private:
-                boost::optional<taxonomy::piecewise_function::ptr> pwf_;
+                boost::optional<taxonomy::function_item::ptr> fi_;
 
               public:
-               loop_to_piecewise_function_upgrade(taxonomy::ptr item) {
-					if constexpr (std::is_same_v<T, piecewise_function>) {
-						pwf_ = loop_to_piecewise_function_upgrade_impl(item);
+               loop_to_function_item_upgrade(taxonomy::ptr item) {
+					if constexpr (std::is_same_v<T, function_item>) {
+						fi_ = loop_to_function_item_upgrade_impl(item);
                     }
                 }
 
                 operator bool() const {
-                    return pwf_.is_initialized();
+                    return fi_.is_initialized();
                 }
 
                 operator typename T::ptr() const {
-					if constexpr (std::is_same_v<T, piecewise_function>) {
-						if (pwf_) {
-							return *pwf_;
+					if constexpr (std::is_same_v<T, function_item>) {
+						if (fi_) {
+							return *fi_;
 						}
 					}
 					return nullptr;
@@ -1435,7 +1435,7 @@ typedef item const* ptr;
 					}
 				}
 				{
-					loop_to_piecewise_function_upgrade<T> upg(u);
+					loop_to_function_item_upgrade<T> upg(u);
 					if (upg) {
 						return upg;
 					}
@@ -1479,7 +1479,7 @@ typedef item const* ptr;
 					}
 				}
 				{
-					loop_to_piecewise_function_upgrade<T> upg(u);
+					loop_to_function_item_upgrade<T> upg(u);
 					if (upg) {
 						return upg;
 					}

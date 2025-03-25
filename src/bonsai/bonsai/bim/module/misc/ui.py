@@ -39,8 +39,9 @@ class BIM_PT_misc_utilities(bpy.types.Panel):
         row = layout.split(factor=0.2, align=True)
         row.prop(props, "total_storeys", text="")
         row.operator("bim.resize_to_storey").total_storeys = props.total_storeys
-        row = layout.row()
-        row.operator("bim.split_along_edge")
+        row = layout.row(align=True)
+        row.operator("bim.split_along_edge", text="Split Along Edge").mode = "BOOLEAN"
+        row.operator("bim.split_along_edge", text="Bisect At Faces").mode = "BISECT"
         row = layout.row()
         row.operator("bim.get_connected_system_elements")
         row = layout.row()

@@ -48,7 +48,8 @@ class MaterialsData:
 
     @classmethod
     def total_materials(cls):
-        return len(tool.Ifc.get().by_type(bpy.context.scene.BIMMaterialProperties.material_type))
+        props = tool.Material.get_material_props()
+        return len(tool.Ifc.get().by_type(props.material_type))
 
     @classmethod
     def material_types(cls):
@@ -101,7 +102,7 @@ class MaterialsData:
 
     @classmethod
     def material_styles_data(cls) -> dict[int, list[dict[str, Any]]]:
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         material_styles_data: dict[int, list[dict[str, Any]]] = {}
 
         for material_item in props.materials:
@@ -237,8 +238,10 @@ class ObjectMaterialData:
         return results
 
     @classmethod
-    def set_items(cls):
+    def set_items(cls) -> list[dict[str, Any]]:
         results = []
+        if cls.material is None:
+            return results
         if cls.material:
             items = []
             if cls.material.is_a("IfcMaterialLayerSetUsage"):
@@ -273,6 +276,8 @@ class ObjectMaterialData:
                     "icon": icon,
                     "material_id": material_id,
                 }
+                if item.is_a("IfcMaterialProfile"):
+                    data["profile_id"] = item.Profile.id()
                 if item.is_a("IfcMaterialProfile") and not item.Name:
                     if item.Profile:
                         data["name"] = item.Profile.ProfileName or "Unnamed"
@@ -281,8 +286,9 @@ class ObjectMaterialData:
                 if item.is_a("IfcMaterialLayer"):
                     total_thickness = item.LayerThickness
                     unit_system = bpy.context.scene.unit_settings.system
+                    props = tool.Drawing.get_document_props()
                     if unit_system == "IMPERIAL":
-                        precision = bpy.context.scene.DocProperties.imperial_precision
+                        precision = props.imperial_precision
                     else:
                         precision = None
                     formatted_thickness = format_distance(
@@ -294,6 +300,18 @@ class ObjectMaterialData:
                 else:
                     data["material"] = item.Material.Name or "Unnamed"
                 results.append(data)
+        should_reverse = cls.material.is_a("IfcMaterialLayerSetUsage") and cls.material.DirectionSense == "POSITIVE"
+        last_i = len(results) - 1
+        for i, result in enumerate(results):
+            result["index"] = i
+            if should_reverse:
+                result["index_up"] = i + 1 if i != last_i else None
+                result["index_down"] = i - 1 if i != 0 else None
+            else:
+                result["index_down"] = i + 1 if i != last_i else None
+                result["index_up"] = i - 1 if i != 0 else None
+        if should_reverse:
+            return list(reversed(results))
         return results
 
     @classmethod
@@ -304,7 +322,13 @@ class ObjectMaterialData:
                 layers = cls.material.ForLayerSet.MaterialLayers
             elif cls.material.is_a("IfcMaterialLayerSet"):
                 layers = cls.material.MaterialLayers
-            return sum([l.LayerThickness for l in layers or []])
+            thickness = sum([l.LayerThickness for l in layers or []])
+            props = tool.Drawing.get_document_props()
+            unit_system = bpy.context.scene.unit_settings.system
+            precision = None
+            if unit_system == "IMPERIAL":
+                precision = props.imperial_precision
+            return format_distance(thickness, precision=precision, suppress_zero_inches=True, in_unit_length=True)
 
     @classmethod
     def set_item_name(cls) -> Union[str, None]:

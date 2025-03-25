@@ -17,9 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bl_ui_utils.layout
 import bonsai.bim
 import bonsai.tool as tool
 from bpy.types import Panel, Menu
+from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.model.data import (
     AuthoringData,
     ArrayData,
@@ -30,13 +32,9 @@ from bonsai.bim.module.model.data import (
     RailingData,
     RoofData,
 )
-from bonsai.bim.module.model.prop import get_ifc_class
 from bonsai.bim.module.model.stair import regenerate_stair_mesh
-from bonsai.bim.module.model.window import update_window_modifier_bmesh
-from bonsai.bim.module.model.door import update_door_modifier_bmesh
 from bonsai.bim.module.model.railing import update_railing_modifier_bmesh
 from bonsai.bim.module.model.roof import update_roof_modifier_bmesh
-from bonsai.bim.helper import prop_with_search
 from collections.abc import Iterable
 
 
@@ -57,8 +55,9 @@ class BIM_MT_type_menu(bpy.types.Menu):
     def draw(self, context):
         props = tool.Model.get_model_props()
         layout = self.layout
-        op = layout.operator("bim.launch_rename_type", icon="GREASEPENCIL", text="Rename Type")
-        op.element = props.menu_relating_type_id
+        with bl_ui_utils.layout.operator_context(layout, "INVOKE_REGION_WIN"):
+            op = layout.operator("bim.rename_type", icon="GREASEPENCIL", text="Rename Type")
+            op.element = props.menu_relating_type_id
         op = layout.operator("bim.select_type", icon="OBJECT_DATA")
         op.relating_type = props.menu_relating_type_id
         op = layout.operator("bim.duplicate_type", icon="DUPLICATE")
@@ -92,21 +91,14 @@ class LaunchTypeManager(bpy.types.Operator):
     def invoke(self, context, event):
         props = tool.Model.get_model_props()
         props.type_page = 1
-        if get_ifc_class(None, context):
-            ifc_class = AuthoringData.data["ifc_class_current"] or AuthoringData.data["ifc_element_type"]
-        else:
-            ifc_class = AuthoringData.data["ifc_element_type"]
-
-        # will be None if project has no types
-        if ifc_class is not None:
-            bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
+        bpy.ops.bim.load_type_thumbnails()
         return context.window_manager.invoke_props_dialog(self, width=550, title="Type Manager", confirm_text="Close")
 
     def draw(self, context):
         props = tool.Model.get_model_props()
         row = self.layout.row(align=True)
         text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type'] or 'Types'}"
-        if AuthoringData.data["total_types"] > 1:
+        if AuthoringData.data["ifc_element_type"] and AuthoringData.data["total_types"] > 1:
             text += "s"
         row.label(text=text, icon="FILE_VOLUME")
         row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
@@ -119,9 +111,8 @@ class LaunchTypeManager(bpy.types.Operator):
         op.ifc_product = "IfcElementType"
         op.ifc_class = AuthoringData.data["ifc_element_type"] or props.ifc_class or ""
 
-        if AuthoringData.data["total_types"]:
-            row = self.layout.row(align=True)
-            row.prop(props, "search_name", icon="FILTER", text="")
+        row = self.layout.row(align=True)
+        row.prop(props, "search_name", icon="FILTER", text="")
 
         columns = self.layout.column_flow(columns=3)
         if AuthoringData.data["total_pages"] > 0:
@@ -160,18 +151,16 @@ class LaunchTypeManager(bpy.types.Operator):
             op = row.operator("bim.set_active_type", text=relating_type["description"], emboss=False)
             op.relating_type = relating_type["id"]
 
-            if relating_type["icon_id"]:
+            if icon_id := AuthoringData.type_thumbnails.get(relating_type["id"], 0):
                 # Yep, that's EXACTLY how it's done. And I'm proud of it.
                 row1 = box.row()
                 row1.ui_units_y = 0.01
-                row1.template_icon(icon_value=relating_type["icon_id"], scale=4)
+                row1.template_icon(icon_value=icon_id, scale=4)
                 row2 = box.column(align=True)
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
-                is_current_relating_type = str(relating_type["id"]) == str(
-                    AuthoringData.data["relating_type_id_current"]
-                )
+                is_current_relating_type = relating_type["id"] == AuthoringData.data["relating_type_data"].get("id")
                 if is_current_relating_type:
                     active_row = row2.row()
                     active_row.alignment = "CENTER"
@@ -180,8 +169,7 @@ class LaunchTypeManager(bpy.types.Operator):
                     row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
             else:
                 row = box.row()
-                op = box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH", emboss=False)
-                op.ifc_class = AuthoringData.data["ifc_class_current"]
+                box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH")
 
             row = box.row()
             row.alignment = "CENTER"
@@ -222,7 +210,9 @@ class BIM_PT_array(bpy.types.Panel):
         if not ArrayData.is_loaded:
             ArrayData.load()
 
-        props = context.active_object.BIMArrayProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Model.get_array_props(obj)
 
         if ArrayData.data["parameters"]:
             row = self.layout.row(align=True)
@@ -296,7 +286,7 @@ class BIM_PT_stair(bpy.types.Panel):
 
         obj = context.active_object
         assert obj
-        props = obj.BIMStairProperties
+        props = tool.Model.get_stair_props(obj)
 
         if StairData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -409,7 +399,9 @@ class BIM_PT_window(bpy.types.Panel):
         if not WindowData.is_loaded:
             WindowData.load()
 
-        props = context.active_object.BIMWindowProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Model.get_window_props(obj)
 
         if WindowData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -450,8 +442,14 @@ class BIM_PT_window(bpy.types.Panel):
                     for panel_i in range(number_of_panels):
                         cols[panel_i + 1].prop(props, prop, index=panel_i, text="")
 
-                update_window_modifier_bmesh(context)
-
+                self.layout.use_property_split = True
+                self.layout.label(text="Material Properties")
+                row = prop_with_search(self.layout, props, "lining_material")
+                tool.Model.draw_material_ui_select(row, props.lining_material)
+                row = prop_with_search(self.layout, props, "framing_material", text="Panel Material")
+                tool.Model.draw_material_ui_select(row, props.framing_material)
+                row = prop_with_search(self.layout, props, "glazing_material")
+                tool.Model.draw_material_ui_select(row, props.glazing_material)
             else:
                 row.operator("bim.enable_editing_window", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_window", icon="X", text="")
@@ -494,7 +492,6 @@ class BIM_PT_window(bpy.types.Panel):
                         prop_value = panel_props[prop_name][panel_i]
                         r.label(text=str(prop_value))
                         r = cols[panel_i + 1].row()
-
         else:
             row = self.layout.row()
             row.label(text="No Window Found")
@@ -547,11 +544,14 @@ class BIM_PT_door(bpy.types.Panel):
 
                 self.layout.use_property_split = True
                 self.layout.label(text="Material Properties")
-                self.layout.prop(props, "lining_material")
-                self.layout.prop(props, "panel_material")
 
-                update_door_modifier_bmesh(context)
-
+                row = prop_with_search(self.layout, props, "lining_material")
+                tool.Model.draw_material_ui_select(row, props.lining_material)
+                row = prop_with_search(self.layout, props, "framing_material", text="Panel Material")
+                tool.Model.draw_material_ui_select(row, props.framing_material)
+                if props.transom_thickness:
+                    row = prop_with_search(self.layout, props, "glazing_material")
+                    tool.Model.draw_material_ui_select(row, props.framing_material)
             else:
                 row.operator("bim.enable_editing_door", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_door", icon="X", text="")
@@ -598,7 +598,9 @@ class BIM_PT_railing(bpy.types.Panel):
         if not RailingData.is_loaded:
             RailingData.load()
 
-        props = context.active_object.BIMRailingProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Model.get_railing_props(obj)
 
         if RailingData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -663,7 +665,7 @@ class BIM_PT_roof(bpy.types.Panel):
 
         obj = context.active_object
         assert obj
-        props = obj.BIMRoofProperties
+        props = tool.Model.get_roof_props(obj)
 
         if RoofData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -699,6 +701,7 @@ class BIM_PT_roof(bpy.types.Panel):
             row.operator("bim.add_roof", icon="ADD", text="")
 
 
-def add_menu(self, context):
-    self.layout.operator("bim.launch_add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")
+def add_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
+    self.layout.operator_context = "INVOKE_REGION_WIN"
+    self.layout.operator("bim.add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")
     self.layout.separator()

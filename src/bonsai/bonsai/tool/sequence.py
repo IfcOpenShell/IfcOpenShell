@@ -1158,7 +1158,7 @@ class Sequence(bonsai.core.tool.Sequence):
         bpy.context.scene.frame_start = 1
         bpy.context.scene.frame_end = 2
         for obj in bpy.data.objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            if not (ifc_id := tool.Blender.get_ifc_definition_id(obj)):
                 continue
             obj.color = (1.0, 1.0, 1.0, 1)
             obj.hide_viewport = False
@@ -1317,7 +1317,7 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def clear_objects_animation(cls, include_blender_objects=True):
         for obj in bpy.data.objects:
-            if not include_blender_objects and not obj.BIMObjectProperties.ifc_definition_id:
+            if not include_blender_objects and not (ifc_id := tool.Blender.get_ifc_definition_id(obj)):
                 continue
             cls.clear_object_animation(obj)
             cls.clear_object_color(obj)
@@ -1326,13 +1326,14 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def animate_objects(cls, settings, frames, animation_type=""):
         for obj in bpy.data.objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
                 continue
-            if tool.Ifc.get().by_id(obj.BIMObjectProperties.ifc_definition_id).is_a("IfcSpace"):
+            if element.is_a("IfcSpace"):
                 cls.hide_object(obj)
                 continue
             cls.earliest_frame = None
-            product_frames = frames.get(obj.BIMObjectProperties.ifc_definition_id, [])
+            product_frames = frames.get(element.id(), [])
             for product_frame in product_frames:
                 if product_frame["relationship"] == "input":
                     cls.animate_input(obj, settings["start_frame"], product_frame, animation_type)

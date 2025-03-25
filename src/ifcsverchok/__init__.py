@@ -32,6 +32,7 @@ import importlib
 import logging
 import types
 import bpy
+from bpy_extras.io_utils import ExportHelper
 
 logger = logging.getLogger("sverchok.ifc")
 
@@ -147,7 +148,10 @@ from ifcsverchok.ifcstore import SvIfcStore
 
 
 class IFC_Sv_UpdateCurrent(bpy.types.Operator):
-    """Update current Sverchok node tree"""
+    """Update current Sverchok node tree.
+
+    Will reset transient IFC file.
+    """
 
     bl_idname = "ifc.sverchok_update_current"
     bl_label = "Update Current Node Tree"
@@ -161,9 +165,12 @@ class IFC_Sv_UpdateCurrent(bpy.types.Operator):
     # infra-related spatial structure elements, such as IfcBridge.
     # https://github.com/IfcOpenShell/IfcOpenShell/pull/2576#discussion_r1016261407
     def execute(self, context):
+        import sverchok.node_tree
+
         self.file = SvIfcStore.purge()
         node_tree = context.space_data.node_tree
         if node_tree:
+            assert isinstance(node_tree, sverchok.node_tree.SverchCustomTree)
             if self.force_mode or node_tree.sv_process:
                 try:
                     bpy.context.window.cursor_set("WAIT")
@@ -174,14 +181,15 @@ class IFC_Sv_UpdateCurrent(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class IFC_Sv_write_file(bpy.types.Operator):
+class IFC_Sv_write_file(bpy.types.Operator, ExportHelper):
     bl_idname = "ifc.write_file_panel"
     bl_label = "Write File"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "File path to write to."
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    bl_description = "Save transient IFC file to the provided path."
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
     node_group: bpy.props.StringProperty(default="")
     force_mode: bpy.props.BoolProperty(default=False)
+    filename_ext = ".ifc"
 
     @classmethod
     def poll(cls, context):
@@ -256,10 +264,6 @@ class IFC_Sv_write_file(bpy.types.Operator):
             self.file.write(self.filepath)
             self.report({"INFO"}, f"File written to: {self.filepath}")
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class IFC_PT_write_file_panel(bpy.types.Panel):

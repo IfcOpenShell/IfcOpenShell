@@ -105,7 +105,7 @@ class TestAddBoolean(test.bootstrap.IFC4):
         assert len(booleans) == 1
         assert len(rep.Items) == 2
 
-        assert len(self.file.get_inverse(first1)) == 1
+        assert self.file.get_total_inverses(first1) == 1
         result = list(self.file.get_inverse(first1))[0]
         assert result.FirstOperand == first1
         assert result.SecondOperand == second1
@@ -114,7 +114,7 @@ class TestAddBoolean(test.bootstrap.IFC4):
         # Second2 is now used twice. Reusing is OK (albeit confusing), so long as things don't get recursive.
         assert result2.SecondOperand == second2
 
-        assert len(self.file.get_inverse(first2)) == 1
+        assert self.file.get_total_inverses(first2) == 1
         result3 = list(self.file.get_inverse(first2))[0]
         assert result3.FirstOperand == first2
         assert result3.SecondOperand == second2

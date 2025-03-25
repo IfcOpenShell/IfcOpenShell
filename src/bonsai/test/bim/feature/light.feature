@@ -44,11 +44,26 @@ Scenario: Display the sun path
     And I set the "Sun Path Size" property to "100.0"
     Then nothing happens
 
-Scenario: Display shadows
+Scenario: See no shadows
+    Given an empty IFC project
+    When I look at the "Solar Access / Shadow" panel
+    Then I don't see "Sun Intensity"
+    And I don't see "Shadow Intensity"
+
+Scenario: Display shaded shadows
     Given an empty IFC project
     And I look at the "Solar Access / Shadow" panel
-    When I click "Display Shadows"
+    When I set the "Shadow Mode" property to "Shaded"
     And I set the "Shadow Intensity" property to "1.0"
+    And I don't see "Sun Intensity"
+    Then nothing happens
+
+Scenario: Display rendered shadows
+    Given an empty IFC project
+    And I look at the "Solar Access / Shadow" panel
+    When I set the "Shadow Mode" property to "Rendered"
+    And I set the "Sun Intensity" property to "1.0"
+    And I don't see "Shadow Intensity"
     Then nothing happens
 
 Scenario: View from sun

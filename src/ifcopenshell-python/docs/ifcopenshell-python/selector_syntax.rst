@@ -102,7 +102,7 @@ will search through all IfcTypeProducts and IfcProducts in the IFC project.
 
     "Class", "Add", "``[!] {{ifc_class_name}}``", "``IfcWall`` adds all IfcWall elements and their subclasses. ``! IfcWall`` subtracts all non-IfcWall elements from the filter group."
     "GlobalId", "Add", "``[!] {{global_id}}``", "``325Q7Fhnf67OZC$$r43uzK`` adds the single element with that GlobalId attribute. ``! 325Q7Fhnf67OZC$$r43uzK`` subtracts that single element."
-    "Attribute", "Filter", "``{{name}}{{=}}{{value}}``", "``Name=Foo`` specifies the criteria that elements must have a ``Name`` attribute with a value of ``Foo``. Attribute names must be spelled exactly the same as in IFC, which means that they must start with an uppercase character."
+    "Attribute", "Filter", "``{{name}}{{=}}{{value}}``", "``Name=Foo`` specifies the criteria that elements must have a ``Name`` attribute with a value of ``Foo``. Attribute names must be spelled exactly the same as in IFC, which means that they must start with an uppercase character. For convenience, ``PredefinedType`` will be get using :func:`ifcopenshell.util.element.get_predefined_type` instead of getting the attribute directly."
     "Property", "Filter", "``{{pset}}.{{prop}}{{=}}{{value}}``", "``Pset_WallCommon.FireRating=2HR`` specifies the criteria that elements must have a ``Pset_WallCommon`` property set, with a ``FireRating`` property within it with a value of ``2HR``. The property set name and the property name are separated by a ``.``."
     "Type", "Filter", "``type{{=}}{{value}}``", "``type=Foo`` specifies the criteria that elements must have a type which has a ``Name`` attribute with a value of ``Foo``."
     "Material", "Filter", "``material{{=}}{{value}}``", "``material=Foo`` specifies the criteria that elements must have a IfcMaterial assigned directly or indirectly (such as within a layer set). That IfcMaterial must have either a ``Name`` or ``Category`` attribute with a value of ``Foo``."
@@ -161,8 +161,9 @@ without needing to write complex code for it.
     "``types.count``", "Count the number of occurrences of a type."
     "``storey.Name``", "Get the ``Name`` attribute of the storey that the element is contained in."
     "``materials.count``", "Count the number of materials assigned to an element."
-    "``material.Name``", "Get the name of the assigned material."
-    "``material.item.0.Name``", "Get the name of the first item in a material set (e.g. the first material layer)"
+    "``material.Name``", "**IfcMaterial**: The name of the assigned material. **IfcMaterialLayerSet**: name of the LayerSetName. **IfcMaterialProfileSet**: The name of the overall material profile set. **IfcMaterialConstituent**: The name of the overall material constituent set."
+    "``material.item.0.Name``", "**IfcMaterial**: N/A. **IfcMaterialLayerSet**: The name of the 1st material layer. **IfcMaterialProfileSet**: The name of the 1st material profile. **IfcMaterialConstituent**: The name of the 1st material constituent."
+    "``material.item.Material.Name.0``", "**IfcMaterial**: The assigned material name. **IfcMaterialLayerSet**: The material name of the 1st material layer. **IfcMaterialProfileSet**: The material name of the 1st material profile. **IfcMaterialConstituent**: The material name of the 1st material constituent."
 
 The element value syntax works by specifying one or more query keys separated
 by a ``.`` character. Each query key returns data based of the results of the
@@ -194,6 +195,7 @@ Valid keys are:
     "``classification``", "Gets the element's classification reference(s)"
     "``group``", "Gets the element's group(s)"
     "``system``", "Gets the element's system(s). This is a subset of group(s)."
+    "``zone``", "Gets the element's zone(s). This is a subset of group(s)."
     "``material`` or ``mat``", "Gets the assigned material, which may be a material set."
     "``item`` or ``i``", "If the previous key returns a material set, gets the relevant material set items"
     "``materials`` or ``mats``", "Gets a list of IfcMaterials assigned directly or indirectly (such as via a material set) to the element"

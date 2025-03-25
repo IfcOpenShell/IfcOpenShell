@@ -96,7 +96,7 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
             container = tool.Ifc.get().by_id(self.container)
         elif (
             (obj := tool.Blender.get_active_object())
-            and (props := obj.BIMObjectSpatialProperties)
+            and (props := tool.Spatial.get_object_spatial_props(obj))
             and (container_obj := props.container_obj)
             and (container := tool.Ifc.get_entity(container_obj))
         ):
@@ -242,17 +242,6 @@ class ImportSpatialDecomposition(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditContainerAttributes(bpy.types.Operator):
-    bl_idname = "bim.edit_container_attributes"
-    bl_label = "Edit container attributes"
-    bl_options = {"REGISTER", "UNDO"}
-    container: bpy.props.IntProperty()
-
-    def execute(self, context):
-        core.edit_container_attributes(tool.Spatial, entity=tool.Ifc.get().by_id(self.container))
-        return {"FINISHED"}
-
-
 class ContractContainer(bpy.types.Operator):
     bl_idname = "bim.contract_container"
     bl_label = "Contract Container"
@@ -345,6 +334,7 @@ class SetDefaultContainer(bpy.types.Operator):
 
     def execute(self, context):
         core.set_default_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        core.set_orientation_slot(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
         return {"FINISHED"}
 
 

@@ -21,6 +21,7 @@ import json
 import bmesh
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -31,9 +32,8 @@ import bonsai.core.geometry
 import bonsai.core.root
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import cos, radians
+from math import cos, pi
 from mathutils import Vector, Matrix
-from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from bonsai.bim.module.model.wall import DumbWallRecalculator
@@ -136,7 +136,7 @@ class DumbSlabGenerator:
             matrix_world.translation.z = self.container_obj.location.z
         else:
             matrix_world.translation.z
-        obj.matrix_world = matrix_world @ Matrix.Rotation(self.x_angle, 4, "X")
+        obj.matrix_world = matrix_world
         bpy.context.view_layer.update()
 
         element = bonsai.core.root.assign_class(
@@ -171,6 +171,7 @@ class DumbSlabGenerator:
             is_global=True,
             should_sync_changes_first=False,
         )
+        obj.matrix_world = obj.matrix_world @ Matrix.Rotation(self.x_angle, 4, "X")
 
         if self.footprint_context:
             extrusion = tool.Model.get_extrusion(representation)
@@ -260,7 +261,7 @@ class DumbSlabPlaner:
         self, related_object: ifcopenshell.entity_instance, layer_set_direction: Optional[str], new_thickness: float
     ) -> None:
         obj = tool.Ifc.get_object(related_object)
-        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+        if not obj or not tool.Geometry.get_active_representation(obj):
             return
 
         material = ifcopenshell.util.element.get_material(related_object)
@@ -283,6 +284,7 @@ class DumbSlabPlaner:
         if tool.Model.get_usage_type(element) != "LAYER3":
             return
         layer_params = tool.Model.get_material_layer_parameters(element)
+        ifc_file = tool.Ifc.get()
         body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
         obj = tool.Ifc.get_object(element)
         if not obj:
@@ -295,34 +297,55 @@ class DumbSlabPlaner:
         if representation:
             extrusion = tool.Model.get_extrusion(representation)
             if extrusion:
-                x, y, z = extrusion.ExtrudedDirection.DirectionRatios
-                existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
-                perpendicular_depth = thickness * (1 / cos(existing_x_angle))
-                perpendicular_offset = layer_params["offset"] * (1 / cos(existing_x_angle))
-                offset_vector = Vector((0.0, 0.0, perpendicular_offset / self.unit_scale))
-                if layer_params["direction_sense"] == "POSITIVE":
-                    y = abs(y) if existing_x_angle > 0 else -abs(y)
-                    z = abs(z)
-                elif layer_params["direction_sense"] == "NEGATIVE":
-                    y = -abs(y) if existing_x_angle > 0 else abs(y)
-                    z = -abs(z)
-                extrusion.ExtrudedDirection.DirectionRatios = (x, y, z)
+                # TODO Right now we don't have a reliable way to calculate the existing x_angle only based solely on the extrusion direction.
+                # For instances, a 30 degrees angled extrusion with positive direction has the same extrusion direction as a
+                # -150 degrees angled extrusion with negative direction. The difference lies in the object's rotation.
+                # This means that things can get messy if the user changes the object x angle somehow. We have to figure out an alternative approach.
+                existing_x_angle = obj.rotation_euler.x
+                existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
+                existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
+                existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 2 * pi, tolerance=0.001) else existing_x_angle
+                direction_ratios = Vector(extrusion.ExtrudedDirection.DirectionRatios)
+                offset_direction = direction_ratios.copy()
+                perpendicular_depth = thickness * abs(1 / cos(existing_x_angle))
+                perpendicular_offset = layer_params["offset"] * abs(1 / cos(existing_x_angle)) / self.unit_scale
+
+                # Check angle and z direction to determine whether the extrusion direction is positive or negative
+                if (abs(existing_x_angle) < (pi / 2) and direction_ratios.z > 0) or (
+                    abs(existing_x_angle) > (pi / 2) and direction_ratios.z < 0
+                ):
+                    # The extrusion direction is positive. If the layer_parameter is set to negative,
+                    # then the we change the extrusion direction.
+                    if layer_params["direction_sense"] == "NEGATIVE":
+                        direction_ratios *= -1
+                elif (abs(existing_x_angle) > (pi / 2) and direction_ratios.z > 0) or (
+                    abs(existing_x_angle) < (pi / 2) and direction_ratios.z < 0
+                ):
+                    # The extrusion direction is negative. If the layer_parameter is set to positive,
+                    # then the we change the extrusion direction. And the offset direction should remain positive
+                    # for either direction sense, so we change it.
+                    offset_direction *= -1
+                    if layer_params["direction_sense"] == "POSITIVE":
+                        direction_ratios *= -1
+
+                extrusion.ExtrudedDirection.DirectionRatios = tuple(direction_ratios)
                 extrusion.Depth = perpendicular_depth
 
-                if perpendicular_offset != 0.0 and not extrusion.Position:
-                    tool.Model.add_extrusion_position(extrusion, perpendicular_offset)
-
-                # Update the extrusion's location based on its current rotation angle and offset
-                if extrusion.Position:
-                    rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
-                    rot_offset = offset_vector @ rot_matrix
-                    extrusion.Position.Location.Coordinates = tuple(rot_offset)
+                ifc_position = extrusion.Position
+                if perpendicular_offset == 0.0:
+                    # Clean up possible previous offset.
+                    tool.Model.reset_extrusion_position(extrusion)
+                else:
+                    position = offset_direction * perpendicular_offset
+                    if ifc_position:
+                        ifc_position.Location.Coordinates = position
+                    else:
+                        tool.Model.add_extrusion_position(extrusion, position)
 
             else:
                 props = tool.Model.get_model_props()
                 x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
-                new_rep = ifcopenshell.api.run(
-                    "geometry.add_slab_representation",
+                new_rep = ifcopenshell.api.geometry.add_slab_representation(
                     tool.Ifc.get(),
                     context=body_context,
                     depth=thickness * self.unit_scale,
@@ -346,15 +369,14 @@ class DumbSlabPlaner:
         else:
             props = tool.Model.get_model_props()
             x_angle = 0 if tool.Cad.is_x(props.x_angle, 0, tolerance=0.001) else props.x_angle
-            representation = ifcopenshell.api.run(
-                "geometry.add_slab_representation",
+            representation = ifcopenshell.api.geometry.add_slab_representation(
                 tool.Ifc.get(),
                 context=body_context,
                 depth=thickness * self.unit_scale,
                 x_angle=x_angle,
             )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
+            ifcopenshell.api.geometry.assign_representation(
+                tool.Ifc.get(), product=element, representation=representation
             )
 
         bonsai.core.geometry.switch_representation(
@@ -842,7 +864,8 @@ class AddSlabFromWall(bpy.types.Operator, tool.Ifc.Operator):
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.relating_type = None
         props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
@@ -864,7 +887,7 @@ class AddSlabFromWall(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
+class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
     bl_idname = "bim.draw_polyline_slab"
     bl_label = "Draw Polyline Slab"
     bl_options = {"REGISTER", "UNDO"}
@@ -873,8 +896,9 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
         self.relating_type = None
         props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
@@ -886,11 +910,13 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
             return {"FINISHED"}
 
         slab = DumbSlabGenerator(self.relating_type).generate("POLYLINE")
+        if not slab:
+            return
 
         model_props = tool.Model.get_model_props()
         direction_sense = model_props.direction_sense
         offset = model_props.offset
-        model = IfcStore.get_file()
+        model = tool.Ifc.get()
         element = tool.Ifc.get_entity(slab)
         material = ifcopenshell.util.element.get_material(element)
         material_set_usage = model.by_id(material.id())
@@ -905,6 +931,9 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
         DumbSlabPlaner().regenerate_from_occurence(element, material_set_usage)
 
     def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _modal(self, context, event):
         if not self.relating_type:
             self.report({"WARNING"}, "You need to select a slab type.")
             PolylineDecorator.uninstall()
@@ -975,6 +1004,9 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator):
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
         super().invoke(context, event)
         ProductDecorator.install(context)
         self.tool_state.use_default_container = True

@@ -29,9 +29,7 @@ def remove_work_plan(file: ifcopenshell.file, work_plan: ifcopenshell.entity_ins
     removed.
 
     :param work_plan: The IfcWorkPlan to remove.
-    :type work_plan: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -43,11 +41,9 @@ def remove_work_plan(file: ifcopenshell.file, work_plan: ifcopenshell.entity_ins
         # And remove it immediately
         ifcopenshell.api.sequence.remove_work_plan(model, work_plan=work_plan)
     """
-    settings = {"work_plan": work_plan}
-
     ifcopenshell.api.project.unassign_declaration(
         file,
-        definitions=[settings["work_plan"]],
+        definitions=[work_plan],
         relating_context=file.by_type("IfcContext")[0],
     )
 
@@ -55,7 +51,7 @@ def remove_work_plan(file: ifcopenshell.file, work_plan: ifcopenshell.entity_ins
     if related_objects:
         ifcopenshell.api.aggregate.unassign_object(file, related_objects)
 
-    history = settings["work_plan"].OwnerHistory
-    file.remove(settings["work_plan"])
+    history = work_plan.OwnerHistory
+    file.remove(work_plan)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)

@@ -62,15 +62,10 @@ def assign_layer(
         # only one item) to the layer.
         ifcopenshell.api.layer.assign_layer(model, items=[representation.Items[0]], layer=layer)
     """
-    settings = {
-        "items": items,
-        "layer": layer,
-    }
-
     # support AssignedItems == None since layer might just got created
-    layer = settings["layer"]
+    assigned_items: set[ifcopenshell.entity_instance]
     assigned_items = set(layer.AssignedItems or [])
-    items = set(settings["items"])
-    if items.issubset(assigned_items):
+    items_set = set(items)
+    if items_set.issubset(assigned_items):
         return
-    layer.AssignedItems = list(assigned_items | items)
+    layer.AssignedItems = list(assigned_items | items_set)

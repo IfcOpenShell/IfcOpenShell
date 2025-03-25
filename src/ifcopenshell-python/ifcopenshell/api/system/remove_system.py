@@ -27,9 +27,7 @@ def remove_system(file: ifcopenshell.file, system: ifcopenshell.entity_instance)
     All the distribution elements within the system are retained.
 
     :param system: The IfcSystem to remove.
-    :type system: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -41,9 +39,7 @@ def remove_system(file: ifcopenshell.file, system: ifcopenshell.entity_instance)
         # Delete it.
         ifcopenshell.api.system.remove_system(model, system=system)
     """
-    settings = {"system": system}
-
-    for inverse_id in [i.id() for i in file.get_inverse(settings["system"])]:
+    for inverse_id in [i.id() for i in file.get_inverse(system)]:
         try:
             inverse = file.by_id(inverse_id)
         except:
@@ -51,11 +47,11 @@ def remove_system(file: ifcopenshell.file, system: ifcopenshell.entity_instance)
         if inverse.is_a("IfcRelDefinesByProperties"):
             ifcopenshell.api.pset.remove_pset(
                 file,
-                product=settings["system"],
+                product=system,
                 pset=inverse.RelatingPropertyDefinition,
             )
         elif inverse.is_a("IfcRelAssignsToGroup"):
-            if inverse.RelatingGroup == settings["system"]:
+            if inverse.RelatingGroup == system:
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
@@ -65,7 +61,7 @@ def remove_system(file: ifcopenshell.file, system: ifcopenshell.entity_instance)
                 file.remove(inverse)
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
-    history = settings["system"].OwnerHistory
-    file.remove(settings["system"])
+    history = system.OwnerHistory
+    file.remove(system)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)

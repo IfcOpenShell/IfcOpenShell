@@ -35,7 +35,6 @@ import bonsai.core.root
 import bonsai.core.geometry
 import bonsai.core.model as core
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from math import pi, sin, cos, degrees, tan, radians
 from mathutils import Vector, Matrix, Quaternion
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
@@ -86,6 +85,7 @@ def get_wall_preview_data(context, relating_type):
     if x_angle > radians(90) or x_angle < radians(-90):
         height *= -1
     angle_distance = height * tan(x_angle)
+    thickness *= 1 / cos(x_angle)
 
     data = {}
     data["verts"] = []
@@ -201,12 +201,12 @@ def get_slab_preview_data(context, relating_type):
     layers = tool.Model.get_material_layer_parameters(relating_type)
     if not layers["thickness"]:
         return
-    thickness = layers["thickness"]
+    thickness = layers["thickness"] * abs(1 / cos(x_angle))
     thickness *= direction
 
     offset_type = model_props.offset_type_horizontal
     unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-    offset = model_props.offset * unit_scale
+    offset = model_props.offset * abs(1 / cos(x_angle)) * unit_scale
 
     data = {}
     data["verts"] = []
@@ -238,7 +238,10 @@ def get_slab_preview_data(context, relating_type):
     bm = create_bmesh_from_vertices(polyline_vertices, is_closed)
     bm.verts.ensure_lookup_table()
     if x_angle:
-        bmesh.ops.rotate(bm, cent=Vector(bm.verts[0].co), verts=bm.verts, matrix=Matrix.Rotation(x_angle, 3, "X"))
+        rot_mat = Matrix.Rotation(x_angle, 3, "X")
+        if abs(x_angle) > (pi / 2):
+            rot_mat = rot_mat @ Matrix.Scale(-1, 3, (0, 1, 0))
+        bmesh.ops.rotate(bm, cent=Vector(bm.verts[0].co), verts=bm.verts, matrix=rot_mat)
     new_faces = bmesh.ops.contextual_create(bm, geom=bm.edges)
     new_faces = bmesh.ops.extrude_face_region(bm, geom=bm.edges[:] + bm.faces[:])
     new_verts = [e for e in new_faces["geom"] if isinstance(e, bmesh.types.BMVert)]
@@ -430,71 +433,90 @@ def get_horizontal_profile_preview_data(context, relating_type):
         case "9":
             grouped_verts = [(v[0] + x_offset, v[1] - y_offset, v[2]) for v in grouped_verts]
 
-    # Create profile curve
-    scale_mat = Matrix.Scale(-1, 4, (1.0, 0.0, 0.0))
-    grouped_verts = [scale_mat @ Vector(v) for v in grouped_verts]
-    profile_curve = bpy.data.curves.new("Profile", type="CURVE")
-    profile_curve.dimensions = "2D"
-    profile_curve.splines.new("POLY")
-    profile_curve.splines[0].points.add(len(grouped_verts))
-
-    for i, point in enumerate(profile_curve.splines[0].points):
-        if i == len(grouped_verts):  # Close curve
-            point.co = Vector((*grouped_verts[0], 0))
-            continue
-        point.co = Vector((*grouped_verts[i], 0))
-    profile_obj = bpy.data.objects.new("Profile", profile_curve)
-
-    # Create path curve with profile object as bevel
-    path_curve = bpy.data.curves.new("Polyline", type="CURVE")
-    path_curve.dimensions = "2D"
-    path_curve.splines.new("POLY")
-    path_curve.splines[0].points.add(len(polyline_verts) - 1)
-    for i, point in enumerate(path_curve.splines[0].points):
-        point.co = Vector((*polyline_verts[i], 0))
-    path_curve.splines[0].use_smooth = False
-    path_curve.bevel_mode = "OBJECT"
-    path_curve.bevel_object = profile_obj
-
-    # Convert path curve to mesh
-    # This operation throws a warning when done during gpu drawing, so it was removed from the decorator file to be handled here
-    path_obj = bpy.data.objects.new("Preview", path_curve)
-    context.scene.collection.objects.link(path_obj)
-    bpy.context.view_layer.objects.active = path_obj
-    dg = context.evaluated_depsgraph_get()
-    path_obj = path_obj.evaluated_get(dg)
-    me = path_obj.to_mesh()
-
-    # Create bmesh from path mesh
-    bm = bmesh.new()
-    new_verts = [bm.verts.new(v.co) for v in me.vertices]
-    index = [[v for v in edge.vertices] for edge in me.edges]
-    new_edges = [bm.edges.new((new_verts[i[0]], new_verts[i[1]])) for i in index]
-    for face in me.polygons:
-        verts = [new_verts[i] for i in face.vertices]
-        bm.faces.new(verts)
-    bm.verts.index_update()
-    bm.edges.index_update()
-    tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
-
-    bpy.data.objects.remove(bpy.data.objects[path_obj.name], do_unlink=True)
-    bpy.data.objects.remove(bpy.data.objects[profile_obj.name], do_unlink=True)
-    try:
-        bpy.data.curves.remove(profile_obj.data, do_unlink=True)
-    except:
-        pass
-    try:
-        bpy.data.curves.remove(path_obj.data, do_unlink=True)
-    except:
-        pass
-
     data = {}
-    data["verts"] = [tuple(v.co) for v in bm.verts]
-    data["edges"] = [(edge.verts[0].index, edge.verts[1].index) for edge in bm.edges]
+    data["verts"] = []
+    data["edges"] = []
+    data["tris"] = []
+
+    grouped_verts = [(v) for v in grouped_verts]
+
+    all_bm = bmesh.new()
+    for i in range(len(polyline_verts) - 1):
+        mesh = bpy.data.meshes.new("TempMesh")
+        # Create the initial mesh from the profile verts
+        bm = create_bmesh_from_vertices(grouped_verts, is_closed=True)
+        bm.verts.ensure_lookup_table()
+        # Creates the clipping plane formed by two segments.
+        # The first one is for the profile start, based on the current and previous segment of the polyline.
+        # The second is for the profile end, based on the current and the next segment.
+        if i == 0:
+            d = (polyline_verts[i + 1] - polyline_verts[i]).normalized()
+            clip_start = d
+        else:
+            d1 = (polyline_verts[i] - polyline_verts[i - 1]).normalized()
+            d2 = (polyline_verts[i] - polyline_verts[i + 1]).normalized()
+            clip_start = (d1 - d2).normalized()
+
+        if i == len(polyline_verts) - 2:
+            d = (polyline_verts[i + 1] - polyline_verts[i]).normalized()
+            clip_end = d
+        else:
+            d1 = (polyline_verts[i + 1] - polyline_verts[i]).normalized()
+            d2 = (polyline_verts[i + 1] - polyline_verts[i + 2]).normalized()
+            clip_end = (d1 - d2).normalized()
+
+        # Rotates the profile face to the right direction
+        direction = polyline_verts[i + 1] - polyline_verts[i]
+        position = polyline_verts[i]
+        rotation_matrix = direction.to_track_quat("Z", "Y").to_matrix().to_4x4()
+        bmesh.ops.transform(bm, verts=bm.verts, matrix=rotation_matrix)
+        bmesh.ops.translate(bm, verts=bm.verts, vec=position)
+        bmesh.ops.translate(bm, verts=bm.verts, vec=-direction)
+
+        # Extrude and move the new face
+        last_face = bmesh.ops.extrude_face_region(bm, geom=bm.edges[:] + bm.faces[:])
+        new_verts = [e for e in last_face["geom"] if isinstance(e, bmesh.types.BMVert)]
+        bmesh.ops.translate(bm, verts=new_verts, vec=direction * 3)
+        # Apply the cutting planes
+        cut = bmesh.ops.bisect_plane(
+            bm,
+            geom=bm.verts[:] + bm.edges[:] + bm.faces[:],
+            plane_co=polyline_verts[i],
+            plane_no=clip_start,
+            clear_inner=True,
+        )
+        bm.verts.index_update()
+        bm.edges.index_update()
+        cut = bmesh.ops.bisect_plane(
+            bm,
+            geom=bm.verts[:] + bm.edges[:] + bm.faces[:],
+            plane_co=polyline_verts[i + 1],
+            plane_no=clip_end,
+            clear_outer=True,
+        )
+
+        bm.to_mesh(mesh)
+        bm.free()
+        mesh.update()
+        all_bm.from_mesh(mesh)
+        bpy.data.meshes.remove(bpy.data.meshes["TempMesh"])
+
+    # It's necessary to add the mesh to an object to get the expected result.
+    mesh = bpy.data.meshes.new("TempMesh2")
+    all_bm.to_mesh(mesh)
+    all_bm.free()
+    obj = bpy.data.objects.new("TempObj", mesh)
+    bm = bmesh.new()
+    bm.from_mesh(obj.data)
+    bpy.data.meshes.remove(bpy.data.meshes["TempMesh2"])
+
+    verts = [tuple(v.co) for v in bm.verts]
+    edges = [[v.index for v in e.verts] for e in bm.edges]
+    tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
+    data["verts"] = verts
+    data["edges"] = edges
     data["tris"] = tris
-
     bm.free()
-
     return data
 
 
@@ -528,15 +550,11 @@ class PolylineOperator:
     # TODO Fill doc strings
     """ """
 
-    number_input: list[str]
-    input_type: tool.Polyline.InputType
-
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return context.space_data.type == "VIEW_3D"
 
     def __init__(self):
-        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         self.mousemove_count = 0
         self.action_count = 0
         self.visible_objs = []
@@ -568,7 +586,7 @@ class PolylineOperator:
         self.input_options = ["D", "A", "X", "Y"]
         self.input_type = None
         self.input_value_xy = [None, None]
-        self.input_ui = tool.Polyline.create_input_ui()
+        self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
         self.is_typing = False
         self.snap_angle = None
         self.snapping_points = []
@@ -598,7 +616,7 @@ class PolylineOperator:
                 self.report({"WARNING"}, "The number typed is not valid.")
                 return is_valid
             else:
-                if self.input_type in {"X", "Y"}:
+                if self.input_type in {"X", "Y", "Z"}:
                     tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
                 elif self.input_type in {"D", "A"}:
                     tool.Polyline.calculate_x_y_and_z(context, self.input_ui, self.tool_state)
@@ -609,59 +627,54 @@ class PolylineOperator:
             return is_valid
 
     def choose_axis(self, event: bpy.types.Event, x: bool = True, y: bool = True, z: bool = False) -> None:
-        if x:
-            if not event.shift and event.value == "PRESS" and event.type == "X":
-                self.tool_state.axis_method = "X" if self.tool_state.axis_method != event.type else None
-                self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
-                PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
-                tool.Blender.update_viewport()
-
-        if y:
-            if not event.shift and event.value == "PRESS" and event.type == "Y":
-                self.tool_state.axis_method = "Y" if self.tool_state.axis_method != event.type else None
-                self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
-                PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
-                tool.Blender.update_viewport()
+        options = {"X", "Y"}
         if z:
-            if not event.shift and event.value == "PRESS" and event.type == "Z":
-                self.tool_state.axis_method = "Z" if self.tool_state.axis_method != event.type else None
-                self.tool_state.lock_axis = False if self.tool_state.lock_axis else True
-                PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
-                tool.Blender.update_viewport()
+            options = {"X", "Y", "Z"}
+        if not event.shift and event.value == "PRESS" and event.type in options:
+            self.tool_state.axis_method = event.type if self.tool_state.axis_method != event.type else None
+            if self.tool_state.axis_method is not None:
+                self.tool_state.lock_axis = True
+            else:
+                self.tool_state.lock_axis = False
+            PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+            tool.Blender.update_viewport()
 
     def choose_plane(self, event: bpy.types.Event, x: bool = True, y: bool = True, z: bool = True) -> None:
         if x:
             if event.shift and event.value == "PRESS" and event.type == "X":
                 self.tool_state.use_default_container = False
-                self.tool_state.plane_method = "YZ"
+                self.tool_state.plane_method = "YZ" if self.tool_state.plane_method != "YZ" else None
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
         if y:
             if event.shift and event.value == "PRESS" and event.type == "Y":
                 self.tool_state.use_default_container = False
-                self.tool_state.plane_method = "XZ"
+                self.tool_state.plane_method = "XZ" if self.tool_state.plane_method != "XZ" else None
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
         if z:
             if event.shift and event.value == "PRESS" and event.type == "Z":
                 self.tool_state.use_default_container = False
-                self.tool_state.plane_method = "XY"
+                self.tool_state.plane_method = "XY" if self.tool_state.plane_method != "XY" else None
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
 
     def handle_instructions(
-        self, context: bpy.types.Context, custom_instructions: dict = {}, custom_info: str = ""
+        self, context: bpy.types.Context, custom_instructions: dict = {}, custom_info: str = "", overwrite: bool = False
     ) -> None:
         self.info = [
             f"Axis: {self.tool_state.axis_method}",
             f"Plane: {self.tool_state.plane_method}",
-            f"Snap: {self.snapping_points[0][1]}",
+            f"Snap: {self.snapping_points[0]['type']}",
         ]
         instructions = self.instructions | custom_instructions if custom_instructions else self.instructions
-
         infos = self.info + custom_info if custom_info else self.info
+
+        if overwrite:
+            instructions = custom_instructions
+            infos = custom_info
 
         def draw_instructions(self: bpy.types.Header, context: bpy.types.Context) -> None:
             for action, settings in instructions.items():
@@ -673,10 +686,10 @@ class PolylineOperator:
                     key = settings["keys"][0]
                     self.layout.label(text=key + action)
 
-            self.layout.label(text="|")
-
-            for info in infos:
-                self.layout.label(text=info)
+            if infos:
+                self.layout.label(text="|")
+                for info in infos:
+                    self.layout.label(text=info)
 
         context.workspace.status_text_set(draw_instructions)
 
@@ -790,7 +803,25 @@ class PolylineOperator:
             tool.Blender.update_viewport()
 
         if event.value == "PRESS" and event.type == "C":
-            tool.Polyline.close_polyline()
+            # Get the first point coordinates to close the polyline
+            polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+            polyline_points = polyline_data[0].polyline_points if polyline_data else []
+            if len(polyline_points) > 2:
+                first_point = polyline_points[0]
+                last_point = polyline_points[-1]
+                if not (
+                    first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z
+                ):
+                    self.input_ui.set_value("X", first_point.x)
+                    self.input_ui.set_value("Y", first_point.y)
+                    if self.input_ui.get_number_value("Z") is not None:
+                        self.input_ui.set_value("Z", first_point.z)
+                    else:
+                        self.input_ui.set_value("Z", 0)
+            result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+            if result:
+                self.report({"WARNING"}, result)
+
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
 
@@ -813,6 +844,11 @@ class PolylineOperator:
             self.number_output = ""
             PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
             tool.Blender.update_viewport()
+
+        if not self.tool_state.is_input_on:
+            if event.value == "RELEASE" and event.type == "BACK_SPACE":
+                tool.Polyline.remove_last_polyline_point()
+                tool.Blender.update_viewport()
 
     def handle_snap_selection(self, context: bpy.types.Context, event: bpy.types.Event) -> None:
         if not self.tool_state.is_input_on and event.value == "PRESS" and event.type == "M":
@@ -869,7 +905,7 @@ class PolylineOperator:
                 detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
                 self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
 
-                if self.snapping_points[0][1] not in {"Plane", "Axis"}:
+                if self.snapping_points[0]["type"] not in {"Plane", "Axis"}:
                     should_round = False
 
                 tool.Polyline.calculate_distance_and_angle(
@@ -881,15 +917,12 @@ class PolylineOperator:
                 tool.Blender.update_viewport()
                 return {"RUNNING_MODAL"}
 
-            if event.value == "RELEASE" and event.type == "BACK_SPACE":
-                tool.Polyline.remove_last_polyline_point()
-                tool.Blender.update_viewport()
-
     def get_product_preview_data(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_isntance):
-        if tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type.is_a() not in {"IfcColumnType"}:
-            data = get_horizontal_profile_preview_data(context, relating_type)
-        elif tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type.is_a() in {"IfcColumnType"}:
-            data = get_vertical_profile_preview_data(context, relating_type)
+        if tool.Model.get_usage_type(relating_type) == "PROFILE":
+            if relating_type.is_a() in {"IfcColumnType", "IfcPileType"}:
+                data = get_vertical_profile_preview_data(context, relating_type)
+            else:
+                data = get_horizontal_profile_preview_data(context, relating_type)
         elif tool.Model.get_usage_type(relating_type) == "LAYER2":
             data = get_wall_preview_data(context, relating_type)
         elif tool.Model.get_usage_type(relating_type) == "LAYER3":
@@ -898,12 +931,12 @@ class PolylineOperator:
             data = get_generic_product_preview_data(context, relating_type)
 
         # Update properties so it can be used by the decorator
-        if not data:
-            return
         props = context.scene.BIMProductPreviewProperties
         props.verts.clear()
         props.edges.clear()
         props.tris.clear()
+        if not data:
+            return
 
         for vert in data["verts"]:
             v = props.verts.add()
@@ -935,6 +968,7 @@ class PolylineOperator:
         elif getattr(props, offset_type) in {"INTERIOR", "TOP"}:
             self.offset = -thickness * direction
 
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         props.offset = self.offset / self.unit_scale
         tool.Blender.update_viewport()
 

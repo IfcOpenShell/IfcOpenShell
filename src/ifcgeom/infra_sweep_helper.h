@@ -12,6 +12,7 @@ namespace ifcopenshell {
 			double dist_along;
 			taxonomy::geom_item::ptr section_geometry;
 			Eigen::Vector3d offset;
+			boost::optional<Eigen::Matrix3d> rotation;
 
 			bool operator <(const cross_section& other) const {
 				return dist_along < other.dist_along;

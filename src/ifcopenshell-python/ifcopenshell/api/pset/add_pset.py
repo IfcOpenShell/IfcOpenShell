@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.api.pset
 import ifcopenshell.guid
-from typing import Optional
+from typing import Optional, Any
 
 
 def add_pset(
@@ -92,12 +92,11 @@ def add_pset(
         # Add a fire rating property standardised by buildingSMART.
         ifcopenshell.api.pset.edit_pset(model, pset=pset, properties={"FireRating": "2HR"})
     """
-    settings = {"product": product, "name": name}
     is_ifc2x3 = file.schema == "IFC2X3"
 
-    if settings["product"].is_a("IfcObject") or settings["product"].is_a("IfcContext"):
-        for rel in settings["product"].IsDefinedBy or []:
-            if rel.is_a("IfcRelDefinesByProperties") and rel.RelatingPropertyDefinition.Name == settings["name"]:
+    if product.is_a("IfcObject") or product.is_a("IfcContext"):
+        for rel in product.IsDefinedBy or []:
+            if rel.is_a("IfcRelDefinesByProperties") and rel.RelatingPropertyDefinition.Name == name:
                 return rel.RelatingPropertyDefinition
 
         pset = file.create_entity(
@@ -105,15 +104,15 @@ def add_pset(
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "Name": settings["name"],
+                "Name": name,
             },
         )
-        ifcopenshell.api.pset.assign_pset(file, [settings["product"]], pset)
+        ifcopenshell.api.pset.assign_pset(file, [product], pset)
         return pset
 
-    elif settings["product"].is_a("IfcTypeObject"):
-        for definition in settings["product"].HasPropertySets or []:
-            if definition.Name == settings["name"]:
+    elif product.is_a("IfcTypeObject"):
+        for definition in product.HasPropertySets or []:
+            if definition.Name == name:
                 return definition
 
         pset = file.create_entity(
@@ -121,42 +120,43 @@ def add_pset(
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "Name": settings["name"],
+                "Name": name,
             },
         )
-        ifcopenshell.api.pset.assign_pset(file, [settings["product"]], pset)
+        ifcopenshell.api.pset.assign_pset(file, [product], pset)
         return pset
 
     # in IFC2X3 IfcMaterialDefinition not yet existed
-    elif settings["product"].is_a("IfcMaterialDefinition") or settings["product"].is_a("IfcMaterial"):
-        kwargs = {"Material": settings["product"]}
+    elif product.is_a("IfcMaterialDefinition") or product.is_a("IfcMaterial"):
+        kwargs: dict[str, Any]
+        kwargs = {"Material": product}
         if file.schema == "IFC2X3":
             ifc_class = ifc2x3_subclass or "IfcExtendedMaterialProperties"
-            definitions = (d for d in file.by_type("IfcMaterialProperties") if d.Material == settings["product"])
+            definitions = (d for d in file.by_type("IfcMaterialProperties") if d.Material == product)
             if ifc_class == "IfcExtendedMaterialProperties":
-                kwargs["Name"] = settings["name"]
+                kwargs["Name"] = name
         else:
             ifc_class = "IfcMaterialProperties"
-            definitions = settings["product"].HasProperties
-            kwargs["Name"] = settings["name"]
+            definitions = product.HasProperties
+            kwargs["Name"] = name
         for definition in definitions:
             # In IFC2X3 not all IfcMaterialProperties has Name
-            if getattr(definition, "Name", None) == settings["name"]:
+            if getattr(definition, "Name", None) == name:
                 return definition
 
         return file.create_entity(ifc_class, **kwargs)
 
-    elif settings["product"].is_a("IfcProfileDef"):
+    elif product.is_a("IfcProfileDef"):
         # in IFC2X3 IfcProfileProperties doesn't have Name and we cannot identify them
         if file.schema != "IFC2X3":
-            for definition in settings["product"].HasProperties or []:
-                if definition.Name == settings["name"]:
+            for definition in product.HasProperties or []:
+                if definition.Name == name:
                     return definition
 
         kwargs = {}
-        kwargs["ProfileDefinition"] = settings["product"]
+        kwargs["ProfileDefinition"] = product
         if file.schema != "IFC2X3":
-            kwargs["Name"] = settings["name"]
+            kwargs["Name"] = name
 
         if is_ifc2x3:
             ifc_class = ifc2x3_subclass or "IfcGeneralProfileProperties"
@@ -164,4 +164,4 @@ def add_pset(
             ifc_class = "IfcProfileProperties"
         return file.create_entity(ifc_class, **kwargs)
 
-    raise TypeError(f"Class '{settings['product'].is_a(True)}' doesn't support adding a property set.")
+    raise TypeError(f"Class '{product.is_a(True)}' doesn't support adding a property set.")

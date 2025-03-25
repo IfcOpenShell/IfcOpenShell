@@ -32,7 +32,7 @@ class BIM_PT_gis(Panel):
     bl_parent_id = "BIM_PT_tab_geometry"
 
     def draw_header(self, context):
-        props = context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         row = self.layout.row(align=True)
         icon = "HIDE_OFF" if props.should_visualise else "HIDE_ON"
         row.label(text="")  # empty text occupies the left of the row
@@ -43,7 +43,7 @@ class BIM_PT_gis(Panel):
     def draw(self, context):
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
-        props = context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
 
         if not GeoreferenceData.is_loaded:
             GeoreferenceData.load()
@@ -54,7 +54,7 @@ class BIM_PT_gis(Panel):
             self.draw_ui(context)
 
     def draw_editable_ui(self, context):
-        props = context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         row = self.layout.row(align=True)
         row.label(text="Projected CRS", icon="WORLD")
         row.operator("bim.edit_georeferencing", icon="CHECKMARK", text="")
@@ -87,7 +87,7 @@ class BIM_PT_gis(Panel):
                 draw_attribute(attribute, self.layout.row())
 
     def draw_ui(self, context):
-        props = context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
 
         if tool.Ifc.get_schema() == "IFC2X3":
             row = self.layout.row()
@@ -149,7 +149,7 @@ class BIM_PT_gis_true_north(Panel):
         if not GeoreferenceData.is_loaded:
             GeoreferenceData.load()
 
-        self.props = context.scene.BIMGeoreferenceProperties
+        self.props = tool.Georeference.get_georeference_props()
 
         if self.props.is_editing_true_north:
             self.draw_editable_ui(context)
@@ -200,7 +200,7 @@ class BIM_PT_gis_blender(Panel):
         if not GeoreferenceData.is_loaded:
             GeoreferenceData.load()
 
-        props = context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
 
         if props.has_blender_offset:
             row = self.layout.row()
@@ -233,7 +233,7 @@ class BIM_PT_gis_wcs(Panel):
         if not GeoreferenceData.is_loaded:
             GeoreferenceData.load()
 
-        props = context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
 
         if props.is_editing_wcs:
             self.draw_editable_ui(context)
@@ -263,7 +263,7 @@ class BIM_PT_gis_wcs(Panel):
             row.operator("bim.enable_editing_wcs", icon="GREASEPENCIL", text="")
 
     def draw_editable_ui(self, context):
-        props = context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
 
         row = self.layout.row(align=True)
         row.label(text="World Coordinate System", icon="EMPTY_ARROWS")
@@ -293,7 +293,7 @@ class BIM_PT_gis_calculator(Panel):
         if not GeoreferenceData.is_loaded:
             GeoreferenceData.load()
 
-        props = context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
 
         if props.has_blender_offset:
             row = self.layout.row(align=True)

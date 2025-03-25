@@ -31,11 +31,8 @@ def add_organisation(
         Sometimes used in drawing naming schemes. Otherise used as a
         canonicalised way of computers to identify the organisation. Like
         their stock name.
-    :type identification: str, optional
     :param name: The legal name of the organisation
-    :type name: str, optional
     :return: The newly created IfcOrganization
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -44,11 +41,9 @@ def add_organisation(
         organisation = ifcopenshell.api.owner.add_organisation(model,
             identification="AWB", name="Architects Without Ballpens")
     """
-    settings = {"identification": identification, "name": name}
-
-    data = {"Name": settings["name"]}
+    data = {"Name": name}
     if file.schema == "IFC2X3":
-        data["Id"] = settings["identification"]
+        data["Id"] = identification
     else:
-        data["Identification"] = settings["identification"]
+        data["Identification"] = identification
     return file.create_entity("IfcOrganization", **data)

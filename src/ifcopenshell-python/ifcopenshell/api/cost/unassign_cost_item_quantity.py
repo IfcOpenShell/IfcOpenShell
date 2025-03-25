@@ -30,12 +30,9 @@ def unassign_cost_item_quantity(
     have any impact on the cost item.
 
     :param cost_item: The IfcCostItem to remove quantities from
-    :type cost_item: ifcopenshell.entity_instance
     :param products: A list of IfcProducts that may have parametrically
         connected quantities to the cost item
-    :type products: list[ifcopenshell.entity_instance]
     :return: None
-    :rtype: None
 
     Example:
 
@@ -69,38 +66,39 @@ def unassign_cost_item_quantity(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"cost_item": cost_item, "products": products or []}
-    return usecase.execute()
+    return usecase.execute(cost_item, products or [])
 
 
 class Usecase:
-    def execute(self):
-        self.quantities = set(self.settings["cost_item"].CostQuantities or [])
-        for quantity in self.settings["cost_item"].CostQuantities or []:
+    file: ifcopenshell.file
+
+    def execute(self, cost_item: ifcopenshell.entity_instance, products: list[ifcopenshell.entity_instance]) -> None:
+        quantities = set(cost_item.CostQuantities or [])
+        for quantity in cost_item.CostQuantities or []:
             for inverse in self.file.get_inverse(quantity):
                 if not inverse.is_a("IfcElementQuantity"):
                     continue
                 for rel in inverse.DefinesOccurrence or []:
                     for related_object in rel.RelatedObjects:
-                        if related_object in self.settings["products"]:
-                            self.quantities.remove(quantity)
-        self.settings["cost_item"].CostQuantities = list(self.quantities)
-        for product in self.settings["products"]:
+                        if related_object in products:
+                            quantities.remove(quantity)
+        cost_item.CostQuantities = list(quantities)
+        for product in products:
             ifcopenshell.api.control.unassign_control(
                 self.file,
                 related_object=product,
-                relating_control=self.settings["cost_item"],
+                relating_control=cost_item,
             )
-        self.update_cost_item_count()
+        self.update_cost_item_count(cost_item)
 
-    def update_cost_item_count(self):
+    def update_cost_item_count(self, cost_item: ifcopenshell.entity_instance) -> None:
         # This is a bold assumption
         # https://forums.buildingsmart.org/t/how-does-a-cost-item-know-that-it-is-counting-a-controlled-product/3564
-        if len(self.settings["cost_item"].CostQuantities) == 1:
-            quantity = self.settings["cost_item"].CostQuantities[0]
+        if len(cost_item.CostQuantities) == 1:
+            quantity = cost_item.CostQuantities[0]
             if quantity.is_a("IfcQuantityCount"):
                 count = 0
-                for rel in self.settings["cost_item"].Controls:
+                for rel in cost_item.Controls:
                     count += len(rel.RelatedObjects)
                 if count:
                     quantity[3] = count

@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import bpy
 import json
@@ -25,14 +26,23 @@ import bonsai.tool as tool
 from contextlib import contextmanager
 from mathutils import Vector
 from ifcclash import ifcclash
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.clash.prop import BIMClashProperties
 
 
 class Clash(bonsai.core.tool.Clash):
 
     @classmethod
+    def get_clash_props(cls) -> BIMClashProperties:
+        return bpy.context.scene.BIMClashProperties
+
+    @classmethod
     def export_clash_sets(cls) -> list[ifcclash.ClashSet]:
-        clash_sets = []
-        for clash_set in bpy.context.scene.BIMClashProperties.clash_sets:
+        clash_sets: list[ifcclash.ClashSet] = []
+        props = cls.get_clash_props()
+        for clash_set in props.clash_sets:
             a = []
             b = []
             for ab in ["a", "b"]:
@@ -46,7 +56,7 @@ class Clash(bonsai.core.tool.Clash):
                         a.append(clash_source)
                     elif ab == "b":
                         b.append(clash_source)
-            clash_set_data = {"name": clash_set.name, "mode": clash_set.mode, "a": a, "b": b}
+            clash_set_data = ifcclash.ClashSet(name=clash_set.name, mode=clash_set.mode, a=a, b=b)
             if clash_set.mode == "intersection":
                 clash_set_data["tolerance"] = clash_set.tolerance
                 clash_set_data["check_all"] = clash_set.check_all
@@ -55,33 +65,37 @@ class Clash(bonsai.core.tool.Clash):
             elif clash_set.mode == "clearance":
                 clash_set_data["clearance"] = clash_set.clearance
                 clash_set_data["check_all"] = clash_set.check_all
-            clash_sets.append(clash_set_data)
+            clash_sets.append(ifcclash.ClashSet(**clash_set_data))
         return clash_sets
 
     @classmethod
-    def get_clash(cls, clash_set, a_global_id, b_global_id):
+    def get_clash(
+        cls, clash_set: ifcclash.ClashSet, a_global_id: str, b_global_id: str
+    ) -> Union[ifcclash.ClashResult, None]:
         clashes = clash_set.get("clashes", None)
         if not clashes:
             return
         return clashes.get(f"{a_global_id}-{b_global_id}", None)
 
     @classmethod
-    def get_clash_set(cls, name):
+    def get_clash_set(cls, name: str) -> Union[ifcclash.ClashSet, None]:
         for clash_set in ClashStore.clash_sets:
             if clash_set["name"] == name:
                 return clash_set
 
     @classmethod
-    def get_clash_sets(cls):
+    def get_clash_sets(cls) -> list[ifcclash.ClashSet]:
         return ClashStore.clash_sets
 
     @classmethod
-    def import_active_clashes(cls):
-        clash_set = bpy.context.scene.BIMClashProperties.active_clash_set
+    def import_active_clashes(cls) -> None:
+        props = cls.get_clash_props()
+        clash_set = props.active_clash_set
         if not clash_set:
             return
         clash_set.clashes.clear()
         result = tool.Clash.get_clash_set(clash_set.name)
+        assert result is not None
         for clash in sorted(result.get("clashes", {}).values(), key=lambda x: x["distance"]):
             blender_clash = clash_set.clashes.add()
             blender_clash.a_global_id = clash["a_global_id"]
@@ -91,17 +105,19 @@ class Clash(bonsai.core.tool.Clash):
             blender_clash.status = False if not "status" in clash.keys() else clash["status"]
 
     @classmethod
-    def load_clash_sets(cls, fn):
+    def load_clash_sets(cls, fn: str) -> None:
         with open(fn) as f:
             ClashStore.clash_sets = json.load(f)
 
     @classmethod
-    def look_at(cls, target, location):
+    def look_at(cls, target: Vector, location: Vector) -> None:
         camera_location = location
         area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
         region = next(region for region in area.regions if region.type == "WINDOW")
         space = next(space for space in area.spaces if space.type == "VIEW_3D")
         override = {"area": area, "region": region, "space_data": space}
+        assert isinstance(space, bpy.types.SpaceView3D)
+        assert space.region_3d
         space.region_3d.view_location = target
         space.region_3d.view_rotation = Vector((camera_location - target)).to_track_quat("Z", "Y")
         space.region_3d.view_distance = (camera_location - target).length
@@ -109,10 +125,8 @@ class Clash(bonsai.core.tool.Clash):
 
 
 class ClashStore:
-    clash_sets = None
-    path = None
+    clash_sets: list[ifcclash.ClashSet] = []
 
     @staticmethod
     def purge():
-        ClashStore.clash_sets = None
-        ClashStore.path = None
+        ClashStore.clash_sets = []

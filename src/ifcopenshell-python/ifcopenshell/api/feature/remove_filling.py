@@ -28,9 +28,7 @@ def remove_filling(file: ifcopenshell.file, element: ifcopenshell.entity_instanc
     fills the opening.
 
     :param element: The element filling an opening.
-    :type element: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -52,10 +50,8 @@ def remove_filling(file: ifcopenshell.file, element: ifcopenshell.entity_instanc
         # Not anymore!
         ifcopenshell.api.feature.remove_filling(model, element=door)
     """
-    settings = {"element": element}
-
     for rel in file.by_type("IfcRelFillsElement"):
-        if rel.RelatedBuildingElement == settings["element"]:
+        if rel.RelatedBuildingElement == element:
             history = rel.OwnerHistory
             file.remove(rel)
             if history:

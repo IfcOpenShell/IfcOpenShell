@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import bpy
 import math
@@ -50,7 +51,7 @@ class Annotator:
         curve.font = font
         props = tool.Drawing.get_text_props(obj)
         props.font_size = "2.5"
-        collection = bpy.context.scene.camera.BIMObjectProperties.collection
+        collection = tool.Blender.get_object_bim_props(bpy.context.scene.camera).collection
         collection.objects.link(obj)
         Annotator.resize_text(obj)
         return obj
@@ -125,12 +126,14 @@ class Annotator:
         return obj
 
     @staticmethod
-    def get_annotation_obj(drawing: ifcopenshell.entity_instance, object_type: str, data_type: str) -> bpy.types.Object:
+    def get_annotation_obj(
+        drawing: ifcopenshell.entity_instance, object_type: str, data_type: tool.Drawing.ANNOTATION_DATA_TYPE
+    ) -> bpy.types.Object:
         camera = tool.Ifc.get_object(drawing)
         co1, _, _, _ = Annotator.get_placeholder_coords(camera)
         matrix_world = tool.Drawing.get_camera_matrix(camera)
         matrix_world.translation = co1
-        collection = camera.BIMObjectProperties.collection
+        collection = tool.Blender.get_object_bim_props(camera).collection
 
         if object_type == "TEXT":
             obj = bpy.data.objects.new(object_type, None)
@@ -147,11 +150,17 @@ class Annotator:
             collection.objects.link(obj)
             return obj
 
-        if object_type != "ANGLE":
-            for obj in collection.objects:
-                element = tool.Ifc.get_entity(obj)
-                if element and element.ObjectType == object_type and obj.type == object_type.upper():
-                    return obj
+        # TODO: remove as outdated?
+        # Is reusing the same objects preventing the creation of new annotations.
+        # if object_type != "ANGLE":
+        #     for obj in collection.objects:
+        #         element = tool.Ifc.get_entity(obj)
+        #         if (
+        #             element
+        #             and ifcopenshell.util.element.get_predefined_type(element) == object_type
+        #             and obj.type == data_type.upper()
+        #         ):
+        #             return obj
 
         if data_type == "mesh":
             data = bpy.data.meshes.new(object_type)

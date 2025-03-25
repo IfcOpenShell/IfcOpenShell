@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.style
 import ifcopenshell.util.element
+from typing import Any
 
 
 def assign_material_style(
@@ -115,6 +116,9 @@ def assign_material_style(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         self.style = self.settings["style"]
         if self.file.schema == "IFC2X3" or self.settings["should_use_presentation_style_assignment"]:
@@ -170,7 +174,7 @@ class Usecase:
             new_items.append(self.create_styled_item(item_to_reuse))
             representation.Items = new_items
             for item in same_style_items:
-                if len(self.file.get_inverse(item)) == 0:
+                if self.file.get_total_inverses(item) == 0:
                     self.file.remove(item)
         else:
             representations = list(definition_representation.Representations)

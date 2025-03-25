@@ -31,13 +31,9 @@ def edit_constituent(
     IfcMaterialConstituent, consult the IFC documentation.
 
     :param constituent: The IfcMaterialConstituent entity you want to edit
-    :type constituent: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
     :param material: The IfcMaterial entity you want to change the constituent to
-    :type material: ifcopenshell.entity_instance, optional
     :return: None
-    :rtype: None
 
     Example:
 
@@ -65,8 +61,6 @@ def edit_constituent(
         ifcopenshell.api.material.edit_constituent(model,
             constituent=constituent, attributes={"Name": "Glazing"})
     """
-    settings = {"constituent": constituent, "attributes": attributes or {}, "material": material}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["constituent"], name, value)
-    settings["constituent"].Material = settings["material"]
+    for name, value in (attributes or {}).items():
+        setattr(constituent, name, value)
+    constituent.Material = material

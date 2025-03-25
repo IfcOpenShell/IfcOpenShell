@@ -40,7 +40,7 @@ def update_relating_object(self, context):
 
     if self.relating_object is None:
         return
-    if not self.relating_object.BIMObjectProperties.ifc_definition_id:
+    if not tool.Blender.get_ifc_definition_id(self.relating_object):
         context.window_manager.popup_menu(message, title="Invalid Element Selected", icon="INFO")
         self.relating_object = None
 

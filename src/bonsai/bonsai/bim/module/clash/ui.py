@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 import bonsai.bim.helper
 from bpy.types import Panel
 from bonsai.bim.module.clash.data import ClashData
@@ -36,9 +37,7 @@ class BIM_PT_ifcclash(Panel):
             ClashData.load()
 
         layout = self.layout
-
-        scene = context.scene
-        props = scene.BIMClashProperties
+        props = tool.Clash.get_clash_props()
 
         row = layout.row(align=True)
         row.operator("bim.add_clash_set")
@@ -157,7 +156,7 @@ class BIM_PT_smart_clash_manager(Panel):
 
     def draw(self, context):
         layout = self.layout
-        props = context.scene.BIMClashProperties
+        props = tool.Clash.get_clash_props()
 
         row = layout.row()
         layout.label(text="Select clash results to group:")

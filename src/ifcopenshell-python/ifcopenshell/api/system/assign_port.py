@@ -34,12 +34,9 @@ def assign_port(
     it may be useful when patching up models.
 
     :param element: The IfcDistributionElement to assign the port to.
-    :type element: ifcopenshell.entity_instance
     :param port: The IfcDistributionPort you want to assign.
-    :type port: ifcopenshell.entity_instance
     :return: The IfcRelNests relationship, or the
         IfcRelConnectsPortToElement for IFC2X3.
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -61,31 +58,30 @@ def assign_port(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "element": element,
-        "port": port,
-    }
-    return usecase.execute()
+    return usecase.execute(element, port)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
+    def execute(
+        self, element: ifcopenshell.entity_instance, port: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
+        self.element = element
+        self.port = port
         if self.file.schema == "IFC2X3":
             return self.execute_ifc2x3()
 
-        rels = self.settings["element"].IsNestedBy or []
+        rels = self.element.IsNestedBy or []
 
         for rel in rels:
-            if self.settings["port"] in rel.RelatedObjects:
+            if self.port in rel.RelatedObjects:
                 return rel
 
         if rels:
             rel = rels[0]
             related_objects = set(rel.RelatedObjects) or set()
-            related_objects.add(self.settings["port"])
+            related_objects.add(self.port)
             rel.RelatedObjects = list(related_objects)
             ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
         else:
@@ -93,34 +89,34 @@ class Usecase:
                 "IfcRelNests",
                 GlobalId=ifcopenshell.guid.new(),
                 OwnerHistory=ifcopenshell.api.owner.create_owner_history(self.file),
-                RelatedObjects=[self.settings["port"]],
-                RelatingObject=self.settings["element"],
+                RelatedObjects=[self.port],
+                RelatingObject=self.element,
             )
 
         self.update_port_placement()
 
         return rel
 
-    def execute_ifc2x3(self):
-        for rel in self.settings["element"].HasPorts or []:
-            if rel.RelatingPort == self.settings["port"]:
+    def execute_ifc2x3(self) -> ifcopenshell.entity_instance:
+        for rel in self.element.HasPorts or []:
+            if rel.RelatingPort == self.port:
                 return rel
         rel = self.file.create_entity(
             "IfcRelConnectsPortToElement",
             GlobalId=ifcopenshell.guid.new(),
             OwnerHistory=ifcopenshell.api.owner.create_owner_history(self.file),
-            RelatingPort=self.settings["port"],
-            RelatedElement=self.settings["element"],
+            RelatingPort=self.port,
+            RelatedElement=self.element,
         )
         self.update_port_placement()
         return rel
 
-    def update_port_placement(self):
-        placement = getattr(self.settings["port"], "ObjectPlacement", None)
+    def update_port_placement(self) -> None:
+        placement = getattr(self.port, "ObjectPlacement", None)
         if placement and placement.is_a("IfcLocalPlacement"):
             ifcopenshell.api.geometry.edit_object_placement(
                 self.file,
-                product=self.settings["port"],
-                matrix=ifcopenshell.util.placement.get_local_placement(self.settings["port"].ObjectPlacement),
+                product=self.port,
+                matrix=ifcopenshell.util.placement.get_local_placement(self.port.ObjectPlacement),
                 is_si=False,
             )

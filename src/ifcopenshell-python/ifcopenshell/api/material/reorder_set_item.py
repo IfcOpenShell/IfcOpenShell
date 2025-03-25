@@ -57,16 +57,17 @@ def reorder_set_item(
         ifcopenshell.api.material.reorder_set_item(model,
             material_set=material_set, old_index=0, new_index=1)
     """
-    settings = {"material_set": material_set, "old_index": old_index, "new_index": new_index}
-
-    if settings["material_set"].is_a("IfcMaterialConstituentSet"):
+    if material_set.is_a("IfcMaterialConstituentSet"):
         set_name = "MaterialConstituents"
-    elif settings["material_set"].is_a("IfcMaterialLayerSet"):
+    elif material_set.is_a("IfcMaterialLayerSet"):
         set_name = "MaterialLayers"
-    elif settings["material_set"].is_a("IfcMaterialProfileSet"):
+    elif material_set.is_a("IfcMaterialProfileSet"):
         set_name = "MaterialProfiles"
-    elif settings["material_set"].is_a("IfcMaterialList"):
+    elif material_set.is_a("IfcMaterialList"):
         set_name = "Materials"
-    items = list(getattr(settings["material_set"], set_name) or [])
-    items.insert(settings["new_index"], items.pop(settings["old_index"]))
-    setattr(settings["material_set"], set_name, items)
+    else:
+        raise ValueError(f"Unexpected material set type: '{material_set.is_a()}'.")
+
+    items = list(getattr(material_set, set_name) or [])
+    items.insert(new_index, items.pop(old_index))
+    setattr(material_set, set_name, items)

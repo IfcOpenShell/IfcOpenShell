@@ -31,7 +31,7 @@ class TestImplementsTool(NewFile):
 
 class TestClearEditingMode(NewFile):
     def test_run(self):
-        props = bpy.context.scene.BIMLibraryProperties
+        props = tool.Library.get_library_props()
         props.editing_mode = "LIBRARY"
         subject.clear_editing_mode()
         assert props.editing_mode == "NONE"
@@ -78,7 +78,7 @@ class TestImportLibraryAttributes(NewFile):
         tool.Ifc.set(ifc := ifcopenshell.file())
         library = ifc.createIfcLibraryInformation("Name", "Version", None, "VersionDate", "Location", "Description")
         subject.import_library_attributes(library)
-        props = bpy.context.scene.BIMLibraryProperties
+        props = tool.Library.get_library_props()
         assert props.library_attributes.get("Name").string_value == "Name"
         assert props.library_attributes.get("Version").string_value == "Version"
         assert props.library_attributes.get("VersionDate").string_value == "VersionDate"
@@ -91,7 +91,7 @@ class TestImportReferenceAttributes(NewFile):
         tool.Ifc.set(ifc := ifcopenshell.file())
         reference = ifc.createIfcLibraryReference("Location", "Identification", "Name", "Description", "Language")
         subject.import_reference_attributes(reference)
-        props = bpy.context.scene.BIMLibraryProperties
+        props = tool.Library.get_library_props()
         assert props.reference_attributes.get("Location").string_value == "Location"
         assert props.reference_attributes.get("Identification").string_value == "Identification"
         assert props.reference_attributes.get("Name").string_value == "Name"
@@ -105,7 +105,7 @@ class TestImportReferences(NewFile):
         library = ifc.createIfcLibraryInformation()
         reference = ifc.createIfcLibraryReference(Name="Reference", ReferencedLibrary=library)
         subject.import_references(library)
-        props = bpy.context.scene.BIMLibraryProperties
+        props = tool.Library.get_library_props()
         assert props.references[0].ifc_definition_id == reference.id()
         assert props.references[0].name == "Reference"
 
@@ -116,7 +116,8 @@ class TestSetActiveLibrary(NewFile):
         tool.Ifc.set(ifc)
         library = ifc.createIfcLibraryInformation()
         subject.set_active_library(library)
-        assert bpy.context.scene.BIMLibraryProperties.active_library_id == library.id()
+        props = tool.Library.get_library_props()
+        assert props.active_library_id == library.id()
 
 
 class TestSetActiveReference(NewFile):
@@ -125,10 +126,12 @@ class TestSetActiveReference(NewFile):
         tool.Ifc.set(ifc)
         reference = ifc.createIfcLibraryReference()
         subject.set_active_reference(reference)
-        assert bpy.context.scene.BIMLibraryProperties.active_reference_id == reference.id()
+        props = tool.Library.get_library_props()
+        assert props.active_reference_id == reference.id()
 
 
 class TestSetEditingMode(NewFile):
     def test_run(self):
         subject.set_editing_mode("LIBRARY")
-        assert bpy.context.scene.BIMLibraryProperties.editing_mode == "LIBRARY"
+        props = tool.Library.get_library_props()
+        assert props.editing_mode == "LIBRARY"

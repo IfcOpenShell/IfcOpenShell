@@ -31,11 +31,8 @@ def edit_work_time(
     IfcWorkTime, consult the IFC documentation.
 
     :param work_time: The IfcWorkTime entity you want to edit
-    :type work_time: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -54,16 +51,14 @@ def edit_work_time(
         ifcopenshell.api.sequence.edit_work_time(model,
             work_time=work_time, attributes={"StartDate": "2000-01-01", "FinishDate": "2000-01-02"})
     """
-    settings = {"work_time": work_time, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
+    for name, value in attributes.items():
         if name in ("Start", "StartDate"):
             value = ifcopenshell.util.date.datetime2ifc(value, "IfcDate")
             # 4 IfcWorktime Start
-            settings["work_time"][4] = value
+            work_time[4] = value
         elif name in ("Finish", "FinishDate"):
             value = ifcopenshell.util.date.datetime2ifc(value, "IfcDate")
             # 5 IfcWorktime Finish
-            settings["work_time"][5] = value
+            work_time[5] = value
         else:
-            setattr(settings["work_time"], name, value)
+            setattr(work_time, name, value)

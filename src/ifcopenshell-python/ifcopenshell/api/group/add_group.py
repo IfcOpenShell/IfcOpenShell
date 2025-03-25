@@ -35,12 +35,9 @@ def add_group(
     or structural load groups, which group together loads for structural
     analysis, or inventories, which are groups of assets.
 
-    :param Name: The name of the group. Defaults to "Unnamed"
-    :type Name: str, optional
+    :param name: The name of the group. Defaults to "Unnamed"
     :param description: The description of the purpose of the group.
-    :type description: str, optional
     :return: The newly created IfcGroup
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -48,17 +45,11 @@ def add_group(
 
         ifcopenshell.api.group.add_group(model, name="Unit 1A")
     """
-    settings = {
-        "name": name or "Unnamed",
-        "description": description,
-    }
 
     return file.create_entity(
         "IfcGroup",
-        **{
-            "GlobalId": ifcopenshell.guid.new(),
-            "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-            "Name": settings["name"],
-            "Description": settings["description"],
-        }
+        GlobalId=ifcopenshell.guid.new(),
+        OwnerHistory=ifcopenshell.api.owner.create_owner_history(file),
+        Name=name,
+        Description=description,
     )

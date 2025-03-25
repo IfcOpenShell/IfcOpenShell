@@ -125,14 +125,24 @@ class SplitAlongEdge(bpy.types.Operator, tool.Ifc.Operator):
         "Will unassign element from a type if type has a representation."
     )
     bl_options = {"REGISTER", "UNDO"}
+    mode: bpy.props.StringProperty(default="BOOLEAN")
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects and tool.Ifc.get()
+        return context.selected_objects
 
     def _execute(self, context):
         cutter = context.active_object
         objs = [o for o in context.selected_objects if o != cutter]
+
+        if not tool.Ifc.get():
+            if self.mode == "BOOLEAN":
+                tool.Misc.boolean_objects_with_cutter(objs, cutter)
+            elif self.mode == "BISECT":
+                tool.Misc.bisect_objects_with_cutter(objs, cutter)
+                for obj in objs:
+                    bpy.data.objects.remove(obj)
+            return
 
         objs_to_cut = []
         # Splitting only works on meshes
@@ -169,7 +179,11 @@ class SplitAlongEdge(bpy.types.Operator, tool.Ifc.Operator):
 
             objs_to_cut.append(obj)
 
-        new_objs = tool.Misc.split_objects_with_cutter(objs_to_cut, cutter)
+        if self.mode == "BOOLEAN":
+            new_objs = tool.Misc.boolean_objects_with_cutter(objs_to_cut, cutter)
+        elif self.mode == "BISECT":
+            new_objs = tool.Misc.bisect_objects_with_cutter(objs_to_cut, cutter)
+
         for obj in new_objs:
             bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
             bpy.ops.bim.update_representation(obj=obj.name)
@@ -257,7 +271,7 @@ class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
         sources = []
 
         for obj in bpy.context.selected_objects:
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            if not tool.Blender.get_ifc_definition_id(obj):
                 continue
 
             element = tool.Ifc.get_entity(obj)
@@ -299,7 +313,7 @@ class DrawSystemArrows(bpy.types.Operator, tool.Ifc.Operator):
         tool.Blender.select_and_activate_single_object(context, curve)
 
     def get_absolute_matrix(self, matrix):
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if props.has_blender_offset:
             matrix = np.array(
                 ifcopenshell.util.geolocation.global2local(

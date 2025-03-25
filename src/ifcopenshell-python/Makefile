@@ -61,12 +61,6 @@ IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.8.1-c
 test:
 	pytest -p no:pytest-blender test
 
-# safe version of tests without mathutils dependency
-# for tests to work for github workflow with python <3.10 #3895
-.PHONY: test-safe
-test-safe:
-	pytest -p no:pytest-blender test --ignore=test/util/test_shape_builder.py
-
 .PHONY: build-ids-docs
 build-ids-docs:
 	mkdir -p test/build

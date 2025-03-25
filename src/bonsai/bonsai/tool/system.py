@@ -30,12 +30,11 @@ import re
 from math import pi, cos, sin
 from mathutils import Matrix, Vector
 from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
-from bonsai.bim.module.drawing.decoration import profile_consequential
 from enum import Enum
 from typing import TYPE_CHECKING, Optional, Any, Union
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties
+    from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties, BIMZoneProperties
 
 
 class System(bonsai.core.tool.System):
@@ -165,7 +164,7 @@ class System(bonsai.core.tool.System):
                 continue
             new = props.systems.add()
             new.ifc_definition_id = system.id()
-            new.name = system.Name or "Unnamed"
+            new["name"] = system.Name or "Unnamed"
             new.ifc_class = system.is_a()
 
     @classmethod
@@ -189,7 +188,7 @@ class System(bonsai.core.tool.System):
 
         container = ifcopenshell.util.element.get_container(element)
         if container:
-            collection = tool.Ifc.get_object(container).BIMObjectProperties.collection
+            collection = tool.Blender.get_object_bim_props(tool.Ifc.get_object(container)).collection
             ifc_importer.collections[container.GlobalId] = collection
         ifc_importer.place_objects_in_collections()
 
@@ -341,32 +340,37 @@ class System(bonsai.core.tool.System):
 
                 # for now it's hardcoded to local Y axis to avoid using viewport data
                 # for performance reasons
-                edge_ortho = obj.matrix_world.col[1].to_3d().normalized()
-                second_ortho = edge_dir.cross(edge_ortho)
-                edge_ortho = second_ortho.cross(edge_dir)
+                for j in range(2):
+                    edge_ortho = obj.matrix_world.col[j].to_3d().normalized()
+                    second_ortho = edge_dir.cross(edge_ortho)
+                    edge_ortho = second_ortho.cross(edge_dir)
 
-                # direction lines should be around the edge center
-                n_direction_lines, start_offset = divmod(edge_length, direction_lines_offset)
-                n_direction_lines = int(n_direction_lines) + 1
-                start_offset /= 2
-                start_offset = edge_dir * start_offset + base_vert
-                cur_vert_index = start_vert_i + len(port_data)
+                    # direction lines should be around the edge center
+                    n_direction_lines, start_offset = divmod(edge_length, direction_lines_offset)
+                    n_direction_lines = int(n_direction_lines) + 1
+                    start_offset /= 2
+                    start_offset = edge_dir * start_offset + base_vert
 
-                for i in range(n_direction_lines):
-                    cur_offset = start_offset + edge_dir * i * direction_lines_offset
                     if both_directions:
-                        verts_pos.append(cur_offset + edge_ortho * direction_lines_width)
-                        verts_pos.append(cur_offset - edge_ortho * direction_lines_width)
-                        edges.append((cur_vert_index, cur_vert_index + 1))
-                        cur_vert_index += 2
+                        cur_vert_index = start_vert_i + len(port_data) + j * 2 * n_direction_lines
                     else:
-                        arrow_base = cur_offset - edge_dir * direction_lines_width
-                        verts_pos.append(arrow_base + edge_ortho * direction_lines_width)
-                        verts_pos.append(cur_offset)
-                        verts_pos.append(arrow_base - edge_ortho * direction_lines_width)
-                        edges.append((cur_vert_index, cur_vert_index + 1))
-                        edges.append((cur_vert_index + 1, cur_vert_index + 2))
-                        cur_vert_index += 3
+                        cur_vert_index = start_vert_i + len(port_data) + j * 3 * n_direction_lines
+
+                    for i in range(n_direction_lines):
+                        cur_offset = start_offset + edge_dir * i * direction_lines_offset
+                        if both_directions:
+                            verts_pos.append(cur_offset + edge_ortho * direction_lines_width)
+                            verts_pos.append(cur_offset - edge_ortho * direction_lines_width)
+                            edges.append((cur_vert_index, cur_vert_index + 1))
+                            cur_vert_index += 2
+                        else:
+                            arrow_base = cur_offset - edge_dir * direction_lines_width
+                            verts_pos.append(arrow_base + edge_ortho * direction_lines_width)
+                            verts_pos.append(cur_offset)
+                            verts_pos.append(arrow_base - edge_ortho * direction_lines_width)
+                            edges.append((cur_vert_index, cur_vert_index + 1))
+                            edges.append((cur_vert_index + 1, cur_vert_index + 2))
+                            cur_vert_index += 3
 
             all_vertices.extend(verts_pos)
 
@@ -427,3 +431,14 @@ class System(bonsai.core.tool.System):
         if not element.AssignedToFlowElement:
             return
         return element.AssignedToFlowElement[0].RelatingFlowElement
+
+    @classmethod
+    def draw_system_ui(cls, layout: bpy.types.UILayout, system_id: int, system_name: str, system_class: str) -> None:
+        from bonsai.bim.module.system.ui import SYSTEM_ICONS
+
+        row = layout.row(align=True)
+        row.label(text=system_name, icon=SYSTEM_ICONS[system_class])
+        op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
+        op.system = system_id
+        op = row.operator("bim.unassign_system", text="", icon="X")
+        op.system = system_id

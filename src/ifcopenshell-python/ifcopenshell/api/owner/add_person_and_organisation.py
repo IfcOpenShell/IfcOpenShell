@@ -30,11 +30,8 @@ def add_person_and_organisation(
 
     :param person: The IfcPerson being the representative of the
         organisation.
-    :type person: ifcopenshell.entity_instance
     :param organisation: The IfcOrganization it
-    :type organisation: ifcopenshell.entity_instance
     :return: The newly created IfcPersonAndOrganization
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -48,6 +45,4 @@ def add_person_and_organisation(
         ifcopenshell.api.owner.add_person_and_organisation(model,
             person=person, organisation=organisation)
     """
-    settings = {"person": person, "organisation": organisation}
-
-    return file.createIfcPersonAndOrganization(settings["person"], settings["organisation"])
+    return file.create_entity("IfcPersonAndOrganization", person, organisation)

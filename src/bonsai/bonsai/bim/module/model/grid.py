@@ -50,7 +50,7 @@ def add_object(self, context):
             "grid.create_grid_axis", tool.Ifc.get(), axis_tag=tag, uvw_axes="UAxes", grid=grid
         )
         tool.Ifc.link(result, obj)
-        ifcopenshell.api.run("grid.create_axis_curve", tool.Ifc.get(), axis_curve=obj, grid_axis=result)
+        tool.Model.create_axis_curve(obj, result)
         tool.Collector.assign(obj)
 
     for i in range(0, self.total_v):
@@ -69,7 +69,7 @@ def add_object(self, context):
             "grid.create_grid_axis", tool.Ifc.get(), axis_tag=tag, uvw_axes="VAxes", grid=grid
         )
         tool.Ifc.link(result, obj)
-        ifcopenshell.api.run("grid.create_axis_curve", tool.Ifc.get(), axis_curve=obj, grid_axis=result)
+        tool.Model.create_axis_curve(obj, result)
         tool.Collector.assign(obj)
 
     tool.Root.reload_grid_decorator()

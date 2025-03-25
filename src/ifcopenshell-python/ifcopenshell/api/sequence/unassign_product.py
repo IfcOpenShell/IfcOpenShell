@@ -31,11 +31,8 @@ def unassign_product(
     See ifcopenshell.api.sequence.assign_product for details.
 
     :param relating_product: The IfcProduct in the relationship.
-    :type relating_product: ifcopenshell.entity_instance
     :param related_object: The IfcTask in the relationship.
-    :type related_object: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -59,13 +56,8 @@ def unassign_product(
         # Change our mind.
         ifcopenshell.api.sequence.unassign_product(relating_product=wall, related_object=task)
     """
-    settings = {
-        "relating_product": relating_product,
-        "related_object": related_object,
-    }
-
-    for rel in settings["related_object"].HasAssignments or []:
-        if not rel.is_a("IfcRelAssignsToProduct") or rel.RelatingProduct != settings["relating_product"]:
+    for rel in related_object.HasAssignments or []:
+        if not rel.is_a("IfcRelAssignsToProduct") or rel.RelatingProduct != relating_product:
             continue
         if len(rel.RelatedObjects) == 1:
             history = rel.OwnerHistory
@@ -74,7 +66,7 @@ def unassign_product(
                 ifcopenshell.util.element.remove_deep2(file, history)
             return
         related_objects = list(rel.RelatedObjects)
-        related_objects.remove(settings["related_object"])
+        related_objects.remove(related_object)
         rel.RelatedObjects = related_objects
         ifcopenshell.api.owner.update_owner_history(file, element=rel)
         return rel

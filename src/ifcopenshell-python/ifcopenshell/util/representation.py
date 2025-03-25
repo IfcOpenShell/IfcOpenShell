@@ -19,6 +19,7 @@
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
+import ifcopenshell.util.shape
 import ifcopenshell.util.placement
 from typing import Optional, Union, TypedDict, Literal, Generator, Sequence
 
@@ -235,12 +236,12 @@ def guess_type(items: Sequence[ifcopenshell.entity_instance]) -> Union[str, None
         ]
     ):
         return "SurfaceModel"
-    elif all([True if i.is_a("IfcSolidModel") else False for i in items]):
-        return "SolidModel"
     elif all(
         [True if i.is_a() == "IfcExtrudedAreaSolid" or i.is_a() == "IfcRevolvedAreaSolid" else False for i in items]
     ):
         return "SweptSolid"
+    elif all([True if i.is_a("IfcSolidModel") else False for i in items]):
+        return "SolidModel"
     elif all(
         [
             (
@@ -343,9 +344,9 @@ def get_prioritised_contexts(ifc_file: ifcopenshell.file) -> list[ifcopenshell.e
     you may want to prioritise visualising certain contexts over others,
     determined by the context type, identifier, target view, and target scale.
 
-    The default prioritises subcontexts, then contexts. It then prioritises 3D,
-    then 2D. It then prioritises bodies, then others. It also prioritises model
-    views, then plan views, then others.
+    The default prioritises 3D, then 2D. It then prioritises subcontexts, then
+    contexts. It then prioritises bodies, then others. It also prioritises
+    model views, then plan views, then others.
 
     :param ifc_file: The model containing contexts
     :return: A list of IfcGeometricRepresentationContext (or SubContext) from
@@ -383,14 +384,6 @@ def get_prioritised_contexts(ifc_file: ifcopenshell.file) -> list[ifcopenshell.e
 
     def sort_context(context):
         priority = []
-        if context.ContextType in type_priority:
-            priority.append(len(type_priority) - type_priority.index(context.ContextType))
-        else:
-            priority.append(0)
-        return tuple(priority)
-
-    def sort_subcontext(context):
-        priority = []
 
         if context.ContextType in type_priority:
             priority.append(len(type_priority) - type_priority.index(context.ContextType))
@@ -402,21 +395,16 @@ def get_prioritised_contexts(ifc_file: ifcopenshell.file) -> list[ifcopenshell.e
         else:
             priority.append(0)
 
-        if context.TargetView in target_view_priority:
+        if getattr(context, "TargetView", None) in target_view_priority:
             priority.append(len(target_view_priority) - target_view_priority.index(context.TargetView))
         else:
             priority.append(0)
 
-        priority.append(context.TargetScale or 0)  # Big then small
+        priority.append(getattr(context, "TargetScale", None) or 0)  # Big then small
 
         return tuple(priority)
 
-    # Ideally, all representations should be in a subcontext, but some BIM programs don't do this correctly
-    return sorted(ifc_file.by_type("IfcGeometricRepresentationSubContext"), key=sort_subcontext, reverse=True) + sorted(
-        ifc_file.by_type("IfcGeometricRepresentationContext", include_subtypes=False),
-        key=sort_context,
-        reverse=True,
-    )
+    return sorted(ifc_file.by_type("IfcGeometricRepresentationContext"), key=sort_context, reverse=True)
 
 
 def get_part_of_product(
@@ -474,3 +462,44 @@ def get_material_style(
                     for style in item.Styles:
                         if style.is_a(ifc_class):
                             return style
+
+
+def get_reference_line(wall: ifcopenshell.entity_instance, fallback_length: float = 1.0) -> list[npt.NDArray]:
+    """Fetch the reference axis that goes in the +X direction
+
+    A base line will then be offset from this reference line based on the
+    material usage. From that base line, the layer thicknesses will offset
+    again, and be extruded to form the body representation.
+
+    :param wall: ifcopenshell.entity_instance
+    :param fallback_length: If there is no reference axis, assume it starts at
+        the object placement (i.e. 0.0, 0.0) and extends for this fallback
+        length along the +X axis.
+    :return: A list of two 2D coordinates representing the start and end of the
+        axis. The axis always goes in the +X direction.
+    """
+    if axis := ifcopenshell.util.representation.get_representation(wall, "Plan", "Axis", "GRAPH_VIEW"):
+        for item in ifcopenshell.util.representation.resolve_representation(axis).Items:
+            if item.is_a("IfcPolyline"):
+                points = [p[0] for p in item.Points]
+            elif item.is_a("IfcIndexedPolyCurve"):
+                points = item.Points.CoordList
+            else:
+                continue
+            if points[0][0] < points[1][0]:  # An axis always goes in the +X direction
+                return [np.array(points[0]), np.array(points[1])]
+            return [np.array(points[1]), np.array(points[0])]
+    elif extrusions := ifcopenshell.util.shape.get_base_extrusions(wall):
+        for extrusion in extrusions:
+            profile = extrusion.SweptArea
+            curve = getattr(profile, "OuterCurve", None)
+            if not curve:
+                continue
+            elif curve.is_a("IfcPolyline"):
+                x = [p[0][0] for p in curve.Points]
+            elif curve.is_a("IfcIndexedPolyCurve"):
+                x = [p[0] for p in curve.Points.CoordList]
+            else:
+                continue
+            return [np.array((min(x), 0.0)), np.array((max(x), 0.0))]
+    return [np.array((0.0, 0.0)), np.array((fallback_length, 0.0))]

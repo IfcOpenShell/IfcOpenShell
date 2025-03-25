@@ -31,11 +31,15 @@ from typing_extensions import assert_never
 
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.pset.prop import PsetProperties
+    from bonsai.bim.module.pset.prop import PsetProperties, GlobalPsetProperties
 
 
 class Pset(bonsai.core.tool.Pset):
     PSET_TYPE = Literal["PSET", "QTO"]
+
+    @classmethod
+    def get_global_pset_props(cls) -> GlobalPsetProperties:
+        return bpy.context.scene.GlobalPsetProperties
 
     @classmethod
     def get_element_pset(

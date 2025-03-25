@@ -19,6 +19,7 @@
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
 import os
+
 import bpy
 import json
 import time
@@ -31,8 +32,7 @@ import ifcopenshell.util.sequence
 import ifcopenshell.util.selector
 from datetime import datetime
 from dateutil import parser, relativedelta
-from bonsai.bim.ifc import IfcStore
-from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from typing import get_args, TYPE_CHECKING
 from typing_extensions import assert_never
 
@@ -700,7 +700,7 @@ class ImportP6(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.p62ifc import P62Ifc
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         p62ifc = P62Ifc()
         p62ifc.xml = self.filepath
@@ -728,7 +728,7 @@ class ImportP6XER(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.p6xer2ifc import P6XER2Ifc
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         p6xer2ifc = P6XER2Ifc()
         p6xer2ifc.xer = self.filepath
@@ -756,7 +756,7 @@ class ImportPP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.pp2ifc import PP2Ifc
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         pp2ifc = PP2Ifc()
         pp2ifc.pp = self.filepath
@@ -784,7 +784,7 @@ class ImportMSP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.msp2ifc import MSP2Ifc
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         msp2ifc = MSP2Ifc()
         msp2ifc.xml = self.filepath
@@ -794,7 +794,7 @@ class ImportMSP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
 
 
-class ExportMSP(bpy.types.Operator, ImportHelper):
+class ExportMSP(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_msp"
     bl_label = "Export MSP"
     bl_options = {"REGISTER", "UNDO"}
@@ -814,7 +814,7 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         from ifc4d.ifc2msp import Ifc2Msp
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         ifc2msp = Ifc2Msp()
         ifc2msp.work_schedule = self.file.by_type("IfcWorkSchedule")[0]
@@ -827,7 +827,7 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
-class ExportP6(bpy.types.Operator, ImportHelper):
+class ExportP6(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_p6"
     bl_label = "Export P6"
     bl_options = {"REGISTER", "UNDO"}
@@ -847,7 +847,7 @@ class ExportP6(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         from ifc4d.ifc2p6 import Ifc2P6
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         ifc2p6 = Ifc2P6()
         ifc2p6.xml = bpy.path.ensure_ext(self.filepath, ".xml")
@@ -1450,15 +1450,17 @@ class LoadProductTasks(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not tool.Ifc.get() or not (obj := context.active_object) or not (obj.BIMObjectProperties.ifc_definition_id):
+        if not tool.Ifc.get() or not (obj := context.active_object) or not (tool.Blender.get_ifc_definition_id(obj)):
             cls.poll_message_set("No IFC object is active.")
             return False
         return True
 
     def execute(self, context):
-        result = core.load_product_related_tasks(
-            tool.Sequence, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
-        )
+        obj = context.active_object
+        assert obj
+        product = tool.Ifc.get_entity(obj)
+        assert product
+        result = core.load_product_related_tasks(tool.Sequence, product=product)
         if isinstance(result, str):
             self.report({"INFO"}, result)
         else:

@@ -29,9 +29,7 @@ def remove_cost_item(file: ifcopenshell.file, cost_item: ifcopenshell.entity_ins
     retained.
 
     :param cost_item: The IfcCostItem entity you want to remove
-    :type cost_item: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -41,15 +39,13 @@ def remove_cost_item(file: ifcopenshell.file, cost_item: ifcopenshell.entity_ins
         item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
         ifcopenshell.api.cost.remove_cost_item(model, cost_item=item)
     """
-    settings = {"cost_item": cost_item}
-
     # TODO: do a deep purge
-    for inverse in file.get_inverse(settings["cost_item"]):
+    for inverse in file.get_inverse(cost_item):
         if inverse.is_a("IfcRelNests"):
-            if inverse.RelatingObject == settings["cost_item"]:
+            if inverse.RelatingObject == cost_item:
                 for related_object in inverse.RelatedObjects:
                     ifcopenshell.api.cost.remove_cost_item(file, cost_item=related_object)
-            elif inverse.RelatedObjects == (settings["cost_item"],):
+            elif inverse.RelatedObjects == (cost_item,):
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
@@ -59,7 +55,7 @@ def remove_cost_item(file: ifcopenshell.file, cost_item: ifcopenshell.entity_ins
             file.remove(inverse)
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
-    history = settings["cost_item"].OwnerHistory
-    file.remove(settings["cost_item"])
+    history = cost_item.OwnerHistory
+    file.remove(cost_item)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)

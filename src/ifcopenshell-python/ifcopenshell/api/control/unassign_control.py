@@ -31,12 +31,9 @@ def unassign_control(
 
     :param relating_control: The IfcControl entity that is creating the
         control or constraint
-    :type relating_control: ifcopenshell.entity_instance
     :param related_object: The IfcObjectDefinition that is being controlled
-    :type related_object: ifcopenshell.entity_instance
     :return: If the control still is related to other objects, the
         IfcRelAssignsToControl is returned, otherwise None.
-    :rtype: ifcopenshell.entity_instance, None
 
     Example:
 
@@ -54,14 +51,8 @@ def unassign_control(
         ifcopenshell.api.control.unassign_control(model,
             relating_control=cost_item, related_object=wall)
     """
-
-    settings = {
-        "relating_control": relating_control,
-        "related_object": related_object,
-    }
-
-    for rel in settings["related_object"].HasAssignments or []:
-        if not rel.is_a("IfcRelAssignsToControl") or rel.RelatingControl != settings["relating_control"]:
+    for rel in related_object.HasAssignments or []:
+        if not rel.is_a("IfcRelAssignsToControl") or rel.RelatingControl != relating_control:
             continue
         if len(rel.RelatedObjects) == 1:
             history = rel.OwnerHistory
@@ -70,7 +61,7 @@ def unassign_control(
                 ifcopenshell.util.element.remove_deep2(file, history)
             return
         related_objects = list(rel.RelatedObjects)
-        related_objects.remove(settings["related_object"])
+        related_objects.remove(related_object)
         rel.RelatedObjects = related_objects
         ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
         return rel

@@ -26,7 +26,6 @@ import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.attribute as core
 import bonsai.core.spatial
-from bonsai.bim.ifc import IfcStore
 
 
 def get_objs_for_operation(operator_properties, context):
@@ -117,7 +116,7 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         obj = tool.Blender.get_active_object(is_selected=False)
         if not (element := tool.Ifc.get_entity(obj)):
             return

@@ -19,7 +19,6 @@
 import bpy
 import ifcopenshell.api
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.classification.data import CostClassificationsData
 from bonsai.bim.module.cost.data import CostSchedulesData, CostItemRatesData, CostItemQuantitiesData
 from bonsai.bim.prop import StrProperty, Attribute
@@ -83,7 +82,7 @@ def update_cost_item_identification(self, context):
     props = context.scene.BIMCostProperties
     if not props.is_cost_update_enabled or self.identification == "XXX":
         return
-    self.file = IfcStore.get_file()
+    self.file = tool.Ifc.get()
     ifcopenshell.api.run(
         "cost.edit_cost_item",
         self.file,
@@ -98,7 +97,7 @@ def update_cost_item_name(self, context):
     props = context.scene.BIMCostProperties
     if not props.is_cost_update_enabled or self.name == "Unnamed":
         return
-    self.file = IfcStore.get_file()
+    self.file = tool.Ifc.get()
     ifcopenshell.api.run(
         "cost.edit_cost_item",
         self.file,

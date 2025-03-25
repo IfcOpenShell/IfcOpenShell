@@ -46,6 +46,7 @@ VERSION_MINOR:=$(shell cat '../../VERSION' | cut -d '.' -f 2)
 VERSION_PATCH:=$(shell cat '../../VERSION' | cut -d '.' -f 3)
 VERSION_DATE:=$(shell date '+%y%m%d')
 LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
+LAST_COMMIT_DATE:=$(shell git show -s --format=%cI)
 PYVERSION:=py310
 PYPI_IMP:=cp
 
@@ -254,6 +255,7 @@ ifeq ($(IS_STABLE), TRUE)
 else
 	$(SED) "s/0.0.0/$(VERSION)-alpha$(VERSION_DATE)/" build/bonsai/blender_manifest.toml
 	$(SED) "s/8888888/$(LAST_COMMIT_HASH)/" build/bonsai/__init__.py
+	$(SED) "s/9999999/$(LAST_COMMIT_DATE)/" build/bonsai/__init__.py
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/pyproject.toml
 endif
 

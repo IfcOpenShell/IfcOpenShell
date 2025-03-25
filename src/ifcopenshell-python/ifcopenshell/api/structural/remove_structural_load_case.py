@@ -25,18 +25,14 @@ def remove_structural_load_case(file: ifcopenshell.file, load_case: ifcopenshell
     """Removes a structural load case
 
     :param load_case: The IfcStructuralLoadCase to remove.
-    :type load_case: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
     """
-    settings = {"load_case": load_case}
-
     # TODO: do a deep purge
-    for rel in settings["load_case"].IsGroupedBy or []:
+    for rel in load_case.IsGroupedBy or []:
         history = rel.OwnerHistory
         file.remove(rel)
         if history:
             ifcopenshell.util.element.remove_deep2(file, history)
-    history = settings["load_case"].OwnerHistory
-    file.remove(settings["load_case"])
+    history = load_case.OwnerHistory
+    file.remove(load_case)
     ifcopenshell.util.element.remove_deep2(file, history)

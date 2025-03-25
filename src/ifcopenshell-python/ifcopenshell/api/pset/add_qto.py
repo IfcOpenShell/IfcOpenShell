@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.guid
+from typing import Any
 
 
 def add_qto(file: ifcopenshell.file, product: ifcopenshell.entity_instance, name: str) -> ifcopenshell.entity_instance:
@@ -83,9 +84,15 @@ def add_qto(file: ifcopenshell.file, product: ifcopenshell.entity_instance, name
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
-        if self.settings["product"].is_a("IfcObject") or self.settings["product"].is_a("IfcContext"):
-            for rel in self.settings["product"].IsDefinedBy or []:
+        product: ifcopenshell.entity_instance = self.settings["product"]
+        name: str = self.settings["name"]
+
+        if product.is_a("IfcObject") or product.is_a("IfcContext"):
+            for rel in product.IsDefinedBy or []:
                 if (
                     rel.is_a("IfcRelDefinesByProperties")
                     and rel.RelatingPropertyDefinition.Name == self.settings["name"]
@@ -103,14 +110,14 @@ class Usecase:
                 }
             )
             return qto
-        elif self.settings["product"].is_a("IfcTypeObject"):
-            for definition in self.settings["product"].HasPropertySets or []:
-                if definition.Name == self.settings["name"]:
+        elif product.is_a("IfcTypeObject"):
+            for definition in product.HasPropertySets or []:
+                if definition.Name == name:
                     return definition
             qto = self.create_qto()
-            has_property_sets = list(self.settings["product"].HasPropertySets or [])
+            has_property_sets = list(product.HasPropertySets or [])
             has_property_sets.append(qto)
-            self.settings["product"].HasPropertySets = has_property_sets
+            product.HasPropertySets = has_property_sets
             return qto
 
     def create_qto(self):

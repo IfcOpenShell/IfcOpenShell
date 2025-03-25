@@ -30,11 +30,8 @@ def edit_information(
     IfcDocumentInformation, consult the IFC documentation.
 
     :param reference: The IfcDocumentInformation entity you want to edit
-    :type reference: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -46,7 +43,5 @@ def edit_information(
             attributes={"Identification": "A-GA-6100", "Name": "Overall Plan",
             "Location": "A-GA-6100 - Overall Plan.pdf"})
     """
-    settings = {"information": information, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["information"], name, value)
+    for name, value in attributes.items():
+        setattr(information, name, value)

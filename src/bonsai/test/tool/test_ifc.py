@@ -40,12 +40,14 @@ class TestSet(test.bim.bootstrap.NewFile):
 class TestGet(test.bim.bootstrap.NewFile):
     def test_getting_an_ifc_dataset_from_a_ifc_spf_filepath(self):
         assert subject.get() is None
-        bpy.context.scene.BIMProperties.ifc_file = "test/files/basic.ifc"
+        props = tool.Blender.get_bim_props()
+        props.ifc_file = "test/files/basic.ifc"
         result = subject.get()
         assert isinstance(result, ifcopenshell.file)
 
     def test_getting_the_active_ifc_dataset_regardless_of_ifc_path(self):
-        bpy.context.scene.BIMProperties.ifc_file = "test/files/basic.ifc"
+        props = tool.Blender.get_bim_props()
+        props.ifc_file = "test/files/basic.ifc"
         ifc = ifcopenshell.file()
         subject.set(ifc)
         assert subject.get() == ifc
@@ -127,14 +129,16 @@ class TestGetEntity(test.bim.bootstrap.NewFile):
 
     def test_attempting_without_a_file(self):
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMObjectProperties.ifc_definition_id = 1
+        props = tool.Blender.get_object_bim_props(obj)
+        props.ifc_definition_id = 1
         assert subject.get_entity(obj) is None
 
     def test_attempting_to_get_an_invalidly_linked_object(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMObjectProperties.ifc_definition_id = 1
+        props = tool.Blender.get_object_bim_props(obj)
+        props.ifc_definition_id = 1
         assert subject.get_entity(obj) is None
 
 
@@ -189,7 +193,7 @@ class TestLink(test.bim.bootstrap.NewFile):
         element = ifc.create_entity("IfcShapeRepresentation")
         obj = bpy.data.meshes.new("Material")
         subject.link(element, obj)
-        assert obj.BIMMeshProperties.ifc_definition_id == element.id()
+        assert tool.Geometry.get_mesh_props(obj).ifc_definition_id == element.id()
 
 
 class TestUnlink(test.bim.bootstrap.NewFile):

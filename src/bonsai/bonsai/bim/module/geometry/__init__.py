@@ -19,6 +19,7 @@
 import bpy
 from . import ui, prop, operator
 from bpy.app.handlers import persistent
+import ifcopenshell.util.element
 
 classes = (
     operator.AddCurvelikeItem,
@@ -98,12 +99,19 @@ addon_keymaps = []
 
 
 @persistent
-def block_scale(scene):
+def block_scale(scene: bpy.types.Scene) -> None:
+    import bonsai.tool as tool
+
     if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
-        if isinstance(obj, bpy.types.Object) and obj.BIMObjectProperties.ifc_definition_id:
-            if obj.scale != (1, 1, 1):
-                obj.scale = (1, 1, 1)
-        elif isinstance(obj, bpy.types.Mesh) and obj.BIMMeshProperties.ifc_definition_id:
+        if isinstance(obj, bpy.types.Object) and tool.Blender.get_ifc_definition_id(obj):
+            if obj.type == "CAMERA":
+                camera = tool.Ifc.get_entity(obj)
+                if ifcopenshell.util.element.get_pset(camera, "EPset_Drawing", "TargetView") == "REFLECTED_PLAN_VIEW":
+                    obj.scale = (-1, -1, -1)
+            else:
+                if obj.scale != (1, 1, 1):
+                    obj.scale = (1, 1, 1)
+        elif isinstance(obj, bpy.types.Mesh) and tool.Geometry.get_mesh_props(obj).ifc_definition_id:
             if obj.scale != (1, 1, 1):
                 obj.scale = (1, 1, 1)
 
@@ -116,6 +124,7 @@ def register():
     operator.OverrideDuplicateMoveLinkedMacro.define("BIM_OT_override_object_duplicate_move_linked")
     operator.OverrideDuplicateMoveLinkedMacro.define("TRANSFORM_OT_translate")
     operator.DuplicateMoveLinkedAggregateMacro.define("BIM_OT_object_duplicate_move_linked_aggregate")
+    operator.DuplicateMoveLinkedAggregateMacro.define("BIM_OT_override_move")
     operator.DuplicateMoveLinkedAggregateMacro.define("TRANSFORM_OT_translate")
     operator.OverrideMoveMacro.define("BIM_OT_override_move")
     operator.OverrideMoveMacro.define("TRANSFORM_OT_translate")

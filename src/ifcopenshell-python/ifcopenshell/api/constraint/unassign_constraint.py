@@ -32,41 +32,35 @@ def unassign_constraint(
     other products.
 
     :param products: The list of products the constraint applies to.
-    :type products: list[ifcopenshell.entity_instance]
     :param constraint: The IfcObjective constraint
-    :type constraint: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "products": products,
-        "constraint": constraint,
-    }
-    return usecase.execute()
+    return usecase.execute(products, constraint)
 
 
 class Usecase:
-    def execute(self):
-        products = set(self.settings["products"])
-        if not products:
-            return
+    file: ifcopenshell.file
 
-        self.constraint = self.settings["constraint"]
-        rels = self.get_constraint_rels()
+    def execute(self, products_: list[ifcopenshell.entity_instance], constraint: ifcopenshell.entity_instance):
+        if not products_:
+            return
+        products_set = set(products_)
+
+        rels = self.get_constraint_rels(constraint)
         related_objects = set()
         for rel in rels:
             related_objects.update(rel.RelatedObjects)
 
-        if not related_objects.intersection(products):
+        if not related_objects.intersection(products_set):
             return
 
         for rel in rels:
             related_objects = set(rel.RelatedObjects)
-            if not related_objects.intersection(products):
+            if not related_objects.intersection(products_set):
                 continue
-            related_objects -= products
+            related_objects -= products_set
             if related_objects:
                 rel.RelatedObjects = list(related_objects)
                 ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
@@ -77,9 +71,9 @@ class Usecase:
             if history:
                 ifcopenshell.util.element.remove_deep2(self.file, history)
 
-    def get_constraint_rels(self) -> list[ifcopenshell.entity_instance]:
+    def get_constraint_rels(self, cosntraint: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         rels = []
-        for rel in self.file.get_inverse(self.constraint):
+        for rel in self.file.get_inverse(cosntraint):
             if rel.is_a("IfcRelAssociatesConstraint"):
                 rels.append(rel)
         return rels

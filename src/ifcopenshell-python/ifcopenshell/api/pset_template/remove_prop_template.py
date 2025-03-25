@@ -27,9 +27,7 @@ def remove_prop_template(file: ifcopenshell.file, prop_template: ifcopenshell.en
     templates.
 
     :param prop_template: The IfcSimplePropertyTemplate to remove.
-    :type prop_template: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -44,13 +42,11 @@ def remove_prop_template(file: ifcopenshell.file, prop_template: ifcopenshell.en
         # Let's remove the second one.
         ifcopenshell.api.pset_template.remove_prop_template(model, prop_template=prop2)
     """
-    settings = {"prop_template": prop_template}
-
-    for inverse in file.get_inverse(settings["prop_template"]):
+    for inverse in file.get_inverse(prop_template):
         if len(inverse.HasPropertyTemplates) == 1:
             inverse.HasPropertyTemplates = []
         else:
             has_property_templates = list(inverse.HasPropertyTemplates)
-            has_property_templates.remove(settings["prop_template"])
+            has_property_templates.remove(prop_template)
             inverse.HasPropertyTemplates = has_property_templates
-    ifcopenshell.util.element.remove_deep(file, settings["prop_template"])
+    ifcopenshell.util.element.remove_deep(file, prop_template)

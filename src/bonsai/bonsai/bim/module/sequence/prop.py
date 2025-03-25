@@ -23,7 +23,6 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.date
 import bonsai.tool as tool
 import bonsai.core.sequence as core
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.sequence.data import SequenceData, AnimationColorSchemeData, refresh as refresh_sequence_data
 import bonsai.bim.module.resource.data
 import bonsai.bim.module.pset.data
@@ -272,10 +271,10 @@ def update_sort_reversed(self, context):
 
 
 def update_filter_by_active_schedule(self, context):
-    if context.active_object:
-        core.load_product_related_tasks(
-            tool.Sequence, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
-        )
+    if obj := context.active_object:
+        product = tool.Ifc.get_entity(obj)
+        assert product
+        core.load_product_related_tasks(tool.Sequence, product=product)
 
 
 def switch_options(self, context):

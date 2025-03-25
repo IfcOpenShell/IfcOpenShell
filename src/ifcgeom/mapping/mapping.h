@@ -86,6 +86,7 @@ namespace geometry {
 		virtual std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
 		virtual void initialize_settings();
 		virtual double get_length_unit() const { return length_unit_; }
+		virtual const std::string& get_length_unit_name() const { return length_unit_name_; }
 		virtual aggregate_of_instance::ptr find_openings(const IfcUtil::IfcBaseEntity*);
 		virtual IfcUtil::IfcBaseEntity* representation_of(const IfcUtil::IfcBaseEntity* product);
 

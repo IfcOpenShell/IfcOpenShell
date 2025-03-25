@@ -68,14 +68,11 @@ def add_material_set(
 
     :param name: The name of the material set, which may be purely
         descriptive or annotated in drawings. Defaults to "Unnamed".
-    :type name: str, optional
     :param set_type: What type of set you want to create, chosen from
         IfcMaterialLayerSet, IfcMaterialProfileSet,
         IfcMaterialConstituentSet, or IfcMaterialList. Defaults to
         IfcMaterialConstituentSet.
-    :type set_type: str, optional
     :return: The newly created material set element
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -113,10 +110,8 @@ def add_material_set(
         # Great! Let's assign our material set to our wall type.
         ifcopenshell.api.material.assign_material(model, products=[wall_type], material=material_set)
     """
-    settings = {"name": name or "Unnamed", "set_type": set_type}
-
-    if settings["set_type"] == "IfcMaterialLayerSet":
-        return file.create_entity("IfcMaterialLayerSet", LayerSetName=settings["name"] or "Unnamed")
-    elif settings["set_type"] == "IfcMaterialList":
+    if set_type == "IfcMaterialLayerSet":
+        return file.create_entity("IfcMaterialLayerSet", LayerSetName=name or "Unnamed")
+    elif set_type == "IfcMaterialList":
         return file.create_entity("IfcMaterialList")
-    return file.create_entity(settings["set_type"], Name=settings["name"] or "Unnamed")
+    return file.create_entity(set_type, Name=name or "Unnamed")

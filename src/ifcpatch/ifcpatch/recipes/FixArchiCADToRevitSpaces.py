@@ -71,7 +71,6 @@ class Patcher:
         import bonsai.tool as tool
         import ifcopenshell
         import ifcopenshell.util.element
-        from bonsai.bim.ifc import IfcStore
         from mathutils import Vector, Matrix
 
         if len(bpy.data.objects) > 0:
@@ -114,8 +113,8 @@ class Patcher:
         bpy.ops.bim.update_representation(
             ifc_representation_class="IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
         )
-        for context in IfcStore.get_file().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
+        for context in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             if context.Precision:
                 context.Precision = 10
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()

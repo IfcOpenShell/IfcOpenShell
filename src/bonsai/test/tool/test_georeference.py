@@ -39,7 +39,7 @@ class TestImportProjectedCRS(NewFile):
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
         ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
         subject.import_projected_crs()
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         assert len(props.projected_crs) == 0
 
     def test_importing_projected_crs(self):
@@ -58,7 +58,7 @@ class TestImportProjectedCRS(NewFile):
         unit = ifcopenshell.api.run("unit.add_si_unit", ifc, unit_type="LENGTHUNIT")
         projected_crs.MapUnit = unit
         subject.import_projected_crs()
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         assert props.projected_crs.get("Name").string_value == "Name"
         assert props.projected_crs.get("Description").string_value == "Description"
         assert props.projected_crs.get("GeodeticDatum").string_value == "GeodeticDatum"
@@ -71,7 +71,7 @@ class TestImportProjectedCRS(NewFile):
         ifc = ifcopenshell.file(schema="IFC2X3")
         tool.Ifc.set(ifc)
         subject.import_projected_crs()
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         assert len(props.projected_crs) == 0
 
 
@@ -82,7 +82,7 @@ class TestImportCoordinateOperation(NewFile):
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
         ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
         subject.import_coordinate_operation()
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         assert len(props.coordinate_operation) == 0
 
     def test_importing_coordinate_operation(self):
@@ -99,7 +99,7 @@ class TestImportCoordinateOperation(NewFile):
         map_conversion.XAxisOrdinate = 5
         map_conversion.Scale = 6
         subject.import_coordinate_operation()
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         assert props.coordinate_operation.get("Eastings").string_value == "1.0"
         assert props.coordinate_operation.get("Northings").string_value == "2.0"
         assert props.coordinate_operation.get("OrthogonalHeight").string_value == "3.0"
@@ -112,7 +112,7 @@ class TestImportCoordinateOperation(NewFile):
         ifc = ifcopenshell.file(schema="IFC2X3")
         tool.Ifc.set(ifc)
         subject.import_coordinate_operation()
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         assert len(props.coordinate_operation) == 0
 
 
@@ -123,7 +123,7 @@ class TestImportTrueNorth(NewFile):
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
         ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
         subject.import_true_north()
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         assert props.true_north_abscissa == "0"
         assert props.true_north_ordinate == "1"
         assert props.true_north_angle == "0"
@@ -135,7 +135,7 @@ class TestImportTrueNorth(NewFile):
         context = ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
         context.TrueNorth = ifc.createIfcDirection((1.0, 2.0, 0.0))
         subject.import_true_north()
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         assert props.true_north_abscissa == "1.0"
         assert props.true_north_ordinate == "2.0"
         assert props.true_north_angle == "-26.5650512"
@@ -176,35 +176,39 @@ class TestGetTrueNorthAttributes(NewFile):
 
 class TestEnableEditing(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMGeoreferenceProperties.is_editing = False
+        props = tool.Georeference.get_georeference_props()
+        props.is_editing = False
         subject.enable_editing()
-        assert bpy.context.scene.BIMGeoreferenceProperties.is_editing is True
+        assert props.is_editing is True
 
 
 class TestDisableEditing(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMGeoreferenceProperties.is_editing = True
+        props = tool.Georeference.get_georeference_props()
+        props.is_editing = True
         subject.disable_editing()
-        assert bpy.context.scene.BIMGeoreferenceProperties.is_editing is False
+        assert props.is_editing is False
 
 
 class TestSetCoordinates(NewFile):
     def test_run(self):
+        props = tool.Georeference.get_georeference_props()
         subject.set_coordinates("local", [1.0, 2.0, 3.0])
-        assert bpy.context.scene.BIMGeoreferenceProperties.local_coordinates == "1.0,2.0,3.0"
+        assert props.local_coordinates == "1.0,2.0,3.0"
         subject.set_coordinates("blender", [4.0, 5.0, 6.0])
-        assert bpy.context.scene.BIMGeoreferenceProperties.blender_coordinates == "4.0,5.0,6.0"
+        assert props.blender_coordinates == "4.0,5.0,6.0"
         subject.set_coordinates("map", [7.0, 8.0, 9.0])
-        assert bpy.context.scene.BIMGeoreferenceProperties.map_coordinates == "7.0,8.0,9.0"
+        assert props.map_coordinates == "7.0,8.0,9.0"
 
 
 class TestGetCoordinates(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMGeoreferenceProperties.local_coordinates = "1.0,2.0,3.0"
+        props = tool.Georeference.get_georeference_props()
+        props.local_coordinates = "1.0,2.0,3.0"
         assert subject.get_coordinates("local") == [1.0, 2.0, 3.0]
-        bpy.context.scene.BIMGeoreferenceProperties.blender_coordinates = "4.0,5.0,6.0"
+        props.blender_coordinates = "4.0,5.0,6.0"
         assert subject.get_coordinates("blender") == [4.0, 5.0, 6.0]
-        bpy.context.scene.BIMGeoreferenceProperties.map_coordinates = "7.0,8.0,9.0"
+        props.map_coordinates = "7.0,8.0,9.0"
         assert subject.get_coordinates("map") == [7.0, 8.0, 9.0]
 
 
@@ -231,7 +235,7 @@ class TestXyz2Enh(NewFile):
         ifc = ifcopenshell.file()
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
         tool.Ifc.set(ifc)
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True
         props.blender_offset_x = "1.0"
         assert subject.xyz2enh([0.0, 0.0, 0.0]) == (1.0, 0.0, 0.0)
@@ -247,7 +251,7 @@ class TestXyz2Enh(NewFile):
         assert subject.xyz2enh([0.0, 0.0, 0.0]) == (1.0, 0.0, 0.0)
 
     def test_applying_both_blender_offset_and_map_conversion(self):
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True
         props.blender_offset_x = "1.0"
         ifc = ifcopenshell.file()
@@ -271,7 +275,7 @@ class TestEnh2Xyz(NewFile):
         ifc = ifcopenshell.file()
         ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
         tool.Ifc.set(ifc)
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True
         props.blender_offset_x = "1.0"
         assert subject.enh2xyz([0.0, 0.0, 0.0]) == (-1.0, 0.0, 0.0)
@@ -287,7 +291,7 @@ class TestEnh2Xyz(NewFile):
         assert subject.enh2xyz([0.0, 0.0, 0.0]) == (-1.0, 0.0, 0.0)
 
     def test_applying_both_blender_offset_and_map_conversion(self):
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True
         props.blender_offset_x = "1.0"
         ifc = ifcopenshell.file()

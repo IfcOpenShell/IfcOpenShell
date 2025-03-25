@@ -28,11 +28,8 @@ def edit_presentation_style(
     IfcPresentationStyle, consult the IFC documentation.
 
     :param style: The IfcPresentationStyle entity you want to edit
-    :type style: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -44,7 +41,5 @@ def edit_presentation_style(
         # Change the name of the style to "Foo"
         ifcopenshell.api.style.edit_presentation_style(model, style=style, attributes={"Name": "Foo"})
     """
-    settings = {"style": style, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["style"], name, value)
+    for name, value in attributes.items():
+        setattr(style, name, value)

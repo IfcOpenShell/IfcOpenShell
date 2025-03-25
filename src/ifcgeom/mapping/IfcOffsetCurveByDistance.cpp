@@ -39,7 +39,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
     auto first_offset_value = *(offset_values->begin());
 
     auto basis_curve = inst->BasisCurve();
-    auto curve = taxonomy::dcast<taxonomy::piecewise_function>(map(basis_curve));
+    auto curve = taxonomy::dcast<taxonomy::function_item>(map(basis_curve));
+    if (!curve) {
+        // Only implement on alignment curves
+        Logger::Warning("IfcOffsetCurveByDistances is only implemented for BasisCurves curves based on taxonomy::function_item", inst);
+        return nullptr;
+    }
 
     double start = curve->start();
     double basis_curve_length = curve->length();

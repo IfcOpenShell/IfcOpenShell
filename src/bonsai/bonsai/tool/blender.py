@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+import sys
 import bpy
 import bmesh
 import json
@@ -37,9 +38,15 @@ from mathutils import Vector
 from pathlib import Path
 from functools import lru_cache
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator
+from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator, TYPE_CHECKING
 from typing_extensions import assert_never
 
+if TYPE_CHECKING:
+    from bonsai.bim.prop import BIMProperties, BIMObjectProperties
+    from bonsai.bim.module.csv.prop import CsvProperties
+    from bonsai.bim.module.diff.prop import DiffProperties
+
+    T = TypeVar("T")
 
 VIEWPORT_ATTRIBUTES = [
     "view_matrix",
@@ -149,15 +156,22 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_active_object(cls, is_selected: bool = False) -> Union[bpy.types.Object, None]:
-        obj = getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active
-        if not is_selected:
-            return obj
-        if obj in cls.get_selected_objects(include_active=False):
-            return obj
+        """Gets the active object
+
+        :param is_selected: If true, the active object also needs to be selected.
+        """
+        if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
+            if not is_selected:
+                return obj
+            if obj.select_get():
+                return obj
 
     @classmethod
     def get_selected_objects(cls, include_active: bool = True) -> set[bpy.types.Object]:
-        """Get selected objects including active object."""
+        """Get selected objects
+
+        :param include_active: If true, the active object is included regardless if it is also selected.
+        """
         if selected_objects := getattr(bpy.context, "selected_objects", None):
             if include_active and (active_obj := cls.get_active_object()):
                 return set(selected_objects + [active_obj])
@@ -189,13 +203,15 @@ class Blender(bonsai.core.tool.Blender):
         if context is None:
             context = bpy.context
         if obj_type == "Object":
-            return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
+            props = tool.Blender.get_object_bim_props(bpy.data.objects[obj])
+            return props.ifc_definition_id
         elif obj_type == "Material":
-            return context.scene.BIMMaterialProperties.materials[
-                context.scene.BIMMaterialProperties.active_material_index
-            ].ifc_definition_id
+            props = tool.Material.get_material_props()
+            return props.materials[props.active_material_index].ifc_definition_id
         elif obj_type == "MaterialSetItem":
-            return bpy.data.objects.get(obj).BIMObjectMaterialProperties.active_material_set_item_id
+            obj_ = bpy.data.objects[obj]
+            omprops = tool.Material.get_object_material_props(obj_)
+            return omprops.active_material_set_item_id
         elif obj_type == "Task":
             tprops = tool.Sequence.get_task_tree_props()
             return tprops.tasks[context.scene.BIMWorkScheduleProperties.active_task_index].ifc_definition_id
@@ -208,9 +224,8 @@ class Blender(bonsai.core.tool.Blender):
                 context.scene.BIMResourceProperties.active_resource_index
             ].ifc_definition_id
         elif obj_type == "Profile":
-            return context.scene.BIMProfileProperties.profiles[
-                context.scene.BIMProfileProperties.active_profile_index
-            ].ifc_definition_id
+            props = tool.Profile.get_profile_props()
+            return props.profiles[props.active_profile_index].ifc_definition_id
         elif obj_type == "WorkSchedule":
             return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
         elif obj_type == "Group":
@@ -220,7 +235,8 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def is_ifc_object(cls, obj: bpy.types.Object) -> bool:
-        return bool(obj.BIMObjectProperties.ifc_definition_id)
+        props = tool.Blender.get_object_bim_props(obj)
+        return bool(props.ifc_definition_id)
 
     @classmethod
     def is_ifc_class_active(cls, ifc_class: str) -> bool:
@@ -487,23 +503,64 @@ class Blender(bonsai.core.tool.Blender):
         )
         return keymap
 
+    KEY_MODIFIERS = {
+        "A": ("EVENT_ALT", "OPTION" if sys.platform == "Darwin" else "ALT"),
+        "C": ("EVENT_CTRL", "CTRL"),
+        "S": ("EVENT_SHIFT", "⇧"),
+        "E": ("EVENT_PADENTER", "ENTER" if sys.platform == "Darwin" else "RETURN"),
+    }
+
     @classmethod
     def add_layout_hotkey_operator(
-        cls, tool_name: str, layout: bpy.types.UILayout, text: str, hotkey: str, description: str
+        cls,
+        layout: bpy.types.UILayout,
+        text: str,
+        hotkey: str,
+        description: str,
+        ui_context: str = "",
+        *,
+        tool_name: str,
+        module_name: str,
+        operator: Optional[str] = None,
     ) -> tuple[bpy.types.OperatorProperties, bpy.types.UILayout]:
-        modifiers = {
-            "A": "EVENT_ALT",
-            "S": "EVENT_SHIFT",
-        }
+        """
+        :param module_name: Provide `__name__` of the current module,
+            so method could pick up icon previews based on the module's `custom_icon_previews` attribute.
+        :param operator: Operator to display in UI. Displaying the specific operator in UI can be useful
+            to provide poll error messages.
+        """
+        if tool_name == "bim":
+            hotkey_operator = "bim.hotkey"
+        else:
+            hotkey_operator = f"bim.{tool_name}_hotkey"
+        operator_to_use = operator or hotkey_operator
+
         modifier, key = hotkey.split("_")
+        op_text = "" if ui_context == "TOOL_HEADER" else text
+        modifier_icon, modifier_str = cls.KEY_MODIFIERS.get(modifier, ("NONE", ""))
 
-        row = layout.row(align=True)
-        row.label(text="", icon=modifiers[modifier])
-        row.label(text="", icon=f"EVENT_{key}")
+        row = layout if ui_context == "TOOL_HEADER" else layout.row(align=True)
+        module = sys.modules[module_name]
+        icon_previews: Union[bpy.utils.previews.ImagePreviewCollection, None]
+        icon_previews = getattr(module, "custom_icon_previews", None)
+        if icon_previews:
+            custom_icon = icon_previews.get(text.upper().replace(" ", "_"), icon_previews["IFC"]).icon_id
+            op = row.operator(operator_to_use, text=op_text, icon_value=custom_icon)
+        else:
+            op = row.operator(operator_to_use, text=op_text)
+        if ui_context != "TOOL_HEADER":
+            row.label(text="", icon=modifier_icon)
+            row.label(text="", icon=f"EVENT_{key}")
 
-        op = row.operator(f"bim.{tool_name}_hotkey", text=text)
-        op.hotkey = hotkey
-        op.description = description
+        if operator_to_use == hotkey_operator:
+            hotkey_description = f"Hotkey: {modifier_str} {key}".strip()
+            description = "\n\n".join(filter(None, [description, hotkey_description]))
+
+            op.hotkey = hotkey
+            if ui_context == "TOOL_HEADER":
+                op.description = text + "\n" + description
+            else:
+                op.description = description
         return op, row
 
     @classmethod
@@ -869,7 +926,7 @@ class Blender(bonsai.core.tool.Blender):
             cls.open_file_or_folder(filepath.as_posix())
             return {"PASS_THROUGH"}
 
-        # holding sHIFT - open file
+        # holding SHIFT - open file
         if not filepath.exists():
             operator.report({"ERROR"}, f'Cannot open non-existing file: "{filepath.as_posix()}"')
             return {"CANCELLED"}
@@ -879,7 +936,7 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def get_layer_collection(cls, collection: bpy.types.Collection) -> Union[bpy.types.LayerCollection, None]:
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-        project_collection = project.BIMObjectProperties.collection
+        project_collection = tool.Blender.get_object_bim_props(project).collection
         for layer_collection in bpy.context.view_layer.layer_collection.children:
             if layer_collection.collection == project_collection:
                 for layer_collection2 in layer_collection.children:
@@ -915,7 +972,7 @@ class Blender(bonsai.core.tool.Blender):
             return False
         if not (element := tool.Ifc.get_entity(obj)):
             return True
-        if obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
+        if obj in tool.Project.get_project_props().clipping_planes_objs:
             return False
         usage_type = tool.Model.get_usage_type(element)
         if usage_type in ("LAYER1", "LAYER2"):
@@ -1018,23 +1075,28 @@ class Blender(bonsai.core.tool.Blender):
 
         @classmethod
         def is_editing_railing_path(cls, obj: bpy.types.Object):
-            return obj.BIMRailingProperties.is_editing_path
+            props = tool.Model.get_railing_props(obj)
+            return props.is_editing_path
 
         @classmethod
         def is_editing_roof_path(cls, obj: bpy.types.Object) -> bool:
-            return obj.BIMRoofProperties.is_editing_path
+            props = tool.Model.get_roof_props(obj)
+            return props.is_editing_path
 
         @classmethod
         def is_editing_railing_parameters(cls, obj: bpy.types.Object) -> bool:
-            return obj.BIMRailingProperties.is_editing
+            props = tool.Model.get_railing_props(obj)
+            return props.is_editing
 
         @classmethod
         def is_editing_roof_parameters(cls, obj: bpy.types.Object) -> bool:
-            return obj.BIMRoofProperties.is_editing
+            props = tool.Model.get_roof_props(obj)
+            return props.is_editing
 
         @classmethod
         def is_editing_window_parameters(cls, obj: bpy.types.Object) -> bool:
-            return obj.BIMWindowProperties.is_editing
+            props = tool.Model.get_window_props(obj)
+            return props.is_editing
 
         @classmethod
         def is_editing_door_parameters(cls, obj: bpy.types.Object) -> bool:
@@ -1043,7 +1105,8 @@ class Blender(bonsai.core.tool.Blender):
 
         @classmethod
         def is_editing_stair_parameters(cls, obj: bpy.types.Object) -> bool:
-            return obj.BIMStairProperties.is_editing
+            props = tool.Model.get_stair_props(obj)
+            return props.is_editing
 
         @classmethod
         def is_modifier_with_non_editable_path(cls, element: entity_instance) -> bool:
@@ -1150,6 +1213,7 @@ class Blender(bonsai.core.tool.Blender):
         # It's faster to get them as f and then convert to d
         # with .astype("d"), if precision is needed.
         coords = np.empty(len(verts) * 3, dtype="f")
+        verts.foreach_get("co", coords)
         coords = coords.reshape(-1, 3)
         return coords
 
@@ -1414,9 +1478,9 @@ class Blender(bonsai.core.tool.Blender):
     def set_prop_from_path(cls, bpy_object: bpy.types.bpy_struct, prop_path: str, value: Any) -> None:
         """Set `data_block` property value using path from `path_from_id`."""
 
-        T = TypeVar("T", bound=bpy.types.bpy_struct)
+        T_ = TypeVar("T_", bound=bpy.types.bpy_struct)
 
-        def path_resolve(obj: T, prop_path: str) -> tuple[T, str]:
+        def path_resolve(obj: T_, prop_path: str) -> tuple[T_, str]:
             if "." in prop_path:
                 extra_path, prop_path = prop_path.rsplit(".", 1)
                 obj = obj.path_resolve(extra_path)
@@ -1478,10 +1542,8 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_user_data_dir(cls) -> Path:
-        try:
-            return Path(bpy.context.scene.BIMProperties.data_dir)
-        except AttributeError:
-            return Path()
+        props = tool.Blender.get_bim_props()
+        return Path(props.data_dir)
 
     @classmethod
     def get_data_dir_path(cls, relative_path: Union[str, Path]) -> Path:
@@ -1539,3 +1601,61 @@ class Blender(bonsai.core.tool.Blender):
 
         dct = {cls.bl_idname: cls.ifc_element_type for cls in (BimTool.__subclasses__())}
         return types.MappingProxyType(dct)
+
+    @classmethod
+    def get_csv_props(cls) -> CsvProperties:
+        return bpy.context.scene.CsvProperties
+
+    @classmethod
+    def get_diff_props(cls) -> DiffProperties:
+        return bpy.context.scene.DiffProperties
+
+    @classmethod
+    def get_bim_props(cls, scene: Optional[bpy.types.Scene] = None) -> BIMProperties:
+        if scene is None:
+            scene = bpy.context.scene
+        return scene.BIMProperties
+
+    @classmethod
+    def get_object_bim_props(cls, obj: bpy.types.Object) -> BIMObjectProperties:
+        return obj.BIMObjectProperties
+
+    @classmethod
+    def get_ifc_definition_id(cls, obj: IFC_CONNECTED_TYPE) -> int:
+        if isinstance(obj, bpy.types.Object):
+            return tool.Blender.get_object_bim_props(obj).ifc_definition_id
+        return tool.Style.get_material_style_props(obj).ifc_definition_id
+
+    @classmethod
+    def get_active_uilist_element(
+        cls, collection: bpy.types.bpy_prop_collection_idprop[T], index: int
+    ) -> Union[T, None]:
+        if 0 <= index < len(collection):
+            return collection[index]
+        return None
+
+    @classmethod
+    def clear_undo_history(cls) -> None:
+        """Clears the Blender history, Bonsai history, and IfcOpenShell history"""
+        old_undo_steps = bpy.context.preferences.edit.undo_steps
+        bpy.context.preferences.edit.undo_steps = 2
+        for i in range(3):
+            bpy.ops.ed.undo_push(message="Undo history cleared")
+        bpy.context.preferences.edit.undo_steps = old_undo_steps
+        tool.Ifc.clear_history()
+        old_history_size = tool.Ifc.get().history_size
+        tool.Ifc.get().set_history_size(0)
+        tool.Ifc.get().set_history_size(old_history_size)
+
+    @classmethod
+    def get_unit_scale(cls):
+        unit_length = bpy.context.scene.unit_settings.length_unit
+        unit_scale = 1.0
+        if unit_length == "CENTIMETERS":
+            unit_scale = 0.01
+        if unit_length == "MILLIMETERS":
+            unit_scale = 0.001
+        if unit_length == "FEET":
+            unit_scale = 0.3048
+
+        return unit_scale
