@@ -45,6 +45,7 @@ namespace geometry {
 		virtual const IfcUtil::IfcBaseEntity* get_product_type(const IfcUtil::IfcBaseEntity*) = 0;
 		virtual const IfcUtil::IfcBaseEntity* get_single_material_association(const IfcUtil::IfcBaseEntity*) = 0;
 		virtual double get_length_unit() const = 0;
+		virtual const std::string& get_length_unit_name() const = 0;
 		virtual IfcUtil::IfcBaseEntity* representation_of(const IfcUtil::IfcBaseEntity* product) = 0;
 
 		const Settings& settings() const { return settings_; }

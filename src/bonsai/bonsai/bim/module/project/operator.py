@@ -47,11 +47,11 @@ import bonsai.bim.helper
 import bonsai.bim.schema
 import bonsai.tool as tool
 import bonsai.core.project as core
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.ui import IFCFileSelector
 from bonsai.bim import import_ifc
 from bonsai.bim import export_ifc
-from collections import defaultdict
 from math import radians
 from pathlib import Path
 from collections import defaultdict
@@ -63,7 +63,7 @@ from bonsai.bim.module.project.decorator import ProjectDecorator, ClippingPlaneD
 from bonsai.bim.module.project.prop import BreadcrumbType
 from bonsai.bim.module.model.decorator import PolylineDecorator, FaceAreaDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from typing import Union, TYPE_CHECKING, Literal, get_args
+from typing import Union, TYPE_CHECKING, get_args
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import Link
@@ -153,12 +153,11 @@ class CreateProject(bpy.types.Operator):
         IfcStore.file = data["file"]
 
 
-class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
+class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_idname = "bim.select_library_file"
     bl_label = "Select Library File"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select an IFC file that can be used as a library"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     append_all: bpy.props.BoolProperty(default=False)
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
@@ -192,10 +191,6 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector):
             bpy.ops.bim.append_entire_library()
         ProjectLibraryData.load()
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
     def rollback(self, data):
         if data["old_filepath"]:
@@ -873,7 +868,7 @@ class DisableEditingHeader(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LoadProject(bpy.types.Operator, IFCFileSelector):
+class LoadProject(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_idname = "bim.load_project"
     bl_label = "Load Project"
     bl_options = {"REGISTER", "UNDO"}
@@ -904,6 +899,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
         default=False,
     )
     use_detailed_tooltip: bpy.props.BoolProperty(default=False, options={"HIDDEN"})
+    filename_ext = ".ifc"
 
     @classmethod
     def description(cls, context, properties):
@@ -1015,8 +1011,7 @@ class LoadProject(bpy.types.Operator, IFCFileSelector):
     def invoke(self, context, event):
         if self.filepath:
             return self.execute(context)
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ImportHelper.invoke(self, context, event)
 
     def draw(self, context):
         if self.use_relative_path:
@@ -1176,12 +1171,12 @@ class ToggleFilterCategories(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class LinkIfc(bpy.types.Operator):
+class LinkIfc(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.link_ifc"
     bl_label = "Link IFC"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Reference in a read-only IFC model in the background"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
     files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
     directory: bpy.props.StringProperty(subtype="DIR_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
@@ -1191,6 +1186,7 @@ class LinkIfc(bpy.types.Operator):
         default=False,
     )
     use_cache: bpy.props.BoolProperty(name="Use Cache", default=True)
+    filename_ext = ".ifc"
 
     if TYPE_CHECKING:
         filepath: str
@@ -1235,10 +1231,6 @@ class LinkIfc(bpy.types.Operator):
                 return {"FINISHED"}
         print(f"Finished linking {len(files)} IFCs", time.time() - start)
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class UnlinkIfc(bpy.types.Operator):
@@ -1545,13 +1537,14 @@ class SelectLinkHandle(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ExportIFC(bpy.types.Operator):
+class ExportIFC(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.save_project"
     bl_label = "Save IFC"
+    # Prevents crash on Blender 4.4.0.
+    bl_description = "Save active IFC file by the provided filepath."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml;*.ifcjson", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
@@ -1582,15 +1575,8 @@ class ExportIFC(bpy.types.Operator):
         if (filepath := props.ifc_file) and not self.should_save_as:
             self.filepath = str(tool.Blender.ensure_blender_path_is_abs(Path(filepath)))
             return self.execute(context)
-        if not self.filepath:
-            if bpy.data.is_saved:
-                self.filepath = Path(bpy.data.filepath).with_suffix(".ifc").__str__()
-            else:
-                self.filepath = "untitled.ifc"
 
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):
         project_props = tool.Project.get_project_props()
@@ -1667,12 +1653,11 @@ class ExportIFC(bpy.types.Operator):
         return "Save the IFC file.  Will save both .IFC/.BLEND files if synced together"
 
 
-class LoadLinkedProject(bpy.types.Operator):
+class LoadLinkedProject(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.load_linked_project"
     bl_label = "Load Project For Viewing Only"
     bl_description = "Operator is used to load a project .cache.blend to then link it to the IFC file."
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty()
 
     file: ifcopenshell.file
     meshes: dict[str, bpy.types.Mesh]
@@ -1681,9 +1666,7 @@ class LoadLinkedProject(bpy.types.Operator):
 
     def invoke(self, context, event):
         # Invoke is for debugging purposes, users are not intended to use this method really.
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ImportHelper.invoke(self, context, event)
 
     def execute(self, context):
         import ifcpatch
@@ -2191,7 +2174,8 @@ class EnableCulling(bpy.types.Operator):
     bl_label = "Enable Culling"
     bl_options = {"REGISTER"}
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.last_view_corners = None
         self.total_mousemoves = 0
         self.cullable_objects = []
@@ -2297,7 +2281,8 @@ class RefreshClippingPlanes(bpy.types.Operator):
     bl_label = "Refresh Clipping Planes"
     bl_options = {"REGISTER"}
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.total_planes = 0
         self.camera = None
 
@@ -2316,7 +2301,7 @@ class RefreshClippingPlanes(bpy.types.Operator):
                 should_refresh = True
                 break
 
-        if context.scene.camera.visible_get() and tool.Ifc.get_entity(context.scene.camera):
+        if (camera := context.scene.camera) and camera.visible_get() and tool.Ifc.get_entity(camera):
             camera = context.scene.camera
         else:
             camera = None
@@ -2606,8 +2591,9 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
         self.input_options = ["D", "A", "X", "Y", "Z"]
         self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
 
@@ -2700,8 +2686,9 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
         self.input_options = ["AREA"]
         self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
         self.clicked_faces = []

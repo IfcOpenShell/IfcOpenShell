@@ -220,7 +220,7 @@
                     "Area": "get_net_side_area",
                     "Height": "get_height",
                     "Perimeter": "get_rectangular_perimeter",
-                    "Width": "get_length"
+                    "Width": "get_x"
                 }
             },
             "IfcDuctFitting": {
@@ -629,7 +629,7 @@
                     "Area": "get_net_side_area",
                     "Height": "get_height",
                     "Perimeter": "get_rectangular_perimeter",
-                    "Width": "get_length"
+                    "Width": "get_x"
                 }
             }
         }

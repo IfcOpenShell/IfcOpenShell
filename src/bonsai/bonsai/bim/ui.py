@@ -39,8 +39,10 @@ from typing import Optional, TYPE_CHECKING
 
 
 class IFCFileSelector:
-    filepath: str
-    use_relative_path: bool
+    # Avoid overriding blender prop annotations at runtime.
+    if TYPE_CHECKING:
+        filepath: str
+        use_relative_path: bool
 
     def is_existing_ifc_file(self, filepath: Optional[str] = None) -> bool:
         """Check if file path exists and if it's an IFC file.

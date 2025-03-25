@@ -24,6 +24,7 @@ import bonsai.tool as tool
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.element
+import ifc5d.qto
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 from shapely.geometry import Polygon
@@ -565,7 +566,7 @@ def has_openings(obj: bpy.types.Object) -> list[ifcopenshell.entity_instance]:
     element = tool.Ifc.get_entity(obj)
     if not element:
         return []
-    return [o for o in tool.Geometry.get_openings(element)]
+    return [o for o in ifcopenshell.util.element.get_openings(element)]
 
 
 def get_obj_decompositions(obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:
@@ -576,20 +577,42 @@ def get_obj_decompositions(obj: bpy.types.Object) -> set[ifcopenshell.entity_ins
 
 
 def get_gross_weight(obj: bpy.types.Object) -> Union[float, None]:
-    """Get gross weight of the object (based on gross volume and Pset_MaterialCommon.MassDensity)"""
+    """Get gross weight of the object.
+
+    Based on gross volume and Pset_MaterialCommon.MassDensity
+    or Pset_ProfileMechanical.MassPerLength and extrusion depth if it's profile based.
+    """
+
+    weight = get_profile_obj_weight(obj)
+    if weight is not None:
+        return weight
+
     obj_mass_density = get_obj_mass_density(obj)
     if not obj_mass_density:
         return
+
     gross_volume = get_gross_volume(obj)
     gross_weight = obj_mass_density * gross_volume
     return gross_weight
 
 
 def get_net_weight(obj: bpy.types.Object) -> Union[float, None]:
-    """Get net weight of the object (based on net volume and Pset_MaterialCommon.MassDensity)"""
+    """Get net weight of the object.
+
+    Based on Pset_ProfileMechanical.MassPerLength and extrusion depth
+    (for profile based objects, though objects with openings are not supported)
+    or object's net volume and Pset_MaterialCommon.MassDensity.
+    """
+
+    if not has_openings(obj):
+        weight = get_profile_obj_weight(obj)
+        if weight is not None:
+            return weight
+
     obj_mass_density = get_obj_mass_density(obj)
     if not obj_mass_density:
         return
+
     net_volume = get_net_volume(obj)
     net_weight = obj_mass_density * net_volume
     return net_weight
@@ -600,6 +623,13 @@ def get_obj_mass_density(obj: bpy.types.Object) -> Union[float, None]:
     entity = tool.Ifc.get_entity(obj)
     assert entity
     return ifcopenshell.util.element.get_element_mass_density(entity)
+
+
+def get_profile_obj_weight(obj: bpy.types.Object) -> Union[float, None]:
+    element = tool.Ifc.get_entity(obj)
+    assert element
+    weight = ifc5d.qto.IfcOpenShell.get_weight_profile_based(element)
+    return weight
 
 
 def get_opening_type(opening: bpy.types.Object, obj: bpy.types.Object) -> Literal["OPENING", "RECESS"]:

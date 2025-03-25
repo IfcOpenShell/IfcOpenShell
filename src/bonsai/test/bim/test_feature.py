@@ -73,7 +73,7 @@ class PanelSpy:
         return self
 
     def __call__(self, *args, **kwargs):
-        if self.spied_attr in ("row", "column", "box", "separator", "menu", "operator_menu_enum"):
+        if self.spied_attr in ("row", "column", "box", "separator", "menu", "operator_menu_enum", "split"):
             return self
         elif self.spied_attr == "template_list":
             listtype_name, list_id, dataptr, propname, active_dataptr, active_propname = args

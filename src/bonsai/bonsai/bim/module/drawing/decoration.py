@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import gpu
 import bpy
 import blf
@@ -29,7 +28,7 @@ import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.bim.module.drawing.helper as helper
 from pathlib import Path
-from math import pi, sin, cos, tan, acos, atan, degrees, radians, ceil
+from math import pi, sin, cos, acos, atan, degrees, radians
 from bpy.types import SpaceView3D
 from mathutils import Vector, Matrix
 from bpy_extras.view3d_utils import location_3d_to_region_2d
@@ -595,7 +594,8 @@ class BaseDecorator:
         region3d = context.region_data
         text_dir = self.get_annotation_direction(context, obj)
 
-        pos = location_3d_to_region_2d(region, region3d, text_world_position)
+        if not (pos := location_3d_to_region_2d(region, region3d, text_world_position)):
+            return
         props = tool.Drawing.get_text_props(obj)
         text_data = DecoratorData.get_ifc_text_data(obj)
         if props.is_editing:
@@ -728,6 +728,8 @@ class DimensionDecorator(BaseDecorator):
             v1 = Vector(vertices[i1])
             p0 = location_3d_to_region_2d(region, region3d, v0)
             p1 = location_3d_to_region_2d(region, region3d, v1)
+            if not p0 or not p1:
+                return
             text_dir = p1 - p0
             if text_dir.length < 1:
                 continue
@@ -878,6 +880,8 @@ class AngleDecorator(BaseDecorator):
 
             # calculate angle position
             p0, p1, p2 = [location_3d_to_region_2d(region, region3d, p) for p in vertices[i0 : i1 + 2]]
+            if not p0 or not p1 or not p2:
+                continue
             edge0 = p0 - p1
             edge1 = p2 - p1
             radius = min(edge0.length_squared, edge1.length_squared) ** 0.5
@@ -942,6 +946,8 @@ class RadiusDecorator(BaseDecorator):
         spline_points = self.get_spline_points(obj)
 
         p0, p1 = [location_3d_to_region_2d(region, region3d, p) for p in self.get_spline_points(obj)]
+        if not p0 or not p1:
+            return
         element = tool.Ifc.get_entity(obj)
         description = element.Description
         dimension_data = DecoratorData.get_dimension_data(obj)
@@ -974,7 +980,8 @@ class FallDecorator(BaseDecorator):
         region = context.region
         region3d = context.region_data
         dir = Vector((1, 0))
-        pos = location_3d_to_region_2d(region, region3d, self.get_spline_end(obj))
+        if not (pos := location_3d_to_region_2d(region, region3d, self.get_spline_end(obj))):
+            return
 
         spline = obj.data.splines[0]
         spline_points = spline.bezier_points if spline.bezier_points else spline.points
@@ -1165,7 +1172,6 @@ class PlanLevelDecorator(BaseDecorator):
         self.draw_labels(context, obj, self.get_splines(obj))
 
     def draw_labels(self, context, obj, splines):
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         region = context.region
         region3d = context.region_data
 
@@ -1175,6 +1181,8 @@ class PlanLevelDecorator(BaseDecorator):
 
         for verts in splines:
             p0, p1 = [location_3d_to_region_2d(region, region3d, v) for v in verts[:2]]
+            if not p0 or not p1:
+                continue
             text_dir = p1 - p0
             if text_dir.length < 1:
                 continue
@@ -1441,8 +1449,10 @@ class GridDecorator(BaseDecorator):
         p1 = location_3d_to_region_2d(region, region3d, v1)
         dir = Vector((1, 0))
         text = obj.name.split("/")[1].split(".")[0]
-        self.draw_label(context, text, p0, dir, vcenter=True, gap=0)
-        self.draw_label(context, text, p1, dir, vcenter=True, gap=0)
+        if p0:
+            self.draw_label(context, text, p0, dir, vcenter=True, gap=0)
+        if p1:
+            self.draw_label(context, text, p1, dir, vcenter=True, gap=0)
 
 
 class ElevationDecorator(BaseDecorator):
@@ -1726,15 +1736,33 @@ class CutDecorator:
         bm_original = bmesh.new()
         bm_original.from_mesh(mesh)
 
+        # Slice our mesh into a 2D drawing cut (2D is always easier)
+        camera_matrix = obj.matrix_world.inverted() @ context.scene.camera.matrix_world
+        global_offset = context.scene.camera.matrix_world.col[2].xyz * -context.scene.camera.data.clip_start
+        plane_co = camera_matrix.translation
+        plane_no = camera_matrix.col[2].xyz
+        geom = bm_original.verts[:] + bm_original.edges[:] + bm_original.faces[:]
+        bmesh.ops.bisect_plane(
+            bm_original,
+            geom=geom,
+            dist=0.0001,
+            plane_co=plane_co,
+            plane_no=plane_no,
+            clear_outer=True,
+            clear_inner=True,
+        )
+        bmesh.ops.remove_doubles(bm_original, verts=bm_original.verts, dist=0.000001)
+        bmesh.ops.triangle_fill(bm_original, use_dissolve=True, edges=bm_original.edges)
+
         if not (material := ifcopenshell.util.element.get_material(element)):
-            verts, tris = self.bisect_mesh_tris(obj, bm_original, context.scene.camera)
+            verts, tris = self.get_bmesh_tris(obj, bm_original, context.scene.camera)
             DecoratorData.fill_cache[element_id].setdefault(self.fallback_colour, []).append((verts, tris))
             return
 
         if material.is_a() not in ("IfcMaterialLayerSet", "IfcMaterialLayerSetUsage"):
             # Constituents, lists, and item styles not supported yet
             material = ifcopenshell.util.element.get_materials(element)[0]
-            verts, tris = self.bisect_mesh_tris(obj, bm_original, context.scene.camera)
+            verts, tris = self.get_bmesh_tris(obj, bm_original, context.scene.camera)
             colour = self.get_material_colour(material)
             DecoratorData.fill_cache[element_id].setdefault(colour, []).append((verts, tris))
             return
@@ -1754,7 +1782,7 @@ class CutDecorator:
 
         if len(layer_set.MaterialLayers) == 1:
             material = layer_set.MaterialLayers[0].Material
-            verts, tris = self.bisect_mesh_tris(obj, bm_original, context.scene.camera)
+            verts, tris = self.get_bmesh_tris(obj, bm_original, context.scene.camera)
             colour = self.get_material_colour(material)
             DecoratorData.fill_cache[element_id].setdefault(colour, []).append((verts, tris))
             return
@@ -1778,41 +1806,42 @@ class CutDecorator:
             no = tool.Drawing.get_extrusion_vector(element).normalized()
             no = Vector([1.0, 0.0, 0.0])
         no *= sense_factor
-        slice_plane_geom = []
         last_i = len(layer_set.MaterialLayers) - 1
+
+        vert_map = {}
+        verts = []
+        edges = []
+        j = 0
+
         for i, layer in enumerate(layer_set.MaterialLayers):
             prev_co = co.copy()
             co += no * layer.LayerThickness * self.unit_scale
             if i != last_i:
-                bisect_geom = bmesh.ops.bisect_plane(
+                bisect = bmesh.ops.bisect_plane(
                     bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
                 )
-                slice_plane_geom.extend(bisect_geom["geom_cut"])
-                edges = [g for g in bisect_geom["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
-                fill = bmesh.ops.edgenet_fill(bm, edges=edges)
-                slice_plane_geom.extend(fill["faces"])
+                for geom in bisect["geom_cut"]:
+                    if isinstance(geom, bmesh.types.BMVert):
+                        verts.append(tuple((obj.matrix_world @ geom.co) + global_offset))
+                        vert_map[geom.index] = j
+                        j += 1
+                    else:
+                        # It seems as though edges always appear after verts
+                        edges.append([vert_map[v.index] for v in geom.verts])
 
             colour = self.get_material_colour(layer.Material)
             bm_fill = bm_original.copy()
             if i != last_i:
                 geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
-                bisect = bmesh.ops.bisect_plane(
-                    bm_fill, geom=geom, dist=0.0001, plane_co=co, plane_no=no, clear_outer=True
-                )
-                edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
-                bmesh.ops.edgenet_fill(bm_fill, edges=edges)
+                bmesh.ops.bisect_plane(bm_fill, geom=geom, dist=0.0001, plane_co=co, plane_no=no, clear_outer=True)
             if i != 0:
                 geom = bm_fill.verts[:] + bm_fill.edges[:] + bm_fill.faces[:]
-                bisect = bmesh.ops.bisect_plane(
-                    bm_fill, geom=geom, dist=0.0001, plane_co=prev_co, plane_no=no, clear_inner=True
-                )
-                edges = [g for g in bisect["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
-                bmesh.ops.edgenet_fill(bm_fill, edges=edges)
+                bmesh.ops.bisect_plane(bm_fill, geom=geom, dist=0.0001, plane_co=prev_co, plane_no=no, clear_inner=True)
 
-            verts, tris = self.bisect_mesh_tris(obj, bm_fill, context.scene.camera)
-            DecoratorData.fill_cache[element_id].setdefault(colour, []).append((verts, tris))
+            DecoratorData.fill_cache[element_id].setdefault(colour, []).append(
+                self.get_bmesh_tris(obj, bm_fill, context.scene.camera)
+            )
 
-        verts, edges = tool.Drawing.bisect_bmesh(obj, bm, slice_plane_geom, context.scene.camera)
         DecoratorData.slice_cache[element.id()] = (verts, edges)
         bm_original.free()
 
@@ -1826,21 +1855,9 @@ class CutDecorator:
         colour = styles[0].SurfaceColour
         return (colour.Red, colour.Green, colour.Blue, 1)
 
-    def bisect_mesh_tris(self, obj, bm, camera):
-        camera_matrix = obj.matrix_world.inverted() @ camera.matrix_world
-        plane_co = camera_matrix.translation
-        plane_no = camera_matrix.col[2].xyz
-
+    def get_bmesh_tris(self, obj, bm, camera):
         global_offset = camera.matrix_world.col[2].xyz * -camera.data.clip_start
-
-        geom = bm.verts[:] + bm.edges[:] + bm.faces[:]
-        bmesh.ops.bisect_plane(
-            bm, geom=geom, dist=0.0001, plane_co=plane_co, plane_no=plane_no, clear_inner=True, clear_outer=True
-        )
-        bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-6)
-        fill = bmesh.ops.edgenet_fill(bm, edges=bm.edges)
-        triangulate = bmesh.ops.triangulate(bm, faces=fill["faces"])
-
+        triangulate = bmesh.ops.triangulate(bm, faces=bm.faces)
         vert_map = {}
         verts = []
         tris = []
@@ -1856,7 +1873,6 @@ class CutDecorator:
                     tri.append(i)
                     i += 1
             tris.append(tri)
-
         return verts, tris
 
 

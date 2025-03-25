@@ -36,7 +36,7 @@ import bmesh
 import mathutils.geometry
 from mathutils import Vector, Matrix, geometry
 import itertools
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 if TYPE_CHECKING:
     from bonsai.bim.module.cad.prop import BIMCadProperties
@@ -170,7 +170,9 @@ class Cad:
         return geometry.intersect_line_plane(v1, v2, plane_co, plane_no)
 
     @classmethod
-    def intersect_edges(cls, edge1, edge2):
+    def intersect_edges(
+        cls, edge1: tuple[Vector, Vector], edge2: tuple[Vector, Vector]
+    ) -> Union[tuple[Vector, Vector], None]:
         """
         > takes 2 tuples, each tuple contains 2 vectors
         - prepares input for sending to intersect_line_line

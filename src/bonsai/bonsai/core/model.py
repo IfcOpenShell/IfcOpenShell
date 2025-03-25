@@ -25,6 +25,8 @@ def unjoin_walls(ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, 
         if not (element := ifc.get_entity(obj)) or model.get_usage_type(element) != "LAYER2":
             continue
         geometry.clear_scale(obj)
+        if ifc.is_moved(obj):
+            geometry.run_edit_object_placement(obj=obj)
         joiner.unjoin(obj)
 
 

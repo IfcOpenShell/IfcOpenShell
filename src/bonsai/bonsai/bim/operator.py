@@ -31,6 +31,7 @@ import ifcopenshell
 import bonsai.bim
 import bonsai.tool as tool
 import bonsai.bim.handler
+from bpy_extras.io_utils import ImportHelper
 from bonsai.bim import import_ifc
 from bonsai.bim.prop import StrProperty
 from bonsai.bim.ui import IFCFileSelector
@@ -145,12 +146,11 @@ class CloseBlendWarning(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
-class SelectURIAttribute(bpy.types.Operator):
+class SelectURIAttribute(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_uri_attribute"
     bl_label = "Select URI Attribute"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select a local file"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     data_path: bpy.props.StringProperty(name="Data Path")
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
@@ -174,18 +174,13 @@ class SelectURIAttribute(bpy.types.Operator):
             attribute.string_value = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class BIM_OT_multiple_file_selector(bpy.types.Operator):
+class BIM_OT_multiple_file_selector(bpy.types.Operator, ImportHelper):
     """Open Blender's file explorer to select one or multiple files."""
 
     bl_idname = "bim.multiple_file_selector"
     bl_label = "Select File(s)"
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     files: bpy.props.CollectionProperty(name="File Path", type=bpy.types.OperatorFileListElement)
     filter_glob: bpy.props.StringProperty(default="*", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -206,18 +201,17 @@ class BIM_OT_multiple_file_selector(bpy.types.Operator):
 
     def invoke(self, context, event):
         self.file_props = context.file_props
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ImportHelper.invoke(self, context, event)
 
 
-class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
+class SelectIfcFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_idname = "bim.select_ifc_file"
     bl_label = "Select IFC File"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = f"Select a different IFC file.\n{tool.Blender.operator_invoke_filepath_hotkeys_description}"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    filename_ext = ".ifc"
 
     def execute(self, context):
         if self.is_existing_ifc_file():
@@ -233,17 +227,14 @@ class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
         res = tool.Blender.operator_invoke_filepath_hotkeys(self, context, event, filepath)
         if res is not None:
             return res
-
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ImportHelper.invoke(self, context, event)
 
 
-class SelectDir(bpy.types.Operator):
+class SelectDir(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_dir"
     bl_label = "Select Directory"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Open a file browser to choose the directory"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     data_path: bpy.props.StringProperty(name="Data Path")
 
     def execute(self, context):
@@ -262,8 +253,7 @@ class SelectDir(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ImportHelper.invoke(self, context, event)
 
 
 class FileAssociate(bpy.types.Operator):
@@ -768,13 +758,13 @@ class BIM_OT_remove_section_plane(bpy.types.Operator):
             bpy.ops.object.delete()
 
 
-class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
+class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.reload_ifc_file"
     bl_label = "Reload IFC File"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Reload an updated IFC file"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
+    filename_ext = ".ifc"
 
     def _execute(self, context):
         import ifcdiff
@@ -841,10 +831,6 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
         bim_props = tool.Blender.get_bim_props()
         bim_props.ifc_file = self.filepath
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class AddIfcFile(bpy.types.Operator):

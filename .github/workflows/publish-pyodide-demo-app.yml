@@ -9,6 +9,8 @@ on:
     paths:
       - 'src/pyodide/**'
       - '.github/workflows/publish-pyodide-demo-app.yml'
+    branches:
+      - v0.8.0
 
 jobs:
   activate:

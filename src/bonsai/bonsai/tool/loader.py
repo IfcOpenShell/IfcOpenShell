@@ -766,16 +766,15 @@ class Loader(bonsai.core.tool.Loader):
             coords = None
             if item.is_a("IfcCartesianPointList3D"):  # PointCloud.c
                 coords = np.array(item.CoordList)
-                vertex_list.extend(Vector(list(coordinates)) * unit_scale for coordinates in item.CoordList)
             # Is it ever used? In IFC4+ PointCloud is requiring 3D list, before IFC4 there were no coord lists at all.
             elif item.is_a("IfcCartesianPointList2D"):
-                vertex_list.extend(Vector(list(coordinates)).to_3d() * unit_scale for coordinates in item.CoordList)
-            elif item.is_a("IfcPoint"):  # Point
-                if item.is_a("IfcCartesianPoint"):
-                    vertex_list.append(Vector(list(item.Coordinates)) * unit_scale)
-                else:
-                    # TODO: implement non cartesian point vertices.
-                    continue
+                coords = np.array(item.CoordList)
+                coords = np.column_stack((coords, np.zeros(coords.shape[0])))
+            elif item.is_a("IfcCartesianPoint"):  # Point
+                coord = np.array(item.Coordinates)
+                if len(coord) == 2:
+                    coord = np.append(coord, (0.0,))
+                coords = np.array((coord,))
             else:
                 assert False
             assert coords is not None

@@ -99,7 +99,7 @@ class Misc(bonsai.core.tool.Misc):
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
     @classmethod
-    def split_objects_with_cutter(
+    def boolean_objects_with_cutter(
         cls, objs: list[bpy.types.Object], cutter: bpy.types.Object
     ) -> list[bpy.types.Object]:
         cutter_mesh = cutter.data
@@ -143,4 +143,75 @@ class Misc(bonsai.core.tool.Misc):
         bm.to_mesh(cutter_mesh)
         bm.free()
         bm_flipped.free()
+        return new_objs
+
+    @classmethod
+    def bisect_objects_with_cutter(
+        cls, objs: list[bpy.types.Object], cutter: bpy.types.Object
+    ) -> list[bpy.types.Object]:
+        cutter_mesh = cutter.data
+        assert isinstance(cutter_mesh, bpy.types.Mesh)
+
+        bm = bmesh.new()
+        bm.from_mesh(cutter_mesh)
+        bm.faces.ensure_lookup_table()
+
+        planes = []
+        for face in bm.faces:
+            no = face.normal.to_4d()
+            no.w = 0.0
+            no = cutter.matrix_world @ no
+            co = cutter.matrix_world @ face.verts[0].co
+            planes.append((co, no))
+
+        bm.free()
+
+        new_objs = []
+        for obj in objs:
+            if not isinstance(obj.data, bpy.types.Mesh) or obj == cutter:
+                continue
+            matrix_i = obj.matrix_world.inverted()
+            bm_obj = bmesh.new()
+            bm_obj.from_mesh(obj.data)
+
+            bms = [bm_obj.copy()]
+            for co, no in planes:
+                co = matrix_i @ co
+                no = (matrix_i @ no).to_3d()
+                new_bms = []
+                for bm in bms:
+                    bm1 = bm.copy()
+                    bm2 = bm.copy()
+                    geom = bm1.verts[:] + bm1.edges[:] + bm1.faces[:]
+                    bisect1 = bmesh.ops.bisect_plane(
+                        bm1, geom=geom, dist=0.0001, plane_co=co, plane_no=no, clear_inner=True
+                    )
+                    if not bisect1["geom"] or not [g for g in bisect1["geom"] if isinstance(g, bmesh.types.BMFace)]:
+                        new_bms.append(bm)
+                        continue
+                    edges = [g for g in bisect1["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
+                    bmesh.ops.triangle_fill(bm1, use_dissolve=True, edges=edges)
+                    geom = bm2.verts[:] + bm2.edges[:] + bm2.faces[:]
+                    bisect2 = bmesh.ops.bisect_plane(
+                        bm2, geom=geom, dist=0.0001, plane_co=co, plane_no=no, clear_outer=True
+                    )
+                    if not bisect2["geom"] or not [g for g in bisect2["geom"] if isinstance(g, bmesh.types.BMFace)]:
+                        new_bms.append(bm)
+                        continue
+                    edges = [g for g in bisect2["geom_cut"] if isinstance(g, bmesh.types.BMEdge)]
+                    bmesh.ops.triangle_fill(bm2, use_dissolve=True, edges=edges)
+
+                    new_bms.append(bm1)
+                    new_bms.append(bm2)
+                bms = new_bms
+
+            for bm in bms:
+                mesh = obj.data
+                new_obj = obj.copy()
+                new_obj.data = mesh.copy()
+                bm.to_mesh(new_obj.data)
+                for collection in obj.users_collection:
+                    collection.objects.link(new_obj)
+                new_objs.append(new_obj)
+
         return new_objs

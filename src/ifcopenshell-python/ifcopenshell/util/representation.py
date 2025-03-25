@@ -19,6 +19,7 @@
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
+import ifcopenshell.util.shape
 import ifcopenshell.util.placement
 from typing import Optional, Union, TypedDict, Literal, Generator, Sequence
 
@@ -480,7 +481,7 @@ def get_reference_line(wall: ifcopenshell.entity_instance, fallback_length: floa
     if axis := ifcopenshell.util.representation.get_representation(wall, "Plan", "Axis", "GRAPH_VIEW"):
         for item in ifcopenshell.util.representation.resolve_representation(axis).Items:
             if item.is_a("IfcPolyline"):
-                points = item.Points
+                points = [p[0] for p in item.Points]
             elif item.is_a("IfcIndexedPolyCurve"):
                 points = item.Points.CoordList
             else:
@@ -488,4 +489,17 @@ def get_reference_line(wall: ifcopenshell.entity_instance, fallback_length: floa
             if points[0][0] < points[1][0]:  # An axis always goes in the +X direction
                 return [np.array(points[0]), np.array(points[1])]
             return [np.array(points[1]), np.array(points[0])]
+    elif extrusions := ifcopenshell.util.shape.get_base_extrusions(wall):
+        for extrusion in extrusions:
+            profile = extrusion.SweptArea
+            curve = getattr(profile, "OuterCurve", None)
+            if not curve:
+                continue
+            elif curve.is_a("IfcPolyline"):
+                x = [p[0][0] for p in curve.Points]
+            elif curve.is_a("IfcIndexedPolyCurve"):
+                x = [p[0] for p in curve.Points.CoordList]
+            else:
+                continue
+            return [np.array((min(x), 0.0)), np.array((max(x), 0.0))]
     return [np.array((0.0, 0.0)), np.array((fallback_length, 0.0))]

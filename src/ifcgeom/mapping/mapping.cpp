@@ -874,7 +874,7 @@ void mapping::initialize_units_() {
     if (settings_.get<ModelRotation>().has()) {
         auto vs = settings_.get<ModelRotation>().get();
         if (vs.size() == 4) {
-            auto m3 = Eigen::Quaterniond(vs[0], vs[1], vs[2], vs[3]).matrix();
+            auto m3 = Eigen::Quaterniond(vs[0], vs[1], vs[2], vs[3]).normalized().matrix();
             Eigen::Matrix4d m4 = Eigen::Matrix4d::Identity();
             m4 << m3;
             offset_and_rotation_ *= m4;

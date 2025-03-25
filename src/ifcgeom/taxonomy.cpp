@@ -799,6 +799,25 @@ boost::optional<face::ptr> ifcopenshell::geometry::taxonomy::curve_to_face_upgra
     return face_;
 }
 
+namespace {
+	// @todo eliminate redundancy with cgal kernel
+	void evaluate_curve(const circle::ptr& c, double u, point3& p) {
+		Eigen::Vector4d xy{ c->radius * std::cos(u), c->radius * std::sin(u), 0, 1. };
+		p.components() = (c->matrix->ccomponents() * xy).head<3>();
+	}
+
+	// @todo eliminate redundancy with cgal kernel
+	void evaluate_curve_d1(const circle::ptr& c, double u, direction3& p) {
+		Eigen::Vector4d xy{ -std::sin(u), cos(u), 0, 0. };
+		p.components() = (c->matrix->ccomponents() * xy).head<3>();
+	}
+
+	double project_onto_curve(const circle::ptr& c, const point3& p) {
+		Eigen::Vector2d xy = (c->matrix->ccomponents().inverse() * p.ccomponents().homogeneous()).head<2>();
+		return std::atan2(xy(1), xy(0));
+	}
+}
+
 
 boost::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_function_item_upgrade_impl(ptr item) {
 	boost::optional<function_item::ptr> fi_;
@@ -811,23 +830,53 @@ boost::optional<function_item::ptr> ifcopenshell::geometry::taxonomy::loop_to_fu
 			piecewise_function::spans_t spans;
 			spans.reserve(loop_->children.size());
 			for (auto& edge_ : loop_->children) {
-				// the edge could be an arc or trimmed circle in the case of IfcIndexPolyCurve - support for this isn't implemented yet
-				if (edge_->basis) {
-					Logger::Message(Logger::Severity::LOG_NOTICE, "Shape of basis curve ignored - edge is treated as a straight line edge");
-				}
+				if (edge_->basis && edge_->basis->kind() == CIRCLE) {
+					const circle::ptr circ = std::static_pointer_cast<circle>(edge_->basis);
 
-				const auto& s = boost::get<point3::ptr>(edge_->start)->ccomponents();
-				const auto& e = boost::get<point3::ptr>(edge_->end)->ccomponents();
-				Eigen::Vector3d v = e - s;
-				auto l = v.norm(); // the norm of a vector is a measure of its length
-				v.normalize();     // normalize the vector so that it is a unit direction vector
-				std::function<Eigen::Matrix4d(double)> fn = [s, v](double u) {
-					Eigen::Vector3d o(s + u * v), axis(0, 0, 1), refDirection(v);
-					auto Y = axis.cross(refDirection).normalized();
-					axis = refDirection.cross(Y).normalized();
-					return make<matrix4>(o, axis, refDirection)->components();
-				};
-            spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
+					auto* s_pnt = boost::get<point3::ptr>(&edge_->start);
+					auto* e_pnt = boost::get<point3::ptr>(&edge_->end);
+					auto* s_param = boost::get<double>(&edge_->start);
+					auto* e_param = boost::get<double>(&edge_->end);
+
+					if (!s_pnt && !s_param) {
+						return boost::none;
+					}
+					if (!e_pnt && !e_param) {
+						return boost::none;
+					}
+
+					double s = s_pnt ? project_onto_curve(circ, **s_pnt) : *s_param;
+					double e = e_pnt ? project_onto_curve(circ, **e_pnt) : *e_param;
+
+					auto l = std::fabs(s - e) * circ->radius;
+					std::function<Eigen::Matrix4d(double)> fn = [circ, s](double u) {
+						point3 P;
+						direction3 d;
+						evaluate_curve(circ, u / circ->radius + s, P);
+						evaluate_curve_d1(circ, u / circ->radius + s, d);
+						return matrix4(P.ccomponents(), circ->matrix->ccomponents().col(2).head<3>(), d.ccomponents()).components();
+					};
+					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
+				} else if (edge_->start.which() == 1 && edge_->end.which() == 1) {
+					if (edge_->basis && edge_->basis->kind() != LINE) {
+						Logger::Message(Logger::Severity::LOG_WARNING, "Basis curve not supported - edge is treated as a straight line edge");
+					}
+					const auto& s = boost::get<point3::ptr>(edge_->start)->ccomponents();
+					const auto& e = boost::get<point3::ptr>(edge_->end)->ccomponents();
+					Eigen::Vector3d v = e - s;
+					auto l = v.norm(); // the norm of a vector is a measure of its length
+					v.normalize();     // normalize the vector so that it is a unit direction vector
+					std::function<Eigen::Matrix4d(double)> fn = [s, v](double u) {
+						Eigen::Vector3d o(s + u * v), axis(0, 0, 1), refDirection(v);
+						auto Y = axis.cross(refDirection).normalized();
+						axis = refDirection.cross(Y).normalized();
+						return make<matrix4>(o, axis, refDirection)->components();
+					};
+					spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
+				} else {
+					Logger::Message(Logger::Severity::LOG_ERROR, "Basis curve not supported");
+					return boost::none;
+				}
 			}
 			fi_ = make<piecewise_function>(0.0,spans);
 			loop_->fi = fi_;

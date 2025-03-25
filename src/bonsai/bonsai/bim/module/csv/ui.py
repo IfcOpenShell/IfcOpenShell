@@ -33,9 +33,7 @@ class BIM_PT_ifccsv(Panel):
 
     def draw(self, context):
         layout = self.layout
-
-        scene = context.scene
-        props = scene.CsvProperties
+        props = tool.Blender.get_csv_props()
 
         if tool.Ifc.get():
             row = layout.row(align=True)
@@ -126,5 +124,8 @@ class BIM_PT_ifccsv(Panel):
             row.operator("bim.remove_csv_attribute", icon="X", text="").index = index
 
         row = layout.row(align=True)
-        row.operator("bim.export_ifccsv", icon="EXPORT", text="Export IFC to " + props.format.upper())
+        if props.format == "web":
+            row.operator("bim.export_ifccsv", icon="EXPORT", text="Open Web UI")
+        else:
+            row.operator("bim.export_ifccsv", icon="EXPORT", text="Export IFC to " + props.format.upper())
         row.operator("bim.import_ifccsv", icon="IMPORT")

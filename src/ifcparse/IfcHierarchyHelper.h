@@ -411,9 +411,9 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
             bool found = false;
             for (typename Schema::IfcRelDefinesByType::list::it i = li->begin(); i != li->end(); ++i) {
                 typename Schema::IfcRelDefinesByType* rel = *i;
-                if (rel->RelatingType() == related_object) {
+                if (rel->RelatingType() == relating_object) {
                     typename Schema::IfcObject::list::ptr objects = rel->RelatedObjects();
-                    objects->push((typename Schema::IfcObject*)related_object);
+                    objects->push(addEntity(related_object)->template as<typename Schema::IfcObject>());
                     rel->setRelatedObjects(objects);
                     found = true;
                     break;
@@ -427,8 +427,8 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
                     owner_hist = addOwnerHistory();
                 }
                 typename Schema::IfcObject::list::ptr related_objects(new aggregate_of<typename Schema::IfcObject>());
-                related_objects->push((typename Schema::IfcObject*)related_object);
-                typename Schema::IfcRelDefinesByType* t = new typename Schema::IfcRelDefinesByType(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, related_objects, related_object->template as<typename Schema::IfcTypeObject>());
+                related_objects->push(related_object->template as<typename Schema::IfcObject>());
+                typename Schema::IfcRelDefinesByType* t = new typename Schema::IfcRelDefinesByType(IfcParse::IfcGlobalId(), owner_hist, boost::none, boost::none, related_objects, relating_object->template as<typename Schema::IfcTypeObject>());
 
                 addEntity(t);
             }
@@ -440,7 +440,7 @@ class IFC_PARSE_API IfcHierarchyHelper : public IfcParse::IfcFile {
                 try {
                     if (get_parent_of_relation(rel) == relating_object) {
                         aggregate_of_instance::ptr products = get_children_of_relation(rel);
-                        products->push(related_object);
+                        products->push(addEntity(related_object));
                         set_children_of_relation(rel, products);
                         found = true;
                         break;

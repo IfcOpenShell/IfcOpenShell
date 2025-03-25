@@ -24,7 +24,7 @@ from bpy.types import Panel, UIList
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from bonsai.bim.module.material.prop import Material, BIMMaterialProperties
@@ -289,7 +289,7 @@ class BIM_PT_object_material(Panel):
             row = box.row()
             prop_with_search(row, self.mprops, "profiles", icon="ITALIC", text="Profile")
 
-    def draw_read_only_set_item_ui(self, box, set_item):
+    def draw_read_only_set_item_ui(self, box: bpy.types.UILayout, set_item: dict[str, Any]) -> None:
         if ObjectMaterialData.data["material_class"] == "IfcMaterialList":
             row = box.row(align=True)
             row.label(text="IfcMaterial", icon="LAYER_ACTIVE")

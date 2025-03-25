@@ -300,6 +300,20 @@ class IfcImporter:
         bpy.context.window_manager.progress_end()
 
     def process_context_filter(self) -> None:
+        contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        if len(contexts) > 100:  # Probably something strange happening. Encountered from Revizto.
+            print("Warning! Excessive contexts were found and merged where applicable.")
+            uniques = {}
+            i = 0
+            for element in contexts:
+                data = "-".join([str(a) for a in element])
+                if unique := uniques.get(data, None):
+                    ifcopenshell.util.element.replace_element(element, unique)
+                    self.file.remove(element)
+                    i += 1
+                else:
+                    uniques[data] = element
+            print(f"Replaced {i} IfcGeometricRepresentationContext")
         tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(self.file)
         tool.Loader.settings.context_settings = tool.Loader.create_settings()
         tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
@@ -747,12 +761,9 @@ class IfcImporter:
     def create_pointclouds(self, products: set[ifcopenshell.entity_instance]) -> set[ifcopenshell.entity_instance]:
         result = set()
         for product in products:
-            representation = self.get_pointcloud_representation(product)
-            if representation is not None:
-                pointcloud = self.create_pointcloud(product, representation)
-                if pointcloud is not None:
+            if representation := self.get_pointcloud_representation(product):
+                if pointcloud := self.create_pointcloud(product, representation):
                     result.add(pointcloud)
-
         return result
 
     def create_pointcloud(
@@ -1159,7 +1170,7 @@ class IfcImportSettings:
 
     @staticmethod
     def factory(context=None, input_file=None, logger=None):
-        scene_diff = bpy.context.scene.DiffProperties
+        scene_diff = tool.Blender.get_diff_props()
         props = tool.Project.get_project_props()
         settings = IfcImportSettings()
         settings.input_file = input_file

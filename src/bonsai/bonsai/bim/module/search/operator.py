@@ -155,7 +155,7 @@ class Search(Operator):
 
     def execute(self, context):
         if self.property_group == "CsvProperties":
-            props = context.scene.CsvProperties
+            props = tool.Blender.get_csv_props()
         elif self.property_group == "BIMSearchProperties":
             props = tool.Search.get_search_props()
         else:
