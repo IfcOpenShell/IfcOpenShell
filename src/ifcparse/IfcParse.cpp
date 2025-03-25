@@ -1130,6 +1130,23 @@ class apply_individual_instance_visitor {
 
 template <typename T>
 void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
+    if constexpr (std::is_same_v<std::decay_t<T>, double>) {
+        if (!std::isfinite(t)) {
+            throw IfcParse::IfcException("Only finite values are allowed");
+        }
+    }
+    if constexpr (std::is_same_v<std::decay_t<T>, std::vector<double>>) {
+        if (std::any_of(t.begin(), t.end(), [](double d) { return !std::isfinite(d); })) {
+            throw IfcParse::IfcException("Only finite values are allowed");
+        }
+    }
+    if constexpr (std::is_same_v<std::decay_t<T>, std::vector<std::vector<double>>>) {
+        for (auto& tt : t) {
+            if (std::any_of(tt.begin(), tt.end(), [](double d) { return !std::isfinite(d); })) {
+                throw IfcParse::IfcException("Only finite values are allowed");
+            }
+        }
+    }
     auto current_attribute = data_.get_attribute_value(i);
     if (file_ != nullptr) {
 
