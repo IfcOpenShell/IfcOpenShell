@@ -1423,10 +1423,10 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
         const auto& ref = p.first.name_;
         const auto& refattr = p.first.index_;
         if (auto* v = boost::get<reference_or_simple_type>(&p.second)) {
-            if (auto* name = boost::get<int>(v)) {
+            if (auto* name = boost::get<InstanceReference>(v)) {
                 entity_by_id_t::const_iterator it = byid_.find(*name);
                 if (it == byid_.end()) {
-                    Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
+                    Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                 } else {
                     byid_[p.first.name_]->data().storage_.set(p.first.index_, it->second);
                 }
@@ -1437,10 +1437,10 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
             aggregate_of_instance::ptr instances(new aggregate_of_instance);
             instances->reserve(v->size());
             for (const auto& vi : *v) {
-                if (auto* name = boost::get<int>(&vi)) {
+                if (auto* name = boost::get<InstanceReference>(&vi)) {
                     entity_by_id_t::const_iterator it = byid_.find(*name);
                     if (it == byid_.end()) {
-                        Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
+                        Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                     } else {
                         instances->push(it->second);
                     }
@@ -1454,10 +1454,10 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
             for (const auto& vi : *v) {
                 std::vector<IfcUtil::IfcBaseClass*> inner;
                 for (const auto& vii : vi) {
-                    if (auto* name = boost::get<int>(&vii)) {
+                    if (auto* name = boost::get<InstanceReference>(&vii)) {
                         entity_by_id_t::const_iterator it = byid_.find(*name);
                         if (it == byid_.end()) {
-                            Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
+                            Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                         } else {
                             inner.push_back(it->second);
                         }
