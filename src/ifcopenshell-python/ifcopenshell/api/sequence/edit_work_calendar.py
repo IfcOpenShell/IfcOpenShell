@@ -28,11 +28,8 @@ def edit_work_calendar(
     IfcWorkCalendar, consult the IFC documentation.
 
     :param work_calendar: The IfcWorkCalendar entity you want to edit
-    :type work_calendar: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -45,7 +42,5 @@ def edit_work_calendar(
         ifcopenshell.api.sequence.edit_work_calendar(model,
             work_calendar=calendar, attributes={"Description": "Monday to Friday 8 hour days"})
     """
-    settings = {"work_calendar": work_calendar, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["work_calendar"], name, value)
+    for name, value in attributes.items():
+        setattr(work_calendar, name, value)

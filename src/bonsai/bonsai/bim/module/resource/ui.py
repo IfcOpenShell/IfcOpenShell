@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 import bonsai.bim.helper
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.resource.data import ResourceData
 from typing import Any
 
@@ -35,7 +35,7 @@ class BIM_PT_resources(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):

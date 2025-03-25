@@ -49,6 +49,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 	// The longitudes determine the range of the sweep and the offsets are interpolated in between
 	// sweep segments. 
 	std::vector<Eigen::Vector3d> profile_offsets;
+	std::vector<boost::optional<Eigen::Matrix3d>> profile_rotations;
 	std::vector<double> longitudes;
 
 	for (auto& cs : *css) {
@@ -69,6 +70,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 		);
 
 		profile_offsets.push_back(po);
+
+		boost::optional<Eigen::Matrix3d> rot;
+		if (csp->Axis() && csp->RefDirection()) {
+			rot = taxonomy::matrix4(
+				Eigen::Vector3d(0, 0, 0),
+				taxonomy::cast<taxonomy::direction3>(map(csp->Axis()))->ccomponents(),
+				taxonomy::cast<taxonomy::direction3>(map(csp->RefDirection()))->ccomponents()).ccomponents().block<3, 3>(0, 0);
+		} else if (csp->Axis()) {
+			rot = taxonomy::matrix4(
+				Eigen::Vector3d(0, 0, 0),
+				taxonomy::cast<taxonomy::direction3>(map(csp->Axis()))->ccomponents()).ccomponents().block<3, 3>(0, 0);
+		}
+		profile_rotations.push_back(rot);
 	}
 #else
 	return nullptr;
@@ -83,7 +97,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSurface* inst) {
 	}
 
 	for (size_t i = 0; i < faces.size(); ++i) {
-		cross_sections.push_back({ longitudes[i], faces[i], profile_offsets[i] });
+		cross_sections.push_back({ longitudes[i], faces[i], profile_offsets[i], profile_rotations[i] });
 	}
 	}
 

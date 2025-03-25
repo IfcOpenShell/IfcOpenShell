@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bpy.types import Panel, UIList, Mesh
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.layer.data import LayersData
 
@@ -34,7 +34,7 @@ class BIM_PT_layers(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not LayersData.is_loaded:
@@ -77,7 +77,6 @@ class BIM_UL_layers(UIList):
             row.label(text=item.name)
 
             if context.active_object and isinstance(context.active_object.data, Mesh):
-                mprops = context.active_object.data.BIMMeshProperties
                 if item.ifc_definition_id in LayersData.data["active_layers"]:
                     op = row.operator("bim.unassign_presentation_layer", text="", icon="KEYFRAME_HLT", emboss=False)
                     op.layer = item.ifc_definition_id

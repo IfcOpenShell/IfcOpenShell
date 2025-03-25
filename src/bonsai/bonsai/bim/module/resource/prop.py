@@ -19,7 +19,6 @@
 import bpy
 import ifcopenshell.api
 import ifcopenshell.util.resource
-from bonsai.bim.ifc import IfcStore
 import bonsai.tool as tool
 import bonsai.bim.module.pset.data
 import bonsai.bim.module.resource.data

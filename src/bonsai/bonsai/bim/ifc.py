@@ -33,7 +33,7 @@ import bonsai.bim.handler
 import bonsai.tool as tool
 from pathlib import Path
 from bonsai.tool.brick import BrickStore
-from typing import Set, Union, Optional, TypedDict, Callable, NotRequired, cast
+from typing import Set, Union, Optional, TypedDict, Callable, NotRequired
 
 
 IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
@@ -105,10 +105,8 @@ class IfcStore:
     @staticmethod
     def get_file():
         if IfcStore.file is None:
-            IfcStore.path = cast(str, bpy.context.scene.BIMProperties.ifc_file)
-            # Interpret relative paths as relative to .blend file.
-            if IfcStore.path and not os.path.isabs(IfcStore.path):
-                IfcStore.path = os.path.abspath(os.path.join(bpy.path.abspath("//"), IfcStore.path))
+            props = tool.Blender.get_bim_props()
+            IfcStore.set_path(props.ifc_file)
             if IfcStore.path:
                 try:
                     IfcStore.load_file(IfcStore.path)
@@ -117,12 +115,20 @@ class IfcStore:
         return IfcStore.file
 
     @staticmethod
+    def set_path(value):
+        IfcStore.path = value
+        # Interpret relative paths as relative to .blend file.
+        if IfcStore.path and not os.path.isabs(IfcStore.path):
+            IfcStore.path = os.path.abspath(os.path.join(bpy.path.abspath("//"), IfcStore.path))
+
+    @staticmethod
     def get_cache():
         if IfcStore.cache is None and IfcStore.path:
+            props = tool.Blender.get_bim_props()
             ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
             ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-            os.makedirs(bpy.context.scene.BIMProperties.cache_dir, exist_ok=True)
-            IfcStore.cache_path = os.path.join(bpy.context.scene.BIMProperties.cache_dir, f"{ifc_hash}.h5")
+            os.makedirs(props.cache_dir, exist_ok=True)
+            IfcStore.cache_path = os.path.join(props.cache_dir, f"{ifc_hash}.h5")
             cache_path = Path(IfcStore.cache_path)
             cache_settings = ifcopenshell.geom.settings()
             serializer_settings = ifcopenshell.geom.serializer_settings()
@@ -162,7 +168,8 @@ class IfcStore:
         assert IfcStore.file
         ifc_key = IfcStore.path + IfcStore.file.wrapped_data.header.file_name.time_stamp
         ifc_hash = hashlib.md5(ifc_key.encode("utf-8")).hexdigest()
-        new_cache_path = os.path.join(bpy.context.scene.BIMProperties.cache_dir, f"{ifc_hash}.h5")
+        props = tool.Blender.get_bim_props()
+        new_cache_path = os.path.join(props.cache_dir, f"{ifc_hash}.h5")
         IfcStore.cache = None
         try:
             shutil.move(IfcStore.cache_path, new_cache_path)
@@ -178,6 +185,7 @@ class IfcStore:
         if not os.path.isfile(path):
             return
         extension = path.split(".")[-1]
+        props = tool.Project.get_project_props()
         if extension.lower() == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
                 with zipfile.ZipFile(path, "r") as zip_ref:
@@ -187,7 +195,7 @@ class IfcStore:
                     return
         elif extension.lower() == "ifcxml":
             IfcStore.file = ifcopenshell.file(ifcopenshell.ifcopenshell_wrapper.parse_ifcxml(path))
-        elif bpy.context.scene.BIMProjectProperties.should_stream:
+        elif props.should_stream:
             IfcStore.file = ifcopenshell.open(path, should_stream=True)
         else:
             IfcStore.file = ifcopenshell.open(path)
@@ -195,9 +203,8 @@ class IfcStore:
     @staticmethod
     def get_schema() -> ifcopenshell.ifcopenshell_wrapper.schema_definition:
         if IfcStore.file is None:
-            IfcStore.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(
-                bpy.context.scene.BIMProjectProperties.export_schema
-            )
+            props = tool.Project.get_project_props()
+            IfcStore.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(props.export_schema)
         elif IfcStore.schema is None:
             IfcStore.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(IfcStore.file.schema_identifier)
         return IfcStore.schema
@@ -247,7 +254,7 @@ class IfcStore:
         # refactor this class and deprecate usage of IfcStore in favour of
         # tools.
         if not isinstance(obj, (bpy.types.Object, bpy.types.Material)):
-            obj.BIMMeshProperties.ifc_definition_id = element.id()
+            tool.Geometry.get_mesh_props(obj).ifc_definition_id = element.id()
             return
 
         existing_obj = IfcStore.id_map.get(element.id(), None)
@@ -262,9 +269,11 @@ class IfcStore:
             IfcStore.guid_map[global_id] = obj
 
         if element.is_a("IfcSurfaceStyle"):
-            obj.BIMStyleProperties.ifc_definition_id = element.id()
+            props = tool.Style.get_material_style_props(obj)
+            props.ifc_definition_id = element.id()
         else:
-            obj.BIMObjectProperties.ifc_definition_id = element.id()
+            props = tool.Blender.get_object_bim_props(obj)
+            props.ifc_definition_id = element.id()
 
         tool.Ifc.setup_listeners(obj)
 
@@ -402,15 +411,24 @@ class IfcStore:
     @staticmethod
     def purge_blender_ifc_data(obj: IFC_CONNECTED_TYPE) -> None:
         if isinstance(obj, bpy.types.Material):
-            obj.BIMStyleProperties.ifc_definition_id = 0
+            props = tool.Style.get_material_style_props(obj)
+            props.ifc_definition_id = 0
         else:  # bpy.types.Object
-            obj.BIMObjectProperties.ifc_definition_id = 0
+            props = tool.Blender.get_object_bim_props(obj)
+            props.ifc_definition_id = 0
 
     @staticmethod
-    def execute_ifc_operator(operator: tool.Ifc.Operator, context: bpy.types.Context, is_invoke=False) -> set[str]:
+    def execute_ifc_operator(
+        operator: tool.Ifc.Operator,
+        context: bpy.types.Context,
+        event=None,
+        method: Literal["EXECUTE", "INVOKE", "MODAL"] = "EXECUTE",
+    ) -> set[str]:
         bonsai.last_actions.append({"type": "operator", "name": operator.bl_idname})
-        bpy.context.scene.BIMProperties.is_dirty = True
-        is_top_level_operator = not bool(IfcStore.current_transaction)
+        props = tool.Blender.get_bim_props()
+        props.is_dirty = True
+        # Modals don't nest, and Blender handles the loop that continuously calls modal()
+        is_top_level_operator = not bool(IfcStore.current_transaction) or (method == "MODAL")
 
         if is_top_level_operator:
             IfcStore.begin_transaction(operator)
@@ -436,10 +454,12 @@ class IfcStore:
                 bonsai.bim.handler.refresh_ui_data()
 
         try:
-            if is_invoke:
-                result = getattr(operator, "_invoke")(context, None)
-            else:
+            if method == "EXECUTE":
                 result = getattr(operator, "_execute")(context)
+            elif method == "INVOKE":
+                result = getattr(operator, "_invoke")(context, event)
+            elif method == "MODAL":
+                result = getattr(operator, "_modal")(context, event)
         except:
             bonsai.last_error = traceback.format_exc()
             # Try to ensure undo will work since Blender undo does work in case of errors.
@@ -451,12 +471,27 @@ class IfcStore:
             end_top_level_operator()
             raise
 
-        end_top_level_operator()
+        if method == "MODAL":
+            if result == {"FINISHED"}:
+                end_top_level_operator()
+            elif result == {"CANCELLED"}:
+                # Please read the docs: https://docs.blender.org/api/current/bpy.types.Operator.html
+                # > "when an operator returns {'CANCELLED'}, no undo step will be created".
+                # This means that if your modal edits IFC data, then the user
+                # cancels it, Blender's undo history will not be in sync with
+                # Bonsai / IfcOpenShell's undo history. Instead of hoping for
+                # Bonsai devs to remember to handle the "cancel" state (i.e.
+                # detect escape keypress) and return {"FINISHED"}, we instead
+                # always enforce an undo step.
+                bpy.ops.ed.undo_push(message=f"Cancel {operator.bl_idname}")
+                end_top_level_operator()
+        else:
+            end_top_level_operator()
         return result
 
     @staticmethod
     def begin_transaction(operator: tool.Ifc.Operator) -> None:
-        IfcStore.current_transaction = str(uuid.uuid4())
+        IfcStore.current_transaction = str(uuid.uuid4()) + operator.__class__.__name__
         operator.transaction_key = IfcStore.current_transaction
 
     @staticmethod
@@ -470,7 +505,8 @@ class IfcStore:
     ) -> None:
         key = getattr(operator, "transaction_key", None)
         data = getattr(operator, "transaction_data", None)
-        bpy.context.scene.BIMProperties.last_transaction = key
+        props = tool.Blender.get_bim_props()
+        props.last_transaction = key
         IfcStore.last_transaction = key
         rollback = rollback or getattr(operator, "rollback", lambda data: True)
         commit = commit or getattr(operator, "commit", lambda data: True)

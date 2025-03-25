@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bonsai.bim.prop import StrProperty, Attribute, BIMFilterGroup
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -29,6 +30,8 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from mathutils import Vector
+from typing import TYPE_CHECKING, Literal, Union
 
 
 class ClashSource(PropertyGroup):
@@ -43,6 +46,10 @@ class ClashSource(PropertyGroup):
         name="Mode",
     )
 
+    if TYPE_CHECKING:
+        filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
+        mode: Literal["a", "i", "e"]
+
 
 class Clash(PropertyGroup):
     a_global_id: StringProperty(name="A")
@@ -51,9 +58,15 @@ class Clash(PropertyGroup):
     b_name: StringProperty(name="B Name")
     status: BoolProperty(name="Status", default=False)
 
+    if TYPE_CHECKING:
+        a_global_id: str
+        b_global_id: str
+        a_name: str
+        b_name: str
+        status: bool
+
 
 class ClashSet(PropertyGroup):
-    name: StringProperty(name="Name")
     mode: EnumProperty(
         items=[
             (
@@ -76,10 +89,24 @@ class ClashSet(PropertyGroup):
     b: CollectionProperty(name="Group B", type=ClashSource)
     clashes: CollectionProperty(name="Clashes", type=Clash)
 
+    if TYPE_CHECKING:
+        mode: Literal["intersection", "collision", "clearance"]
+        tolerance: float
+        clearance: float
+        allow_touching: bool
+        check_all: bool
+        a: bpy.types.bpy_prop_collection_idprop[ClashSource]
+        b: bpy.types.bpy_prop_collection_idprop[ClashSource]
+        clashes: bpy.types.bpy_prop_collection_idprop[Clash]
+
 
 class SmartClashGroup(PropertyGroup):
     number: StringProperty(name="Number")
     global_ids: CollectionProperty(name="GlobalIDs", type=StrProperty)
+
+    if TYPE_CHECKING:
+        number: str
+        global_ids: bpy.types.bpy_prop_collection_idprop[StrProperty]
 
 
 class BIMClashProperties(PropertyGroup):
@@ -107,17 +134,33 @@ class BIMClashProperties(PropertyGroup):
         subtype="FILE_PATH",
     )
 
-    @property
-    def active_clash_set(self):
-        if self.active_clash_set_index < len(self.clash_sets):
-            return self.clash_sets[self.active_clash_set_index]
+    if TYPE_CHECKING:
+        blender_clash_set_a: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        blender_clash_set_b: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        clash_sets: bpy.types.bpy_prop_collection_idprop[ClashSet]
+        should_create_clash_snapshots: bool
+        clash_results_path: str
+        smart_grouped_clashes_path: str
+        active_clash_set_index: int
+        active_clash_index: int
+        smart_clash_groups: bpy.types.bpy_prop_collection_idprop[SmartClashGroup]
+        active_smart_group_index: int
+        smart_clash_grouping_max_distance: int
+        p1: Vector
+        p2: Vector
+        active_clash_text: str
+        export_path: str
 
     @property
-    def active_smart_group(self):
-        if self.active_smart_group_index < len(self.smart_clash_groups):
-            return self.smart_clash_groups[self.active_smart_group_index]
+    def active_clash_set(self) -> Union[ClashSet, None]:
+        return tool.Blender.get_active_uilist_element(self.clash_sets, self.active_clash_set_index)
 
     @property
-    def active_clash(self):
-        if self.active_clash_index < len(self.active_clash_set.clashes):
-            return self.active_clash_set.clashes[self.active_clash_index]
+    def active_smart_group(self) -> Union[SmartClashGroup, None]:
+        return tool.Blender.get_active_uilist_element(self.smart_clash_groups, self.active_smart_group_index)
+
+    @property
+    def active_clash(self) -> Union[Clash, None]:
+        if not (clash_set := self.active_clash_set):
+            return None
+        return tool.Blender.get_active_uilist_element(clash_set.clashes, self.active_clash_index)

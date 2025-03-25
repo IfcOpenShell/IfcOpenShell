@@ -29,12 +29,9 @@ def unassign_resource(
     """Removes the relationship between a resource and object
 
     :param relating_resource: The IfcResource to assign the object to.
-    :type relating_resource: ifcopenshell.entity_instance
     :param related_object: The IfcProduct or IfcActor to assign to the
         object.
-    :type related_object: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -60,13 +57,8 @@ def unassign_resource(
         ifcopenshell.api.resource.unassign_resource(model,
             relating_resource=crane, related_object=product)
     """
-    settings = {
-        "relating_resource": relating_resource,
-        "related_object": related_object,
-    }
-
-    for rel in settings["related_object"].HasAssignments or []:
-        if not rel.is_a("IfcRelAssignsToResource") or rel.RelatingResource != settings["relating_resource"]:
+    for rel in related_object.HasAssignments or []:
+        if not rel.is_a("IfcRelAssignsToResource") or rel.RelatingResource != relating_resource:
             continue
         if len(rel.RelatedObjects) == 1:
             history = rel.OwnerHistory
@@ -75,6 +67,6 @@ def unassign_resource(
                 ifcopenshell.util.element.remove_deep2(file, history)
             return
         related_objects = list(rel.RelatedObjects)
-        related_objects.remove(settings["related_object"])
+        related_objects.remove(related_object)
         rel.RelatedObjects = related_objects
         ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})

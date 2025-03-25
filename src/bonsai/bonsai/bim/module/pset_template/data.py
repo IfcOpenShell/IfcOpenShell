@@ -56,7 +56,7 @@ class PsetTemplatesData:
         ifc_file = IfcStore.pset_template_file
         if not ifc_file:
             return []
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+        schema = ifcopenshell.schema_by_name(ifc_file.schema)
         version = ifc_file.schema
         enum_items = [
             (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description", ""))
@@ -97,7 +97,7 @@ class PsetTemplatesData:
         # If mixed typed are used (e.g. during transition), assume type is not specified.
         pset_type = next(iter(pset_types)) if len(pset_types) == 1 else None
 
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+        schema = ifcopenshell.schema_by_name(ifc_file.schema)
         attribute = schema.declaration_by_name("IfcSimplePropertyTemplate").attributes()[0]
         enum_items = [
             a

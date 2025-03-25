@@ -113,8 +113,7 @@ def get_schema_by_name(version: str) -> ifcopenshell_wrapper.schema_definition:
     global schema_by_name
     version = ifcopenshell.util.schema.get_fallback_schema(version)
     if not schema_by_name[version]:
-        schema_name = "IFC4X3_ADD2" if version == "IFC4X3" else version
-        schema_by_name[version] = ifcopenshell_wrapper.schema_by_name(schema_name)
+        schema_by_name[version] = ifcopenshell.schema_by_name(version)
     return schema_by_name[version]
 
 

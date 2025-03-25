@@ -730,7 +730,8 @@ class Web(bonsai.core.tool.Web):
         if operator_data["type"] == "getDrawings":
             drawings_data = []
             sheets_data = []
-            ifc_file_dir = os.path.dirname(bpy.context.scene.BIMProperties.ifc_file)
+            props = tool.Blender.get_bim_props()
+            ifc_file_dir = os.path.dirname(props.ifc_file)
 
             sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
             for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):

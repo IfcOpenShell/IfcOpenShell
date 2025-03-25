@@ -64,13 +64,10 @@ def assign_object(
 
     :param products: The list of parts of the aggregate, typically of IfcElement or
         IfcSpatialStructureElement subclass
-    :type product: list[ifcopenshell.entity_instance]
     :param relating_object: The whole of the aggregate, typically an
         IfcElement or IfcSpatialStructureElement subclass
-    :type relating_object: ifcopenshell.entity_instance
     :return: The IfcRelAggregate relationship instance
         or `None` if `products` was empty list.
-    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -86,16 +83,10 @@ def assign_object(
         # The site has a building
         ifcopenshell.api.aggregate.assign_object(model, products=[subelement], relating_object=element)
     """
-    settings = {
-        "products": products,
-        "relating_object": relating_object,
-    }
-
-    if not settings["products"]:
+    if not products:
         return
 
-    products = set(settings["products"])
-    relating_object = settings["relating_object"]
+    products_set = set(products)
     is_decomposed_by = next((i for i in relating_object.IsDecomposedBy if i.is_a("IfcRelAggregates")), None)
 
     previous_aggregates_rels: set[ifcopenshell.entity_instance] = set()
@@ -103,7 +94,7 @@ def assign_object(
     products_with_aggregates: list[ifcopenshell.entity_instance] = []
 
     # check if there is anything to change
-    for product in products:
+    for product in products_set:
         product_rel = next(iter(product.Decomposes), None)
 
         if product_rel is None:
@@ -129,7 +120,7 @@ def assign_object(
 
     # unassign elements from previous aggregates
     for decomposes in previous_aggregates_rels:
-        related_objects = set(decomposes.RelatedObjects) - products
+        related_objects = set(decomposes.RelatedObjects) - products_set
         if related_objects:
             decomposes.RelatedObjects = list(related_objects)
             ifcopenshell.api.owner.update_owner_history(file, **{"element": decomposes})
@@ -141,7 +132,7 @@ def assign_object(
 
     # assign elements to a new aggregate
     if is_decomposed_by:
-        is_decomposed_by.RelatedObjects = list(set(is_decomposed_by.RelatedObjects) | products)
+        is_decomposed_by.RelatedObjects = list(set(is_decomposed_by.RelatedObjects) | products_set)
         ifcopenshell.api.owner.update_owner_history(file, **{"element": is_decomposed_by})
     else:
         is_decomposed_by = file.create_entity(
@@ -149,7 +140,7 @@ def assign_object(
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": list(products),
+                "RelatedObjects": list(products_set),
                 "RelatingObject": relating_object,
             }
         )

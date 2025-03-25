@@ -27,12 +27,12 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from typing import Optional, Callable, Any, Union, Iterable, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import bonsai.bim.prop
     from bonsai.bim.prop import Attribute
+    from bonsai.bim.module.search.prop import BIMFilterGroup
 
     # ImportCallback return values:
     # - None  - property should be imported by default workflow
@@ -119,7 +119,8 @@ def import_attributes(
     data: dict[str, Any],
     callback: Optional[ImportCallback] = None,
 ) -> None:
-    for attribute in IfcStore.get_schema().declaration_by_name(ifc_class).all_attributes():
+    schema = tool.Ifc.schema()
+    for attribute in schema.declaration_by_name(ifc_class).all_attributes():
         import_attribute(attribute, props, data, callback=callback)
 
 
@@ -292,7 +293,10 @@ def prop_with_search(
     should_click_ok: bool = False,
     original_operator_path: Optional[str] = None,
     **kwargs: Any,
-):
+) -> bpy.types.UILayout:
+    """
+    :return: Added row.
+    """
     # kwargs are layout.prop arguments (text, icon, etc.)
     row = layout.row(align=True)
     row.prop(data, prop_name, **kwargs)
@@ -306,6 +310,7 @@ def prop_with_search(
             op.original_operator_path = original_operator_path or ""
     except TypeError:  # Prop is not iterable
         pass
+    return row
 
 
 def get_enum_items(
@@ -372,11 +377,16 @@ def convert_property_group_from_si(property_group: bpy.types.PropertyGroup, skip
         setattr(property_group, prop_name, prop_value)
 
 
-def draw_filter(layout: bpy.types.UILayout, filter_groups, data, module: str) -> None:
+def draw_filter(
+    layout: bpy.types.UILayout,
+    filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup],
+    data,
+    module: str,
+) -> None:
     if not data.is_loaded:
         data.load()
 
-    sprops = bpy.context.scene.BIMSearchProperties
+    sprops = tool.Search.get_search_props()
 
     if tool.Ifc.get():
         row = layout.row(align=True)

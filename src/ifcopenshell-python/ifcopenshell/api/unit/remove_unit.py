@@ -27,9 +27,7 @@ def remove_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instance) -> 
     defined quantities in the model completely lose their meaning.
 
     :param unit: The unit element to remove
-    :type unit: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -41,14 +39,12 @@ def remove_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instance) -> 
         # Yeah maybe not.
         ifcopenshell.api.unit.remove_unit(model, unit=unit)
     """
-    settings = {"unit": unit}
-
     unit_assignment = ifcopenshell.util.unit.get_unit_assignment(file)
-    if unit_assignment and settings["unit"] in unit_assignment.Units:
+    if unit_assignment and unit in unit_assignment.Units:
         units = list(unit_assignment.Units)
-        units.remove(settings["unit"])
+        units.remove(unit)
         if units:
             unit_assignment.Units = units
         else:
             file.remove(unit_assignment)
-    ifcopenshell.util.element.remove_deep(file, settings["unit"])
+    ifcopenshell.util.element.remove_deep(file, unit)

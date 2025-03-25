@@ -21,7 +21,6 @@ import bonsai.bim.helper
 import bonsai.bim.module.cost.prop as CostProp
 import bonsai.tool as tool
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.cost.data import CostSchedulesData
 from typing import Any
 
@@ -37,7 +36,7 @@ class BIM_PT_cost_schedules(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
@@ -709,18 +708,16 @@ class BIM_UL_cost_items_trait:
 
 
 class BIM_UL_cost_items(BIM_UL_cost_items_trait, UIList):
-    def __init__(self):
-        self.contract_operator = "bim.contract_cost_item"
-        self.expand_operator = "bim.expand_cost_item"
+    contract_operator = "bim.contract_cost_item"
+    expand_operator = "bim.expand_cost_item"
 
 
 class BIM_UL_cost_item_rates(BIM_UL_cost_items_trait, UIList):
     # A schedule of rates UIList is identical to a regular cost items UIList but
     # we want a separate UIList instance so that you can browse both lists
     # independently in Blender. So we use a trait.
-    def __init__(self):
-        self.contract_operator = "bim.contract_cost_item_rate"
-        self.expand_operator = "bim.expand_cost_item_rate"
+    contract_operator = "bim.contract_cost_item_rate"
+    expand_operator = "bim.expand_cost_item_rate"
 
     def draw_quantity_column(self, layout, cost_item):
         self.draw_uom_column(layout, cost_item)

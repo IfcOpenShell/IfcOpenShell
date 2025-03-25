@@ -29,6 +29,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Literal
 
 
 class CsvAttribute(PropertyGroup):
@@ -58,6 +59,14 @@ class CsvAttribute(PropertyGroup):
         ]
     )
     formatting: StringProperty(default="{{value}}", name="Formatting")
+
+    if TYPE_CHECKING:
+        header: str
+        sort: Literal["NONE", "ASC", "DESC"]
+        group: Literal["NONE", "GROUP", "CONCAT", "VARIES", "SUM", "AVERAGE", "MIN", "MAX"]
+        varies_value: str
+        summary: Literal["NONE", "SUM", "AVERAGE", "MIN", "MAX"]
+        formatting: str
 
 
 class CsvProperties(PropertyGroup):
@@ -104,3 +113,26 @@ class CsvProperties(PropertyGroup):
         name="Load from Memory",
         description="Use IFC file currently loaded in Bonsai",
     )
+
+    if TYPE_CHECKING:
+        csv_ifc_file: str
+        ifc_selector: str
+        filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
+        csv_attributes: bpy.types.bpy_prop_collection_idprop[CsvAttribute]
+        should_generate_svg: bool
+        should_preserve_existing: bool
+        include_global_id: bool
+        null_value: str
+        empty_value: str
+        true_value: str
+        false_value: str
+        concat_value: str
+        csv_delimiter: Literal["NONE", "ASC", "DESC"]
+        format: Literal["csv", "xlsx", "ods", "web"]
+        csv_custom_delimiter: str
+        should_show_settings: bool
+        should_show_sort: bool
+        should_show_group: bool
+        should_show_summary: bool
+        should_show_formatting: bool
+        should_load_from_memory: bool

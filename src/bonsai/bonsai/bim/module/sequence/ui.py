@@ -22,7 +22,6 @@ import isodate
 import bonsai.tool as tool
 import bonsai.bim.helper
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.sequence.data import (
     WorkPlansData,
@@ -45,7 +44,7 @@ class BIM_PT_status(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         self.props = context.scene.BIMStatusProperties
@@ -77,7 +76,7 @@ class BIM_PT_work_plans(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and file.schema != "IFC2X3"
 
     def draw(self, context):
@@ -147,7 +146,7 @@ class BIM_PT_work_schedules(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
@@ -592,7 +591,7 @@ class BIM_PT_animation_Color_Scheme(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
@@ -980,7 +979,7 @@ class BIM_PT_work_calendars(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):

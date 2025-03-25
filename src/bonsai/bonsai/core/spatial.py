@@ -121,9 +121,8 @@ def import_spatial_decomposition(spatial: tool.Spatial) -> None:
     spatial.import_spatial_decomposition()
 
 
-def edit_container_attributes(spatial: tool.Spatial, entity: ifcopenshell.entity_instance) -> None:
-    spatial.edit_container_attributes(entity)
-    spatial.import_spatial_decomposition()
+def set_orientation_slot(spatial: tool.Spatial, container: ifcopenshell.entity_instance) -> None:
+    spatial.create_orientation_slot(container)
 
 
 def contract_container(spatial: tool.Spatial, container: ifcopenshell.entity_instance) -> None:

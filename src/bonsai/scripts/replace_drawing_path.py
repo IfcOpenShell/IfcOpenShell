@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-""" This script regenerates all drawing paths in case they have been created in a different operating system.
+"""This script regenerates all drawing paths in case they have been created in a different operating system.
 
 It is useful when an annotation drawing has been created on windows and you want to recreate the
 drawig in linux.

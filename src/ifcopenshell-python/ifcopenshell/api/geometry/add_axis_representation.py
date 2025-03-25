@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
-from typing import Union
+from typing import Union, Any
 
 COORD = Union[tuple[float, float], tuple[float, float, float]]
 
@@ -56,13 +56,10 @@ def add_axis_representation(
     :param context: The IfcGeometricRepresentationContext that the
         representation is part of. This must be either a
         Model/Axis/GRAPH_VIEW (3D) or Plan/Axis/GRAPH_VIEW (2D).
-    :type context: ifcopenshell.entity_instance
     :param axis: The axis, as a list of two coordinates, the coordinates
         being either a list of 2 or 3 float coordinates depending on whether
         the axis is 2D or 3D.
-    :type axis: list[list[float]]
     :return: The newly created IfcShapeRepresentation entity
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -82,6 +79,9 @@ def add_axis_representation(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         is_2d = len(self.settings["axis"][0]) == 2

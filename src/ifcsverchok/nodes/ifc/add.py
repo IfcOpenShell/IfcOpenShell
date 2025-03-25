@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
@@ -27,24 +28,41 @@ from sverchok.data_structure import updateNode
 class SvIfcAdd(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcAdd"
     bl_label = "IFC Add"
+    bl_description = "Add an entity to the provided IFC file."
     file: StringProperty(name="file", update=updateNode)
     entity: StringProperty(name="entity", update=updateNode)
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "file").prop_name = "file"
-        self.inputs.new("SvStringsSocket", "entity").prop_name = "entity"
-        self.outputs.new("SvStringsSocket", "file")
-        self.outputs.new("SvStringsSocket", "entity")
+        helper.create_socket(
+            self.inputs,
+            "file",
+            description="File to add entity to.",
+            data_type="list[list[ifcopenshell.file]]",
+            prop_name="file",
+        )
+        helper.create_socket(
+            self.inputs,
+            "entity",
+            description="Entity to add to file.",
+            data_type="list[list[ifcopenshell.entity_instance]]",
+            prop_name="entity",
+        )
+        helper.create_socket(
+            self.outputs, "file", description="File with added entity.", data_type="list[list[ifcopenshell.file]]"
+        )
+        helper.create_socket(
+            self.outputs, "entity", description="Added entity.", data_type="list[list[ifcopenshell.entity_instance]]"
+        )
 
     def process(self):
         self.sv_input_names = ["file", "entity"]
-        self.file_out = []
-        self.entity_out = []
+        self.file_out: list[ifcopenshell.file] = []
+        self.entity_out: list[ifcopenshell.entity_instance] = []
         super().process()
         self.outputs["file"].sv_set([self.file_out])
         self.outputs["entity"].sv_set([self.entity_out])
 
-    def process_ifc(self, file, entity):
+    def process_ifc(self, file: ifcopenshell.file, entity: ifcopenshell.entity_instance) -> None:
         self.entity_out.append(file.add(entity))
         self.file_out.append(file)
 

@@ -23,7 +23,6 @@ import ifcopenshell.api.constraint
 import ifcopenshell.util.attribute
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 
 
 class LoadObjectives(bpy.types.Operator):
@@ -84,7 +83,7 @@ class AddObjective(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        result = ifcopenshell.api.run("constraint.add_objective", IfcStore.get_file())
+        result = ifcopenshell.api.run("constraint.add_objective", tool.Ifc.get())
         bpy.ops.bim.load_objectives()
         bpy.ops.bim.enable_editing_constraint(constraint=result.id())
         return {"FINISHED"}
@@ -116,7 +115,7 @@ class RemoveConstraint(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMConstraintProperties
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         ifcopenshell.api.run(
             "constraint.remove_constraint", self.file, **{"constraint": self.file.by_id(self.constraint)}
         )
@@ -162,8 +161,12 @@ class AssignConstraint(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        products = [self.file.by_id(obj_id) for obj in objs if (obj_id := obj.BIMObjectProperties.ifc_definition_id)]
+        objs = [bpy.data.objects[self.obj]] if self.obj else context.selected_objects
+        products = [
+            self.file.by_id(obj_id)
+            for obj in objs
+            if (obj_id := tool.Blender.get_object_bim_props(obj).ifc_definition_id)
+        ]
         if products:
             ifcopenshell.api.run(
                 "constraint.assign_constraint",
@@ -185,8 +188,12 @@ class UnassignConstraint(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        products = [self.file.by_id(obj_id) for obj in objs if (obj_id := obj.BIMObjectProperties.ifc_definition_id)]
+        objs = [bpy.data.objects[self.obj]] if self.obj else context.selected_objects
+        products = [
+            self.file.by_id(obj_id)
+            for obj in objs
+            if (obj_id := tool.Blender.get_object_bim_props(obj).ifc_definition_id)
+        ]
         if products:
             ifcopenshell.api.run(
                 "constraint.unassign_constraint",

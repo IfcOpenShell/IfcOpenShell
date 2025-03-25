@@ -30,17 +30,15 @@ def get_application(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instanc
     IfcApplication. See ifcopenshell.api.owner.create_owner_history for details.
 
     :param ifc: The IFC file object that is being edited.
-    :type ifc: ifcopenshell.file
     :return: The IfcApplication with metadata of the authoring software.
-    :rtype: ifcopenshell.entity_instance
     """
-    app = ifc.by_type("IfcApplication")
+    app = next(iter(ifc.by_type("IfcApplication")), None)
     if not app and ifc.schema == "IFC2X3":
         raise Exception(
             "Please create an application to continue. See the owner.create_owner_history docs for more info."
             "https://docs.ifcopenshell.org/autoapi/ifcopenshell/api/owner/create_owner_history/index.html"
         )
-    return (app or [None])[0]
+    return app
 
 
 def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
@@ -50,17 +48,15 @@ def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None
     IfcApplication. See ifcopenshell.api.owner.create_owner_history for details.
 
     :param ifc: The IFC file object that is being edited.
-    :type ifc: ifcopenshell.file
     :return: The IfcPersonAndOrganization with metadata of the authoring user.
-    :rtype: ifcopenshell.entity_instance
     """
-    pao = ifc.by_type("IfcPersonAndOrganization")
+    pao = next(iter(ifc.by_type("IfcPersonAndOrganization")), None)
     if not pao and ifc.schema == "IFC2X3":
         raise Exception(
             "Please create a user to continue. See the owner.create_owner_history docs for more info."
             "https://docs.ifcopenshell.org/autoapi/ifcopenshell/api/owner/create_owner_history/index.html"
         )
-    return (pao or [None])[0]
+    return pao
 
 
 get_application_factory = get_application

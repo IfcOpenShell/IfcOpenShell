@@ -20,6 +20,7 @@ import bpy
 from bonsai.bim.module.model.data import AuthoringData
 from bpy.types import PropertyGroup
 from math import pi
+from typing import TYPE_CHECKING
 
 
 class BIMCadProperties(PropertyGroup):
@@ -31,3 +32,11 @@ class BIMCadProperties(PropertyGroup):
     gable_roof_edge_angle: bpy.props.FloatProperty(
         name="Gable Roof Edge Angle", default=pi / 2, soft_min=0, soft_max=pi / 2, subtype="ANGLE"
     )
+
+    if TYPE_CHECKING:
+        resolution: int
+        radius: float
+        distance: float
+        x: float
+        y: float
+        gable_roof_edge_angle: float

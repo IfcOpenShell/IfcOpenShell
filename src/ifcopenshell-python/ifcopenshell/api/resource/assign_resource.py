@@ -42,12 +42,9 @@ def assign_resource(
     (e.g. if the resource is a labour resource).
 
     :param relating_resource: The IfcResource to assign the object to.
-    :type relating_resource: ifcopenshell.entity_instance
     :param related_object: The IfcProduct or IfcActor to assign to the
         object.
-    :type related_object: ifcopenshell.entity_instance
     :return: The newly created IfcRelAssignsToResource
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -82,26 +79,18 @@ def assign_resource(
         # This means that UCO is now our crane operator.
         ifcopenshell.api.resource.assign_resource(model, relating_resource=crane, related_object=actor)
     """
-    settings = {
-        "relating_resource": relating_resource,
-        "related_object": related_object,
-    }
-
-    if settings["related_object"].HasAssignments:
-        for assignment in settings["related_object"].HasAssignments:
-            if (
-                assignment.is_a("IfclRelAssignsToResource")
-                and assignment.RelatingResource == settings["relating_resource"]
-            ):
+    if related_object.HasAssignments:
+        for assignment in related_object.HasAssignments:
+            if assignment.is_a("IfclRelAssignsToResource") and assignment.RelatingResource == relating_resource:
                 return assignment
 
     resource_of = None
-    if settings["relating_resource"].ResourceOf:
-        resource_of = settings["relating_resource"].ResourceOf[0]
+    if relating_resource.ResourceOf:
+        resource_of = relating_resource.ResourceOf[0]
 
     if resource_of:
         related_objects = list(resource_of.RelatedObjects)
-        related_objects.append(settings["related_object"])
+        related_objects.append(related_object)
         resource_of.RelatedObjects = related_objects
         ifcopenshell.api.owner.update_owner_history(file, **{"element": resource_of})
     else:
@@ -110,8 +99,8 @@ def assign_resource(
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": [settings["related_object"]],
-                "RelatingResource": settings["relating_resource"],
+                "RelatedObjects": [related_object],
+                "RelatingResource": relating_resource,
             }
         )
     return resource_of

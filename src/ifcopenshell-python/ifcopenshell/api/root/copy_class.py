@@ -17,12 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.material
 import ifcopenshell.api.root
 import ifcopenshell.api.system
 import ifcopenshell.api.geometry
 import ifcopenshell.util.system
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+from typing import Any
 
 
 def copy_class(file: ifcopenshell.file, product: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
@@ -53,9 +55,7 @@ def copy_class(file: ifcopenshell.file, product: ifcopenshell.entity_instance) -
       connections are still valid.
 
     :param product: The IfcProduct to copy.
-    :type param: ifcopenshell.entity_instance
     :return: The copied product
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -69,23 +69,26 @@ def copy_class(file: ifcopenshell.file, product: ifcopenshell.entity_instance) -
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"product": product}
-    return usecase.execute()
+    return usecase.execute(product)
 
 
 class Usecase:
-    def execute(self):
-        result = ifcopenshell.util.element.copy(self.file, self.settings["product"])
+    file: ifcopenshell.file
+
+    def execute(self, product: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        result = ifcopenshell.util.element.copy(self.file, product)
         self.copy_direct_attributes(result)
-        self.copy_indirect_attributes(self.settings["product"], result)
+        self.copy_indirect_attributes(product, result)
         return result
 
-    def copy_direct_attributes(self, to_element):
+    def copy_direct_attributes(self, to_element: ifcopenshell.entity_instance) -> None:
         self.remove_representations(to_element)
         self.copy_object_placements(to_element)
         self.copy_psets(to_element)
 
-    def copy_indirect_attributes(self, from_element, to_element):
+    def copy_indirect_attributes(
+        self, from_element: ifcopenshell.entity_instance, to_element: ifcopenshell.entity_instance
+    ) -> None:
         for inverse in self.file.get_inverse(from_element):
             if inverse.is_a("IfcRelDefinesByProperties"):
                 # Properties must not be shared between objects for convenience of authoring
@@ -157,9 +160,7 @@ class Usecase:
                 inverse.RelatedObjects = [to_element]
             elif inverse.is_a("IfcRelAssociatesMaterial") and "Set" in inverse.RelatingMaterial.is_a():
                 inverse = ifcopenshell.util.element.copy(self.file, inverse)
-                inverse.RelatingMaterial = ifcopenshell.util.element.copy_deep(
-                    self.file, inverse.RelatingMaterial, exclude=["IfcMaterial"]
-                )
+                inverse.RelatingMaterial = ifcopenshell.api.material.copy_material(self.file, inverse.RelatingMaterial)
                 inverse.RelatedObjects = [to_element]
             else:
                 for i, value in enumerate(inverse):
@@ -171,13 +172,13 @@ class Usecase:
                         new_value.append(to_element)
                         inverse[i] = new_value
 
-    def remove_representations(self, element):
+    def remove_representations(self, element: ifcopenshell.entity_instance) -> None:
         if element.is_a("IfcProduct"):
             element.Representation = None
         elif element.is_a("IfcTypeProduct"):
             element.RepresentationMaps = None
 
-    def copy_object_placements(self, element):
+    def copy_object_placements(self, element: ifcopenshell.entity_instance) -> None:
         if not element.is_a("IfcProduct") or not element.ObjectPlacement:
             return
         element.ObjectPlacement = ifcopenshell.util.element.copy(self.file, element.ObjectPlacement)
@@ -185,7 +186,7 @@ class Usecase:
             self.file, element.ObjectPlacement.RelativePlacement
         )
 
-    def copy_psets(self, element):
+    def copy_psets(self, element: ifcopenshell.entity_instance) -> None:
         if not element.is_a("IfcTypeObject") or not element.HasPropertySets:
             return
         element.HasPropertySets = [

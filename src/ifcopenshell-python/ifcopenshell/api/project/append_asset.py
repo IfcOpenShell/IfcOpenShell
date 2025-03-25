@@ -229,7 +229,9 @@ class Usecase:
             return next((e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None)
         elif element.is_a("IfcPresentationStyle"):
             name = element.Name
-            return next((e for e in self.file.by_type("IfcPresentationStyle") if e.Name == name), None)
+            if name is None:
+                return None
+            return next((e for e in self.file.by_type(element.is_a()) if e.Name == name), None)
         else:
             return None
 
@@ -261,6 +263,8 @@ class Usecase:
             self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": ["StyledByItem", "LayerAssignment"],
             "IfcRepresentation": ["LayerAssignments"],
+            "IfcProductDefinitionShape": ["HasShapeAspects"],
+            "IfcRepresentationMap": ["HasShapeAspects"],
         }
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
@@ -278,6 +282,8 @@ class Usecase:
                 "LayerAssignments" if self.file.schema == "IFC2X3" else "LayerAssignment",
             ],
             "IfcRepresentation": ["LayerAssignments"],
+            "IfcProductDefinitionShape": ["HasShapeAspects"],
+            "IfcRepresentationMap": ["HasShapeAspects"],
         }
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
@@ -519,6 +525,7 @@ class Usecase:
         if added_element := reuse_identities.get(element_identity):
             return added_element
 
+        ifc_class = element.is_a()
         attributes_ = None
 
         def get_attributes() -> tuple[W.attribute, ...]:
@@ -544,6 +551,13 @@ class Usecase:
             if existing_material is not None:
                 reuse_identities[element_identity] = existing_material
                 return existing_material
+        elif element.is_a("IfcPresentationStyle"):
+            style_name = element.Name
+            if style_name is not None:
+                existing_style = next((e for e in ifc_file.by_type(ifc_class) if e.Name == style_name), None)
+                if existing_style is not None:
+                    reuse_identities[element_identity] = existing_style
+                    return existing_style
 
         attrs = {}
 
@@ -592,7 +606,7 @@ class Usecase:
             attrs[attr_index] = attr_value
 
         # Adding entity at the end just to keep it consistent with `file.add`.
-        new = ifc_file.create_entity(element.is_a())
+        new = ifc_file.create_entity(ifc_class)
         reuse_identities[element_identity] = new
         for attr_index, attr_value in attrs.items():
             new[attr_index] = attr_value

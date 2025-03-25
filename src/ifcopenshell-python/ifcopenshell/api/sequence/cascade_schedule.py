@@ -19,6 +19,8 @@
 import datetime
 import ifcopenshell.util.date
 import ifcopenshell.util.sequence
+from ifcopenshell.util.sequence import DURATION_TYPE
+from typing import Union, Optional
 
 
 def cascade_schedule(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> None:
@@ -41,9 +43,7 @@ def cascade_schedule(file: ifcopenshell.file, task: ifcopenshell.entity_instance
     be equivalent to be Tuesday 8am, for instance.
 
     :param task: The start task to begin cascading from.
-    :type task: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -103,16 +103,22 @@ def cascade_schedule(file: ifcopenshell.file, task: ifcopenshell.entity_instance
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"task": task}
-    return usecase.execute()
+    return usecase.execute(task)
 
 
 class Usecase:
-    def execute(self):
-        self.calendar_cache = {}
-        self.cascade_task(self.settings["task"], is_first_task=True)
+    file: ifcopenshell.file
 
-    def cascade_task(self, task, is_first_task=False, task_sequence=None):
+    def execute(self, task: ifcopenshell.entity_instance):
+        self.calendar_cache = {}
+        self.cascade_task(task, is_first_task=True)
+
+    def cascade_task(
+        self,
+        task: ifcopenshell.entity_instance,
+        is_first_task: bool = False,
+        task_sequence: Optional[list[ifcopenshell.entity_instance]] = None,
+    ) -> None:
         if task_sequence is None:
             task_sequence = []
 
@@ -316,18 +322,22 @@ class Usecase:
                 for nested_task in rel.RelatedObjects or []
             ]
 
-    def get_lag_time_days(self, lag_time):
+    def get_lag_time_days(self, lag_time: ifcopenshell.entity_instance) -> int:
         return ifcopenshell.util.date.ifc2datetime(lag_time.LagValue.wrappedValue).days
 
-    def get_calendar(self, task):
+    def get_calendar(self, task: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         if task.id() not in self.calendar_cache:
             self.calendar_cache[task.id()] = ifcopenshell.util.sequence.derive_calendar(task)
         return self.calendar_cache[task.id()]
 
-    def offset_date(self, date, days, duration_type, calendar):
+    def offset_date(
+        self, date: datetime.datetime, days: int, duration_type: DURATION_TYPE, calendar: ifcopenshell.entity_instance
+    ) -> datetime.datetime:
         return ifcopenshell.util.sequence.offset_date(date, datetime.timedelta(days=days), duration_type, calendar)
 
-    def get_task_time_attribute(self, task, attribute):
+    def get_task_time_attribute(
+        self, task: ifcopenshell.entity_instance, attribute: str
+    ) -> Union[datetime.datetime, None]:
         if task.TaskTime:
             value = getattr(task.TaskTime, attribute)
             if value:

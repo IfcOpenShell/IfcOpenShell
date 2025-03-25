@@ -24,7 +24,6 @@ import ifcopenshell.util.element
 import bonsai.bim.handler
 import bonsai.tool as tool
 import bonsai.core.document as core
-from bonsai.bim.ifc import IfcStore
 
 
 class LoadProjectDocuments(bpy.types.Operator):
@@ -116,7 +115,7 @@ class EditDocument(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMDocumentProperties
+        props = tool.Document.get_document_props()
         core.edit_document(tool.Ifc, tool.Document, document=tool.Ifc.get().by_id(props.active_document_id))
 
 

@@ -22,6 +22,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.element
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from ifcsverchok.ifcstore import SvIfcStore
 from bpy.props import StringProperty, BoolProperty
 from sverchok.node_tree import SverchCustomTreeNode
@@ -31,7 +32,7 @@ from sverchok.data_structure import updateNode, flatten_data
 class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     """
     Triggers: Ifc write to file
-    Tooltip: Write active Sverchok Ifc file to path
+    Tooltip: Write transient Ifc file to path
     """
 
     def refresh_node_local(self, context):
@@ -39,7 +40,9 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
             self.process()
             self.refresh_local = False
 
-    refresh_local: BoolProperty(name="Write", description="Write to file", update=refresh_node_local)
+    refresh_local: BoolProperty(
+        name="Write", description="Write to file when changed to True.", update=refresh_node_local
+    )
 
     bl_idname = "SvIfcWriteFile"
     bl_label = "IFC Write File"
@@ -50,8 +53,20 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
     )
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "path").prop_name = "path"
-        self.outputs.new("SvStringsSocket", "output")
+        helper.create_socket(
+            self.inputs,
+            "path",
+            description="File path to write to. Can be relative.",
+            data_type="str",
+            prop_name="path",
+        )
+        helper.create_socket(
+            self.outputs,
+            "output",
+            description="Node result output message.",
+            data_type="str",
+            prop_name="output",
+        )
 
     def draw_buttons(self, context, layout):
         row = layout.row(align=True)
@@ -77,7 +92,8 @@ class SvIfcWriteFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.Sv
             file.write(path)
         self.outputs["output"].sv_set(f"File written successfully to: {path}.")
 
-    def ensure_hirarchy(self, file):
+    def ensure_hirarchy(self, file: ifcopenshell.file) -> None:
+        # TODO: same code as ifc.write_file_panel?
         elements_in_buildings = []
         if not 0 <= 0 < len(file.by_type("IfcBuilding")):
             my_building = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcBuilding", name="My Building")

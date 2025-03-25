@@ -118,7 +118,9 @@ class Aggregate(bonsai.core.tool.Aggregate):
                     not_editing_obj = props.not_editing_objects.add()
                     not_editing_obj.obj = obj.original
                     not_editing_obj.previous_display_type = obj.original.display_type
+                    not_editing_obj.previous_hide_select = obj.original.hide_select
                     obj.original.display_type = "WIRE"
+                    obj.hide_select = True
                 else:
                     editing_obj = props.editing_objects.add()
                     editing_obj.obj = obj.original
@@ -132,13 +134,15 @@ class Aggregate(bonsai.core.tool.Aggregate):
         props = context.scene.BIMAggregateProperties
         for obj_prop in props.not_editing_objects:
             obj = obj_prop.obj
+            if not obj:
+                continue
             obj.original.display_type = obj_prop.previous_display_type
+            obj.hide_select = obj_prop.previous_hide_select
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
 
         parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(props.editing_aggregate))
-        objs = [tool.Ifc.get_object(part) for part in parts]
         if context.space_data.local_view:
             bpy.ops.view3d.localview()
 

@@ -16,17 +16,26 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
 import bonsai.core.tool
 import bonsai.tool as tool
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.covering.prop import BIMCoveringProperties
 
 
 class Covering(bonsai.core.tool.Covering):
     @classmethod
+    def get_covering_props(cls) -> BIMCoveringProperties:
+        return bpy.context.scene.BIMCoveringProperties
+
+    @classmethod
     def get_z_from_ceiling_height(cls) -> float:
-        props = bpy.context.scene.BIMCoveringProperties
+        props = cls.get_covering_props()
         return props.ceiling_height
 
     #    def toggle_spaces_visibility_wired_and_textured(cls, spaces):

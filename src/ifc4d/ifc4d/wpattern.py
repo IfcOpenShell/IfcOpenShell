@@ -1,7 +1,7 @@
 """
 This class parses the calendar work pattern and retruns a list
 The list returned has a key DayOfWeek which takes a value Sunday to Saturday
-for each day as a key there is a list of working times with the format 
+for each day as a key there is a list of working times with the format
 {"Start": datetime.time, "Finish": datetime.time}
 
 """

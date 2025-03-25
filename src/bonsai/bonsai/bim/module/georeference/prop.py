@@ -33,15 +33,18 @@ from bpy.props import (
 )
 from bonsai.bim.module.georeference.data import GeoreferenceData
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
+from typing import TYPE_CHECKING
 
 
-def get_coordinate_operation_class(self, context):
+def get_coordinate_operation_class(
+    self: "BIMGeoreferenceProperties", context: bpy.types.Context
+) -> list[tuple[str, str, str]]:
     if not GeoreferenceData.is_loaded:
         GeoreferenceData.load()
     return GeoreferenceData.data["coordinate_operation_class"]
 
 
-def update_true_north_angle(self, context):
+def update_true_north_angle(self: "BIMGeoreferenceProperties", context: bpy.types.Context) -> None:
     if self.is_changing_angle:
         return
     self.is_changing_angle = True
@@ -54,7 +57,7 @@ def update_true_north_angle(self, context):
     self.is_changing_angle = False
 
 
-def update_true_north_vector(self, context):
+def update_true_north_vector(self: "BIMGeoreferenceProperties", context: bpy.types.Context) -> None:
     if self.is_changing_angle:
         return
     self.is_changing_angle = True
@@ -67,7 +70,7 @@ def update_true_north_vector(self, context):
     self.is_changing_angle = False
 
 
-def update_grid_north_angle(self, context):
+def update_grid_north_angle(self: "BIMGeoreferenceProperties", context: bpy.types.Context) -> None:
     if self.is_changing_angle:
         return
     self.is_changing_angle = True
@@ -81,7 +84,7 @@ def update_grid_north_angle(self, context):
     self.is_changing_angle = False
 
 
-def update_grid_north_vector(self, context):
+def update_grid_north_vector(self: "BIMGeoreferenceProperties", context: bpy.types.Context) -> None:
     if self.is_changing_angle:
         return
     self.is_changing_angle = True
@@ -95,15 +98,15 @@ def update_grid_north_vector(self, context):
     self.is_changing_angle = False
 
 
-def update_should_visualise(self, context):
+def update_should_visualise(self: "BIMGeoreferenceProperties", context: bpy.types.Context) -> None:
     if self.should_visualise:
         GeoreferenceDecorator.install(bpy.context)
     else:
         GeoreferenceDecorator.uninstall()
 
 
-def update_blender_coordinates(self, context):
-    props = bpy.context.scene.BIMGeoreferenceProperties
+def update_blender_coordinates(self: "BIMGeoreferenceProperties", context: bpy.types.Context) -> None:
+    props = self
     if props.is_updating_coordinates:
         return
     props.is_updating_coordinates = True
@@ -123,8 +126,8 @@ def update_blender_coordinates(self, context):
     props.is_updating_coordinates = False
 
 
-def update_local_coordinates(self, context):
-    props = bpy.context.scene.BIMGeoreferenceProperties
+def update_local_coordinates(self: "BIMGeoreferenceProperties", context: bpy.types.Context) -> None:
+    props = self
     if props.is_updating_coordinates:
         return
     props.is_updating_coordinates = True
@@ -147,8 +150,8 @@ def update_local_coordinates(self, context):
     props.is_updating_coordinates = False
 
 
-def update_map_coordinates(self, context):
-    props = bpy.context.scene.BIMGeoreferenceProperties
+def update_map_coordinates(self: "BIMGeoreferenceProperties", context: bpy.types.Context) -> None:
+    props = self
     if props.is_updating_coordinates:
         return
     props.is_updating_coordinates = True
@@ -248,3 +251,45 @@ class BIMGeoreferenceProperties(PropertyGroup):
     wcs_y: StringProperty(name="WCS Y", default="0")
     wcs_z: StringProperty(name="WCS Z", default="0")
     wcs_rotation: StringProperty(name="WCS Rotation", default="0")
+
+    if TYPE_CHECKING:
+        coordinate_operation_class: str
+        is_changing_angle: bool
+        is_editing: bool
+        is_editing_wcs: bool
+        is_editing_true_north: bool
+        coordinate_operation: bpy.types.bpy_prop_collection_idprop[Attribute]
+        projected_crs: bpy.types.bpy_prop_collection_idprop[Attribute]
+        is_updating_coordinates: bool
+        blender_coordinates: str
+        local_coordinates: str
+        map_coordinates: str
+        should_visualise: bool
+        visualization_scale: float
+        grid_north_angle: str
+        x_axis_abscissa: str
+        x_axis_ordinate: str
+        x_axis_is_null: bool
+
+        host_model_origin: str
+        host_model_origin_si: str
+        host_model_project_north: str
+
+        model_origin: str
+        model_origin_si: str
+        model_project_north: str
+
+        has_blender_offset: bool
+        blender_offset_x: str
+        blender_offset_y: str
+        blender_offset_z: str
+        blender_x_axis_abscissa: str
+        blender_x_axis_ordinate: str
+
+        true_north_angle: str
+        true_north_abscissa: str
+        true_north_ordinate: str
+        wcs_x: str
+        wcs_y: str
+        wcs_z: str
+        wcs_rotation: str

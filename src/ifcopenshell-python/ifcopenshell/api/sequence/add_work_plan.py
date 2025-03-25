@@ -41,15 +41,11 @@ def add_work_plan(
 
     :param name: The name of the work plan. Recommended to be "Maintenance"
         or "Construction" for the two main purposes.
-    :type name: str, optional
     :param predefined_type: The type of work plan, used for baselining.
         Leave as "NOTDEFINED" if unsure.
-    :type predefined_type: str
     :param start_time: The earliest start time when the schedules grouped
         within the work plan are relevant.
-    :type start_time: str,datetime.time
     :return: The newly created IfcWorkPlan
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -62,23 +58,18 @@ def add_work_plan(
         schedule = ifcopenshell.api.sequence.add_work_schedule(model,
             name="Construction Schedule A", work_plan=work_plan)
     """
-    settings = {
-        "name": name,
-        "predefined_type": predefined_type,
-        "start_time": start_time or datetime.now(),
-    }
-
+    start_time = start_time or datetime.now()
     work_plan = ifcopenshell.api.root.create_entity(
         file,
         ifc_class="IfcWorkPlan",
-        predefined_type=settings["predefined_type"],
-        name=settings["name"],
+        predefined_type=predefined_type,
+        name=name,
     )
     work_plan.CreationDate = ifcopenshell.util.date.datetime2ifc(datetime.now(), "IfcDateTime")
     user = ifcopenshell.api.owner.settings.get_user(file)
     if user:
         work_plan.Creators = [user.ThePerson]
-    work_plan.StartTime = ifcopenshell.util.date.datetime2ifc(settings["start_time"], "IfcDateTime")
+    work_plan.StartTime = ifcopenshell.util.date.datetime2ifc(start_time, "IfcDateTime")
 
     context = file.by_type("IfcContext")[0]
     ifcopenshell.api.project.assign_declaration(

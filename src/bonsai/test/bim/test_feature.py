@@ -18,6 +18,7 @@
 
 import os
 import bpy
+import pytest
 import traceback
 import webbrowser
 import numpy as np
@@ -39,7 +40,7 @@ scenarios("feature")
 
 variables = {
     "cwd": Path.cwd().as_posix(),
-    "ifc": "IfcStore.get_file()",
+    "ifc": "tool.Ifc.get()",
     "pset_ifc": "IfcStore.pset_template_file",
     "classification_ifc": "IfcStore.classification_file",
 }
@@ -65,12 +66,14 @@ class PanelSpy:
 
     def __getattr__(self, attr):
         self.spied_attr = attr
+        if annotation := self.panel.__annotations__.get(attr, None):
+            return annotation.keywords.get("default", None)  # An operator property
         if attr == "layout":
             return self
         return self
 
     def __call__(self, *args, **kwargs):
-        if self.spied_attr in ("row", "column", "box", "separator"):
+        if self.spied_attr in ("row", "column", "box", "separator", "menu", "operator_menu_enum", "split"):
             return self
         elif self.spied_attr == "template_list":
             listtype_name, list_id, dataptr, propname, active_dataptr, active_propname = args
@@ -123,7 +126,10 @@ class PanelSpy:
             prefix, op_name = operator.split(".")
             operator = getattr(getattr(bpy.ops, prefix), op_name)
             bl_idname = operator.idname()
-            bl_label = getattr(bpy.types, bl_idname).bl_label
+            try:
+                bl_label = getattr(bpy.types, bl_idname).bl_label
+            except:  # Doesn't work on built-ins, I don't know what to do
+                bl_label = bl_idname
             text = kwargs.get("text", bl_label)
             icon = kwargs.get("icon", None)
             if text:
@@ -152,8 +158,27 @@ class TemplateListSpy:
         self.spied_data = spied_data
 
 
-panel_name_cache = {}
+ui_name_cache = {}
 panel_spy: PanelSpy = None
+
+
+def create_ui_name_cache():
+    global ui_name_cache
+    if ui_name_cache:
+        return
+    for bl_idname in dir(bpy.types):
+        try:
+            panel_type = getattr(bpy.types, bl_idname)
+            if panel_type.bl_rna.base.name == "Panel":
+                ui_name_cache[panel_type.bl_label] = panel_type.bl_idname
+            elif panel_type.bl_rna.base.name == "Operator":
+                ui_name_cache[panel_type.bl_label] = bl_idname
+            elif panel_type.bl_rna.base.name == "Menu":
+                if panel_type.bl_label == "Add" and bl_idname != "VIEW3D_MT_add":
+                    continue  # Non-unique, but "VIEW3D_MT_add" is the one we care about
+                ui_name_cache[panel_type.bl_label] = bl_idname
+        except:
+            pass
 
 
 def replace_variables(value):
@@ -190,7 +215,8 @@ def an_empty_blender_session():
     # default project settings
     bpy.context.scene.unit_settings.system = "METRIC"
     bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
-    bpy.context.scene.BIMProjectProperties.template_file = "0"
+    props = tool.Project.get_project_props()
+    props.template_file = "0"
     tool.Blender.get_addon_preferences().should_play_chaching_sound = False
 
 
@@ -203,7 +229,8 @@ def an_empty_ifc_project():
 @given("an empty IFC2X3 project")
 def an_empty_ifc_2x3_project():
     an_empty_blender_session()
-    bpy.context.scene.BIMProjectProperties.export_schema = "IFC2X3"
+    props = tool.Project.get_project_props()
+    props.export_schema = "IFC2X3"
     bpy.ops.bim.create_project()
 
 
@@ -216,22 +243,40 @@ def the_brickschema_is_stubbed():
 
 @given(parsers.parse('I look at the "{panel}" panel'))
 @when(parsers.parse('I look at the "{panel}" panel'))
-@when(parsers.parse('I look at the "{panel}" panel'))
+@then(parsers.parse('I look at the "{panel}" panel'))
 def i_look_at_the_panel_panel(panel):
-    global panel_name_cache
+    global ui_name_cache
     global panel_spy
-    if not panel_name_cache:
-        for bl_idname in dir(bpy.types):
-            try:
-                panel_type = getattr(bpy.types, bl_idname)
-                if panel_type.bl_rna.base.name != "Panel":
-                    continue
-                panel_name_cache[panel_type.bl_label] = panel_type.bl_idname
-            except:
-                pass
-    if panel not in panel_name_cache:
-        assert False, f"Panel {panel} not found in {panel_name_cache}"
-    panel_spy = PanelSpy(getattr(bpy.types, panel_name_cache[panel]))
+    create_ui_name_cache()
+    if panel not in ui_name_cache:
+        assert False, f"Panel {panel} not found in {ui_name_cache}"
+    panel_spy = PanelSpy(getattr(bpy.types, ui_name_cache[panel]))
+    panel_spy.refresh_spy()
+
+
+@given(parsers.parse('I open the "{name}" menu'))
+@when(parsers.parse('I open the "{name}" menu'))
+@then(parsers.parse('I open the "{name}" menu'))
+def i_open_the_name_menu(name):
+    global ui_name_cache
+    global panel_spy
+    create_ui_name_cache()
+    if name not in ui_name_cache:
+        assert False, f"Menu {name} not found in {ui_name_cache}"
+    panel_spy = PanelSpy(getattr(bpy.types, ui_name_cache[name]))
+    panel_spy.refresh_spy()
+
+
+@given(parsers.parse('I trigger "{operator}"'))
+@when(parsers.parse('I trigger "{operator}"'))
+@then(parsers.parse('I trigger "{operator}"'))
+def i_trigger_operator(operator):
+    global ui_name_cache
+    global panel_spy
+    create_ui_name_cache()
+    if operator not in ui_name_cache:
+        assert False, f"Operator {operator} not found in {ui_name_cache}"
+    panel_spy = PanelSpy(getattr(bpy.types, ui_name_cache[operator]))
     panel_spy.refresh_spy()
 
 
@@ -299,27 +344,36 @@ def i_see_the_prop_property_is_value(prop, value):
 def i_set_the_prop_property_to_value(prop, value):
     value = value.strip()
     panel_spy.refresh_spy()
-    for spied_prop in panel_spy.spied_props:
-        if prop in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
-            if spied_prop["prop_type"] == "BOOLEAN":
-                if value == "TRUE":
-                    setattr(spied_prop["props"], spied_prop["name"], True)
-                elif value == "FALSE":
-                    setattr(spied_prop["props"], spied_prop["name"], False)
-            elif spied_prop["prop_type"] == "FLOAT":
-                setattr(spied_prop["props"], spied_prop["name"], float(value))
-            elif spied_prop["prop_type"] == "INT":
-                setattr(spied_prop["props"], spied_prop["name"], int(value))
-            elif spied_prop["prop_type"] == "ENUM":
-                enum_identifier = [i for i in spied_prop["enum_items"] if i is not None and i[1] == value]
-                if not enum_identifier:
-                    assert False, f"Could not find value {value} in enum {spied_prop['enum_items']}"
-                setattr(spied_prop["props"], spied_prop["name"], enum_identifier[0][0])
-            else:
-                setattr(spied_prop["props"], spied_prop["name"], value)
-            panel_spy.is_spy_dirty = True
-            return
-    assert False, f"Property {prop} not found in {panel_spy.spied_props}"
+    is_nth = False
+    if prop[0].isnumeric() and (prop.endswith("st") or prop.endswith("nd") or prop.endswith("th")):
+        is_nth = True
+    for nth, spied_prop in enumerate(panel_spy.spied_props):
+        if is_nth and nth != int(prop[:-2]) - 1:
+            continue
+        if not is_nth and prop not in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
+            continue
+        if spied_prop["prop_type"] == "BOOLEAN":
+            if value == "TRUE":
+                setattr(spied_prop["props"], spied_prop["name"], True)
+            elif value == "FALSE":
+                setattr(spied_prop["props"], spied_prop["name"], False)
+        elif spied_prop["prop_type"] == "FLOAT":
+            setattr(spied_prop["props"], spied_prop["name"], float(value))
+        elif spied_prop["prop_type"] == "INT":
+            setattr(spied_prop["props"], spied_prop["name"], int(value))
+        elif spied_prop["prop_type"] == "ENUM":
+            enum_identifier = [i for i in spied_prop["enum_items"] if i is not None and i[1] == value]
+            if not enum_identifier:
+                assert False, f"Could not find value {value} in enum {spied_prop['enum_items']}"
+            setattr(spied_prop["props"], spied_prop["name"], enum_identifier[0][0])
+        elif spied_prop["prop_type"] == "POINTER":
+            setattr(spied_prop["props"], spied_prop["name"], bpy.data.objects.get(value))
+        else:
+            setattr(spied_prop["props"], spied_prop["name"], value)
+        panel_spy.is_spy_dirty = True
+        return
+    debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_props)])
+    assert False, f"Property {prop} not found in:\n{debug}"
 
 
 @then(parsers.parse('The "{name}" list has {total} items'))
@@ -363,20 +417,25 @@ def i_create_default_mep_types():
     model_props = tool.Model.get_model_props()
 
     # add couple segments types
-    model_props.type_class = "IfcDuctSegmentType"
-    model_props.type_name = "RECT1"
-    model_props.type_template = "FLOW_SEGMENT_RECTANGULAR"
-    bpy.ops.bim.add_type()
+    i_trigger_operator("Add Element")
+    i_set_the_prop_property_to_value("Name", "RECT1")
+    i_set_the_prop_property_to_value("Class", "IfcDuctSegmentType")
+    i_set_the_prop_property_to_value("Representation", "Rectangular Distribution Segment")
+    i_click_button("OK")
 
-    model_props.type_template = "FLOW_SEGMENT_CIRCULAR"
-    model_props.type_name = "CIRCLE1"
-    bpy.ops.bim.add_type()
+    i_trigger_operator("Add Element")
+    i_set_the_prop_property_to_value("Name", "CIRCLE1")
+    i_set_the_prop_property_to_value("Class", "IfcDuctSegmentType")
+    i_set_the_prop_property_to_value("Representation", "Circular Distribution Segment")
+    i_click_button("OK")
 
     # add an actuator type
-    model_props.type_class = "IfcActuatorType"
-    model_props.type_template = "MESH"  # cube representation
-    model_props.type_name = "ACTUATOR"
-    bpy.ops.bim.add_type()
+    i_trigger_operator("Add Element")
+    i_set_the_prop_property_to_value("Name", "ACTUATOR")
+    i_set_the_prop_property_to_value("Class", "IfcActuatorType")
+    i_set_the_prop_property_to_value("Representation", "Custom Tessellation")
+    i_click_button("OK")
+
     with bpy.context.temp_override(active_object=bpy.data.objects["IfcActuatorType/ACTUATOR"]):
         bpy.ops.bim.add_port()
         # port at cube's left side
@@ -441,6 +500,20 @@ def i_add_a_plane_of_size_size_at_location(size, location):
     bpy.ops.mesh.primitive_plane_add(size=float(size), location=[float(co) for co in location.split(",")])
 
 
+@then(parsers.parse('I expect an error "{error_msg}" when "{function}"'))
+def i_expect_an_error_msg_when_function(error_msg, function):
+    try:
+        exec(function)
+    except Exception as e:
+        actual_error_msg = str(e).strip()
+        if str(e).strip() != error_msg:
+            traceback.print_exc()
+            msg = f"Got different exception running {function} - '{actual_error_msg}' instead of '{error_msg}'"
+            assert False, msg
+        return
+    assert False, f"Function {function} ran without exception '{error_msg}'"
+
+
 @then(parsers.parse('I press "{operator}" and expect error "{error_msg}"'))
 def i_press_operator_and_expect_error(operator, error_msg):
     operator = replace_variables(operator)
@@ -449,13 +522,14 @@ def i_press_operator_and_expect_error(operator, error_msg):
             exec(f"bpy.ops.{operator}")
         else:
             exec(f"bpy.ops.{operator}()")
-        assert False, f"Operator bpy.ops.{operator} ran without exception '{error_msg}'"
     except Exception as e:
         actual_error_msg = str(e).strip()
         if str(e).strip() != error_msg:
             traceback.print_exc()
             msg = f"Got different exception running bpy.ops.{operator} - '{actual_error_msg}' instead of '{error_msg}'"
             assert False, msg
+        return
+    assert False, f"Operator bpy.ops.{operator} ran without exception '{error_msg}'"
 
 
 @given(parsers.parse('I press "{operator}"'))
@@ -474,6 +548,7 @@ def i_press_operator(operator):
 
 @given(parsers.parse('I click "{button}"'))
 @when(parsers.parse('I click "{button}"'))
+@then(parsers.parse('I click "{button}"'))
 def i_click_button(button):
     panel_spy.refresh_spy()
     for spied_operator in panel_spy.spied_operators:
@@ -487,7 +562,12 @@ def i_click_button(button):
             val = getattr(spied_prop["props"], spied_prop["name"])
             setattr(spied_prop["props"], spied_prop["name"], not bool(val))
             return
-    assert False, f"Could not find {button} in {panel_spy.spied_operators}"
+    if button == "OK" and panel_spy.panel.bl_rna.base.name == "Operator":
+        # Clicked confirm on an operator's draw dialog
+        return i_press_operator(panel_spy.panel.bl_idname)
+    debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
+    debug += f"\nHere is the text we see: {panel_spy.spied_labels}"
+    assert False, f"Could not find {button}:\n{debug}"
 
 
 @given(parsers.parse('I click "{button}" and expect error "{error_msg}"'))
@@ -531,6 +611,7 @@ def i_refresh_the_selected_objects():
     bonsai.bim.handler.active_object_callback()
 
 
+@given("I deselect all objects")
 @when("I deselect all objects")
 def i_deselect_all_objects():
     bpy.context.view_layer.objects.active = None
@@ -539,6 +620,8 @@ def i_deselect_all_objects():
 
 @given(parsers.parse('the object "{name}" is selected'))
 @when(parsers.parse('the object "{name}" is selected'))
+@given(parsers.parse('I select the object "{name}"'))
+@when(parsers.parse('I select the object "{name}"'))
 def the_object_name_is_selected(name):
     i_deselect_all_objects()
     additionally_the_object_name_is_selected(name)
@@ -594,7 +677,9 @@ def then_the_object_name_is_placed_in_the_collection_collection(name: str, colle
 def additionally_the_object_name_is_selected(name):
     obj = bpy.context.scene.objects.get(name)
     if not obj:
-        assert False, f'The object "{name}" could not be selected'
+        total = len(bpy.context.scene.objects)
+        debug = "\n".join([o.name for o in bpy.context.scene.objects])
+        assert False, f'The object "{name}" could not be selected. Available objects ({total} total):\n{debug}'
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
 
@@ -655,6 +740,8 @@ def nothing_happens():
     pass
 
 
+@given(parsers.parse('the object "{name}" exists'))
+@when(parsers.parse('the object "{name}" exists'))
 @then(parsers.parse('the object "{name}" exists'))
 def the_object_name_exists(name: str) -> bpy.types.Object:
     # Some objects from linked collections may share the same name. This disambiguates them.
@@ -664,7 +751,8 @@ def the_object_name_exists(name: str) -> bpy.types.Object:
     else:
         obj = bpy.data.objects.get(name)
     if not obj:
-        assert False, f'The object "{name}" does not exist'
+        debug = "\n".join([o.name for o in bpy.data.objects])
+        assert False, f'The object "{name}" does not exist:\n{debug}'
     return obj
 
 
@@ -716,8 +804,8 @@ def the_collection_exclude_status_is(name: str, exclude: str) -> None:
 @then(parsers.parse('the object "{name1}" and "{name2}" are different elements'))
 def the_object_name1_and_name2_are_different_elements(name1, name2):
     ifc = an_ifc_file_exists()
-    element1 = ifc.by_id(the_object_name_exists(name1).BIMObjectProperties.ifc_definition_id)
-    element2 = ifc.by_id(the_object_name_exists(name2).BIMObjectProperties.ifc_definition_id)
+    element1 = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name1)))
+    element2 = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name2)))
     assert element1 != element2, f"Objects {name1} and {name2} have same elements {element1} and {element2}"
 
 
@@ -730,7 +818,7 @@ def the_object_name_has_a_body_of_value(name, value):
 @then(parsers.parse('the object "{name}" has a "{type}" representation of "{context}"'))
 def the_object_name_has_a_representation_type_of_context(name, type, context):
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     context, subcontext, target_view = context.split("/")
     rep = ifcopenshell.util.representation.get_representation(element, context, subcontext or None, target_view or None)
     assert rep
@@ -742,7 +830,7 @@ def the_object_name_has_a_representation_type_of_context(name, type, context):
 def the_object_name_data_is_a_type_representation_of_context(name, type, context):
     ifc = an_ifc_file_exists()
     context, subcontext, target_view = context.split("/")
-    rep = ifc.by_id(the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id)
+    rep = ifc.by_id(tool.Geometry.get_mesh_props(the_object_name_exists(name).data).ifc_definition_id)
     assert rep
     assert rep.RepresentationType == type, f"The object {name} is not a {type} representation"
     assert rep.ContextOfItems.ContextType == context
@@ -784,14 +872,14 @@ def the_ifc_material_name_does_not_exist(name):
 
 @then("an IFC file does not exist")
 def an_ifc_file_does_not_exist():
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     if ifc:
         assert False, "An IFC is available"
 
 
 @then("an IFC file exists")
 def an_ifc_file_exists():
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     if not ifc:
         assert False, "No IFC file is available"
     return ifc
@@ -805,8 +893,8 @@ def the_object_name_should_display_as_mode(name, mode):
 
 @then(parsers.parse('the object "{name}" is voided by "{void}"'))
 def the_object_name_is_voided_by_void(name, void):
-    ifc = IfcStore.get_file()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    ifc = tool.Ifc.get()
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     assert any((rel for rel in element.HasOpenings if rel.RelatedOpeningElement.Name == void)), "No void found"
 
 
@@ -821,16 +909,16 @@ def the_object_name_is_not_voided_by_void(name, void):
 
 @then(parsers.parse('the object "{name}" is not voided'))
 def the_object_name_is_not_voided(name):
-    ifc = IfcStore.get_file()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    ifc = tool.Ifc.get()
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     assert not element.HasOpenings, "A void was found"
 
 
 @then(parsers.parse('the object "{name}" is a void'))
 def the_object_name_is_a_void(name):
-    ifc = IfcStore.get_file()
+    ifc = tool.Ifc.get()
     obj = the_object_name_exists(name)
-    element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(obj))
     assert any((element.VoidsElements)), "No void was found"
 
 
@@ -870,14 +958,14 @@ def the_object_name_is_not_visible(name):
 @then(parsers.parse('the object "{name}" is an "{ifc_class}"'))
 def the_object_name_is_an_ifc_class(name, ifc_class):
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     assert element.is_a(ifc_class), f'Object "{name}" is an {element.is_a()}'
 
 
 @then(parsers.parse('the object "{name}" is not an IFC element'))
 def the_object_name_is_not_an_ifc_element(name):
     obj = the_object_name_exists(name)
-    ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_definition_id = tool.Blender.get_ifc_definition_id(obj)
     assert ifc_definition_id == 0, f"The object {obj} has an ID of {ifc_definition_id}"
 
 
@@ -888,35 +976,35 @@ def the_object_name_has_no_data(name):
 
 @then(parsers.parse('the object "{name}" has data which is an IFC representation'))
 def the_object_name_has_ifc_representation_data(name):
-    id = the_object_name_exists(name).data.BIMMeshProperties.ifc_definition_id
+    id = tool.Geometry.get_mesh_props(the_object_name_exists(name).data).ifc_definition_id
     assert id != 0, f"The ID is {id}"
 
 
 @then(parsers.parse('the material "{name}" is an IFC material'))
 def the_material_name_is_an_ifc_material(name):
     obj = the_material_name_exists(name)
-    ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_definition_id = tool.Blender.get_ifc_definition_id(obj)
     assert ifc_definition_id != 0, f"The material {obj} has no ID: {ifc_definition_id}"
 
 
 @then(parsers.parse('the material "{name}" is not an IFC material'))
 def the_material_name_is_not_an_ifc_material(name):
     obj = the_material_name_exists(name)
-    ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_definition_id = tool.Blender.get_ifc_definition_id(obj)
     assert ifc_definition_id == 0, f"The material {obj} has an ID of {ifc_definition_id}"
 
 
 @then(parsers.parse('the material "{name}" is an IFC style'))
 def the_material_name_is_an_ifc_style(name):
     obj = the_material_name_exists(name)
-    ifc_definition_id = obj.BIMStyleProperties.ifc_definition_id
+    ifc_definition_id = tool.Blender.get_ifc_definition_id(obj)
     assert ifc_definition_id != 0, f"The material {obj} has a style ID of {ifc_definition_id}"
 
 
 @then(parsers.parse('the material "{name}" is not an IFC style'))
 def the_material_name_is_not_an_ifc_style(name):
     obj = the_material_name_exists(name)
-    ifc_definition_id = obj.BIMStyleProperties.ifc_definition_id
+    ifc_definition_id = tool.Blender.get_ifc_definition_id(obj)
     assert ifc_definition_id == 0, f"The material {obj} has a style ID of {ifc_definition_id}"
 
 
@@ -934,8 +1022,8 @@ def the_object_name_has_number_vertices(name, number):
 
 @then(parsers.parse('the void "{name}" is filled by "{filling}"'))
 def the_void_name_is_filled_by_filling(name, filling):
-    ifc = IfcStore.get_file()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    ifc = tool.Ifc.get()
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     assert any((rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings)), "No filling found"
 
 
@@ -951,8 +1039,8 @@ def the_void_name_is_not_filled_by_filling(name, filling):
 @when(parsers.parse('the object "{name}" is not a filling'))
 @then(parsers.parse('the object "{name}" is not a filling'))
 def the_object_name_is_not_a_filling(name):
-    ifc = IfcStore.get_file()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    ifc = tool.Ifc.get()
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     assert not any(element.FillsVoids), "A filling was found"
 
 
@@ -1008,8 +1096,9 @@ def prop_is_roughly_value(prop, value):
 def the_object_name_has_a_cartesian_point_offset_of_offset(name: str, offset: str) -> None:
     offset = replace_variables(offset)
     obj = the_object_name_exists(name)
-    assert obj.BIMObjectProperties.blender_offset_type == "CARTESIAN_POINT"
-    obj_offset = np.array(tuple(map(float, obj.BIMObjectProperties.cartesian_point_offset.split(","))))
+    props = tool.Blender.get_object_bim_props(obj)
+    assert props.blender_offset_type == "CARTESIAN_POINT"
+    obj_offset = np.array(tuple(map(float, props.cartesian_point_offset.split(","))))
     offset = np.array(tuple(map(float, offset.split(","))))
     assert np.allclose(obj_offset, offset)
 
@@ -1111,7 +1200,7 @@ def the_object_name_is_at_location(name, location):
     obj_location = the_object_name_exists(name).location
     assert (
         obj_location - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object is at {obj_location}"
+    ).length < 0.1, f"Object is at {obj_location} instead of {location}"
 
 
 @then(parsers.parse('the object "{name}" has a vertex at "{location}"'))
@@ -1143,7 +1232,7 @@ def the_object_name_dimensions_are_dimensions(name, dimensions):
     actual_dimensions = list(the_object_name_exists(name).dimensions)
     expected_dimensions = [float(co) for co in dimensions.split(",")]
     for i, number in enumerate(actual_dimensions):
-        assert is_x(number, expected_dimensions[i]), f"Expected {expected_dimensions[i]} but got {number}"
+        assert is_x(number, expected_dimensions[i]), f"Expected {expected_dimensions} but got {actual_dimensions}"
 
 
 @then(parsers.parse('the object "{name}" top right corner is at "{location}"'))
@@ -1152,7 +1241,7 @@ def the_object_name_top_right_corner_is_at_location(name, location):
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[6])
     assert (
         obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object has top right corner {obj_corner}"
+    ).length < 0.1, f"Object has top right corner {obj_corner} instead of {location}"
 
 
 @then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
@@ -1161,13 +1250,13 @@ def the_object_name_bottom_left_corner_is_at_location(name, location):
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[0])
     assert (
         obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object has bottom left corner {obj_corner}"
+    ).length < 0.1, f"Object has bottom left corner {obj_corner} instead of {location}"
 
 
 @then(parsers.parse('the object "{name}" is contained in "{container_name}"'))
 def the_object_name_is_contained_in_container_name(name, container_name):
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     container = ifcopenshell.util.element.get_container(element)
     if not container:
         assert False, f'Object "{name}" is not in any container'
@@ -1177,7 +1266,7 @@ def the_object_name_is_contained_in_container_name(name, container_name):
 @then(parsers.parse('the object "{name}" is contained in object "{container_name}"'))
 def the_object_name_is_contained_in_object_container_name(name: str, container_name: str) -> None:
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     container = ifcopenshell.util.element.get_container(element)
     if not container:
         assert False, f'Object "{name}" is not in any container'
@@ -1188,7 +1277,7 @@ def the_object_name_is_contained_in_object_container_name(name: str, container_n
 @then(parsers.parse('the object "{name}" is aggregated by object "{aggregate_name}"'))
 def the_object_name_is_aggregated_by_object_aggregate_name(name: str, aggregate_name: str) -> None:
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     aggregate = ifcopenshell.util.element.get_aggregate(element)
     if not aggregate:
         assert False, f'Object "{name}" is not aggregated by any element'
@@ -1199,7 +1288,7 @@ def the_object_name_is_aggregated_by_object_aggregate_name(name: str, aggregate_
 @then(parsers.parse('the object "{name}" has no aggregate'))
 def the_object_name_has_no_aggregate(name: str) -> None:
     ifc = an_ifc_file_exists()
-    element = ifc.by_id(the_object_name_exists(name).BIMObjectProperties.ifc_definition_id)
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
     aggregate = ifcopenshell.util.element.get_aggregate(element)
     if aggregate:
         assert False, f'Object "{name}" is aggregated by element "{aggregate}"'
@@ -1220,7 +1309,7 @@ def the_object_name_has_no_modifiers(name):
 @given(parsers.parse('I load the IFC test file "{filepath}"'))
 def i_load_the_ifc_test_file(filepath):
     filepath = f"{variables['cwd']}{filepath}"
-    bpy.ops.bim.load_project(filepath=filepath, use_relative_path=True)
+    bpy.ops.bim.load_project(filepath=filepath)
 
 
 @given("I load the demo construction library")
@@ -1245,7 +1334,7 @@ def i_display_the_construction_type_browser():
 @when("I add the construction type")
 def i_add_the_active_construction_type():
     props = tool.Model.get_model_props()
-    bpy.ops.bim.add_constr_type_instance(relating_type_id=int(props.relating_type_id))
+    bpy.ops.bim.add_occurrence(relating_type_id=int(props.relating_type_id))
 
 
 @then(parsers.parse("construction type is {relating_type_name}"))
@@ -1253,6 +1342,20 @@ def construction_type(relating_type_name):
     props = tool.Model.get_model_props()
     relating_type = AuthoringData.relating_type_name_by_id(props.ifc_class, props.relating_type_id)
     assert relating_type == relating_type_name, f"Construction Type is a {relating_type}, not a {relating_type_name}"
+
+
+@given("I toggle edit mode")
+@when("I toggle edit mode")
+@then("I toggle edit mode")
+def i_toggle_edit_mode():
+    props = tool.Geometry.get_geometry_props()
+    print(f"Toggling from {bpy.context.mode} / {props.mode} ...")
+    print("Selected items:", bpy.context.active_object, bpy.context.selected_objects)
+    if bpy.context.mode == "OBJECT":
+        bpy.ops.bim.override_mode_set_edit()
+    else:
+        bpy.ops.bim.override_mode_set_object()
+    print(f"... mode is now {bpy.context.mode} / {props.mode}")
 
 
 @when("I move the cursor to the bottom left corner")
@@ -1273,6 +1376,9 @@ def prepare_undo():
 def hit_undo():
     bpy.ops.ed.undo_push(message="UNDO STEP")
     bpy.ops.ed.undo()
+    # override = tool.Blender.get_viewport_context()
+    # with bpy.context.temp_override(**override):
+    #     bpy.ops.ed.undo()
 
 
 @then(parsers.parse('the object "{obj_name1}" has a connection with "{obj_name2}"'))
@@ -1327,12 +1433,9 @@ def the_obj1_and_obj2_belong_the_same_linked_aggregate_group(obj_name1, obj_name
 def the_obj_layer_lenght_is_set_to(value):
     value = float(value)
     try:
-        eval(f"bpy.context.scene.BIMModelProperties.length")
+        eval("bpy.context.scene.BIMModelProperties.length")
     except:
         assert False, f"Property BIMModelProperties.length does not exist when trying to set to value {value}"
-
-    print(50 * "@", bpy.context.selected_objects)
-
     props = tool.Model.get_model_props()
     props.length = value
     bpy.ops.bim.change_layer_length(length=value)
@@ -1348,11 +1451,19 @@ def run_test_code():
     pass
 
 
+@given(parsers.parse("I fail"))
+@when(parsers.parse("I fail"))
+@then(parsers.parse("I fail"))
+def i_fail():
+    assert False
+
+
 @given(parsers.parse("I save sample test files"))
 @when(parsers.parse("I save sample test files"))
 @then(parsers.parse("I save sample test files"))
 def saving_sample_test_files(and_open_in_blender=None):
     filepath = f"{variables['cwd']}/test/files/temp/sample_test_file"
+    print(f"Saved to {filepath}")
     bpy.ops.bim.save_project(filepath=f"{filepath}.ifc", should_save_as=True)
     bpy.ops.wm.save_as_mainfile(filepath=f"{filepath}.blend")
 

@@ -46,14 +46,11 @@ def reference_structure(
     spaces simultaneously.
 
     :param products: The list of physical IfcElements that exists in the space.
-    :type products: list[ifcopenshell.entity_instance]
     :param relating_structure: The IfcSpatialStructureElement element, such
         as IfcBuilding, IfcBuildingStorey, or IfcSpace that the element
         exists in.
-    :type relating_structure: ifcopenshell.entity_instance
     :return: The IfcRelReferencedInSpatialStructure relationship instance
         or `None` if `products` was an empty list.
-    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -85,19 +82,16 @@ def reference_structure(
             model, products=[column], relating_structure=[storey2, storey3]
         )
     """
-    settings = {
-        "products": products,
-        "relating_structure": relating_structure,
-    }
 
-    structure = settings["relating_structure"]
-    products = set(settings["products"])
+    structure = relating_structure
+    products_set = set(products)
 
-    if not products:
+    if not products_set:
         return
 
     referenced = ifcopenshell.util.element.get_structure_referenced_elements(structure)
-    products_to_assign = products - referenced
+    products_to_assign = products_set - referenced
+    rel: Union[ifcopenshell.entity_instance, None]
     rel = next(iter(structure.ReferencesElements), None)
 
     if not products_to_assign:

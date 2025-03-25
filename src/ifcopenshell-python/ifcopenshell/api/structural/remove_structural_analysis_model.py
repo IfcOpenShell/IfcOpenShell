@@ -29,18 +29,14 @@ def remove_structural_analysis_model(
 
     :param structural_analysis_model: The IfcStructuralAnalysisModel to
         remove.
-    :type structural_analysis_model: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
     """
-    settings = {"structural_analysis_model": structural_analysis_model}
-
-    for rel in settings["structural_analysis_model"].IsGroupedBy or []:
+    for rel in structural_analysis_model.IsGroupedBy or []:
         history = rel.OwnerHistory
         file.remove(rel)
         if history:
             ifcopenshell.util.element.remove_deep2(file, history)
-    history = settings["structural_analysis_model"].OwnerHistory
-    file.remove(settings["structural_analysis_model"])
+    history = structural_analysis_model.OwnerHistory
+    file.remove(structural_analysis_model)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)

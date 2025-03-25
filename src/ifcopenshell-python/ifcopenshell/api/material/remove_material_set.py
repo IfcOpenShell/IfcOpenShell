@@ -29,9 +29,7 @@ def remove_material_set(file: ifcopenshell.file, material: ifcopenshell.entity_i
 
     :param material: The IfcMaterialLayerSet, IfcMaterialConstituentSet,
         IfcMaterialProfileSet entity you want to remove.
-    :type material: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -55,20 +53,18 @@ def remove_material_set(file: ifcopenshell.file, material: ifcopenshell.entity_i
         ifcopenshell.api.material.remove_material_set(model, material=material_set)
     """
 
-    settings = {"material": material}
-
-    inverse_elements = file.get_inverse(settings["material"])
-    if settings["material"].is_a("IfcMaterialLayerSet"):
-        set_items = settings["material"].MaterialLayers or []
-    elif settings["material"].is_a("IfcMaterialProfileSet"):
-        set_items = settings["material"].MaterialProfiles or []
-    elif settings["material"].is_a("IfcMaterialConstituentSet"):
-        set_items = settings["material"].MaterialConstituents or []
-    elif settings["material"].is_a("IfcMaterialList"):
+    inverse_elements = file.get_inverse(material)
+    if material.is_a("IfcMaterialLayerSet"):
+        set_items = material.MaterialLayers or []
+    elif material.is_a("IfcMaterialProfileSet"):
+        set_items = material.MaterialProfiles or []
+    elif material.is_a("IfcMaterialConstituentSet"):
+        set_items = material.MaterialConstituents or []
+    elif material.is_a("IfcMaterialList"):
         set_items = []
     for set_item in set_items:
         file.remove(set_item)
-    file.remove(settings["material"])
+    file.remove(material)
     for inverse in inverse_elements:
         if inverse.is_a("IfcRelAssociatesMaterial"):
             history = inverse.OwnerHistory

@@ -18,7 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.util.unit
-from typing import Optional
+from typing import Optional, Any
 
 
 def assign_unit(
@@ -75,6 +75,9 @@ def assign_unit(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         # We're going to refactor this to split unit creation and assignment
         if self.settings["units"]:

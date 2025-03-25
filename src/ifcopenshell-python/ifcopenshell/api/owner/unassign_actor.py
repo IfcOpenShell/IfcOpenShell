@@ -29,11 +29,8 @@ def unassign_actor(
     This means that the actor is no longer responsible for the object.
 
     :param relating_actor: The IfcActor who is responsible for the object.
-    :type relating_actor: ifcopenshell.entity_instance
     :param related_object: The object the actor is responsible for.
-    :type related_object: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -55,13 +52,8 @@ def unassign_actor(
         ifcopenshell.api.owner.unassign_actor(model,
             relating_actor=manufacturer, related_object=pump_type)
     """
-    settings = {
-        "relating_actor": relating_actor,
-        "related_object": related_object,
-    }
-
-    for rel in settings["related_object"].HasAssignments or []:
-        if not rel.is_a("IfcRelAssignsToActor") or rel.RelatingActor != settings["relating_actor"]:
+    for rel in related_object.HasAssignments or []:
+        if not rel.is_a("IfcRelAssignsToActor") or rel.RelatingActor != relating_actor:
             continue
         if len(rel.RelatedObjects) == 1:
             history = rel.OwnerHistory
@@ -70,6 +62,6 @@ def unassign_actor(
                 ifcopenshell.util.element.remove_deep2(file, history)
             return
         related_objects = list(rel.RelatedObjects)
-        related_objects.remove(settings["related_object"])
+        related_objects.remove(related_object)
         rel.RelatedObjects = related_objects
         ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})

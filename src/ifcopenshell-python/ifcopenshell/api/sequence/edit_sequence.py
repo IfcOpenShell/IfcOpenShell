@@ -30,11 +30,8 @@ def edit_sequence(
     IfcRelSequence, consult the IFC documentation.
 
     :param rel_sequence: The IfcRelSequence entity you want to edit
-    :type rel_sequence: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -62,9 +59,7 @@ def edit_sequence(
         ifcopenshell.api.sequence.edit_sequence(model,
             rel_sequence=sequence, attributes={"SequenceType": "START_START"})
     """
-    settings = {"rel_sequence": rel_sequence, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["rel_sequence"], name, value)
-    if "SequenceType" in settings["attributes"].keys():
-        ifcopenshell.api.sequence.cascade_schedule(file, task=settings["rel_sequence"].RelatedProcess)
+    for name, value in attributes.items():
+        setattr(rel_sequence, name, value)
+    if "SequenceType" in attributes.keys():
+        ifcopenshell.api.sequence.cascade_schedule(file, task=rel_sequence.RelatedProcess)

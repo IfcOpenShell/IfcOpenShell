@@ -54,12 +54,9 @@ def add_cost_item_quantity(
     using another API call.
 
     :param cost_item: The IfcCostItem to add the quantity to
-    :type cost_item: ifcopenshell.entity_instance
     :param ifc_class: The type of quantity to add
-    :type ifc_class: str, optional
     :return: The newly created quantity entity, chosen from the ifc_class
         parameter
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -76,20 +73,18 @@ def add_cost_item_quantity(
         ifcopenshell.api.cost.add_cost_item_quantity(model,
             cost_item=item, ifc_class="IfcQuantityCount")
     """
-    settings = {"cost_item": cost_item, "ifc_class": ifc_class}
-
-    quantity = file.create_entity(settings["ifc_class"], Name="Unnamed")
+    quantity = file.create_entity(ifc_class, Name="Unnamed")
     # 3 IfcPhysicalSimpleQuantity Value
     # This is a bold assumption
     # https://forums.buildingsmart.org/t/how-does-a-cost-item-know-that-it-is-counting-a-controlled-product/3564
-    if settings["ifc_class"] == "IfcQuantityCount":
+    if ifc_class == "IfcQuantityCount":
         count = 0
-        for rel in settings["cost_item"].Controls:
+        for rel in cost_item.Controls:
             count += len(rel.RelatedObjects)
         quantity[3] = count
     else:
         quantity[3] = 0.0
-    quantities = list(settings["cost_item"].CostQuantities or [])
+    quantities = list(cost_item.CostQuantities or [])
     quantities.append(quantity)
-    settings["cost_item"].CostQuantities = quantities
+    cost_item.CostQuantities = quantities
     return quantity

@@ -1226,6 +1226,23 @@ class apply_individual_instance_visitor {
 
 template <typename T>
 void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
+    if constexpr (std::is_same_v<std::decay_t<T>, double>) {
+        if (!std::isfinite(t)) {
+            throw IfcParse::IfcException("Only finite values are allowed");
+        }
+    }
+    if constexpr (std::is_same_v<std::decay_t<T>, std::vector<double>>) {
+        if (std::any_of(t.begin(), t.end(), [](double d) { return !std::isfinite(d); })) {
+            throw IfcParse::IfcException("Only finite values are allowed");
+        }
+    }
+    if constexpr (std::is_same_v<std::decay_t<T>, std::vector<std::vector<double>>>) {
+        for (auto& tt : t) {
+            if (std::any_of(tt.begin(), tt.end(), [](double d) { return !std::isfinite(d); })) {
+                throw IfcParse::IfcException("Only finite values are allowed");
+            }
+        }
+    }
     auto current_attribute = get_attribute_value(i);
     if (file_ != nullptr) {
 
@@ -1567,10 +1584,10 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
         const auto& ref = p.first.name_;
         const auto& refattr = p.first.index_;
         if (auto* v = boost::get<reference_or_simple_type>(&p.second)) {
-            if (auto* name = boost::get<int>(v)) {
+            if (auto* name = boost::get<InstanceReference>(v)) {
                 auto it = byid_.find(*name);
                 if (it == byid_.end()) {
-                    Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
+                    Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                 } else {
                     byid_[p.first.name_]->data().set_attribute_value(nullptr, nullptr, 0, p.first.index_, it->second);
                 }
@@ -1581,10 +1598,10 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
             aggregate_of_instance::ptr instances(new aggregate_of_instance);
             instances->reserve(v->size());
             for (const auto& vi : *v) {
-                if (auto* name = boost::get<int>(&vi)) {
+                if (auto* name = boost::get<InstanceReference>(&vi)) {
                     auto it = byid_.find(*name);
                     if (it == byid_.end()) {
-                        Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
+                        Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                     } else {
                         instances->push(it->second);
                     }
@@ -1598,10 +1615,10 @@ void IfcParse::impl::in_memory_file_storage::read_from_stream(IfcParse::IfcSpfSt
             for (const auto& vi : *v) {
                 std::vector<IfcUtil::IfcBaseClass*> inner;
                 for (const auto& vii : vi) {
-                    if (auto* name = boost::get<int>(&vii)) {
+                    if (auto* name = boost::get<InstanceReference>(&vii)) {
                         auto it = byid_.find(*name);
                         if (it == byid_.end()) {
-                            Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
+                            Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                         } else {
                             inner.push_back(it->second);
                         }

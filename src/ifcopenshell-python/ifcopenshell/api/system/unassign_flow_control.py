@@ -30,11 +30,8 @@ def unassign_flow_control(
 
     :param related_flow_control: IfcDistributionControlElement controling the
         flow element
-    :type related_flow_control: ifcopenshell.entity_instance
     :param relating_flow_element: The IfcDistributionFlowElement that is being controlled
-    :type relating_flow_element: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -53,15 +50,10 @@ def unassign_flow_control(
         )
     """
 
-    settings = {
-        "relating_flow_element": relating_flow_element,
-        "related_flow_control": related_flow_control,
-    }
-
-    if not settings["related_flow_control"].AssignedToFlowElement:
+    if not related_flow_control.AssignedToFlowElement:
         return
-    assignment = settings["related_flow_control"].AssignedToFlowElement[0]
-    if assignment.RelatingFlowElement != settings["relating_flow_element"]:
+    assignment = related_flow_control.AssignedToFlowElement[0]
+    if assignment.RelatingFlowElement != relating_flow_element:
         return
     if len(assignment.RelatedControlElements) == 1:
         history = assignment.OwnerHistory
@@ -70,6 +62,6 @@ def unassign_flow_control(
             ifcopenshell.util.element.remove_deep2(file, history)
         return
     related_flow_controls = list(assignment.RelatedControlElements)
-    related_flow_controls.remove(settings["related_flow_control"])
+    related_flow_controls.remove(related_flow_control)
     assignment.RelatedControlElements = related_flow_controls
     ifcopenshell.api.owner.update_owner_history(file, **{"element": assignment})

@@ -1,0 +1,21 @@
+name: Dispatch Build IfcOpenShell
+
+on:
+  workflow_dispatch:
+
+jobs:
+  trigger-workflows:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        workflow:
+          - 'Build IfcOpenShell Linux'
+          - 'Build IfcOpenShell Linux ARM'
+          - 'Build IfcOpenShell OSX'
+          - 'Build IfcOpenShell WASM / Pyodide'
+          - 'Build IfcOpenShell Windows'
+    steps:
+      - name: Trigger binary build workflows
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: ${{ matrix.workflow }}

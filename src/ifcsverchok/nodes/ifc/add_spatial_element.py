@@ -221,7 +221,6 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         try:
             del SvIfcStore.id_map[self.node_id]
             del self.node_dict[hash(self)]
-            # print('Node was deleted')
         except KeyError or AttributeError:
             pass
 

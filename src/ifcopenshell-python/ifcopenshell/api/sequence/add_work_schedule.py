@@ -77,19 +77,12 @@ def add_work_schedule(
         construction = ifcopenshell.api.sequence.add_task(model,
             work_schedule=schedule, name="Construction", identification="C")
     """
-    settings = {
-        "name": name,
-        "predefined_type": predefined_type,
-        "object_type": object_type,
-        "start_time": start_time or datetime.now(),
-        "work_plan": work_plan,
-    }
-
+    start_time = start_time or datetime.now()
     work_schedule = ifcopenshell.api.root.create_entity(
         file,
         ifc_class="IfcWorkSchedule",
-        predefined_type=settings["predefined_type"],
-        name=settings["name"],
+        predefined_type=predefined_type,
+        name=name,
     )
     if file.schema == "IFC2X3":
         work_schedule.CreationDate = createIfcDateAndTime(file, datetime.now())
@@ -99,17 +92,17 @@ def add_work_schedule(
     if user:
         work_schedule.Creators = [user.ThePerson]
     if file.schema == "IFC2X3":
-        work_schedule.StartTime = createIfcDateAndTime(file, settings["start_time"])
+        work_schedule.StartTime = createIfcDateAndTime(file, start_time)
     else:
-        work_schedule.StartTime = ifcopenshell.util.date.datetime2ifc(settings["start_time"], "IfcDateTime")
-    if settings["object_type"]:
-        work_schedule.ObjectType = settings["object_type"]
-    if settings["work_plan"]:
+        work_schedule.StartTime = ifcopenshell.util.date.datetime2ifc(start_time, "IfcDateTime")
+    if object_type:
+        work_schedule.ObjectType = object_type
+    if work_plan:
         ifcopenshell.api.aggregate.assign_object(
             file,
             **{
                 "products": [work_schedule],
-                "relating_object": settings["work_plan"],
+                "relating_object": work_plan,
             }
         )
     elif file.schema != "IFC2X3":

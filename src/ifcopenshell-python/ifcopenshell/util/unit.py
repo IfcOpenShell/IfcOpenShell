@@ -20,10 +20,10 @@ from fractions import Fraction
 from math import pi
 from typing import Any
 from typing import Dict
-from typing import Iterable
 from typing import Literal
 from typing import Optional
 from typing import Union
+from typing import Generator
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
@@ -456,7 +456,7 @@ def get_project_unit(
 
 
 def get_property_unit(
-    prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file, use_cache: bool = False
+    prop: ifcopenshell.entity_instance, ifc_file: Union[ifcopenshell.file, None], use_cache: bool = False
 ) -> Union[ifcopenshell.entity_instance, None]:
     """Gets the unit definition of a property or quantity
 
@@ -499,11 +499,13 @@ def get_property_unit(
             measure_class = value.is_a()
 
     if measure_class and (unit_type := get_measure_unit_type(measure_class)):
+        if not ifc_file:
+            ifc_file = prop.file
         return get_project_unit(ifc_file, unit_type, use_cache=use_cache)
 
 
 def get_property_table_unit(
-    prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file, use_cache: bool = False
+    prop: ifcopenshell.entity_instance, ifc_file: Union[ifcopenshell.file, None], use_cache: bool = False
 ) -> Dict[str, Union[ifcopenshell.entity_instance, None]]:
     """
     Gets the unit definition of a property table
@@ -523,6 +525,8 @@ def get_property_table_unit(
         If a unit-entity is missing,
         the value associated to the key is `null`.
     """
+    if not ifc_file:
+        ifc_file = prop.file
     defining_unit = None
     if unit := prop.DefiningUnit:
         defining_unit = unit
@@ -803,15 +807,25 @@ def is_attr_type(
     return None
 
 
-def iter_element_and_attributes_per_type(
-    ifc_file: ifcopenshell.file, attr_type_name: str
-) -> Iterable[tuple[ifcopenshell.entity_instance, ifcopenshell_wrapper.attribute, Any]]:
+FloatOrSequenceOfFloats = Union[float, tuple["FloatOrSequenceOfFloats", ...]]
+
+
+def iter_element_and_attributes_per_type(ifc_file: ifcopenshell.file, attr_type_name: str) -> Generator[
+    tuple[
+        ifcopenshell.entity_instance,
+        ifcopenshell_wrapper.attribute,
+        Union[FloatOrSequenceOfFloats, ifcopenshell.entity_instance],
+    ],
+    None,
+    None,
+]:
     schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
 
     for element in ifc_file:
         entity = schema.declaration_by_name(element.is_a())
         attrs = entity.all_attributes()
-        for attr, val, is_derived in zip(attrs, list(element), entity.derived()):
+        attrs_derived: tuple[bool, ...] = entity.derived()
+        for attr, val, is_derived in zip(attrs, list(element), attrs_derived):
             if is_derived:
                 continue
 
@@ -826,6 +840,17 @@ def iter_element_and_attributes_per_type(
 
             if isinstance(val, ifcopenshell.entity_instance) and not val.is_a(attr_type_name):
                 continue
+            elif isinstance(val, tuple):
+                if not val:
+                    continue
+                val_ = val[0]
+                # If it's a tuple of entities, just yield the entities we need to edit.
+                if isinstance(val_, ifcopenshell.entity_instance):
+                    for val_ in val:
+                        if not val_.is_a(attr_type_name):
+                            continue
+                        yield element, attr, val_
+                    continue
 
             yield element, attr, val
 
@@ -835,6 +860,7 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
     import ifcopenshell.util.element
     import ifcopenshell.util.geolocation
     import ifcopenshell.api.georeference
+    import ifcopenshell.api.unit
 
     prefix = get_prefix(target_units)
     si_unit = get_unit_name(target_units)
@@ -855,16 +881,17 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
         new_length = ifcopenshell.api.unit.add_conversion_based_unit(file_patched, name=target_units)
 
     # support tuple of tuples, as in IfcCartesianPointList3D.CoordList
-    def convert_value(value):
+    def convert_value(value: FloatOrSequenceOfFloats) -> FloatOrSequenceOfFloats:
         if not isinstance(value, tuple):
             return convert_unit(value, old_length, new_length)
         return tuple(convert_value(v) for v in value)
 
     # Traverse all elements and their nested attributes in the file and convert them
     for element, attr, val in iter_element_and_attributes_per_type(file_patched, "IfcLengthMeasure"):
+        # NOTE: There is no risk of editing same entities twice as they're all recreated
+        # after file is reloaded as `file_patched`.
         if isinstance(val, ifcopenshell.entity_instance):
-            new_value = convert_value(val.wrappedValue)
-            getattr(element, attr.name()).wrappedValue = new_value
+            val.wrappedValue = convert_value(val.wrappedValue)
         else:
             new_value = convert_value(val)
             setattr(element, attr.name(), new_value)

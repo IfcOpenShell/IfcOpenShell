@@ -49,14 +49,15 @@ Scenario: Remove style
 
 Scenario: Edit style
     Given an empty IFC project
-    And I press "bim.load_styles(style_type='IfcSurfaceStyle')"
-    And I press "bim.enable_adding_presentation_style"
-    And I set "scene.BIMStylesProperties.style_name" to "Style"
-    And I press "bim.add_presentation_style"
+    And I look at the "Styles" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I set the "Name" property to "Style"
+    And I click "Save New Style"
     And the variable "style" is "{ifc}.by_type('IfcSurfaceStyle')[0].id()"
-    And I press "bim.enable_editing_style(style={style})"
-    And I set "scene.BIMStylesProperties.attributes[0].string_value" to "NewStyle"
-    When I press "bim.edit_style"
+    And I click "GREASEPENCIL"
+    And I set the "Name" property to "NewStyle"
+    When I click "Save Attributes"
     Then the material "Style" does not exist
     And the material "NewStyle" exists
 

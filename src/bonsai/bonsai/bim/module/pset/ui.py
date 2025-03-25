@@ -20,7 +20,6 @@ from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 from bpy.types import Panel
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import prop_with_search, get_display_value
 from bonsai.bim.module.pset.data import (
     ObjectPsetsData,
@@ -238,16 +237,17 @@ class BIM_PT_object_psets(Panel):
     def draw_header(self, context):
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
-        row.prop(context.scene.GlobalPsetProperties, "pset_filter", text="", icon="VIEWZOOM")
+        global_props = tool.Pset.get_global_pset_props()
+        row.prop(global_props, "pset_filter", text="", icon="VIEWZOOM")
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
         return True
 
@@ -262,6 +262,7 @@ class BIM_PT_object_psets(Panel):
         op.obj = context.active_object.name
         op.obj_type = "Object"
 
+        global_props = tool.Pset.get_global_pset_props()
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":
             draw_psetqto_ui(
                 context,
@@ -270,7 +271,7 @@ class BIM_PT_object_psets(Panel):
                 props,
                 self.layout,
                 "Object",
-                filter_keyword=context.scene.GlobalPsetProperties.pset_filter,
+                filter_keyword=global_props.pset_filter,
             )
 
         if ObjectPsetsData.data["psets"]:
@@ -286,7 +287,7 @@ class BIM_PT_object_psets(Panel):
                     props,
                     self.layout,
                     "Object",
-                    filter_keyword=context.scene.GlobalPsetProperties.pset_filter,
+                    filter_keyword=global_props.pset_filter,
                 )
 
         if ObjectPsetsData.data["inherited_psets"]:
@@ -300,7 +301,7 @@ class BIM_PT_object_psets(Panel):
                     self.layout,
                     "Object",
                     allow_removing=False,
-                    filter_keyword=context.scene.GlobalPsetProperties.pset_filter,
+                    filter_keyword=global_props.pset_filter,
                 )
 
 
@@ -316,16 +317,17 @@ class BIM_PT_object_qtos(Panel):
     def draw_header(self, context):
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
-        row.prop(context.scene.GlobalPsetProperties, "qto_filter", text="", icon="VIEWZOOM")
+        global_props = tool.Pset.get_global_pset_props()
+        row.prop(global_props, "qto_filter", text="", icon="VIEWZOOM")
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
         return True
 
@@ -340,6 +342,7 @@ class BIM_PT_object_qtos(Panel):
         op.obj = context.active_object.name
         op.obj_type = "Object"
 
+        global_props = tool.Pset.get_global_pset_props()
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "QTO":
             draw_psetqto_ui(
                 context,
@@ -348,7 +351,7 @@ class BIM_PT_object_qtos(Panel):
                 props,
                 self.layout,
                 "Object",
-                filter_keyword=context.scene.GlobalPsetProperties.qto_filter,
+                filter_keyword=global_props.qto_filter,
             )
 
         if ObjectQtosData.data["qtos"]:
@@ -364,7 +367,7 @@ class BIM_PT_object_qtos(Panel):
                     props,
                     self.layout,
                     "Object",
-                    filter_keyword=context.scene.GlobalPsetProperties.qto_filter,
+                    filter_keyword=global_props.qto_filter,
                 )
 
         if ObjectQtosData.data["inherited_qsets"]:
@@ -378,10 +381,10 @@ class BIM_PT_object_qtos(Panel):
                     self.layout,
                     "Object",
                     allow_removing=False,
-                    filter_keyword=context.scene.GlobalPsetProperties.qto_filter,
+                    filter_keyword=global_props.qto_filter,
                 )
         layout = self.layout
-        qtoprops = context.scene.BIMQtoProperties
+        qtoprops = tool.Qto.get_qto_props()
         row = layout.row(align=True)
         row.prop(qtoprops, "qto_rule", text="")
         # A bit confusing as we typically use this icon for is_null.
@@ -403,13 +406,13 @@ class BIM_PT_material_psets(Panel):
         ifc_file = tool.Ifc.get()
         if not ifc_file or ifc_file.schema == "IFC2X3":
             return False  # We don't support material psets in IFC2X3 because they suck
-        props = context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         if props.is_editing and (material := props.active_material) and material.ifc_definition_id:
             return True
         return False
 
     def draw(self, context):
-        props = context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         if props.materials and props.active_material_index < len(props.materials):
             ifc_definition_id = props.materials[props.active_material_index].ifc_definition_id
 
@@ -460,7 +463,8 @@ class BIM_PT_material_set_item_psets(Panel):
 
         obj = context.active_object
         assert obj
-        if not obj.BIMObjectMaterialProperties.active_material_set_item_id:
+        omprops = tool.Material.get_object_material_props(obj)
+        if not omprops.active_material_set_item_id:
             self.layout.label(text="No Material Set Item Edited.")
             return
 
@@ -663,10 +667,10 @@ class BIM_PT_profile_psets(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMProfileProperties
+        props = tool.Profile.get_profile_props()
         if not props.is_editing:
             return False
-        total_profiles = len(context.scene.BIMProfileProperties.profiles)
+        total_profiles = len(props.profiles)
         if total_profiles > 0 and props.active_profile_index < total_profiles:
             return True
         return False

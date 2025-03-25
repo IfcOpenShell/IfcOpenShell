@@ -112,22 +112,25 @@ class TestDeleteElementObjects(NewFile):
 
 class TestDisableEditingSystem(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMSystemProperties.edited_system_id = 10
+        props = tool.System.get_system_props()
+        props.edited_system_id = 10
         subject.disable_editing_system()
-        assert bpy.context.scene.BIMSystemProperties.edited_system_id == 0
+        assert props.edited_system_id == 0
 
 
 class TestDisableSystemEditingUI(NewFile):
     def test_run(self):
         subject.enable_system_editing_ui()
         subject.disable_system_editing_ui()
-        assert bpy.context.scene.BIMSystemProperties.is_editing is False
+        props = tool.System.get_system_props()
+        assert props.is_editing is False
 
 
 class TestEnableSystemEditingUI(NewFile):
     def test_run(self):
         subject.enable_system_editing_ui()
-        assert bpy.context.scene.BIMSystemProperties.is_editing is True
+        props = tool.System.get_system_props()
+        assert props.is_editing is True
 
 
 class TestExportSystemAttributes(NewFile):
@@ -171,7 +174,7 @@ class TestImportSystemAttributes(NewFile):
         system.Description = "Description"
         system.ObjectType = "ObjectType"
         subject().import_system_attributes(system)
-        props = bpy.context.scene.BIMSystemProperties
+        props = tool.System.get_system_props()
         assert props.system_attributes.get("GlobalId").string_value == "GlobalId"
         assert props.system_attributes.get("Name").string_value == "Name"
         assert props.system_attributes.get("Description").string_value == "Description"
@@ -188,7 +191,7 @@ class TestImportSystemAttributes(NewFile):
         system.PredefinedType = "SHADING"
         system.LongName = "LongName"
         subject().import_system_attributes(system)
-        props = bpy.context.scene.BIMSystemProperties
+        props = tool.System.get_system_props()
         assert props.system_attributes.get("GlobalId").string_value == "GlobalId"
         assert props.system_attributes.get("Name").string_value == "Name"
         assert props.system_attributes.get("Description").string_value == "Description"
@@ -207,7 +210,7 @@ class TestImportSystemAttributes(NewFile):
         system.PredefinedType = "ELECTRICAL"
         system.LongName = "LongName"
         subject().import_system_attributes(system)
-        props = bpy.context.scene.BIMSystemProperties
+        props = tool.System.get_system_props()
         assert props.system_attributes.get("GlobalId").string_value == "GlobalId"
         assert props.system_attributes.get("Name").string_value == "Name"
         assert props.system_attributes.get("Description").string_value == "Description"
@@ -223,7 +226,7 @@ class TestImportSystems(NewFile):
         system = ifc.createIfcDistributionSystem()
         zone = ifc.createIfcZone()
         subject.import_systems()
-        props = bpy.context.scene.BIMSystemProperties
+        props = tool.System.get_system_props()
         assert len(props.systems) == 2
         assert props.systems[0].ifc_definition_id == system.id()
         assert props.systems[0].name == "Unnamed"
@@ -277,7 +280,8 @@ class TestSetActiveSystem(NewFile):
         tool.Ifc().set(ifc)
         system = ifcopenshell.api.run("system.add_system", ifc, ifc_class="IfcSystem")
         subject.set_active_edited_system(system)
-        assert bpy.context.scene.BIMSystemProperties.edited_system_id == system.id()
+        props = tool.System.get_system_props()
+        assert props.edited_system_id == system.id()
 
 
 class TestFlowElementAndControls(NewFile):

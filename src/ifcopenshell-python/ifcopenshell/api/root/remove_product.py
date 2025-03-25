@@ -62,42 +62,38 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
         # No we don't.
         ifcopenshell.api.root.remove_product(model, product=wall)
     """
-    settings = {"product": product}
-
-    representations = []
-    if settings["product"].is_a("IfcProduct"):
-        if settings["product"].Representation:
-            representations = settings["product"].Representation.Representations or []
+    representations: list[ifcopenshell.entity_instance] = []
+    if product.is_a("IfcProduct"):
+        if product.Representation:
+            representations = product.Representation.Representations or []
         else:
             representations = []
 
         # remove object placements
-        object_placement = settings["product"].ObjectPlacement
+        object_placement = product.ObjectPlacement
         if object_placement:
             if file.get_total_inverses(object_placement) == 1:
-                settings["product"].ObjectPlacement = None  # remove the inverse for remove_deep2 to work
+                product.ObjectPlacement = None  # remove the inverse for remove_deep2 to work
                 ifcopenshell.util.element.remove_deep2(file, object_placement)
 
-    elif settings["product"].is_a("IfcTypeProduct"):
-        representations = [rm.MappedRepresentation for rm in settings["product"].RepresentationMaps or []]
+    elif product.is_a("IfcTypeProduct"):
+        representations = [rm.MappedRepresentation for rm in product.RepresentationMaps or []]
 
         # remove psets
-        psets = settings["product"].HasPropertySets or []
+        psets = product.HasPropertySets or []
         for pset in psets:
             if file.get_total_inverses(pset) != 1:
                 continue
-            ifcopenshell.api.pset.remove_pset(file, product=settings["product"], pset=pset)
+            ifcopenshell.api.pset.remove_pset(file, product=product, pset=pset)
 
     for representation in representations:
-        ifcopenshell.api.geometry.unassign_representation(
-            file, product=settings["product"], representation=representation
-        )
-        ifcopenshell.api.geometry.remove_representation(file, **{"representation": representation})
-    for opening in getattr(settings["product"], "HasOpenings", []) or []:
+        ifcopenshell.api.geometry.unassign_representation(file, product=product, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(file, representation=representation)
+    for opening in getattr(product, "HasOpenings", []) or []:
         ifcopenshell.api.feature.remove_feature(file, feature=opening.RelatedOpeningElement)
 
-    if settings["product"].is_a("IfcGrid"):
-        for axis in settings["product"].UAxes + settings["product"].VAxes + (settings["product"].WAxes or ()):
+    if product.is_a("IfcGrid"):
+        for axis in product.UAxes + product.VAxes + (product.WAxes or ()):
             ifcopenshell.api.grid.remove_grid_axis(file, axis=axis)
 
     def element_exists(element_id):
@@ -108,22 +104,20 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
             return False
 
     # TODO: remove object placement and other relationships
-    for inverse_id in [i.id() for i in file.get_inverse(settings["product"])]:
+    for inverse_id in [i.id() for i in file.get_inverse(product)]:
         try:
             inverse = file.by_id(inverse_id)
         except:
             continue
         if inverse.is_a("IfcRelDefinesByProperties"):
-            ifcopenshell.api.pset.remove_pset(
-                file, product=settings["product"], pset=inverse.RelatingPropertyDefinition
-            )
+            ifcopenshell.api.pset.remove_pset(file, product=product, pset=inverse.RelatingPropertyDefinition)
         elif inverse.is_a("IfcRelAssociatesMaterial"):
-            ifcopenshell.api.material.unassign_material(file, products=[settings["product"]])
+            ifcopenshell.api.material.unassign_material(file, products=[product])
         elif inverse.is_a("IfcRelDefinesByType"):
-            if inverse.RelatingType == settings["product"]:
+            if inverse.RelatingType == product:
                 ifcopenshell.api.type.unassign_type(file, related_objects=inverse.RelatedObjects)
             else:
-                ifcopenshell.api.type.unassign_type(file, related_objects=[settings["product"]])
+                ifcopenshell.api.type.unassign_type(file, related_objects=[product])
         elif inverse.is_a("IfcRelSpaceBoundary"):
             ifcopenshell.api.boundary.remove_boundary(file, boundary=inverse)
         elif inverse.is_a("IfcRelFillsElement"):
@@ -142,7 +136,7 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelNests"):
-            if inverse.RelatingObject == settings["product"]:
+            if inverse.RelatingObject == product:
                 inverse_id = inverse.id()
                 for subelement in inverse.RelatedObjects:
                     if subelement.is_a("IfcDistributionPort"):
@@ -153,27 +147,27 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
                     file.remove(inverse)
                     if history:
                         ifcopenshell.util.element.remove_deep2(file, history)
-            elif inverse.RelatedObjects == (settings["product"],):
+            elif inverse.RelatedObjects == (product,):
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelAggregates"):
-            if inverse.RelatingObject == settings["product"] or len(inverse.RelatedObjects) == 1:
+            if inverse.RelatingObject == product or len(inverse.RelatedObjects) == 1:
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelContainedInSpatialStructure"):
-            if inverse.RelatingStructure == settings["product"] or len(inverse.RelatedElements) == 1:
+            if inverse.RelatingStructure == product or len(inverse.RelatedElements) == 1:
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelConnectsElements"):
             if inverse.is_a("IfcRelConnectsWithRealizingElements"):
-                if settings["product"] not in (inverse.RelatingElement, inverse.RelatedElement) and any(
-                    el for el in inverse.RealizingElements if el != settings["product"]
+                if product not in (inverse.RelatingElement, inverse.RelatedElement) and any(
+                    el for el in inverse.RealizingElements if el != product
                 ):
                     continue
             history = inverse.OwnerHistory
@@ -181,15 +175,15 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelConnectsPortToElement"):
-            if inverse.RelatedElement == settings["product"]:
+            if inverse.RelatedElement == product:
                 ifcopenshell.api.root.remove_product(file, product=inverse.RelatingPort)
-            elif inverse.RelatingPort == settings["product"]:
+            elif inverse.RelatingPort == product:
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelConnectsPorts"):
-            if settings["product"] not in (inverse.RelatingPort, inverse.RelatedPort):
+            if product not in (inverse.RelatingPort, inverse.RelatedPort):
                 # if it's not RelatingPort/RelatedPort then it's optional RealizingElement
                 # so we keep the relationship
                 continue
@@ -204,7 +198,7 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelAssignsToProduct"):
-            if inverse.RelatingProduct == settings["product"]:
+            if inverse.RelatingProduct == product:
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
@@ -215,17 +209,17 @@ def remove_product(file: ifcopenshell.file, product: ifcopenshell.entity_instanc
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelFlowControlElements"):
-            if inverse.RelatingFlowElement == settings["product"]:
+            if inverse.RelatingFlowElement == product:
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
-            elif inverse.RelatedControlElements == (settings["product"],):
+            elif inverse.RelatedControlElements == (product,):
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
-    history = settings["product"].OwnerHistory
-    file.remove(settings["product"])
+    history = product.OwnerHistory
+    file.remove(product)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)

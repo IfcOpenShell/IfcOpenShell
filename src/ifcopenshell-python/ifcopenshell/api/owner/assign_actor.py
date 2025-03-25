@@ -43,11 +43,8 @@ def assign_actor(
         ifcopenshell.api.resource.assign_resource.
 
     :param relating_actor: The IfcActor who is responsible for the object.
-    :type relating_actor: ifcopenshell.entity_instance
     :param related_object: The object the actor is responsible for.
-    :type related_object: ifcopenshell.entity_instance
     :return: The newly created IfcRelAssignsToActor relationship.
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -74,24 +71,19 @@ def assign_actor(
         ifcopenshell.api.owner.assign_actor(model,
             relating_actor=manufacturer, related_object=pump_type)
     """
-    settings = {
-        "relating_actor": relating_actor,
-        "related_object": related_object,
-    }
-
-    if settings["related_object"].HasAssignments:
-        for rel in settings["related_object"].HasAssignments:
-            if rel.is_a("IfcRelAssignsToActor") and rel.RelatingActor == settings["relating_actor"]:
+    if related_object.HasAssignments:
+        for rel in related_object.HasAssignments:
+            if rel.is_a("IfcRelAssignsToActor") and rel.RelatingActor == relating_actor:
                 return rel
 
     rel = None
 
-    if settings["relating_actor"].IsActingUpon:
-        rel = settings["relating_actor"].IsActingUpon[0]
+    if relating_actor.IsActingUpon:
+        rel = relating_actor.IsActingUpon[0]
 
     if rel:
         related_objects = list(rel.RelatedObjects)
-        related_objects.append(settings["related_object"])
+        related_objects.append(related_object)
         rel.RelatedObjects = related_objects
         ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
     else:
@@ -100,8 +92,8 @@ def assign_actor(
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": [settings["related_object"]],
-                "RelatingActor": settings["relating_actor"],
+                "RelatedObjects": [related_object],
+                "RelatingActor": relating_actor,
             }
         )
     return rel

@@ -26,16 +26,14 @@ def add_metric_reference(
     Adds a chain of references to a metric. The reference path is a string of the form "attribute.attribute.attribute"
     Used to reference a value of an attribute of an instance through a metric objective entity.
     """
-    settings = {"metric": metric, "reference_path": reference_path}
-
     references_created = []
-    if settings["reference_path"]:
-        attributes = settings["reference_path"].split(".")
+    if reference_path:
+        attributes = reference_path.split(".")
         for i in range(len(attributes)):
             if i == 0:
                 reference = file.create_entity("IfcReference")
                 reference.AttributeIdentifier = attributes[i]
-                settings["metric"].ReferencePath = reference
+                metric.ReferencePath = reference
                 references_created.append(reference)
             else:
                 reference = file.create_entity("IfcReference")

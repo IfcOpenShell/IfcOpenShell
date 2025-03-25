@@ -34,12 +34,12 @@ class BIM_PT_aggregate(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
+        props = tool.Blender.get_object_bim_props(obj)
         if not props.ifc_definition_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
             return False
         if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcObjectDefinition"):
             return False
@@ -66,9 +66,9 @@ class BIM_PT_aggregate(Panel):
                 col.enabled = False
             op = col.operator("bim.aggregate_assign_object", icon="CHECKMARK")
             if props.relating_object:
-                op.relating_object = props.relating_object.BIMObjectProperties.ifc_definition_id
+                op.relating_object = tool.Blender.get_object_bim_props(props.relating_object).ifc_definition_id
             elif props.related_object:
-                op.related_object = props.related_object.BIMObjectProperties.ifc_definition_id
+                op.related_object = tool.Blender.get_object_bim_props(props.related_object).ifc_definition_id
             row.operator("bim.disable_editing_aggregate", icon="CANCEL", text="")
             return
         else:
@@ -115,14 +115,14 @@ class BIM_PT_linked_aggregate(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
+        props = tool.Blender.get_object_bim_props(obj)
         if not props.ifc_definition_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
             return False
-        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcObjectDefinition"):
+        if not tool.Ifc.get().by_id(props.ifc_definition_id).is_a("IfcObjectDefinition"):
             return False
         return True
 

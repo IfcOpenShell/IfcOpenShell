@@ -622,7 +622,7 @@ class Usecase:
             window_lining_size = V(overall_width, lining_depth, window_lining_height)
             window_position = V(0, 0, overall_height - window_lining_height)
             frame_size = V(door_opening_width, frame_depth, frame_height)
-            window_lining_items, frame_items, glass_items = create_ifc_window(
+            current_window_items = create_ifc_window(
                 builder,
                 window_lining_size,
                 window_lining_thickness,
@@ -633,6 +633,9 @@ class Usecase:
                 glass_thickness,
                 window_position,
             )
+            window_lining_items = current_window_items["Lining"]
+            frame_items = current_window_items["Framing"]
+            glass_items = current_window_items["Glazing"]
 
         lining_offset_items = lining_items + door_items + window_lining_items + frame_items + glass_items
         builder.translate(lining_offset_items, (0, lining_offset, 0))

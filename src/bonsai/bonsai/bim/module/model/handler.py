@@ -20,7 +20,6 @@ import bpy
 import ifcopenshell
 import ifcopenshell.api
 from bonsai.bim.module.model import product, wall, slab, profile, opening, task
-from bonsai.bim.ifc import IfcStore
 from bpy.app.handlers import persistent
 
 

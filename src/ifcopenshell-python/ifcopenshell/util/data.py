@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import numpy as np
 import ifcopenshell
 from typing import Any, Union
@@ -30,7 +31,9 @@ class Clipping:
     operand_type: str = "IfcHalfSpaceSolid"
 
     @classmethod
-    def parse(cls, raw_data: Any) -> Union[ifcopenshell.entity_instance, "Clipping", None]:
+    def parse(
+        cls, raw_data: Union[ifcopenshell.entity_instance, Clipping, dict[str, Any]]
+    ) -> Union[ifcopenshell.entity_instance, Clipping]:
         """Parse various formats into a clipping object
 
         `raw_data` can be either:
@@ -63,7 +66,7 @@ class Clipping:
         raise Exception(f"Unexpected clipping type provided: {raw_data}")
 
     def apply(
-        self, ifc_file: ifcopenshell.file, first_operand: ifcopenshell.entity_instance, unit_scale: float
+        self, ifc_file: Union[ifcopenshell.file, None], first_operand: ifcopenshell.entity_instance, unit_scale: float
     ) -> ifcopenshell.entity_instance:
         """Applies the clipping data as an IfcBooleanClippingResult to an operand
 
@@ -72,6 +75,9 @@ class Clipping:
         :param unit_scale: The unit scale value to convert from the Clipping's SI units to project units
         :return: An IfcBooleanClippingResult which uses an IfcHalfSpaceSolid to clip the first operand
         """
+
+        if not ifc_file:
+            ifc_file = first_operand.file
 
         location = ifc_file.createIfcCartesianPoint([i / unit_scale for i in self.location])
         direction = ifc_file.createIfcDirection(self.normal)

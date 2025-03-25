@@ -137,9 +137,7 @@ def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) ->
     ``get_mappeditem_transformation`` instead.
 
     :param item: The IfcCartesianTransformationOperator entity
-    :type item: ifcopenshell.entity_instance
     :return: A 4x4 numpy transformation matrix
-    :rtype: MatrixType
     """
     origin = np.array(inst.LocalOrigin.Coordinates)
     axis1 = np.array((1.0, 0.0, 0.0))

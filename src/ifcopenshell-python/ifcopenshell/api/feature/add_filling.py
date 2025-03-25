@@ -33,11 +33,8 @@ def add_filling(
     filled.
 
     :param opening: The IfcOpeningElement to fill with the element.
-    :type opening: ifcopenshell.entity_instance
     :param element: The IfcElement to be inserted into the opening.
-    :type element: ifcopenshell.entity_instance
     :return: The new IfcRelFillsElement relationship
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -102,12 +99,10 @@ def add_filling(
         # The door will now fill the opening.
         ifcopenshell.api.feature.add_filling(model, opening=opening, element=door)
     """
-    settings = {"opening": opening, "element": element}
-
-    fills_voids = settings["element"].FillsVoids
+    fills_voids = element.FillsVoids
 
     if fills_voids:
-        if fills_voids[0].RelatingOpeningElement == settings["opening"]:
+        if fills_voids[0].RelatingOpeningElement == opening:
             return fills_voids[0]
         history = fills_voids[0].OwnerHistory
         file.remove(fills_voids[0])
@@ -117,6 +112,6 @@ def add_filling(
     return file.create_entity(
         "IfcRelFillsElement",
         GlobalId=ifcopenshell.guid.new(),
-        RelatingOpeningElement=settings["opening"],
-        RelatedBuildingElement=settings["element"],
+        RelatingOpeningElement=opening,
+        RelatedBuildingElement=element,
     )

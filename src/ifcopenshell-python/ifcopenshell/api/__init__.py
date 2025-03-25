@@ -163,7 +163,7 @@ def remove_all_listeners():
     post_listeners.clear()
 
 
-def extract_docs(module, usecase):
+def extract_docs(module: str, usecase: str) -> dict[str, Any]:
     import typing
     import collections
 

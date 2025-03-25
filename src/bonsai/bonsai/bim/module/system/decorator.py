@@ -41,7 +41,8 @@ def transparent_color(color, alpha=0.1):
 
 @persistent
 def toggle_decorations_on_load(*args):
-    if bpy.context.scene.BIMSystemProperties.should_draw_decorations:
+    props = tool.System.get_system_props()
+    if props.should_draw_decorations:
         SystemDecorator.install(bpy.context)
     else:
         SystemDecorator.uninstall()

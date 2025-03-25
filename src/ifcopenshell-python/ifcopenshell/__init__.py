@@ -237,6 +237,10 @@ def schema_by_name(
 
     :param schema: Which IFC schema to use, chosen from "IFC2X3", "IFC4",
         or "IFC4X3". These refer to the ISO approved versions of IFC.
+        E.g. from ``ifcopenshell.file.schema_identifier``.
+        Passing ``ifcopenshell.file.schema`` also will work but may result
+        in not precisely matching schema but it's only conern if you're
+        using not one of the main schemas.
     :param schema_version: If you want to specify an exact version of IFC
         that may not be an ISO approved version, use this argument instead
         of ``schema``. IFC versions on technical.buildingsmart.org are

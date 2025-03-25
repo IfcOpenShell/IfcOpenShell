@@ -24,7 +24,8 @@ from bpy.app.handlers import persistent
 
 @persistent
 def load_post(*args):
-    if bpy.context.scene.DocProperties.should_draw_decorations:
+    props = tool.Drawing.get_document_props()
+    if props.should_draw_decorations:
         decoration.DecorationsHandler.install(bpy.context)
     else:
         decoration.DecorationsHandler.uninstall()
@@ -35,9 +36,11 @@ def depsgraph_update_pre_handler(scene):
     set_active_camera_resolution(scene)
 
 
-def set_active_camera_resolution(scene):
-    if not scene.camera or "/" not in scene.camera.name or not scene.DocProperties.drawings:
+def set_active_camera_resolution(scene: bpy.types.Scene) -> None:
+    props = tool.Drawing.get_document_props()
+    if not scene.camera or "/" not in scene.camera.name or not props.drawings:
         return
+    assert isinstance(scene.camera.data, bpy.types.Camera)
     props = scene.camera.data.BIMCameraProperties
     ortho_scale = max((props.width, props.height))
     aspect_ratio = props.width / props.height
@@ -60,5 +63,3 @@ def set_active_camera_resolution(scene):
 
         scene.render.resolution_x = scene.camera.data.BIMCameraProperties.raster_x = int(raster_x)
         scene.render.resolution_y = scene.camera.data.BIMCameraProperties.raster_y = int(raster_y)
-
-    current_drawing = scene.DocProperties.drawings[scene.DocProperties.current_drawing_index]

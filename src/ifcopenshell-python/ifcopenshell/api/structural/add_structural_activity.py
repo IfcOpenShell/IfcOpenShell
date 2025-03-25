@@ -27,7 +27,7 @@ def add_structural_activity(
     ifc_class: str = "IfcStructuralPlanarAction",
     predefined_type: str = "CONST",
     global_or_local: Literal["GLOBAL_COORDS", "LOCAL_COORDS"] = "GLOBAL_COORDS",
-) -> None:
+) -> ifcopenshell.entity_instance:
     """Adds a new structural activity
 
     A structural activity is either a structural action or a reaction. It
@@ -38,42 +38,29 @@ def add_structural_activity(
     a structural member.
 
     :param ifc_class: Choose from any subtype of IfcStructuralActivity.
-    :type ifc_class: str
     :param predefined_type: View the IFC documentation for what valid
         predefined types may be chosen.
-    :type predefined_type: str
     :param global_or_local: The location coordinates of the load is always
         defined locally relative to the structural member the activity is
         assigned to. However, the directions of the applied load may either
         be specified globally or locally depending on how this argument is
         set. Choose from GLOBAL_COORDS or LOCAL_COORDS.
-    :type global_or_local: str
     :param applied_load: The IfcStructuralLoad that is applied in this
         activity.
-    :type applied_load: ifcopenshell.entity_instance
     :param structural_member: The IfcStructuralMember that the load is
         applied to.
-    :type structural_member: ifcopenshell.entity_instance
     :return: The newly created entity based on the ifc_class
-    :rtype: ifcopenshell.entity_instance
     """
-    settings = {
-        "ifc_class": ifc_class,
-        "predefined_type": predefined_type,
-        "global_or_local": global_or_local,
-        "applied_load": applied_load,
-        "structural_member": structural_member,
-    }
 
     activity = ifcopenshell.api.root.create_entity(
         file,
-        ifc_class=settings["ifc_class"],
-        predefined_type=settings["predefined_type"],
+        ifc_class=ifc_class,
+        predefined_type=predefined_type,
     )
-    activity.AppliedLoad = settings["applied_load"]
-    activity.GlobalOrLocal = settings["global_or_local"]
+    activity.AppliedLoad = applied_load
+    activity.GlobalOrLocal = global_or_local
 
     rel = ifcopenshell.api.root.create_entity(file, ifc_class="IfcRelConnectsStructuralActivity")
-    rel.RelatingElement = settings["structural_member"]
+    rel.RelatingElement = structural_member
     rel.RelatedStructuralActivity = activity
     return activity

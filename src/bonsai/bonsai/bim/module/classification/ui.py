@@ -21,7 +21,6 @@ import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.bim.module.classification.prop as classification_prop
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.classification.data import (
     ClassificationsData,
     ClassificationReferencesData,
@@ -124,7 +123,7 @@ class ReferenceUI:
         self.sprops = context.scene.BIMClassificationProperties
         self.bprops = context.scene.BIMBSDDProperties
         self.props = context.scene.BIMClassificationReferenceProperties
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
 
         self.draw_add_ui(context)
 
@@ -312,7 +311,7 @@ class BIM_PT_material_classifications(Panel, ReferenceUI):
     def poll(cls, context):
         if not tool.Ifc.get():
             return False
-        props = context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         if props.is_editing and (material := props.active_material) and material.ifc_definition_id:
             return True
         return False

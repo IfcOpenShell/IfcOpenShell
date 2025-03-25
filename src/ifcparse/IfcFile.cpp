@@ -46,19 +46,14 @@ namespace {
     template<typename Variant, typename T>
     constexpr bool is_type_in_variant_v = is_type_in_variant<Variant, T>::value;
 
-    struct InstanceReference {
-        int v;
-        operator int() const {
-            return v;
-        }
-    };
-
     template <typename Fn>
     void dispatch_token(int instance_id, int attribute_id, IfcParse::Token t, IfcParse::declaration* decl, Fn fn) {
         if (t.type == IfcParse::Token_BINARY) {
             fn(IfcParse::TokenFunc::asBinary(t));
-        } else if (t.type == IfcParse::Token_BOOL) {
+        } else if (IfcParse::TokenFunc::isBool(t)) {
             fn(IfcParse::TokenFunc::asBool(t));
+        } else if (IfcParse::TokenFunc::isLogical(t)) {
+            fn(IfcParse::TokenFunc::asLogical(t));
         } else if (t.type == IfcParse::Token_ENUMERATION) {
             auto& s = IfcParse::TokenFunc::asStringRef(t);
             if (decl && decl->as_enumeration_type()) {
@@ -73,7 +68,7 @@ namespace {
         } else if (t.type == IfcParse::Token_FLOAT) {
             fn(IfcParse::TokenFunc::asFloat(t));
         } else if (t.type == IfcParse::Token_IDENTIFIER) {
-            fn(IfcParse::reference_or_simple_type{ InstanceReference{ IfcParse::TokenFunc::asIdentifier(t) } });
+            fn(IfcParse::reference_or_simple_type{ IfcParse::InstanceReference{ IfcParse::TokenFunc::asIdentifier(t), t.startPos } });
         } else if (t.type == IfcParse::Token_INT) {
             fn(IfcParse::TokenFunc::asInt(t));
         } else if (t.type == IfcParse::Token_STRING) {

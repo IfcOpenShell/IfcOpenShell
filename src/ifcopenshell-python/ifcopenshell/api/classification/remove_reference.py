@@ -33,15 +33,12 @@ def remove_reference(
 
     :param reference: The IfcClassificationReference entity of the
         relationship you want to remove.
-    :type reference: ifcopenshell.entity_instance
     :param product: The list fo object entities of the relationship you want to
         remove.
-    :type product: list[ifcopenshell.entity_instance]
 
     :raises TypeError: If file is IFC2X3 and `products` has non-IfcRoot elements.
 
     :return: None
-    :rtype: None
 
     Example:
 
@@ -56,20 +53,18 @@ def remove_reference(
         ifcopenshell.api.classification.remove_reference(model,
             reference=reference, products=[wall_type])
     """
-    settings = {"reference": reference, "products": products}
-
     is_ifc2x3 = file.schema == "IFC2X3"
-    products = set(settings["products"])
-    referenced = ifcopenshell.util.element.get_referenced_elements(settings["reference"])
-    products -= products.difference(referenced)
+    products_set = set(products)
+    referenced = ifcopenshell.util.element.get_referenced_elements(reference)
+    products_set -= products_set.difference(referenced)
 
     # all products are already unassigned from a reference
-    if not products:
+    if not products_set:
         return
 
     rooted_products: set[ifcopenshell.entity_instance] = set()
     non_rooted_products: set[ifcopenshell.entity_instance] = set()
-    for product in settings["products"]:
+    for product in products:
         if product.is_a("IfcRoot"):
             rooted_products.add(product)
         else:
@@ -86,7 +81,7 @@ def remove_reference(
         reference_rels = {
             rel
             for rel in reference_rels
-            if rel.is_a("IfcRelAssociatesClassification") and rel.RelatingClassification == settings["reference"]
+            if rel.is_a("IfcRelAssociatesClassification") and rel.RelatingClassification == reference
         }
 
         for rel in reference_rels:
@@ -108,7 +103,7 @@ def remove_reference(
                 rels = getattr(product, "HasExternalReference", [])
             reference_rels.update(rels)
 
-        reference_rels = {rel for rel in reference_rels if rel.RelatingReference == settings["reference"]}
+        reference_rels = {rel for rel in reference_rels if rel.RelatingReference == reference}
         for rel in reference_rels:
             related_objects = set(rel.RelatedResourceObjects) - non_rooted_products
             if related_objects:
@@ -117,6 +112,6 @@ def remove_reference(
                 file.remove(rel)
 
     # TODO: we only handle lightweight classifications here
-    referenced_elements = ifcopenshell.util.element.get_referenced_elements(settings["reference"])
+    referenced_elements = ifcopenshell.util.element.get_referenced_elements(reference)
     if not referenced_elements:
-        file.remove(settings["reference"])
+        file.remove(reference)

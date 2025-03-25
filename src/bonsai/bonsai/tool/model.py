@@ -26,6 +26,8 @@ import collections.abc
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
+import ifcopenshell.api.grid
 import ifcopenshell.api.pset
 import ifcopenshell.geom
 import ifcopenshell.util.element
@@ -36,25 +38,30 @@ import ifcopenshell.util.unit
 import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
-import bonsai.core.geometry as geometry
-from math import atan, cos, degrees, radians
+from math import atan, cos, degrees, pi, radians
 from mathutils import Matrix, Vector
 from copy import deepcopy
 from functools import partial
 from bonsai.bim import import_ifc
 
-# TODO: This line is somehow keeping the world from falling apart with a circular import error.
-from bonsai.bim.module.geometry.helper import Helper
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from typing import Optional, Union, TypeVar, Any, Iterable, Literal, TYPE_CHECKING
+from typing import Optional, Union, TypeVar, Any, Iterable, Literal, TYPE_CHECKING, Sequence, TypedDict
 
 T = TypeVar("T")
 V_ = tool.Blender.V_
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.model.prop import BIMModelProperties, BIMDoorProperties
+    from bonsai.bim.module.model.prop import (
+        BIMModelProperties,
+        BIMDoorProperties,
+        BIMArrayProperties,
+        BIMRoofProperties,
+        BIMWindowProperties,
+        BIMStairProperties,
+        BIMRailingProperties,
+    )
 
 
 class Model(bonsai.core.tool.Model):
@@ -65,6 +72,26 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_door_props(cls, obj: bpy.types.Object) -> BIMDoorProperties:
         return obj.BIMDoorProperties
+
+    @classmethod
+    def get_window_props(cls, obj: bpy.types.Object) -> BIMWindowProperties:
+        return obj.BIMWindowProperties
+
+    @classmethod
+    def get_stair_props(cls, obj: bpy.types.Object) -> BIMStairProperties:
+        return obj.BIMStairProperties
+
+    @classmethod
+    def get_roof_props(cls, obj: bpy.types.Object) -> BIMRoofProperties:
+        return obj.BIMRoofProperties
+
+    @classmethod
+    def get_railing_props(cls, obj: bpy.types.Object) -> BIMRailingProperties:
+        return obj.BIMRailingProperties
+
+    @classmethod
+    def get_array_props(cls, obj: bpy.types.Object) -> BIMArrayProperties:
+        return obj.BIMArrayProperties
 
     @classmethod
     def convert_si_to_unit(cls, value: T) -> T:
@@ -79,7 +106,7 @@ class Model(bonsai.core.tool.Model):
         return value * cls.unit_scale
 
     @classmethod
-    def convert_data_to_project_units(cls, data: dict[str, Any], non_si_props: list[str] = []) -> dict[str, Any]:
+    def convert_data_to_project_units(cls, data: dict[str, Any], non_si_props: Sequence[str] = ()) -> dict[str, Any]:
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for prop_name in data:
             if prop_name in non_si_props:
@@ -92,7 +119,7 @@ class Model(bonsai.core.tool.Model):
         return data
 
     @classmethod
-    def convert_data_to_si_units(cls, data: dict[str, Any], non_si_props: list[str] = []) -> dict[str, Any]:
+    def convert_data_to_si_units(cls, data: dict[str, Any], non_si_props: Sequence[str] = ()) -> dict[str, Any]:
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for prop_name in data:
             if prop_name in non_si_props:
@@ -103,6 +130,19 @@ class Model(bonsai.core.tool.Model):
             else:
                 data[prop_name] = prop_value * si_conversion
         return data
+
+    @classmethod
+    def get_constituents_props_data(cls, element: ifcopenshell.entity_instance) -> dict[str, str]:
+        constituents = ("lining", "framing", "glazing")
+        props: dict[str, str] = {f"{constituent}_material": "0" for constituent in constituents}
+        material = ifcopenshell.util.element.get_material(element)
+        if not material or not material.is_a("IfcMaterialConstituentSet"):
+            return props
+        for constituent in material.MaterialConstituents:
+            name = (constituent.Name or "").lower()
+            if name in constituents:
+                props[f"{name}_material"] = str(constituent.Material.id())
+        return props
 
     @classmethod
     def convert_mesh_to_curve(
@@ -241,7 +281,7 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def get_extrusion(cls, representation: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
-        """return first found IfcExtrudedAreaSolid"""
+        """Return first found IfcExtrudedAreaSolid"""
         item = representation.Items[0]
         while True:
             if item.is_a("IfcExtrudedAreaSolid"):
@@ -251,8 +291,19 @@ class Model(bonsai.core.tool.Model):
             else:
                 break
 
+    unit_scale: float
+    vertices: list[Vector]
+    edges: list[Sequence[int]]
+    arcs: list[Sequence[int]]
+    circles: list[Sequence[int]]
+
     @classmethod
-    def import_axis(cls, axis, obj=None, position=None):
+    def import_axis(
+        cls,
+        axis: Union[ifcopenshell.entity_instance, tuple[Vector, Vector]],
+        obj=None,
+        position: Optional[Matrix] = None,
+    ) -> bpy.types.Object:
         cls.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         if position is None:
@@ -263,7 +314,7 @@ class Model(bonsai.core.tool.Model):
         cls.arcs = []
         cls.circles = []
 
-        if isinstance(axis, list):
+        if isinstance(axis, tuple):
             cls.vertices.extend(
                 [
                     position @ Vector(cls.convert_unit_to_si(axis[0])).to_3d(),
@@ -276,7 +327,7 @@ class Model(bonsai.core.tool.Model):
 
         mesh = bpy.data.meshes.new("Axis")
         mesh.from_pydata(cls.vertices, cls.edges, [])
-        mesh.BIMMeshProperties.subshape_type = "AXIS"
+        tool.Geometry.get_mesh_props(mesh).subshape_type = "AXIS"
 
         if obj is None:
             obj = bpy.data.objects.new("Axis", mesh)
@@ -333,7 +384,7 @@ class Model(bonsai.core.tool.Model):
 
         mesh = bpy.data.meshes.new("Profile")
         mesh.from_pydata(cls.vertices, cls.edges, [])
-        mesh.BIMMeshProperties.subshape_type = "PROFILE"
+        tool.Geometry.get_mesh_props(mesh).subshape_type = "PROFILE"
 
         if obj is None:
             obj = bpy.data.objects.new("Profile", mesh)
@@ -375,7 +426,7 @@ class Model(bonsai.core.tool.Model):
 
         mesh = bpy.data.meshes.new("Curve")
         mesh.from_pydata(cls.vertices, cls.edges, [])
-        mesh.BIMMeshProperties.subshape_type = "PROFILE"
+        tool.Geometry.get_mesh_props(mesh).subshape_type = "PROFILE"
 
         if obj is None:
             obj = bpy.data.objects.new("Curve", mesh)
@@ -416,7 +467,7 @@ class Model(bonsai.core.tool.Model):
 
         mesh = bpy.data.meshes.new("Surface")
         mesh.from_pydata(cls.vertices, cls.edges, [])
-        mesh.BIMMeshProperties.subshape_type = "PROFILE"
+        tool.Geometry.get_mesh_props(mesh).subshape_type = "PROFILE"
 
         if obj is None:
             obj = bpy.data.objects.new("Surface", mesh)
@@ -433,10 +484,13 @@ class Model(bonsai.core.tool.Model):
 
         return obj
 
+    class UnsupportedCurveForConversion(Exception):
+        pass
+
     @classmethod
     def convert_curve_to_mesh(
         cls,
-        obj: bpy.types.Object,
+        obj: Union[bpy.types.Object, None],  # Unused argument.
         position: Matrix,
         curve: ifcopenshell.entity_instance,
         x_angle: Optional[float] = None,
@@ -444,19 +498,24 @@ class Model(bonsai.core.tool.Model):
         offset = len(cls.vertices)
 
         if curve.is_a("IfcPolyline"):
-            total_points = len(curve.Points)
-            last_index = len(curve.Points) - 1
-            for i, point in enumerate(curve.Points):
-                if i == last_index:
-                    continue
+            curve_points: tuple[ifcopenshell.entity_instance, ...] = curve.Points
+            # Polyline must have 2 points to be valid.
+            is_closed = np.allclose(curve_points[0].Coordinates, curve_points[-1].Coordinates)
+
+            points_to_add = curve_points[:-1] if is_closed else curve_points
+            for point in points_to_add:
                 global_point = position @ Vector(cls.convert_unit_to_si(point.Coordinates)).to_3d()
                 cls.vertices.append(global_point)
-            cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices))])
-            cls.edges[-1] = (len(cls.vertices) - 1, offset)  # Close the loop
+
+            cls.edges.extend([(i, i + 1) for i in range(offset, len(cls.vertices) - 1)])
+            if is_closed:
+                cls.edges[-1] = (len(cls.vertices) - 1, offset)  # Close the loop
+
         elif curve.is_a("IfcCompositeCurve"):
             # This is a first pass incomplete implementation only for simple polylines, and misses many details.
             for segment in curve.Segments:
                 cls.convert_curve_to_mesh(obj, position, segment.ParentCurve)
+
         elif curve.is_a("IfcIndexedPolyCurve"):
             for local_point in curve.Points.CoordList:
                 global_point = position @ Vector(cls.convert_unit_to_si(local_point)).to_3d()
@@ -492,6 +551,8 @@ class Model(bonsai.core.tool.Model):
             )
             cls.circles.append([offset, offset + 1])
             cls.edges.append((offset, offset + 1))
+        else:
+            raise cls.UnsupportedCurveForConversion(f"Profile has unsupported curve type: {curve}.")
 
     @classmethod
     def import_rectangle(cls, obj: bpy.types.Object, position: Matrix, profile: ifcopenshell.entity_instance) -> None:
@@ -539,8 +600,16 @@ class Model(bonsai.core.tool.Model):
             if not openings[i].obj:
                 openings.remove(i)
 
+    class MaterialLayerParameters(TypedDict):
+        """Float values are in project units."""
+
+        layer_set_direction: Literal["AXIS1", "AXIS2", "AXIS3"]
+        thickness: float
+        offset: float
+        direction_sense: Literal["NEGATIVE", "POSITIVE"]
+
     @classmethod
-    def get_material_layer_parameters(cls, element: ifcopenshell.entity_instance) -> dict[str, Any]:
+    def get_material_layer_parameters(cls, element: ifcopenshell.entity_instance) -> MaterialLayerParameters:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         layer_set_direction = "AXIS2"
         offset = 0.0
@@ -555,12 +624,12 @@ class Model(bonsai.core.tool.Model):
                 material = material.ForLayerSet
             if material.is_a("IfcMaterialLayerSet"):
                 thickness = sum([l.LayerThickness for l in material.MaterialLayers]) * unit_scale
-        return {
-            "layer_set_direction": layer_set_direction,
-            "thickness": thickness,
-            "offset": offset,
-            "direction_sense": direction_sense,
-        }
+        return cls.MaterialLayerParameters(
+            layer_set_direction=layer_set_direction,
+            thickness=thickness,
+            offset=offset,
+            direction_sense=direction_sense,
+        )
 
     @classmethod
     def get_booleans(
@@ -568,7 +637,10 @@ class Model(bonsai.core.tool.Model):
         element: Optional[ifcopenshell.entity_instance] = None,
         representation: Optional[ifcopenshell.entity_instance] = None,
     ) -> list[ifcopenshell.entity_instance]:
+        """Either element or representation must be provided."""
+        assert element or representation, "Either element or representation must be provided."
         if representation is None:
+            assert element
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
                 return []
@@ -935,8 +1007,11 @@ class Model(bonsai.core.tool.Model):
         obj: bpy.types.Object,
         new_representation: ifcopenshell.entity_instance,
     ) -> None:
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
         ifc_file = tool.Ifc.get()
         ifc_element = tool.Ifc.get_entity(obj)
+        assert ifc_element
         old_representation = ifcopenshell.util.representation.get_representation(
             ifc_element, ifc_context.ContextType, ifc_context.ContextIdentifier, ifc_context.TargetView
         )
@@ -950,7 +1025,7 @@ class Model(bonsai.core.tool.Model):
             ifcopenshell.api.run(
                 "geometry.assign_representation", ifc_file, product=ifc_element, representation=new_representation
             )
-        geometry.switch_representation(
+        bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
             obj=obj,
@@ -1469,9 +1544,9 @@ class Model(bonsai.core.tool.Model):
         after material assignment or material unassignment.
         """
         for element in elements:
-            if not (obj := tool.Ifc.get_object(element)) or not obj.data:
+            if not (obj := tool.Ifc.get_object(element)) or not (data := obj.data):
                 continue
-            representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+            representation = tool.Ifc.get().by_id(tool.Geometry.get_mesh_props(data).ifc_definition_id)
             bonsai.core.geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,
@@ -1498,12 +1573,14 @@ class Model(bonsai.core.tool.Model):
     def add_body_representation(cls, obj: bpy.types.Object) -> None:
         ifc_file = tool.Ifc.get()
         body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        representation = ifcopenshell.api.run(
-            "geometry.add_representation",
+        assert body
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        representation = ifcopenshell.api.geometry.add_representation(
             ifc_file,
             context=body,
             blender_object=obj,
-            geometry=obj.data,
+            geometry=mesh,
             coordinate_offset=tool.Geometry.get_cartesian_point_offset(obj),
             total_items=tool.Geometry.get_total_representation_items(obj),
             should_force_faceted_brep=tool.Geometry.should_force_faceted_brep(),
@@ -1512,6 +1589,7 @@ class Model(bonsai.core.tool.Model):
             ifc_representation_class=None,
             profile_set_usage=None,
         )
+        assert representation
         tool.Model.replace_object_ifc_representation(body, obj, representation)
 
     @classmethod
@@ -1535,7 +1613,7 @@ class Model(bonsai.core.tool.Model):
         mesh: bpy.types.Mesh,
         position: Matrix | None = None,
         x_angle: Optional[float] = None,
-    ) -> Union[tuple, dict]:
+    ) -> tuple | dict | None:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         if position is None:
@@ -1588,7 +1666,7 @@ class Model(bonsai.core.tool.Model):
         loop_edges = list(bm.edges)
 
         # Create loops from edges
-        loops = []
+        loops: list[list[bmesh.types.BMEdge]] = []
         while loop_edges:
             edge = loop_edges.pop()
             loop = [edge]
@@ -1609,19 +1687,19 @@ class Model(bonsai.core.tool.Model):
 
         tmp = ifcopenshell.file(schema=tool.Ifc.get().schema)
 
-        def is_in_group(v, group_name):
+        def is_in_group(v: bmesh.types.BMVert, group_name: str) -> bool:
             for group_index in groups[group_name]:
                 if group_index in v[deform_layer]:
                     return True
             return False
 
-        def get_group_index(v, group_name):
+        def get_group_index(v: bmesh.types.BMVert, group_name: str) -> Union[int, None]:
             for group_index in groups[group_name]:
                 if group_index in v[deform_layer]:
                     return group_index
 
         # Convert all loops into IFC curves
-        curves = []
+        curves: list[ifcopenshell.entity_instance] = []
         for loop in loops:
 
             if len(loop) == 1 and all([is_in_group(v, "IFCCIRCLE") for v in loop[0].verts]):
@@ -1634,7 +1712,7 @@ class Model(bonsai.core.tool.Model):
                     tmp.createIfcCircle(tmp.createIfcAxis2Placement2D(tmp.createIfcCartesianPoint(list(mid))), radius)
                 )
             else:
-                loop_verts = []
+                loop_verts: list[bmesh.types.BMVert] = []
                 for i, edge in enumerate(loop):
                     if i == 0 and len(loop) == 1:
                         loop_verts.append(edge.verts[0])
@@ -1710,7 +1788,7 @@ class Model(bonsai.core.tool.Model):
                     curves.append(tmp.createIfcIndexedPolyCurve(points))
 
         # Sort IFC curves into either closed, or closed with void profile defs
-        profile_defs = []
+        profile_defs: list[ifcopenshell.entity_instance] = []
         settings = ifcopenshell.geom.settings()
         settings.set("dimensionality", ifcopenshell.ifcopenshell_wrapper.CURVES_SURFACES_AND_SOLIDS)
 
@@ -1750,7 +1828,9 @@ class Model(bonsai.core.tool.Model):
                 else:
                     profile_defs.append(tmp.createIfcArbitraryClosedProfileDef("AREA", None, curve))
 
-        if len(profile_defs) == 1:
+        if (total_profile_defs := len(profile_defs)) == 0:
+            return
+        elif total_profile_defs == 1:
             profile_def = profile_defs[0]
         else:
             profile_def = tmp.createIfcCompositeProfileDef("AREA", None, profile_defs)
@@ -1937,7 +2017,9 @@ class Model(bonsai.core.tool.Model):
         or it's not referring to an object (e.g. potential boolean object)."""
         if obj.type != "MESH":
             return
-        return obj.data.BIMMeshProperties.obj
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+        return tool.Geometry.get_mesh_props(mesh).obj
 
     @classmethod
     def get_tracked_opening_type(cls, obj: bpy.types.Object) -> Union[Literal["OPENING", "BOOLEAN"], None]:
@@ -1968,20 +2050,133 @@ class Model(bonsai.core.tool.Model):
         FilledOpeningGenerator().generate(filling_obj, voided_obj)
 
     @classmethod
-    def add_extrusion_position(cls, extrusion: ifcopenshell.entity_instance, offset: float) -> None:
+    def add_extrusion_position(cls, extrusion: ifcopenshell.entity_instance, position: Vector) -> None:
         ifc_file = tool.Ifc.get()
 
-        position = ifc_file.createIfcAxis2Placement3D(
-            ifc_file.createIfcCartesianPoint((0.0, 0.0, offset)),
+        new_position = ifc_file.createIfcAxis2Placement3D(
+            ifc_file.createIfcCartesianPoint(position),
             ifc_file.createIfcDirection((0.0, 0.0, 1.0)),
             ifc_file.createIfcDirection((1.0, 0.0, 0.0)),
         )
 
-        extrusion.Position = position
+        extrusion.Position = new_position
 
     @classmethod
-    def get_existing_x_angle(cls, extrusion):
-        x, y, z = extrusion.ExtrudedDirection.DirectionRatios
-        x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
+    def reset_extrusion_position(cls, extrusion: ifcopenshell.entity_instance) -> None:
+        ifc_file = extrusion.file
 
-        return x_angle
+        if ifc_file.schema == "IFC2X3":
+            # Position is not optional.
+            extrusion.Position.Location.Coordinates = (0.0, 0.0, 0.0)
+            return
+
+        position = extrusion.Position
+        if position is None:
+            return
+        extrusion.Position = None
+        ifcopenshell.util.element.remove_deep2(ifc_file, position)
+
+    @classmethod
+    def get_existing_x_angle(cls, extrusion: ifcopenshell.entity_instance) -> float:
+        x, y, z = extrusion.ExtrudedDirection.DirectionRatios
+        vector = Vector((0, 1))
+        x_angle = vector.angle_signed(Vector((y, z)))
+        return x_angle if z > 0 else (x_angle + pi)
+
+    @classmethod
+    def create_axis_curve(cls, obj: bpy.types.Object, grid_axis: ifcopenshell.entity_instance) -> None:
+        m = tool.Surveyor.get_absolute_matrix(obj)
+        points = [m @ np.array(v.co.to_4d()) for v in obj.data.vertices[0:2]]
+        ifcopenshell.api.grid.create_axis_curve(
+            tool.Ifc.get(), p1=points[0], p2=points[1], is_si=True, grid_axis=grid_axis
+        )
+
+    @classmethod
+    def draw_material_ui_select(cls, layout: bpy.types.UILayout, material_id: str) -> None:
+        material_id_int = int(material_id)
+        if not material_id_int:
+            return
+        op = layout.operator("bim.material_ui_select", icon="ZOOM_SELECTED", text="")
+        op.material_id = material_id_int
+
+    @classmethod
+    def get_slab_clipping_bmesh(cls, obj: bpy.types.Object) -> bpy.types.BMesh | None:
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+
+        bm = bmesh.new()
+        bm.from_mesh(obj.data)
+        bmesh.ops.dissolve_limit(bm, angle_limit=radians(1), verts=bm.verts, edges=bm.edges)
+        bm.faces.ensure_lookup_table()
+
+        clipping_bm = bmesh.new()
+        vertex_map = {}
+
+        for face in bm.faces:
+            face.normal_update()
+            normal = face.normal.to_4d()
+            normal.w = 0
+            if (obj.matrix_world @ normal).z >= -0.5:
+                continue
+            new_verts = []
+            for vert in face.verts:
+                if not (new_vert := vertex_map.get(vert.index, None)):
+                    new_vert = clipping_bm.verts.new(obj.matrix_world @ vert.co / unit_scale)
+                    vertex_map[vert.index] = new_vert
+                new_verts.append(new_vert)
+            clipping_bm.faces.new(new_verts)
+
+        if not len(clipping_bm.faces):
+            return
+
+        bmesh.ops.recalc_face_normals(clipping_bm, faces=clipping_bm.faces)
+        return clipping_bm  # clipping_bm is in project units
+
+    @classmethod
+    def clip_wall_to_slab(cls, wall: ifcopenshell.entity_instance, clipping_bm: bpy.types.BMesh) -> None:
+        matrix_i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement))
+        bm = clipping_bm.copy()
+        bmesh.ops.transform(bm, matrix=Matrix(matrix_i.tolist()), verts=bm.verts)
+
+        bm.verts.ensure_lookup_table()
+        zs = [v.co.z for v in bm.verts]
+        min_z = min(zs)
+        max_z = max(zs)
+
+        operand = None
+        if (z := max_z - min_z) and not np.isclose(z, 0.0):
+            builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+
+            result = bmesh.ops.extrude_face_region(bm, geom=bm.faces)
+            extruded_verts = [elem for elem in result["geom"] if isinstance(elem, bmesh.types.BMVert)]
+            bmesh.ops.translate(bm, verts=extruded_verts, vec=(0, 0, z))
+
+            verts = [v.co for v in bm.verts]
+            faces = [[v.index for v in p.verts] for p in bm.faces]
+            operand = builder.mesh(verts, faces)
+
+        for extrusion in ifcopenshell.util.shape.get_base_extrusions(wall) or []:
+            if extrusion.Position:
+                position = ifcopenshell.util.placement.get_axis2placement(extrusion.Position)
+            else:
+                position = np.eye(4)
+
+            direction = np.array(extrusion.ExtrudedDirection[0])
+            direction /= np.linalg.norm(direction)
+            direction = position @ np.append(direction, 0.0)
+
+            if direction[2] <= 0 or position[2][3] > max_z:
+                continue
+
+            extrusion.Depth = max_z / direction[2]
+
+            if operand:
+                booleans = ifcopenshell.api.geometry.add_boolean(
+                    tool.Ifc.get(), first_item=extrusion, second_items=[operand]
+                )
+                tool.Model.mark_manual_booleans(wall, booleans)
+
+    @classmethod
+    def connect_wall_to_slab(cls, wall: ifcopenshell.entity_instance, slab: ifcopenshell.entity_instance) -> None:
+        ifcopenshell.api.geometry.connect_element(
+            tool.Ifc.get(), relating_element=slab, related_element=wall, description="TOP"
+        )

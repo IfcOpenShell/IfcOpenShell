@@ -28,7 +28,7 @@ namespace ifcopenshell { namespace geometry {
 
 		Converter(const std::string& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& settings);
 		
-		~Converter() {}
+		~Converter();
 
 		ifcopenshell::geometry::abstract_mapping* mapping() const { return mapping_; }
 

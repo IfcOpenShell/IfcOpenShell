@@ -32,7 +32,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union, Literal
 
 
 def get_contexts(self, context):
@@ -121,7 +121,7 @@ def get_layers_no_active(self, context):
     return LayersData.data["layers_enum_no_active"]
 
 
-def update_shape_aspect(self, context):
+def update_shape_aspect(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
     shape_aspect_id = self.representation_item_shape_aspect
     attrs = self.shape_aspect_attrs
 
@@ -250,9 +250,8 @@ class BIMObjectGeometryProperties(PropertyGroup):
     representation_item_layer: EnumProperty(items=get_layers, name="Representation Item's Layer")
 
     @property
-    def active_item(self):
-        if 0 <= self.active_item_index < len(self.items):
-            return self.items[self.active_item_index]
+    def active_item(self) -> Union[RepresentationItem, None]:
+        return tool.Blender.get_active_uilist_element(self.items, self.active_item_index)
 
     if TYPE_CHECKING:
         contexts: str
@@ -268,6 +267,9 @@ class BIMObjectGeometryProperties(PropertyGroup):
         shape_aspect_attrs: ShapeAspect
         is_editing_item_layer: bool
         representation_item_layer: str
+
+
+GeometryMode = Literal["OBJECT", "ITEM", "EDIT"]
 
 
 class BIMGeometryProperties(PropertyGroup):
@@ -308,7 +310,7 @@ class BIMGeometryProperties(PropertyGroup):
         should_force_faceted_brep: bool
         should_force_triangulation: bool
         is_changing_mode: bool
-        mode: str
+        mode: GeometryMode
         representation_obj: Union[bpy.types.Object, None]
         item_objs: bpy.types.bpy_prop_collection_idprop[RepresentationItemObject]
         representation_from_object: Union[bpy.types.Object, None]

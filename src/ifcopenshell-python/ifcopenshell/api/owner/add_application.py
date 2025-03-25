@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
-from typing import Optional
+from typing import Optional, Any
 
 
 def add_application(
@@ -68,6 +68,9 @@ def add_application(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         if not self.settings["application_developer"]:
             self.settings["application_developer"] = self.create_application_organisation()

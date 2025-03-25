@@ -46,12 +46,9 @@ def assign_product(
     in 3D.
 
     :param relating_product: The IfcProduct the object is related to
-    :type relating_product: ifcopenshell.entity_instance
     :param related_object: The object (typically IfcAnnotation) that the
         product is related to
-    :type related_object: ifcopenshell.entity_instance
     :return: The created IfcRelAssignsToProduct relationship
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -62,42 +59,36 @@ def assign_product(
         ifcopenshell.api.drawing.assign_product(model,
             relating_product=furniture, related_object=annotation)
     """
-    settings = {
-        "relating_product": relating_product,
-        "related_object": related_object,
-    }
-
-    is_grid_axis = settings["relating_product"].is_a("IfcGridAxis")
+    is_grid_axis = relating_product.is_a("IfcGridAxis")
 
     if is_grid_axis:
-        if settings["related_object"].HasAssignments:
-            for rel in settings["related_object"].HasAssignments:
-                if rel.is_a("IfcRelAssignsToProduct") and rel.Name == settings["relating_product"].AxisTag:
+        if related_object.HasAssignments:
+            for rel in related_object.HasAssignments:
+                if rel.is_a("IfcRelAssignsToProduct") and rel.Name == relating_product.AxisTag:
                     return
-    elif settings["related_object"].HasAssignments:
-        for rel in settings["related_object"].HasAssignments:
-            if rel.is_a("IfcRelAssignsToProduct") and rel.RelatingProduct == settings["relating_product"]:
+    elif related_object.HasAssignments:
+        for rel in related_object.HasAssignments:
+            if rel.is_a("IfcRelAssignsToProduct") and rel.RelatingProduct == relating_product:
                 return
 
     referenced_by = None
 
     if is_grid_axis:
-        axis = settings["relating_product"]
+        axis = relating_product
         grid = None
         for attribute in ("PartOfW", "PartOfV", "PartOfU"):
             if getattr(axis, attribute, None):
                 grid = getattr(axis, attribute)[0]
-        settings["relating_product"] = grid
         for rel in grid.ReferencedBy:
             if rel.Name == axis.AxisTag:
                 referenced_by = rel
                 break
-    elif settings["relating_product"].ReferencedBy:
-        referenced_by = settings["relating_product"].ReferencedBy[0]
+    elif relating_product.ReferencedBy:
+        referenced_by = relating_product.ReferencedBy[0]
 
     if referenced_by:
         related_objects = list(referenced_by.RelatedObjects)
-        related_objects.append(settings["related_object"])
+        related_objects.append(related_object)
         referenced_by.RelatedObjects = related_objects
         ifcopenshell.api.owner.update_owner_history(file, **{"element": referenced_by})
     else:
@@ -106,8 +97,8 @@ def assign_product(
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": [settings["related_object"]],
-                "RelatingProduct": settings["relating_product"],
+                "RelatedObjects": [related_object],
+                "RelatingProduct": relating_product,
             },
         )
 
