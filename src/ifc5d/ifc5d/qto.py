@@ -441,6 +441,8 @@ class Blender(QtoCalculator):
         "get_rectangular_perimeter": Function("IfcLengthMeasure", "Rectangular Perimeter", ""),
         "get_stair_length": Function("IfcLengthMeasure", "Stair Length", ""),
         "get_width": Function("IfcLengthMeasure", "Width", ""),
+        "get_footing_height": Function("IfcLengthMeasure", "Height", ""),
+        "get_footing_length": Function("IfcLengthMeasure", "Length", ""),
         # IfcAreaMeasure
         "get_covering_gross_area": Function("IfcAreaMeasure", "Covering Gross Area", ""),
         "get_covering_net_area": Function("IfcAreaMeasure", "Covering Net Area", ""),
