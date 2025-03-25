@@ -42,7 +42,7 @@ from typing import Optional, Any, Union, Literal, TYPE_CHECKING, Iterable
 
 if TYPE_CHECKING:
     import bonsai.bim.prop
-    from bonsai.bim.module.sequence.prop import BIMTaskTreeProperties
+    from bonsai.bim.module.sequence.prop import BIMTaskTreeProperties, BIMWorkScheduleProperties, BIMAnimationProperties
 
 
 class Sequence(bonsai.core.tool.Sequence):
@@ -50,8 +50,16 @@ class Sequence(bonsai.core.tool.Sequence):
     RELATED_OBJECT_TYPE = Literal["RESOURCE", "PRODUCT", "CONTROL"]
 
     @classmethod
+    def get_animation_props(cls) -> BIMAnimationProperties:
+        return bpy.context.scene.BIMAnimationProperties
+
+    @classmethod
     def get_task_tree_props(cls) -> BIMTaskTreeProperties:
         return bpy.context.scene.BIMTaskTreeProperties
+
+    @classmethod
+    def get_work_schedule_props(cls) -> BIMWorkScheduleProperties:
+        return bpy.context.scene.BIMWorkScheduleProperties
 
     @classmethod
     def get_work_plan_attributes(cls) -> dict[str, Any]:
@@ -119,7 +127,7 @@ class Sequence(bonsai.core.tool.Sequence):
                 attributes[prop.name] = helper.parse_duration(prop.string_value)
                 return True
 
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         return bonsai.bim.helper.export_attributes(props.work_schedule_attributes, callback)
 
     @classmethod
@@ -129,23 +137,25 @@ class Sequence(bonsai.core.tool.Sequence):
                 prop.string_value = "" if prop.is_null else data[name]
                 return True
 
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.work_schedule_attributes.clear()
         bonsai.bim.helper.import_attributes2(work_schedule, props.work_schedule_attributes, callback)
 
     @classmethod
     def enable_editing_work_schedule(cls, work_schedule: ifcopenshell.entity_instance) -> None:
-        bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id = work_schedule.id()
-        bpy.context.scene.BIMWorkScheduleProperties.editing_type = "WORK_SCHEDULE"
+        props = cls.get_work_schedule_props()
+        props.active_work_schedule_id = work_schedule.id()
+        props.editing_type = "WORK_SCHEDULE"
 
     @classmethod
     def disable_editing_work_schedule(cls) -> None:
-        bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id = 0
+        props = cls.get_work_schedule_props()
+        props.active_work_schedule_id = 0
 
     @classmethod
     def enable_editing_work_schedule_tasks(cls, work_schedule: Union[ifcopenshell.entity_instance, None]) -> None:
         if work_schedule:
-            props = bpy.context.scene.BIMWorkScheduleProperties
+            props = cls.get_work_schedule_props()
             props.active_work_schedule_id = work_schedule.id()
             props.editing_type = "TASKS"
 
@@ -153,7 +163,7 @@ class Sequence(bonsai.core.tool.Sequence):
     def load_task_tree(cls, work_schedule: ifcopenshell.entity_instance) -> None:
         props = cls.get_task_tree_props()
         props.tasks.clear()
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         cls.contracted_tasks = json.loads(props.contracted_tasks)
 
         related_objects_ids = cls.get_sorted_tasks_ids(ifcopenshell.util.sequence.get_root_tasks(work_schedule))
@@ -162,13 +172,15 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def get_sorted_tasks_ids(cls, tasks: list[ifcopenshell.entity_instance]) -> list[int]:
+        props = cls.get_work_schedule_props()
+
         def get_sort_key(task):
             # Sorting only applies to actual tasks, not the WBS
             # for rel in task.IsNestedBy:
             #     for object in rel.RelatedObjects:
             #         if object.is_a("IfcTask"):
             #             return "0000000000" + (task.Identification or "")
-            column_type, name = bpy.context.scene.BIMWorkScheduleProperties.sort_column.split(".")
+            column_type, name = props.sort_column.split(".")
             if column_type == "IfcTask":
                 return task.get_info(task)[name] or ""
             elif column_type == "IfcTaskTime" and task.TaskTime:
@@ -179,12 +191,12 @@ class Sequence(bonsai.core.tool.Sequence):
             s = sort_keys[i]
             return [int(text) if text.isdigit() else text.lower() for text in _nsre.split(s)]
 
-        if bpy.context.scene.BIMWorkScheduleProperties.sort_column:
+        if props.sort_column:
             sort_keys = {task.id(): get_sort_key(task) for task in tasks}
             related_object_ids = sorted(sort_keys, key=natural_sort_key)
         else:
             related_object_ids = [task.id() for task in tasks]
-        if bpy.context.scene.BIMWorkScheduleProperties.is_sort_reversed:
+        if props.is_sort_reversed:
             related_object_ids.reverse()
         return related_object_ids
 
@@ -205,7 +217,7 @@ class Sequence(bonsai.core.tool.Sequence):
     # TODO: task argument is never used?
     @classmethod
     def load_task_properties(cls, task: Optional[ifcopenshell.entity_instance] = None) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         task_props = cls.get_task_tree_props()
         tasks_with_visual_bar = cls.get_task_bar_list()
         props.is_task_update_enabled = False
@@ -270,24 +282,26 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def get_active_work_schedule(cls) -> Union[ifcopenshell.entity_instance, None]:
-        if not bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
+        props = cls.get_work_schedule_props()
+        if not props.active_work_schedule_id:
             return None
-        return tool.Ifc.get().by_id(bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id)
+        return tool.Ifc.get().by_id(props.active_work_schedule_id)
 
     @classmethod
     def expand_task(cls, task: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         contracted_tasks = json.loads(props.contracted_tasks)
         contracted_tasks.remove(task.id())
         props.contracted_tasks = json.dumps(contracted_tasks)
 
     @classmethod
     def expand_all_tasks(cls) -> None:
-        bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks = json.dumps([])
+        props = cls.get_work_schedule_props()
+        props.contracted_tasks = json.dumps([])
 
     @classmethod
     def contract_all_tasks(cls) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         tprops = cls.get_task_tree_props()
         contracted_tasks = json.loads(props.contracted_tasks)
         for task_item in tprops.tasks:
@@ -297,23 +311,24 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def contract_task(cls, task: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         contracted_tasks = json.loads(props.contracted_tasks)
         contracted_tasks.append(task.id())
         props.contracted_tasks = json.dumps(contracted_tasks)
 
     @classmethod
     def disable_work_schedule(cls) -> None:
-        bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id = 0
+        props = cls.get_work_schedule_props()
+        props.active_work_schedule_id = 0
 
     @classmethod
     def disable_selecting_deleted_task(cls) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         if props.active_task_id not in [
             task.ifc_definition_id for task in cls.get_task_tree_props().tasks
         ]:  # Task was deleted
-            bpy.context.scene.BIMWorkScheduleProperties.active_task_id = 0
-            bpy.context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
+            props.active_task_id = 0
+            props.active_task_time_id = 0
 
     @classmethod
     def get_checked_tasks(cls) -> list[ifcopenshell.entity_instance]:
@@ -323,11 +338,13 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def get_task_attribute_value(cls, attribute_name: str) -> Any:
-        return bpy.context.scene.BIMWorkScheduleProperties.task_attributes.get(attribute_name).get_value()
+        props = cls.get_work_schedule_props()
+        return props.task_attributes.get(attribute_name).get_value()
 
     @classmethod
     def get_active_task(cls) -> ifcopenshell.entity_instance:
-        return tool.Ifc.get().by_id(bpy.context.scene.BIMWorkScheduleProperties.active_task_id)
+        props = cls.get_work_schedule_props()
+        return tool.Ifc.get().by_id(props.active_task_id)
 
     @classmethod
     def get_active_work_time(cls) -> ifcopenshell.entity_instance:
@@ -339,23 +356,26 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def load_task_attributes(cls, task: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.task_attributes.clear()
         bonsai.bim.helper.import_attributes2(task, props.task_attributes)
 
     @classmethod
     def enable_editing_task_attributes(cls, task: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.active_task_id = task.id()
         props.editing_task_type = "ATTRIBUTES"
 
     @classmethod
     def get_task_attributes(cls) -> dict[str, Any]:
-        return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.task_attributes)
+        props = cls.get_work_schedule_props()
+        return bonsai.bim.helper.export_attributes(props.task_attributes)
 
     @classmethod
     def load_task_time_attributes(cls, task_time: ifcopenshell.entity_instance) -> None:
         import bonsai.bim.module.sequence.helper as helper
+
+        props = cls.get_work_schedule_props()
 
         def callback(
             name: str, prop: Union[bonsai.bim.prop.Attribute, None], data: dict[str, Any]
@@ -363,7 +383,7 @@ class Sequence(bonsai.core.tool.Sequence):
             if prop and prop.data_type == "string":
                 # TODO: Check actual attribute type instead of providing attribute names.
                 if name in ("ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"):
-                    duration_props = bpy.context.scene.BIMWorkScheduleProperties.durations_attributes.add()
+                    duration_props = props.durations_attributes.add()
                     duration_props.name = name
                     if prop.is_null:
                         for key in duration_props.keys():
@@ -378,27 +398,29 @@ class Sequence(bonsai.core.tool.Sequence):
                 prop.string_value = "" if prop.is_null else data[name].isoformat()
                 return True
 
-        props = bpy.context.scene.BIMWorkScheduleProperties
         props.task_time_attributes.clear()
         props.durations_attributes.clear()
         bonsai.bim.helper.import_attributes2(task_time, props.task_time_attributes, callback)
 
     @classmethod
     def enable_editing_task_time(cls, task: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.active_task_id = task.id()
         props.active_task_time_id = task.TaskTime.id()
         props.editing_task_type = "TASKTIME"
 
     @classmethod
     def disable_editing_task(cls) -> None:
-        bpy.context.scene.BIMWorkScheduleProperties.active_task_id = 0
-        bpy.context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
-        bpy.context.scene.BIMWorkScheduleProperties.editing_task_type = ""
+        props = cls.get_work_schedule_props()
+        props.active_task_id = 0
+        props.active_task_time_id = 0
+        props.editing_task_type = ""
 
     @classmethod
     def get_task_time_attributes(cls) -> dict[str, Any]:
         import bonsai.bim.module.sequence.helper as helper
+
+        props = cls.get_work_schedule_props()
 
         def callback(attributes, prop):
             if "Start" in prop.name or "Finish" in prop.name or prop.name == "StatusTime":
@@ -408,7 +430,6 @@ class Sequence(bonsai.core.tool.Sequence):
                 attributes[prop.name] = helper.parse_datetime(prop.string_value)
                 return True
             elif prop.name in ["ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"]:
-                props = bpy.context.scene.BIMWorkScheduleProperties
                 if prop.is_null:
                     attributes[prop.name] = None
                     for value in props.durations_attributes.values():
@@ -424,13 +445,12 @@ class Sequence(bonsai.core.tool.Sequence):
                         value = 0
                     return True
 
-        props = bpy.context.scene.BIMWorkScheduleProperties
         return bonsai.bim.helper.export_attributes(props.task_time_attributes, callback)
 
     @classmethod
     def load_task_resources(cls, task: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
-        rprops = bpy.context.scene.BIMResourceProperties
+        props = cls.get_work_schedule_props()
+        rprops = cls.get_resource_props()
         props.task_resources.clear()
         rprops.is_resource_update_enabled = False
         for resource in cls.get_task_resources(task) or []:
@@ -442,12 +462,14 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def get_task_inputs(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_inputs
+        props = cls.get_work_schedule_props()
+        is_deep = props.show_nested_inputs
         return ifcopenshell.util.sequence.get_task_inputs(task, is_deep)
 
     @classmethod
     def get_task_outputs(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_outputs
+        props = cls.get_work_schedule_props()
+        is_deep = props.show_nested_outputs
         return ifcopenshell.util.sequence.get_task_outputs(task, is_deep)
 
     @classmethod
@@ -468,12 +490,13 @@ class Sequence(bonsai.core.tool.Sequence):
     ) -> Union[list[ifcopenshell.entity_instance], None]:
         if not task:
             return
-        is_deep = bpy.context.scene.BIMWorkScheduleProperties.show_nested_resources
+        props = cls.get_work_schedule_props()
+        is_deep = props.show_nested_resources
         return ifcopenshell.util.sequence.get_task_resources(task, is_deep)
 
     @classmethod
     def load_task_inputs(cls, inputs: list[ifcopenshell.entity_instance]) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.task_inputs.clear()
         for input in inputs:
             new = props.task_inputs.add()
@@ -482,7 +505,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def load_task_outputs(cls, outputs: list[ifcopenshell.entity_instance]) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.task_outputs.clear()
         if outputs:
             for output in outputs:
@@ -493,10 +516,9 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def get_highlighted_task(cls) -> Union[ifcopenshell.entity_instance, None]:
         tasks = cls.get_task_tree_props().tasks
-        if len(tasks) and len(tasks) > bpy.context.scene.BIMWorkScheduleProperties.active_task_index:
-            return tool.Ifc.get().by_id(
-                tasks[bpy.context.scene.BIMWorkScheduleProperties.active_task_index].ifc_definition_id
-            )
+        props = cls.get_work_schedule_props()
+        if len(tasks) and len(tasks) > props.active_task_index:
+            return tool.Ifc.get().by_id(tasks[props.active_task_index].ifc_definition_id)
 
     @classmethod
     def get_direct_nested_tasks(cls, task: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -648,37 +670,40 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def enable_editing_task_calendar(cls, task: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.active_task_id = task.id()
         props.editing_task_type = "CALENDAR"
 
     @classmethod
     def enable_editing_task_sequence(cls) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.editing_task_type = "SEQUENCE"
 
     @classmethod
     def disable_editing_task_time(cls) -> None:
-        bpy.context.scene.BIMWorkScheduleProperties.active_task_id = 0
-        bpy.context.scene.BIMWorkScheduleProperties.active_task_time_id = 0
+        props = cls.get_work_schedule_props()
+        props.active_task_id = 0
+        props.active_task_time_id = 0
 
     @classmethod
     def load_rel_sequence_attributes(cls, rel_sequence: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.sequence_attributes.clear()
         bonsai.bim.helper.import_attributes2(rel_sequence, props.sequence_attributes)
 
     @classmethod
     def enable_editing_rel_sequence_attributes(cls, rel_sequence: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.active_sequence_id = rel_sequence.id()
         props.editing_sequence_type = "ATTRIBUTES"
 
     @classmethod
     def load_lag_time_attributes(cls, lag_time: ifcopenshell.entity_instance) -> None:
+        props = cls.get_work_schedule_props()
+
         def callback(name, prop, data):
             if name == "LagValue":
-                prop = bpy.context.scene.BIMWorkScheduleProperties.lag_time_attributes.add()
+                prop = props.lag_time_attributes.add()
                 prop.name = name
                 prop.is_null = data[name] is None
                 prop.is_optional = False
@@ -688,27 +713,29 @@ class Sequence(bonsai.core.tool.Sequence):
                 )
                 return True
 
-        props = bpy.context.scene.BIMWorkScheduleProperties
         props.lag_time_attributes.clear()
         bonsai.bim.helper.import_attributes2(lag_time, props.lag_time_attributes, callback)
 
     @classmethod
     def enable_editing_sequence_lag_time(cls, rel_sequence: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.active_sequence_id = rel_sequence.id()
         props.editing_sequence_type = "LAG_TIME"
 
     @classmethod
     def get_rel_sequence_attributes(cls) -> dict[str, Any]:
-        return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.sequence_attributes)
+        props = cls.get_work_schedule_props()
+        return bonsai.bim.helper.export_attributes(props.sequence_attributes)
 
     @classmethod
     def disable_editing_rel_sequence(cls) -> None:
-        bpy.context.scene.BIMWorkScheduleProperties.active_sequence_id = 0
+        props = cls.get_work_schedule_props()
+        props.active_sequence_id = 0
 
     @classmethod
     def get_lag_time_attributes(cls) -> dict[str, Any]:
-        return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMWorkScheduleProperties.lag_time_attributes)
+        props = cls.get_work_schedule_props()
+        return bonsai.bim.helper.export_attributes(props.lag_time_attributes)
 
     @classmethod
     def select_products(cls, products: Iterable[ifcopenshell.entity_instance]) -> None:
@@ -719,14 +746,14 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def add_task_column(cls, column_type: str, name: str, data_type: str) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         new = props.columns.add()
         new.name = f"{column_type}.{name}"
         new.data_type = data_type
 
     @classmethod
     def setup_default_task_columns(cls) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.columns.clear()
         default_columns = ["ScheduleStart", "ScheduleFinish", "ScheduleDuration"]
         for item in default_columns:
@@ -736,14 +763,14 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def remove_task_column(cls, name: str) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.columns.remove(props.columns.find(name))
         if props.sort_column == name:
             props.sort_column = ""
 
     @classmethod
     def set_task_sort_column(cls, column: str) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.sort_column = column
 
     @classmethod
@@ -772,12 +799,13 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def is_work_schedule_active(cls, work_schedule):
-        return (
-            True if work_schedule.id() == bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id else False
-        )
+        props = cls.get_work_schedule_props()
+        return True if work_schedule.id() == props.active_work_schedule_id else False
 
     @classmethod
     def go_to_task(cls, task):
+        props = cls.get_work_schedule_props()
+
         def get_ancestor_ids(task):
             ids = []
             for rel in task.Nests or []:
@@ -785,11 +813,11 @@ class Sequence(bonsai.core.tool.Sequence):
                 ids.extend(get_ancestor_ids(rel.RelatingObject))
             return ids
 
-        contracted_tasks = json.loads(bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks)
+        contracted_tasks = json.loads(props.contracted_tasks)
         for ancestor_id in get_ancestor_ids(task):
             if ancestor_id in contracted_tasks:
                 contracted_tasks.remove(ancestor_id)
-        bpy.context.scene.BIMWorkScheduleProperties.contracted_tasks = json.dumps(contracted_tasks)
+        props.contracted_tasks = json.dumps(contracted_tasks)
 
         work_schedule = cls.get_active_work_schedule()
         cls.load_task_tree(work_schedule)
@@ -797,7 +825,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
         task_props = cls.get_task_tree_props()
         expanded_tasks = [item.ifc_definition_id for item in task_props.tasks]
-        bpy.context.scene.BIMWorkScheduleProperties.active_task_index = expanded_tasks.index(task.id()) or 0
+        props.active_task_index = expanded_tasks.index(task.id()) or 0
 
     # TODO: proper typing
     @classmethod
@@ -808,7 +836,7 @@ class Sequence(bonsai.core.tool.Sequence):
     def update_visualisation_date(cls, start_date, finish_date):
         if not (start_date and finish_date):
             return
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.visualisation_start = ifcopenshell.util.date.canonicalise_time(start_date)
         props.visualisation_finish = ifcopenshell.util.date.canonicalise_time(finish_date)
 
@@ -849,7 +877,7 @@ class Sequence(bonsai.core.tool.Sequence):
                 }
 
         def create_task_bar_data(tasks, vertical_increment, collection):
-            props = bpy.context.scene.BIMWorkScheduleProperties
+            props = cls.get_work_schedule_props()
             settings = {
                 "viz_start": (
                     parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
@@ -874,7 +902,8 @@ class Sequence(bonsai.core.tool.Sequence):
                     position_shift = task_data["start_frame"] * size_to_duration_ratio
                     bar_size = (task_data["finish_frame"] - task_data["start_frame"]) * size_to_duration_ratio
 
-                    color_progress = bpy.context.scene.BIMAnimationProperties.color_progress
+                    anim_props = cls.get_animation_props()
+                    color_progress = anim_props.color_progress
                     bar = add_bar(
                         material=material_progress,
                         vertical_increment=vertical_increment,
@@ -887,7 +916,7 @@ class Sequence(bonsai.core.tool.Sequence):
                         name=task_data["name"] + "/Progress Bar",
                     )
 
-                    color_full = bpy.context.scene.BIMAnimationProperties.color_full
+                    color_full = anim_props.color_full
                     bar2 = add_bar(
                         material=material_full,
                         vertical_increment=vertical_increment,
@@ -1082,7 +1111,7 @@ class Sequence(bonsai.core.tool.Sequence):
                 "Color": (0.2, 0.2, 0.2),
             },
         }
-        props = bpy.context.scene.BIMAnimationProperties
+        props = cls.get_animation_props()
         props.task_output_colors.clear()
         props.task_input_colors.clear()
         for group, data in groups.items():
@@ -1102,14 +1131,14 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def get_start_date(cls) -> Union[datetime, None]:
-        start = parser.parse(bpy.context.scene.BIMWorkScheduleProperties.visualisation_start, dayfirst=True, fuzzy=True)
+        props = cls.get_work_schedule_props()
+        start = parser.parse(props.visualisation_start, dayfirst=True, fuzzy=True)
         return start or None
 
     @classmethod
     def get_finish_date(cls) -> Union[datetime, None]:
-        finish = parser.parse(
-            bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish, dayfirst=True, fuzzy=True
-        )
+        props = cls.get_work_schedule_props()
+        finish = parser.parse(props.visualisation_finish, dayfirst=True, fuzzy=True)
         return finish or None
 
     @classmethod
@@ -1241,7 +1270,7 @@ class Sequence(bonsai.core.tool.Sequence):
         def calculate_using_frames(start, finish, animation_frames, real_duration):
             return ((finish - start) / real_duration) * animation_frames
 
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         if not (props.visualisation_start and props.visualisation_finish):
             return
 
@@ -1346,7 +1375,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def animate_input(cls, obj, start_frame, product_frame, animation_type):
-        props = bpy.context.scene.BIMAnimationProperties
+        props = cls.get_animation_props()
         color = props.task_input_colors[product_frame["type"]].color
         if product_frame["type"] in ["LOGISTIC", "MOVE", "DISPOSAL"]:
             cls.animate_destruction(obj, start_frame, product_frame, color, animation_type)
@@ -1355,7 +1384,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def animate_output(cls, obj, start_frame, product_frame, animation_type):
-        props = bpy.context.scene.BIMAnimationProperties
+        props = cls.get_animation_props()
         color = props.task_output_colors[product_frame["type"]].color
         if product_frame["type"] in ["CONSTRUCTION", "INSTALLATION", "NOTDEFINED"]:
             cls.animate_creation(obj, start_frame, product_frame, color)
@@ -1466,8 +1495,9 @@ class Sequence(bonsai.core.tool.Sequence):
 
         obj.data.BIMDateTextProperties.start_frame = settings["start_frame"]
         obj.data.BIMDateTextProperties.total_frames = int(settings["total_frames"])
-        obj.data.BIMDateTextProperties.start = bpy.context.scene.BIMWorkScheduleProperties.visualisation_start
-        obj.data.BIMDateTextProperties.finish = bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish
+        props = cls.get_work_schedule_props()
+        obj.data.BIMDateTextProperties.start = props.visualisation_start
+        obj.data.BIMDateTextProperties.finish = props.visualisation_finish
         append_handler(animate_text_handler)
 
     @classmethod
@@ -1573,7 +1603,8 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def is_filter_by_active_schedule(cls) -> bool:
-        return bpy.context.scene.BIMWorkScheduleProperties.filter_by_active_schedule
+        props = cls.get_work_schedule_props()
+        return props.filter_by_active_schedule
 
     @classmethod
     def get_tasks_for_product(
@@ -1585,7 +1616,7 @@ class Sequence(bonsai.core.tool.Sequence):
     def load_product_related_tasks(
         cls, task_inputs: list[ifcopenshell.entity_instance], task_ouputs: list[ifcopenshell.entity_instance]
     ) -> None:
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = cls.get_work_schedule_props()
         props.product_input_tasks.clear()
         props.product_output_tasks.clear()
         for task in task_inputs or []:
@@ -1617,18 +1648,21 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def is_sorting_enabled(cls):
-        return bpy.context.scene.BIMWorkScheduleProperties.sort_column
+        props = cls.get_work_schedule_props()
+        return props.sort_column
 
     @classmethod
     def is_sort_reversed(cls):
-        return bpy.context.scene.BIMWorkScheduleProperties.is_sort_reversed
+        props = cls.get_work_schedule_props()
+        return props.is_sort_reversed
 
     @classmethod
     def get_user_predefined_type(cls):
-        predefined_type = bpy.context.scene.BIMWorkScheduleProperties.work_schedule_predefined_types
+        props = cls.get_work_schedule_props()
+        predefined_type = props.work_schedule_predefined_types
         object_type = None
         if predefined_type == "USERDEFINED":
-            object_type = bpy.context.scene.BIMWorkScheduleProperties.object_type
+            object_type = props.object_type
         return predefined_type, object_type
 
     @classmethod
@@ -1649,7 +1683,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def save_animation_color_scheme(cls, name: str) -> ifcopenshell.entity_instance:
-        props = bpy.context.scene.BIMAnimationProperties
+        props = cls.get_animation_props()
         colour_scheme = {
             "Inputs": {cs.name: cs.color[0:3] for cs in props.task_input_colors},
             "Outputs": {cs.name: cs.color[0:3] for cs in props.task_output_colors},
@@ -1674,7 +1708,7 @@ class Sequence(bonsai.core.tool.Sequence):
         if data.get("type") == "BBIM_AnimationColorScheme":
             inputs_color_scheme = data.get("colourscheme").get("Inputs")
             outputs_color_scheme = data.get("colourscheme").get("Outputs")
-            props = bpy.context.scene.BIMAnimationProperties
+            props = cls.get_animation_props()
             props.task_input_colors.clear()
             props.task_output_colors.clear()
             for value, colour in inputs_color_scheme.items():
@@ -1711,26 +1745,30 @@ class Sequence(bonsai.core.tool.Sequence):
         return False
 
     @classmethod
-    def get_task_bar_list(cls):
-        return json.loads(bpy.context.scene.BIMWorkScheduleProperties.task_bars)
+    def get_task_bar_list(cls) -> list[int]:
+        props = cls.get_work_schedule_props()
+        return json.loads(props.task_bars)
 
     @classmethod
-    def add_task_bar(cls, task_id):
+    def add_task_bar(cls, task_id: int) -> None:
         task_bars = cls.get_task_bar_list()
         task_bars.append(task_id)
-        bpy.context.scene.BIMWorkScheduleProperties.task_bars = json.dumps(task_bars)
+        props = cls.get_work_schedule_props()
+        props.task_bars = json.dumps(task_bars)
 
     @classmethod
-    def remove_task_bar(cls, task_id):
+    def remove_task_bar(cls, task_id: int) -> None:
         task_bars = cls.get_task_bar_list()
         if task_id in task_bars:
             task_bars.remove(task_id)
-            bpy.context.scene.BIMWorkScheduleProperties.task_bars = json.dumps(task_bars)
+            props = cls.get_work_schedule_props()
+            props.task_bars = json.dumps(task_bars)
 
     @classmethod
     def get_animation_color_scheme(cls):
-        if len(bpy.context.scene.BIMAnimationProperties.saved_color_schemes) > 0:
-            return tool.Ifc.get().by_id(int(bpy.context.scene.BIMAnimationProperties.saved_color_schemes))
+        props = cls.get_animation_props()
+        if len(props.saved_color_schemes) > 0:
+            return tool.Ifc.get().by_id(int(props.saved_color_schemes))
 
     @classmethod
     def parse_isodate_datetime(cls, datetime_str: str, include_time: bool) -> datetime:

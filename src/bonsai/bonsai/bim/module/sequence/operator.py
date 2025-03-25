@@ -232,7 +232,7 @@ class AddWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "name", text="Name")
-        self.props = context.scene.BIMWorkScheduleProperties
+        self.props = tool.Sequence.get_work_schedule_props()
         layout.prop(self.props, "work_schedule_predefined_types", text="Type")
         if self.props.work_schedule_predefined_types == "USERDEFINED":
             layout.prop(self.props, "object_type", text="Object type")
@@ -247,10 +247,11 @@ class EditWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Sequence.get_work_schedule_props()
         core.edit_work_schedule(
             tool.Ifc,
             tool.Sequence,
-            work_schedule=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_work_schedule_id),
+            work_schedule=tool.Ifc.get().by_id(props.active_work_schedule_id),
         )
 
 
@@ -376,11 +377,12 @@ class EditTaskTime(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Sequence.get_work_schedule_props()
         core.edit_task_time(
             tool.Ifc,
             tool.Sequence,
             tool.Resource,
-            task_time=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_task_time_id),
+            task_time=tool.Ifc.get().by_id(props.active_task_time_id),
         )
 
 
@@ -411,9 +413,8 @@ class EditTask(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_task(
-            tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_task_id)
-        )
+        props = tool.Sequence.get_work_schedule_props()
+        core.edit_task(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(props.active_task_id))
 
 
 class CopyTaskAttribute(bpy.types.Operator, tool.Ifc.Operator):
@@ -1083,10 +1084,11 @@ class EditSequenceAttributes(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Sequence.get_work_schedule_props()
         core.edit_sequence_attributes(
             tool.Ifc,
             tool.Sequence,
-            rel_sequence=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_sequence_id),
+            rel_sequence=tool.Ifc.get().by_id(props.active_sequence_id),
         )
 
 
@@ -1138,7 +1140,8 @@ class VisualiseWorkScheduleDate(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return bool(bpy.context.scene.BIMWorkScheduleProperties.visualisation_start)
+        props = tool.Sequence.get_work_schedule_props()
+        return bool(props.visualisation_start)
 
     def execute(self, context):
         core.visualise_work_schedule_date(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
@@ -1163,10 +1166,8 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        has_start, has_finish = (
-            bpy.context.scene.BIMWorkScheduleProperties.visualisation_start,
-            bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish,
-        )
+        props = tool.Sequence.get_work_schedule_props()
+        has_start, has_finish = props.visualisation_start, props.visualisation_finish
         return bool(has_start and has_finish) and not "-" in (has_start, has_finish)
 
     def execute(self, context):
@@ -1421,11 +1422,12 @@ class LoadAnimationColorScheme(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Loads the animation color scheme"
 
     def _execute(self, context):
-        group = tool.Ifc.get().by_id(int(context.scene.BIMAnimationProperties.saved_color_schemes))
+        props = tool.Sequence.get_animation_props()
+        group = tool.Ifc.get().by_id(int(props.saved_color_schemes))
         core.load_animation_color_scheme(tool.Sequence, scheme=group)
 
     def draw(self, context):
-        props = context.scene.BIMAnimationProperties
+        props = tool.Sequence.get_animation_props()
         row = self.layout.row()
         row.prop(props, "saved_color_schemes", text="")
 

@@ -62,6 +62,8 @@ def remove_material_set(file: ifcopenshell.file, material: ifcopenshell.entity_i
         set_items = material.MaterialConstituents or []
     elif material.is_a("IfcMaterialList"):
         set_items = []
+    else:
+        raise ValueError(f"Unknown material set type: {material.is_a()}")
     for set_item in set_items:
         file.remove(set_item)
     file.remove(material)

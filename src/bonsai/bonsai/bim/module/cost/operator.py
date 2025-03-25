@@ -36,16 +36,18 @@ class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     object_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        predefined_type = context.scene.BIMCostProperties.cost_schedule_predefined_types
+        props = tool.Cost.get_cost_props()
+        predefined_type = props.cost_schedule_predefined_types
         if predefined_type == "USERDEFINED":
             predefined_type = self.object_type
         core.add_cost_schedule(tool.Ifc, name=self.name, predefined_type=predefined_type)
 
     def draw(self, context):
         layout = self.layout
+        props = tool.Cost.get_cost_props()
         layout.prop(self, "name", text="Name")
-        layout.prop(context.scene.BIMCostProperties, "cost_schedule_predefined_types", text="Type")
-        if context.scene.BIMCostProperties.cost_schedule_predefined_types == "USERDEFINED":
+        layout.prop(props, "cost_schedule_predefined_types", text="Type")
+        if props.cost_schedule_predefined_types == "USERDEFINED":
             layout.prop(self, "object_type", text="Object type")
 
     def invoke(self, context, event):
@@ -58,10 +60,11 @@ class EditCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Cost.get_cost_props()
         core.edit_cost_schedule(
             tool.Ifc,
             tool.Cost,
-            cost_schedule=tool.Ifc.get().by_id(context.scene.BIMCostProperties.active_cost_schedule_id),
+            cost_schedule=tool.Ifc.get().by_id(props.active_cost_schedule_id),
         )
 
 
@@ -559,7 +562,8 @@ class AddCostColumn(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not context.scene.BIMCostProperties.cost_column:
+        props = tool.Cost.get_cost_props()
+        if not props.cost_column:
             cls.poll_message_set("Cost column name is empty")
             return False
         return True

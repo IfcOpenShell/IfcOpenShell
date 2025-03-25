@@ -76,8 +76,8 @@ def draw_attribute(
     elif value_name == "filepath_value":
         attribute.filepath_value.layout_file_select(layout, filter_glob=attribute.filter_glob, text=attribute.name)
     elif attribute.name in ("ScheduleDuration", "ActualDuration", "FreeFloat", "TotalFloat"):
-        propis = bpy.context.scene.BIMWorkScheduleProperties
-        for item in propis.durations_attributes:
+        props = tool.Sequence.get_work_schedule_props()
+        for item in props.durations_attributes:
             if item.name == attribute.name:
                 duration_props = item
                 layout.label(text=attribute.name)

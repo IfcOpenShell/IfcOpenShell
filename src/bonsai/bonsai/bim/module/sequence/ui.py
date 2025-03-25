@@ -30,7 +30,11 @@ from bonsai.bim.module.sequence.data import (
     TaskICOMData,
     AnimationColorSchemeData,
 )
-from typing import Any, Optional
+from typing import Any, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
+    from bonsai.bim.module.sequence.prop import BIMWorkScheduleProperties, BIMTaskTreeProperties, Task
 
 
 class BIM_PT_status(Panel):
@@ -154,7 +158,7 @@ class BIM_PT_work_schedules(Panel):
             SequenceData.load()
         if not WorkScheduleData.is_loaded:
             WorkScheduleData.load()
-        self.props = context.scene.BIMWorkScheduleProperties
+        self.props = tool.Sequence.get_work_schedule_props()
         self.tprops = tool.Sequence.get_task_tree_props()
 
         if not self.props.active_work_schedule_id:
@@ -479,14 +483,14 @@ class BIM_PT_animation_tools(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMWorkScheduleProperties
+        props = tool.Sequence.get_work_schedule_props()
         if props.active_work_schedule_id:
             return True
         return False
 
     def draw(self, context):
-        self.props = context.scene.BIMWorkScheduleProperties
-        self.animation_props = context.scene.BIMAnimationProperties
+        self.props = tool.Sequence.get_work_schedule_props()
+        self.animation_props = tool.Sequence.get_animation_props()
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         row.prop(self.props, "should_show_visualisation_ui", text="Animation Settings", icon="SETTINGS")
@@ -598,7 +602,7 @@ class BIM_PT_animation_Color_Scheme(Panel):
         if not AnimationColorSchemeData.is_loaded:
             AnimationColorSchemeData.load()
 
-        self.animation_props = context.scene.BIMAnimationProperties
+        self.animation_props = tool.Sequence.get_animation_props()
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         row.operator("bim.load_default_animation_color_scheme", text="Load default", icon="SEQUENCE_COLOR_04")
@@ -645,7 +649,7 @@ class BIM_PT_task_icom(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMWorkScheduleProperties
+        props = tool.Sequence.get_work_schedule_props()
         if not props.active_work_schedule_id:
             return False
         tprops = tool.Sequence.get_task_tree_props()
@@ -658,7 +662,7 @@ class BIM_PT_task_icom(Panel):
         if not TaskICOMData.is_loaded:
             TaskICOMData.load()
 
-        self.props = context.scene.BIMWorkScheduleProperties
+        self.props = tool.Sequence.get_work_schedule_props()
         self.tprops = tool.Sequence.get_task_tree_props()
         task = self.tprops.tasks[self.props.active_task_index]
 
@@ -751,8 +755,17 @@ class BIM_PT_task_icom(Panel):
 
 
 class BIM_UL_task_columns(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.BIMWorkScheduleProperties
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: "BIMWorkScheduleProperties",
+        item: "Attribute",
+        icon,
+        active_data,
+        active_propname,
+    ):
+        props = tool.Sequence.get_work_schedule_props()
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
@@ -820,7 +833,7 @@ class BIM_UL_product_output_tasks(UIList):
 class BIM_UL_tasks(UIList):
     @classmethod
     def draw_header(cls, layout: bpy.types.UILayout):
-        props = bpy.context.scene.BIMWorkScheduleProperties
+        props = tool.Sequence.get_work_schedule_props()
         row = layout.row(align=True)
 
         split1 = row.split(factor=0.1)
@@ -829,9 +842,18 @@ class BIM_UL_tasks(UIList):
         split2.label(text="Name")
         cls.draw_custom_columns(props, split2, header=True)
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: "BIMTaskTreeProperties",
+        item: "Task",
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
-            self.props = context.scene.BIMWorkScheduleProperties
+            self.props = tool.Sequence.get_work_schedule_props()
             task = SequenceData.data["tasks"][item.ifc_definition_id]
             row = layout.row(align=True)
 
@@ -1140,7 +1162,7 @@ class BIM_PT_4D_Tools(Panel):
     bl_parent_id = "BIM_PT_tab_sequence"
 
     def draw(self, context):
-        self.props = context.scene.BIMWorkScheduleProperties
+        self.props = tool.Sequence.get_work_schedule_props()
         row = self.layout.row()
         row.operator("bim.load_product_related_tasks", text="Load Tasks", icon="FILE_REFRESH")
         row.prop(self.props, "filter_by_active_schedule", text="Filter by Active Schedule")

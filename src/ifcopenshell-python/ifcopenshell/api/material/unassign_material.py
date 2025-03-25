@@ -32,9 +32,7 @@ def unassign_material(file: ifcopenshell.file, products: list[ifcopenshell.entit
     If the product does not have a material, nothing happens.
 
     :param products: The list IfcProducts that may or may not have a material
-    :type product: list[ifcopenshell.entity_instance]
     :return: None
-    :rtype: None
 
     Example:
 
@@ -54,18 +52,16 @@ def unassign_material(file: ifcopenshell.file, products: list[ifcopenshell.entit
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"products": products}
-    return usecase.execute()
+    return usecase.execute(products)
 
 
 class Usecase:
     file: ifcopenshell.file
-    settings: dict[str, Any]
 
-    def execute(self):
-        self.products = set(self.settings["products"])
-        if not self.products:
+    def execute(self, products: list[ifcopenshell.entity_instance]) -> None:
+        if not products:
             return
+        self.products = set(products)
 
         self.remove_material_usages_from_types()
         self.unassign_materials()

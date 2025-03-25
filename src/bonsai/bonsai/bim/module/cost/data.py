@@ -66,8 +66,9 @@ class CostSchedulesData:
     @classmethod
     def schedules(cls):
         results = []
-        if bpy.context.scene.BIMCostProperties.active_cost_schedule_id:
-            schedule = tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.active_cost_schedule_id)
+        props = tool.Cost.get_cost_props()
+        if props.active_cost_schedule_id:
+            schedule = tool.Ifc.get().by_id(props.active_cost_schedule_id)
             results.append(
                 {
                     "id": schedule.id(),
@@ -88,7 +89,8 @@ class CostSchedulesData:
 
     @classmethod
     def is_editing_rates(cls):
-        ifc_id = bpy.context.scene.BIMCostProperties.active_cost_schedule_id
+        props = tool.Cost.get_cost_props()
+        ifc_id = props.active_cost_schedule_id
         if not ifc_id:
             return
         return tool.Ifc.get().by_id(ifc_id).PredefinedType == "SCHEDULEOFRATES"
@@ -256,7 +258,8 @@ class CostSchedulesData:
     @classmethod
     def cost_quantities(cls):
         results = []
-        ifc_id = bpy.context.scene.BIMCostProperties.active_cost_item_id
+        props = tool.Cost.get_cost_props()
+        ifc_id = props.active_cost_item_id
         if not ifc_id:
             return results
         for quantity in tool.Ifc.get().by_id(ifc_id).CostQuantities or []:
@@ -265,7 +268,8 @@ class CostSchedulesData:
 
     @classmethod
     def cost_values(cls):
-        ifc_id = bpy.context.scene.BIMCostProperties.active_cost_item_id
+        props = tool.Cost.get_cost_props()
+        ifc_id = props.active_cost_item_id
         if not ifc_id:
             return []
         return ifcopenshell.util.cost.get_cost_values(tool.Ifc.get().by_id(ifc_id))
@@ -324,7 +328,8 @@ class CostItemQuantitiesData:
 
     @classmethod
     def process_quantity_names(cls):
-        active_task_index = bpy.context.scene.BIMWorkScheduleProperties.active_task_index
+        props = tool.Sequence.get_work_schedule_props()
+        active_task_index = props.active_task_index
         tprops = tool.Sequence.get_task_tree_props()
         total_tasks = len(tprops.tasks)
         if not total_tasks or active_task_index >= total_tasks:

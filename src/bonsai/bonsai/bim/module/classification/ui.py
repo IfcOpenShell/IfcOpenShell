@@ -338,7 +338,8 @@ class BIM_PT_cost_classifications(Panel, ReferenceUI):
     def poll(cls, context):
         if not tool.Ifc.get():
             return False
-        return bool(context.scene.BIMCostProperties.cost_items)
+        props = tool.Cost.get_cost_props()
+        return bool(props.cost_items)
 
     def draw(self, context):
         if not CostClassificationsData.is_loaded:

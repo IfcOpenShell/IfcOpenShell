@@ -494,7 +494,7 @@ class BIM_PT_task_qtos(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMWorkScheduleProperties
+        props = tool.Sequence.get_work_schedule_props()
         if not props.active_work_schedule_id:
             return False
         tprops = tool.Sequence.get_task_tree_props()
@@ -712,9 +712,8 @@ class BIM_PT_work_schedule_psets(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
-            return False
-        return True
+        props = tool.Sequence.get_work_schedule_props()
+        return bool(props.active_work_schedule_id)
 
     def draw(self, context):
         if not WorkSchedulePsetsData.is_loaded:

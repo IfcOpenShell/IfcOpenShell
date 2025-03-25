@@ -281,9 +281,12 @@ class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
+    if TYPE_CHECKING:
+        obj: str
+
     def _execute(self, context):
-        objects = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
-        core.unassign_material(tool.Ifc, tool.Material, objects=objects)
+        objects = [bpy.data.objects[self.obj]] if self.obj else tool.Blender.get_selected_objects()
+        core.unassign_material(tool.Ifc, tool.Material, objects=list(objects))
 
 
 class AddConstituent(bpy.types.Operator, tool.Ifc.Operator):
