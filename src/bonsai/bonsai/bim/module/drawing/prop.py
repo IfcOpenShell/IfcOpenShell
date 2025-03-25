@@ -602,6 +602,8 @@ class BIMTextProperties(PropertyGroup):
     literals: CollectionProperty(name="Literals", type=LiteralProps)
     font_size: EnumProperty(
         items=[
+            ("1.3", "1.3 - Mini", ""),
+            ("1.5", "1.5 - Tiny", ""),
             ("1.8", "1.8 - Small", ""),
             ("2.5", "2.5 - Regular", ""),
             ("3.5", "3.5 - Large", ""),
