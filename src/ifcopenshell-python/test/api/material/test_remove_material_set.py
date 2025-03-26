@@ -17,9 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
+import ifcopenshell.api.material
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
-import ifcopenshell.api.material
+import ifcopenshell.api.type
 
 
 class TestRemoveMaterialSetIFC2X3(test.bootstrap.IFC2X3):
@@ -44,6 +45,19 @@ class TestRemoveMaterialSetIFC2X3(test.bootstrap.IFC2X3):
         assert len(self.file.by_type("IfcMaterialLayerSet")) == 0
         assert len(self.file.by_type("IfcMaterialLayer")) == 0
         assert len(self.file.by_type("IfcMaterial")) == 1
+
+    def test_removing_a_material_set_with_usages(self):
+        material = ifcopenshell.api.material.add_material_set(self.file, set_type="IfcMaterialLayerSet")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        ifcopenshell.api.material.assign_material(self.file, products=[element_type], material=material)
+        ifcopenshell.api.material.assign_material(
+            self.file, products=[element], material=material, type="IfcMaterialLayerSetUsage"
+        )
+        ifcopenshell.api.material.remove_material_set(self.file, material=material)
+        assert len(self.file.by_type("IfcMaterialLayerSet")) == 0
+        assert len(self.file.by_type("IfcMaterialLayerSetUsage")) == 0
 
 
 class TestRemoveMaterialSetIFC4(test.bootstrap.IFC4, TestRemoveMaterialSetIFC2X3):

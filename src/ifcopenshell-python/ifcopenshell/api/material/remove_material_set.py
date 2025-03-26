@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.material
 import ifcopenshell.util.element
 
 
@@ -24,7 +25,9 @@ def remove_material_set(file: ifcopenshell.file, material: ifcopenshell.entity_i
     """Removes a material set
 
     All set items, such as layers, profiles, or constituents will also be
-    removed. However, the materials and profile curves used by the layers,
+    removed. All set usages are also removed.
+
+    However, the materials and profile curves used by the layers,
     profiles and constituents will not be removed.
 
     :param material: The IfcMaterialLayerSet, IfcMaterialConstituentSet,
@@ -53,7 +56,15 @@ def remove_material_set(file: ifcopenshell.file, material: ifcopenshell.entity_i
         ifcopenshell.api.material.remove_material_set(model, material=material_set)
     """
 
-    inverse_elements = file.get_inverse(material)
+    # Remove all usages for sets.
+    has_usages = material.is_a("IfcMaterialLayerSet") or material.is_a("IfcMaterialProfileSet")
+    if has_usages:
+        # Usage is invalid if it is not associated with some element,
+        # so we can remove usages through unassignment.
+        elements = ifcopenshell.util.element.get_elements_by_material(file, material)
+        if elements:
+            ifcopenshell.api.material.unassign_material(file, products=list(elements))
+
     if material.is_a("IfcMaterialLayerSet"):
         set_items = material.MaterialLayers or []
     elif material.is_a("IfcMaterialProfileSet"):
@@ -66,9 +77,13 @@ def remove_material_set(file: ifcopenshell.file, material: ifcopenshell.entity_i
         raise ValueError(f"Unknown material set type: {material.is_a()}")
     for set_item in set_items:
         file.remove(set_item)
+
+    inverse_elements = file.get_inverse(material)
     file.remove(material)
+
     for inverse in inverse_elements:
         if inverse.is_a("IfcRelAssociatesMaterial"):
+            # NOTE: for has_usages already handled by unassign_material.
             history = inverse.OwnerHistory
             file.remove(inverse)
             if history:

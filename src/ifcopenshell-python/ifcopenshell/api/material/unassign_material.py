@@ -31,6 +31,9 @@ def unassign_material(file: ifcopenshell.file, products: list[ifcopenshell.entit
 
     If the product does not have a material, nothing happens.
 
+    Unassigning a LayerSet or ProfileSet from the product type will also
+    remove all Usages of the set.
+
     :param products: The list IfcProducts that may or may not have a material
     :return: None
 
@@ -76,6 +79,8 @@ class Usecase:
                 continue
             if material.is_a() in ["IfcMaterialLayerSet", "IfcMaterialProfileSet"]:
                 # Remove set usages
+                # TODO: be more considerate and remove only usages
+                # associated with the set + product type, not all usages?
                 for inverse in self.file.get_inverse(material):
                     if self.file.schema == "IFC2X3":
                         if not inverse.is_a("IfcMaterialLayerSetUsage"):
