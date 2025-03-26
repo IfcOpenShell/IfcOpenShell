@@ -368,11 +368,11 @@ class ObjectMaterialData:
             material = ifcopenshell.util.element.get_material(element_type)
             if not material:
                 return
-            if material.is_a() in ("IfcMaterialLayerSetUsage", "IfcMaterialLayerSet"):
-                name_attr = "LayerSetName"
-            else:
-                name_attr = "Name"
-            return getattr(material, name_attr, "Unnamed") or "Unnamed"
+            ifc_class = material.is_a()
+            # Are there really usages in types?
+            if "Usage" in ifc_class:
+                return "Unnamed"
+            return tool.Material.get_material_name(material) or "Unnamed"
 
     @classmethod
     def material_type(cls):
