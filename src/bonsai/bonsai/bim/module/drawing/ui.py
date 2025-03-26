@@ -183,7 +183,14 @@ class BIM_PT_drawing_underlay(Panel):
 
         if not dprops.drawing_styles:
             return
-        layout.template_list("BIM_UL_generic", "", dprops, "drawing_styles", props, "active_drawing_style_index")
+        layout.template_list(
+            "BIM_UL_generic",
+            "BIM_UL_generic_drawing_styles",
+            dprops,
+            "drawing_styles",
+            props,
+            "active_drawing_style_index",
+        )
 
         if not drawing_index_is_valid:
             return
@@ -326,7 +333,12 @@ class BIM_PT_schedules(Panel):
                 row.operator("bim.remove_schedule", icon="X", text="").schedule = active_schedule.ifc_definition_id
 
             self.layout.template_list(
-                "BIM_UL_generic", "", self.props, "schedules", self.props, "active_schedule_index"
+                "BIM_UL_generic",
+                "BIM_UL_generic_schedules",
+                self.props,
+                "schedules",
+                self.props,
+                "active_schedule_index",
             )
 
 
@@ -373,7 +385,12 @@ class BIM_PT_references(Panel):
                 row.operator("bim.remove_reference", icon="X", text="").reference = active_reference.ifc_definition_id
 
             self.layout.template_list(
-                "BIM_UL_generic", "", self.props, "references", self.props, "active_reference_index"
+                "BIM_UL_generic",
+                "BIM_UL_generic_references",
+                self.props,
+                "references",
+                self.props,
+                "active_reference_index",
             )
 
 

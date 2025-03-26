@@ -616,8 +616,8 @@ class BIM_PT_animation_Color_Scheme(Panel):
         row1.label(text="INPUT COLORS", icon="COLLECTION_COLOR_01")
         row1 = col.row()
         row1.template_list(
-            "BIM_UL_animation_colors",
-            "",
+            BIM_UL_animation_colors.__name__,
+            BIM_UL_animation_colors.__name__ + "_task_input_colors",
             self.animation_props,
             "task_input_colors",
             self.animation_props,
@@ -628,8 +628,8 @@ class BIM_PT_animation_Color_Scheme(Panel):
         row1.label(text="OUTPUT COLORS", icon="COLLECTION_COLOR_04")
         row1 = col.row()
         row1.template_list(
-            "BIM_UL_animation_colors",
-            "",
+            BIM_UL_animation_colors.__name__,
+            BIM_UL_animation_colors.__name__ + "_task_output_colors",
             self.animation_props,
             "task_output_colors",
             self.animation_props,

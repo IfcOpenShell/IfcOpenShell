@@ -352,8 +352,8 @@ class BIM_PT_cost_item_types(Panel):
 
         row2 = col.row()
         row2.template_list(
-            "BIM_UL_cost_item_quantities",
-            "",
+            BIM_UL_cost_item_quantities.__name__,
+            BIM_UL_cost_item_quantities.__name__ + "_cost_item_processes",
             self.props,
             "cost_item_processes",
             self.props,
@@ -369,8 +369,8 @@ class BIM_PT_cost_item_types(Panel):
 
         row2 = col.row()
         row2.template_list(
-            "BIM_UL_cost_item_quantities",
-            "",
+            BIM_UL_cost_item_quantities.__name__,
+            BIM_UL_cost_item_quantities.__name__ + "_cost_item_resources",
             self.props,
             "cost_item_resources",
             self.props,
@@ -439,8 +439,8 @@ class BIM_PT_cost_item_quantities(Panel):
         row2.prop(self.props, "show_nested_elements", text="Show nested")
         row2 = col.row()
         row2.template_list(
-            "BIM_UL_cost_item_quantities",
-            "",
+            BIM_UL_cost_item_quantities.__name__,
+            BIM_UL_cost_item_quantities.__name__ + "_cost_item_products",
             self.props,
             "cost_item_products",
             self.props,
@@ -484,8 +484,8 @@ class BIM_PT_cost_item_quantities(Panel):
 
         row2 = col.row()
         row2.template_list(
-            "BIM_UL_cost_item_quantities",
-            "",
+            BIM_UL_cost_item_quantities.__name__,
+            BIM_UL_cost_item_quantities.__name__ + "_cost_item_processes",
             self.props,
             "cost_item_processes",
             self.props,
@@ -532,8 +532,8 @@ class BIM_PT_cost_item_quantities(Panel):
 
         row2 = col.row()
         row2.template_list(
-            "BIM_UL_cost_item_quantities",
-            "",
+            BIM_UL_cost_item_quantities.__name__,
+            BIM_UL_cost_item_quantities.__name__ + "_cost_item_resources",
             self.props,
             "cost_item_resources",
             self.props,
