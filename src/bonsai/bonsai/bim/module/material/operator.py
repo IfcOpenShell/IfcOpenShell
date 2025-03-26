@@ -278,6 +278,11 @@ class AssignMaterial(bpy.types.Operator, tool.Ifc.Operator):
 class UnassignMaterial(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_material"
     bl_label = "Unassign Material"
+    bl_description = (
+        "Unassign material from the selected objects.\n\n"
+        "If object inherits material from a type, material will be unassigned from the type.\n"
+        "If object has a material usage, related material set will be unassigned from the type."
+    )
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
