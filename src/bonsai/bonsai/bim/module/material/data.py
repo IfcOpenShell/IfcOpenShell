@@ -177,6 +177,8 @@ class ObjectMaterialData:
     @classmethod
     def material_class(cls) -> Union[str, None]:
         element = tool.Ifc.get_entity(tool.Geometry.get_active_or_representation_obj())
+        assert element
+        cls.element = element
         cls.material = ifcopenshell.util.element.get_material(element)
         if cls.material:
             return cls.material.is_a()
@@ -360,12 +362,15 @@ class ObjectMaterialData:
             key=lambda x: x[1],
         )
 
+    type_material_: Union[ifcopenshell.entity_instance, None] = None
+
     @classmethod
     def type_material(cls):
         element = tool.Ifc.get_entity(tool.Geometry.get_active_or_representation_obj())
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type and element_type != element:
             material = ifcopenshell.util.element.get_material(element_type)
+            cls.type_material_ = material
             if not material:
                 return
             ifc_class = material.is_a()
@@ -397,15 +402,18 @@ class ObjectMaterialData:
 
     @classmethod
     def is_type_material_overridden(cls) -> bool:
-        if not cls.data["type_material"]:
+        if not cls.material or not cls.type_material_:
             return False
 
-        # try to avoid accessing ifc
-        if cls.data["material_name"] != cls.data["type_material"]:
+        # Typically, we don't indicate Usages as material overrides
+        # as this is just Usages nature.
+        if "Usage" in cls.material.is_a():
+            return False
+
+        if cls.material != cls.type_material_:
             return True
 
         # in theory material can be overridden by the same material
         # so we check occurrence material explicitly
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        occurrence_material = ifcopenshell.util.element.get_material(element, should_inherit=False)
-        return bool(occurrence_material) and "Usage" not in occurrence_material.is_a()
+        occurrence_material = ifcopenshell.util.element.get_material(cls.element, should_inherit=False)
+        return bool(occurrence_material)
