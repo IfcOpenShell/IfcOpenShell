@@ -32,13 +32,104 @@ import bonsai.tool as tool
 from pathlib import Path
 
 
+def sync_guids(target_file: ifcopenshell.file, source_file: ifcopenshell.file) -> None:
+
+    def sync_guid(element: ifcopenshell.entity_instance) -> None:
+        """Try to sync `element` guid with `source_file`.
+
+        Sync is assigning guid based on the first element from `source_file` that has a matching type and name.
+        """
+
+        if element.is_a("IfcTypeProduct") or element.is_a("IfcContext"):
+            assert element.Name, element
+            elements = source_file.by_type(element.is_a(), False)
+            for element_ in elements:
+                if element.Name == element_.Name:
+                    element.GlobalId = element_.GlobalId
+                    return
+        print(
+            f"WARNING! Couldn't find a matching element in the GUID source to sync guid for '{element.Name}' ({element})."
+        )
+
+    def sync_pset(pset: ifcopenshell.entity_instance) -> None:
+        element_types = pset.DefinesType
+        assert len(element_types) == 1
+        element_type: ifcopenshell.entity_instance = element_types[0]
+        try:
+            element_type_ = source_file.by_guid(element_type.GlobalId)
+        except RuntimeError:
+            # New type with pset was added.
+            print(f"WARNING! Couldn't find a matching pset for '{pset.Name}' ({pset}).")
+            return
+        assert len(element_type_.HasPropertySets) == 1
+        pset_ = element_type_.HasPropertySets[0]
+        assert pset.Name == pset_.Name
+        pset.GlobalId = pset_.GlobalId
+
+    def sync_rel(rel: ifcopenshell.entity_instance) -> None:
+        if rel.is_a("IfcRelAssociatesMaterial"):
+            related_objects = rel.RelatedObjects
+            assert len(related_objects) == 1
+            related_object = related_objects[0]
+            try:
+                related_object_ = source_file.by_guid(related_object.GlobalId)
+            except RuntimeError:
+                # New type with material was added.
+                print(f"WARNING! Couldn't find a matching rel for '{rel}'.")
+                return
+            rel_ = next((r for r in related_object_.HasAssociations if r.is_a("IfcRelAssociatesMaterial")))
+            assert rel_
+            rel.GlobalId = rel_.GlobalId
+        elif rel.is_a("IfcRelDeclares"):
+            context = rel.RelatingContext
+            try:
+                context_ = source_file.by_guid(context.GlobalId)
+            except RuntimeError:
+                # New context was added.
+                print(f"WARNING! Couldn't find a matching context for '{context}'.")
+                return
+            rel_ = context_.Declares[0]
+            rel.GlobalId = rel_.GlobalId
+        else:
+            print(f"WARNING! Couldn't find a matching element in the GUID source to sync guid for '{rel}'.")
+
+    roots = target_file.by_type("IfcRoot")
+    psets: list[ifcopenshell.entity_instance] = []
+    rels: list[ifcopenshell.entity_instance] = []
+    for element in roots:
+        if element.is_a("IfcPropertySet"):
+            psets.append(element)
+            continue
+        elif element.is_a("IfcRelationship"):
+            rels.append(element)
+            continue
+        sync_guid(element)
+
+    for rel in rels:
+        sync_rel(rel)
+
+    for pset in psets:
+        sync_pset(pset)
+
+
 class LibraryGenerator:
+    output_filename = "Demo Library.ifc"
+
+    guid_source: ifcopenshell.file
+    """Guid sync is needed to avoid unnecessary diffs
+    and to avoid `append_asset` from identifying existing elements and as new ones.
+    """
+
     def generate(self) -> None:
         assert bpy.context.blend_data
         opened_blend_file = Path(bpy.context.blend_data.filepath)
         assert (
             opened_blend_file.name == "demo-library.blend"
         ), "This script must be run from the demo-library.blend file as it's using Blender objects to create representations."
+        libraries_path = opened_blend_file.parent.parent / "bonsai" / "bim" / "data" / "libraries"
+
+        guid_source_filepath = libraries_path / f"IFC4 {self.output_filename}"
+        self.guid_source = ifcopenshell.open(guid_source_filepath)
 
         ifcopenshell.api.pre_listeners = {}
         ifcopenshell.api.post_listeners = {}
@@ -48,6 +139,7 @@ class LibraryGenerator:
 
         # Basic project setup.
         self.project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject", name="Bonsai Demo")
+
         self.library = ifcopenshell.api.root.create_entity(
             self.file, ifc_class="IfcProjectLibrary", name="Bonsai Demo Library"
         )
@@ -188,7 +280,8 @@ class LibraryGenerator:
         self.create_text_type("TYPE-TAG", "capsule-tag", ["{{type.Name}}"])
         self.create_text_type("NAME-TAG", "capsule-tag", ["{{Name}}"])
 
-        self.file.write("IFC4 Demo Library.ifc")
+        sync_guids(self.file, self.guid_source)
+        self.file.write(libraries_path / f"{self.file.schema} {self.output_filename}")
 
     def create_symbol_type(self, name: str, symbol: str) -> None:
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct", name=name)
@@ -288,4 +381,5 @@ class LibraryGenerator:
         ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
 
 
-LibraryGenerator().generate()
+if __name__ == "__main__":
+    LibraryGenerator().generate()
