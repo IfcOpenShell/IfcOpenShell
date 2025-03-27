@@ -22,11 +22,14 @@ import ifcopenshell.api
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.material
+import ifcopenshell.api.owner
+import ifcopenshell.api.owner.settings
 import ifcopenshell.api.project
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.api.unit
+import ifcopenshell.util.schema
 import ifcopenshell.util.shape_builder
 import bonsai.tool as tool
 from pathlib import Path
@@ -40,7 +43,8 @@ def sync_guids(target_file: ifcopenshell.file, source_file: ifcopenshell.file) -
         Sync is assigning guid based on the first element from `source_file` that has a matching type and name.
         """
 
-        if element.is_a("IfcTypeProduct") or element.is_a("IfcContext"):
+        # In IFC2X3 IfcProject is not IfcContext.
+        if element.is_a("IfcTypeProduct") or element.is_a("IfcContext") or element.is_a("IfcProject"):
             assert element.Name, element
             elements = source_file.by_type(element.is_a(), False)
             for element_ in elements:
@@ -120,7 +124,7 @@ class LibraryGenerator:
     and to avoid `append_asset` from identifying existing elements and as new ones.
     """
 
-    def generate(self) -> None:
+    def generate(self, schema: ifcopenshell.util.schema.IFC_SCHEMA) -> None:
         assert bpy.context.blend_data
         opened_blend_file = Path(bpy.context.blend_data.filepath)
         assert (
@@ -128,24 +132,38 @@ class LibraryGenerator:
         ), "This script must be run from the demo-library.blend file as it's using Blender objects to create representations."
         libraries_path = opened_blend_file.parent.parent / "bonsai" / "bim" / "data" / "libraries"
 
-        guid_source_filepath = libraries_path / f"IFC4 {self.output_filename}"
+        guid_source_filepath = libraries_path / f"{schema} {self.output_filename}"
         self.guid_source = ifcopenshell.open(guid_source_filepath)
 
         ifcopenshell.api.pre_listeners = {}
         ifcopenshell.api.post_listeners = {}
 
-        self.file = ifcopenshell.api.project.create_file()
+        self.file = ifcopenshell.api.project.create_file(schema)
         self.builder = ifcopenshell.util.shape_builder.ShapeBuilder(self.file)
+
+        if schema == "IFC2X3":
+            ifcopenshell.api.owner.settings.factory_reset()
+            person = ifcopenshell.api.owner.add_person(self.file)
+            organization = ifcopenshell.api.owner.add_organisation(self.file)
+            user = ifcopenshell.api.owner.add_person_and_organisation(
+                self.file, person=person, organisation=organization
+            )
+            application = ifcopenshell.api.owner.add_application(
+                self.file, application_full_name="Bonsai", application_identifier="Bonsai"
+            )
+            ifcopenshell.api.owner.settings.get_user = lambda x: user
+            ifcopenshell.api.owner.settings.get_application = lambda x: application
 
         # Basic project setup.
         self.project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject", name="Bonsai Demo")
 
-        self.library = ifcopenshell.api.root.create_entity(
-            self.file, ifc_class="IfcProjectLibrary", name="Bonsai Demo Library"
-        )
-        ifcopenshell.api.project.assign_declaration(
-            self.file, definitions=[self.library], relating_context=self.project
-        )
+        if schema != "IFC2X3":
+            self.library = ifcopenshell.api.root.create_entity(
+                self.file, ifc_class="IfcProjectLibrary", name="Bonsai Demo Library"
+            )
+            ifcopenshell.api.project.assign_declaration(
+                self.file, definitions=[self.library], relating_context=self.project
+            )
         ifcopenshell.api.unit.assign_unit(self.file, length={"is_metric": True, "raw": "METERS"})
         model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
         plan = ifcopenshell.api.context.add_context(self.file, context_type="Plan")
@@ -192,66 +210,77 @@ class LibraryGenerator:
         pset = ifcopenshell.api.pset.add_pset(self.file, product=product, name="EPset_Parametric")
         ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"LayerSetDirection": "AXIS3"})
 
-        self.create_layer_type("IfcRampType", "RAM200", 0.2)
+        if schema != "IFC2X3":
+            self.create_layer_type("IfcRampType", "RAM200", 0.2)
 
-        profile = self.file.create_entity("IfcCircleProfileDef", ProfileType="AREA", Radius=0.3)
-        self.create_profile_type("IfcPileType", "P1", profile)
+            profile = self.file.create_entity("IfcCircleProfileDef", ProfileType="AREA", Radius=0.3)
+            self.create_profile_type("IfcPileType", "P1", profile)
 
         self.create_layer_type("IfcSlabType", "FLR200", 0.2)
         self.create_layer_type("IfcSlabType", "FLR300", 0.3)
 
-        profile = self.file.create_entity(
-            "IfcRectangleProfileDef", ProfileName="500x600", ProfileType="AREA", XDim=0.5, YDim=0.6
-        )
-        self.create_profile_type("IfcColumnType", "C1", profile)
+        if schema != "IFC2X3":
+            # No profile sets in IFC2X3 :(
+            profile = self.file.create_entity(
+                "IfcRectangleProfileDef", ProfileName="500x600", ProfileType="AREA", XDim=0.5, YDim=0.6
+            )
+            self.create_profile_type("IfcColumnType", "C1", profile)
 
-        profile = self.file.create_entity(
-            "IfcCircleHollowProfileDef",
-            ProfileName="500.0x5.0 CHS",
-            ProfileType="AREA",
-            Radius=0.25,
-            WallThickness=0.005,
-        )
-        self.create_profile_type("IfcColumnType", "C2", profile)
+            profile = self.file.create_entity(
+                "IfcCircleHollowProfileDef",
+                ProfileName="500.0x5.0 CHS",
+                ProfileType="AREA",
+                Radius=0.25,
+                WallThickness=0.005,
+            )
+            self.create_profile_type("IfcColumnType", "C2", profile)
 
-        profile = self.file.create_entity(
-            "IfcRectangleHollowProfileDef",
-            ProfileName="150x75x2.0 RHS",
-            ProfileType="AREA",
-            XDim=0.075,
-            YDim=0.15,
-            WallThickness=0.002,
-            InnerFilletRadius=0.005,
-            OuterFilletRadius=0.005,
-        )
-        self.create_profile_type("IfcColumnType", "C3", profile)
+            profile = self.file.create_entity(
+                "IfcRectangleHollowProfileDef",
+                ProfileName="150x75x2.0 RHS",
+                ProfileType="AREA",
+                XDim=0.075,
+                YDim=0.15,
+                WallThickness=0.002,
+                InnerFilletRadius=0.005,
+                OuterFilletRadius=0.005,
+            )
+            self.create_profile_type("IfcColumnType", "C3", profile)
 
-        profile = self.file.create_entity(
-            "IfcIShapeProfileDef",
-            ProfileName="DEMO-I",
-            ProfileType="AREA",
-            OverallWidth=0.1,
-            OverallDepth=0.2,
-            WebThickness=0.005,
-            FlangeThickness=0.01,
-            FilletRadius=0.005,
-        )
-        self.create_profile_type("IfcBeamType", "B1", profile)
+            profile = self.file.create_entity(
+                "IfcIShapeProfileDef",
+                ProfileName="DEMO-I",
+                ProfileType="AREA",
+                OverallWidth=0.1,
+                OverallDepth=0.2,
+                WebThickness=0.005,
+                FlangeThickness=0.01,
+                FilletRadius=0.005,
+            )
+            self.create_profile_type("IfcBeamType", "B1", profile)
 
-        profile = self.file.create_entity(
-            "IfcCShapeProfileDef",
-            ProfileName="DEMO-C",
-            ProfileType="AREA",
-            Depth=0.2,
-            Width=0.1,
-            WallThickness=0.0015,
-            Girth=0.03,
-            InternalFilletRadius=0.005,
-        )
-        self.create_profile_type("IfcBeamType", "B2", profile)
+            profile = self.file.create_entity(
+                "IfcCShapeProfileDef",
+                ProfileName="DEMO-C",
+                ProfileType="AREA",
+                Depth=0.2,
+                Width=0.1,
+                WallThickness=0.0015,
+                Girth=0.03,
+                InternalFilletRadius=0.005,
+            )
+            self.create_profile_type("IfcBeamType", "B2", profile)
 
-        self.create_type("IfcWindowType", "WT01", {"model_body": "Window", "plan_body": "Window-Plan"})
-        self.create_type("IfcDoorType", "DT01", {"model_body": "Door", "plan_body": "Door-Plan"})
+        self.create_type(
+            "IfcWindowType" if schema != "IFC2X3" else "IfcWindowStyle",
+            "WT01",
+            {"model_body": "Window", "plan_body": "Window-Plan"},
+        )
+        self.create_type(
+            "IfcDoorType" if schema != "IFC2X3" else "IfcDoorStyle",
+            "DT01",
+            {"model_body": "Door", "plan_body": "Door-Plan"},
+        )
         self.create_type("IfcFurnitureType", "BUN01", {"model_body": "Bunny", "plan_body": "Bunny-Plan"})
 
         # IfcAnnotation types.
@@ -282,6 +311,9 @@ class LibraryGenerator:
 
         sync_guids(self.file, self.guid_source)
         self.file.write(libraries_path / f"{self.file.schema} {self.output_filename}")
+
+        if schema == "IFC2X3":
+            ifcopenshell.api.owner.settings.restore()
 
     def create_symbol_type(self, name: str, symbol: str) -> None:
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct", name=name)
@@ -330,7 +362,8 @@ class LibraryGenerator:
         layer_set = rel.RelatingMaterial
         layer = ifcopenshell.api.material.add_layer(self.file, layer_set=layer_set, material=self.material)
         layer.LayerThickness = thickness
-        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
+        if self.file.schema != "IFC2X3":
+            ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
         return element
 
     def create_profile_type(self, ifc_class: str, name: str, profile: ifcopenshell.entity_instance) -> None:
@@ -342,7 +375,8 @@ class LibraryGenerator:
             self.file, profile_set=profile_set, material=self.material
         )
         ifcopenshell.api.material.assign_profile(self.file, material_profile=material_profile, profile=profile)
-        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
+        if self.file.schema != "IFC2X3":
+            ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
 
     def create_type(self, ifc_class: str, name: str, representations: dict[str, str]) -> None:
         """ "
@@ -366,11 +400,14 @@ class LibraryGenerator:
                 material = slot.material
                 assert material
                 style = ifcopenshell.api.style.add_style(self.file, name=material.name)
+                attributes = tool.Style.get_surface_shading_attributes(material)
+                if self.file.schema == "IFC2X3":
+                    del attributes["Transparency"]
                 ifcopenshell.api.style.add_surface_style(
                     self.file,
                     style=style,
                     ifc_class="IfcSurfaceStyleShading",
-                    attributes=tool.Style.get_surface_shading_attributes(material),
+                    attributes=attributes,
                 )
                 styles.append(style)
             if styles:
@@ -378,8 +415,12 @@ class LibraryGenerator:
                     self.file, shape_representation=representation, styles=styles
                 )
             ifcopenshell.api.geometry.assign_representation(self.file, product=element, representation=representation)
-        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
+
+        if self.file.schema != "IFC2X3":
+            ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
 
 
 if __name__ == "__main__":
-    LibraryGenerator().generate()
+    LibraryGenerator().generate("IFC2X3")
+    LibraryGenerator().generate("IFC4")
+    LibraryGenerator().generate("IFC4X3")
