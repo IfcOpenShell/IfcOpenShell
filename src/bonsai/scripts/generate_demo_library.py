@@ -19,44 +19,60 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.project
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.style
+import ifcopenshell.api.unit
+import ifcopenshell.util.shape_builder
 import bonsai.tool as tool
+from pathlib import Path
 
 
 class LibraryGenerator:
-    def generate(self):
+    def generate(self) -> None:
+        assert bpy.context.blend_data
+        opened_blend_file = Path(bpy.context.blend_data.filepath)
+        assert (
+            opened_blend_file.name == "demo-library.blend"
+        ), "This script must be run from the demo-library.blend file as it's using Blender objects to create representations."
+
         ifcopenshell.api.pre_listeners = {}
         ifcopenshell.api.post_listeners = {}
 
-        self.file = ifcopenshell.api.run("project.create_file")
-        self.project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject", name="Bonsai Demo")
-        self.library = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name="Bonsai Demo Library"
+        self.file = ifcopenshell.api.project.create_file()
+        self.builder = ifcopenshell.util.shape_builder.ShapeBuilder(self.file)
+
+        # Basic project setup.
+        self.project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject", name="Bonsai Demo")
+        self.library = ifcopenshell.api.root.create_entity(
+            self.file, ifc_class="IfcProjectLibrary", name="Bonsai Demo Library"
         )
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[self.library], relating_context=self.project
+        ifcopenshell.api.project.assign_declaration(
+            self.file, definitions=[self.library], relating_context=self.project
         )
-        ifcopenshell.api.run("unit.assign_unit", self.file, length={"is_metric": True, "raw": "METERS"})
-        model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
-        plan = ifcopenshell.api.run("context.add_context", self.file, context_type="Plan")
+        ifcopenshell.api.unit.assign_unit(self.file, length={"is_metric": True, "raw": "METERS"})
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        plan = ifcopenshell.api.context.add_context(self.file, context_type="Plan")
         self.representations = {
-            "model_body": ifcopenshell.api.run(
-                "context.add_context",
+            "model_body": ifcopenshell.api.context.add_context(
                 self.file,
                 context_type="Model",
                 context_identifier="Body",
                 target_view="MODEL_VIEW",
                 parent=model,
             ),
-            "plan_body": ifcopenshell.api.run(
-                "context.add_context",
+            "plan_body": ifcopenshell.api.context.add_context(
                 self.file,
                 context_type="Plan",
                 context_identifier="Body",
                 target_view="PLAN_VIEW",
                 parent=plan,
             ),
-            "model_annotation": ifcopenshell.api.run(
-                "context.add_context",
+            "model_annotation": ifcopenshell.api.context.add_context(
                 self.file,
                 context_type="Model",
                 context_identifier="Annotation",
@@ -65,22 +81,24 @@ class LibraryGenerator:
             ),
         }
 
-        self.material = ifcopenshell.api.run("material.add_material", self.file, name="Unknown")
+        self.material = ifcopenshell.api.material.add_material(self.file, name="Unknown")
 
+        # IfcWallType.
         self.create_layer_type("IfcWallType", "WAL50", 0.05)
         self.create_layer_type("IfcWallType", "WAL100", 0.1)
         self.create_layer_type("IfcWallType", "WAL200", 0.2)
         self.create_layer_type("IfcWallType", "WAL300", 0.3)
 
+        # IfcCoveringType.
         self.create_layer_type("IfcCoveringType", "COV10", 0.01)
 
         product = self.create_layer_type("IfcCoveringType", "COV20", 0.02)
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=product, name="EPset_Parametric")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"LayerSetDirection": "AXIS2"})
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=product, name="EPset_Parametric")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"LayerSetDirection": "AXIS2"})
 
         product = self.create_layer_type("IfcCoveringType", "COV30", 0.03)
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=product, name="EPset_Parametric")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"LayerSetDirection": "AXIS3"})
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=product, name="EPset_Parametric")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"LayerSetDirection": "AXIS3"})
 
         self.create_layer_type("IfcRampType", "RAM200", 0.2)
 
@@ -144,15 +162,18 @@ class LibraryGenerator:
         self.create_type("IfcDoorType", "DT01", {"model_body": "Door", "plan_body": "Door-Plan"})
         self.create_type("IfcFurnitureType", "BUN01", {"model_body": "Bunny", "plan_body": "Bunny-Plan"})
 
+        # IfcAnnotation types.
         self.create_symbol_type("SETOUT-POINT", "setout-point")
         self.create_symbol_type("CONTROL-POINT", "control-point")
         self.create_symbol_type("TRAVERSE-POINT", "traverse-point")
+
         self.create_line_type("DASHED", "dashed")
         self.create_line_type("FINE", "fine")
         self.create_line_type("THIN", "thin")
         self.create_line_type("MEDIUM", "medium")
         self.create_line_type("THICK", "thick")
         self.create_line_type("STRONG", "strong")
+
         self.create_text_type(
             "SETOUT-TAG", "setout-tag", ["E ``round({{easting}}, 0.001)``", "N ``round({{northing}}, 0.001)``"]
         )
@@ -169,106 +190,102 @@ class LibraryGenerator:
 
         self.file.write("IFC4 Demo Library.ifc")
 
-    def create_symbol_type(self, name, symbol):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTypeProduct", name=name)
+    def create_symbol_type(self, name: str, symbol: str) -> None:
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct", name=name)
         element.ApplicableOccurrence = "IfcAnnotation/SYMBOL"
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Annotation")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Symbol": symbol})
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Symbol": symbol})
 
-    def create_line_type(self, name, classes):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTypeProduct", name=name)
+    def create_line_type(self, name: str, classes: str) -> None:
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct", name=name)
         element.ApplicableOccurrence = "IfcAnnotation/LINEWORK"
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Annotation")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Classes": classes})
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Classes": classes})
 
-    def create_text_type(self, name, symbol, literals):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcTypeProduct", name=name)
+    def create_text_type(self, name: str, symbol: str, literals: list[str]) -> None:
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcTypeProduct", name=name)
         element.ApplicableOccurrence = "IfcAnnotation/TEXT"
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Annotation")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Symbol": symbol})
-        items = []
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Symbol": symbol})
+        items: list[ifcopenshell.entity_instance] = []
         for literal in literals:
-            origin = self.file.createIfcAxis2Placement3D(
-                self.file.createIfcCartesianPoint((0.0, 0.0, 0.0)),
-                self.file.createIfcDirection((0.0, 0.0, 1.0)),
-                self.file.createIfcDirection((1.0, 0.0, 0.0)),
-            )
+            origin = self.builder.create_axis2_placement_3d()
             items.append(
-                self.file.createIfcTextLiteralWithExtent(
-                    literal, origin, "RIGHT", self.file.createIfcPlanarExtent(1000, 1000), "center"
-                )
+                self.file.create_entity(
+                    "IfcTextLiteralWithExtent",
+                    literal,
+                    origin,
+                    "RIGHT",
+                    self.file.create_entity("IfcPlanarExtent", 1000, 1000),
+                    "center",
+                ),
             )
 
-        representation = self.file.createIfcShapeRepresentation(
+        representation = self.file.create_entity(
+            "IfcShapeRepresentation",
             self.representations["model_annotation"],
             self.representations["model_annotation"].ContextIdentifier,
             "Annotation2D",
             items,
         )
-        ifcopenshell.api.run(
-            "geometry.assign_representation", self.file, product=element, representation=representation
-        )
+        ifcopenshell.api.geometry.assign_representation(self.file, product=element, representation=representation)
 
-    def create_layer_type(self, ifc_class, name, thickness):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        rel = ifcopenshell.api.run(
-            "material.assign_material", self.file, products=[element], type="IfcMaterialLayerSet"
-        )
+    def create_layer_type(self, ifc_class: str, name: str, thickness: float) -> ifcopenshell.entity_instance:
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class=ifc_class, name=name)
+        rel = ifcopenshell.api.material.assign_material(self.file, products=[element], type="IfcMaterialLayerSet")
+        assert isinstance(rel, ifcopenshell.entity_instance)
         layer_set = rel.RelatingMaterial
-        layer = ifcopenshell.api.run("material.add_layer", self.file, layer_set=layer_set, material=self.material)
+        layer = ifcopenshell.api.material.add_layer(self.file, layer_set=layer_set, material=self.material)
         layer.LayerThickness = thickness
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
-        )
+        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
         return element
 
-    def create_profile_type(self, ifc_class, name, profile):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        rel = ifcopenshell.api.run(
-            "material.assign_material", self.file, products=[element], type="IfcMaterialProfileSet"
-        )
+    def create_profile_type(self, ifc_class: str, name: str, profile: ifcopenshell.entity_instance) -> None:
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class=ifc_class, name=name)
+        rel = ifcopenshell.api.material.assign_material(self.file, products=[element], type="IfcMaterialProfileSet")
+        assert isinstance(rel, ifcopenshell.entity_instance)
         profile_set = rel.RelatingMaterial
-        material_profile = ifcopenshell.api.run(
-            "material.add_profile", self.file, profile_set=profile_set, material=self.material
+        material_profile = ifcopenshell.api.material.add_profile(
+            self.file, profile_set=profile_set, material=self.material
         )
-        ifcopenshell.api.run("material.assign_profile", self.file, material_profile=material_profile, profile=profile)
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
-        )
+        ifcopenshell.api.material.assign_profile(self.file, material_profile=material_profile, profile=profile)
+        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
 
-    def create_type(self, ifc_class, name, representations):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
+    def create_type(self, ifc_class: str, name: str, representations: dict[str, str]) -> None:
+        """ "
+        :param representations: Mapping of representation contexts to Blender objects names to be used
+            as a representation source.
+        """
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class=ifc_class, name=name)
         for rep_name, obj_name in representations.items():
-            obj = bpy.data.objects.get(obj_name)
-            representation = ifcopenshell.api.run(
-                "geometry.add_representation",
+            obj = bpy.data.objects[obj_name]
+            assert isinstance(obj.data, bpy.types.Mesh)
+            representation = ifcopenshell.api.geometry.add_representation(
                 self.file,
                 context=self.representations[rep_name],
                 blender_object=obj,
                 geometry=obj.data,
                 total_items=max(1, len(obj.material_slots)),
             )
-            styles = []
+            assert representation
+            styles: list[ifcopenshell.entity_instance] = []
             for slot in obj.material_slots:
-                style = ifcopenshell.api.run("style.add_style", self.file, name=slot.material.name)
-                ifcopenshell.api.run(
-                    "style.add_surface_style",
+                material = slot.material
+                assert material
+                style = ifcopenshell.api.style.add_style(self.file, name=material.name)
+                ifcopenshell.api.style.add_surface_style(
                     self.file,
                     style=style,
                     ifc_class="IfcSurfaceStyleShading",
-                    attributes=tool.Style.get_surface_shading_attributes(slot.material),
+                    attributes=tool.Style.get_surface_shading_attributes(material),
                 )
                 styles.append(style)
             if styles:
-                ifcopenshell.api.run(
-                    "style.assign_representation_styles", self.file, shape_representation=representation, styles=styles
+                ifcopenshell.api.style.assign_representation_styles(
+                    self.file, shape_representation=representation, styles=styles
                 )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", self.file, product=element, representation=representation
-            )
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
-        )
+            ifcopenshell.api.geometry.assign_representation(self.file, product=element, representation=representation)
+        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
 
 
 LibraryGenerator().generate()
