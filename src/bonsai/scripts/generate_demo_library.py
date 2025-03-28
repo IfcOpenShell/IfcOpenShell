@@ -151,6 +151,7 @@ class LibraryGenerator:
             application = ifcopenshell.api.owner.add_application(
                 self.file, application_full_name="Bonsai", application_identifier="Bonsai"
             )
+            # Override Bonsai methods for duration of the script.
             ifcopenshell.api.owner.settings.get_user = lambda x: user
             ifcopenshell.api.owner.settings.get_application = lambda x: application
 

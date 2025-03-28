@@ -31,6 +31,7 @@ import ifcopenshell.api.project
 import ifcopenshell.api.material
 import ifcopenshell.api.profile
 import ifcopenshell.api.unit
+import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.unit
@@ -561,6 +562,42 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
         representations = tuple(self.file.by_type("IfcRepresentation"))
         assert self.file.by_type("IfcPresentationLayerAssignment")[0].AssignedItems == representations
+
+    def test_append_owner_history_without_producing_duplicates(self):
+        ifc_file = ifcopenshell.file()
+        library = ifcopenshell.file()
+
+        # Setup owner history.
+        ifcopenshell.api.owner.settings.factory_reset()
+        person = ifcopenshell.api.owner.add_person(library)
+        ifcopenshell.api.owner.add_role(library, person, "CONTRIBUTOR")
+        organization = ifcopenshell.api.owner.add_organisation(library)
+        user = ifcopenshell.api.owner.add_person_and_organisation(library, person=person, organisation=organization)
+        application = ifcopenshell.api.owner.add_application(library)
+        assert len(library.by_type("IfcPerson")) == 1
+        assert len(library.by_type("IfcPersonAndOrganization")) == 1
+        assert len(library.by_type("IfcApplication")) == 1
+        assert len(library.by_type("IfcOrganization")) == 2
+
+        # IfcOrganization's attributes.
+        assert len(library.by_type("IfcTelecomAddress")) == 1
+        # IfcPerson's attributes.
+        assert len(library.by_type("IfcActorRole")) == 2
+
+        # Add 2 wall types.
+        wall_type_1 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
+        wall_type_2 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
+
+        ifcopenshell.api.project.append_asset(ifc_file, library, wall_type_1)
+        ifcopenshell.api.project.append_asset(ifc_file, library, wall_type_2)
+
+        assert len(ifc_file.by_type("IfcPerson")) == 1
+        assert len(ifc_file.by_type("IfcPersonAndOrganization")) == 1
+        assert len(ifc_file.by_type("IfcApplication")) == 1
+        assert len(ifc_file.by_type("IfcOrganization")) == 2
+        # Ensure their attributes are also not duplicated.
+        assert len(ifc_file.by_type("IfcTelecomAddress")) == 1
+        assert len(ifc_file.by_type("IfcActorRole")) == 2
 
 
 class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
