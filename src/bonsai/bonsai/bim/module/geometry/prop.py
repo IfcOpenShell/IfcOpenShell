@@ -209,6 +209,7 @@ def update_is_editing_item_layer(self: "BIMObjectGeometryProperties", context: b
         item = ifc_file.by_id(active_ui_item.ifc_definition_id)
         if layer := next(iter(item.LayerAssignment), None):
             self.representation_item_layer = str(layer.id())
+        return
 
     if "representation_item_layer" in self:
         del self["representation_item_layer"]
