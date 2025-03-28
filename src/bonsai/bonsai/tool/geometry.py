@@ -1931,6 +1931,7 @@ class Geometry(bonsai.core.tool.Geometry):
     def export_mesh_to_tessellation(
         cls, obj: bpy.types.Object, ifc_context: ifcopenshell.entity_instance
     ) -> ifcopenshell.entity_instance:
+        ifc_file = tool.Ifc.get()
         builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         items = []
@@ -1946,7 +1947,10 @@ class Geometry(bonsai.core.tool.Geometry):
             items.append(item)
             material_index = mesh.polygons[0].material_index
             if materials := list(mesh.materials):
+                # TODO: we don't account for multiple materials if they're not on loose parts.
                 material = materials[material_index]
+                if not material:
+                    continue
                 if not (style := tool.Ifc.get_entity(material)):
                     style = ifcopenshell.api.run("style.add_style", tool.Ifc.get(), name=material.name)
                     if material.use_nodes:
