@@ -135,7 +135,7 @@ AttributeValue::operator EnumerationReference() const
         size_t v;
         memcpy(&v, str.data() + 1, sizeof(size_t));
         auto decl = array_.db_ptr->file->schema()->declarations()[v]->as_enumeration_type();
-        memcpy(&v, str.data() + 5, sizeof(size_t));
+        memcpy(&v, str.data() + 1 + sizeof(size_t), sizeof(size_t));
         return EnumerationReference(decl, v);
     }
 }
