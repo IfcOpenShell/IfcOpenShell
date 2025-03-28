@@ -62,6 +62,7 @@ if TYPE_CHECKING:
         BIMWindowProperties,
         BIMStairProperties,
         BIMRailingProperties,
+        BIMExternalParametricGeometryProperties,
     )
 
 
@@ -93,6 +94,10 @@ class Model(bonsai.core.tool.Model):
     @classmethod
     def get_array_props(cls, obj: bpy.types.Object) -> BIMArrayProperties:
         return obj.BIMArrayProperties
+
+    @classmethod
+    def get_epg_props(cls, obj: bpy.types.Object) -> BIMExternalParametricGeometryProperties:
+        return obj.BIMExternalParametricGeometryProperties
 
     @classmethod
     def convert_si_to_unit(cls, value: T) -> T:
@@ -1596,15 +1601,13 @@ class Model(bonsai.core.tool.Model):
         return occurrences
 
     @classmethod
-    def add_body_representation(cls, obj: bpy.types.Object) -> None:
+    def add_representation(cls, obj: bpy.types.Object, context: ifcopenshell.entity_instance) -> None:
         ifc_file = tool.Ifc.get()
-        body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
-        assert body
         mesh = obj.data
         assert isinstance(mesh, bpy.types.Mesh)
         representation = ifcopenshell.api.geometry.add_representation(
             ifc_file,
-            context=body,
+            context=context,
             blender_object=obj,
             geometry=mesh,
             coordinate_offset=tool.Geometry.get_cartesian_point_offset(obj),
@@ -1616,7 +1619,14 @@ class Model(bonsai.core.tool.Model):
             profile_set_usage=None,
         )
         assert representation
-        tool.Model.replace_object_ifc_representation(body, obj, representation)
+        tool.Model.replace_object_ifc_representation(context, obj, representation)
+
+    @classmethod
+    def add_body_representation(cls, obj: bpy.types.Object) -> None:
+        ifc_file = tool.Ifc.get()
+        body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+        assert body
+        cls.add_representation(obj, body)
 
     @classmethod
     def auto_detect_annotation_fill_area(cls, obj: bpy.types.Object, mesh: bpy.types.Mesh) -> dict | None:
@@ -2206,3 +2216,112 @@ class Model(bonsai.core.tool.Model):
         ifcopenshell.api.geometry.connect_element(
             tool.Ifc.get(), relating_element=slab, related_element=wall, description="TOP"
         )
+
+    @classmethod
+    def get_epg_modifier(cls, obj: bpy.types.Object) -> Union[bpy.types.NodesModifier, None]:
+        for m in obj.modifiers:
+            if m.type == "NODES" and m.name.startswith("BBIM_EPG"):
+                assert isinstance(m, bpy.types.NodesModifier)
+                return m
+        return None
+
+    @classmethod
+    def setup_external_nodes(
+        cls, modifier: bpy.types.NodesModifier, external_nodes: bpy.types.GeometryNodeTree
+    ) -> None:
+        bbim_nodes = modifier.node_group
+
+        if bbim_nodes is not None:
+            # Just assign modifier to existing node group.
+            assert isinstance(bbim_nodes, bpy.types.GeometryNodeTree)
+            group_node = next(n for n in bbim_nodes.nodes if n.type == "GROUP")
+            assert isinstance(group_node, bpy.types.GeometryNodeGroup)
+            group_node.node_tree = external_nodes
+            return
+
+        # Create a new node group.
+        bbim_nodes = bpy.data.node_groups.new(type="GeometryNodeTree", name="BBIM_EPG")
+        modifier.node_group = bbim_nodes
+
+        assert isinstance(bbim_nodes, bpy.types.GeometryNodeTree)
+        bbim_nodes_interface = bbim_nodes.interface
+        assert bbim_nodes_interface
+
+        geometry_socket_2 = bbim_nodes_interface.new_socket(
+            name="Geometry", in_out="OUTPUT", socket_type="NodeSocketGeometry"
+        )
+        geometry_socket_2.attribute_domain = "POINT"
+
+        # Socket Geometry
+        geometry_socket_3 = bbim_nodes_interface.new_socket(
+            name="Geometry", in_out="INPUT", socket_type="NodeSocketGeometry"
+        )
+        geometry_socket_3.attribute_domain = "POINT"
+
+        # Socket Socket
+        socket_socket = bbim_nodes_interface.new_socket(name="Socket", in_out="INPUT", socket_type="NodeSocketGeometry")
+        socket_socket.attribute_domain = "POINT"
+
+        # Initialize bbim_epg nodes.
+        # Node Group Input.
+        group_input_1 = bbim_nodes.nodes.new("NodeGroupInput")
+        assert isinstance(group_input_1, bpy.types.NodeGroupInput)
+        group_input_1.name = "Group Input"
+        # Node Group Output.
+        group_output_1 = bbim_nodes.nodes.new("NodeGroupOutput")
+        assert isinstance(group_output_1, bpy.types.NodeGroupOutput)
+        group_output_1.name = "Group Output"
+        group_output_1.is_active_output = True
+
+        # Node Group.
+        group = bbim_nodes.nodes.new("GeometryNodeGroup")
+        assert isinstance(group, bpy.types.GeometryNodeGroup)
+        group.name = "Group"
+        group.node_tree = external_nodes
+
+        # Set locations
+        group_input_1.location = (-345.0525817871094, 65.80108642578125)
+        group_output_1.location = (200.0, 0.0)
+        group.location = (-83.36784362792969, 80.47976684570312)
+
+        # Set dimensions
+        group_input_1.width, group_input_1.height = 140.0, 100.0
+        group_output_1.width, group_output_1.height = 140.0, 100.0
+        group.width, group.height = 179.41021728515625, 100.0
+
+        # Initialize bbim_epg links.
+        # group.Geometry -> group_output_1.Geometry
+        bbim_nodes.links.new(group.outputs[0], group_output_1.inputs[0])
+        # group_input_1.Geometry -> group.Geometry
+        bbim_nodes.links.new(group_input_1.outputs[0], group.inputs[0])
+
+    @classmethod
+    def setup_parametric_geometry(cls, obj: bpy.types.Object) -> None:
+        props = cls.get_epg_props(obj)
+        external_nodes = props.geo_nodes
+        assert external_nodes
+
+        if not (modifier := cls.get_epg_modifier(obj)):
+            modifier = obj.modifiers.new(type="NODES", name="BBIM_EPG")
+            assert isinstance(modifier, bpy.types.NodesModifier)
+        modifier.show_viewport = True
+        cls.setup_external_nodes(modifier, external_nodes)
+
+    @classmethod
+    def clean_up_parametric_geometry(cls, obj: bpy.types.Object) -> None:
+        modifier = tool.Model.get_epg_modifier(obj)
+        assert modifier
+        node_tree = modifier.node_group
+        assert node_tree
+        bpy.data.node_groups.remove(node_tree)
+        obj.modifiers.clear()
+
+    @classmethod
+    def get_parametric_geometry_inputs(cls, modifier: bpy.types.NodesModifier) -> list[bpy.types.NodeSocket]:
+        node_group = modifier.node_group
+        assert isinstance(node_group, bpy.types.GeometryNodeTree)
+
+        group_node = next(n for n in node_group.nodes if n.type == "GROUP")
+        assert isinstance(group_node, bpy.types.GeometryNodeGroup)
+
+        return [s for s in group_node.inputs if s.type != "GEOMETRY"]

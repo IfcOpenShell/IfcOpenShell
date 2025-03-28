@@ -40,6 +40,7 @@ from . import (
     railing,
     roof,
     mep,
+    external,
 )
 from typing import NamedTuple
 
@@ -138,6 +139,7 @@ classes = (
     prop.BIMRoofProperties,
     prop.BIMPolylineProperties,
     prop.BIMProductPreviewProperties,
+    prop.BIMExternalParametricGeometryProperties,
     ui.BIM_PT_array,
     ui.BIM_PT_stair,
     ui.BIM_PT_sverchok,
@@ -147,6 +149,7 @@ classes = (
     ui.BIM_PT_roof,
     ui.BIM_MT_type_manager_menu,
     ui.BIM_MT_type_menu,
+    ui.BIM_PT_external_parametric_geometry,
     ui.LaunchTypeMenu,
     ui.LaunchTypeManager,
     grid.BIM_OT_add_object,
@@ -198,6 +201,7 @@ classes = (
     mep.MEPAddObstruction,
     mep.MEPAddTransition,
     mep.MEPAddBend,
+    external.ApplyExternalParametricGeometry,
 )
 
 addon_keymaps = []
@@ -255,6 +259,9 @@ def register():
     bpy.types.Object.BIMDoorProperties = bpy.props.PointerProperty(type=prop.BIMDoorProperties)
     bpy.types.Object.BIMRailingProperties = bpy.props.PointerProperty(type=prop.BIMRailingProperties)
     bpy.types.Object.BIMRoofProperties = bpy.props.PointerProperty(type=prop.BIMRoofProperties)
+    bpy.types.Object.BIMExternalParametricGeometryProperties = bpy.props.PointerProperty(
+        type=prop.BIMExternalParametricGeometryProperties
+    )
 
     bpy.types.VIEW3D_MT_add.prepend(ui.add_menu)
     bpy.app.handlers.load_post.append(handler.load_post)
@@ -277,6 +284,7 @@ def unregister():
     del bpy.types.Object.BIMDoorProperties
     del bpy.types.Object.BIMRailingProperties
     del bpy.types.Object.BIMRoofProperties
+    del bpy.types.Object.BIMExternalParametricGeometryProperties
 
     bpy.app.handlers.load_post.remove(handler.load_post)
     bpy.types.VIEW3D_MT_add.remove(ui.add_menu)

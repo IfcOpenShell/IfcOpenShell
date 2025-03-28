@@ -701,6 +701,49 @@ class BIM_PT_roof(bpy.types.Panel):
             row.operator("bim.add_roof", icon="ADD", text="")
 
 
+class BIM_PT_external_parametric_geometry(bpy.types.Panel):
+    bl_label = "External Parametric Geometry"
+    bl_idname = "BIM_PT_external_parametric_geometry"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
+
+    @classmethod
+    def poll(cls, context):
+        return (obj := context.active_object) and obj.type == "MESH"
+
+    def draw(self, context):
+        obj = context.active_object
+        assert obj
+        layout = self.layout
+        assert layout
+        props = tool.Model.get_epg_props(obj)
+
+        row = layout.row(align=True)
+        row.alignment = "RIGHT"
+
+        if not props.is_editing:
+            row.prop(props, "is_editing", icon="GREASEPENCIL", text="")
+            return
+
+        row.operator("bim.apply_external_parametric_geometry", icon="CHECKMARK", text="")
+        row.prop(props, "is_editing", icon="CANCEL", text="")
+        row = layout.row(align=True)
+        row.prop_search(props, "geo_nodes", bpy.data, "node_groups")
+        if props.geo_nodes:
+            assert (modifier := tool.Model.get_epg_modifier(obj))
+            inputs = tool.Model.get_parametric_geometry_inputs(modifier)
+            # NOTE: users won't be able to see inputs descriptions.
+            # If we add group node inputs as modifiers inputs, descriptions will be visible.
+            # But then we need to ensure inputs are up to date
+            # (e.g. probably just by adding a refresh button).
+            for input in inputs:
+                row = layout.row(align=True)
+                row.prop(input, "default_value", text=input.name)
+
+
 def add_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
     self.layout.operator_context = "INVOKE_REGION_WIN"
     self.layout.operator("bim.add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")

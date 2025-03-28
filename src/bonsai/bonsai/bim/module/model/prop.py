@@ -1142,3 +1142,43 @@ class BIMProductPreviewProperties(PropertyGroup):
     verts: bpy.props.CollectionProperty(type=ProductPreviewItem)
     edges: bpy.props.CollectionProperty(type=ProductPreviewItem)
     tris: bpy.props.CollectionProperty(type=ProductPreviewItem)
+
+
+def update_is_editing(self: "BIMExternalParametricGeometryProperties", context: bpy.types.Context) -> None:
+    if self.is_editing:
+        return
+
+    tool.Model.clean_up_parametric_geometry(self.id_data)
+    del self["is_editing"]
+    del self["geo_nodes"]
+
+
+def update_geo_nodes(self: "BIMExternalParametricGeometryProperties", context: bpy.types.Context) -> None:
+    if self.geo_nodes:
+        tool.Model.setup_parametric_geometry(self.id_data)
+        return
+
+    modifier = tool.Model.get_epg_modifier(self.id_data)
+    assert modifier
+    modifier.show_viewport = False
+    del self["geo_nodes"]
+
+
+class BIMExternalParametricGeometryProperties(bpy.types.PropertyGroup):
+    is_editing: bpy.props.BoolProperty(
+        name="Is Editing Paramteric Geometry",
+        description="Toggle editing parametric geometry.",
+        default=False,
+        update=update_is_editing,
+    )
+    geo_nodes: bpy.props.PointerProperty(
+        name="Geometry Nodes",
+        description="Geometry nodes tree to use as a source for representation.",
+        type=bpy.types.GeometryNodeTree,
+        update=update_geo_nodes,
+        poll=lambda self, node_tree: not node_tree.name.startswith("BBIM_EPG"),
+    )
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        geo_nodes: Union[bpy.types.GeometryNodeTree, None]
