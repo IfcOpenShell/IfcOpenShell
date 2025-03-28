@@ -252,17 +252,17 @@ class settings_mixin:
                 group = parser.add_mutually_exclusive_group()
                 group.add_argument(
                     f"--{nm}",
-                    dest=nm,
+                    dest=nm.replace('-', '_'),
                     action="store_true",
                 )
                 group.add_argument(
                     f"--no-{nm}",
-                    dest=nm,
+                    dest=nm.replace('-', '_'),
                     action="store_false",
                 )
-                parser.set_defaults(**{nm: None})
+                parser.set_defaults(**{nm.replace('-', '_'): None})
             else:
-                parser.add_argument(f"--{nm}", dest=nm, type=type_factories[ty])
+                parser.add_argument(f"--{nm}", dest=nm.replace('-', '_'), type=type_factories[ty])
 
     def apply_namespace(self, namespace) -> None:
         """
@@ -271,8 +271,8 @@ class settings_mixin:
         """
         names = set(self.setting_names())
         for k, v in namespace._get_kwargs():
-            if k in names and v is not None:
-                self.set(k, v)
+            if k.replace('_', '-') in names and v is not None:
+                self.set(k.replace('_', '-'), v)
 
 
 class serializer_settings(settings_mixin, ifcopenshell_wrapper.SerializerSettings):
