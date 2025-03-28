@@ -22,6 +22,7 @@ from ifcopenshell.api.alignment import get_axis_subcontext
 from typing import Sequence
 import math
 
+
 def _get_axis(file: ifcopenshell.file, Ds: float, rail_head_distance: float) -> entity_instance:
     Dy = rail_head_distance
     Dz = 2 * Ds
