@@ -1952,7 +1952,7 @@ class Geometry(bonsai.core.tool.Geometry):
                 if not material:
                     continue
                 if not (style := tool.Ifc.get_entity(material)):
-                    style = ifcopenshell.api.run("style.add_style", tool.Ifc.get(), name=material.name)
+                    style = ifcopenshell.api.style.add_style(ifc_file, name=material.name)
                     if material.use_nodes:
                         ifc_class = "IfcSurfaceStyleRendering"
                         attributes = tool.Style.get_surface_rendering_attributes(material)
