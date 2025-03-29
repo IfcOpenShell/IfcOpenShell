@@ -695,6 +695,10 @@ class ExportCostSchedules(bpy.types.Operator, ExportHelper):
         default=True,
     )
 
+    @property
+    def filename_ext(self) -> str:
+        return f".{self.format.lower()}"
+
     def execute(self, context):
         cost_schedule = tool.Ifc.get().by_id(self.cost_schedule) if self.cost_schedule else None
         r = core.export_cost_schedules(
