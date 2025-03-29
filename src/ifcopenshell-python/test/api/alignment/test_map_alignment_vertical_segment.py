@@ -37,7 +37,7 @@ def _CircularArc_100_0_10_0_0_0_0_5_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -66,7 +66,7 @@ def _CircularArc_100_0_10_0_0_0__0_5_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -97,7 +97,7 @@ def _CircularArc_100_0_10_0_0_5_0_0_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -128,7 +128,7 @@ def _CircularArc_100_0_10_0__0_5_0_0_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -159,7 +159,7 @@ def _CircularArc_100_0_10_0_0_5_1_0_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -192,7 +192,7 @@ def _CircularArc_100_0_10_0__0_5__1_0_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -225,7 +225,7 @@ def _CircularArc_100_0_10_0_1_0_0_5_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -258,7 +258,7 @@ def _CircularArc_100_0_10_0__1_0__0_5_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -291,7 +291,7 @@ def _ConstantGradient_100_0_10_0_0_0_0_5_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -320,7 +320,7 @@ def _ConstantGradient_100_0_10_0_0_0__0_5_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -349,7 +349,7 @@ def _ConstantGradient_100_0_10_0_0_5_0_0_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -380,7 +380,7 @@ def _ConstantGradient_100_0_10_0__0_5_0_0_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -411,7 +411,7 @@ def _ConstantGradient_100_0_10_0_0_5_1_0_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -442,7 +442,7 @@ def _ConstantGradient_100_0_10_0__0_5__1_0_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -473,7 +473,7 @@ def _ConstantGradient_100_0_10_0_1_0_0_5_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -504,7 +504,7 @@ def _ConstantGradient_100_0_10_0__1_0__0_5_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -535,7 +535,7 @@ def _ParabolicArc_100_0_10_0_0_0_0_5_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -564,7 +564,7 @@ def _ParabolicArc_100_0_10_0_0_0__0_5_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -593,7 +593,7 @@ def _ParabolicArc_100_0_10_0_0_5_0_0_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -624,7 +624,7 @@ def _ParabolicArc_100_0_10_0__0_5_0_0_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -655,7 +655,7 @@ def _ParabolicArc_100_0_10_0_0_5_1_0_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -665,7 +665,7 @@ def _ParabolicArc_100_0_10_0_0_5_1_0_1_Meter(file):
         (0.894427190999916, 0.447213595499958)
     )
     assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(0.0)
-    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(125.53583325398947)
+    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(125.53583299580873)
     assert mapped_segment.ParentCurve.is_a("IfcPolynomialCurve")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx((0.0, 0.0))
     assert mapped_segment.ParentCurve.CoefficientsX == pytest.approx((0.0, 1.0))
@@ -686,7 +686,7 @@ def _ParabolicArc_100_0_10_0__0_5__1_0_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -696,7 +696,7 @@ def _ParabolicArc_100_0_10_0__0_5__1_0_1_Meter(file):
         (0.894427190999916, -0.447213595499958)
     )
     assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(0.0)
-    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(125.53583325398947)
+    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(125.53583299580873)
     assert mapped_segment.ParentCurve.is_a("IfcPolynomialCurve")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx((0.0, 0.0))
     assert mapped_segment.ParentCurve.CoefficientsX == pytest.approx((0.0, 1.0))
@@ -717,7 +717,7 @@ def _ParabolicArc_100_0_10_0_1_0_0_5_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -727,7 +727,7 @@ def _ParabolicArc_100_0_10_0_1_0_0_5_1_Meter(file):
         (0.707106781186547, 0.707106781186547)
     )
     assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(0.0)
-    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(125.53583325398947)
+    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(125.53583299580873)
     assert mapped_segment.ParentCurve.is_a("IfcPolynomialCurve")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx((0.0, 0.0))
     assert mapped_segment.ParentCurve.CoefficientsX == pytest.approx((0.0, 1.0))
@@ -748,7 +748,7 @@ def _ParabolicArc_100_0_10_0__1_0__0_5_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert mapped_segments[1] == None
@@ -758,7 +758,7 @@ def _ParabolicArc_100_0_10_0__1_0__0_5_1_Meter(file):
         (0.707106781186547, -0.707106781186547)
     )
     assert mapped_segment.SegmentStart.wrappedValue == pytest.approx(0.0)
-    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(125.53583325398947)
+    assert mapped_segment.SegmentLength.wrappedValue == pytest.approx(125.53583299580873)
     assert mapped_segment.ParentCurve.is_a("IfcPolynomialCurve")
     assert mapped_segment.ParentCurve.Position.Location.Coordinates == pytest.approx((0.0, 0.0))
     assert mapped_segment.ParentCurve.CoefficientsX == pytest.approx((0.0, 1.0))

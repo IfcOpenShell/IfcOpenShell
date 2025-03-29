@@ -401,38 +401,36 @@ def _map_viennese_bend(file: ifcopenshell.file, design_parameters: entity_instan
     raise NotImplementedError("VIENNESEBEND not implemented")
 
 
-def map_alignment_horizontal_segment(
-    file: ifcopenshell.file, design_parameters: entity_instance
-) -> Sequence[entity_instance]:
+def map_alignment_horizontal_segment(file: ifcopenshell.file, segment: entity_instance) -> Sequence[entity_instance]:
     """
     Creates IfcCurveSegment entities for the represention of the supplied IfcAlignmentHorizontalSegment business logic entity instance.
     A pair of entities is returned because a single business logic segment of type HELMERTCURVE maps to two representaiton entities.
 
     The IfcCurveSegment.Transition transition code is set to DISCONTINUOUS
     """
-    expected_type = "IfcAlignmentHorizontalSegment"
-    if not design_parameters.is_a(expected_type):
-        raise TypeError(f"Expected to see type '{expected_type}', instead received '{design_parameters.is_a()}'.")
+    expected_type = "IfcAlignmentSegment"
+    if not segment.is_a(expected_type):
+        raise TypeError(f"Expected to see type '{expected_type}', instead received '{segment.is_a()}'.")
 
-    match design_parameters.PredefinedType:
+    match segment.DesignParameters.PredefinedType:
         case "LINE":
-            result = _map_line(file, design_parameters)
+            result = _map_line(file, segment.DesignParameters)
         case "CIRCULARARC":
-            result = _map_circular_arc(file, design_parameters)
+            result = _map_circular_arc(file, segment.DesignParameters)
         case "CLOTHOID":
-            result = _map_clothoid(file, design_parameters)
+            result = _map_clothoid(file, segment.DesignParameters)
         case "CUBIC":
-            result = _map_cubic(file, design_parameters)
+            result = _map_cubic(file, segment.DesignParameters)
         case "HELMERTCURVE":
-            result = _map_helmert_curve(file, design_parameters)
+            result = _map_helmert_curve(file, segment.DesignParameters)
         case "BLOSSCURVE":
-            result = _map_bloss_curve(file, design_parameters)
+            result = _map_bloss_curve(file, segment.DesignParameters)
         case "COSINECURVE":
-            result = _map_cosine_curve(file, design_parameters)
+            result = _map_cosine_curve(file, segment.DesignParameters)
         case "SINECURVE":
-            result = _map_sine_curve(file, design_parameters)
+            result = _map_sine_curve(file, segment.DesignParameters)
         case "VIENNESEBEND":
-            result = _map_viennese_bend(file, design_parameters)
+            result = _map_viennese_bend(file, segment.DesignParameters)
         case _:
             raise TypeError("Unexpected predefined type")
 
