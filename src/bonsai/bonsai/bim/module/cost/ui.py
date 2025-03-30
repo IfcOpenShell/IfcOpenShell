@@ -377,8 +377,29 @@ class BIM_PT_cost_item_types(Panel):
         # TODO
         col = grid.column()
 
+        has_quantity_names = CostProp.get_resource_quantity_names(self, context)
+
         row2 = col.row(align=True)
-        row2.label(text="Resources")
+        #row2.label(text="Resources")
+        total_cost_item_resources = len(self.props.cost_item_resources)
+        row2.label(text="Resources({})".format(total_cost_item_resources))
+
+        op = row2.operator("bim.calculate_cost_item_resource_value", text="", icon="DISC")
+        op.cost_item = cost_item.ifc_definition_id
+        
+        rtprops = context.scene.BIMResourceTreeProperties
+        rprops = context.scene.BIMResourceProperties
+        if rtprops.resources and rprops.active_resource_index < len(rtprops.resources):
+            if has_quantity_names:
+                op = row2.operator("bim.assign_cost_item_quantity", text="", icon="PROPERTIES")
+                op.related_object_type = "RESOURCE"
+                op.cost_item = cost_item.ifc_definition_id
+                op.prop_name = self.props.resource_quantity_names
+
+            op = row2.operator("bim.assign_cost_item_quantity", text="", icon="ADD")
+            op.related_object_type = "RESOURCE"
+            op.cost_item = cost_item.ifc_definition_id
+            op.prop_name = ""
 
         row2 = col.row()
         row2.template_list(
