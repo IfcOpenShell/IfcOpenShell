@@ -72,13 +72,16 @@ class Loader:
         # ConnectionGeometry is optional in IFC schema for some reasons.
         if not boundary.ConnectionGeometry:
             return None
+        assert self.ifc_importer
+        assert self.operator
         surface = boundary.ConnectionGeometry.SurfaceOnRelatingElement
         # Workaround for invalid geometry provided by Revit. See https://github.com/Autodesk/revit-ifc/issues/270
         if surface.is_a("IfcCurveBoundedPlane") and not getattr(surface, "InnerBoundaries", None):
             surface.InnerBoundaries = ()
         try:
             shape = ifcopenshell.geom.create_shape(self.settings, surface)
-            mesh = self.ifc_importer.create_mesh(None, shape)
+            mesh = self.ifc_importer.create_mesh(boundary, shape)
+            assert mesh
             tool.Loader.link_mesh(shape, mesh)
         except RuntimeError:
             # Fallback solution for invalid geometry provided by Revit. (InnerBoundaries cuting OuterBoundary)
