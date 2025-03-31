@@ -846,9 +846,8 @@ class Spatial(bonsai.core.tool.Spatial):
         `mat` - identity matrix
         """
         x, y, z = bpy.context.scene.cursor.location.xyz
-        if container := tool.Root.get_default_container():
-            if container_obj := tool.Ifc.get_object(container):
-                z = container_obj.matrix_world.translation.z
+        if tool.Root.get_default_container():
+            z = tool.Root.get_default_container_elevation()
         mat = Matrix()
         h = 3
         return x, y, z, h, mat

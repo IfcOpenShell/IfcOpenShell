@@ -649,7 +649,7 @@ class PolylineDecorator:
 
         # Plane Method or Default Container
         if tool.Ifc.get():
-            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+            default_container_elevation = tool.Root.get_default_container_elevation()
         else:
             default_container_elevation = 0.0
         projection_point = []

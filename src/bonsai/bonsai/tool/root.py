@@ -129,6 +129,15 @@ class Root(bonsai.core.tool.Root):
         return None
 
     @classmethod
+    def get_default_container_elevation(cls) -> float:
+        default_container = cls.get_default_container()
+        if not default_container:
+            return 0.0
+        obj = tool.Ifc.get_object(default_container)
+        assert isinstance(obj, bpy.types.Object)
+        return obj.location.z
+
+    @classmethod
     def get_connection_relationships(
         cls, objs: list[bpy.types.Object]
     ) -> dict[ifcopenshell.entity_instance, dict[str, Any]]:

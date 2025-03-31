@@ -119,7 +119,7 @@ class Polyline(bonsai.core.tool.Polyline):
             last_point_data = None
 
         if tool.Ifc.get():
-            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+            default_container_elevation = tool.Root.get_default_container_elevation()
         else:
             default_container_elevation = 0
 
@@ -267,7 +267,7 @@ class Polyline(bonsai.core.tool.Polyline):
             last_point = Vector((0, 0, 0))
 
         if tool.Ifc.get():
-            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+            default_container_elevation = tool.Root.get_default_container_elevation()
         else:
             default_container_elevation = 0
 
@@ -505,7 +505,7 @@ class Polyline(bonsai.core.tool.Polyline):
 
         snap_vertex = bpy.context.scene.BIMPolylineProperties.snap_mouse_point[0]
         if tool_state and tool_state.use_default_container:
-            z = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+            z = tool.Root.get_default_container_elevation()
 
         # Lock one dimension when in plane method
         if tool_state.plane_origin:
