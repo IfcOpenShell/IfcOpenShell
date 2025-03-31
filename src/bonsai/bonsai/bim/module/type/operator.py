@@ -24,11 +24,13 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.api
+import ifcopenshell.api.type
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.geometry
 import bonsai.core.type as core
 import bonsai.core.root
+from typing import TYPE_CHECKING
 
 
 class AssignType(bpy.types.Operator, tool.Ifc.Operator):
@@ -38,15 +40,18 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
     relating_type: bpy.props.IntProperty()
     related_object: bpy.props.StringProperty()
 
+    if TYPE_CHECKING:
+        relating_type: int
+        related_object: str
+
     def _execute(self, context):
         relating_type = tool.Ifc.get().by_id(
             self.relating_type or int(context.active_object.BIMTypeProperties.relating_type)
         )
-        related_objects = (
-            [bpy.data.objects.get(self.related_object)]
-            if self.related_object
-            else context.selected_objects or [context.active_object]
-        )
+        if self.related_object:
+            related_objects = [bpy.data.objects[self.related_object]]
+        else:
+            related_objects = tool.Blender.get_selected_objects()
         model_props = tool.Model.get_model_props()
         for obj in related_objects:
             element = tool.Ifc.get_entity(obj)
@@ -63,17 +68,24 @@ class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     related_object: bpy.props.StringProperty()
 
+    if TYPE_CHECKING:
+        related_object: str
+
     def _execute(self, context):
         def exclude_callback(attribute):
             return attribute.is_a("IfcProfileDef") and attribute.ProfileName
 
         self.file = tool.Ifc.get()
-        objs = [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
-        for obj in objs:
+        if self.related_object:
+            related_objects = [bpy.data.objects[self.related_object]]
+        else:
+            related_objects = tool.Blender.get_selected_objects()
+
+        for obj in related_objects:
             element = tool.Ifc.get_entity(obj)
             if not element or not element.is_a("IfcObject"):
                 continue
-            ifcopenshell.api.run("type.unassign_type", self.file, related_objects=[element])
+            ifcopenshell.api.type.unassign_type(self.file, related_objects=[element])
 
             if element.Representation:
                 new_active_representation = None

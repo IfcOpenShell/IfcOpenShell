@@ -982,14 +982,17 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         self.set_boundary_name(parent_boundary)
         return parent_boundary
 
-    def get_face_matrix(self, p1, p2, p3):
+    def get_face_matrix(self, p1: Vector, p2: Vector, p3: Vector) -> Matrix:
         edge1 = p2 - p1
         edge2 = p3 - p1
         normal = edge1.cross(edge2)
+        assert isinstance(normal, Vector)
+
         z_axis = normal.normalized()
         x_axis = p2 - p1
         x_axis.normalize()
         y_axis = z_axis.cross(x_axis)
+        assert isinstance(y_axis, Vector)
 
         mat = Matrix()
         mat.col[0][:3] = x_axis
@@ -1059,7 +1062,7 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
 
         return surface
 
-    def set_boundary_name(self, boundary):
+    def set_boundary_name(self, boundary: ifcopenshell.entity_instance):
         """
         By convention 1stLevel and 2ndLevel boundary have specific name and description
         See https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/IfcRelSpaceBoundary.htm

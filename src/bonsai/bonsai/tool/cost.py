@@ -29,6 +29,7 @@ import bonsai.bim.helper
 import json
 from pathlib import Path
 from typing import Optional, Any, Generator, Union, Literal, TYPE_CHECKING
+from typing_extensions import assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.module.cost.prop import BIMCostProperties, CostItemQuantity
@@ -652,7 +653,10 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def export_cost_schedules(
-        cls, filepath: str, format: str, cost_schedule: Optional[ifcopenshell.entity_instance] = None
+        cls,
+        filepath: str,
+        format: Literal["CSV", "ODS", "XLSX"],
+        cost_schedule: Optional[ifcopenshell.entity_instance] = None,
     ) -> Union[str, None]:
         import subprocess
         import os
@@ -680,6 +684,8 @@ class Cost(bonsai.core.tool.Cost):
 
             writer = Ifc5DXlsxWriter(file=tool.Ifc.get(), output=path, cost_schedule=cost_schedule)
             writer.write()
+        else:
+            assert_never(format)
         try:
             if path:
                 if sys.platform == "win32":
