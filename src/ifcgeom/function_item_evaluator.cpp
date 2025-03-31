@@ -101,9 +101,7 @@ struct gradient_fn_evaluator : public fn_evaluator {
     double end() const override { return fn_->end(); }
 
     Eigen::Matrix4d evaluate(double u) const override {
-        // u is distance from start of vertical.
-        // add vertical->start() to u to get distance from start of horizontal
-        auto xy = horizontal_evaluator_.evaluate(u + start_);
+        auto xy = horizontal_evaluator_.evaluate(u);
         auto uz = vertical_evaluator_.evaluate(u);
 
         // curvature is stored in row 3 - capture it and remove it from the xy and uz matrices
@@ -148,9 +146,7 @@ struct cant_fn_evaluator : public fn_evaluator {
     double end() const override { return fn_->end(); }
 
     Eigen::Matrix4d evaluate(double u) const override {
-        // u is distance from start of cant curve
-        // add cant->start() to u to get the distance from start of gradient curve
-        auto g = gradient_evaluator_.evaluate(u + start_);
+        auto g = gradient_evaluator_.evaluate(u);
         auto c = cant_evaluator_.evaluate(u);
 
         
