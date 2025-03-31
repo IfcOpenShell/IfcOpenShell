@@ -248,6 +248,11 @@ class Geometry(bonsai.core.tool.Geometry):
         collection = tool.Blender.get_object_bim_props(obj).collection
         if collection:
             parent = ifcopenshell.util.element.get_aggregate(element)
+
+            # Fallback to the aggregate as a new default container instead of resetting it.
+            if tool.Root.get_default_container() == element and parent and not parent.is_a("IfcProject"):
+                tool.Spatial.set_default_container(parent)
+
             if not parent:
                 parent = ifcopenshell.util.element.get_container(element)
             if parent:
