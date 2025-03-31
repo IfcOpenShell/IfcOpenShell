@@ -450,7 +450,7 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def load_task_resources(cls, task: ifcopenshell.entity_instance) -> None:
         props = cls.get_work_schedule_props()
-        rprops = cls.get_resource_props()
+        rprops = tool.Resource.get_resource_props()
         props.task_resources.clear()
         rprops.is_resource_update_enabled = False
         for resource in cls.get_task_resources(task) or []:
