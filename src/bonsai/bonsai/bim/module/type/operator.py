@@ -36,6 +36,7 @@ from typing import TYPE_CHECKING
 class AssignType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_type"
     bl_label = "Assign Type"
+    bl_description = "Assign a type to the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     relating_type: bpy.props.IntProperty()
     related_object: bpy.props.StringProperty()
@@ -65,6 +66,7 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
 class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_type"
     bl_label = "Unassign Type"
+    bl_description = "Unassign a type from the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     related_object: bpy.props.StringProperty()
 
