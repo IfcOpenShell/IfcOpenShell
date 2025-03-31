@@ -528,6 +528,7 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator, ExportHe
         "ALT+CLICK to provide a path where to save the IFC file with the removed elements (note changes will be applied to the current IFC too)"
     )
     bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".ifc"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
 

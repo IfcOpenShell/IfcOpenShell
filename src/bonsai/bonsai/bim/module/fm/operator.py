@@ -31,8 +31,18 @@ class ExecuteIfcFM(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.execute_ifcfm"
     bl_label = "Execute IfcFM"
     bl_description = "Export IfcFM data as a spreadsheet."
-    file_format: bpy.props.StringProperty()
+
     filter_glob: bpy.props.StringProperty(default="*.csv;*.ods;*.xlsx", options={"HIDDEN"})
+
+    @property
+    def filename_ext(self) -> str:
+        props = bpy.context.scene.BIMFMProperties
+        return f".{props.format}"
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.BIMFMProperties
+        layout.prop(props, "format")
 
     @classmethod
     def poll(cls, context):
@@ -41,11 +51,6 @@ class ExecuteIfcFM(bpy.types.Operator, ExportHelper):
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
         return True
-
-    def invoke(self, context, event):
-        props = context.scene.BIMFMProperties
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, f".{props.format}")
-        return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):
         props = context.scene.BIMFMProperties
@@ -105,6 +110,16 @@ class ExecuteIfcFMFederate(bpy.types.Operator, ExportHelper):
     bl_description = "Merge added IfcFM spreadsheets."
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xlsx", options={"HIDDEN"})
 
+    @property
+    def filename_ext(self) -> str:
+        props = bpy.context.scene.BIMFMProperties
+        return f".{props.format}"
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.BIMFMProperties
+        layout.prop(props, "format")
+
     @classmethod
     def poll(cls, context):
         props = context.scene.BIMFMProperties
@@ -112,11 +127,6 @@ class ExecuteIfcFMFederate(bpy.types.Operator, ExportHelper):
             cls.poll_message_set("No spreadsheet files selected.")
             return False
         return True
-
-    def invoke(self, context, event):
-        props = context.scene.BIMFMProperties
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, f".{props.format}")
-        return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):
         props = context.scene.BIMFMProperties
