@@ -101,7 +101,8 @@ class Loader:
                 return None
             mesh = bpy.data.meshes.new(str(surface.id()))
             bm = bmesh.new()
-            verts = [bm.verts.new(shape.verts[i : i + 3]) for i in range(0, len(shape.verts), 3)]
+            coords = ifcopenshell.util.shape.get_vertices(shape)
+            verts = [bm.verts.new(coord) for coord in coords]
             bm.faces.new(verts)
             for inner_boundary in surface.InnerBoundaries:
                 try:
@@ -112,7 +113,9 @@ class Loader:
                         f"Skipping an inner boundary for IfcRelSpaceBoundary with ID {boundary.id()}. Geometry might be invalid",
                     )
                     return None
-                verts = [bm.verts.new(shape.verts[i : i + 3]) for i in range(0, len(shape.verts), 3)]
+                coords = ifcopenshell.util.shape.get_vertices(shape)
+                verts = [bm.verts.new(coord) for coord in coords]
+                bm.faces.new(verts)
                 for i in range(len(verts) - 1):
                     bm.edges.new(verts[i : i + 2])
                 bm.edges.new((verts[-1], verts[0]))
