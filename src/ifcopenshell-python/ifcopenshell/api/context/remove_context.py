@@ -59,5 +59,7 @@ def remove_context(file: ifcopenshell.file, context: ifcopenshell.entity_instanc
     else:
         representations_in_context = context.RepresentationsInContext
         file.remove(context)
-        for element in representations_in_context:
-            ifcopenshell.api.geometry.remove_representation(file, representation=element)
+        for rep in representations_in_context:
+            for element in ifcopenshell.util.element.get_elements_by_representation(file, rep):
+                ifcopenshell.api.geometry.unassign_representation(file, product=element, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(file, representation=rep)
