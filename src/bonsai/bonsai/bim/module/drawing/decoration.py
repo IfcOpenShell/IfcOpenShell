@@ -318,6 +318,8 @@ class BaseDecorator:
         color: tuple[float, float, float, float],
         indices: Optional[list[tuple[int, int]]] = None,
     ) -> None:
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.base_shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -1699,6 +1701,8 @@ class CutDecorator:
             self.draw_batch("POINTS", selected_vertices, selected_elements_color)
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)

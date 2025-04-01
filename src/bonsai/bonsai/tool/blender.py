@@ -1668,3 +1668,21 @@ class Blender(bonsai.core.tool.Blender):
             unit_scale = 0.3048
 
         return unit_scale
+
+    @classmethod
+    def validate_shader_batch_data(cls, pos: Any, indices: Optional[Any]) -> bool:
+        """Validate shader batch data.
+
+        If method returns ``False``, then drawing for this batch should be skipped.
+        Should be used always before running ``batch.draw(shader)``
+
+        Important because in Blender 4.4.0 on Mac passing an empty list
+        as ``indices`` is causing a crash.
+
+        See https://projects.blender.org/blender/blender/issues/136831
+        """
+        # Checking `pos` is not critical but we keep it
+        # to ensure batch data is always validated to avoid crashes.
+        if len(pos) == 0 or (indices is not None and len(indices) == 0):
+            return False
+        return True
