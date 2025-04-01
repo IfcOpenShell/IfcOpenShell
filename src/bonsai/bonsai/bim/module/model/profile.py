@@ -170,7 +170,7 @@ class DumbProfileGenerator:
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbProfile"})
 
-        obj.select_set(True)
+        tool.Blender.select_object(obj)
 
         return obj
 

@@ -193,7 +193,7 @@ class DumbSlabGenerator:
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer3"})
         material = ifcopenshell.util.element.get_material(element)
         material.LayerSetDirection = "AXIS3"
-        obj.select_set(True)
+        tool.Blender.select_object(obj)
         return obj
 
 

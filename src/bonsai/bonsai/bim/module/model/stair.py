@@ -169,7 +169,7 @@ class BIM_OT_add_stair(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
         bpy.context.view_layer.objects.active = obj
-        obj.select_set(True)
+        tool.Blender.select_object(obj)
         bpy.ops.bim.add_stair()
         return {"FINISHED"}
 
