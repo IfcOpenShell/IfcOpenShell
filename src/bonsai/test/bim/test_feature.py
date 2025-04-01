@@ -134,7 +134,10 @@ class PanelSpy:
             icon = kwargs.get("icon", None)
             if text:
                 self.spied_labels.append(text)
-            spied_operator = {"operator": operator, "icon": icon, "text": text, "kwargs": {}}
+            after = ""
+            if self.spied_labels:
+                after = self.spied_labels[-1]
+            spied_operator = {"operator": operator, "icon": icon, "text": text, "kwargs": {}, "after": after}
             self.spied_operators.append(spied_operator)
             return OperatorSpy(spied_operator)
         else:
@@ -565,6 +568,22 @@ def i_click_button(button):
     if button == "OK" and panel_spy.panel.bl_rna.base.name == "Operator":
         # Clicked confirm on an operator's draw dialog
         return i_press_operator(panel_spy.panel.bl_idname)
+    debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
+    debug += f"\nHere is the text we see: {panel_spy.spied_labels}"
+    assert False, f"Could not find {button}:\n{debug}"
+
+
+@given(parsers.parse('I click the "{button}" after the text "{text}"'))
+@when(parsers.parse('I click the "{button}" after the text "{text}"'))
+@then(parsers.parse('I click the "{button}" after the text "{text}"'))
+def i_click_the_button_after_the_text_text(button, text):
+    panel_spy.refresh_spy()
+    for spied_operator in panel_spy.spied_operators:
+        if spied_operator["after"] == text:
+            if spied_operator["text"] == button or spied_operator["icon"] == button:
+                spied_operator["operator"]("INVOKE_DEFAULT", **spied_operator["kwargs"])
+                panel_spy.is_spy_dirty = True
+                return
     debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
     debug += f"\nHere is the text we see: {panel_spy.spied_labels}"
     assert False, f"Could not find {button}:\n{debug}"
