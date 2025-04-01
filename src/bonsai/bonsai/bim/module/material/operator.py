@@ -876,6 +876,15 @@ class EditMaterialStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Edit Material Style"
     bl_options = {"REGISTER", "UNDO"}
 
+    @classmethod
+    def poll(cls, context):
+        props = tool.Material.get_material_props()
+        active_style = tool.Blender.get_enum_safe(props, "styles")
+        if not active_style:
+            cls.poll_message_set("No style selected to assign.")
+            return False
+        return True
+
     def _execute(self, context):
         props = tool.Material.get_material_props()
         ifc_file = tool.Ifc.get()

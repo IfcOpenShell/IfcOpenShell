@@ -456,11 +456,14 @@ class Drawing(bonsai.core.tool.Drawing):
             "PLAN_LEVEL",
         ):
             parent = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan")
+            if not parent:
+                parent = ifcopenshell.api.context.add_context(tool.Ifc.get(), context_type="Plan")
         else:
             parent = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model")
+            if not parent:
+                parent = ifcopenshell.api.context.add_context(tool.Ifc.get(), context_type="Model")
 
-        return ifcopenshell.api.run(
-            "context.add_context",
+        return ifcopenshell.api.context.add_context(
             tool.Ifc.get(),
             context_type=parent.ContextType,
             context_identifier="Annotation",

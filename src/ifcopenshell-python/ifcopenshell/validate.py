@@ -86,7 +86,7 @@ class json_logger:
         self.statements = []
         self.state = {}
 
-    def set_state(self, key, value):
+    def set_state(self, key: str, value: Any):
         self.state[key] = value
 
     def log(self, level, message, *args):
@@ -111,6 +111,20 @@ simple_type_python_mapping = {
 def annotate_inst_attr_pos(
     inst: Union[ifcopenshell.entity_instance, W.HeaderEntity], pos: int, entity_str: str = ""
 ) -> str:
+    """Add a caret annotation to the entity string at the given attribute index.
+
+    :param inst: Instance to annotate.
+    :param pos: Attribute index to annotate.
+    :param entity_str: Entity string to annotate. If not provided, ``str(inst)`` is used.
+
+    Example:
+
+    .. code:: python
+        annotate_inst_attr_pos(inst, 2)
+        # #7=IfcApplication(#6,'0.8.1-alpha241113-xxxxxxx','Bonsai','Bonsai')
+        #                                                  ^^^^^^^^
+    """
+
     def get_pos() -> Iterator[int]:
         depth = 0
         idx = -1
@@ -408,6 +422,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
         log_internal_cpp_errors(f, filename, logger)
 
     validate_ifc_header(f, logger)
+    validate_ifc_applications(f, logger)
 
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema_identifier)
     used_guids: dict[str, ifcopenshell.entity_instance] = dict()
@@ -628,6 +643,49 @@ def validate_ifc_header(f: ifcopenshell.file, logger: Logger) -> None:
     validate_attribute(file_name, "preprocessor_version", 4)
     validate_attribute(file_name, "originating_system", 5)
     validate_attribute(file_name, "authorization", 6)
+
+
+def validate_ifc_applications(f: ifcopenshell.file, logger: Logger) -> None:
+    used_names: dict[str, ifcopenshell.entity_instance] = dict()
+    used_ids: dict[str, ifcopenshell.entity_instance] = dict()
+
+    for inst in f.by_type("IfcApplication"):
+        app_name: str = inst.ApplicationFullName
+        app_id: str = inst.ApplicationIdentifier
+
+        if app_name is not None:
+            if app_name not in used_names:
+                used_names[app_name] = inst
+            else:
+                if hasattr(logger, "set_state"):
+                    logger.set_state("instance", inst)
+                rule = "Rule IfcApplication.UR1:\n    The attribute ApplicationFullName should be unique"
+                previous_element = used_names[app_name]
+                logger.error(
+                    "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
+                    inst,
+                    annotate_inst_attr_pos(inst, 2),
+                    rule,
+                    previous_element,
+                    annotate_inst_attr_pos(previous_element, 2),
+                )
+
+        if app_id is not None:
+            if app_id not in used_ids:
+                used_ids[app_id] = inst
+            else:
+                if hasattr(logger, "set_state"):
+                    logger.set_state("instance", inst)
+                rule = "Rule IfcApplication.UR2:\n    The attribute ApplicationIdentifier should be unique"
+                previous_element = used_ids[app_id]
+                logger.error(
+                    "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
+                    inst,
+                    annotate_inst_attr_pos(inst, 3),
+                    rule,
+                    previous_element,
+                    annotate_inst_attr_pos(previous_element, 3),
+                )
 
 
 class LogDetectionHandler(Handler):

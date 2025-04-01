@@ -24,7 +24,7 @@ import bonsai.tool as tool
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 import bonsai.tool as tool
 import bonsai.core.cost as core
-from typing import get_args, TYPE_CHECKING
+from typing import get_args, TYPE_CHECKING, Literal
 
 
 class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -694,6 +694,13 @@ class ExportCostSchedules(bpy.types.Operator, ExportHelper):
         name="Filter Folders",
         default=True,
     )
+
+    if TYPE_CHECKING:
+        format: Literal["CSV", "XLSX", "ODS"]
+
+    @property
+    def filename_ext(self) -> str:
+        return f".{self.format.lower()}"
 
     def execute(self, context):
         cost_schedule = tool.Ifc.get().by_id(self.cost_schedule) if self.cost_schedule else None

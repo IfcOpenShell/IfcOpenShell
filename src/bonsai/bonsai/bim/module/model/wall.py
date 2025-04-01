@@ -882,7 +882,7 @@ class DumbWallGenerator:
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer2"})
         material = ifcopenshell.util.element.get_material(element)
         material.LayerSetDirection = "AXIS2"
-        obj.select_set(True)
+        tool.Blender.select_object(obj)
         return obj
 
     def get_relating_type_class(self, relating_type):

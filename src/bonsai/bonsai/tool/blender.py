@@ -605,6 +605,10 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def set_object_selection(cls, obj: bpy.types.Object, state: bool = True):
+        """Run ``Object.select_set`` but ignore errors if the object is hidden.
+
+        Therefore, doesn't guarantee that the object is actually selected.
+        """
         try:
             obj.select_set(state)
         except RuntimeError:  # Trying to select a hidden object throws an error
@@ -612,10 +616,14 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def select_object(cls, obj: bpy.types.Object):
+        """Shortcut for ``set_object_selection(obj, True)``."""
         cls.set_object_selection(obj, True)
 
     @classmethod
     def deselect_object(cls, obj: bpy.types.Object, ensure_active_object: bool = True):
+        """Deselect object (using ``set_object_selection``) and optionally ensure that active
+        object is not the deselected object (last selected object used to replace it as active).
+        """
         cls.set_object_selection(obj, False)
         if ensure_active_object and bpy.context.view_layer.objects.active == obj:
             if bpy.context.selected_objects:

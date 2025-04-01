@@ -181,6 +181,7 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
     bl_label = "Export IFC"
     bl_description = "Export IFC data as a spreadsheet."
     filename_ext = ".csv"
+    filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     @classmethod
@@ -202,6 +203,8 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
         props = tool.Blender.get_csv_props()
         if props.format == "web":
             return self.execute(context)
+        self.filter_glob = f"*.{props.format}"
+        self.filename_ext = f".{props.format}"
         return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):

@@ -95,6 +95,7 @@ def get_stair_length(obj: bpy.types.Object) -> float:
     stair_length = math.sqrt(pow(length, 2) + pow(height, 2))
     return stair_length
 
+
 def get_footing_length(o: bpy.types.Object) -> float:
     element = tool.Ifc.get_entity(o)
     assert element
@@ -107,6 +108,7 @@ def get_footing_length(o: bpy.types.Object) -> float:
         return max(get_x(o), get_y(o))
     else:
         return get_length(o)
+
 
 def get_net_stair_area(obj: bpy.types.Object) -> float:
     OBB_obj = get_OBB_object(obj)
@@ -185,6 +187,7 @@ def get_width(o: bpy.types.Object) -> float:
     x = get_x(o)
     y = get_y(o)
     return min(x, y)
+
 
 def get_footing_height(o: bpy.types.Object) -> float:
     element = tool.Ifc.get_entity(o)

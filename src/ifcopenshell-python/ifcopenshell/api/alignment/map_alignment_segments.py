@@ -56,7 +56,14 @@ def map_alignment_segments(
     for rel_nests in alignment.IsNestedBy:
         for layout in rel_nests.RelatedObjects:
             if layout.is_a("IfcLinearElement"):
-                mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, layout)
+                if alignment.is_a("IfcAlignmentHorizontal"):
+                    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, layout)
+                elif alignment.is_a("IfcAlignmentVertical"):
+                    mapped_segments = ifcopenshell.api.alignment.map_alignment_vertical_segment(file, layout)
+                elif alignment.is_a("IfcAlignmentCant"):
+                    mapped_segments = ifcopenshell.api.alignment.map_alignment_cant_segment(
+                        file, layout, alignment.RailHeadDistance
+                    )
                 for mapped_segment in mapped_segments:
                     if mapped_segment:
                         ifcopenshell.api.alignment.add_segment_to_curve(file, mapped_segment, composite_curve)

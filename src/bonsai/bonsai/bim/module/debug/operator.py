@@ -23,6 +23,7 @@ import time
 import random
 import logging
 import subprocess
+import platform
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.geom
@@ -528,6 +529,7 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator, ExportHe
         "ALT+CLICK to provide a path where to save the IFC file with the removed elements (note changes will be applied to the current IFC too)"
     )
     bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".ifc"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
 
@@ -959,7 +961,12 @@ class RestartBlender(bpy.types.Operator):
         ms_store_app_id = tool.Blender.get_microsoft_store_app_id()
         if not ms_store_app_id:
             path = bpy.app.binary_path
-            os.execv(path, sys.argv)
+            if platform.system() == "Windows":
+                args = sys.argv[1:] 
+                command_line = subprocess.list2cmdline([path] + args)
+                os.execv(path, [command_line])
+            else:
+                os.execv(path, sys.argv)
         else:
             # Microsoft apps do not allow launching blender.exe directly
             # since Blender folder is kind of private.

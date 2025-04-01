@@ -134,3 +134,34 @@ Scenario: Remove drawing - deleting active drawing
     When the object "IfcAnnotation/PLAN_VIEW" is selected
     And I delete the selected objects
     Then the collection "IfcAnnotation/PLAN_VIEW" does not exist
+
+Scenario: Add annotation - text
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save sample test files
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "OUTLINER_OB_CAMERA"
+    When I press "bim.add_annotation"
+    Then the object "IfcAnnotation/TEXT" is selected
+
+Scenario: Add annotation - auto create context if it doesn't exist
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I save sample test files
+    And I look at the "Geometric Representation Contexts" panel
+    And I see "Plan"
+    And I click the "X" after the text "Plan"
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "OUTLINER_OB_CAMERA"
+    When I press "bim.add_annotation"
+    Then the object "IfcAnnotation/TEXT" is selected

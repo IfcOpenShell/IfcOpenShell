@@ -162,7 +162,7 @@ class Snap(bonsai.core.tool.Snap):
         snap_threshold = 1 * cls.get_increment_snap_value(bpy.context)
 
         if tool.Ifc.get():
-            default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+            default_container_elevation = tool.Root.get_default_container_elevation()
         else:
             default_container_elevation = 0.0
         polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
@@ -396,7 +396,7 @@ class Snap(bonsai.core.tool.Snap):
 
         # Axis and Plane
         if tool.Ifc.get():
-            elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+            elevation = tool.Root.get_default_container_elevation()
         else:
             elevation = 0.0
 

@@ -60,7 +60,6 @@ from .get_curve import get_curve
 from .get_parent_alignment import get_parent_alignment
 from .has_zero_length_segment import has_zero_length_segment
 from .map_alignment_segments import map_alignment_segments
-from .map_alignment_segment import map_alignment_segment
 from .map_alignment_horizontal_segment import map_alignment_horizontal_segment
 from .map_alignment_vertical_segment import map_alignment_vertical_segment
 from .map_alignment_cant_segment import map_alignment_cant_segment
@@ -91,7 +90,6 @@ __all__ = [
     "get_parent_alignment",
     "has_zero_length_segment",
     "map_alignment_segments",
-    "map_alignment_segment",
     "map_alignment_horizontal_segment",
     "map_alignment_vertical_segment",
     "map_alignment_cant_segment",

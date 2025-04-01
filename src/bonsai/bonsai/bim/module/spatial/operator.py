@@ -270,6 +270,18 @@ class DeleteContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty()
 
+    @classmethod
+    def poll(cls, context):
+        props = tool.Spatial.get_spatial_props()
+        active_container = props.active_container
+        if not active_container:
+            cls.poll_message_set("No active container.")
+            return False
+        if active_container.ifc_class == "IfcProject":
+            cls.poll_message_set("Cannot delete IfcProject.")
+            return False
+        return True
+
     def _execute(self, context):
         core.delete_container(tool.Ifc, tool.Spatial, tool.Geometry, container=tool.Ifc.get().by_id(self.container))
 
@@ -331,6 +343,18 @@ class SetDefaultContainer(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Set this as the default container that all new elements will be contained in"
     container: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.Spatial.get_spatial_props()
+        active_container = props.active_container
+        if not active_container:
+            cls.poll_message_set("No active container.")
+            return False
+        if active_container.ifc_class == "IfcProject":
+            cls.poll_message_set("Cannot set default IfcProject as default container.")
+            return False
+        return True
 
     def execute(self, context):
         core.set_default_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))

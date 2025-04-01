@@ -1092,7 +1092,10 @@ class IfcImporter:
                 verts=verts,
                 load_indexed_maps=self.ifc_import_settings.load_indexed_maps,
             )
-            return tool.Loader.slice_layerset_mesh(element, mesh)
+            # E.g. `create_mesh` is also used for IfcRelSpaceBoundary.
+            if element.is_a("IfcObjectDefinition"):
+                return tool.Loader.slice_layerset_mesh(element, mesh)
+            return mesh
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
             import traceback

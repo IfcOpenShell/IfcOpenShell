@@ -529,7 +529,7 @@ def get_generic_product_preview_data(context, relating_type):
     else:
         rl = 0
     snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
-    default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+    default_container_elevation = tool.Root.get_default_container_elevation()
     mouse_point = Vector((snap_prop.x, snap_prop.y, default_container_elevation))
     snap_obj = bpy.data.objects.get(snap_prop.snap_object)
     snap_element = tool.Ifc.get_entity(snap_obj)

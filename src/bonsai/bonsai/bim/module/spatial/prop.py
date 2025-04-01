@@ -268,14 +268,12 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
         should_include_children: bool
 
     @property
-    def active_container(self):
-        if self.containers and self.active_container_index < len(self.containers):
-            return self.containers[self.active_container_index]
+    def active_container(self) -> Union[BIMContainer, None]:
+        return tool.Blender.get_active_uilist_element(self.containers, self.active_container_index)
 
     @property
-    def active_element(self):
-        if self.elements and self.active_element_index < len(self.elements):
-            return self.elements[self.active_element_index]
+    def active_element(self) -> Union[Element, None]:
+        return tool.Blender.get_active_uilist_element(self.elements, self.active_element_index)
 
 
 class BIMGridProperties(PropertyGroup):

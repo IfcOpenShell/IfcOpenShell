@@ -37,7 +37,7 @@ def _BlossCurve_100_0_300_1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -68,7 +68,7 @@ def _BlossCurve_100_0__300__1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -99,7 +99,7 @@ def _BlossCurve_100_0_300_inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -130,7 +130,7 @@ def _BlossCurve_100_0__300__inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -161,7 +161,7 @@ def _BlossCurve_100_0_1000_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -192,7 +192,7 @@ def _BlossCurve_100_0__1000__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -223,7 +223,7 @@ def _BlossCurve_100_0_inf_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -254,7 +254,7 @@ def _BlossCurve_100_0__inf__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -285,7 +285,7 @@ def _CircularArc_100_0_300_1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -313,7 +313,7 @@ def _CircularArc_100_0__300__1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -341,7 +341,7 @@ def _CircularArc_100_0_300_inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -369,7 +369,7 @@ def _CircularArc_100_0__300__inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -397,7 +397,7 @@ def _CircularArc_100_0_1000_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -425,7 +425,7 @@ def _CircularArc_100_0__1000__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -453,7 +453,7 @@ def _CircularArc_100_0_inf_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -481,7 +481,7 @@ def _CircularArc_100_0__inf__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -509,7 +509,7 @@ def _Clothoid_100_0_300_1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -537,7 +537,7 @@ def _Clothoid_100_0__300__1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -565,7 +565,7 @@ def _Clothoid_100_0_300_inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -593,7 +593,7 @@ def _Clothoid_100_0__300__inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -621,7 +621,7 @@ def _Clothoid_100_0_1000_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -649,7 +649,7 @@ def _Clothoid_100_0__1000__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -677,7 +677,7 @@ def _Clothoid_100_0_inf_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -705,7 +705,7 @@ def _Clothoid_100_0__inf__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -733,7 +733,7 @@ def _CosineCurve_100_0_300_1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -762,7 +762,7 @@ def _CosineCurve_100_0__300__1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -791,7 +791,7 @@ def _CosineCurve_100_0_300_inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -820,7 +820,7 @@ def _CosineCurve_100_0__300__inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -849,7 +849,7 @@ def _CosineCurve_100_0_1000_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -878,7 +878,7 @@ def _CosineCurve_100_0__1000__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -907,7 +907,7 @@ def _CosineCurve_100_0_inf_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -936,7 +936,7 @@ def _CosineCurve_100_0__inf__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -965,7 +965,7 @@ def _Cubic_100_0_300_1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -994,7 +994,7 @@ def _Cubic_100_0__300__1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1023,7 +1023,7 @@ def _Cubic_100_0_300_inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1052,7 +1052,7 @@ def _Cubic_100_0__300__inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1081,7 +1081,7 @@ def _Cubic_100_0_1000_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1110,7 +1110,7 @@ def _Cubic_100_0__1000__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1139,7 +1139,7 @@ def _Cubic_100_0_inf_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1168,7 +1168,7 @@ def _Cubic_100_0__inf__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1197,7 +1197,7 @@ def _HelmertCurve_100_0_300_1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1245,7 +1245,7 @@ def _HelmertCurve_100_0__300__1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1293,7 +1293,7 @@ def _HelmertCurve_100_0_300_inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1341,7 +1341,7 @@ def _HelmertCurve_100_0__300__inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1389,7 +1389,7 @@ def _HelmertCurve_100_0_1000_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1437,7 +1437,7 @@ def _HelmertCurve_100_0__1000__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1485,7 +1485,7 @@ def _HelmertCurve_100_0_inf_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1533,7 +1533,7 @@ def _HelmertCurve_100_0__inf__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1581,7 +1581,7 @@ def _Line_100_0_300_1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1609,7 +1609,7 @@ def _Line_100_0__300__1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1637,7 +1637,7 @@ def _Line_100_0_300_inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1665,7 +1665,7 @@ def _Line_100_0__300__inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1693,7 +1693,7 @@ def _Line_100_0_1000_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1721,7 +1721,7 @@ def _Line_100_0__1000__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1749,7 +1749,7 @@ def _Line_100_0_inf_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1777,7 +1777,7 @@ def _Line_100_0__inf__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1805,7 +1805,7 @@ def _SineCurve_100_0_300_1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1835,7 +1835,7 @@ def _SineCurve_100_0__300__1000_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1865,7 +1865,7 @@ def _SineCurve_100_0_300_inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1895,7 +1895,7 @@ def _SineCurve_100_0__300__inf_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1925,7 +1925,7 @@ def _SineCurve_100_0_1000_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1955,7 +1955,7 @@ def _SineCurve_100_0__1000__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -1985,7 +1985,7 @@ def _SineCurve_100_0_inf_300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition
@@ -2015,7 +2015,7 @@ def _SineCurve_100_0__inf__300_1_Meter(file):
         GlobalId=ifcopenshell.guid.new(), DesignParameters=design_parameters
     )
 
-    mapped_segments = ifcopenshell.api.alignment.map_alignment_segment(file, alignment_segment)
+    mapped_segments = ifcopenshell.api.alignment.map_alignment_horizontal_segment(file, alignment_segment)
     mapped_segment = mapped_segments[0]
     assert len(mapped_segments) == 2
     assert "DISCONTINUOUS" == mapped_segment.Transition

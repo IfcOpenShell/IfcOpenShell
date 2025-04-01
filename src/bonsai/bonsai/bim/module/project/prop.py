@@ -368,7 +368,13 @@ class BIMProjectProperties(PropertyGroup):
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
     export_schema: EnumProperty(items=get_export_schema, name="IFC Schema", update=update_export_schema)
-    template_file: EnumProperty(items=get_template_file, name="Template File")
+    template_file: EnumProperty(
+        items=get_template_file,
+        name="Template File",
+        description=(
+            "Template to use for a new project. All types from the template will be appended to a new project)."
+        ),
+    )
 
     # Project library UI.
     library_file: EnumProperty(items=get_library_file, name="Library File", update=update_library_file)

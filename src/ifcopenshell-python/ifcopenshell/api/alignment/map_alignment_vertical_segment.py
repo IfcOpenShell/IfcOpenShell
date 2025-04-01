@@ -60,10 +60,7 @@ def _map_constant_gradient(file: ifcopenshell.file, design_parameters: entity_in
 
     parent_curve = file.create_entity(
         type="IfcLine",
-        Pnt=file.create_entity(
-            type="IfcCartesianPoint",
-            Coordinates=(0.0, 0.0),
-        ),
+        Pnt=file.createIfcCartesianPoint((0.0, 0.0)),
         Dir=file.create_entity(
             type="IfcVector",
             Orientation=file.create_entity(
@@ -78,12 +75,10 @@ def _map_constant_gradient(file: ifcopenshell.file, design_parameters: entity_in
     dy = math.sin(math.atan(start_gradient))
     curve_segment_length = horizontal_length / dx
 
-    curve_segment = file.create_entity(
-        type="IfcCurveSegment",
+    curve_segment = file.createIfcCurveSegment(
         Transition=transition,
-        Placement=file.create_entity(
-            type="IfcAxis2Placement2D",
-            Location=file.create_entity(type="IfcCartesianPoint", Coordinates=(start_distance_along, start_height)),
+        Placement=file.createIfcAxis2Placement2D(
+            Location=file.createIfcCartesianPoint((start_distance_along, start_height)),
             RefDirection=file.createIfcDirection((dx, dy)),
         ),
         SegmentStart=file.createIfcLengthMeasure(0.0),
@@ -110,7 +105,7 @@ def _map_parabolic_arc(file: ifcopenshell.file, design_parameters: entity_instan
         type="IfcPolynomialCurve",
         Position=file.create_entity(
             type="IfcAxis2Placement2D",
-            Location=file.create_entity(type="IfcCartesianPoint", Coordinates=(0.0, 0.0)),
+            Location=file.createIfcCartesianPoint((0.0, 0.0)),
             RefDirection=file.createIfcDirection(
                 (1.0, 0.0),
             ),
@@ -128,7 +123,7 @@ def _map_parabolic_arc(file: ifcopenshell.file, design_parameters: entity_instan
         Transition=transition,
         Placement=file.create_entity(
             type="IfcAxis2Placement2D",
-            Location=file.create_entity(type="IfcCartesianPoint", Coordinates=(start_distance_along, start_height)),
+            Location=file.createIfcCartesianPoint((start_distance_along, start_height)),
             RefDirection=file.createIfcDirection((dx, dy)),
         ),
         SegmentStart=file.createIfcLengthMeasure(0.0),
@@ -194,32 +189,30 @@ def _map_clothoid(file: ifcopenshell.file, design_parameters: entity_instance) -
     raise NotImplementedError("mapping for IfcVerticalSegment.CLOTHOID not implemented")
 
 
-def map_alignment_vertical_segment(
-    file: ifcopenshell.file, design_parameters: entity_instance
-) -> Sequence[entity_instance]:
+def map_alignment_vertical_segment(file: ifcopenshell.file, segment: entity_instance) -> Sequence[entity_instance]:
     """
     Creates IfcCurveSegment entities for the represention of the supplied IfcAlignmentVerticalSegment business logic entity instance.
     A pair of entities is returned for consistency with map_alignment_horizontal_segment and map_alignment_cant_segment.
 
     """
-    expected_type = "IfcAlignmentVerticalSegment"
-    if not design_parameters.is_a(expected_type):
-        raise TypeError(f"Expected to see type '{expected_type}', instead received '{design_parameters.is_a()}'.")
+    expected_type = "IfcAlignmentSegment"
+    if not segment.is_a(expected_type):
+        raise TypeError(f"Expected to see type '{expected_type}', instead received '{segment.is_a()}'.")
 
-    match design_parameters.PredefinedType:
+    match segment.DesignParameters.PredefinedType:
         case "CONSTANTGRADIENT":
-            result = _map_constant_gradient(file, design_parameters)
+            result = _map_constant_gradient(file, segment.DesignParameters)
 
         case "PARABOLICARC":
-            result = _map_parabolic_arc(file, design_parameters)
+            result = _map_parabolic_arc(file, segment.DesignParameters)
 
         case "CIRCULARARC":
-            result = _map_circular_arc(file, design_parameters)
+            result = _map_circular_arc(file, segment.DesignParameters)
 
         case "CLOTHOID":
-            result = _map_clothoid(file, design_parameters)
+            result = _map_clothoid(file, segment.DesignParameters)
 
         case _:
-            raise TypeError("Unexpected predefined type")
+            raise TypeError(f"Unexpected predefined type - got {segment.DesignParameters.PredefinedType}")
 
     return result

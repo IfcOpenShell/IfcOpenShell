@@ -43,15 +43,11 @@ def create_entity(
     operation type but many people forget.
 
     :param ifc_class: Any rooted IFC class.
-    :type ifc_class: str,optional
     :param predefined_type: Any built-in or user-defined predefined type that
         is applicable to that IFC class. For user-defined predefined types
         just enter in any value and the API will handle it automatically.
-    :type predefined_type: str,optional
     :param name: The name of the new element.
-    :type name: str,optional
     :return: The newly created element based on the specified IFC class.
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
