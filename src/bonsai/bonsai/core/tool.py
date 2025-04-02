@@ -558,7 +558,7 @@ class Misc:
     def run_root_copy_class(cls, obj=None): pass
     def scale_object_to_height(cls, obj, height): pass
     def set_object_origin_to_bottom(cls, obj): pass
-    def split_objects_with_cutter(cls, objs, cutter): pass
+    def boolean_objects_with_cutter(cls, objs, cutter): pass
 
 
 @interface
