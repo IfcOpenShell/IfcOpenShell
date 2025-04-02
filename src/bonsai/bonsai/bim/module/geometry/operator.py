@@ -2509,11 +2509,12 @@ class RemoveRepresentationItem(bpy.types.Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
-        obj = tool.Geometry.get_active_or_representation_obj()
+        assert (obj := tool.Geometry.get_active_or_representation_obj())
+        assert (element := tool.Ifc.get_entity(obj))
         ifc_file = tool.Ifc.get()
 
         representation_item = ifc_file.by_id(self.representation_item_id)
-        tool.Geometry.remove_representation_item(representation_item)
+        tool.Geometry.remove_representation_item(representation_item, element)
         tool.Geometry.reload_representation(obj)
 
         # reload items ui

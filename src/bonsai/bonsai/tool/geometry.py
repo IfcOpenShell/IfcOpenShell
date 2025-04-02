@@ -202,6 +202,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def delete_ifc_item(cls, obj: bpy.types.Object) -> None:
+        """Delete IfcRepresentationItem's Object."""
         props = tool.Geometry.get_geometry_props()
         if len(props.item_objs) == 1:
             return
@@ -212,7 +213,9 @@ class Geometry(bonsai.core.tool.Geometry):
         mesh = obj.data
         assert isinstance(mesh, bpy.types.Mesh)
         item = tool.Ifc.get().by_id(tool.Geometry.get_mesh_props(mesh).ifc_definition_id)
-        cls.remove_representation_item(item)
+        rep_obj = props.representation_obj
+        assert (rep_obj := props.representation_obj) and (rep_element := tool.Ifc.get_entity(rep_obj))
+        cls.remove_representation_item(item, rep_element)
         cls.reload_representation(props.representation_obj)
         bpy.data.objects.remove(obj)
 
@@ -1344,12 +1347,19 @@ class Geometry(bonsai.core.tool.Geometry):
         )
 
     @classmethod
-    def remove_representation_item(cls, representation_item: ifcopenshell.entity_instance) -> None:
+    def remove_representation_item(
+        cls, representation_item: ifcopenshell.entity_instance, element: ifcopenshell.entity_instance
+    ) -> None:
+        """Remove IfcRepresentationItem.
+
+        :param representation_item: item to remove.
+        :param element: item's element. Is used to unmark manual booleans.
+        """
         # NOTE: we assume it's not the last representation item
         # otherwise we probably would need to remove representation too
         # NOTE: a lot of shared code with `geometry.remove_representation`
         ifc_file = tool.Ifc.get()
-        shape_aspects = []
+        shape_aspects: list[ifcopenshell.entity_instance] = []
 
         consider_inverses = []
         styled_item, colour, texture, layer = None, None, None, None
@@ -1366,7 +1376,7 @@ class Geometry(bonsai.core.tool.Geometry):
         [consider_inverses.append(texture := t) for t in getattr(representation_item, "HasTextures", [])]
 
         representation = None
-        boolean_results_to_remove = set()
+        boolean_results_to_remove: set[ifcopenshell.entity_instance] = set()
         for inverse in ifc_file.get_inverse(representation_item):
             if inverse.is_a("IfcShapeRepresentation"):
                 if inverse.OfShapeAspect:
@@ -1409,11 +1419,9 @@ class Geometry(bonsai.core.tool.Geometry):
         also_consider = list(consider_inverses)
         ifcopenshell.util.element.remove_deep2(ifc_file, representation_item, also_consider=also_consider)
 
-        props = tool.Geometry.get_geometry_props()
-        rep_element = tool.Ifc.get_entity(props.representation_obj)
-        tool.Model.unmark_manual_booleans(rep_element, [b.id() for b in boolean_results_to_remove])
+        tool.Model.unmark_manual_booleans(element, [b.id() for b in boolean_results_to_remove])
         for boolean_result in boolean_results_to_remove:
-            cls.remove_representation_item(boolean_result)
+            cls.remove_representation_item(boolean_result, element)
 
     @classmethod
     def create_shape_aspect(
