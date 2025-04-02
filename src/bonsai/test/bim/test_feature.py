@@ -162,7 +162,7 @@ class TemplateListSpy:
 
 
 ui_name_cache = {}
-panel_spy: PanelSpy = None
+panel_spy: Union[PanelSpy, None] = None
 
 
 def create_ui_name_cache():
@@ -287,6 +287,7 @@ def i_trigger_operator(operator):
 @when(parsers.parse('I see "{text}"'))
 @then(parsers.parse('I see "{text}"'))
 def i_see_text(text):
+    assert panel_spy
     panel_spy.refresh_spy()
     assert [l for l in panel_spy.spied_labels if text in l], f"Text {text} not found in {panel_spy.spied_labels}"
 
@@ -295,6 +296,7 @@ def i_see_text(text):
 @when(parsers.parse('I don\'t see "{text}"'))
 @then(parsers.parse('I don\'t see "{text}"'))
 def i_dont_see_text(text):
+    assert panel_spy
     panel_spy.refresh_spy()
     assert not [l for l in panel_spy.spied_labels if text in l], f"Text {text} found in {panel_spy.spied_labels}"
 
@@ -303,6 +305,7 @@ def i_dont_see_text(text):
 @when(parsers.parse('I don\'t see the "{name}" list'))
 @then(parsers.parse('I don\'t see the "{name}" list'))
 def i_dont_see_the_name_list(name):
+    assert panel_spy
     panel_spy.refresh_spy()
     assert name not in [l["listtype_name"] for l in panel_spy.spied_lists]
 
@@ -311,6 +314,7 @@ def i_dont_see_the_name_list(name):
 @when(parsers.parse('I see the "{prop}" property'))
 @then(parsers.parse('I see the "{prop}" property'))
 def i_see_the_prop_property(prop):
+    assert panel_spy
     panel_spy.refresh_spy()
     assert [
         p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
@@ -321,6 +325,7 @@ def i_see_the_prop_property(prop):
 @when(parsers.parse('I don\'t see the "{prop}" property'))
 @then(parsers.parse('I don\'t see the "{prop}" property'))
 def i_dont_see_the_prop_property(prop):
+    assert panel_spy
     panel_spy.refresh_spy()
     assert not [
         p for p in panel_spy.spied_props if prop in (p["name"], p["text"], p["icon"])
@@ -331,6 +336,7 @@ def i_dont_see_the_prop_property(prop):
 @when(parsers.parse('I see the "{prop}" property is "{value}"'))
 @then(parsers.parse('I see the "{prop}" property is "{value}"'))
 def i_see_the_prop_property_is_value(prop, value):
+    assert panel_spy
     panel_spy.refresh_spy()
     for spied_prop in panel_spy.spied_props:
         if prop in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
@@ -344,8 +350,9 @@ def i_see_the_prop_property_is_value(prop, value):
 @given(parsers.parse('I set the "{prop}" property to "{value}"'))
 @when(parsers.parse('I set the "{prop}" property to "{value}"'))
 @then(parsers.parse('I set the "{prop}" property to "{value}"'))
-def i_set_the_prop_property_to_value(prop, value):
+def i_set_the_prop_property_to_value(prop: str, value: str):
     value = value.strip()
+    assert panel_spy
     panel_spy.refresh_spy()
     is_nth = False
     if prop[0].isnumeric() and (prop.endswith("st") or prop.endswith("nd") or prop.endswith("th")):
@@ -382,6 +389,7 @@ def i_set_the_prop_property_to_value(prop, value):
 @then(parsers.parse('The "{name}" list has {total} items'))
 def the_name_list_has_total_items(name, total):
     total = int(total)
+    assert panel_spy
     panel_spy.refresh_spy()
     for spied_list in panel_spy.spied_lists:
         if name == spied_list["listtype_name"]:
@@ -394,6 +402,7 @@ def the_name_list_has_total_items(name, total):
 @given(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 @when(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
+    assert panel_spy
     panel_spy.refresh_spy()
     for spied_list in panel_spy.spied_lists:
         if list_name == spied_list["listtype_name"]:
@@ -553,6 +562,7 @@ def i_press_operator(operator):
 @when(parsers.parse('I click "{button}"'))
 @then(parsers.parse('I click "{button}"'))
 def i_click_button(button):
+    assert panel_spy
     panel_spy.refresh_spy()
     for spied_operator in panel_spy.spied_operators:
         if spied_operator["text"] == button or spied_operator["icon"] == button:
@@ -577,6 +587,7 @@ def i_click_button(button):
 @when(parsers.parse('I click the "{button}" after the text "{text}"'))
 @then(parsers.parse('I click the "{button}" after the text "{text}"'))
 def i_click_the_button_after_the_text_text(button, text):
+    assert panel_spy
     panel_spy.refresh_spy()
     for spied_operator in panel_spy.spied_operators:
         if spied_operator["after"] == text:

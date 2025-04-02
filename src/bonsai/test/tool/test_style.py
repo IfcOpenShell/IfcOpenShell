@@ -126,6 +126,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.diffuse_color = [1, 1, 1, 1]
         obj.use_nodes = True
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert node
         node.inputs["Alpha"].default_value = 0.8
         node.inputs["Base Color"].default_value = [0.5, 0.5, 0.5, 0.5]
         node.inputs["Roughness"].default_value = 0.2
@@ -154,6 +155,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlossy")
@@ -185,6 +187,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node and output
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfDiffuse")
@@ -216,6 +219,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node and output
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlass")
@@ -247,6 +251,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node and output
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeEmission")
@@ -277,6 +282,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node and output
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeVolumePrincipled")

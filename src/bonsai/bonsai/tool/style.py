@@ -28,7 +28,7 @@ import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
 from mathutils import Color
-from typing import Union, Any, Optional, Literal, TYPE_CHECKING
+from typing import Union, Any, Optional, Literal, TYPE_CHECKING, Sequence
 
 if TYPE_CHECKING:
     from bonsai.bim.module.style.prop import BIMStylesProperties, BIMStyleProperties
@@ -291,7 +291,7 @@ class Style(bonsai.core.tool.Style):
     def get_surface_rendering_attributes(cls, obj: bpy.types.Material, verbose: bool = False) -> dict[str, Any]:
         report = (lambda *x: print(*x)) if verbose else (lambda *x: None)
 
-        def color_to_ifc_format(color):
+        def color_to_ifc_format(color: Sequence[float]) -> dict[str, Any]:
             return {
                 "Name": None,
                 "Red": color[0],
@@ -324,6 +324,7 @@ class Style(bonsai.core.tool.Style):
         report(f"{GREEN}Viewport color{R} saved as {GREEN}SurfaceColour{R}")
 
         # TODO: make sure bsdf is connected to the output?
+        assert obj.node_tree
         bsdfs = {n.type: n for n in obj.node_tree.nodes if n.outputs and n.outputs[0].is_linked}
         if "BSDF_PRINCIPLED" not in bsdfs:
             report(f"{GREEN}Viewport color alpha{R} saved as {GREEN}Transparency{R}")
