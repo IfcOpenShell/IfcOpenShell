@@ -225,7 +225,7 @@ class BIM_PT_representation_items(Panel):
             RepresentationItemsData.load()
 
         props = tool.Geometry.get_geometry_props()
-        obj = props.representation_obj or tool.Blender.get_active_object()
+        obj = tool.Geometry.get_active_or_representation_obj()
         assert obj
         props = tool.Geometry.get_object_geometry_props(obj)
 
