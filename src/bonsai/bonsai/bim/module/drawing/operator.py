@@ -824,6 +824,8 @@ class CreateDrawing(bpy.types.Operator):
 
         props = tool.Project.get_project_props()
         for link in props.links:
+            if not link.is_loaded:
+                continue
             if link.name not in IfcStore.session_files:
                 IfcStore.session_files[link.name] = ifcopenshell.open(link.name)
             files[link.name] = IfcStore.session_files[link.name]
