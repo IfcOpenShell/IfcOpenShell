@@ -1775,8 +1775,8 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                     obj.select_set(False)
                     self.report(
                         {"ERROR"},
-                        f"IFC join failed - object '{obj}' has a different representation type "
-                        f"({obj_rep.RepresentationType}) than target '{self.target}' ({representation_type}).",
+                        f"IFC join failed - object '{obj.name}' has a different representation type "
+                        f"({obj_rep.RepresentationType})\nthan target '{self.target.name}' ({representation_type}).",
                     )
                     return
 
