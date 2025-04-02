@@ -456,7 +456,7 @@ class Brick(bonsai.core.tool.Brick):
 
     @classmethod
     def add_namespace(cls, alias: str, uri: str) -> None:
-        assert BrickStore.graph
+        assert BrickStore.graph is not None
         BrickStore.graph.bind(alias, Namespace(uri))
         BrickStore.load_namespaces()
 
