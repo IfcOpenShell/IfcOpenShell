@@ -41,6 +41,9 @@ class SvIfcReadFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvI
         )
 
     def process(self):
+        if not any(socket.is_linked for socket in self.outputs):
+            return
+
         self.sv_input_names = ["path"]
         super().process()
 

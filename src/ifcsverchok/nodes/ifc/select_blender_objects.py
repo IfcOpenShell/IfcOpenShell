@@ -65,6 +65,9 @@ class SvIfcSelectBlenderObjects(bpy.types.Node, SverchCustomTreeNode, ifcsvercho
         )
 
     def process(self) -> None:
+        if not any(socket.is_linked for socket in self.outputs):
+            return
+
         self.sv_input_names = ["entities"]
         self.guids: list[str] = []
         super().process()

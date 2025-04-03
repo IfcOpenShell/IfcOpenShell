@@ -55,6 +55,9 @@ class SvIfcRemove(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfc
         )
 
     def process(self):
+        if not any(socket.is_linked for socket in self.outputs):
+            return
+
         file: ifcopenshell.file
         file = self.inputs["file"].sv_get()[0][0]
         self.new_file = ifcopenshell.file.from_string(file.wrapped_data.to_string())

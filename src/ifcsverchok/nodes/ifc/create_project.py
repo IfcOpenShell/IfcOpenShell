@@ -46,6 +46,9 @@ class SvIfcCreateProject(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
         )
 
     def process(self):
+        if not any(socket.is_linked for socket in self.outputs):
+            return
+
         # file
         file = self.inputs["file"].sv_get()[0][0]
         if file:
