@@ -303,6 +303,7 @@ class BrowseExternalStyle(bpy.types.Operator, ImportHelper):
 
     def get_data_blocks(self, context):
         l = [("", "", "")]
+        BrowseExternalStyle.data_block_items = l
         if self.data_block_type != "0" and os.path.exists(self.filepath) and self.filepath.endswith(".blend"):
             with bpy.data.libraries.load(self.filepath) as (data_from, data_to):
                 objects = getattr(data_from, self.data_block_type)
