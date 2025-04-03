@@ -516,6 +516,7 @@ class CreateObjectUI:
     @classmethod
     def draw_type_manager_launcher(cls, context):
         ui_context = context.region.type
+        props = tool.Model.get_model_props()
         row = cls.layout.row(align=True)
         box = cls.layout.box()
         row1 = box.row(align=True)
