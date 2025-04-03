@@ -74,6 +74,10 @@ class Aggregate:
     def get_container(cls, element): pass
     def get_relating_object(cls, related_element): pass
 
+@interface
+class Alignment:
+    def build_alignment(cls): pass
+    def add_survey_point(cls,x,y): pass
 
 @interface
 class Bcf:
