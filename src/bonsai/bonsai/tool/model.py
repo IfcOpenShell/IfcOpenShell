@@ -687,8 +687,12 @@ class Model(bonsai.core.tool.Model):
 
     @classmethod
     def unmark_manual_booleans(cls, element: ifcopenshell.entity_instance, boolean_ids: list[int]) -> None:
-        # NOTE: we use use boolean_ids instead of boolean entities
-        # so it will be possible to unmark manual booleans after they already was deleted
+        """Remove boolean ids from ``element``'s 'BBIM_Boolean' pset.
+
+        :param boolean_ids: List of boolean ids to remove.
+            Ids are used instead of entities to make it possible to unmark already removed booleans.
+            Provided ids may not be marked as manual booleans previously.
+        """
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Boolean")
         if not pset:
             return

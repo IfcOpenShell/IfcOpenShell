@@ -20,6 +20,7 @@ import bpy
 import math
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api.geometry
 import ifcopenshell.api.type
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -606,13 +607,13 @@ class TestRemoveRepresentationItem(NewFile):
 
         items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
         representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
-        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
 
         product_shape = element.Representation
         shape_aspect = subject.create_shape_aspect(product_shape, representation, items[:1], None)
         shape_aspect_id = shape_aspect.id()
 
-        subject.remove_representation_item(items[0])
+        subject.remove_representation_item(items[0], element)
         assert tool.Ifc.get_entity_by_id(shape_aspect_id) is None
         assert set(representation.Items) == {items[1]}
 

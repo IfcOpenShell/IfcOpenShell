@@ -1304,6 +1304,9 @@ class LoadLink(bpy.types.Operator):
 
     def execute(self, context):
         filepath = Path(tool.Ifc.resolve_uri(self.filepath))
+        if not filepath.exists():
+            self.report({"ERROR"}, f"File does not exist: '{filepath}'")
+            return {"CANCELLED"}
         self.filepath_ = filepath
         if filepath.suffix.lower().endswith(".blend"):
             self.link_blend(filepath)

@@ -283,7 +283,14 @@ class BIMGeometryProperties(PropertyGroup):
     is_changing_mode: BoolProperty(name="Is Changing Mode", default=False)
     mode: EnumProperty(items=get_mode, name="IFC Interaction Mode", update=update_mode)
     representation_obj: PointerProperty(
-        name="Representation Object", type=bpy.types.Object, update=update_representation_obj
+        name="Representation Object",
+        description=(
+            "Only used for Item Mode. When element is in Item Mode, new objects are imported "
+            "for each element's representation item, original element's object is hidden and "
+            "representation_obj pointing to it. None if no object in Item Mode."
+        ),
+        type=bpy.types.Object,
+        update=update_representation_obj,
     )
     item_objs: CollectionProperty(name="Item Objects", type=RepresentationItemObject)
 

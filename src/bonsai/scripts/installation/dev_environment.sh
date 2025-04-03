@@ -10,6 +10,10 @@ PACKAGE_PATH="${BLENDER_PATH}/extensions/.local/lib/python3.11/site-packages"
 # BONSAI_PATH="${BLENDER_PATH}/extensions/user_default/bonsai"
 BONSAI_PATH="${BLENDER_PATH}/extensions/raw_githubusercontent_com/bonsai"
 
+# Validate inputs.
+[ -z "$REPO_PATH" ] && echo "Error: REPO_PATH is not set." && exit 1
+[ -z "$BLENDER_PATH" ] && echo "Error: BLENDER_PATH is not set." && exit 1
+
 # Changing to the Git repository directory
 cd "${REPO_PATH}"
 

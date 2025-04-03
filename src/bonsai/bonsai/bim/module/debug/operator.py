@@ -962,7 +962,7 @@ class RestartBlender(bpy.types.Operator):
         if not ms_store_app_id:
             path = bpy.app.binary_path
             if platform.system() == "Windows":
-                args = sys.argv[1:] 
+                args = sys.argv[1:]
                 command_line = subprocess.list2cmdline([path] + args)
                 os.execv(path, [command_line])
             else:

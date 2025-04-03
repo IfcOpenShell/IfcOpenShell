@@ -131,6 +131,9 @@ class AggregateDecorator:
         return shader
 
     def draw_custom_batch(self, coords, color):
+        indices = None
+        if not tool.Blender.validate_shader_batch_data(coords, indices):
+            return
         shader = self.dotted_line_shader()
 
         arc_lengths = [0]
@@ -141,6 +144,7 @@ class AggregateDecorator:
             shader,
             "LINE_STRIP",
             {"position": coords, "arcLength": arc_lengths},
+            indices=indices,
         )
 
         matrix = bpy.context.region_data.perspective_matrix
@@ -150,6 +154,8 @@ class AggregateDecorator:
         batch.draw(shader)
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -243,6 +249,8 @@ class AggregateModeDecorator:
         cls.is_installed = False
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
