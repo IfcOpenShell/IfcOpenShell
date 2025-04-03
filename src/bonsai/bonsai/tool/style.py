@@ -387,10 +387,10 @@ class Style(bonsai.core.tool.Style):
             report(f"BSDF {GREEN}Color{R} saved as {GREEN}DiffuseColour{R}")
             diffuse_color = bsdf.inputs["Color"].default_value
 
-        elif "BSDF_DIFFUSE" in bsdfs:
+        elif "BSDF_DIFFUSE" in bsdfs or "DIFFUSE_BSDF" in bsdfs:
             report(f"Because of {BLUE}BSDF_DIFFUSE{R} node reflectance method identified as {BLUE}MATT{R}")
             attributes["ReflectanceMethod"] = "MATT"
-            bsdf = bsdfs["BSDF_DIFFUSE"]
+            bsdf = bsdfs["BSDF_DIFFUSE"] if "BSDF_DIFFUSE" in bsdfs else bsdfs["DIFFUSE_BSDF"]
 
             report(f"BSDF {GREEN}Roughness{R} saved as {GREEN}IfcSpecularRoughness{R}")
             attributes["SpecularHighlight"] = {"IfcSpecularRoughness": round(bsdf.inputs["Roughness"].default_value, 3)}
