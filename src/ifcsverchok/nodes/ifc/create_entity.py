@@ -93,7 +93,7 @@ class SvIfcCreateEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper
         row.prop(self, "refresh_local", icon="FILE_REFRESH")
 
     def process(self):
-         if not any(socket.is_linked for socket in self.outputs):
+        if not any(socket.is_linked for socket in self.outputs):
             return
 
         self.names = flatten_data(self.inputs["Names"].sv_get(), target_level=1)
