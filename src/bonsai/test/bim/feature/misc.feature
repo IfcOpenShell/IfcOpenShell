@@ -39,9 +39,10 @@ Scenario: Split along edge - boolean mode
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I add a plane of size "4" at "0,0,0"
     And the object "IfcWall/Cube" is selected
     And additionally the object "Plane" is selected
@@ -54,9 +55,10 @@ Scenario: Split along edge - bisect mode
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I add a plane of size "4" at "0,0,0"
     And the object "IfcWall/Cube" is selected
     And additionally the object "Plane" is selected

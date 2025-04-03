@@ -901,9 +901,10 @@ Scenario: Export IFC - with changed object scale ignored
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     When the object "IfcWall/Cube" is scaled to "2"
     And I press "bim.save_project(filepath='{cwd}/test/files/temp/export.ifc')"

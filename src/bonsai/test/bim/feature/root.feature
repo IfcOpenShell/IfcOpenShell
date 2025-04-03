@@ -84,9 +84,10 @@ Scenario: Unlink object
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I press "bim.load_styles(style_type='IfcSurfaceStyle')"
     And I press "bim.enable_adding_presentation_style"
     And I set "scene.BIMStylesProperties.style_name" to "Style"

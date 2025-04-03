@@ -273,9 +273,10 @@ Scenario: Calculate Resource Work
     And I press "bim.edit_task_time"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I set "active_object.PsetProperties.qto_name" to "Qto_WallBaseQuantities"
     When I press "bim.add_qto(obj='IfcWall/Cube', obj_type='Object')"
@@ -307,9 +308,10 @@ Scenario: Assign Resource
     And the variable "labor_resource" is "IfcStore.get_file().by_type('IfcLaborResource')[0].id()"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.assign_resource(resource={labor_resource})"
     Then nothing happens
@@ -323,9 +325,10 @@ Scenario: Unassign Resource
     And the variable "labor_resource" is "IfcStore.get_file().by_type('IfcLaborResource')[0].id()"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.assign_resource(resource={labor_resource})"
     And the object "IfcWall/Cube" is selected
