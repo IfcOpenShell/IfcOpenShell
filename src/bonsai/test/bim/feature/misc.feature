@@ -21,14 +21,18 @@ Scenario: Resize to storey
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
-    And the variable "storey" is "tool.Ifc.get().by_type('IfcBuildingStorey')[0].id()"
-    And I press "bim.set_default_container(container={storey})"
-    And I press "bim.assign_container(container={storey})"
-    When I press "bim.resize_to_storey(total_storeys=1)"
+    And I look at the "Spatial Decomposition" panel
+    And I select the "My Storey" item in the "BIM_UL_containers_manager" list
+    And I click "Set Default"
+    # Assign Container.
+    And I click "FOLDER_REDIRECT"
+    And I look at the "Miscellaneous" panel
+    When I click "Resize To Storey"
     Then nothing happens
 
 Scenario: Split along edge - boolean mode

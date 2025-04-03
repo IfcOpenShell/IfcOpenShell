@@ -562,6 +562,9 @@ def i_press_operator(operator):
 @when(parsers.parse('I click "{button}"'))
 @then(parsers.parse('I click "{button}"'))
 def i_click_button(button):
+    """
+    :param button: The text or icon of the button to click.
+    """
     assert panel_spy
     panel_spy.refresh_spy()
     for spied_operator in panel_spy.spied_operators:

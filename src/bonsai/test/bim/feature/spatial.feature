@@ -21,14 +21,17 @@ Scenario: Assign container
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
-    And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
-    And I press "bim.set_default_container(container={site})"
-    And I press "bim.enable_editing_container"
-    When I press "bim.assign_container()"
+    And I look at the "Spatial Decomposition" panel
+    And I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And I click "Set Default"
+    And I look at the "Spatial Container" panel
+    And I click "GREASEPENCIL"
+    When I click "CHECKMARK"
     Then the object "IfcWall/Cube" is in the collection "IfcSite/My Site"
 
 Scenario: Copy to container
@@ -75,30 +78,38 @@ Scenario: Select container
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
-    And I press "bim.enable_editing_container"
-    And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
-    And I press "bim.set_default_container(container={site})"
-    And I press "bim.assign_container()"
-    When I press "bim.select_container"
+    And I look at the "Spatial Decomposition" panel
+    And I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And I click "Set Default"
+    # Assign container.
+    And I look at the "Spatial Container" panel
+    And I click "GREASEPENCIL"
+    And I click "CHECKMARK"
+    When I click "OBJECT_DATA"
     Then nothing happens
 
 Scenario: Select similar container
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
-    And I press "bim.enable_editing_container"
-    And the variable "site" is "tool.Ifc.get().by_type('IfcSite')[0].id()"
-    And I press "bim.set_default_container(container={site})"
-    And I press "bim.assign_container()"
-    When I press "bim.select_similar_container"
+    And I look at the "Spatial Decomposition" panel
+    And I select the "My Site" item in the "BIM_UL_containers_manager" list
+    And I click "Set Default"
+    # Assign container.
+    And I look at the "Spatial Container" panel
+    And I click "GREASEPENCIL"
+    And I click "CHECKMARK"
+    When I click "RESTRICT_SELECT_OFF"
     Then nothing happens
 
 Scenario: Execute generate space from cursor position
