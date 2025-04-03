@@ -74,5 +74,6 @@ echo Manually downloading some third party dependencies...
 curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -o "%PACKAGE_PATH%\bonsai\bim\data\gantt\jsgantt.js"
 curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -o "%PACKAGE_PATH%\bonsai\bim\data\gantt\jsgantt.css"
 curl -L https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o "%PACKAGE_PATH%\bonsai\bim\data\brick\Brick.ttl"
+curl https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js -o "%PACKAGE_PATH%\bonsai\bim\data\webui\static\js\jquery.min.js"
 
 pause

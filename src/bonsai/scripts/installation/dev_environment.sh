@@ -57,3 +57,5 @@ wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/d
 wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
 cd "${PACKAGE_PATH}/bonsai/bim/data/brick"
 wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
+cd "${PACKAGE_PATH}/bonsai/bim/data/webui/static/js"
+wget https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
