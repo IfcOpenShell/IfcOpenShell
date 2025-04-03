@@ -351,6 +351,10 @@ def i_see_the_prop_property_is_value(prop, value):
 @when(parsers.parse('I set the "{prop}" property to "{value}"'))
 @then(parsers.parse('I set the "{prop}" property to "{value}"'))
 def i_set_the_prop_property_to_value(prop: str, value: str):
+    """
+    :param prop: Could be either property name, property text, property icon
+        or property index (e.g. "1st", "2nd", "5th").
+    """
     value = value.strip()
     assert panel_spy
     panel_spy.refresh_spy()
