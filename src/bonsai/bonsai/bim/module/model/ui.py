@@ -65,7 +65,8 @@ class BIM_MT_type_menu(bpy.types.Menu):
         layout.separator()
         op = layout.operator("bim.remove_type", icon="X")
         op.element = props.menu_relating_type_id
-
+        element = tool.Ifc.get().by_id(props.menu_relating_type_id)
+        tool.Model.update_thumbnail_for_element(element, refresh=True)
 
 class LaunchTypeMenu(bpy.types.Operator):
     bl_idname = "bim.launch_type_menu"
