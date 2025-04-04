@@ -75,18 +75,24 @@ class Raycast(bonsai.core.tool.Raycast):
                 transposed_bbox.append(coord_2d)
 
         region = context.region
-        borders = (region.width, region.height)
+        borders = (0, region.width, 0, region.height)
         for i, axis in enumerate(zip(*transposed_bbox)):
             min_point = min(axis)
             max_point = max(axis)
-            if min_point == max_point:
-                min_point = 0
-            if min_point < borders[i] and max_point > 0:
-                bbox_2d.extend([min_point, max_point])
-            else:
-                return (obj, None)
+            bbox_2d.extend([min_point, max_point])
 
-        return (obj, bbox_2d)
+        if len(bbox_2d) == 0:
+            return None
+        # AABB
+        if (
+            bbox_2d[0] <= borders[1]
+            and bbox_2d[1] >= borders[0]
+            and bbox_2d[2] <= borders[3]
+            and bbox_2d[3] >= borders[2]
+        ):
+            return (obj, bbox_2d)
+        return None
+
 
     @classmethod
     def intersect_mouse_2d_bounding_box(cls, mouse_pos: tuple[int, int], bbox: list[float, float, float, float]):
