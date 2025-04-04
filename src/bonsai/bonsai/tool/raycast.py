@@ -52,7 +52,14 @@ class Raycast(bonsai.core.tool.Raycast):
             else:  # Usual object
                 obj = dup.object
                 all_objs.append(obj)
-        return all_objs
+
+        visible_objs = []
+        for obj in all_objs:
+            if obj.type in {"MESH", "EMPTY", "CURVE"} and (
+                obj.visible_in_viewport_get(bpy.context.space_data) or obj.library
+            ):  # Check for local view and local collections for this viewport and object
+                visible_objs.append(obj)
+        return visible_objs
 
     @classmethod
     def get_on_screen_2d_bounding_boxes(cls, context: bpy.types.Context, obj: bpy.types.Object):
@@ -386,12 +393,9 @@ class Raycast(bonsai.core.tool.Raycast):
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         objs_to_raycast = []
         for obj, bbox_2d in objs_2d_bbox:
-            if obj.type in {"MESH", "EMPTY", "CURVE"} and bbox_2d:
+            if bbox_2d:
                 if tool.Raycast.intersect_mouse_2d_bounding_box(mouse_pos, bbox_2d):
-                    if (
-                        obj.visible_in_viewport_get(bpy.context.space_data) or obj.library
-                    ):  # Check for local view and local collections for this viewport and object
-                        objs_to_raycast.append(obj)
+                    objs_to_raycast.append(obj)
         return objs_to_raycast
 
     @classmethod
