@@ -32,14 +32,16 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Apply Opening"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = (
-        "Apply an Opening object on an Element. "
-        "The Element and the Opening to be applied should be selected. The order of selection is not important"
+        "Apply opening objects to an Element.\n\n"
+        "The Element and the openings to be applied should be selected. The order of selection is not important.\n"
+        "Opening can be just a Blender mesh object."
     )
 
     @classmethod
     def poll(cls, context):
         if len(context.selected_objects) < 2:
             cls.poll_message_set("Select openings and a target element")
+            return False
         return True
 
     def _execute(self, context):

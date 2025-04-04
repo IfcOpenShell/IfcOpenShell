@@ -360,6 +360,7 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
     is_specific_tool: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
     ifc_product: bpy.props.StringProperty(options={"SKIP_SAVE"})
     ifc_class: bpy.props.StringProperty(options={"SKIP_SAVE"})
+    skip_dialog: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
     def invoke(self, context, event):
         return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
@@ -380,6 +381,8 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             props.ifc_product = self.ifc_product
         if self.ifc_class:
             props.ifc_class = self.ifc_class
+        if self.skip_dialog:
+            return self.execute(context)
         return context.window_manager.invoke_props_dialog(self)
 
     def _execute(self, context):

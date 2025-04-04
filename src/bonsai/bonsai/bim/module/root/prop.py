@@ -190,6 +190,7 @@ class BIMRootProperties(PropertyGroup):
 
     if TYPE_CHECKING:
         contexts: str
+        name: str
         description: str
         ifc_product: str
         ifc_class: str

@@ -960,6 +960,13 @@ class EditObjectUI:
             op_text = "Add Void" if ui_context != "TOOL_HEADER" else ""
             op_icon = custom_icon_previews["ADD_VOID"].icon_id
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            op = row.operator("bim.add_element", text=op_text, icon_value=op_icon)
+            op.ifc_product = "IfcFeatureElement"
+            op.ifc_class = "IfcOpeningElement"
+            op.skip_dialog = True
+            if ui_context != "TOOL_HEADER":
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_O")
 
         if AuthoringData.data["is_voidable_element"]:
             if AuthoringData.data["has_visible_openings"]:
@@ -1342,8 +1349,12 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.add_boundary()
 
     def hotkey_S_O(self):
-        if len(bpy.context.selected_objects) == 2:
+        if len(bpy.context.selected_objects) > 1:
             bpy.ops.bim.add_opening()
+        else:
+            bpy.ops.bim.add_element(
+                "INVOKE_DEFAULT", ifc_product="IfcFeatureElement", ifc_class="IfcOpeningElement", skip_dialog=True
+            )
 
     def hotkey_S_L(self):
         if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
