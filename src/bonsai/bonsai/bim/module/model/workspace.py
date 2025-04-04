@@ -982,12 +982,19 @@ class EditObjectUI:
         row = cls.layout.row(align=True)
         row.separator()
         row.label(text="Align") if ui_context != "TOOL_HEADER" else row
+
+        description: str
+        if AuthoringData.data["active_material_usage"] == "LAYER2":
+            description = bpy.ops.bim.align_wall.__doc__
+        else:
+            description = bpy.ops.bim.align_product.__doc__
+
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(row, "Exterior", "S_X", "", ui_context)
+        add_layout_hotkey_operator(row, "Exterior", "S_X", description, ui_context)
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(row, "Centreline", "S_C", "", ui_context)
+        add_layout_hotkey_operator(row, "Centreline", "S_C", description, ui_context)
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(row, "Interior", "S_V", "", ui_context)
+        add_layout_hotkey_operator(row, "Interior", "S_V", description, ui_context)
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
         add_layout_hotkey_operator(row, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__, ui_context)
 
