@@ -54,7 +54,10 @@ class UnjoinWalls(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
         core.unjoin_walls(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
@@ -139,11 +142,17 @@ class AlignWall(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        selected_valid_objects = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
-        return context.active_object and len(selected_valid_objects) > 1
+        if not context.active_object:
+            cls.poll_message_set("No active object selected.")
+            return False
+        selected_valid_objects = tool.Model.get_selected_mesh_objects()
+        if len(selected_valid_objects) < 2:
+            cls.poll_message_set("Please select at least two mesh objects.")
+            return False
+        return True
 
     def execute(self, context):
-        selected_objects = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
+        selected_objects = tool.Model.get_selected_mesh_objects()
         for obj in selected_objects:
             if obj == context.active_object:
                 continue
@@ -167,10 +176,13 @@ class FlipWall(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
-        selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
+        selected_objs = tool.Model.get_selected_mesh_objects()
         joiner = DumbWallJoiner()
         for obj in selected_objs:
             joiner.flip(obj)
@@ -187,10 +199,13 @@ class SplitWall(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
-        selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
+        selected_objs = tool.Model.get_selected_mesh_objects()
         for obj in selected_objs:
             DumbWallJoiner().split(obj, context.scene.cursor.location)
         return {"FINISHED"}
@@ -204,12 +219,23 @@ class MergeWall(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not context.active_object:
+            cls.poll_message_set("No active object selected.")
+            return False
+        elif not tool.Model.has_selected_ifc_objects():
+            cls.poll_message_set("No mesh IFC objects selected.")
+            return False
+        mesh_objects = [o for o in tool.Model.get_selected_ifc_objects() if o.type == "MESH"]
+        if len(mesh_objects) != 2:
+            cls.poll_message_set("Please select exactly two mesh IFC objects.")
+            return False
+        return True
 
     def _execute(self, context):
-        selected_objs = [o for o in context.selected_objects if o.data and hasattr(o.data, "transform")]
-        if len(selected_objs) == 2:
-            DumbWallJoiner().merge([o for o in selected_objs if o != context.active_object][0], context.active_object)
+        active_obj = context.active_object
+        assert active_obj
+        selected_objs = tool.Model.get_selected_mesh_objects()
+        DumbWallJoiner().merge(next(o for o in selected_objs if o != active_obj), active_obj)
         return {"FINISHED"}
 
 
@@ -220,50 +246,59 @@ class RecalculateWall(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_mesh_ifc_objects():
+            cls.poll_message_set("No mesh IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
-        DumbWallRecalculator().recalculate(context.selected_objects)
+        objects = tool.Model.get_selected_mesh_ifc_objects()
+        DumbWallRecalculator().recalculate(objects)
         return {"FINISHED"}
 
 
 class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_extrusion_depth"
     bl_label = "Update"
-    bl_description = "Update Height"
+    bl_description = "Update height for the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     depth: bpy.props.FloatProperty()
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_mesh_ifc_objects():
+            cls.poll_message_set("No mesh IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
-        layer2_objs = []
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        for obj in context.selected_objects:
+        layer2_objs: list[bpy.types.Object] = []
+        ifc_file = tool.Ifc.get()
+        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        selected_objs = tool.Model.get_selected_mesh_ifc_objects()
+
+        for obj in selected_objs:
             element = tool.Ifc.get_entity(obj)
-            if not element:
-                return
+            assert element
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
-                return
+                continue
             extrusion = tool.Model.get_extrusion(representation)
             if not extrusion:
-                return
+                continue
             x, y, z = extrusion.ExtrudedDirection.DirectionRatios
             x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
             extrusion.Depth = self.depth / si_conversion * (1 / cos(x_angle))
             if tool.Model.get_usage_type(element) == "LAYER2":
                 for rel in element.ConnectedFrom:
                     if rel.is_a() == "IfcRelConnectsElements":
-                        ifcopenshell.api.run(
-                            "geometry.disconnect_element",
-                            tool.Ifc.get(),
+                        ifcopenshell.api.geometry.disconnect_element(
+                            ifc_file,
                             relating_element=rel.RelatingElement,
                             related_element=element,
                         )
                 layer2_objs.append(obj)
+
         if layer2_objs:
             DumbWallRecalculator().recalculate(layer2_objs)
         return {"FINISHED"}
@@ -272,30 +307,33 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
 class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_extrusion_x_angle"
     bl_label = "Update"
-    bl_description = "Update Angle"
+    bl_description = "Update angle for the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     x_angle: bpy.props.FloatProperty(name="X Angle", default=0, subtype="ANGLE")
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_mesh_ifc_objects():
+            cls.poll_message_set("No mesh IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
-        layer2_objs = []
-        other_objs = []
+        layer2_objs: list[bpy.types.Object] = []
         x_angle = 0 if tool.Cad.is_x(self.x_angle, 0, tolerance=0.001) else self.x_angle
         x_angle = 0 if tool.Cad.is_x(self.x_angle, pi, tolerance=0.001) else self.x_angle
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        for obj in context.selected_objects:
+        selected_objs = tool.Model.get_selected_mesh_ifc_objects()
+
+        for obj in selected_objs:
             element = tool.Ifc.get_entity(obj)
-            if not element:
-                return
+            assert element
             representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
             if not representation:
-                return
+                continue
             extrusion = tool.Model.get_extrusion(representation)
             if not extrusion:
-                return
+                continue
             existing_x_angle = tool.Model.get_existing_x_angle(extrusion)
             existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, 0, tolerance=0.001) else existing_x_angle
             existing_x_angle = 0 if tool.Cad.is_x(existing_x_angle, pi, tolerance=0.001) else existing_x_angle
@@ -382,17 +420,21 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
 class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_layer_length"
     bl_label = "Update"
-    bl_description = "Update Length"
+    bl_description = "Update length for the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     length: bpy.props.FloatProperty()
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not tool.Model.has_selected_mesh_ifc_objects():
+            cls.poll_message_set("No mesh IFC objects selected.")
+            return False
+        return True
 
     def _execute(self, context):
         joiner = DumbWallJoiner()
-        for obj in context.selected_objects:
+        selected_objs = tool.Model.get_selected_mesh_ifc_objects()
+        for obj in selected_objs:
             joiner.set_length(obj, self.length)
         return {"FINISHED"}
 
@@ -1080,7 +1122,7 @@ class DumbWallJoiner:
         )
         self.recreate_wall(element1, wall1)
 
-    def merge(self, wall1, wall2):
+    def merge(self, wall1: bpy.types.Object, wall2: bpy.types.Object) -> None:
         if tool.Ifc.is_moved(wall1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
         if tool.Ifc.is_moved(wall2):
@@ -1088,6 +1130,7 @@ class DumbWallJoiner:
 
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
+        assert element1 and element2
 
         p1, p2 = ifcopenshell.util.representation.get_reference_line(element1)
         p3, p4 = ifcopenshell.util.representation.get_reference_line(element2)
@@ -1196,8 +1239,7 @@ class DumbWallJoiner:
 
     def set_length(self, wall1: bpy.types.Object, si_length: float) -> None:
         element1 = tool.Ifc.get_entity(wall1)
-        if not element1:
-            return
+        assert element1
         if tool.Ifc.is_moved(wall1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
 

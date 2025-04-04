@@ -1138,6 +1138,27 @@ class Model(bonsai.core.tool.Model):
 
         AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
 
+    @classmethod
+    def get_selected_ifc_objects(cls) -> list[bpy.types.Object]:
+        return [obj for obj in tool.Blender.get_selected_objects() if tool.Ifc.get_entity(obj)]
+
+    @classmethod
+    def has_selected_ifc_objects(cls) -> bool:
+        return any(tool.Ifc.get_entity(obj) for obj in tool.Blender.get_selected_objects())
+
+    @classmethod
+    def get_selected_mesh_objects(cls) -> list[bpy.types.Object]:
+        objects = tool.Blender.get_selected_objects()
+        return [obj for obj in objects if obj.type == "MESH"]
+
+    @classmethod
+    def get_selected_mesh_ifc_objects(cls) -> list[bpy.types.Object]:
+        return [obj for obj in tool.Model.get_selected_mesh_objects() if tool.Ifc.get_entity(obj)]
+
+    @classmethod
+    def has_selected_mesh_ifc_objects(cls) -> bool:
+        return any(tool.Ifc.get_entity(obj) for obj in tool.Model.get_selected_mesh_objects())
+
     BBIM_PARAMETRIC_PSETS = (
         "BBIM_Window",
         "BBIM_Door",

@@ -31,6 +31,7 @@ if TYPE_CHECKING:
 def unjoin_walls(
     ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner: DumbWallJoiner, model: tool.Model
 ) -> None:
+    """Unjoin selected walls."""
     for obj in blender.get_selected_objects():
         if not (element := ifc.get_entity(obj)) or model.get_usage_type(element) != "LAYER2":
             continue
@@ -48,6 +49,7 @@ def extend_walls(
     model: tool.Model,
     target: Vector,
 ) -> None:
+    """Extend selected walls to the target."""
     for obj in blender.get_selected_objects():
         if not (element := ifc.get_entity(obj)) or model.get_usage_type(element) != "LAYER2":
             continue
