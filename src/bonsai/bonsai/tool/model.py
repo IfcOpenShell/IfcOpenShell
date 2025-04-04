@@ -34,6 +34,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.unit
 import bonsai.core.geometry
 import bonsai.core.tool
@@ -2104,7 +2105,7 @@ class Model(bonsai.core.tool.Model):
         op.material_id = material_id_int
 
     @classmethod
-    def get_slab_clipping_bmesh(cls, obj: bpy.types.Object) -> bpy.types.BMesh | None:
+    def get_slab_clipping_bmesh(cls, obj: bpy.types.Object) -> bmesh.types.BMesh | None:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         bm = bmesh.new()
@@ -2136,7 +2137,7 @@ class Model(bonsai.core.tool.Model):
         return clipping_bm  # clipping_bm is in project units
 
     @classmethod
-    def clip_wall_to_slab(cls, wall: ifcopenshell.entity_instance, clipping_bm: bpy.types.BMesh) -> None:
+    def clip_wall_to_slab(cls, wall: ifcopenshell.entity_instance, clipping_bm: bmesh.types.BMesh) -> None:
         matrix_i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(wall.ObjectPlacement))
         bm = clipping_bm.copy()
         bmesh.ops.transform(bm, matrix=Matrix(matrix_i.tolist()), verts=bm.verts)

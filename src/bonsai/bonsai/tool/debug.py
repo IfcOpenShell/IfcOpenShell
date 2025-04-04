@@ -64,7 +64,7 @@ class Debug(bonsai.core.tool.Debug):
                 pass
 
     @classmethod
-    def debug_bmesh(cls, bm: bpy.types.BMesh, name: str = "Debug") -> bpy.types.Object:
+    def debug_bmesh(cls, bm: bmesh.types.BMesh, name: str = "Debug") -> bpy.types.Object:
         mesh = bpy.data.meshes.new("Debug")
         bm.to_mesh(mesh)
         obj = bpy.data.objects.new(name, mesh)

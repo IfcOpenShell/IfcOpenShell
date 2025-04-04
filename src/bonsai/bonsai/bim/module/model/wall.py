@@ -24,10 +24,12 @@ import math
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
 import mathutils.geometry
 import bonsai.core.type
@@ -66,7 +68,7 @@ class ExtendWallsToUnderside(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         slab = None
-        walls = []
+        walls: list[bpy.types.Object] = []
         if (obj := tool.Blender.get_active_object(is_selected=True)) and (element := tool.Ifc.get_entity(obj)):
             slab = obj
         for obj in tool.Blender.get_selected_objects(include_active=False):
@@ -1192,14 +1194,14 @@ class DumbWallJoiner:
             self.set_axis(element1, intersect, p2)
         self.recreate_wall(element1, wall1)
 
-    def set_length(self, wall1, si_length):
+    def set_length(self, wall1: bpy.types.Object, si_length: float) -> None:
         element1 = tool.Ifc.get_entity(wall1)
         if not element1:
             return
         if tool.Ifc.is_moved(wall1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
 
-        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
+        ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type="ATEND")
 
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         p1, p2 = ifcopenshell.util.representation.get_reference_line(element1)
@@ -1207,7 +1209,7 @@ class DumbWallJoiner:
         self.set_axis(element1, p1, p2)
         self.recreate_wall(element1, wall1)
 
-    def join_T(self, wall1, wall2):
+    def join_T(self, wall1: bpy.types.Object, wall2: bpy.types.Object) -> None:
         element1 = tool.Ifc.get_entity(wall1)
         element2 = tool.Ifc.get_entity(wall2)
         axis1 = tool.Model.get_wall_axis(wall1)
@@ -1219,8 +1221,7 @@ class DumbWallJoiner:
             return
         connection = "ATEND" if tool.Cad.edge_percent(intersect, axis1["reference"]) > 0.5 else "ATSTART"
 
-        ifcopenshell.api.run(
-            "geometry.connect_path",
+        ifcopenshell.api.geometry.connect_path(
             tool.Ifc.get(),
             related_element=element1,
             relating_element=element2,
@@ -1231,7 +1232,7 @@ class DumbWallJoiner:
 
         self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
 
-    def connect(self, obj1, obj2):
+    def connect(self, obj1: bpy.types.Object, obj2: bpy.types.Object) -> None:
         wall1 = tool.Ifc.get_entity(obj1)
         wall2 = tool.Ifc.get_entity(obj2)
         if tool.Ifc.is_moved(obj1):

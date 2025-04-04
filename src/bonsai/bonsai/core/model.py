@@ -16,11 +16,21 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-import bonsai.core.tool as tool
-from typing import Literal, Iterable
+from __future__ import annotations
+from typing import TYPE_CHECKING, Optional, Literal, Iterable
+
+if TYPE_CHECKING:
+    import bpy
+    import ifcopenshell
+    import bonsai.tool as tool
+
+    from mathutils import Vector
+    from bonsai.bim.module.model.wall import DumbWallJoiner
 
 
-def unjoin_walls(ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner, model: tool.Model) -> None:
+def unjoin_walls(
+    ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner: DumbWallJoiner, model: tool.Model
+) -> None:
     for obj in blender.get_selected_objects():
         if not (element := ifc.get_entity(obj)) or model.get_usage_type(element) != "LAYER2":
             continue
@@ -31,7 +41,12 @@ def unjoin_walls(ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, 
 
 
 def extend_walls(
-    ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner, model: tool.Model, target
+    ifc: tool.Ifc,
+    blender: tool.Blender,
+    geometry: tool.Geometry,
+    joiner: DumbWallJoiner,
+    model: tool.Model,
+    target: Vector,
 ) -> None:
     for obj in blender.get_selected_objects():
         if not (element := ifc.get_entity(obj)) or model.get_usage_type(element) != "LAYER2":
@@ -44,7 +59,7 @@ def join_walls_LV(
     ifc: tool.Ifc,
     blender: tool.Blender,
     geometry: tool.Geometry,
-    joiner,
+    joiner: DumbWallJoiner,
     model: tool.Model,
     join_type: Literal["L", "V"] = "L",
 ) -> None:
@@ -66,7 +81,11 @@ def join_walls_LV(
 
 
 def extend_wall_to_slab(
-    ifc: tool.Ifc, geometry: tool.Geometry, model: tool.Model, slab_obj, wall_objs: Iterable
+    ifc: tool.Ifc,
+    geometry: tool.Geometry,
+    model: tool.Model,
+    slab_obj: bpy.types.Object,
+    wall_objs: list[bpy.types.Object],
 ) -> None:
     if not (clip := model.get_slab_clipping_bmesh(slab_obj)):
         return  # Nothing to clip?
@@ -80,7 +99,9 @@ def extend_wall_to_slab(
     model.reload_body_representation(wall_objs)
 
 
-def join_walls_TZ(ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner, model: tool.Model) -> None:
+def join_walls_TZ(
+    ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner: DumbWallJoiner, model: tool.Model
+) -> None:
     selected_objs = [
         o
         for o in blender.get_selected_objects()
