@@ -910,7 +910,9 @@ class EditObjectUI:
         else:
             if "LAYER2" in AuthoringData.data["selected_material_usages"]:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-                add_layout_hotkey_operator(cls.layout, "Extend To Undersideb", "S_E", "", ui_context)
+                add_layout_hotkey_operator(
+                    cls.layout, "Extend To Underside", "S_E", bpy.ops.bim.extend_to_underside.__doc__, ui_context
+                )
 
         if AuthoringData.data["is_flippable_element"]:
             cls.draw_flip(ui_context, row)
