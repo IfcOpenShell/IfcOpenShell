@@ -483,17 +483,17 @@ class Snap(bonsai.core.tool.Snap):
 
         def sort_points_by_weighted_distance(snapping_points):
             for snap in snapping_points:
-                weight_factor = 100 * cls.get_increment_snap_value(context)
+                zoom_factor = bpy.context.region_data.view_distance
                 if snap["type"] == "Vertex":
-                    snap["distance"] *= weight_factor / 12
-                if snap["type"] == "Edge":
-                    snap["distance"] *= weight_factor
+                    snap["distance"] *= (zoom_factor / 10)
                 if snap["type"] == "Edge Center":
-                    snap["distance"] *= weight_factor / 5
+                    snap["distance"] *= (zoom_factor / 8)
                 if snap["type"] == "Edge Intersection":
-                    snap["distance"] *= weight_factor / 10
+                    snap["distance"] *= (zoom_factor / 5)
+                if snap["type"] == "Edge":
+                    snap["distance"] *= zoom_factor
                 if snap["type"] in ["Plane", "Axis", "Face"]:
-                    snap["distance"] = weight_factor / 50
+                    snap["distance"] *= zoom_factor
             return sorted(snapping_points, key=lambda x: x["distance"])
 
         snaps_by_group = filter_snapping_points_by_group(detected_snaps)

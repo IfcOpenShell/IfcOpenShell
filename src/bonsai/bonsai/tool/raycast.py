@@ -193,9 +193,7 @@ class Raycast(bonsai.core.tool.Raycast):
         # Makes the snapping point more or less sticky than others
         # It changes the distance and affects how the snapping point are sorted
         # We multiply by the increment snap which is based on the viewport zoom
-        snap_threshold = 10 * tool.Snap.get_increment_snap_value(bpy.context)
-        if face:
-            snap_threshold = tool.Snap.get_increment_snap_value(bpy.context)
+        snap_threshold = rv3d.view_distance / 100
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
@@ -288,7 +286,7 @@ class Raycast(bonsai.core.tool.Raycast):
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
-        snap_threshold = tool.Snap.get_increment_snap_value(bpy.context)
+        snap_threshold = rv3d.view_distance / 100
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
@@ -365,7 +363,7 @@ class Raycast(bonsai.core.tool.Raycast):
         rv3d = context.region_data
         mouse_pos = event.mouse_region_x, event.mouse_region_y
         ray_origin, ray_target, ray_direction = cls.get_viewport_ray_data(context, event)
-        snap_threshold = tool.Snap.get_increment_snap_value(bpy.context)
+        snap_threshold = rv3d.view_distance / 100
 
         try:
             loc = view3d_utils.region_2d_to_location_3d(region, rv3d, mouse_pos, ray_direction)
