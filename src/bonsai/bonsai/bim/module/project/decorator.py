@@ -329,7 +329,7 @@ class MeasureDecorator:
 
             all_positions = []
             for i in range(len(polyline_points)):
-                if i < 1 and measure_type == "AREA":
+                if i < 1 and measure_type == "POLY_AREA":
                     continue
                 if i == 0:
                     continue
@@ -374,7 +374,7 @@ class MeasureDecorator:
             polyline_verts = [Vector((p.x, p.y, p.z)) for p in polyline_points]
 
             # Area
-            if measure_type == "AREA" and polyline_data.area:
+            if measure_type == "POLY_AREA" and polyline_data.area:
                 if len(polyline_verts) < 3:
                     continue
                 center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
@@ -392,7 +392,7 @@ class MeasureDecorator:
                 blf.draw(self.font_id, text)
 
             # Length
-            if measure_type in {"POLYLINE", "AREA"}:
+            if measure_type in {"POLYLINE", "POLY_AREA"}:
                 if len(polyline_verts) < 3:
                     continue
                 total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
@@ -455,7 +455,7 @@ class MeasureDecorator:
             # Area highlight
             if polyline_data:
                 area = polyline_data.area.split(" ")[0]
-                if area:
+                if polyline_data.measurement_type == "POLY_AREA" and area:
                     if float(area) > 0:
                         tris = self.calculate_polygon(polyline_verts)["tris"]
                         self.draw_batch("TRIS", polyline_verts, transparent_color(decorator_color_special), tris)
