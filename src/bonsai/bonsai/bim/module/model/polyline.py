@@ -550,6 +550,8 @@ class PolylineOperator:
     # TODO Fill doc strings
     """ """
 
+    objs_2d_bbox: list[tuple[bpy.types.Object, list[float]]]
+
     @classmethod
     def poll(cls, context: bpy.types.Context) -> bool:
         return context.space_data.type == "VIEW_3D"

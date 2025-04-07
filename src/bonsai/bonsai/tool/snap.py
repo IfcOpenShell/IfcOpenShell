@@ -25,7 +25,7 @@ import math
 import mathutils
 from mathutils import Matrix, Vector
 from lark import Lark, Transformer
-from typing import Union
+from typing import Union, Any
 
 
 class Snap(bonsai.core.tool.Snap):
@@ -145,12 +145,12 @@ class Snap(bonsai.core.tool.Snap):
 
     @classmethod
     def snap_on_axis(cls, intersection, tool_state):
-        def create_axis_line_data(rot_mat, origin):
+        def create_axis_line_data(rot_mat: Matrix, origin: Vector) -> tuple[Vector, Vector]:
             length = 1000
             direction = Vector((1, 0, 0))
             if tool_state.plane_method == "YZ" or (not tool_state.plane_method and tool_state.axis_method == "Z"):
                 direction = Vector((0, 0, 1))
-            rot_dir = rot_mat.inverted() @ direction
+            rot_dir: Vector = rot_mat.inverted() @ direction
             start = origin + rot_dir * length
             end = origin - rot_dir * length
 
@@ -280,10 +280,16 @@ class Snap(bonsai.core.tool.Snap):
         return sorted_intersections
 
     @classmethod
-    def detect_snapping_points(cls, context: bpy.types.Context, event: bpy.types.Event, objs_2d_bbox, tool_state):
+    def detect_snapping_points(
+        cls,
+        context: bpy.types.Context,
+        event: bpy.types.Event,
+        objs_2d_bbox: list[tuple[bpy.types.Object, list[float]]],
+        tool_state: tool.Polyline.ToolState,
+    ) -> list[dict[str, Any]]:
         rv3d = context.region_data
         space = context.space_data
-        detected_snaps = []
+        detected_snaps: list[dict[str, Any]] = []
 
         def select_plane_method():
             if not last_polyline_point:
@@ -485,11 +491,11 @@ class Snap(bonsai.core.tool.Snap):
             for snap in snapping_points:
                 zoom_factor = bpy.context.region_data.view_distance
                 if snap["type"] == "Vertex":
-                    snap["distance"] *= (zoom_factor / 10)
+                    snap["distance"] *= zoom_factor / 10
                 if snap["type"] == "Edge Center":
-                    snap["distance"] *= (zoom_factor / 8)
+                    snap["distance"] *= zoom_factor / 8
                 if snap["type"] == "Edge Intersection":
-                    snap["distance"] *= (zoom_factor / 5)
+                    snap["distance"] *= zoom_factor / 5
                 if snap["type"] == "Edge":
                     snap["distance"] *= zoom_factor
                 if snap["type"] in ["Plane", "Axis", "Face"]:

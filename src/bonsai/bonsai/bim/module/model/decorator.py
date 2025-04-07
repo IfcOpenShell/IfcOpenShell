@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import blf
 import bpy
@@ -34,6 +35,7 @@ from gpu_extras.presets import draw_circle_2d
 from typing import Union
 from bonsai.bim.module.drawing.helper import format_distance
 from itertools import chain
+from typing import Union, Any
 
 
 def transparent_color(color, alpha=0.1):
@@ -348,21 +350,28 @@ class PolylineDecorator:
         cls.is_installed = False
 
     @classmethod
-    def update(cls, event, tool_state, input_ui, snapping_point):
+    def update(
+        cls,
+        event: bpy.types.Event,
+        tool_state: tool.Polyline.ToolState,
+        input_ui: tool.Polyline.PolylineUI,
+        snapping_point: Vector,
+    ) -> None:
         cls.event = event
         cls.tool_state = tool_state
         cls.input_ui = input_ui
 
+    # TODO: unused?
     @classmethod
-    def set_input_ui(cls, input_ui):
+    def set_input_ui(cls, input_ui: tool.Polyline.PolylineUI) -> None:
         cls.input_ui = input_ui
 
     @classmethod
-    def set_angle_axis_line(cls, start, end):
+    def set_angle_axis_line(cls, start: Vector, end: Vector) -> None:
         cls.axis_start = start
         cls.axis_end = end
 
-    def calculate_measurement_x_y_and_z(self, context):
+    def calculate_measurement_x_y_and_z(self, context: bpy.types.Context) -> None:
         polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
 
@@ -385,7 +394,7 @@ class PolylineDecorator:
         return (x_axis, y_axis, z_axis), (x_middle, y_middle, z_middle)
 
     @classmethod
-    def calculate_polygon(self, points):
+    def calculate_polygon(cls, points: list[Vector]) -> dict[str, Any]:
         bm = bmesh.new()
 
         new_verts = [bm.verts.new(v) for v in points]
@@ -414,7 +423,7 @@ class PolylineDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def draw_input_ui(self, context):
+    def draw_input_ui(self, context: bpy.types.Context) -> None:
         texts = {
             "D": "Distance: ",
             "A": "Angle: ",
@@ -424,6 +433,7 @@ class PolylineDecorator:
             "AREA": "Area:",
         }
         try:
+            assert self.event
             mouse_pos = self.event.mouse_region_x, self.event.mouse_region_y
         except:
             mouse_pos = (None, None)
@@ -726,8 +736,8 @@ class PolylineDecorator:
             polyline_points = polyline_data.polyline_points
         else:
             polyline_points = []
-        polyline_verts = []
-        polyline_edges = []
+        polyline_verts: list[Vector] = []
+        polyline_edges: list[list[int]] = []
         for point_prop in polyline_points:
             point = Vector((point_prop.x, point_prop.y, point_prop.z))
             polyline_verts.append(point)

@@ -62,12 +62,18 @@ class Raycast(bonsai.core.tool.Raycast):
         return visible_objs
 
     @classmethod
-    def get_on_screen_2d_bounding_boxes(cls, context: bpy.types.Context, obj: bpy.types.Object):
+    def get_on_screen_2d_bounding_boxes(
+        cls, context: bpy.types.Context, obj: bpy.types.Object
+    ) -> Union[tuple[bpy.types.Object, list[float]], None]:
         obj_matrix = obj.matrix_world.copy()
         bbox = [obj_matrix @ Vector(v) for v in obj.bound_box]
 
-        transposed_bbox = []
-        bbox_2d = []
+        transposed_bbox: list[Vector] = []
+        bbox_2d: list[float] = []
+
+        assert context.region
+        assert isinstance(context.space_data, bpy.types.SpaceView3D)
+        assert context.space_data.region_3d
 
         for v in bbox:
             coord_2d = view3d_utils.location_3d_to_region_2d(context.region, context.space_data.region_3d, v)
@@ -77,6 +83,7 @@ class Raycast(bonsai.core.tool.Raycast):
         region = context.region
         borders = (0, region.width, 0, region.height)
         for i, axis in enumerate(zip(*transposed_bbox)):
+            axis: tuple[float, ...]
             min_point = min(axis)
             max_point = max(axis)
             bbox_2d.extend([min_point, max_point])
@@ -92,7 +99,6 @@ class Raycast(bonsai.core.tool.Raycast):
         ):
             return (obj, bbox_2d)
         return None
-
 
     @classmethod
     def intersect_mouse_2d_bounding_box(cls, mouse_pos: tuple[int, int], bbox: list[float, float, float, float]):
