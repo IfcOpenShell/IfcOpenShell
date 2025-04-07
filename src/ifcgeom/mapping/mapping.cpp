@@ -556,6 +556,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial* material) {
         }
     }
 
+    // When material does not have a representation we don't create a style from it
+    return nullptr;
+
+    /*
     taxonomy::style::ptr material_style = taxonomy::make<taxonomy::style>();
     material_style->instance = material;
     if (settings_.get<settings::UseMaterialNames>().get()) {
@@ -566,6 +570,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcMaterial* material) {
         material_style->name = oss.str();
     }
     return material_style;
+    */
 
     // @todo
     // IfcGeom::SurfaceStyle material_style = IfcGeom::SurfaceStyle(material->data().id(), material->Name());
