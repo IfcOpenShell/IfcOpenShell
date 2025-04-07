@@ -504,9 +504,9 @@ class Blender(QtoCalculator):
             obj = tool.Ifc.get_object(element)
             if not obj or obj.type != "MESH":
                 continue
-            element_results = {}
+            element_results = results.setdefault(element, {})
             for name, quantities in qtos.items():
-                qto_results = {}
+                qto_results = element_results.setdefault(name, {})
                 for quantity, formula in quantities.items():
                     if not formula:
                         continue
@@ -517,8 +517,8 @@ class Blender(QtoCalculator):
                 if qto_results:
                     element_results[name] = qto_results
             # Avoid adding empty qsets if nothing was calculated.
-            if element_results:
-                results[element] = element_results
+            if not element_results:
+                del results[element]
 
 
 calculators: dict[str, type[QtoCalculator]] = {
