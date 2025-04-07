@@ -277,6 +277,8 @@ class IfcOpenShell(QtoCalculator):
                     formula = formula.partition("_")[2]
                     gross_or_net_qtos.setdefault(name, {})[quantity] = formula
                     formula_functions[formula] = getattr(ifcopenshell.util.shape, formula)
+                else:
+                    print(f"WARNING. Unexpected formula: '{formula}' ({name}.{quantity}).")
 
         tasks: list[tuple[Union[ifcopenshell.geom.iterator, IteratorForTypes], QtosFormulas]] = []
 
