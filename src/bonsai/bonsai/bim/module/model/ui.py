@@ -65,6 +65,10 @@ class BIM_MT_type_menu(bpy.types.Menu):
         layout.separator()
         op = layout.operator("bim.remove_type", icon="X")
         op.element = props.menu_relating_type_id
+        layout.separator()
+        op = layout.operator("bim.refresh_thumbnail", icon="FILE_REFRESH")
+        op.element = props.menu_relating_type_id
+
 
 
 class LaunchTypeMenu(bpy.types.Operator):

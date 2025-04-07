@@ -26,6 +26,7 @@ classes = (
     operator.DuplicateType,
     operator.EnableEditingType,
     operator.RemoveType,
+    operator.RefreshTumbnail,
     operator.RenameType,
     operator.SelectSimilarType,
     operator.SelectType,

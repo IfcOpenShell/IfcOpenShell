@@ -271,6 +271,16 @@ class RemoveType(bpy.types.Operator, tool.Ifc.Operator):
         obj = tool.Ifc.get_object(element)
         tool.Geometry.delete_ifc_object(obj)
 
+class RefreshTumbnail(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.refresh_thumbnail"
+    bl_label = "Refresh Thumbnail"
+    bl_options = {"REGISTER", "UNDO"}
+    element: bpy.props.IntProperty()
+
+    def _execute(self, context):
+        element = tool.Ifc.get().by_id(self.element)
+        tool.Model.update_thumbnail_for_element(element, refresh=True)
+
 
 class RenameType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.rename_type"
