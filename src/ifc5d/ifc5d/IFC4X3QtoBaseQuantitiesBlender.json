@@ -540,16 +540,6 @@
                     "Width": "get_height"
                 }
             },
-            "IfcProduct": {
-                "Qto_BodyGeometryValidation": {
-                    "GrossSurfaceArea": null,
-                    "GrossVolume": null,
-                    "NetSurfaceArea": null,
-                    "NetVolume": null,
-                    "SurfaceGenusAfterFeatures": null,
-                    "SurfaceGenusBeforeFeatures": null
-                }
-            },
             "IfcProjectionElement": {
                 "Qto_ProjectionElementBaseQuantities": {
                     "Area": "get_net_side_area",
