@@ -78,8 +78,8 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Assign Container"
     bl_description = "\n".join(
         (
-            "Assign the selected objects to the selected container.",
-            "This will move objects to the container collection in the outliner.",
+            "Assign the selected objects to the container selected in Spatial Manager.\n",
+            "This will also move objects to the container collection in the outliner.",
             "ALT + Click to ensure objects are only linked in the container collection",
         )
     )
