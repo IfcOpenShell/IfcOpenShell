@@ -677,8 +677,9 @@ class EnableEditingExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
 
             # Restore the position to before it was changed by the offset and x_angle
             rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
-            offset = Vector((0.0, 0.0, -layer_params["offset"]))
-            rot_offset = offset @ rot_matrix
+            perpendicular_offset = layer_params["offset"] * abs(1 / cos(existing_x_angle))
+            offset_vector = Vector((0.0, 0.0, -perpendicular_offset))
+            rot_offset = offset_vector @ rot_matrix
             tranlation_matrix = Matrix.Translation(rot_offset)
             position = position @ tranlation_matrix
 
@@ -725,8 +726,9 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
 
             # Restore the position to after it was changed by the offset and x_angle
             rot_matrix = Matrix.Rotation(existing_x_angle, 4, "X")
-            offset = Vector((0.0, 0.0, -layer_params["offset"]))
-            rot_offset = offset @ rot_matrix
+            perpendicular_offset = layer_params["offset"] * abs(1 / cos(existing_x_angle))
+            offset_vector = Vector((0.0, 0.0, -perpendicular_offset))
+            rot_offset = offset_vector @ rot_matrix
             tranlation_matrix = Matrix.Translation(rot_offset)
             position = position @ tranlation_matrix
 
