@@ -21,7 +21,7 @@ import bpy
 from bpy.types import Panel, UIList
 from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
 import bonsai.tool as tool
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast, Any
 
 if TYPE_CHECKING:
     from bonsai.bim.module.spatial.prop import BIMSpatialDecompositionProperties, BIMContainer, Element
@@ -56,6 +56,8 @@ class BIM_PT_spatial(Panel):
                 row.operator("bim.assign_container", icon="CHECKMARK", text="")
                 row.operator("bim.disable_editing_container", icon="CANCEL", text="")
 
+            # TODO: deprecate as it's very hard to discover
+            # containers are not even selectable by default.
             if SpatialData.data["selected_containers"]:
                 row = self.layout.row()
                 row.label(text=f"{len(SpatialData.data['selected_containers'])} Selected Containers")
@@ -86,14 +88,16 @@ class BIM_PT_spatial(Panel):
                 row.label(text="No Spatial Container")
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
 
-            if references := SpatialData.data["references"]:
+            if references := cast(list[dict[str, Any]], SpatialData.data["references"]):
                 self.layout.label(text=f"{len(references)} References:")
             else:
                 self.layout.label(text="No References Found")
 
             for reference in references:
                 row = self.layout.row()
-                row.label(text=reference, icon="LINKED")
+                row.label(text=reference["name"], icon="LINKED")
+                op = row.operator("bim.dereference_from_provided_structure", icon="X", text="")
+                op.structure = reference["id"]
 
 
 class BIM_PT_spatial_decomposition(Panel):
@@ -200,6 +204,7 @@ class BIM_PT_spatial_decomposition(Panel):
         op.container = ifc_definition_id
 
         row.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
+        row.operator("bim.reference_from_provided_structure", icon="LINKED", text="").structure = ifc_definition_id
         op = row.operator("bim.select_decomposed_element", icon="OBJECT_DATA", text="")
         if active_element := self.props.active_element:
             op.element = active_element.ifc_definition_id

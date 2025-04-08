@@ -73,6 +73,76 @@ class DereferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
                 core.dereference_structure(tool.Ifc, tool.Spatial, structure=container, element=element)
 
 
+class ReferenceFromProvidedStructure(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.reference_from_provided_structure"
+    bl_label = "Reference from Provided Structure"
+    bl_description = "Reference selected objects from the provided structure.\n\n" "ALT + Click to dereference instead."
+    bl_options = {"REGISTER", "UNDO"}
+
+    structure: bpy.props.IntProperty(options={"SKIP_SAVE"})
+    dereference: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Blender.get_selected_objects():
+            cls.poll_message_set("No objects selected.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        self.dereference = event.alt
+        return self.execute(context)
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        structure = ifc_file.by_id(self.structure)
+
+        objs = tool.Spatial.get_selected_objects_without_containers()
+        if not objs:
+            self.report({"INFO"}, "No non-spatial objects are selected.")
+            return
+
+        elements = [e for o in objs if (e := tool.Ifc.get_entity(o))]
+        for element in elements:
+            if self.dereference:
+                core.dereference_structure(tool.Ifc, tool.Spatial, structure=structure, element=element)
+            else:
+                core.reference_structure(tool.Ifc, tool.Spatial, structure=structure, element=element)
+
+        msg = "dereferenced" if self.dereference else "referenced"
+        self.report({"INFO"}, f"{len(elements)} elements {msg} from the structure.")
+
+
+class DereferenceFromProvidedStructure(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.dereference_from_provided_structure"
+    bl_label = "Dereference from Provided Structure"
+    bl_description = "Dereference selected objects from the provided structure."
+    bl_options = {"REGISTER", "UNDO"}
+
+    structure: bpy.props.IntProperty(options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Blender.get_selected_objects():
+            cls.poll_message_set("No objects selected.")
+            return False
+        return True
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        structure = ifc_file.by_id(self.structure)
+        objs = tool.Spatial.get_selected_objects_without_containers()
+        if not objs:
+            self.report({"INFO"}, "No non-spatial objects are selected.")
+            return
+
+        elements = [e for o in objs if (e := tool.Ifc.get_entity(o))]
+        for element in elements:
+            core.dereference_structure(tool.Ifc, tool.Spatial, structure=structure, element=element)
+
+        self.report({"INFO"}, f"{len(elements)} elements dereferenced from the structure.")
+
+
 class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_container"
     bl_label = "Assign Container"
