@@ -65,6 +65,8 @@ class Raycast(bonsai.core.tool.Raycast):
     def get_on_screen_2d_bounding_boxes(
         cls, context: bpy.types.Context, obj: bpy.types.Object
     ) -> Union[tuple[bpy.types.Object, list[float]], None]:
+        rv3d = context.region_data
+        view_location = rv3d.view_matrix.inverted().translation
         obj_matrix = obj.matrix_world.copy()
         bbox = [obj_matrix @ Vector(v) for v in obj.bound_box]
 
@@ -74,6 +76,19 @@ class Raycast(bonsai.core.tool.Raycast):
         assert context.region
         assert isinstance(context.space_data, bpy.types.SpaceView3D)
         assert context.space_data.region_3d
+
+        # Do not include objects too far from camera view
+        if rv3d.view_perspective == "PERSP":
+            threshold = 200
+            min_distance = float('inf')
+            closest_distance: float = None
+            for point in bbox:
+                distance = (view_location - point).length
+                if distance < min_distance:
+                    min_distance = distance
+                    closest_distance = distance
+            if closest_distance > threshold:
+                return None
 
         for v in bbox:
             coord_2d = view3d_utils.location_3d_to_region_2d(context.region, context.space_data.region_3d, v)
