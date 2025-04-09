@@ -174,7 +174,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_class"
     bl_label = "Assign IFC Class"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Assign the IFC Class to the selected objects"
+    bl_description = "Assign the IFC Class to the selected non-ifc objects."
     obj: bpy.props.StringProperty()
     ifc_class: bpy.props.StringProperty()
     predefined_type: bpy.props.StringProperty()
@@ -217,6 +217,10 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
         tool.Blender.clear_objects_selection()
 
         for obj in objects:
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                continue
+
             if obj.mode != "OBJECT":
                 self.report({"ERROR"}, "Object must be in OBJECT mode to assign class")
                 continue
