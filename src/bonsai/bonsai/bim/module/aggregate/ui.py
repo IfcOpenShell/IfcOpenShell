@@ -49,11 +49,13 @@ class BIM_PT_aggregate(Panel):
         layout = self.layout
         row = layout.row()
         row.label(text="Aggregate Decorator")
-        row.prop(context.scene.BIMAggregateProperties, "aggregate_decorator", icon="HIDE_OFF", text="")
+        props = tool.Aggregate.get_aggregate_props()
+        row.prop(props, "aggregate_decorator", icon="HIDE_OFF", text="")
         if not AggregateData.is_loaded:
             AggregateData.load()
 
-        props = context.active_object.BIMObjectAggregateProperties
+        assert (obj := context.active_object)
+        props = tool.Aggregate.get_object_aggregate_props(obj)
 
         if props.is_editing:
             row = layout.row()
@@ -131,9 +133,8 @@ class BIM_PT_linked_aggregate(Panel):
         if not AggregateData.is_loaded:
             AggregateData.load()
 
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        props = obj.BIMObjectAggregateProperties
+        assert (obj := context.active_object)
+        assert (element := tool.Ifc.get_entity(obj))
         row = layout.row(align=True)
 
         if element.Decomposes:

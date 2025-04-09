@@ -717,12 +717,14 @@ class EditObjectUI:
             AuthoringData.load(ifc_element_type)
 
         if context.region.type == "TOOL_HEADER":
-            if context.scene.BIMAggregateProperties.in_aggregate_mode:
+            aprops = tool.Aggregate.get_aggregate_props()
+            if aprops.in_aggregate_mode:
                 layout.label(text=f"Aggregate Mode", icon="EMPTY_AXIS")
                 row = cls.layout.row(align=True)
                 op = row.operator("bim.disable_aggregate_mode", text="", icon="X")
                 op = row.operator("bim.toggle_aggregate_mode_local_view", text="", icon="ZOOM_SELECTED")
-            if context.scene.BIMNestProperties.in_nest_mode:
+            nprops = tool.Nest.get_nest_props()
+            if nprops.in_nest_mode:
                 layout.label(text=f"Nest Mode", icon="EMPTY_AXIS")
                 row = cls.layout.row(align=True)
                 op = row.operator("bim.disable_nest_mode", text="", icon="X")

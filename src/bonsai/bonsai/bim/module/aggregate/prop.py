@@ -33,6 +33,7 @@ from bpy.props import (
     CollectionProperty,
 )
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator, AggregateModeDecorator
+from typing import TYPE_CHECKING, Union
 
 
 def can_aggregate(relating_obj: bpy.types.Object, related_obj: bpy.types.Object) -> bool:
@@ -98,11 +99,21 @@ class BIMObjectAggregateProperties(PropertyGroup):
         poll=poll_related_object,
     )
 
+    if TYPE_CHECKING:
+        is_editing: bool
+        relating_object: Union[bpy.types.Object, None]
+        related_object: Union[bpy.types.Object, None]
+
 
 class Objects(bpy.types.PropertyGroup):
     obj: PointerProperty(type=bpy.types.Object)
     previous_display_type: bpy.props.StringProperty(default="TEXTURED")
     previous_hide_select: bpy.props.BoolProperty(default=False)
+
+    if TYPE_CHECKING:
+        obj: Union[bpy.types.Object, None]
+        previous_display_type: str
+        previous_hide_select: bool
 
 
 class BIMAggregateProperties(PropertyGroup):
@@ -115,3 +126,10 @@ class BIMAggregateProperties(PropertyGroup):
         default=False,
         update=update_aggregate_decorator,
     )
+
+    if TYPE_CHECKING:
+        in_aggregate_mode: bool
+        editing_aggregate: Union[bpy.types.Object, None]
+        editing_objects: bpy.types.bpy_prop_collection_idprop[Objects]
+        not_editing_objects: bpy.types.bpy_prop_collection_idprop[Objects]
+        aggregate_decorator: bool

@@ -1929,7 +1929,7 @@ class OverrideEscape(bpy.types.Operator):
             tool.Geometry.disable_item_mode()
         elif tool.Model.get_model_props().openings:
             bpy.ops.bim.hide_all_openings()
-        elif context.scene.BIMAggregateProperties.in_aggregate_mode:
+        elif tool.Aggregate.get_aggregate_props().in_aggregate_mode:
             bpy.ops.bim.disable_aggregate_mode()
         elif active_object := context.active_object:
             if tool.Blender.Modifier.try_canceling_editing_modifier_parameters_or_path(active_object):
@@ -1953,24 +1953,26 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         selected_objs = context.selected_objects  # Purposely exclude active object
+        aprops = tool.Aggregate.get_aggregate_props()
+        nprops = tool.Nest.get_nest_props()
 
         if self.has_aggregates(selected_objs):
-            if not context.scene.BIMAggregateProperties.in_aggregate_mode:
+            if not aprops.in_aggregate_mode:
                 bonsai.core.aggregate.enable_aggregate_mode(tool.Aggregate, context.active_object)
                 return {"FINISHED"}
 
         if self.has_nests(selected_objs):
-            if not context.scene.BIMNestProperties.in_nest_mode:
+            if not nprops.in_nest_mode:
                 bonsai.core.nest.enable_nest_mode(tool.Nest, context.active_object)
                 return {"FINISHED"}
 
         if len(selected_objs) == 1 and context.active_object == selected_objs[0]:
             self.handle_single_object(context, context.active_object)
         elif len(selected_objs) == 0:
-            if context.scene.BIMAggregateProperties.in_aggregate_mode:
+            if aprops.in_aggregate_mode:
                 bonsai.core.aggregate.disable_aggregate_mode(tool.Aggregate)
                 return {"FINISHED"}
-            if context.scene.BIMNestProperties.in_nest_mode:
+            if nprops.in_nest_mode:
                 bonsai.core.nest.disable_nest_mode(tool.Nest)
                 return {"FINISHED"}
             tool.Geometry.disable_item_mode()
@@ -1981,9 +1983,10 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         props = tool.Geometry.get_geometry_props()
         pprops = tool.Project.get_project_props()
+        aprops = tool.Aggregate.get_aggregate_props()
         if obj == props.representation_obj:
             self.report({"ERROR"}, f"Element '{obj.name}' is in item mode and cannot be edited directly")
-        elif obj in [o.obj for o in context.scene.BIMAggregateProperties.not_editing_objects]:
+        elif obj in [o.obj for o in aprops.not_editing_objects]:
             obj.select_set(False)
             self.report(
                 {"ERROR"}, f"Element '{obj.name}' does not belong to this aggregate and cannot be edited directly"
@@ -2099,7 +2102,8 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                 continue
             aggregate = ifcopenshell.util.element.get_aggregate(element)
             parts = ifcopenshell.util.element.get_parts(element)
-            if (aggregate or parts) and not bpy.context.scene.BIMAggregateProperties.in_aggregate_mode:
+            props = tool.Aggregate.get_aggregate_props()
+            if (aggregate or parts) and not props.in_aggregate_mode:
                 return True
             else:
                 return False
@@ -2111,7 +2115,8 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
                 continue
             nest = ifcopenshell.util.element.get_nest(element)
             components = ifcopenshell.util.element.get_components(element)
-            if (nest or components) and not bpy.context.scene.BIMNestProperties.in_nest_mode:
+            props = tool.Nest.get_nest_props()
+            if (nest or components) and not props.in_nest_mode:
                 return True
             else:
                 return False
@@ -3270,7 +3275,7 @@ class OverrideMove(bpy.types.Operator):
             self.new_active_obj = obj
 
         # Get aggregates
-        props = context.scene.BIMAggregateProperties
+        props = tool.Aggregate.get_aggregate_props()
         not_editing_objs = [o.obj for o in props.not_editing_objects]
         aggregates_to_move = []
         for obj in context.selected_objects:
@@ -3305,7 +3310,7 @@ class OverrideMove(bpy.types.Operator):
             return {"FINISHED"}
 
         # Get nests
-        props = context.scene.BIMNestProperties
+        props = tool.Nest.get_nest_props()
         not_editing_objs = [o.obj for o in props.not_editing_objects]
         nests_to_move = []
         for obj in context.selected_objects:

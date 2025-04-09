@@ -48,7 +48,8 @@ class BIM_PT_nest(Panel):
         if not NestData.is_loaded:
             NestData.load()
 
-        props = context.active_object.BIMObjectNestProperties
+        assert (obj := context.active_object)
+        props = tool.Nest.get_object_nest_props(obj)
 
         if props.is_editing:
             row = layout.row(align=True)

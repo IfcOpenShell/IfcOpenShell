@@ -54,14 +54,16 @@ class TestDisableEditing(NewFile):
         obj = bpy.data.objects.new("Object", None)
         subject.enable_editing(obj)
         subject.disable_editing(obj)
-        assert obj.BIMObjectNestProperties.is_editing is False
+        props = tool.Nest.get_object_nest_props(obj)
+        assert props.is_editing is False
 
 
 class TestEnableEditing(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
         subject.enable_editing(obj)
-        assert obj.BIMObjectNestProperties.is_editing is True
+        props = tool.Nest.get_object_nest_props(obj)
+        assert props.is_editing is True
 
 
 class TestGetContainer(NewFile):

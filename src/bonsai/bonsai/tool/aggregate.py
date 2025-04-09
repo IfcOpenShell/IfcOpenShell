@@ -16,15 +16,27 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from typing import Union
+from typing import Union, TYPE_CHECKING, Literal
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.aggregate.prop import BIMAggregateProperties, BIMObjectAggregateProperties
 
 
 class Aggregate(bonsai.core.tool.Aggregate):
+    @classmethod
+    def get_aggregate_props(cls) -> BIMAggregateProperties:
+        return bpy.context.scene.BIMAggregateProperties
+
+    @classmethod
+    def get_object_aggregate_props(cls, obj: bpy.types.Object) -> BIMObjectAggregateProperties:
+        return obj.BIMObjectAggregateProperties
+
     @classmethod
     def can_aggregate(cls, relating_obj: bpy.types.Object, related_obj: bpy.types.Object) -> bool:
         relating_object = tool.Ifc.get_entity(relating_obj)
@@ -56,11 +68,13 @@ class Aggregate(bonsai.core.tool.Aggregate):
 
     @classmethod
     def disable_editing(cls, obj: bpy.types.Object) -> None:
-        obj.BIMObjectAggregateProperties.is_editing = False
+        props = cls.get_object_aggregate_props(obj)
+        props.is_editing = False
 
     @classmethod
     def enable_editing(cls, obj: bpy.types.Object) -> None:
-        obj.BIMObjectAggregateProperties.is_editing = True
+        props = cls.get_object_aggregate_props(obj)
+        props.is_editing = True
 
     @classmethod
     def get_container(cls, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -86,13 +100,14 @@ class Aggregate(bonsai.core.tool.Aggregate):
         return parts
 
     @classmethod
-    def get_aggregate_mode(cls):
-        return bpy.context.scene.BIMAggregateProperties.in_aggregate_mode
+    def get_aggregate_mode(cls) -> bool:
+        props = cls.get_aggregate_props()
+        return props.in_aggregate_mode
 
     @classmethod
-    def enable_aggregate_mode(cls, active_object: bpy.types.Object):
+    def enable_aggregate_mode(cls, active_object: bpy.types.Object) -> set[Literal["FINISHED"]]:
         context = bpy.context
-        props = context.scene.BIMAggregateProperties
+        props = cls.get_aggregate_props()
 
         element = tool.Ifc.get_entity(active_object)
         if not element:
@@ -131,7 +146,7 @@ class Aggregate(bonsai.core.tool.Aggregate):
     @classmethod
     def disable_aggregate_mode(cls):
         context = bpy.context
-        props = context.scene.BIMAggregateProperties
+        props = cls.get_aggregate_props()
         for obj_prop in props.not_editing_objects:
             obj = obj_prop.obj
             if not obj:

@@ -158,7 +158,7 @@ class BIM_OT_toggle_nest_mode_local_view(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMNestProperties
+        props = tool.Nest.get_nest_props()
         objs = [o.obj for o in props.editing_objects]
         if props.in_nest_mode:
             if context.space_data.local_view:

@@ -20,6 +20,7 @@ import blf
 import bpy
 import gpu
 import ifcopenshell
+import ifcopenshell.util.element
 import bonsai.tool as tool
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
@@ -162,8 +163,9 @@ class NestDecorator:
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def draw_nest(self, context):
-        if context.scene.BIMNestProperties.in_nest_mode:
+    def draw_nest(self, context: bpy.types.Context) -> None:
+        props = tool.Nest.get_nest_props()
+        if props.in_nest_mode:
             return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         decorator_color_special = self.addon_prefs.decorator_color_special
@@ -262,7 +264,7 @@ class NestModeDecorator:
             return
         region = context.region
         rv3d = region.data
-        props = context.scene.BIMNestProperties
+        props = tool.Nest.get_nest_props()
 
         aggregate_obj = props.editing_nest
         if not aggregate_obj:
@@ -291,7 +293,7 @@ class NestModeDecorator:
     def draw_nest_empty(self, context):
         if context.mode == "EDIT_MESH":
             return
-        props = context.scene.BIMNestProperties
+        props = tool.Nest.get_nest_props()
         nest_obj = props.editing_nest
         if not nest_obj:
             return

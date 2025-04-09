@@ -20,6 +20,7 @@ import blf
 import bpy
 import gpu
 import ifcopenshell
+import ifcopenshell.util.element
 import bonsai.tool as tool
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
@@ -162,7 +163,8 @@ class AggregateDecorator:
         batch.draw(shader)
 
     def draw_aggregate(self, context):
-        if context.scene.BIMAggregateProperties.in_aggregate_mode:
+        props = tool.Aggregate.get_aggregate_props()
+        if props.in_aggregate_mode:
             return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         decorator_color_special = self.addon_prefs.decorator_color_special
@@ -210,7 +212,7 @@ class AggregateDecorator:
             self.draw_batch("LINES", line_y, color, [(0, 1)])
             line_z = (location - Vector((0.0, 0.0, size)), location + Vector((0.0, 0.0, size)))
             self.draw_batch("LINES", line_z, color, [(0, 1)])
-            if context.scene.BIMAggregateProperties.in_aggregate_mode:
+            if props.in_aggregate_mode:
                 return
             parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(aggregate))
             parts_objs = [tool.Ifc.get_object(p) for p in parts]
@@ -261,7 +263,7 @@ class AggregateModeDecorator:
             return
         region = context.region
         rv3d = region.data
-        props = context.scene.BIMAggregateProperties
+        props = tool.Aggregate.get_aggregate_props()
 
         aggregate_obj = props.editing_aggregate
         if not aggregate_obj:
@@ -292,7 +294,7 @@ class AggregateModeDecorator:
     def draw_aggregate_empty(self, context):
         if context.mode == "EDIT_MESH":
             return
-        props = context.scene.BIMAggregateProperties
+        props = tool.Aggregate.get_aggregate_props()
         aggregate_obj = props.editing_aggregate
         if not aggregate_obj:
             return

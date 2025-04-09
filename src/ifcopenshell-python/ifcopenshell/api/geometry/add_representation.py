@@ -112,15 +112,15 @@ class Usecase:
     ifc_vertices: list[ifcopenshell.entity_instance]
     coordinate_offset: Union[npt.NDArray[np.float64], None]
     geometry: Union[bpy.types.Mesh, bpy.types.Curve]
+    blender_object: bpy.types.Object
 
     def execute(self) -> Union[ifcopenshell.entity_instance, None]:
         self.is_manifold = None
         self.coordinate_offset = self.settings["coordinate_offset"]
         self.geometry = self.settings["geometry"]
-        if (
-            isinstance(self.settings["geometry"], bpy.types.Mesh)
-            and self.settings["geometry"] == self.settings["blender_object"].data
-        ):
+        self.blender_object = self.settings["blender_object"]
+
+        if isinstance(self.geometry, bpy.types.Mesh) and self.geometry == self.blender_object.data:
             self.evaluate_geometry()
         if self.settings["unit_scale"] is None:
             self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
@@ -147,11 +147,11 @@ class Usecase:
         return any([abs((tM @ v.co).z) > threshold for v in face.verts])
 
     def evaluate_geometry(self) -> None:
-        for modifier in self.settings["blender_object"].modifiers:
+        for modifier in self.blender_object.modifiers:
             if modifier.type == "BOOLEAN":
                 modifier.show_viewport = False
 
-        mesh = self.settings["blender_object"].evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        mesh = self.blender_object.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
         bm = bmesh.new()
         bm.from_mesh(mesh)
 
@@ -173,7 +173,7 @@ class Usecase:
 
         self.settings["geometry"] = mesh
 
-        for modifier in self.settings["blender_object"].modifiers:
+        for modifier in self.blender_object.modifiers:
             if modifier.type == "BOOLEAN":
                 modifier.show_viewport = True
 
@@ -540,7 +540,7 @@ class Usecase:
 
         # create dummy object that will have more detailed curves
         # since now we do not really support splines curves natively
-        obj = self.settings["blender_object"]
+        obj = self.blender_object
         dummy = bpy.data.objects.new("Dummy", obj.data.copy())
         bpy.context.scene.collection.objects.link(dummy)
         tool.Blender.select_and_activate_single_object(bpy.context, dummy)
@@ -752,7 +752,7 @@ class Usecase:
             profile_def,
             position,
             self.file.createIfcDirection((0.0, 0.0, 1.0)),
-            self.convert_si_to_unit(self.settings["blender_object"].dimensions[2]),
+            self.convert_si_to_unit(self.blender_object.dimensions[2]),
         )
         return self.file.createIfcShapeRepresentation(
             self.settings["context"],
@@ -952,7 +952,7 @@ class Usecase:
         )
 
     def create_box_representation(self) -> ifcopenshell.entity_instance:
-        obj = self.settings["blender_object"]
+        obj = self.blender_object
         bounding_box = self.file.createIfcBoundingBox(
             self.create_cartesian_point(obj.bound_box[0][0], obj.bound_box[0][1], obj.bound_box[0][2]),
             self.convert_si_to_unit(obj.dimensions[0]),

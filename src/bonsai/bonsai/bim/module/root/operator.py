@@ -35,6 +35,7 @@ import bonsai.bim.module.root.prop as root_prop
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import get_enum_items, prop_with_search
 from mathutils import Vector
+from typing import TYPE_CHECKING
 
 
 class EnableReassignClass(bpy.types.Operator):
@@ -181,6 +182,15 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
     context_id: bpy.props.IntProperty()
     should_add_representation: bpy.props.BoolProperty(default=True)
     ifc_representation_class: bpy.props.StringProperty()
+
+    if TYPE_CHECKING:
+        obj: str
+        ifc_class: str
+        predefined_type: str
+        userdefined_type: str
+        context_id: int
+        should_add_representation: bool
+        ifc_representation_class: str
 
     def _execute(self, context):
         props = tool.Root.get_root_props()

@@ -347,8 +347,8 @@ def load_post(scene):
 
     # Bonsai overlays
     georeference_props = tool.Georeference.get_georeference_props()
-    aggregate_props = bpy.context.scene.BIMAggregateProperties
-    nest_props = bpy.context.scene.BIMNestProperties
+    aggregate_props = tool.Aggregate.get_aggregate_props()
+    nest_props = tool.Nest.get_nest_props()
     model_props = tool.Model.get_model_props()
     if georeference_props.should_visualise:
         GeoreferenceDecorator.install(bpy.context)

@@ -238,13 +238,13 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def is_in_aggregate_mode(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        props = bpy.context.scene.BIMAggregateProperties
+        props = tool.Aggregate.get_aggregate_props()
         if props.editing_aggregate and props.in_aggregate_mode:
             return tool.Ifc.get_entity(props.editing_aggregate)
 
     @classmethod
     def is_in_nest_mode(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        props = bpy.context.scene.BIMNestProperties
+        props = tool.Nest.get_nest_props()
         if props.editing_nest and props.in_nest_mode:
             return tool.Ifc.get_entity(props.editing_nest)
 
