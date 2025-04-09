@@ -31,7 +31,7 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Assign Object To Aggregation"
     bl_description = (
         "Assign object as an aggregate to the selected IFC elements.\n\n"
-        "If called from Bonsai UI, then either 'Relating Whole' or 'Related Part' must be provided.\n"
+        "If called from Object Aggregates UI, then either 'Relating Whole' or 'Related Part' must be provided.\n"
         "If called directly, active object will be considered a relating whole"
     )
     bl_options = {"REGISTER", "UNDO"}
