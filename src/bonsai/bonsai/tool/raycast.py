@@ -80,7 +80,7 @@ class Raycast(bonsai.core.tool.Raycast):
         # Do not include objects too far from camera view
         if rv3d.view_perspective == "PERSP":
             threshold = 200
-            min_distance = float('inf')
+            min_distance = float("inf")
             closest_distance: float = None
             for point in bbox:
                 distance = (view_location - point).length
