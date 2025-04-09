@@ -197,10 +197,8 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
         objects: list[bpy.types.Object] = []
         if self.obj:
             objects = [bpy.data.objects[self.obj]]
-        elif objects := context.selected_objects:
-            pass
-        elif obj := context.active_object:
-            objects = [obj]
+        else:
+            objects = list(tool.Blender.get_selected_objects())
 
         if not objects:
             self.report({"INFO"}, "No objects selected.")
