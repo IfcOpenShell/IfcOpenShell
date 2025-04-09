@@ -242,6 +242,12 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     )
                     obj.select_set(False)
 
+                # Apply geometry.
+                if obj.modifiers:
+                    ensure_single_user_mesh(obj.data)
+                    with context.temp_override(selected_editable_objects=[obj]):
+                        bpy.ops.object.convert(target="MESH")
+
                 # Apply scale.
                 if obj.scale != (1, 1, 1):
                     ensure_single_user_mesh(obj.data)
