@@ -229,12 +229,19 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 continue
 
             if self.should_add_representation and isinstance(obj.data, bpy.types.Mesh) and obj.data.polygons:
+                # Apply scale.
                 if obj.scale != (1, 1, 1):
                     if obj.data.users > 1:
                         bpy.ops.object.make_single_user(
                             object=True, obdata=True, material=False, animation=False, obdata_animation=False
                         )
+                    is_negative = obj.matrix_world.is_negative
                     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True, properties=False)
+                    # object.transform_apply is losing normals.
+                    if is_negative:
+                        for polygon in obj.data.polygons:
+                            polygon.flip()
+
                 if tool.Geometry.mesh_has_loose_geometry(obj.data):
                     self.report(
                         {"WARNING"},
