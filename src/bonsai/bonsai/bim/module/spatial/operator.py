@@ -146,12 +146,12 @@ class DereferenceFromProvidedStructure(bpy.types.Operator, tool.Ifc.Operator):
 class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_container"
     bl_label = "Assign Container"
-    bl_description = "\n".join(
-        (
-            "Assign the selected objects to the container selected in Spatial Manager.\n",
-            "This will also move objects to the container collection in the outliner.",
-            "ALT + Click to ensure objects are only linked in the container collection",
-        )
+    bl_description = (
+        "Assign the selected objects to the container selected in Spatial Manager.\n\n"
+        "All elements-parts of an aggregate will be skipped.\n"
+        "To assign a container, they should be unassigned from an aggregate first.\n\n"
+        "This will also move objects to the container collection in the outliner.\n"
+        "ALT + Click to ensure objects are only linked in the container collection"
     )
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty(options={"SKIP_SAVE"})
@@ -173,11 +173,32 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
             pass
         else:
             return
-        for element_obj in tool.Blender.get_selected_objects():
+
+        objs: list[bpy.types.Object] = []
+        # In IFC element can be either contained of aggregated,
+        # tehrefore we skip aggregated elements here to prevent confusion.
+        # Can't handle it in `poll` since user might just select bunch of elements
+        # and try to assign a container to them
+        # and excluding aggregates because of the `poll` failing might get awkward.
+        skipped_aggregates = 0
+        for obj in tool.Blender.get_selected_objects():
+            if not (element := tool.Ifc.get_entity(obj)):
+                continue
+            if ifcopenshell.util.element.get_aggregate(element):
+                skipped_aggregates += 1
+                continue
+            objs.append(obj)
+
+        for element_obj in objs:
             if self.remove_from_other_containers:
                 for col in element_obj.users_collection[:]:
                     col.objects.unlink(element_obj)
             core.assign_container(tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj)
+
+        aggregates_msg = ""
+        if skipped_aggregates:
+            aggregates_msg = f" {skipped_aggregates} aggregated elements skipped."
+        self.report({"INFO"}, f"{len(objs)} elements assigned.{aggregates_msg}")
 
 
 class EnableEditingContainer(bpy.types.Operator):
