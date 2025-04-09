@@ -211,7 +211,11 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
             ifc_context = int(props.contexts or "0") or None
         if ifc_context:
             ifc_context = tool.Ifc.get().by_id(ifc_context)
-        active_object = context.active_object
+
+        # Manage selection as operator can be called not from UI but using `object` argument.
+        current_selection = tool.Blender.get_objects_selection(context)
+        tool.Blender.clear_objects_selection()
+
         for obj in objects:
             if obj.mode != "OBJECT":
                 self.report({"ERROR"}, "Object must be in OBJECT mode to assign class")
@@ -227,14 +231,23 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 continue
 
             if self.should_add_representation and isinstance(obj.data, bpy.types.Mesh) and obj.data.polygons:
+
+                def ensure_single_user_mesh(mesh: bpy.types.Mesh) -> None:
+                    if mesh.users == 1:
+                        return
+                    obj.select_set(True)
+                    # temp_override is not supported.
+                    bpy.ops.object.make_single_user(
+                        object=True, obdata=True, material=False, animation=False, obdata_animation=False
+                    )
+                    obj.select_set(False)
+
                 # Apply scale.
                 if obj.scale != (1, 1, 1):
-                    if obj.data.users > 1:
-                        bpy.ops.object.make_single_user(
-                            object=True, obdata=True, material=False, animation=False, obdata_animation=False
-                        )
+                    ensure_single_user_mesh(obj.data)
                     is_negative = obj.matrix_world.is_negative
-                    bpy.ops.object.transform_apply(location=False, rotation=False, scale=True, properties=False)
+                    with context.temp_override(selected_editable_objects=[obj]):
+                        bpy.ops.object.transform_apply(location=False, rotation=False, scale=True, properties=False)
                     # object.transform_apply is losing normals.
                     if is_negative:
                         for polygon in obj.data.polygons:
@@ -279,7 +292,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     ifc_representation_class=self.ifc_representation_class,
                 )
 
-        context.view_layer.objects.active = active_object
+        tool.Blender.set_objects_selection(*current_selection)
 
 
 class UnlinkObject(bpy.types.Operator, tool.Ifc.Operator):

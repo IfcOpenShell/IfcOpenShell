@@ -656,6 +656,12 @@ class Blender(bonsai.core.tool.Blender):
             active_object.select_set(True)
 
     @classmethod
+    def clear_objects_selection(cls) -> None:
+        """Clear objects selection and active object."""
+        bpy.ops.object.select_all(action="DESELECT")
+        cls.clear_active_object()
+
+    @classmethod
     def get_enum_safe(cls, props: bpy.types.PropertyGroup, prop_name: str) -> Union[str, None]:
         """method created for readibility and to avoid console warnings like
         `pyrna_enum_to_py: current value '17' matches no enum in 'BIMModelProperties', '', 'relating_type_id'`
