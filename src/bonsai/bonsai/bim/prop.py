@@ -620,7 +620,14 @@ class BIMObjectProperties(PropertyGroup):
     )
     cartesian_point_offset: StringProperty(name="Cartesian Point Offset")
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
-    is_renaming: BoolProperty(name="Is Renaming", default=False)
+    is_renaming: BoolProperty(
+        name="Is Renaming",
+        description=(
+            "Flag to ensure object name callback wouldn't write new name to IFC. "
+            "Automatically reset to `False` after the next callback."
+        ),
+        default=False,
+    )
     location_checksum: StringProperty(name="Location Checksum")
     rotation_checksum: StringProperty(name="Rotation Checksum")
 

@@ -419,7 +419,9 @@ class Root(bonsai.core.tool.Root):
         name = tool.Loader.get_name(element)
         if obj.name != name:
             props = tool.Blender.get_object_bim_props(obj)
-            props.is_renaming = True
+            # If it's not an IFC object, then it doesn't have a name callback.
+            # So, we need to protect it writing to IFC.
+            props.is_renaming = bool(tool.Ifc.get_entity(obj))
             obj.name = name  # The handler will trigger, and reset is_renaming to False
 
     @classmethod
@@ -428,7 +430,7 @@ class Root(bonsai.core.tool.Root):
         if material.name == name:
             return
         msprops = tool.Style.get_material_style_props(material)
-        msprops.is_renaming = True
+        msprops.is_renaming = bool(tool.Ifc.get_entity(material))
         material.name = name  # The handler will trigger, and reset is_renaming to False.
 
     @classmethod
