@@ -173,7 +173,14 @@ class BIM_PT_spatial_decomposition(Panel):
         if not self.props.active_container:
             return
 
-        if not self.props.total_elements:
+        container_has_elements = bool(self.props.total_elements)
+        if container_has_elements:
+            row = self.layout.row()
+            row.label(
+                text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Elements",
+                icon="FILE_3D",
+            )
+        else:
             row = self.layout.row(align=True)
             row.label(text=f"{self.props.active_container.ifc_class} > No Elements", icon="FILE_3D")
             row.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
@@ -181,37 +188,43 @@ class BIM_PT_spatial_decomposition(Panel):
             row = self.layout.row(align=True)
             row.prop(self.props, "element_mode", text="", icon="FILEBROWSER")
             row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
-            return
-
-        row = self.layout.row()
-        row.label(
-            text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Elements",
-            icon="FILE_3D",
-        )
 
         row = self.layout.row(align=True)
+        row.alignment = "RIGHT"
 
-        op = row.operator("bim.set_element_visibility", icon="FULLSCREEN_EXIT", text="Isolate")
+        col = row.column()
+        row_ = col.row(align=True)
+        row_.enabled = container_has_elements
+        op = row_.operator("bim.set_element_visibility", icon="FULLSCREEN_EXIT", text="")
         op.mode = "ISOLATE"
         op.container = ifc_definition_id
 
-        op = row.operator("bim.set_element_visibility", icon="HIDE_OFF", text="")
+        op = row_.operator("bim.set_element_visibility", icon="HIDE_OFF", text="")
         op.mode = "SHOW"
         op.container = ifc_definition_id
 
-        op = row.operator("bim.set_element_visibility", icon="HIDE_ON", text="")
+        op = row_.operator("bim.set_element_visibility", icon="HIDE_ON", text="")
         op.mode = "HIDE"
         op.container = ifc_definition_id
 
-        row.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
-        row.operator("bim.reference_from_provided_structure", icon="LINKED", text="").structure = ifc_definition_id
-        op = row.operator("bim.select_decomposed_element", icon="OBJECT_DATA", text="")
+        col = row.column()
+        row_ = col.row(align=True)
+        row_.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
+        row_.operator("bim.reference_from_provided_structure", icon="LINKED", text="").structure = ifc_definition_id
+
+        col = row.column()
+        row_ = col.row(align=True)
+        row_.enabled = container_has_elements
+        op = row_.operator("bim.select_decomposed_element", icon="OBJECT_DATA", text="")
         if active_element := self.props.active_element:
             op.element = active_element.ifc_definition_id
         else:
             op.element = 0
-        op = row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
+        op = row_.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
         op.container = ifc_definition_id
+
+        if not container_has_elements:
+            return
 
         row = self.layout.row(align=True)
         row.prop(self.props, "element_mode", text="", icon="FILEBROWSER")
