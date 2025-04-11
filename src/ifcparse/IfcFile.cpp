@@ -225,7 +225,7 @@ namespace {
     }
 }
 
-IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size) {
+IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index) {
     std::vector<const IfcParse::parameter_type*> parameter_types;
     std::unique_ptr<IfcParse::named_type> transient_named_type;
 
@@ -274,16 +274,16 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
 
         auto index = (uint8_t) std::distance(tokens_.begin(), it);
 
-        boost::apply_visitor([this, &storage, name, &references_to_resolve, index, param_type](const auto& v) {
+        boost::apply_visitor([this, &storage, name, &references_to_resolve, index, param_type, resolve_reference_index](const auto& v) {
             if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::Token>) {
-                dispatch_token(name, index, v, param_type && param_type->as_named_type() ? param_type->as_named_type()->declared_type() : nullptr, [this, &storage, name, &references_to_resolve, index](auto v) {
+                dispatch_token(name, index, v, param_type && param_type->as_named_type() ? param_type->as_named_type()->declared_type() : nullptr, [this, &storage, name, &references_to_resolve, index, resolve_reference_index](auto v) {
                     if constexpr (std::is_same_v<std::decay_t<decltype(v)>, IfcParse::reference_or_simple_type>) {
                         if (name > 0) {
                             references_to_resolve.push_back(std::make_pair(
                                 // @todo previously this was storage but apparently the 
                                 // pointer is not constant with the moving and temporary nature
                                 // maybe it ought to be and in that case a pointer is more direct
-                                MutableAttributeValue{ name, index },
+                                MutableAttributeValue{ name, resolve_reference_index == -1 ? index : (uint8_t) resolve_reference_index },
                                 v
                             ));
                         }
@@ -298,14 +298,14 @@ IfcEntityInstanceData IfcParse::parse_context::construct(int name, unresolved_re
                         pt = pt->as_named_type()->declared_type()->as_type_declaration()->declared_type();
                     }
                 }
-                construct_<0>(name, index, *v, pt ? pt->as_aggregation_type() : nullptr, [this, &storage, name, &references_to_resolve, index](const auto& v) {
+                construct_<0>(name, index, *v, pt ? pt->as_aggregation_type() : nullptr, [this, &storage, name, &references_to_resolve, index, resolve_reference_index](const auto& v) {
                     if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<reference_or_simple_type>>) {
                         if (name > 0) {
-                            references_to_resolve.push_back({ {name, index }, v });
+                            references_to_resolve.push_back({ {name, resolve_reference_index == -1 ? index : (uint8_t)resolve_reference_index }, v });
                         }
                     } else if constexpr (std::is_same_v<std::decay_t<decltype(v)>, std::vector<std::vector<reference_or_simple_type>>>) {
                         if (name > 0) {
-                            references_to_resolve.push_back({ {name, index }, v });
+                            references_to_resolve.push_back({ {name, resolve_reference_index == -1 ? index : (uint8_t)resolve_reference_index }, v });
                         }
                     } else {
                         storage.set(index, v);
