@@ -26,7 +26,13 @@ from logging import Logger
 
 
 class Patcher:
-    def __init__(self, file: ifcopenshell.file, logger: Logger, query: str = "IfcWall"):
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        logger: Logger,
+        query: str = "IfcWall",
+        assume_asset_uniqueness_by_name: bool = True,
+    ):
         """Extract certain elements into a new model
 
         Extract a subset of elements from an existing IFC data set and save it
@@ -34,7 +40,14 @@ class Patcher:
         in a model and save it as a new model.
 
         :param query: A query to select the subset of IFC elements.
-        :type query: str
+        :param assume_asset_uniqueness_by_name: Avoid adding assets (profiles, materials, styles)
+            with the same name multiple times. Which helps in avoiding duplicated assets.
+            -----
+            Note that it assumes different project assets use different names
+            (you can run IFC Assets Validation to confirm).
+            If they're not and this option is enabled, it may lead to confusing results
+            (mixed up profiles, materials, styles).
+            So either need to ensure assets naming is unique or disable this option.
 
         Example:
 
@@ -52,6 +65,7 @@ class Patcher:
         self.file = file
         self.logger = logger
         self.query = query
+        self.assume_asset_uniqueness_by_name = assume_asset_uniqueness_by_name
 
     def patch(self):
         self.contained_ins: dict[str, set[ifcopenshell.entity_instance]] = {}
@@ -83,7 +97,11 @@ class Patcher:
         if element.is_a("IfcProject"):
             return self.new.add(element)
         return ifcopenshell.api.project.append_asset(
-            self.new, library=self.file, element=element, reuse_identities=self.reuse_identities
+            self.new,
+            library=self.file,
+            element=element,
+            reuse_identities=self.reuse_identities,
+            assume_asset_uniqueness_by_name=self.assume_asset_uniqueness_by_name,
         )
 
     def add_spatial_structures(
