@@ -143,24 +143,47 @@ def append_asset(
 
 
 class SafeRemovalContext:
+    """Context manager to ensure `remove_deep` won't create invalid entities
+    in `reuse_identities` leading to possible crashes.
+
+    Should be always used if removing an entity that was possibly added by `file_add`.
+    """
+
     file: ifcopenshell.file
     reuse_identities: dict[int, ifcopenshell.entity_instance]
 
-    def __init__(self, ifc_file: ifcopenshell.file, reuse_identities: dict[int, ifcopenshell.entity_instance]):
+    assume_asset_uniqueness_by_name: bool
+    """If `False`, then all job is done by `file.add`
+    and we don't need to worry about invalid entities."""
+
+    def __init__(
+        self,
+        ifc_file: ifcopenshell.file,
+        reuse_identities: dict[int, ifcopenshell.entity_instance],
+        assume_asset_uniqueness_by_name: bool,
+    ):
         self.file = ifc_file
         self.reuse_identities = reuse_identities
+        self.assume_asset_uniqueness_by_name = assume_asset_uniqueness_by_name
 
     def __enter__(self):
+        if not self.assume_asset_uniqueness_by_name:
+            return
+
         ifcopenshell.util.element.batch_remove_deep2(self.file)
 
     def __exit__(self, *args):
-        original_identities: dict[ifcopenshell.entity_instance, int] = {}
+        if not self.assume_asset_uniqueness_by_name:
+            return
+
+        # Collect identities.
+        removed_identities: dict[ifcopenshell.entity_instance, int] = {}
         assert self.file.to_delete is not None
-        elements = self.file.to_delete
+        removed_elements = self.file.to_delete
         for identity, element in self.reuse_identities.items():
-            if element in elements:
-                original_identities[element] = identity
-        assert len(original_identities) == len(elements)
+            if element in removed_elements:
+                removed_identities[element] = identity
+        assert len(removed_identities) == len(removed_elements)
 
         # Actually remove elements.
         for element in self.file.to_delete:
@@ -169,7 +192,7 @@ class SafeRemovalContext:
         self.file.to_delete = None
 
         # Clean up dead identities.
-        for identity in original_identities.values():
+        for identity in removed_identities.values():
             del self.reuse_identities[identity]
 
 
@@ -324,7 +347,7 @@ class Usecase:
             matrix = ifcopenshell.util.placement.get_local_placement(placement)
             matrix = ifcopenshell.util.geolocation.auto_local2global(self.settings["library"], matrix)
             matrix = ifcopenshell.util.geolocation.auto_global2local(self.file, matrix)
-            with SafeRemovalContext(self.file, self.reuse_identities):
+            with SafeRemovalContext(self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name):
                 ifcopenshell.api.geometry.edit_object_placement(self.file, element, matrix, is_si=False)
 
         element_type = ifcopenshell.util.element.get_type(self.settings["element"])
@@ -490,7 +513,7 @@ class Usecase:
             for inverse in self.file.get_inverse(added_context):
                 ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
 
-        with SafeRemovalContext(self.file, self.reuse_identities):
+        with SafeRemovalContext(self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name):
             for added_context in added_contexts:
                 ifcopenshell.util.element.remove_deep2(self.file, added_context)
 
