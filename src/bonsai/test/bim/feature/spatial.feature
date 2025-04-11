@@ -153,7 +153,7 @@ Scenario: Isolate spatial container
     And I click "OK"
     And I look at the "Spatial Decomposition" panel
     When I select the "My Site" item in the "BIM_UL_containers_manager" list
-    And I click "Isolate"
+    And I click "FULLSCREEN_EXIT"
     Then nothing happens
 
 Scenario: Show spatial container
