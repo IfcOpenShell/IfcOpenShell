@@ -50,6 +50,8 @@ class BIM_PT_debug(Panel):
         row.prop(props, "package_name", text="")
         row.operator("bim.pip_install", icon="EVENT_PAGEDOWN").name = props.package_name
 
+        layout.operator("bim.validate_ifc_assets", icon="CHECKMARK")
+
         row = layout.row()
         row.operator("bim.reload_ifc_file", text="Incrementally Reload Changes")
 

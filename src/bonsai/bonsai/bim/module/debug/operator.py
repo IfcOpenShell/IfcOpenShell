@@ -37,6 +37,7 @@ import bonsai.core.profile
 import bonsai.core.type
 import bonsai.bim.handler
 import bonsai.bim.import_ifc as import_ifc
+from collections import defaultdict
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 from pathlib import Path
 from bonsai import get_debug_info, format_debug_info
@@ -148,6 +149,67 @@ class ValidateIfcFile(bpy.types.Operator):
             self.report({"INFO"}, "Check validation results in the system console.")
         else:
             self.report({"INFO"}, "No validation issues found.")
+
+        return {"FINISHED"}
+
+
+class ValidateIfcAssets(bpy.types.Operator):
+    bl_idname = "bim.validate_ifc_assets"
+    bl_label = "Validate IFC Assets"
+    bl_description = (
+        "Run Bonsai validation for IFC assets.\n\n"
+        "There's an internal Bonsai convention to treat some IFC assets "
+        "as unique based on their name (e.g. profiles, materials, styles).\n"
+        "Though it's not required by IFC, it is a generally good practice "
+        "to keep asset names unique and it also helps with various issues.\n"
+        "If it's not conformed, it could lead to duplicated assets or "
+        "the opposite - different assets of the same name treated as one."
+    )
+    bl_options = set()
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("IFC file is not loaded.")
+            return False
+        return True
+
+    def execute(self, context):
+        ifc_file = tool.Ifc.get()
+
+        ifc_classes = {
+            "IfcMaterial": "Name",
+            "IfcProfileDef": "ProfileName",
+            "IfcPresentationStyle": "Name",
+        }
+
+        issues_found = False
+        unique_assets: defaultdict[str, list[ifcopenshell.entity_instance]]
+        for ifc_class, name_attr in ifc_classes.items():
+            unique_assets = defaultdict(list)
+            for asset in ifc_file.by_type(ifc_class):
+                asset_name: Union[str, None] = getattr(asset, name_attr)
+                if asset_name is None:
+                    continue
+                unique_assets[asset_name].append(asset)
+
+            msg = ""
+            for asset_name, assets in unique_assets.items():
+                if len(assets) == 1:
+                    continue
+                msg += f"{ifc_class} name '{asset_name}' is used by multiple assets:\n"
+                for asset in assets:
+                    msg += f"- {asset}\n"
+
+            if msg:
+                issues_found = True
+                msg = f"Found issues validating {ifc_class} assets.\n" + msg
+                print(msg)
+
+        if issues_found:
+            self.report({"INFO"}, "Check asset validation results in the system console.")
+        else:
+            self.report({"INFO"}, "No asset validation issues found.")
 
         return {"FINISHED"}
 
