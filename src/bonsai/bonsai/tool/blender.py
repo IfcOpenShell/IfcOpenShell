@@ -114,11 +114,13 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def set_active_object(cls, obj: bpy.types.Object) -> None:
+        """Set active object and select it."""
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
 
     @classmethod
     def clear_active_object(cls) -> None:
+        """Clear active object, object is not unselected."""
         bpy.context.view_layer.objects.active = None
 
     @classmethod

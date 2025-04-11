@@ -40,6 +40,7 @@ from bpy.props import (
     CollectionProperty,
 )
 from typing import TYPE_CHECKING, Literal, get_args
+from typing_extensions import assert_never
 
 
 class AddFilterGroup(Operator):
@@ -144,6 +145,7 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
 class Search(Operator):
     bl_idname = "bim.search"
     bl_label = "Search"
+    bl_description = "Search IFC elements by the provided query and add them to the current selection."
 
     PropertyGroupType = Literal["CsvProperties", "BIMSearchProperties"]
     property_group: bpy.props.EnumProperty(
@@ -159,17 +161,18 @@ class Search(Operator):
         elif self.property_group == "BIMSearchProperties":
             props = tool.Search.get_search_props()
         else:
-            raise Exception(f"bim.search - unexpected property group name '{self.property_group}'.")
+            assert_never(self.property_group)
 
         results = ifcopenshell.util.selector.filter_elements(
             tool.Ifc.get(), tool.Search.export_filter_query(props.filter_groups)
         )
 
-        total_selected = 0
-        for element in results:
-            if obj := tool.Ifc.get_object(element):
-                obj.select_set(True)
-        self.report({"INFO"}, f"{len(results)} Results")
+        objs = [obj for e in results if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)]
+        for obj in objs:
+            tool.Blender.set_object_selection(obj)
+        if objs:
+            tool.Blender.set_active_object(objs[0])
+        self.report({"INFO"}, f"{len(results)} Results.")
         return {"FINISHED"}
 
 
