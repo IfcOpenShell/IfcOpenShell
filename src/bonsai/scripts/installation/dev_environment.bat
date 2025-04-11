@@ -30,6 +30,12 @@ pause
 echo Changing to the Git repository directory...
 cd %REPO_PATH%
 
+:: Handle symlinks (they could be disabled by default on Windows).
+git config --local core.symlinks true
+:: Delete and checkout is the only way to ensure files are added as symlinks.
+del /Q src\bonsai\bonsai\bim\data\templates\projects\*.ifc
+git checkout -- src/bonsai/bonsai/bim/data/templates/projects/*.ifc
+
 echo Copy over compiled IfcOpenShell files...
 copy "%PACKAGE_PATH%\ifcopenshell\*_wrapper*" "%CD%\src\ifcopenshell-python\ifcopenshell\"
 
