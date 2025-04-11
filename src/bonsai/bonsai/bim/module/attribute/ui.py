@@ -17,14 +17,16 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.bim.helper
+import bpy.types
 from bpy.types import Panel
 from bonsai.bim.module.attribute.data import AttributesData
 import bonsai.tool as tool
 
 
-def draw_ui(context, layout, attributes):
+def draw_ui(context: bpy.types.Context, layout: bpy.types.UILayout, attributes) -> None:
     obj = context.active_object
-    props = obj.BIMAttributeProperties
+    assert obj
+    props = tool.Blender.get_object_attribute_props(obj)
 
     if props.is_editing_attributes:
         row = layout.row(align=True)

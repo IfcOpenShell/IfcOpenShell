@@ -26,30 +26,42 @@ import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.attribute as core
 import bonsai.core.spatial
+from typing import TYPE_CHECKING
 
 
-def get_objs_for_operation(operator_properties, context):
+def get_objs_for_operation(
+    operator_properties: "AttributesOperator", context: bpy.types.Context
+) -> list[bpy.types.Object]:
     if operator_properties.obj:
         return [bpy.data.objects[operator_properties.obj]]
     if operator_properties.mass_operation:
         return context.selected_objects[:]
-    return [context.active_object]
+    obj = context.active_object
+    assert obj
+    return [obj]
 
 
-class EnableEditingAttributes(bpy.types.Operator):
-    bl_idname = "bim.enable_editing_attributes"
-    bl_label = "Enable Editing Attributes"
-    bl_description = "ALT + Left Click to enable editing attributes on all selected objects"
-    bl_options = {"REGISTER", "UNDO"}
+class AttributesOperator:
     obj: bpy.props.StringProperty(options={"SKIP_SAVE"})
     mass_operation: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    if TYPE_CHECKING:
+        obj: str
+        mass_operation: bool
 
     def invoke(self, context, event):
         self.mass_operation = event.alt
         return self.execute(context)
 
-    def enable_editing_attribute_on_obj(self, obj):
-        props = obj.BIMAttributeProperties
+
+class EnableEditingAttributes(bpy.types.Operator, AttributesOperator):
+    bl_idname = "bim.enable_editing_attributes"
+    bl_label = "Enable Editing Attributes"
+    bl_description = "ALT + Left Click to enable editing attributes on all selected objects"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def enable_editing_attribute_on_obj(self, obj: bpy.types.Object) -> None:
+        props = tool.Blender.get_object_attribute_props(obj)
         props.attributes.clear()
 
         element = tool.Ifc.get_entity(obj)
@@ -87,20 +99,14 @@ class EnableEditingAttributes(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class DisableEditingAttributes(bpy.types.Operator):
+class DisableEditingAttributes(bpy.types.Operator, AttributesOperator):
     bl_idname = "bim.disable_editing_attributes"
     bl_label = "Disable Editing Attributes"
     bl_description = "ALT + Left Click to disable editing attributes on all selected objects"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty(options={"SKIP_SAVE"})
-    mass_operation: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
 
-    def invoke(self, context, event):
-        self.mass_operation = event.alt
-        return self.execute(context)
-
-    def disable_editing_attributes_on_obj(self, obj):
-        props = obj.BIMAttributeProperties
+    def disable_editing_attributes_on_obj(self, obj: bpy.types.Object) -> None:
+        props = tool.Blender.get_object_attribute_props(obj)
         props.is_editing_attributes = False
 
     def execute(self, context):
@@ -118,7 +124,7 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         self.file = tool.Ifc.get()
         obj = tool.Blender.get_active_object(is_selected=False)
-        if not (element := tool.Ifc.get_entity(obj)):
+        if not obj or not (element := tool.Ifc.get_entity(obj)):
             return
 
         def callback(attributes, prop):
@@ -130,7 +136,7 @@ class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
                         attributes[prop.name] = None
                     return True
 
-        props = obj.BIMAttributeProperties
+        props = tool.Blender.get_object_attribute_props(obj)
         attributes = bonsai.bim.helper.export_attributes(props.attributes, callback=callback)
         ifcopenshell.api.attribute.edit_attributes(self.file, product=element, attributes=attributes)
 
@@ -165,13 +171,12 @@ class GenerateGlobalId(bpy.types.Operator, tool.Ifc.Operator):
                 element.GlobalId = ifcopenshell.guid.new()
 
         obj = context.active_object
-        if not obj or not obj.BIMAttributeProperties.is_editing_attributes:
+        if not obj or not (props := tool.Blender.get_object_attribute_props(obj)).is_editing_attributes:
             return {"FINISHED"}
 
-        props = obj.BIMAttributeProperties
         element = tool.Ifc.get_entity(obj)
 
-        if not element.is_a("IfcRoot"):
+        if not element or not element.is_a("IfcRoot"):
             return {"FINISHED"}
 
         if self.use_selected and obj in context.selected_objects:
@@ -191,7 +196,10 @@ class CopyAttributeToSelection(bpy.types.Operator, tool.Ifc.Operator):
     name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        value = tool.Blender.get_active_object().BIMAttributeProperties.attributes.get(self.name).get_value()
+        obj = tool.Blender.get_active_object()
+        assert obj
+        props = tool.Blender.get_object_attribute_props(obj)
+        value = props.attributes[self.name].get_value()
         total = core.copy_attribute_to_selection(
             tool.Ifc, tool.Blender, tool.Root, tool.Spatial, name=self.name, value=value
         )

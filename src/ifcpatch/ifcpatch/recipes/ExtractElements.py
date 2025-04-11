@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.project
 import ifcopenshell.guid
 import ifcopenshell.util.selector
 from typing import Union
@@ -81,8 +82,8 @@ class Patcher:
             pass
         if element.is_a("IfcProject"):
             return self.new.add(element)
-        return ifcopenshell.api.run(
-            "project.append_asset", self.new, library=self.file, element=element, reuse_identities=self.reuse_identities
+        return ifcopenshell.api.project.append_asset(
+            self.new, library=self.file, element=element, reuse_identities=self.reuse_identities
         )
 
     def add_spatial_structures(

@@ -53,7 +53,7 @@ def execute(args: ArgumentsDict) -> Union[ifcopenshell.file, str]:
 
     :param args: A dictionary of arguments, corresponding to the parameters
         listed subsequent to this in this docstring.
-    :type args: dict
+    :type args: ArgumentsDict
     :param file: An IFC model to apply the patch recipe to.
         Required for most recipes except the ones that require `input`.
     :type file: ifcopenshell.file, optional

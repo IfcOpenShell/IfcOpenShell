@@ -43,6 +43,7 @@ from typing_extensions import assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import BIMProperties, BIMObjectProperties
+    from bonsai.bim.module.attribute.prop import BIMAttributeProperties
     from bonsai.bim.module.csv.prop import CsvProperties
     from bonsai.bim.module.diff.prop import DiffProperties
 
@@ -1634,6 +1635,10 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def get_object_bim_props(cls, obj: bpy.types.Object) -> BIMObjectProperties:
         return obj.BIMObjectProperties
+
+    @classmethod
+    def get_object_attribute_props(cls, obj: bpy.types.Object) -> BIMAttributeProperties:
+        return obj.BIMAttributeProperties
 
     @classmethod
     def get_ifc_definition_id(cls, obj: IFC_CONNECTED_TYPE) -> int:
