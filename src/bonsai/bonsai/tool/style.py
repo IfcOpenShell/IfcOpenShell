@@ -666,9 +666,12 @@ class Style(bonsai.core.tool.Style):
     @classmethod
     def rename_style(cls, style: ifcopenshell.entity_instance, name: str) -> None:
         """Rename style and related blender material."""
+        if style.Name == name:
+            return
+        style.Name = name
         blender_material = tool.Ifc.get_object(style)
-        # Will implicitly update the style name using handler.
-        blender_material.name = name
+        assert isinstance(blender_material, bpy.types.Material)
+        tool.Root.set_material_name(blender_material, name)
 
     @classmethod
     def purge_unused_styles(cls) -> int:
