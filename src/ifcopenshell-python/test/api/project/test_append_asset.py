@@ -660,10 +660,10 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         library_profile = ifcopenshell.api.profile.add_parameterized_profile(library, "IfcCircleProfileDef")
         library_profile.ProfileName = "TestProfile"
         material_set = ifcopenshell.api.material.add_material_set(library, set_type="IfcMaterialProfileSet")
-        material = ifcopenshell.api.material.add_material(library, "TestMaterial")
-        style = ifcopenshell.api.style.add_style(library, "TestStyle", ifc_class="IfcSurfaceStyle")
-        ifcopenshell.api.style.assign_material_style(library, material, style, body)
-        ifcopenshell.api.material.add_profile(library, material_set, material, library_profile)
+        library_material = ifcopenshell.api.material.add_material(library, "TestMaterial")
+        library_style = ifcopenshell.api.style.add_style(library, "TestStyle", ifc_class="IfcSurfaceStyle")
+        ifcopenshell.api.style.assign_material_style(library, library_material, library_style, body)
+        ifcopenshell.api.material.add_profile(library, material_set, library_material, library_profile)
         ifcopenshell.api.material.assign_material(
             library, [column_type], material=material_set, type="IfcMaterialProfileSet"
         )
@@ -677,14 +677,14 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         assert len(profiles) == 1 and profiles[0].ProfileName == "TestProfile"
 
         # Test adding a material with existing name.
-        material = ifcopenshell.api.material.add_material(self.file, "TestMaterial")
-        ifcopenshell.api.project.append_asset(self.file, library, library_profile)
+        ifcopenshell.api.material.add_material(self.file, "TestMaterial")
+        ifcopenshell.api.project.append_asset(self.file, library, library_material)
         materials = self.file.by_type("IfcMaterial")
         assert len(materials) == 1 and materials[0].Name == "TestMaterial"
 
         # Test adding a style with existing name.
-        style = ifcopenshell.api.style.add_style(self.file, "TestStyle", ifc_class="IfcSurfaceStyle")
-        ifcopenshell.api.project.append_asset(self.file, library, style)
+        ifcopenshell.api.style.add_style(self.file, "TestStyle", ifc_class="IfcSurfaceStyle")
+        ifcopenshell.api.project.append_asset(self.file, library, library_style)
         styles = self.file.by_type("IfcSurfaceStyle")
         assert len(styles) == 1 and styles[0].Name == "TestStyle"
 
