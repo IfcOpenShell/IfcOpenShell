@@ -1,12 +1,11 @@
 ---
-name: Feature request
+name: Feature request - Bonsai
 about: Suggest an idea for this project
 title: ''
-labels: ''
+labels: Bonsai, Feature
 assignees: ''
 
 ---
-
 
 **Feature Description**
 
