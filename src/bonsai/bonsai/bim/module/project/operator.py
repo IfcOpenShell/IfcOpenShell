@@ -2349,7 +2349,9 @@ class RefreshClippingPlanes(bpy.types.Operator):
         data = region.data
 
         props = tool.Project.get_project_props()
-        if not len(props.clipping_planes) and not self.camera:
+        # See 6452 and 6478.
+        # if not len(props.clipping_planes) and not self.camera:
+        if not len(props.clipping_planes):
             data.use_clip_planes = False
         else:
             with bpy.context.temp_override(area=area, region=region):
@@ -2378,13 +2380,14 @@ class RefreshClippingPlanes(bpy.types.Operator):
                     clip_planes.append(clip_plane)
                     bm.free()
 
-                if self.camera:
-                    normal = self.camera.matrix_world.col[2].to_3d()
-                    normal *= -1
-                    center = self.camera.matrix_world.translation
-                    distance = -center.dot(normal)
-                    clip_plane = (normal.x, normal.y, normal.z, distance)
-                    clip_planes.append(clip_plane)
+                # See 6452 and 6478.
+                # if self.camera:
+                #     normal = self.camera.matrix_world.col[2].to_3d()
+                #     normal *= -1
+                #     center = self.camera.matrix_world.translation
+                #     distance = -center.dot(normal)
+                #     clip_plane = (normal.x, normal.y, normal.z, distance)
+                #     clip_planes.append(clip_plane)
 
                 clip_planes = cycle(clip_planes)
                 data.clip_planes = [tuple(next(clip_planes)) for i in range(0, 6)]

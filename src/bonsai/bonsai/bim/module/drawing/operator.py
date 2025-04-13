@@ -2169,7 +2169,8 @@ class ActivateDrawingBase:
         camera_props = camera.data.BIMCameraProperties
         if camera_props.update_representation(camera):
             bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
-        bpy.ops.bim.refresh_clipping_planes("INVOKE_DEFAULT")
+        # See 6452 and 6478.
+        # bpy.ops.bim.refresh_clipping_planes("INVOKE_DEFAULT")
 
         return {"FINISHED"}
 
