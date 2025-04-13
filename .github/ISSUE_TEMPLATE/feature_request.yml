@@ -1,8 +1,8 @@
 name: Feature Request
-description: Suggest an idea for this project
+description: Suggest a new feature or improvement
 type: Feature
 body:
 - type: textarea
   attributes:
     label: Feature Description
-    placeholder: "Describe a feature you'd like us to add. If it's not obvious, explain why this feature is awesome. Note that feature requests must be specific and measurable."
+    placeholder: "Describe a feature you'd like us to add, or a change to the user interface, design, or workflow for usability. If it's not obvious, explain why this feature is awesome. Note that feature requests must be specific and measurable."
