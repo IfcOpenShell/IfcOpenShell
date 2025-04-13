@@ -47,7 +47,6 @@ class IfcExporter:
         self.set_header()
         IfcStore.update_cache()
         self.sync_all_objects()
-        self.sync_edited_objects()
         tool.Project.save_linked_models_to_ifc()
         extension = self.ifc_export_settings.output_file.split(".")[-1].lower()
         if extension == "ifczip":
@@ -108,20 +107,6 @@ class IfcExporter:
                     results.append(result)
             except ReferenceError:
                 pass  # The object is likely deleted
-        return results
-
-    def sync_edited_objects(self) -> list[ifcopenshell.entity_instance]:
-        results: list[ifcopenshell.entity_instance] = []
-        for obj in IfcStore.edited_objs.copy():
-            if not obj:
-                continue
-            if not tool.Blender.is_valid_data_block(obj):
-                continue
-            element = tool.Ifc.get_entity(obj)
-            if element:
-                results.append(element)
-            bpy.ops.bim.update_representation(obj=obj.name)
-        IfcStore.edited_objs.clear()
         return results
 
     def sync_object_material(self, obj: bpy.types.Object) -> None:

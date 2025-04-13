@@ -799,7 +799,6 @@ class CreateDrawing(bpy.types.Operator):
                 exporter = bonsai.bim.export_ifc.IfcExporter(None)
                 exporter.file = tool.Ifc.get()
                 invalidated_elements = exporter.sync_all_objects()
-                invalidated_elements += exporter.sync_edited_objects()
                 invalidated_guids = [e.GlobalId for e in invalidated_elements if hasattr(e, "GlobalId")]
                 if cache := IfcStore.get_cache():
                     [cache.remove(guid) for guid in invalidated_guids]
