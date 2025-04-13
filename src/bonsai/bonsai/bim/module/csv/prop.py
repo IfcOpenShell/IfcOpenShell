@@ -72,6 +72,7 @@ class CsvAttribute(PropertyGroup):
 
 class CsvProperties(PropertyGroup):
     csv_ifc_file: StringProperty(default="", name="IFC File")
+    csv_ifc_files: CollectionProperty(type=bpy.types.PropertyGroup, name="IFC Files")
     ifc_selector: StringProperty(default="", name="IFC Selector")
     filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
     csv_attributes: CollectionProperty(name="CSV Attributes", type=CsvAttribute)
@@ -137,3 +138,16 @@ class CsvProperties(PropertyGroup):
         should_show_summary: bool
         should_show_formatting: bool
         should_load_from_memory: bool
+
+class FileNode(bpy.types.PropertyGroup):
+    name: StringProperty()
+    full_path: StringProperty()
+    parent_name: StringProperty()
+    is_directory: BoolProperty()
+    enabled: BoolProperty()
+    expanded: BoolProperty(default=False)
+
+class FileTree(bpy.types.PropertyGroup):
+    nodes: CollectionProperty(type=FileNode)
+
+bpy.types.Scene.show_directory_structure = BoolProperty(default=False)

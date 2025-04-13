@@ -49,8 +49,19 @@ class BIM_PT_ifccsv(Panel):
 
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = layout.row(align=True)
-            row.prop(props, "csv_ifc_file")
-            row.operator("bim.select_csv_ifc_file", icon="FILE_FOLDER", text="")
+            #row.prop(props, "csv_ifc_file")
+
+            row.label(text="Selected Files in project tree:", icon="FILE_FOLDER")
+            if context.scene.show_directory_structure:
+                row.operator("bim.clear_ifc_files_selection", text="", icon="FILE_REFRESH")
+                row.operator("bim.hide_ifc_files", text="", icon="CANCEL")
+                nodes = context.scene.file_tree.nodes
+                if nodes:
+                    root = nodes[0]
+                    self.draw_node(layout, root, nodes)
+            else:
+                row.operator("bim.select_ifc_files", text="", icon="IMPORT")
+
 
         if props.should_show_settings:
             layout.use_property_split = True
@@ -129,3 +140,19 @@ class BIM_PT_ifccsv(Panel):
         else:
             row.operator("bim.export_ifccsv", icon="EXPORT", text="Export IFC to " + props.format.upper())
         row.operator("bim.import_ifccsv", icon="IMPORT")
+
+
+    def draw_node(self, layout, node, all_nodes, level=0):
+        icon = 'FILE_FOLDER' if node.is_directory else 'FILE'
+        disclosure_icon = 'TRIA_RIGHT' if not node.expanded else 'TRIA_DOWN'
+
+        row = layout.row()
+        row.separator(factor=level)
+        row.prop(node, "expanded", icon=disclosure_icon, icon_only=True, emboss=False)
+        row.prop(node, "enabled", text="")
+        row.label(text=node.name, icon=icon)
+
+        if node.is_directory and node.expanded:
+            children = [n for n in all_nodes if n.parent_name == node.name]
+            for child in children:
+                self.draw_node(layout, child, all_nodes, level + 1)
