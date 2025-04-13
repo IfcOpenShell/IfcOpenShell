@@ -100,26 +100,11 @@ class IfcExporter:
                 result = self.sync_object_placement(obj)
                 if result:
                     results.append(result)
-                result = self.sync_object_material(obj)
-                # TODO: sync_object_material always returns None
-                # so it's never really appended
                 if result:
                     results.append(result)
             except ReferenceError:
                 pass  # The object is likely deleted
         return results
-
-    def sync_object_material(self, obj: bpy.types.Object) -> None:
-        if not obj.data or not isinstance(obj.data, bpy.types.Mesh):
-            return
-        if not self.has_changed_materials(obj):
-            return
-        bpy.ops.bim.update_representation(obj=obj.name)
-
-    def has_changed_materials(self, obj: bpy.types.Object) -> bool:
-        mprops = tool.Geometry.get_mesh_props(obj.data)
-        checksum = mprops.material_checksum
-        return checksum != tool.Geometry.get_material_checksum(obj)
 
     def sync_object_placement(self, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
         element = self.file.by_id(tool.Blender.get_object_bim_props(obj).ifc_definition_id)
