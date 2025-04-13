@@ -247,6 +247,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         default=True,
         description="If disabled, the toolbar will only load when an IFC model is active",
     )
+    should_use_snap: BoolProperty(
+        name="Enable Snapping on Startup",
+        default=True,
+        description="If enabled, snapping will be enabled on new sessions.\nIt is recommended to keep this `Enabled`",
+    )
     should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
     tmp_dir: StringProperty(
         name="Temporary Directory",
@@ -349,13 +354,13 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row.operator("bim.file_associate", icon="LOCKVIEW_ON")
         row.operator("bim.file_unassociate", icon="LOCKVIEW_OFF")
 
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Interface", self.draw_interface_settings)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Command Paths", self.draw_commands)
-        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Misc.", self.draw_misc_settings)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Model", self.draw_model_settings)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Colors", self.draw_decorator_colors)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Directories", self.draw_directories)
         bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Drawing", self.draw_drawing_settings)
-        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Openings", self.draw_openings_settings)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Other", self.draw_other_settings)
 
     def draw_commands(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "svg2pdf_command")
@@ -365,16 +370,14 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(self, "pdf_command")
         layout.prop(self, "spreadsheet_command")
 
-    def draw_misc_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+    def draw_interface_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         layout.prop(self, "should_hide_empty_props")
         layout.prop(self, "should_setup_workspace")
         layout.prop(self, "activate_workspace")
         layout.prop(self, "should_setup_toolbar")
+        layout.prop(self, "should_use_snap")
         layout.prop(self, "should_play_chaching_sound")
         layout.prop(self, "spatial_elements_unselectable")
-        props = tool.Project.get_project_props()
-        layout.prop(props, "should_disable_undo_on_save")
-        layout.prop(props, "should_stream")
 
     def draw_model_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
         props = tool.Model.get_model_props()
@@ -426,8 +429,11 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.row().prop(self, "decorator_color_error")
         layout.row().prop(self, "decorator_color_background")
 
-    def draw_openings_settings(self, layout, context):
+    def draw_other_settings(self, layout, context):
         layout.prop(self, "opening_focus_opacity")
+        props = tool.Project.get_project_props()
+        layout.prop(props, "should_disable_undo_on_save")
+        layout.prop(props, "should_stream")
 
 
 # Scene panel groups

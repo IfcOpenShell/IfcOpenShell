@@ -361,7 +361,7 @@ def load_post(scene):
     if model_props.show_slab_direction:
         SlabDirectionDecorator.install(bpy.context)
 
-    if scene := bpy.context.scene:
+    if preferences.should_use_snap and (scene := bpy.context.scene):
         # Snapping is off by default in Blender, but in BIM, it's more useful to be on
         scene.tool_settings.use_snap = True
         # Match default Bonsai snaps
