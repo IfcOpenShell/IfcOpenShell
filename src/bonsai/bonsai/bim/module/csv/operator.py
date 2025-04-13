@@ -187,8 +187,9 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
     @classmethod
     def poll(cls, context):
         props = tool.Blender.get_csv_props()
-        if not props.should_load_from_memory and not props.csv_ifc_file:
-            cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
+        something_selected = any(node.enabled for node in bpy.context.scene.file_tree.nodes)
+        if not props.should_load_from_memory and not something_selected:
+            cls.poll_message_set("Select at least one IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
         return True
 
