@@ -1303,7 +1303,7 @@ class LoadLink(bpy.types.Operator):
     filepath_: Path
 
     def execute(self, context):
-        filepath = Path(tool.Ifc.resolve_uri(self.filepath))
+        filepath = Path(tool.Ifc.resolve_uri(tool.Ifc.get_uri(self.filepath, use_relative_path=False)))
         if not filepath.exists():
             self.report({"ERROR"}, f"File does not exist: '{filepath}'")
             return {"CANCELLED"}
