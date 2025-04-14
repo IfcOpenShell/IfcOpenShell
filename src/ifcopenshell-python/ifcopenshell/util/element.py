@@ -72,6 +72,7 @@ def get_pset(
     type_pset = None
     ifc_file = element.file
     is_ifc2x3 = ifc_file.schema == "IFC2X3"
+    is_profile = False
 
     if element.is_a("IfcTypeObject"):
         for definition in element.HasPropertySets or []:
@@ -81,14 +82,19 @@ def get_pset(
     elif (
         (is_ifc2x3_material := (is_ifc2x3 and element.is_a("IfcMaterial")))
         or element.is_a("IfcMaterialDefinition")
-        or element.is_a("IfcProfileDef")
+        or (is_profile := element.is_a("IfcProfileDef"))
     ):
         if is_ifc2x3_material:
+            # Support extended props as they do have a name.
             for definition in ifc_file.by_type("IfcExtendedMaterialProperties"):
                 if definition.Material == element and definition.Name == name:
                     pset = definition
                     break
+        elif is_ifc2x3 and is_profile:
+            # Don't support them as they don't have a name.
+            pass
         else:
+            # IfcProfileDef or IfcMaterialDefinition, IFC4+.
             for definition in element.HasProperties or []:
                 if definition.Name == name:
                     pset = definition
@@ -165,6 +171,8 @@ def get_psets(
         qsets = ifcopenshell.util.element.get_psets(element, qtos_only=True)
         psets_and_qtos = ifcopenshell.util.element.get_psets(element)
     """
+    ifc_file = element.file
+    is_ifc2x3 = ifc_file.schema == "IFC2X3"
     psets = {}
     if element.is_a("IfcTypeObject"):
         for definition in element.HasPropertySets or []:
@@ -174,8 +182,22 @@ def get_psets(
                 continue
             psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
     # NOTE: doesn't account for IFC2X3 missing HasProperties
-    elif element.is_a("IfcMaterialDefinition") or element.is_a("IfcProfileDef"):
-        for definition in getattr(element, "HasProperties", None) or []:
+    elif (
+        (is_ifc2x3_material := (is_ifc2x3 and element.is_a("IfcMaterial")))
+        or element.is_a("IfcMaterialDefinition")
+        or element.is_a("IfcProfileDef")
+    ):
+        definitions: list[ifcopenshell.entity_instance]
+        if is_ifc2x3:
+            if is_ifc2x3_material:
+                # Only extended props have a name.
+                definitions = [d for d in ifc_file.by_type("IfcExtendedMaterialProperties") if d.Material == element]
+            else:
+                # Ignoring profiles as they don't have names.
+                definitions = []
+        else:
+            definitions = getattr(element, "HasProperties", None) or []
+        for definition in definitions:
             if qtos_only:
                 continue
             psets.setdefault(definition.Name, {}).update(get_property_definition(definition, verbose=verbose))
@@ -247,6 +269,9 @@ def get_property_definition(
     elif ifc_class == "IfcMaterialProperties" or ifc_class == "IfcProfileProperties":
         # 2 IfcExtendedProperties.Properties
         props.update(get_properties(definition[2], verbose=verbose))
+    elif ifc_class == "IfcExtendedMaterialProperties":
+        # 1 IfcExtendedMaterialProperties.ExtendedProperties
+        props.update(get_properties(definition[1], verbose=verbose))
     else:
         # Entity introduced in IFC4
         # definition.is_a('IfcPreDefinedPropertySet'):
