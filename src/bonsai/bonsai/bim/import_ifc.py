@@ -717,9 +717,15 @@ class IfcImporter:
     def create_structural_point_connections(self):
         for product in self.file.by_type("IfcStructuralPointConnection"):
             # TODO: make this based off ifcopenshell. See #1409
-            representation: ifcopenshell.entity_instance = next(
-                rep for rep in product.Representation.Representations if rep.RepresentationType == "Vertex"
-            )
+
+            representation = tool.Structural.get_vertex_representation(product)
+            if not representation:
+                print(
+                    "WARNING. Skipping invalid IfcStructuralPointConnection - "
+                    f"element has no valid representation:\n{product}."
+                )
+                continue
+
             mesh = tool.Loader.create_structural_point_connection_mesh(representation)
             if mesh is None:
                 continue

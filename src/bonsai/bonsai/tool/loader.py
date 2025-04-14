@@ -799,6 +799,7 @@ class Loader(bonsai.core.tool.Loader):
 
         # TODO implement non cartesian point vertices.
         if not point.is_a("IfcCartesianPoint"):
+            print(f"WARNING. Unsupported point type for IfcStructuralPointConnection: {point}.")
             return
 
         ifc_file = tool.Ifc.get()

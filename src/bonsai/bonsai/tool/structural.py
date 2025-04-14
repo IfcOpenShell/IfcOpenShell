@@ -172,3 +172,42 @@ class Structural(bonsai.core.tool.Structural):
             new = props.structural_analysis_models.add()
             new.ifc_definition_id = ifc_definition_id
             new.name = model["Name"] or "Unnamed"
+
+    @classmethod
+    def get_vertex_representation(
+        cls, product: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
+        """
+        :param product: IfcStructuralPointConnection
+        :return: IfcTopologyRepresentation if it's valid.
+        """
+        vertex_representation, undefined_representation = None, None
+        # At least 1 representation is mandatory in IFC for IfcStructuralPointConnection.
+        for rep in product.Representation.Representations:
+            rep: ifcopenshell.entity_instance
+            rep_type: str = rep.RepresentationType
+            if rep_type == "Vertex":
+                vertex_representation = rep
+                break
+            # It's possible to have 'Undefined' or some other non-predefined type.
+            elif rep_type not in ("Edge", "Path", "Face", "Shell"):
+                undefined_representation = rep
+
+        if not vertex_representation and not undefined_representation:
+            return
+
+        # All other checks in this case are covered by IFC validation.
+        if vertex_representation:
+            items = vertex_representation.Items
+            if len(items) != 1:
+                return None
+            return vertex_representation
+
+        if undefined_representation is None:
+            return
+
+        items = undefined_representation.Items
+        if len(items) != 1 or not all(item.is_a("IfcVertex") for item in items):
+            return None
+
+        return undefined_representation
