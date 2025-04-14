@@ -27,10 +27,14 @@ import ifcopenshell
 import ifcopenshell.util.selector
 import bonsai.tool as tool
 import bonsai.bim.module.drawing.scheduler as scheduler
+import pandas as pd
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 from bonsai.bim.handler import refresh_ui_data
 from typing import TYPE_CHECKING
 from collections import Counter
+from datetime import datetime
+
+
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -202,11 +206,9 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
 
     def invoke(self, context, event):
         props = tool.Blender.get_csv_props()
-        if props.format == "web":
-            return self.execute(context)
-        self.filter_glob = f"*.{props.format}"
-        self.filename_ext = f".{props.format}"
-        return ExportHelper.invoke(self, context, event)
+#        self.filter_glob = f"*.{props.format}"
+#        self.filename_ext = f".{props.format}"
+        return self.execute(context)
 
     def execute(self, context):
         import ifccsv
@@ -214,70 +216,93 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
         props = tool.Blender.get_csv_props()
         self.filepath = bpy.path.ensure_ext(self.filepath, f".{props.format}")
         if props.should_load_from_memory:
-            ifc_file = tool.Ifc.get()
-        else:
+            #ifc_file = tool.Ifc.get()
+            ifc_path = bpy.context.scene.BIMProperties.ifc_file
+            build_file_tree(os.path.dirname(ifc_path))
+            
+            ifc_file_path = bpy.context.scene.BIMProperties.ifc_file
+            for node in bpy.context.scene.file_tree.nodes:
+                if node.full_path == ifc_file_path:
+                    node.enabled = True
+                    break  # Exit the loop once the node is found
+
+        dataframes = []
+        for node in bpy.context.scene.file_tree.nodes:
+            if not node.enabled:
+                continue
+
+            props.csv_ifc_file = node.full_path
             ifc_file = ifcopenshell.open(props.csv_ifc_file)
-        results = ifcopenshell.util.selector.filter_elements(
-            ifc_file, tool.Search.export_filter_query(props.filter_groups)
-        )
 
-        ifc_csv = ifccsv.IfcCsv()
-        attributes = [a.name for a in props.csv_attributes]
-        headers = [a.header for a in props.csv_attributes]
+            results = ifcopenshell.util.selector.filter_elements(
+                ifc_file, tool.Search.export_filter_query(props.filter_groups)
+            )
 
-        sort = []
-        groups = []
-        summaries = []
-        formatting = []
-        for attribute in props.csv_attributes:
-            if attribute.sort != "NONE":
-                sort.append({"name": attribute.name, "order": attribute.sort})
-            if attribute.group != "NONE":
-                groups.append({"name": attribute.name, "type": attribute.group, "varies_value": attribute.varies_value})
-            if attribute.summary != "NONE":
-                summaries.append({"name": attribute.name, "type": attribute.summary})
+            ifc_csv = ifccsv.IfcCsv()
+            attributes = [a.name for a in props.csv_attributes]
+            headers = [a.header for a in props.csv_attributes]
 
-            if attribute.formatting != "{{value}}" and "{{value}}" in attribute.formatting:
-                formatting.append({"name": attribute.name, "format": attribute.formatting})
+            sort = []
+            groups = []
+            summaries = []
+            formatting = []
+            for attribute in props.csv_attributes:
+                if attribute.sort != "NONE":
+                    sort.append({"name": attribute.name, "order": attribute.sort})
+                if attribute.group != "NONE":
+                    groups.append({"name": attribute.name, "type": attribute.group, "varies_value": attribute.varies_value})
+                if attribute.summary != "NONE":
+                    summaries.append({"name": attribute.name, "type": attribute.summary})
 
-        file_format = props.format
+                if attribute.formatting != "{{value}}" and "{{value}}" in attribute.formatting:
+                    formatting.append({"name": attribute.name, "format": attribute.formatting})
+
+            file_format = props.format
+            if props.format == "web":
+                file_format = "pd"
+
+            sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
+            current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M")
+            outFilename = f"{node.full_path}_{current_datetime}.{props.format}"
+            ifc_csv.export(
+                ifc_file,
+                results,
+                attributes,
+                headers=headers,
+                output = outFilename,
+                format=file_format,
+                should_preserve_existing=props.should_preserve_existing,
+                delimiter=sep,
+                include_global_id=props.include_global_id,
+                null=props.null_value,
+                empty=props.empty_value,
+                bool_true=props.true_value,
+                bool_false=props.false_value,
+                concat=props.concat_value,
+                sort=sort,
+                groups=groups,
+                summaries=summaries,
+                formatting=formatting,
+            )
+
+            if props.format != "csv" and props.should_generate_svg:
+                schedule_creator = scheduler.Scheduler()
+                schedule_creator.schedule(outFilename, tool.Drawing.get_path_with_ext(outFilename, "svg"))
+            if props.format == "web":
+                if not context.scene.WebProperties.is_connected:
+                    bpy.ops.bim.connect_websocket_server()
+                df = ifc_csv.dataframe
+                assert df is not None
+                dataframes.append(df) 
+                # Tabulator seems to be ignoring columns non-unique columns,
+                # so we ensure they are unique at input.
+
+            self.report({"INFO"}, f"Data is exported for {outFilename}.")
+
         if props.format == "web":
-            file_format = "pd"
-
-        sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
-        ifc_csv.export(
-            ifc_file,
-            results,
-            attributes,
-            headers=headers,
-            output=self.filepath,
-            format=file_format,
-            should_preserve_existing=props.should_preserve_existing,
-            delimiter=sep,
-            include_global_id=props.include_global_id,
-            null=props.null_value,
-            empty=props.empty_value,
-            bool_true=props.true_value,
-            bool_false=props.false_value,
-            concat=props.concat_value,
-            sort=sort,
-            groups=groups,
-            summaries=summaries,
-            formatting=formatting,
-        )
-
-        if props.format != "csv" and props.should_generate_svg:
-            schedule_creator = scheduler.Scheduler()
-            schedule_creator.schedule(self.filepath, tool.Drawing.get_path_with_ext(self.filepath, "svg"))
-        if props.format == "web":
-            if not context.scene.WebProperties.is_connected:
-                bpy.ops.bim.connect_websocket_server()
-            df = ifc_csv.dataframe
-            assert df is not None
-            # Tabulator seems to be ignoring columns non-unique columns,
-            # so we ensure they are unique at input.
-            df.columns = self.get_unique_column_names(df)
-            tool.Web.send_webui_data(data=df.to_csv(index=False), data_key="csv_data", event="csv_data")
+            concatenated_df = pd.concat(dataframes, ignore_index=True)
+            concatenated_df.columns = self.get_unique_column_names(concatenated_df)
+            tool.Web.send_webui_data(data=concatenated_df.to_csv(index=False), data_key="csv_data", event="csv_data")
 
         self.report({"INFO"}, f"Data is exported to {props.format.upper()}.")
         return {"FINISHED"}

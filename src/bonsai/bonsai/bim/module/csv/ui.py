@@ -49,6 +49,8 @@ class BIM_PT_ifccsv(Panel):
 
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = layout.row(align=True)
+#            row.prop(props, "perform_qty_takeoff")
+#            row = layout.row(align=True)
             #row.prop(props, "csv_ifc_file")
 
             row.label(text="Selected Files in project tree:", icon="FILE_FOLDER")

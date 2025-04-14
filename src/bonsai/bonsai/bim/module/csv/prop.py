@@ -78,7 +78,7 @@ class CsvProperties(PropertyGroup):
     csv_attributes: CollectionProperty(name="CSV Attributes", type=CsvAttribute)
     should_generate_svg: BoolProperty(default=False, name="Generate SVG")
     should_preserve_existing: BoolProperty(default=False, name="Preserve Existing")
-    include_global_id: BoolProperty(default=True, name="Include GlobalId")
+    include_global_id: BoolProperty(default=True, name="Include FileName and GlobalId")
     null_value: StringProperty(default="N/A", name="Null Value")
     empty_value: StringProperty(default="-", name="Empty String Value")
     true_value: StringProperty(default="YES", name="True Value")
@@ -114,6 +114,11 @@ class CsvProperties(PropertyGroup):
         default=False,
         name="Load from Memory",
         description="Use IFC file currently loaded in Bonsai",
+    )
+    perform_qty_takeoff: BoolProperty(
+        default=True,
+        name="Perform Quantity Takeoff",
+        description="Perform quantity takeoff on the IFC files selected prior to exporting",
     )
 
     if TYPE_CHECKING:
