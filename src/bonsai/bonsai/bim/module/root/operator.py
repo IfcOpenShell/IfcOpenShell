@@ -302,7 +302,11 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     context=ifc_context,
                     ifc_representation_class=self.ifc_representation_class,
                 )
-                tool.Geometry.reload_representation(obj)
+                representation = tool.Geometry.get_active_representation(obj)
+                if representation:
+                    tool.Geometry.reload_representation(obj)
+                elif obj.data is not None:
+                    new_obj = tool.Geometry.recreate_object_with_data(obj, None)
 
         # TODO: reload representation might lead to the object being replaced by object of the other type.
         # We probably should track it somehow and keep the original selection.
