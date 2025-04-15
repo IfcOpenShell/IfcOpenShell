@@ -77,7 +77,7 @@ class CsvProperties(PropertyGroup):
     csv_attributes: CollectionProperty(name="CSV Attributes", type=CsvAttribute)
     should_generate_svg: BoolProperty(default=False, name="Generate SVG")
     should_preserve_existing: BoolProperty(default=False, name="Preserve Existing")
-    include_global_id: BoolProperty(default=True, name="Include GlobalId")
+    include_global_id: BoolProperty(default=True, name="Include FileName and GlobalId")
     null_value: StringProperty(default="N/A", name="Null Value")
     empty_value: StringProperty(default="-", name="Empty String Value")
     true_value: StringProperty(default="YES", name="True Value")
@@ -137,3 +137,11 @@ class CsvProperties(PropertyGroup):
         should_show_summary: bool
         should_show_formatting: bool
         should_load_from_memory: bool
+
+class IfcFile(bpy.types.PropertyGroup):
+    file_path: StringProperty(name="File Path")
+    is_selected: BoolProperty(name="Selected", default=True)
+
+class IfcProperties(bpy.types.PropertyGroup):
+    ifc_files: CollectionProperty(type=IfcFile)
+    active_ifc_file_index: IntProperty()

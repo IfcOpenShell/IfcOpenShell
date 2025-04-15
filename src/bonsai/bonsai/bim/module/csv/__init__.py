@@ -29,15 +29,21 @@ classes = (
     operator.RemoveCsvAttribute,
     operator.ReorderCsvAttribute,
     operator.SelectCsvIfcFile,
+    operator.BIM_OT_add_ifc_files,
+    operator.BIM_OT_remove_ifc_file,
     prop.CsvAttribute,
     prop.CsvProperties,
+    prop.IfcFile,
+    prop.IfcProperties,
     ui.BIM_PT_ifccsv,
+    ui.BIM_UL_ifc_files,
 )
 
 
 def register():
     bpy.types.Scene.CsvProperties = bpy.props.PointerProperty(type=prop.CsvProperties)
-
+    bpy.types.Scene.IfcProperties = bpy.props.PointerProperty(type=prop.IfcProperties)
 
 def unregister():
     del bpy.types.Scene.CsvProperties
+    del bpy.types.Scene.IfcProperties
