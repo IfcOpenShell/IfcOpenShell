@@ -536,6 +536,7 @@ class SelectCostScheduleProducts(bpy.types.Operator):
 class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
     bl_idname = "bim.import_cost_schedule_csv"
     bl_label = "Import Cost Schedule CSV"
+    bl_description = "Import cost schdule from the provided .csv file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})

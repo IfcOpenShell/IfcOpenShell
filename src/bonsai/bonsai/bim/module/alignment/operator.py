@@ -45,6 +45,7 @@ from typing_extensions import assert_never
 class ImportAlignmentCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_alignment_csv"
     bl_label = "Import Alignment CSV"
+    bl_description = " Import alignment from the provided .csv file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
