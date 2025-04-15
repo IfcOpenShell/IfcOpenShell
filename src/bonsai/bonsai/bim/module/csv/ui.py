@@ -151,7 +151,8 @@ class BIM_PT_ifccsv(Panel):
         row = layout.row()
         row.separator(factor=level)
         row.prop(node, "expanded", icon=disclosure_icon, icon_only=True, emboss=False)
-        row.prop(node, "enabled", text="")
+        if not node.is_directory:
+            row.prop(node, "enabled", text="")
         row.label(text=node.name, icon=icon)
 
         if node.is_directory and node.expanded:

@@ -216,8 +216,9 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
         props = tool.Blender.get_csv_props()
         self.filepath = bpy.path.ensure_ext(self.filepath, f".{props.format}")
         if props.should_load_from_memory:
-            #ifc_file = tool.Ifc.get()
             ifc_path = bpy.context.scene.BIMProperties.ifc_file
+            bpy.ops.bim.save_project(filepath=ifc_path, should_save_as=False, use_relative_path=False)
+            context.scene.file_tree.nodes.clear()
             build_file_tree(os.path.dirname(ifc_path))
             
             ifc_file_path = bpy.context.scene.BIMProperties.ifc_file
@@ -232,7 +233,11 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                 continue
 
             props.csv_ifc_file = node.full_path
-            ifc_file = ifcopenshell.open(props.csv_ifc_file)
+            try:
+                ifc_file = ifcopenshell.open(props.csv_ifc_file)
+            except Exception as e:
+                self.report({"INFO"}, f"An error occurred while opening {props.csv_ifc_file}: {e}")
+                continue
 
             results = ifcopenshell.util.selector.filter_elements(
                 ifc_file, tool.Search.export_filter_query(props.filter_groups)
