@@ -35,7 +35,6 @@ from datetime import datetime
 import pandas as pd
 import subprocess
 
-
 if TYPE_CHECKING:
     import pandas as pd
 
@@ -305,8 +304,6 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                 # so we ensure they are unique at input.
 
             self.report({"INFO"}, f"Data is exported for {outFilename}.")
-
-        if props.format == "web":
             concatenated_df = pd.concat(dataframes, ignore_index=True)
             concatenated_df.columns = self.get_unique_column_names(concatenated_df)
             tool.Web.send_webui_data(data=concatenated_df.to_csv(index=False), data_key="csv_data", event="csv_data")
