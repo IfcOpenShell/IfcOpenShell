@@ -20,6 +20,7 @@ import os
 import bpy
 import bpy.utils.previews
 import importlib
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from . import handler, ui, prop, operator
 from typing import Callable, Union
 
@@ -221,7 +222,12 @@ def on_register(scene):
 
 def register():
     for cls in classes:
+        # Prevent crashes in Blender 4.4.0, see #6420.
+        if issubclass(cls, (ImportHelper, ExportHelper)):
+            assert getattr(cls, "bl_description", "") or cls.__doc__, cls
+
         bpy.utils.register_class(cls)
+
     bpy.app.handlers.depsgraph_update_post.append(on_register)
     bpy.app.handlers.undo_post.append(handler.undo_post)
     bpy.app.handlers.redo_post.append(handler.redo_post)

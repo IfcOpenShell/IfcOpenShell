@@ -659,6 +659,7 @@ class DisableEditingWorkCalendar(bpy.types.Operator):
 class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_csv"
     bl_label = "Import CSV"
+    bl_description = "Import work schedule from the provided .csv file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
@@ -686,6 +687,7 @@ class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 class ImportP6(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_p6"
     bl_label = "Import P6"
+    bl_description = "Import provided .xml P6 file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
@@ -714,6 +716,7 @@ class ImportP6(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 class ImportP6XER(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_p6xer"
     bl_label = "Import P6 XER"
+    bl_description = "Import provided .xer P6 file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xer"
     filter_glob: bpy.props.StringProperty(default="*.xer", options={"HIDDEN"})
@@ -742,6 +745,7 @@ class ImportP6XER(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 class ImportPP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_pp"
     bl_label = "Import Powerproject .pp"
+    bl_description = "Import provided .pp file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".pp"
     filter_glob: bpy.props.StringProperty(default="*.pp", options={"HIDDEN"})
@@ -770,6 +774,7 @@ class ImportPP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 class ImportMSP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_msp"
     bl_label = "Import MSP"
+    bl_description = "Import provided .xml MSP file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
@@ -798,6 +803,7 @@ class ImportMSP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 class ExportMSP(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_msp"
     bl_label = "Export MSP"
+    bl_description = "Export work schedule as .xml MSP file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
@@ -831,6 +837,7 @@ class ExportMSP(bpy.types.Operator, ExportHelper):
 class ExportP6(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_p6"
     bl_label = "Export P6"
+    bl_description = "Export work schedule as .xml P6 file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})

@@ -2223,6 +2223,7 @@ class ActivateDrawingFromSheet(bpy.types.Operator, ActivateDrawingBase):
 class SelectDocIfcFile(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_doc_ifc_file"
     bl_label = "Select Documentation IFC File"
+    bl_description = "Selection .ifc file for documentation."
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     filename_ext = ".ifc"
