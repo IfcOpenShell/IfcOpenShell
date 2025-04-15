@@ -180,7 +180,10 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
     predefined_type: bpy.props.StringProperty()
     userdefined_type: bpy.props.StringProperty()
     context_id: bpy.props.IntProperty()
+
+    # TODO: is never used?
     should_add_representation: bpy.props.BoolProperty(default=True)
+
     ifc_representation_class: bpy.props.StringProperty()
 
     if TYPE_CHECKING:
@@ -193,6 +196,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
         ifc_representation_class: str
 
     def _execute(self, context):
+        ifc_file = tool.Ifc.get()
         props = tool.Root.get_root_props()
         objects: list[bpy.types.Object] = []
         if self.obj:
@@ -211,6 +215,10 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
             ifc_context = int(props.contexts or "0") or None
         if ifc_context:
             ifc_context = tool.Ifc.get().by_id(ifc_context)
+
+        schema = ifcopenshell.schema_by_name(ifc_file.schema)
+        declaration = schema.declaration_by_name(ifc_class)
+        is_structural = ifcopenshell.util.schema.is_a(declaration, "IfcStructuralItem")
 
         # Manage selection as operator can be called not from UI but using `object` argument.
         current_selection = tool.Blender.get_objects_selection(context)
@@ -234,7 +242,13 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 )
                 continue
 
-            if self.should_add_representation and isinstance(obj.data, bpy.types.Mesh) and obj.data.polygons:
+            if (
+                self.should_add_representation
+                and not is_structural
+                and isinstance(obj.data, bpy.types.Mesh)
+                and obj.data.polygons
+            ):
+                # Export mesh as tesselation.
 
                 def ensure_single_user_mesh(mesh: bpy.types.Mesh) -> None:
                     if mesh.users == 1:
@@ -290,7 +304,21 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     should_sync_changes_first=False,
                 )
             else:
-                # TODO: replace empty geometry meshes with empties.
+
+                def is_representation_supported() -> bool:
+                    # We don't support much topological representations
+                    # and need to prevent assigning IfcShapeRepresentations to structural items.
+                    if is_structural:
+                        return False
+                    data = obj.data
+                    # Is empty mesh.
+                    if isinstance(data, bpy.types.Mesh) and not data.vertices:
+                        return False
+                    # Is empty curve.
+                    if isinstance(data, bpy.types.Curve) and not data.splines:
+                        return False
+                    return True
+
                 element = core.assign_class(
                     tool.Ifc,
                     tool.Collector,
@@ -298,7 +326,7 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                     obj=obj,
                     ifc_class=ifc_class,
                     predefined_type=predefined_type,
-                    should_add_representation=self.should_add_representation,
+                    should_add_representation=self.should_add_representation and is_representation_supported(),
                     context=ifc_context,
                     ifc_representation_class=self.ifc_representation_class,
                 )
