@@ -106,22 +106,28 @@ class IfcCsv:
         if include_global_id:
             attributes.insert(0, "GlobalId")
             headers.insert(0, "GlobalId")
+            attributes.insert(0, "FileName")
+            headers.insert(0, "FileName")
 
         for element in elements:
             result = []
 
             for attribute in attributes:
-                value = ifcopenshell.util.selector.get_element_value(element, attribute)
-                if value is None:
-                    value = null
-                elif value == "":
-                    value = empty
-                elif value is True:
-                    value = bool_true
-                elif value is False:
-                    value = bool_false
-                elif isinstance(value, (list, tuple)) and concat is not None:
-                    value = concat.join(map(str, value))
+                if attribute == "FileName":
+                    base_name = os.path.basename(output)
+                    value = re.sub(r"_\d{4}-\d{2}-\d{2}_\d{2}-\d{2}\.\w+$", "", base_name)
+                else:
+                    value = ifcopenshell.util.selector.get_element_value(element, attribute)
+                    if value is None:
+                        value = null
+                    elif value == "":
+                        value = empty
+                    elif value is True:
+                        value = bool_true
+                    elif value is False:
+                        value = bool_false
+                    elif isinstance(value, (list, tuple)) and concat is not None:
+                        value = concat.join(map(str, value))
                 result.append(value)
             self.results.append(result)
 

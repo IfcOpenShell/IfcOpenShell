@@ -16,11 +16,24 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
 from bpy.types import Panel
 from bonsai.bim.module.search.data import SearchData
 
+class BIM_UL_ifc_files(bpy.types.UIList):
+    """Custom UIList to display selected IFC files"""
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        # `item` represents a single file in the list
+        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+            row = layout.row(align=True)
+            row.prop(item, "file_path", text="")  # Display the file path
+            row.prop(item, "is_selected", text="")  # Checkbox to select/unselect the file
+            row.operator("bim.remove_ifc_file", icon="X", text="").index = index
+        elif self.layout_type in {'GRID'}:
+            layout.label(text=item.file_path)
 
 class BIM_PT_ifccsv(Panel):
     bl_label = "Spreadsheet Import/Export"
@@ -35,6 +48,7 @@ class BIM_PT_ifccsv(Panel):
         assert self.layout
         layout = self.layout
         props = tool.Blender.get_csv_props()
+        ifcprops = tool.Blender.get_ifc_props()
 
         if tool.Ifc.get():
             row = layout.row(align=True)
@@ -50,8 +64,17 @@ class BIM_PT_ifccsv(Panel):
 
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = layout.row(align=True)
-            row.prop(props, "csv_ifc_file")
-            row.operator("bim.select_csv_ifc_file", icon="FILE_FOLDER", text="")
+            row.operator("bim.add_ifc_files", icon="FILE_FOLDER", text="Add IFC Files")
+
+            # Display the UIList for selected files
+            layout.template_list(
+                "BIM_UL_ifc_files",  # The UIList class
+                "",                  # Unique identifier (not used here)
+                ifcprops,               # The data source
+                "ifc_files",         # The property containing the list of files
+                ifcprops,               # The data source for the active index
+                "active_ifc_file_index",  # The property for the active file index
+            )
 
         if props.should_show_settings:
             layout.use_property_split = True

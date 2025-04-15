@@ -31,6 +31,8 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 from bonsai.bim.handler import refresh_ui_data
 from typing import TYPE_CHECKING
 from collections import Counter
+from datetime import datetime
+import pandas as pd
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -187,7 +189,9 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
     @classmethod
     def poll(cls, context):
         props = tool.Blender.get_csv_props()
-        if not props.should_load_from_memory and not props.csv_ifc_file:
+        propsIfc = tool.Blender.get_ifc_props()
+        something_selected = any(node.is_selected for node in propsIfc.ifc_files)
+        if not props.should_load_from_memory and not something_selected:
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
         return True
@@ -200,83 +204,110 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
         return f"Export IFC data as a spreadsheet by the provided filepath in '{props.format}' format ."
 
     def invoke(self, context, event):
-        props = tool.Blender.get_csv_props()
-        if props.format == "web":
-            return self.execute(context)
-        self.filter_glob = f"*.{props.format}"
-        self.filename_ext = f".{props.format}"
-        return ExportHelper.invoke(self, context, event)
-
+        return self.execute(context)
+       
     def execute(self, context):
         import ifccsv
 
         props = tool.Blender.get_csv_props()
+        propsIfc = tool.Blender.get_ifc_props()
         self.filepath = bpy.path.ensure_ext(self.filepath, f".{props.format}")
         if props.should_load_from_memory:
-            ifc_file = tool.Ifc.get()
-        else:
-            ifc_file = ifcopenshell.open(props.csv_ifc_file)
-        results = ifcopenshell.util.selector.filter_elements(
-            ifc_file, tool.Search.export_filter_query(props.filter_groups)
-        )
+            ifc_file_path = bpy.context.scene.BIMProperties.ifc_file
+            for node in propsIfc.ifc_files:
+                node.is_selected = False
+            for node in propsIfc.ifc_files:
+                if  tool.Ifc.resolve_uri(node.file_path) == ifc_file_path:
+                    node.is_selected = True
+                    break
+            if not any(node.is_selected for node in propsIfc.ifc_files):
+                # Add the selected file to the list
+                new_file = propsIfc.ifc_files.add()
+                new_file.file_path = ifc_file_path
+                new_file.is_selected = True
 
-        ifc_csv = ifccsv.IfcCsv()
-        attributes = [a.name for a in props.csv_attributes]
-        headers = [a.header for a in props.csv_attributes]
 
-        sort = []
-        groups = []
-        summaries = []
-        formatting = []
-        for attribute in props.csv_attributes:
-            if attribute.sort != "NONE":
-                sort.append({"name": attribute.name, "order": attribute.sort})
-            if attribute.group != "NONE":
-                groups.append({"name": attribute.name, "type": attribute.group, "varies_value": attribute.varies_value})
-            if attribute.summary != "NONE":
-                summaries.append({"name": attribute.name, "type": attribute.summary})
+        dataframes = []
+        for node in propsIfc.ifc_files:
+            if not node.is_selected:
+                continue
+            props.csv_ifc_file = tool.Ifc.resolve_uri(node.file_path)
+            try:
+                ifc_file = ifcopenshell.open(props.csv_ifc_file)
+            except Exception as e:
+                self.report({"INFO"}, f"An error occurred while opening {props.csv_ifc_file}: {e}")
+                continue
 
-            if attribute.formatting != "{{value}}" and "{{value}}" in attribute.formatting:
-                formatting.append({"name": attribute.name, "format": attribute.formatting})
+            results = ifcopenshell.util.selector.filter_elements(
+                ifc_file, tool.Search.export_filter_query(props.filter_groups)
+            )
 
-        file_format = props.format
+            ifc_csv = ifccsv.IfcCsv()
+            attributes = [a.name for a in props.csv_attributes]
+            headers = [a.header for a in props.csv_attributes]
+
+            sort = []
+            groups = []
+            summaries = []
+            formatting = []
+            for attribute in props.csv_attributes:
+                if attribute.sort != "NONE":
+                    sort.append({"name": attribute.name, "order": attribute.sort})
+                if attribute.group != "NONE":
+                    groups.append({"name": attribute.name, "type": attribute.group, "varies_value": attribute.varies_value})
+                if attribute.summary != "NONE":
+                    summaries.append({"name": attribute.name, "type": attribute.summary})
+
+                if attribute.formatting != "{{value}}" and "{{value}}" in attribute.formatting:
+                    formatting.append({"name": attribute.name, "format": attribute.formatting})
+
+            file_format = props.format
+            if props.format == "web":
+                file_format = "pd"
+
+            sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
+            current_datetime = datetime.now().strftime("%Y-%m-%d_%H-%M")
+            outFilename = f"{props.csv_ifc_file}_{current_datetime}.{props.format}"
+            ifc_csv.export(
+                ifc_file,
+                results,
+                attributes,
+                headers=headers,
+                output=outFilename,
+                format=file_format,
+                should_preserve_existing=props.should_preserve_existing,
+                delimiter=sep,
+                include_global_id=props.include_global_id,
+                null=props.null_value,
+                empty=props.empty_value,
+                bool_true=props.true_value,
+                bool_false=props.false_value,
+                concat=props.concat_value,
+                sort=sort,
+                groups=groups,
+                summaries=summaries,
+                formatting=formatting,
+            )
+
+            if props.format != "csv" and props.should_generate_svg:
+                schedule_creator = scheduler.Scheduler()
+                schedule_creator.schedule(outFilename, tool.Drawing.get_path_with_ext(outFilename, "svg"))
+            if props.format == "web":
+                if not tool.Web.get_web_props().is_connected:
+                    bpy.ops.bim.connect_websocket_server()
+                df = ifc_csv.dataframe
+                assert df is not None
+                dataframes.append(df)
+                # Tabulator seems to be ignoring columns non-unique columns,
+                # so we ensure they are unique at input.
+
+            self.report({"INFO"}, f"Data is exported for {outFilename}.")
+
+
         if props.format == "web":
-            file_format = "pd"
-
-        sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
-        ifc_csv.export(
-            ifc_file,
-            results,
-            attributes,
-            headers=headers,
-            output=self.filepath,
-            format=file_format,
-            should_preserve_existing=props.should_preserve_existing,
-            delimiter=sep,
-            include_global_id=props.include_global_id,
-            null=props.null_value,
-            empty=props.empty_value,
-            bool_true=props.true_value,
-            bool_false=props.false_value,
-            concat=props.concat_value,
-            sort=sort,
-            groups=groups,
-            summaries=summaries,
-            formatting=formatting,
-        )
-
-        if props.format != "csv" and props.should_generate_svg:
-            schedule_creator = scheduler.Scheduler()
-            schedule_creator.schedule(self.filepath, tool.Drawing.get_path_with_ext(self.filepath, "svg"))
-        if props.format == "web":
-            if not tool.Web.get_web_props().is_connected:
-                bpy.ops.bim.connect_websocket_server()
-            df = ifc_csv.dataframe
-            assert df is not None
-            # Tabulator seems to be ignoring columns non-unique columns,
-            # so we ensure they are unique at input.
-            df.columns = self.get_unique_column_names(df)
-            tool.Web.send_webui_data(data=df.to_csv(index=False), data_key="csv_data", event="csv_data")
+            concatenated_df = pd.concat(dataframes, ignore_index=True)
+            concatenated_df.columns = self.get_unique_column_names(concatenated_df)
+            tool.Web.send_webui_data(data=concatenated_df.to_csv(index=False), data_key="csv_data", event="csv_data")
 
         self.report({"INFO"}, f"Data is exported to {props.format.upper()}.")
         return {"FINISHED"}
@@ -349,4 +380,44 @@ class SelectCsvIfcFile(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         props = tool.Blender.get_csv_props()
         props.csv_ifc_file = self.filepath
+        return {"FINISHED"}
+
+class BIM_OT_add_ifc_files(bpy.types.Operator, ImportHelper):
+    """Operator to add files to the list"""
+    bl_idname = "bim.add_ifc_files"
+    bl_label = "Add IFC Files"
+    bl_description = "Select IFC files to add to the list"
+    bl_options = {"REGISTER", "UNDO"}
+
+
+    files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
+    directory: bpy.props.StringProperty(subtype="DIR_PATH")
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
+    use_relative_path: bpy.props.BoolProperty(
+        name="Use Relative Path",
+        description="Whether to store linked model path relative to the currently opened IFC file.",
+        default=True,
+    )
+    use_cache: bpy.props.BoolProperty(name="Use Cache", default=False)
+
+
+    def execute(self, context):
+        propsIfc = tool.Blender.get_ifc_props()
+        # Add the selected file to the list
+        new_file = propsIfc.ifc_files.add()
+        new_file.file_path = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)  # Use the selected file path
+        new_file.is_selected = True
+        return {"FINISHED"}
+
+
+class BIM_OT_remove_ifc_file(bpy.types.Operator):
+    """Operator to remove a file from the list"""
+    bl_idname = "bim.remove_ifc_file"
+    bl_label = "Remove IFC File"
+
+    index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = tool.Blender.get_ifc_props()
+        props.ifc_files.remove(self.index)
         return {"FINISHED"}
