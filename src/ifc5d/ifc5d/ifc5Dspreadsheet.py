@@ -26,7 +26,21 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.cost
 import ifcopenshell.util.date
-from typing import Union, Optional, Any
+from typing import Union, Optional, Any, TypedDict, NotRequired
+
+
+class CostItem(TypedDict):
+    Index: int
+    Hierarchy: str
+    Id: int
+    Identification: Union[str, None]
+    Description: Union[str, None]
+    Unit: str
+    Quantity: int
+    ChildrenData: list["CostItem"]
+    # Total Price: float
+    # * Cost: str
+    # Rate Subtotal: float
 
 
 class IfcDataGetter:
@@ -34,11 +48,9 @@ class IfcDataGetter:
     def get_schedules(
         file: ifcopenshell.file, filter_by_schedule: Optional[ifcopenshell.entity_instance] = None
     ) -> list[ifcopenshell.entity_instance]:
-        return [
-            schedule
-            for schedule in file.by_type("IfcCostSchedule")
-            if not filter_by_schedule or schedule == filter_by_schedule
-        ]
+        if filter_by_schedule:
+            return [filter_by_schedule]
+        return file.by_type("IfcCostSchedule")
 
     @staticmethod
     def canonicalise_time(time: Union[datetime.datetime, None]) -> str:
@@ -96,17 +108,21 @@ class IfcDataGetter:
     def process_cost_data(
         file: ifcopenshell.file,
         cost_item: ifcopenshell.entity_instance,
-        cost_items_data: list[dict[str, Any]],
+        cost_items_data: list[CostItem],
         index: int,
         hierarchy: str = "1",
     ) -> None:
+        """
+        :param cost_items_data: A list to fill with cost items.
+        """
+
         def listToString(s):
             return ", ".join([str(i) for i in s])
 
         quantity_data = IfcDataGetter.get_cost_item_quantity(file, cost_item)
         cost_values_data = IfcDataGetter.get_cost_item_values(cost_item)
 
-        data = {
+        data: CostItem = {
             "Index": index,
             "Hierarchy": hierarchy,
             "Id": cost_item.id(),
@@ -140,8 +156,8 @@ class IfcDataGetter:
             )
 
     @staticmethod
-    def get_cost_items_data(file: ifcopenshell.file, schedule: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
-        cost_items_data = []
+    def get_cost_items_data(file: ifcopenshell.file, schedule: ifcopenshell.entity_instance) -> list[CostItem]:
+        cost_items_data: list[cost_item] = []
         index = 0
         for cost_item in IfcDataGetter.get_root_costs(schedule):
             IfcDataGetter.process_cost_data(file, cost_item, cost_items_data, index)
@@ -204,8 +220,43 @@ class IfcDataGetter:
         }
 
 
+class SheetData(TypedDict):
+    headers: list[str]
+    cost_items: list[CostItem]
+    # IFC attributes.
+    UpdateDate: str
+    PredefinedType: Union[str, None]
+    Name: str
+    """Name should be unique as it's going to be used as a filename"""
+
+
 class Ifc5Dwriter:
+    # Inputs.
     file: ifcopenshell.file
+    output: str
+    """Output filepath."""
+    cost_schedule: Union[ifcopenshell.entity_instance, None]
+    """Cost schedule to export. If not provided - export all."""
+    colors: dict[int, str]
+    """Colors to use for hierarchy indices."""
+
+    # Outputs.
+    sheet_data: dict[int, SheetData]
+
+    # Private.
+    cost_schedules: list[ifcopenshell.entity_instance]
+    """List of cost schedules to export."""
+    column_indexes: list[str] = list("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    default_colors: dict[int, str] = {
+        0: "0839C2",  # 1st Row - Dark Blue
+        1: "266EF6",  # Internal reference
+        2: "47C9FF",  # External reference
+        3: "82E9FF",  # Optional
+        4: "B8F2FF",  # Secondary information
+        5: "DAECF5",  # Project specific
+        6: "000000",  # Not used
+        7: "fed8b1",  # 2nd Row - Light Orange
+    }
 
     def __init__(
         self,
@@ -223,29 +274,14 @@ class Ifc5Dwriter:
         else:
             self.file = file
         self.cost_schedule = cost_schedule
-        self.cost_schedules = []
-        self.sheet_data = {}
-        self.column_indexes = []
-        self.colours = {
-            0: "0839C2",  # 1st Row - Dark Blue
-            1: "266EF6",  # Internal reference
-            2: "47C9FF",  # External reference
-            3: "82E9FF",  # Optional
-            4: "B8F2FF",  # Secondary information
-            5: "DAECF5",  # Project specific
-            6: "000000",  # Not used
-            7: "fed8b1",  # 2nd Row - Light Orange
-        }
+        self.colours = self.default_colors.copy()
 
     def parse(self):
-        self.column_indexes = []
-        self.used_names = []
-        for i in range(26):
-            self.column_indexes.append("ABCDEFGHIJKLMNOPQRSTUVWXYZ"[i % 26])
+        used_names: list[str] = []
         for cost_schedule in self.cost_schedules:
             sheet_id = cost_schedule.id()
-            self.sheet_data[sheet_id] = {}
-            self.sheet_data[sheet_id]["headers"] = [
+            self.sheet_data[sheet_id] = sheet_data = SheetData()
+            sheet_data["headers"] = [
                 "Id",
                 "Hierarchy",
                 "Index",
@@ -255,18 +291,18 @@ class Ifc5Dwriter:
                 "Unit",
             ]
             cost_rate_categories = IfcDataGetter.get_cost_rates_categories(cost_schedule)
-            self.sheet_data[sheet_id]["headers"].extend(list(cost_rate_categories))
-            self.sheet_data[sheet_id]["headers"].extend(["Rate Subtotal", "Total Price", "Children"])
-            self.sheet_data[sheet_id]["cost_items"] = IfcDataGetter.get_cost_items_data(self.file, cost_schedule)
-            self.sheet_data[sheet_id]["UpdateDate"] = IfcDataGetter.canonicalise_time(
+            sheet_data["headers"].extend(list(cost_rate_categories))
+            sheet_data["headers"].extend(["Rate Subtotal", "Total Price", "Children"])
+            sheet_data["cost_items"] = IfcDataGetter.get_cost_items_data(self.file, cost_schedule)
+            sheet_data["UpdateDate"] = IfcDataGetter.canonicalise_time(
                 ifcopenshell.util.date.ifc2datetime(cost_schedule.UpdateDate)
             )
-            self.sheet_data[sheet_id]["PredefinedType"] = cost_schedule.PredefinedType
+            sheet_data["PredefinedType"] = cost_schedule.PredefinedType
             schedule_name = cost_schedule.Name or "Unnamed"
-            if schedule_name in self.used_names:
-                schedule_name = "{}_{}".format(schedule_name, self.used_names.count(schedule_name))
-            self.sheet_data[sheet_id]["Name"] = schedule_name
-            self.used_names.append(schedule_name)
+            if schedule_name in used_names:
+                schedule_name = "{}_{}".format(schedule_name, used_names.count(schedule_name))
+            sheet_data["Name"] = schedule_name
+            used_names.append(schedule_name)
 
     def multiply_cells(self, cell1, cell2):
         return "={}*{}".format(cell1, cell2)
@@ -437,7 +473,6 @@ class Ifc5DXlsxWriter(Ifc5Dwriter):
                 file_name += cost_schedule.Name or ""
         self.file_path = os.path.join(self.output, "{}.xlsx".format(file_name))
         self.workbook = xlsxwriter.Workbook(self.file_path)
-        self.used_names = []
         for cost_schedule in self.cost_schedules:
             self.write_table(cost_schedule)
         self.workbook.close()
