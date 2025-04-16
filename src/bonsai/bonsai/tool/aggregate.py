@@ -89,6 +89,20 @@ class Aggregate(bonsai.core.tool.Aggregate):
                 return rel.RelatingObject
 
     @classmethod
+    def get_aggregates_recursively(cls, element: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+        """Get elements aggregates recursively, resulting set includes `element`."""
+        aggregates = list() 
+        queue = {element}
+        while queue:
+            element = queue.pop()
+            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            if aggregate:
+                queue.update({aggregate})
+            if ifcopenshell.util.element.get_parts(element):
+                aggregates.append(element)
+        return aggregates
+
+    @classmethod
     def get_parts_recursively(cls, element: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
         """Get elements parts recursively, resulting set includes `element`."""
         parts = set()
@@ -100,9 +114,17 @@ class Aggregate(bonsai.core.tool.Aggregate):
         return parts
 
     @classmethod
-    def get_aggregate_mode(cls) -> bool:
+    def get_higher_aggregate(cls) -> ifcopenshell.entity_instance:
         props = cls.get_aggregate_props()
-        return props.in_aggregate_mode
+        editing_aggregate = tool.Ifc.get_entity(props.editing_aggregate)
+        higher_aggregate = ifcopenshell.util.element.get_aggregate(editing_aggregate)
+        return tool.Ifc.get_object(higher_aggregate) if higher_aggregate else None
+
+    @classmethod
+    def update_previous_aggregate_mode_state(cls):
+        props = cls.get_aggregate_props()
+        props.previous_state = props.in_aggregate_mode
+        props.previous_editing_aggregate = props.editing_aggregate
 
     @classmethod
     def enable_aggregate_mode(cls, active_object: bpy.types.Object) -> set[Literal["FINISHED"]]:
@@ -112,12 +134,24 @@ class Aggregate(bonsai.core.tool.Aggregate):
         element = tool.Ifc.get_entity(active_object)
         if not element:
             return {"FINISHED"}
-        aggregate = ifcopenshell.util.element.get_aggregate(element)
-        parts = ifcopenshell.util.element.get_parts(element)
+        # Defines the aggregate based on previous state
+        # Controls whether the user is entering a deeper level or
+        # exiting to a higher level. See core/aggregate.py
+        aggregates = tool.Aggregate.get_aggregates_recursively(element)
+        aggregate = aggregates[-1]
+        if props.previous_state:
+            previous_aggregate = tool.Ifc.get_entity(props.previous_editing_aggregate)
+            if previous_aggregate in aggregates:
+                reference_index = aggregates.index(previous_aggregate)
+                aggregate = aggregates[reference_index - 1]
+            else:
+                aggregate = aggregates[0]
+
+        parts = tool.Aggregate.get_parts_recursively(element)
         if not aggregate and not parts:
             return {"FINISHED"}
         if not parts:
-            parts = ifcopenshell.util.element.get_parts(aggregate)
+            parts = tool.Aggregate.get_parts_recursively(aggregate)
         if parts:
             props.editing_aggregate = tool.Ifc.get_object(aggregate) if aggregate else tool.Ifc.get_object(element)
             parts_objs = [tool.Ifc.get_object(part) for part in parts]
@@ -157,7 +191,6 @@ class Aggregate(bonsai.core.tool.Aggregate):
             if not element:
                 continue
 
-        parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(props.editing_aggregate))
         if context.space_data.local_view:
             bpy.ops.view3d.localview()
 
