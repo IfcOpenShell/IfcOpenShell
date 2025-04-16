@@ -26,6 +26,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.cost
 import ifcopenshell.util.date
+from collections import Counter
 from typing import Union, Optional, Any, TypedDict, NotRequired
 
 
@@ -277,7 +278,7 @@ class Ifc5Dwriter:
         self.colours = self.default_colors.copy()
 
     def parse(self):
-        used_names: list[str] = []
+        counter: Counter[str] = Counter()
         for cost_schedule in self.cost_schedules:
             sheet_id = cost_schedule.id()
             self.sheet_data[sheet_id] = sheet_data = SheetData()
@@ -299,10 +300,12 @@ class Ifc5Dwriter:
             )
             sheet_data["PredefinedType"] = cost_schedule.PredefinedType
             schedule_name = cost_schedule.Name or "Unnamed"
-            if schedule_name in used_names:
-                schedule_name = "{}_{}".format(schedule_name, used_names.count(schedule_name))
+
+            counter[schedule_name] += 1
+            if (count := counter[schedule_name]) > 1:
+                schedule_name = f"{schedule_name}_{count - 1}"
+
             sheet_data["Name"] = schedule_name
-            used_names.append(schedule_name)
 
     def multiply_cells(self, cell1, cell2):
         return "={}*{}".format(cell1, cell2)
