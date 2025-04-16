@@ -84,6 +84,8 @@ class Csv2Ifc:
 
         parents: dict[int, CostItem] = {}
         locale.setlocale(locale.LC_ALL, "")  # set the system locale
+        non_sor_fields = {"Property", "Query"}
+
         with open(self.csv, "r", encoding="utf-8") as csv_file:
             reader = csv.reader(csv_file)
             for row in reader:
@@ -102,12 +104,18 @@ class Csv2Ifc:
                     # validate header
                     mandatory_fields = {"Name", "Quantity", "Unit"}
                     if not self.is_schedule_of_rates:
-                        mandatory_fields.update({"Property", "Query"})
+                        mandatory_fields.update(non_sor_fields)
                     available_fields = set(self.headers.keys())
-                    if not mandatory_fields.issubset(available_fields):
-                        raise Exception(
-                            f"Missing mandatory fields in CSV header: {', '.join(mandatory_fields-available_fields)}"
-                        )
+                    missing_fields = mandatory_fields - available_fields
+                    if missing_fields:
+                        if missing_fields == non_sor_fields and not self.is_schedule_of_rates:
+                            self.is_schedule_of_rates = True
+                            print(
+                                "WARNING. Assumed the imported cost schedule is a schedule of rates "
+                                f"because the following fields are missing: {', '.join(non_sor_fields)}."
+                            )
+                        else:
+                            raise Exception(f"Missing mandatory fields in CSV header: {', '.join(missing_fields)}")
 
                     continue
                 cost_data = self.get_row_cost_data(row)
