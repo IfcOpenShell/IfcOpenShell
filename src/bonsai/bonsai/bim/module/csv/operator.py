@@ -310,8 +310,9 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
             concatenated_df = pd.concat(dataframes, ignore_index=True)
             concatenated_df.columns = self.get_unique_column_names(concatenated_df)
             tool.Web.send_webui_data(data=concatenated_df.to_csv(index=False), data_key="csv_data", event="csv_data")
-
-        self.report({"INFO"}, f"Data is exported to {props.format.upper()}.")
+            self.report({"INFO"}, f"Data is exported to {props.format.upper()}. http://127.0.0.1:{bpy.context.scene.WebProperties['webserver_port']}") 
+        else:
+            self.report({"INFO"}, f"Data is exported to {props.format.upper()}.")
         return {"FINISHED"}
 
     def get_unique_column_names(self, dataframe: pd.DataFrame) -> list[str]:
