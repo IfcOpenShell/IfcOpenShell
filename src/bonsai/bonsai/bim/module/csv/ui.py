@@ -31,6 +31,10 @@ class BIM_UL_ifc_files(bpy.types.UIList):
             row = layout.row(align=True)
             row.prop(item, "file_path", text="")  # Display the file path
             row.prop(item, "is_selected", text="")  # Checkbox to select/unselect the file
+            # Add the "eye" icon button to open the file
+            op = row.operator("bim.open_ifc_file", icon="HIDE_OFF", text="")
+            op.file_path = item.file_path  # Pass the file path to the operator
+            # Add the "X" icon button to remove the file
             row.operator("bim.remove_ifc_file", icon="X", text="").index = index
         elif self.layout_type in {'GRID'}:
             layout.label(text=item.file_path)
@@ -65,6 +69,7 @@ class BIM_PT_ifccsv(Panel):
         if not tool.Ifc.get() or not props.should_load_from_memory:
             row = layout.row(align=True)
             row.operator("bim.add_ifc_files", icon="FILE_FOLDER", text="Add IFC Files")
+            row.operator("bim.add_linked_files", icon="LINKED", text="Add Linked Files")
 
             # Display the UIList for selected files
             layout.template_list(

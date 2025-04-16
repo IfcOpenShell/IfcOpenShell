@@ -33,6 +33,8 @@ from typing import TYPE_CHECKING
 from collections import Counter
 from datetime import datetime
 import pandas as pd
+import subprocess
+
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -420,4 +422,52 @@ class BIM_OT_remove_ifc_file(bpy.types.Operator):
     def execute(self, context):
         props = tool.Blender.get_ifc_props()
         props.ifc_files.remove(self.index)
+        return {"FINISHED"}
+    
+class BIM_OT_add_linked_files(bpy.types.Operator):
+    """Operator to add linked files to the IFC file list"""
+    bl_idname = "bim.add_linked_files"
+    bl_label = "Add Linked Files"
+    bl_description = "Add linked files from the project to the IFC file list"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        propsIfc = tool.Blender.get_ifc_props()
+        project_props = tool.Project.get_project_props()
+
+        # Traverse the linked files in the project
+        for link in project_props.links:
+            linked_file_path = link.name
+
+            # Check if the file is already in propsIfc.ifc_files
+            if not any(node.file_path == linked_file_path for node in propsIfc.ifc_files):
+                # Add the linked file to propsIfc.ifc_files
+                new_file = propsIfc.ifc_files.add()
+                new_file.file_path = linked_file_path
+                new_file.is_selected = True
+
+        self.report({"INFO"}, "Linked files added to the IFC file list.")
+        return {"FINISHED"}
+
+
+class BIM_OT_open_ifc_file(bpy.types.Operator):
+    """Operator to open an IFC file in a new Blender instance and load the project"""
+    bl_idname = "bim.open_ifc_file"
+    bl_label = "Open IFC File"
+    bl_description = "Open the selected IFC file in a new Blender instance and load the project"
+    bl_options = {"REGISTER", "UNDO"}
+
+    file_path: bpy.props.StringProperty(name="File Path")
+
+    def execute(self, context):
+        try:
+            # Launch a new Blender instance and execute the bim.load_project operator
+            subprocess.Popen([
+                "blender",  # Path to Blender executable
+                "--python-expr",  # Run a Python expression
+                f"import bpy; bpy.ops.bim.load_project(filepath='{tool.Ifc.resolve_uri(self.file_path)}', should_start_fresh_session=True)"
+            ])
+            self.report({"INFO"}, f"Opening file: {tool.Ifc.resolve_uri(self.file_path)} in a new Blender instance.")
+        except Exception as e:
+            self.report({"ERROR"}, f"Failed to open file: {e}")
         return {"FINISHED"}
