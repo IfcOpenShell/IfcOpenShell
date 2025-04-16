@@ -3299,9 +3299,17 @@ class OverrideMove(bpy.types.Operator):
             if parts:
                 aggregates_to_move.append(tool.Ifc.get_object(element))
                 aggregates_to_move.extend(list(tool.Aggregate.get_parts_recursively(element)))
-
                 continue
-            aggregate = ifcopenshell.util.element.get_aggregate(element)
+
+            # Controls the aggregate level it should consider to move
+            aggregates = tool.Aggregate.get_aggregates_recursively(element)
+            aggregate = aggregates[-1]
+            if props.in_aggregate_mode:
+                current_aggregate_index = aggregates.index(tool.Ifc.get_entity(props.editing_aggregate))
+                aggregate = aggregates[current_aggregate_index - 1]
+                if tool.Ifc.get_entity(props.editing_aggregate) == aggregates[0]:
+                    aggregate = aggregates[0]
+
             if not parts and props.in_aggregate_mode and aggregate == tool.Ifc.get_entity(props.editing_aggregate):
                 continue
             if aggregate:
