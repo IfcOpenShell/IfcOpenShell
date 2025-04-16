@@ -60,6 +60,7 @@ and data-rich OpenBIM with Blender :)
       guides/authoring/other_addons
       guides/troubleshooting
       guides/debugging
+      guides/coordination/spreadsheet_export
 
    .. toctree::
       :hidden:
