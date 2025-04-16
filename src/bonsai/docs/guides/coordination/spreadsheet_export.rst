@@ -46,7 +46,7 @@ Let's see in detail each of the steps:
    
    The "Add Linked Files" will fetch the files you have in the Links subpanel in the projects panel.
 
-   For exmaple if we have these files linked in the project panel:
+   For example if we have these files linked in the project panel:
 
    .. image:: images/LinksPanel.png
      :width: 500
@@ -55,7 +55,7 @@ Let's see in detail each of the steps:
 
    .. image:: images/addLinkedFiles.png
 
-   We wil then get them populated in the list of files to be processed.
+   We will then get them populated in the list of files to be processed.
 
    .. image:: images/LinksPanelToExportPanel.png
      :width: 500
@@ -120,8 +120,17 @@ Let's see in detail each of the steps:
    .. Note::
 
       Typically the Web Broswer will be opened automatically. If not, you can copy the address and paste it in your browser.
+
+
+   Once the web page is opened, you will see a table with the data exported from the IFC files. You can filter the data by typing in the search box or by clicking on the column headers to sort the data. You can also 
+   export the data to CSV format by clicking on the button at the top left of the table.
+
+   .. image:: images/webUI.png
+
    
-   - In the case of "Export IFC to CSV", "Export IFC to XLSX" or "Export IFC to ODS" you will see a message in the bottom of the screen telling you "Data is exported to ..." once finished
+   - In the case of "Export IFC to CSV", "Export IFC to XLSX" or "Export IFC to ODS" you will see a message in the bottom of the screen telling you "Data is exported to ..." once finished. You can check the folder where the IFC files are located and you will see the files generated there.
+
+   .. image:: images/csvExported.png
 
    .. Tip::
 
