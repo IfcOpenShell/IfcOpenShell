@@ -31,6 +31,8 @@ classes = (
     operator.SelectCsvIfcFile,
     operator.BIM_OT_add_ifc_files,
     operator.BIM_OT_remove_ifc_file,
+    operator.BIM_OT_add_linked_files,
+    operator.BIM_OT_open_ifc_file,
     prop.CsvAttribute,
     prop.CsvProperties,
     prop.IfcFile,
