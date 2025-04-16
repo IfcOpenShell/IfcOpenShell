@@ -23,6 +23,14 @@ Planned (would you like to contribute? Please reach out!):
 
 ## Usage CSV to IFC
 
+See example files as a CSV file format reference:
+- `sample_cost_schedule_house_FR.csv` / `.ods`
+- `schedule.csv`, `rates.csv` (schedule of rates example)
+
+Some notes on the format:
+- Empty lines are ignored.
+- Importing ods/xlsx is not currently supported, only csv.
+
 ## Usage IFC to CSV, ODS, XSLS
 
 #TODO
