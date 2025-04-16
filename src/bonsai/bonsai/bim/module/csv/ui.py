@@ -23,18 +23,13 @@ from bpy.types import Panel
 from bonsai.bim.module.search.data import SearchData
 
 class BIM_UL_ifc_files(bpy.types.UIList):
-    """Custom UIList to display selected IFC files"""
-
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        # `item` represents a single file in the list
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
             row = layout.row(align=True)
-            row.prop(item, "file_path", text="")  # Display the file path
-            row.prop(item, "is_selected", text="")  # Checkbox to select/unselect the file
-            # Add the "eye" icon button to open the file
+            row.prop(item, "file_path", text="")  
+            row.prop(item, "is_selected", text="")  
             op = row.operator("bim.open_ifc_file", icon="HIDE_OFF", text="")
-            op.file_path = item.file_path  # Pass the file path to the operator
-            # Add the "X" icon button to remove the file
+            op.file_path = item.file_path
             row.operator("bim.remove_ifc_file", icon="X", text="").index = index
         elif self.layout_type in {'GRID'}:
             layout.label(text=item.file_path)
@@ -71,14 +66,13 @@ class BIM_PT_ifccsv(Panel):
             row.operator("bim.add_ifc_files", icon="FILE_FOLDER", text="Add IFC Files")
             row.operator("bim.add_linked_files", icon="LINKED", text="Add Linked Files")
 
-            # Display the UIList for selected files
             layout.template_list(
-                "BIM_UL_ifc_files",  # The UIList class
-                "",                  # Unique identifier (not used here)
-                ifcprops,               # The data source
-                "ifc_files",         # The property containing the list of files
-                ifcprops,               # The data source for the active index
-                "active_ifc_file_index",  # The property for the active file index
+                "BIM_UL_ifc_files",
+                "",
+                ifcprops,
+                "ifc_files",
+                ifcprops,
+                "active_ifc_file_index",
             )
 
         if props.should_show_settings:
