@@ -386,7 +386,7 @@ class BIM_OT_disable_aggregate_mode(bpy.types.Operator):
 
     def execute(self, context):
         bpy.ops.object.select_all(action="DESELECT")
-        bonsai.core.aggregate.disable_aggregate_mode(tool.Aggregate)
+        bonsai.core.aggregate.exit_aggregate_mode(tool.Aggregate)
         return {"FINISHED"}
 
 

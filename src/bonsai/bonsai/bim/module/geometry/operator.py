@@ -1957,9 +1957,8 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
         nprops = tool.Nest.get_nest_props()
 
         if self.has_aggregates(selected_objs):
-            if not aprops.in_aggregate_mode:
-                bonsai.core.aggregate.enable_aggregate_mode(tool.Aggregate, context.active_object)
-                return {"FINISHED"}
+            bonsai.core.aggregate.enter_aggregate_mode(tool.Aggregate, context.active_object)
+            return {"FINISHED"}
 
         if self.has_nests(selected_objs):
             if not nprops.in_nest_mode:
@@ -1970,7 +1969,11 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             self.handle_single_object(context, context.active_object)
         elif len(selected_objs) == 0:
             if aprops.in_aggregate_mode:
-                bonsai.core.aggregate.disable_aggregate_mode(tool.Aggregate)
+                gprops = tool.Geometry.get_geometry_props()
+                if gprops.representation_obj:
+                    tool.Geometry.disable_item_mode()
+                else:
+                    bonsai.core.aggregate.exit_aggregate_mode(tool.Aggregate)
                 return {"FINISHED"}
             if nprops.in_nest_mode:
                 bonsai.core.nest.disable_nest_mode(tool.Nest)
@@ -2104,6 +2107,10 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             parts = ifcopenshell.util.element.get_parts(element)
             props = tool.Aggregate.get_aggregate_props()
             if (aggregate or parts) and not props.in_aggregate_mode:
+                return True
+            elif element != tool.Ifc.get_entity(props.editing_aggregate) and aggregate != tool.Ifc.get_entity(props.editing_aggregate):
+                return True
+            elif parts and aggregate == tool.Ifc.get_entity(props.editing_aggregate):
                 return True
             else:
                 return False
@@ -3291,10 +3298,12 @@ class OverrideMove(bpy.types.Operator):
             parts = ifcopenshell.util.element.get_parts(element)
             if parts:
                 aggregates_to_move.append(tool.Ifc.get_object(element))
-                continue
-            if not parts and props.in_aggregate_mode:
+                aggregates_to_move.extend(list(tool.Aggregate.get_parts_recursively(element)))
+
                 continue
             aggregate = ifcopenshell.util.element.get_aggregate(element)
+            if not parts and props.in_aggregate_mode and aggregate == tool.Ifc.get_entity(props.editing_aggregate):
+                continue
             if aggregate:
                 aggregates_to_move.append(tool.Ifc.get_object(aggregate))
                 obj.select_set(False)
