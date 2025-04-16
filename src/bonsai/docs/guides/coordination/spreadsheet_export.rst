@@ -111,15 +111,23 @@ Let's see in detail each of the steps:
 
    .. image:: images/loadSaveCSV.png
 
+   .. Note::
+
+      Between the search filter panel and the attribute selection panel you have a button called "Select". This will apply a selection to all the objects in the scene that match the query. 
+      This is useful to check if the query is correct and if you are selecting the elements you want to export. It is just a visual feedback to check if the query is correct but selecting 
+      or not selecting will not change the export process.
+
+
 4. Export to files or to a webserver. Finaly we are ready to export our data. Depending on the format you selected in step two you will have "Export IFC to CSV", "Export IFC to XLSX", "Export IFC to ODS" or "Open Web UI"
 
    - In the case of "Open Web UI", After the button is clicked there will be a message in the bottom of the screen telling you the local address and port where to point your browser
 
    .. image:: images/webExport.png
 
-   .. Note::
+   .. Warning::
 
-      Typically the Web Broswer will be opened automatically. If not, you can copy the address and paste it in your browser.
+      Typically the Web Broswer will be opened automatically. If not, you can copy the address and paste it in your browser. If you have forgotten the port, you can check it in the event log 
+      in the SCRIPTING tab. See the tip below.
 
 
    Once the web page is opened, you will see a table with the data exported from the IFC files. You can filter the data by typing in the search box or by clicking on the column headers to sort the data. You can also 
