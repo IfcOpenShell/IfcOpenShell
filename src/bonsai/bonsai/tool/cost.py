@@ -651,7 +651,7 @@ class Cost(bonsai.core.tool.Cost):
     @classmethod
     def export_cost_schedules(
         cls,
-        filepath: str,
+        dirpath: str,
         format: Literal["CSV", "ODS", "XLSX"],
         cost_schedule: Optional[ifcopenshell.entity_instance] = None,
     ) -> Union[str, None]:
@@ -659,8 +659,8 @@ class Cost(bonsai.core.tool.Cost):
         import os
         import sys
 
-        if filepath:
-            path = filepath
+        if dirpath:
+            path = dirpath
         else:
             path = tool.Blender.get_data_dir_path(Path("build") / "cost_schedules").__str__()
 
