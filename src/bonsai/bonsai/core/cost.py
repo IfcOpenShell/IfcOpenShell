@@ -338,12 +338,12 @@ def calculate_cost_item_resource_value(ifc: tool.Ifc, cost_item: ifcopenshell.en
 
 def export_cost_schedules(
     cost: tool.Cost,
-    filepath: str,
+    dirpath: str,
     format: Literal["CSV", "ODS", "XLSX"],
     cost_schedule: Union[ifcopenshell.entity_instance, None] = None,
 ) -> Union[str, None]:
     cost.play_sound()
-    return cost.export_cost_schedules(filepath, format, cost_schedule)
+    return cost.export_cost_schedules(dirpath, format, cost_schedule)
 
 
 def clear_cost_item_assignments(

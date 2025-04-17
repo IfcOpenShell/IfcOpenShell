@@ -24,6 +24,7 @@ import bonsai.tool as tool
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 import bonsai.tool as tool
 import bonsai.core.cost as core
+from pathlib import Path
 from typing import get_args, TYPE_CHECKING, Literal
 
 
@@ -687,7 +688,8 @@ class ExportCostSchedules(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_cost_schedules"
     bl_label = "Export Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Export a cost schedule to a CSV, XSLX OR ODS file"
+    bl_description = "Export current/all cost schedules as CSV, XSLX or ODS files to the provided directory."
+
     cost_schedule: bpy.props.IntProperty()
     format: bpy.props.EnumProperty(name="Format", items=(("CSV", "CSV", ""), ("XLSX", "XLSX", ""), ("ODS", "ODS", "")))
     directory: bpy.props.StringProperty(subtype="FILE_PATH")
@@ -697,7 +699,15 @@ class ExportCostSchedules(bpy.types.Operator, ExportHelper):
     )
 
     if TYPE_CHECKING:
+        cost_schedule: int
         format: Literal["CSV", "XLSX", "ODS"]
+        directory: str
+
+    def check(self, context):
+        if self.filepath != self.directory:
+            self.filepath = self.directory
+            return True
+        return False
 
     @property
     def filename_ext(self) -> str:
@@ -706,14 +716,11 @@ class ExportCostSchedules(bpy.types.Operator, ExportHelper):
     def execute(self, context):
         cost_schedule = tool.Ifc.get().by_id(self.cost_schedule) if self.cost_schedule else None
         r = core.export_cost_schedules(
-            tool.Cost, filepath=self.directory, format=self.format, cost_schedule=cost_schedule
+            tool.Cost, dirpath=self.directory, format=self.format, cost_schedule=cost_schedule
         )
         if isinstance(r, str):
             self.report({"ERROR"}, r)
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        return ExportHelper.invoke(self, context, event)
 
     def draw(self, context):
         self.layout.label(text="Choose a format")
