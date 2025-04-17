@@ -890,11 +890,15 @@ class CreateDrawing(bpy.types.Operator):
             # shapely variant
             group = root.find("{http://www.w3.org/2000/svg}g")
 
+            raycast_objs = set()
             elements_with_faces = set()
             for element in drawing_elements.copy():
+                if element.is_a("IfcAnnotation"):
+                    continue
                 obj = tool.Ifc.get_object(element)
                 if obj and obj.type == "MESH" and len(obj.data.polygons):
                     elements_with_faces.add(element.GlobalId)
+                    raycast_objs.add(obj)
 
             projections = root.xpath(
                 ".//svg:g[contains(@class, 'projection')]", namespaces={"svg": "http://www.w3.org/2000/svg"}
@@ -929,12 +933,13 @@ class CreateDrawing(bpy.types.Operator):
                     ]
                     if not inside_elements:
                         camera_dir = self.camera.matrix_world.col[2].to_3d() * -1
-                        elements = [
-                            e
-                            for e in tree.select_ray(self.pythonize(centroid3d), self.pythonize(camera_dir))
-                            if not e.instance.is_a("IfcAnnotation")
-                        ]
-                        if elements:
+                        # We previously used tree.select_ray, but raycasting in Blender is 100x faster.
+                        raycast_results = self.cast_rays_and_get_best_object(raycast_objs, centroid3d, camera_dir)
+                        raycast_element = None
+                        if raycast_obj := raycast_results[0]:
+                            raycast_element = tool.Ifc.get_entity(raycast_obj)
+
+                        if raycast_element:
                             path = etree.Element("path")
                             d = (
                                 "M"
@@ -948,7 +953,7 @@ class CreateDrawing(bpy.types.Operator):
                                     + " Z"
                                 )
                             path.attrib["d"] = d
-                            classes = self.get_svg_classes(ifc.by_id(elements[0].instance.id()))
+                            classes = self.get_svg_classes(raycast_element)
                             classes.append("surface")
                             path.set("class", " ".join(list(classes)))
                             group.insert(0, path)
@@ -1450,6 +1455,37 @@ class CreateDrawing(bpy.types.Operator):
 
     def pythonize(self, arr):
         return tuple(map(float, arr))
+
+    def cast_rays_and_get_best_object(
+        self, objs_to_raycast: list[bpy.types.Object], ray_origin, ray_direction
+    ) -> Union[tuple[bpy.types.Object, Vector, int], tuple[None, None, None]]:
+        # This could be optimised even further with 2D box culling
+        best_length_squared = 1.0
+        best_obj = None
+        best_hit = None
+        best_face_index = None
+
+        for obj in objs_to_raycast:
+            matrix_inv = obj.matrix_world.inverted()
+            ray_origin_obj = matrix_inv @ ray_origin
+            ray_direction_obj = ray_direction.to_4d()
+            ray_direction_obj[3] = 0.0
+            ray_direction_obj = (matrix_inv @ ray_direction_obj).to_3d()
+
+            success, location, normal, face_index = obj.ray_cast(ray_origin_obj, ray_direction_obj)
+
+            if success:
+                hit = obj.matrix_world @ location
+                length_squared = (hit - ray_origin).length_squared
+                if best_obj is None or length_squared < best_length_squared:
+                    best_length_squared = length_squared
+                    best_obj = obj
+                    best_hit = hit
+                    best_face_index = face_index
+
+        if best_obj is not None:
+            return best_obj, best_hit, best_face_index
+        return None, None, None
 
     def move_projection_to_bottom(self, root):
         # IfcConvert puts the projection afterwards which is not correct since
