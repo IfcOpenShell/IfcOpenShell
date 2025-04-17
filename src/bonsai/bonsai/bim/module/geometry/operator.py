@@ -2099,7 +2099,9 @@ class OverrideModeSetEdit(bpy.types.Operator, tool.Ifc.Operator):
             props = tool.Aggregate.get_aggregate_props()
             if (aggregate or parts) and not props.in_aggregate_mode:
                 return True
-            elif element != tool.Ifc.get_entity(props.editing_aggregate) and aggregate != tool.Ifc.get_entity(props.editing_aggregate):
+            elif element != tool.Ifc.get_entity(props.editing_aggregate) and aggregate != tool.Ifc.get_entity(
+                props.editing_aggregate
+            ):
                 return True
             elif parts and aggregate == tool.Ifc.get_entity(props.editing_aggregate):
                 return True
