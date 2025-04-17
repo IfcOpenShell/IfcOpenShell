@@ -224,6 +224,68 @@ Scenario: Regenerate a wall - after doing nothing interesting
     And the object "IfcWall/Wall" dimensions are "1,0.1,3"
     And the object "IfcWall/Wall" bottom left corner is at "0,0,0"
 
+Scenario: Insert door into wall
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And the object "IfcWall/Wall" is selected
+    And the cursor is at "10,0,0"
+    # Extend the wall
+    And I press "bim.hotkey(hotkey='S_E')"
+    When I set "scene.BIMModelProperties.ifc_class" to "IfcDoorType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcDoorType') if e.Name == 'DT01'][0].id()"
+    And the cursor is at "7,0,0"
+    And I press "bim.add_occurrence"
+    Then the object "IfcDoor/Door" is at "7,0,0"
+    And the object "IfcWall/Wall" is filled by "IfcDoor/Door"
+
+Scenario: Flip a door inserted in a wall
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And the object "IfcWall/Wall" is selected
+    And the cursor is at "10,0,0"
+    # Extend the wall
+    And I press "bim.hotkey(hotkey='S_E')"
+    # Insert a door
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcDoorType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcDoorType') if e.Name == 'DT01'][0].id()"
+    And the cursor is at "7,0,0"
+    And I press "bim.add_occurrence"
+    When the object "IfcDoor/Door" is selected
+    And I press "bim.hotkey(hotkey='S_F')"
+    Then the object "IfcDoor/Door" is at "8.01,0.1,0"
+
+Scenario: Split a wall which has a flipped door
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    And the object "IfcWall/Wall" is selected
+    And the cursor is at "10,0,0"
+    # Extend the wall
+    And I press "bim.hotkey(hotkey='S_E')"
+    # Insert a door
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcDoorType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcDoorType') if e.Name == 'DT01'][0].id()"
+    And the cursor is at "7,0,0"
+    And I press "bim.add_occurrence"
+    # Flip the door
+    And the object "IfcDoor/Door" is selected
+    And I press "bim.hotkey(hotkey='S_F')"
+    When the cursor is at "5,0,0"
+    And the object "IfcWall/Wall" is selected
+    And I press "bim.hotkey(hotkey='S_K')"
+    Then the object "IfcDoor/Door" is at "8.01,0.1,0"
+
 Scenario: Add a slab
     Given an empty IFC project
     And I load the demo construction library

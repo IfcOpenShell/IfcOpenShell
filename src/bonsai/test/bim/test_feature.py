@@ -1057,6 +1057,25 @@ def the_object_name_has_number_vertices(name, number):
     assert total == int(number), f"We found {total} vertices"
 
 
+@then(parsers.parse('the object "{name}" is filled by "{name2}"'))
+def the_object_name_is_filled_by_filling(name, name2):
+    ifc = tool.Ifc.get()
+    element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
+    debug = {}
+    for rel in ifcopenshell.util.element.get_openings(element):
+        filling = None
+        opening = rel.RelatedOpeningElement
+        for rel2 in opening.HasFillings or []:
+            filling = rel2.RelatedBuildingElement
+            break
+        debug[opening] = filling
+        filling_obj = tool.Ifc.get_object(filling)
+        if filling_obj and filling_obj.name == name2:
+            return True
+    debug = "\n".join([f"{k} filled by {v}" for k, v in debug.items()])
+    assert False, f"Object {name} is not filled by {name2}.\n{debug}"
+
+
 @then(parsers.parse('the void "{name}" is filled by "{filling}"'))
 def the_void_name_is_filled_by_filling(name, filling):
     ifc = tool.Ifc.get()
@@ -1357,6 +1376,7 @@ def i_add_a_construction_library():
 
 
 @given(parsers.parse('the cursor is at "{location}"'))
+@when(parsers.parse('the cursor is at "{location}"'))
 def the_cursor_is_at_location(location):
     bpy.context.scene.cursor.location = [float(co) for co in location.split(",")]
 

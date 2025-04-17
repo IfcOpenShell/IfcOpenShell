@@ -1019,7 +1019,6 @@ class DumbWallJoiner:
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
 
         axis1 = tool.Model.get_wall_axis(wall1)
-        axis2 = copy.deepcopy(axis1)
         intersect, cut_percentage = mathutils.geometry.intersect_point_line(target.to_2d(), *axis1["reference"])
         if cut_percentage < 0 or cut_percentage > 1 or tool.Cad.is_x(cut_percentage, (0, 1)):
             return
@@ -1080,12 +1079,28 @@ class DumbWallJoiner:
         # During the duplication process, filled voids are not copied. So we
         # only need to check fillings on the original element1.
         for opening in [r.RelatedOpeningElement for r in element1.HasOpenings if r.RelatedOpeningElement.HasFillings]:
-            filling_obj = tool.Ifc.get_object(opening.HasFillings[0].RelatedBuildingElement)
+            rel = opening.HasFillings[0]
+            filling = rel.RelatedBuildingElement
+            filling_obj = tool.Ifc.get_object(filling)
             filling_location = filling_obj.matrix_world.translation
             _, filling_position = mathutils.geometry.intersect_point_line(filling_location.to_2d(), *axis1["reference"])
             if filling_position > cut_percentage:
                 # The filling should be moved from element1 to element2.
-                FilledOpeningGenerator().generate(filling_obj, wall2, target=filling_obj.matrix_world.translation)
+                new_opening = ifcopenshell.api.root.copy_class(tool.Ifc.get(), product=opening)
+                new_opening.VoidsElements[0].RelatingBuildingElement = element2
+                if new_opening.ObjectPlacement and new_opening.ObjectPlacement.is_a("IfcLocalPlacement"):
+                    if element2.ObjectPlacement:
+                        new_opening.ObjectPlacement.PlacementRelTo = element2.ObjectPlacement
+                # For now, we do copy opening representations
+                if opening.Representation:
+                    new_opening.Representation = ifcopenshell.util.element.copy_deep(
+                        tool.Ifc.get(), opening.Representation, exclude=["IfcGeometricRepresentationContext"]
+                    )
+
+                rel.RelatedBuildingElement = element2
+
+                # Remove the old opening
+                ifcopenshell.api.run("feature.remove_feature", tool.Ifc.get(), feature=opening)
 
         p1, p2 = ifcopenshell.util.representation.get_reference_line(element1)
         p3 = (wall1.matrix_world.inverted() @ intersect.to_3d()).to_2d() / unit_scale
