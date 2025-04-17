@@ -372,7 +372,7 @@ class BIMProjectProperties(PropertyGroup):
         items=get_template_file,
         name="Template File",
         description=(
-            "Template to use for a new project. All types from the template will be appended to a new project)."
+            "Template to use for a new project. All types from the template will be appended to a new project."
         ),
     )
 
