@@ -664,8 +664,10 @@ namespace IfcGeom {
 		const IfcUtil::IfcBaseClass* next() {
 			using std::chrono::high_resolution_clock;
 
+			if (*native_task_result_iterator_ != *task_result_iterator_) {
+				delete* native_task_result_iterator_;
+			}
 			delete *task_result_iterator_;
-			delete *native_task_result_iterator_;
 
 			if (num_threads_ != 1) {
 				if (!wait_for_element()) {
@@ -896,8 +898,11 @@ namespace IfcGeom {
 
 			if (task_result_ptr_initialized) {
 				while (task_result_iterator_ != --all_processed_elements_.end()) {
+					if (*native_task_result_iterator_ != *task_result_iterator_) {
+						delete* native_task_result_iterator_;
+					}
 					delete *task_result_iterator_++;
-					delete *native_task_result_iterator_++;
+					native_task_result_iterator_++;
 				}
 			}
 
