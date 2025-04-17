@@ -35,7 +35,7 @@ class CostItem(TypedDict):
     Hierarchy: str
     Id: int
     Identification: Union[str, None]
-    Description: Union[str, None]
+    Name: Union[str, None]
     Unit: str
     Quantity: int
     ChildrenData: list["CostItem"]
@@ -131,7 +131,7 @@ class IfcDataGetter:
             "Hierarchy": hierarchy,
             "Id": cost_item.id(),
             "Identification": cost_item.Identification,
-            "Description": cost_item.Name,
+            "Name": cost_item.Name,
             "Unit": cost_values_data[0]["unit"] if cost_values_data else "",
             "Quantity": quantity_data["quantity"]["total_quantity"],
             "ChildrenData": [],
@@ -290,7 +290,7 @@ class Ifc5Dwriter:
                 "Hierarchy",
                 "Index",
                 "Identification",
-                "Description",
+                "Name",
                 "Quantity",
                 "Unit",
             ]

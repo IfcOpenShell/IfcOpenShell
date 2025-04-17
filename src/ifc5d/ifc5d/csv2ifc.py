@@ -107,6 +107,16 @@ class Csv2Ifc:
                         mandatory_fields.update(non_sor_fields)
                     available_fields = set(self.headers.keys())
                     missing_fields = mandatory_fields - available_fields
+
+                    # TODO: 25-04-17 Deprecated 'Description' argument, should fully remove later.
+                    if missing_fields and "Name" in missing_fields and "Description" in available_fields:
+                        print(
+                            "WARNING. 'Description' column is deprecated and should be renamed to 'Name'. It will be deprecated soon completely."
+                        )
+                        self.headers["Name"] = self.headers["Description"]
+                        del self.headers["Description"]
+                        missing_fields.remove("Name")
+
                     if missing_fields:
                         if missing_fields == non_sor_fields and not self.is_schedule_of_rates:
                             self.is_schedule_of_rates = True
