@@ -30,6 +30,8 @@ See example files as a CSV file format reference:
 Some notes on the format:
 - Empty lines are ignored.
 - Importing ods/xlsx is not currently supported, only csv.
+- 'Property', 'Query' columns are required only for non-schedule of rates cost schedules.
+- Some older exports may have 'Description' field instead of 'Name', it is safe to just rename it.
 - 'Hierarchy' is just an informational column that doesn't affect the import.  
 E.g. '1', '1.1', '1.1.1', etc.
 - 'Index' column is a hierarchy depth that's used for building hierarchy during csv import, starting from 1.  
