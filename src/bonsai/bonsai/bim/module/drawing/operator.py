@@ -889,15 +889,6 @@ class CreateDrawing(bpy.types.Operator):
         if self.camera.data.BIMCameraProperties.fill_mode == "SHAPELY":
             # shapely variant
             group = root.find("{http://www.w3.org/2000/svg}g")
-            nm = group.attrib["{http://www.ifcopenshell.org/ns}name"]
-            m4 = np.array(json.loads(group.attrib["{http://www.ifcopenshell.org/ns}plane"]))
-            m3 = np.array(json.loads(group.attrib["{http://www.ifcopenshell.org/ns}matrix3"]))
-            m44 = np.eye(4)
-            m44[0][0:2] = m3[0][0:2]
-            m44[1][0:2] = m3[1][0:2]
-            m44[0][3] = m3[0][2]
-            m44[1][3] = m3[1][2]
-            m44 = np.linalg.inv(m44)
 
             elements_with_faces = set()
             for element in drawing_elements.copy():
@@ -930,21 +921,18 @@ class CreateDrawing(bpy.types.Operator):
                 if polygon.area < 1:
                     continue
                 centroid = polygon.centroid
-                internal_point = centroid if polygon.contains(centroid) else polygon.representative_point()
-                if internal_point:
-                    internal_point = [internal_point.x, internal_point.y]
-                    a, b = self.drawing_to_model_co(m44, m4, internal_point, 0.0), self.drawing_to_model_co(
-                        m44, m4, internal_point, -100.0
-                    )
-                    inside_elements = [e for e in tree.select(self.pythonize(a)) if not e.is_a("IfcAnnotation")]
+                centroid = centroid if polygon.contains(centroid) else polygon.representative_point()
+                if centroid:
+                    centroid3d = self.drawing_to_model_co(centroid.x, centroid.y)
+                    inside_elements = [
+                        e for e in tree.select(self.pythonize(centroid3d)) if not e.is_a("IfcAnnotation")
+                    ]
                     if not inside_elements:
+                        camera_dir = self.camera.matrix_world.col[2].to_3d() * -1
                         elements = [
                             e
-                            for e in tree.select_ray(self.pythonize(a), self.pythonize(b - a))
+                            for e in tree.select_ray(self.pythonize(centroid3d), self.pythonize(camera_dir))
                             if not e.instance.is_a("IfcAnnotation")
-                            and tool.Cad.is_point_on_edge(
-                                Vector(list(e.position)), (Vector(self.pythonize(a)), Vector(self.pythonize(b)))
-                            )
                         ]
                         if elements:
                             path = etree.Element("path")
@@ -961,12 +949,6 @@ class CreateDrawing(bpy.types.Operator):
                                 )
                             path.attrib["d"] = d
                             classes = self.get_svg_classes(ifc.by_id(elements[0].instance.id()))
-                            classes.append(f"intpoint-{internal_point}")
-                            classes.append(f"ab-{a}, {b}")
-                            for i, ray_result in enumerate(elements):
-                                classes.append(f"el{i}-{ray_result.instance.id()}")
-                                classes.append(f"el{i}-pos-{list(ray_result.position)}")
-                                classes.append(f"el{i}-dst-{ray_result.distance}")
                             classes.append("surface")
                             path.set("class", " ".join(list(classes)))
                             group.insert(0, path)
@@ -1026,18 +1008,6 @@ class CreateDrawing(bpy.types.Operator):
 
                     g2 = list(yield_groups(svg2))[0]
 
-                    # These are attributes on the original group that we can use to reconstruct
-                    # a 4x4 matrix of the projection used in the SVG generation process
-                    nm = g1.getAttribute("ifc:name")
-                    m4 = np.array(json.loads(g1.getAttribute("ifc:plane")))
-                    m3 = np.array(json.loads(g1.getAttribute("ifc:matrix3")))
-                    m44 = np.eye(4)
-                    m44[0][0:2] = m3[0][0:2]
-                    m44[1][0:2] = m3[1][0:2]
-                    m44[0][3] = m3[0][2]
-                    m44[1][3] = m3[1][2]
-                    m44 = np.linalg.inv(m44)
-
                     # Loop over the cell paths
                     for pi, p in enumerate(g2.getElementsByTagName("path")):
                         d = p.getAttribute("d")
@@ -1054,30 +1024,34 @@ class CreateDrawing(bpy.types.Operator):
 
                         xy = list(map(float, p.getAttribute("ifc:pointInside").split(",")))
 
-                        a, b = self.drawing_to_model_co(m44, m4, xy, 0.0), self.drawing_to_model_co(m44, m4, xy, -100.0)
+                        centroid3d = self.drawing_to_model_co(*xy)
 
-                        inside_elements = [e for e in tree.select(self.pythonize(a)) if not e.is_a("IfcAnnotation")]
+                        inside_elements = [
+                            e for e in tree.select(self.pythonize(centroid3d)) if not e.is_a("IfcAnnotation")
+                        ]
                         if inside_elements:
                             elements = None
                             if iteration != num_passes:
                                 semantics[pi] = (inside_elements[0], -1)
                         else:
+                            camera_dir = self.camera.matrix_world.col[2].to_3d() * -1
                             elements = [
                                 e
-                                for e in tree.select_ray(self.pythonize(a), self.pythonize(b - a))
+                                for e in tree.select_ray(self.pythonize(centroid3d), self.pythonize(camera_dir))
                                 if not e.instance.is_a("IfcAnnotation")
                             ]
 
                         if elements:
                             classes = self.get_svg_classes(ifc.by_id(elements[0].instance.id()))
                             classes.append("projection")
+                            classes.append("surface")
 
                             if iteration != num_passes:
                                 semantics[pi] = elements[0]
                         else:
                             classes = ["projection"]
 
-                        p.setAttribute("style", "")
+                        p.setAttribute("style", "foo")
                         p.setAttribute("class", " ".join(classes))
 
                     if iteration != num_passes:
@@ -1414,7 +1388,6 @@ class CreateDrawing(bpy.types.Operator):
             if layer:
                 for query in join_criteria:
                     key = ifcopenshell.util.selector.get_element_value(layer, query)
-                    print("got layer key", query, key)
                     if isinstance(key, (list, tuple)):
                         keys.extend(key)
                     else:
@@ -1469,10 +1442,11 @@ class CreateDrawing(bpy.types.Operator):
                 g.set("class", " ".join(list(classes)))
                 group.append(g)
 
-    def drawing_to_model_co(self, m44, m4, xy, z=0.0):
-        xyzw = m44 @ np.array(xy + [z, 1.0])
-        xyzw[1] *= -1.0
-        return (m4 @ xyzw)[0:3]
+    def drawing_to_model_co(self, x, y):
+        camera_xy = np.array((x, -y)) / self.scale / 1000
+        camera_props = self.camera.data.BIMCameraProperties
+        camera_xy += np.array((camera_props.width / -2, camera_props.height / 2))  # top left offset
+        return self.camera.matrix_world @ Vector(camera_xy).to_3d()
 
     def pythonize(self, arr):
         return tuple(map(float, arr))
