@@ -55,7 +55,15 @@ Simple example:
 import ifc5d.ifc5Dspreadsheet
 
 # csv.
-writer = ifc5d.ifc5Dspreadsheet.Ifc5DCsvWriter(ifc_file, temp_csv_dir)
+writer = ifc5d.ifc5Dspreadsheet.Ifc5DCsvWriter(ifc_file, csv_dir)
+writer.write()
+
+# ods.
+writer = ifc5d.ifc5Dspreadsheet.Ifc5DOdsWriter(ifc_file, ods_dir)
+writer.write()
+
+# xlsx.
+writer = ifc5d.ifc5Dspreadsheet.Ifc5DXlsxWriter(ifc_file, xlsx_dir)
 writer.write()
 ```
 
