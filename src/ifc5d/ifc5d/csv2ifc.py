@@ -165,6 +165,7 @@ class Csv2Ifc:
     def create_ifc(self) -> None:
         if not self.file:
             self.create_boilerplate_ifc()
+        assert self.file
         if not self.cost_schedule:
             self.cost_schedule = ifcopenshell.api.cost.add_cost_schedule(self.file, name="CSV Import")
             if self.is_schedule_of_rates:
@@ -179,6 +180,7 @@ class Csv2Ifc:
             self.create_cost_item(cost_item, parent)
 
     def create_cost_item(self, cost_item: CostItem, parent: Optional[ifcopenshell.entity_instance] = None) -> None:
+        assert self.file
         if parent is None:
             cost_item["ifc"] = ifcopenshell.api.cost.add_cost_item(self.file, cost_schedule=self.cost_schedule)
         else:
@@ -265,6 +267,7 @@ class Csv2Ifc:
         unit = self.units.get(symbol, None)
         if unit:
             return unit
+        assert self.file
         unit = self.file.create_entity(
             "IfcContextDependentUnit",
             self.file.create_entity("IfcDimensionalExponents", 0, 0, 0, 0, 0, 0, 0),
