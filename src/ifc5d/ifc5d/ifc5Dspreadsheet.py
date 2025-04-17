@@ -61,7 +61,7 @@ class IfcDataGetter:
 
     @staticmethod
     def get_root_costs(cost_schedule: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
-        return [obj for rel in cost_schedule.Controls or [] for obj in rel.RelatedObjects or []]
+        return ifcopenshell.util.cost.get_root_cost_items(cost_schedule)
 
     @staticmethod
     def get_cost_item_values(cost_item: Union[ifcopenshell.entity_instance, None]) -> Union[list[dict[str, Any]], None]:
@@ -85,6 +85,9 @@ class IfcDataGetter:
 
     @staticmethod
     def process_categories(cost_item: ifcopenshell.entity_instance, categories: set[str]) -> set[str]:
+        """
+        :param categories: A set to fill with categories.
+        """
         for cost_value in cost_item.CostValues or []:
             if cost_value.Category:
                 categories.add("{}{}".format(cost_value.Category, " Cost"))
@@ -93,14 +96,16 @@ class IfcDataGetter:
     @staticmethod
     def process_cost_item_categories(cost_item: ifcopenshell.entity_instance, categories: set[str]) -> set[str]:
         IfcDataGetter.process_categories(cost_item, categories)
-        for rel in cost_item.IsNestedBy or []:
-            for child in rel.RelatedObjects or []:
-                IfcDataGetter.process_cost_item_categories(child, categories)
+        for child in ifcopenshell.util.cost.get_nested_cost_items(cost_item):
+            IfcDataGetter.process_cost_item_categories(child, categories)
         return categories
 
     @staticmethod
     def get_cost_rates_categories(schedule: ifcopenshell.entity_instance) -> set[str]:
-        categories = set()
+        """
+        :param categories: A set to fill with categories.
+        """
+        categories: set[str] = set()
         for cost_item in IfcDataGetter.get_root_costs(schedule):
             IfcDataGetter.process_cost_item_categories(cost_item, categories)
         return categories
@@ -110,15 +115,13 @@ class IfcDataGetter:
         file: ifcopenshell.file,
         cost_item: ifcopenshell.entity_instance,
         cost_items_data: list[CostItem],
-        index: int,
+        index: int = 1,
         hierarchy: str = "1",
     ) -> None:
         """
         :param cost_items_data: A list to fill with cost items.
+        :param index: Current hierarchy depth.
         """
-
-        def listToString(s):
-            return ", ".join([str(i) for i in s])
 
         quantity_data = IfcDataGetter.get_cost_item_quantity(file, cost_item)
         cost_values_data = IfcDataGetter.get_cost_item_values(cost_item)
@@ -150,15 +153,13 @@ class IfcDataGetter:
 
         index += 1
         child_hierarchy = hierarchy + ".1"
-        for nested_cost in [obj for rel in cost_item.IsNestedBy or [] for obj in rel.RelatedObjects or []]:
+        for i, nested_cost in enumerate(ifcopenshell.util.cost.get_nested_cost_items(cost_item), 1):
+            child_hierarchy = f"{hierarchy}.{i}"
             IfcDataGetter.process_cost_data(file, nested_cost, cost_items_data, index, child_hierarchy)
-            child_hierarchy = (
-                ".".join(child_hierarchy.split(".")[:-1]) + "." + str(int(child_hierarchy.split(".")[-1]) + 1)
-            )
 
     @staticmethod
     def get_cost_items_data(file: ifcopenshell.file, schedule: ifcopenshell.entity_instance) -> list[CostItem]:
-        cost_items_data: list[cost_item] = []
+        cost_items_data: list[CostItem] = []
         index = 0
         for cost_item in IfcDataGetter.get_root_costs(schedule):
             IfcDataGetter.process_cost_data(file, cost_item, cost_items_data, index)
@@ -278,6 +279,8 @@ class Ifc5Dwriter:
         self.colours = self.default_colors.copy()
 
     def parse(self):
+        """Fill ``sheet_data`` from ``cost_schedules``."""
+        self.sheet_data = {}
         counter: Counter[str] = Counter()
         for cost_schedule in self.cost_schedules:
             sheet_id = cost_schedule.id()
@@ -326,7 +329,6 @@ class Ifc5Dwriter:
 
     def write(self):
         self.cost_schedules = IfcDataGetter.get_schedules(self.file, self.cost_schedule)
-        self.sheet_data = {}
         self.parse()
 
 
