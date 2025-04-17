@@ -30,6 +30,7 @@ from typing import Any, Union, Optional, TypedDict, NotRequired
 
 
 class CsvHeader(TypedDict):
+    Index: int
     Name: int
     Quantity: int
     Unit: int
@@ -86,13 +87,16 @@ class Csv2Ifc:
         locale.setlocale(locale.LC_ALL, "")  # set the system locale
         non_sor_fields = {"Property", "Query"}
 
+        # TODO: 25-04-17 Deprecated 0 indices, should fully remove later.
+        min_index = None
+
         with open(self.csv, "r", encoding="utf-8") as csv_file:
             reader = csv.reader(csv_file)
             for row in reader:
                 if not row[0]:
                     continue
                 # parse header
-                if row[0] == "Hierarchy":
+                if not self.headers:
                     self.has_categories = True
                     for i, col in enumerate(row):
                         if not col:
@@ -129,12 +133,18 @@ class Csv2Ifc:
 
                     continue
                 cost_data = self.get_row_cost_data(row)
-                hierarchy_key = int(row[0])
-                if hierarchy_key == 1:
+                index = int(row[self.headers["Index"]])
+                if min_index is None and index in (0, 1):
+                    if index == 0:
+                        print(
+                            "WARNING. Indices in csv table start from 0, they should start from 1. It will be deprecated soon completely."
+                        )
+                    min_index = index
+                if index == min_index:
                     self.cost_items.append(cost_data)
                 else:
-                    parents[hierarchy_key - 1]["children"].append(cost_data)
-                parents[hierarchy_key] = cost_data
+                    parents[index - 1]["children"].append(cost_data)
+                parents[index] = cost_data
 
     def get_row_cost_data(self, row: list[str]) -> CostItem:
         name = row[self.headers["Name"]]

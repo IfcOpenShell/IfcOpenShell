@@ -30,6 +30,11 @@ See example files as a CSV file format reference:
 Some notes on the format:
 - Empty lines are ignored.
 - Importing ods/xlsx is not currently supported, only csv.
+- 'Hierarchy' is just an informational column that doesn't affect the import.  
+E.g. '1', '1.1', '1.1.1', etc.
+- 'Index' column is a hierarchy depth that's used for building hierarchy during csv import, starting from 1.  
+E.g. root items of the same level have index '1', their children have '2', etc.
+- 'Index' was preferred for import hierarchy source over 'Hierarchy' as it's easier to edit from the table view.
 
 ## Usage IFC to CSV, ODS, XSLS
 

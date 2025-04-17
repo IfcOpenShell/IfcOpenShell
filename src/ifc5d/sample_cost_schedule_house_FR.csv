@@ -1,4 +1,4 @@
-Hierarchy,Identification,Name,Quantity,Unit,Contract,Rate,Material Rate,Labor Rate,Subtotal,Property,Query
+Index,Identification,Name,Quantity,Unit,Contract,Rate,Material Rate,Labor Rate,Subtotal,Property,Query
 1,DB,Design and build,,,,,,,,,
 2,DB.1,Design,,,,,,,,,
 3,DB.1.1,Architecte,1,unit,40000,,,,40000,,

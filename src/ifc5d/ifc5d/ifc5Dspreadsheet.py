@@ -160,9 +160,8 @@ class IfcDataGetter:
     @staticmethod
     def get_cost_items_data(file: ifcopenshell.file, schedule: ifcopenshell.entity_instance) -> list[CostItem]:
         cost_items_data: list[CostItem] = []
-        index = 0
         for cost_item in IfcDataGetter.get_root_costs(schedule):
-            IfcDataGetter.process_cost_data(file, cost_item, cost_items_data, index)
+            IfcDataGetter.process_cost_data(file, cost_item, cost_items_data)
         return cost_items_data
 
     @staticmethod
