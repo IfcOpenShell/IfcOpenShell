@@ -927,16 +927,7 @@ class OverrideOutlinerDelete(bpy.types.Operator):
         return {"FINISHED"}
 
     def get_collection_objects_and_children(self, collection: bpy.types.Collection) -> dict[str, Any]:
-        objects = set()
-        children = set()
-        queue = [collection]
-        while queue:
-            collection = queue.pop()
-            for obj in collection.objects:
-                objects.add(obj)
-            queue.extend(collection.children)
-            children = children.union(collection.children)
-        return {"objects": objects, "children": children}
+        return {"objects": set(collection.all_objects), "children": set(collection.children_recursive)}
 
     def rollback(self, data):
         tool.Ifc.set(data["old_file"])
