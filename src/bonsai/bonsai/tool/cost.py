@@ -568,10 +568,7 @@ class Cost(bonsai.core.tool.Cost):
         import time
 
         start = time.time()
-        csv2ifc = Csv2Ifc()
-        csv2ifc.csv = file_path
-        csv2ifc.file = tool.Ifc.get()
-        csv2ifc.is_schedule_of_rates = is_schedule_of_rates
+        csv2ifc = Csv2Ifc(file_path, tool.Ifc.get(), is_schedule_of_rates=is_schedule_of_rates)
         csv2ifc.execute()
         print("Import finished in {:.2f} seconds".format(time.time() - start))
 

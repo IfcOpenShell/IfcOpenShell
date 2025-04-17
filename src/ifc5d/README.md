@@ -36,9 +36,26 @@ E.g. '1', '1.1', '1.1.1', etc.
 E.g. root items of the same level have index '1', their children have '2', etc.
 - 'Index' was preferred for import hierarchy source over 'Hierarchy' as it's easier to edit from the table view.
 
+
+Simple example:
+```python
+import ifc5d.csv2ifc
+
+csv2ifc = ifc5d.csv2ifc.Csv2Ifc(csv_filepath, ifc_file)
+csv2ifc.execute()
+```
+
+
 ## Usage IFC to CSV, ODS, XSLS
 
-#TODO
+Simple example:
+```python
+import ifc5d.ifc5Dspreadsheet
+
+# csv.
+writer = ifc5d.ifc5Dspreadsheet.Ifc5DCsvWriter(ifc_file, temp_csv_dir)
+writer.write()
+```
 
 ### CLI app for converting IFC files to CSV, ODS or XLSX format.
 
