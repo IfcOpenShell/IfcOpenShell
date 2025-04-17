@@ -235,9 +235,7 @@ class Ifc5Dwriter:
     # Inputs.
     file: ifcopenshell.file
     output: str
-    """Output filepath."""
     cost_schedule: Union[ifcopenshell.entity_instance, None]
-    """Cost schedule to export. If not provided - export all."""
     colors: dict[int, str]
     """Colors to use for hierarchy indices."""
 
@@ -266,8 +264,9 @@ class Ifc5Dwriter:
         cost_schedule: Optional[ifcopenshell.entity_instance] = None,
     ):
         """
-        Args:
-            cost_schedule: exported cost schedule. If not provided, will export all available schedules.
+        :param file: IFC file to exprot cost schedules from.
+        :param output: Output directory for csv files.
+        :param cost_schedule: exported cost schedule. If not provided, will export all available schedules.
         """
         self.output = output
         if isinstance(file, str):
@@ -277,7 +276,7 @@ class Ifc5Dwriter:
         self.cost_schedule = cost_schedule
         self.colours = self.default_colors.copy()
 
-    def parse(self):
+    def parse(self) -> None:
         """Fill ``sheet_data`` from ``cost_schedules``."""
         self.sheet_data = {}
         counter: Counter[str] = Counter()
@@ -326,13 +325,13 @@ class Ifc5Dwriter:
             attribute = get_position_in_list(attribute, self.sheet_data[schedule_id]["headers"])
             return "{}{}".format(self.column_indexes[attribute], self.row_count)
 
-    def write(self):
+    def write(self) -> None:
         self.cost_schedules = IfcDataGetter.get_schedules(self.file, self.cost_schedule)
         self.parse()
 
 
 class Ifc5DCsvWriter(Ifc5Dwriter):
-    def write(self):
+    def write(self) -> None:
         import csv
 
         super().write()
@@ -348,7 +347,7 @@ class Ifc5DCsvWriter(Ifc5Dwriter):
 
 
 class Ifc5DOdsWriter(Ifc5Dwriter):
-    def write(self):
+    def write(self) -> None:
         from odf.opendocument import OpenDocumentSpreadsheet
         from odf.style import Style, TableCellProperties
         from odf.number import NumberStyle, CurrencyStyle, CurrencySymbol, Number, Text
@@ -465,7 +464,7 @@ class Ifc5DOdsWriter(Ifc5Dwriter):
 
 
 class Ifc5DXlsxWriter(Ifc5Dwriter):
-    def write(self):
+    def write(self) -> None:
         import xlsxwriter
 
         super().write()

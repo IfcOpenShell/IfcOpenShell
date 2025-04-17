@@ -58,11 +58,8 @@ class Csv2Ifc:
     # Inputs.
     csv: str
     file: Union[ifcopenshell.file, None] = None
-    """If not provided, boilerplate file will be created."""
     cost_schedule: Union[ifcopenshell.entity_instance, None] = None
-    """Cost schedule to load cost items to. If not provided, new one will be created."""
     is_schedule_of_rates: bool = False
-    """Whether imported schedule is a schedule of rates."""
 
     # Output.
     cost_items: list[CostItem]
@@ -71,10 +68,33 @@ class Csv2Ifc:
     headers: CsvHeader
     units: dict[str, ifcopenshell.entity_instance]
 
-    def __init__(self):
-        self.units: dict[str, ifcopenshell.entity_instance] = {}
+    def __init__(
+        self,
+        csv: str = None,
+        ifc_file: Union[ifcopenshell.file, None] = None,
+        cost_schedule: Union[ifcopenshell.entity_instance, None] = None,
+        *,
+        is_schedule_of_rates: bool = False,
+    ):
+        """
+        :param csv: CSV filepath to import.
+        :param ifc_file: IFC file to import to. If not provided, boilerplate file will be created.
+        :param cost_schedule: Cost schedule to load cost items to. If not provided, new one will be created.
+        :param is_schedule_of_rates: Whether imported schedule is a schedule of rates.
+        """
+        # TODO: Arguments added only at 25.04.14
+        # `csv` argument is actually not optional, it's only optional for backwards compatibility.
+        # And will be deprecated later.
+        if csv is None:
+            print("WARNING. `csv` argument is not optional and should be provided to the constructor.")
+        self.csv = csv
+        self.file = ifc_file
+        self.cost_schedule = cost_schedule
+        self.is_schedule_of_rates = is_schedule_of_rates
+        self.units = {}
 
     def execute(self) -> None:
+        assert self.csv
         self.parse_csv()
         self.create_ifc()
 
