@@ -1738,11 +1738,6 @@ class Geometry(bonsai.core.tool.Geometry):
                     new_m = np.array(new_m)
                     surface.Position = builder.create_axis2_placement_3d_from_matrix(new_m)
                     ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), position)
-                else:
-                    self.report(
-                        {"INFO"},
-                        f"Editing boolean using non-IfcPlane IfcSurface ({surface.is_a()}) is not supported.",
-                    )
 
         if has_changed:
             cls.reload_representation(rep_obj)
@@ -2037,14 +2032,10 @@ class Geometry(bonsai.core.tool.Geometry):
             element = tool.Ifc.get_entity(obj)
             if element:
                 if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-                    self.report(
-                        {"INFO"}, "Did not duplicate. Duplicate drawings through the Drawings and Documents UI."
-                    )
-                    obj.select_set(False)
+                    tool.Blender.deselect_object(obj)
                     continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
                 elif tool.Geometry.is_locked(element):
-                    tool.Blender.deselect_object(obj, ensure_active_object=True)
-                    self.report({"ERROR"}, lock_error_message(obj.name))
+                    tool.Blender.deselect_object(obj)
                     continue
             elif tool.Geometry.is_representation_item(obj):
                 cls.duplicate_ifc_item(obj)
@@ -2218,11 +2209,11 @@ class Geometry(bonsai.core.tool.Geometry):
             for connection in new[0].ConnectedTo:
                 entity = connection.RelatedElement
                 if entity in old_to_new.keys() or single_obj:
-                    core.remove_connection(tool.Geometry, connection=connection)
+                    cls.remove_connection(connection)
             for connection in new[0].ConnectedFrom:
                 entity = connection.RelatingElement
                 if entity in old_to_new.keys() or single_obj:
-                    core.remove_connection(tool.Geometry, connection=connection)
+                    cls.remove_connection(connection)
 
     @classmethod
     def remove_linked_aggregate_data(cls, old_to_new):
