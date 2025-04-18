@@ -2015,3 +2015,229 @@ class Geometry(bonsai.core.tool.Geometry):
     @classmethod
     def run_edit_object_placement(cls, obj: bpy.types.Object) -> None:
         return bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+    @classmethod
+    def duplicate_ifc_objects(
+        cls, objects_to_duplicate: Iterable[bpy.types.Object], active_object=None, linked=False
+    ) -> dict:
+        # Handle arrays
+        objects_to_duplicate = set(objects_to_duplicate)
+        arrays_to_duplicate, array_children = cls.process_arrays_for_duplication(objects_to_duplicate)
+        objects_to_duplicate -= array_children
+        for child in array_children:
+            child.select_set(False)
+
+        new_active_obj = None
+        # Track decompositions so they can be recreated after the operation
+        decomposition_relationships = tool.Root.get_decomposition_relationships(objects_to_duplicate)
+        connection_relationships = tool.Root.get_connection_relationships(objects_to_duplicate)
+        old_to_new = {}
+
+        for obj in objects_to_duplicate:
+            element = tool.Ifc.get_entity(obj)
+            if element:
+                if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+                    self.report(
+                        {"INFO"}, "Did not duplicate. Duplicate drawings through the Drawings and Documents UI."
+                    )
+                    obj.select_set(False)
+                    continue  # For now, don't copy drawings until we stabilise a bit more. It's tricky.
+                elif tool.Geometry.is_locked(element):
+                    tool.Blender.deselect_object(obj, ensure_active_object=True)
+                    self.report({"ERROR"}, lock_error_message(obj.name))
+                    continue
+            elif tool.Geometry.is_representation_item(obj):
+                cls.duplicate_ifc_item(obj)
+                continue
+
+            tracked_opening_type = tool.Model.get_tracked_opening_type(obj)
+            is_tracked_opening = bool(tracked_opening_type)
+            keep_data_linked = linked and not element and not is_tracked_opening
+
+            # Prior to duplicating, sync the object placement to make decomposition recreation more stable.
+            if tool.Ifc.is_moved(obj):
+                bonsai.core.geometry.edit_object_placement(
+                    tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj, apply_scale=False
+                )
+
+            new_obj = obj.copy()
+            temp_data = None
+
+            # Currently for optimization we do not apply pending changes (scale or changed .data)
+            # to the original and duplicated objects.
+            # Keep new object edited if original is.
+            if tool.Ifc.is_edited(obj, ignore_scale=True):
+                tool.Ifc.edit(new_obj)
+
+            if obj.data and not keep_data_linked:
+                # assure root.copy_class won't replace the previous mesh globally
+                temp_data = obj.data.copy()
+                new_obj.data = temp_data
+
+                # Unlink from previous boolean element
+                # and keep object tracked for decorations.
+                if is_tracked_opening:
+                    mprops = tool.Geometry.get_mesh_props(new_obj.data)
+                    mprops.ifc_boolean_id = 0
+                    tool.Root.add_tracked_opening(new_obj, tracked_opening_type)
+
+            if obj == active_object:
+                new_active_obj = new_obj
+            for collection in obj.users_collection:
+                collection.objects.link(new_obj)
+            obj.select_set(False)
+            new_obj.select_set(True)
+
+            if not element:
+                continue
+
+            # clear object's collection so it will be able to have it's own
+            tool.Blender.get_object_bim_props(new_obj).collection = None
+            # copy the actual class
+            new = bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
+
+            # clean up the orphaned mesh with ifc id of the original object to avoid confusion
+            # IfcGridAxis keeps the same mesh data (it's pointing to ifc id 0, so it's not a problem)
+            if new and temp_data and not new.is_a("IfcGridAxis"):
+                if new.is_a("IfcRelSpaceBoundary"):
+                    surface = new.ConnectionGeometry.SurfaceOnRelatingElement
+                    temp_data.name = f"0/{surface.id()}"
+                    tool.Ifc.link(surface, temp_data)
+                else:
+                    tool.Blender.remove_data_block(temp_data)
+
+            if new:
+                # TODO: handle array data for other cases of duplication
+                array_data = arrays_to_duplicate.get(obj, None)
+                tool.Model.handle_array_on_copied_element(new, array_data)
+                if array_data:
+                    for child in tool.Blender.Modifier.Array.get_all_children_objects(new):
+                        child.select_set(True)
+
+                # TODO: add new array children to recreate their decomposition too
+                old_to_new[element] = [new]
+                if new.is_a("IfcRelSpaceBoundary"):
+                    tool.Boundary.decorate_boundary(new_obj)
+
+        # Recreate aggregate relationship
+        for old in old_to_new.keys():
+            if old.is_a("IfcElementAssembly"):
+                tool.Root.recreate_aggregate(old_to_new)
+
+        # Remove connections with old objects and recreates paths
+        cls.remove_old_connections(old_to_new)
+        tool.Root.recreate_connections(connection_relationships, old_to_new)
+
+        # Recreate decompositions
+        tool.Root.recreate_decompositions(decomposition_relationships, old_to_new)
+        cls.remove_linked_aggregate_data(old_to_new)
+        bonsai.bim.handler.refresh_ui_data()
+        tool.Root.reload_grid_decorator()
+        return old_to_new, active_object
+
+    @classmethod
+    def duplicate_ifc_item(cls, obj: bpy.types.Object) -> None:
+        props = tool.Geometry.get_geometry_props()
+        item = tool.Geometry.get_active_representation(obj)
+        assert item
+        new_item = ifcopenshell.util.element.copy_deep(tool.Ifc.get(), item)
+        new_obj = obj.copy()
+        assert tool.Geometry.has_mesh_properties(obj.data)
+        temp_data = obj.data.copy()
+        new_obj.data = temp_data
+        tool.Ifc.link(new_item, temp_data)
+        new_obj.name = obj.data.name = f"Item/{new_item.is_a()}/{new_item.id()}"
+        props.add_item_object(new_obj, new_item)
+
+        for collection in obj.users_collection:
+            collection.objects.link(new_obj)
+
+        representation = tool.Geometry.get_active_representation(props.representation_obj)
+        representation = ifcopenshell.util.representation.resolve_representation(representation)
+        representation.Items = list(representation.Items) + [new_item]
+
+        tool.Geometry.reload_representation(props.representation_obj)
+
+        obj.select_set(False)
+        tool.Root.reload_item_decorator()
+
+    @classmethod
+    def process_arrays_for_duplication(
+        cls, objects_to_duplicate: Iterable[bpy.types.Object]
+    ) -> tuple[dict[bpy.types.Object, Any], set[ifcopenshell.entity_instance]]:
+        """ "Process arrays for currently selected objects.
+
+        :return: A tuple of two elements:\n
+            - dictionary of objects and their array data. Those objects are safe to duplicate and regenerate arrays using the data.\n
+            - set of array children objects. Those objects can be ignored during duplication, they will be recreated automatically
+            when arrays are regenerated for objects from the dictionary.
+        """
+        selected_objects = set(objects_to_duplicate)
+        array_parents = set()
+        arrays_to_create: dict[bpy.types.Object, Any] = dict()
+        array_children: set[ifcopenshell.entity_instance] = set()  # will be ignored during the duplication
+
+        for obj in objects_to_duplicate:
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
+            if not pset:
+                continue
+            array_parents.add(tool.Ifc.get().by_guid(pset["Parent"]))
+
+        for array_parent in array_parents:
+            array_parent_obj = tool.Ifc.get_object(array_parent)
+            if array_parent_obj not in selected_objects:
+                continue
+
+            array_data = []
+            for modifier_data in tool.Blender.Modifier.Array.get_modifiers_data(array_parent):
+                children = set(tool.Blender.Modifier.Array.get_children_objects(modifier_data))
+                if children.issubset(selected_objects):
+                    modifier_data["children"] = []
+                    array_data.append(modifier_data)
+                    array_children.update(children)
+                else:
+                    break  # allows to duplicate only n first layers of an array
+
+            if array_data:
+                arrays_to_create[array_parent_obj] = array_data
+
+        return arrays_to_create, array_children
+
+    @classmethod
+    def remove_old_connections(cls, old_to_new):
+        single_obj = False
+        if len(old_to_new) == 1:
+            single_obj = True
+
+        for new in old_to_new.values():
+            if not hasattr(new[0], "ConnectedTo"):
+                continue
+            for connection in new[0].ConnectedTo:
+                entity = connection.RelatedElement
+                if entity in old_to_new.keys() or single_obj:
+                    core.remove_connection(tool.Geometry, connection=connection)
+            for connection in new[0].ConnectedFrom:
+                entity = connection.RelatingElement
+                if entity in old_to_new.keys() or single_obj:
+                    core.remove_connection(tool.Geometry, connection=connection)
+
+    @classmethod
+    def remove_linked_aggregate_data(cls, old_to_new):
+        for old, new in old_to_new.items():
+            pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
+            if pset:
+                pset = tool.Ifc.get().by_id(pset["id"])
+                ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new[0], pset=pset)
+
+            if new[0].is_a("IfcElementAssembly"):
+                linked_aggregate_group = [
+                    r.RelatingGroup
+                    for r in getattr(new[0], "HasAssignments", []) or []
+                    if r.is_a("IfcRelAssignsToGroup")
+                    if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
+                ]
+                if linked_aggregate_group:
+                    tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], products=[new[0]])

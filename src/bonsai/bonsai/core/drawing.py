@@ -297,6 +297,7 @@ def add_drawing(
 def duplicate_drawing(
     ifc: tool.Ifc,
     drawing_tool: tool.Drawing,
+    geometry: tool.Geometry,
     drawing: ifcopenshell.entity_instance,
     should_duplicate_annotations: bool = False,
 ) -> ifcopenshell.entity_instance:
@@ -310,13 +311,14 @@ def duplicate_drawing(
     ifc.run("group.edit_group", group=new_group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=new_group, products=[new_drawing])
     if should_duplicate_annotations:
-        for annotation in drawing_tool.get_group_elements(group):
-            if annotation == drawing:
-                continue
-            new_annotation = ifc.run("root.copy_class", product=annotation)
-            drawing_tool.copy_representation(annotation, new_annotation)
-            ifc.run("group.unassign_group", group=group, products=[new_annotation])
-            ifc.run("group.assign_group", group=new_group, products=[new_annotation])
+        new_annotations = []
+        annotation_objs = [ifc.get_object(a) for a in drawing_tool.get_group_elements(group) if a != drawing]
+        old_to_new, _ = geometry.duplicate_ifc_objects(annotation_objs)
+        for new_elements in old_to_new.values():
+            new_annotations.extend(new_elements)
+        new_annotation = set(new_annotations)
+        ifc.run("group.unassign_group", group=group, products=new_annotations)
+        ifc.run("group.assign_group", group=new_group, products=new_annotations)
 
     old_reference = drawing_tool.get_drawing_document(new_drawing)
     ifc.run("document.unassign_document", products=[new_drawing], document=old_reference)

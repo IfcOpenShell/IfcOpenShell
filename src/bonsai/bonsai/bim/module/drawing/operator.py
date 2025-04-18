@@ -181,6 +181,7 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
         core.duplicate_drawing(
             tool.Ifc,
             tool.Drawing,
+            tool.Geometry,
             drawing=tool.Ifc.get().by_id(self.drawing),
             should_duplicate_annotations=self.should_duplicate_annotations,
         )
