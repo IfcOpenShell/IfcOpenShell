@@ -127,6 +127,10 @@ class Csv2Ifc:
         self.parse_csv()
         self.create_ifc()
 
+    def refresh(self) -> None:
+        self.parse_csv()
+        self.create_cost_items(self.cost_items)
+
     def parse_csv(self) -> None:
         """Fill ``headers`` and ``cost_items`` based on data from csv file."""
         self.cost_items = []

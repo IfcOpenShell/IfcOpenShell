@@ -42,6 +42,7 @@ def disable_editing_cost_schedule(cost: tool.Cost) -> None:
 
 def remove_cost_schedule(ifc: tool.Ifc, cost: tool.Cost, cost_schedule: ifcopenshell.entity_instance) -> None:
     cost.remove_stored_schedule_columns(cost_schedule)
+    cost.remove_csv_filepath(cost_schedule)
     ifc.run("cost.remove_cost_schedule", cost_schedule=cost_schedule)
 
 
@@ -311,10 +312,20 @@ def select_cost_schedule_products(
     products = cost.get_cost_schedule_products(cost_schedule)
     spatial.select_products(products)
 
+def import_cost_schedule_csv(cost: tool.Cost, file_path: str, is_schedule_of_rates: bool) -> ifcopenshell.entity_instance:
+    cost_schedule = cost.import_cost_schedule_csv(file_path, is_schedule_of_rates)
+    return cost_schedule
 
-def import_cost_schedule_csv(cost: tool.Cost, file_path: str, is_schedule_of_rates: bool) -> None:
-    cost.import_cost_schedule_csv(file_path, is_schedule_of_rates)
+def add_csv_filepath(cost: tool.Cost, file_path: str, is_schedule_of_rates: bool, cost_schedule) -> None:
+    cost.add_csv_filepath(file_path, is_schedule_of_rates, cost_schedule)
 
+def remove_csv_filepath(cost: tool.Cost, cost_schedule) -> None:
+    cost.remove_csv_filepath(cost_schedule)
+
+def refresh_cost_schedule_csv(ifc: tool.Ifc, cost:tool.Cost) -> None:
+    cost.delete_all_cost_items()
+    cost.refresh_cost_schedule_csv()
+    cost.load_cost_schedule_tree()
 
 def add_cost_column(cost: tool.Cost, name: str) -> None:
     cost.add_cost_column(name)
