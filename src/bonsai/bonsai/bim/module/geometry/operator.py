@@ -969,19 +969,10 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 context.view_layer.objects.active = self.new_active_obj
             return {"FINISHED"}
 
-        new_active_obj = None
-        for obj in context.selected_objects:
-            new_obj = obj.copy()
-            if obj.data and not linked:
-                new_obj.data = obj.data.copy()
-            if obj == context.active_object:
-                new_active_obj = new_obj
-            for collection in obj.users_collection:
-                collection.objects.link(new_obj)
-            obj.select_set(False)
-            new_obj.select_set(True)
-        if new_active_obj:
-            context.view_layer.objects.active = new_active_obj
+        if linked:
+            bpy.ops.object.duplicate_move_linked()
+        else:
+            bpy.ops.object.duplicate_move()
         return {"FINISHED"}
 
     @staticmethod
