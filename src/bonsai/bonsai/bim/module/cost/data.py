@@ -24,7 +24,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
-from typing import Any
+from typing import Any, Union
 
 
 def refresh():
@@ -33,13 +33,19 @@ def refresh():
     CostItemQuantitiesData.is_loaded = False
 
 
+CostItem = dict[str, Any]
+CostQuantity = dict[str, Any]
+CostSchedule = dict[str, Any]
+Currency = dict[str, Any]
+
+
 class CostSchedulesData:
     data = {}
     is_loaded = False
     _cost_values: dict[int, dict[str, Any]]
 
     @classmethod
-    def load(cls):
+    def load(cls) -> None:
         cls.data = {
             "predefined_types": cls.get_cost_schedule_types(),
             "total_cost_schedules": cls.total_cost_schedules(),
@@ -54,18 +60,18 @@ class CostSchedulesData:
         cls.is_loaded = True
 
     @classmethod
-    def currency(cls):
+    def currency(cls) -> Union[Currency, None]:
         unit = tool.Unit.get_project_currency_unit()
         if unit:
             return {"id": unit.id(), "name": unit.Currency}
 
     @classmethod
-    def total_cost_schedules(cls):
+    def total_cost_schedules(cls) -> int:
         return len(tool.Ifc.get().by_type("IfcCostSchedule"))
 
     @classmethod
-    def schedules(cls):
-        results = []
+    def schedules(cls) -> list[CostSchedule]:
+        results: list[CostSchedule] = []
         props = tool.Cost.get_cost_props()
         if props.active_cost_schedule_id:
             schedule = tool.Ifc.get().by_id(props.active_cost_schedule_id)
@@ -88,19 +94,19 @@ class CostSchedulesData:
         return results
 
     @classmethod
-    def is_editing_rates(cls):
+    def is_editing_rates(cls) -> bool:
         props = tool.Cost.get_cost_props()
         ifc_id = props.active_cost_schedule_id
         if not ifc_id:
-            return
+            return False
         return tool.Ifc.get().by_id(ifc_id).PredefinedType == "SCHEDULEOFRATES"
 
     @classmethod
-    def cost_items(cls):
+    def cost_items(cls) -> dict[int, CostItem]:
         cls._cost_values = {}
-        results = {}
+        results: dict[int, CostItem] = {}
         for cost_item in tool.Ifc.get().by_type("IfcCostItem"):
-            data = {}
+            data: CostItem = {}
             cls._load_cost_item_quantities(cost_item, data)
             cls._load_cost_values(cost_item, data)
             cls._load_nesting_index(cost_item, data)
@@ -108,13 +114,13 @@ class CostSchedulesData:
         return results
 
     @classmethod
-    def _load_nesting_index(cls, cost_item, data):
+    def _load_nesting_index(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
         data["NestingIndex"] = None
         for rel in cost_item.Nests or []:
             data["NestingIndex"] = rel.RelatedObjects.index(cost_item)
 
     @classmethod
-    def _load_cost_values(cls, root_element, data):
+    def _load_cost_values(cls, root_element: ifcopenshell.entity_instance, data: CostItem) -> None:
         # data["CostValues"] = []
         data["CategoryValues"] = {}
         data["UnitBasisValueComponent"] = None
@@ -123,6 +129,7 @@ class CostSchedulesData:
         data["TotalCost"] = 0.0
         has_unit_basis = False
         is_sum = False
+        values: list[ifcopenshell.entity_instance]
         if root_element.is_a("IfcCostItem"):
             values = root_element.CostValues
         elif root_element.is_a("IfcConstructionResource"):
@@ -150,7 +157,7 @@ class CostSchedulesData:
             data["TotalAppliedValue"] = None
 
     @classmethod
-    def _load_cost_item_quantities(cls, cost_item, data):
+    def _load_cost_item_quantities(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
         # parametric_quantities = []
         # for rel in cost_item.Controls:
         #     for related_object in rel.RelatedObjects or []:
@@ -158,8 +165,9 @@ class CostSchedulesData:
         #         parametric_quantities.extend(quantities)
         data["TotalCostQuantity"] = ifcopenshell.util.cost.get_total_quantity(cost_item)
         data["UnitSymbol"] = "-"
-        if cost_item.CostQuantities:
-            quantity = cost_item.CostQuantities[0]
+        quantities: list[ifcopenshell.entity_instance] = cost_item.CostQuantities
+        if quantities:
+            quantity = quantities[0]
             data["QuantityType"] = quantity.is_a()
             unit = ifcopenshell.util.unit.get_property_unit(quantity, tool.Ifc.get())
             if unit:
@@ -213,23 +221,31 @@ class CostSchedulesData:
     ) -> list[int]:
         if not element.is_a("IfcObject"):
             return []
-        cost_quantities = cost_item.CostQuantities
+        cost_quantities: list[ifcopenshell.entity_instance] = cost_item.CostQuantities
         if not cost_quantities:
             return []
-        results = []
+
+        results: list[int] = []
+        relationship: ifcopenshell.entity_instance
         for relationship in element.IsDefinedBy:
             if not relationship.is_a("IfcRelDefinesByProperties"):
                 continue
-            qto = relationship.RelatingPropertyDefinition
+            qto: ifcopenshell.entity_instance = relationship.RelatingPropertyDefinition
             if not qto.is_a("IfcElementQuantity"):
                 continue
+            prop: ifcopenshell.entity_instance
             for prop in qto.Quantities:
                 if prop in cost_quantities:
                     results.append(prop.id())
         return results
 
     @classmethod
-    def _load_cost_value(cls, root_element, root_element_data, cost_value):
+    def _load_cost_value(
+        cls,
+        root_element: ifcopenshell.entity_instance,
+        root_element_data: CostItem,
+        cost_value: ifcopenshell.entity_instance,
+    ) -> None:
         value_data = cost_value.get_info()
         del value_data["AppliedValue"]
         if value_data["UnitBasis"]:
@@ -256,8 +272,8 @@ class CostSchedulesData:
             cls._load_cost_value(root_element, root_element_data, component)
 
     @classmethod
-    def cost_quantities(cls):
-        results = []
+    def cost_quantities(cls) -> list[CostQuantity]:
+        results: list[CostQuantity] = []
         props = tool.Cost.get_cost_props()
         ifc_id = props.active_cost_item_id
         if not ifc_id:
@@ -267,7 +283,7 @@ class CostSchedulesData:
         return results
 
     @classmethod
-    def cost_values(cls):
+    def cost_values(cls) -> list[dict[str, str]]:
         props = tool.Cost.get_cost_props()
         ifc_id = props.active_cost_item_id
         if not ifc_id:
@@ -275,14 +291,14 @@ class CostSchedulesData:
         return ifcopenshell.util.cost.get_cost_values(tool.Ifc.get().by_id(ifc_id))
 
     @classmethod
-    def quantity_types(cls):
+    def quantity_types(cls) -> list[tuple[str, str, str]]:
         return [
             (t.name(), t.name(), "")
             for t in tool.Ifc.schema().declaration_by_name("IfcPhysicalSimpleQuantity").subtypes()
         ]
 
     @classmethod
-    def get_cost_schedule_types(cls):
+    def get_cost_schedule_types(cls) -> list[tuple[str, str, str]]:
         types = ifcopenshell.util.cost.get_cost_schedule_types(tool.Ifc.get())
         return [(t["name"], t["name"], t["description"]) for t in types]
 
@@ -299,7 +315,7 @@ class CostItemRatesData:
         cls.is_loaded = True
 
     @classmethod
-    def schedule_of_rates(cls):
+    def schedule_of_rates(cls) -> list[tuple[str, str, str]]:
         return [
             (str(s.id()), s.Name or "Unnamed", "")
             for s in tool.Ifc.get().by_type("IfcCostSchedule")
