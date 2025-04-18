@@ -975,6 +975,14 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
     @staticmethod
     def execute_ifc_duplicate_operator(self, context, linked=False):
+        for obj in context.selected_objects:
+            if element := tool.Ifc.get_entity(obj):
+                if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+                    tool.Blender.deselect_object(obj)
+                    self.report({"ERROR"}, "Drawing not duplicated.")
+                elif tool.Geometry.is_locked(element):
+                    tool.Blender.deselect_object(obj)
+                    self.report({"ERROR"}, lock_error_message(obj.name))
         old_to_new, new_active_obj = tool.Geometry.duplicate_ifc_objects(
             set(context.selected_objects), linked=linked, active_object=context.active_object
         )
