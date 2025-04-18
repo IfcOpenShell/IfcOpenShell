@@ -71,6 +71,19 @@ class BIM_PT_cost_schedules(Panel):
                 text="Currently editing: {}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]),
                 icon="LINENUMBERS_ON",
             )
+            
+            row0 = self.layout.row(align=True)
+            col = row0.column()
+            col.label(text="Linked CSV:")
+            row_1 = col.row(align=True)
+            if self.props.active_cost_schedule_id in [item.cost_item_id for item in self.props.cost_schedule_files]:
+                file = next((item.csv_filepath for item in self.props.cost_schedule_files if item.cost_item_id == self.props.active_cost_schedule_id), None)
+                row_1.label(text=file)
+                row_1.operator("bim.refresh_cost_schedule_csv", icon="FILE_REFRESH", text="")
+            else:
+                row_1.label(text="No CSV file found")
+                row_1.operator("bim.import_cost_schedule_csv", icon="IMPORT", text="")
+            
             grid = self.layout.grid_flow(columns=2, even_columns=True)
             col = grid.column()
             row1 = col.row(align=True)
