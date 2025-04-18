@@ -27,6 +27,7 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.cost
 import ifcopenshell.util.date
+import ifcopenshell.util.unit
 from collections import Counter
 from typing import Union, Optional, Any, TypedDict, NotRequired
 
@@ -49,6 +50,7 @@ class CostItem(TypedDict):
 
 class CostItemQuantity(TypedDict):
     quantity: Union[float, None]
+    unit: str
 
 
 class CostValue(TypedDict):
@@ -115,6 +117,13 @@ class IfcDataGetter:
         quantity_data = IfcDataGetter.get_cost_item_quantity(file, cost_item)
         cost_values_data = IfcDataGetter.get_cost_item_values(cost_item)
 
+        # Guess IfcCostItem unit.
+        unit = ""
+        if cost_values_data:
+            unit = cost_values_data[0]["unit"]
+        if not unit:
+            unit = quantity_data["unit"]
+
         rate_subtotal = 0.0
         total_price = 0.0
         cost_categories: dict[str, float] = {}
@@ -133,7 +142,7 @@ class IfcDataGetter:
             "Id": cost_item.id(),
             "Identification": cost_item.Identification,
             "Name": cost_item.Name,
-            "Unit": cost_values_data[0]["unit"] if cost_values_data else "",
+            "Unit": unit,
             "Quantity": quantity_data["quantity"],
             "RateSubtotal": rate_subtotal,
             "TotalPrice": total_price,
@@ -192,6 +201,7 @@ class IfcDataGetter:
             # 3 IfcPhysicalSimpleQuantity.Value
             return quantity[3]
 
+        unit = ""
         cost_item_quantities: list[ifcopenshell.entity_instance] = cost_item.CostQuantities
         if cost_item_quantities:
             total_cost_quantity = 0.0
@@ -209,11 +219,16 @@ class IfcDataGetter:
             for quantity in cost_item_quantities:
                 if quantity not in accounted_for:
                     total_cost_quantity += add_quantity(quantity, take_off_name)
+
+            ifc_unit = ifcopenshell.util.unit.get_property_unit(cost_item_quantities[0], file)
+            if ifc_unit:
+                unit = ifcopenshell.util.unit.get_unit_symbol(ifc_unit)
         else:
             total_cost_quantity = None
 
         return {
             "quantity": total_cost_quantity,
+            "unit": unit,
         }
 
 
