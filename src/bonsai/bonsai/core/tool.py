@@ -246,6 +246,10 @@ class Cost:
     def has_schedules(cls): pass
     def highlight_cost_item(cls, cost_item): pass
     def import_cost_schedule_csv(cls, file_path, is_schedule_of_rates): pass
+    def add_csv_filepath(cls, file_path, is_schedule_of_rates, cost_schedule): pass
+    def remove_csv_filepath(cls, cost_schedule): pass
+    def delete_all_cost_items(cls): pass
+    def refresh_cost_schedule_csv(cls): pass
     def is_active_schedule_of_rates(cls): pass
     def is_cost_schedule_active(cls, cost_schedule): pass
     def is_root_cost_item(cls, cost_item): pass
