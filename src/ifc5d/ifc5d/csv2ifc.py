@@ -108,7 +108,7 @@ class Csv2Ifc:
 
         parents: dict[int, CostItem] = {}
         locale.setlocale(locale.LC_ALL, "")  # set the system locale
-        non_sor_fields = {"Property", "Query"}
+        non_sor_fields = {"Quantity", "Property", "Query"}
 
         # TODO: 25-04-17 Deprecated 0 indices, should fully remove later.
         min_index = None
@@ -126,9 +126,7 @@ class Csv2Ifc:
                         self.has_categories = False
 
                     # validate header
-                    mandatory_fields = {"Name", "Quantity", "Unit"}
-                    if not self.is_schedule_of_rates:
-                        mandatory_fields.update(non_sor_fields)
+                    mandatory_fields = {"Name", "Unit"}
                     available_fields = set(self.headers.keys())
                     missing_fields = mandatory_fields - available_fields
 
@@ -142,14 +140,7 @@ class Csv2Ifc:
                         missing_fields.remove("Name")
 
                     if missing_fields:
-                        if missing_fields == non_sor_fields and not self.is_schedule_of_rates:
-                            self.is_schedule_of_rates = True
-                            print(
-                                "WARNING. Assumed the imported cost schedule is a schedule of rates "
-                                f"because the following fields are missing: {', '.join(non_sor_fields)}."
-                            )
-                        else:
-                            raise Exception(f"Missing mandatory fields in CSV header: {', '.join(missing_fields)}")
+                        raise Exception(f"Missing mandatory fields in CSV header: {', '.join(missing_fields)}")
 
                     continue
                 cost_data = self.get_row_cost_data(row)
