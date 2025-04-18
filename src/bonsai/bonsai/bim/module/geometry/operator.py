@@ -975,7 +975,7 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
     @staticmethod
     def execute_ifc_duplicate_operator(self, context, linked=False):
-        old_to_new, new_active_object = tool.Geometry.duplicate_ifc_objects(
+        old_to_new, new_active_obj = tool.Geometry.duplicate_ifc_objects(
             set(context.selected_objects), linked=linked, active_object=context.active_object
         )
         if new_active_obj:
