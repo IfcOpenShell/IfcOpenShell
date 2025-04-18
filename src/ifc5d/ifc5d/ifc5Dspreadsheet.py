@@ -17,6 +17,7 @@
 # along with Ifc5D.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
 import os
 import time
 import argparse
@@ -31,17 +32,32 @@ from typing import Union, Optional, Any, TypedDict, NotRequired
 
 
 class CostItem(TypedDict):
+    # Exported columns.
     Index: int
     Hierarchy: str
     Id: int
     Identification: Union[str, None]
     Name: Union[str, None]
     Unit: str
-    Quantity: int
-    ChildrenData: list["CostItem"]
-    # Total Price: float
-    # * Cost: str
-    # Rate Subtotal: float
+    Quantity: Union[float, None]
+    RateSubtotal: float
+    TotalPrice: float
+
+    # Internal.
+    cost_categories: dict[str, float]
+
+
+class CostItemQuantity(TypedDict):
+    quantity: Union[float, None]
+
+
+class CostValue(TypedDict):
+    id: int
+    """Cost Value id."""
+    name: Union[str, None]
+    applied_value: float
+    unit: str
+    category: str
 
 
 class IfcDataGetter:
@@ -64,10 +80,10 @@ class IfcDataGetter:
         return ifcopenshell.util.cost.get_root_cost_items(cost_schedule)
 
     @staticmethod
-    def get_cost_item_values(cost_item: Union[ifcopenshell.entity_instance, None]) -> Union[list[dict[str, Any]], None]:
+    def get_cost_item_values(cost_item: Union[ifcopenshell.entity_instance, None]) -> Union[list[CostValue], None]:
         if not cost_item:
             return None
-        values = []
+        values: list[CostValue] = []
         for cost_value in cost_item.CostValues or []:
             name = cost_value.Name
             applied_value = ifcopenshell.util.cost.calculate_applied_value(cost_item, cost_value)
@@ -84,47 +100,32 @@ class IfcDataGetter:
         return values
 
     @staticmethod
-    def process_categories(cost_item: ifcopenshell.entity_instance, categories: set[str]) -> set[str]:
-        """
-        :param categories: A set to fill with categories.
-        """
-        for cost_value in cost_item.CostValues or []:
-            if cost_value.Category:
-                categories.add("{}{}".format(cost_value.Category, " Cost"))
-        return categories
-
-    @staticmethod
-    def process_cost_item_categories(cost_item: ifcopenshell.entity_instance, categories: set[str]) -> set[str]:
-        IfcDataGetter.process_categories(cost_item, categories)
-        for child in ifcopenshell.util.cost.get_nested_cost_items(cost_item):
-            IfcDataGetter.process_cost_item_categories(child, categories)
-        return categories
-
-    @staticmethod
-    def get_cost_rates_categories(schedule: ifcopenshell.entity_instance) -> set[str]:
-        """
-        :param categories: A set to fill with categories.
-        """
-        categories: set[str] = set()
-        for cost_item in IfcDataGetter.get_root_costs(schedule):
-            IfcDataGetter.process_cost_item_categories(cost_item, categories)
-        return categories
-
-    @staticmethod
-    def process_cost_data(
+    def get_cost_items_data(
         file: ifcopenshell.file,
         cost_item: ifcopenshell.entity_instance,
-        cost_items_data: list[CostItem],
         index: int = 1,
         hierarchy: str = "1",
-    ) -> None:
+    ) -> list[CostItem]:
         """
         :param cost_items_data: A list to fill with cost items.
         :param index: Current hierarchy depth.
         """
+        cost_items_data: list[CostItem] = []
 
         quantity_data = IfcDataGetter.get_cost_item_quantity(file, cost_item)
         cost_values_data = IfcDataGetter.get_cost_item_values(cost_item)
+
+        rate_subtotal = 0.0
+        total_price = 0.0
+        cost_categories: dict[str, float] = {}
+        for cost_value in cost_values_data or []:
+            category = cost_value["category"]
+            if cost_value["category"] == "*":  # A sum.
+                total_price = cost_value["applied_value"]
+            else:
+                cost_category = "{}{}".format(category, " Cost")
+                cost_categories[cost_category] = cost_value["applied_value"]
+                rate_subtotal += cost_value["applied_value"]
 
         data: CostItem = {
             "Index": index,
@@ -133,35 +134,25 @@ class IfcDataGetter:
             "Identification": cost_item.Identification,
             "Name": cost_item.Name,
             "Unit": cost_values_data[0]["unit"] if cost_values_data else "",
-            "Quantity": quantity_data["quantity"]["total_quantity"],
-            "ChildrenData": [],
+            "Quantity": quantity_data["quantity"],
+            "RateSubtotal": rate_subtotal,
+            "TotalPrice": total_price,
+            "cost_categories": cost_categories,
         }
-        for cost_value in cost_values_data or []:
-            cost_category = "{}{}".format(cost_value["category"], " Cost")
-            data[cost_category] = cost_value["applied_value"]
-        if data.get("* Cost", None):
-            data["Total Price"] = data["* Cost"]
-            data["* Cost"] = ""
-        rate_subtotal = 0
-        for key, value in data.items():
-            if "Cost" in key and not "*" in key:
-                rate_subtotal += value
-
-        data["Rate Subtotal"] = rate_subtotal
-
         cost_items_data.append(data)
 
         index += 1
         child_hierarchy = hierarchy + ".1"
         for i, nested_cost in enumerate(ifcopenshell.util.cost.get_nested_cost_items(cost_item), 1):
             child_hierarchy = f"{hierarchy}.{i}"
-            IfcDataGetter.process_cost_data(file, nested_cost, cost_items_data, index, child_hierarchy)
+            cost_items_data.extend(IfcDataGetter.get_cost_items_data(file, nested_cost, index, child_hierarchy))
+        return cost_items_data
 
     @staticmethod
-    def get_cost_items_data(file: ifcopenshell.file, schedule: ifcopenshell.entity_instance) -> list[CostItem]:
+    def get_schedule_cost_items_data(file: ifcopenshell.file, schedule: ifcopenshell.entity_instance) -> list[CostItem]:
         cost_items_data: list[CostItem] = []
         for cost_item in IfcDataGetter.get_root_costs(schedule):
-            IfcDataGetter.process_cost_data(file, cost_item, cost_items_data)
+            cost_items_data.extend(IfcDataGetter.get_cost_items_data(file, cost_item))
         return cost_items_data
 
     @staticmethod
@@ -184,40 +175,45 @@ class IfcDataGetter:
         return IfcDataGetter.format_unit(unit.UnitComponent)
 
     @staticmethod
-    def get_cost_item_quantity(file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance) -> dict[str, Any]:
+    def get_cost_item_quantity(file: ifcopenshell.file, cost_item: ifcopenshell.entity_instance) -> CostItemQuantity:
+        accounted_for: set[ifcopenshell.entity_instance] = set()
+
+        # NOTE: take_off_name is not used anywhere.
+        take_off_name: str = ""
+
         # TODO: handle multiple quantities, THOSE WHHICH ARE JUYST ASSIGNED TO THE COST ITEM DIRECTLY, NOT THROUGH OBJECTS.
         def add_quantity(quantity: ifcopenshell.entity_instance, take_off_name: str) -> float:
-            accounted_for.append(quantity)
+            accounted_for.add(quantity)
             if take_off_name == "":
+                # 0 IfcPhysicalSimpleQuantity.Name
                 take_off_name = quantity[0]
-                if quantity[0] != take_off_name:
-                    take_off_name = "mixed-takeoff-quantities"
+            if quantity[0] != take_off_name:
+                take_off_name = "mixed-takeoff-quantities"
+            # 3 IfcPhysicalSimpleQuantity.Value
             return quantity[3]
 
-        take_off_name = ""
-        total_cost_quantity = 0
-        accounted_for = []
-        cost_item_quantities = cost_item.CostQuantities
+        cost_item_quantities: list[ifcopenshell.entity_instance] = cost_item.CostQuantities
         if cost_item_quantities:
-            for rel in cost_item.Controls or []:
-                for related_object in rel.RelatedObjects:
-                    qtos = ifcopenshell.util.element.get_psets(related_object, qtos_only=True)
-                    for quantities in qtos.values() or []:
-                        qto = file.by_id(quantities["id"])
-                        for quantity in qto.Quantities:
-                            if quantity not in cost_item_quantities:
-                                continue
-                            total_cost_quantity += add_quantity(quantity, take_off_name)
-                            accounted_for.append(quantity)
+            total_cost_quantity = 0.0
+            # Add quantities from cost assignments.
+            for related_object in ifcopenshell.util.cost.get_cost_assignments_by_type(cost_item):
+                qtos = ifcopenshell.util.element.get_psets(related_object, qtos_only=True)
+                for quantities in qtos.values() or []:
+                    qto = file.by_id(quantities["id"])
+                    for quantity in qto.Quantities:
+                        if quantity not in cost_item_quantities:
+                            continue
+                        total_cost_quantity += add_quantity(quantity, take_off_name)
 
+            # Add cost item quantities assigned to the cost item directly.
             for quantity in cost_item_quantities:
-                if not quantity in accounted_for:
+                if quantity not in accounted_for:
                     total_cost_quantity += add_quantity(quantity, take_off_name)
+        else:
+            total_cost_quantity = None
 
         return {
-            "id": cost_item.id(),
-            "name": cost_item.Name,
-            "quantity": {"take_off_name": take_off_name, "total_quantity": total_cost_quantity},
+            "quantity": total_cost_quantity,
         }
 
 
@@ -282,31 +278,42 @@ class Ifc5Dwriter:
         counter: Counter[str] = Counter()
         for cost_schedule in self.cost_schedules:
             sheet_id = cost_schedule.id()
-            self.sheet_data[sheet_id] = sheet_data = SheetData()
-            sheet_data["headers"] = [
+            cost_items = IfcDataGetter.get_schedule_cost_items_data(self.file, cost_schedule)
+            headers: list[str] = [
                 "Id",
                 "Hierarchy",
                 "Index",
                 "Identification",
                 "Name",
-                "Quantity",
                 "Unit",
             ]
-            cost_rate_categories = IfcDataGetter.get_cost_rates_categories(cost_schedule)
-            sheet_data["headers"].extend(list(cost_rate_categories))
-            sheet_data["headers"].extend(["Rate Subtotal", "Total Price", "Children"])
-            sheet_data["cost_items"] = IfcDataGetter.get_cost_items_data(self.file, cost_schedule)
-            sheet_data["UpdateDate"] = IfcDataGetter.canonicalise_time(
-                ifcopenshell.util.date.ifc2datetime(cost_schedule.UpdateDate)
-            )
-            sheet_data["PredefinedType"] = cost_schedule.PredefinedType
-            schedule_name = cost_schedule.Name or "Unnamed"
+            if cost_schedule.PredefinedType != "SCHEDULEOFRATES":
+                headers.insert(-1, "Quantity")
+            headers.extend(["RateSubtotal", "TotalPrice"])
 
+            # Handle cost categories.
+            categories: set[str] = set()
+            for cost_item in cost_items:
+                for category, value in cost_item["cost_categories"].items():
+                    categories.add(category)
+                    cost_item[category] = value
+            assert not (intersection := categories.intersection(headers)), intersection
+            headers.extend(categories)
+
+            schedule_name = cost_schedule.Name or "Unnamed"
             counter[schedule_name] += 1
             if (count := counter[schedule_name]) > 1:
                 schedule_name = f"{schedule_name}_{count - 1}"
 
-            sheet_data["Name"] = schedule_name
+            self.sheet_data[sheet_id] = {
+                "Name": schedule_name,
+                "headers": headers,
+                "cost_items": cost_items,
+                "UpdateDate": IfcDataGetter.canonicalise_time(
+                    ifcopenshell.util.date.ifc2datetime(cost_schedule.UpdateDate)
+                ),
+                "PredefinedType": cost_schedule.PredefinedType,
+            }
 
     def multiply_cells(self, cell1, cell2):
         return "={}*{}".format(cell1, cell2)
