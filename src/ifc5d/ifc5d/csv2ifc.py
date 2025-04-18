@@ -36,10 +36,34 @@ class CsvHeader(TypedDict):
     Identification: NotRequired[int]
     Value: NotRequired[int]
 
+    # Info fields from csv export.
+    Hierarchy: NotRequired[int]
+    Id: NotRequired[int]
+
     # Not schedule of rates:
     Quantity: NotRequired[int]
     Property: NotRequired[int]
     Query: NotRequired[int]
+
+
+# Currently we assume that if column is not part of the main header,
+# then it is a cost value category. So here we list any additional column
+# that shouldn't be treated as cost values.
+MAIN_CSV_HEADER_COLUMNS = list(CsvHeader.__annotations__.keys())
+MAIN_CSV_HEADER_COLUMNS.extend(
+    [
+        # Not sure what this for but it's present in sample .csv.
+        "Subtotal",
+        # Columns from exporter.
+        "RateSubtotal",
+        "TotalPrice",
+        # Deprecated columns from exporter, shouldn't be exported any longer.
+        "Children",
+        "Rate Subtotal",
+        "Total Price",
+        "* Cost",
+    ]
+)
 
 
 class CostItem(TypedDict):
@@ -70,6 +94,8 @@ class Csv2Ifc:
     # Private.
     headers: CsvHeader
     units: dict[str, ifcopenshell.entity_instance]
+    categories: dict[str, int]
+    has_categories: bool
 
     def __init__(
         self,
@@ -124,6 +150,15 @@ class Csv2Ifc:
                     self.headers = {col: i for i, col in enumerate(row) if col}
                     if "Value" in self.headers:
                         self.has_categories = False
+                    else:
+                        # Very fragile part of the code.
+                        self.categories = {  # pyright: ignore [reportAttributeAccessIssue]
+                            name: index for name, index in self.headers.items() if name not in MAIN_CSV_HEADER_COLUMNS
+                        }
+                        if self.categories:
+                            print(
+                                f"The following columns will be used as cost values categories: {', '.join(self.categories)}"
+                            )
 
                     # validate header
                     mandatory_fields = {"Name", "Unit"}
@@ -170,10 +205,7 @@ class Csv2Ifc:
 
         if self.has_categories:
             cost_values = {
-                k: locale.atof(row[v])
-                for k, v in self.headers.items()
-                if k not in ["Hierarchy", "Identification", "Name", "Quantity", "Unit", "Subtotal", "Property", "Query"]
-                and row[v]
+                col_name: locale.atof(row[col_i]) for col_name, col_i in self.categories.items() if row[col_i]
             }
         else:
             assert "Value" in self.headers
