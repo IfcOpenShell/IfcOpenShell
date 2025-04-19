@@ -1438,17 +1438,6 @@ class ReloadLink(bpy.types.Operator):
 
     def execute(self, context):
         filepath = Path(self.filepath)
-
-        def get_linked_ifcs() -> set[bpy.types.Library]:
-            return {
-                c.library
-                for c in bpy.data.collections
-                if "IfcProject" in c.name and c.library and Path(c.library.filepath) == filepath
-            }
-
-        for library in get_linked_ifcs():
-            library.reload()
-
         is_abs = os.path.isabs(Path(self.filepath))
         use_relative_path = not is_abs
         bpy.ops.bim.unlink_ifc(filepath=self.filepath)
