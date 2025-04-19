@@ -1051,13 +1051,24 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::dir
 
 	std::list<cgal_face_t> face_list;
 
+	auto& fs = direction->ccomponents();
+	cgal_direction_t dir(fs(0), fs(1), fs(2));
+
 	int wi = 0;
 	for (auto& w : faces_to_extrude) {
 
-		face_list.push_back(cgal_face_t{ w });
+		auto fnorm = newell(w);
+		const bool reverse = fnorm * dir > 0;
 
-		auto& fs = direction->ccomponents();
-		cgal_direction_t dir(fs(0), fs(1), fs(2));
+		if (reverse) {
+			cgal_face_t bottom_face;
+			for (auto vertex = w.rbegin(); vertex != w.rend(); ++vertex) {
+				bottom_face.outer.push_back(*vertex);
+			}
+			face_list.push_back(bottom_face);
+		} else {
+			face_list.push_back(cgal_face_t{ w });
+		}
 
 		int si = 0;
 		for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = w.begin();
@@ -1073,19 +1084,31 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::dir
 			}
 
 			cgal_face_t side_face;
-			side_face.outer.push_back(*next_vertex);
-			side_face.outer.push_back(*current_vertex);
-			side_face.outer.push_back(*current_vertex + height * dir);
-			side_face.outer.push_back(*next_vertex + height * dir);
+			if (reverse) {
+				side_face.outer.push_back(*current_vertex + height * dir);
+				side_face.outer.push_back(*next_vertex + height * dir);
+				side_face.outer.push_back(*next_vertex);
+				side_face.outer.push_back(*current_vertex);
+			} else {
+				side_face.outer.push_back(*current_vertex);
+				side_face.outer.push_back(*next_vertex);
+				side_face.outer.push_back(*next_vertex + height * dir);
+				side_face.outer.push_back(*current_vertex + height * dir);
+			}
 			face_list.push_back(side_face);
 		}
 
 		cgal_face_t top_face;
-		for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = w.rbegin();
-			vertex != w.rend();
-			++vertex) {
-			top_face.outer.push_back(*vertex + height * dir);
-		} face_list.push_back(top_face);
+		if (reverse) {
+			for (auto vertex = w.begin(); vertex != w.end(); ++vertex) {
+				top_face.outer.push_back(*vertex + height * dir);
+			}
+		} else {
+			for (auto vertex = w.rbegin(); vertex != w.rend(); ++vertex) {
+				top_face.outer.push_back(*vertex + height * dir);
+			}
+		}
+		face_list.push_back(top_face);
 
 		wi++;
 	}
