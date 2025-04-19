@@ -305,6 +305,7 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
 			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinition>
 			(object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
 
+#ifdef SCHEMAS_HAS_IfcPropertySetDefinitionSet
 		aggregate_of<IfcSchema::IfcPropertySetDefinitionSet>::ptr property_set_sets = get_related
 			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinitionSet>
 			(object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
@@ -312,6 +313,7 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
 		for (auto& s : *property_set_sets) {
 			 property_sets->push((decltype(property_sets))*s);
 		}
+#endif
 
 		for (IfcSchema::IfcPropertySetDefinition::list::it it = property_sets->begin(); it != property_sets->end(); ++it) {
 			IfcSchema::IfcPropertySetDefinition* pset = *it;
