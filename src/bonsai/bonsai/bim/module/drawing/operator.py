@@ -1505,7 +1505,7 @@ class CreateDrawing(bpy.types.Operator):
         group = root.find("{http://www.w3.org/2000/svg}g")
 
         # TODO: Make this an assignable preference
-        classes_to_move = ["IfcColumn", "IfcBeam", "EPsetStatusStatus-NEW"]
+        classes_to_move = ["IfcColumn", "IfcBeam", "EPsetStatusStatus-NEW", "IfcGeographicElement"]
 
         # Iterate through classes in order of preference
         for class_name in classes_to_move:
