@@ -34,9 +34,7 @@ def refresh():
     DrawingsData.is_loaded = False
     ElementFiltersData.is_loaded = False
     AnnotationData.is_loaded = False
-    DecoratorData.data = {}
-    DecoratorData.cut_cache = {}
-    DecoratorData.layerset_cache = {}
+    DecoratorData.is_loaded = False
 
 
 class ProductAssignmentsData:
@@ -240,6 +238,25 @@ class DecoratorData:
     fill_cache = {}
 
     @classmethod
+    def load(cls):
+        cls.is_loaded = True
+        cls.cut_cache = {}
+        cls.layerset_cache = {}
+
+        text = {}
+        dimension = {}
+        for obj in bpy.context.visible_objects:
+            if not (element := tool.Ifc.get_entity(obj)):
+                continue
+            if tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
+                text[obj.name] = cls.get_ifc_text_data(obj)
+            elif tool.Drawing.is_annotation_object_type(
+                element, ("DIMENSION", "DIAMETER", "SECTION_LEVEL", "PLAN_LEVEL", "RADIUS")
+            ):
+                dimension[obj.name] = cls.get_dimension_data(obj)
+        cls.data = {"text": text, "dimension": dimension}
+
+    @classmethod
     def get_batting_thickness(cls, obj):
         """used by IfcAnnotations with ObjectType = "BATTING" """
         result = cls.data.get(obj.name, None)
@@ -296,17 +313,10 @@ class DecoratorData:
         return display_data
 
     @classmethod
-    def get_ifc_text_data(cls, obj: bpy.types.Object) -> dict[str, Any]:
+    def get_ifc_text_data(cls, obj: bpy.types.Object) -> dict:
         """used by Ifc Annotations with ObjectType = "TEXT" / "TEXT_LEADER"\n
         returns font size in mm for current ifc text object"""
-        result = cls.data.get(obj.name, None)
-        if result is not None:
-            return result
-
         element = tool.Ifc.get_entity(obj)
-        if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
-            return None
-
         props = tool.Drawing.get_text_props(obj)
         # getting font size
         pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Annotation") or {}
@@ -344,9 +354,7 @@ class DecoratorData:
 
             literals_data.append(literal_data)
 
-        text_data = {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol, "Newline_At": newline_at}
-        cls.data[obj.name] = text_data
-        return text_data
+        return {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol, "Newline_At": newline_at}
 
     @classmethod
     def get_symbol(cls, obj: bpy.types.Object) -> Union[str, None]:
@@ -359,19 +367,7 @@ class DecoratorData:
 
         DIMENSION / DIAMETER / SECTION_LEVEL / PLAN_LEVEL / RADIUS
         """
-        result = cls.data.get(obj.name, None)
-        if result is not None:
-            return result
-
         element = tool.Ifc.get_entity(obj)
-        supported_object_types = ("DIMENSION", "DIAMETER", "SECTION_LEVEL", "PLAN_LEVEL", "RADIUS")
-        if (
-            not element
-            or not element.is_a("IfcAnnotation")
-            or ifcopenshell.util.element.get_predefined_type(element) not in supported_object_types
-        ):
-            return None
-
         dimension_style = "arrow"
         fill_bg = False
         classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
@@ -390,7 +386,7 @@ class DecoratorData:
         custom_unit_list = pset_data.get("CustomUnit", None) or ""
         custom_unit = custom_unit_list[0] if custom_unit_list else ""
 
-        dimension_data = {
+        return {
             "dimension_style": dimension_style,
             "show_description_only": show_description_only,
             "suppress_zero_inches": suppress_zero_inches,
@@ -399,8 +395,6 @@ class DecoratorData:
             "fill_bg": fill_bg,
             "custom_unit": custom_unit,
         }
-        cls.data[obj.name] = dimension_data
-        return dimension_data
 
 
 class AnnotationData:

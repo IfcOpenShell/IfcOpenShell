@@ -599,7 +599,7 @@ class BaseDecorator:
         if not (pos := location_3d_to_region_2d(region, region3d, text_world_position)):
             return
         props = tool.Drawing.get_text_props(obj)
-        text_data = DecoratorData.get_ifc_text_data(obj)
+        text_data = DecoratorData.data["text"].get(obj.name, None)
         if props.is_editing:
             text_data = text_data | props.get_text_edited_data()
         literals_data = text_data["Literals"]
@@ -656,7 +656,10 @@ class DimensionDecorator(BaseDecorator):
         viewportDrawingScale = self.get_viewport_drawing_scale(context)
 
         # setup geometry parameters
-        dimension_style = DecoratorData.get_dimension_data(obj)["dimension_style"]
+        dimension_data = DecoratorData.data["dimension"].get(obj.name, None)
+        if not dimension_data:
+            return
+        dimension_style = dimension_data["dimension_style"]
         if dimension_style == "oblique":
             size = viewportDrawingScale * 10  # OLBIQUE_SYMBOL_SIZE
             angle = radians(45)
@@ -718,7 +721,9 @@ class DimensionDecorator(BaseDecorator):
 
         element = tool.Ifc.get_entity(obj)
         description = element.Description
-        dimension_data = DecoratorData.get_dimension_data(obj)
+        dimension_data = DecoratorData.data["dimension"].get(obj.name, None)
+        if not dimension_data:
+            return
         show_description_only = dimension_data["show_description_only"]
         text_prefix = dimension_data["text_prefix"]
         text_suffix = dimension_data["text_suffix"]
@@ -952,7 +957,9 @@ class RadiusDecorator(BaseDecorator):
             return
         element = tool.Ifc.get_entity(obj)
         description = element.Description
-        dimension_data = DecoratorData.get_dimension_data(obj)
+        dimension_data = DecoratorData.data["dimension"].get(obj.name, None)
+        if not dimension_data:
+            return
         viewportDrawingScale = self.get_viewport_drawing_scale(context)
         text_offset = 20 * viewportDrawingScale
 
@@ -1179,7 +1186,9 @@ class PlanLevelDecorator(BaseDecorator):
 
         element = tool.Ifc.get_entity(obj)
         description = element.Description
-        dimension_data = DecoratorData.get_dimension_data(obj)
+        dimension_data = DecoratorData.data["dimension"].get(obj.name, None)
+        if not dimension_data:
+            return
 
         for verts in splines:
             p0, p1 = [location_3d_to_region_2d(region, region3d, v) for v in verts[:2]]
@@ -1262,7 +1271,9 @@ class SectionLevelDecorator(BaseDecorator):
         storey = tool.Drawing.get_annotation_element(element)
         tag = storey.Name if storey else element.Description
 
-        dimension_data = DecoratorData.get_dimension_data(obj)
+        dimension_data = DecoratorData.data["dimension"].get(obj.name, None)
+        if not dimension_data:
+            return
 
         for verts in splines:
 
@@ -1721,11 +1732,11 @@ class CutDecorator:
             self.recalculate_fill(context, obj, element)
 
     def recalculate_cut(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
-        if not tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
-            DecoratorData.cut_cache[element.id()] = (False, False)
-        else:
+        if tool.Drawing.is_intersecting_camera(obj, context.scene.camera):
             verts, edges = tool.Drawing.bisect_mesh(obj, context.scene.camera)
             DecoratorData.cut_cache[element.id()] = (verts, edges)
+        else:
+            DecoratorData.cut_cache[element.id()] = (False, False)
 
     def recalculate_fill(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
         element_id = element.id()
@@ -1909,6 +1920,8 @@ class DecorationsHandler:
     def install(cls, context):
         if cls.installed:
             cls.uninstall()
+        if not DecoratorData.is_loaded:
+            DecoratorData.load()
         handler = cls()
         # NOTE: we USE POST_PIXEL here so that we can use both POLYLINE_UNIFORM_COLOR
         # and drawing text in the same handler. BUT this means that we supply coordinates in WINSPACE
