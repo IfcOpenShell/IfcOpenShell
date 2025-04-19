@@ -19,6 +19,52 @@ Scenario: Duplicate drawing
     When I press "bim.duplicate_drawing(drawing={drawing})"
     Then nothing happens
 
+Scenario: Duplicate drawing - without duplicating annotations
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And I save sample test files
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "OUTLINER_OB_CAMERA"
+    And I press "bim.add_annotation"
+    And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
+    When I press "bim.duplicate_drawing(drawing={drawing})"
+    And I select the "PLAN_VIEW-X" item in the "BIM_UL_drawinglist" list
+    And I click "OUTLINER_OB_CAMERA"
+    Then the object "IfcAnnotation/TEXT" is not selected
+    And the object "IfcAnnotation/TEXT.001" does not exist
+
+Scenario: Duplicate drawing - with duplicating annotations
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And I save sample test files
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "OUTLINER_OB_CAMERA"
+    And I press "bim.add_annotation"
+    And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
+    When I press "bim.duplicate_drawing(drawing={drawing}, should_duplicate_annotations=True)"
+    And I select the "PLAN_VIEW-X" item in the "BIM_UL_drawinglist" list
+    And I click "OUTLINER_OB_CAMERA"
+    Then the object "IfcAnnotation/TEXT" is not selected
+    And the object "IfcAnnotation/TEXT.001" exists
+
 Scenario: Create drawing
     Given an empty IFC project
     And I add a cube
@@ -35,7 +81,8 @@ Scenario: Create drawing
     When I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     And I click "OUTLINER_OB_CAMERA"
     And I click "OUTPUT"
-    Then nothing happens
+    Then the drawing "PLAN_VIEW.svg" contains "cut"
+    And the drawing "PLAN_VIEW.svg" contains "IfcWall"
 
 Scenario: Create drawing after deleting a duplicated object
     Given an empty IFC project
@@ -171,3 +218,25 @@ Scenario: Add annotation - auto create context if it doesn't exist
     And I click "OUTLINER_OB_CAMERA"
     When I press "bim.add_annotation"
     Then the object "IfcAnnotation/TEXT" is selected
+
+Scenario: Create drawing - using shapely fill mode
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And I save sample test files
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I set the "location_hint" property to "My Storey"
+    And I click "ADD"
+    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    When I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
+    And I click "OUTLINER_OB_CAMERA"
+    And I look at the "Active Drawing" panel
+    And I set the "Fill Mode" property to "Shapely"
+    And I look at the "Drawings" panel
+    And I click "OUTPUT"
+    Then the drawing "MY STOREY PLAN.svg" contains "IfcWall material-null surface"

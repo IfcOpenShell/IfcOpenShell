@@ -2031,7 +2031,6 @@ class Drawing(bonsai.core.tool.Drawing):
         cls.import_camera_props(drawing, camera.data)
 
         for obj in selected_objects_before:
-            obj.hide_set(False)
             obj.select_set(True)
 
     @classmethod

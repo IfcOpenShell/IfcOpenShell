@@ -670,6 +670,12 @@ def then_the_object_name_is_selected(name):
     assert obj in bpy.context.selected_objects
 
 
+@then(parsers.parse('the object "{name}" is not selected'))
+def then_the_object_name_is_not_selected(name):
+    obj = the_object_name_exists(name)
+    assert obj not in bpy.context.selected_objects
+
+
 @given(parsers.parse('the object "{name}" is rotated by "{rotation_deg}" deg'))
 @when(parsers.parse('the object "{name}" is rotated by "{rotation_deg}" deg'))
 def the_object_name_is_rotated_by(name, rotation_deg):
@@ -1487,7 +1493,7 @@ def the_obj1_and_obj2_belong_the_same_linked_aggregate_group(obj_name1, obj_name
 
 
 @when(parsers.parse('the object layer length is set to "{value}"'))
-def the_obj_layer_lenght_is_set_to(value):
+def the_obj_layer_length_is_set_to(value):
     value = float(value)
     try:
         eval("bpy.context.scene.BIMModelProperties.length")
@@ -1496,6 +1502,16 @@ def the_obj_layer_lenght_is_set_to(value):
     props = tool.Model.get_model_props()
     props.length = value
     bpy.ops.bim.change_layer_length(length=value)
+
+
+@then(parsers.parse('the drawing "{filename}" contains "{text}"'))
+def the_drawing_filename_contains_text(filename, text):
+    filepath = f"{variables['cwd']}/test/files/temp/drawings/{filename}"
+    with open(filepath, "r") as f:
+        content = f.read()
+        if text in content:
+            return True
+    assert False, f"Drawing {filename} does not contain {text}:\n{filepath}\n{content}"
 
 
 # These definitions are not to be used in tests but simply in debugging failing tests
