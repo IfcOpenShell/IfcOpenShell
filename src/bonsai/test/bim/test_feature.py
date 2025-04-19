@@ -40,6 +40,7 @@ scenarios("feature")
 
 variables = {
     "cwd": Path.cwd().as_posix(),
+    "ifc_dir": os.path.join(Path.cwd().as_posix(), "test", "files", "temp"),
     "ifc": "tool.Ifc.get()",
     "pset_ifc": "IfcStore.pset_template_file",
     "classification_ifc": "IfcStore.classification_file",
@@ -405,6 +406,7 @@ def the_name_list_has_total_items(name, total):
 
 @given(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
 @when(parsers.parse('I select the "{item_name}" item in the "{list_name}" list'))
+@then(parsers.parse('I can select the "{item_name}" item in the "{list_name}" list'))
 def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
     assert panel_spy
     panel_spy.refresh_spy()
@@ -1360,7 +1362,16 @@ def the_object_name_has_no_aggregate(name: str) -> None:
 def the_file_name_should_contain_value(name, value):
     name = replace_variables(name)
     with open(name, "r") as f:
-        assert value in f.read()
+        content = f.read()
+        assert value in content, f"File {name} does not contain {value}:\n{content}"
+
+
+@then(parsers.parse('the file "{name}" should not contain "{value}"'))
+def the_file_name_should_contain_value(name, value):
+    name = replace_variables(name)
+    with open(name, "r") as f:
+        content = f.read()
+        assert value not in content, f"File {name} contains {value}:\n{content}"
 
 
 @then(parsers.parse('the object "{name}" has no modifiers'))
@@ -1502,16 +1513,6 @@ def the_obj_layer_length_is_set_to(value):
     props = tool.Model.get_model_props()
     props.length = value
     bpy.ops.bim.change_layer_length(length=value)
-
-
-@then(parsers.parse('the drawing "{filename}" contains "{text}"'))
-def the_drawing_filename_contains_text(filename, text):
-    filepath = f"{variables['cwd']}/test/files/temp/drawings/{filename}"
-    with open(filepath, "r") as f:
-        content = f.read()
-        if text in content:
-            return True
-    assert False, f"Drawing {filename} does not contain {text}:\n{filepath}\n{content}"
 
 
 # These definitions are not to be used in tests but simply in debugging failing tests

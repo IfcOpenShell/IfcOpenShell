@@ -81,8 +81,8 @@ Scenario: Create drawing
     When I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
     And I click "OUTLINER_OB_CAMERA"
     And I click "OUTPUT"
-    Then the drawing "PLAN_VIEW.svg" contains "cut"
-    And the drawing "PLAN_VIEW.svg" contains "IfcWall"
+    Then the file "{ifc_dir}/drawings/PLAN_VIEW.svg" should contain "cut"
+    And the file "{ifc_dir}/drawings/PLAN_VIEW.svg" should contain "IfcWall"
 
 Scenario: Create drawing after deleting a duplicated object
     Given an empty IFC project
@@ -239,4 +239,76 @@ Scenario: Create drawing - using shapely fill mode
     And I set the "Fill Mode" property to "Shapely"
     And I look at the "Drawings" panel
     And I click "OUTPUT"
-    Then the drawing "MY STOREY PLAN.svg" contains "IfcWall material-null surface"
+    Then the file "{ifc_dir}/drawings/MY STOREY PLAN.svg" should contain "IfcWall material-null surface"
+
+Scenario: Add sheet
+    Given an empty IFC project
+    And I save sample test files
+    And I look at the "Sheets" panel
+    And I click "IMPORT"
+    When I click "ADD"
+    Then the file "{ifc_dir}/layouts/A00 - UNTITLED.svg" should contain "titleblocks/A1.svg"
+    And the file "{ifc_dir}/layouts/A00 - UNTITLED.svg" should not contain "GRID NORTH"
+
+Scenario: Create sheet
+    Given an empty IFC project
+    And I save sample test files
+    And I look at the "Sheets" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I select the "UNTITLED" item in the "BIM_UL_sheets" list
+    When I click "OUTPUT"
+    Then the file "{ifc_dir}/sheets/A00 - UNTITLED.svg" should not contain "titleblocks/A1.svg"
+    And the file "{ifc_dir}/sheets/A00 - UNTITLED.svg" should contain "GRID NORTH"
+    And the file "{ifc_dir}/sheets/A00 - UNTITLED.svg" should not contain "IfcWall"
+
+Scenario: Add drawing to sheet
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And I save sample test files
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "OUTLINER_OB_CAMERA"
+    And I click "OUTPUT"
+    And I look at the "Sheets" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And the variable "sheet" is "tool.Ifc.get().by_type('IfcDocumentInformation')[-1].id()"
+    And I select the "UNTITLED" item in the "BIM_UL_sheets" list
+    And I press "bim.expand_sheet(sheet={sheet})"
+    When I click "IMAGE_PLANE"
+    Then I can select the "PLAN_VIEW.svg" item in the "BIM_UL_sheets" list
+
+Scenario: Create sheet - with a drawing added to it
+    Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And I save sample test files
+    And I look at the "Drawings" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
+    And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
+    And I click "OUTLINER_OB_CAMERA"
+    And I click "OUTPUT"
+    And I look at the "Sheets" panel
+    And I click "IMPORT"
+    And I click "ADD"
+    And the variable "sheet" is "tool.Ifc.get().by_type('IfcDocumentInformation')[-1].id()"
+    And I select the "UNTITLED" item in the "BIM_UL_sheets" list
+    And I press "bim.expand_sheet(sheet={sheet})"
+    And I click "IMAGE_PLANE"
+    When I click "OUTPUT"
+    Then the file "{ifc_dir}/sheets/A00 - UNTITLED.svg" should contain "IfcWall"
