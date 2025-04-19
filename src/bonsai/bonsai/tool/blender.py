@@ -745,6 +745,10 @@ class Blender(bonsai.core.tool.Blender):
         return {"data_block": getattr(data_to, data_block_type)[0], "msg": ""}
 
     @classmethod
+    def remove_object(cls, obj: bpy.types.Object) -> None:
+        bpy.data.objects.remove(obj)
+
+    @classmethod
     def remove_data_block(cls, data_block: bpy.types.ID, do_unlink=True) -> None:
         """Removes a datablock (such as a mesh)
 

@@ -296,6 +296,7 @@ def add_drawing(
 
 def duplicate_drawing(
     ifc: tool.Ifc,
+    blender: tool.Blender,
     drawing_tool: tool.Drawing,
     geometry: tool.Geometry,
     drawing: ifcopenshell.entity_instance,
@@ -315,6 +316,11 @@ def duplicate_drawing(
         annotation_objs = [ifc.get_object(a) for a in drawing_tool.get_group_elements(group) if a != drawing]
         old_to_new, _ = geometry.duplicate_ifc_objects(annotation_objs)
         for new_elements in old_to_new.values():
+            # Remove the Blender object, since we haven't actually activated the duplicated drawing
+            for new_element in new_elements:
+                print('new element', new_element)
+                print('gonna remove', ifc.get_object(new_element))
+                blender.remove_object(ifc.get_object(new_element))
             new_annotations.extend(new_elements)
         new_annotation = set(new_annotations)
         ifc.run("group.unassign_group", group=group, products=new_annotations)

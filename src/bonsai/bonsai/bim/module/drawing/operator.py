@@ -180,6 +180,7 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Drawing.get_document_props()
         core.duplicate_drawing(
             tool.Ifc,
+            tool.Blender,
             tool.Drawing,
             tool.Geometry,
             drawing=tool.Ifc.get().by_id(self.drawing),
