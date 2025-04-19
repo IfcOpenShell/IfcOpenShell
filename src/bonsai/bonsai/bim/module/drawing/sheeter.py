@@ -90,7 +90,6 @@ class SheetBuilder:
         layout_dir = os.path.dirname(layout_path)
 
         drawing_path = tool.Drawing.get_document_uri(tool.Drawing.get_drawing_reference(drawing))
-        underlay_path = os.path.splitext(drawing_path)[0] + "-underlay.png"
 
         if not os.path.exists(layout_path) or not os.path.exists(drawing_path):
             raise FileNotFoundError
@@ -115,16 +114,6 @@ class SheetBuilder:
         view_height = self.convert_to_mm(view_root.attrib.get("height"))
 
         x, y = self.next_drawing_location(layout_root, view_width)
-
-        # add background
-        if os.path.isfile(underlay_path):
-            background = ET.SubElement(view, "image")
-            background.attrib["data-type"] = "background"
-            background.attrib["xlink:href"] = os.path.relpath(underlay_path, layout_dir)
-            background.attrib["x"] = str(x)
-            background.attrib["y"] = str(y)
-            background.attrib["width"] = str(view_width)
-            background.attrib["height"] = str(view_height)
 
         # add foreground
         if os.path.isfile(drawing_path):
@@ -406,14 +395,11 @@ class SheetBuilder:
 
             images = view.findall("{http://www.w3.org/2000/svg}image")
 
-            background = None
             foreground = None
             view_title = None
 
             for image in images:
-                if image.attrib["data-type"] == "background":
-                    background = image
-                elif image.attrib["data-type"] == "foreground":
+                if image.attrib["data-type"] == "foreground":
                     foreground = image
                 elif image.attrib["data-type"] == "view-title":
                     view_title = image
@@ -422,12 +408,6 @@ class SheetBuilder:
                 svg = self.parse_embedded_svg(foreground, {})
                 svg = self.ensure_drawing_unique_styles(svg, drawing_id)
                 view.append(svg)
-
-            if background is not None:
-                background_path = os.path.join(self.layout_dir, self.get_href(background))
-                raster_path = os.path.join(self.sheets_dir, os.path.basename(background_path))
-                shutil.copy(background_path, raster_path)
-                self.references["RASTER"].append(raster_path)
 
             if view_title is not None:
                 foreground_path = self.get_href(foreground)
@@ -521,8 +501,14 @@ class SheetBuilder:
             self.scale = embedded.attrib.get("data-scale")
             images = embedded.findall("{http://www.w3.org/2000/svg}image")
             for image in images:
-                new_href = ntpath.basename(image.attrib.get("{http://www.w3.org/1999/xlink}href"))
-                image.attrib["{http://www.w3.org/1999/xlink}href"] = new_href
+                old_href = Path(image.attrib.get("{http://www.w3.org/1999/xlink}href"))
+                if not os.path.isabs(old_href):
+                    template_dir = Path(os.path.join(self.layout_dir, svg_path)).resolve().parent
+                    old_href = Path(os.path.join(template_dir, old_href))
+                old_href = old_href.absolute().resolve().as_posix()
+                new_href = Path(os.path.join(self.sheets_dir, Path(old_href).name)).absolute().resolve().as_posix()
+                shutil.copy(old_href, new_href)
+                image.attrib["{http://www.w3.org/1999/xlink}href"] = Path(old_href).name
         for child in embedded:
             if "namedview" in child.tag:
                 continue

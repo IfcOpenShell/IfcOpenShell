@@ -1924,7 +1924,6 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
             sheet_builder = sheeter.SheetBuilder()
 
             references = sheet_builder.build(sheet)
-            raster_references = [tool.Ifc.get_uri(r, use_relative_path=True) for r in references["RASTER"]]
 
             # These variables will be made available to the evaluated commands
             svg = references["SHEET"]
@@ -1943,11 +1942,6 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
                 reference_description = tool.Drawing.get_reference_description(reference)
                 if reference_description == "SHEET":
                     has_sheet_reference = True
-                elif reference_description == "RASTER":
-                    if reference.Location in raster_references:
-                        raster_references.remove(reference.Location)
-                    else:
-                        tool.Ifc.run("document.remove_reference", reference=reference)
 
             if not has_sheet_reference:
                 reference = tool.Ifc.run("document.add_reference", information=sheet)
@@ -1956,18 +1950,6 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
                     reference=reference,
                     attributes=tool.Drawing.generate_reference_attributes(
                         reference, Location=tool.Ifc.get_uri(svg, use_relative_path=True), Description="SHEET"
-                    ),
-                )
-
-            for raster_reference in raster_references:
-                reference = tool.Ifc.run("document.add_reference", information=sheet)
-                tool.Ifc.run(
-                    "document.edit_reference",
-                    reference=reference,
-                    attributes=tool.Drawing.generate_reference_attributes(
-                        reference,
-                        Location=tool.Ifc.get_uri(raster_reference, use_relative_path=True),
-                        Description="RASTER",
                     ),
                 )
 
