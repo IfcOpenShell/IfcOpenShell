@@ -118,5 +118,10 @@ jobs:
           aws-region: us-east-1
 
       - name: Upload .zip Archives to S3
+        env:
+          AWS_DEBUG: 1
+          AWS_RETRY_MODE: standard
+          AWS_MAX_ATTEMPTS: 3
         run: |
-          aws s3 cp $env:USERPROFILE\output s3://ifcopenshell-builds/ --recursive
+          dir "$env:USERPROFILE\output"
+          aws s3 cp "$env:USERPROFILE\output" s3://ifcopenshell-builds/ --recursive
