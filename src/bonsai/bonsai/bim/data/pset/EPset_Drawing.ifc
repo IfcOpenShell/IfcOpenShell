@@ -32,6 +32,6 @@ DATA;
 #25=IFCSIMPLEPROPERTYTEMPLATE('3LHwCrOcb6Y8ozfJZ7Ay$c',$,'LineworkMode','Method to use for line work',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #26=IFCSIMPLEPROPERTYTEMPLATE('2iwERDOW55Pf4hCbuFRe1Q',$,'FillMode','Method to fill areas seen in projection',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
 #27=IFCSIMPLEPROPERTYTEMPLATE('1YF$qLzBzF19Io8aB2N8cE',$,'CutMode','Method for cutting geometry',.P_SINGLEVALUE.,'IfcLabel',$,$,$,$,$,.READWRITE.);
-#28=IFCSIMPLEPROPERTYTEMPLATE('1YSnFzurrEyRNtoLdmmddP',$,'BringToFront','The objects with these SVG classes will render in front of all other objects.\nEx: IfcBeam, IfcColumn',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);
+#28=IFCSIMPLEPROPERTYTEMPLATE('1YSnFzurrEyRNtoLdmmddP',$,'BringToFront','The objects with these SVG classes will render in front of all other objects.Ex: IfcBeam, IfcColumn',.P_SINGLEVALUE.,'IfcText',$,$,$,$,$,.READWRITE.);
 ENDSEC;
 END-ISO-10303-21;
