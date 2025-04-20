@@ -1502,12 +1502,12 @@ class CreateDrawing(bpy.types.Operator):
 
     def move_elements_to_top(self, root):
         group = root.find("{http://www.w3.org/2000/svg}g")
+        bringtofront = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "BringToFront") or ''
+        bringtofront = [item.strip() for item in bringtofront.split(',') if item.strip()]
 
-        # TODO: Make this an assignable preference
-        classes_to_move = ["IfcColumn", "IfcBeam", "EPsetStatusStatus-NEW", "IfcGeographicElement"]
 
         # Iterate through classes in order of preference
-        for class_name in classes_to_move:
+        for class_name in bringtofront:
             xpath_query = f".//svg:g[contains(@class, '{class_name}')]"
             elements_to_move = root.xpath(xpath_query, namespaces={"svg": "http://www.w3.org/2000/svg"})
 
