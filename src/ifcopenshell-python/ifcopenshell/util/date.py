@@ -75,7 +75,7 @@ def ifc2datetime(element):
 
 def get_isosplit(s, split):
     if split in s:
-        n, s = s.split(split)
+        n, s = s.split(split, 1)
     else:
         n = 0
     return n, s
