@@ -157,7 +157,10 @@ class Csv2Ifc:
                     else:
                         # Very fragile part of the code.
                         self.categories = {  # pyright: ignore [reportAttributeAccessIssue]
-                            name: index for name, index in self.headers.items() if name not in MAIN_CSV_HEADER_COLUMNS
+                            # ' Cost' is a sufix added on export.
+                            name.removesuffix(" Cost"): index
+                            for name, index in self.headers.items()
+                            if name not in MAIN_CSV_HEADER_COLUMNS
                         }
                         if self.categories:
                             print(
