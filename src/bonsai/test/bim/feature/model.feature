@@ -286,7 +286,28 @@ Scenario: Split a wall which has a flipped door
     And I press "bim.hotkey(hotkey='S_K')"
     Then the object "IfcDoor/Door" is at "8.01,0.1,0"
 
-Scenario: Align two walls - centerline
+Scenario: Offset walls
+    Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
+    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
+    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
+    And I press "bim.add_occurrence"
+    When the object "IfcWall/Wall" is selected
+    And I set "scene.BIMModelProperties.offset_type_vertical" to "EXTERIOR"
+    And I press "bim.offset_walls"
+    Then the object "IfcWall/Wall" bottom left corner is at "0,0,0"
+    And the object "IfcWall/Wall" top right corner is at "1,0.1,3"
+    When I set "scene.BIMModelProperties.offset_type_vertical" to "INTERIOR"
+    And I press "bim.offset_walls"
+    Then the object "IfcWall/Wall" bottom left corner is at "0,-0.1,0"
+    And the object "IfcWall/Wall" top right corner is at "1,0,3"
+    When I set "scene.BIMModelProperties.offset_type_vertical" to "CENTER"
+    And I press "bim.offset_walls"
+    Then the object "IfcWall/Wall" bottom left corner is at "0,-0.05,0"
+    And the object "IfcWall/Wall" top right corner is at "1,0.05,3"
+
+Scenario: Align walls
     Given an empty IFC project
     And I load the demo construction library
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
@@ -304,46 +325,18 @@ Scenario: Align two walls - centerline
     And the object "IfcWall/Wall" top right corner is at "1,0.1,3"
     And the object "IfcWall/Wall.001" bottom left corner is at "10,-0.1,0"
     And the object "IfcWall/Wall.001" top right corner is at "11,0.2,3"
-
-Scenario: Align two walls - interior
-    Given an empty IFC project
-    And I load the demo construction library
-    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
-    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
-    And I press "bim.add_occurrence"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL300'][0].id()"
-    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
-    And the cursor is at "10,5,0"
-    And I press "bim.add_occurrence"
-    When the object "IfcWall/Wall.001" is selected
-    And additionally the object "IfcWall/Wall" is selected
-    And I press "bim.hotkey(hotkey='S_V')"
+    When I press "bim.hotkey(hotkey='S_V')"
     Then the object "IfcWall/Wall" bottom left corner is at "0,0,0"
     And the object "IfcWall/Wall" top right corner is at "1,0.1,3"
     And the object "IfcWall/Wall.001" bottom left corner is at "10,-0.2,0"
     And the object "IfcWall/Wall.001" top right corner is at "11,0.1,3"
-
-Scenario: Align two walls - exterior
-    Given an empty IFC project
-    And I load the demo construction library
-    And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
-    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
-    And I press "bim.add_occurrence"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL300'][0].id()"
-    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
-    And the cursor is at "10,5,0"
-    And I press "bim.add_occurrence"
-    When the object "IfcWall/Wall.001" is selected
-    And additionally the object "IfcWall/Wall" is selected
-    And I press "bim.hotkey(hotkey='S_X')"
+    When I press "bim.hotkey(hotkey='S_X')"
     Then the object "IfcWall/Wall" bottom left corner is at "0,0,0"
     And the object "IfcWall/Wall" top right corner is at "1,0.1,3"
     And the object "IfcWall/Wall.001" bottom left corner is at "10,0,0"
     And the object "IfcWall/Wall.001" top right corner is at "11,0.3,3"
 
-Scenario: Align two walls - centerline fail due to selection criteria
+Scenario: Align walls - centerline fail due to selection criteria
     Given an empty IFC project
     And I load the demo construction library
     And I set "scene.BIMModelProperties.ifc_class" to "IfcWallType"
@@ -353,7 +346,7 @@ Scenario: Align two walls - centerline fail due to selection criteria
     When the object "IfcWall/Wall" is selected
     Then I press "bim.hotkey(hotkey='S_C')" and expect error "Error: At least two vertically layered elements must be selected to match alignments."
 
-Scenario: Align two elements - centerline
+Scenario: Align elements
     Given an empty IFC project
     And I load the demo construction library
     And I set "scene.BIMModelProperties.ifc_class" to "IfcDoorType"
@@ -370,38 +363,12 @@ Scenario: Align two elements - centerline
     And the object "IfcDoor/Door" top right corner is at "1.01,0.1,2.145"
     And the object "IfcDoor/Door.001" bottom left corner is at "10,-0.455,0"
     And the object "IfcDoor/Door.001" top right corner is at "9.9,0.555,2.145"
-
-Scenario: Align two elements - positive
-    Given an empty IFC project
-    And I load the demo construction library
-    And I set "scene.BIMModelProperties.ifc_class" to "IfcDoorType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcDoorType') if e.Name == 'DT01'][0].id()"
-    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
-    And I press "bim.add_occurrence"
-    And the cursor is at "10,5,0"
-    And I press "bim.add_occurrence"
-    And the object "IfcDoor/Door.001" is rotated by "0,0,90" deg
-    When the object "IfcDoor/Door.001" is selected
-    And additionally the object "IfcDoor/Door" is selected
-    And I press "bim.hotkey(hotkey='S_V')"
+    When I press "bim.hotkey(hotkey='S_V')"
     Then the object "IfcDoor/Door" bottom left corner is at "0,0,0"
     And the object "IfcDoor/Door" top right corner is at "1.01,0.1,2.145"
     And the object "IfcDoor/Door.001" bottom left corner is at "10,-0.910,0"
     And the object "IfcDoor/Door.001" top right corner is at "9.9,0.1,2.145"
-
-Scenario: Align two elements - negative
-    Given an empty IFC project
-    And I load the demo construction library
-    And I set "scene.BIMModelProperties.ifc_class" to "IfcDoorType"
-    And the variable "element_type" is "[e for e in {ifc}.by_type('IfcDoorType') if e.Name == 'DT01'][0].id()"
-    And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
-    And I press "bim.add_occurrence"
-    And the cursor is at "10,5,0"
-    And I press "bim.add_occurrence"
-    And the object "IfcDoor/Door.001" is rotated by "0,0,90" deg
-    When the object "IfcDoor/Door.001" is selected
-    And additionally the object "IfcDoor/Door" is selected
-    And I press "bim.hotkey(hotkey='S_X')"
+    When I press "bim.hotkey(hotkey='S_X')"
     Then the object "IfcDoor/Door" bottom left corner is at "0,0,0"
     And the object "IfcDoor/Door" top right corner is at "1.01,0.1,2.145"
     And the object "IfcDoor/Door.001" bottom left corner is at "10,0,0"

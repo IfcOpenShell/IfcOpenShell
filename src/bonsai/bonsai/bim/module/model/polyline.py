@@ -599,6 +599,7 @@ class PolylineOperator:
             "Increment Angle": {"icons": True, "keys": ["EVENT_SHIFT", "MOUSE_MMB_SCROLL"]},
             "Modify Snap Point": {"icons": True, "keys": ["EVENT_M"]},
             "Close Polyline": {"icons": True, "keys": ["EVENT_C"]},
+            "Offset": {"icons": True, "keys": ["EVENT_O"]},
             "Remove Point": {"icons": True, "keys": ["EVENT_BACKSPACE"]},
         }
 

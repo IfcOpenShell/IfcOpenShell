@@ -77,6 +77,7 @@ classes = (
     wall.ExtendWallsToWall,
     wall.FlipWall,
     wall.MergeWall,
+    wall.OffsetWalls,
     wall.RecalculateWall,
     wall.SplitWall,
     wall.UnjoinWalls,

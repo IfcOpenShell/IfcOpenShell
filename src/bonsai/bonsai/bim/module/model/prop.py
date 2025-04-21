@@ -221,13 +221,13 @@ class BIMModelProperties(PropertyGroup):
         items=[("EXTERIOR", "Exterior", ""), ("CENTER", "Center", ""), ("INTERIOR", "Interior", "")],
         name="Vertical Layer Offset Type",
         default="EXTERIOR",
-        description="It's a convention that affects the offset to reference line",
+        description="Offset convention to reference line",
     )
     offset_type_horizontal: bpy.props.EnumProperty(
         items=[("TOP", "Top", ""), ("CENTER", "Center", ""), ("BOTTOM", "Bottom", "")],
         name="Horizontal Layer Offset Type",
         default="TOP",
-        description="It's a convention that affects the offset to reference line",
+        description="Offset convention to reference line",
     )
     offset: bpy.props.FloatProperty(name="Offset", default=0.0, description="Material usage offset from reference line")
     show_wall_axis: bpy.props.BoolProperty(
