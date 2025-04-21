@@ -21,7 +21,7 @@ import test.bootstrap
 import ifcopenshell.util.date as subject
 
 
-class TestIsoDuration:
+class TestReadableIFCDuration():
     def test_run(self):
-        assert subject.readable_ifc_duration("P2Y3M1W4DT5H45M30S") == "2 y 3 m 1 w 4 d 5 h 45 m 30 s"
-        assert subject.readable_ifc_duration("P2Y3MT30S") == "2 y 3 m 30 s"
+        assert subject.readable_ifc_duration("P2Y3M1W4DT5H45M30S") == "2Y 3M 1W 4D 5h 45m 30s"
+        assert subject.readable_ifc_duration("PT40H") == "40h"
