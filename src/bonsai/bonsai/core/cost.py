@@ -312,20 +312,27 @@ def select_cost_schedule_products(
     products = cost.get_cost_schedule_products(cost_schedule)
     spatial.select_products(products)
 
-def import_cost_schedule_csv(cost: tool.Cost, file_path: str, is_schedule_of_rates: bool) -> ifcopenshell.entity_instance:
+
+def import_cost_schedule_csv(
+    cost: tool.Cost, file_path: str, is_schedule_of_rates: bool
+) -> ifcopenshell.entity_instance:
     cost_schedule = cost.import_cost_schedule_csv(file_path, is_schedule_of_rates)
     return cost_schedule
+
 
 def add_csv_filepath(cost: tool.Cost, file_path: str, is_schedule_of_rates: bool, cost_schedule) -> None:
     cost.add_csv_filepath(file_path, is_schedule_of_rates, cost_schedule)
 
+
 def remove_csv_filepath(cost: tool.Cost, cost_schedule) -> None:
     cost.remove_csv_filepath(cost_schedule)
 
-def refresh_cost_schedule_csv(ifc: tool.Ifc, cost:tool.Cost) -> None:
+
+def refresh_cost_schedule_csv(ifc: tool.Ifc, cost: tool.Cost) -> None:
     cost.delete_all_cost_items()
     cost.refresh_cost_schedule_csv()
     cost.load_cost_schedule_tree()
+
 
 def add_cost_column(cost: tool.Cost, name: str) -> None:
     cost.add_cost_column(name)

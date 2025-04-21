@@ -152,7 +152,9 @@ class Drawer:
         # self.svg_settings.set_deflection_tolerance(0.0001)
         self.svg_buffer = ifcopenshell.geom.serializers.buffer()
         self.serialiser_settings = ifcopenshell.geom.serializer_settings()
-        self.serialiser = ifcopenshell.geom.serializers.svg(self.svg_buffer, self.svg_settings, self.serialiser_settings)
+        self.serialiser = ifcopenshell.geom.serializers.svg(
+            self.svg_buffer, self.svg_settings, self.serialiser_settings
+        )
         self.serialiser.setFile(ifc)
         self.serialiser.setWithoutStoreys(True)
         self.serialiser.setPolygonal(True)

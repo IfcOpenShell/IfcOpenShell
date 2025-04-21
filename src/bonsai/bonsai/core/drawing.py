@@ -318,8 +318,8 @@ def duplicate_drawing(
         for new_elements in old_to_new.values():
             # Remove the Blender object, since we haven't actually activated the duplicated drawing
             for new_element in new_elements:
-                print('new element', new_element)
-                print('gonna remove', ifc.get_object(new_element))
+                print("new element", new_element)
+                print("gonna remove", ifc.get_object(new_element))
                 blender.remove_object(ifc.get_object(new_element))
             new_annotations.extend(new_elements)
         new_annotation = set(new_annotations)

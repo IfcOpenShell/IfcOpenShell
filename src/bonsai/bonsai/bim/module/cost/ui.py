@@ -71,19 +71,26 @@ class BIM_PT_cost_schedules(Panel):
                 text="Currently editing: {}[{}]".format(cost_schedule["name"], cost_schedule["predefined_type"]),
                 icon="LINENUMBERS_ON",
             )
-            
+
             row0 = self.layout.row(align=True)
             col = row0.column()
             col.label(text="Linked CSV:")
             row_1 = col.row(align=True)
             if self.props.active_cost_schedule_id in [item.cost_item_id for item in self.props.cost_schedule_files]:
-                file = next((item.csv_filepath for item in self.props.cost_schedule_files if item.cost_item_id == self.props.active_cost_schedule_id), None)
+                file = next(
+                    (
+                        item.csv_filepath
+                        for item in self.props.cost_schedule_files
+                        if item.cost_item_id == self.props.active_cost_schedule_id
+                    ),
+                    None,
+                )
                 row_1.label(text=file)
                 row_1.operator("bim.refresh_cost_schedule_csv", icon="FILE_REFRESH", text="")
             else:
                 row_1.label(text="No CSV file found")
                 row_1.operator("bim.import_cost_schedule_csv", icon="IMPORT", text="")
-            
+
             grid = self.layout.grid_flow(columns=2, even_columns=True)
             col = grid.column()
             row1 = col.row(align=True)
@@ -380,13 +387,13 @@ class BIM_PT_cost_item_types(Panel):
         has_quantity_names = CostProp.get_resource_quantity_names(self, context)
 
         row2 = col.row(align=True)
-        #row2.label(text="Resources")
+        # row2.label(text="Resources")
         total_cost_item_resources = len(self.props.cost_item_resources)
         row2.label(text="Resources({})".format(total_cost_item_resources))
 
         op = row2.operator("bim.calculate_cost_item_resource_value", text="", icon="DISC")
         op.cost_item = cost_item.ifc_definition_id
-        
+
         rtprops = context.scene.BIMResourceTreeProperties
         rprops = context.scene.BIMResourceProperties
         if rtprops.resources and rprops.active_resource_index < len(rtprops.resources):
