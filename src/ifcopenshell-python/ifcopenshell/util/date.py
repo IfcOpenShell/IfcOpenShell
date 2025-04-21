@@ -18,7 +18,6 @@
 
 import datetime
 import isodate
-import isodate.duration
 from re import findall
 from dateutil import parser
 from typing import Literal, Union, Any, overload
@@ -70,32 +69,26 @@ def ifc2datetime(element):
         )
 
 
-def readable_ifc_duration(string: str) -> str:
-    """Convert ISO duration to more readable string format.
+def readable_ifc_duration(duration):
+    if "T" in duration:
+        period_duration, time_duration = duration.split("T")
+        period_duration = period_duration[1:]
+    else:
+        period_duration = duration[1:]
+        time_duration = ""
 
-    Examples:
-    - "P2Y3M1W4DT5H45M30S" -> "2 y 3 m 1 w 4 d 5 h 45 m 30 s"
-    - "P2Y3MT30S" -> "2 y 3 m 30 s"
-    """
-    duration = isodate.parse_duration(string, as_timedelta_if_possible=False)
-    assert isinstance(duration, isodate.duration.Duration)
+    result = []
+    for designator in ("Y", "M", "W", "D"):
+        if designator in period_duration:
+            value, period_duration = period_duration.split(designator)
+            result.append(f"{value}{designator}")
 
-    final_string = ""
-    final_string += f"{duration.years} y " if duration.years else ""
-    final_string += f"{duration.months} m " if duration.months else ""
-
-    # Duration stores all other components as timedelta.
-    tdelta = duration.tdelta
-    weeks, days = divmod(tdelta.days, 7)
-    final_string += f"{weeks} w " if weeks else ""
-    final_string += f"{days} d " if days else ""
-    hours, seconds = divmod(tdelta.seconds, 3600)
-    minutes, seconds = divmod(seconds, 60)
-    final_string += f"{hours} h " if hours else ""
-    final_string += f"{minutes} m " if minutes else ""
-    final_string += f"{seconds} s" if seconds else ""
-
-    return final_string
+    if time_duration:
+        for designator in ("H", "M", "S"):
+            if designator in time_duration:
+                value, time_duration = time_duration.split(designator)
+                result.append(f"{value}{designator.lower()}")
+    return " ".join(result)
 
 
 @overload
