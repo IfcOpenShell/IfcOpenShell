@@ -26,6 +26,7 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import locale
+from pathlib import Path
 from typing import Any, Union, Optional, TypedDict, NotRequired
 
 
@@ -138,7 +139,6 @@ class Csv2Ifc:
 
         parents: dict[int, CostItem] = {}
         locale.setlocale(locale.LC_ALL, "")  # set the system locale
-        non_sor_fields = {"Quantity", "Property", "Query"}
 
         # TODO: 25-04-17 Deprecated 0 indices, should fully remove later.
         min_index = None
@@ -231,7 +231,8 @@ class Csv2Ifc:
             self.create_boilerplate_ifc()
         assert self.file
         if not self.cost_schedule:
-            self.cost_schedule = ifcopenshell.api.cost.add_cost_schedule(self.file, name="CSV Import")
+            cost_schedule_name = Path(self.csv).stem
+            self.cost_schedule = ifcopenshell.api.cost.add_cost_schedule(self.file, name=cost_schedule_name)
             if self.is_schedule_of_rates:
                 self.cost_schedule.PredefinedType = "SCHEDULEOFRATES"
         self.create_cost_items(self.cost_items)
