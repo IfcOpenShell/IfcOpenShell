@@ -265,21 +265,21 @@
             },
             "IfcEarthworksCut": {
                 "Qto_EarthworksCutBaseQuantities": {
-                    "Depth": null,
-                    "Length": null,
+                    "Depth": "get_height",
+                    "Length": "get_length",
                     "LooseVolume": null,
-                    "UndisturbedVolume": null,
+                    "UndisturbedVolume": "get_net_volume",
                     "Weight": null,
-                    "Width": null
+                    "Width": "get_width"
                 }
             },
             "IfcEarthworksFill": {
                 "Qto_EarthworksFillBaseQuantities": {
-                    "CompactedVolume": null,
-                    "Depth": null,
-                    "Length": null,
+                    "CompactedVolume": "get_net_volume",
+                    "Depth": "get_height",
+                    "Length": "get_length",
                     "LooseVolume": null,
-                    "Width": null
+                    "Width": "get_width"
                 }
             },
             "IfcElectricAppliance + IfcElectricApplianceType": {
