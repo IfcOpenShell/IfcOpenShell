@@ -219,7 +219,7 @@ class FilterCategory(PropertyGroup):
 class Link(PropertyGroup):
     name: StringProperty(
         name="Name",
-        description="Filepath to linked .ifc file, stored in posix format (could be relative to .blend file, not to .ifc)",
+        description="Filepath to linked .ifc file, stored in posix format (could be relative to .ifc file, not to .blend)",
     )
     is_loaded: BoolProperty(name="Is Loaded", default=False)
     is_selectable: BoolProperty(name="Is Selectable", default=True)
