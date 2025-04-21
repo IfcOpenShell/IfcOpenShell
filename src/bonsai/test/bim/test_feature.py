@@ -1264,7 +1264,7 @@ def the_object_name_is_at_location(name, location):
     obj_location = the_object_name_exists(name).location
     assert (
         obj_location - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object is at {obj_location} instead of {location}"
+    ).length < 0.05, f"Object is at {obj_location} instead of {location}"
 
 
 @then(parsers.parse('the object "{name}" has a vertex at "{location}"'))
@@ -1305,7 +1305,7 @@ def the_object_name_top_right_corner_is_at_location(name, location):
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[6])
     assert (
         obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object has top right corner {obj_corner} instead of {location}"
+    ).length < 0.05, f"Object has top right corner {obj_corner} instead of {location}"
 
 
 @then(parsers.parse('the object "{name}" bottom left corner is at "{location}"'))
@@ -1314,7 +1314,7 @@ def the_object_name_bottom_left_corner_is_at_location(name, location):
     obj_corner = obj.matrix_world @ Vector(obj.bound_box[0])
     assert (
         obj_corner - Vector([float(co) for co in location.split(",")])
-    ).length < 0.1, f"Object has bottom left corner {obj_corner} instead of {location}"
+    ).length < 0.05, f"Object has bottom left corner {obj_corner} instead of {location}"
 
 
 @then(parsers.parse('the object "{name}" is contained in "{container_name}"'))

@@ -39,6 +39,7 @@ import ifcopenshell.util.unit
 import bonsai.core.geometry
 import bonsai.core.tool
 import bonsai.tool as tool
+import mathutils
 from math import atan, cos, degrees, pi, radians
 from mathutils import Matrix, Vector
 from copy import deepcopy
@@ -2325,3 +2326,45 @@ class Model(bonsai.core.tool.Model):
         assert isinstance(group_node, bpy.types.GeometryNodeGroup)
 
         return [s for s in group_node.inputs if s.type != "GEOMETRY"]
+
+    @classmethod
+    def align_objects(cls, reference_obj: bpy.types.Object, objs: Iterable[bpy.types.Object], align_type: Literal["CENTERLINE", "POSITIVE", "NEGATIVE"]):
+        if align_type == "CENTERLINE":
+            point = reference_obj.matrix_world @ (
+                Vector(reference_obj.bound_box[0]) + (reference_obj.dimensions / 2)
+            )
+        elif align_type == "POSITIVE":
+            point = reference_obj.matrix_world @ Vector(reference_obj.bound_box[6])
+        elif align_type == "NEGATIVE":
+            point = reference_obj.matrix_world @ Vector(reference_obj.bound_box[0])
+
+        reference_x_axis = reference_obj.matrix_world.col[0].to_3d()
+        reference_y_axis = reference_obj.matrix_world.col[1].to_3d()
+
+        x_distances = cls.get_axis_distances(point, reference_x_axis, objs, align_type)
+        y_distances = cls.get_axis_distances(point, reference_y_axis, objs, align_type)
+        if abs(sum(x_distances)) < abs(sum(y_distances)):
+            for i, obj in enumerate(objs):
+                obj.matrix_world = Matrix.Translation(reference_x_axis * -x_distances[i]) @ obj.matrix_world
+        else:
+            for i, obj in enumerate(objs):
+                obj.matrix_world = Matrix.Translation(reference_y_axis * -y_distances[i]) @ obj.matrix_world
+
+    @classmethod
+    def get_axis_distances(cls, point: Vector, axis: Vector, objs: Iterable[bpy.types.Object], align_type: Literal["CENTERLINE", "POSITIVE", "NEGATIVE"]) -> list[float]:
+        results = []
+        for obj in objs:
+            if align_type == "CENTERLINE":
+                obj_point = obj.matrix_world @ (Vector(obj.bound_box[0]) + (obj.dimensions / 2))
+            elif align_type == "POSITIVE":
+                obj_point = obj.matrix_world @ Vector(obj.bound_box[6])
+            elif align_type == "NEGATIVE":
+                obj_point = obj.matrix_world @ Vector(obj.bound_box[0])
+            results.append(mathutils.geometry.distance_point_to_plane(obj_point, point, axis))
+        return results
+
+    @classmethod
+    def offset_wall(cls, wall: bpy.types.Object, baseline: Literal["EXTERIOR", "INTERIOR", "CENTERLINE"]) -> None:
+        element = tool.Ifc.get_entity(wall)
+        if baseline == "CENTERLINE":
+            pass
