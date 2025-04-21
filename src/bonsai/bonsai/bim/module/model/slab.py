@@ -36,7 +36,6 @@ from math import cos, pi
 from mathutils import Vector, Matrix
 from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
-from bonsai.bim.module.model.wall import DumbWallRecalculator
 from typing import Optional
 
 
@@ -1035,5 +1034,5 @@ class RecalculateSlab(bpy.types.Operator, tool.Ifc.Operator):
                     if rel.is_a() == "IfcRelConnectsElements" and rel.RelatedElement.is_a("IfcWall"):
                         walls.append(tool.Ifc.get_object(rel.RelatedElement))
 
-        DumbWallRecalculator().recalculate(walls)
+        tool.Model.recalculate_walls(walls)
         return {"FINISHED"}

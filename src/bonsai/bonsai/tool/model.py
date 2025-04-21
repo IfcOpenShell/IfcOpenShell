@@ -2328,11 +2328,14 @@ class Model(bonsai.core.tool.Model):
         return [s for s in group_node.inputs if s.type != "GEOMETRY"]
 
     @classmethod
-    def align_objects(cls, reference_obj: bpy.types.Object, objs: Iterable[bpy.types.Object], align_type: Literal["CENTERLINE", "POSITIVE", "NEGATIVE"]):
-        if align_type == "CENTERLINE":
-            point = reference_obj.matrix_world @ (
-                Vector(reference_obj.bound_box[0]) + (reference_obj.dimensions / 2)
-            )
+    def align_objects(
+        cls,
+        reference_obj: bpy.types.Object,
+        objs: Iterable[bpy.types.Object],
+        align_type: Literal["CENTER", "POSITIVE", "NEGATIVE"],
+    ):
+        if align_type == "CENTER":
+            point = reference_obj.matrix_world @ (Vector(reference_obj.bound_box[0]) + (reference_obj.dimensions / 2))
         elif align_type == "POSITIVE":
             point = reference_obj.matrix_world @ Vector(reference_obj.bound_box[6])
         elif align_type == "NEGATIVE":
@@ -2351,10 +2354,16 @@ class Model(bonsai.core.tool.Model):
                 obj.matrix_world = Matrix.Translation(reference_y_axis * -y_distances[i]) @ obj.matrix_world
 
     @classmethod
-    def get_axis_distances(cls, point: Vector, axis: Vector, objs: Iterable[bpy.types.Object], align_type: Literal["CENTERLINE", "POSITIVE", "NEGATIVE"]) -> list[float]:
+    def get_axis_distances(
+        cls,
+        point: Vector,
+        axis: Vector,
+        objs: Iterable[bpy.types.Object],
+        align_type: Literal["CENTER", "POSITIVE", "NEGATIVE"],
+    ) -> list[float]:
         results = []
         for obj in objs:
-            if align_type == "CENTERLINE":
+            if align_type == "CENTER":
                 obj_point = obj.matrix_world @ (Vector(obj.bound_box[0]) + (obj.dimensions / 2))
             elif align_type == "POSITIVE":
                 obj_point = obj.matrix_world @ Vector(obj.bound_box[6])
@@ -2364,7 +2373,66 @@ class Model(bonsai.core.tool.Model):
         return results
 
     @classmethod
-    def offset_wall(cls, wall: bpy.types.Object, baseline: Literal["EXTERIOR", "INTERIOR", "CENTERLINE"]) -> None:
+    def offset_wall(cls, wall: bpy.types.Object, baseline: Literal["EXTERIOR", "INTERIOR", "CENTER"]) -> None:
         element = tool.Ifc.get_entity(wall)
-        if baseline == "CENTERLINE":
-            pass
+        usage = ifcopenshell.util.element.get_material(element)
+        if not usage.is_a("IfcMaterialLayerSetUsage"):
+            return
+        layer_set = usage.ForLayerSet
+        if baseline == "CENTER":
+            if usage.DirectionSense == "POSITIVE":
+                usage.OffsetFromReferenceLine = -layer_set.TotalThickness / 2
+            else:
+                usage.OffsetFromReferenceLine = layer_set.TotalThickness / 2
+        elif baseline == "INTERIOR":
+            if usage.DirectionSense == "POSITIVE":
+                usage.OffsetFromReferenceLine = -layer_set.TotalThickness
+            else:
+                usage.OffsetFromReferenceLine = 0.0
+        elif baseline == "EXTERIOR":
+            if usage.DirectionSense == "POSITIVE":
+                usage.OffsetFromReferenceLine = 0.0
+            else:
+                usage.OffsetFromReferenceLine = layer_set.TotalThickness
+
+    @classmethod
+    def recreate_wall(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
+        rep = ifcopenshell.api.geometry.regenerate_wall_representation(tool.Ifc.get(), element)
+        bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=rep,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+        tool.Geometry.record_object_materials(obj)
+
+        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
+        matrix[:, 3] *= unit_scale
+        obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix)
+        tool.Geometry.record_object_position(obj)
+
+    @classmethod
+    def recalculate_walls(cls, walls: list[bpy.types.Object]) -> None:
+        queue: set[tuple[ifcopenshell.entity_instance, bpy.types.Object]] = set()
+        for wall in walls:
+            element = tool.Ifc.get_entity(wall)
+            if tool.Ifc.is_moved(wall):
+                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall)
+            queue.add((element, wall))
+            for rel in getattr(element, "ConnectedTo", []):
+                obj = tool.Ifc.get_object(rel.RelatedElement)
+                if tool.Ifc.is_moved(obj):
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                queue.add((rel.RelatedElement, obj))
+            for rel in getattr(element, "ConnectedFrom", []):
+                obj = tool.Ifc.get_object(rel.RelatingElement)
+                if tool.Ifc.is_moved(obj):
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+                queue.add((rel.RelatingElement, obj))
+        for element, wall in queue:
+            if tool.Model.get_usage_type(element) == "LAYER2" and wall:
+                cls.recreate_wall(element, wall)

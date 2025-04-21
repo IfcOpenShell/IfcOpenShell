@@ -773,6 +773,12 @@ class EditObjectUI:
             op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
             op.x_angle = cls.props.x_angle
 
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.prop(
+                data=cls.props, property="offset_type_vertical", text="Offset" if ui_context != "TOOL_HEADER" else ""
+            )
+            row.operator("bim.offset_walls", icon="FILE_REFRESH", text="")
+
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             row.prop(data=cls.props, property="x_angle", text="Angle" if ui_context != "TOOL_HEADER" else "A")
             op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
@@ -1182,12 +1188,12 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             try:
-                core.align_walls(tool.Ifc, tool.Blender, tool.Model, DumbWallAligner(), "CENTERLINE")
+                core.align_walls(tool.Ifc, tool.Blender, tool.Model, DumbWallAligner(), "CENTER")
             except core.RequireAtLeastTwoLayeredElements as e:
                 self.report({"ERROR"}, str(e))
         else:
             try:
-                core.align_objects(tool.Blender, tool.Model, "CENTERLINE")
+                core.align_objects(tool.Blender, tool.Model, "CENTER")
             except core.RequireAtLeastTwoElements as e:
                 self.report({"ERROR"}, str(e))
 
@@ -1356,7 +1362,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
                 core.align_objects(tool.Blender, tool.Model, "NEGATIVE")
             except core.RequireAtLeastTwoElements as e:
                 self.report({"ERROR"}, str(e))
-
 
     def hotkey_S_Y(self):
         if not bpy.context.selected_objects:

@@ -117,8 +117,8 @@ class ExtendWallsToWall(bpy.types.Operator, tool.Ifc.Operator):
                 ifcopenshell.api.geometry.connect_wall(
                     tool.Ifc.get(), wall1=element, wall2=target_element, is_atpath=True
                 )
-                joiner.recreate_wall(element, obj)
-            joiner.recreate_wall(target_element, target_obj)
+                tool.Model.recreate_wall(element, obj)
+            tool.Model.recreate_wall(target_element, target_obj)
         else:
             self.report({"ERROR"}, "Please select at least one LAYER2 element and one active LAYER2 element")
 
@@ -129,10 +129,10 @@ class AlignWall(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = """ Align the selected walls to the active wall:
     'Ext.': align to the EXTERIOR face
-    'C/L': align to wall CENTERLINE
+    'C/L': align to wall CENTER
     'Int.': align to the INTERIOR face"""
 
-    AlignType = Literal["CENTERLINE", "EXTERIOR", "INTERIOR"]
+    AlignType = Literal["CENTER", "EXTERIOR", "INTERIOR"]
     align_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
         items=((i, i, "") for i in get_args(AlignType))
     )
@@ -233,7 +233,7 @@ class RecalculateWall(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         objects = tool.Model.get_selected_mesh_ifc_objects()
-        DumbWallRecalculator().recalculate(objects)
+        tool.Model.recalculate_walls(objects)
         return {"FINISHED"}
 
 
@@ -280,7 +280,7 @@ class ChangeExtrusionDepth(bpy.types.Operator, tool.Ifc.Operator):
                 layer2_objs.append(obj)
 
         if layer2_objs:
-            DumbWallRecalculator().recalculate(layer2_objs)
+            tool.Model.recalculate_walls(layer2_objs)
         return {"FINISHED"}
 
 
@@ -393,7 +393,7 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 obj.rotation_euler.z = current_z_rot
 
         if layer2_objs:
-            DumbWallRecalculator().recalculate(layer2_objs)
+            tool.Model.recalculate_walls(layer2_objs)
         return {"FINISHED"}
 
 
@@ -416,7 +416,24 @@ class ChangeLayerLength(bpy.types.Operator, tool.Ifc.Operator):
         selected_objs = tool.Model.get_selected_mesh_ifc_objects()
         for obj in selected_objs:
             joiner.set_length(obj, self.length)
-        return {"FINISHED"}
+
+
+class OffsetWalls(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.offset_walls"
+    bl_label = "Offset Walls"
+    bl_description = "Offset selected objects from their reference line."
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Model.has_selected_mesh_ifc_objects():
+            cls.poll_message_set("No mesh IFC objects selected.")
+            return False
+        return True
+
+    def _execute(self, context):
+        props = tool.Model.get_model_props()
+        core.offset_walls(tool.Ifc, tool.Blender, tool.Model, props.offset_type_vertical)
 
 
 class AddWallsFromSlab(bpy.types.Operator, tool.Ifc.Operator):
@@ -487,12 +504,8 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             material_set_usage = model.by_id(material.id())
             # if material.is_a("IfcMaterialLayerSetUsage"):
             attributes = {"OffsetFromReferenceLine": offset, "DirectionSense": direction_sense}
-            ifcopenshell.api.run(
-                "material.edit_layer_usage",
-                model,
-                **{"usage": material_set_usage, "attributes": attributes},
-            )
-            DumbWallRecalculator().recalculate([wall["obj"]])
+            ifcopenshell.api.run("material.edit_layer_usage", model, usage=material_set_usage, attributes=attributes)
+            tool.Model.recalculate_walls([wall["obj"]])
 
         if walls:
             if is_polyline_closed:
@@ -680,30 +693,6 @@ class DumbWallAligner:
         wall = (self.wall.matrix_world.to_quaternion() @ Vector((1, 0, 0))).to_2d()
         angle = reference.angle_signed(wall)
         return round(degrees(angle) % 360) == 180
-
-
-class DumbWallRecalculator:
-    def recalculate(self, walls: list[bpy.types.Object]) -> None:
-        queue: set[tuple[ifcopenshell.entity_instance, bpy.types.Object]] = set()
-        for wall in walls:
-            element = tool.Ifc.get_entity(wall)
-            if tool.Ifc.is_moved(wall):
-                bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall)
-            queue.add((element, wall))
-            for rel in getattr(element, "ConnectedTo", []):
-                obj = tool.Ifc.get_object(rel.RelatedElement)
-                if tool.Ifc.is_moved(obj):
-                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-                queue.add((rel.RelatedElement, obj))
-            for rel in getattr(element, "ConnectedFrom", []):
-                obj = tool.Ifc.get_object(rel.RelatingElement)
-                if tool.Ifc.is_moved(obj):
-                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-                queue.add((rel.RelatingElement, obj))
-        joiner = DumbWallJoiner()
-        for element, wall in queue:
-            if tool.Model.get_usage_type(element) == "LAYER2" and wall:
-                joiner.recreate_wall(element, wall)
 
 
 class DumbWallGenerator:
@@ -937,7 +926,7 @@ class DumbWallPlaner:
             else:
                 for rel in inverse.AssociatedTo:
                     walls.extend([tool.Ifc.get_object(e) for e in rel.RelatedObjects])
-        DumbWallRecalculator().recalculate([w for w in set(walls) if w])
+        tool.Model.recalculate_walls([w for w in set(walls) if w])
 
     def regenerate_from_type(self, usecase_path, ifc_file, settings):
         relating_type = settings["relating_type"]
@@ -968,7 +957,7 @@ class DumbWallPlaner:
         if layer_set_direction:
             material.LayerSetDirection = layer_set_direction
         if material.LayerSetDirection == "AXIS2":
-            DumbWallRecalculator().recalculate([obj])
+            tool.Model.recalculate_walls([obj])
 
 
 class DumbWallJoiner:
@@ -988,7 +977,7 @@ class DumbWallJoiner:
         axis1 = tool.Model.get_wall_axis(wall1)
         axis = copy.deepcopy(axis1["reference"])
         body = copy.deepcopy(axis1["reference"])
-        self.recreate_wall(element1, wall1, axis, body)
+        tool.Model.recreate_wall(element1, wall1)
 
     def split(self, wall1: bpy.types.Object, target: Vector) -> None:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -1089,8 +1078,8 @@ class DumbWallJoiner:
         self.set_axis(element1, p1, p3)
         self.set_axis(element2, p3, p2)
 
-        self.recreate_wall(element1, wall1)
-        self.recreate_wall(element2, wall2)
+        tool.Model.recreate_wall(element1, wall1)
+        tool.Model.recreate_wall(element2, wall2)
 
     def flip(self, wall1: bpy.types.Object) -> None:
         if tool.Ifc.is_moved(wall1):
@@ -1117,7 +1106,7 @@ class DumbWallJoiner:
         ifcopenshell.api.geometry.edit_object_placement(
             tool.Ifc.get(), product=element1, matrix=matrix, is_si=False, should_transform_children=False
         )
-        self.recreate_wall(element1, wall1)
+        tool.Model.recreate_wall(element1, wall1)
 
     def merge(self, wall1: bpy.types.Object, wall2: bpy.types.Object) -> None:
         if tool.Ifc.is_moved(wall1):
@@ -1170,7 +1159,7 @@ class DumbWallJoiner:
                 related_connection=rel.RelatedConnectionType,
             )
 
-        self.recreate_wall(element1, wall1)
+        tool.Model.recreate_wall(element1, wall1)
 
         tool.Geometry.delete_ifc_object(wall2)
 
@@ -1203,7 +1192,7 @@ class DumbWallJoiner:
             description="TOP",
         )
 
-        self.recreate_wall(element1, wall1)
+        tool.Model.recreate_wall(element1, wall1)
 
     def set_axis(self, wall, p1, p2):
         axis = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan", "Axis", "GRAPH_VIEW")
@@ -1232,7 +1221,7 @@ class DumbWallJoiner:
             self.set_axis(element1, p1, intersect)
         else:
             self.set_axis(element1, intersect, p2)
-        self.recreate_wall(element1, wall1)
+        tool.Model.recreate_wall(element1, wall1)
 
     def set_length(self, wall1: bpy.types.Object, si_length: float) -> None:
         element1 = tool.Ifc.get_entity(wall1)
@@ -1246,7 +1235,7 @@ class DumbWallJoiner:
         p1, p2 = ifcopenshell.util.representation.get_reference_line(element1)
         p2[0] = p1[0] + si_length / unit_scale
         self.set_axis(element1, p1, p2)
-        self.recreate_wall(element1, wall1)
+        tool.Model.recreate_wall(element1, wall1)
 
     def join_T(self, wall1: bpy.types.Object, wall2: bpy.types.Object) -> None:
         element1 = tool.Ifc.get_entity(wall1)
@@ -1269,7 +1258,7 @@ class DumbWallJoiner:
             description="BUTT",
         )
 
-        self.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
+        tool.Model.recreate_wall(element1, wall1, axis1["reference"], axis1["reference"])
 
     def connect(self, obj1: bpy.types.Object, obj2: bpy.types.Object) -> None:
         wall1 = tool.Ifc.get_entity(obj1)
@@ -1279,27 +1268,8 @@ class DumbWallJoiner:
         if tool.Ifc.is_moved(obj2):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
         ifcopenshell.api.geometry.connect_wall(tool.Ifc.get(), wall1=wall1, wall2=wall2)
-        self.recreate_wall(wall1, obj1)
-        self.recreate_wall(wall2, obj2)
-
-    def recreate_wall(self, element: ifcopenshell.entity_instance, obj: bpy.types.Object, axis=None, body=None) -> None:
-        rep = ifcopenshell.api.geometry.regenerate_wall_representation(tool.Ifc.get(), element)
-        bonsai.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=rep,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=False,
-        )
-        tool.Geometry.record_object_materials(obj)
-
-        unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        matrix = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-        matrix[:, 3] *= unit_scale
-        obj.matrix_world = tool.Loader.apply_blender_offset_to_matrix_world(obj, matrix)
-        tool.Geometry.record_object_position(obj)
+        tool.Model.recreate_wall(wall1, obj1)
+        tool.Model.recreate_wall(wall2, obj2)
 
     def create_matrix(self, p, x, y, z):
         return Matrix([x, y, z, p]).to_4x4().transposed()

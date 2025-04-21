@@ -678,3 +678,44 @@ class TestApplyIfcMaterialChanges(NewFile):
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
         tool.Material.ensure_material_unassigned([element])
         assert self.get_mesh(obj).materials[:] == [bpy.data.materials["Red"]]
+
+
+class TestOffsetWall(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        wall_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWallType", name="WAL01")
+        material_set = ifcopenshell.api.material.add_material_set(ifc, set_type="IfcMaterialLayerSet")
+        material = ifcopenshell.api.material.add_material(ifc, name="PB01", category="gypsum")
+        layer = ifcopenshell.api.material.add_layer(ifc, layer_set=material_set, material=material)
+        ifcopenshell.api.material.edit_layer(ifc, layer=layer, attributes={"LayerThickness": 100})
+        ifcopenshell.api.material.assign_material(ifc, products=[wall_type], material=material_set)
+
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[wall], relating_type=wall_type)
+        rel = ifcopenshell.api.material.assign_material(ifc, products=[wall], type="IfcMaterialLayerSetUsage")
+        usage = rel.RelatingMaterial
+        obj = bpy.data.objects.new("Wall", None)
+        tool.Ifc.link(wall, obj)
+
+        usage.DirectionSense = "POSITIVE"
+        subject.offset_wall(obj, "CENTER")
+        assert usage.OffsetFromReferenceLine == -50
+        usage.DirectionSense = "NEGATIVE"
+        subject.offset_wall(obj, "CENTER")
+        assert usage.OffsetFromReferenceLine == 50
+
+        usage.DirectionSense = "POSITIVE"
+        subject.offset_wall(obj, "INTERIOR")
+        assert usage.OffsetFromReferenceLine == -100
+        usage.DirectionSense = "NEGATIVE"
+        subject.offset_wall(obj, "INTERIOR")
+        assert usage.OffsetFromReferenceLine == 0
+
+        usage.DirectionSense = "POSITIVE"
+        subject.offset_wall(obj, "EXTERIOR")
+        assert usage.OffsetFromReferenceLine == 0
+        usage.DirectionSense = "NEGATIVE"
+        subject.offset_wall(obj, "EXTERIOR")
+        assert usage.OffsetFromReferenceLine == 100

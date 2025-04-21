@@ -27,6 +27,9 @@ if TYPE_CHECKING:
     from mathutils import Vector
     from bonsai.bim.module.model.wall import DumbWallJoiner, DumbWallAligner
 
+    AlignType = Literal["CENTER", "EXTERIOR", "INTERIOR"]
+    OffsetType = Literal["CENTER", "EXTERIOR", "INTERIOR"]
+
 
 def unjoin_walls(
     ifc: tool.Ifc, blender: tool.Blender, geometry: tool.Geometry, joiner: DumbWallJoiner, model: tool.Model
@@ -82,12 +85,19 @@ def join_walls_LV(
     joiner.connect(another_selected_object, active_obj)
 
 
+def offset_walls(ifc: tool.Ifc, blender: tool.Blender, model: tool.Model, offset_type: OffsetType):
+    objs = [
+        obj
+        for obj in blender.get_selected_objects()
+        if (element := ifc.get_entity(obj)) and model.get_usage_type(element) == "LAYER2"
+    ]
+    for obj in objs:
+        model.offset_wall(obj, offset_type)
+    model.recalculate_walls(objs)
+
+
 def align_walls(
-    ifc: tool.Ifc,
-    blender: tool.Blender,
-    model: tool.Model,
-    aligner: DumbWallAligner,
-    align_type: Literal["CENTERLINE", "EXTERIOR", "INTERIOR"],
+    ifc: tool.Ifc, blender: tool.Blender, model: tool.Model, aligner: DumbWallAligner, align_type: AlignType
 ):
     reference_obj = blender.get_active_object(is_selected=True)
     if not (e := ifc.get_entity(reference_obj) or not model.get_usage_type(e) == "LAYER2"):
@@ -103,7 +113,7 @@ def align_walls(
         )
     aligner.set_reference_wall(reference_obj)
     for obj in objs:
-        if align_type == "CENTERLINE":
+        if align_type == "CENTER":
             aligner.align_centerline(obj)
         elif align_type == "EXTERIOR":
             aligner.align_first_layer(obj)
@@ -111,7 +121,7 @@ def align_walls(
             aligner.align_last_layer(obj)
 
 
-def align_objects(blender: tool.Blender, model: tool.Model, align_type: Literal["CENTERLINE", "POSITIVE", "NEGATIVE"]):
+def align_objects(blender: tool.Blender, model: tool.Model, align_type: Literal["CENTER", "POSITIVE", "NEGATIVE"]):
     reference_obj = blender.get_active_object(is_selected=True)
     objs = [o for o in blender.get_selected_objects() if o != reference_obj]
     if not reference_obj or not objs:

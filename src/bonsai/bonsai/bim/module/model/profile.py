@@ -36,7 +36,6 @@ import bonsai.core.root
 from bonsai.bim.ifc import IfcStore
 from math import pi, degrees, atan2
 from mathutils import Vector, Matrix
-from bonsai.bim.module.model.wall import DumbWallRecalculator
 from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from typing import Union, Any, Optional
@@ -969,7 +968,7 @@ class Rotate90(bpy.types.Operator, tool.Ifc.Operator):
             obj.matrix_world @= rotate_matrix
         bpy.context.view_layer.update()
         DumbProfileRecalculator().recalculate(profile_objs)
-        DumbWallRecalculator().recalculate(layer2_objs)
+        tool.Model.recalculate_walls(layer2_objs)
         return {"FINISHED"}
 
 
