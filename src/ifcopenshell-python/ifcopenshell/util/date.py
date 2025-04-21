@@ -17,14 +17,11 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+import isodate
+import isodate.duration
 from re import findall
 from dateutil import parser
 from typing import Literal, Union, Any, overload
-
-try:
-    import isodate
-except ModuleNotFoundError as e:
-    print(f"Note: duration parsing not available due to missing dependencies: util.date - {e}")
 
 
 def timedelta2duration(timedelta):
@@ -73,34 +70,30 @@ def ifc2datetime(element):
         )
 
 
-def get_isosplit(s, split):
-    if split in s:
-        n, s = s.split(split)
-    else:
-        n = 0
-    return n, s
+def readable_ifc_duration(string: str) -> str:
+    """Convert ISO duration to more readable string format.
 
-
-def readable_ifc_duration(string):
-    string = string.split("P")[-1]
-
-    years, string = get_isosplit(string, "Y")
-    months, string = get_isosplit(string, "M")
-    weeks, string = get_isosplit(string, "W")
-    days, string = get_isosplit(string, "D")
-    _, string = get_isosplit(string, "T")
-    hours, string = get_isosplit(string, "H")
-    minutes, string = get_isosplit(string, "M")
-    seconds, string = get_isosplit(string, "S")
+    Examples:
+    - "P2Y3M1W4DT5H45M30S" -> "2 y 3 m 1 w 4 d 5 h 45 m 30 s"
+    - "P2Y3MT30S" -> "2 y 3 m 30 s"
+    """
+    duration = isodate.parse_duration(string, as_timedelta_if_possible=False)
+    assert isinstance(duration, isodate.duration.Duration)
 
     final_string = ""
-    final_string += f"{years} y " if years else ""
-    final_string += f"{months} m " if months else ""
+    final_string += f"{duration.years} y " if duration.years else ""
+    final_string += f"{duration.months} m " if duration.months else ""
+
+    # Duration stores all other components as timedelta.
+    tdelta = duration.tdelta
+    weeks, days = divmod(tdelta.days, 7)
     final_string += f"{weeks} w " if weeks else ""
     final_string += f"{days} d " if days else ""
-    final_string += f"{round(float(hours),2)} h " if hours else ""
+    hours, seconds = divmod(tdelta.seconds, 3600)
+    minutes, seconds = divmod(seconds, 60)
+    final_string += f"{hours} h " if hours else ""
     final_string += f"{minutes} m " if minutes else ""
-    final_string += f"{seconds} s " if seconds else ""
+    final_string += f"{seconds} s" if seconds else ""
 
     return final_string
 
