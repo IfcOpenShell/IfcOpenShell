@@ -839,13 +839,14 @@ class Loader(bonsai.core.tool.Loader):
         camera = bpy.data.cameras.new(tool.Loader.get_mesh_name_from_shape(geometry))
         camera.type = camera_type
         camera.show_limits = True
+        props = tool.Drawing.get_camera_props(camera)
 
         if camera_type == "ORTHO":
             camera.clip_start = 0.002  # Technically 0, but Blender doesn't allow this, so 2mm it is!
             camera.clip_end = depth
 
-            camera.BIMCameraProperties.width = width
-            camera.BIMCameraProperties.height = height
+            props.width = width
+            props.height = height
         elif camera_type == "PERSP":
             abs_min_z = abs(min(z))
             abs_max_z = abs(max(z))
@@ -853,8 +854,8 @@ class Loader(bonsai.core.tool.Loader):
             camera.clip_end = abs_min_z
             max_res = 1000
 
-            camera.BIMCameraProperties.width = width
-            camera.BIMCameraProperties.height = height
+            props.width = width
+            props.height = height
 
             if width > height:
                 fov = 2 * atan(width / (2 * abs_min_z))

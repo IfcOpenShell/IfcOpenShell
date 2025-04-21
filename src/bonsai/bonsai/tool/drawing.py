@@ -55,7 +55,13 @@ from typing import Optional, Union, Iterable, Any, Literal, Sequence, TYPE_CHECK
 from pathlib import Path
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.drawing.prop import DocProperties, Sheet, BIMAnnotationProperties, BIMTextProperties
+    from bonsai.bim.module.drawing.prop import (
+        DocProperties,
+        Sheet,
+        BIMAnnotationProperties,
+        BIMTextProperties,
+        BIMCameraProperties,
+    )
     from bonsai.bim.module.drawing.prop import Drawing as DrawingProperties
 
 
@@ -105,6 +111,17 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def get_text_props(cls, obj: bpy.types.Object) -> BIMTextProperties:
         return obj.BIMTextProperties
+
+    @classmethod
+    def get_camera_props(cls, camera: Union[bpy.types.Object, bpy.types.Camera]) -> BIMCameraProperties:
+        """
+        :param camera: Camera object or camera.
+        """
+        if isinstance(camera, bpy.types.Camera):
+            data = camera
+        else:
+            assert isinstance(data := camera.data, bpy.types.Camera)
+        return data.BIMCameraProperties
 
     @classmethod
     def canonicalise_class_name(cls, name: str) -> str:
@@ -780,7 +797,7 @@ class Drawing(bonsai.core.tool.Drawing):
         from bonsai.bim.module.drawing.prop import get_diagram_scales
 
         # Temporarily clear the definition id to prevent prop update callbacks to IFC.
-        camera_props = camera.BIMCameraProperties
+        camera_props = tool.Drawing.get_camera_props(camera)
         update_props = camera_props.update_props
         camera_props.update_props = False
 
@@ -2199,8 +2216,8 @@ class Drawing(bonsai.core.tool.Drawing):
         return float(numerator) / float(denominator)
 
     @classmethod
-    def get_diagram_scale(cls, obj: bpy.types.Object) -> dict[str, float]:
-        props = obj.data.BIMCameraProperties
+    def get_diagram_scale(cls, obj: bpy.types.Object) -> dict[str, str]:
+        props = cls.get_camera_props(obj)
         scale = props.diagram_scale
         if scale != "CUSTOM":
             human_scale, scale = scale.split("|")

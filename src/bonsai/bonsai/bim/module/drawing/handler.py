@@ -38,18 +38,17 @@ def depsgraph_update_pre_handler(scene):
 
 def set_active_camera_resolution(scene: bpy.types.Scene) -> None:
     props = tool.Drawing.get_document_props()
-    if not scene.camera or "/" not in scene.camera.name or not props.drawings:
+    camera_obj = scene.camera
+    if not camera_obj or "/" not in camera_obj.name or not props.drawings:
         return
-    assert isinstance(scene.camera.data, bpy.types.Camera)
-    props = scene.camera.data.BIMCameraProperties
+    assert isinstance((camera := camera_obj.data), bpy.types.Camera)
+    props = tool.Drawing.get_camera_props(camera)
     ortho_scale = max((props.width, props.height))
     aspect_ratio = props.width / props.height
-    if (scene.camera.data.ortho_scale != ortho_scale) or (
-        scene.render.resolution_x / scene.render.resolution_y != aspect_ratio
-    ):
-        scene.camera.data.ortho_scale = ortho_scale
+    if (camera.ortho_scale != ortho_scale) or (scene.render.resolution_x / scene.render.resolution_y != aspect_ratio):
+        camera.ortho_scale = ortho_scale
 
-        diagram_scale = tool.Drawing.get_diagram_scale(scene.camera)
+        diagram_scale = tool.Drawing.get_diagram_scale(camera_obj)
         scale_ratio = tool.Drawing.get_scale_ratio(diagram_scale["Scale"])
 
         if props.width > props.height:
@@ -61,5 +60,5 @@ def set_active_camera_resolution(scene: bpy.types.Scene) -> None:
             raster_x = ortho_scale * aspect_ratio * scale_ratio * props.dpi / 0.0254
             raster_y = ortho_scale * scale_ratio * props.dpi / 0.0254
 
-        scene.render.resolution_x = scene.camera.data.BIMCameraProperties.raster_x = int(raster_x)
-        scene.render.resolution_y = scene.camera.data.BIMCameraProperties.raster_y = int(raster_y)
+        scene.render.resolution_x = props.raster_x = int(raster_x)
+        scene.render.resolution_y = props.raster_y = int(raster_y)

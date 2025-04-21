@@ -413,12 +413,13 @@ def get_project_collection(scene):
     return colls[0]
 
 
-def parse_diagram_scale(camera):
+def parse_diagram_scale(camera: bpy.types.Camera) -> float:
     """Returns numeric value of scale"""
-    if camera.BIMCameraProperties.diagram_scale == "CUSTOM":
-        _, fraction = camera.BIMCameraProperties.custom_diagram_scale.split("|")
+    props = tool.Drawing.get_camera_props(camera)
+    if props.diagram_scale == "CUSTOM":
+        _, fraction = props.custom_diagram_scale.split("|")
     else:
-        _, fraction = camera.BIMCameraProperties.diagram_scale.split("|")
+        _, fraction = props.diagram_scale.split("|")
     numerator, denominator = fraction.split("/")
     return float(numerator) / float(denominator)
 
@@ -431,12 +432,11 @@ def ortho_view_frame(
     Similar to `bpy.types.Camera.view_frame`
 
     :arg camera: camera of drawing
-    :type camera: bpy.types.Camera + BIMCameraProperties
     :arg margin: margins, in scene units
-    :type margin: float
     :return: (xmin, xmax, ymin, ymax, zmin, zmax) in local camera coordinates
     """
-    aspect = camera.BIMCameraProperties.raster_y / camera.BIMCameraProperties.raster_x
+    props = tool.Drawing.get_camera_props(camera)
+    aspect = props.raster_y / props.raster_x
     size = camera.ortho_scale
     hwidth = size * 0.5
     hheight = size * 0.5 * aspect

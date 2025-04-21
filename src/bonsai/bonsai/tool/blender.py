@@ -82,7 +82,7 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def activate_camera(cls, obj: bpy.types.Object) -> None:
 
-        area = tool.Blender.get_view3d_area()
+        area = cls.get_view3d_area()
         is_local_view = area.spaces[0].local_view is not None
 
         if is_local_view:
@@ -206,7 +206,7 @@ class Blender(bonsai.core.tool.Blender):
         if context is None:
             context = bpy.context
         if obj_type == "Object":
-            props = tool.Blender.get_object_bim_props(bpy.data.objects[obj])
+            props = cls.get_object_bim_props(bpy.data.objects[obj])
             return props.ifc_definition_id
         elif obj_type == "Material":
             props = tool.Material.get_material_props()
@@ -239,7 +239,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def is_ifc_object(cls, obj: bpy.types.Object) -> bool:
-        props = tool.Blender.get_object_bim_props(obj)
+        props = cls.get_object_bim_props(obj)
         return bool(props.ifc_definition_id)
 
     @classmethod
@@ -338,7 +338,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def set_viewport_tool(cls, tool_name: str) -> None:
-        with bpy.context.temp_override(**tool.Blender.get_viewport_context()):
+        with bpy.context.temp_override(**cls.get_viewport_context()):
             bpy.ops.wm.tool_set_by_id(name=tool_name)
 
     @classmethod
@@ -398,7 +398,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def update_viewport(cls) -> None:
-        tool.Blender.get_viewport_context()["area"].tag_redraw()
+        cls.get_viewport_context()["area"].tag_redraw()
 
     @classmethod
     def force_depsgraph_update(cls) -> None:
@@ -711,7 +711,7 @@ class Blender(bonsai.core.tool.Blender):
             False if enum is still invalid (as there no enum items)
             and update callback was not triggered (may need to trigger it manually).
         """
-        current_value = tool.Blender.get_enum_safe(props, prop_name)
+        current_value = cls.get_enum_safe(props, prop_name)
         if current_value is not None:
             # Value is valid, just trigger the update callback.
             setattr(props, prop_name, current_value)
@@ -958,7 +958,7 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def get_layer_collection(cls, collection: bpy.types.Collection) -> Union[bpy.types.LayerCollection, None]:
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-        project_collection = tool.Blender.get_object_bim_props(project).collection
+        project_collection = cls.get_object_bim_props(project).collection
         for layer_collection in bpy.context.view_layer.layer_collection.children:
             if layer_collection.collection == project_collection:
                 for layer_collection2 in layer_collection.children:
@@ -1564,7 +1564,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_user_data_dir(cls) -> Path:
-        props = tool.Blender.get_bim_props()
+        props = cls.get_bim_props()
         return Path(props.data_dir)
 
     @classmethod
@@ -1649,7 +1649,7 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def get_ifc_definition_id(cls, obj: IFC_CONNECTED_TYPE) -> int:
         if isinstance(obj, bpy.types.Object):
-            return tool.Blender.get_object_bim_props(obj).ifc_definition_id
+            return cls.get_object_bim_props(obj).ifc_definition_id
         return tool.Style.get_material_style_props(obj).ifc_definition_id
 
     @classmethod

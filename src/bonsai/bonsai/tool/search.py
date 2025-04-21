@@ -51,9 +51,11 @@ class Search(bonsai.core.tool.Search):
         elif module == "diff":
             return tool.Blender.get_diff_props().filter_groups
         elif module == "drawing_include":
-            return bpy.context.scene.camera.data.BIMCameraProperties.include_filter_groups
+            assert (scene := bpy.context.scene) and (camera_obj := (scene.camera))
+            return tool.Drawing.get_camera_props(camera_obj).include_filter_groups
         elif module == "drawing_exclude":
-            return bpy.context.scene.camera.data.BIMCameraProperties.exclude_filter_groups
+            assert (scene := bpy.context.scene) and (camera_obj := (scene.camera))
+            return tool.Drawing.get_camera_props(camera_obj).exclude_filter_groups
         elif module.startswith("clash"):
             _, clash_set_index, ab, clash_source_index = module.split("_")
             props = tool.Clash.get_clash_props()
