@@ -16,12 +16,18 @@ def load_fixture():
 class TestViewDefinition:
     def test_single_view(self, load_fixture):
         f = load_fixture("passing_header.ifc")
-        assert f.mvd.view_definitions == "Alignment-basedView"
+        assert f.mvd.view_definitions == ["Alignment-basedView"]
 
     def test_multiple_views(self, load_fixture):
         f = load_fixture("two_views.ifc")
-        assert f.mvd.view_definitions == 'CoordinationView_V2.0, SpaceBoundaryAddonView'
-
+        assert f.mvd.view_definitions == ['CoordinationView_V2.0', 'SpaceBoundaryAddonView']
+        
+    def test_add_view(self):
+        header = MockHeader(("ViewDefinition [CoordinationView_V2.0]",))
+        mvd = mvd_info.MvdInfo(header)
+        assert mvd.view_definitions == ["CoordinationView_V2.0"]
+        mvd.view_definitions.append("SpaceBoundaryAddonView")
+        assert mvd.view_definitions == ['CoordinationView_V2.0', 'SpaceBoundaryAddonView']
 
 class TestExchangeRequirements:
     def test_parsing(self, load_fixture):
@@ -36,8 +42,8 @@ class TestExchangeRequirements:
             'ExchangeRequirement [SomethingElse]'
         )
         assert f.mvd.exchange_requirements == 'SomethingElse'
-        f.mvd.view_definitions = 'CoordinationView_V2.0'
-        assert f.mvd.view_definitions == 'CoordinationView_V2.0'
+        f.mvd.view_definitions = ['CoordinationView_V2.0']
+        assert f.mvd.view_definitions == ['CoordinationView_V2.0']
 
 
 class TestComments:
@@ -126,9 +132,14 @@ class TestKeywords:
 class TestFallbackBehavior:
     def test_parse_mvd_fallback(self, monkeypatch):
         monkeypatch.setattr(mvd_info, "LARK_AVAILABLE", False)
+        header = MockHeader(("ViewDefinition [ShouldNotParse]",))
         mvd = mvd_info.MvdInfo(
-            get_description=lambda: ["ViewDefinition [ShouldNotParse]"],
-            set_description=lambda d: None
+            header
         )
         assert mvd.view_definitions is None
         assert mvd.keywords == set()
+        
+class MockHeader:
+    def __init__(self, description):
+        self.file_description = type("FileDescription", (), {"description": description})
+
