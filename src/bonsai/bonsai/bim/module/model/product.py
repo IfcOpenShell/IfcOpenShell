@@ -577,48 +577,11 @@ class AlignProduct(bpy.types.Operator):
         align_type: AlignType
 
     def execute(self, context):
-        selected_objs = context.selected_objects
-        if len(selected_objs) < 2 or not context.active_object:
-            self.report({"ERROR"}, "Please select atleast 2 objects.")
-            return {"FINISHED"}
-        if self.align_type == "CENTERLINE":
-            point = context.active_object.matrix_world @ (
-                Vector(context.active_object.bound_box[0]) + (context.active_object.dimensions / 2)
-            )
-        elif self.align_type == "POSITIVE":
-            point = context.active_object.matrix_world @ Vector(context.active_object.bound_box[6])
-        elif self.align_type == "NEGATIVE":
-            point = context.active_object.matrix_world @ Vector(context.active_object.bound_box[0])
-        else:
-            assert_never(self.align_type)
-
-        active_x_axis = context.active_object.matrix_world.to_quaternion() @ Vector((1, 0, 0))
-        active_y_axis = context.active_object.matrix_world.to_quaternion() @ Vector((0, 1, 0))
-        active_z_axis = context.active_object.matrix_world.to_quaternion() @ Vector((0, 0, 1))
-
-        x_distances = self.get_axis_distances(point, active_x_axis, context)
-        y_distances = self.get_axis_distances(point, active_y_axis, context)
-        if abs(sum(x_distances)) < abs(sum(y_distances)):
-            for i, obj in enumerate(selected_objs):
-                obj.matrix_world = Matrix.Translation(active_x_axis * -x_distances[i]) @ obj.matrix_world
-        else:
-            for i, obj in enumerate(selected_objs):
-                obj.matrix_world = Matrix.Translation(active_y_axis * -y_distances[i]) @ obj.matrix_world
+        try:
+            core.align_objects(tool.Blender, tool.Model, self.align_type)
+        except core.RequireAtLeastTwoElements as e:
+            self.report({"ERROR"}, str(e))
         return {"FINISHED"}
-
-    def get_axis_distances(self, point: Vector, axis: Vector, context: bpy.types.Context) -> list[float]:
-        results = []
-        for obj in context.selected_objects:
-            if self.align_type == "CENTERLINE":
-                obj_point = obj.matrix_world @ (Vector(obj.bound_box[0]) + (obj.dimensions / 2))
-            elif self.align_type == "POSITIVE":
-                obj_point = obj.matrix_world @ Vector(obj.bound_box[6])
-            elif self.align_type == "NEGATIVE":
-                obj_point = obj.matrix_world @ Vector(obj.bound_box[0])
-            else:
-                assert_never(self.align_type)
-            results.append(mathutils.geometry.distance_point_to_plane(obj_point, point, axis))
-        return results
 
 
 class LoadTypeThumbnails(bpy.types.Operator):

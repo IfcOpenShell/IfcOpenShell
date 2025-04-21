@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
     from mathutils import Vector
-    from bonsai.bim.module.model.wall import DumbWallJoiner
+    from bonsai.bim.module.model.wall import DumbWallJoiner, DumbWallAligner
 
 
 def unjoin_walls(
@@ -80,6 +80,43 @@ def join_walls_LV(
         geometry.clear_scale(obj)
 
     joiner.connect(another_selected_object, active_obj)
+
+
+def align_walls(
+    ifc: tool.Ifc,
+    blender: tool.Blender,
+    model: tool.Model,
+    aligner: DumbWallAligner,
+    align_type: Literal["CENTERLINE", "EXTERIOR", "INTERIOR"],
+):
+    reference_obj = blender.get_active_object(is_selected=True)
+    if not (e := ifc.get_entity(reference_obj) or not model.get_usage_type(e) == "LAYER2"):
+        reference_obj = None
+    objs = [
+        o
+        for o in blender.get_selected_objects()
+        if o != reference_obj and (e := ifc.get_entity(o)) and model.get_usage_type(e) == "LAYER2"
+    ]
+    if not reference_obj or not objs:
+        raise RequireAtLeastTwoLayeredElements(
+            "At least two vertically layered elements must be selected to match alignments."
+        )
+    aligner.set_reference_wall(reference_obj)
+    for obj in objs:
+        if align_type == "CENTERLINE":
+            aligner.align_centerline(obj)
+        elif align_type == "EXTERIOR":
+            aligner.align_first_layer(obj)
+        elif align_type == "INTERIOR":
+            aligner.align_last_layer(obj)
+
+
+def align_objects(blender: tool.Blender, model: tool.Model, align_type: Literal["CENTERLINE", "POSITIVE", "NEGATIVE"]):
+    reference_obj = blender.get_active_object(is_selected=True)
+    objs = [o for o in blender.get_selected_objects() if o != reference_obj]
+    if not reference_obj or not objs:
+        raise RequireAtLeastTwoElements("At least two objects must be selected to match alignments.")
+    model.align_objects(reference_obj, objs, align_type)
 
 
 def extend_wall_to_slab(
@@ -144,4 +181,12 @@ class RequireTwoWallsError(Exception):
 
 
 class RequireAtLeastTwoLayeredElements(Exception):
+    pass
+
+
+class RequireAtLeastTwoElements(Exception):
+    pass
+
+
+class RequireLayeredElement(Exception):
     pass

@@ -140,31 +140,11 @@ class AlignWall(bpy.types.Operator):
     if TYPE_CHECKING:
         align_type: AlignType
 
-    @classmethod
-    def poll(cls, context):
-        if not context.active_object:
-            cls.poll_message_set("No active object selected.")
-            return False
-        selected_valid_objects = tool.Model.get_selected_mesh_objects()
-        if len(selected_valid_objects) < 2:
-            cls.poll_message_set("Please select at least two mesh objects.")
-            return False
-        return True
-
     def execute(self, context):
-        selected_objects = tool.Model.get_selected_mesh_objects()
-        for obj in selected_objects:
-            if obj == context.active_object:
-                continue
-            aligner = DumbWallAligner(obj, context.active_object)
-            if self.align_type == "CENTERLINE":
-                aligner.align_centerline()
-            elif self.align_type == "EXTERIOR":
-                aligner.align_first_layer()
-            elif self.align_type == "INTERIOR":
-                aligner.align_last_layer()
-            else:
-                assert_never(self.align_type)
+        try:
+            core.align_walls(tool.Ifc, tool.Blender, tool.Model, DumbWallAligner(), self.align_type)
+        except core.RequireAtLeastTwoLayeredElements as e:
+            self.report({"ERROR"}, str(e))
         return {"FINISHED"}
 
 
@@ -613,11 +593,11 @@ class DumbWallAligner:
     # An alignment shifts the origin of all walls to the closest point on the
     # local X axis of the reference wall. In addition, the Z rotation is copied.
     # Z translations are ignored for alignment.
-    def __init__(self, wall: bpy.types.Object, reference_wall: bpy.types.Object):
-        self.wall = wall
+    def set_reference_wall(self, reference_wall: bpy.types.Object):
         self.reference_wall = reference_wall
 
-    def align_centerline(self) -> None:
+    def align_centerline(self, wall: bpy.types.Object) -> None:
+        self.wall = wall
         self.align_rotation()
 
         l_start = Vector(self.reference_wall.bound_box[0]).lerp(Vector(self.reference_wall.bound_box[3]), 0.5)
@@ -635,7 +615,8 @@ class DumbWallAligner:
         new_origin = point - offset
         self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
-    def align_last_layer(self) -> None:
+    def align_last_layer(self, wall: bpy.types.Object) -> None:
+        self.wall = wall
         self.align_rotation()
 
         if self.is_rotation_flipped():
@@ -658,7 +639,8 @@ class DumbWallAligner:
         new_origin = point - offset
         self.wall.matrix_world.translation[0], self.wall.matrix_world.translation[1] = new_origin.xy
 
-    def align_first_layer(self) -> None:
+    def align_first_layer(self, wall: bpy.types.Object) -> None:
+        self.wall = wall
         self.align_rotation()
 
         if self.is_rotation_flipped():

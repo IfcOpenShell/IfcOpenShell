@@ -23,7 +23,7 @@ import bpy.utils.previews
 import bonsai.bim
 import bonsai.tool as tool
 import bonsai.core.model as core
-from bonsai.bim.module.model.wall import DumbWallJoiner
+from bonsai.bim.module.model.wall import DumbWallJoiner, DumbWallAligner
 from bonsai.bim.helper import prop_with_search, draw_attribute
 from bpy.types import WorkSpaceTool, Menu
 from bonsai.bim.module.model.data import AuthoringData, ItemData
@@ -1181,10 +1181,15 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
         if self.active_material_usage == "LAYER2":
-            if bpy.ops.bim.align_wall.poll():
-                bpy.ops.bim.align_wall(align_type="CENTERLINE")
+            try:
+                core.align_walls(tool.Ifc, tool.Blender, tool.Model, DumbWallAligner(), "CENTERLINE")
+            except core.RequireAtLeastTwoLayeredElements as e:
+                self.report({"ERROR"}, str(e))
         else:
-            bpy.ops.bim.align_product(align_type="CENTERLINE")
+            try:
+                core.align_objects(tool.Blender, tool.Model, "CENTERLINE")
+            except core.RequireAtLeastTwoElements as e:
+                self.report({"ERROR"}, str(e))
 
     def hotkey_S_E(self):
         if not bpy.context.selected_objects or not (active_object := bpy.context.active_object):
@@ -1328,18 +1333,30 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
         elif self.active_material_usage == "LAYER2":
-            bpy.ops.bim.align_wall(align_type="INTERIOR")
+            try:
+                core.align_walls(tool.Ifc, tool.Blender, tool.Model, DumbWallAligner(), "INTERIOR")
+            except core.RequireAtLeastTwoLayeredElements as e:
+                self.report({"ERROR"}, str(e))
         else:
-            bpy.ops.bim.align_product(align_type="POSITIVE")
+            try:
+                core.align_objects(tool.Blender, tool.Model, "POSITIVE")
+            except core.RequireAtLeastTwoElements as e:
+                self.report({"ERROR"}, str(e))
 
     def hotkey_S_X(self):
         if not bpy.context.selected_objects:
             return
         if self.active_material_usage == "LAYER2":
-            if bpy.ops.bim.align_wall.poll():
-                bpy.ops.bim.align_wall(align_type="EXTERIOR")
+            try:
+                core.align_walls(tool.Ifc, tool.Blender, tool.Model, DumbWallAligner(), "EXTERIOR")
+            except core.RequireAtLeastTwoLayeredElements as e:
+                self.report({"ERROR"}, str(e))
         else:
-            bpy.ops.bim.align_product(align_type="NEGATIVE")
+            try:
+                core.align_objects(tool.Blender, tool.Model, "NEGATIVE")
+            except core.RequireAtLeastTwoElements as e:
+                self.report({"ERROR"}, str(e))
+
 
     def hotkey_S_Y(self):
         if not bpy.context.selected_objects:
