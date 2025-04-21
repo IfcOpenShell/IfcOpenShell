@@ -131,34 +131,46 @@ else:
 
 
 class MvdInfo:
-    def __init__(self, get_description: Callable[[], list[str]], set_description: Callable[[list[str]], None]):
-        self._get_description = get_description
-        self._set_description = set_description
+    def __init__(self, header):
+        self._header = header
         self._parsed = None
 
     def _ensure_parsed(self):
         if not LARK_AVAILABLE:
             return
         if self._parsed is None:
-            self._parsed = parse_mvd(self.description)
+            self._parsed = parse_mvd(self._header.file_description.description)
 
     @property
     def description(self) -> list[str]:
-        return self._get_description()
+        return self._header.file_description.description
 
     @description.setter
     def description(self, new_description: list[str]):
-        self._set_description(new_description)
+        self._header.file_description.description = tuple(new_description)
         self._parsed = None
 
     @property
     def view_definitions(self):
         self._ensure_parsed()
-        return ', '.join(' '.join(item.split()) for item in self._parsed.view_definitions) if self._parsed else None
+        if not self._parsed or self._parsed.view_definitions is None:
+            return None  #
+
+        vd = self._parsed.view_definitions
+        vd_list = vd if isinstance(vd, list) else [vd] if vd else []
+        return AutoCommitList(
+            vd_list,
+            callback=lambda val: (self._update_keyword("ViewDefinition", val), setattr(self, "_parsed", None)),
+            formatter=lambda lst: ",".join(str(i) for i in lst)
+        )
 
     @view_definitions.setter
-    def view_definitions(self, new_value: str):
-        self._update_keyword("ViewDefinition", new_value)
+    def view_definitions(self, new_value: str | list[str]):
+        if isinstance(new_value, list):
+            value = ", ".join(new_value)
+        else:
+            value = str(new_value)
+        self._update_keyword("ViewDefinition", value)
 
     @property
     def comments(self):

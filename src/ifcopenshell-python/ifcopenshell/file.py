@@ -471,10 +471,8 @@ class file:
     def mvd(self):
         if not LARK_AVAILABLE:
             return None
-        file_description = self.wrapped_data.header.file_description
         return MvdInfo(
-            get_description=lambda: file_description.description, 
-            set_description=lambda d: setattr(file_description, "description", tuple(d))
+            self.header
         )
 
     def __getattr__(self, attr) -> Union[Any, Callable[..., ifcopenshell.entity_instance]]:
