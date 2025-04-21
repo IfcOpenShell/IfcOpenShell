@@ -417,10 +417,11 @@ def parse_diagram_scale(camera: bpy.types.Camera) -> float:
     """Returns numeric value of scale"""
     props = tool.Drawing.get_camera_props(camera)
     if props.diagram_scale == "CUSTOM":
-        _, fraction = props.custom_diagram_scale.split("|")
+        numerator = props.custom_scale_numerator
+        denominator = props.custom_scale_denominator
     else:
         _, fraction = props.diagram_scale.split("|")
-    numerator, denominator = fraction.split("/")
+        numerator, denominator = fraction.split("/")
     return float(numerator) / float(denominator)
 
 
