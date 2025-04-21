@@ -28,6 +28,7 @@ from typing import Union, Optional, Literal, Any, TYPE_CHECKING
 from ifcopenshell.util.shape_builder import ifc_safe_vector_type, VectorType
 
 if TYPE_CHECKING:
+    import bonsai.tool as tool
     from bonsai.bim.module.geometry.helper import Helper
 
 
@@ -81,9 +82,11 @@ def add_representation(
     """
     # lazy import Helper to avoid circular import
     if "Helper" not in globals():
+        import bonsai.tool as tool
         from bonsai.bim.module.geometry.helper import Helper
 
         globals()["Helper"] = Helper
+        globals()["tool"] = tool
 
     usecase = Usecase()
     # TODO: This usecase currently depends on Blender's data model
@@ -111,7 +114,7 @@ class Usecase:
     settings: dict[str, Any]
     ifc_vertices: list[ifcopenshell.entity_instance]
     coordinate_offset: Union[npt.NDArray[np.float64], None]
-    geometry: Union[bpy.types.Mesh, bpy.types.Curve]
+    geometry: Union[bpy.types.Mesh, bpy.types.Curve, bpy.types.Camera]
     blender_object: bpy.types.Object
 
     def execute(self) -> Union[ifcopenshell.entity_instance, None]:
@@ -319,8 +322,10 @@ class Usecase:
         return self.create_mesh_representation()
 
     def create_camera_block_representation(self) -> ifcopenshell.entity_instance:
-        raster_x = self.settings["geometry"].BIMCameraProperties.raster_x
-        raster_y = self.settings["geometry"].BIMCameraProperties.raster_y
+        assert isinstance(self.geometry, bpy.types.Camera)
+        props = tool.Drawing.get_camera_props(self.geometry)
+        raster_x = props.raster_x
+        raster_y = props.raster_y
 
         if self.is_camera_landscape():
             width = self.settings["geometry"].ortho_scale
@@ -347,8 +352,10 @@ class Usecase:
         )
 
     def create_camera_pyramid_representation(self) -> ifcopenshell.entity_instance:
-        raster_x = self.settings["geometry"].BIMCameraProperties.raster_x
-        raster_y = self.settings["geometry"].BIMCameraProperties.raster_y
+        assert isinstance(self.geometry, bpy.types.Camera)
+        props = tool.Drawing.get_camera_props(self.geometry)
+        raster_x = props.raster_x
+        raster_y = props.raster_y
         fov = self.settings["geometry"].angle
 
         clip_end = self.settings["geometry"].clip_end
@@ -389,10 +396,9 @@ class Usecase:
         )
 
     def is_camera_landscape(self) -> bool:
-        return (
-            self.settings["geometry"].BIMCameraProperties.raster_x
-            > self.settings["geometry"].BIMCameraProperties.raster_y
-        )
+        assert isinstance(self.geometry, bpy.types.Camera)
+        props = tool.Drawing.get_camera_props(self.geometry)
+        return props.raster_x > props.raster_y
 
     def create_swept_disk_solid_representation(self) -> ifcopenshell.entity_instance:
         return self.file.createIfcShapeRepresentation(

@@ -522,9 +522,34 @@ class BIMCameraProperties(PropertyGroup):
     exclude_filter_groups: CollectionProperty(type=BIMFilterGroup, name="Exclude Filter")
     update_props: BoolProperty(name="Enable Props Auto Update", default=True)
 
+    if TYPE_CHECKING:
+        linework_mode: Literal["OPENCASCADE", "FREESTYLE"]
+        fill_mode: Literal["NONE", "SHAPELY", "SVGFILL"]
+        cut_mode: Literal["BISECT", "OPENCASCADE"]
+        has_underlay: bool
+        has_linework: bool
+        has_annotation: bool
+        representation: str
+        view_name: str
+        diagram_scale: str
+        custom_scale_numerator: str
+        custom_scale_denominator: str
+        raster_x: int
+        raster_y: int
+        dpi: int
+        width: float
+        height: float
+        is_nts: bool
+        active_drawing_style_index: int
+        filter_mode: str
+        include_filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
+        exclude_filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
+        update_props: bool
+
     # For now, this JSON dump are all the parameters that determine a camera's "Block representation"
     # By checking this, you will know whether or not the camera IFC representation needs to be refreshed
-    def update_representation(self, obj):
+    def update_representation(self, obj: bpy.types.Object) -> bool:
+        assert isinstance(obj.data, bpy.types.Camera)
         representation = json.dumps(
             {
                 "matrix": [list(x) for x in obj.matrix_world],

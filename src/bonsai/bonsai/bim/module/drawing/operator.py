@@ -228,7 +228,9 @@ class CreateDrawing(bpy.types.Operator):
         if not tool.Drawing.is_drawing_active():
             cls.poll_message_set("No active drawing.")
             return False
-        if context.scene.camera.data.BIMCameraProperties.linework_mode == "FREESTYLE" and not hasattr(
+        assert context.scene
+        assert (camera_obj := context.scene.camera)
+        if tool.Drawing.get_camera_props(camera_obj).linework_mode == "FREESTYLE" and not hasattr(
             context.scene, "svg_export"
         ):
             cls.poll_message_set(
@@ -248,6 +250,7 @@ class CreateDrawing(bpy.types.Operator):
 
     def execute(self, context):
         self.props = tool.Drawing.get_document_props()
+        assert context.scene and context.scene.camera
 
         active_drawing_id = tool.Blender.get_ifc_definition_id(context.scene.camera)
         if self.print_all:
@@ -262,13 +265,14 @@ class CreateDrawing(bpy.types.Operator):
                 bpy.ops.bim.activate_drawing(drawing=drawing_id, should_view_from_camera=False)
 
             self.camera = context.scene.camera
-            self.camera_element = tool.Ifc.get_entity(self.camera)
+            assert (camera_element := tool.Ifc.get_entity(self.camera))
+            self.camera_element = camera_element
             self.camera_document = tool.Drawing.get_drawing_document(self.camera_element)
             self.file = tool.Ifc.get()
 
             with profile("Drawing generation process"):
                 with profile("Initialize drawing generation process"):
-                    self.cprops = self.camera.data.BIMCameraProperties
+                    self.cprops = tool.Drawing.get_camera_props(self.camera)
                     self.drawing = self.file.by_id(drawing_id)
                     self.drawing_name = self.drawing.Name
                     self.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
@@ -297,11 +301,11 @@ class CreateDrawing(bpy.types.Operator):
 
                 with profile("Generate linework"):
                     if tool.Drawing.is_camera_orthographic():
-                        if self.camera.data.BIMCameraProperties.linework_mode == "OPENCASCADE":
+                        if self.cprops.linework_mode == "OPENCASCADE":
                             linework_svg = self.generate_linework(context)
-                        elif self.camera.data.BIMCameraProperties.linework_mode == "FREESTYLE":
+                        elif self.cprops.linework_mode == "FREESTYLE":
                             linework_svg = self.generate_freestyle_linework(context)
-                    elif self.camera.data.BIMCameraProperties.linework_mode == "FREESTYLE":
+                    elif self.cprops.linework_mode == "FREESTYLE":
                         linework_svg = self.generate_freestyle_linework(context)
 
                 with profile("Generate annotation"):
@@ -876,19 +880,19 @@ class CreateDrawing(bpy.types.Operator):
 
             return svg_path
 
-        if self.camera.data.BIMCameraProperties.cut_mode == "BISECT":
+        if self.cprops.cut_mode == "BISECT":
             self.remove_cut_linework(root)
             self.generate_bisect_linework(context, root)
             self.generate_wall_layers(context, root)
             self.merge_linework_and_add_metadata(root)
             self.move_elements_to_top(root)
-        elif self.camera.data.BIMCameraProperties.cut_mode == "OPENCASCADE":
+        elif self.cprops.cut_mode == "OPENCASCADE":
             self.move_projection_to_bottom(root)
             self.generate_wall_layers(context, root)
             self.merge_linework_and_add_metadata(root)
             self.move_elements_to_top(root)
 
-        if self.camera.data.BIMCameraProperties.fill_mode == "SHAPELY":
+        if self.cprops.fill_mode == "SHAPELY":
             # shapely variant
             group = root.find("{http://www.w3.org/2000/svg}g")
 
@@ -960,7 +964,7 @@ class CreateDrawing(bpy.types.Operator):
                             path.set("class", " ".join(list(classes)))
                             group.insert(0, path)
 
-        if self.camera.data.BIMCameraProperties.fill_mode == "SVGFILL":
+        if self.cprops.fill_mode == "SVGFILL":
             results = etree.tostring(root).decode("utf8")
             svg_data_1 = results
             from xml.dom.minidom import parseString
@@ -1449,10 +1453,9 @@ class CreateDrawing(bpy.types.Operator):
                 g.set("class", " ".join(list(classes)))
                 group.append(g)
 
-    def drawing_to_model_co(self, x, y):
+    def drawing_to_model_co(self, x: float, y: float) -> Vector:
         camera_xy = np.array((x, -y)) / self.scale / 1000
-        camera_props = self.camera.data.BIMCameraProperties
-        camera_xy += np.array((camera_props.width / -2, camera_props.height / 2))  # top left offset
+        camera_xy += np.array((self.cprops.width / -2, self.cprops.height / 2))  # top left offset
         return self.camera.matrix_world @ Vector(camera_xy).to_3d()
 
     def pythonize(self, arr):
@@ -2158,7 +2161,7 @@ class ActivateDrawingBase:
 
         # Save drawing bounds to the .ifc file
         camera = context.scene.camera
-        camera_props = camera.data.BIMCameraProperties
+        camera_props = tool.Drawing.get_camera_props(camera)
         if camera_props.update_representation(camera):
             bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
         # See 6452 and 6478.
@@ -2298,7 +2301,8 @@ class ReloadDrawingStyles(bpy.types.Operator):
         if not DrawingsData.is_loaded:
             DrawingsData.load()
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
-        camera_props = context.scene.camera.data.BIMCameraProperties
+        assert context.scene and (camera := context.scene.camera)
+        camera_props = tool.Drawing.get_camera_props(camera)
 
         # added this part as a temporary fallback
         # TODO: should remove it a bit later when projects get more accommodated
@@ -2365,12 +2369,14 @@ class AddDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
+        assert context.scene and (camera_obj := context.scene.camera)
         props = tool.Drawing.get_document_props()
         drawing_styles = props.drawing_styles
         new = drawing_styles.add()
         # drawing style is saved to ifc on rename
         new.name = tool.Blender.ensure_unique_name("New Drawing Style", drawing_styles)
-        context.scene.camera.data.BIMCameraProperties.active_drawing_style_index = len(drawing_styles) - 1
+        camera_props = tool.Drawing.get_camera_props(camera_obj)
+        camera_props.active_drawing_style_index = len(drawing_styles) - 1
         return {"FINISHED"}
 
 
@@ -2381,9 +2387,11 @@ class RemoveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
+        assert context.scene and (camera_obj := context.scene.camera)
         props = tool.Drawing.get_document_props()
         props.drawing_styles.remove(self.index)
-        context.scene.camera.data.BIMCameraProperties.active_drawing_style_index = max(self.index - 1, 0)
+        camera_props = tool.Drawing.get_camera_props(camera_obj)
+        camera_props.active_drawing_style_index = max(self.index - 1, 0)
         bpy.ops.bim.save_drawing_styles_data()
         return {"FINISHED"}
 

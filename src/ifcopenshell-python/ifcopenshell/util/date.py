@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import datetime
 import isodate
 from re import findall
@@ -37,7 +38,7 @@ def timedelta2duration(timedelta):
     return isodate.Duration(**components)
 
 
-def ifc2datetime(element):
+def ifc2datetime(element: Union[str, int, ifcopenshell.entity_instance]):
     if isinstance(element, str) and "P" in element[0:2]:  # IfcDuration
         duration = parse_duration(element)
         if isinstance(duration, datetime.timedelta):
@@ -246,7 +247,7 @@ def parse_duration(value: Union[str, None]) -> Union[datetime.timedelta, None]:
                 return None
 
 
-def canonicalise_time(time):
+def canonicalise_time(time: Union[datetime.datetime, None]) -> str:
     if not time:
         return "-"
     return time.strftime("%d/%m/%y")

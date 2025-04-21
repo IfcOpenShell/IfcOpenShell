@@ -1192,6 +1192,9 @@ class LinkIfc(bpy.types.Operator, ImportHelper):
         filepath: str
         files: list[bpy.types.OperatorFileListElement]
         directory: str
+        filter_glob: str
+        use_relative_path: bool
+        use_cache: bool
 
     def draw(self, context):
         pprops = tool.Project.get_project_props()
