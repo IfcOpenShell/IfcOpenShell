@@ -30,7 +30,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 
 def update_document_name(self: "Document", context: bpy.types.Context) -> None:
@@ -79,3 +79,7 @@ class BIMDocumentProperties(PropertyGroup):
         breadcrumbs: bpy.types.bpy_prop_collection_idprop[StrProperty]
         active_document_index: int
         is_editing: bool
+
+    @property
+    def active_document(self) -> Union[Document, None]:
+        return tool.Blender.get_active_uilist_element(self.documents, self.active_document_index)

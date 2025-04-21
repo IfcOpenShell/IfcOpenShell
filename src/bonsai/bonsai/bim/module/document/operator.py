@@ -132,13 +132,14 @@ class RemoveDocument(bpy.types.Operator, tool.Ifc.Operator):
 class AssignDocument(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_document"
     bl_label = "Assign Document"
+    bl_description = "Assign active document to the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     document: bpy.props.IntProperty()
 
     def _execute(self, context):
         document = tool.Ifc.get().by_id(self.document)
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
+        objs = [bpy.data.objects[self.obj]] if self.obj else tool.Blender.get_selected_objects()
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
             if element:
