@@ -258,6 +258,7 @@ class Ifc(bonsai.core.tool.Ifc):
 
     @classmethod
     def resolve_uri(cls, uri: str) -> str:
+        """Get absolute path based on the active IFC file."""
         if os.path.isabs(uri):
             return uri
         ifc_path = cls.get_path()
@@ -267,6 +268,10 @@ class Ifc(bonsai.core.tool.Ifc):
 
     @classmethod
     def get_uri(cls, uri: str | Path, use_relative_path: bool = False) -> str:
+        """Get path relative to the active IFC file, if `use_relative_path` is `True`.
+
+        If `use_relative_path` is `False` - get absolute filepath from uri.
+        """
         if not use_relative_path:
             return Path(uri).absolute().resolve().as_posix()
         uri = Path(uri)
