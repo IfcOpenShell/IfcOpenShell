@@ -555,7 +555,8 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator)
         cost_schedule = core.import_cost_schedule_csv(tool.Cost, self.filepath, self.is_schedule_of_rates)
         core.add_csv_filepath(tool.Cost, self.filepath, self.is_schedule_of_rates, cost_schedule)
         return {"FINISHED"}
-    
+
+
 class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.refresh_cost_schedule_csv"
     bl_label = "Refresh Cost Schedule CSV"
@@ -565,6 +566,7 @@ class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         core.refresh_cost_schedule_csv(tool.Ifc, tool.Cost)
         return {"FINISHED"}
+
 
 class AddCostColumn(bpy.types.Operator):
     bl_idname = "bim.add_cost_column"

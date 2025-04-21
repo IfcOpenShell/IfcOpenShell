@@ -1502,9 +1502,8 @@ class CreateDrawing(bpy.types.Operator):
 
     def move_elements_to_top(self, root):
         group = root.find("{http://www.w3.org/2000/svg}g")
-        bringtofront = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "BringToFront") or ''
-        bringtofront = [item.strip() for item in bringtofront.split(',') if item.strip()]
-
+        bringtofront = ifcopenshell.util.element.get_pset(self.camera_element, "EPset_Drawing", "BringToFront") or ""
+        bringtofront = [item.strip() for item in bringtofront.split(",") if item.strip()]
 
         # Iterate through classes in order of preference
         for class_name in bringtofront:

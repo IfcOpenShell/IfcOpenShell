@@ -561,7 +561,9 @@ class Cost(bonsai.core.tool.Cost):
         return products
 
     @classmethod
-    def import_cost_schedule_csv(cls, file_path: Optional[str] = None, is_schedule_of_rates: bool = False) -> ifcopenshell.entity_instance:
+    def import_cost_schedule_csv(
+        cls, file_path: Optional[str] = None, is_schedule_of_rates: bool = False
+    ) -> ifcopenshell.entity_instance:
         if not file_path:
             return
         from ifc5d.csv2ifc import Csv2Ifc
@@ -572,12 +574,17 @@ class Cost(bonsai.core.tool.Cost):
         csv2ifc.execute()
         print("Import finished in {:.2f} seconds".format(time.time() - start))
         return csv2ifc.cost_schedule
-    
+
     @classmethod
-    def add_csv_filepath(cls, file_path: Optional[str] = None, is_schedule_of_rates: bool = False, cost_schedule: ifcopenshell.entity_instance = None) -> None:
+    def add_csv_filepath(
+        cls,
+        file_path: Optional[str] = None,
+        is_schedule_of_rates: bool = False,
+        cost_schedule: ifcopenshell.entity_instance = None,
+    ) -> None:
         if not file_path:
             return
-        
+
         props = cls.get_cost_props()
         if not props.active_cost_schedule_id in [item.cost_item_id for item in props.cost_schedule_files]:
             item = props.cost_schedule_files.add()
@@ -585,12 +592,12 @@ class Cost(bonsai.core.tool.Cost):
             item.csv_filepath = file_path
         else:
             return
-    
+
     @classmethod
     def remove_csv_filepath(cls, cost_schedule: ifcopenshell.entity_instance = None) -> None:
         if not cost_schedule:
             return
-    
+
         props = cls.get_cost_props()
         cost_schedule_id = cost_schedule.id()
         if cost_schedule_id in [item.cost_item_id for item in props.cost_schedule_files]:
@@ -601,28 +608,30 @@ class Cost(bonsai.core.tool.Cost):
                     return
         else:
             return
-    
+
     @classmethod
     def delete_all_cost_items(cls):
         cost_schedule = tool.Cost.get_active_cost_schedule()
         items = ifcopenshell.util.cost.get_root_cost_items(cost_schedule)
         for item in items:
             cost_item_id = item.id()
-            ifcopenshell.api.run("cost.remove_cost_item", tool.Ifc.get(), cost_item = item)
+            ifcopenshell.api.run("cost.remove_cost_item", tool.Ifc.get(), cost_item=item)
             tool.Cost.clean_up_cost_item_tree(cost_item_id)
-    
+
     @classmethod
     def refresh_cost_schedule_csv(cls):
         from ifc5d.csv2ifc import Csv2Ifc
 
         props = cls.get_cost_props()
         cost_schedule_id = props.active_cost_schedule_id
-        file_path = next((item.csv_filepath for item in props.cost_schedule_files if item.cost_item_id == cost_schedule_id), None)
+        file_path = next(
+            (item.csv_filepath for item in props.cost_schedule_files if item.cost_item_id == cost_schedule_id), None
+        )
         if not file_path:
             return
-        
+
         cost_schedule = tool.Ifc.get_entity_by_id(cost_schedule_id)
-        
+
         csv2ifc = Csv2Ifc()
         csv2ifc.csv = file_path
         csv2ifc.file = tool.Ifc.get()
@@ -631,7 +640,7 @@ class Cost(bonsai.core.tool.Cost):
         csv2ifc.refresh()
 
         print("Csv file correctly refreshed")
-        
+
     @classmethod
     def add_cost_column(cls, name: str) -> None:
         props = cls.get_cost_props()

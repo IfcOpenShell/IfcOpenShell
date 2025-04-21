@@ -166,6 +166,7 @@ class CostItemQuantity(PropertyGroup):
         unit_symbol: str
         total_cost_quantity: float
 
+
 class CostItemsMapping(PropertyGroup):
     cost_item_id: IntProperty(name="cost_item_id")
     csv_filepath: StringProperty(name="filepath")
@@ -173,6 +174,7 @@ class CostItemsMapping(PropertyGroup):
     if TYPE_CHECKING:
         cost_item_id: int
         csv_filepath: str
+
 
 class CostItemType(PropertyGroup):
     name: StringProperty(name="Name")
