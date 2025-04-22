@@ -73,12 +73,13 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         if tool.Geometry.is_representation_item(obj):
             self.separate_item(context, obj)
         elif element := tool.Ifc.get_entity(obj):
             self.separate_element(element)
 
-    def separate_item(self, context, obj):
+    def separate_item(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
         item = tool.Geometry.get_active_representation(obj)
         assert item
         if tool.Geometry.is_meshlike_item(item):
@@ -126,7 +127,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         tool.Ifc.link(item, obj)
         props.add_item_object(obj, item)
 
-    def separate_element(self, element):
+    def separate_element(self, element: ifcopenshell.entity_instance) -> None:
         # You cannot separate meshes if the representation is mapped.
         relating_type = tool.Root.get_element_type(element)
         if relating_type and tool.Root.does_type_have_representations(relating_type):

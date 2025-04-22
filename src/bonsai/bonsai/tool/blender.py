@@ -42,6 +42,7 @@ from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, G
 from typing_extensions import assert_never
 
 if TYPE_CHECKING:
+    import bpy._typing.rna_enums as rna_enums
     from bonsai.bim.prop import BIMProperties, BIMObjectProperties
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
     from bonsai.bim.module.csv.prop import CsvProperties
@@ -879,7 +880,8 @@ class Blender(bonsai.core.tool.Blender):
         return results
 
     @classmethod
-    def toggle_edit_mode(cls, context: bpy.types.Context) -> set[str]:
+    def toggle_edit_mode(cls, context: bpy.types.Context) -> set[rna_enums.OperatorReturnItems]:
+        """Run ``object.mode_set(EDIT)``."""
         ao = context.active_object
         if not ao:
             return {"CANCELLED"}

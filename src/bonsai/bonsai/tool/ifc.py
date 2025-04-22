@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import bpy
 import numpy as np
@@ -28,7 +29,10 @@ import bonsai.bim.handler
 import bonsai.tool as tool
 from pathlib import Path
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
-from typing import Optional, Union, Any, final, Literal
+from typing import Optional, Union, Any, final, Literal, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bpy._typing import rna_enums
 
 
 class Ifc(bonsai.core.tool.Ifc):
@@ -317,11 +321,11 @@ class Ifc(bonsai.core.tool.Ifc):
         transaction_data: Union[Any, None] = None
 
         @final
-        def execute(self, context):
+        def execute(self, context) -> set[rna_enums.OperatorReturnItems]:
             IfcStore.execute_ifc_operator(self, context)
             return {"FINISHED"}
 
         # NOTE: this class can't inherit from abc.ABC to use abc.abstractmethod
         # because it conflicts with bpy.types.Operator.
-        def _execute(self, context: bpy.types.Context) -> None:
+        def _execute(self, context: bpy.types.Context) -> Union[None, set[rna_enums.OperatorReturnItems]]:
             raise NotImplementedError("IFC operator must implement _execute method.")

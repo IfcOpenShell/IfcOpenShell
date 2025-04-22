@@ -95,7 +95,7 @@ classes = (
 )
 
 
-addon_keymaps = []
+addon_keymaps: list[tuple[bpy.types.KeyMap, bpy.types.KeyMapItem]] = []
 
 
 @persistent
