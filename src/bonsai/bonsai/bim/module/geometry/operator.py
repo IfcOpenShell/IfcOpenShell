@@ -97,6 +97,10 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
+        if self.type == "SELECTED" and context.mode != "EDIT":
+            self.report({"ERROR"}, "Separate by selection requires EDIT mode.")
+            return {"CANCELLED"}
+
         non_ifc_objects: list[bpy.types.Object] = []
 
         if len(context.selected_editable_objects) > 1:
