@@ -70,7 +70,7 @@ class Root(bonsai.core.tool.Root):
     def copy_representation(
         cls, source: ifcopenshell.entity_instance, dest: ifcopenshell.entity_instance
     ) -> dict[int, ifcopenshell.entity_instance]:
-        def exclude_callback(attribute):
+        def exclude_callback(attribute: ifcopenshell.entity_instance) -> bool:
             return attribute.is_a("IfcProfileDef") and attribute.ProfileName
 
         copied_entities: dict[int, ifcopenshell.entity_instance] = {}
