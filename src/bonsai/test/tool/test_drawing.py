@@ -726,8 +726,10 @@ class TestDrawingMaintainingSheetPosition(NewFile):
         assert drawing_data["foreground"] == (30.0, 30.0, 500.0, 500.0)
         assert drawing_data["view-title"] == (30.0, 535.0, 50.22, 10.0)
 
-        bpy.context.scene.camera.data.BIMCameraProperties.width = 25
-        bpy.context.scene.camera.data.BIMCameraProperties.height = 25
+        assert (scene := bpy.context.scene) and (camera := scene.camera)
+        props = tool.Drawing.get_camera_props(camera)
+        props.width = 25
+        props.height = 25
         tool.Blender.force_depsgraph_update()
 
         bpy.ops.bim.create_drawing()
@@ -866,7 +868,9 @@ class TestDrawingStyles(NewFile):
 
     def test_drawing_styles_loaded_on_underlay_enabled(self):
         self.setup_project_with_drawing()
-        bpy.context.scene.camera.data.BIMCameraProperties.has_underlay = True
+        assert (scene := bpy.context.scene) and (camera := scene.camera)
+        props = tool.Drawing.get_camera_props(camera)
+        props.has_underlay = True
         assert len(self.drawing_styles) == 3
 
     def test_drawing_styles_reload(self):

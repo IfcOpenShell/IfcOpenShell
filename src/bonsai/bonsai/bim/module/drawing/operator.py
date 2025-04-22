@@ -2408,6 +2408,7 @@ class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     def execute(self, context):
         space = self.get_view_3d(context)  # Do not remove. It is used later in eval
         scene = context.scene
+        assert scene
         style = {}
         eval_namespace = {"context": context, "scene": scene, "space": space}
 
@@ -2445,7 +2446,9 @@ class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         if self.index:
             index = int(self.index)
         else:
-            index = context.scene.camera.data.BIMCameraProperties.active_drawing_style_index
+            assert (camera := scene.camera)
+            props = tool.Drawing.get_camera_props(camera)
+            index = props.active_drawing_style_index
         props = tool.Drawing.get_document_props()
         props.drawing_styles[index].raster_style = json.dumps(style)
 
@@ -2520,8 +2523,10 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     def execute(self, context):
         scene = context.scene
+        assert scene and (camera := scene.camera)
+        camera_props = tool.Drawing.get_camera_props(camera)
         ifc_file = tool.Ifc.get()
-        active_drawing_style_index = scene.camera.data.BIMCameraProperties.active_drawing_style_index
+        active_drawing_style_index = camera_props.active_drawing_style_index
         props = tool.Drawing.get_document_props()
 
         if active_drawing_style_index >= len(props.drawing_styles):
@@ -2841,7 +2846,8 @@ class AddDrawingStyleAttribute(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.camera.data.BIMCameraProperties
+        assert context.scene and (camera := context.scene.camera)
+        props = tool.Drawing.get_camera_props(camera)
         dprops = tool.Drawing.get_document_props()
         dprops.drawing_styles[props.active_drawing_style_index].attributes.add()
         return {"FINISHED"}
@@ -2855,7 +2861,8 @@ class RemoveDrawingStyleAttribute(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        props = context.scene.camera.data.BIMCameraProperties
+        assert context.scene and (camera := context.scene.camera)
+        props = tool.Drawing.get_camera_props(camera)
         dprops = tool.Drawing.get_document_props()
         dprops.drawing_styles[props.active_drawing_style_index].attributes.remove(self.index)
         return {"FINISHED"}
@@ -3402,11 +3409,15 @@ class EnableEditingElementFilter(bpy.types.Operator, tool.Ifc.Operator):
     filter_mode: bpy.props.StringProperty()
 
     def _execute(self, context):
-        obj = bpy.context.scene.camera
+        assert context.scene
+        obj = context.scene.camera
         if not obj:
             return
-        obj.data.BIMCameraProperties.filter_mode = self.filter_mode
+        assert (camera := context.scene.camera)
+        props = tool.Drawing.get_camera_props(camera)
+        props.filter_mode = self.filter_mode
         element = tool.Ifc.get_entity(obj)
+        assert element
         if query := ifcopenshell.util.element.get_pset(element, "EPset_Drawing", self.filter_mode.title()):
             filter_groups = tool.Search.get_filter_groups(f"drawing_{self.filter_mode.lower()}")
             try:
@@ -3422,10 +3433,12 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
     filter_mode: bpy.props.StringProperty()
 
     def _execute(self, context):
-        obj = bpy.context.scene.camera
+        assert context.scene
+        obj = context.scene.camera
         assert obj
-        props = obj.data.BIMCameraProperties
+        props = tool.Drawing.get_camera_props(obj)
         element = tool.Ifc.get_entity(obj)
+        assert element
         pset = tool.Pset.get_element_pset(element, "EPset_Drawing")
         if self.filter_mode == "INCLUDE":
             query = tool.Search.export_filter_query(props.include_filter_groups) or None
@@ -3433,7 +3446,7 @@ class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
         elif self.filter_mode == "EXCLUDE":
             query = tool.Search.export_filter_query(props.exclude_filter_groups) or None
             ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Exclude": query})
-        obj.data.BIMCameraProperties.filter_mode = "NONE"
+        props.filter_mode = "NONE"
         bpy.ops.bim.activate_drawing(drawing=element.id(), should_view_from_camera=False)
 
 
