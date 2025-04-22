@@ -80,22 +80,45 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         items=[(i.identifier, i.name, i.description) for i in blender_type_prop.enum_items],
     )
 
+    if TYPE_CHECKING:
+        type: Any
+
+    @classmethod
+    def poll(cls, context):
+        if not context.selected_editable_objects:
+            cls.poll_message_set("No editable objects are selected.")
+            return False
+        return True
+
     def invoke(self, context, event):
         if "type" not in self.properties:
             return bpy.ops.wm.call_menu(name="BIM_MT_hotkey_separate")
         return self.execute(context)
 
     def _execute(self, context):
-        obj = context.active_object
-        assert obj
-        if tool.Geometry.is_representation_item(obj):
-            self.separate_item(context, obj)
-        elif element := tool.Ifc.get_entity(obj):
-            self.separate_element(context, element, obj)
+        non_ifc_objects: list[bpy.types.Object] = []
+
+        if len(context.selected_editable_objects) > 1:
+            self.report({"ERROR"}, "Separate for multiple elements is not yet supported. Select just 1.")
+            return {"CANCELLED"}
+
+        for obj in context.selected_editable_objects:
+            if tool.Geometry.is_representation_item(obj):
+                self.separate_item(context, obj)
+            elif element := tool.Ifc.get_entity(obj):
+                self.separate_element(context, element, obj)
+            else:
+                non_ifc_objects.append(obj)
+
+        if non_ifc_objects:
+            with context.temp_override(selected_editable_objects=non_ifc_objects):
+                bpy.ops.mesh.separate(type=self.type)
 
     def separate_item(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
         item = tool.Geometry.get_active_representation(obj)
-        assert item
+        representation_obj = tool.Geometry.get_geometry_props().representation_obj
+        assert item and representation_obj
+
         if tool.Geometry.is_meshlike_item(item):
             previous_selected_objects = context.selected_objects
             bpy.ops.mesh.separate(type=self.type)
@@ -103,7 +126,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
                 if obj in previous_selected_objects:
                     continue
                 self.add_meshlike_item(obj)
-            tool.Geometry.reload_representation(tool.Geometry.get_geometry_props().representation_obj)
+            tool.Geometry.reload_representation(representation_obj)
         else:
             self.report({"INFO"}, f"Separating an {item.is_a()} is not supported")
 
