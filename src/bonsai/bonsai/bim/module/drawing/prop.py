@@ -45,7 +45,7 @@ from bpy.props import (
     CollectionProperty,
     BoolVectorProperty,
 )
-from typing import TYPE_CHECKING, Literal, Any
+from typing import TYPE_CHECKING, Literal, Any, Callable
 
 
 diagram_scales_enum = []
@@ -218,12 +218,17 @@ def update_has_underlay(self: "BIMCameraProperties", context: bpy.types.Context)
         bpy.ops.bim.activate_drawing_style()
 
 
+def get_update_layer_callback(
+    camera_prop_name: str, pset_prop_name: str
+) -> Callable[["BIMCameraProperties", bpy.types.Context], None]:
+    def update_layer_callback(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+        update_layer(self, context, pset_prop_name, getattr(self, camera_prop_name))
+
+    return update_layer_callback
+
+
 def update_has_linework(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     update_layer(self, context, "HasLinework", self.has_linework)
-
-
-def update_has_annotation(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
-    update_layer(self, context, "HasAnnotation", self.has_annotation)
 
 
 def update_dpi(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
@@ -243,6 +248,7 @@ def update_cut_mode(self: "BIMCameraProperties", context: bpy.types.Context) -> 
 
 
 def update_layer(self: "BIMCameraProperties", context: bpy.types.Context, name: str, value: Any) -> None:
+    assert context.scene
     if not self.update_props:
         return
     if not context.scene.camera or context.scene.camera.data != self.id_data:
@@ -292,10 +298,24 @@ class Variable(PropertyGroup):
     prop_key: StringProperty(name="Property Key")
 
 
+TargetView = Literal["PLAN_VIEW", "ELEVATION_VIEW", "SECTION_VIEW", "REFLECTED_PLAN_VIEW", "MODEL_VIEW"]
+TARGET_VIEW_ITEMS: list[tuple[TargetView, str, str]] = [
+    ("PLAN_VIEW", "Plan", ""),
+    ("ELEVATION_VIEW", "Elevation", ""),
+    ("SECTION_VIEW", "Section", ""),
+    ("REFLECTED_PLAN_VIEW", "RCP", ""),
+    ("MODEL_VIEW", "Model", ""),
+]
+
+
 class Drawing(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     name: StringProperty(name="Name", update=update_drawing_name)
-    target_view: StringProperty(name="Target View")
+    target_view: EnumProperty(
+        name="Target View",
+        default="PLAN_VIEW",
+        items=TARGET_VIEW_ITEMS,
+    )
     is_selected: BoolProperty(name="Is Selected", default=True)
     is_drawing: BoolProperty(name="Is Drawing", default=False)
     is_expanded: BoolProperty(name="Is Expanded", default=True)
@@ -303,7 +323,7 @@ class Drawing(PropertyGroup):
     if TYPE_CHECKING:
         ifc_definition_id: int
         name: str
-        target_view: str
+        target_view: TargetView
         is_selected: bool
         is_drawing: bool
         is_expanded: bool
@@ -380,13 +400,7 @@ class DocProperties(PropertyGroup):
     is_editing_schedules: BoolProperty(name="Is Editing Schedules", default=False)
     is_editing_references: BoolProperty(name="Is Editing References", default=False)
     target_view: EnumProperty(
-        items=[
-            ("PLAN_VIEW", "Plan", ""),
-            ("ELEVATION_VIEW", "Elevation", ""),
-            ("SECTION_VIEW", "Section", ""),
-            ("REFLECTED_PLAN_VIEW", "RCP", ""),
-            ("MODEL_VIEW", "Model", ""),
-        ],
+        items=TARGET_VIEW_ITEMS,
         name="Target View",
         default="PLAN_VIEW",
         update=update_target_view,
@@ -507,9 +521,30 @@ class BIMCameraProperties(PropertyGroup):
         name="Cut Mode",
         update=update_cut_mode,
     )
-    has_underlay: BoolProperty(name="Underlay", default=False, update=update_has_underlay)
-    has_linework: BoolProperty(name="Linework", default=True, update=update_has_linework)
-    has_annotation: BoolProperty(name="Annotation", default=True, update=update_has_annotation)
+
+    # EPset_Drawing.
+    has_underlay: BoolProperty(
+        name="Underlay",
+        default=False,
+        update=get_update_layer_callback("has_underlay", "HasUnderlay"),
+    )
+    has_linework: BoolProperty(
+        name="Linework",
+        default=True,
+        update=get_update_layer_callback("has_linework", "HasLinework"),
+    )
+    has_annotation: BoolProperty(
+        name="Annotation",
+        default=True,
+        update=get_update_layer_callback("has_annotation", "HasAnnotation"),
+    )
+    target_view: EnumProperty(
+        name="Target View",
+        default="PLAN_VIEW",
+        items=TARGET_VIEW_ITEMS,
+        update=get_update_layer_callback("target_view", "TargetView"),
+    )
+
     representation: StringProperty(name="Representation")
     view_name: StringProperty(name="View Name")
     diagram_scale: EnumProperty(items=get_diagram_scales, name="Drawing Scale", update=update_diagram_scale)
@@ -535,9 +570,12 @@ class BIMCameraProperties(PropertyGroup):
         linework_mode: Literal["OPENCASCADE", "FREESTYLE"]
         fill_mode: Literal["NONE", "SHAPELY", "SVGFILL"]
         cut_mode: Literal["BISECT", "OPENCASCADE"]
+
         has_underlay: bool
         has_linework: bool
         has_annotation: bool
+        target_view: TargetView
+
         representation: str
         view_name: str
         diagram_scale: str

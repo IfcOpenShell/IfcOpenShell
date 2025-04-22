@@ -71,6 +71,9 @@ class BIM_PT_camera(Panel):
         row.prop(props, "has_annotation", icon="MOD_EDGESPLIT")
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
 
+        row = self.layout.row(align=True)
+        row.prop(props, "target_view")
+
         row = self.layout.row()
         row.prop(props, "linework_mode")
         if props.linework_mode == "OPENCASCADE":
