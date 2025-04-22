@@ -68,8 +68,17 @@ class EditObjectPlacement(bpy.types.Operator, tool.Ifc.Operator):
 class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_mesh_separate"
     bl_label = "IFC Mesh Separate"
+    blender_op = bpy.ops.mesh.separate.get_rna_type()
+    bl_description = (
+        blender_op.description + ".\nAlso makes sure changes are in sync with IFC (operator works only on IFC objects)"
+    )
     bl_options = {"REGISTER", "UNDO"}
-    type: bpy.props.StringProperty()
+    blender_type_prop = blender_op.properties["type"]
+    type: bpy.props.EnumProperty(
+        name=blender_type_prop.name,
+        default=blender_type_prop.default,
+        items=[(i.identifier, i.name, i.description) for i in blender_type_prop.enum_items],
+    )
 
     def _execute(self, context):
         obj = context.active_object
