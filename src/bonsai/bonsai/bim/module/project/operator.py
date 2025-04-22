@@ -1320,11 +1320,13 @@ class LoadLink(bpy.types.Operator):
         return {"FINISHED"}
 
     def link_blend(self, filepath: Path) -> None:
-        with bpy.data.libraries.load(str(filepath), link=True) as (data_from, data_to):
+        # Resolve it, otherwise it might not match with `library.filepath`.
+        blend_filepath = filepath.resolve()
+        with bpy.data.libraries.load(str(blend_filepath), link=True) as (data_from, data_to):
             data_to.scenes = data_from.scenes
         link = tool.Project.get_project_props().links[self.filepath]
         for scene in bpy.data.scenes:
-            if not scene.library or Path(scene.library.filepath) != filepath:
+            if not scene.library or Path(scene.library.filepath) != blend_filepath:
                 continue
             for child in scene.collection.children:
                 if "IfcProject" not in child.name:
