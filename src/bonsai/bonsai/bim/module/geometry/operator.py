@@ -80,6 +80,11 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         items=[(i.identifier, i.name, i.description) for i in blender_type_prop.enum_items],
     )
 
+    def invoke(self, context, event):
+        if "type" not in self.properties:
+            return bpy.ops.wm.call_menu(name="BIM_MT_hotkey_separate")
+        return self.execute(context)
+
     def _execute(self, context):
         obj = context.active_object
         assert obj
