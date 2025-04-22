@@ -76,25 +76,20 @@ class BIM_MT_separate(Menu):
     bl_label = "IFC Separate"
 
     def draw(self, context):
-        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC Selection").type = "SELECTED"
-        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC By Material").type = "MATERIAL"
-        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC By Loose Parts").type = "LOOSE"
+        assert self.layout
+        self.layout.label(text="IFC Separate", icon_value=bonsai.bim.icons["IFC"].icon_id)
+        self.layout.operator_enum("bim.override_mesh_separate", "type")
 
 
+# TODO: remove as it's the same as BIM_MT_separate?
 class BIM_MT_hotkey_separate(Menu):
     bl_idname = "BIM_MT_hotkey_separate"
     bl_label = "Separate"
 
     def draw(self, context):
+        assert self.layout
         self.layout.label(text="IFC Separate", icon_value=bonsai.bim.icons["IFC"].icon_id)
-        self.layout.operator("bim.override_mesh_separate", text="Selection").type = "SELECTED"
-        self.layout.operator("bim.override_mesh_separate", text="By Material").type = "MATERIAL"
-        self.layout.operator("bim.override_mesh_separate", text="By Loose Parts").type = "LOOSE"
-        self.layout.separator()
-        self.layout.label(text="Blender Separate", icon="BLENDER")
-        self.layout.operator("mesh.separate", text="Selection").type = "SELECTED"
-        self.layout.operator("mesh.separate", text="By Material").type = "MATERIAL"
-        self.layout.operator("mesh.separate", text="By Loose Parts").type = "LOOSE"
+        self.layout.operator_enum("bim.override_mesh_separate", "type")
 
 
 class BIM_MT_object_set_origin(Menu):
