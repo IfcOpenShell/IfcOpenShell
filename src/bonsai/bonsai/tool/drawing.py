@@ -298,20 +298,21 @@ class Drawing(bonsai.core.tool.Drawing):
     def create_camera(
         cls, name: str, matrix: Matrix, location_hint: Literal["PERSPECTIVE", "ORTHOGRAPHIC"]
     ) -> bpy.types.Object:
-        camera = bpy.data.objects.new(name, bpy.data.cameras.new(name))
+        camera = bpy.data.objects.new(name, (camera_data := bpy.data.cameras.new(name)))
+        props = cls.get_camera_props(camera_data)
         camera.location = (0, 0, 1.5)  # The view shall be 1.5m above the origin
-        camera.data.show_limits = True
+        camera_data.show_limits = True
         if location_hint == "PERSPECTIVE":
-            camera.data.type = "PERSP"
+            camera_data.type = "PERSP"
         else:
-            camera.data.type = "ORTHO"
-        camera.data.ortho_scale = 50  # The default of 6m is too small
-        camera.data.clip_start = 0.002  # 2mm is close to zero but allows any GPU-drawn lines to be visible.
-        camera.data.clip_end = 10  # A slightly more reasonable default
+            camera_data.type = "ORTHO"
+        camera_data.ortho_scale = 50  # The default of 6m is too small
+        camera_data.clip_start = 0.002  # 2mm is close to zero but allows any GPU-drawn lines to be visible.
+        camera_data.clip_end = 10  # A slightly more reasonable default
         if bpy.context.scene.unit_settings.system == "IMPERIAL":
-            camera.data.BIMCameraProperties.diagram_scale = '1/8"=1\'-0"|1/96'
+            props.diagram_scale = '1/8"=1\'-0"|1/96'
         else:
-            camera.data.BIMCameraProperties.diagram_scale = "1:100|1/100"
+            props.diagram_scale = "1:100|1/100"
         camera.matrix_world = matrix
         return camera
 
@@ -797,50 +798,50 @@ class Drawing(bonsai.core.tool.Drawing):
         from bonsai.bim.module.drawing.prop import get_diagram_scales
 
         # Temporarily clear the definition id to prevent prop update callbacks to IFC.
-        camera_props = tool.Drawing.get_camera_props(camera)
+        camera_props = cls.get_camera_props(camera)
         update_props = camera_props.update_props
         camera_props.update_props = False
 
-        camera.BIMCameraProperties.has_underlay = False
-        camera.BIMCameraProperties.has_linework = True
-        camera.BIMCameraProperties.has_annotation = True
-        camera.BIMCameraProperties.target_view = "PLAN_VIEW"
-        camera.BIMCameraProperties.is_nts = False
+        camera_props.has_underlay = False
+        camera_props.has_linework = True
+        camera_props.has_annotation = True
+        camera_props.target_view = "PLAN_VIEW"
+        camera_props.is_nts = False
 
         pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
         if pset:
             if "TargetView" in pset:
-                camera.BIMCameraProperties.target_view = pset["TargetView"]
+                camera_props.target_view = pset["TargetView"]
             if "Scale" in pset:
                 valid_scales = [
                     i[0] for i in get_diagram_scales(None, bpy.context) if pset["Scale"] == i[0].split("|")[-1]
                 ]
                 if valid_scales:
-                    camera.BIMCameraProperties.diagram_scale = valid_scales[0]
+                    camera_props.diagram_scale = valid_scales[0]
                 else:
-                    camera.BIMCameraProperties.diagram_scale = "CUSTOM"
+                    camera_props.diagram_scale = "CUSTOM"
                     if ":" in pset["HumanScale"]:
                         numerator, denominator = pset["HumanScale"].split(":")
                     else:
                         numerator, denominator = pset["HumanScale"].split("=")
-                    camera.BIMCameraProperties.custom_scale_numerator = numerator
-                    camera.BIMCameraProperties.custom_scale_denominator = denominator
+                    camera_props.custom_scale_numerator = numerator
+                    camera_props.custom_scale_denominator = denominator
             if "HasUnderlay" in pset:
-                camera.BIMCameraProperties.has_underlay = bool(pset["HasUnderlay"])
+                camera_props.has_underlay = bool(pset["HasUnderlay"])
             if "HasLinework" in pset:
-                camera.BIMCameraProperties.has_linework = bool(pset["HasLinework"])
+                camera_props.has_linework = bool(pset["HasLinework"])
             if "HasAnnotation" in pset:
-                camera.BIMCameraProperties.has_annotation = bool(pset["HasAnnotation"])
+                camera_props.has_annotation = bool(pset["HasAnnotation"])
             if "IsNTS" in pset:
-                camera.BIMCameraProperties.is_nts = bool(pset["IsNTS"])
+                camera_props.is_nts = bool(pset["IsNTS"])
             if "DPI" in pset:
-                camera.BIMCameraProperties.dpi = int(pset["DPI"])
+                camera_props.dpi = int(pset["DPI"])
             if "LineworkMode" in pset:
-                camera.BIMCameraProperties.linework_mode = str(pset["LineworkMode"])
+                camera_props.linework_mode = str(pset["LineworkMode"])
             if "FillMode" in pset:
-                camera.BIMCameraProperties.fill_mode = str(pset["FillMode"])
+                camera_props.fill_mode = str(pset["FillMode"])
             if "CutMode" in pset:
-                camera.BIMCameraProperties.cut_mode = str(pset["CutMode"])
+                camera_props.cut_mode = str(pset["CutMode"])
 
         camera_props.update_props = update_props
 
@@ -853,7 +854,7 @@ class Drawing(bonsai.core.tool.Drawing):
         cls.drawing_selected_states.update({d.ifc_definition_id: d.is_selected for d in props.drawings if d.is_drawing})
         props.drawings.clear()
         drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
-        grouped_drawings = {
+        grouped_drawings: dict[str, list[ifcopenshell.entity_instance]] = {
             "MODEL_VIEW": [],
             "PLAN_VIEW": [],
             "SECTION_VIEW": [],
@@ -1327,8 +1328,13 @@ class Drawing(bonsai.core.tool.Drawing):
         import bonsai.bim.module.drawing.helper as helper
 
         camera = tool.Ifc.get_object(drawing)
-        bounds = helper.ortho_view_frame(camera.data) if camera.data.type == "ORTHO" else None
+        assert isinstance(camera, bpy.types.Object)
+        assert isinstance((camera_data := camera.data), bpy.types.Camera)
+        props = tool.Drawing.get_camera_props(camera_data)
+
+        bounds = helper.ortho_view_frame(camera_data) if camera_data.type == "ORTHO" else None
         reference_obj = tool.Ifc.get_object(reference_element)
+        assert isinstance(reference_obj, bpy.types.Object)
 
         def to_camera_coords(camera: bpy.types.Object, reference_obj: bpy.types.Object) -> Matrix:
             mat = reference_obj.matrix_world.copy()
@@ -1336,12 +1342,12 @@ class Drawing(bonsai.core.tool.Drawing):
             xyz[2] = 0
             xyz = camera.matrix_world @ xyz
             mat.translation = xyz
-            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
+            annotation_offset = mathutils.Vector((0, 0, -camera_data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
             mat.translation += annotation_offset
             return mat
 
-        def project_point_onto_camera(point, camera):
+        def project_point_onto_camera(point: Vector, camera: bpy.types.Object) -> Vector:
             projection = camera.matrix_world.to_quaternion() @ mathutils.Vector((0, 0, -1))
             return camera.matrix_world.inverted() @ mathutils.geometry.intersect_line_plane(
                 point.xyz, point.xyz - projection, camera.location, projection
@@ -1349,12 +1355,12 @@ class Drawing(bonsai.core.tool.Drawing):
 
         obj_matrix = to_camera_coords(camera, reference_obj)
 
-        if camera.data.BIMCameraProperties.raster_x > camera.data.BIMCameraProperties.raster_y:
-            width = camera.data.ortho_scale
-            height = width / camera.data.BIMCameraProperties.raster_x * camera.data.BIMCameraProperties.raster_y
+        if props.raster_x > props.raster_y:
+            width = camera_data.ortho_scale
+            height = width / props.raster_x * props.raster_y
         else:
-            height = camera.data.ortho_scale
-            width = height / camera.data.BIMCameraProperties.raster_y * camera.data.BIMCameraProperties.raster_x
+            height = camera_data.ortho_scale
+            width = height / props.raster_y * props.raster_x
 
         projection = project_point_onto_camera(reference_obj.location, camera)
         co1 = camera.matrix_world @ mathutils.Vector((width / 2, projection[1], -1))
@@ -1618,16 +1624,18 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_camera_block(cls, obj: bpy.types.Object) -> dict:
-        raster_x = obj.data.BIMCameraProperties.raster_x
-        raster_y = obj.data.BIMCameraProperties.raster_y
+        assert isinstance(camera := obj.data, bpy.types.Camera)
+        props = tool.Drawing.get_camera_props(camera)
+        raster_x = props.raster_x
+        raster_y = props.raster_y
 
         if raster_x > raster_y:
-            width = obj.data.ortho_scale
+            width = camera.ortho_scale
             height = width / raster_x * raster_y
         else:
-            height = obj.data.ortho_scale
+            height = camera.ortho_scale
             width = height / raster_y * raster_x
-        depth = obj.data.clip_end
+        depth = camera.clip_end
 
         verts = (
             obj.matrix_world @ mathutils.Vector((-width / 2, -height / 2, -depth)),
@@ -2054,7 +2062,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def get_elements_in_camera_view(
         cls, camera: bpy.types.Object, objs: list[bpy.types.Object]
     ) -> set[ifcopenshell.entity_instance]:
-        props = camera.data.BIMCameraProperties
+        props = tool.Drawing.get_camera_props(camera)
         x = props.width
         y = props.height
 

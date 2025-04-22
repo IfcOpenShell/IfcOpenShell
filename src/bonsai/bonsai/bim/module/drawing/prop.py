@@ -22,6 +22,7 @@ import json
 import enum
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.core.drawing as core
@@ -65,9 +66,10 @@ def get_location_hint(self, context):
     return DrawingsData.data["location_hint"]
 
 
-def update_diagram_scale(self, context):
+def update_diagram_scale(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     if not self.update_props:
         return
+    assert context.scene
     if not context.scene.camera or context.scene.camera.data != self.id_data:
         return
     element = tool.Ifc.get_entity(context.scene.camera)
@@ -89,13 +91,14 @@ def update_diagram_scale(self, context):
     if pset:
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
-        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
-    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties=diagram_scale)
+        pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="EPset_Drawing")
+    ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties=diagram_scale)
 
 
 def update_is_nts(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     if not self.update_props:
         return
+    assert context.scene
     if not context.scene.camera or context.scene.camera.data != self.id_data:
         return
     element = tool.Ifc.get_entity(context.scene.camera)
@@ -118,8 +121,9 @@ def update_is_nts(self: "BIMCameraProperties", context: bpy.types.Context) -> No
     ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"IsNTS": self.is_nts})
 
 
-def get_diagram_scales(self, context):
+def get_diagram_scales(self: "BIMCameraProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     global diagram_scales_enum
+    assert context.scene
     if (
         len(diagram_scales_enum) < 1
         or (context.scene.unit_settings.system == "IMPERIAL" and len(diagram_scales_enum) == 13)
@@ -200,44 +204,45 @@ def set_drawing_style_name(self: "DrawingStyle", new_value: str) -> None:
     bpy.ops.bim.save_drawing_styles_data(rename_style=True, rename_style_from=old_value, rename_style_to=new_value)
 
 
-def update_document_name(self, context):
+def update_document_name(self: "Document", context: bpy.types.Context) -> None:
     document = tool.Ifc.get().by_id(self.ifc_definition_id)
     core.update_document_name(tool.Ifc, tool.Drawing, document=document, name=self.name)
 
 
-def update_has_underlay(self, context):
+def update_has_underlay(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     update_layer(self, context, "HasUnderlay", self.has_underlay)
+    assert context.scene
     # making sure that camera is active
     if self.has_underlay and (context.scene.camera and context.scene.camera.data == self.id_data):
         bpy.ops.bim.reload_drawing_styles()
         bpy.ops.bim.activate_drawing_style()
 
 
-def update_has_linework(self, context):
+def update_has_linework(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     update_layer(self, context, "HasLinework", self.has_linework)
 
 
-def update_has_annotation(self, context):
+def update_has_annotation(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     update_layer(self, context, "HasAnnotation", self.has_annotation)
 
 
-def update_dpi(self, context):
+def update_dpi(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     update_layer(self, context, "DPI", self.dpi)
 
 
-def update_linework_mode(self, context):
+def update_linework_mode(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     update_layer(self, context, "LineworkMode", self.linework_mode)
 
 
-def update_fill_mode(self, context):
+def update_fill_mode(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     update_layer(self, context, "FillMode", self.fill_mode)
 
 
-def update_cut_mode(self, context):
+def update_cut_mode(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     update_layer(self, context, "CutMode", self.cut_mode)
 
 
-def update_layer(self, context, name, value):
+def update_layer(self: "BIMCameraProperties", context: bpy.types.Context, name: str, value: Any) -> None:
     if not self.update_props:
         return
     if not context.scene.camera or context.scene.camera.data != self.id_data:
@@ -520,7 +525,11 @@ class BIMCameraProperties(PropertyGroup):
     filter_mode: StringProperty(name="Filter Mode", default="NONE")
     include_filter_groups: CollectionProperty(type=BIMFilterGroup, name="Include Filter")
     exclude_filter_groups: CollectionProperty(type=BIMFilterGroup, name="Exclude Filter")
-    update_props: BoolProperty(name="Enable Props Auto Update", default=True)
+    update_props: BoolProperty(
+        name="Enable Props Auto Update",
+        description="Update related EPset_Drawing pset on any change in camera properties.",
+        default=True,
+    )
 
     if TYPE_CHECKING:
         linework_mode: Literal["OPENCASCADE", "FREESTYLE"]

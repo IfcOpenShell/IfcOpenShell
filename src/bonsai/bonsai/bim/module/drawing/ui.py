@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
@@ -28,6 +29,10 @@ from bonsai.bim.module.drawing.data import (
     ElementFiltersData,
     DecoratorData,
 )
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.drawing.prop import DocProperties, Drawing
 
 
 class BIM_PT_camera(Panel):
@@ -39,18 +44,21 @@ class BIM_PT_camera(Panel):
     bl_parent_id = "BIM_PT_tab_drawings"
 
     def draw(self, context):
-        if not (context.scene.camera and hasattr(context.scene.camera.data, "BIMCameraProperties")):
+        assert context.scene and self.layout
+        camera = context.scene.camera
+        if not camera:
             row = self.layout.row()
             row.label(text="No Active Drawing", icon="ERROR")
             return
 
-        if "/" not in context.scene.camera.name:
+        if not tool.Ifc.get_entity(camera):
             self.layout.label(text="This is not a BIM camera.")
             return
 
+        assert isinstance(camera_data := camera.data, bpy.types.Camera)
+        props = tool.Drawing.get_camera_props(camera)
         self.layout.use_property_split = True
         dprops = tool.Drawing.get_document_props()
-        props = context.scene.camera.data.BIMCameraProperties
 
         col = self.layout.column(align=True)
         row = col.row(align=True)
@@ -77,7 +85,7 @@ class BIM_PT_camera(Panel):
         row.prop(props, "height")
 
         row = self.layout.row()
-        row.prop(context.scene.camera.data, "clip_end", text="Depth")
+        row.prop(camera_data, "clip_end", text="Depth")
 
         row = self.layout.row(align=True)
         row.prop(props, "diagram_scale", text="Scale")
@@ -110,7 +118,8 @@ class BIM_PT_element_filters(Panel):
         if not ElementFiltersData.is_loaded:
             ElementFiltersData.load()
 
-        props = context.scene.camera.data.BIMCameraProperties
+        assert context.scene and (camera := context.scene.camera)
+        props = tool.Drawing.get_camera_props(camera)
 
         if props.filter_mode == "INCLUDE":
             bonsai.bim.helper.draw_filter(
@@ -159,10 +168,9 @@ class BIM_PT_drawing_underlay(Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        camera = context.scene.camera
-        assert camera
+        assert context.scene and (camera := context.scene.camera)
         dprops = tool.Drawing.get_document_props()
-        props = camera.data.BIMCameraProperties
+        props = tool.Drawing.get_camera_props(camera)
         drawing_index_is_valid = props.active_drawing_style_index < len(dprops.drawing_styles)
 
         if not DrawingsData.is_loaded:
@@ -607,7 +615,7 @@ class BIM_PT_text(Panel):
 
 
 class BIM_UL_drawinglist(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(self, context, layout, data: DocProperties, item: Drawing, icon, active_data, active_propname):
         if not item:
             layout.label(text="", translate=False)
             return
