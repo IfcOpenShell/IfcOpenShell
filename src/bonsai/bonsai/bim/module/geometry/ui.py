@@ -97,21 +97,9 @@ class BIM_MT_object_set_origin(Menu):
     bl_label = "IFC Set Origin"
 
     def draw(self, context):
-        self.layout.operator("bim.override_origin_set", icon="PLUGIN", text="IFC Geometry to Origin").origin_type = (
-            "GEOMETRY_ORIGIN"
-        )
-        self.layout.operator("bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Geometry").origin_type = (
-            "ORIGIN_GEOMETRY"
-        )
-        self.layout.operator("bim.override_origin_set", icon="PLUGIN", text="IFC Origin to 3D Cursor").origin_type = (
-            "ORIGIN_CURSOR"
-        )
-        self.layout.operator(
-            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Center of Mass (Surface)"
-        ).origin_type = "ORIGIN_CENTER_OF_MASS"
-        self.layout.operator(
-            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Center of Mass (Volume)"
-        ).origin_type = "ORIGIN_CENTER_OF_VOLUME"
+        assert self.layout
+        self.layout.label(text="IFC Set Origin", icon_value=bonsai.bim.icons["IFC"].icon_id)
+        self.layout.operator_enum("bim.override_origin_set", property="origin_type")
 
 
 def outliner_menu(self, context):
