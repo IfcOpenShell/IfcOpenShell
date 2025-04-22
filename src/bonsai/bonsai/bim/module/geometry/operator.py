@@ -78,6 +78,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         name=blender_type_prop.name,
         default=blender_type_prop.default,
         items=[(i.identifier, i.name, i.description) for i in blender_type_prop.enum_items],
+        options={"SKIP_SAVE"},
     )
 
     if TYPE_CHECKING:
