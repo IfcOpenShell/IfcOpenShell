@@ -279,6 +279,8 @@ class CreateDrawing(bpy.types.Operator):
                     self.get_scale(context)
                     if self.cprops.update_representation(self.camera):
                         bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
+                        # Reassign props as data is recreated during the update.
+                        self.cprops = tool.Drawing.get_camera_props(self.camera)
 
                     self.svg_writer = svgwriter.SvgWriter()
                     self.svg_writer.human_scale = self.human_scale
