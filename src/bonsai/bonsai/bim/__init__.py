@@ -199,6 +199,7 @@ classes = [
     ui.BIM_PT_section_with_cappings,
     ui.BIM_PT_decorators_overlay,
     ui.BIM_PT_snappping,
+    operator.BIM_OT_show_system_info,
 ]
 
 for mod in modules.values():
