@@ -1967,6 +1967,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
+        assert drawing and isinstance(camera.data, bpy.types.Camera)
 
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
         filtered_elements.add(drawing)
