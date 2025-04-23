@@ -32,7 +32,7 @@ from . import main
 # http://academy.ifcopenshell.org/creating-a-simple-wall-with-property-set-and-quantity-information/
 TEMPLATE = """ISO-10303-21;
 HEADER;
-FILE_DESCRIPTION(('ViewDefinition [CoordinationView]'),'2;1');
+FILE_DESCRIPTION(('ViewDefinition [CoordinationView_V2.0]'),'2;1');
 FILE_NAME('%(filename)s','%(timestring)s',('%(creator)s'),('%(organization)s'),'%(application)s','%(application)s','');
 FILE_SCHEMA(('%(schema_identifier)s'));
 ENDSEC;
@@ -62,7 +62,7 @@ END-ISO-10303-21;
 """
 
 DEFAULTS = {
-    "application": lambda d: "IfcOpenShell-%s" % main.version,
+   "application": lambda d: "IfcOpenShell contributors - IfcOpenShell - v%s" % get_pep440_version(main.version),
     "application_version": lambda d: main.version,
     "project_globalid": lambda d: compress(uuid.uuid4().hex),
     "schema_identifier": lambda d: "IFC4",
@@ -70,6 +70,12 @@ DEFAULTS = {
     "timestring": lambda d: time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(d.get("timestamp") or time.time())),
 }
 
+def get_pep440_version(ifcopenshell_wrapper_version):
+    """
+    Returns a PEP 440-compliant version string, valid for use with
+    `packaging.version.parse()` and compliant with the Validation Service header policy.
+    """
+    return ifcopenshell_wrapper_version.replace("-", "+", 1)
 
 def create(
     filename=None,
