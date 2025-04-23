@@ -31,6 +31,7 @@ import ifcopenshell
 import bonsai.bim
 import bonsai.tool as tool
 import bonsai.bim.handler
+from bonsai.bim.ui import UIData
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim import import_ifc
 from bonsai.bim.prop import StrProperty
@@ -1202,3 +1203,42 @@ class CopyTextToClipboard(bpy.types.Operator):
     def execute(self, context):
         context.window_manager.clipboard = self.text
         return {"FINISHED"}
+
+class BIM_OT_show_system_info(bpy.types.Operator):
+    bl_idname = "bim.show_system_info"
+    bl_label = "System Info"
+    bl_options = {"REGISTER", "UNDO"}
+
+    info_text: bpy.props.StringProperty()
+
+    def execute(self, context):
+        context.window_manager.clipboard = self.info_text
+        self.report({"INFO"}, "System information copied to clipboard.")
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        os_version = platform.platform()
+        blender_version = bpy.app.version_string
+        if not UIData.is_loaded:
+            UIData.load()
+        bonsai_version = f"Bonsai v{UIData.data['version']}"
+        active_addons = [f"  -> {addon.module}" for addon in bpy.context.preferences.addons]
+
+        self.info_text = (
+            f"OS Version: {os_version}\n"
+            f"Blender Version: {blender_version}\n"
+            f"Bonsai Version: {bonsai_version}\n"
+            f"Active Addons:\n" + "\n".join(active_addons)
+        )
+
+        return context.window_manager.invoke_props_dialog(self, width=600)
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+
+        for line in self.info_text.split("\n"):
+            col.label(text=line)
+
+        col.separator()
+        col.label(text="(The information has been copied to the clipboard.)")
