@@ -1,10 +1,18 @@
-VERSION:=`date '+%y%m%d'`
-PYVERSION:=py310
-PLATFORM:=linux
+IS_STABLE:=FALSE
+VERSION:=$(shell cat ../../VERSION)
+VERSION_DATE:=$(shell date '+%y%m%d')
+PYVERSION:=py311
+PLATFORM:=linux64
 
+PYTHON:=python3.11
+PIP:=pip3.11
 SED:=sed -i
+VENV_ACTIVATE:=bin/activate
+
 ifeq ($(OS),Windows_NT)
 HOSTOS:=win
+PYTHON:=python
+VENV_ACTIVATE:=Scripts/activate
 else
 UNAME_S:=$(shell uname -s)
 ifeq ($(UNAME_S),Linux)
@@ -31,28 +39,27 @@ ifeq ($(PYVERSION), py312)
 PYNUMBER:=312
 endif
 
-ifeq ($(PLATFORM), linux)
+# We actually do support glibc 2.28-2.30 (see #5636)
+# but those are old and there's no demand for it.
+ifeq ($(PLATFORM), linux64)
 PLATFORMTAG:=manylinux_2_31_x86_64
 endif
-ifeq ($(PLATFORM), macos)
+ifeq ($(PLATFORM), macos64)
 PLATFORMTAG:=macosx_10_15_x86_64
 endif
-ifeq ($(PLATFORM), macosm1)
+ifeq ($(PLATFORM), macosm164)
 PLATFORMTAG:=macosx_11_0_arm64
 endif
-ifeq ($(PLATFORM), win)
+ifeq ($(PLATFORM), win64)
 PLATFORMTAG:=win_amd64
 endif
+
+IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.8.3-2db6b86-$(PLATFORM).zip
+IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.8.3-2db6b86-$(PLATFORM).zip
 
 .PHONY: test
 test:
 	pytest -p no:pytest-blender test
-
-# safe version of tests without mathutils dependency
-# for tests to work for github workflow with python <3.10 #3895
-.PHONY: test-safe
-test-safe:
-	pytest -p no:pytest-blender test --ignore=test/util/test_shape_builder.py
 
 .PHONY: build-ids-docs
 build-ids-docs:
@@ -79,8 +86,17 @@ coverage:
 clean:
 	rm -rf htmlcov
 
-.PHONY: dist
-dist:
+.PHONY: zip-ifcconvert
+zip-ifcconvert:
+ifndef PLATFORM
+	$(error PLATFORM is not set)
+endif
+	mkdir -p dist
+	cd dist && wget $(IFCCONVERT_URL)
+	cd dist && mv *.zip ifcconvert-$(VERSION)-$(PLATFORM).zip
+
+.PHONY: zip
+zip:
 ifndef PLATFORM
 	$(error PLATFORM is not set)
 endif
@@ -89,23 +105,43 @@ endif
 	mkdir -p dist/ifcopenshell
 	cp -r ifcopenshell/* dist/ifcopenshell/
 
-	cd dist/working && wget https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.7.0-f7c03db-$(PLATFORM)64.zip
+	cd dist/working && wget $(IOS_URL)
 	cd dist/working && unzip ifcopenshell-python*
-	cp -r dist/working/ifcopenshell/ifcopenshell_wrapper.py dist/ifcopenshell/
-ifeq ($(PLATFORM), win)
-	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.pyd dist/ifcopenshell/
-else
-	cp -r dist/working/ifcopenshell/_ifcopenshell_wrapper.so dist/ifcopenshell/
-endif
+	cp -r dist/working/ifcopenshell/*ifcopenshell_wrapper* dist/ifcopenshell/
 	rm -rf dist/working
-	# distutils cannot access anything outside the cwd, so hackishly swap out the README.md
-	cp README.md ../README.bak
-	cp ../../README.md README.md
-	$(SED) "s/999999/$(VERSION)/" pyproject.toml
-	python -m build
-	$(SED) "s/$(VERSION)/999999/" pyproject.toml
-	mv ../README.bak README.md
-	cd dist && mv ifcopenshell-0.7.0.$(VERSION)-py3-none-any.whl ifcopenshell-0.7.0.$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' dist/ifcopenshell/__init__.py
+	cd dist && zip -r ifcopenshell-python-$(VERSION)-$(PYVERSION)-$(PLATFORM).zip ifcopenshell
 	rm -rf dist/ifcopenshell
-	rm -rf dist/ifcopenshell.egg-info
-	rm -rf dist/ifcopenshell-0.7.0.$(VERSION).tar.gz
+
+.PHONY: dist
+dist:
+ifndef PLATFORM
+	$(error PLATFORM is not set)
+endif
+	rm -rf build
+	mkdir -p build
+	mkdir -p dist
+	cp -r ifcopenshell build/
+
+	mkdir build/botbuild
+	cd build/botbuild && wget $(IOS_URL) && unzip ifcopenshell-python*
+	cp -r build/botbuild/ifcopenshell/*ifcopenshell_wrapper* build/ifcopenshell/
+	cp ../../README.md build/
+	cp pyproject.toml build/
+ifeq ($(IS_STABLE), TRUE)
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)"/' build/ifcopenshell/__init__.py
+else
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)a$(VERSION_DATE)"/' build/pyproject.toml
+	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/ifcopenshell/__init__.py
+endif
+
+	cd build && $(PYTHON) -m venv env && . env/$(VENV_ACTIVATE) && $(PIP) install build
+	cd build && . env/$(VENV_ACTIVATE) && $(PYTHON) -m build
+
+ifeq ($(IS_STABLE), TRUE)
+	mv build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+else
+	cp build/dist/ifcopenshell-*.whl dist/ifcopenshell-$(VERSION)a$(VERSION_DATE)-$(PYVERSION)-none-$(PLATFORMTAG).whl
+endif
+	rm -rf build

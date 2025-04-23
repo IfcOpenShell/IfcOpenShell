@@ -21,6 +21,7 @@ import itertools
 import bpy
 import ifcopenshell
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from ifcsverchok.ifcstore import SvIfcStore
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
@@ -30,18 +31,24 @@ from sverchok.data_structure import updateNode, flatten_data
 class SvIfcByGuid(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcByGuid"
     bl_label = "IFC By Guid"
+    bl_description = "Get IFC elements by guid from the transient IFC file."
     n_id: StringProperty(default="")
     guid: StringProperty(name="Guid(s)", update=updateNode)
     id_iter = itertools.count()
+    guids: list[str]
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "guid").prop_name = "guid"
-        self.outputs.new("SvStringsSocket", "Entities")
+        helper.create_socket(
+            self.inputs, "guid", description="Entities guids.", data_type="list[list[str]]", prop_name="guid"
+        )
+        helper.create_socket(
+            self.outputs, "Entities", description="Entities", data_type="list[list[ifcopenshell.entity_instance]]"
+        )
 
     def draw_buttons(self, context, layout):
-        layout.operator(
-            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = "Get IFC element by guid. Takes one or multiple guids."
+        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
+            "Get IFC element by guid. Takes one or multiple guids."
+        )
 
     def process(self):
         self.guids = flatten_data(self.inputs["guid"].sv_get(), target_level=1)

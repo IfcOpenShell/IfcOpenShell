@@ -114,7 +114,7 @@ if "%CMAKE_VERSION%" LSS "cmake version 3.11.4" (
 )
 
 :: NOTE Boost < 1.64 doesn't work without tricks if the user has only VS 2017 installed and no earlier versions.
-set BOOST_VERSION=1.79.0
+set BOOST_VERSION=1.86.0
 :: Version string with underscores instead of dots.
 set BOOST_VER=%BOOST_VERSION:.=_%
 
@@ -169,7 +169,7 @@ cd "%DEPS_DIR%"
 :: VERSIONS
 set HDF5_VERSION=1.8.22
 set HDF5_VERSION_MAJOR=1.8
-set OCCT_VERSION=7.7.1
+set OCCT_VERSION=7.8.1
 :: NOTE If updating the default Python version, change PY_VER_MAJOR_MINOR accordingly in run-cmake.bat
 set PYTHON_VERSION=3.11.7
 
@@ -179,7 +179,9 @@ set OCC_LIBRARY_DIR=%INSTALL_DIR%\opencascade-%OCCT_VERSION%\win%ARCH_BITS%\lib>
 for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do ( 
     set PY_VER_MAJOR_MINOR=%%a%%b
 )
-set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
+    set PYTHONHOME=%INSTALL_DIR%\Python%PY_VER_MAJOR_MINOR%
+)
 
 :: Cache last used CMake generator and configurable dependency dirs for other scripts to use
 :: This is consolidated at the beginning of the script so that the script can be partially
@@ -193,8 +195,12 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
     echo PYTHONHOME=%PYTHONHOME%>>"%~dp0\%BUILD_DEPS_CACHE_PATH%"
 )
 
-
 :proj
+
+IF EXIST "%INSTALL_DIR%\proj-9.2.1" (
+    echo Found existing "%INSTALL_DIR%\proj-9.2.1", skipping
+    goto :mpir
+)
 
 set DEPENDENCY_NAME=sqlite3
 md %INSTALL_DIR%\sqlite3\lib %INSTALL_DIR%\sqlite3\bin %INSTALL_DIR%\sqlite3\include
@@ -231,6 +237,12 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 
 :mpir
+
+IF EXIST "%INSTALL_DIR%\mpir" (
+    echo Found existing "%INSTALL_DIR%\mpir", skipping
+    goto :mpfr
+)
+
 set DEPENDENCY_NAME=mpir
 set DEPENDENCY_DIR=%DEPS_DIR%\mpir
 call :GitCloneAndCheckoutRevision https://github.com/BrianGladman/mpir.git "%DEPENDENCY_DIR%"
@@ -254,6 +266,12 @@ copy ..\..\lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpir"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :mpfr
+
+IF EXIST "%INSTALL_DIR%\mpfr" (
+    echo Found existing "%INSTALL_DIR%\mpfr", skipping
+    goto :HDF5
+)
+
 set DEPENDENCY_NAME=mpfr
 set DEPENDENCY_DIR=%DEPS_DIR%\mpfr
 call :GitCloneAndCheckoutRevision https://github.com/aothms/mpfr.git "%DEPENDENCY_DIR%" 2ebbe10fd029a480cf6e8a64c493afa9f3654251
@@ -281,11 +299,18 @@ copy lib\%VS_PLATFORM%\%DEBUG_OR_RELEASE%\* "%INSTALL_DIR%\mpfr"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :HDF5
+
 set DEPENDENCY_NAME=hdf5
 set DEPENDENCY_DIR=%DEPS_DIR%
 cd "%DEPENDENCY_DIR%"
 set HDF5_CMAKE_ZIP=CMake-hdf5-%HDF5_VERSION%.zip
 set HDF5_INSTALL_ZIP_NAME=HDF5-%HDF5_VERSION%-win%ARCH_BITS%
+
+IF EXIST "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%" (
+    echo Found existing "%INSTALL_DIR%\%HDF5_INSTALL_ZIP_NAME%", skipping
+    goto :Boost
+)
+
 if "%ARCH_BITS%"=="64" set ARCH_BITS_64=64
 call :DownloadFile http://support.hdfgroup.org/ftp/HDF5/releases/hdf5-%HDF5_VERSION_MAJOR%/hdf5-%HDF5_VERSION%/src/CMake-hdf5-%HDF5_VERSION%.zip "%DEPS_DIR%" %HDF5_CMAKE_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -307,17 +332,16 @@ set DEPENDENCY_DIR=%DEPS_DIR%\boost_%BOOST_VER%
 set BOOST_LIBRARYDIR=%DEPENDENCY_DIR%\stage\%GEN_SHORTHAND%\lib
 :: NOTE Also zip download exists, if encountering problems with 7z for some reason.
 set ZIP_EXT=7z
-set BOOST_ZIP=boost_%BOOST_VER%.%ZIP_EXT%
+set BOOST_ZIP=boost-%BOOST_VERSION%-b2-nodocs.%ZIP_EXT%
 
-:: On 2021-05-11 Boost changed download address:
-:: Instead of: https://dl.bintray.com/boostorg/release/ you should use https://boostorg.jfrog.io/artifactory/main/release/ to retrieve boost releases.
-
-rem call :DownloadFile https://dl.bintray.com/boostorg/release/%BOOST_VERSION%/source/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
-call :DownloadFile https://boostorg.jfrog.io/artifactory/main/release/%BOOST_VERSION%/source/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
+call :DownloadFile https://github.com/boostorg/boost/releases/download/boost-%BOOST_VERSION%/%BOOST_ZIP% "%DEPS_DIR%" %BOOST_ZIP%
 
 IF NOT %ERRORLEVEL%==0 GOTO :Error
-call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
+call :ExtractArchive %BOOST_ZIP% "%DEPS_DIR%" %DEPENDENCY_DIR%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
+
+:: top-level folder name changed when migrating to github releases
+ren %DEPS_DIR%\boost-%BOOST_VERSION% boost_%BOOST_VER%
 
 :: Build Boost build script
 if not exist "%DEPENDENCY_DIR%\project-config.jam". (
@@ -346,11 +370,19 @@ IF NOT EXIST "%INSTALL_DIR%\json\nlohmann". mkdir "%INSTALL_DIR%\json\nlohmann"
 call :DownloadFile https://github.com/nlohmann/json/releases/download/v3.6.1/json.hpp "%INSTALL_DIR%\json\nlohmann" json.hpp
 
 :OpenCOLLADA
+
 :: Note OpenCOLLADA has only Release and Debug builds.
 set DEPENDENCY_NAME=OpenCOLLADA
 set DEPENDENCY_DIR=%DEPS_DIR%\OpenCOLLADA
 :: Use a fixed revision in order to prevent introducing breaking changes
 call :GitCloneAndCheckoutRevision https://github.com/KhronosGroup/OpenCOLLADA.git "%DEPENDENCY_DIR%" 064a60b65c2c31b94f013820856bc84fb1937cc6
+
+IF EXIST "%INSTALL_DIR%\OpenCOLLADA" (
+    echo Found existing "%INSTALL_DIR%\OpenCOLLADA", skipping
+    :: we do need to clone though because the bundled libxml includes are not installed
+    goto :OCCT
+)
+
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 cd "%DEPENDENCY_DIR%"
 :: Debug build of OpenCOLLADAValidator fails (https://github.com/KhronosGroup/OpenCOLLADA/issues/377) so
@@ -371,14 +403,20 @@ call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %DEBUG_OR_RELEASE%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :OCCT
+
 SET OCCT_VER=V%OCCT_VERSION:.=_%
+
+IF EXIST "%INSTALL_DIR%\opencascade-%OCCT_VERSION%" (
+    echo Found existing "%INSTALL_DIR%\opencascade-%OCCT_VERSION%", skipping
+    goto :Python
+)
 
 :: OCCT has many dependencies but FreeType is the only mandatory
 set DEPENDENCY_NAME=FreeType
 set DEPENDENCY_DIR=%DEPS_DIR%\freetype-2.7.1
 set FREETYPE_ZIP=ft271.zip
 cd "%DEPS_DIR%"
-call :DownloadFile https://sourceforge.net/projects/freetype/files/freetype2/2.7.1/%FREETYPE_ZIP%/download "%DEPS_DIR%" %FREETYPE_ZIP%
+call :DownloadFile https://download-mirror.savannah.gnu.org/releases/freetype/ft271.zip "%DEPS_DIR%" %FREETYPE_ZIP%
 if not %ERRORLEVEL%==0 goto :Error
 call :ExtractArchive %FREETYPE_ZIP% "%DEPS_DIR%" "%DEPENDENCY_DIR%"
 if not %ERRORLEVEL%==0 goto :Error
@@ -394,7 +432,7 @@ if not %ERRORLEVEL%==0 goto :Error
 set DEPENDENCY_NAME=Open CASCADE %OCCT_VERSION%
 set DEPENDENCY_DIR=%DEPS_DIR%\occt_git
 cd "%DEPS_DIR%"
-call :GitCloneAndCheckoutRevision https://git.dev.opencascade.org/repos/occt.git "%DEPENDENCY_DIR%" %OCCT_VER%
+call :GitCloneAndCheckoutRevision https://github.com/Open-Cascade-SAS/OCCT "%DEPENDENCY_DIR%" %OCCT_VER%
 if not %ERRORLEVEL%==0 goto :Error
 
 :: Patching always blindly would trigger a rebuild each time
@@ -470,12 +508,18 @@ IF "%IFCOS_INSTALL_PYTHON%"=="TRUE" (
 )
 
 :SWIG
+
+IF EXIST "%INSTALL_DIR%\swigwin" (
+    echo Found existing "%INSTALL_DIR%\swigwin", skipping
+    goto :cgal
+)
+
 set SWIG_VERSION=3.0.12
 set DEPENDENCY_NAME=SWIG %SWIG_VERSION%
 set DEPENDENCY_DIR=N/A
 set SWIG_ZIP=swigwin-%SWIG_VERSION%.zip
 cd "%DEPS_DIR%"
-call :DownloadFile https://sourceforge.net/projects/swig/files/swigwin/swigwin-%SWIG_VERSION%/%SWIG_ZIP% "%DEPS_DIR%" %SWIG_ZIP%
+call :DownloadFile https://github.com/aothms/swigwin-3.0.12/raw/refs/heads/main/swigwin-3.0.12.zip "%DEPS_DIR%" %SWIG_ZIP%
 IF NOT %ERRORLEVEL%==0 GOTO :Error
 call :ExtractArchive %SWIG_ZIP% "%DEPS_DIR%" "%DEPS_DIR%\swigwin"
 IF NOT %ERRORLEVEL%==0 GOTO :Error
@@ -487,6 +531,12 @@ IF EXIST "%DEPS_DIR%\swigwin-%SWIG_VERSION%". (
 IF EXIST "%DEPS_DIR%\swigwin\". robocopy "%DEPS_DIR%\swigwin" "%INSTALL_DIR%\swigwin" /E /IS /MOVE /njh /njs
 
 :cgal
+
+IF EXIST "%INSTALL_DIR%\cgal" (
+    echo Found existing "%INSTALL_DIR%\cgal", skipping
+    goto :Eigen
+)
+
 set DEPENDENCY_NAME=cgal
 set DEPENDENCY_DIR=%DEPS_DIR%\cgal
 call :GitCloneAndCheckoutRevision https://github.com/CGAL/cgal.git "%DEPENDENCY_DIR%" v5.2.3
@@ -512,6 +562,45 @@ IF NOT %ERRORLEVEL%==0 GOTO :Error
 set DEPENDENCY_NAME=Eigen
 set DEPENDENCY_DIR=%INSTALL_DIR%\%DEPENDENCY_NAME%
 call :GitCloneAndCheckoutRevision https://gitlab.com/libeigen/eigen.git "%DEPENDENCY_DIR%" 3.3.9
+
+:: :tbb
+:: set DEPENDENCY_NAME=tbb
+:: set DEPENDENCY_DIR=%DEPS_DIR%\tbb
+:: call :GitCloneAndCheckoutRevision https://github.com/wjakob/tbb  "%DEPENDENCY_DIR%" 9e219e24fe223b299783200f217e9d27790a87b0
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: cd "%DEPENDENCY_DIR%"
+:: call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\tbb"  ^
+::                -DBUILD_SHARED_LIBS=Off
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\TBB.sln" %BUILD_CFG%
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: 
+:: :usd
+:: set DEPENDENCY_NAME=usd
+:: set DEPENDENCY_DIR=%DEPS_DIR%\usd
+:: call :GitCloneAndCheckoutRevision https://github.com/PixarAnimationStudios/OpenUSD "%DEPENDENCY_DIR%" v24.05
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: cd "%DEPENDENCY_DIR%"
+:: call :RunCMake -DCMAKE_INSTALL_PREFIX="%INSTALL_DIR%\usd"  ^
+::                -DBOOST_ROOT="%DEPS_DIR%\boost_%BOOST_VER%" ^
+::                -DOneTBB_CMAKE_ENABLE=On                    ^
+::                -DTBB_ROOT_DIR="%INSTALL_DIR%\tbb"          ^
+::                -DPXR_ENABLE_PYTHON_SUPPORT=FALSE           ^
+::                -DPXR_ENABLE_GL_SUPPORT=FALSE               ^
+::                -DPXR_BUILD_IMAGING=FALSE                   ^
+::                -DPXR_BUILD_TUTORIALS=FALSE                 ^
+::                -DPXR_BUILD_EXAMPLES=FALSE                  ^
+::                -DPXR_BUILD_USD_TOOLS=FALSE                 ^
+::                -DPXR_BUILD_TESTS=FALSE                     ^
+::                -DBUILD_SHARED_LIBS=Off                     ^
+::                -DBOOST_LIBRARYDIR="%DEPS_DIR%\boost_%BOOST_VER%\stage\vs%VS_VER%-%VS_PLATFORM%\lib"
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: call :BuildSolution "%DEPENDENCY_DIR%\%BUILD_DIR%\USD.sln" %BUILD_CFG%
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
+:: call :InstallCMakeProject "%DEPENDENCY_DIR%\%BUILD_DIR%" %BUILD_CFG%
+:: IF NOT %ERRORLEVEL%==0 GOTO :Error
 
 :Successful
 echo.

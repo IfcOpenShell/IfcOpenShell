@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en" class="blender">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bonsai Web UI</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="https://bonsaibim.org/assets/images/favicon-blender.png"
+    />
+    <link
+      rel="stylesheet"
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="/static/css/drawings.css"
+      id="drawings-stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    />
+    <script
+      type="text/javascript"
+      src="https://code.jquery.com/jquery-3.6.0.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.1.1/svg.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.socket.io/4.0.0/socket.io.min.js"
+    ></script>
+    <script>
+      var SOCKET_PORT = {{port}};
+    </script>
+    <script defer src="./static/js/drawings.js"></script>
+  </head>
+  <body>
+    <nav>
+      <img
+        src="https://bonsaibim.org/assets/images/blender/blender-logo.png"
+        alt="Logo"
+        class="logo"
+      />
+      <ul>
+        <li>
+          <a href="/"><i class="fa-solid fa-table"></i> Schedules</a>
+        </li>
+        <li>
+          <a href="/costing"
+            ><i class="fa-solid fa-exclamation-triangle"></i>Costing</a
+          >
+        </li>
+        <li>
+          <a href="/sequencing"
+            ><i class="fa-solid fa-chart-gantt"></i> Construction Sequencing</a
+          >
+        </li>
+        <li>
+          <a href="/documentation" class="active"
+            ><i class="fa-solid fa-images"></i> Documentation</a
+          >
+        </li>
+        <li>
+          <a class="dummy-class"
+            ><i class="fa-solid fa-camera"></i> BCF Topics</a
+          >
+        </li>
+        <li>
+          <a class="dummy-class"
+            ><i class="fa-solid fa-square-check"></i> IDS Audits</a
+          >
+        </li>
+        <li>
+          <a class="dummy-class"
+            ><i class="fa-solid fa-hotel"></i> Facility Management</a
+          >
+        </li>
+      </ul>
+      <button id="toggle-theme" onclick="toggleTheme()">
+        <i class="fas fa-moon"></i>
+      </button>
+    </nav>
+    <div id="connected-list-div">
+      <button id="show-connected-button" onclick="toggleClientList()">
+        Connected Blenders:
+        <span id="blender-count">0</span>
+        <i class="fas fa-chevron-down"></i>
+      </button>
+      <div id="client-list"></div>
+    </div>
+    <div class="container-fluid d-flex" id="container">
+      <div class="col-2 left">
+        <!-- Dropdown menu -->
+        <div class="dropdown mb-1">
+          <label for="dropdown-menu">IFC File:</label>
+          <select class="p-0 pl-2" id="dropdown-menu">
+            <!-- IFC files will be dynamically populated here -->
+            <option value="0" selected hidden>IFC File</option>
+          </select>
+        </div>
+        <!-- Panel with sub-panels -->
+        <div class="panel">
+          <div class="card-container" id="accordion">
+            <div class="card pb-2">
+              <div class="card-header overflow-hidden" id="headingOne">
+                <button
+                  class="btn p-0 pl-2 w-100 text-left"
+                  data-toggle="collapse"
+                  data-target="#collapseOne"
+                >
+                  Drawings
+                </button>
+              </div>
+
+              <div id="collapseOne" class="collapse show card-container">
+                <div class="card-body">
+                  <ul class="sub-panel pl-2" id="drawings-sub-panel">
+                    <!-- Drawings will be dynamically populated here -->
+                  </ul>
+                </div>
+              </div>
+            </div>
+            <div class="card pb-2">
+              <div class="card-header overflow-hidden" id="headingTwo">
+                <button
+                  class="btn p-0 pl-2 w-100 text-left"
+                  data-toggle="collapse"
+                  data-target="#collapseTwo"
+                >
+                  Sheets
+                </button>
+              </div>
+              <div id="collapseTwo" class="collapse show card-container">
+                <div class="card-body">
+                  <ul class="sub-panel pl-2" id="sheets-sub-panel">
+                    <!-- Sheets will be dynamically populated here -->
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-10 right pl-3">
+        <div id="svg-container"></div>
+      </div>
+    </div>
+    <footer>
+      <p>Bonsai Version: {{version}}</p>
+    </footer>
+  </body>
+</html>

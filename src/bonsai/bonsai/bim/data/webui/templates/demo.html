@@ -1,0 +1,273 @@
+<!-- this is a demo web UI page -->
+<!DOCTYPE html>
+<html lang="en" class="blender">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bonsai Web UI</title>
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="https://bonsaibim.org/assets/images/favicon-blender.png"
+    />
+    <!-- here we request the CSS file from the server, -->
+    <!-- using registered static path in the server -->
+    <link rel="stylesheet" href="/static/css/demo.css" id="demo-stylesheet" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    />
+    <script
+      type="text/javascript"
+      src="https://code.jquery.com/jquery-3.6.0.min.js"
+    ></script>
+    <script
+      type="text/javascript"
+      src="https://cdn.socket.io/4.0.0/socket.io.min.js"
+    ></script>
+    <script>
+      // here we define the port that the server is listening on.
+      // so that we can connect to the websocket server and request static files
+      // this is set when the HTML file is served by the server when opening the web UI URL.
+      var SOCKET_PORT = {{port}};
+    </script>
+    <!-- here we request the JS file from the server-->
+    <!-- using registered static path in the server -->
+    <script defer src="./static/js/demo.js"></script>
+  </head>
+  <body>
+    <!-- the navigation bar at the top of the page. -->
+    <nav>
+      <img
+        src="https://bonsaibim.org/assets/images/blender/blender-logo.png"
+        alt="Logo"
+        class="logo"
+      />
+      <ul>
+        <li>
+          <a href="/"><i class="fa-solid fa-table"></i> Schedules</a>
+        </li>
+        <li>
+          <a href="/sequencing"
+            ><i class="fa-solid fa-chart-gantt"></i> Construction Sequencing</a
+          >
+        </li>
+        <li>
+          <a href="/documentation"
+            ><i class="fa-solid fa-images"></i> Documentation</a
+          >
+        </li>
+        <li>
+          <a><i class="fa-solid fa-camera"></i> BCF Topics</a>
+        </li>
+        <li>
+          <a><i class="fa-solid fa-square-check"></i> IDS Audits</a>
+        </li>
+        <li>
+          <a><i class="fa-solid fa-hotel"></i> Facility Management</a>
+        </li>
+      </ul>
+      <button id="toggle-theme" onclick="toggleTheme()">
+        <i class="fas fa-moon"></i>
+      </button>
+    </nav>
+    <!-- the main page container. -->
+    <div id="container">
+      <div id="message-container">
+        <!-- Here we have a text input and a button that calls the SendMessage() function-->
+        <input type="text" id="input-message" placeholder="Send a Message" />
+        <button onclick="sendMessage()">Send Message to Bonsai</button>
+      </div>
+      <!-- The following is the explanation part of the demo page. -->
+      <!-- I suggest reading it from the demo page iteself :) -->
+      <!-- we need to stop formating because formatiing messes up pre tag spacing -->
+      <!-- which in turn messes up code blocks display-->
+      <!-- prettier-ignore-start -->
+      <div id="explanation">
+        <h1 id="welcome-to-the-web-ui-demo-page">Welcome to the web UI demo page!</h1>
+        <p>This demo showcases how Bonsai's Web UI interacts with a WebSocket server. The demo illustrates how the Web UI establishes a connection, exchanges data with the server, and updates the UI dynamically based on incoming data.</p>
+        <p>You can use the above textbox to send a message to Bonsai which will be printed to the console!</p>
+        <p>If you prefer, you can explore the source code directly in the data/webui directory:</p>
+        <ul>
+        <li>sioserver.py</li>
+        <li>templates/demo.html</li>
+        <li>static/js/demo.js</li>
+        </ul>
+        <p>Each file contains detailed comments to help you understand the code. Alternatively, continue reading this demo page to understand how the Web UI operates</p>
+        <h2 id="webscoket-server-sioserverpy">WebScoket Server (sioserver.py)</h2>
+        <p>In the websocket server, there are two key namespaces.</p>
+        <ul>
+        <li>Blender Namespace: Connects all Bonsai instances.</li>
+        <li>Web Namespace: Connects all Web UI clients.</li>
+        </ul>
+        <p>These namespaces are attached to the WebSocket server, allowing event-driven communication.</p>
+
+<pre class="hljs"><code><div><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">WebNamespace</span><span class="hljs-params">(socketio.AsyncNamespace)</span>:</span>
+    <span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">on_connect</span><span class="hljs-params">(self, sid, environ)</span>:</span>
+        ...
+    <span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">on_disconnect</span><span class="hljs-params">(self, sid)</span>:</span>
+        ...
+    <span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">on_web_operator</span><span class="hljs-params">(self, sid, data)</span>:</span>
+        ...
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">BlenderNamespace</span><span class="hljs-params">(socketio.AsyncNamespace)</span>:</span>
+    <span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">on_connect</span><span class="hljs-params">(self, sid, environ)</span>:</span>
+        ...
+    <span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">on_disconnect</span><span class="hljs-params">(self, sid)</span>:</span>
+        ...
+    <span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">on_demo_data</span><span class="hljs-params">(self, sid, data)</span>:</span>
+        ...
+</div></code></pre>
+
+        <p>Each namespace defines event handlers that are triggered when a connected client emits specific events. For example, the on_demo_data function is invoked when a client emits the demo_data event.</p>
+        <p>The server also defines routes, such as the /demo URL, which are tied to specific request handlers.</p>
+
+<pre class="hljs"><code><div><span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">demo</span><span class="hljs-params">(request)</span>:</span>
+    <span class="hljs-keyword">with</span> open(<span class="hljs-string">"templates/demo.html"</span>, <span class="hljs-string">"r"</span>) <span class="hljs-keyword">as</span> f:
+        template = f.read()
+    html_content = pystache.render(template, {<span class="hljs-string">"port"</span>: sio_port, <span class="hljs-string">"version"</span>: bonsai_version})
+    <span class="hljs-keyword">return</span> web.Response(text=html_content, content_type=<span class="hljs-string">"text/html"</span>)
+
+app.router.add_get(<span class="hljs-string">"/demo"</span>, demo)
+</div></code></pre>
+
+        <p>In this example, when the /demo URL is accessed, the server reads the demo.html template, renders it with variables like port and version, and returns the fully rendered HTML to the client's browser.</p>
+        <h2 id="html-file-templatesdemohtml">HTML File (templates/demo.html)</h2>
+        <p>When the Web UI URL is visited, the server follows these steps:</p>
+        <ul>
+        <li>Retrieves the HTML file from the templates directory.</li>
+        <li>uses pystache to render variables, such as SOCKET_PORT, into the HTML template.</li>
+        <li>Sends the fully rendered HTML page to the web browser.</li>
+        </ul>
+        <p>The SOCKET_PORT variable is injected into the HTML and later used by the JavaScript file to establish a WebSocket connection.</p>
+
+<pre class="hljs"><code><div><span class="hljs-tag">&lt;<span class="hljs-name">script</span>&gt;</span><span class="actionscript">
+    <span class="hljs-keyword">var</span> SOCKET_PORT = {{port}};
+</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+</div></code></pre>
+
+        <p>After the HTML page loads, the browser automatically requests static files, such as CSS and JavaScript, from the static directory specified in the sioserver.py file.</p>
+
+<pre class="hljs"><code><div><span class="hljs-tag">&lt;<span class="hljs-name">link</span> <span class="hljs-attr">rel</span>=<span class="hljs-string">"stylesheet"</span> <span class="hljs-attr">href</span>=<span class="hljs-string">"/static/css/demo.css"</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"demo-stylesheet"</span> /&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">defer</span> <span class="hljs-attr">src</span>=<span class="hljs-string">"./static/js/demo.js"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span>
+</div></code></pre>
+
+        <h2 id="javascript-file-staticjsdemojs">JavaScript File (static/js/demo.js)</h2>
+        <p>The JavaScript file is responsible for establishing and managing the WebSocket connection. It starts by ensuring the DOM is fully loaded before executing any scripts.</p>
+
+<pre class="hljs"><code><div><span class="hljs-keyword">let</span> socket;
+$(<span class="hljs-built_in">document</span>).ready(<span class="hljs-function"><span class="hljs-keyword">function</span> (<span class="hljs-params"></span>) </span>{
+  <span class="hljs-keyword">var</span> defaultTheme = <span class="hljs-string">"blender"</span>; <span class="hljs-comment">// Default theme to be applied</span>
+  <span class="hljs-keyword">var</span> theme = localStorage.getItem(<span class="hljs-string">"theme"</span>) || defaultTheme; <span class="hljs-comment">// Retrieve the stored theme or use the default</span>
+  setTheme(theme); <span class="hljs-comment">// Apply the theme</span>
+
+  connectSocket(); <span class="hljs-comment">// Establish WebSocket connection</span>
+});
+</div></code></pre>
+
+        <p>Upon page load, the script sets the theme (either from local storage or the default) and then calls connectSocket function to initiate the WebSocket connection.</p>
+        <h3 id="establishing-websocket-connection">Establishing WebSocket connection</h3>
+        <p>The connectSocket function constructs the WebSocket connection URL using the SOCKET_PORT variable and then initializes the connection.</p>
+
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">connectSocket</span>(<span class="hljs-params"></span>) </span>{
+  <span class="hljs-keyword">const</span> url = <span class="hljs-string">"ws://localhost:"</span> + SOCKET_PORT + <span class="hljs-string">"/web"</span>;
+  socket = io(url);
+  <span class="hljs-built_in">console</span>.log(<span class="hljs-string">"socket: "</span>, socket);
+
+  <span class="hljs-comment">// Register socket event handlers</span>
+  socket.on(<span class="hljs-string">"blender_connect"</span>, handleBlenderConnect);
+  socket.on(<span class="hljs-string">"blender_disconnect"</span>, handleBlenderDisconnect);
+  socket.on(<span class="hljs-string">"theme_data"</span>, handleThemeData);
+  socket.on(<span class="hljs-string">"demo_data"</span>, handleDemoData);
+}
+</div></code></pre>
+
+        <p>The socket variable is used to manage the WebSocket connection within the web namespace. After establishing the connection, the script registers event handlers for specific events emitted by the server.</p>
+        <h3 id="receiving-data-from-bonsai">Receiving Data from Bonsai</h3>
+        <p>Event handlers process the data received from the server and manipulate the DOM to reflect the changes on the webpage. For instance, the handleDemoData function processes the demo_data event and updates the demo content on the page.</p>
+
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">handleDemoData</span>(<span class="hljs-params">demoData</span>) </span>{
+  <span class="hljs-built_in">console</span>.log(demoData);
+  <span class="hljs-keyword">const</span> message = demoData[<span class="hljs-string">"data"</span>][<span class="hljs-string">"demo_message"</span>];
+  <span class="hljs-keyword">const</span> blenderId = demoData[<span class="hljs-string">"blenderId"</span>];
+  <span class="hljs-keyword">const</span> id = <span class="hljs-string">"message-"</span> + blenderId;
+  <span class="hljs-keyword">const</span> messageHeader = $(<span class="hljs-string">"#"</span> + id);
+  <span class="hljs-keyword">const</span> messageText = <span class="hljs-string">`Bonsai instance with ID: <span class="hljs-subst">${blenderId}</span> sent the message: <span class="hljs-subst">${message}</span>`</span>;
+
+  <span class="hljs-keyword">if</span> (messageHeader[<span class="hljs-number">0</span>] === <span class="hljs-literal">undefined</span>) {
+    <span class="hljs-keyword">const</span> newMessageElement = $(<span class="hljs-string">"&lt;h3&gt;"</span>, { <span class="hljs-attr">id</span>: id }).text(messageText);
+    newMessageElement.prependTo(<span class="hljs-string">"#message-container"</span>);
+  } <span class="hljs-keyword">else</span> {
+    messageHeader.text(messageText);
+    messageHeader.prependTo(<span class="hljs-string">"#message-container"</span>);
+  }
+}
+</div></code></pre>
+
+        <p>we use the BlenderId, which is a unique identifier given for by the server for each client connedted to it, to differentiate between different Bonsai instances.</p>
+        <p>This functionality is repeated for other event handlers, such as handleBlenderConnect, handleBlenderDisconnect, and handleThemeData, where specific actions are taken based on the event type and the data provided by the server.</p>
+        <h3 id="sending-data-to-bonsai">Sending Data to Bonsai</h3>
+        <p>Data is sent to the server in response to DOM events, such as onclick. These events trigger functions that use the socket variable to emit an event to the server, passing the appropriate data for the specific web operator.</p>
+
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">SendMessage</span>(<span class="hljs-params"></span>) </span>{
+  <span class="hljs-keyword">const</span> inputMessage = $(<span class="hljs-string">"#input-message"</span>).val();
+  <span class="hljs-keyword">const</span> msg = {
+    <span class="hljs-attr">sourcePage</span>: <span class="hljs-string">"demo"</span>,
+    <span class="hljs-comment">// blenderId: BlenderId,</span>
+    <span class="hljs-attr">operator</span>: {
+      <span class="hljs-attr">type</span>: <span class="hljs-string">"message"</span>,
+      <span class="hljs-attr">message</span>: inputMessage,
+    },
+  };
+  socket.emit(<span class="hljs-string">"web_operator"</span>, msg);
+}
+</div></code></pre>
+
+        <p>In this example, the blenderId field specifies which Bonsai instance should receive the operator. If blenderId is not set, the operator is broadcast to all instances.</p>
+        <p>The server forwards this operator to the appropriate Bonsai instance, where it is processed by functions like sio_listen_web_operator and check_operator_queue in tool/web.py.</p>
+      
+        <h2 id="web-tool-toolwebpy">Web Tool (tool/web.py)</h2>
+        <p>the sio_listen_web_operator function is automatically called when the event web_operator is emitted to Bonsai. It takes the web operator and attempts to put it in a web operators queue.</p>
+
+<pre class="hljs"><code><div><span class="hljs-meta">@classmethod</span>
+<span class="hljs-keyword">async</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">sio_listen_web_operator</span><span class="hljs-params">(cls, data)</span>:</span>
+    <span class="hljs-keyword">try</span>:
+        web_operator_queue.put_nowait(data)
+    <span class="hljs-keyword">except</span> queue.Full:
+        <span class="hljs-keyword">pass</span>
+</div></code></pre>
+
+        <p>then the check_operator_queue function is called by a timer that is run every second to retrieve operators from the queue and handle them</p>
+
+<pre class="hljs"><code><div><span class="hljs-meta">@classmethod</span>
+<span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">check_operator_queue</span><span class="hljs-params">(cls)</span>:</span>
+    <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> bpy.context.scene.WebProperties.is_connected:
+        <span class="hljs-keyword">with</span> web_operator_queue.mutex:
+            web_operator_queue.queue.clear()
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">None</span>  <span class="hljs-comment"># unregister timer if not connected</span>
+
+    <span class="hljs-keyword">while</span> <span class="hljs-keyword">not</span> web_operator_queue.empty():
+        operator = web_operator_queue.get_nowait()
+        <span class="hljs-keyword">if</span> <span class="hljs-keyword">not</span> operator:
+            <span class="hljs-keyword">continue</span>
+        <span class="hljs-keyword">if</span> operator[<span class="hljs-string">"sourcePage"</span>] == <span class="hljs-string">"csv"</span>:
+            cls.handle_csv_operator(operator[<span class="hljs-string">"operator"</span>])
+        <span class="hljs-keyword">elif</span> operator[<span class="hljs-string">"sourcePage"</span>] == <span class="hljs-string">"gantt"</span>:
+            cls.handle_gantt_operator(operator[<span class="hljs-string">"operator"</span>])
+        <span class="hljs-keyword">elif</span> operator[<span class="hljs-string">"sourcePage"</span>] == <span class="hljs-string">"drawings"</span>:
+            cls.handle_drawings_operator(operator[<span class="hljs-string">"operator"</span>])
+        <span class="hljs-keyword">elif</span> operator[<span class="hljs-string">"sourcePage"</span>] == <span class="hljs-string">"demo"</span>:
+            message = operator[<span class="hljs-string">"operator"</span>][<span class="hljs-string">"message"</span>]
+            print(<span class="hljs-string">f"Message from demo page: <span class="hljs-subst">{message}</span>"</span>)
+    <span class="hljs-keyword">return</span> <span class="hljs-number">1.0</span>
+</div></code></pre>
+
+        <p>Here we check the source page of the operator and call the appropriate handler for that page.</p>
+      </div>
+      <!-- prettier-ignore-end -->
+    </div>
+    <footer>
+      <p>Bonsai Version: {{version}}</p>
+    </footer>
+  </body>
+</html>

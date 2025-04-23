@@ -16,17 +16,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import numpy
-import pytest
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.structural
 
 
 class TestEditStructuralAnalysisModel(test.bootstrap.IFC4):
     def test_editing_a_structural_analysis_model(self):
-        subject = ifcopenshell.api.run("structural.add_structural_analysis_model", self.file)
-        subject = ifcopenshell.api.run(
-            "structural.edit_structural_analysis_model",
+        subject = ifcopenshell.api.structural.add_structural_analysis_model(self.file)
+        ifcopenshell.api.structural.edit_structural_analysis_model(
             self.file,
             structural_analysis_model=subject,
             attributes={"Name": "My edited model", "Description": "Description of my model"},
@@ -34,3 +31,7 @@ class TestEditStructuralAnalysisModel(test.bootstrap.IFC4):
         models = self.file.by_type("IfcStructuralAnalysisModel")
         assert subject == models[0]
         assert subject.is_a("IfcStructuralAnalysisModel")
+
+
+class TestEditStructuralAnalysisModelIFC2X3(test.bootstrap.IFC2X3, TestEditStructuralAnalysisModel):
+    pass

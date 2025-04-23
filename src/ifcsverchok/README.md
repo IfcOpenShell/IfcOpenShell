@@ -3,13 +3,13 @@
 
 N.B.! IfcSverchok nodes are WIP. You can experience Blender crashes while using them, especially if you're undoing (ctrl/cmd-Z) something in the node tree.
 
-## Packaged installation[](https://blenderbim.org/docs-python/ifcsverchok/installation.html#packaged-installation "Permalink to this headline")
+## Packaged installation[](https://docs.ifcopenshell.org/ifcsverchok/installation.html#packaged-installation "Permalink to this headline")
 
-IfcSverchok is packaged like a regular Blender add-on, so installation is the same as any other Blender add-on. [Download IfcSverchok here](https://blenderbim.org/builds/ifcsverchok-230823.zip).
+IfcSverchok is packaged like a regular Blender add-on, so installation is the same as any other Blender add-on. [Download IfcSverchok here](https://github.com/IfcOpenShell/IfcOpenShell/releases/download/ifcsverchok-240417/ifcsverchok-240417.zip).
 
 Like all Blender add-ons, they can be installed using `Edit > Preferences > Addons > Install > Choose Downloaded ZIP > Enable Add-on Checkbox`. You can enable add-ons permanently by using `Save User Settings` from the Addons menu.
 
-Before installing, you will also need to [install the BlenderBIM Add-on](https://blenderbim.org/download.html) and install the latest version of [Sverchok](https://github.com/nortikin/sverchok) (v1.2).
+Before installing, you will also need to [install Bonsai](https://bonsaibim.org/download.html) and install the latest version of [Sverchok](https://github.com/nortikin/sverchok) (v1.2).
 
 ## Nodes
 List of nodes that have been tested to the best of ability (nodes not listed here are not considered ready for use). If you find bugs/unexpected behaviour in any of them, please open an issue or get in touch otherwise.
@@ -79,7 +79,7 @@ In this example model, we have created both storeys and a building, but it's not
 ![Alt text](./assets/exporting_ifc.png?raw=true)
 
 #### Opening The Created IFC Model
-Now we can open the created IFC model with any IFC viewer or program. Here it is opened with BlenderBIM.
+Now we can open the created IFC model with any IFC viewer or program. Here it is opened with Bonsai.
 ![Alt text](./assets/imported_ifc.png?raw=true)
 
 ### Other examples

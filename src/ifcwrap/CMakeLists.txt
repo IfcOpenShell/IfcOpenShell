@@ -52,13 +52,28 @@ IF (WIN32 AND NOT PYTHON_DEBUG_LIBRARIES)
 	ADD_DEFINITIONS(-DSWIG_PYTHON_INTERPRETER_NO_DEBUG)
 ENDIF()
 
+if (WITH_CGAL)
+    set(LIBSVGFILL svgfill)
+endif()
+
 SET_SOURCE_FILES_PROPERTIES(IfcPython.i PROPERTIES CPLUSPLUS ON)
+# Rebuild on changes in other .i files.
+SET_PROPERTY(
+	SOURCE IfcPython.i
+	PROPERTY DEPENDS
+		IfcGeomWrapper.i
+		IfcParseWrapper.i
+		utils/type_conversion.i
+		utils/typemaps_in.i
+		utils/typemaps_out.i
+)
 swig_add_library(ifcopenshell_wrapper LANGUAGE python SOURCES IfcPython.i)
+SET_PROPERTY(TARGET ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTY SWIG_DEPENDS ${IFCOPENSHELL_LIBRARIES})
 if("$ENV{LDFLAGS}" MATCHES ".undefined.suppress")
 # On osx there is some state in the python dylib. With `-Wl,undefined,suppress` we can ignore the missing symbols at compile time.
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} libsvgfill)
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${LIBSVGFILL})
 else()
-SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${PYTHON_LIBRARIES} libsvgfill)
+SWIG_LINK_LIBRARIES(ifcopenshell_wrapper ${IFCOPENSHELL_LIBRARIES} ${PYTHON_LIBRARIES} ${LIBSVGFILL})
 endif()
 if ((NOT WIN32) AND BUILD_SHARED_LIBS)
     SET_INSTALL_RPATHS(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} "${IFCDIRS};${OCC_LIBRARY_DIR}")
@@ -68,6 +83,16 @@ endif()
 # directory in which the wrapper can be installed.
 FIND_PACKAGE(PythonInterp)
 IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MODULE_INSTALL_DIR)
+    if (NOT WASM_BUILD)
+    # Find Python interpreter and get its version
+    # Not on WASM because we're cross compiling in that case
+    EXECUTE_PROCESS(
+        COMMAND ${PYTHON_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_config_var('EXT_SUFFIX'))"
+        OUTPUT_VARIABLE PYTHON_EXTENSION_SUFFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    SET_TARGET_PROPERTIES(${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME} PROPERTIES SUFFIX ${PYTHON_EXTENSION_SUFFIX})
+    endif()
     if (PYTHON_MODULE_INSTALL_DIR)
 	set(python_package_dir "${PYTHON_MODULE_INSTALL_DIR}")
     else()
@@ -95,15 +120,17 @@ IF((PYTHONINTERP_FOUND AND NOT "${PYTHON_EXECUTABLE}" STREQUAL "") OR PYTHON_MOD
         FOREACH(file ${sourcefiles})
             FILE(RELATIVE_PATH relative "${CMAKE_CURRENT_SOURCE_DIR}/../ifcopenshell-python/ifcopenshell/" "${file}")
             GET_FILENAME_COMPONENT(dir "${relative}" DIRECTORY)
-			INSTALL(FILES "${file}"
-                    DESTINATION "${python_package_dir}/ifcopenshell/${dir}")
+            if(NOT IS_DIRECTORY "${file}")
+			    INSTALL(FILES "${file}"
+                        DESTINATION "${python_package_dir}/ifcopenshell/${dir}")
+            endif()
         ENDFOREACH()
         INSTALL(FILES "${CMAKE_BINARY_DIR}/ifcwrap/ifcopenshell_wrapper.py"
                 DESTINATION "${python_package_dir}/ifcopenshell")
-        INSTALL(TARGETS _ifcopenshell_wrapper
+        INSTALL(TARGETS ${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME}
                 DESTINATION "${python_package_dir}/ifcopenshell")
 	if (MSVC)
-	    install(FILES $<TARGET_PDB_FILE:_ifcopenshell_wrapper> DESTINATION bin OPTIONAL)
+	    INSTALL(FILES $<TARGET_PDB_FILE:${SWIG_MODULE_ifcopenshell_wrapper_REAL_NAME}> DESTINATION bin OPTIONAL)
 	endif()
     ENDIF()
 ELSE()

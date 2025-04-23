@@ -1,5 +1,6 @@
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.owner
 from pathlib import Path
 
 
@@ -12,13 +13,13 @@ for schema in ("ifc2x3", "ifc4", "ifc4x3"):
 
         # setup IfcOwnerHistory
         if schema == "ifc2x3":
-            ifcopenshell.api.run("owner.add_application", f)
-            person = ifcopenshell.api.run("owner.add_person", f)
-            organization = ifcopenshell.api.run("owner.add_organisation", f)
-            ifcopenshell.api.run("owner.add_person_and_organisation", f, person=person, organisation=organization)
+            ifcopenshell.api.owner.add_application(f)
+            person = ifcopenshell.api.owner.add_person(f)
+            organization = ifcopenshell.api.owner.add_organisation(f)
+            ifcopenshell.api.owner.add_person_and_organisation(f, person=person, organisation=organization)
 
-        wall1 = ifcopenshell.api.run("root.create_entity", f)
-        wall2 = ifcopenshell.api.run("root.create_entity", f)
+        wall1 = ifcopenshell.api.root.create_entity(f)
+        wall2 = ifcopenshell.api.root.create_entity(f)
         wall1.GlobalId = guid1
         wall2.GlobalId = guid1 if status == "fail" else guid2
 

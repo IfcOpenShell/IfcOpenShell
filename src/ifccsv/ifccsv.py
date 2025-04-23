@@ -29,7 +29,7 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from statistics import mean
-from typing import Optional, Union
+from typing import Optional, Union, Literal, Iterable
 
 try:
     from odf.namespaces import OFFICENS
@@ -53,7 +53,21 @@ except:
     pass  # No Pandas support
 
 
+__version__ = version = "0.0.0"
+
+
+FILE_FORMAT = Literal[
+    "csv",
+    "ods",
+    "xlsx",
+    "pd",
+]
+
+
 class IfcCsv:
+    attributes: list[str]
+    headers: list[str]
+
     def __init__(self):
         self.headers = []
         self.results = []
@@ -61,20 +75,20 @@ class IfcCsv:
 
     def export(
         self,
-        ifc_file,
-        elements,
-        attributes,
-        headers=None,
+        ifc_file: ifcopenshell.file,
+        elements: Iterable[ifcopenshell.entity_instance],
+        attributes: Union[list[str], None],
+        headers: Optional[list[str]] = None,
         output=None,
-        format=None,
-        should_preserve_existing=False,
-        include_global_id=True,
-        delimiter=",",
-        null="-",
-        empty="",
-        bool_true="YES",
-        bool_false="NO",
-        concat=", ",
+        format: FILE_FORMAT = None,
+        should_preserve_existing: bool = False,
+        include_global_id: bool = True,
+        delimiter: str = ",",
+        null: str = "-",
+        empty: str = "",
+        bool_true: str = "YES",
+        bool_false: str = "NO",
+        concat: str = ", ",
         sort=None,
         groups=None,
         summaries=None,
@@ -282,12 +296,12 @@ class IfcCsv:
             writer.writerow(self.headers)
             for row in self.results:
                 writer.writerow(row)
-            if any([s for s in self.summaries if s is not None]):
+            if self.has_summaries():
                 writer.writerow(self.summaries)
 
     def export_ods(self, output, should_preserve_existing=False):
         df = self.export_pd()
-        if self.summaries:
+        if self.has_summaries():
             df.loc[df.shape[0]] = self.summaries
 
         if os.path.exists(output) and should_preserve_existing:
@@ -310,10 +324,9 @@ class IfcCsv:
             # If the DataFrame has fewer rows than the table, blank out the extra rows
             num_rows_table = len(first_table.getElementsByType(TableRow)) - 1  # Exclude header row
             if len(df) < num_rows_table:
-                for i in range(len(df) + 1, num_rows_table + 1):  # +1 to account for header
-                    for cell in first_table.getElementsByType(TableRow)[i].getElementsByType(TableCell):
-                        for item in cell.childNodes:
-                            cell.removeChild(item)
+                rows = first_table.getElementsByType(TableRow)
+                for i in reversed(range(len(df) + 1, num_rows_table + 1)):  # +1 to account for header
+                    first_table.removeChild(rows[i])
 
             ods_document.save(output)
         else:
@@ -348,9 +361,12 @@ class IfcCsv:
         row.addElement(new_cell)
         return new_cell
 
+    def has_summaries(self):
+        return any([s for s in self.summaries if s is not None])
+
     def export_xlsx(self, output, should_preserve_existing=False):
         df = self.export_pd()
-        if self.summaries:
+        if self.has_summaries():
             df.loc[df.shape[0]] = self.summaries
 
         if os.path.exists(output):
@@ -382,16 +398,29 @@ class IfcCsv:
         return ["{}.{}".format(pset_qto_name, n) for n in results]
 
     def Import(
-        self, ifc_file, table, attributes=None, delimiter=",", null="-", empty="", bool_true="YES", bool_false="NO"
-    ):
-        ext = table.split(".")[-1].lower()
+        self,
+        ifc_file: ifcopenshell.file,
+        table: str,
+        attributes: Optional[list[Union[str, None]]] = None,
+        delimiter: str = ",",
+        null: str = "-",
+        empty: str = "",
+        bool_true: str = "YES",
+        bool_false: str = "NO",
+        concat: str = ", ",
+    ) -> None:
+        """
+        Args:
+            table: filepath to the table.
+        """
+        ext: FILE_FORMAT = table.split(".")[-1].lower()
 
         if ext == "csv":
-            self.import_csv(ifc_file, table, attributes, delimiter, null, empty, bool_true, bool_false)
+            self.import_csv(ifc_file, table, attributes, delimiter, null, empty, bool_true, bool_false, concat)
         elif ext == "ods":
-            self.import_ods(ifc_file, table, attributes, null, empty, bool_true, bool_false)
+            self.import_ods(ifc_file, table, attributes, null, empty, bool_true, bool_false, concat)
         elif ext == "xlsx":
-            self.import_xlsx(ifc_file, table, attributes, null, empty, bool_true, bool_false)
+            self.import_xlsx(ifc_file, table, attributes, null, empty, bool_true, bool_false, concat)
 
     def import_csv(
         self,
@@ -403,6 +432,7 @@ class IfcCsv:
         empty: str = "",
         bool_true: str = "YES",
         bool_false: str = "NO",
+        concat: str = ", ",
     ) -> None:
         with open(table, newline="", encoding="utf-8") as f:
             reader = csv.reader(f, delimiter=delimiter)
@@ -415,17 +445,27 @@ class IfcCsv:
                     elif len(attributes) == len(headers) - 1:
                         attributes.insert(0, "")  # The GlobalId column
                     continue
-                self.process_row(ifc_file, row, headers, attributes, null, empty, bool_true, bool_false)
+                self.process_row(ifc_file, row, headers, attributes, null, empty, bool_true, bool_false, concat)
 
-    def import_xlsx(self, ifc_file, table, attributes, null, empty, bool_true, bool_false):
+    def import_xlsx(self, ifc_file, table, attributes, null, empty, bool_true, bool_false, concat) -> None:
         df = pd.read_excel(table)
         self.import_pd(ifc_file, df, attributes, null, empty, bool_true, bool_false)
 
-    def import_ods(self, ifc_file, table, attributes, null, empty, bool_true, bool_false):
+    def import_ods(self, ifc_file, table, attributes, null, empty, bool_true, bool_false, concat) -> None:
         df = pd.read_excel(table, engine="odf")
         self.import_pd(ifc_file, df, attributes, null, empty, bool_true, bool_false)
 
-    def import_pd(self, ifc_file, df, attributes=None, null="-", empty="", bool_true="YES", bool_false="NO"):
+    def import_pd(
+        self,
+        ifc_file: ifcopenshell.file,
+        df: "pd.DataFrame",
+        attributes: Optional[list[Union[str, None]]] = None,
+        null: str = "-",
+        empty: str = "",
+        bool_true: str = "YES",
+        bool_false: str = "NO",
+        concat: str = ", ",
+    ) -> None:
         headers = df.columns.tolist()
 
         if not attributes:
@@ -434,7 +474,7 @@ class IfcCsv:
             attributes.insert(0, "")  # The GlobalId column
 
         for _, row in df.iterrows():
-            self.process_row(ifc_file, row.tolist(), headers, attributes, null, empty, bool_true, bool_false)
+            self.process_row(ifc_file, row.tolist(), headers, attributes, null, empty, bool_true, bool_false, concat)
 
     def process_row(
         self,
@@ -446,6 +486,7 @@ class IfcCsv:
         empty: str,
         bool_true: str,
         bool_false: str,
+        concat: str,
     ) -> None:
         try:
             element = ifc_file.by_guid(row[0])
@@ -464,7 +505,7 @@ class IfcCsv:
             elif value == bool_false:
                 value = False
             key = attributes[i] or headers[i]
-            ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value)
+            ifcopenshell.util.selector.set_element_value(ifc_file, element, key, value, concat=concat)
 
 
 if __name__ == "__main__":
@@ -526,5 +567,6 @@ if __name__ == "__main__":
             delimiter=args.delimiter,
             null=args.null,
             empty=args.empty,
+            concat=args.concat,
         )
         ifc_file.write(args.ifc)

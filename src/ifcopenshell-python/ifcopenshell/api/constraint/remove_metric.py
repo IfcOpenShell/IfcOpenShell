@@ -15,39 +15,45 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+import ifcopenshell.util.element
+
+
+def remove_metric(file: ifcopenshell.file, metric: ifcopenshell.entity_instance) -> None:
+    """Remove a metric benchmark
+
+    Removes a metric benchmark and all of its associations to any products
+    and objectives.
+
+    :param metric: The IfcMetric you want to remove.
+    :type metric: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
+
+    Example:
+
+    .. code:: python
+
+        objective = ifcopenshell.api.constraint.add_objective(model)
+        metric = ifcopenshell.api.constraint.add_metric(model,
+            objective=objective)
+        ifcopenshell.api.constraint.remove_metric(model,
+            metric=metric)
+    """
+    usecase = Usecase()
+    usecase.file = file
+    return usecase.execute(metric)
 
 
 class Usecase:
-    def __init__(self, file, metric=None):
-        """Remove a metric benchmark
+    file: ifcopenshell.file
 
-        Removes a metric benchmark and all of its associations to any products
-        and objectives.
-
-        :param metric: The IfcMetric you want to remove.
-        :type metric: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-
-        Example:
-
-        .. code:: python
-
-            objective = ifcopenshell.api.run("constraint.add_objective", model)
-            metric = ifcopenshell.api.run("constraint.add_metric", model,
-                objective=objective)
-            ifcopenshell.api.run("constraint.remove_metric", model,
-                metric=metric)
-        """
-        self.file = file
-        self.settings = {"metric": metric}
-
-    def execute(self):
-        if self.settings["metric"].ReferencePath:
-            reference = self.settings["metric"].ReferencePath
+    def execute(self, metric: ifcopenshell.entity_instance) -> None:
+        if metric.ReferencePath:
+            reference = metric.ReferencePath
             self.delete_reference(reference)
 
-        self.file.remove(self.settings["metric"])
+        self.file.remove(metric)
         for rel in self.file.by_type("IfcRelAssociatesConstraint"):
             if not rel.RelatingConstraint:
                 history = rel.OwnerHistory
@@ -58,7 +64,7 @@ class Usecase:
             if not resource_rel.RelatingConstraint:
                 self.file.remove(resource_rel)
 
-    def delete_reference(self, reference):
+    def delete_reference(self, reference: ifcopenshell.entity_instance) -> None:
         if reference.InnerReference:
             self.delete_reference(reference.InnerReference)
         self.file.remove(reference)

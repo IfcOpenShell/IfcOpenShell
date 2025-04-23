@@ -20,12 +20,24 @@
 %rename("buffer") stream_or_filename;
 
 %ignore stream_or_filename::stream;
+%ignore boost::hash_value;
 
 // This is only used for RGB colours, hence the size of 3
 %typemap(out) const double* {
 	$result = PyTuple_New(3);
 	for (int i = 0; i < 3; ++i) {
 		PyTuple_SetItem($result, i, PyFloat_FromDouble($1[i]));
+	}
+}
+
+%typemap(out) Eigen::Matrix4d {
+	$result = PyTuple_New(4);
+	for (int i = 0; i < 4; ++i) {
+		auto row = PyTuple_New(4);
+		for (int j = 0; j < 4; ++j) {
+			PyTuple_SetItem(row, j, PyFloat_FromDouble($1(i, j)));
+		}
+		PyTuple_SetItem($result, i, row);
 	}
 }
 
@@ -87,23 +99,264 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 }
 %}
 
+%ignore ifcopenshell::geometry::taxonomy::item::print;
+
+%typemap(out) boost::variant<boost::blank, ifcopenshell::geometry::taxonomy::point3::ptr, double> {
+	if ($1.which() == 0) {
+		Py_INCREF(Py_None);
+		return Py_None;
+	} else if ($1.which() == 1) {
+		return SWIG_NewPointerObj(SWIG_as_voidptr(new std::shared_ptr<ifcopenshell::geometry::taxonomy::point3>(boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>($1))), SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__point3_t, 0 | SWIG_POINTER_OWN);
+	} else {
+		return PyFloat_FromDouble(boost::get<double>($1));
+	}
+}
+
+
+%typemap(in) ifcopenshell::geometry::taxonomy::item::ptr {
+	// @this is really annoying, but apparently inheritance
+	// is lost in swig in the shared_ptr type hiearchy
+	using namespace ifcopenshell::geometry::taxonomy;
+	if (!$1) $1 = try_upcast<boolean_result>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__boolean_result_t);
+	if (!$1) $1 = try_upcast<bspline_curve>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__bspline_curve_t);
+	if (!$1) $1 = try_upcast<bspline_surface>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__bspline_surface_t);
+	if (!$1) $1 = try_upcast<circle>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__circle_t);
+	if (!$1) $1 = try_upcast<collection>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__collection_t);
+	if (!$1) $1 = try_upcast<colour>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__colour_t);
+	if (!$1) $1 = try_upcast<cylinder>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__cylinder_t);
+	if (!$1) $1 = try_upcast<direction3>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__direction3_t);
+	if (!$1) $1 = try_upcast<edge>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__edge_t);
+	if (!$1) $1 = try_upcast<ellipse>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__ellipse_t);
+	if (!$1) $1 = try_upcast<extrusion>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__extrusion_t);
+	if (!$1) $1 = try_upcast<face>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__face_t);
+	if (!$1) $1 = try_upcast<line>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__line_t);
+	if (!$1) $1 = try_upcast<loft>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__loft_t);
+	if (!$1) $1 = try_upcast<loop>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__loop_t);
+	if (!$1) $1 = try_upcast<matrix4>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__matrix4_t);
+	if (!$1) $1 = try_upcast<node>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__node_t);
+	if (!$1) $1 = try_upcast<offset_curve>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__offset_curve_t);
+	if (!$1) $1 = try_upcast<function_item>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__function_item_t);
+	if (!$1) $1 = try_upcast<functor_item>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__functor_item_t);
+	if (!$1) $1 = try_upcast<piecewise_function>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__piecewise_function_t);
+	if (!$1) $1 = try_upcast<gradient_function>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__gradient_function_t);
+	if (!$1) $1 = try_upcast<cant_function>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__cant_function_t);
+	if (!$1) $1 = try_upcast<offset_function>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__offset_function_t);
+	if (!$1) $1 = try_upcast<plane>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__plane_t);
+	if (!$1) $1 = try_upcast<point3>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__point3_t);
+	if (!$1) $1 = try_upcast<revolve>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__revolve_t);
+	if (!$1) $1 = try_upcast<shell>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__shell_t);
+	if (!$1) $1 = try_upcast<solid>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__solid_t);
+	if (!$1) $1 = try_upcast<sphere>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__sphere_t);
+	if (!$1) $1 = try_upcast<torus>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__torus_t);
+	if (!$1) $1 = try_upcast<style>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__style_t);
+	if (!$1) $1 = try_upcast<sweep_along_curve>($input, SWIGTYPE_p_std__shared_ptrT_ifcopenshell__geometry__taxonomy__sweep_along_curve_t);
+}
+
+%inline %{
+std::string taxonomy_item_repr(ifcopenshell::geometry::taxonomy::item::ptr i) {
+	std::ostringstream oss;
+	i->print(oss);
+	std::string result = oss.str();
+
+	// Strip new line at the end of the printed result.
+	// result is probably always ends with \n but just to be safe.
+	if (!result.empty() && result.back() == '\n') {
+		result.pop_back();
+	}
+	return result;  
+}
+%}
+
+%{
+
+
+namespace {
+    // Helper function to create a Python tuple from an Eigen matrix/vector
+    template <typename T>
+    PyObject* eigen_to_python_tuple(const Eigen::MatrixBase<T>& mat) {
+        constexpr auto rows = T::RowsAtCompileTime;
+        constexpr auto cols = T::ColsAtCompileTime;
+
+        if constexpr (rows == 1 || cols == 1) {
+            // Eigen::Vector (1D array)
+            PyObject* tuple = PyTuple_New(rows * cols);
+            for (int i = 0; i < mat.size(); ++i) {
+                PyTuple_SetItem(tuple, i, PyFloat_FromDouble(mat(i)));
+            }
+            return tuple;
+        } else {
+            // Eigen::Matrix (2D array)
+            PyObject* tuple = PyTuple_New(rows);
+            for (int i = 0; i < rows; ++i) {
+                PyObject* row = PyTuple_New(cols);
+                for (int j = 0; j < cols; ++j) {
+                    PyTuple_SetItem(row, j, PyFloat_FromDouble(mat(i, j)));
+                }
+                PyTuple_SetItem(tuple, i, row);
+            }
+            return tuple;
+        }
+    }
+}
+
+%}
+
+%shared_ptr(ifcopenshell::geometry::taxonomy::boolean_result);
+%shared_ptr(ifcopenshell::geometry::taxonomy::item);
+%shared_ptr(ifcopenshell::geometry::taxonomy::implicit_item);
+%shared_ptr(ifcopenshell::geometry::taxonomy::function_item);
+%shared_ptr(ifcopenshell::geometry::taxonomy::functor_item);
+%shared_ptr(ifcopenshell::geometry::taxonomy::piecewise_function);
+%shared_ptr(ifcopenshell::geometry::taxonomy::gradient_function);
+%shared_ptr(ifcopenshell::geometry::taxonomy::cant_function);
+%shared_ptr(ifcopenshell::geometry::taxonomy::offset_function);
+%shared_ptr(ifcopenshell::geometry::taxonomy::less_functor);
+%shared_ptr(ifcopenshell::geometry::taxonomy::eigen_base);
+%shared_ptr(ifcopenshell::geometry::taxonomy::matrix4);
+%shared_ptr(ifcopenshell::geometry::taxonomy::colour);
+%shared_ptr(ifcopenshell::geometry::taxonomy::style);
+%shared_ptr(ifcopenshell::geometry::taxonomy::geom_item);
+%shared_ptr(ifcopenshell::geometry::taxonomy::cartesian_base);
+%shared_ptr(ifcopenshell::geometry::taxonomy::point3);
+%shared_ptr(ifcopenshell::geometry::taxonomy::direction3);
+%shared_ptr(ifcopenshell::geometry::taxonomy::curve);
+%shared_ptr(ifcopenshell::geometry::taxonomy::line);
+%shared_ptr(ifcopenshell::geometry::taxonomy::circle);
+%shared_ptr(ifcopenshell::geometry::taxonomy::ellipse);
+%shared_ptr(ifcopenshell::geometry::taxonomy::bspline_curve);
+%shared_ptr(ifcopenshell::geometry::taxonomy::offset_curve);
+%shared_ptr(ifcopenshell::geometry::taxonomy::trimmed_curve);
+%shared_ptr(ifcopenshell::geometry::taxonomy::edge);
+%shared_ptr(ifcopenshell::geometry::taxonomy::collection_base);
+%shared_ptr(ifcopenshell::geometry::taxonomy::collection);
+%shared_ptr(ifcopenshell::geometry::taxonomy::loop);
+%shared_ptr(ifcopenshell::geometry::taxonomy::face);
+%shared_ptr(ifcopenshell::geometry::taxonomy::shell);
+%shared_ptr(ifcopenshell::geometry::taxonomy::solid);
+%shared_ptr(ifcopenshell::geometry::taxonomy::loft);
+%shared_ptr(ifcopenshell::geometry::taxonomy::surface);
+%shared_ptr(ifcopenshell::geometry::taxonomy::plane);
+%shared_ptr(ifcopenshell::geometry::taxonomy::cylinder);
+%shared_ptr(ifcopenshell::geometry::taxonomy::sphere);
+%shared_ptr(ifcopenshell::geometry::taxonomy::torus);
+%shared_ptr(ifcopenshell::geometry::taxonomy::bspline_surface);
+%shared_ptr(ifcopenshell::geometry::taxonomy::sweep);
+%shared_ptr(ifcopenshell::geometry::taxonomy::extrusion);
+%shared_ptr(ifcopenshell::geometry::taxonomy::revolve);
+%shared_ptr(ifcopenshell::geometry::taxonomy::sweep_along_curve);
+%shared_ptr(ifcopenshell::geometry::taxonomy::node);
+
 %include "../ifcgeom/ifc_geom_api.h"
 %include "../ifcgeom/Converter.h"
 %include "../ifcgeom/ConversionResult.h"
-%include "../ifcgeom/IteratorSettings.h"
 %include "../ifcgeom/ConversionSettings.h"
 %include "../ifcgeom/IfcGeomElement.h"
 %include "../ifcgeom/IfcGeomRepresentation.h"
 %include "../ifcgeom/Iterator.h"
 %include "../ifcgeom/GeometrySerializer.h"
 %include "../ifcgeom/taxonomy.h"
+%include "../ifcgeom/function_item_evaluator.h"
 
 %include "../serializers/SvgSerializer.h"
 %include "../serializers/HdfSerializer.h"
 %include "../serializers/WavefrontObjSerializer.h"
+%include "../serializers/ColladaSerializer.h"
 %include "../serializers/XmlSerializer.h"
 %include "../serializers/GltfSerializer.h"
+%include "../serializers/TtlWktSerializer.h"
 
+%extend ifcopenshell::geometry::taxonomy::style {
+	size_t instance_id() const {
+		if (self->instance == nullptr) {
+			return 0;
+		}
+		const IfcUtil::IfcBaseEntity* ent;
+		if ((ent = self->instance->as<IfcUtil::IfcBaseEntity>()) == nullptr) {
+			return 0;
+		}
+		return ent->id();
+	}
+}
+
+
+%define assign_component_acccess(item_name)
+
+%extend ifcopenshell::geometry::taxonomy::item_name {
+	PyObject* components_() const {
+		return eigen_to_python_tuple(self->ccomponents());
+	}
+
+	%pythoncode %{
+		components = property(components_)
+	%}
+};
+
+%enddef
+
+assign_component_acccess(point3);
+assign_component_acccess(direction3);
+assign_component_acccess(matrix4);
+assign_component_acccess(colour);
+
+%define assign_children_access(item_name, children_type)
+
+%extend ifcopenshell::geometry::taxonomy::item_name {
+	// swig does not accept auto here as the return type
+	const std::vector<ifcopenshell::geometry::taxonomy::children_type::ptr>& children_() const {
+		return $self->children;
+	}
+
+	const ifcopenshell::geometry::taxonomy::children_type::ptr& __getitem__(int index) const {
+		if (index < 0 || index >= $self->children.size()) {
+			throw std::runtime_error("Index " + std::to_string(index) + " is out of bounds for an array of length " + std::to_string($self->children.size()));
+		}
+		return $self->children[index];
+	}
+
+	%pythoncode %{
+		children = property(children_)
+		def __iter__(self):
+			return iter(self.children)
+	%}
+};
+
+%enddef
+
+assign_children_access(collection, geom_item);
+assign_children_access(loop, edge);
+assign_children_access(face, loop);
+assign_children_access(shell, face);
+assign_children_access(solid, shell);
+assign_children_access(loft, geom_item);
+assign_children_access(boolean_result, geom_item);
+
+%define assign_matrix_access(item_name)
+
+%extend ifcopenshell::geometry::taxonomy::item_name {
+	// swig does not accept auto here as the return type
+	const ifcopenshell::geometry::taxonomy::matrix4::ptr& matrix_() const {
+		return $self->matrix;
+	}
+
+	%pythoncode %{
+		matrix = property(matrix_)
+	%}
+};
+
+%enddef
+
+assign_matrix_access(line);
+assign_matrix_access(circle);
+assign_matrix_access(ellipse);
+assign_matrix_access(collection);
+assign_matrix_access(solid);
+assign_matrix_access(face);
+assign_matrix_access(plane);
+assign_matrix_access(cylinder);
+assign_matrix_access(sphere);
+assign_matrix_access(torus);
+assign_matrix_access(extrusion);
+assign_matrix_access(revolve);
 
 %extend ifcopenshell::geometry::Settings {
 	void set_(const std::string& name, bool val) {
@@ -115,7 +368,7 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 	void set_(const std::string& name, ifcopenshell::geometry::settings::IteratorOutputOptions val) {
 		return $self->set(name, val);
 	}
-	void set_(const std::string& name, ifcopenshell::geometry::settings::PiecewiseStepMethod val) {
+	void set_(const std::string& name, ifcopenshell::geometry::settings::FunctionStepMethod val) {
 		return $self->set(name, val);
 	}
 	void set_(const std::string& name, ifcopenshell::geometry::settings::OutputDimensionalityTypes val) {
@@ -133,11 +386,17 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 	void set_(const std::string& name, const std::set<std::string>& val) {
 		return $self->set(name, val);
 	}
+	void set_(const std::string& name, const std::vector<double>& val) {
+		return $self->set(name, val);
+	}
 	ifcopenshell::geometry::Settings::value_variant_t get_(const std::string& name) {
 		return $self->get(name);
 	}
 	std::vector<std::string> setting_names() {
 		return $self->setting_names();
+	}
+	std::string get_type(const std::string& name) {
+		return $self->get_type(name);
 	}
 }
 
@@ -162,6 +421,9 @@ std::pair<char const*, size_t> vector_to_buffer(const T& t) {
 	}
 	std::vector<std::string> setting_names() {
 		return $self->setting_names();
+	}
+	std::string get_type(const std::string& name) {
+		return $self->get_type(name);
 	}
 }
 
@@ -343,13 +605,16 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 			return SWIG_Py_Void();
 		}
 	}
+	PyObject* operator()(IfcGeom::Transformation* transformation) const {
+		return SWIG_NewPointerObj(SWIG_as_voidptr(transformation), SWIGTYPE_p_IfcGeom__Transformation, SWIG_POINTER_OWN);
+	}
 };
 %}
 
 // Note that these elements ARE to be owned by SWIG/Python
-%typemap(out) boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> {
+%typemap(out) boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> {
 	// See which type is set and return appropriate
-	$result = boost::apply_visitor(ShapeRTTI(), $1);
+	$result = boost::apply_visitor(ShapeRTTI(), (boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*>) $1);
 }
 
 %newobject construct_iterator_with_include_exclude;
@@ -399,6 +664,10 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		return vector_to_buffer(self->item_ids());
 	}
 
+	std::pair<const char*, size_t> edges_item_ids_buffer() const {
+		return vector_to_buffer(self->edges_item_ids());
+	}
+
 	std::pair<const char*, size_t> verts_buffer() const {
 		return vector_to_buffer(self->verts());
 	}
@@ -410,7 +679,8 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
     PyObject* colors_buffer() const {
         std::vector<double> clrs;
         clrs.reserve(self->materials().size() * 4);
-        for (auto& m : self->materials()) {
+        for (auto& mptr : self->materials()) {
+			auto& m = *mptr;
             if (m.diffuse) {
                 clrs.push_back(m.diffuse.ccomponents()[0]);
                 clrs.push_back(m.diffuse.ccomponents()[1]);
@@ -432,29 +702,46 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
     %pythoncode %{
         # Hide the getters with read-only property implementations
-        id = property(id)
-        faces = property(faces)
+        faces_tri = property(faces)
+        polyhedral_faces_without_holes = property(polyhedral_faces_without_holes)
+        polyhedral_faces_with_holes = property(polyhedral_faces_with_holes)
+        def get_faces(self):
+            if self.faces_tri: 
+                return self.faces_tri
+            elif self.polyhedral_faces_without_holes:
+                return self.polyhedral_faces_without_holes
+            else:
+                return self.polyhedral_faces_with_holes
+        faces = property(get_faces)
         edges = property(edges)
         material_ids = property(material_ids)
         materials = property(materials)
         verts = property(verts)
         normals = property(normals)
         item_ids = property(item_ids)
+        uvs = property(uvs)
 
         faces_buffer = property(faces_buffer)
         edges_buffer = property(edges_buffer)
         material_ids_buffer = property(material_ids_buffer)
         item_ids_buffer = property(item_ids_buffer)
+        edges_item_ids_buffer = property(edges_item_ids_buffer)
         verts_buffer = property(verts_buffer)
         normals_buffer = property(normals_buffer)
         colors_buffer = property(colors_buffer)
     %}
 };
 
-%extend IfcGeom::Representation::Serialization {
+%extend IfcGeom::Representation::Representation {
 	%pythoncode %{
         # Hide the getters with read-only property implementations
         id = property(id)
+	%}
+};
+
+%extend IfcGeom::Representation::Serialization {
+	%pythoncode %{
+        # Hide the getters with read-only property implementations
         brep_data = property(brep_data)
         surface_styles = property(surface_styles)
         surface_style_ids = property(surface_style_ids)
@@ -577,27 +864,25 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	}
 
 	template <typename Schema>
-	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
-		IfcParse::IfcFile* file = instance->data().file;
+	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> helper_fn_create_shape(const std::string& geometry_library, ifcopenshell::geometry::Settings& st, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0) {
+		IfcParse::IfcFile* file = instance->file_;
 			
-		ifcopenshell::geometry::Converter kernel(geometry_library, file, settings);
+		ifcopenshell::geometry::Converter kernel(geometry_library, file, st);
 			
-		if (instance->declaration().is(Schema::IfcProduct::Class())) {
+		if (typename Schema::IfcProduct* product = instance->as<typename Schema::IfcProduct>()) {
 			if (representation) {
 				if (!representation->declaration().is(Schema::IfcRepresentation::Class())) {
 					throw IfcParse::IfcException("Supplied representation not of type IfcRepresentation");
 				}
 			}
 		
-			typename Schema::IfcProduct* product = (typename Schema::IfcProduct*) instance;
-
 			if (!representation && !product->Representation()) {
 				throw IfcParse::IfcException("Representation is NULL");
 			}
 			
 			typename Schema::IfcProductRepresentation* prodrep = product->Representation();
 			typename Schema::IfcRepresentation::list::ptr reps = prodrep->Representations();
-			typename Schema::IfcRepresentation* ifc_representation = (typename Schema::IfcRepresentation*) representation;
+			typename Schema::IfcRepresentation* ifc_representation = representation ? representation->as<typename Schema::IfcRepresentation>() : nullptr;
 			
 			if (!ifc_representation) {
 				// First, try to find a representation based on the settings
@@ -606,7 +891,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					if (!rep->RepresentationIdentifier()) {
 						continue;
 					}
-					if (settings.get<ifcopenshell::geometry::settings::OutputDimensionality>().get() != ifcopenshell::geometry::settings::CURVES) {
+					if (st.get<ifcopenshell::geometry::settings::OutputDimensionality>().get() != ifcopenshell::geometry::settings::CURVES) {
 						if (*rep->RepresentationIdentifier() == "Body" || *rep->RepresentationIdentifier() == "Facetation") {
 							ifc_representation = rep;
 							break;
@@ -629,7 +914,7 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					// TODO: Remove redundancy with IfcGeomIterator.h
 					if (context->ContextType()) {
 						std::set<std::string> context_types;
-						if (settings.get<ifcopenshell::geometry::settings::OutputDimensionality>().get() != ifcopenshell::geometry::settings::CURVES) {
+						if (st.get<ifcopenshell::geometry::settings::OutputDimensionality>().get() != ifcopenshell::geometry::settings::CURVES) {
 							context_types.insert("model");
 							context_types.insert("design");
 							context_types.insert("model view");
@@ -660,19 +945,34 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 
 			IfcGeom::BRepElement* brep = kernel.create_brep_for_representation_and_product(ifc_representation, product);
 			if (!brep) {
-				throw IfcParse::IfcException("Failed to process shape");
+				std::ostringstream oss_repr, oss_product;
+				ifc_representation->toString(oss_repr);
+				product->toString(oss_product);
+				throw IfcParse::IfcException("Failed to process shape. Product: " + oss_product.str() + ", representation: " + oss_repr.str());
 			}
-			if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
+			if (st.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
 				IfcGeom::SerializedElement* serialization = new IfcGeom::SerializedElement(*brep);
 				delete brep;
 				return serialization;
-			} else if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
+			} else if (st.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
 				IfcGeom::TriangulationElement* triangulation = new IfcGeom::TriangulationElement(*brep);
 				delete brep;
 				return triangulation;
 			} else {
-				throw IfcParse::IfcException("No element to return based on provided settings");
+				return brep;
 			}
+		} else if (instance->as<typename Schema::IfcPlacement>() != nullptr || instance->as<typename Schema::IfcObjectPlacement>()) {
+			auto item = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::matrix4>(kernel.mapping()->map(instance));
+			if (item == nullptr) {
+				throw IfcParse::IfcException("Failed to convert placement");
+			}
+            if (st.get<ifcopenshell::geometry::settings::ConvertBackUnits>().get()) {
+                // we pass the settings to the Transformation object, but access the data just offloads to the
+                // generic cartesian_base<Matrix4> so there's no time to apply the settings to the translation part.
+                item = ifcopenshell::geometry::taxonomy::matrix4::ptr(item->clone_());
+                item->components().col(3).head<3>() /= kernel.settings().get<ifcopenshell::geometry::settings::LengthUnit>().get();
+            }
+			return new IfcGeom::Transformation(kernel.settings(), item);
 		} else {
 			if (!representation) {
 				if (instance->declaration().is(Schema::IfcRepresentationItem::Class()) || 
@@ -680,13 +980,20 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 					// https://github.com/IfcOpenShell/IfcOpenShell/issues/1649
 					instance->declaration().is(Schema::IfcProfileDef::Class())
 				) {
-					IfcGeom::ConversionResults shapes = kernel.convert(instance);
-
-					IfcGeom::Representation::BRep brep(settings, instance->declaration().name(), to_locale_invariant_string(instance->data().id()), shapes);
+					IfcGeom::ConversionResults shapes;
 					try {
-						if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
+						shapes = kernel.convert(instance);
+					} catch (...) {
+						std::ostringstream oss;
+						instance->toString(oss);
+						throw IfcParse::IfcException("Failed to process shape. Instance: " + oss.str());
+					}
+
+					IfcGeom::Representation::BRep brep(kernel.settings(), instance->declaration().name(), to_locale_invariant_string(instance->as<IfcUtil::IfcBaseEntity>()->id()), shapes);
+					try {
+						if (st.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::SERIALIZED) {
 							return new IfcGeom::Representation::Serialization(brep);
-						} else if (settings.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
+						} else if (st.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::TRIANGULATED) {
 							return new IfcGeom::Representation::Triangulation(brep);
 						}
 					} catch (...) {
@@ -701,8 +1008,45 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 	}
 %}
 
+%typemap(out) ifcopenshell::geometry::taxonomy::item::ptr {
+	$result = item_to_pyobject($1);
+}
+
+%{
+template <typename T>
+ifcopenshell::geometry::taxonomy::item::ptr try_upcast(PyObject* obj0, swig_type_info* info) {
+    typename T::ptr *arg1 = 0 ;
+    void *argp1 ;
+    typename T::ptr tempshared1 ;
+
+    int newmem = 0;
+    auto res1 = SWIG_ConvertPtrAndOwn(obj0, &argp1, info,  0 , &newmem);
+    if (SWIG_IsOK(res1)) {
+        if (newmem & SWIG_CAST_NEW_MEMORY) {
+            if (argp1) tempshared1 = *reinterpret_cast< typename T::ptr * >(argp1);
+            delete reinterpret_cast< typename T::ptr * >(argp1);
+            arg1 = &tempshared1;
+        } else {
+            arg1 = (argp1) ? reinterpret_cast< typename T::ptr * >(argp1) : &tempshared1;
+        }
+        return std::static_pointer_cast<ifcopenshell::geometry::taxonomy::item>(*arg1);
+    }
+    return nullptr;
+}
+%}
+
 %inline %{
-	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*> create_shape(ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0, const char* const geometry_library="opencascade") {
+	ifcopenshell::geometry::taxonomy::item::ptr map_shape(ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance) {
+	    if (instance->file_ == nullptr) {
+            throw std::runtime_error("Unable to map instance without file");
+        }
+        std::unique_ptr<ifcopenshell::geometry::abstract_mapping> mapping(ifcopenshell::geometry::impl::mapping_implementations().construct(instance->file_, settings));
+		return mapping->map(instance);
+	}
+%}
+
+%inline %{
+	static boost::variant<IfcGeom::Element*, IfcGeom::Representation::Representation*, IfcGeom::Transformation*> create_shape(ifcopenshell::geometry::Settings& settings, IfcUtil::IfcBaseClass* instance, IfcUtil::IfcBaseClass* representation = 0, const char* const geometry_library="opencascade") {
 		const std::string& schema_name = instance->declaration().schema()->name();
 
 		#ifdef HAS_SCHEMA_2x3
@@ -802,6 +1146,8 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 %ignore prefiltered_hlr;
 %ignore svgfill::svg_to_line_segments;
 %ignore svgfill::line_segments_to_polygons;
+%ignore svgfill::svg_to_polygons;
+%ignore svgfill::arrange_polygons;
 
 %template(svg_line_segments) std::vector<std::array<svgfill::point_2, 2>>;
 %template(svg_groups_of_line_segments) std::vector<std::vector<std::array<svgfill::point_2, 2>>>;
@@ -910,9 +1256,72 @@ struct ShapeRTTI : public boost::static_visitor<PyObject*>
 		if (svgfill::line_segments_to_polygons(s, eps, segments, r)) {
 			return r;
 		} else {
+			throw std::runtime_error("Failed process line segments");
+		}
+	}
+
+	std::vector<svgfill::polygon_2> svg_to_polygons(const std::string& data, const boost::optional<std::string>& class_name) {
+		std::vector<svgfill::polygon_2> r;
+		if (svgfill::svg_to_polygons(data, class_name, r)) {
+			return r;
+		} else {
 			throw std::runtime_error("Failed to read SVG");
+		}	
+	}
+
+	std::vector<svgfill::polygon_2> arrange_polygons(const std::vector<svgfill::polygon_2>& polygons) {
+		std::vector<svgfill::polygon_2> r;
+		if (svgfill::arrange_polygons(polygons, r)) {
+			return r;
+		} else {
+			throw std::runtime_error("Failed to arrange polygons");
 		}
 	}
 %}
+
+%define assign_repr(item_name)
+
+%extend item_name {
+	%pythoncode %{
+		__repr__ = taxonomy_item_repr
+	%}
+};
+
+%enddef
+
+assign_repr(ifcopenshell::geometry::taxonomy::boolean_result)
+assign_repr(ifcopenshell::geometry::taxonomy::bspline_curve)
+assign_repr(ifcopenshell::geometry::taxonomy::bspline_surface)
+assign_repr(ifcopenshell::geometry::taxonomy::circle)
+assign_repr(ifcopenshell::geometry::taxonomy::collection)
+assign_repr(ifcopenshell::geometry::taxonomy::colour)
+assign_repr(ifcopenshell::geometry::taxonomy::cylinder)
+assign_repr(ifcopenshell::geometry::taxonomy::direction3)
+assign_repr(ifcopenshell::geometry::taxonomy::edge)
+assign_repr(ifcopenshell::geometry::taxonomy::ellipse)
+assign_repr(ifcopenshell::geometry::taxonomy::extrusion)
+assign_repr(ifcopenshell::geometry::taxonomy::face)
+assign_repr(ifcopenshell::geometry::taxonomy::line)
+assign_repr(ifcopenshell::geometry::taxonomy::loft)
+assign_repr(ifcopenshell::geometry::taxonomy::loop)
+assign_repr(ifcopenshell::geometry::taxonomy::matrix4)
+assign_repr(ifcopenshell::geometry::taxonomy::node)
+assign_repr(ifcopenshell::geometry::taxonomy::offset_curve)
+assign_repr(ifcopenshell::geometry::taxonomy::function_item)
+assign_repr(ifcopenshell::geometry::taxonomy::functor_item)
+assign_repr(ifcopenshell::geometry::taxonomy::piecewise_function)
+assign_repr(ifcopenshell::geometry::taxonomy::gradient_function)
+assign_repr(ifcopenshell::geometry::taxonomy::cant_function)
+assign_repr(ifcopenshell::geometry::taxonomy::offset_function)
+assign_repr(ifcopenshell::geometry::taxonomy::plane)
+assign_repr(ifcopenshell::geometry::taxonomy::point3)
+assign_repr(ifcopenshell::geometry::taxonomy::revolve)
+assign_repr(ifcopenshell::geometry::taxonomy::shell)
+assign_repr(ifcopenshell::geometry::taxonomy::solid)
+assign_repr(ifcopenshell::geometry::taxonomy::sphere)
+assign_repr(ifcopenshell::geometry::taxonomy::torus)
+assign_repr(ifcopenshell::geometry::taxonomy::style)
+assign_repr(ifcopenshell::geometry::taxonomy::sweep_along_curve)
+
 
 #endif

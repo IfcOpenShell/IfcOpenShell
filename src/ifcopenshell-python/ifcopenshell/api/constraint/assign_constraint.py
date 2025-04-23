@@ -17,50 +17,75 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.owner
+import ifcopenshell.guid
+from typing import Union
+
+
+def assign_constraint(
+    file: ifcopenshell.file,
+    products: list[ifcopenshell.entity_instance],
+    constraint: ifcopenshell.entity_instance,
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Assigns a constraint to a list of products
+
+    This assigns a relationship between a product and a constraint, so that
+    when a product's properties and quantities do not match the requirements
+    of the constraint's metrics, results can be flagged.
+
+    It is assumed (but not explicit in the IFC documentation) that
+    constraints are inherited from the type. This way, it is not necessary
+    to create lots of constraint assignments.
+
+    :param products: The list of products the constraint applies to. This is anything
+        which can have properties or quantities.
+    :param constraint: The IfcObjective constraint
+    :return: The new or updated IfcRelAssociatesConstraint relationship
+        or `None` if `products` was an empty list.
+    """
+    usecase = Usecase()
+    usecase.file = file
+    return usecase.execute(products, constraint)
 
 
 class Usecase:
-    def __init__(self, file, product=None, constraint=None):
-        """Assigns a constraint to a product
+    file: ifcopenshell.file
 
-        This assigns a relationship between a product and a constraint, so that
-        when a product's properties and quantities do not match the requirements
-        of the constraint's metrics, results can be flagged.
+    def execute(self, products: list[ifcopenshell.entity_instance], constraint: ifcopenshell.entity_instance):
+        if not products:
+            return
+        products_set = set(products)
 
-        It is assumed (but not explicit in the IFC documentation) that
-        constraints are inherited from the type. This way, it is not necessary
-        to create lots of constraint assignments.
+        rels = self.get_constraint_rels(constraint)
+        related_objects = set()
+        for rel in rels:
+            related_objects.update(rel.RelatedObjects)
 
-        :param product: The product the constraint applies to. This is anything
-            which can have properties or quantities.
-        :type product: ifcopenshell.entity_instance.entity_instance
-        :param constraint: The IfcObjective constraint
-        :type constraint: ifcopenshell.entity_instance.entity_instance
-        :return: The new or updated IfcRelAssociatesConstraint relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
-        """
-        self.file = file
-        self.settings = {
-            "product": product,
-            "constraint": constraint,
-        }
+        products_to_assign = products_set - related_objects
+        if not products_to_assign:
+            return rels[0]
 
-    def execute(self):
-        rel = self.get_constraint_rel()
-        related_objects = set(rel.RelatedObjects) if rel.RelatedObjects else set()
-        related_objects.add(self.settings["product"])
-        rel.RelatedObjects = list(related_objects)
-        return rel
+        rel = next(iter(rels), None)
 
-    def get_constraint_rel(self):
-        for rel in self.file.by_type("IfcRelAssociatesConstraint"):
-            if rel.RelatingConstraint == self.settings["constraint"]:
-                return rel
+        if rel:
+            related_objects = set(rel.RelatedObjects) | products_to_assign
+            rel.RelatedObjects = list(related_objects)
+            ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
+            return rel
+
         return self.file.create_entity(
             "IfcRelAssociatesConstraint",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
-                # TODO: owner history
-                "RelatingConstraint": self.settings["constraint"],
+                "OwnerHistory": ifcopenshell.api.owner.create_owner_history(self.file),
+                "RelatingConstraint": constraint,
+                "RelatedObjects": list(products_to_assign),
             }
         )
+
+    def get_constraint_rels(self, constraint: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+        rels = []
+        for rel in self.file.get_inverse(constraint):
+            if rel.is_a("IfcRelAssociatesConstraint"):
+                rels.append(rel)
+        return rels

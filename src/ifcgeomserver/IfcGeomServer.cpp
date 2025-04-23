@@ -353,9 +353,9 @@ protected:
 			// We remove the blanks here from the material array. I.e. materials without a diffuse color
 			std::vector<boost::optional<std::array<float, 4> > > diffuse_color_array;
 			for (auto it = geom->geometry().materials().begin(); it != geom->geometry().materials().end(); ++it) {
-				const auto& mat = *it;
-				if (mat.diffuse) {
-					const auto& color = mat.diffuse.ccomponents();
+				const auto& mat = **it;
+				if (mat.get_color()) {
+                    const auto& color = mat.get_color().ccomponents();
 					diffuse_color_array.push_back(std::array<float, 4>{
 						static_cast<float>(color(0)),
 						static_cast<float>(color(1)),

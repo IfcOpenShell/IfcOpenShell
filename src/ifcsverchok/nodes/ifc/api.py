@@ -19,16 +19,19 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import sverchok.core.sockets
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from bpy.props import StringProperty, EnumProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
 import logging
-logger = logging.getLogger('sverchok.ifc')
+from typing import Union, Any
+
+logger = logging.getLogger("sverchok.ifc")
 
 
-def update_usecase(self, context):
-    print("API - running update usecase!")
+def update_usecase(self: "SvIfcApi", context: bpy.types.Context) -> None:
     module_usecase = self.get_module_usecase()
     if module_usecase:
         self.generate_node(*module_usecase)
@@ -36,8 +39,9 @@ def update_usecase(self, context):
 
 class SvIfcTooltip(bpy.types.Operator):
     bl_idname = "node.sv_ifc_tooltip"
-    bl_label = "IFC Info"
+    bl_label = ""
     tooltip: bpy.props.StringProperty()
+    bl_options = {"INTERNAL"}
 
     @classmethod
     def description(cls, context, properties):
@@ -54,26 +58,37 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
     usecase: StringProperty(name="Usecase", update=update_usecase)
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "usecase").prop_name = "usecase"
-        self.outputs.new("SvVerticesSocket", "file")
+        helper.create_socket(
+            self.inputs,
+            "usecase",
+            description="Usecase to run.",
+            data_type="list[list[str]]",
+            prop_name="usecase",
+        )
+        helper.create_socket(
+            self.outputs,
+            "file",
+            description="Use case output.",
+            data_type="list[Any]",
+            socket_type=sverchok.core.sockets.SvVerticesSocket,
+        )
 
     def draw_buttons(self, context, layout):
         op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False)
         op.tooltip = self.tooltip
 
     def process(self):
-        print("process")
         module_usecase = self.get_module_usecase()
         if module_usecase:
             self.sv_input_names = [i.name for i in self.inputs]
             super().process()
 
-    def get_module_usecase(self):
+    def get_module_usecase(self) -> Union[list[str], None]:
         usecase = self.inputs["usecase"].sv_get()[0][0]
         if usecase:
             return usecase.split(".")
 
-    def generate_node(self, module, usecase):
+    def generate_node(self, module: str, usecase: str) -> None:
         try:
             node_data = ifcopenshell.api.extract_docs(module, usecase)
         except:
@@ -92,7 +107,7 @@ class SvIfcApi(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCor
                 self.tooltip = f"{name}: {data['description']}\n"
         self.tooltip = self.tooltip.strip()
 
-    def process_ifc(self, usecase, *setting_values):
+    def process_ifc(self, usecase: Union[str, None], *setting_values: Any) -> None:
         if usecase:
             settings = dict(zip(self.sv_input_names[1:], setting_values))
             settings = {k: v for k, v in settings.items() if v != ""}

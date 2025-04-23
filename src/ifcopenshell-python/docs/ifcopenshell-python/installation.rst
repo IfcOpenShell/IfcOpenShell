@@ -2,63 +2,46 @@ Installation
 ============
 
 There are different methods of installation, depending on your situation. If
-you aren't sure which to choose, if you're a programmer, go for the **Pre-built
-packages**. If you aren't a programmer, go for the **BlenderBIM Add-on**.
+you aren't sure which to choose, if you're a programmer, go for **PyPI** if you
+use Pip, otherwise go for the **ZIP packages**. If you aren't a programmer, go
+for **Bonsai**.
 
-1. **Pre-built packages** is recommended for users wanting to use the latest IfcOpenShell builds.
-2. **PyPI** is recommended for developers using Pip.
-3. **Conda** is recommended for developers using Anaconda.
-4. **Docker** is recommended for developers using Docker.
-5. **AWS Lambda** is recommended for developers using AWS Lambda functions.
-6. **Google Colab** is recommended for developers using Google Colab.
-7. **Web Assembly** is recommended for developers experimenting with IfcOpenShell on the web.
-8. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a graphical interface.
-9. **From source with precompiled binaries** is recommended for developers actively working with the Python code.
-10. **Compiling from source** is recommended for developers actively working with the C++ core.
+1. :ref:`ifcopenshell-python/installation:pypi` is recommended for developers using Pip.
+2. :ref:`ifcopenshell-python/installation:zip packages` is recommended for users doing a manual installation.
+3. :ref:`ifcopenshell-python/installation:conda` is recommended for developers using Anaconda.
+4. :ref:`ifcopenshell-python/installation:docker` is recommended for developers using Docker.
+5. :ref:`ifcopenshell-python/installation:aws lambda` is recommended for developers using AWS Lambda functions.
+6. :ref:`ifcopenshell-python/installation:google colab` is recommended for developers using Google Colab.
+7. :ref:`ifcopenshell-python/installation:web assembly` is recommended for developers experimenting with IfcOpenShell on the web.
+8. :ref:`ifcopenshell-python/installation:using bonsai` is recommended for non-developers wanting a graphical interface.
+9. :ref:`ifcopenshell-python/installation:From source with precompiled binaries` is recommended for developers actively working with the Python code.
+10. :ref:`ifcopenshell-python/installation:Compiling from source` is recommended for developers actively working with the C++ core.
+11. :ref:`ifcopenshell-python/installation:Linux distribution packages` are available by the community.
 
-Pre-built packages
-------------------
+PyPI
+----
 
-Pre-built packages are prepared sporadically depending on whether there are
-changes in the IfcOpenShell C++ core. This will give you the latest available
-C++ bindings, but may potentially contain outdated pure Python modules, such as
-the API.
+.. code-block::
+
+    pip install ifcopenshell
+
+ZIP packages
+------------
 
 1. Choose which version to download based on your operating system, Python
    version, and computer architecture.
 
-   +-------------+----------------+----------------+----------------+-------------------+---------------------+
-   |             | Linux 64bit    | Windows 32bit  | Windows 64bit  | MacOS Intel 64bit | MacOS Silicon 64bit |
-   +=============+================+================+================+===================+=====================+
-   | Python 3.9  | py39-linux64_  | py39-win32_    | py39-win64_    | py39-macos64_     | py39-macosm164_     |
-   +-------------+----------------+----------------+----------------+-------------------+---------------------+
-   | Python 3.10 | py310-linux64_ | py310-win32_   | py310-win64_   | py310-macos64_    | py310-macosm164_    |
-   +-------------+----------------+----------------+----------------+-------------------+---------------------+
-   | Python 3.11 | py311-linux64_ | py311-win32_   | py311-win64_   | py311-macos64_    | py311-macosm164_    |
-   +-------------+----------------+----------------+----------------+-------------------+---------------------+
-   | Python 3.12 | py312-linux64_ | py312-win32_   | py312-win64_   | py312-macos64_    | py312-macosm164_    |
-   +-------------+----------------+----------------+----------------+-------------------+---------------------+
-
-.. _py39-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-f7c03db-linux64.zip
-.. _py310-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-f7c03db-linux64.zip
-.. _py311-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-f7c03db-linux64.zip
-.. _py312-linux64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-f7c03db-linux64.zip
-.. _py39-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-f7c03db-win32.zip
-.. _py310-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-f7c03db-win32.zip
-.. _py311-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-f7c03db-win32.zip
-.. _py312-win32: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-f7c03db-win32.zip
-.. _py39-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-f7c03db-win64.zip
-.. _py310-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-f7c03db-win64.zip
-.. _py311-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-f7c03db-win64.zip
-.. _py312-win64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-f7c03db-win64.zip
-.. _py39-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-f7c03db-macos64.zip
-.. _py310-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-f7c03db-macos64.zip
-.. _py311-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-f7c03db-macos64.zip
-.. _py312-macos64: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-f7c03db-macos64.zip
-.. _py39-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-39-v0.7.0-f7c03db-macosm164.zip
-.. _py310-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-310-v0.7.0-f7c03db-macosm164.zip
-.. _py311-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-311-v0.7.0-f7c03db-macosm164.zip
-.. _py312-macosm164: https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-312-v0.7.0-f7c03db-macosm164.zip
+   +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
+   |             | Linux 64bit                     | Windows 64bit                 | MacOS Intel 64bit               | MacOS Silicon 64bit               |
+   +=============+=================================+===============================+=================================+===================================+
+   | Python 3.9  | :ios_python_url:`py39-linux64`  | :ios_python_url:`py39-win64`  | :ios_python_url:`py39-macos64`  | :ios_python_url:`py39-macosm164`  |
+   +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
+   | Python 3.10 | :ios_python_url:`py310-linux64` | :ios_python_url:`py310-win64` | :ios_python_url:`py310-macos64` | :ios_python_url:`py310-macosm164` |
+   +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
+   | Python 3.11 | :ios_python_url:`py311-linux64` | :ios_python_url:`py311-win64` | :ios_python_url:`py311-macos64` | :ios_python_url:`py311-macosm164` |
+   +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
+   | Python 3.12 | :ios_python_url:`py312-linux64` | :ios_python_url:`py312-win64` | :ios_python_url:`py312-macos64` | :ios_python_url:`py312-macosm164` |
+   +-------------+---------------------------------+-------------------------------+---------------------------------+-----------------------------------+
 
 2. Unzip the downloaded file and copy the ``ifcopenshell`` directory into your
    Python path. If you're not sure where your Python path is, run the following
@@ -80,20 +63,6 @@ the API.
       import ifcopenshell
       print(ifcopenshell.version)
       model = ifcopenshell.file()
-
-PyPI
-----
-
-PyPI releases are automatically performed once a month and contain the latest
-Python code that point in time.
-
-Releases on PyPI may potentially ship slightly outdated precompiled binaries of
-the C++ core. This is because the binaries typically go through a period of
-manual testing prior in case of high-risk changes.
-
-.. code-block::
-
-    pip install ifcopenshell
 
 Conda
 -----
@@ -131,9 +100,9 @@ Conda
 Docker
 ------
 
-.. code-block::
+.. code-block:: bash
 
-    $ docker run -it aecgeeks/ifcopenshell python3 -c 'import ifcopenshell; print(ifcopenshell.version)'
+    docker run -it aecgeeks/ifcopenshell python3 -c 'import ifcopenshell; print(ifcopenshell.version)'
 
 .. note::
 
@@ -159,28 +128,28 @@ Gateways, etc.
    <https://github.com/ifcopenshell/ifcopenshell>`_.
 
 2. Replace the sample Lambda function code in the `example_handler
-   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/example_handler/__init__.py>`__
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/aws/lambda/example_handler/__init__.py>`__
    directory with your own code.
 
 3. Update the import path in the Dockerfile's `CMD instruction
-   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/Dockerfile#L40>`__
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/aws/lambda/Dockerfile#L40>`__
    to match your Lambda function's handler function.
 
 4. Edit the `requirements.txt
-   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.7.0/aws/lambda/requirements.txt>`__
+   <https://github.com/IfcOpenShell/IfcOpenShell/blob/v0.8.0/aws/lambda/requirements.txt>`__
    file and add any additional dependencies required by your Lambda function.
 
 5. Build the Docker image:
 
-   .. code-block::
+   .. code-block:: bash
 
-      $ docker build -t lambda-ifcopenshell .
+      docker build -t lambda-ifcopenshell .
 
 6. Run the Docker container:
 
-   .. code-block::
+   .. code-block:: bash
 
-      $ docker run lambda-ifcopenshell
+      docker run lambda-ifcopenshell
 
 7. Test lambda locally by following the `AWS guide on testing Lambda container
    images locally
@@ -213,30 +182,29 @@ you full access to the entire IfcOpenShell API.
 `Click here <https://github.com/IfcOpenShell/wasm-preview>`__ to learn how to
 use WASM.
 
-Using the BlenderBIM Add-on
----------------------------
+Using Bonsai
+------------
 
-The BlenderBIM Add-on is a Blender based graphical interface to IfcOpenShell.
-Other than providing a graphical IFC authoring platform, it also comes with
-IfcOpenShell, its utilities, and a Python shell built-in. This means you don't
-need to install Python first, and you also can compare your IfcOpenShell
-scripting to what you see with a visual model viewer, or use a graphical
-interface to access the IfcOpenShell utilities.
+Bonsai is a Blender based graphical interface to IfcOpenShell.  Other than
+providing a graphical IFC authoring platform, it also comes with IfcOpenShell,
+its utilities, and a Python shell built-in. This means you don't need to
+install Python first, and you also can compare your IfcOpenShell scripting to
+what you see with a visual model viewer, or use a graphical interface to access
+the IfcOpenShell utilities.
 
-The BlenderBIM Add-on is available either as a stable build or a daily build.
+Bonsai is available either as a stable build or a daily build.
 
-1. Install the BlenderBIM Add-on by following the `BlenderBIM Add-on
-   installation documentation
-   <https://blenderbim.org/docs/users/installation.html>`_.
+1. Install Bonsai by following the `Bonsai installation documentation
+   <https://docs.bonsaibim.org/guides/installation.html>`_.
 
 2. Launch Blender. On the top left of the Viewport panel, click the **Editor
    Type** icon to change the viewport into a **Python Console**.
 
-   .. image:: blenderbim-python-console-1.png
+   .. image:: bonsai-python-console-1.png
 
 3. Make sure you can import IfcOpenShell successfully with the following script.
 
-   .. image:: blenderbim-python-console-2.png
+   .. image:: bonsai-python-console-2.png
 
 .. tip::
 
@@ -247,13 +215,13 @@ The BlenderBIM Add-on is available either as a stable build or a daily build.
 Blender also comes with a text editor so you can write longer scripts.  Instead
 of choosing the **Python Console**, choose the **Text Editor**.
 
-.. image:: blenderbim-text-editor-1.png
+.. image:: bonsai-text-editor-1.png
 
 You can now create a new text file for your script by clicking ``Text > New``,
 and run your script using the **Text > Run Script** menu or by clicking on the
 **Play Icon**.
 
-.. image:: blenderbim-text-editor-2.png
+.. image:: bonsai-text-editor-2.png
 
 .. seealso::
 
@@ -261,7 +229,7 @@ and run your script using the **Text > Run Script** menu or by clicking on the
    Blender.  This can help when learning how to write scripts as you can double
    check the results of your scripts with what you see in the graphical
    interface. `Read more
-   <https://blenderbim.org/docs/users/exploring_an_ifc_model.html>`_.
+   <https://docs.bonsaibim.org/guides/exploring_an_ifc_model.html>`_.
 
 From source with precompiled binaries
 -------------------------------------
@@ -271,7 +239,8 @@ From source with precompiled binaries
 
 2. Place ``src/ifcopenshell-python/ifcopenshell/`` in your Python path.
 
-3. Download the relevant pre-built package, and copy over the two files with
+3. Download the relevant pre-built package from the `IfcOpenShell Build Service
+   <https://builds.ifcopenshell.org>`_, and copy over the two files with
    ``ifcopenshell_wrapper`` in their filename to
    ``src/ifcopenshell-python/ifcopenshell/``.
 
@@ -282,11 +251,20 @@ Advanced developers may want to compile IfcOpenShell. Refer to the
 :doc:`IfcOpenShell installation guide <../ifcopenshell/installation>` for
 instructions.
 
+Linux distribution packages
+---------------------------
+
+- `Arch Linux <https://aur.archlinux.org/packages/ifcopenshell>`_
+- `Arch Linux (Git) <https://aur.archlinux.org/packages/ifcopenshell-git>`_
+- `Fedora <https://copr.fedorainfracloud.org/coprs/bpostle/IfcOpenShell/>`_
+- `Ubuntu (outdated) <https://launchpad.net/~freecad-community/+archive/ubuntu/ppa>`_
+
 Legacy versions
 ---------------
 
 It is not recommended to use older versions of IfcOpenShell, but for historic
 reasons you may find them here:
 
+- `Builds for IfcOpenShell v0.7.0 <https://builds.ifcopenshell.org/>`_
 - `Builds for IfcOpenShell v0.6.0 <https://github.com/IfcOpenBot/IfcOpenShell/commit/721fe4729aa5302efe1602971aae2558934ad098#comments>`_
 - `Builds for IfcOpenShell v0.5.0 <https://github.com/IfcOpenShell/IfcOpenShell/releases/tag/v0.5.0-preview2>`_

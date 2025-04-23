@@ -55,9 +55,7 @@ class COMMANDFILE:
             conn["relatedElements"] = []
         for el in elements:
             for rel in el["connections"]:
-                conn = [
-                    c for c in connections if c["referenceName"] == rel["relatedConnection"]
-                ][0]
+                conn = [c for c in connections if c["referenceName"] == rel["relatedConnection"]][0]
                 conn["relatedElements"].append(rel)
         # End <--
 
@@ -65,27 +63,17 @@ class COMMANDFILE:
         profiles = data["db"]["profiles"]
 
         edgeGroupNames = tuple(
-            [
-                self.getGroupName(el["referenceName"])
-                for el in elements
-                if el["geometryType"] == "line"
-            ]
+            [self.getGroupName(el["referenceName"]) for el in elements if el["geometryType"] == "line"]
         )
         faceGroupNames = tuple(
-            [
-                self.getGroupName(el["referenceName"])
-                for el in elements
-                if el["geometryType"] == "surface"
-            ]
+            [self.getGroupName(el["referenceName"]) for el in elements if el["geometryType"] == "surface"]
         )
 
         rigidLinkGroupNames = []
         for conn in connections:
             rigidLinkGroupNames.extend(
                 [
-                    self.getGroupName(rel["relatingElement"])
-                    + "_1DR_"
-                    + self.getGroupName(conn["referenceName"])
+                    self.getGroupName(rel["relatingElement"]) + "_1DR_" + self.getGroupName(conn["referenceName"])
                     for rel in conn["relatedElements"]
                     if rel["eccentricity"]
                 ]
@@ -192,20 +180,16 @@ model = AFFE_MODELE(
             else:
                 if "shearModulus" in material["mechProps"]:
                     poissonRatio = (
-                        material["mechProps"]["youngModulus"]
-                        / 2.0
-                        / material["mechProps"]["shearModulus"]
+                        material["mechProps"]["youngModulus"] / 2.0 / material["mechProps"]["shearModulus"]
                     ) - 1
                 else:
                     poissonRatio = 0.0
 
             context = {
                 "matNameID": "mat" + "_%s" % i,
-                "youngModulus": float(material["mechProps"]["youngModulus"])
-                * ScaleFactor ** 2,
+                "youngModulus": float(material["mechProps"]["youngModulus"]) * ScaleFactor**2,
                 "poissonRatio": float(poissonRatio),
-                "massDensity": float(material["commonProps"]["massDensity"])
-                * ScaleFactor ** 3,
+                "massDensity": float(material["commonProps"]["massDensity"]) * ScaleFactor**3,
             }
 
             f.write(template.format(**context))
@@ -225,9 +209,7 @@ material = AFFE_MATERIAU(
         ),"""
 
             context = {
-                "groupNames": tuple(
-                    [self.getGroupName(rel) for rel in material["relatedElements"]]
-                ),
+                "groupNames": tuple([self.getGroupName(rel) for rel in material["relatedElements"]]),
                 "matNameID": "mat" + "_%s" % i,
             }
 
@@ -260,10 +242,7 @@ element = AFFE_CARA_ELEM(
         )
 
         for profile in profiles:
-            if (
-                profile["profileShape"] == "rectangular"
-                and profile["profileType"] == "AREA"
-            ):
+            if profile["profileShape"] == "rectangular" and profile["profileType"] == "AREA":
                 template = """
         _F(
             GROUP_MA = {groupNames},
@@ -273,9 +252,7 @@ element = AFFE_CARA_ELEM(
         ),"""
 
                 context = {
-                    "groupNames": tuple(
-                        [self.getGroupName(rel) for rel in profile["relatedElements"]]
-                    ),
+                    "groupNames": tuple([self.getGroupName(rel) for rel in profile["relatedElements"]]),
                     "profileDimensions": (
                         profile["xDim"] / ScaleFactor,
                         profile["yDim"] / ScaleFactor,
@@ -284,10 +261,7 @@ element = AFFE_CARA_ELEM(
 
                 f.write(template.format(**context))
 
-            elif (
-                profile["profileShape"] == "iSymmetrical"
-                and profile["profileType"] == "AREA"
-            ):
+            elif profile["profileShape"] == "iSymmetrical" and profile["profileType"] == "AREA":
                 template = """
         _F(
             GROUP_MA = {groupNames},
@@ -297,14 +271,12 @@ element = AFFE_CARA_ELEM(
         ),"""
 
                 context = {
-                    "groupNames": tuple(
-                        [self.getGroupName(rel) for rel in profile["relatedElements"]]
-                    ),
+                    "groupNames": tuple([self.getGroupName(rel) for rel in profile["relatedElements"]]),
                     "profileProperties": (
-                        profile["mechProps"]["crossSectionArea"] / ScaleFactor ** 2,
-                        profile["mechProps"]["momentOfInertiaY"] / ScaleFactor ** 4,
-                        profile["mechProps"]["momentOfInertiaZ"] / ScaleFactor ** 4,
-                        profile["mechProps"]["torsionalConstantX"] / ScaleFactor ** 4,
+                        profile["mechProps"]["crossSectionArea"] / ScaleFactor**2,
+                        profile["mechProps"]["momentOfInertiaY"] / ScaleFactor**4,
+                        profile["mechProps"]["momentOfInertiaZ"] / ScaleFactor**4,
+                        profile["mechProps"]["torsionalConstantX"] / ScaleFactor**4,
                     ),
                 }
 
@@ -572,9 +544,7 @@ if __name__ == "__main__":
     files = fileNames
 
     for fileName in files:
-        BASE_PATH = Path(
-            "/home/jesusbill/Dev-Projects/github.com/IfcOpenShell/analysis-models/models/"
-        )
+        BASE_PATH = Path("/home/jesusbill/Dev-Projects/github.com/IfcOpenShell/analysis-models/models/")
         DATAFILENAME = BASE_PATH / fileName / f"{fileName}.json"
         ASTERFILENAME = BASE_PATH / fileName / f"{fileName}.comm"
         COMMANDFILE(DATAFILENAME, ASTERFILENAME)

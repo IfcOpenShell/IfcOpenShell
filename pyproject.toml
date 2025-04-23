@@ -1,2 +1,38 @@
 [tool.black]
 line-length = 120
+include = '''
+    src/(
+        bcf
+        |bcfserver
+        |bonsai
+        |bsdd
+        |foundationserver
+        |ifc2ca
+        |ifc4d
+        |ifc5d
+        |ifcbimtester
+        |ifcblender
+        |ifccityjson
+        |ifcclash
+        |ifccsv
+        |ifcdiff
+        |ifcfm
+        |ifcpatch
+        |ifctester
+        |ifcopenshell-python
+        |ifcsverchok
+        |opencdeserver
+    )/.*.py$
+'''
+extend-exclude = '''
+    src/ifcopenshell-python/ifcopenshell/express/*
+    |src/ifcopenshell-python/ifcopenshell/mvd/*
+    |src/ifcopenshell-python/ifcopenshell/simple_spf/*
+    |src/ifc2ca/templates/*
+    |src/ifcconvert/cityjson/*
+'''
+
+[tool.pyright]
+reportInvalidTypeForm = false
+disableBytesTypePromotions = true
+reportUnnecessaryTypeIgnoreComment = true

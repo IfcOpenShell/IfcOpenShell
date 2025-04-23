@@ -17,59 +17,51 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, system=None):
-        """Removes a distribution system
+def remove_system(file: ifcopenshell.file, system: ifcopenshell.entity_instance) -> None:
+    """Removes a distribution system
 
-        All the distribution elements within the system are retained.
+    All the distribution elements within the system are retained.
 
-        :param system: The IfcSystem to remove.
-        :type system: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param system: The IfcSystem to remove.
+    :return: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # A completely empty distribution system
-            system = ifcopenshell.api.run("system.add_system", model)
+        # A completely empty distribution system
+        system = ifcopenshell.api.system.add_system(model)
 
-            # Delete it.
-            ifcopenshell.api.run("system.remove_system", model, system=system)
-        """
-        self.file = file
-        self.settings = {"system": system}
-
-    def execute(self):
-        for inverse_id in [i.id() for i in self.file.get_inverse(self.settings["system"])]:
-            try:
-                inverse = self.file.by_id(inverse_id)
-            except:
-                continue
-            if inverse.is_a("IfcRelDefinesByProperties"):
-                ifcopenshell.api.run(
-                    "pset.remove_pset",
-                    self.file,
-                    product=self.settings["system"],
-                    pset=inverse.RelatingPropertyDefinition,
-                )
-            elif inverse.is_a("IfcRelAssignsToGroup"):
-                if inverse.RelatingGroup == self.settings["system"]:
-                    history = inverse.OwnerHistory
-                    self.file.remove(inverse)
-                    if history:
-                        ifcopenshell.util.element.remove_deep2(self.file, history)
-                elif len(inverse.RelatedObjects) == 1:
-                    history = inverse.OwnerHistory
-                    self.file.remove(inverse)
-                    if history:
-                        ifcopenshell.util.element.remove_deep2(self.file, history)
-        history = self.settings["system"].OwnerHistory
-        self.file.remove(self.settings["system"])
-        if history:
-            ifcopenshell.util.element.remove_deep2(self.file, history)
+        # Delete it.
+        ifcopenshell.api.system.remove_system(model, system=system)
+    """
+    for inverse_id in [i.id() for i in file.get_inverse(system)]:
+        try:
+            inverse = file.by_id(inverse_id)
+        except:
+            continue
+        if inverse.is_a("IfcRelDefinesByProperties"):
+            ifcopenshell.api.pset.remove_pset(
+                file,
+                product=system,
+                pset=inverse.RelatingPropertyDefinition,
+            )
+        elif inverse.is_a("IfcRelAssignsToGroup"):
+            if inverse.RelatingGroup == system:
+                history = inverse.OwnerHistory
+                file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(file, history)
+            elif len(inverse.RelatedObjects) == 1:
+                history = inverse.OwnerHistory
+                file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(file, history)
+    history = system.OwnerHistory
+    file.remove(system)
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

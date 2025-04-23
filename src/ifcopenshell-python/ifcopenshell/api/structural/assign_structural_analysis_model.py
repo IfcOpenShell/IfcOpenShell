@@ -17,40 +17,22 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.group
+import ifcopenshell.api.owner
+import ifcopenshell.guid
+from typing import Union
 
 
-class Usecase:
-    def __init__(self, file, product=None, structural_analysis_model=None):
-        """Assigns a load or structural member to an analysis model
+def assign_structural_analysis_model(
+    file: ifcopenshell.file,
+    products: list[ifcopenshell.entity_instance],
+    structural_analysis_model: ifcopenshell.entity_instance,
+) -> Union[ifcopenshell.entity_instance, None]:
+    """Assigns a load or structural member to an analysis model
 
-        :param product: The structural element that is part of the analysis.
-        :type product: ifcopenshell.entity_instance.entity_instance
-        :param structural_analysis_model: The IfcStructuralAnalysisModel that
-            the structural element is related to.
-        :type structural_analysis_model: ifcopenshell.entity_instance.entity_instance
-        :return: The IfcRelAssignsToGroup relationship
-        :rtype: ifcopenshell.entity_instance.entity_instance
-        """
-        self.file = file
-        self.settings = {
-            "product": product,
-            "structural_analysis_model": structural_analysis_model,
-        }
-
-    def execute(self):
-        if not self.settings["structural_analysis_model"].IsGroupedBy:
-            return self.file.create_entity(
-                "IfcRelAssignsToGroup",
-                **{
-                    "GlobalId": ifcopenshell.guid.new(),
-                    "OwnerHistory": ifcopenshell.api.run("owner.create_owner_history", self.file),
-                    "RelatedObjects": [self.settings["product"]],
-                    "RelatingGroup": self.settings["structural_analysis_model"],
-                }
-            )
-        rel = self.settings["structural_analysis_model"].IsGroupedBy[0]
-        related_objects = set(rel.RelatedObjects) or set()
-        related_objects.add(self.settings["product"])
-        rel.RelatedObjects = list(related_objects)
-        ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+    :param products: The structural elements that is part of the analysis.
+    :param structural_analysis_model: The IfcStructuralAnalysisModel that
+        the structural element is related to.
+    :return: The IfcRelAssignsToGroup relationship
+    """
+    return ifcopenshell.api.group.assign_group(file, products, structural_analysis_model)

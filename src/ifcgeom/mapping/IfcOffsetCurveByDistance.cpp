@@ -19,6 +19,7 @@
 
 #include "mapping.h"
 #include "../profile_helper.h"
+#include "../function_item_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
@@ -38,11 +39,17 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
     auto first_offset_value = *(offset_values->begin());
 
     auto basis_curve = inst->BasisCurve();
-    //auto pw_curve = ifcopenshell::geometry::piecewise_from_item(map(basis_curve));
-    auto pw_curve = taxonomy::dcast<taxonomy::piecewise_function>(map(basis_curve));
-    double basis_curve_length = pw_curve->length();
+    auto curve = taxonomy::dcast<taxonomy::function_item>(map(basis_curve));
+    if (!curve) {
+        // Only implement on alignment curves
+        Logger::Warning("IfcOffsetCurveByDistances is only implemented for BasisCurves curves based on taxonomy::function_item", inst);
+        return nullptr;
+    }
 
-    auto offsets = taxonomy::make<taxonomy::piecewise_function>(&settings_);
+    double start = curve->start();
+    double basis_curve_length = curve->length();
+
+    taxonomy::piecewise_function::spans_t offset_spans;
 
 #if defined SCHEMA_HAS_IfcDistanceExpression
    double first_distance = first_offset_value->DistanceAlong();
@@ -63,12 +70,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
         py *= length_unit_;
         pz *= length_unit_;
         
-        auto fn = [py, pz](double u) -> Eigen::Matrix4d { 
+        auto fn = [py, pz](double /*u*/) -> Eigen::Matrix4d { 
            Eigen::Matrix4d m = Eigen::Matrix4d::Identity(); 
            m.col(3)(1) = py; 
            m.col(3)(2) = pz; 
            return m; };
-        offsets->spans.push_back({first_distance, fn});
+        offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(first_distance, fn));
 	}
 
     auto iter = offset_values->begin();
@@ -112,7 +119,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
             m.col(3)(2) = (l == 0.0 ? zp : (zp + (zn - zp) * u / l));
             return m;
         };
-		  offsets->spans.push_back({l, fn});
+        offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
     }
 
 	 // at this point, next == end and prev == end-1
@@ -134,28 +141,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
          py *= length_unit_;
          pz *= length_unit_;
          double l = basis_curve_length - last_distance;
-         auto fn = [py, pz](double u) -> Eigen::Matrix4d { 
+         auto fn = [py, pz](double /*u*/) -> Eigen::Matrix4d { 
             Eigen::Matrix4d m = Eigen::Matrix4d::Identity(); 
             m.col(3)(1) = py; 
             m.col(3)(2) = pz; 
             return m; };
 
-         offsets->spans.push_back({l, fn});
+         offset_spans.emplace_back(taxonomy::make<taxonomy::functor_item>(l, fn));
     }
 
-	auto composition = [pw_curve, offsets](double u) -> Eigen::Matrix4d {
-      auto p = pw_curve->evaluate(u);
-		auto offset = offsets->evaluate(u);
-      Eigen::Matrix4d m = p * offset;
-      return m;
-	};
+   auto offsets = taxonomy::make<taxonomy::piecewise_function>(start,offset_spans);
 
-   // current implementation assumes that composition is equal to the full length of basis curve
-   // this may change depending on decisions in the bSI-IF
-	auto pwf = taxonomy::make<taxonomy::piecewise_function>(&settings_);
-	pwf->spans.emplace_back( basis_curve_length, composition );
-	pwf->instance = inst;
-	return pwf;
+   auto fn = taxonomy::make<taxonomy::offset_function>(curve, offsets);
+   return fn;
 }
 
 #endif

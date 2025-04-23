@@ -1,0 +1,47 @@
+name: ci-bonsai-choco
+
+on:
+  schedule:
+    #         ┌───────────── minute (0 - 59)
+    #         │  ┌───────────── hour (0 - 23)
+    #         │  │ ┌───────────── day of the month (1 - 31)
+    #         │  │ │ ┌───────────── month (1 - 12 or JAN-DEC)
+    #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
+    #         *  * * * *
+    - cron:  "30 0 * * *" # 30min past utc midnight
+  workflow_dispatch:
+
+env:
+  major: 0
+  minor: 0
+  name: bonsai
+  choco_version: 1.1.0
+  CHOCO_TOKEN:   ${{ secrets.CHOCO_TOKEN }}
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    if: |
+      github.repository == 'IfcOpenShell/IfcOpenShell'
+    steps:
+    - name: Set env
+      run: echo ok go
+
+  build:
+    needs: activate
+    name: "choco_release"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+          fetch-depth: 0
+      - run: echo ${{ env.DATE }}
+      - name: Check in release tags if we should do a choco release and perform the release if needed
+        id: do_choco_release
+        run: |
+          pip install pygithub
+          cd /home/runner/work/IfcOpenShell/IfcOpenShell/choco/bonsai/ &&
+          python3 choco_release.py

@@ -16,9 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.type
+import ifcopenshell.api.classification
 import ifcopenshell.util.classification as subject
 
 
@@ -28,33 +29,30 @@ class TestGetReferences(test.bootstrap.IFC4):
         classification = library.createIfcClassification(Name="Name")
         reference1 = library.createIfcClassificationReference(Identification="1", ReferencedSource=classification)
         reference2 = library.createIfcClassificationReference(Identification="2", ReferencedSource=classification)
-        project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("classification.add_classification", self.file, classification=classification)
-        ifcopenshell.api.run(
-            "classification.add_reference",
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.classification.add_classification(self.file, classification=classification)
+        ifcopenshell.api.classification.add_reference(
             self.file,
-            product=element,
+            products=[element],
             reference=reference1,
             classification=classification,
         )
-        ifcopenshell.api.run(
-            "classification.add_reference",
+        ifcopenshell.api.classification.add_reference(
             self.file,
-            product=element,
+            products=[element],
             reference=reference2,
             classification=classification,
         )
         assert subject.get_references(element) == set(self.file.by_type("IfcClassificationReference"))
 
     def test_get_references_of_a_non_rooted_element(self):
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         element = self.file.createIfcMaterial()
-        result = ifcopenshell.api.run("classification.add_classification", self.file, classification="Name")
-        ifcopenshell.api.run(
-            "classification.add_reference",
+        result = ifcopenshell.api.classification.add_classification(self.file, classification="Name")
+        ifcopenshell.api.classification.add_reference(
             self.file,
-            product=element,
+            products=[element],
             identification="X",
             name="Foobar",
             classification=result,
@@ -66,22 +64,20 @@ class TestGetReferences(test.bootstrap.IFC4):
         classification = library.createIfcClassification(Name="Name")
         reference1 = library.createIfcClassificationReference(Identification="1", ReferencedSource=classification)
         reference2 = library.createIfcClassificationReference(Identification="2", ReferencedSource=classification)
-        project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
-        ifcopenshell.api.run("classification.add_classification", self.file, classification=classification)
-        ifcopenshell.api.run(
-            "classification.add_reference",
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        ifcopenshell.api.classification.add_classification(self.file, classification=classification)
+        ifcopenshell.api.classification.add_reference(
             self.file,
-            product=element,
+            products=[element],
             reference=reference1,
             classification=classification,
         )
-        ifcopenshell.api.run(
-            "classification.add_reference",
+        ifcopenshell.api.classification.add_reference(
             self.file,
-            product=element_type,
+            products=[element_type],
             reference=reference2,
             classification=classification,
         )
@@ -95,22 +91,20 @@ class TestGetReferences(test.bootstrap.IFC4):
         classification = library.createIfcClassification(Name="Name")
         reference1 = library.createIfcClassificationReference(Identification="1", ReferencedSource=classification)
         reference2 = library.createIfcClassificationReference(Identification="2", ReferencedSource=classification)
-        project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        element_type = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWallType")
-        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=element_type)
-        ifcopenshell.api.run("classification.add_classification", self.file, classification=classification)
-        ifcopenshell.api.run(
-            "classification.add_reference",
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+        ifcopenshell.api.classification.add_classification(self.file, classification=classification)
+        ifcopenshell.api.classification.add_reference(
             self.file,
-            product=element,
+            products=[element],
             reference=reference1,
             classification=classification,
         )
-        ifcopenshell.api.run(
-            "classification.add_reference",
+        ifcopenshell.api.classification.add_reference(
             self.file,
-            product=element_type,
+            products=[element_type],
             reference=reference2,
             classification=classification,
         )

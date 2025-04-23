@@ -17,23 +17,21 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.system
 
 
 class TestUnassignFlowControl(test.bootstrap.IFC4):
     def test_run(self):
         flow_element = self.file.createIfcFlowSegment()
-        flow_control = self.file.createIfcController()
+        flow_control = self.file.create_entity("IfcDistributionControlElement")
 
         # assign and unassign
-        relation = ifcopenshell.api.run(
-            "system.assign_flow_control",
+        relation = ifcopenshell.api.system.assign_flow_control(
             self.file,
             related_flow_control=flow_control,
             relating_flow_element=flow_element,
         )
-        ifcopenshell.api.run(
-            "system.unassign_flow_control",
+        ifcopenshell.api.system.unassign_flow_control(
             self.file,
             related_flow_control=flow_control,
             relating_flow_element=flow_element,
@@ -41,24 +39,25 @@ class TestUnassignFlowControl(test.bootstrap.IFC4):
         assert len(self.file.by_type("IfcRelFlowControlElements")) == 0
 
         # 1 element 2 controls
-        flow_control1 = self.file.createIfcController()
-        relation = ifcopenshell.api.run(
-            "system.assign_flow_control",
+        flow_control1 = self.file.create_entity("IfcDistributionControlElement")
+        relation = ifcopenshell.api.system.assign_flow_control(
             self.file,
             related_flow_control=flow_control,
             relating_flow_element=flow_element,
         )
-        ifcopenshell.api.run(
-            "system.assign_flow_control",
+        ifcopenshell.api.system.assign_flow_control(
             self.file,
             related_flow_control=flow_control1,
             relating_flow_element=flow_element,
         )
-        ifcopenshell.api.run(
-            "system.unassign_flow_control",
+        ifcopenshell.api.system.unassign_flow_control(
             self.file,
             related_flow_control=flow_control1,
             relating_flow_element=flow_element,
         )
         assert len(self.file.by_type("IfcRelFlowControlElements")) == 1
         assert relation.RelatedControlElements == (flow_control,)
+
+
+class TestUnassignFlowControlIFC2X3(TestUnassignFlowControl, test.bootstrap.IFC2X3):
+    pass

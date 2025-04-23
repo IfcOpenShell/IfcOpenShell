@@ -20,50 +20,57 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
+def remove_classification(file: ifcopenshell.file, classification: ifcopenshell.entity_instance) -> None:
+    """Removes an IfcClassification from the project and all references
+
+    The classification and all of its relationships, children references,
+    and relationships between objects and child references are completely
+    removed from a project.
+
+    :param classification: The IfcClassification entity you want to remove
+    :return: None
+
+    Example:
+
+    .. code:: python
+
+        classification = model.by_type("IfcClassification")[0]
+        ifcopenshell.api.classification.remove_classification(model,
+            classification=classification)
+    """
+    usecase = Usecase()
+    usecase.file = file
+    return usecase.execute(classification)
+
+
 class Usecase:
-    def __init__(self, file, classification=None):
-        """Removes an IfcClassification from the project and all references
+    file: ifcopenshell.file
 
-        The classification and all of its relationships, children references,
-        and relationships between objectse and child references are completely
-        removed from a project.
-
-        :param classification: The IfcClassification entity you want to remove
-        :type classification: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
-
-        Example:
-
-        .. code:: python
-
-            classification = model.by_type("IfcClassification")[0]
-            ifcopenshell.api.run("classification.remove_classification", model,
-                classification=classification)
-        """
-        self.file = file
-        self.settings = {"classification": classification}
-
-    def execute(self):
-        references = self.get_references(self.settings["classification"])
+    def execute(self, classification: ifcopenshell.entity_instance) -> None:
+        references = self.get_references(classification)
         for reference in references:
             self.file.remove(reference)
-        self.file.remove(self.settings["classification"])
+        self.file.remove(classification)
         for rel in self.file.by_type("IfcRelAssociatesClassification"):
             if not rel.RelatingClassification:
                 history = rel.OwnerHistory
                 self.file.remove(rel)
                 if history:
                     ifcopenshell.util.element.remove_deep2(self.file, history)
-        for rel in self.file.by_type("IfcExternalReferenceRelationship"):
-            if not rel.RelatingReference:
-                self.file.remove(rel)
 
-    def get_references(self, classification):
+        if self.file.schema != "IFC2X3":
+            for rel in self.file.by_type("IfcExternalReferenceRelationship"):
+                if not rel.RelatingReference:
+                    self.file.remove(rel)
+
+    def get_references(self, classification: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         results = []
-        if not classification.HasReferences:
-            return results
-        for reference in classification.HasReferences:
-            results.append(reference)
-            results.extend(self.get_references(reference))
+        if self.file.schema == "IFC2X3":
+            for reference in self.file.by_type("IfcClassificationReference"):
+                if reference.ReferencedSource == classification:
+                    results.append(reference)
+        else:
+            for reference in classification.HasReferences:
+                results.append(reference)
+                results.extend(self.get_references(reference))
         return results

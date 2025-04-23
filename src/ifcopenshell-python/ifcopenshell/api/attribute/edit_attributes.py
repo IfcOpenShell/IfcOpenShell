@@ -16,66 +16,69 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import ifcopenshell.api
+import ifcopenshell.api.owner
+import ifcopenshell.util.element
+from typing import Any, Union
+from types import EllipsisType
 
 
-class Usecase:
-    def __init__(self, file, product=None, attributes=None):
-        """Edit the attributes of a product
+def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+    """Edit the attributes of a product
 
-        All IFC entities have attributes. Normally they can be edited directly,
-        by simply assigning a new value to them. In some scenarios, you may wish
-        to also ensure that ownership history is updated. This function provides
-        that convenience.
+    All IFC entities have attributes. Normally they can be edited directly,
+    by simply assigning a new value to them. In some scenarios, you may wish
+    to also ensure that ownership history is updated. This function provides
+    that convenience.
 
-        :param product: The product you want to edit. This may be any rooted IFC
-            entity.
-        :type product: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    The method will maintain consistency for PredefinedType attribute
+    based on whether ElementType/ObjectType and whether occurrence is typed:
 
-        Example:
+    - PredefinedType and ObjectType to be `None` if occurrence is typed
+    - PredefinedType to be "NOTDEFINED" if ElementType/ObjectType is None
+    - PredefinedType to be "USERDEFINED" if ElementType/ObjectType is not None
 
-        .. code:: python
+    :param product: The product you want to edit. This may be any rooted IFC
+        entity.
+    :param attributes: a dictionary of attribute names and values.
+    :return: None
 
-            element = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
-            ifcopenshell.api.run("attribute.edit_attributes", model,
-                product=element, attributes={"Name": "Waldo"})
+    Example:
+
+    .. code:: python
+
+        element = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+        ifcopenshell.api.attribute.edit_attributes(model,
+            product=element, attributes={"Name": "Waldo"})
+    """
+
+    def getattr_safe(element: ifcopenshell.entity_instance, attr: str) -> Union[Any, EllipsisType]:
+        """Return attribute value or Ellipsis if attribute doesn't exist.
+
+        Useful as an alternative to hasattr - hasattr under the hood just does
+        getattr but doesn't return a value. That helps reduce times IFC is accessed.
         """
-        self.file = file
-        self.settings = {"product": product, "attributes": attributes or {}}
+        return getattr(element, attr, ...)
 
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["product"], name, value)
-        if hasattr(self.settings["product"], "PredefinedType"):
-            if hasattr(self.settings["product"], "ElementType"):
-                if (
-                    self.settings["product"].ElementType is None
-                    and self.settings["product"].PredefinedType == "USERDEFINED"
-                ):
-                    self.settings["product"].PredefinedType = "NOTDEFINED"
-                elif (
-                    self.settings["product"].ElementType
-                    and self.settings["product"].PredefinedType != "USERDEFINED"
-                ):
-                    self.settings["product"].PredefinedType = "USERDEFINED"
-            elif hasattr(self.settings["product"], "ObjectType"):
-                relating_type = ifcopenshell.util.element.get_type(self.settings["product"])
-                if relating_type and relating_type.PredefinedType != "NOTDEFINED":
-                    self.settings["product"].ObjectType = None
-                    self.settings["product"].PredefinedType = None
-                elif (
-                    self.settings["product"].ObjectType is None
-                    and self.settings["product"].PredefinedType == "USERDEFINED"
-                ):
-                    self.settings["product"].PredefinedType = "NOTDEFINED"
-                elif (
-                    self.settings["product"].ObjectType
-                    and self.settings["product"].PredefinedType != "USERDEFINED"
-                ):
-                    self.settings["product"].PredefinedType = "USERDEFINED"
-        if hasattr(self.settings["product"], "OwnerHistory"):
-            ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": self.settings["product"]})
+    for name, value in attributes.items():
+        setattr(product, name, value)
+
+    if (predefined_type := getattr_safe(product, "PredefinedType")) is not ...:
+        if (element_type := getattr_safe(product, "ElementType")) is not ...:
+            if element_type is None and predefined_type == "USERDEFINED":
+                product.PredefinedType = "NOTDEFINED"
+            elif element_type and predefined_type != "USERDEFINED":
+                product.PredefinedType = "USERDEFINED"
+
+        elif (object_type := getattr_safe(product, "ObjectType")) is not ...:
+            relating_type = ifcopenshell.util.element.get_type(product)
+            # Allow for None due to https://github.com/buildingSMART/IFC4.3.x-development/issues/818
+            if relating_type and relating_type.PredefinedType not in ("NOTDEFINED", None):
+                product.ObjectType = None
+                product.PredefinedType = None
+            elif object_type is None and predefined_type == "USERDEFINED":
+                product.PredefinedType = "NOTDEFINED"
+            elif object_type and predefined_type != "USERDEFINED":
+                product.PredefinedType = "USERDEFINED"
+
+    if hasattr(product, "OwnerHistory"):
+        ifcopenshell.api.owner.update_owner_history(file, **{"element": product})

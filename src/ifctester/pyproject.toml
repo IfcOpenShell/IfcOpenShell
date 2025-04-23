@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ifctester"
-version = "0.0.999999"
+version = "0.0.0"
 authors = [
   { name="Dion Moult", email="dion@thinkmoult.com" },
 ]
@@ -15,7 +15,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
-dependencies = ["ifcopenshell", "dateutil", "xmlschema", "numpy"]
+dependencies = ["ifcopenshell", "python-dateutil", "xmlschema", "numpy", "odfpy", "pystache", "bcf-client"]
 
 [project.urls]
 Homepage = "http://ifcopenshell.org"
@@ -23,8 +23,8 @@ Documentation = "https://docs.ifcopenshell.org"
 Issues = "https://github.com/IfcOpenShell/IfcOpenShell/issues"
 
 [tool.setuptools.packages.find]
-include = ["ifctester"]
+include = ["ifctester*"]
 exclude = ["test*"]
 
 [tool.setuptools.package-data]
-ifctester = ["*.xsd", "templates/*.html"]
+"*" = ["*.*"]

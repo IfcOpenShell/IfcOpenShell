@@ -24,7 +24,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.classification
 from functools import lru_cache
 from xmlschema.validators import identities
-from typing import Union, Optional, Any, Literal, TYPE_CHECKING
+from typing import Union, Optional, Any, Literal, TYPE_CHECKING, TypedDict
 from logging import Logger
 
 if TYPE_CHECKING:
@@ -39,13 +39,23 @@ def cast_to_value(from_value, to_value):
             # We do not cast to int because 42.0 == 42 and 42.3 != 42
             return float(from_value)
         elif target_type == "bool":
-            if from_value == "TRUE":
+            if from_value in ("true", "1"):
                 return True
-            elif from_value == "FALSE":
+            elif from_value in ("false", "0"):
                 return False
         return builtins.__dict__[target_type](from_value)
     except ValueError:
         pass
+
+
+# See bug 4716.
+def is_x(value, cast_value):
+    if cast_value >= 0:
+        if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
+            return False
+    elif value > cast_value * (1.0 - 1e-6) or value < cast_value * (1.0 + 1e-6):
+        return False
+    return True
 
 
 @lru_cache
@@ -61,12 +71,18 @@ def get_psets(element):
 Cardinality = Literal["required", "optional", "prohibited"]
 
 
+class FacetFailure(TypedDict):
+    element: ifcopenshell.entity_instance
+    reason: str
+
+
 class Facet:
     cardinality: Cardinality
 
     def __init__(self, *parameters):
         self.status = None
-        self.failures = []
+        self.passed_entities: set[ifcopenshell.entity_instance] = set()
+        self.failures: list[FacetFailure] = []
         for i, name in enumerate(self.parameters):
             setattr(self, name.replace("@", ""), parameters[i])
 
@@ -96,8 +112,10 @@ class Facet:
         return self
 
     def filter(
-        self, ifc_file: ifcopenshell.file, elements: list[ifcopenshell.entity_instance]
+        self, ifc_file: ifcopenshell.file, elements: Optional[list[ifcopenshell.entity_instance]]
     ) -> list[ifcopenshell.entity_instance]:
+        if not elements:
+            return []
         return [e for e in elements if self(e)]
 
     def to_string(
@@ -105,16 +123,20 @@ class Facet:
         clause_type: str,
         specification: Optional[Specification] = None,
         requirement: Optional[Facet] = None,
-    ):
+    ) -> str:
         if clause_type == "applicability":
             templates = self.applicability_templates
         elif clause_type == "requirement":
             is_prohibited = False
-            if specification.maxOccurs == 0:
+            if specification and specification.maxOccurs == 0:
                 is_prohibited = not is_prohibited
-            if requirement.cardinality == "prohibited":
+            if requirement and requirement.cardinality == "prohibited":
                 is_prohibited = not is_prohibited
             templates = self.prohibited_templates if is_prohibited else self.requirement_templates
+            if requirement and requirement.cardinality == "optional":
+                templates = [
+                    t.replace("shall", "may").replace("Shall", "May").replace("must", "may") for t in templates
+                ]
 
         for template in templates:
             total_variables = len(template) - len(template.replace("{", ""))
@@ -128,10 +150,11 @@ class Facet:
                     total_replacements += 1
                 if total_replacements == total_variables:
                     return template
+        return "This facet cannot be interpreted"
 
     def to_ids_value(self, parameter: Union[str, Restriction, list]) -> dict[str, Any]:
-        if isinstance(parameter, str):
-            parameter_dict = {"simpleValue": parameter}
+        if isinstance(parameter, (int, float, str)):
+            parameter_dict = {"simpleValue": str(parameter)}
         elif isinstance(parameter, Restriction):
             parameter_dict = {"xs:restriction": [parameter.asdict()]}
         elif isinstance(parameter, list):
@@ -234,7 +257,7 @@ class Attribute(Facet):
             return super().filter(ifc_file, elements)
 
         results = []
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
         entities = {entity.name(): entity for entity in schema.entities()}
 
         def ignore_subtypes(entity):
@@ -256,16 +279,13 @@ class Attribute(Facet):
         return results
 
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> AttributeResult:
-        if self.cardinality == "optional":
-            return AttributeResult(True)
-
         if isinstance(self.name, str):
             names = [self.name]
             attribute_type = inst.wrapped_data.get_attribute_category(self.name)
             if attribute_type == 1:  # Forward attribute
                 values = [getattr(inst, self.name, None)]
             else:
-                values = [None]
+                values = []
         else:
             info = inst.get_info()
             names = []
@@ -281,6 +301,8 @@ class Attribute(Facet):
         reason = None
 
         if not is_pass:
+            if self.cardinality == "optional":
+                return AttributeResult(True)
             reason = {"type": "NOVALUE"}
 
         if is_pass:
@@ -324,7 +346,7 @@ class Attribute(Facet):
                 elif isinstance(self.value, str):
                     cast_value = cast_to_value(self.value, value)
                     if isinstance(value, float) and isinstance(cast_value, float):
-                        if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
+                        if not is_x(value, cast_value):
                             is_pass = False
                             reason = {"type": "VALUE", "actual": value}
                             break
@@ -371,9 +393,6 @@ class Classification(Facet):
         return ifc_file.by_type("IfcObjectDefinition")
 
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> ClassificationResult:
-        if self.cardinality == "optional":
-            return ClassificationResult(True)  # Is this really the correct behaviour?
-
         leaf_references = ifcopenshell.util.classification.get_references(inst)
 
         references = leaf_references.copy()
@@ -384,6 +403,8 @@ class Classification(Facet):
         reason = None
 
         if not is_pass:
+            if self.cardinality == "optional":
+                return ClassificationResult(True)
             reason = {"type": "NOVALUE"}
 
         if is_pass and self.value:
@@ -393,7 +414,8 @@ class Classification(Facet):
                 reason = {"type": "VALUE", "actual": values}
 
         if is_pass:
-            systems = [ifcopenshell.util.classification.get_classification(r).Name for r in references]
+            classifications = filter(None, (ifcopenshell.util.classification.get_classification(r) for r in references))
+            systems = [r.Name for r in classifications]
             is_pass = any([self.system == s for s in systems])
             if not is_pass:
                 reason = {"type": "SYSTEM", "actual": systems}
@@ -418,6 +440,7 @@ class PartOf(Facet):
             "An element with an {relation} relationship",
         ]
         self.requirement_templates = [
+            "An element must have an {relation} relationship with an {name} of predefined type {predefinedType}",
             "An element must have an {relation} relationship with an {name}",
             "An element must have an {relation} relationship",
         ]
@@ -460,10 +483,12 @@ class PartOf(Facet):
             ancestors = []
             parent = self.get_parent(inst)
             while parent:
-                ancestors.append(parent.is_a())
+                ancestors.append(parent.is_a().upper())
                 if parent.is_a().upper() == self.name:
                     if self.predefinedType:
-                        if ifcopenshell.util.element.get_predefined_type(parent) == self.predefinedType:
+                        predefined_type = ifcopenshell.util.element.get_predefined_type(parent)
+                        ancestors[-1] += f".{predefined_type}"
+                        if predefined_type == self.predefinedType:
                             is_pass = True
                     else:
                         is_pass = True
@@ -480,10 +505,12 @@ class PartOf(Facet):
                 is_pass = False
                 ancestors = []
                 while aggregate is not None:
-                    ancestors.append(aggregate.is_a())
+                    ancestors.append(aggregate.is_a().upper())
                     if aggregate.is_a().upper() == self.name:
                         if self.predefinedType:
-                            if ifcopenshell.util.element.get_predefined_type(aggregate) == self.predefinedType:
+                            predefined_type = ifcopenshell.util.element.get_predefined_type(aggregate)
+                            ancestors[-1] += f".{predefined_type}"
+                            if predefined_type == self.predefinedType:
                                 is_pass = True
                         else:
                             is_pass = True
@@ -518,13 +545,13 @@ class PartOf(Facet):
                 if container.is_a().upper() != self.name:
                     is_pass = False
                     reason = {"type": "ENTITY", "actual": container.is_a().upper()}
-                if self.predefinedType:
+                if is_pass and self.predefinedType:
                     predefined_type = ifcopenshell.util.element.get_predefined_type(container)
                     if predefined_type != self.predefinedType:
                         is_pass = False
                         reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
         elif self.relation == "IFCRELNESTS":
-            nest = self.get_nested_whole(inst)
+            nest = ifcopenshell.util.element.get_nest(inst)
             is_pass = nest is not None
             if not is_pass:
                 reason = {"type": "NOVALUE"}
@@ -532,70 +559,51 @@ class PartOf(Facet):
                 is_pass = False
                 ancestors = []
                 while nest is not None:
-                    ancestors.append(nest.is_a())
+                    ancestors.append(nest.is_a().upper())
                     if nest.is_a().upper() == self.name:
                         if self.predefinedType:
-                            if ifcopenshell.util.element.get_predefined_type(nest) == self.predefinedType:
+                            predefined_type = ifcopenshell.util.element.get_predefined_type(nest)
+                            ancestors[-1] += f".{predefined_type}"
+                            if predefined_type == self.predefinedType:
                                 is_pass = True
                         else:
                             is_pass = True
                         break
-                    nest = self.get_nested_whole(nest)
+                    nest = ifcopenshell.util.element.get_nest(nest)
                 if not is_pass:
                     reason = {"type": "ENTITY", "actual": ancestors}
         elif self.relation == "IFCRELVOIDSELEMENT IFCRELFILLSELEMENT":
             if inst.is_a("IfcOpeningElement"):
-                building_element = self.get_voided_element(inst)
+                building_element = ifcopenshell.util.element.get_voided_element(inst)
             else:
                 building_element = None
-                opening = self.get_filled_opening(inst)
+                opening = ifcopenshell.util.element.get_filled_void(inst)
                 if opening:
-                    building_element = self.get_voided_element(opening)
+                    building_element = ifcopenshell.util.element.get_voided_element(opening)
             is_pass = building_element is not None
             if not is_pass:
                 reason = {"type": "NOVALUE"}
             if is_pass and self.name:
-                is_pass = False
-                if building_element.is_a().upper() == self.name:
-                    if self.predefinedType:
-                        if ifcopenshell.util.element.get_predefined_type(building_element) == self.predefinedType:
-                            is_pass = True
-                    else:
-                        is_pass = True
-                if not is_pass:
-                    reason = {"type": "ENTITY", "actual": building_element}
+                if building_element.is_a().upper() != self.name:
+                    is_pass = False
+                    reason = {"type": "ENTITY", "actual": building_element.is_a().upper()}
+                if is_pass and self.predefinedType:
+                    predefined_type = ifcopenshell.util.element.get_predefined_type(building_element)
+                    if predefined_type != self.predefinedType:
+                        is_pass = False
+                        reason = {"type": "PREDEFINEDTYPE", "actual": predefined_type}
 
         if self.cardinality == "prohibited":
             return PartOfResult(not is_pass, {"type": "PROHIBITED"})
         return PartOfResult(is_pass, reason)
 
-    def get_nested_whole(self, element):
-        for rel in getattr(element, "Nests", []) or []:
-            return rel.RelatingObject
-
-    def get_voided_element(self, element):
-        for rel in getattr(element, "VoidsElements", []) or []:
-            return rel.RelatingBuildingElement
-
-    def get_filled_opening(self, element):
-        for rel in getattr(element, "FillsVoids", []) or []:
-            return rel.RelatingOpeningElement
-
     def get_parent(self, element):
-        parent = ifcopenshell.util.element.get_aggregate(element)
-        if not parent:
-            parent = ifcopenshell.util.element.get_container(element, should_get_direct=True)
+        parent = ifcopenshell.util.element.get_parent(element)
         if not parent:
             for rel in getattr(element, "HasAssignments", []) or []:
                 if rel.is_a("IfcRelAssignsToGroup"):
                     parent = rel.RelatingGroup
                     break
-        if not parent:
-            self.get_nested_whole(element)
-        if not parent:
-            self.get_voided_element(element)
-        if not parent:
-            self.get_filled_opening(element)
         return parent
 
 
@@ -647,9 +655,6 @@ class Property(Facet):
         )
 
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> PropertyResult:
-        if self.cardinality == "optional":
-            return PropertyResult(True)
-
         if isinstance(self.propertySet, str):
             pset = get_pset(inst, self.propertySet)
             psets = {self.propertySet: pset} if pset else {}
@@ -661,6 +666,8 @@ class Property(Facet):
         reason = None
 
         if not is_pass:
+            if self.cardinality == "optional":
+                return PropertyResult(True)
             reason = {"type": "NOPSET"}
 
         if is_pass:
@@ -681,6 +688,8 @@ class Property(Facet):
                     props[pset_name] = {k: v for k, v in pset_props.items() if k == self.baseName}
 
                 if not bool(props[pset_name]):
+                    if self.cardinality == "optional":
+                        return PropertyResult(True)
                     is_pass = False
                     reason = {"type": "NOVALUE"}
                     break
@@ -788,7 +797,7 @@ class Property(Facet):
                         props[pset_name][prop_entity.Name] = values
                     elif prop_entity.is_a("IfcPropertyTableValue"):
                         values = []
-                        units = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        units = ifcopenshell.util.unit.get_property_table_unit(prop_entity, inst.wrapped_data.file)
                         for attribute in ["Defining", "Defined"]:
                             column_values = props[pset_name][prop_entity.Name][f"{attribute}Values"]
                             if not column_values:
@@ -850,7 +859,7 @@ class Property(Facet):
                             # "42" = 42
                             cast_value = cast_to_value(self.value, value)
                             if isinstance(value, float) and isinstance(cast_value, float):
-                                if value < cast_value * (1.0 - 1e-6) or value > cast_value * (1.0 + 1e-6):
+                                if not is_x(value, cast_value):
                                     is_pass = False
                                     reason = {"type": "VALUE", "actual": value}
                                     break
@@ -908,15 +917,14 @@ class Material(Facet):
         return ifc_file.by_type("IfcObjectDefinition")
 
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> MaterialResult:
-        if self.cardinality == "optional":
-            return MaterialResult(True)
-
         material = ifcopenshell.util.element.get_material(inst, should_skip_usage=True)
 
         is_pass = material is not None
         reason = None
 
         if not is_pass:
+            if self.cardinality == "optional":
+                return MaterialResult(True)
             reason = {"type": "NOVALUE"}
 
         if is_pass and self.value:
@@ -990,7 +998,17 @@ class Restriction:
         for constraint, value in self.options.items():
             value = [value] if not isinstance(value, list) else value
             for v in value:
-                if constraint in ["length", "minLength", "maxLength"]:
+                if constraint in [
+                    "length",
+                    "minLength",
+                    "maxLength",
+                    "maxExclusive",
+                    "maxInclusive",
+                    "minExclusive",
+                    "minInclusive",
+                    "totalDigits",
+                    "fractionDigits",
+                ]:
                     value_dict = {"@value": v}
                 else:
                     value_dict = {"@value": str(v)}
@@ -1001,37 +1019,40 @@ class Restriction:
         if other is None:
             return False
         for constraint, value in self.options.items():
-            if constraint == "enumeration":
-                if other not in [cast_to_value(v, other) for v in value]:
-                    return False
-            elif constraint == "pattern":
-                if not isinstance(other, str):
-                    return False
-                value = value if isinstance(value, list) else [value]
-                for pattern in value:
-                    if re.compile(identities.translate_pattern(pattern)).fullmatch(other) is None:
+            try:
+                if constraint == "enumeration":
+                    if other not in [cast_to_value(v, other) for v in value]:
                         return False
-            elif constraint == "length":
-                if len(str(other)) != int(value):
-                    return False
-            elif constraint == "maxLength":
-                if len(str(other)) > int(value):
-                    return False
-            elif constraint == "minLength":
-                if len(str(other)) < int(value):
-                    return False
-            elif constraint == "maxExclusive":
-                if float(other) >= float(value):
-                    return False
-            elif constraint == "maxInclusive":
-                if float(other) > float(value):
-                    return False
-            elif constraint == "minExclusive":
-                if float(other) <= float(value):
-                    return False
-            elif constraint == "minInclusive":
-                if float(other) < float(value):
-                    return False
+                elif constraint == "pattern":
+                    if not isinstance(other, str):
+                        return False
+                    value = value if isinstance(value, list) else [value]
+                    for pattern in value:
+                        if re.compile(identities.translate_pattern(pattern)).fullmatch(other) is None:
+                            return False
+                elif constraint == "length":
+                    if len(str(other)) != int(value):
+                        return False
+                elif constraint == "maxLength":
+                    if len(str(other)) > int(value):
+                        return False
+                elif constraint == "minLength":
+                    if len(str(other)) < int(value):
+                        return False
+                elif constraint == "maxExclusive":
+                    if float(other) >= float(value):
+                        return False
+                elif constraint == "maxInclusive":
+                    if float(other) > float(value):
+                        return False
+                elif constraint == "minExclusive":
+                    if float(other) <= float(value):
+                        return False
+                elif constraint == "minInclusive":
+                    if float(other) < float(value):
+                        return False
+            except ValueError:
+                return False
         return True
 
     def __str__(self):
@@ -1039,7 +1060,7 @@ class Restriction:
 
 
 class Result:
-    def __init__(self, is_pass, reason=None):
+    def __init__(self, is_pass: bool, reason: Optional[dict[str, Any]] = None):
         self.is_pass = is_pass
         self.reason = reason
 
@@ -1068,11 +1089,11 @@ class AttributeResult(Result):
         elif self.reason["type"] == "FALSEY":
             return f"The attribute value \"{str(self.reason['actual'])}\" is empty"
         elif self.reason["type"] == "INVALID":
-            return f"An invalid attribute name was specified in the IDS"
+            return "An invalid attribute name was specified in the IDS"
         elif self.reason["type"] == "VALUE":
             return f"The attribute value \"{str(self.reason['actual'])}\" does not match the requirement"
         elif self.reason["type"] == "PROHIBITED":
-            return f"The attribute value should not have met the requirement"
+            return "The attribute value should not have met the requirement"
 
 
 class ClassificationResult(Result):
@@ -1084,7 +1105,7 @@ class ClassificationResult(Result):
         elif self.reason["type"] == "SYSTEM":
             return f"The systems \"{str(self.reason['actual'])}\" do not match the requirements"
         elif self.reason["type"] == "PROHIBITED":
-            return f"The classification should not have met the requirement"
+            return "The classification should not have met the requirement"
 
 
 class PartOfResult(Result):
@@ -1093,8 +1114,10 @@ class PartOfResult(Result):
             return "The entity has no relationship"
         elif self.reason["type"] == "ENTITY":
             return f"The entity has a relationship with incorrect entities: \"{str(self.reason['actual'])}\""
+        elif self.reason["type"] == "PREDEFINEDTYPE":
+            return f"The entity has a relationship with incorrect predefined type: \"{str(self.reason['actual'])}\""
         elif self.reason["type"] == "PROHIBITED":
-            return f"The relationship should not have met the requirement"
+            return "The relationship should not have met the requirement"
 
 
 class PropertyResult(Result):

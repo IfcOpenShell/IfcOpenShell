@@ -2,7 +2,8 @@ IfcConvert
 ==========
 
 IfcConvert is a command-line application for converting IFC geometry into file
-formats such as OBJ, DAE, GLB, STP, IGS, XML, SVG, H5, and IFC itself.
+formats such as OBJ, DAE, GLB, STP, IGS, XML, SVG, H5, CityJSON, TTL/WKT, and
+IFC-SPF itself.
 
 For other formats, you may use other IfcOpenShell utilities as shown in the
 table below.
@@ -12,9 +13,9 @@ table below.
 +=========================+=========================+======================+
 | .ifc                    | .obj, .dae, .glb, .stp, | IfcConvert           |
 |                         | .igs, .xml, .svg, .h5,  |                      |
-|                         | .ifc                    |                      |
+|                         | .cityjson, .ttl, .ifc   |                      |
 +-------------------------+-------------------------+----------------------+
-| .ifc                    | .dae, .abc, .usd, .obj, | `BlenderBIM Add-on`_ |
+| .ifc                    | .dae, .abc, .usd, .obj, | Bonsai_              |
 |                         | .ply, .stl, .fbx, .glb, |                      |
 |                         | .gltf, .x3d, .dxf       |                      |
 +-------------------------+-------------------------+----------------------+
@@ -41,9 +42,9 @@ table below.
 +-------------------------+-------------------------+----------------------+
 | .csv                    | .ifc                    | IfcCSV_              |
 +-------------------------+-------------------------+----------------------+
-| .dxf                    | .ifc                    | `BlenderBIM Add-on`_ |
+| .dxf                    | .ifc                    | Bonsai_              |
 +-------------------------+-------------------------+----------------------+
-| .obj                    | .ifc                    | `BlenderBIM Add-on`_ |
+| .obj                    | .ifc                    | Bonsai_              |
 +-------------------------+-------------------------+----------------------+
 | .json (CityJSON)        | .ifc                    | IfcCityJSON_         |
 +-------------------------+-------------------------+----------------------+
@@ -64,7 +65,7 @@ table below.
 .. _Ifc5D: ifc5d.html
 .. _IfcCityJSON: ifccityjson.html
 .. _Ifc2JSON: other.html
-.. _BlenderBIM Add-on: https://blenderbim.org
+.. _Bonsai: bonsai.html
 
 .. toctree::
    :hidden:

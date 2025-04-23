@@ -17,14 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.drawing
 
 
 class TestEditTextLiteral(test.bootstrap.IFC4):
     def test_run(self):
         text = self.file.createIfcTextLiteralWithExtent()
-        ifcopenshell.api.run(
-            "drawing.edit_text_literal",
+        ifcopenshell.api.drawing.edit_text_literal(
             self.file,
             text_literal=text,
             attributes={
@@ -36,3 +35,7 @@ class TestEditTextLiteral(test.bootstrap.IFC4):
         assert text.Literal == "Literal"
         assert text.Path == "RIGHT"
         assert text.BoxAlignment == "middle"
+
+
+class TestEditTextLiteralIFC2X3(test.bootstrap.IFC2X3, TestEditTextLiteral):
+    pass

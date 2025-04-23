@@ -21,7 +21,7 @@ import ifcopenshell.util.element
 
 
 class Patcher:
-    def __init__(self, src, file, logger):
+    def __init__(self, file, logger):
         """Optimise the filesize of an IFC model
 
         It is possible to non-losslessly optimise the filesize of an IFC model.
@@ -34,7 +34,7 @@ class Patcher:
         If filesize is an issue, another approach would be to use IFCZIP
         instead to compress the model. Optimising the model only typically
         affects filesize and has minimal impact on load times. Large filesizes
-        can usually be solved through other means. Consult the BlenderBIM Add-on
+        can usually be solved through other means. Consult the bonsai Add-on
         documentation on dealing with large models for more details.
 
         Warning: this optimise recipe is very, very slow. Please consider using
@@ -46,7 +46,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "Optimise", "arguments": []})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.optimized_file = ifcopenshell.file(schema=self.file.schema)

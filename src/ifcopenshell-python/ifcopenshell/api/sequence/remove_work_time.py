@@ -15,33 +15,36 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+import ifcopenshell.api.sequence
 
 
-class Usecase:
-    def __init__(self, file, work_time=None):
-        """Removes a work time
+def remove_work_time(file: ifcopenshell.file, work_time: ifcopenshell.entity_instance) -> None:
+    """Removes a work time
 
-        :param work_time: The IfcWorkTime to remove.
-        :type work_time: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param work_time: The IfcWorkTime to remove.
+    :type work_time: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # Let's create a new calendar.
-            calendar = ifcopenshell.api.run("sequence.add_work_calendar", model)
+        # Let's create a new calendar.
+        calendar = ifcopenshell.api.sequence.add_work_calendar(model)
 
-            # Let's start defining the times that we work during the week.
-            work_time = ifcopenshell.api.run("sequence.add_work_time", model,
-                work_calendar=calendar, time_type="WorkingTimes")
+        # Let's start defining the times that we work during the week.
+        work_time = ifcopenshell.api.sequence.add_work_time(model,
+            work_calendar=calendar, time_type="WorkingTimes")
 
-            # And remove it immediately
-            ifcopenshell.api.run("sequence.remove_work_time", model, work_time=work_time)
-        """
-        self.file = file
-        self.settings = {"work_time": work_time}
+        # And remove it immediately
+        ifcopenshell.api.sequence.remove_work_time(model, work_time=work_time)
+    """
 
-    def execute(self):
-        self.file.remove(self.settings["work_time"])
+    # Currently in API recurrence patterns are created during assignment
+    # and removed during unassignment, so they are never reused.
+    if recurrence_pattern := work_time.RecurrencePattern:
+        ifcopenshell.api.sequence.unassign_recurrence_pattern(file, recurrence_pattern)
+
+    file.remove(work_time)

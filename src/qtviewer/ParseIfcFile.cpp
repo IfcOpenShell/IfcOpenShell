@@ -1,21 +1,20 @@
 #include "ParseIfcFile.h"
-#include "MessageLogger.h"
 
+#include "MessageLogger.h"
 #include "osg/Array"
 #include "osg/Geometry"
 #include "osg/Material"
-#include "osg/MatrixTransform"
 #include "osg/Matrixd"
+#include "osg/MatrixTransform"
 #include "osg/PrimitiveSet"
+#include "osg/ref_ptr"
 #include "osg/StateAttribute"
 #include "osg/StateSet"
 #include "osg/Vec4"
-#include "osg/ref_ptr"
-#include <OpenGL/OpenGL.h>
-#include <cstddef> // size_t
-#include <string>
 
+#include <cstddef> // size_t
 #include <osg/Vec3>
+#include <string>
 #include <vector>
 
 ParseIfcFile::ParseIfcFile() {}
@@ -27,11 +26,10 @@ bool ParseIfcFile::Parse(
     std::vector<osg::ref_ptr<osg::MatrixTransform>>& matrixTransforms
 ) {
     IfcParse::IfcFile file(filePath);
-
-    IfcGeom::IteratorSettings settings;
-    settings.set(IfcGeom::IteratorSettings::USE_WORLD_COORDS, false);
-    settings.set(IfcGeom::IteratorSettings::WELD_VERTICES, false);
-    settings.set(IfcGeom::IteratorSettings::APPLY_DEFAULT_MATERIALS, true);
+    ifcopenshell::geometry::Settings settings;
+    settings.set("use-world-coords", false);
+    settings.set("weld-vertices", false);
+    settings.set("apply-default-materials", true);
 
     IfcGeom::Iterator* it = new IfcGeom::Iterator(settings, &file);
     if (!it->initialize()) {
@@ -57,7 +55,16 @@ bool ParseIfcFile::Parse(
         //MessageLogger::log("id: " + id);
 
         // Transformation Matrix
-        const std::vector<double>& matrixData = triElem->transformation().matrix().data();
+        std::vector<double> matrixData;
+        auto transform4x4 = triElem->transformation().data()->components();
+        for (int col = 0; col<4; col++)
+        {
+            for (int row =0; row<3; row++)
+            {
+                matrixData.push_back(transform4x4(row,col));
+            }
+
+        }
 
         // Debugging:
         std::string matrixStr = "";
@@ -97,7 +104,7 @@ bool ParseIfcFile::Parse(
         const std::vector<int>& elemFaces = triElemGeom->faces();
         const std::vector<double>& elemVertices = triElemGeom->verts();
         const std::vector<double>& elemNormals = triElemGeom->normals();
-        const std::vector<IfcGeom::Material>& elemMats = triElemGeom->materials();
+        const std::vector<ifcopenshell::geometry::taxonomy::style::ptr>& elemMats = triElemGeom->materials();
         const std::vector<int>& elemMatIds = triElemGeom->material_ids();
 
         std::map<int, osg::ref_ptr<osg::Material>> uniqueMaterials;
@@ -190,15 +197,14 @@ void ParseIfcFile::buildTriangleNodes(
     addVertexAndNormal(index + 2);
 }
 
-osg::ref_ptr<osg::Material> ParseIfcFile::getOsgMaterial(const IfcGeom::Material& material)
+osg::ref_ptr<osg::Material> ParseIfcFile::getOsgMaterial(const ifcopenshell::geometry::taxonomy::style::ptr& material)
 {
-    const double* diffuseColor = material.diffuse();
+    ifcopenshell::geometry::taxonomy::colour diffuseColor = material->diffuse;
     osg::Vec4 matOsgDiffuseColor(
-            diffuseColor[0], 
-            diffuseColor[1], 
-            diffuseColor[2], 
-            material.transparency()
-        );
+        diffuseColor.r(),
+        diffuseColor.g(),
+        diffuseColor.b(),
+        material->transparency);
 
     osg::ref_ptr<osg::Material> osgMaterial = new osg::Material;
     osgMaterial->setDiffuse(osg::Material::FRONT_AND_BACK, matOsgDiffuseColor);

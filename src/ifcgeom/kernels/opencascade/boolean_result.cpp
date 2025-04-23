@@ -98,7 +98,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 		AbstractKernel::convert(c, cr);
 		if (first && br->operation == taxonomy::boolean_result::SUBTRACTION) {
 			// @todo A will be null on union/intersection, intended?
-			IfcGeom::util::flatten_shape_list(cr, a, false, settings_.get<settings::Precision>().get());
+			IfcGeom::util::flatten_shape_list(cr, a, false, true, settings_.get<settings::Precision>().get());
 			first_item_style = c->surface_style;
 			if (!first_item_style && c->kind() == taxonomy::COLLECTION) {
 				// @todo recursively right?
@@ -107,7 +107,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 
 			if (settings_.get<settings::DisableBooleanResult>().get()) {
 				results.emplace_back(IfcGeom::ConversionResult(
-					(int)br->instance->data().id(),
+					br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 					br->matrix,
 					new OpenCascadeShape(a),
 					br->surface_style ? br->surface_style : first_item_style
@@ -123,6 +123,10 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 
 			for (auto& r : cr) {
 				auto S = std::static_pointer_cast<OpenCascadeShape>(r.Shape())->shape();
+				if (S.IsNull()) {
+					Logger::Error("Null operand");
+					continue;
+				}
 				gp_GTrsf trsf;
 				convert(r.Placement(), trsf);
 				// @todo it really confuses me why I cannot use Moved() here instead
@@ -140,6 +144,8 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 					} else {
 						S = result;
 					}
+				} else {
+					S = util::ensure_fit_for_subtraction(S, tol);
 				}
 
 				b.Append(S);
@@ -155,7 +161,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 
 	TopoDS_Shape r;
 
-	if (a.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(a).More() && util::is_nested_compound_of_solid(a)) {
+	if (br->operation == taxonomy::boolean_result::SUBTRACTION && !a.IsNull() && a.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(a).More() && util::is_nested_compound_of_solid(a)) {
 		TopoDS_Compound C;
 		BRep_Builder B;
 		B.MakeCompound(C);
@@ -171,15 +177,23 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::boolean_result::ptr br, Con
 		}
 		r = C;
 	} else {
+		if (br->operation != taxonomy::boolean_result::SUBTRACTION && a.IsNull()) {
+			a = b.First();
+			b.RemoveFirst();
+		}
 		valid_result = util::boolean_operation(bst, a, b, op_to_occt(br->operation), r);
 	}
 
+	if (valid_result) {
+		std::swap(r, a);
+	}
+
 	results.emplace_back(IfcGeom::ConversionResult(
-		(int) br->instance->data().id(),
+		br->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		br->matrix,
-		new OpenCascadeShape(r),
+		new OpenCascadeShape(a),
 		br->surface_style ? br->surface_style : first_item_style
 	));
 
-	return valid_result;
+	return true;
 }

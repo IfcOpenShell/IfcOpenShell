@@ -65,12 +65,14 @@ void plain_text_message(T& out, const boost::optional<const IfcUtil::IfcBaseClas
     out << "[" << severity_strings<typename T::char_type>::value[type] << "] ";
     out << "[" << get_time(type <= Logger::LOG_PERF).c_str() << "] ";
     if (current_product) {
-        std::string global_id = *((IfcUtil::IfcBaseEntity*)*current_product)->get("GlobalId");
+        std::string global_id = (*current_product)->as<IfcUtil::IfcBaseEntity>()->get("GlobalId");
         out << "{" << global_id.c_str() << "} ";
     }
     out << message.c_str() << std::endl;
     if (instance) {
-        std::string instance_string = instance->data().toString();
+        std::ostringstream oss;
+        instance->as<IfcUtil::IfcBaseClass>()->toString(oss);
+        auto instance_string = oss.str();
         if (instance_string.size() > 259) {
             instance_string = instance_string.substr(0, 256) + "...";
         }
@@ -98,16 +100,26 @@ void json_message(T& out, const boost::optional<const IfcUtil::IfcBaseClass*>& c
 
     property_tree.put(level_string, severity_strings<typename T::char_type>::value[type]);
     if (current_product) {
-        property_tree.put(product_string, string_as<typename T::char_type>((**current_product).data().toString()));
+        std::ostringstream oss;
+        (*current_product)->toString(oss);
+        property_tree.put(product_string, string_as<typename T::char_type>(oss.str()));
     }
     property_tree.put(message_string, string_as<typename T::char_type>(message));
     if (instance) {
-        property_tree.put(instance_string, string_as<typename T::char_type>(instance->data().toString()));
+        std::ostringstream oss;
+        instance->as<IfcUtil::IfcBaseClass>()->toString(oss);
+        property_tree.put(instance_string, string_as<typename T::char_type>(oss.str()));
     }
 
     property_tree.put(time_string, string_as<typename T::char_type>(get_time()));
 
     boost::property_tree::write_json(out, property_tree, false);
+
+    // Append a newline after the JSON object if the Boost version is 1.86 or higher
+#if BOOST_VERSION >= 108600
+    out << '\n';
+#endif
+
 }
 } // namespace
 
@@ -141,6 +153,10 @@ void Logger::SetOutput(std::wostream* stream1, std::wostream* stream2) {
 }
 
 void Logger::Message(Logger::Severity type, const std::string& message, const IfcUtil::IfcBaseInterface* instance) {
+    if (type < verbosity_) {
+        return;
+    }
+
     static std::mutex mtx;
     std::lock_guard<std::mutex> lock(mtx);
 
@@ -160,7 +176,7 @@ void Logger::Message(Logger::Severity type, const std::string& message, const If
     if (type > max_severity_) {
         max_severity_ = type;
     }
-    if (((log2_ != nullptr) || (wlog2_ != nullptr)) && type >= verbosity_) {
+    if (((log2_ != nullptr) || (wlog2_ != nullptr))) {
         if (format_ == FMT_PLAIN) {
             if (log2_ != nullptr) {
                 plain_text_message(*log2_, current_product_, type, message, instance);

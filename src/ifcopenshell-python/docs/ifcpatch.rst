@@ -7,17 +7,24 @@ prepackaged scripts on IFC models on a server with a standardised interface.
 It's also great for distributing little scripts that need to modify an IFC to
 users who don't know how to code or aren't interested in knowing the details.
 
+PyPI
+----
+
+.. code-block::
+
+    pip install ifcpatch
+
 Source installation
 -------------------
 
 1. :doc:`Install IfcOpenShell <ifcopenshell-python/installation>`
-2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcpatch>`_.
+2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcpatch>`_.
 3. ``cd /path/to/src/ifcpatch``
 
 Here is a minimal example of how to use IfcPatch as a Python module or CLI
 utility:
 
-::
+.. code-block:: console
 
     $ python -m ifcpatch -h
 
@@ -45,10 +52,10 @@ This recipe expects one argument, which uses the
 :ref:`ifcopenshell-python/selector_syntax:filtering elements` syntax.  In this
 example, we'll extract out all `IfcWall` elements.
 
-::
+.. code-block:: bash
 
-    $ ifcpatch -i input.ifc -o output.ifc -r ExtractElements -a "IfcWall"
-    $ cat output.ifc
+    ifcpatch -i input.ifc -o output.ifc -r ExtractElements -a "IfcWall"
+    cat output.ifc
 
 Here is a minimal example of how to use IfcPatch as a library:
 
@@ -66,16 +73,16 @@ Here is a minimal example of how to use IfcPatch as a library:
 
 You can also alias it to a command:
 
-::
+.. code-block:: bash
 
-    $ alias ifcpatch='python -m ifcpatch'
+    alias ifcpatch='python -m ifcpatch'
 
 Alternatively, you can package it as an executable.
 
-::
+.. code-block:: bash
 
-    $ python make.py
-    $ ./dist/ifcpatch
+    python make.py
+    ./dist/ifcpatch
 
 Patch recipes
 -------------

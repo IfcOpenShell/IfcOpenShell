@@ -73,22 +73,25 @@ src/ifcopenshell-python/test/build
 # mypy cache
 .mypy_cache
 
-# blenderbim libs
-src/blenderbim/blenderbim/libs
+# bonsai i18n
+src/bonsai/bonsai/translations.py
 
-# blenderbim i18n
-src/blenderbim/blenderbim/translations.py
+# bonsai test temp files
+src/bonsai/test/files/temp
+src/bonsai/test/files/basic.ifc.cache.blend
+src/bonsai/test/files/basic.ifc.cache.sqlite
 
-# blenderbim test temp files
-src/blenderbim/test/files/temp
-src/blenderbim/test/files/basic.ifc.cache.blend
-src/blenderbim/test/files/basic.ifc.cache.sqlite
+# bonsai data
+src/bonsai/bonsai/bim/data/build/
+src/bonsai/bonsai/bim/data/gantt/index.html
+src/bonsai/bonsai/bim/data/gantt/jsgantt.js
+src/bonsai/bonsai/bim/data/gantt/jsgantt.css
 
-src/blenderbim/drawings
-src/blenderbim/layouts
+src/bonsai/drawings
+src/bonsai/layouts
 
 # ifcopenshell swig and compiled files
-src/ifcopenshell-python/ifcopenshell/_ifcopenshell_wrapper.so
+src/ifcopenshell-python/ifcopenshell/_ifcopenshell_wrapper*.so
 src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 
 # apple
@@ -100,4 +103,7 @@ src/ifcopenshell-python/ifcopenshell/ifcopenshell_wrapper.py
 .cache
 
 # Brickschema
-src/blenderbim/blenderbim/bim/schema/Brick.ttl
+src/bonsai/bonsai/bim/schema/Brick.ttl
+
+bonsaiDecoratorForLoads.code-workspace
+dev_environment.bat

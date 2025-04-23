@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ifcopenshell"
-version = "0.7.0.999999"
+version = "0.0.0"
 authors = [
   { name="Dion Moult", email="dion@thinkmoult.com" },
 ]
@@ -15,16 +15,24 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU Lesser General Public License v3 or later (LGPLv3+)",
 ]
-dependencies = ["mathutils", "shapely", "numpy", "isodate", "dateutil", "lark"]
+dependencies = [
+    "shapely",
+    "numpy",
+    "isodate",
+    "python-dateutil",
+    "lark",
+    "typing-extensions",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
 
 [project.urls]
 "Homepage" = "http://ifcopenshell.org"
 "Bug Tracker" = "https://github.com/ifcopenshell/ifcopenshell/issues"
 
 [tool.setuptools.packages.find]
-where = ["dist"]
 include = ["ifcopenshell*"]
 
 [tool.setuptools.package-data]
-ifcopenshell = ["*.pyd", "*.so", "*.json"]
-"ifcopenshell.util" = ["*.json", "schema/*.ifc"]
+"*" = ["*.*"]

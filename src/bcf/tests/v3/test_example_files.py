@@ -39,6 +39,22 @@ def assert_everything_in_place(bcf: BcfXml):
     assert bcf.project.name == "BCF 3.0 test cases"
     assert bcf.project.project_id == "de894a86-3a08-4ea0-b2d1-6c222b5602d1"
 
+    assert bcf.extensions
+    assert bcf.extensions.topic_types
+    assert bcf.extensions.topic_types.topic_type == ["ERROR", "WARNING", "INFORMATION", "CLASH", "OTHER"]
+    assert bcf.extensions.topic_statuses
+    assert bcf.extensions.topic_statuses.topic_status == ["OPEN", "IN_PROGRESS", "SOLVED", "CLOSED"]
+    assert bcf.extensions.priorities
+    assert bcf.extensions.priorities.priority == ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
+    assert bcf.extensions.topic_labels
+    assert bcf.extensions.topic_labels.topic_label == []
+    assert bcf.extensions.users
+    assert bcf.extensions.users.user == ["Architect@example.com", "Engineer@example.com", "MEPDesigner@example.com"]
+    assert bcf.extensions.snippet_types
+    assert bcf.extensions.snippet_types.snippet_type == []
+    assert bcf.extensions.stages
+    assert bcf.extensions.stages.stage == []
+
     assert len(bcf.topics) == 1
     topic_handler = bcf.topics["8ac9822a-761a-4deb-9f39-f61286acbf6a"]
 

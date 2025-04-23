@@ -57,7 +57,7 @@ std::map<std::string, std::string> POSTFIX_SCHEMA(argument_name_map);
 
 // Format an IFC attribute and maybe returns as string. Only literal scalar 
 // values are converted. Things like entity instances and lists are omitted.
-boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_mapping* mapping, const Argument* argument, IfcUtil::ArgumentType argument_type, const std::string& argument_name) {
+boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_mapping* mapping, AttributeValue argument, IfcUtil::ArgumentType argument_type, const std::string& argument_name) {
 	boost::optional<std::string> value;
 	
 	// Hard-code lat-lon as it represents an array
@@ -65,7 +65,7 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 	if (argument_name == "IfcSite.RefLatitude" ||
 		argument_name == "IfcSite.RefLongitude")
 	{
-		std::vector<int> angle = *argument;
+		std::vector<int> angle = argument;
 		double deg;
 		if (angle.size() >= 3) {
 			deg = angle[0] + angle[1] / 60. + angle[2] / 3600.;
@@ -82,31 +82,32 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 	}
 
 	switch(argument_type) {
-		case IfcUtil::Argument_BOOL: {
-			const bool b = *argument;
-			value = b ? "true" : "false";
+		case IfcUtil::Argument_BOOL:
+		case IfcUtil::Argument_LOGICAL:{
+			const boost::logic::tribool b = argument;
+			value = b.value == boost::logic::tribool::indeterminate_value ? "unknown" : b ? "true" : "false";
 			break; }
 		case IfcUtil::Argument_DOUBLE: {
-			const double d = *argument;
+			const double d = argument;
 			std::stringstream stream;
 			stream << std::setprecision (std::numeric_limits< double >::max_digits10) << d;
 			value = stream.str();
 			break; }
 		case IfcUtil::Argument_STRING:
 		case IfcUtil::Argument_ENUMERATION: {
-			value = static_cast<std::string>(*argument);
+			value = static_cast<std::string>(argument);
 			break; }
 		case IfcUtil::Argument_INT: {
-			const int v = *argument;
+			const int v = argument;
 			std::stringstream stream;
 			stream << v;
 			value = stream.str();
 			break; }
 		case IfcUtil::Argument_ENTITY_INSTANCE: {
-			IfcUtil::IfcBaseClass* e = *argument;
+			IfcUtil::IfcBaseClass* e = argument;
 			if (!e->declaration().as_entity()) {
 				IfcUtil::IfcBaseType* f = e->as<IfcUtil::IfcBaseType>();
-				value = format_attribute(mapping, f->data().getArgument(0), f->data().getArgument(0)->type(), argument_name);
+				value = format_attribute(mapping, f->data().get_attribute_value(0), f->data().get_attribute_value(0).type(), argument_name);
 			} else if (e->declaration().is(IfcSchema::IfcSIUnit::Class()) || e->declaration().is(IfcSchema::IfcConversionBasedUnit::Class())) {
 				// Some string concatenation to have a unit name as a XML attribute.
 
@@ -130,12 +131,11 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 				auto matrix = ifcopenshell::geometry::taxonomy::cast< ifcopenshell::geometry::taxonomy::matrix4>(item);
 				
 				std::stringstream stream;
-				for (int i = 1; i < 5; ++i) {
-					for (int j = 1; j < 4; ++j) {
+				for (int i = 0; i < 4; ++i) {
+					for (int j = 0; j < 4; ++j) {
 						const double trsf_value = matrix->ccomponents()(j, i);
 						stream << std::setprecision (std::numeric_limits< double >::max_digits10) << trsf_value << " ";
 					}
-					stream << ((i == 4) ? "1" : "0 ");
 				}
 				value = stream.str();
 
@@ -152,24 +152,24 @@ boost::optional<std::string> format_attribute(ifcopenshell::geometry::abstract_m
 
 // Appends to a node with possibly existing attributes
 ptree* format_entity_instance(ifcopenshell::geometry::abstract_mapping* mapping, IfcUtil::IfcBaseEntity* instance, ptree& child, ptree& tree, bool as_link = false) {
-	const unsigned n = instance->declaration().attribute_count();
+	const unsigned n = instance->declaration().as_entity()->attribute_count();
 	for (unsigned i = 0; i < n; ++i) {
 		try {
-		    instance->data().getArgument(i);
+		    instance->data().get_attribute_value(i);
 		} catch (const std::exception&) {
 		    Logger::Error("Expected " + boost::lexical_cast<std::string>(n) + " attributes for:", instance);
 		    break;
 		}		
-		const Argument* argument = instance->data().getArgument(i);
-		if (argument->isNull()) continue;
+		auto argument = instance->data().get_attribute_value(i);
+		if (argument.isNull()) continue;
 
-		std::string argument_name = instance->declaration().attribute_by_index(i)->name();
+		std::string argument_name = instance->declaration().as_entity()->attribute_by_index(i)->name();
 		std::map<std::string, std::string>::const_iterator argument_name_it;
 		argument_name_it = POSTFIX_SCHEMA(argument_name_map).find(argument_name);
 		if (argument_name_it != POSTFIX_SCHEMA(argument_name_map).end()) {
 			argument_name = argument_name_it->second;
 		}
-		const IfcUtil::ArgumentType argument_type = instance->data().getArgument(i)->type();
+		const IfcUtil::ArgumentType argument_type = instance->data().get_attribute_value(i).type();
 
 		const std::string qualified_name = instance->declaration().name() + "." + argument_name;
 		boost::optional<std::string> value;
@@ -202,7 +202,7 @@ ptree* format_entity_instance(ifcopenshell::geometry::abstract_mapping* mapping,
 }
 
 std::string qualify_unrooted_instance(IfcUtil::IfcBaseInterface* inst) {
-	return inst->declaration().name() + "_" + boost::lexical_cast<std::string>(inst->data().id());
+	return inst->declaration().name() + "_" + boost::lexical_cast<std::string>(inst->as<IfcUtil::IfcBaseEntity>()->id());
 }
 
 // A function to be called recursively. Template specialization is used 
@@ -219,9 +219,9 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, A* instance, p
 // Returns related entity instances using IFC's objectified relationship
 // model. The second and third argument require a member function pointer.
 template <typename T, typename U, typename V, typename F, typename G>
-typename V::list::ptr get_related(T* t, F f, G g) {
+auto get_related(T* t, F f, G g) {
 	typename U::list::ptr li = (*t.*f)()->template as<U>();
-	typename V::list::ptr acc(new typename V::list);
+	typename aggregate_of<V>::ptr acc(new aggregate_of<V>);
 	for (typename U::list::it it = li->begin(); it != li->end(); ++it) {
 		U* u = *it;
 		try {
@@ -305,6 +305,16 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
 			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinition>
 			(object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
 
+#ifdef SCHEMAS_HAS_IfcPropertySetDefinitionSet
+		aggregate_of<IfcSchema::IfcPropertySetDefinitionSet>::ptr property_set_sets = get_related
+			<IfcSchema::IfcObject, IfcSchema::IfcRelDefinesByProperties, IfcSchema::IfcPropertySetDefinitionSet>
+			(object, &IfcSchema::IfcObject::IsDefinedBy, &IfcSchema::IfcRelDefinesByProperties::RelatingPropertyDefinition);
+
+		for (auto& s : *property_set_sets) {
+			 property_sets->push((decltype(property_sets))*s);
+		}
+#endif
+
 		for (IfcSchema::IfcPropertySetDefinition::list::it it = property_sets->begin(); it != property_sets->end(); ++it) {
 			IfcSchema::IfcPropertySetDefinition* pset = *it;
 			if (pset->declaration().is(IfcSchema::IfcPropertySet::Class())) {
@@ -351,6 +361,13 @@ ptree* descend(ifcopenshell::geometry::abstract_mapping* mapping, IfcSchema::Ifc
 			}
 		}
     }
+
+#ifdef SCHEMA_HAS_IfcAlignmentSegment
+	if (auto* als = product->as<IfcSchema::IfcAlignmentSegment>()) {
+		ptree node;
+		format_entity_instance(mapping, als->DesignParameters(), node, child, false);
+	}
+#endif
 
 	return &child;
 }
@@ -542,17 +559,27 @@ void POSTFIX_SCHEMA(XmlSerializer)::finalize() {
 
 	ptree root, header, units, decomposition, properties, quantities, types, layers, materials, work, calendars, connections, groups;
 
+	auto catch_exceptions = [this](const auto& fn) {
+		try {
+			return fn();
+		} catch(const std::exception& e) {
+			Logger::Error(e);
+			static std::invoke_result_t<decltype(fn)> v;
+			return v;
+		}
+	};
+
 	// Write the SPF header as XML nodes.
-	BOOST_FOREACH(const std::string& s, file->header().file_description().description()) {
+	BOOST_FOREACH(const std::string & s, catch_exceptions([this]() { return file->header().file_description().description(); })) {
 		header.add_child("file_description.description", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_name().author()) {
+	BOOST_FOREACH(const std::string& s, catch_exceptions([this]() { return file->header().file_name().author(); })) {
 		header.add_child("file_name.author", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_name().organization()) {
+	BOOST_FOREACH(const std::string& s, catch_exceptions([this]() { return file->header().file_name().organization(); })) {
 		header.add_child("file_name.organization", ptree(s));
 	}
-	BOOST_FOREACH(const std::string& s, file->header().file_schema().schema_identifiers()) {
+	BOOST_FOREACH(const std::string& s, catch_exceptions([this]() { return file->header().file_schema().schema_identifiers(); })) {
 		header.add_child("file_schema.schema_identifiers", ptree(s));
 	}
 	try {

@@ -55,8 +55,31 @@ def test_save_maximum_information() -> None:
 
 def assert_everything_in_place(bcf: BcfXml):
     assert bcf.version.version_id == "2.1"
+    assert bcf.project
     assert bcf.project.name == "BCF API Implementation"
+    assert bcf.project_info
     assert bcf.project_info.extension_schema == "extensions.xsd"
+
+    assert bcf.extensions
+    assert bcf.extensions.topic_types
+    assert bcf.extensions.topic_types.topic_type == ["Architecture", "Hidden Type", "Structural"]
+    assert bcf.extensions.topic_statuses
+    assert bcf.extensions.topic_statuses.topic_status == ["Finished status", "Open", "Closed"]
+    assert bcf.extensions.priorities
+    assert bcf.extensions.priorities.priority == ["Low", "High", "Medium"]
+    assert bcf.extensions.topic_labels
+    assert bcf.extensions.topic_labels.topic_label == [
+        "Architecture",
+        "IT Development",
+        "Management",
+        "Mechanical",
+        "Structural",
+    ]
+    assert bcf.extensions.users
+    assert bcf.extensions.users.user == ["dangl@iabi.eu", "linhard@iabi.eu"]
+    assert bcf.extensions.snippet_types
+    assert bcf.extensions.snippet_types.snippet_type == ["IFC2X3", "PDF", "XLSX"]
+    assert bcf.extensions.stages is None
 
     assert len(bcf.topics) == 2
     assert_first_topic_handler(bcf.topics["7ddc3ef0-0ab7-43f1-918a-45e38b42369c"])

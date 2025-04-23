@@ -17,98 +17,204 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.geometry
+import ifcopenshell.api.pset
+import ifcopenshell.api.spatial
+import ifcopenshell.api.type
+import ifcopenshell.guid
+import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
+from typing import Optional, Union, Literal
+
+
+def reassign_class(
+    file: ifcopenshell.file,
+    product: ifcopenshell.entity_instance,
+    ifc_class: str = "IfcBuildingElementProxy",
+    predefined_type: Optional[str] = None,
+    occurrence_class: Optional[str] = None,
+) -> ifcopenshell.entity_instance:
+    """Changes the class of a product
+
+    If you ever created a wall then realised it's meant to be something
+    else, this function lets you change the IFC class whilst retaining all
+    other geometry and relationships.
+
+    This is especially useful when dealing with poorly classified data from
+    proprietary software with limited IFC capabilities.
+
+    If you are reassigning a type, the occurrence classes are also
+    reassigned to maintain validity.
+
+    Vice versa, if you are reassigning an occurrence, the type is also
+    reassigned in IFC4 and up. In IFC2X3, this may not occur if the type
+    cannot be unambiguously derived, so you are required to manually check
+    this.
+
+    Reassigning type class to occurrence (and vice versa) is supported.
+
+    :param product: The IfcProduct that you want to change the class of.
+    :param ifc_class: The new IFC class you want to change it to.
+    :param predefined_type: In case you want to change the predefined type
+        too. User defined types are also allowed, just type what you want.
+    :param occurrence_class: IFC class to assign to occurrences in case
+        if provided ``ifc_class`` is IfcTypeProduct.
+        If omitted, class will be deduced automatically from the type.
+        Only really needed in IFC2X3, since in IFC4+ there is no ambiguity on
+        what class to assign to occurrences.
+    :return: The newly modified product.
+
+    Example:
+
+    .. code:: python
+
+        # We have a wall.
+        wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
+
+        # Oh, did I say wall? I meant slab.
+        slab = ifcopenshell.api.root.reassign_class(model, product=wall, ifc_class="IfcSlab")
+
+        # Warning: this will crash since wall doesn't exist any more.
+        print(wall) # Kaboom.
+    """
+    usecase = Usecase()
+    usecase.file = file
+    return usecase.execute(product, ifc_class, predefined_type, occurrence_class)
 
 
 class Usecase:
-    def __init__(
+    file: ifcopenshell.file
+
+    def execute(
         self,
-        file,
-        product=None,
-        ifc_class="IfcBuildingElementProxy",
-        predefined_type=None,
-    ):
-        """Changes the class of a product
+        product: ifcopenshell.entity_instance,
+        ifc_class: str,
+        predefined_type: Union[str, None],
+        occurrence_class: Union[str, None],
+    ) -> ifcopenshell.entity_instance:
+        self.occurrence_class = occurrence_class
+        was_type_product_before = product.is_a("IfcTypeProduct")
+        schema = ifcopenshell.schema_by_name(self.file.schema)
+        is_type_product_after: bool
+        is_type_product_after = schema.declaration_by_name(ifc_class)._is("IfcTypeProduct")
 
-        If you ever created a wall then realised it's meant to be something
-        else, this function lets you change the IFC class whilst retaining all
-        other geometry and relationships.
+        if was_type_product_before == is_type_product_after:
+            return self.simple_reassignment(product, ifc_class, predefined_type)
 
-        This is especially useful when dealing with poorly classified data from
-        proprietary software with limited IFC capabilities.
+        switch_type = "occurrence_to_type" if is_type_product_after else "type_to_occurrence"
 
-        If you are reassigning a type, the occurrence classes are also
-        reassigned to maintain validity.
+        return self.switch_between_class_types(
+            product,
+            switch_type,
+            ifc_class,
+            predefined_type,
+        )
 
-        Vice versa, if you are reassigning an occurrence, the type is also
-        reassigned in IFC4 and up. In IFC2X3, this may not occur if the type
-        cannot be unambiguously derived, so you are required to manually check
-        this.
+    def switch_between_class_types(
+        self,
+        element: ifcopenshell.entity_instance,
+        switch_type: Literal["occurrence_to_type", "type_to_occurrence"],
+        ifc_class: str,
+        predefined_type: Union[str, None],
+    ) -> ifcopenshell.entity_instance:
 
-        :param product: The IfcProduct that you want to change the class of.
-        :type product: ifcopenshell.entity_instance.entity_instance
-        :param ifc_class: The new IFC class you want to change it to.
-        :type ifc_class: str,optional
-        :param predefined_type: In case you want to change the predefined type
-            too. User defined types are also allowed, just type what you want.
-        :type predefined_type: str,optional
-        :return: The newly modified product.
-        :rtype: ifcopenshell.entity_instance.entity_instance
+        psets_to_reassign: list[ifcopenshell.entity_instance] = []
 
-        Example:
+        representations = list(ifcopenshell.util.representation.get_representations_iter(element))
+        for rep in representations:
+            if switch_type == "type_to_occurrence":
+                rep = ifcopenshell.util.representation.resolve_representation(rep)
+            ifcopenshell.api.geometry.unassign_representation(self.file, product=element, representation=rep)
 
-        .. code:: python
+        if switch_type == "type_to_occurrence":
+            occurrences = ifcopenshell.util.element.get_types(element)
+            # Don't need to reassign as psets are linked to type directly, without rel.
+            psets_to_reassign = element.HasPropertySets or []
 
-            # We have a wall.
-            wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall")
+            element = self.reassign_class(element, ifc_class, predefined_type)
+            ifcopenshell.api.type.unassign_type(self.file, occurrences)
 
-            # Oh, did I say wall? I meant slab.
-            slab = ifcopenshell.api.run("root.reassign_class", model, product=wall, ifc_class="IfcSlab")
+        else:  # occurrence_to_type
+            element_type = ifcopenshell.util.element.get_type(element)
+            # Handle element type.
+            if element_type:
+                ifcopenshell.api.type.unassign_type(self.file, [element])
 
-            # Warning: this will crash since wall doesn't exist any more.
-            print(wall) # Kaboom.
-        """
-        self.file = file
-        self.settings = {
-            "product": product,
-            "ifc_class": ifc_class,
-            "predefined_type": predefined_type,
-        }
+            # Handle containers and aggregates.
+            if ifcopenshell.util.element.get_container(element):
+                ifcopenshell.api.spatial.unassign_container(self.file, [element])
+            elif ifcopenshell.util.element.get_aggregate(element):
+                ifcopenshell.api.aggregate.unassign_object(self.file, [element])
 
-    def execute(self):
-        element = self.reassign_class(self.settings["product"], self.settings["ifc_class"])
+            psets = ifcopenshell.util.element.get_psets(element)
+            for pset_name in psets:
+                pset = self.file.by_id(psets[pset_name]["id"])
+                psets_to_reassign.append(pset)
+                ifcopenshell.api.pset.unassign_pset(self.file, [element], pset)
 
+            element = self.reassign_class(element, ifc_class, predefined_type)
+
+        # Reassign psets.
+        for pset in psets_to_reassign:
+            ifcopenshell.api.pset.assign_pset(self.file, [element], pset)
+
+        # Reassign representations.
+        for rep in representations:
+            ifcopenshell.api.geometry.assign_representation(self.file, product=element, representation=rep)
+
+        # Keep IFC valid (PlacementForShapeRepresentation).
+        if switch_type == "type_to_occurrence" and representations:
+            ifcopenshell.api.geometry.edit_object_placement(self.file, product=element)
+
+        return element
+
+    def simple_reassignment(
+        self,
+        element: ifcopenshell.entity_instance,
+        ifc_class: str,
+        predefined_type: Union[str, None],
+    ) -> ifcopenshell.entity_instance:
+        element = self.reassign_class(element, ifc_class, predefined_type)
         if element.is_a("IfcTypeProduct"):
-            for occurrence in ifcopenshell.util.element.get_types(element) or []:
-                ifc_class = ifcopenshell.util.type.get_applicable_entities(self.settings["ifc_class"])[0]
-                self.reassign_class(occurrence, ifc_class)
+            for occurrence in ifcopenshell.util.element.get_types(element):
+                if self.occurrence_class:
+                    ifc_class_ = self.occurrence_class
+                else:
+                    # NOTE: in theory we can skip reassignment in IFC2X3 in some cases
+                    # e.g. if occurrence is IfcRoof and we're reassigning to IfcBuildingElementProxyType
+                    # but currently type_to_entity_map doesn't completely match entity_to_type_map,
+                    # see type.py for more details.
+                    ifc_class_ = next(iter(ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)))
+                self.reassign_class(occurrence, ifc_class_, predefined_type)
         else:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
-                ifc_class = ifcopenshell.util.type.get_applicable_types(self.settings["ifc_class"])
-                if ifc_class and len(ifc_class) == 1:
-                    element_type = self.reassign_class(element_type, ifc_class[0])
+                ifc_class_ = next(iter(ifcopenshell.util.type.get_applicable_types(ifc_class, self.file.schema)))
+                element_type = self.reassign_class(element_type, ifc_class_, predefined_type)
                 ifc_class = element.is_a()
-                for occurrence in ifcopenshell.util.element.get_types(element_type) or []:
+                for occurrence in ifcopenshell.util.element.get_types(element_type):
                     if occurrence == element:
                         continue
-                    self.reassign_class(occurrence, ifc_class)
+                    self.reassign_class(occurrence, ifc_class, predefined_type)
         return element
 
-    def reassign_class(self, element, ifc_class):
+    def reassign_class(
+        self, element: ifcopenshell.entity_instance, ifc_class: str, predefined_type: Union[str, None]
+    ) -> ifcopenshell.entity_instance:
         element = ifcopenshell.util.schema.reassign_class(self.file, element, ifc_class)
-        if self.settings["predefined_type"] and hasattr(element, "PredefinedType"):
+        if predefined_type and hasattr(element, "PredefinedType"):
             try:
-                element.PredefinedType = self.settings["predefined_type"]
+                element.PredefinedType = predefined_type
             except:
                 # PredefinedType wasn't in the respective enum, assume it's actually USERDEFINED
                 # and set .ElementType / .ObjectType to the provided predefined type
                 element.PredefinedType = "USERDEFINED"
                 if element.is_a("IfcTypeProduct"):
-                    element.ElementType = self.settings["predefined_type"]
+                    element.ElementType = predefined_type
                 else:
-                    element.ObjectType = self.settings["predefined_type"]
+                    element.ObjectType = predefined_type
 
         return element

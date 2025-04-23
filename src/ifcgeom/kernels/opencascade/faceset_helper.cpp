@@ -35,13 +35,18 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 	// @todo use pointers?
 	std::vector<ifcopenshell::geometry::taxonomy::point3::ptr> points;
 	std::vector<ifcopenshell::geometry::taxonomy::loop::ptr> loops;
+	std::set<uint32_t> point_identities_visited;
 
 	for (auto& f : shell->children) {
 		for (auto& l : f->children) {
 			loops.push_back(l);
 			for (auto& e : l->children) {
 				// @todo make sure only cartesian points are provided here
-				points.push_back(boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(e->start));
+				auto& p = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(e->orientation.get_value_or(true) ? e->start : e->end);
+				if (point_identities_visited.find(p->identity()) == point_identities_visited.end()) {
+					point_identities_visited.insert(p->identity());
+					points.push_back(p);
+				}
 			}
 		}
 	}
@@ -110,6 +115,7 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 			eps_ = Precision::Confusion();
 		}
 
+		std::vector<bool> retained(pnts.size());
 		for (int pnt_i = 0; pnt_i < (int)pnts.size(); ++pnt_i) {
 			if (pnts[pnt_i]) {
 				std::set<int> vs;
@@ -120,7 +126,9 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 					// NB: insert() ignores duplicate keys
 					// v-1?
 					// @todo this reliable also in case of tesselations?
-					vertex_mapping_.insert({ pt.identity(), pnt_i });
+					if (vertex_mapping_.insert({ pt.identity(), pnt_i }).second) {
+						retained[pnt_i] = true;
+					}
 				}
 			}
 		}
@@ -136,8 +144,10 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 			}
 		}
 
-		if (unique.size() != vertex_mapping_.size()) {
-			Logger::Notice("Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(vertex_mapping_.size()));
+		auto num_retained = std::count(retained.begin(), retained.end(), true);
+
+		if (unique.size() != num_retained) {
+			Logger::Notice("Collapsed vertices from " + std::to_string(pnts.size()) + " (" + std::to_string(unique.size()) + " unique) to " + std::to_string(num_retained));
 		}
 
 		typedef std::array<int, 2> edge_t;
@@ -155,7 +165,6 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 
 			if (edge_sets.find(segment_set) != edge_sets.end()) {
 				duplicate_faces++;
-				// @todo does this work with tesselated face sets, will they have an associated instance? Guess not.
 				duplicates_.insert(loop->identity());
 				continue;
 			}
@@ -197,12 +206,15 @@ void IfcGeom::OpenCascadeKernel::faceset_helper::loop_(const ifcopenshell::geome
 		return;
 	}
 
-	auto a = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(ps->children.back()->start);
+	auto a = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(ps->children.back()->orientation.get_value_or(true) ? ps->children.back()->start : ps->children.back()->end);
 	auto A = a->identity();
 	for (auto& b : ps->children) {
-		auto B = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(b->start)->identity();
+		auto B = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(b->orientation.get_value_or(true) ? b->start : b->end)->identity();
 		auto C = vertex_mapping_[A], D = vertex_mapping_[B];
 		bool fwd = C < D;
+		if (!b->orientation) {
+			fwd = !fwd;
+		}
 		if (!fwd) {
 			std::swap(C, D);
 		}

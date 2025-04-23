@@ -250,7 +250,7 @@ https://technical.buildingsmart.org/standards/ifc/ifc-schema-specifications/
 https://www.sciencedirect.com/science/article/pii/S0926580523000389
 
 - IFCOpenShell documentation
-https://blenderbim.org/docs-python/
+https://docs.ifcopenshell.org/
 
 ### Frontend
 

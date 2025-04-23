@@ -18,11 +18,17 @@
 
 import ifcopenshell
 import ifcopenshell.util.schema
+import typing
 from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, schema: str = "IFC4"):
+    def __init__(
+        self,
+        file: ifcopenshell.file,
+        logger: Logger,
+        schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4",
+    ):
         """Migrate from one IFC version to another
 
         Note that this is experimental and will try to preserve as much data as
@@ -38,7 +44,6 @@ class Patcher:
             # Upgrade an IFC2X3 model to IFC4
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "Migrate", "arguments": ["IFC4"]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.schema = schema
@@ -46,7 +51,8 @@ class Patcher:
     def patch(self):
         self.file_patched = ifcopenshell.file(schema=self.schema)
         migrator = ifcopenshell.util.schema.Migrator()
+        migrator.preprocess(self.file, self.file_patched)
         for element in self.file:
-            migrator.migrate(element, self.file_patched)
+            new_element = migrator.migrate(element, self.file_patched)
             print("Migrating", element)
-            print("Successfully converted to", migrator.migrate(element, self.file_patched))
+            print("Successfully converted to", new_element)

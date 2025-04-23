@@ -25,16 +25,17 @@ except ModuleNotFoundError as e:
     )
     raise e
 
-from collections import Counter
 import itertools
 import operator
-from bs4 import BeautifulSoup
 import json
 import ifcopenshell
+from collections import Counter
+from bs4 import BeautifulSoup
+from typing import Any, Union
 
 
 # Hacky modified functions from server.py to make parser work
-def get_definition_from_md(resource, mdc):
+def get_definition_from_md(resource: str, mdc: str) -> str:
     # Only match up to the first h2
     lines = []
     for line in mdc.split("\n"):
@@ -49,7 +50,7 @@ def get_definition_from_md(resource, mdc):
     return mdc_splitted[1] if len(mdc_splitted) > 1 else ""
 
 
-def get_type_values(resource, mdc):
+def get_type_values(resource: str, mdc: str) -> dict[str, Any]:
     values = R.type_values.get(resource)
     if not values:
         return
@@ -127,9 +128,21 @@ def get_attributes_keep_md(resource, builder):
 
 # -------------------------
 
+# Temporary fix for https://github.com/buildingSMART/IFC4.3.x-development/issues/754.
+_original_get_resource_path = get_resource_path
 
-def get_description_json(resource):
+
+def get_resource_path(resource: str, abort_on_error=False) -> Union[str, None]:
+    md = _original_get_resource_path(resource, abort_on_error)
+    if md and resource == "IfcURIReference":
+        md = md.replace("IfcMeasureResource", "IfcExternalReferenceResource")
+    return md
+
+
+def get_description_json(resource: str) -> str:
     md = get_resource_path(resource, abort_on_error=False)
+    if not md:
+        raise Exception(f"No resource path found for '{resource}'.")
     mdc = open(md, "r", encoding="utf-8").read()
     description = get_definition_from_md(resource, mdc)
     return description
@@ -149,11 +162,13 @@ def get_attributes_json(resource):
 
 def get_predefined_type_values_json(resource):
     md = get_resource_path(resource, abort_on_error=False)
+    if not md:
+        raise Exception(f"No resource path found for '{resource}'.")
     mdc = open(md, "r", encoding="utf-8").read()
     return get_type_values(resource, mdc)["schema_values"]
 
 
-def save_entities_data(entities):
+def save_entities_data(entities: list[str]) -> None:
     entities_description = dict()
     for entity in entities:
         entity_data = dict()
@@ -163,6 +178,7 @@ def save_entities_data(entities):
         except Exception as e:
             md = get_resource_path(entity, abort_on_error=False)
             if md:
+                print(f"server returned markdown file path ('{md}') but there was some other parsing error, see below.")
                 raise e
             print(
                 f"WARNING. Cannot find resource path for `{entity}` in DEV DOCUMENTATION even though it's present in ifcopenshell schema. It will be skipped."
@@ -198,6 +214,6 @@ def save_entities_data(entities):
 
 
 if __name__ == "__main__":
-    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name("IFC4X3")
-    entities = [e.name() for e in schema.declarations()]
+    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name("IFC4X3_ADD2")
+    entities: list[str] = [e.name() for e in schema.declarations()]
     save_entities_data(entities)

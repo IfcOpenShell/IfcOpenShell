@@ -19,44 +19,36 @@
 import ifcopenshell
 
 
-class Usecase:
-    def __init__(self, file, objective=None):
-        """Add a new metric benchmark
+def add_metric(file: ifcopenshell.file, objective: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+    """Add a new metric benchmark
 
-        Qualitative constraints may have a series of quantitative benchmarks
-        linked to it known as metrics. Metrics may be parametrically linked to
-        computed model properties or quantities. Metrics need to be satisfied
-        to meet the objective of the constraint.
+    Qualitative constraints may have a series of quantitative benchmarks
+    linked to it known as metrics. Metrics may be parametrically linked to
+    computed model properties or quantities. Metrics need to be satisfied
+    to meet the objective of the constraint.
 
-        :param objective: The IfcObjective that this metric is a benchmark of.
-        :type objective: ifcopenshell.entity_instance.entity_instance
-        :return: The newly created IfcMetric entity
-        :rtype: ifcopenshell.entity_instance.entity_instance
+    :param objective: The IfcObjective that this metric is a benchmark of.
+    :return: The newly created IfcMetric entity
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            objective = ifcopenshell.api.run("constraint.add_objective", model)
-            metric = ifcopenshell.api.run("constraint.add_metric", model,
-                objective=objective)
-        """
-        self.file = file
-        self.settings = {
-            "objective": objective,
-        }
-
-    def execute(self):
-        metric = self.file.create_entity(
-            "IfcMetric",
-            **{
-                "Name": "Unnamed",
-                "ConstraintGrade": "NOTDEFINED",
-                "Benchmark": "EQUALTO",
-            }
-        )
-        if self.settings["objective"]:
-            benchmark_values = list(self.settings["objective"].BenchmarkValues or [])
-            benchmark_values.append(metric)
-            self.settings["objective"].BenchmarkValues = benchmark_values
-        return metric
+        objective = ifcopenshell.api.constraint.add_objective(model)
+        metric = ifcopenshell.api.constraint.add_metric(model,
+            objective=objective)
+    """
+    metric = file.create_entity(
+        "IfcMetric",
+        **{
+            "Name": "Unnamed",
+            "ConstraintGrade": "NOTDEFINED",
+            "Benchmark": "EQUALTO",
+        },
+    )
+    if objective:
+        benchmark_values: list[ifcopenshell.entity_instance]
+        benchmark_values = list(objective.BenchmarkValues or [])
+        benchmark_values.append(metric)
+        objective.BenchmarkValues = benchmark_values
+    return metric

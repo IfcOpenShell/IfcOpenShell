@@ -18,21 +18,22 @@
 
 import pytest
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.system
 import ifcopenshell.util.system
 
 
 class TestUnassignSystem(test.bootstrap.IFC4):
     def test_unassign_system(self):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
-        element2 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
-        element3 = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcFlowSegment")
-        system = ifcopenshell.api.run("system.add_system", self.file)
-        ifcopenshell.api.run("system.assign_system", self.file, products=[element, element2, element3], system=system)
-        ifcopenshell.api.run("system.unassign_system", self.file, products=[element2, element3], system=system)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowSegment")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowSegment")
+        element3 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowSegment")
+        system = ifcopenshell.api.system.add_system(self.file)
+        ifcopenshell.api.system.assign_system(self.file, products=[element, element2, element3], system=system)
+        ifcopenshell.api.system.unassign_system(self.file, products=[element2, element3], system=system)
         assert ifcopenshell.util.system.get_system_elements(system) == [element]
 
-        ifcopenshell.api.run("system.unassign_system", self.file, products=[element], system=system)
+        ifcopenshell.api.system.unassign_system(self.file, products=[element], system=system)
         assert ifcopenshell.util.system.get_system_elements(system) == []
 
 

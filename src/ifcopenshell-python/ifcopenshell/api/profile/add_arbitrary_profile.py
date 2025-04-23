@@ -16,57 +16,66 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import numpy.typing as npt
 import ifcopenshell.util.unit
+from ifcopenshell.util.shape_builder import V, SequenceOfVectors, ifc_safe_vector_type
+from typing import Optional, Union
+
+
+def add_arbitrary_profile(
+    file: ifcopenshell.file, profile: SequenceOfVectors, name: Optional[str] = None
+) -> ifcopenshell.entity_instance:
+    """Adds a new arbitrary polyline-based profile
+
+    The profile is represented as a polyline defined by a list of
+    coordinates. Only straight segments are allowed. Coordinates must be
+    provided in SI meters.
+
+    To represent a closed curve, the first and last coordinate must be
+    identical.
+
+    :param profile: A list of coordinates
+    :param name: If the profile is semantically significant (i.e. to be
+        managed and reused by the user) then it must be named. Otherwise,
+        this may be left as none.
+    :return: The newly created IfcArbitraryClosedProfileDef
+
+    Example:
+
+    .. code:: python
+
+        # A 10mm by 100mm rectangle, such that might be used as a wooden
+        # skirting board or kick plate.
+        square = ifcopenshell.api.profile.add_arbitrary_profile(model,
+            profile=[(0., 0.), (.01, 0.), (.01, .1), (0., .1), (0., 0.)],
+            name="SK01 Profile")
+    """
+    usecase = Usecase()
+    usecase.file = file
+    return usecase.execute(V(profile), name)
 
 
 class Usecase:
-    def __init__(self, file, profile=None, name=None):
-        """Adds a new arbitrary polyline-based profile
+    file: ifcopenshell.file
 
-        The profile is represented as a polyline defined by a list of
-        coordinates. Only straight segments are allowed. Coordinates must be
-        provided in SI meters.
-
-        To represent a closed curve, the first and last coordinate must be
-        identical.
-
-        :param profile: A list of coordinates
-        :type profile: list[list[float]]
-        :param name: If the profile is semantically significant (i.e. to be
-            managed and reused by the user) then it must be named. Otherwise,
-            this may be left as none.
-        :type name: str, optional
-        :return: The newly created IfcArbitraryClosedProfileDef
-        :rtype: ifcopenshell.entity_instance.entity_instance
-
-        Example:
-
-        .. code:: python
-
-            # A 10mm by 100mm rectangle, such that might be used as a wooden
-            # skirting board or kick plate.
-            square = ifcopenshell.api.run("profile.add_arbitrary_profile", model,
-                profile=[(0., 0.), (.01, 0.), (.01, .1), (0., .1), (0., 0.)],
-                name="SK01 Profile")
-        """
-        self.file = file
-        self.settings = {"profile": profile, "name": name}
-
-    def execute(self):
-        self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        points = [self.convert_si_to_unit(p) for p in self.settings["profile"]]
+    def execute(self, profile: npt.NDArray, name: Union[str, None]):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        points = self.convert_si_to_unit(profile)
         if self.file.schema == "IFC2X3":
-            curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in points])
+            curve = self.file.create_entity(
+                "IfcPolyline",
+                [self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(p)) for p in points],
+            )
         else:
-            dimensions = len(points[0])
+            dimensions = points.shape[1]
             if dimensions == 2:
-                ifc_points = self.file.createIfcCartesianPointList2D(points)
+                ifc_points = self.file.create_entity("IfcCartesianPointList2D", ifc_safe_vector_type(points))
             elif dimensions == 3:
-                ifc_points = self.file.createIfcCartesianPointList3D(points)
-            curve = self.file.createIfcIndexedPolyCurve(ifc_points)
-        return self.file.createIfcArbitraryClosedProfileDef("AREA", self.settings["name"], curve)
+                ifc_points = self.file.create_entity("IfcCartesianPointList3D", ifc_safe_vector_type(points))
+            else:
+                assert False, f"Invalid dimensions: {dimensions}."
+            curve = self.file.create_entity("IfcIndexedPolyCurve", ifc_points)
+        return self.file.create_entity("IfcArbitraryClosedProfileDef", "AREA", name, curve)
 
-    def convert_si_to_unit(self, co):
-        if isinstance(co, (tuple, list)):
-            return [self.convert_si_to_unit(o) for o in co]
-        return co / self.settings["unit_scale"]
+    def convert_si_to_unit(self, co: npt.NDArray) -> npt.NDArray:
+        return co / self.unit_scale

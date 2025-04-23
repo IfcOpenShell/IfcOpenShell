@@ -503,10 +503,10 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 
 				double u0, u1, v0, v1;
 				prop_a.Bounds(u0, u1, v0, v1);
-				prop_a.Normal((u0 + u1) / 2., (u0 + u1) / 2., p_a, v_a);
+				prop_a.Normal((u0 + u1) / 2., (v0 + v1) / 2., p_a, v_a);
 
 				prop_b.Bounds(u0, u1, v0, v1);
-				prop_b.Normal((u0 + u1) / 2., (u0 + u1) / 2., p_b, v_b);
+				prop_b.Normal((u0 + u1) / 2., (v0 + v1) / 2., p_b, v_b);
 
 				bool all_vertices_behind_f_a = true;
 
@@ -531,7 +531,7 @@ int IfcGeom::util::eliminate_touching_operands(double prec, const TopoDS_Shape &
 				// Check if surface normals are opposite
 				if (v_a.IsOpposite(v_b, 1.e-5)) {
 					// Check if faces are co-planar
-					if ((p_b.XYZ() - p_a.XYZ()).Dot(v_a.XYZ()) <= prec) {
+					if (std::abs((p_b.XYZ() - p_a.XYZ()).Dot(v_a.XYZ())) <= prec) {
 
 						TopTools_IndexedMapOfShape f_b_vertices;
 						TopExp::MapShapes(f_b, TopAbs_VERTEX, f_b_vertices);
@@ -683,42 +683,45 @@ bool IfcGeom::util::boolean_subtraction_2d_using_builder(const TopoDS_Shape & a_
 					BRep_Tool::Curve(e1, u21, u22)
 				);
 
-				if (!ecc.Extrema().IsParallel() && ecc.NbExtrema() == 1) {
+				if (!ecc.Extrema().IsParallel() && ecc.NbExtrema() >= 1) {
 					// @todo: extend this to work in case of multiple extrema and curved segments.
-					gp_Pnt p1, p2;
-					ecc.Points(1, p1, p2);
 
-					// #3616 Only take into account orthogonal distance between closest points on curve
-					// to see whether inside tolerance. Current DY is hardcoded. The sensible default
-					// for walls.
-					gp_Vec vec(p1, p2);
-					Standard_Real d = vec.Dot(gp::DY());
-					gp_Vec projected = d * gp::DY();
-					gp_Vec ortho_remainder = vec - projected;
-					Standard_Real ortho_distance = ortho_remainder.Magnitude();
+					for (int i = 1; i <= ecc.NbExtrema(); ++i) {
+						gp_Pnt p1, p2;
+						ecc.Points(i, p1, p2);
 
-					const bool unbounded_intersects = ortho_distance < eps;
-					if (unbounded_intersects) {
-						ecc.Parameters(1, U1, U2);
+						// #3616 Only take into account orthogonal distance between closest points on curve
+						// to see whether inside tolerance. Current DY is hardcoded. The sensible default
+						// for walls.
+						gp_Vec vec(p1, p2);
+						Standard_Real d = vec.Dot(gp::DY());
+						gp_Vec projected = d * gp::DY();
+						gp_Vec ortho_remainder = vec - projected;
+						Standard_Real ortho_distance = ortho_remainder.Magnitude();
 
-						if (u11 > u12) {
-							std::swap(u11, u12);
-						}
-						if (u21 > u22) {
-							std::swap(u21, u22);
-						}
+						const bool unbounded_intersects = ortho_distance < eps;
+						if (unbounded_intersects) {
+							ecc.Parameters(i, U1, U2);
 
-						/// @todo: tfk: probably need different thresholds on non-linear curves
-						u11 -= eps;
-						u12 += eps;
-						u21 -= eps;
-						u22 += eps;
+							if (u11 > u12) {
+								std::swap(u11, u12);
+							}
+							if (u21 > u22) {
+								std::swap(u21, u22);
+							}
 
-						if (u11 < U1 && U1 < u12 && u21 < U2 && U2 < u22) {
-							// Edge curves belonging to different operands intersect, don't process
-							// using builder.
-							Logger::Notice("Intersecting boundaries");
-							return false;
+							/// @todo: tfk: probably need different thresholds on non-linear curves
+							u11 -= eps;
+							u12 += eps;
+							u21 -= eps;
+							u22 += eps;
+
+							if (u11 < U1 && U1 < u12 && u21 < U2 && U2 < u22) {
+								// Edge curves belonging to different operands intersect, don't process
+								// using builder.
+								Logger::Notice("Intersecting boundaries");
+								return false;
+							}
 						}
 					}
 				}
@@ -926,11 +929,11 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	bool is_2d = count(a, TopAbs_FACE) > 0 && count(a, TopAbs_SHELL) == 0;
 
 	bool success = false;
-	BRepAlgoAPI_BooleanOperation* builder;
+	std::unique_ptr<BRepAlgoAPI_BooleanOperation> builder;
 	TopTools_ListOfShape b_tmp;
 
 	if (op == BOPAlgo_CUT) {
-		builder = new BRepAlgoAPI_Cut();
+		builder.reset(new BRepAlgoAPI_Cut());
 
 		if (do_subtraction_eliminate_disjoint_bbox) {
 			PERF("boolean subtraction: eliminate disjoint bbox");
@@ -965,9 +968,9 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		}
 
 	} else if (op == BOPAlgo_COMMON) {
-		builder = new BRepAlgoAPI_Common();
+		builder.reset(new BRepAlgoAPI_Common());
 	} else if (op == BOPAlgo_FUSE) {
-		builder = new BRepAlgoAPI_Fuse();
+		builder.reset(new BRepAlgoAPI_Fuse());
 	} else {
 		return false;
 	}
@@ -978,10 +981,12 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		return true;
 	}
 
-	if (Logger::LOG_NOTICE >= Logger::Verbosity()) {
+	if (!is_2d && Logger::LOG_NOTICE >= Logger::Verbosity()) {
 		PERF("preliminary manifoldness check");
 
-		Logger::Notice("Operand A is " + (is_manifold(a) ? ""s : "non-"s) + "manifold");
+		if (!a.IsNull()) {
+			Logger::Notice("Operand A is " + (is_manifold(a) ? ""s : "non-"s) + "manifold");
+		}
 
 		TopTools_ListIteratorOfListOfShape it(b);
 		for (int i = 0; it.More(); it.Next(), ++i) {
@@ -1026,6 +1031,9 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	const double fuzz = (std::min)(min_length_orig / 3., fuzziness);
 
 	Logger::Notice("Used fuzziness: " + std::to_string(fuzz));
+
+	const double new_fuzziness = fuzziness * 10.;
+	const bool allow_retry = new_fuzziness - 1e-15 <= settings.precision * 10000. && new_fuzziness < min_length_orig;
 
 	TopTools_ListOfShape s1s;
 	s1s.Append(copy_operand(a));
@@ -1074,7 +1082,7 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 				if (is_extrusion_b) {
 					Logger::Notice("Operand B " + std::to_string(nb) + "/" + std::to_string(b.Extent()) + " is an extrusion");
 
-					if (b_interval.first < a_interval.first + fuzz && b_interval.second > a_interval.second - fuzz) {
+					if (b_interval.first < a_interval.first + (fuzz * 100.) && b_interval.second > a_interval.second - (fuzz * 100.)) {
 						Logger::Notice("Operand B creates a through hole");
 
 						// Align b with a operand
@@ -1150,9 +1158,20 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 		builder->Build();
 	}
 	if (builder->IsDone()) {
-		if (builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
+		if (false && builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection))) {
 			Logger::Notice("Builder reports self-intersection in output");
 			success = false;
+
+			/*
+			const auto& ws = builder->DSFiller()->GetReport()->GetAlerts(Message_Warning);
+			for (const auto& w : ws) {
+				if (w->DynamicType() == STANDARD_TYPE(BOPAlgo_AlertAcquiredSelfIntersection)) {
+					const auto& x = Handle(BOPAlgo_AlertAcquiredSelfIntersection)::DownCast(w)->GetShape();
+					BRepTools::Write(x, "debug_x.brep");
+					BRepTools::Write(*builder, "debug_r.brep");
+				}
+			}
+			*/
 		} else if(builder->DSFiller()->HasWarning(STANDARD_TYPE(BOPAlgo_AlertBadPositioning)) && !TopoDS_Iterator(*builder).More()) {
 			Logger::Notice("Builder reports bad positioning and result is empty");
 			success = false;
@@ -1410,10 +1429,8 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 			Logger::Notice(str_str);
 		}
 	}
-	delete builder;
 	if (!success) {
-		const double new_fuzziness = fuzziness * 10.;
-		if (new_fuzziness - 1e-15 <= settings.precision * 10000. && new_fuzziness < min_length_orig) {
+		if (allow_retry) {
 			return boolean_operation(settings, a, b, op, result, new_fuzziness);
 		} else {
 			Logger::Notice("No longer attempting boolean operation with higher fuzziness");
@@ -1428,14 +1445,15 @@ bool IfcGeom::util::boolean_operation(const boolean_settings& settings, const To
 	return boolean_operation(settings, a, bs, op, result, fuzziness);
 }
 
-const TopoDS_Shape& IfcGeom::util::ensure_fit_for_subtraction(const TopoDS_Shape& shape, TopoDS_Shape& solid, double tol) {
+TopoDS_Shape IfcGeom::util::ensure_fit_for_subtraction(const TopoDS_Shape& shape, double tol) {
 	const bool is_comp = is_compound(shape);
 	if (!is_comp) {
-		return solid = shape;
+		return shape;
 	}
 
+	TopoDS_Solid solid;
 	if (!create_solid_from_compound(shape, solid, tol)) {
-		return solid = shape;
+		return shape;
 	}
 
 	return solid;

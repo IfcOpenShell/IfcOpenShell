@@ -46,6 +46,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcCircleProfileDef* inst) {
 #endif
 		if (has_position) {
 			c->matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
+		} else {
+			// matrix needs to be set on elementary curves
+			c->matrix = taxonomy::make<taxonomy::matrix4>();
 		}
 
 		auto e = taxonomy::make<taxonomy::edge>();

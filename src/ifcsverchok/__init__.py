@@ -19,8 +19,8 @@
 bl_info = {
     "name": "IFC for Sverchok",
     "author": "Martina Jakubowska, Dion Moult",
-    "version": (0, 0, 999999),
-    "blender": (2, 90, 0),
+    "version": (0, 0, 0),
+    "blender": (3, 1, 0),
     "location": "Node Editor",
     "category": "Node",
     "description": "An extension to Sverchok to work with IFC data",
@@ -30,8 +30,53 @@ bl_info = {
 
 import importlib
 import logging
+import types
+import bpy
+from bpy_extras.io_utils import ExportHelper
 
 logger = logging.getLogger("sverchok.ifc")
+
+
+def get_blender_addon_package_by_name(addon_name: str) -> types.ModuleType:
+    # Check for legacy addons.
+    # Make an exception for sverchok as it keeps getting installed by all kind of names
+    # and then hacks `sverchok` into `sys.modules`.
+    if addon_name in bpy.context.preferences.addons or addon_name == "sverchok":
+        return importlib.import_module(addon_name)
+    elif bpy.app.version < (4, 2, 0):
+        raise ModuleNotFoundError
+
+    # Check for Blender extensions.
+    addon_package = None
+    for package_name in bpy.context.preferences.addons.keys():
+        if package_name.endswith(f".{addon_name}"):
+            try:
+                addon_package = importlib.import_module(package_name)
+            except ModuleNotFoundError:
+                pass
+    if addon_package is None:
+        raise ModuleNotFoundError
+    return addon_package
+
+
+def ensure_addons_are_enabled(*addon_names: str) -> None:
+    errors = []
+    for addon_name in addon_names:
+        try:
+            module = get_blender_addon_package_by_name(addon_name)
+            # `__addon_enabled__` is not present if addon wasn't enabled before
+            if not getattr(module, "__addon_enabled__", False):
+                errors.append(f"- Addon {addon_name} appears to be disabled, it should be enabled before IFC Sverchok.")
+        except ModuleNotFoundError:
+            errors.append(f"- Addon {addon_name} is not installed.")
+
+    if errors:
+        raise Exception("Some issues were found trying to enable IFC Sverchok:\n" + "\n".join(errors))
+
+
+ensure_addons_are_enabled("bonsai", "sverchok")
+
+
 from sverchok.ui.nodeview_space_menu import add_node_menu
 
 
@@ -69,36 +114,15 @@ def nodes_index():
     ]
 
 
-node_categories = [
-    {
-        "IFC": [
-            "SvIfcCreateFile",
-            "SvIfcReadFile",
-            "SvIfcWriteFile",
-            "SvIfcCreateEntity",
-            "SvIfcCreateShape",
-            "SvIfcReadEntity",
-            "SvIfcPickIfcClass",
-            "SvIfcById",
-            "SvIfcByGuid",
-            "SvIfcByType",
-            "SvIfcByQuery",
-            "SvIfcAdd",
-            "SvIfcAddPset",
-            "SvIfcAddSpatialElement",
-            "SvIfcRemove",
-            "SvIfcGenerateGuid",
-            "SvIfcGetProperty",
-            "SvIfcGetAttribute",
-            "SvIfcSelectBlenderObjects",
-            "SvIfcApi",
-            "SvIfcBMeshToIfcRepr",
-            "SvIfcSverchokToIfcRepr",
-            "SvIfcCreateProject",
-            "SvIfcQuickProjectSetup",
-        ]
-    }
-]
+def make_node_categories() -> list[dict[str, list[str]]]:
+    node_categories = [{}]
+    for category, nodes in nodes_index():
+        nodes = [node_name for idname, node_name in nodes]
+        node_categories[0][category] = nodes
+    return node_categories
+
+
+node_categories = make_node_categories()
 
 
 def make_node_list():
@@ -116,7 +140,6 @@ imported_modules = make_node_list()
 
 reload_event = False
 
-import bpy
 from os.path import splitext
 import ifcopenshell
 import ifcopenshell.api
@@ -125,7 +148,10 @@ from ifcsverchok.ifcstore import SvIfcStore
 
 
 class IFC_Sv_UpdateCurrent(bpy.types.Operator):
-    """Update current Sverchok node tree"""
+    """Update current Sverchok node tree.
+
+    Will reset transient IFC file.
+    """
 
     bl_idname = "ifc.sverchok_update_current"
     bl_label = "Update Current Node Tree"
@@ -139,9 +165,12 @@ class IFC_Sv_UpdateCurrent(bpy.types.Operator):
     # infra-related spatial structure elements, such as IfcBridge.
     # https://github.com/IfcOpenShell/IfcOpenShell/pull/2576#discussion_r1016261407
     def execute(self, context):
+        import sverchok.node_tree
+
         self.file = SvIfcStore.purge()
         node_tree = context.space_data.node_tree
         if node_tree:
+            assert isinstance(node_tree, sverchok.node_tree.SverchCustomTree)
             if self.force_mode or node_tree.sv_process:
                 try:
                     bpy.context.window.cursor_set("WAIT")
@@ -152,21 +181,25 @@ class IFC_Sv_UpdateCurrent(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class IFC_Sv_write_file(bpy.types.Operator):
+class IFC_Sv_write_file(bpy.types.Operator, ExportHelper):
     bl_idname = "ifc.write_file_panel"
     bl_label = "Write File"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "File path to write to."
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    bl_description = "Save transient IFC file to the provided path."
+    filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
     node_group: bpy.props.StringProperty(default="")
     force_mode: bpy.props.BoolProperty(default=False)
+    filename_ext = ".ifc"
 
     @classmethod
     def poll(cls, context):
-        return any("IFC" in n for n in context.space_data.edit_tree.nodes.keys())
+        space = context.space_data
+        if not isinstance(space, bpy.types.SpaceNodeEditor):
+            return False
+        return any("IFC" in n for n in space.edit_tree.nodes.keys())
 
-    def ensure_hirarchy(self, file):
-        elements_in_buildings = set()
+    def ensure_hirarchy(self, file: ifcopenshell.file) -> None:
+        elements_in_buildings: set[ifcopenshell.entity_instance] = set()
         if len(file.by_type("IfcBuilding")) == 0:
             my_building = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcBuilding", name="My Building")
             elements = ifcopenshell.util.element.get_decomposition(my_building)
@@ -232,10 +265,6 @@ class IFC_Sv_write_file(bpy.types.Operator):
             self.report({"INFO"}, f"File written to: {self.filepath}")
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
 
 class IFC_PT_write_file_panel(bpy.types.Panel):
     bl_idname = "IFC_PT_write_file_panel"
@@ -249,6 +278,7 @@ class IFC_PT_write_file_panel(bpy.types.Panel):
     def poll(cls, context):
         if context.space_data.edit_tree and any("IFC" in n for n in context.space_data.edit_tree.nodes.keys()):
             return True
+        return False
 
     def draw(self, context):
         ng = context.space_data.node_tree

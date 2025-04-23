@@ -1,4 +1,3 @@
-
 # Ifc2CA - IFC Code_Aster utility
 # Copyright (C) 2020, 2021, 2023, 2024 Ioannis P. Christovasilis <ipc@aethereng.com>
 #

@@ -50,6 +50,7 @@ Schema::IfcProject* setup_project(IfcHierarchyHelper<Schema>& file) {
 
     auto project = file.addProject();
     project->setName(std::string("FHWA Bridge Geometry Manual Example Alignment"));
+    project->setDescription(std::string("C++ Example"));
 
     // set up project units for feet
     // the call to file.addProject() sets up length units as millimeter.
@@ -151,7 +152,7 @@ std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegmen
 // creates geometry and business logic segments for vertical profile parabolic vertical curves
 std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegment*> create_vcurve(typename Schema::IfcCartesianPoint* p, double start_slope, double end_slope, double length) {
     // geometry
-    double A = 0.0;
+    double A = p->Coordinates()[1];
     double B = start_slope;
     double C = (end_slope - start_slope) / (2 * length);
 
@@ -163,7 +164,7 @@ std::pair<typename Schema::IfcCurveSegment*, typename Schema::IfcAlignmentSegmen
 
     auto curve_segment = new Schema::IfcCurveSegment(
         Schema::IfcTransitionCode::IfcTransitionCode_CONTSAMEGRADIENT,
-        new Schema::IfcAxis2Placement2D(p, new Schema::IfcDirection(std::vector<double>{1.0, 0.0})),
+        new Schema::IfcAxis2Placement2D(p, new Schema::IfcDirection(std::vector<double>{sqrt(1 - start_slope * start_slope), start_slope})),
         new Schema::IfcLengthMeasure(0.0),
         new Schema::IfcLengthMeasure(length),
         parent_curve);
@@ -394,6 +395,7 @@ int main() {
 
     // Zero-length terminator
     auto vertical_terminator_segment = create_gradient(vpoe, -0.5 / 100, 0.0);
+    vertical_terminator_segment.first->setTransition(Schema::IfcTransitionCode::IfcTransitionCode_DISCONTINUOUS);
     vertical_curve_segments->push(vertical_terminator_segment.first);
     vertical_segments->push(vertical_terminator_segment.second);
 
@@ -479,7 +481,10 @@ int main() {
         auto site = file.addSite(project, nullptr);
         site->setName(os.str());
 
-        auto rel_referenced_in_spatial_structure = new Schema::IfcRelReferencedInSpatialStructure(IfcParse::IfcGlobalId(), nullptr, boost::none, boost::none, list_alignments_referenced_in_site, site);
+        std::ostringstream description;
+        description << "Alignments referenced into the spatial structure of Bridge Site " << i;
+
+        auto rel_referenced_in_spatial_structure = new Schema::IfcRelReferencedInSpatialStructure(IfcParse::IfcGlobalId(), nullptr, boost::none, description.str(), list_alignments_referenced_in_site, site);
         file.addEntity(rel_referenced_in_spatial_structure);
     }
 

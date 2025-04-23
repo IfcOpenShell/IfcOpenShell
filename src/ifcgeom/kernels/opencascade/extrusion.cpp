@@ -15,7 +15,7 @@ bool OpenCascadeKernel::convert(const taxonomy::extrusion::ptr extrusion, TopoDS
 	}
 
 	TopoDS_Shape face;
-	if (!convert(extrusion->basis, face)) {
+	if (!convert(taxonomy::cast<taxonomy::face>(extrusion->basis), face)) {
 		return false;
 	}
 
@@ -78,7 +78,7 @@ bool OpenCascadeKernel::convert_impl(const taxonomy::extrusion::ptr extrusion, I
 	}
 
 	results.emplace_back(ConversionResult(
-		extrusion->instance->data().id(),
+		extrusion->instance->as<IfcUtil::IfcBaseEntity>()->id(),
 		extrusion->matrix,
 		new OpenCascadeShape(shape),
 		extrusion->surface_style

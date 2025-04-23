@@ -19,12 +19,15 @@
 import bpy
 
 import ifcopenshell
+import sverchok.core.sockets
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from ifcsverchok.ifcstore import SvIfcStore
 
-import bpy
 import json
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.api.pset
 
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
@@ -34,6 +37,7 @@ from sverchok.data_structure import updateNode, flatten_data
 class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcAddPset"
     bl_label = "IFC Add Pset"
+    bl_description = "Add/edit a property set for the provided element ids in the transient IFC file."
     Name: StringProperty(
         name="Name",
         description="Name of the property set. Eg. Pset_WallCommon.",
@@ -49,15 +53,31 @@ class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
     Elements: StringProperty(name="Element Ids", update=updateNode)
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "Name").prop_name = "Name"
-        self.inputs.new("SvTextSocket", "Properties").prop_name = "Properties"
-        self.inputs.new("SvStringsSocket", "Elements").prop_name = "Elements"
-        self.outputs.new("SvStringsSocket", "Entity")
+        helper.create_socket(
+            self.inputs, "Name", description="Name of the property set.", data_type="list[list[str]]", prop_name="Name"
+        )
+        helper.create_socket(
+            self.inputs,
+            "Properties",
+            description="Properties in a JSON format.",
+            data_type="list[list[str]]",
+            prop_name="Properties",
+            socket_type=sverchok.core.sockets.SvTextSocket,
+        )
+        helper.create_socket(
+            self.inputs, "Elements", description="Element Ids.", data_type="list[list[str]]", prop_name="Elements"
+        )
+        helper.create_socket(
+            self.outputs,
+            "Entity",
+            description="Added/edited psets.",
+            data_type="list[list[ifcopenshell.entity_instance]]]",
+        )
 
     def draw_buttons(self, context, layout):
-        layout.operator(
-            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = "Add a property set and corresponding properties to IfcElements."
+        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
+            "Add a property set and corresponding properties to IfcElements."
+        )
 
     def process(self):
         if not any(socket.is_linked for socket in self.outputs):
@@ -80,14 +100,13 @@ class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
 
         self.outputs["Entity"].sv_set([element])
 
-    def create(self, name, properties, elements):
+    def create(
+        self, name: str, properties: str, elements: list[ifcopenshell.entity_instance]
+    ) -> list[ifcopenshell.entity_instance]:
         results = []
         for element in elements:
-            result = ifcopenshell.api.run(
-                "pset.add_pset", self.file, product=element, name=name
-            )
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            result = ifcopenshell.api.pset.add_pset(self.file, product=element, name=name)
+            ifcopenshell.api.pset.edit_pset(
                 self.file,
                 pset=result,
                 properties=json.loads(properties),
@@ -96,13 +115,14 @@ class SvIfcAddPset(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
             results.append(result)
         return results
 
-    def edit(self, name, properties, elements):
+    def edit(
+        self, name: str, properties: str, elements: list[ifcopenshell.entity_instance]
+    ) -> list[ifcopenshell.entity_instance]:
         result_ids = SvIfcStore.id_map[self.node_id]
-        results = []
+        results: list[ifcopenshell.entity_instance] = []
         for result_id in result_ids:
             result = self.file.by_id(result_id)
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            ifcopenshell.api.pset.edit_pset(
                 self.file,
                 pset=result,
                 name=name,

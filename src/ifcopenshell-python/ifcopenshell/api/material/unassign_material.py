@@ -17,48 +17,54 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
 import ifcopenshell.util.element
+from typing import Any
+
+
+def unassign_material(file: ifcopenshell.file, products: list[ifcopenshell.entity_instance]) -> None:
+    """Removes any material relationship with the list of products
+
+    A product can only have one material assigned to it, which is why it is
+    not necessary to specify the material to unassign. The material is not
+    removed, only the relationship is removed.
+
+    If the product does not have a material, nothing happens.
+
+    Unassigning a LayerSet or ProfileSet from the product type will also
+    remove all Usages of the set.
+
+    :param products: The list IfcProducts that may or may not have a material
+    :return: None
+
+    Example:
+
+    .. code:: python
+
+        concrete = ifcopenshell.api.material.add_material(model, name="CON01", category="concrete")
+
+        # Let's imagine a concrete bench made out of concrete.
+        bench_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcFurnitureType")
+        ifcopenshell.api.material.assign_material(model,
+            products=[bench_type], type="IfcMaterial", material=concrete)
+
+        # Let's change our mind and remove the concrete assignment. The
+        # concrete material still exists, but the bench is no longer made
+        # out of concrete now.
+        ifcopenshell.api.material.unassign_material(model, products=[bench_type])
+    """
+    usecase = Usecase()
+    usecase.file = file
+    return usecase.execute(products)
 
 
 class Usecase:
-    def __init__(self, file: ifcopenshell.file, products: list[ifcopenshell.entity_instance]):
-        """Removes any material relationship with the list of products
+    file: ifcopenshell.file
 
-        A product can only have one material assigned to it, which is why it is
-        not necessary to specify the material to unassign. The material is not
-        removed, only the relationship is removed.
-
-        If the product does not have a material, nothing happens.
-
-        :param products: The list IfcProducts that may or may not have a material
-        :type product: list[ifcopenshell.entity_instance.entity_instance]
-        :return: None
-        :rtype: None
-
-        Example:
-
-        .. code:: python
-
-            concrete = ifcopenshell.api.run("material.add_material", model, name="CON01", category="concrete")
-
-            # Let's imagine a concrete bench made out of concrete.
-            bench_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcFurnitureType")
-            ifcopenshell.api.run("material.assign_material", model,
-                products=[bench_type], type="IfcMaterial", material=concrete)
-
-            # Let's change our mind and remove the concrete assignment. The
-            # concrete material still exists, but the bench is no longer made
-            # out of concrete now.
-            ifcopenshell.api.run("material.unassign_material", model, products=[bench_type])
-        """
-        self.file = file
-        self.settings = {"products": products}
-
-    def execute(self) -> None:
-        self.products = set(self.settings["products"])
-        if not self.products:
+    def execute(self, products: list[ifcopenshell.entity_instance]) -> None:
+        if not products:
             return
+        self.products = set(products)
 
         self.remove_material_usages_from_types()
         self.unassign_materials()
@@ -73,6 +79,8 @@ class Usecase:
                 continue
             if material.is_a() in ["IfcMaterialLayerSet", "IfcMaterialProfileSet"]:
                 # Remove set usages
+                # TODO: be more considerate and remove only usages
+                # associated with the set + product type, not all usages?
                 for inverse in self.file.get_inverse(material):
                     if self.file.schema == "IFC2X3":
                         if not inverse.is_a("IfcMaterialLayerSetUsage"):
@@ -124,4 +132,4 @@ class Usecase:
                         ifcopenshell.util.element.remove_deep2(self.file, history)
                     continue
                 rel.RelatedObjects = list(related_objects)
-                ifcopenshell.api.run("owner.update_owner_history", self.file, **{"element": rel})
+                ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})

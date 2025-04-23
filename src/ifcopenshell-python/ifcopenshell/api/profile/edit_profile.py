@@ -15,36 +15,30 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Any
 
 
-class Usecase:
-    def __init__(self, file, profile=None, attributes=None):
-        """Edits the attributes of an IfcProfileDef
+def edit_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instance, attributes: dict[str, Any]) -> None:
+    """Edits the attributes of an IfcProfileDef
 
-        For more information about the attributes and data types of an
-        IfcProfileDef, consult the IFC documentation.
+    For more information about the attributes and data types of an
+    IfcProfileDef, consult the IFC documentation.
 
-        :param profile: The IfcProfileDef entity you want to edit
-        :type profile: ifcopenshell.entity_instance.entity_instance
-        :param attributes: a dictionary of attribute names and values.
-        :type attributes: dict, optional
-        :return: None
-        :rtype: None
+    :param profile: The IfcProfileDef entity you want to edit
+    :param attributes: a dictionary of attribute names and values.
+    :return: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            circle = ifcopenshell.api.run("profile.add_parameterized_profile", model,
-                ifc_class="IfcCircleProfileDef")
-            circle = 1.
+        circle = ifcopenshell.api.profile.add_parameterized_profile(model,
+            ifc_class="IfcCircleProfileDef")
+        circle = 1.
 
-            ifcopenshell.api.run("profile.edit_profile", model,
-                profile=circle, attributes={"ProfileName": "1000mm Dia"})
-        """
-        self.file = file
-        self.settings = {"profile": profile, "attributes": attributes or {}}
-
-    def execute(self):
-        for name, value in self.settings["attributes"].items():
-            setattr(self.settings["profile"], name, value)
+        ifcopenshell.api.profile.edit_profile(model,
+            profile=circle, attributes={"ProfileName": "1000mm Dia"})
+    """
+    for name, value in attributes.items():
+        setattr(profile, name, value)

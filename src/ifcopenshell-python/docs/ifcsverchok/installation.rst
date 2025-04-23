@@ -12,14 +12,14 @@ Packaged installation
 
 IfcSverchok is packaged like a regular Blender add-on, so installation is the
 same as any other Blender add-on. `Download IfcSverchok here
-<https://blenderbim.org/builds/ifcsverchok-230823.zip>`__.
+<https://github.com/IfcOpenShell/IfcOpenShell/releases/download/ifcsverchok-0.8.1/ifcsverchok-0.8.1.zip>`__.
 
 Like all Blender add-ons, they can be installed using ``Edit > Preferences >
 Addons > Install > Choose Downloaded ZIP > Enable Add-on Checkbox``. You can
 enable add-ons permanently by using ``Save User Settings`` from the Addons menu.
 
-Before installing, you will also need to `install the BlenderBIM Add-on
-<https://blenderbim.org/download.html>`__ and `install Sverchok
+Before installing, you will also need to `install Bonsai
+<https://bonsaibim.org/download.html>`__ and `install Sverchok
 <https://github.com/nortikin/sverchok#installation>`__.
 
 If you downloaded Blender as a ``.zip`` file without running an installer, you
@@ -71,23 +71,23 @@ Just symbolically link the IfcSverchok add-on files to your Git repository. If
 you're on Windows, use ``mklink`` instead. This allows us to code in our Git
 repository, and see the changes in our Blender installation.
 
-::
+.. code-block:: bash
 
-    $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
-    $ cd IfcOpenShell
+    git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+    cd IfcOpenShell
 
     # Link the repository to blender
-    $ ln -s src/ifcsverchok /path/to/blender/2.XX/scripts/addons/ifcsverchok
+    ln -s src/ifcsverchok /path/to/blender/2.XX/scripts/addons/ifcsverchok
     
 On Windows:
 
-::
+.. code-block:: bat
 
-    $ git clone https://github.com/IfcOpenShell/IfcOpenShell.git
-    $ cd IfcOpenShell
+    git clone https://github.com/IfcOpenShell/IfcOpenShell.git
+    cd IfcOpenShell
 
     # Link the repository to blender
-    $ mklink /D "\path\to\blender\2.XX\scripts\addons\ifcsverchok" "\path\to\src\ifcsverchok"
+    mklink /D "\path\to\blender\2.XX\scripts\addons\ifcsverchok" "\path\to\src\ifcsverchok"
 
 After you modify your code in the Git repository, you will need to restart
 Blender for the changes to take effect. In ``Edit > Preferences > Add-ons`` you

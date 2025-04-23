@@ -17,13 +17,13 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.library
 
 
 class TestAddReference(test.bootstrap.IFC4):
     def test_adding_a_reference(self):
-        library = ifcopenshell.api.run("library.add_library", self.file, name="Name")
-        reference = ifcopenshell.api.run("library.add_reference", self.file, library=library)
+        library = ifcopenshell.api.library.add_library(self.file, name="Name")
+        reference = ifcopenshell.api.library.add_reference(self.file, library=library)
         assert reference.is_a("IfcLibraryReference")
         ifc2x3 = self.file.schema == "IFC2X3"
         if ifc2x3:

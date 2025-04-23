@@ -17,72 +17,96 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.unit
+import numpy.typing as npt
+from ifcopenshell.util.shape_builder import SequenceOfVectors, ifc_safe_vector_type, V
+from typing import Optional, Union
+
+
+def add_arbitrary_profile_with_voids(
+    file: ifcopenshell.file,
+    outer_profile: SequenceOfVectors,
+    inner_profiles: list[SequenceOfVectors],
+    name: Optional[str] = None,
+) -> ifcopenshell.entity_instance:
+    """Adds a new arbitrary polyline-based profile with voids
+
+    The outer profile is represented as a polyline defined by a list of
+    coordinates. Only straight segments are allowed. Coordinates must be
+    provided in SI meters.
+
+    To represent a closed curve, the first and last coordinate must be
+    identical.
+
+    The inner profiles are represented as a list of polylines.
+    Every polyline in defined by a list of coordinates.
+    Only straight segments are allowed. Coordinates must be
+    provided in SI meters.
+
+    :param outer_profile: A list of coordinates
+    :param inner_profiles: A list of polylines
+    :param name: If the profile is semantically significant (i.e. to be
+        managed and reused by the user) then it must be named. Otherwise,
+        this may be left as none.
+    :return: The newly created IfcArbitraryProfileDefWithVoids
+
+    Example:
+
+    .. code:: python
+
+        # A 400mm by 400mm square with a 200mm by 200mm hole in it.
+        square_with_hole = ifcopenshell.api.profile.add_arbitrary_profile_with_voids(model,
+            outer_profile=[(0., 0.), (.4, 0.), (.4, .4), (0., .4), (0., 0.)],
+            inner_profiles=[[(0.1, 0.1), (0.3, 0.1), (0.3, 0.3), (0.1, 0.3), (0.1, 0.1)]],
+            name="SK01 Hole Profile")
+    """
+    usecase = Usecase()
+    usecase.file = file
+    return usecase.execute(V(outer_profile), [V(p) for p in inner_profiles], name)
 
 
 class Usecase:
-    def __init__(self, file, outer_profile=None, inner_profiles=None, name=None):
-        """Adds a new arbitrary polyline-based profile with voids
+    file: ifcopenshell.file
 
-        The outer profile is represented as a polyline defined by a list of
-        coordinates. Only straight segments are allowed. Coordinates must be
-        provided in SI meters.
+    def execute(
+        self,
+        outer_profile: npt.NDArray,
+        inner_profiles: list[npt.NDArray],
+        name: Union[str, None],
+    ):
+        self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
+        outer_points = self.convert_si_to_unit(outer_profile)
+        inner_points: list[npt.NDArray] = []
+        for inner_profile in inner_profiles:
+            inner_points.append(self.convert_si_to_unit(inner_profile))
 
-        To represent a closed curve, the first and last coordinate must be
-        identical.
-
-        The inner profiles are represented as a list of polylines.
-        Every polyline in defined by a list of coordinates.
-        Only straight segments are allowed. Coordinates must be
-        provided in SI meters.
-
-        :param outer_profile: A list of coordinates
-        :type profile: list[float]
-        :param inner_profiles: A list of polylines
-        :type profile: list[list[float]]
-        :param name: If the profile is semantically significant (i.e. to be
-            managed and reused by the user) then it must be named. Otherwise,
-            this may be left as none.
-        :type name: str, optional
-        :return: The newly created IfcArbitraryProfileDefWithVoids
-        :rtype: ifcopenshell.entity_instance.entity_instance
-
-        Example:
-
-        .. code:: python
-
-            # A 400mm by 400mm square with a 200mm by 200mm hole in it.
-            square_with_hole = ifcopenshell.api.run("profile.add_arbitrary_profile_with_voids", model,
-                outer_profile=[(0., 0.), (.4, 0.), (.4, .4), (0., .4), (0., 0.)],
-                inner_profiles=[[(0.1, 0.1), (0.3, 0.1), (0.3, 0.3), (0.1, 0.3), (0.1, 0.1)]],
-                name="SK01 Hole Profile")
-        """
-        self.file = file
-        self.settings = {"outer_profile": outer_profile, "inner_profiles": inner_profiles, "name": name}
-
-    def execute(self):
-        self.settings["unit_scale"] = ifcopenshell.util.unit.calculate_unit_scale(self.file)
-        outer_points = [self.convert_si_to_unit(p) for p in self.settings["outer_profile"]]
-        inner_points = []
-        for inner_profile in self.settings["inner_profiles"]:
-            inner_points.append([self.convert_si_to_unit(p) for p in inner_profile])
+        inner_curves: list[ifcopenshell.entity_instance] = []
         if self.file.schema == "IFC2X3":
-            outer_curve = self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in outer_points])
-            inner_curves = []
+            outer_curve = self.file.create_entity(
+                "IfcPolyline",
+                [self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(p)) for p in outer_points],
+            )
             for inner_point in inner_points:
-                inner_curves.append(self.file.createIfcPolyline([self.file.createIfcCartesianPoint(p) for p in inner_point]))
+                inner_curves.append(
+                    self.file.create_entity(
+                        "IfcPolyline",
+                        [self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(p)) for p in inner_point],
+                    )
+                )
         else:
-            outer_curve = self.file.createIfcIndexedPolyCurve(self.file.createIfcCartesianPointList3D(outer_points))
-            inner_curves = []
+            outer_curve = self.file.create_entity(
+                "IfcIndexedPolyCurve",
+                (self.file.create_entity("IfcCartesianPointList3D", ifc_safe_vector_type(outer_points))),
+            )
             for inner_point in inner_points:
-                dimensions = len(inner_point[0])
+                dimensions = inner_point.shape[1]
                 if dimensions == 2:
-                    ifc_points = self.file.createIfcCartesianPointList2D(inner_point)
+                    ifc_points = self.file.create_entity("IfcCartesianPointList2D", ifc_safe_vector_type(inner_point))
                 elif dimensions == 3:
-                    ifc_points = self.file.createIfcCartesianPointList3D(inner_point)
-                inner_curves.append(self.file.createIfcIndexedPolyCurve(ifc_points))
-        return self.file.createIfcArbitraryProfileDefWithVoids("AREA", self.settings["name"], outer_curve, inner_curves)
+                    ifc_points = self.file.create_entity("IfcCartesianPointList3D", ifc_safe_vector_type(inner_point))
+                else:
+                    assert False, f"Invalid dimensions: {dimensions}."
+                inner_curves.append(self.file.create_entity("IfcIndexedPolyCurve", ifc_points))
+        return self.file.create_entity("IfcArbitraryProfileDefWithVoids", "AREA", name, outer_curve, inner_curves)
 
-    def convert_si_to_unit(self, co):
-        if isinstance(co, (tuple, list)):
-            return [self.convert_si_to_unit(o) for o in co]
-        return co / self.settings["unit_scale"]
+    def convert_si_to_unit(self, co: npt.NDArray) -> npt.NDArray:
+        return co / self.unit_scale

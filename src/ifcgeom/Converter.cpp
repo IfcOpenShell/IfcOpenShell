@@ -6,10 +6,21 @@ using namespace ifcopenshell::geometry;
 
 ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& s)
 	: geometry_library_(boost::to_lower_copy(geometry_library))
-	, settings_(s)
 {
-	mapping_ = impl::mapping_implementations().construct(file, settings_);
-	kernel_ = kernels::construct(geometry_library, mapping_->settings());
+	mapping_ = impl::mapping_implementations().construct(file, s);
+	kernel_ = kernels::construct(file, geometry_library, mapping_->settings());
+	// Mapping reads unit information and applies to settings
+	settings_ = mapping_->settings();
+}
+
+ifcopenshell::geometry::Converter::~Converter()
+{
+	if (kernel_ != nullptr) {
+		delete kernel_;
+	}
+	if (mapping_ != nullptr) {
+		delete mapping_;
+	}
 }
 
 namespace {
@@ -35,7 +46,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 
 	auto place = place_;
 
-	representation_id_builder << representation_node->instance->data().id();
+	representation_id_builder << representation_node->instance->as<IfcUtil::IfcBaseEntity>()->id();
 
 	IfcGeom::Representation::BRep* shape;
 	IfcGeom::ConversionResults shapes;
@@ -107,12 +118,21 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	bool material_style_applied = false;
 
 	auto single_material = mapping_->get_single_material_association(product);
+	if (!single_material) {
+		auto type_product = mapping_->get_product_type(product);
+		if (type_product) {
+			single_material = mapping_->get_single_material_association(type_product);
+		}
+	}
+
 	if (single_material) {
-		auto s = taxonomy::cast<taxonomy::style>(mapping_->map(single_material));
-		for (auto it = shapes.begin(); it != shapes.end(); ++it) {
-			if (!it->hasStyle() && s) {
-				it->setStyle(s);
-				material_style_applied = true;
+		if (auto itm = mapping_->map(single_material)) {
+			auto s = taxonomy::cast<taxonomy::style>(itm);
+			for (auto it = shapes.begin(); it != shapes.end(); ++it) {
+				if (!it->hasStyle() && s) {
+					it->setStyle(s);
+					material_style_applied = true;
+				}
 			}
 		}
 	} else {
@@ -130,7 +150,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	}
 
 	if (material_style_applied) {
-		representation_id_builder << "-material-" << single_material->data().id();
+		representation_id_builder << "-material-" << single_material->id();
 	}
 
 	if (settings_.get<ifcopenshell::geometry::settings::ForceSpaceTransparency>().has() && product->declaration().is("IfcSpace")) {
@@ -146,7 +166,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	try {
 		IfcUtil::IfcBaseEntity* parent_object = mapping_->get_decomposing_entity(product);
 		if (parent_object) {
-			parent_id = parent_object->data().id();
+			parent_id = parent_object->id();
 		}
 	} catch (const std::exception& e) {
 		Logger::Error(e);
@@ -164,7 +184,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	if (!settings_.get<ifcopenshell::geometry::settings::DisableOpeningSubtractions>().get() && openings && openings->size()) {
 		representation_id_builder << "-openings";
 		for (auto it = openings->begin(); it != openings->end(); ++it) {
-			representation_id_builder << "-" << (*it)->data().id();
+			representation_id_builder << "-" << (*it)->id();
 		}
 
 		IfcGeom::ConversionResults opened_shapes;
@@ -174,10 +194,26 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 
 			std::transform(openings->begin(), openings->end(), std::back_inserter(opening_items), [this](IfcUtil::IfcBaseClass* opening) {
 				auto prod_item = mapping()->map(opening);
-				return std::make_pair(mapping()->map(mapping()->representation_of(opening->as<IfcUtil::IfcBaseEntity>())), *taxonomy::cast<taxonomy::geom_item>(prod_item)->matrix);
+				auto repr = mapping()->representation_of(opening->as<IfcUtil::IfcBaseEntity>());
+				if (repr) {
+					return std::make_pair(mapping()->map(repr), *taxonomy::cast<taxonomy::geom_item>(prod_item)->matrix);
+				} else {
+					return std::make_pair(taxonomy::ptr{}, taxonomy::matrix4{});
+				}
 			});
 
-			kernel_->convert_openings(product, opening_items, shapes, *place, opened_shapes);
+			opening_items.erase(
+				std::remove_if(
+					opening_items.begin(),
+					opening_items.end(),
+					[](const std::pair<taxonomy::ptr, taxonomy::matrix4>& p) { return !p.first; }
+			), opening_items.end());
+
+			if (opening_items.empty()) {
+				opened_shapes = shapes;
+			} else {
+				kernel_->convert_openings(product, opening_items, shapes, *place, opened_shapes);
+			}
 		} catch (const std::exception& e) {
 			Logger::Message(Logger::LOG_ERROR, std::string("Error processing openings for: ") + e.what() + ":", product);
 			caught_error = true;
@@ -185,42 +221,55 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 			Logger::Message(Logger::LOG_ERROR, "Error processing openings for:", product);
 		}
 
-		if (caught_error && opened_shapes.size() < shapes.size()) {
-			opened_shapes = shapes;
-		}
-
-		if (settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().get()) {
-			for (auto it = opened_shapes.begin(); it != opened_shapes.end(); ++it) {
-				it->prepend(place);
+		if (!(caught_error && opened_shapes.size() < shapes.size())) {
+			if (settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().get()) {
+				for (auto it = opened_shapes.begin(); it != opened_shapes.end(); ++it) {
+					it->prepend(place);
+				}
+				place = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
+				representation_id_builder << "-world-coords";
 			}
-			place = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
-			representation_id_builder << "-world-coords";
+			shapes = opened_shapes;
 		}
-		shape = new IfcGeom::Representation::BRep(settings_, product_type, representation_id_builder.str(), opened_shapes);
 	} else if (settings_.get<ifcopenshell::geometry::settings::UseWorldCoords>().get()) {
 		for (auto it = shapes.begin(); it != shapes.end(); ++it) {
 			it->prepend(place);
 		}
 		place = ifcopenshell::geometry::taxonomy::make<ifcopenshell::geometry::taxonomy::matrix4>();
 		representation_id_builder << "-world-coords";
-		shape = new IfcGeom::Representation::BRep(settings_, product_type, representation_id_builder.str(), shapes);
-	} else {
-		shape = new IfcGeom::Representation::BRep(settings_, product_type, representation_id_builder.str(), shapes);
 	}
+
+	if (settings_.get<ifcopenshell::geometry::settings::UnifyShapes>().get()) {
+		IfcGeom::ConversionResults unified_shapes;
+		try {
+			if (kernel_->unify_shapes(shapes, unified_shapes)) {
+				std::swap(shapes, unified_shapes);
+			}
+		} catch (std::exception& e) {
+			Logger::Error(e);
+		}
+	}
+
+	shape = new IfcGeom::Representation::BRep(settings_, product_type, representation_id_builder.str(), shapes);
 
 	std::string context_string = "";
 
-	/*
-	// @todo
-	if (representation->RepresentationIdentifier()) {
-		context_string = *representation->RepresentationIdentifier();
-	} else if (representation->ContextOfItems()->ContextType()) {
-		context_string = *representation->ContextOfItems()->ContextType();
+	// IfcShapeRepresentation.
+	const IfcUtil::IfcBaseEntity *representation = representation_node->instance->as<IfcUtil::IfcBaseEntity>();
+	auto representation_identifier = representation->get("RepresentationIdentifier");
+	if (!representation_identifier.isNull()) {
+		context_string = (std::string) representation_identifier;
 	}
-	*/
+	else {
+		IfcUtil::IfcBaseClass *context = (IfcUtil::IfcBaseClass*)representation->get("ContextOfItems");
+		auto context_type = context->as<IfcUtil::IfcBaseEntity>()->get("ContextType");
+		if (!context_type.isNull()) {
+			context_string = (std::string)context_type;
+		}
+	}
 
 	auto elem = new IfcGeom::BRepElement(
-		product->data().id(),
+		product->id(),
 		parent_id,
 		name,
 		product_type,
@@ -312,7 +361,7 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_process
 	try {
 		IfcUtil::IfcBaseEntity* parent_object = mapping_->get_decomposing_entity(product);
 		if (parent_object) {
-			parent_id = parent_object->data().id();
+			parent_id = parent_object->id();
 		}
 	} catch (const std::exception& e) {
 		Logger::Error(e);
@@ -320,26 +369,16 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_process
 
 	const std::string guid = product->get_value<std::string>("GlobalId");
 	const std::string name = product->get_value<std::string>("Name", "");
-
-	/*
-	std::string context_string = "";
-	if (representation->hasRepresentationIdentifier()) {
-		context_string = representation->RepresentationIdentifier();
-	} else if (representation->ContextOfItems()->hasContextType()) {
-		context_string = representation->ContextOfItems()->ContextType();
-	}
-	*/
-
 	const std::string product_type = product->declaration().name();
+	const std::string context_string = brep->context();
 
 	return new IfcGeom::BRepElement(
-		product->data().id(),
+		product->id(),
 		parent_id,
 		name,
 		product_type,
 		guid,
-		// @todo
-		"",
+		context_string,
 		place,
 		brep->geometry_pointer(),
 		product
@@ -347,8 +386,13 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_process
 }
 
 IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_representation_and_product(const IfcUtil::IfcBaseEntity* representation, const IfcUtil::IfcBaseEntity* product) {
+	auto interpreted_representation = mapping_->map(representation);
+	if (!interpreted_representation) {
+		interpreted_representation = taxonomy::make<taxonomy::collection>();
+		interpreted_representation->instance = representation;
+	}
 	return create_brep_for_representation_and_product(
-		mapping_->map(representation),
+		interpreted_representation,
 		product,
 		taxonomy::cast<taxonomy::geom_item>(mapping_->map(product))->matrix
 	);
@@ -361,7 +405,9 @@ IfcGeom::ConversionResults ifcopenshell::geometry::Converter::convert(IfcUtil::I
 	IfcGeom::ConversionResults results;
 	if (geom_item) {
 		std::clock_t geom_start = std::clock();
-		kernel_->convert(geom_item, results);
+		if (!kernel_->convert(geom_item, results)) {
+			throw std::runtime_error("Failed to convert item");
+		}
 		std::clock_t geom_end = std::clock();
 		total_map_time += (geom_start - map_start) / (double) CLOCKS_PER_SEC;
 		total_geom_time += (geom_end - geom_start) / (double) CLOCKS_PER_SEC;

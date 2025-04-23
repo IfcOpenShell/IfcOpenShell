@@ -20,36 +20,29 @@ import ifcopenshell
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, boundary=None):
-        """Removes a space boundary
+def remove_boundary(file: ifcopenshell.file, boundary: ifcopenshell.entity_instance) -> None:
+    """Removes a space boundary
 
-        The relating space or related building element is untouched. Only the
-        boundary and its connection geometry is removed.
+    The relating space or related building element is untouched. Only the
+    boundary and its connection geometry is removed.
 
-        :param boundary: The IfcRelSpaceBoundary you want to remove.
-        :type boundary: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param boundary: The IfcRelSpaceBoundary you want to remove.
+    :return: None
 
-        Example:
+    Example:
 
-            # A boring boundary with no geometry. Note that this boundary is
-            # invalid and does not relate to any space or building element.
-            boundary = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcRelSpaceBoundary")
+        # A boring boundary with no geometry. Note that this boundary is
+        # invalid and does not relate to any space or building element.
+        boundary = ifcopenshell.api.root.create_entity(model, ifc_class="IfcRelSpaceBoundary")
 
-            # Let's remove it!
-            ifcopenshell.api.run("boundary.remove_boundary", model, boundary=boundary)
-        """
-        self.file = file
-        self.settings = {"boundary": boundary}
-
-    def execute(self):
-        geometry = self.settings["boundary"].ConnectionGeometry
-        if geometry:
-            self.settings["boundary"].ConnectionGeometry = None
-            ifcopenshell.util.element.remove_deep2(self.file, geometry)
-        history = self.settings["boundary"].OwnerHistory
-        self.file.remove(self.settings["boundary"])
-        if history:
-            ifcopenshell.util.element.remove_deep2(self.file, history)
+        # Let's remove it!
+        ifcopenshell.api.boundary.remove_boundary(model, boundary=boundary)
+    """
+    geometry = boundary.ConnectionGeometry
+    if geometry:
+        boundary.ConnectionGeometry = None
+        ifcopenshell.util.element.remove_deep2(file, geometry)
+    history = boundary.OwnerHistory
+    file.remove(boundary)
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

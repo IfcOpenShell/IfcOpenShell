@@ -68,11 +68,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcRectangleHollowProfileDef* i
 		return nullptr;
 	}
 
-	s1->children.push_back(s2->children[0]);
+	auto f = taxonomy::cast<taxonomy::face>(s1);
+	s2->external = false;
+	f->children.push_back(s2);
 
-#ifdef TAXONOMY_USE_NAKED_PTR
-	delete s2;
-#endif
-
-	return s1;
+	return f;
 }

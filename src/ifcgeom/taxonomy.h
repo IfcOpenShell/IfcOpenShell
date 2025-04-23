@@ -8,6 +8,7 @@
 
 #include <boost/variant.hpp>
 #include <boost/functional/hash.hpp>
+#include <boost/math/constants/constants.hpp>
 
 #include <Eigen/Dense>
 
@@ -28,6 +29,8 @@
 #endif
 
 // @todo don't do std::less but use hashing and cache hash values.
+
+namespace boost { inline std::size_t hash_value(const blank&) { return 0; } }
 
 namespace ifcopenshell {
 
@@ -90,7 +93,50 @@ typedef item const* ptr;
 				topology_error(const char* const s) : std::runtime_error(s) {}
 			};
 
-			enum kinds { MATRIX4, POINT3, DIRECTION3, LINE, CIRCLE, ELLIPSE, BSPLINE_CURVE, OFFSET_CURVE, PLANE, CYLINDER, BSPLINE_SURFACE, EDGE, LOOP, FACE, SHELL, SOLID, LOFT, EXTRUSION, REVOLVE, SURFACE_CURVE_SWEEP, NODE, COLLECTION, BOOLEAN_RESULT, PIECEWISE_FUNCTION, COLOUR, STYLE };
+			// Implementer note: If you add a new item type, be sure to do the following
+			// 1) Add a new kind to this list
+			// 2) Update the values array used by kind_to_string()
+			// 3) Update the KindsTuple with the class name of the new item
+			// 4) Add compare function (see compare functions in taxonomy.cpp starting around line 9)
+			// 4) Update Python bindings
+			//    a) update list of assign_repr in IfcGeomWrapper.i
+			//    b) update inheritance list in IfcGeomWrapper.i (around line 120 in the file)
+			//    c) update item_to_pyobject function definition in type_conversion.i
+			enum kinds {
+                MATRIX4,
+                POINT3,
+                DIRECTION3,
+                LINE,
+                CIRCLE,
+                ELLIPSE,
+                BSPLINE_CURVE,
+                OFFSET_CURVE,
+                PLANE,
+                CYLINDER,
+                SPHERE,
+                TORUS,
+                BSPLINE_SURFACE,
+                EDGE,
+                LOOP,
+                FACE,
+                SHELL,
+                SOLID,
+                LOFT,
+                EXTRUSION,
+                REVOLVE,
+                SWEEP_ALONG_CURVE,
+                NODE,
+                COLLECTION,
+                BOOLEAN_RESULT,
+					 FUNCTION_ITEM,
+                FUNCTOR_ITEM,
+					 PIECEWISE_FUNCTION,
+                GRADIENT_FUNCTION,
+					 CANT_FUNCTION,
+					 OFFSET_FUNCTION,
+                COLOUR,
+                STYLE
+            };
 
 			const std::string& kind_to_string(kinds k);
 
@@ -108,7 +154,7 @@ typedef item const* ptr;
 
 				virtual item* clone_() const = 0;
 				virtual kinds kind() const = 0;
-				virtual void print(std::ostream&, int indent = 0) const = 0;
+				virtual void print(std::ostream&, int indent = 0) const;
 				virtual void reverse() { throw taxonomy::topology_error(); }
 				virtual size_t calc_hash() const = 0;
 				virtual size_t hash() const {
@@ -127,81 +173,6 @@ typedef item const* ptr;
 				virtual ~item() {}
 
 				uint32_t identity() const { return identity_; }
-			};
-
-			struct implicit_item : public item {
-				DECLARE_PTR(implicit_item)
-				using item::item;
-
-				virtual item::ptr evaluate() const = 0;
-			};
-
-			struct piecewise_function : public implicit_item {
-				DECLARE_PTR(piecewise_function)
-
-				piecewise_function(const IfcUtil::IfcBaseInterface* instance = nullptr) : implicit_item(instance){};
-				piecewise_function(ifcopenshell::geometry::Settings* settings) : settings_(settings){};
-            piecewise_function(piecewise_function&&) = default;
-            piecewise_function(const piecewise_function&) = default;
-
-				ifcopenshell::geometry::Settings* settings_ = nullptr;
-
-				// length of span, function to evaluate span
-				std::vector<std::pair<double, std::function<Eigen::Matrix4d(double u)>>> spans;
-
-				double length() const {
-                    return std::accumulate(spans.begin(), spans.end(), 0.0, [](const auto& v,const auto& s) { return v + s.first; });
-                }
-
-				void print(std::ostream& o, int = 0) const {
-					o << "piecewise_function" << std::endl;
-				}
-
-				virtual piecewise_function* clone_() const { return new piecewise_function(*this); }
-				virtual kinds kind() const { return PIECEWISE_FUNCTION; }
-
-				virtual size_t calc_hash() const {
-					auto v = std::make_tuple(static_cast<size_t>(PIECEWISE_FUNCTION), 0);
-					return boost::hash<decltype(v)>{}(v);
-				}
-
-				virtual item::ptr evaluate() const;
-            item::ptr evaluate(double ustart, double uend,unsigned nsteps) const;
-
-				Eigen::Matrix4d evaluate(double u) const;
-			};
-
-#ifdef TAXONOMY_USE_SHARED_PTR
-			typedef std::shared_ptr<item> ptr;
-			typedef std::shared_ptr<const item> const_ptr;
-			template<typename T, typename... Args>
-			std::shared_ptr<T> make(Args&&... args) {
-				return std::make_shared<T>(std::forward<Args>(args)...);
-			}
-#endif
-#ifdef TAXONOMY_USE_UNIQUE_PTR
-			typedef std::uniqe_ptr<item> ptr;
-			typedef std::uniqe_ptr<const item> ptr;
-			template<typename T, typename... Args>
-			std::uniqe_ptr<T> make(Args&&... args) {
-				return new T(std::forward<Args>(args)...));
-			}
-#endif
-#ifdef TAXONOMY_USE_NAKED_PTR
-			typedef item* ptr;
-			typedef item const* ptr;
-			template<typename T, typename... Args>
-			T* make(Args&&... args) {
-				return new T(std::forward<Args>(args)...));
-			}
-#endif
-
-			bool less(item::const_ptr, item::const_ptr);
-
-			struct less_functor {
-				bool operator()(item::const_ptr a, item::const_ptr b) const {
-					return less(a, b);
-				}
 			};
 
 			namespace {
@@ -264,8 +235,7 @@ typedef item const* ptr;
 				const T& ccomponents() const {
 					if (this->components_) {
 						return *this->components_;
-					}
-					else {
+					} else {
 						return eigen_defaults<T>();
 					}
 				}
@@ -286,20 +256,20 @@ typedef item const* ptr;
 					boost::hash_combine(h, std::hash<size_t>{}(T::ColsAtCompileTime));
 					if (components_) {
 						for (int i = 0; i < components_->size(); ++i) {
-							auto elem = *(components_->data() + (size_t) i);
+							auto elem = *(components_->data() + (size_t)i);
 							boost::hash_combine(h, std::hash<typename T::Scalar>()(elem));
 						}
 					}
-					return (uint32_t) h;
+					return (uint32_t)h;
 				}
 			};
 
 			struct matrix4 : public item, public eigen_base<Eigen::Matrix4d> {
 			private:
 				void init(const Eigen::Vector3d& o, const Eigen::Vector3d& z, const Eigen::Vector3d& x) {
-					auto X = x.normalized();
-					auto Y = z.cross(x).normalized();
 					auto Z = z.normalized();
+					auto Y = Z.cross(x).normalized();
+					auto X = Y.cross(Z);
 					components_ = new Eigen::Matrix4d;
 					(*components_) <<
 						X(0), Y(0), Z(0), o(0),
@@ -339,9 +309,7 @@ typedef item const* ptr;
 					return !components_ || components_->isIdentity();
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "matrix4", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				virtual matrix4* clone_() const { return new matrix4(*this); }
 				virtual kinds kind() const { return MATRIX4; }
@@ -357,9 +325,7 @@ typedef item const* ptr;
 			struct colour : public item, public eigen_base<Eigen::Vector3d> {
 				DECLARE_PTR(colour)
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "colour", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				virtual colour* clone_() const { return new colour(*this); }
 				virtual kinds kind() const { return COLOUR; }
@@ -382,36 +348,33 @@ typedef item const* ptr;
 
 				std::string name;
 				colour diffuse;
+				colour surface;
 				colour specular;
 				double specularity, transparency;
+				bool use_surface_color;
 
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "style" << std::endl;
-					o << std::string(indent, ' ') << "     " << "name" << (name) << std::endl;
-					if (diffuse.components_) {
-						o << std::string(indent, ' ') << "     " << "diffuse" << (name) << std::endl;
-						diffuse.print(o, indent + 5 + 7);
-					}
-					if (specular.components_) {
-						o << std::string(indent, ' ') << "     " << "specular" << (name) << std::endl;
-						specular.print(o, indent + 5 + 8);
-					}
-					// @todo
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				virtual style* clone_() const { return new style(*this); }
 				virtual kinds kind() const { return STYLE; }
 
 				virtual size_t calc_hash() const {
-					auto v = std::make_tuple(static_cast<size_t>(STYLE), name, diffuse.hash(), specular.hash(), specularity, transparency);
+					auto v = std::make_tuple(static_cast<size_t>(STYLE), name, diffuse.hash(), surface.hash(), specular.hash(), specularity, transparency);
 					return boost::hash<decltype(v)>{}(v);
 				}
 
 				// @todo equality implementation based on values?
 				bool operator==(const style& other) const { return instance == other.instance; }
 
-				style() : specularity(std::numeric_limits<double>::quiet_NaN()), transparency(std::numeric_limits<double>::quiet_NaN()) {}
-				style(const std::string& name) : name(name), specularity(std::numeric_limits<double>::quiet_NaN()), transparency(std::numeric_limits<double>::quiet_NaN()) {}
+				style() : specularity(std::numeric_limits<double>::quiet_NaN()), transparency(std::numeric_limits<double>::quiet_NaN()), use_surface_color(false) {}
+				style(const std::string& name) : name(name), specularity(std::numeric_limits<double>::quiet_NaN()), transparency(std::numeric_limits<double>::quiet_NaN()), use_surface_color(false) {}
+
+				const colour& get_color() const {
+                    if (use_surface_color && surface) {
+                        return surface;
+                    }
+                    return diffuse;
+				}
 
 				bool has_specularity() const {
 					return !std::isnan(specularity);
@@ -428,9 +391,206 @@ typedef item const* ptr;
 				style::ptr surface_style;
 				matrix4::ptr matrix;
 
-				geom_item(const IfcUtil::IfcBaseClass* instance = nullptr) : item(instance), surface_style(nullptr) {}
-				geom_item(const IfcUtil::IfcBaseClass* instance, matrix4::ptr m) : item(instance), surface_style(nullptr), matrix(m) {}
+				geom_item(const IfcUtil::IfcBaseInterface* instance = nullptr) : item(instance), surface_style(nullptr) {}
+				geom_item(const IfcUtil::IfcBaseInterface* instance, matrix4::ptr m) : item(instance), surface_style(nullptr), matrix(m) {}
 				geom_item(matrix4::ptr m) : surface_style(nullptr), matrix(m) {}
+			};
+
+			struct implicit_item : public geom_item {
+				DECLARE_PTR(implicit_item)
+				using geom_item::geom_item;
+			};
+
+			struct function_item : public implicit_item {
+                DECLARE_PTR(function_item)
+
+                function_item(const IfcUtil::IfcBaseInterface* instance = nullptr) : implicit_item(instance) {}
+                function_item(function_item&&) = default;
+                function_item(const function_item&) = default;
+
+                virtual ~function_item() = default;
+                virtual double start() const = 0;
+                virtual double end() const = 0;
+                virtual double length() const {
+                    return end() - start();
+                }
+
+                virtual kinds kind() const { return FUNCTION_ITEM; }
+                virtual size_t calc_hash() const {
+                    auto v = std::make_tuple(static_cast<size_t>(FUNCTION_ITEM), 0);
+                    return boost::hash<decltype(v)>{}(v);
+                };
+            };
+
+			struct functor_item : public function_item {
+            DECLARE_PTR(functor_item)
+
+            functor_item(double length, std::function<Eigen::Matrix4d(double u)> fn, const IfcUtil::IfcBaseInterface* instance = nullptr) : function_item(instance),
+						 length_(length), fn_(fn) {}
+            functor_item(functor_item&&) = default;
+            functor_item(const functor_item&) = default;
+            virtual ~functor_item() = default;
+
+				double start() const override { return 0.0; }
+            double end() const override { return length_; }
+
+				Eigen::Matrix4d operator()(double u) const { return fn_(u); }
+
+     			functor_item* clone_() const override { return new functor_item(*this); }
+            virtual kinds kind() const { return FUNCTOR_ITEM; }
+            virtual size_t calc_hash() const {
+                auto v = std::make_tuple(static_cast<size_t>(FUNCTOR_ITEM), 0);
+               return boost::hash<decltype(v)>{}(v);
+            }
+
+         private:
+				double length_;
+				std::function<Eigen::Matrix4d(double u)> fn_;
+         };
+
+			struct piecewise_function : public function_item {
+            DECLARE_PTR(piecewise_function)
+
+				using spans_t = std::vector<function_item::const_ptr>;
+
+            piecewise_function(double start, const spans_t& s, const IfcUtil::IfcBaseInterface* instance = nullptr);
+            piecewise_function(double start, const std::vector<piecewise_function::ptr>& pwfs, const IfcUtil::IfcBaseInterface* instance = nullptr);
+            piecewise_function(piecewise_function&&) = default;
+            piecewise_function(const piecewise_function&) = default;
+            virtual ~piecewise_function() = default;
+
+				const spans_t& spans() const;
+            size_t span_count() const {return spans_.size();}
+            function_item::const_ptr span_fn(size_t i) { return spans_[i]; }
+				bool is_empty() const;
+				double start() const override;
+				double end() const override;
+            double length() const override;
+
+				piecewise_function* clone_() const override { return new piecewise_function(*this); }
+				virtual kinds kind() const { return PIECEWISE_FUNCTION; }
+
+				virtual size_t calc_hash() const	{
+					auto v = std::make_tuple(static_cast<size_t>(PIECEWISE_FUNCTION), 0);
+					return boost::hash<decltype(v)>{}(v);
+				}
+
+            private:
+                double start_ = 0.0; // starting value of the pwf
+                spans_t spans_;
+            };
+
+         struct gradient_function : public function_item {
+             DECLARE_PTR(gradient_function)
+             gradient_function(piecewise_function::const_ptr horizontal, piecewise_function::const_ptr vertical, const IfcUtil::IfcBaseInterface* instance = nullptr);
+             gradient_function(gradient_function&&) = default;
+             gradient_function(const gradient_function&) = default;
+             virtual ~gradient_function() = default;
+
+               virtual double start() const override;
+               virtual double end() const override;
+
+					piecewise_function::const_ptr get_horizontal() const;
+               piecewise_function::const_ptr get_vertical() const;
+
+    				gradient_function* clone_() const override { return new gradient_function(*this); }
+
+               virtual kinds kind() const { return GRADIENT_FUNCTION; }
+
+               virtual size_t calc_hash() const {
+                  auto v = std::make_tuple(static_cast<size_t>(GRADIENT_FUNCTION), 0);
+                  return boost::hash<decltype(v)>{}(v);
+               }
+
+      		private:
+               piecewise_function::const_ptr horizontal_, vertical_;
+         };
+
+         struct cant_function : public function_item {
+             DECLARE_PTR(cant_function)
+             cant_function(gradient_function::const_ptr gradient, piecewise_function::const_ptr cant, const IfcUtil::IfcBaseInterface* instance = nullptr);
+             cant_function(cant_function&&) = default;
+             cant_function(const cant_function&) = default;
+             virtual ~cant_function() = default;
+
+             virtual double start() const override;
+             virtual double end() const override;
+
+				 gradient_function::const_ptr get_gradient() const;
+             piecewise_function::const_ptr get_cant() const;
+
+             cant_function* clone_() const override { return new cant_function(*this); }
+
+             virtual kinds kind() const { return CANT_FUNCTION; }
+
+             virtual size_t calc_hash() const {
+                 auto v = std::make_tuple(static_cast<size_t>(CANT_FUNCTION), 0);
+                 return boost::hash<decltype(v)>{}(v);
+             }
+
+           private:
+             gradient_function::const_ptr gradient_;
+             piecewise_function::const_ptr cant_;
+         };
+
+         struct offset_function : public function_item {
+             DECLARE_PTR(offset_function)
+             offset_function(function_item::const_ptr basis, piecewise_function::const_ptr offset, const IfcUtil::IfcBaseInterface* instance = nullptr);
+             offset_function(offset_function&&) = default;
+             offset_function(const offset_function&) = default;
+             virtual ~offset_function() = default;
+
+             virtual double start() const override;
+             virtual double end() const override;
+
+             function_item::const_ptr get_basis() const;
+             piecewise_function::const_ptr get_offset() const;
+
+             offset_function* clone_() const override { return new offset_function(*this); }
+
+             virtual kinds kind() const { return OFFSET_FUNCTION; }
+
+             virtual size_t calc_hash() const {
+                 auto v = std::make_tuple(static_cast<size_t>(OFFSET_FUNCTION), 0);
+                 return boost::hash<decltype(v)>{}(v);
+             }
+
+           private:
+             function_item::const_ptr basis_;
+             piecewise_function::const_ptr offset_;
+         };
+
+#ifdef TAXONOMY_USE_SHARED_PTR
+			typedef std::shared_ptr<item> ptr;
+			typedef std::shared_ptr<const item> const_ptr;
+			template<typename T, typename... Args>
+			std::shared_ptr<T> make(Args&&... args) {
+				return std::make_shared<T>(std::forward<Args>(args)...);
+			}
+#endif
+#ifdef TAXONOMY_USE_UNIQUE_PTR
+			typedef std::uniqe_ptr<item> ptr;
+			typedef std::uniqe_ptr<const item> ptr;
+			template<typename T, typename... Args>
+			std::uniqe_ptr<T> make(Args&&... args) {
+				return new T(std::forward<Args>(args)...));
+			}
+#endif
+#ifdef TAXONOMY_USE_NAKED_PTR
+			typedef item* ptr;
+			typedef item const* ptr;
+			template<typename T, typename... Args>
+			T* make(Args&&... args) {
+				return new T(std::forward<Args>(args)...));
+			}
+#endif
+
+			bool less(item::const_ptr, item::const_ptr);
+
+			struct less_functor {
+				bool operator()(item::const_ptr a, item::const_ptr b) const {
+					return less(a, b);
+				}
 			};
 
 			// @todo make 4d for easier multiplication
@@ -452,9 +612,7 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "point3", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				point3() : cartesian_base() {}
 				point3(const Eigen::Vector3d& c) : cartesian_base(c) {}
@@ -472,9 +630,7 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "direction3", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				direction3() : cartesian_base() {}
 				direction3(const Eigen::Vector3d& c) : cartesian_base(c) {}
@@ -499,9 +655,7 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "line", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 			};
 
 			struct circle : public curve {
@@ -517,9 +671,7 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "circle", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				static circle::ptr from_3_points(const Eigen::Vector3d& p1, const Eigen::Vector3d& p2, const Eigen::Vector3d& p3) {
 					Eigen::Vector3d t = p2 - p1;
@@ -550,9 +702,10 @@ typedef item const* ptr;
 				}
 			};
 
-			struct ellipse : public circle {
+			struct ellipse : public curve {
 				DECLARE_PTR(ellipse)
 
+				double radius;
 				double radius2;
 
 				virtual ellipse* clone_() const { return new ellipse(*this); }
@@ -563,9 +716,7 @@ typedef item const* ptr;
 					return boost::hash<decltype(v)>{}(v);
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					print_impl(o, "ellipse", indent);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 			};
 
 			struct bspline_curve : public curve {
@@ -599,10 +750,6 @@ typedef item const* ptr;
 				std::vector<double> knots;
 				boost::optional<std::vector<double>> weights;
 				int degree;
-
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "bspline curve" << std::endl;
-				}
 			};
 
 			struct offset_curve : public curve {
@@ -619,54 +766,30 @@ typedef item const* ptr;
 					auto v = std::make_tuple(static_cast<size_t>(OFFSET_CURVE), reference->hash(), offset, basis ? basis->hash() : size_t(0));
 					return boost::hash<decltype(v)>{}(v);
 				}
-
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "offset_curve" << std::endl;
-				}
 			};
 
-			struct trimmed_curve : public item {
+			struct trimmed_curve : public geom_item {
 				DECLARE_PTR(trimmed_curve)
 
 				// @todo The copy constructor of point3 within the variant fails on the avx instruction
 				// on the default gcc in Ubuntu 18.04 and a recent AMD Ryzen. Probably due to allignment.
-				boost::variant<point3::ptr, double> start, end;
+				boost::variant<boost::blank, point3::ptr, double> start, end;
 
 				// @todo somehow account for the fact that curve in IFC can be trimmed curve, polyline and composite curve as well.
 				item::ptr basis;
 
 				// @todo does this make sense? this is to accommodate for the fact that orientation is defined on both TrimmedCurve as well CompCurveSegment
-				boost::optional<bool> orientation_2;
+				boost::optional<bool> curve_sense;
 
-				trimmed_curve() : basis(nullptr), orientation_2(true) {}
+				trimmed_curve() : basis(nullptr) {}
 				trimmed_curve(const point3::ptr& a, const point3::ptr& b) : start(a), end(b), basis(nullptr) {}
 
 				virtual void reverse() {
 					// std::swap(start, end);
-					orientation = !orientation;
+					orientation = !orientation.get_value_or(true);
 				}
 
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "trimmed_curve" << std::endl;
-					if (basis) {
-						basis->print(o, indent + 4);
-					}
-
-					const boost::variant<point3::ptr, double>* const start_end[2] = { &start, &end };
-					for (int i = 0; i < 2; ++i) {
-						o << std::string(indent + 4, ' ') << (i == 0 ? "start" : "end") << std::endl;
-						if (start_end[i]->which() == 0) {
-							boost::get<point3::ptr>(*start_end[i])->print(o, indent + 4);
-						}
-						else if (start_end[i]->which() == 1) {
-							o << std::string(indent + 4, ' ') << "parameter " << boost::get<double>(*start_end[i]) << std::endl;
-						}
-					}
-
-					if (this->instance) {
-						o << std::string(indent, ' ') << this->instance->data().toString() << std::endl;
-					}
-				}
+				void print(std::ostream& o, int indent = 0) const;
 			};
 
 			struct edge : public trimmed_curve {
@@ -680,7 +803,7 @@ typedef item const* ptr;
 				virtual kinds kind() const { return EDGE; }
 
 				virtual size_t calc_hash() const {
-					auto v = std::make_tuple(static_cast<size_t>(EDGE), start, end, basis ? basis->hash() : size_t(0), orientation_2 ? *orientation_2 ? 2 : 1 : 0);
+					auto v = std::make_tuple(static_cast<size_t>(EDGE), start, end, basis ? basis->hash() : size_t(0), curve_sense ? *curve_sense ? 2 : 1 : 0);
 					return boost::hash<decltype(v)>{}(v);
 				}
 			};
@@ -719,14 +842,19 @@ typedef item const* ptr;
 					}
 				}
 
+				virtual void print_impl(std::ostream&, int) const {
+					// empty on purpose
+				}
+
 				void print(std::ostream& o, int indent = 0) const {
 					o << std::string(indent, ' ') << kind_to_string(kind()) << std::endl;
-					if (!matrix->is_identity()) {
+					if (matrix && !matrix->is_identity()) {
 						matrix->print(o, indent + 4);
 					}
 					for (auto& c : children) {
 						c->print(o, indent + 4);
 					}
+					print_impl(o, indent + 4);
 				}
 
 				virtual ~collection_base() {
@@ -764,7 +892,7 @@ typedef item const* ptr;
 				DECLARE_PTR(loop)
 
 				boost::optional<bool> external, closed;
-				boost::optional<taxonomy::piecewise_function::ptr> pwf;
+				boost::optional<taxonomy::function_item::ptr> fi;
 
 				bool is_polyhedron() const {
 					for (auto& e : children) {
@@ -775,6 +903,28 @@ typedef item const* ptr;
 						}
 					}
 					return true;
+				}
+
+				void calculate_linear_edge_curves() const {
+					for (auto& e : children) {
+						if (e->basis == nullptr) {
+							if (e->start.which() == 1 && e->end.which() == 1) {
+								auto ln = make<taxonomy::line>();
+								auto a = boost::get<point3::ptr>(e->start)->ccomponents();
+								auto b = boost::get<point3::ptr>(e->end)->ccomponents();
+								ln->matrix = make<matrix4>(a, b - a);
+								e->basis = ln;
+							}
+						}
+					}
+				}
+
+				void remove_linear_edge_curves() const {
+					for (auto& e : children) {
+						if (e->basis != nullptr && e->basis->kind() == LINE) {
+							e->basis = nullptr;
+						}
+					}
 				}
 
 				virtual loop* clone_() const { return new loop(*this); }
@@ -794,6 +944,13 @@ typedef item const* ptr;
 				virtual face* clone_() const { return new face(*this); }
 				virtual kinds kind() const { return FACE; }
 
+				virtual void print_impl(std::ostream& o, int indent) const {
+					if (basis) {
+						o << std::string(indent, ' ') << "basis" << std::endl;
+						basis->print(o, indent + 4);
+					}
+				}
+
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(FACE), hash_elements(), basis ? basis->hash() : size_t(0));
 					return boost::hash<decltype(v)>{}(v);
@@ -804,6 +961,11 @@ typedef item const* ptr;
 				DECLARE_PTR(shell)
 
 				boost::optional<bool> closed;
+
+				virtual void print_impl(std::ostream& o, int indent) const {
+					using namespace std::string_literals;
+					o << std::string(indent, ' ') << "closed " << (closed ? *closed ? "yes"s : "no"s : "unknown"s) << std::endl;
+				}
 
 				virtual shell* clone_() const { return new shell(*this); }
 				virtual kinds kind() const { return SHELL; }
@@ -826,13 +988,18 @@ typedef item const* ptr;
 				}
 			};
 
-			struct loft : public collection_base<face> {
+			struct loft : public collection_base<geom_item> {
 				DECLARE_PTR(loft)
 
 				item::ptr axis;
 
 				virtual loft* clone_() const { return new loft(*this); }
 				virtual kinds kind() const { return LOFT; }
+
+				virtual void print_impl(std::ostream& o, int indent) const {
+					o << std::string(indent, ' ') << "axis" << std::endl;
+					axis->print(o, indent + 4);
+				}
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(LOFT), hash_elements(), axis ? axis->hash() : size_t(0));
@@ -848,10 +1015,6 @@ typedef item const* ptr;
 				virtual plane* clone_() const { return new plane(*this); }
 				virtual kinds kind() const { return PLANE; }
 
-				void print(std::ostream& o, int) const {
-					o << "not implemented";
-				}
-
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(PLANE), matrix->hash_components());
 					return boost::hash<decltype(v)>{}(v);
@@ -866,11 +1029,37 @@ typedef item const* ptr;
 				virtual cylinder* clone_() const { return new cylinder(*this); }
 				virtual kinds kind() const { return CYLINDER; }
 
-				void print(std::ostream& o, int) const {
-					o << "not implemented";
-				}
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(CYLINDER), matrix->hash_components());
+					return boost::hash<decltype(v)>{}(v);
+				}
+			};
+
+			struct sphere : public surface {
+				DECLARE_PTR(sphere)
+
+				double radius;
+
+				virtual sphere* clone_() const { return new sphere(*this); }
+				virtual kinds kind() const { return SPHERE; }
+
+				virtual size_t calc_hash() const {
+					auto v = std::make_tuple(static_cast<size_t>(SPHERE), matrix->hash_components());
+					return boost::hash<decltype(v)>{}(v);
+				}
+			};
+
+			struct torus : public surface {
+				DECLARE_PTR(torus)
+
+				double radius1;
+				double radius2;
+
+				virtual torus* clone_() const { return new torus(*this); }
+				virtual kinds kind() const { return TORUS; }
+
+				virtual size_t calc_hash() const {
+					auto v = std::make_tuple(static_cast<size_t>(TORUS), matrix->hash_components());
 					return boost::hash<decltype(v)>{}(v);
 				}
 			};
@@ -916,19 +1105,15 @@ typedef item const* ptr;
 				std::array<std::vector<double>, 2> knots;
 				boost::optional<std::vector<std::vector<double>>> weights;
 				std::array<int, 2> degree;
-
-				void print(std::ostream& o, int) const {
-					o << "not implemented";
-				}
 			};
 
 			struct sweep : public geom_item {
 				DECLARE_PTR(sweep)
 
-				face::ptr basis;
+				item::ptr basis;
 
 				sweep(face::ptr b) : basis(b) {}
-				sweep(matrix4::ptr m, face::ptr b) : geom_item(m), basis(b) {}
+				sweep(matrix4::ptr m, item::ptr b) : geom_item(m), basis(b) {}
 			};
 
 			struct extrusion : public sweep {
@@ -940,13 +1125,9 @@ typedef item const* ptr;
 				virtual extrusion* clone_() const { return new extrusion(*this); }
 				virtual kinds kind() const { return EXTRUSION; }
 
-				extrusion(matrix4::ptr m, face::ptr basis, direction3::ptr dir, double d) : sweep(m, basis), direction(dir), depth(d) {}
+				extrusion(matrix4::ptr m, item::ptr basis, direction3::ptr dir, double d) : sweep(m, basis), direction(dir), depth(d) {}
 
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "extrusion " << depth << std::endl;
-					direction->print(o, indent + 4);
-					basis->print(o, indent + 4);
-				}
+				void print(std::ostream& o, int indent = 0) const;
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(EXTRUSION), matrix->hash_components(), basis->calc_hash(), direction->hash_components(), depth);
@@ -964,11 +1145,7 @@ typedef item const* ptr;
 				virtual revolve* clone_() const { return new revolve(*this); }
 				virtual kinds kind() const { return REVOLVE; }
 
-				revolve(matrix4::ptr m, face::ptr basis, point3::ptr pnt, direction3::ptr dir, const boost::optional<double>& a) : sweep(m, basis), axis_origin(pnt), direction(dir), angle(a) {}
-
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "revolve" << std::endl;
-				}
+				revolve(matrix4::ptr m, item::ptr basis, point3::ptr pnt, direction3::ptr dir, const boost::optional<double>& a) : sweep(m, basis), axis_origin(pnt), direction(dir), angle(a) {}
 
 				virtual size_t calc_hash() const {
 					auto v = std::make_tuple(static_cast<size_t>(REVOLVE), matrix->hash_components(), basis->calc_hash(), axis_origin->hash_components(), direction->hash_components(), angle ? *angle : 1000.);
@@ -976,23 +1153,19 @@ typedef item const* ptr;
 				}
 			};
 
-			struct surface_curve_sweep : public sweep {
-				DECLARE_PTR(surface_curve_sweep)
+			struct sweep_along_curve : public sweep {
+				DECLARE_PTR(sweep_along_curve)
 
 				item::ptr surface;
 				item::ptr curve;
 
-				virtual surface_curve_sweep* clone_() const { return new surface_curve_sweep(*this); }
-				virtual kinds kind() const { return SURFACE_CURVE_SWEEP; }
+				virtual sweep_along_curve* clone_() const { return new sweep_along_curve(*this); }
+				virtual kinds kind() const { return SWEEP_ALONG_CURVE; }
 
-				surface_curve_sweep(matrix4::ptr m, face::ptr basis, item::ptr surf, item::ptr crv) : sweep(m, basis), surface(surf), curve(crv) {}
-
-				void print(std::ostream& o, int indent = 0) const {
-					o << std::string(indent, ' ') << "surface_curve_sweep" << std::endl;
-				}
+				sweep_along_curve(matrix4::ptr m, face::ptr basis, item::ptr surf, item::ptr crv) : sweep(m, basis), surface(surf), curve(crv) {}
 
 				virtual size_t calc_hash() const {
-					auto v = std::make_tuple(static_cast<size_t>(SURFACE_CURVE_SWEEP), matrix->hash_components(), basis->calc_hash(), surface->calc_hash(), curve->calc_hash());
+					auto v = std::make_tuple(static_cast<size_t>(SWEEP_ALONG_CURVE), matrix->hash_components(), basis->calc_hash(), surface->calc_hash(), curve->calc_hash());
 					return boost::hash<decltype(v)>{}(v);
 				}
 			};
@@ -1037,9 +1210,10 @@ typedef item const* ptr;
 			};
 
 			namespace impl {
-				typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, surface_curve_sweep, node, collection, boolean_result, piecewise_function> KindsTuple;
+				typedef std::tuple<matrix4, point3, direction3, line, circle, ellipse, bspline_curve, offset_curve, plane, cylinder, sphere, torus, bspline_surface, edge, loop, face, shell, solid, loft, extrusion, revolve, sweep_along_curve, node, collection, boolean_result, function_item, functor_item, piecewise_function, gradient_function, cant_function,offset_function> KindsTuple;
 				typedef std::tuple<line, circle, ellipse, bspline_curve, offset_curve, loop, edge> CurvesTuple;
-				typedef std::tuple<plane, cylinder, bspline_surface> SurfacesTuple;
+				typedef std::tuple<plane, cylinder, sphere, torus, bspline_surface, extrusion, revolve> SurfacesTuple;
+				typedef std::tuple<edge, loop, face, piecewise_function> UpgradesTuple;
 			}
 
 			struct type_by_kind {
@@ -1063,39 +1237,22 @@ typedef item const* ptr;
 				static const size_t max = std::tuple_size<impl::SurfacesTuple>::value;
 			};
 
-			// Hacks around not wanting to use if constexpr
-			template <typename T>
-			class loop_to_face_upgrade {
-			public:
-				loop_to_face_upgrade(taxonomy::ptr) {}
+			struct upgrades {
+				template <std::size_t N>
+				using type = typename std::tuple_element<N, impl::UpgradesTuple>::type;
 
-				operator bool() const {
-					return false;
-				}
-
-				operator taxonomy::face::ptr() const {
-					throw taxonomy::topology_error();
-				}
-
-				operator typename T::ptr() const {
-					throw taxonomy::topology_error();
-				}
+				static const size_t max = std::tuple_size<impl::UpgradesTuple>::value;
 			};
 
-			template <>
-			class loop_to_face_upgrade<taxonomy::face> {
+			boost::optional<face::ptr> loop_to_face_upgrade_impl(ptr item);
+			template <typename T>
+			class loop_to_face_upgrade {
 			private:
 				boost::optional<taxonomy::face::ptr> face_;
 			public:
 				loop_to_face_upgrade(taxonomy::ptr item) {
-					auto loop = taxonomy::dcast<taxonomy::loop>(item);
-					if (loop) {
-						loop->external = true;
-
-						face_ = taxonomy::make<taxonomy::face>();
-						(*face_)->instance = loop->instance;
-						(*face_)->matrix = loop->matrix;
-						(*face_)->children = { taxonomy::clone(loop) };
+					if constexpr (std::is_same_v<T, face>) {
+						face_ = loop_to_face_upgrade_impl(item);
 					}
 				}
 
@@ -1103,100 +1260,231 @@ typedef item const* ptr;
 					return face_.is_initialized();
 				}
 
-				operator taxonomy::face::ptr() const {
-					return *face_;
+				operator typename T::ptr() const {
+					if constexpr (std::is_same_v<T, face>) {
+						if (face_) {
+							return *face_;
+						}
+					}
+					return nullptr;
 				}
 			};
 
-			// Hacks around not wanting to use if constexpr
-         template <typename T>
-         class loop_to_piecewise_function_upgrade {
-              public:
-                loop_to_piecewise_function_upgrade(taxonomy::ptr) {}
+			boost::optional<edge::ptr> curve_to_edge_upgrade_impl(ptr item);
+			template <typename T>
+			class curve_to_edge_upgrade {
+			private:
+				boost::optional<taxonomy::edge::ptr> edge_;
+			public:
+				curve_to_edge_upgrade(taxonomy::ptr item) {
+					if constexpr (std::is_same_v<T, edge>) {
+						edge_ = taxonomy::curve_to_edge_upgrade_impl(item);
+					}
+				}
 
-                operator bool() const {
-                    return false;
-                }
+				operator bool() const {
+					return edge_.is_initialized();
+				}
 
-                operator taxonomy::piecewise_function::ptr() const {
-                    throw taxonomy::topology_error();
-                }
+				operator typename T::ptr() const {
+					if constexpr (std::is_same_v<T, edge>) {
+						if (edge_) {
+							return *edge_;
+						}
+					}
+					return nullptr;
+				}
+			};
 
-                operator typename T::ptr() const {
-                    throw taxonomy::topology_error();
-                }
-            };
+			boost::optional<loop::ptr> curve_to_loop_upgrade_impl(ptr item);
+			template <typename T>
+			class curve_to_loop_upgrade {
+			private:
+				boost::optional<taxonomy::loop::ptr> loop_;
+			public:
+				curve_to_loop_upgrade(taxonomy::ptr item) {
+					if constexpr (std::is_same_v<T, loop>) {
+						loop_ = curve_to_loop_upgrade_impl(item);
+					}
+				}
 
-            template <>
-            class loop_to_piecewise_function_upgrade<taxonomy::piecewise_function> {
+				operator bool() const {
+					return loop_.is_initialized();
+				}
+
+				operator typename T::ptr() const {
+					if constexpr (std::is_same_v<T, loop>) {
+						if (loop_) {
+							return *loop_;
+						}
+					}
+					return nullptr;
+				}
+			};
+
+			boost::optional<loop::ptr> edge_to_loop_upgrade_impl(ptr item);
+			template <typename T>
+			class edge_to_loop_upgrade {
+			private:
+				boost::optional<taxonomy::loop::ptr> loop_;
+			public:
+				edge_to_loop_upgrade(taxonomy::ptr item) {
+					if constexpr (std::is_same_v<T, loop>) {
+						loop_ = edge_to_loop_upgrade_impl(item);
+					}
+				}
+
+				operator bool() const {
+					return loop_.is_initialized();
+				}
+
+				operator typename T::ptr() const {
+					if constexpr (std::is_same_v<T, loop>) {
+						if (loop_) {
+							return *loop_;
+						}
+					}
+					return nullptr;
+				}
+			};
+
+			boost::optional<face::ptr> curve_to_face_upgrade_impl(ptr item);
+			template <typename T>
+			class curve_to_face_upgrade {
+			private:
+				boost::optional<taxonomy::face::ptr> face_;
+			public:
+				curve_to_face_upgrade(taxonomy::ptr item) {
+					if constexpr (std::is_same_v<T, edge>) {
+						face_ = curve_to_face_upgrade_impl(item);
+					}
+				}
+
+				operator bool() const {
+					return face_.is_initialized();
+				}
+
+				operator typename T::ptr() const {
+					if constexpr (std::is_same_v<T, face>) {
+						if (face_) {
+							return *face_;
+						}
+					}
+					return nullptr;
+				}
+			};
+
+			boost::optional<function_item::ptr> loop_to_function_item_upgrade_impl(ptr item);
+            template <typename T>
+            class loop_to_function_item_upgrade {
               private:
-                boost::optional<taxonomy::piecewise_function::ptr> pwf_;
+                boost::optional<taxonomy::function_item::ptr> fi_;
 
               public:
-                loop_to_piecewise_function_upgrade(taxonomy::ptr item) {
-                    auto loop = taxonomy::dcast<taxonomy::loop>(item);
-                    if (loop) {
-                        if (loop->pwf.is_initialized()) {
-                            pwf_ = loop->pwf;
-                        } else {
-                            pwf_ = taxonomy::make<taxonomy::piecewise_function>();
-                            for (auto& edge : loop->children) {
-                                // the edge could be an arc or trimmed circle in the case of IfcIndexPolyCurve - support for this isn't implemented yet
-                                if (edge->basis) {
-                                    Logger::Message(Logger::Severity::LOG_NOTICE, "Shape of basis curve ignored - edge is treated as a straight line edge");
-                                }
-
-                                const auto& s = boost::get<taxonomy::point3::ptr>(edge->start)->ccomponents();
-                                const auto& e = boost::get<taxonomy::point3::ptr>(edge->end)->ccomponents();
-                                Eigen::Vector3d v = e - s;
-                                auto l = v.norm(); // the norm of a vector is a measure of its length
-                                v.normalize();     // normalize the vector so that it is a unit direction vector
-                                std::function<Eigen::Matrix4d(double)> fn = [s, v](double u) {
-                                    Eigen::Vector3d o(s + u * v), axis(0, 0, 1), refDirection(v);
-                                    auto Y = axis.cross(refDirection).normalized();
-                                    axis = refDirection.cross(Y).normalized();
-                                    return taxonomy::make<taxonomy::matrix4>(o, axis, refDirection)->components();
-                                };
-                                (*pwf_)->spans.emplace_back(l, fn);
-                            }
-                            loop->pwf = pwf_;
-                        }
+               loop_to_function_item_upgrade(taxonomy::ptr item) {
+					if constexpr (std::is_same_v<T, function_item>) {
+						fi_ = loop_to_function_item_upgrade_impl(item);
                     }
                 }
 
                 operator bool() const {
-                    return pwf_.is_initialized();
+                    return fi_.is_initialized();
                 }
 
-                operator taxonomy::piecewise_function::ptr() const {
-                    return *pwf_;
+                operator typename T::ptr() const {
+					if constexpr (std::is_same_v<T, function_item>) {
+						if (fi_) {
+							return *fi_;
+						}
+					}
+					return nullptr;
                 }
             };
 
 #ifdef TAXONOMY_USE_SHARED_PTR
 			template <typename T, typename U>
 			std::shared_ptr<T> cast(const std::shared_ptr<U>& u) {
-				loop_to_face_upgrade<T> upg(u);
-				if (upg) {
-					return upg;
+				{
+					curve_to_edge_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
 				}
-            loop_to_piecewise_function_upgrade<T> pwupg(u);
-            if (pwupg) {
-               return pwupg;
-            }
-				return std::static_pointer_cast<T>(u);
+				{
+					curve_to_loop_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					curve_to_face_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					edge_to_loop_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					loop_to_face_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					loop_to_function_item_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				if (auto r = std::dynamic_pointer_cast<T>(u)) {
+					return r;
+				} else {
+					throw std::runtime_error("Unexpected topology");
+				}
 			}
 			template <typename T, typename U>
 			std::shared_ptr<T> dcast(const std::shared_ptr<U>& u) {
-				loop_to_face_upgrade<T> upg(u);
-				if (upg) {
-					return upg;
+				{
+					curve_to_edge_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
 				}
-            loop_to_piecewise_function_upgrade<T> pwupg(u);
-            if (pwupg) {
-               return pwupg;
-            }
-            return std::dynamic_pointer_cast<T>(u);
+				{
+					curve_to_loop_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					curve_to_face_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					edge_to_loop_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					loop_to_face_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				{
+					loop_to_function_item_upgrade<T> upg(u);
+					if (upg) {
+						return upg;
+					}
+				}
+				return std::dynamic_pointer_cast<T>(u);
 			}
 #endif
 #ifdef TAXONOMY_USE_UNIQUE_PTR
@@ -1318,10 +1606,10 @@ typedef item const* ptr;
 				}
 				else if (auto l = taxonomy::dcast<taxonomy::edge>(i)) {
 					// @todo maybe make edge a collection then as well?
-					if (l->start.which() == 0) {
+					if (l->start.which() == 1) {
 						fn(boost::get<taxonomy::point3::ptr>(l->start));
 					}
-					if (l->end.which() == 0) {
+					if (l->end.which() == 1) {
 						fn(boost::get<taxonomy::point3::ptr>(l->end));
 					}
 				}

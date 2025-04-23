@@ -49,16 +49,21 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcTriangulatedFaceSet* inst) {
 			auto loop = taxonomy::make<taxonomy::loop>();
 			fa->children = { loop };
 			loop->external = true;
-			taxonomy::point3::ptr previous;
+			taxonomy::point3::ptr first, previous;
 			for (std::vector<int>::const_iterator jt = indices.begin(); jt != indices.end(); ++jt) {
 				if (*jt < 1 || *jt > max_index) {
 					throw IfcParse::IfcException("IfcTriangulatedFaceSet index out of bounds for index " + boost::lexical_cast<std::string>(*jt));
 				}
 				const taxonomy::point3::ptr& current = points[(*jt) - 1];
-				if (jt != indices.begin()) {
+				if (jt == indices.begin()) {
+					first = current;
+				} else {
 					loop->children.push_back(taxonomy::make<taxonomy::edge>(previous, current));
 				}
 				previous = current;
+			}
+			if (first && previous != first) {
+				loop->children.push_back(taxonomy::make<taxonomy::edge>(previous, first));
 			}
 		}
 	}

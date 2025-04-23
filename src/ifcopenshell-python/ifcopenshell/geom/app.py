@@ -16,16 +16,13 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import os
 import sys
 import time
 import operator
 import functools
 import multiprocessing
+import ifcopenshell.ifcopenshell_wrapper as W
 
 try:
     from OCC.Core import AIS
@@ -126,7 +123,7 @@ class geometry_creation_thread(QtCore.QThread):
         self.signals.completed.emit((it, self.f, list(_())))
 
 
-class configuration(object):
+class configuration:
     def __init__(self):
         try:
             import ConfigParser
@@ -208,7 +205,6 @@ class application(QtWidgets.QApplication):
     with two tree views and a graphical 3d view"""
 
     class abstract_treeview(QtWidgets.QTreeWidget):
-
         """Base class for the two treeview controls"""
 
         instanceSelected = QtCore.pyqtSignal([object])
@@ -259,7 +255,6 @@ class application(QtWidgets.QApplication):
             )
 
     class decomposition_treeview(abstract_treeview):
-
         """Treeview with typical IFC decomposition relationships"""
 
         ATTRIBUTES = ["Entity", "GlobalId", "Name"]
@@ -305,7 +300,6 @@ class application(QtWidgets.QApplication):
             self.expandAll()
 
     class type_treeview(abstract_treeview):
-
         """Treeview with typical IFC decomposition relationships"""
 
         ATTRIBUTES = ["Name"]
@@ -529,8 +523,8 @@ class application(QtWidgets.QApplication):
 
             if setting is None:
                 setting = settings()
-                setting.set(setting.INCLUDE_CURVES, True)
-                setting.set(setting.USE_PYTHON_OPENCASCADE, True)
+                setting.set("dimensionality", W.CURVES_SURFACES_AND_SOLIDS)
+                setting.set("use-python-opencascade", True)
 
             self.signals = geometry_creation_signals()
             thread = self.thread = geometry_creation_thread(self.signals, setting, f)

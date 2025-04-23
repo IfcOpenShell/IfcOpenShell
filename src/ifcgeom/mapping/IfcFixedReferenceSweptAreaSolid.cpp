@@ -18,6 +18,7 @@
  ********************************************************************************/
 
 #include "mapping.h"
+#include "../function_item_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
@@ -33,9 +34,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 	loft->axis = nullptr;
 
 	// @todo currently only the case is handled where directrix returns a piecewise_function
-	if (auto pwf = taxonomy::dcast<taxonomy::piecewise_function>(dir)) {
+	if (auto fn = taxonomy::dcast<taxonomy::function_item>(dir)) {
+      function_item_evaluator evaluator(settings_,fn);
 		double start = 0;
-		double end = pwf->length();
+      double end = fn->length();
 #ifdef SCHEMA_HAS_IfcDirectrixCurveSweptAreaSolid
 		// IfcDirectrixCurveSweptAreaSolid introduced in 4.3 changed attribute type
 		// from optional IfcParamValue to optional IfcCurveMeasureSelect.
@@ -53,25 +55,17 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 			}
 		}
 #endif
-		auto curve_length = end - start;
-		auto param_type = settings_.get<ifcopenshell::geometry::settings::PiecewiseStepType>().get();
-		auto param = settings_.get<ifcopenshell::geometry::settings::PiecewiseStepParam>().get();
-		size_t num_steps = 0;
-		if (param_type == ifcopenshell::geometry::settings::PiecewiseStepMethod::MAXSTEPSIZE) {
-			// parameter is max step size
-			num_steps = (size_t) std::ceil(curve_length / param);
-		} else {
-			// parameter is minimum number of steps
-			num_steps = (size_t) std::ceil(param);
-		}
-		for (size_t i = 0; i <= num_steps; ++i) {
-			auto m4 = pwf->evaluate(start + curve_length / num_steps * i);
+      auto evaluation_points = evaluator.evaluation_points();
+      for (const auto& dist_along : evaluation_points) {
+          auto m4 = evaluator.evaluate(dist_along);
 			
+			/*
 			std::stringstream ss;
 			ss << m4;
 			auto s = ss.str();
 			std::wcout << s.c_str() << std::endl;
             std::wcout << "determinant: " << m4.determinant() << std::endl;
+			*/
 
 			Eigen::Matrix4d m4b = Eigen::Matrix4d::Identity();
 			bool is_directrix_derived = false;
@@ -94,10 +88,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 				proj.normalize();
 				auto ref = proj.cross(tangent);
 
-				m4b.col(0).head<3>() = ref;
-				m4b.col(1).head<3>() = proj;
+				m4b.col(0).head<3>() = proj;
+				m4b.col(1).head<3>() = ref;
 				m4b.col(2).head<3>() = tangent;
 				m4b.col(3).head<3>() = pos;
+
+				/*
+				Eigen::JacobiSVD<decltype(m4b)> svd(m4b);
+				auto condition_number = svd.singularValues()(0)
+					/ svd.singularValues()(svd.singularValues().size() - 1);
+				if (condition_number > 1.e10) {
+					Logger::Error("Non-invertible matrix at " + std::to_string(distalong) + " conversion will likely fail.");
+				}
+				*/
 			}
 
 			// @todo taxonomy::clone() does not actually clone. That's really confusing.

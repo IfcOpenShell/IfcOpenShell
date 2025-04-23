@@ -36,18 +36,22 @@ static const char* const DATA = "DATA";
 
 using namespace IfcParse;
 
-HeaderEntity::HeaderEntity(const char* const datatype, size_t size, IfcFile* file)
-    : IfcEntityInstanceData(file, size),
-      datatype_(datatype),
-      size_(size) {
-    if (file != nullptr) {
-        offset_in_file_ = file->stream->Tell();
-        load();
+namespace {
+    IfcEntityInstanceData read_from_file(IfcFile* f, size_t s) {
+        parse_context pc;
+        f->tokens->Next();
+        f->load(-1, nullptr, pc, -1);
+        return pc.construct(-1, f->references_to_resolve, nullptr, s);
     }
 }
 
+HeaderEntity::HeaderEntity(const char* const datatype, size_t size, IfcFile* file)
+    : datatype_(datatype)
+    , file_(file)
+    , data_(file ? read_from_file(file, size) : IfcEntityInstanceData(storage_t(size)))
+{}
+
 HeaderEntity::~HeaderEntity() {
-    clearArguments();
 }
 
 void IfcSpfHeader::readSemicolon() {
@@ -89,18 +93,21 @@ void IfcSpfHeader::read() {
 
     readTerminal(FILE_DESCRIPTION, NONE);
     delete file_description_;
+    // readParen();
     file_description_ = new FileDescription(file_);
-    // readSemicolon();
+    readSemicolon();
 
     readTerminal(FILE_NAME, NONE);
     delete file_name_;
+    // readParen();
     file_name_ = new FileName(file_);
-    // readSemicolon();
+    readSemicolon();
 
     readTerminal(FILE_SCHEMA, NONE);
     delete file_schema_;
+    // readParen();
     file_schema_ = new FileSchema(file_);
-    // readSemicolon();
+    readSemicolon();
 }
 
 bool IfcSpfHeader::tryRead() {

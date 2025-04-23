@@ -17,73 +17,69 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.project
+import ifcopenshell.api.sequence
+import ifcopenshell.api.aggregate
 import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, work_schedule=None):
-        """Removes a work schedule
+def remove_work_schedule(file: ifcopenshell.file, work_schedule: ifcopenshell.entity_instance) -> None:
+    """Removes a work schedule
 
-        All tasks in the work schedule are also removed recursively.
+    All tasks in the work schedule are also removed recursively.
 
-        :param work_schedule: The IfcWorkSchedule to remove.
-        :type work_schedule: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param work_schedule: The IfcWorkSchedule to remove.
+    :type work_schedule: ifcopenshell.entity_instance
+    :return: None
+    :rtype: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            # This will hold all our construction schedules
-            work_plan = ifcopenshell.api.run("sequence.add_work_plan", model, name="Construction")
+        # This will hold all our construction schedules
+        work_plan = ifcopenshell.api.sequence.add_work_plan(model, name="Construction")
 
-            # Let's imagine this is one of our schedules in our work plan.
-            schedule = ifcopenshell.api.run("sequence.add_work_schedule", model,
-                name="Construction Schedule A", work_plan=work_plan)
+        # Let's imagine this is one of our schedules in our work plan.
+        schedule = ifcopenshell.api.sequence.add_work_schedule(model,
+            name="Construction Schedule A", work_plan=work_plan)
 
-            # And remove it immediately
-            ifcopenshell.api.run("sequence.remove_work_schedule", model, work_schedule=schedule)
-        """
-        self.file = file
-        self.settings = {"work_schedule": work_schedule}
+        # And remove it immediately
+        ifcopenshell.api.sequence.remove_work_schedule(model, work_schedule=schedule)
+    """
+    # TODO: do a deep purge
+    ifcopenshell.api.project.unassign_declaration(
+        file, definitions=[work_schedule], relating_context=file.by_type("IfcContext")[0]
+    )
 
-    def execute(self):
-        # TODO: do a deep purge
-        ifcopenshell.api.run(
-            "project.unassign_declaration",
-            self.file,
-            definition=self.settings["work_schedule"],
-            relating_context=self.file.by_type("IfcContext")[0],
-        )
-        if self.settings["work_schedule"].Declares:
-            for rel in self.settings["work_schedule"].Declares:
-                for work_schedule in rel.RelatedObjects:
-                    ifcopenshell.api.run(
-                        "sequence.remove_work_schedule",
-                        self.file,
-                        work_schedule=work_schedule,
-                    )
-        for inverse in self.file.get_inverse(self.settings["work_schedule"]):
-            if inverse.is_a("IfcRelDefinesByObject"):
-                if inverse.RelatingObject == self.settings["work_schedule"] or len(inverse.RelatedObjects) == 1:
-                    history = inverse.OwnerHistory
-                    self.file.remove(inverse)
-                    if history:
-                        ifcopenshell.util.element.remove_deep2(self.file, history)
-                else:
-                    related_objects = list(inverse.RelatedObjects)
-                    related_objects.remove(self.settings["work_schedule"])
-                    inverse.RelatedObjects = related_objects
-            elif inverse.is_a("IfcRelAssignsToControl"):
-                [
-                    ifcopenshell.api.run("sequence.remove_task", self.file, task=related_object)
-                    for related_object in inverse.RelatedObjects
-                    if related_object.is_a("IfcTask")
-                ]
+    if work_schedule.Declares:
+        for rel in work_schedule.Declares:
+            for work_schedule_ in rel.RelatedObjects:
+                ifcopenshell.api.sequence.remove_work_schedule(file, work_schedule=work_schedule_)
 
-        history = self.settings["work_schedule"].OwnerHistory
-        self.file.remove(self.settings["work_schedule"])
-        if history:
-            ifcopenshell.util.element.remove_deep2(self.file, history)
+    # Unassign from work plans.
+    if work_schedule.Decomposes:
+        ifcopenshell.api.aggregate.unassign_object(file, [work_schedule])
+
+    for inverse in file.get_inverse(work_schedule):
+        if inverse.is_a("IfcRelDefinesByObject"):
+            if inverse.RelatingObject == work_schedule or len(inverse.RelatedObjects) == 1:
+                history = inverse.OwnerHistory
+                file.remove(inverse)
+                if history:
+                    ifcopenshell.util.element.remove_deep2(file, history)
+            else:
+                related_objects = list(inverse.RelatedObjects)
+                related_objects.remove(work_schedule)
+                inverse.RelatedObjects = related_objects
+        elif inverse.is_a("IfcRelAssignsToControl"):
+            [
+                ifcopenshell.api.sequence.remove_task(file, task=related_object)
+                for related_object in inverse.RelatedObjects
+                if related_object.is_a("IfcTask")
+            ]
+
+    history = work_schedule.OwnerHistory
+    file.remove(work_schedule)
+    if history:
+        ifcopenshell.util.element.remove_deep2(file, history)

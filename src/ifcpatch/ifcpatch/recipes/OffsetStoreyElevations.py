@@ -16,15 +16,17 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
+import typing
+
 
 class Patcher:
-    def __init__(self, src, file, logger, z=None):
+    def __init__(self, file, logger, z: typing.Union[str, float] = "0"):
         """Offset building storeys by a particular Z value
 
         All objects placed relative to the storeys will also be shifted.
 
         :param z: The Z value in project length units to offset storeys by.
-        :type z: float
+        :type z: typing.Union[str, float]
 
         Example:
 
@@ -33,10 +35,9 @@ class Patcher:
             # Shift all storeys up by 42 units
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "OffsetStoreyElevations", "arguments": [42]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
-        self.z = z
+        self.z = float(z)
 
     def patch(self):
         project = self.file.by_type("IfcProject")[0]

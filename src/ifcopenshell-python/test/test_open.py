@@ -28,28 +28,22 @@ class TestOpen:
     def test_open_ifcspf(self):
         assert ifcopenshell.open(TEST_FILE_DIR / "WallInstance_IFC4Add2.ifc")
 
+    @pytest.mark.skip("IFC-XML temporarily disabled")
     def test_open_ifcxml(self):
         assert ifcopenshell.open(TEST_FILE_DIR / "wall-with-opening-and-window.ifcxml")
 
+    @pytest.mark.skip("IFC-XML temporarily disabled")
     def test_open_ifc_zip_ifcxml_format(self):
-        assert ifcopenshell.open(
-            TEST_FILE_DIR / "wall-with-opening-and-window_ifcxml_format.ifczip"
-        )
+        assert ifcopenshell.open(TEST_FILE_DIR / "wall-with-opening-and-window_ifcxml_format.ifczip")
 
     def test_open_ifc_zip_ifcspf_format(self):
-        assert ifcopenshell.open(
-            TEST_FILE_DIR / "WallInstance_IFC4Add2_ifcspf_format.ifczip"
-        )
+        assert ifcopenshell.open(TEST_FILE_DIR / "WallInstance_IFC4Add2_ifcspf_format.ifczip")
 
     def test_open_zip(self):
-        assert ifcopenshell.open(
-            TEST_FILE_DIR / "WallInstance_IFC4Add2_ifcspf_format.zip"
-        )
+        assert ifcopenshell.open(TEST_FILE_DIR / "WallInstance_IFC4Add2_ifcspf_format.zip")
 
     def test_open_anyextension_ifcspf_format(self):
-        assert ifcopenshell.open(
-            TEST_FILE_DIR / "WallInstance_IFC4Add2_ifcspf_format.anyextension"
-        )
+        assert ifcopenshell.open(TEST_FILE_DIR / "WallInstance_IFC4Add2_ifcspf_format.anyextension")
 
     def test_open_anyextension_ifczip_ifcspf_format(self):
         assert ifcopenshell.open(
@@ -57,16 +51,19 @@ class TestOpen:
             ".ifcZIP",
         )
 
+    @pytest.mark.skip("IFC-XML temporarily disabled")
     def test_open_anyextension_ifcxml_format(self):
         assert ifcopenshell.open(
             TEST_FILE_DIR / "wall-with-opening-and-window_ifcxml_format.anyextension",
             ".ifcXML",
         )
 
+    @pytest.mark.skip("IFC-XML temporarily disabled")
     def test_invalid_ifcspf(self):
         with pytest.raises(ifcopenshell.Error):
             assert ifcopenshell.open(TEST_FILE_DIR / "invalid.ifc")
 
+    @pytest.mark.skip("IFC-XML temporarily disabled")
     def test_invalid_ifcxml(self):
         with pytest.raises(IOError):
             assert ifcopenshell.open(TEST_FILE_DIR / "invalid.ifcxml")

@@ -28,6 +28,7 @@
 
 #include "IfcException.h"
 #include "IfcSpfStream.h"
+#include "IfcLogger.h"
 
 #include <codecvt>
 #include <iomanip>
@@ -44,7 +45,7 @@
 #define ARBITRARY (1 << 7)
 #define EXTENDED2 (1 << 8)
 #define EXTENDED4 (1 << 9)
-#define HEX(N) (1 << (9 + N))
+#define HEX(N) (1 << (9 + (N)))
 #define THIRD_SOLIDUS (1 << 18)
 #define ENDEXTENDED_X (1 << 19)
 #define ENDEXTENDED_0 (1 << 20)
@@ -52,25 +53,26 @@
 #define ENCOUNTERED_HEX (1 << 23)
 
 // FIXME: These probably need to be less forgiving in terms of wrongly defined sequences
-#define EXPECTS_ALPHABET(S) (S & FIRST_SOLIDUS)
-#define EXPECTS_PAGE(S) (S & FIRST_SOLIDUS)
-#define EXPECTS_ARBITRARY(S) (S & FIRST_SOLIDUS)
-#define EXPECTS_N_OR_F(S) (S & FIRST_SOLIDUS && !(S & ARBITRARY))
-#define EXPECTS_ARBITRARY2(S) (S & ARBITRARY && !(S & SECOND_SOLIDUS))
-#define EXPECTS_ALPHABET_DEFINITION(S) (S & FIRST_SOLIDUS && S & ALPHABET)
-#define EXPECTS_SOLIDUS(S) (S & ALPHABET_DEFINITION || S & PAGE || S & ARBITRARY || S & EXTENDED2 || S & EXTENDED4 || S & ENDEXTENDED_0 || S & IGNORED_DIRECTIVE || (S & EXTENDED4 && S & HEX(8)) || (S & EXTENDED2 && S & HEX(4)))
-#define EXPECTS_CHARACTER(S) (S & PAGE && S & SECOND_SOLIDUS)
-#define EXPECTS_HEX(S) (S & HEX(1) || S & HEX(3) || S & HEX(5) || S & HEX(6) || S & HEX(7) || (S & ARBITRARY && S & SECOND_SOLIDUS) || (S & EXTENDED2 && S & HEX(2)) || (S & EXTENDED4 && S & HEX(4)))
-#define EXPECTS_ENDEXTENDED_X(S) (S & THIRD_SOLIDUS)
-#define EXPECTS_ENDEXTENDED_0(S) (S & ENDEXTENDED_X)
+#define EXPECTS_ALPHABET(S) ((S) & FIRST_SOLIDUS)
+#define EXPECTS_PAGE(S) ((S) & FIRST_SOLIDUS)
+#define EXPECTS_ARBITRARY(S) ((S) & FIRST_SOLIDUS)
+#define EXPECTS_N_OR_F(S) ((S) & FIRST_SOLIDUS && !((S) & ARBITRARY))
+#define EXPECTS_ARBITRARY2(S) ((S) & ARBITRARY && !((S) & SECOND_SOLIDUS))
+#define EXPECTS_ALPHABET_DEFINITION(S) ((S) & FIRST_SOLIDUS && (S) & ALPHABET)
+#define EXPECTS_SOLIDUS(S) ((S) & ALPHABET_DEFINITION || (S) & PAGE || (S) & ARBITRARY || (S) & EXTENDED2 || (S) & EXTENDED4 || (S) & ENDEXTENDED_0 || (S) & IGNORED_DIRECTIVE || ((S) & EXTENDED4 && (S) & HEX(8)) || ((S) & EXTENDED2 && (S) & HEX(4)))
+#define EXPECTS_CHARACTER(S) ((S) & PAGE && (S) & SECOND_SOLIDUS)
+#define EXPECTS_HEX(S) ((S) & HEX(1) || (S) & HEX(3) || (S) & HEX(5) || (S) & HEX(6) || (S) & HEX(7) || ((S) & ARBITRARY && (S) & SECOND_SOLIDUS) || ((S) & EXTENDED2 && (S) & HEX(2)) || ((S) & EXTENDED4 && (S) & HEX(4)))
+#define EXPECTS_ENDEXTENDED_X(S) ((S) & THIRD_SOLIDUS)
+#define EXPECTS_ENDEXTENDED_0(S) ((S) & ENDEXTENDED_X)
 
-#define IS_VALID_ALPHABET_DEFINITION(C) (C >= 0x41 && C <= 0x49)
-#define IS_HEXADECIMAL(C) ((C >= 0x30 && C <= 0x39) || (C >= 0x41 && C <= 0x46))
-#define HEX_TO_INT(C) ((C >= 0x30 && C <= 0x39) ? C - 0x30 : (C + 10) - 0x41)
-#define CLEAR_HEX(C) (C &= ~(HEX(1) | HEX(2) | HEX(3) | HEX(4) | HEX(5) | HEX(6) | HEX(7) | HEX(8)))
+#define IS_VALID_ALPHABET_DEFINITION(C) ((C) >= 0x41 && (C) <= 0x49)
+#define IS_LOWERCASE_HEX(C) (((C) >= 0x61 && (C) <= 0x66))
+#define IS_HEXADECIMAL(C) (((C) >= 0x30 && (C) <= 0x39) || ((C) >= 0x41 && (C) <= 0x46) || IS_LOWERCASE_HEX(C))
+#define HEX_TO_INT(C) (((C) >= 0x30 && (C) <= 0x39) ? (C)-0x30 : ((C) >= 0x41 && (C) <= 0x46) ? ((C)-0x41 + 10) \
+                                                                                              : ((C)-0x61 + 10))
+#define CLEAR_HEX(C) ((C) &= ~(HEX(1) | HEX(2) | HEX(3) | HEX(4) | HEX(5) | HEX(6) | HEX(7) | HEX(8)))
 
 using namespace IfcParse;
-using namespace IfcWrite;
 
 IfcCharacterDecoder::IfcCharacterDecoder(IfcParse::IfcSpfStream* stream) {
     stream_ = stream;
@@ -81,7 +83,7 @@ IfcCharacterDecoder::~IfcCharacterDecoder() {
 }
 
 namespace {
-static unsigned int reference_helper = 0;
+unsigned int reference_helper = 0;
 
 class pure_impure_helper {
   private:
@@ -171,6 +173,11 @@ class pure_impure_helper {
             } else if (current_char == 'S' && EXPECTS_PAGE(parse_state)) {
                 parse_state += PAGE;
             } else if (IS_HEXADECIMAL(current_char) && EXPECTS_HEX(parse_state)) {
+                if (IS_LOWERCASE_HEX(current_char)) {
+                    Logger::Warning("Lowercase hexadecimal character '" + std::string(1, current_char) +
+                                    "' found at offset " + std::to_string(pointer_) +
+                                    ". It is recommended to use uppercase for hexadecimal.");
+                }
                 hex <<= 4;
                 parse_state += HEX((++hex_count));
                 hex += HEX_TO_INT(current_char);
@@ -420,14 +427,36 @@ std::wstring IfcUtil::convert_utf8(const std::string& string) {
 // bug in msvc 2015 and 2017, unsure if fixed in later versions
 
 std::u32string IfcUtil::convert_utf8_to_utf32(const std::string& s) {
-    auto converted = std::wstring_convert<std::codecvt_utf8<int32_t>, int32_t>().from_bytes(s);
-    return std::u32string(reinterpret_cast<char32_t const*>(converted.data()));
+    bool is_ascii = true;
+    for (char c : s) {
+        if (static_cast<unsigned char>(c) >= 128) {
+            is_ascii = false;
+            break;
+        }
+    }
+    if (is_ascii) {
+        return std::u32string(s.begin(), s.end());
+     } else {
+        auto converted = std::wstring_convert<std::codecvt_utf8<int32_t>, int32_t>().from_bytes(s);
+        return std::u32string(reinterpret_cast<char32_t const*>(converted.data()));
+    }
 }
 
 #else
 
-std::u32string IfcUtil::convert_utf8_to_utf32(const std::string& string) {
-    return std::wstring_convert<std::codecvt_utf8<std::u32string::value_type>, std::u32string::value_type>().from_bytes(string);
+std::u32string IfcUtil::convert_utf8_to_utf32(const std::string& s) {
+    bool is_ascii = true;
+    for (char c : s) {
+        if (static_cast<unsigned char>(c) >= 128) {
+            is_ascii = false;
+            break;
+        }
+    }
+    if (is_ascii) {
+        return std::u32string(s.begin(), s.end());
+    } 
+        return std::wstring_convert<std::codecvt_utf8<std::u32string::value_type>, std::u32string::value_type>().from_bytes(s);
+   
 }
 
 #endif

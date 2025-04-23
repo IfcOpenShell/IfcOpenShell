@@ -17,19 +17,19 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.geometry
 
 
 class TestRemoveRepresentation(test.bootstrap.IFC4):
     def test_removing_a_single_unused_shape_representation(self):
         representation = self.file.createIfcShapeRepresentation()
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcShapeRepresentation")) == 0
 
     def test_not_removing_a_shape_representation_in_use(self):
         representation = self.file.createIfcShapeRepresentation()
         self.file.createIfcProductRepresentation(Representations=[representation])
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcShapeRepresentation")) == 1
 
     def test_removing_a_mapped_representation_fully(self):
@@ -44,7 +44,7 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
             ],
         )
         assert len(self.file.by_type("IfcShapeRepresentation")) == 2
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcShapeRepresentation")) == 0
 
     def test_removing_only_the_representation_mapping_if_the_map_has_other_users(self):
@@ -57,7 +57,7 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
             Items=[self.file.createIfcMappedItem(MappingTarget=representation_map)],
         )
         assert len(self.file.by_type("IfcShapeRepresentation")) == 2
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcShapeRepresentation")) == 1
         assert self.file.by_type("IfcShapeRepresentation")[0].RepresentationType != "MappedRepresentation"
         assert len(self.file.by_type("IfcRepresentationMap")) == 1
@@ -67,7 +67,7 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
         representation = self.file.createIfcShapeRepresentation(Items=[item])
         surface_style = self.file.createIfcSurfaceStyle()
         styled_item = self.file.createIfcStyledItem(Item=item, Styles=[surface_style])
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcStyledItem")) == 0
         assert len(self.file.by_type("IfcSurfaceStyle")) == 1
 
@@ -76,13 +76,13 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
         representation = self.file.createIfcShapeRepresentation(Items=[item])
         styled_item = self.file.createIfcStyledItem(Item=item)
         representation2 = self.file.createIfcShapeRepresentation(Items=[item])
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcStyledItem")) == 1
 
     def test_purging_representation_presentation_layers(self):
         representation = self.file.createIfcShapeRepresentation()
         layer = self.file.createIfcPresentationLayerAssignment(AssignedItems=[representation])
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcPresentationLayerAssignment")) == 0
         assert len(self.file.by_type("IfcShapeRepresentation")) == 0
 
@@ -90,7 +90,7 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
         representation = self.file.createIfcShapeRepresentation()
         representation2 = self.file.createIfcShapeRepresentation()
         layer = self.file.createIfcPresentationLayerAssignment(AssignedItems=[representation, representation2])
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcPresentationLayerAssignment")) == 1
         assert len(self.file.by_type("IfcShapeRepresentation")) == 1
 
@@ -98,7 +98,7 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
         item = self.file.createIfcExtrudedAreaSolid()
         representation = self.file.createIfcShapeRepresentation(Items=[item])
         layer = self.file.createIfcPresentationLayerAssignment(AssignedItems=[item])
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcPresentationLayerAssignment")) == 0
         assert len(self.file.by_type("IfcExtrudedAreaSolid")) == 0
 
@@ -107,21 +107,21 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
         representation = self.file.createIfcShapeRepresentation(Items=[item])
         representation2 = self.file.createIfcShapeRepresentation(Items=[item2])
         layer = self.file.createIfcPresentationLayerAssignment(AssignedItems=[item, item2])
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcPresentationLayerAssignment")) == 1
         assert len(self.file.by_type("IfcExtrudedAreaSolid")) == 1
 
     def test_not_purging_geometric_representation_contexts(self):
         context = self.file.createIfcGeometricRepresentationSubContext()
         representation = self.file.createIfcShapeRepresentation(ContextOfItems=context)
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcGeometricRepresentationContext")) == 1
 
     def test_purging_colour_map(self):
         item = self.file.createIfcTriangulatedFaceSet()
         representation = self.file.createIfcShapeRepresentation(Items=[item])
         colour = self.file.createIfcIndexedColourMap(Colours=self.file.createIfcColourRgbList(), MappedTo=item)
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcIndexedColourMap")) == 0
         assert len(self.file.by_type("IfcColourRgbList")) == 0
 
@@ -132,7 +132,7 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
         texture = self.file.createIfcIndexedTriangleTextureMap(
             TexCoords=self.file.createIfcTextureVertexList(), MappedTo=item, Maps=[image]
         )
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcIndexedTriangleTextureMap")) == 0
         assert len(self.file.by_type("IfcTextureVertexList")) == 0
         assert len(self.file.by_type("IfcImageTexture")) == 0
@@ -145,7 +145,7 @@ class TestRemoveRepresentation(test.bootstrap.IFC4):
             TexCoords=self.file.createIfcTextureVertexList(), MappedTo=item, Maps=[image]
         )
         texture2 = self.file.createIfcIndexedTriangleTextureMap(Maps=[image])
-        ifcopenshell.api.run("geometry.remove_representation", self.file, representation=representation)
+        ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
         assert len(self.file.by_type("IfcIndexedTriangleTextureMap")) == 1
         assert len(self.file.by_type("IfcTextureVertexList")) == 0
         assert len(self.file.by_type("IfcImageTexture")) == 1

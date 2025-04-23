@@ -17,51 +17,49 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
+import ifcopenshell.util.element
 
 
-class Usecase:
-    def __init__(self, file, context=None):
-        """Removes an IfcGeometricRepresentationContext
+def remove_context(file: ifcopenshell.file, context: ifcopenshell.entity_instance) -> None:
+    """Removes an IfcGeometricRepresentationContext
 
-        Any representation geometry that is assigned to the context is also
-        removed. If a context is removed, then any subcontexts are also removed.
+    Any representation geometry that is assigned to the context is also
+    removed. If a context is removed, then any subcontexts are also removed.
 
-        :param context: The IfcGeometricRepresentationContext entity to remove
-        :type context: ifcopenshell.entity_instance.entity_instance
-        :return: None
-        :rtype: None
+    :param context: The IfcGeometricRepresentationContext entity to remove
+    :return: None
 
-        Example:
+    Example:
 
-        .. code:: python
+    .. code:: python
 
-            model = ifcopenshell.api.run("context.add_context", model, context_type="Model")
-            # Revit had a bug where they incorrectly called the body representation a "Facetation"
-            body = ifcopenshell.api.run("context.add_context", model,
-                context_type="Model", context_identifier="Facetation", target_view="MODEL_VIEW", parent=model
-            )
+        model = ifcopenshell.api.context.add_context(model, context_type="Model")
+        # Revit had a bug where they incorrectly called the body representation a "Facetation"
+        body = ifcopenshell.api.context.add_context(model,
+            context_type="Model", context_identifier="Facetation", target_view="MODEL_VIEW", parent=model
+        )
 
-            # Let's just get rid of it completely
-            ifcopenshell.api.run("context.remove_context", model, context=body)
-        """
-        self.file = file
-        self.settings = {"context": context}
+        # Let's just get rid of it completely
+        ifcopenshell.api.context.remove_context(model, context=body)
+    """
+    for subcontext in context.HasSubContexts:
+        ifcopenshell.api.context.remove_context(file, context=subcontext)
 
-    def execute(self):
-        for subcontext in self.settings["context"].HasSubContexts:
-            ifcopenshell.api.run("context.remove_context", self.file, context=subcontext)
-
-        if getattr(self.settings["context"], "ParentContext", None):
-            new = self.settings["context"].ParentContext
-            for inverse in self.file.get_inverse(self.settings["context"]):
-                if inverse.is_a("IfcCoordinateOperation"):
-                    inverse.SourceCRS = inverse.TargetCRS
-                    ifcopenshell.util.element.remove_deep(self.file, inverse)
-                else:
-                    ifcopenshell.util.element.replace_attribute(inverse, self.settings["context"], new)
-            self.file.remove(self.settings["context"])
-        else:
-            representations_in_context = self.settings["context"].RepresentationsInContext
-            self.file.remove(self.settings["context"])
-            for element in representations_in_context:
-                ifcopenshell.api.run("geometry.remove_representation", self.file, representation=element)
+    if getattr(context, "ParentContext", None):
+        new = context.ParentContext
+        for inverse in file.get_inverse(context):
+            if inverse.is_a("IfcCoordinateOperation"):
+                inverse.SourceCRS = inverse.TargetCRS
+                ifcopenshell.util.element.remove_deep(file, inverse)
+            else:
+                ifcopenshell.util.element.replace_attribute(inverse, context, new)
+        file.remove(context)
+    else:
+        representations_in_context = context.RepresentationsInContext
+        file.remove(context)
+        for rep in representations_in_context:
+            for element in ifcopenshell.util.element.get_elements_by_representation(file, rep):
+                ifcopenshell.api.geometry.unassign_representation(file, product=element, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(file, representation=rep)

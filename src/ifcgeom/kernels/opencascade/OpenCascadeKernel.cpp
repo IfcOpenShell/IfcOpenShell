@@ -23,175 +23,12 @@
   *                                                                              *
   ********************************************************************************/
 
-// #include <set>
-// #include <algorithm>
-// #include <numeric>
-// 
-// #include <Standard_Version.hxx>
-// 
-// #include <gp_Pnt.hxx>
-// #include <gp_Vec.hxx>
-// #include <gp_Dir.hxx>
-// #include <gp_Pnt2d.hxx>
-// #include <gp_GTrsf.hxx>
-// #include <gp_GTrsf2d.hxx>
-// #include <gp_Trsf.hxx>
-// #include <gp_Trsf2d.hxx>
-// #include <gp_Ax3.hxx>
-// #include <gp_Pln.hxx>
-// 
-// #include <Geom_Line.hxx>
-// #include <Geom_Circle.hxx>
-// 
-// #include <Geom_Plane.hxx>
-// #include <Geom_OffsetCurve.hxx>
-// #include <Geom_OffsetSurface.hxx>
-// #include <Geom_CylindricalSurface.hxx>
-// #include <Geom_SurfaceOfLinearExtrusion.hxx>
-// 
-// #include <GeomAPI_IntCS.hxx>
-// #include <GeomAPI_IntSS.hxx>
-// 
-// #include <BRepBndLib.hxx>
-// #include <BRepOffsetAPI_Sewing.hxx>
-// #include <BRepBuilderAPI_MakeFace.hxx>
-// #include <BRepBuilderAPI_MakeEdge.hxx>
-// #include <BRepBuilderAPI_MakeWire.hxx>
-// #include <BRepBuilderAPI_MakePolygon.hxx>
-// #include <BRepBuilderAPI_MakeVertex.hxx>
-// 
-// #include <TopoDS.hxx>
-// #include <TopoDS_Wire.hxx>
-// #include <TopoDS_Face.hxx>
-// #include <TopoDS_CompSolid.hxx>
-// 
-// #include <TopExp.hxx>
-// #include <TopExp_Explorer.hxx>
-// 
-// #include <BRepPrimAPI_MakePrism.hxx>
-// #include <BRepBuilderAPI_MakeShell.hxx>
-// #include <BRepBuilderAPI_MakeSolid.hxx>
-// #include <BRepPrimAPI_MakeHalfSpace.hxx>
-// #include <BRepAlgoAPI_Cut.hxx>
-// #include <BRepAlgoAPI_Fuse.hxx>
-// #include <BRepAlgoAPI_Common.hxx>
-// #include <BRepAlgoAPI_BooleanOperation.hxx>
-// #if OCC_VERSION_HEX >= 0x70200
-// #include <BRepAlgoAPI_Splitter.hxx>
-// #endif
-// 
-// #include <BRepAlgo_NormalProjection.hxx>
-// 
-// #include <ShapeFix_Shape.hxx>
-// #include <ShapeFix_ShapeTolerance.hxx>
-// #include <ShapeFix_Solid.hxx>
-// #include <ShapeFix_Shell.hxx>
-// 
-// #include <ShapeAnalysis_Curve.hxx>
-// #include <ShapeAnalysis_Surface.hxx>
-// 
-// 
-// #include <BRepFilletAPI_MakeFillet2d.hxx>
-// 
-// #include <TopLoc_Location.hxx>
-// 
-// #include <GProp_GProps.hxx>
-// #include <BRepGProp.hxx>
-// 
-// #include <BRepBuilderAPI_Transform.hxx>
-// #include <BRepBuilderAPI_GTransform.hxx>
-// 
-// #include <BRepGProp_Face.hxx>
-// #include <BRepCheck.hxx>
-// #include <BRepCheck_Analyzer.hxx>
-// 
-// #include <BRepMesh_IncrementalMesh.hxx>
-// #include <BRepTools.hxx>
-// #include <BRepTools_WireExplorer.hxx>
-// 
-// #include <Poly_Triangulation.hxx>
-// #include <Poly_Array1OfTriangle.hxx>
-// 
-// #include <TopTools_IndexedMapOfShape.hxx>
-// #include <TopTools_IndexedDataMapOfShapeListOfShape.hxx>
-// 
-// #include <BOPAlgo_PaveFiller.hxx>
-// 
-// #include <GCPnts_AbscissaPoint.hxx>
-// 
-// #include <BRepClass3d_SolidClassifier.hxx>
-// 
-// #include <GeomAPI_ExtremaCurveCurve.hxx>
-// 
-// #include <Extrema_ExtCS.hxx>
-// 
-// #include <ShapeAnalysis_Edge.hxx>
-// 
-// #if OCC_VERSION_HEX >= 0x70200
-// #include <BOPAlgo_Alerts.hxx>
-// #endif
-// 
-// #include "../../../ifcparse/macros.h"
-// #include "../../../ifcparse/IfcSIPrefix.h"
-// 
-// #include "../../../ifcparse/IfcFile.h"
-// 
-
 #include "OpenCascadeKernel.h"
 
-// #include "IfcGeomTree.h"
-
 #include "boolean_utils.h"
-
-// #include "wire_utils.h"
-
 #include "base_utils.h"
 
-// #include "layerset.h"
-// 
-// #include <memory>
-// #include <thread>
-// 
-// #if OCC_VERSION_HEX < 0x60900
-// #ifdef _MSC_VER
-// #pragma message("warning: You are linking against Open CASCADE version " OCC_VERSION_COMPLETE ". Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade.")
-// #else
-// #warning "You are linking against an older version of Open CASCADE. Version 6.9.0 introduces various improvements with relation to boolean operations. You are advised to upgrade."
-// #endif
-// #endif
-// 
-// namespace {
-// 	struct POSTFIX_SCHEMA(factory_t) {
-// 		IfcGeom::Kernel* operator()(IfcParse::IfcFile* file) const {
-// 			IfcGeom::POSTFIX_SCHEMA(Kernel)* k = new IfcGeom::POSTFIX_SCHEMA(Kernel);
-// 			if (file) {
-// 
-// 			}
-// 			return k;
-// 		}
-// 	};
-// }
-// 
-// void MAKE_INIT_FN(KernelImplementation_)(IfcGeom::impl::KernelFactoryImplementation* mapping) {
-// 	static const std::string schema_name = STRINGIFY(IfcSchema);
-// 	POSTFIX_SCHEMA(factory_t) factory;
-// 	mapping->bind(schema_name, factory);
-// }
-// 
-// #define Kernel POSTFIX_SCHEMA(Kernel)
-// 
-// void IfcGeom::Kernel::set_offset(const std::array<double, 3> &p_offset) {
-// 	offset = gp_Vec(p_offset[0], p_offset[1], p_offset[2]);
-// 
-// 	offset_and_rotation = util::combine_offset_and_rotation(offset, rotation);
-// }
-// 
-// void IfcGeom::Kernel::set_rotation(const std::array<double, 4> &p_rotation) {
-// 	rotation = gp_Quaternion(p_rotation[0], p_rotation[1], p_rotation[2], p_rotation[3]);
-// 
-// 	offset_and_rotation = util::combine_offset_and_rotation(offset, rotation);
-// }
-// 
+#include <BRepPrimAPI_MakeRevol.hxx>
 
 namespace {
 	struct opening_sorter {
@@ -248,9 +85,8 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 		AbstractKernel::convert(op.first, opening_shapes);
 
 		for (unsigned int i = 0; i < opening_shapes.size(); ++i) {
-			TopoDS_Shape opening_shape_solid;
 			auto opening_shape_i = std::static_pointer_cast<OpenCascadeShape>(opening_shapes[i].Shape())->shape();
-			const TopoDS_Shape& opening_shape_unlocated = util::ensure_fit_for_subtraction(opening_shape_i, opening_shape_solid, settings_.get<settings::Precision>().get());
+			const TopoDS_Shape& opening_shape_unlocated = util::ensure_fit_for_subtraction(opening_shape_i, settings_.get<settings::Precision>().get());
 
 			auto gtrsf = opening_shapes[i].Placement();
 			// @todo check
@@ -280,6 +116,10 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 		std::list<TopoDS_Shape> parts;
 
 		auto it3_shape = std::static_pointer_cast<OpenCascadeShape>(it3->Shape())->shape();
+		if (it3_shape.IsNull()) {
+			Logger::Error("Null operand");
+			continue;
+		}
 
 		bool is_multiple = it3_shape.ShapeType() == TopAbs_COMPOUND && TopoDS_Iterator(it3_shape).More() && util::is_nested_compound_of_solid(it3_shape);
 
@@ -302,13 +142,11 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 			TopoDS_Shape entity_part_result;
 
 			for (int as_shell = 0; as_shell < 2; ++as_shell) {
-
-				TopoDS_Shape entity_shape_solid;
 				TopoDS_Shape entity_shape_unlocated;
 				if (as_shell) {
 					entity_shape_unlocated = entity_part;
 				} else {
-					entity_shape_unlocated = util::ensure_fit_for_subtraction(entity_part, entity_shape_solid, settings_.get<settings::Precision>().get());
+					entity_shape_unlocated = util::ensure_fit_for_subtraction(entity_part, settings_.get<settings::Precision>().get());
 				}
 				const auto& m = it3->Placement()->ccomponents();
 				// @todo
@@ -387,6 +225,46 @@ bool IfcGeom::OpenCascadeKernel::convert_openings(const IfcUtil::IfcBaseEntity* 
 
 		cut_shapes.push_back(IfcGeom::ConversionResult(it3->ItemId(), new OpenCascadeShape(combined_result), it3->StylePtr()));
 	}
+	return true;
+}
+
+bool IfcGeom::OpenCascadeKernel::unify_shapes(const IfcGeom::ConversionResults& input, IfcGeom::ConversionResults& output) {
+	std::transform(input.begin(), input.end(), std::back_inserter(output), [this](auto v) {
+		auto& s = std::static_pointer_cast<OpenCascadeShape>(v.Shape())->shape();
+		return IfcGeom::ConversionResult(
+			v.ItemId(),
+			v.Placement(),
+			new OpenCascadeShape(util::unify(s, settings_.get<ifcopenshell::geometry::settings::Precision>().get())),
+			v.StylePtr());
+	});
+	return true;
+}
+
+bool IfcGeom::OpenCascadeKernel::convert_impl(const taxonomy::revolve::ptr r, IfcGeom::ConversionResults& results) {
+
+
+	gp_Ax1 ax(
+		convert_xyz<gp_Pnt>(*r->axis_origin),
+		convert_xyz<gp_Dir>(*r->direction));
+
+	TopoDS_Shape face;
+	if (!convert(taxonomy::cast<taxonomy::face>(r->basis), face)) {
+		return false;
+	}
+
+	TopoDS_Shape shape;
+	if (r->angle) {
+		shape = BRepPrimAPI_MakeRevol(face, ax, *r->angle);
+	} else {
+		shape = BRepPrimAPI_MakeRevol(face, ax);
+	}
+
+	results.emplace_back(ConversionResult(
+		r->instance->as<IfcUtil::IfcBaseEntity>()->id(),
+		r->matrix,
+		new OpenCascadeShape(shape),
+		r->surface_style
+	));
 	return true;
 }
 

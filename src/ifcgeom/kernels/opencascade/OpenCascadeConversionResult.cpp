@@ -5,6 +5,8 @@
 #include <BRepGProp.hxx>
 #include <GProp_GProps.hxx>
 #include <Geom_SphericalSurface.hxx>
+#include <Geom_Plane.hxx>
+#include <BRepTools_WireExplorer.hxx>
 
 #include "OpenCascadeConversionResult.h"
 
@@ -12,6 +14,18 @@
 #include "../../../ifcgeom/IfcGeomRepresentation.h"
 #include "base_utils.h"
 #include "boolean_utils.h"
+
+#include <Standard_Version.hxx>
+
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <tuple>
+#include <algorithm>
+
+#if OCC_VERSION_HEX >= 0x70600
+#include <TopTools_FormatVersion.hxx>
+#endif
 
 using IfcGeom::OpaqueNumber;
 using IfcGeom::OpaqueCoordinate;
@@ -65,6 +79,18 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 	TopExp_Explorer exp;
 	for (exp.Init(shape_, TopAbs_FACE); exp.More(); exp.Next(), ++num_faces) {
 		TopoDS_Face face = TopoDS::Face(exp.Current());
+
+		size_t num_bounds = 0; 
+		for (TopoDS_Iterator it(face); it.More(); it.Next(), ++num_bounds) {}
+		
+		const bool is_planar = BRep_Tool::Surface(face) && BRep_Tool::Surface(face)->DynamicType() == STANDARD_TYPE(Geom_Plane);
+		const bool has_inner_bounds = num_bounds > 1;
+
+		const bool polyhedral_output_with_holes = settings.get<settings::TriangulationType>().get() == settings::POLYHEDRON_WITH_HOLES && is_planar;
+		const bool polyhedral_output_without_holes = settings.get<settings::TriangulationType>().get() == settings::POLYHEDRON_WITHOUT_HOLES && is_planar && !has_inner_bounds;
+
+		std::vector<std::tuple<int, int, int>> triangle_indices;
+
 		TopLoc_Location loc;
 		Handle_Poly_Triangulation tri = BRep_Tool::Triangulation(face, loc);
 
@@ -148,17 +174,27 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				_normals.push_back((float)normal.Z());
 				*/
 
-				t->addFace(item_id, surface_style_id, dict[n1], dict[n2], dict[n3]);
+				if (polyhedral_output_without_holes || polyhedral_output_with_holes) {
+					triangle_indices.push_back({ dict[n1], dict[n2], dict[n3] });
+				} else {
+					if (settings.get<settings::TriangulationType>().get() == settings::POLYHEDRON_WITHOUT_HOLES) {
+						t->addFace(item_id, surface_style_id, std::vector<int>{ dict[n1], dict[n2], dict[n3] });
+					} else if (settings.get<settings::TriangulationType>().get() == settings::POLYHEDRON_WITH_HOLES) {
+						t->addFace(item_id, surface_style_id, std::vector<std::vector<int>>{{ dict[n1], dict[n2], dict[n3] }});
+					} else {
+						t->addFace(item_id, surface_style_id, dict[n1], dict[n2], dict[n3]);
 
-				t->addEdge(dict[n1], dict[n2], edgecount);
-				t->addEdge(dict[n2], dict[n3], edgecount);
-				t->addEdge(dict[n3], dict[n1], edgecount);
+						t->registerEdgeCount(dict[n1], dict[n2], edgecount);
+						t->registerEdgeCount(dict[n2], dict[n3], edgecount);
+						t->registerEdgeCount(dict[n3], dict[n1], edgecount);
+					}
+				}
 			}
 			for (auto& p : edgecount) {
 				// @todo should be != 2?
 				if (p.second == 1 && emitted_edges.find(p.first) == emitted_edges.end()) {
 					// non manifold edge, face boundary
-					t->registerEdge(p.first.first, p.first.second);
+					t->registerEdge(item_id, p.first.first, p.first.second);
 					if (settings.get<settings::WeldVertices>().get()) {
 						// only relevant while welding, because otherwise vertices are not shared among distinct faces
 						emitted_edges.insert(p.first);
@@ -166,10 +202,23 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				}
 			}
 		}
+
+		if (polyhedral_output_without_holes || polyhedral_output_with_holes) {
+			auto loops = IfcGeom::util::find_boundary_loops(t->verts(), triangle_indices);
+			if (polyhedral_output_without_holes) {
+				if (!loops.empty() && !loops[0].empty()) {
+					t->addFace(item_id, surface_style_id, loops[0]);
+				}
+			} else {
+				if (!loops.empty()) {
+					t->addFace(item_id, surface_style_id, loops);
+				}
+			}
+		}
 	}
 
 	if (!t->normals().empty() && settings.get<settings::GenerateUvs>().get()) {
-		t->uvs() = IfcGeom::Representation::Triangulation::box_project_uvs(t->verts(), t->normals());
+		t->uvs_ref() = IfcGeom::Representation::Triangulation::box_project_uvs(t->verts(), t->normals());
 	}
 
 	if (num_faces == 0) {
@@ -177,23 +226,66 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 		// and loose edges is discouraged by the standard. An alternative would be to use
 		// TopExp_Explorer texp(s, TopAbs_EDGE, TopAbs_FACE) to find edges that do not
 		// belong to any face.
-		for (TopExp_Explorer texp(shape_, TopAbs_EDGE); texp.More(); texp.Next()) {
-			BRepAdaptor_Curve crv(TopoDS::Edge(texp.Current()));
+
+		TopTools_ListOfShape edges;
+		// First collect edges part of wire in order
+		for (TopExp_Explorer texp(shape_, TopAbs_WIRE); texp.More(); texp.Next()) {
+			BRepTools_WireExplorer wexp(TopoDS::Wire(texp.Current()));
+			for (; wexp.More(); wexp.Next()) {
+				edges.Append(wexp.Current());
+			}
+		}
+
+		// Then collect edges not part of wire
+		for (TopExp_Explorer texp(shape_, TopAbs_EDGE, TopAbs_WIRE); texp.More(); texp.Next()) {
+			edges.Append(texp.Current());
+		}
+
+		for (TopTools_ListIteratorOfListOfShape texp(edges); texp.More(); texp.Next()) {
+			BRepAdaptor_Curve crv(TopoDS::Edge(texp.Value()));
 			GCPnts_QuasiUniformDeflection tessellater(crv, settings.get<settings::MesherLinearDeflection>().get());
 			int n = tessellater.NbPoints();
 			int previous = -1;
+			const bool reversed = texp.Value().Orientation() == TopAbs_REVERSED;
+			bool first = true;
 
-			for (int i = 1; i <= n; ++i) {
-				gp_XYZ p = tessellater.Value(i).XYZ();
+			gp_Pnt p0, p1;
+			double u0 = std::numeric_limits<double>::quiet_NaN(), u1 = std::numeric_limits<double>::quiet_NaN();
+			if (auto crv = BRep_Tool::Curve(TopoDS::Edge(texp.Value()), u0, u1)) {
+				TopoDS_Vertex v0, v1;
+				TopExp::Vertices(TopoDS::Edge(texp.Value()), v0, v1, false);
+				if (!v0.IsNull() && !v1.IsNull()) {
+					p0 = BRep_Tool::Pnt(v0);
+					p1 = BRep_Tool::Pnt(v1);
+				} else {
+					u0 = u1 = std::numeric_limits<double>::quiet_NaN();
+				}
+			}
+
+			for (int i = (reversed ? n : 1); reversed ? (i >= 1) : (i <= n); i += reversed ? -1 : 1) {
+				gp_XYZ p;
+				if (std::fabs(tessellater.Parameter(i) - u0) < 1.e-7) {
+					// Use the exact points from the topology when parameter is close to the begin or end of the parametric range
+					// This guarantees points are properly welded, because the GCPnts_QuasiUniformDeflection could otherwise introduce
+					// minor differences between the approximated points from shared vertices.
+					// @todo Using GCPnts_QuasiUniformDeflection on linear edges is pure lazyness
+					p = p0.XYZ();
+				} else if (std::fabs(tessellater.Parameter(i) - u1) < 1.e-7) {
+					p = p1.XYZ();
+				} else {
+					p = tessellater.Value(i).XYZ();
+				}
+				
 				auto p_local = p;
 				taxonomy_transform(place.components_, p);
 
 				int current = t->addVertex(item_id, surface_style_id, p.X(), p.Y(), p.Z());
 
 				std::vector<std::pair<int, int>> segments;
-				if (i > 1) {
+				if (!first) {
 					segments.push_back(std::make_pair(previous, current));
 				}
+				first = false;
 
 				if (settings.get<settings::EdgeArrows>().get()) {
 					// In case you want direction arrows on your edges
@@ -204,7 +296,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 					crv.D1(u, tmp, tmp2);
 					gp_Dir d1, d2, d3, d4;
 					d1 = tmp2;
-					if (texp.Current().Orientation() == TopAbs_REVERSED) {
+					if (reversed) {
 						d1 = -d1;
 					}
 					if (fabs(d1.Z()) < 0.5) {
@@ -228,7 +320,7 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 				}
 
 				for (auto& sgmt : segments) {
-					t->addEdge(surface_style_id, sgmt.first, sgmt.second);
+					t->addEdge(item_id, surface_style_id, sgmt.first, sgmt.second);
 				}
 
 				previous = current;
@@ -242,7 +334,11 @@ void ifcopenshell::geometry::OpenCascadeShape::Triangulate(ifcopenshell::geometr
 void ifcopenshell::geometry::OpenCascadeShape::Serialize(const ifcopenshell::geometry::taxonomy::matrix4& place, std::string& r) const {
 	auto s = IfcGeom::util::apply_transformation(shape_, place);
 	std::stringstream sstream;
+#if OCC_VERSION_HEX >= 0x70600
+	BRepTools::Write(s, sstream, false, false, TopTools_FormatVersion_VERSION_2);
+#else
 	BRepTools::Write(s, sstream);
+#endif
 	r = sstream.str();
 }
 

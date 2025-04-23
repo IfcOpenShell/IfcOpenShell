@@ -15,8 +15,8 @@ take length values defined in feet, and apply imperial formatting such that it
 shows both feet and inches including fractions.
 
 These three usecases of filtering, getting a value, and formatting that value
-are common and used in many utilities, such as in the BlenderBIM Add-on,
-IfcCSV, IfcDiff, IfcClash, IfcPatch, and IfcFM.
+are common and used in many utilities, such as in Bonsai, IfcCSV, IfcDiff,
+IfcClash, IfcPatch, and IfcFM.
 
 IfcOpenShell provides a custom syntax to consistently and concisely describe
 filters, value queries, and formatting rules.
@@ -87,21 +87,28 @@ The filters are chained and apply from left to right.
 
     filter[, filter]*
 
-There are nine types of filters to choose from. Some of these filters will add
-new elements to your filter group, and some will filter previously added
-elements in your filter group based on their criteria.
+Below is the table of filters to choose from. Most of these filters will filter
+previously added elements in your filter group based on their criteria.
+
+There are two exceptions - if ``elements`` are not provided to ``filter_elements``
+*Class* and *GlobalId* filters (without ``[!]``) will add new elements to the filter group ,
+otherwise they'll also filter elements based on criteria.
+
+If neither *Class* and *GlobalId* and ``elements`` are not provided then filter
+will search through all IfcTypeProducts and IfcProducts in the IFC project.
 
 .. csv-table::
    :header: "Filter", "Type", "Usage", "Example"
 
     "Class", "Add", "``[!] {{ifc_class_name}}``", "``IfcWall`` adds all IfcWall elements and their subclasses. ``! IfcWall`` subtracts all non-IfcWall elements from the filter group."
     "GlobalId", "Add", "``[!] {{global_id}}``", "``325Q7Fhnf67OZC$$r43uzK`` adds the single element with that GlobalId attribute. ``! 325Q7Fhnf67OZC$$r43uzK`` subtracts that single element."
-    "Attribute", "Filter", "``{{name}}{{=}}{{value}}``", "``Name=Foo`` specifies the criteria that elements must have a ``Name`` attribute with a value of ``Foo``. Attribute names must be spelled exactly the same as in IFC, which means that they must start with an uppercase character."
+    "Attribute", "Filter", "``{{name}}{{=}}{{value}}``", "``Name=Foo`` specifies the criteria that elements must have a ``Name`` attribute with a value of ``Foo``. Attribute names must be spelled exactly the same as in IFC, which means that they must start with an uppercase character. For convenience, ``PredefinedType`` will be get using :func:`ifcopenshell.util.element.get_predefined_type` instead of getting the attribute directly."
     "Property", "Filter", "``{{pset}}.{{prop}}{{=}}{{value}}``", "``Pset_WallCommon.FireRating=2HR`` specifies the criteria that elements must have a ``Pset_WallCommon`` property set, with a ``FireRating`` property within it with a value of ``2HR``. The property set name and the property name are separated by a ``.``."
     "Type", "Filter", "``type{{=}}{{value}}``", "``type=Foo`` specifies the criteria that elements must have a type which has a ``Name`` attribute with a value of ``Foo``."
     "Material", "Filter", "``material{{=}}{{value}}``", "``material=Foo`` specifies the criteria that elements must have a IfcMaterial assigned directly or indirectly (such as within a layer set). That IfcMaterial must have either a ``Name`` or ``Category`` attribute with a value of ``Foo``."
     "Classification", "Filter", "``classification{{=}}{{value}}``", "``classification=Foo`` specifies the criteria that elements must have an IfcClassificationReference with an ``Identification`` attribute with a value of ``Foo``."
     "Location", "Filter", "``location{{=}}{{value}}``", "``location=Foo`` specifies the criteria that elements must be contained directly or indirectly in a spatial element with a ``Name`` attribute with a value of ``Foo``."
+    "Parent", "Filter", "``parent{{=}}{{value}}``", "``parent=Foo`` specifies the criteria that elements must be a direct or indirect child in the spatial hierarchy to an element with a ``Name`` attribute with a value of ``Foo``."
     "Query", "Filter", "``query:{{keys}}{{=}}{{value}}``", "``query:types.count=0`` specifies the criteria that elements must have zero type occurrences. The query keys corresponds to the syntax used in the `Getting element values`_ section"
 
 When you specify a filter with a ``{{=}}`` check, you can choose from one of
@@ -116,6 +123,8 @@ the following comparison checks:
     "``>=``", "Must be greater than or equal to the value."
     "``<``", "Must be less than the value."
     "``<=``", "Must be less than or equal to the value."
+    "``*=``", "Must contain the value."
+    "``!*=``", "Must not contain the value."
 
 When you specify a ``{{pset}}``, ``{{prop}}``, or ``{{value}}``, there are
 three ways you can do so:
@@ -125,7 +134,7 @@ three ways you can do so:
 
     "Quoted string", "``""foo \""bar\"" baz""``", "The value must be in double quotes. The value may contain spaces, symbols, and other characters. If you need to use a double quote, you can escape it with a backslash. This is the safest, most general way to specify a value."
     "Unquoted string", "``foobarbaz``", "For convenience, if you have a simple value which contains no spaces or special characters, you are free to specify it as an unquoted string."
-    "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes."
+    "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes. You can learn more about regular expressions from `Beginners Regex tutorial <https://regexone.com/>`_ and `Online Regex testing website <https://regex101.com/>`_."
 
 Getting element values
 ----------------------
@@ -152,8 +161,9 @@ without needing to write complex code for it.
     "``types.count``", "Count the number of occurrences of a type."
     "``storey.Name``", "Get the ``Name`` attribute of the storey that the element is contained in."
     "``materials.count``", "Count the number of materials assigned to an element."
-    "``material.Name``", "Get the name of the assigned material."
-    "``material.item.0.Name``", "Get the name of the first item in a material set (e.g. the first material layer)"
+    "``material.Name``", "**IfcMaterial**: The name of the assigned material. **IfcMaterialLayerSet**: name of the LayerSetName. **IfcMaterialProfileSet**: The name of the overall material profile set. **IfcMaterialConstituent**: The name of the overall material constituent set."
+    "``material.item.0.Name``", "**IfcMaterial**: N/A. **IfcMaterialLayerSet**: The name of the 1st material layer. **IfcMaterialProfileSet**: The name of the 1st material profile. **IfcMaterialConstituent**: The name of the 1st material constituent."
+    "``material.item.Material.Name.0``", "**IfcMaterial**: The assigned material name. **IfcMaterialLayerSet**: The material name of the 1st material layer. **IfcMaterialProfileSet**: The material name of the 1st material profile. **IfcMaterialConstituent**: The material name of the 1st material constituent."
 
 The element value syntax works by specifying one or more query keys separated
 by a ``.`` character. Each query key returns data based of the results of the
@@ -180,10 +190,16 @@ Valid keys are:
     "``space``", "Gets the first IfcSpace spatial element that an element is contained in."
     "``storey``", "Gets the first IfcBuildingStorey spatial element that an element is contained in."
     "``building``", "Gets the first IfcBuilding spatial element that an element is contained in."
-    "``site``", "Gets the first IccSite spatial element that an element is contained in."
+    "``site``", "Gets the first IfcSite spatial element that an element is contained in."
+    "``parent``", "Gets the parent element in the spatial hierarchy."
+    "``classification``", "Gets the element's classification reference(s)"
+    "``group``", "Gets the element's group(s)"
+    "``system``", "Gets the element's system(s). This is a subset of group(s)."
+    "``zone``", "Gets the element's zone(s). This is a subset of group(s)."
     "``material`` or ``mat``", "Gets the assigned material, which may be a material set."
     "``item`` or ``i``", "If the previous key returns a material set, gets the relevant material set items"
     "``materials`` or ``mats``", "Gets a list of IfcMaterials assigned directly or indirectly (such as via a material set) to the element"
+    "``profiles``", "Gets a list of IfcProfileDefs assigned (such as via a material profile) or used (such as in an extrusion) in the element"
     "``x``", "Gets the X coordinate of the element's placement"
     "``y``", "Gets the Y coordinate of the element's placement"
     "``z``", "Gets the Z coordinate of the element's placement"
@@ -201,7 +217,7 @@ do so:
 
     "Quoted string", "``""foo \""bar\"" baz""``", "The value must be in double quotes. The value may contain spaces, symbols, and other characters. If you need to use a double quote, you can escape it with a backslash. This is the safest, most general way to specify a value."
     "Unquoted string", "``foobarbaz``", "For convenience, if you have a simple value which contains no spaces or special characters, you are free to specify it as an unquoted string."
-    "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes."
+    "Regex string", "``/foo.*baz/``", "You may specify a Python-compatible regex pattern delimited by forward slashes. You can learn more about regular expressions from `Beginners Regex tutorial <https://regexone.com/>`_ and `Online Regex testing website <https://regex101.com/>`_."
 
 Formatting
 ----------
@@ -232,6 +248,12 @@ nest formulas, for example ``concat(title("foo"), lower("Bar"))`` will produce
     "``title({{value}})``", "``title(""foo"")``", "``Foo``", "Titlecases a string."
     "``concat({{value}}[, {{value2}}]*)``", "``concat(""foo"", ""bar"")``", "``foobar``", "Concatenates two or more strings."
     "``round({{value}}, {{precision}})``", "``round(3.123, 0.1)``", "``3.1``", "Rounds ``{{value}}`` to the nearest ``{{precision}}``."
-    "``number({{value}}[, {{decimal_separator}}[, {{thousands_separator}}]])``", "``number(1234.56, "","", ""."")``", "123.4,56", "Formats {{value}} with an optional custom {{decimal_separator}} and {{thousands_separator}}. The default separators are ``.`` and ``,``."
+    "``int({{value}})``", "``int(3.123)``", "``3``", "Truncates the decimal part of the ``{{value}}``."
+    "``number({{value}}[, {{decimal_separator}}[, {{thousands_separator}}]])``", "``number(1234.56, "","", ""."")``", "``1.234,56``", "Formats {{value}} with an optional custom {{decimal_separator}} and {{thousands_separator}}. The default separators are ``.`` and ``,``."
     "``metric_length({{value}}, {{precision}}, {{decimals}})``", "``metric_length(3.123, 0.1, 2)``", "``3.10``", "Rounds ``{{value}}`` to the nearest ``{{precision}}`` then displays using a certain amount of decimal places."
     "``imperial_length({{value}}, {{precision}}, {{input_unit}}, {{output_unit}})``", "``imperial_length(3.22, 4, ""foot"")``", "``3' - 3 3/4""``", "``The {{value}}`` may be specified either as ``foot`` or ``inch`` depending on ``{{input_unit}}``. The ``{{value}}`` is then rounded to the nearest ``1/{{precision}}`` inch then formatted using fractional feet and inches if ``{{output_unit}}`` is set to ``foot`` or just inches if ``{{output_unit}}`` is set to ``inch``."
+
+When using queries in an IfcAnnotation tag surround with backticks. 
+Examples: 
+````number({{Qto_WallBaseQuantities.Width}}, ",",".")```` or 
+````round({{Qto_BuildingElementProxyQuantities.NetVolume}},.1)````

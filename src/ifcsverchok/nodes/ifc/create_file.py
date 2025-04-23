@@ -18,7 +18,10 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.guid
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
+import sverchok.core.sockets
 from bpy.props import StringProperty
 from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode
@@ -26,13 +29,15 @@ from sverchok.data_structure import updateNode
 
 class SvIfcCreateFileRefresh(bpy.types.Operator):
     bl_idname = "node.sv_ifc_create_file_refresh"
-    bl_label = "LB Out"
+    bl_label = "File Refresh"
+    bl_description = "Create new IFC file."
 
     tree_name: StringProperty(default="")
     node_name: StringProperty(default="")
     has_baked: bpy.props.BoolProperty(name="Has Baked", default=False)
 
     def execute(self, context):
+        node: SvIfcCreateFile
         node = bpy.data.node_groups[self.tree_name].nodes[self.node_name]
         node.process()
         return {"FINISHED"}
@@ -41,11 +46,20 @@ class SvIfcCreateFileRefresh(bpy.types.Operator):
 class SvIfcCreateFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcCreateFile"
     bl_label = "IFC Create File"
+    bl_description = "Create a new IFC file."
     schema: StringProperty(name="schema", update=updateNode, default="IFC4")
 
     def sv_init(self, context):
-        self.inputs.new("SvStringsSocket", "schema").prop_name = "schema"
-        self.outputs.new("SvVerticesSocket", "file")
+        helper.create_socket(
+            self.inputs, "schema", description="IFC schema to use.", data_type="str", prop_name="schema"
+        )
+        helper.create_socket(
+            self.outputs,
+            "file",
+            description="Opened IFC file.",
+            data_type="list[list[ifcopenshell.file]]",
+            socket_type=sverchok.core.sockets.SvVerticesSocket,
+        )
 
     def draw_buttons(self, context, layout):
         self.wrapper_tracked_ui_draw_op(layout, "node.sv_ifc_create_file_refresh", icon="FILE_REFRESH", text="Refresh")
@@ -54,7 +68,7 @@ class SvIfcCreateFile(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.S
         self.sv_input_names = ["schema"]
         super().process()
 
-    def process_ifc(self, schema):
+    def process_ifc(self, schema: str) -> None:
         guid = ifcopenshell.guid.new()
         ifcsverchok.helper.ifc_files[guid] = ifcopenshell.file(schema=schema)
         self.outputs["file"].sv_set([[ifcsverchok.helper.ifc_files[guid]]])

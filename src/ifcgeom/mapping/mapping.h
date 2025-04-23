@@ -6,6 +6,8 @@
 #include "../../ifcparse/IfcFile.h"
 #include "../../ifcparse/IfcLogger.h"
 
+#include <mutex>
+
 #define INCLUDE_SCHEMA(x) STRINGIFY(../../ifcparse/x.h)
 #include INCLUDE_SCHEMA(IfcSchema)
 #undef INCLUDE_SCHEMA
@@ -24,13 +26,57 @@ namespace geometry {
 		std::string length_unit_name_;
 
 		std::map<uint32_t, ifcopenshell::geometry::taxonomy::ptr> cache_;
+      std::mutex cache_guard_; // provides mutually exclusive access to cache_
 
 		const IfcParse::declaration* placement_rel_to_type_;
 		const IfcUtil::IfcBaseEntity* placement_rel_to_instance_;
+
+		Eigen::Matrix4d offset_and_rotation_ = Eigen::Matrix4d::Identity();
 		
 		void initialize_units_();
 		void addRepresentationsFromContextIds(IfcSchema::IfcRepresentation::list::ptr&);
 		void addRepresentationsFromDefaultContexts(IfcSchema::IfcRepresentation::list::ptr&);
+
+		// Set of instances to mark failures that are intended, such as representations not
+		// resulting in any items due to dimensionality filters.
+		std::set<const IfcUtil::IfcBaseInterface*> failed_on_purpose_;
+		std::set<const IfcSchema::IfcRepresentationMap*> not_reusable_maps_;
+
+		template <typename T>
+		void process_mapping(bool& matched, taxonomy::ptr& item, IfcUtil::IfcBaseInterface const * inst) {
+			if (!item && inst->as<T>()) {
+				matched = true;
+				try {
+					item = map_impl(inst->as<T>());
+					if (item != nullptr) {
+						if (item->instance == nullptr) {
+							item->instance = inst;
+						}
+						try {
+							if (inst->as<IfcSchema::IfcRepresentationItem>() && !inst->as<IfcSchema::IfcStyledItem>() &&
+								/* @todo */
+								(item->kind() == taxonomy::SOLID || item->kind() == taxonomy::SHELL || item->kind() == taxonomy::COLLECTION || item->kind() == taxonomy::EXTRUSION || item->kind() == taxonomy::LOFT || item->kind() == taxonomy::BOOLEAN_RESULT || item->kind() == taxonomy::REVOLVE || item->kind() == taxonomy::SWEEP_ALONG_CURVE || item->kind() == taxonomy::FACE)
+								) {
+								auto style = find_style(inst->as<IfcSchema::IfcRepresentationItem>());
+								if (style) {
+									auto mstyle = map(style);
+									if (mstyle) {
+										taxonomy::cast<taxonomy::geom_item>(item)->surface_style = taxonomy::cast<taxonomy::style>(mstyle);
+									}
+								}
+							}
+						} catch (const std::exception& e) {
+							Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", inst);
+						}
+					} else if (failed_on_purpose_.find(inst) == failed_on_purpose_.end()) {
+						Logger::Message(Logger::LOG_ERROR, "Failed to convert:", inst);
+					}
+				} catch (const std::exception& e) {
+					Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + "\nFailed to convert:", inst);
+				}
+			}
+		}
+		const IfcSchema::IfcStyledItem* find_style(const IfcSchema::IfcRepresentationItem*);
 	public:
 		POSTFIX_SCHEMA(mapping)(IfcParse::IfcFile* file, Settings& settings) : abstract_mapping(settings), file_(file), placement_rel_to_type_(0), placement_rel_to_instance_(0) {
 			initialize_units_();
@@ -40,12 +86,14 @@ namespace geometry {
 		virtual std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
 		virtual void initialize_settings();
 		virtual double get_length_unit() const { return length_unit_; }
+		virtual const std::string& get_length_unit_name() const { return length_unit_name_; }
 		virtual aggregate_of_instance::ptr find_openings(const IfcUtil::IfcBaseEntity*);
 		virtual IfcUtil::IfcBaseEntity* representation_of(const IfcUtil::IfcBaseEntity* product);
-		
+
+		virtual const IfcUtil::IfcBaseEntity* get_product_type(const IfcUtil::IfcBaseEntity* product_);
 		virtual const IfcUtil::IfcBaseEntity* get_single_material_association(const IfcUtil::IfcBaseEntity* product);
 		IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
-		IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation* representation, bool only_direct=false);
+		IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation* representation, IfcSchema::IfcRepresentationMap*& rmap, bool only_direct=false);
 		bool reuse_ok_(const IfcSchema::IfcProduct::list::ptr& products);
 		IfcUtil::IfcBaseEntity* get_decomposing_entity(const IfcUtil::IfcBaseEntity* product, bool include_openings);
 

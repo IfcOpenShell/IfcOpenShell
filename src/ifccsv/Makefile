@@ -16,19 +16,10 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcCSV.  If not, see <http://www.gnu.org/licenses/>.
 
-VERSION:=`date '+%y%m%d'`
-SED:=sed -i
-ifeq ($(UNAME_S),Darwin)
-SED:=sed -i '' -e
-endif
+PACKAGE_NAME:=ifccsv.py
+IS_MODULE:=true
+include ../common.mk
 
 .PHONY: qa
 qa:
 	black .
-
-.PHONY: dist
-dist:
-	rm -rf dist
-	$(SED) "s/999999/$(VERSION)/" pyproject.toml
-	python -m build
-	$(SED) "s/$(VERSION)/999999/" pyproject.toml

@@ -17,80 +17,65 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.owner
+import ifcopenshell.guid
 import ifcopenshell.util.element
+from typing import Optional
 
 
-class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {
-            "relating_element": None,
-            "related_element": None,
-            "relating_connection": "NOTDEFINED",
-            "related_connection": "NOTDEFINED",
-            "description": None,
-        }
-        for key, value in settings.items():
-            self.settings[key] = value
+def connect_path(
+    file: ifcopenshell.file,
+    relating_element: ifcopenshell.entity_instance,
+    related_element: ifcopenshell.entity_instance,
+    relating_connection: str = "NOTDEFINED",
+    related_connection: str = "NOTDEFINED",
+    description: Optional[str] = None,
+) -> ifcopenshell.entity_instance:
+    incompatible_connections: list[ifcopenshell.entity_instance] = []
+    for rel in relating_element.ConnectedTo:
+        if not rel.is_a("IfcRelConnectsPathElements"):
+            continue
+        if rel.RelatedElement == related_element:
+            incompatible_connections.append(rel)
+        elif rel.RelatingConnectionType in ["ATSTART", "ATEND"] and rel.RelatingConnectionType == relating_connection:
+            incompatible_connections.append(rel)
 
-    def execute(self):
-        incompatible_connections = []
-        for rel in self.settings["relating_element"].ConnectedTo:
-            if not rel.is_a("IfcRelConnectsPathElements"):
-                continue
-            if rel.RelatedElement == self.settings["related_element"]:
-                incompatible_connections.append(rel)
-            elif (
-                rel.RelatingConnectionType in ["ATSTART", "ATEND"]
-                and rel.RelatingConnectionType == self.settings["relating_connection"]
-            ):
-                incompatible_connections.append(rel)
+    for rel in relating_element.ConnectedFrom:
+        if not rel.is_a("IfcRelConnectsPathElements"):
+            continue
+        if rel.RelatedConnectionType in ["ATSTART", "ATEND"] and rel.RelatedConnectionType == relating_connection:
+            incompatible_connections.append(rel)
 
-        for rel in self.settings["relating_element"].ConnectedFrom:
-            if not rel.is_a("IfcRelConnectsPathElements"):
-                continue
-            if (
-                rel.RelatedConnectionType in ["ATSTART", "ATEND"]
-                and rel.RelatedConnectionType == self.settings["relating_connection"]
-            ):
-                incompatible_connections.append(rel)
+    for rel in related_element.ConnectedFrom:
+        if not rel.is_a("IfcRelConnectsPathElements"):
+            continue
+        if rel.RelatedConnectionType in ["ATSTART", "ATEND"] and rel.RelatedConnectionType == related_connection:
+            incompatible_connections.append(rel)
 
-        for rel in self.settings["related_element"].ConnectedFrom:
-            if not rel.is_a("IfcRelConnectsPathElements"):
-                continue
-            if (
-                rel.RelatedConnectionType in ["ATSTART", "ATEND"]
-                and rel.RelatedConnectionType == self.settings["related_connection"]
-            ):
-                incompatible_connections.append(rel)
+    for rel in related_element.ConnectedTo:
+        if not rel.is_a("IfcRelConnectsPathElements"):
+            continue
+        if rel.RelatedElement == relating_element:
+            incompatible_connections.append(rel)
+        elif rel.RelatingConnectionType in ["ATSTART", "ATEND"] and rel.RelatingConnectionType == related_connection:
+            incompatible_connections.append(rel)
 
-        for rel in self.settings["related_element"].ConnectedTo:
-            if not rel.is_a("IfcRelConnectsPathElements"):
-                continue
-            if rel.RelatedElement == self.settings["relating_element"]:
-                incompatible_connections.append(rel)
-            elif (
-                rel.RelatingConnectionType in ["ATSTART", "ATEND"]
-                and rel.RelatingConnectionType == self.settings["related_connection"]
-            ):
-                incompatible_connections.append(rel)
+    if incompatible_connections:
+        for connection in set(incompatible_connections):
+            history = connection.OwnerHistory
+            file.remove(connection)
+            if history:
+                ifcopenshell.util.element.remove_deep2(file, history)
 
-        if incompatible_connections:
-            for connection in set(incompatible_connections):
-                history = connection.OwnerHistory
-                self.file.remove(connection)
-                if history:
-                    ifcopenshell.util.element.remove_deep2(self.file, history)
-
-        return self.file.createIfcRelConnectsPathElements(
-            ifcopenshell.guid.new(),
-            OwnerHistory=ifcopenshell.api.run("owner.create_owner_history", self.file),
-            Description=self.settings["description"],
-            RelatingElement=self.settings["relating_element"],
-            RelatedElement=self.settings["related_element"],
-            RelatingConnectionType=self.settings["relating_connection"],
-            RelatedConnectionType=self.settings["related_connection"],
-            RelatingPriorities=[],
-            RelatedPriorities=[],
-        )
+    return file.create_entity(
+        "IfcRelConnectsPathElements",
+        ifcopenshell.guid.new(),
+        OwnerHistory=ifcopenshell.api.owner.create_owner_history(file),
+        Description=description,
+        RelatingElement=relating_element,
+        RelatedElement=related_element,
+        RelatingConnectionType=relating_connection,
+        RelatedConnectionType=related_connection,
+        RelatingPriorities=[],
+        RelatedPriorities=[],
+    )

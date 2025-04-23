@@ -22,105 +22,134 @@ import re
 import json
 import time
 import tempfile
+import typing
 import itertools
 import numpy as np
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
-import ifcopenshell.util.unit
-import ifcopenshell.util.shape
-import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
+import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import ifcopenshell.util.schema
+import ifcopenshell.util.shape
+import ifcopenshell.util.unit
+from pathlib import Path
+from ifcopenshell.geom import ShapeType
+from typing import Any, TYPE_CHECKING, Literal
 
-try:
+SQLTypes = typing.Literal["SQLite", "MySQL"]
+
+if TYPE_CHECKING:
     import sqlite3
-except:
-    print("No SQLite support")
-
-try:
     import mysql.connector
-except:
-    print("No MySQL support")
+else:
+    try:
+        import sqlite3
+    except:
+        print("No SQLite support")
+        SQLTypes = typing.Literal["MySQL"]
+
+    try:
+        import mysql.connector
+    except:
+        print("No MySQL support")
+        SQLTypes = typing.Literal["SQLite"]
+
+DEFAULT_DATABASE_NAME = "database"
 
 
 class Patcher:
     def __init__(
         self,
-        src,
         file,
         logger,
-        sql_type: str = "sqlite",
+        sql_type: SQLTypes = "SQLite",
         host: str = "localhost",
         username: str = "root",
         password: str = "pass",
-        database: str = "test",
+        database: str = f"{DEFAULT_DATABASE_NAME}.sqlite",
+        full_schema: bool = True,
+        is_strict: bool = False,
+        should_expand: bool = False,
+        should_get_inverses: bool = True,
+        should_get_psets: bool = True,
+        should_get_geometry: bool = True,
+        should_skip_geometry_data: bool = False,
     ):
         """Convert an IFC-SPF model to SQLite or MySQL.
 
-        There are certain controls which are hardcoded in this recipe that you
-        may modify, including:
+        :param sql_type: Choose between "SQLite" or "MySQL"
+        :param database: Database path to save the SQL database to (already existing or not).
+            Could also be a directory, then the database will be stored
+            using default filename (e.g. 'database.sqlite').
+        :filter_glob database: *.db;*.sqlite
+        :param full_schema: if True, will create tables for all IFC classes,
+            regardless if they are used or not in the dataset. If False, will
+            only create tables for classes in the dataset.
+        :param is_strict: whether or not to enforce null or not null. If your
+            dataset might contain invalid data, set this to False.
+        :param should_expand: if True, entities with attributes containing lists of
+            entities will be separated into multiple rows. This means the ifc_id
+            is no longer a unique primary key. If False, lists will be stored as
+            JSON.
+        :param should_get_psets: if True, a separate psets table will be created to
+            make it easy to query properties. This is in addition to regular IFC
+            tables like IfcPropertySet.
+        :param should_get_geometry: Whether or not to process and store explicit
+            geometry data as a blob in a separate geometry and shape table.
+        :param should_skip_geometry_data: Whether or not to also create tables for
+            IfcRepresentation and IfcRepresentationItem classes. These tables are
+            unnecessary if you are not interested in geometry.
 
-        - full_schema: if True, will create tables for all IFC classes,
-          regardless if they are used or not in the dataset. If False, will
-          only create tables for classes in the dataset.
-        - is_strict: whether or not to enforce null or not null. If your
-          dataset might contain invalid data, set this to False.
-        - should_expand: if True, entities with attributes containing lists of
-          entities will be separated into multiple rows. This means the ifc_id
-          is no longer a unique primary key. If False, lists will be stored as
-          JSON.
-        - should_get_psets: if True, a separate psets table will be created to
-          make it easy to query properties. This is in addition to regular IFC
-          tables like IfcPropertySet.
-        - should_get_geometry: Whether or not to process and store explicit
-          geometry data as a blob in a separate geometry and shape table.
-        - should_skip_geometry_data: Whether or not to also create tables for
-          IfcRepresentation and IfcRepresentationItem classes. These tables are
-          unnecessary if you are not interested in geometry.
-
-        :param sql_type: Choose between "sqlite" or "mysql"
-        :type sql_type: str
 
         Example:
 
         .. code:: python
 
-            # Convert to SQLite
-            ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "Ifc2Sql", "arguments": ["sqlite"]})
+            # Convert to SQLite, SQLite databse will be saved to a temporary file.
+            sqlite_temp_filepath = ifcpatch.execute(
+                {"input": "input.ifc", "file": model, "recipe": "Ifc2Sql", "arguments": ["sqlite"]}
+            )
         """
-        self.src = src
         self.file = file
         self.logger = logger
-        self.sql_type = sql_type
+        self.sql_type: Literal["sqlite", "mysql"] = sql_type.lower()
         self.host = host
         self.username = username
         self.password = password
         self.database = database
 
-    def patch(self):
-        self.full_schema = True  # Set true for ifcopenshell.sqlite
-        self.is_strict = False
-        self.should_expand = False  # Set false for ifcopenshell.sqlite
-        self.should_get_inverses = True  # Set true for ifcopenshell.sqlite
-        self.should_get_psets = True
-        self.should_get_geometry = True  # Set true for ifcopenshell.sqlite
-        self.should_skip_geometry_data = False  # Set false for ifcopenshell.sqlite
+        # Configuration Values
+        self.full_schema = full_schema
+        self.is_strict = is_strict
+        self.should_expand = should_expand
+        self.should_get_inverses = should_get_inverses
+        self.should_get_psets = should_get_psets
+        self.should_get_geometry = should_get_geometry
+        self.should_skip_geometry_data = should_skip_geometry_data
 
-        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema)
+    def patch(self) -> None:
+        suffix = ".db" if self.sql_type == "SQLite" else ".sqlite"
+        database = Path(self.database)
+        if database.is_dir():
+            database = (database / DEFAULT_DATABASE_NAME).with_suffix(suffix)
+        elif not database.parent.exists():
+            database.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            # Assume it's a filepath - existing or not.
+            pass
+
+        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema_identifier)
 
         if self.sql_type == "sqlite":
-            tmp = tempfile.NamedTemporaryFile(delete=False)
-            db_file = tmp.name
-            self.db = sqlite3.connect(db_file)
+            self.db = sqlite3.connect(database)
             self.c = self.db.cursor()
-            self.file_patched = db_file
         elif self.sql_type == "mysql":
             self.db = mysql.connector.connect(
-                host=self.host, user=self.username, password=self.password, database=self.database
+                host=self.host, user=self.username, password=self.password, database=str(database)
             )
             self.c = self.db.cursor()
-            self.file_patched = None
 
         self.create_id_map()
         self.create_metadata()
@@ -168,7 +197,7 @@ class Patcher:
         self.db.commit()
         self.db.close()
 
-    def create_geometry(self):
+    def create_geometry(self) -> None:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
 
         self.shape_rows = {}
@@ -180,7 +209,7 @@ class Patcher:
             self.elements = self.file.by_type("IfcElement")
 
         self.settings = ifcopenshell.geom.settings()
-        self.settings.set(self.settings.STRICT_TOLERANCE, True)
+        self.settings.set("apply-default-materials", False)
 
         self.body_contexts = [
             c.id()
@@ -195,7 +224,7 @@ class Patcher:
                 if c.ContextType == "Model"
             ]
         )
-        self.settings.set_context_ids(self.body_contexts)
+        self.settings.set("context-ids", self.body_contexts)
 
         products = self.elements
         iterator = ifcopenshell.geom.iterator(self.settings, self.file, multiprocessing.cpu_count(), include=products)
@@ -217,24 +246,26 @@ class Patcher:
                 checkpoint = time.time()
             shape = iterator.get()
             if shape:
-                if shape.geometry.id not in self.geometry_rows:
-                    v = np.array(shape.geometry.verts).tobytes()
-                    e = np.array(shape.geometry.edges).tobytes()
-                    f = np.array(shape.geometry.faces).tobytes()
-                    mids = np.array(shape.geometry.material_ids).tobytes()
-                    m = json.dumps([int(m.name.split("-")[2]) for m in shape.geometry.materials])
-                    self.geometry_rows[shape.geometry.id] = [shape.geometry.id, v, e, f, mids, m]
-                m = ifcopenshell.util.shape.get_shape_matrix(shape)
-                m[0][3] /= self.unit_scale
-                m[1][3] /= self.unit_scale
-                m[2][3] /= self.unit_scale
-                x, y, z = m[:, 3][0:3]
-                self.shape_rows[shape.id] = [shape.id, float(x), float(y), float(z), m.tobytes(), shape.geometry.id]
+                shape_id = shape.id
+                geometry_id = shape.geometry.id
+                if geometry_id not in self.geometry_rows:
+                    geometry: ShapeType
+                    geometry = shape.geometry
+                    v = geometry.verts_buffer
+                    e = geometry.edges_buffer
+                    f = geometry.faces_buffer
+                    mids = geometry.material_ids_buffer
+                    m = json.dumps([m.instance_id() for m in shape.geometry.materials])
+                    self.geometry_rows[geometry_id] = [geometry_id, v, e, f, mids, m]
+                # Copy required since otherwise it is read-only
+                m = ifcopenshell.util.shape.get_shape_matrix(shape).copy()
+                m[:3, 3] /= self.unit_scale
+                x, y, z = m[:, 3][0:3].tolist()
+                self.shape_rows[shape_id] = [shape_id, x, y, z, m.tobytes(), geometry_id]
             if not iterator.next():
                 break
-        print("Done creating geometry")
 
-    def create_id_map(self):
+    def create_id_map(self) -> None:
         if self.sql_type == "sqlite":
             statement = (
                 "CREATE TABLE IF NOT EXISTS id_map (ifc_id integer PRIMARY KEY NOT NULL UNIQUE, ifc_class text);"
@@ -249,7 +280,7 @@ class Patcher:
             """
         self.c.execute(statement)
 
-    def create_metadata(self):
+    def create_metadata(self) -> None:
         # There is no "standard" SQL serialisation, so we propose a convention
         # of a "metadata" table to hold high level metadata. This includes the
         # preprocessor field to uniquely identify the "variant" of SQL schema
@@ -273,7 +304,7 @@ class Patcher:
             self.c.execute(statement)
             self.c.execute("INSERT INTO metadata VALUES (%s, %s, %s);", metadata)
 
-    def create_pset_table(self):
+    def create_pset_table(self) -> None:
         statement = """
         CREATE TABLE IF NOT EXISTS psets (
             ifc_id integer NOT NULL,
@@ -284,7 +315,7 @@ class Patcher:
         """
         self.c.execute(statement)
 
-    def create_geometry_table(self):
+    def create_geometry_table(self) -> None:
         statement = """
         CREATE TABLE IF NOT EXISTS shape (
             ifc_id integer NOT NULL,
@@ -314,7 +345,7 @@ class Patcher:
 
         self.c.execute(statement)
 
-    def create_sqlite_table(self, ifc_class, declaration):
+    def create_sqlite_table(self, ifc_class: str, declaration: ifcopenshell.ifcopenshell_wrapper.declaration) -> None:
         statement = f"CREATE TABLE IF NOT EXISTS {ifc_class} ("
 
         if self.should_expand:
@@ -331,6 +362,7 @@ class Patcher:
         for i in range(0, total_attributes):
             attribute = declaration.attribute_by_index(i)
             primitive = ifcopenshell.util.attribute.get_primitive_type(attribute)
+            data_type = "TEXT"
             if primitive in ("string", "enum"):
                 data_type = "TEXT"
             elif primitive in ("entity", "integer", "boolean"):
@@ -341,8 +373,10 @@ class Patcher:
                 data_type = "INTEGER"
             elif isinstance(primitive, tuple):
                 data_type = "JSON"
+            elif primitive == "binary":
+                data_type = "TEXT"
             else:
-                print(attribute, primitive)  # Not implemented?
+                print("Possibly not implemented attribute data type:", attribute, primitive)
             if not self.is_strict or derived[i]:
                 optional = ""
             else:
@@ -352,10 +386,9 @@ class Patcher:
         if self.should_get_inverses:
             statement += ", inverses JSON"
         statement += ");"
-        print(statement)
         self.c.execute(statement)
 
-    def create_mysql_table(self, ifc_class, declaration):
+    def create_mysql_table(self, ifc_class: str, declaration: ifcopenshell.ifcopenshell_wrapper.declaration) -> None:
         declaration = self.schema.declaration_by_name(ifc_class)
         statement = f"CREATE TABLE IF NOT EXISTS {ifc_class} ("
         statement += "`ifc_id` int(10) unsigned NOT NULL,"
@@ -396,11 +429,9 @@ class Patcher:
             statement += " PRIMARY KEY (`ifc_id`)"
 
         statement += ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;"
-        print(statement)
         self.c.execute(statement)
 
-    def insert_data(self, ifc_class):
-        print("Extracting data for", ifc_class)
+    def insert_data(self, ifc_class: str) -> None:
         elements = self.file.by_type(ifc_class, include_subtypes=False)
 
         rows = []
@@ -450,13 +481,15 @@ class Patcher:
                     for prop_name, value in pset_data.items():
                         if prop_name == "id":
                             continue
+                        if isinstance(value, list):
+                            value = json.dumps(value)
                         pset_rows.append([element.id(), pset_name, prop_name, value])
 
             if self.should_get_geometry:
-                if element.id() not in self.shape_rows and getattr(element, "ObjectPlacement", None):
-                    m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-                    x, y, z = m[:, 3][0:3]
-                    self.shape_rows[element.id()] = [element.id(), float(x), float(y), float(z), m.tobytes(), None]
+                if element.id() not in self.shape_rows and (placement := getattr(element, "ObjectPlacement", None)):
+                    m = ifcopenshell.util.placement.get_local_placement(placement)
+                    x, y, z = m[:, 3][0:3].tolist()
+                    self.shape_rows[element.id()] = [element.id(), x, y, z, m.tobytes(), None]
 
         if self.sql_type == "sqlite":
             if rows:
@@ -471,14 +504,14 @@ class Patcher:
             if pset_rows:
                 self.c.executemany("INSERT INTO psets VALUES (%s, %s, %s, %s);", pset_rows)
 
-    def serialise_value(self, element, value):
+    def serialise_value(self, element: ifcopenshell.entity_instance, value: Any) -> Any:
         return element.walk(
             lambda v: isinstance(v, ifcopenshell.entity_instance),
             lambda v: v.id() if v.id() else {"type": v.is_a(), "value": v.wrappedValue},
             value,
         )
 
-    def get_permutations(self, lst, indexes):
+    def get_permutations(self, lst: list[Any], indexes: list[int]) -> list[Any]:
         nested_lists = [lst[i] for i in indexes]
 
         # Generate the Cartesian product of the nested lists
@@ -494,7 +527,7 @@ class Patcher:
 
         return final_lists
 
-    def is_entity_list(self, attribute):
+    def is_entity_list(self, attribute: ifcopenshell.ifcopenshell_wrapper.attribute) -> bool:
         attribute = str(attribute.type_of_attribute())
         if (attribute.startswith("<list") or attribute.startswith("<set")) and "<entity" in attribute:
             for data_type in re.findall("<(.*?) .*?>", attribute):

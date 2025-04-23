@@ -41,6 +41,13 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFace* inst) {
 			face->children.push_back(r);
 		}
 	}
+
+	auto face_surface = inst->as<IfcSchema::IfcFaceSurface>();
+
+	if (face_surface) {
+		face->basis = map(face_surface->FaceSurface());
+	}
+
 	if (face->children.empty()) {
 #ifdef TAXONOMY_USE_NAKED_PTR
 		delete face;

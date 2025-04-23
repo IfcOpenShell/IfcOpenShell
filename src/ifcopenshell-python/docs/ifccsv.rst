@@ -43,16 +43,52 @@ you make in the spreadsheet or table will also be made in the IFC.
 
 There are different methods of installation, depending on your situation.
 
-1. **Source installation** is recommended for developers wanting to use the
-   latest code as a library or a CLI utility.
-2. **Using the BlenderBIM Add-on** is recommended for non-developers wanting a
+1. **PyPI** is recommended for developers using Pip.
+2. **Using Bonsai** is recommended for non-developers wanting a
    graphical interface.
+3. **Source installation** is recommended for developers wanting to use the
+   latest code as a library or a CLI utility.
+
+PyPI
+----
+
+.. code-block::
+
+    pip install ifccsv
+
+Using Bonsai
+---------------------------
+
+Bonsai is a Blender Add-on that provides a graphical interface for IfcOpenShell.
+Other than providing a graphical IFC authoring platform, it also comes with
+IfcOpenShell, its utilities, and a Python shell built-in. This means you don't
+need to install Python first, and you also can compare your IfcOpenShell
+scripting to what you see with a visual model viewer, or use a graphical
+interface to access the IfcOpenShell utilities.
+
+1. Install Bonsai by following the `Bonsai
+   installation documentation
+   <https://docs.bonsaibim.org/guides/installation.html>`_.
+
+2. Launch Blender. Change to the **Scene Properties** tab in the **Properties
+   Panel**. Scroll down to the **IFC Collaboration > IFC CSV Import / Export**
+   panel.
+
+3. Browse to your IFC file.
+
+4. Type in a filter query, such as ``IfcDoor``.
+
+5. Optionally add attributes you'd like to export.
+
+6. Press **Export IFC to CSV**
+
+TODO: add pictures and make this clearer for non-developers.
 
 Source installation
 -------------------
 
 1. :doc:`Install IfcOpenShell <ifcopenshell-python/installation>`
-2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifccsv>`_.
+2. `Clone the source code <https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifccsv>`_.
 3. ``cd /path/to/IfcOpenShell/src/ifccsv``
 
 Depending on which formats you want to edit, you will need to install more
@@ -65,7 +101,7 @@ dependencies:
 Here is a minimal example of how to use IfcDiff as a Python module or CLI
 utility:
 
-::
+.. code-block:: console
 
     $ python -m ifccsv -h
     usage: ifccsv.py [-h] -i IFC [-s SPREADSHEET] [-f FORMAT] [-d DELIMITER] [-n NULL] [-e EMPTY] [--bool_true BOOL_TRUE] [--bool_false BOOL_FALSE] [--concat CONCAT] [-q QUERY] [-a ATTRIBUTES [ATTRIBUTES ...]]
@@ -115,7 +151,7 @@ Here is a minimal example of how to use IfcCSV as a library:
     model = ifcopenshell.open("/path/to/model.ifc")
     # Using the selector is optional. You may specify elements as a list manually if you prefer.
     # e.g. elements = model.by_type("IfcElement")
-    elements = ifcopenshell.util.selector.Selector.parse(model, ".IfcElement")
+    elements = ifcopenshell.util.selector.filter_elements(model, "IfcElement")
     attributes = ["Name", "Description"]
 
     # Export our model's elements and their attributes to a CSV.
@@ -140,31 +176,3 @@ Here is a minimal example of how to use IfcCSV as a library:
     # You can also import changes from a CSV
     ifc_csv.Import(model, "input.csv")
     model.write("/path/to/updated_model.ifc")
-
-Using the BlenderBIM Add-on
----------------------------
-
-The BlenderBIM Add-on is a Blender based graphical interface to IfcOpenShell.
-Other than providing a graphical IFC authoring platform, it also comes with
-IfcOpenShell, its utilities, and a Python shell built-in. This means you don't
-need to install Python first, and you also can compare your IfcOpenShell
-scripting to what you see with a visual model viewer, or use a graphical
-interface to access the IfcOpenShell utilities.
-
-1. Install the BlenderBIM Add-on by following the `BlenderBIM Add-on
-   installation documentation
-   <https://blenderbim.org/docs/users/installation.html>`_.
-
-2. Launch Blender. Change to the **Scene Properties** tab in the **Properties
-   Panel**. Scroll down to the **IFC Collaboration > IFC CSV Import / Export**
-   panel.
-
-3. Browse to your IFC file.
-
-4. Type in a filter query, such as ``IfcDoor``.
-
-5. Optionally add attributes you'd like to export.
-
-6. Press **Export IFC to CSV**
-
-TODO: add pictures and make this clearer for non-developers.

@@ -15,47 +15,53 @@
 #
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
+import ifcopenshell
+from typing import Optional
 
 
-class Usecase:
-    def __init__(self, file, entity=None, relating_space=None, related_building_element=None, parent_boundary=None, corresponding_boundary=None):
-        """Modify the relationships of a space boundary relationship
+def edit_attributes(
+    file: ifcopenshell.file,
+    entity: ifcopenshell.entity_instance,
+    relating_space: ifcopenshell.entity_instance,
+    related_building_element: ifcopenshell.entity_instance,
+    parent_boundary: Optional[ifcopenshell.entity_instance] = None,
+    corresponding_boundary: Optional[ifcopenshell.entity_instance] = None,
+) -> None:
+    """Modify the relationships of a space boundary relationship
 
-        Currently this function is quite minimal and offers no advantage to
-        manual assignment of the space boundary attributes.
+    Currently this function is quite minimal and offers no advantage to
+    manual assignment of the space boundary attributes.
 
-        :param entity: The IfcRelSpaceBoundary to modify
-        :type entity: ifcopenshell.entity_instance.entity_instance
-        :param relating_space: The IfcSpace or IfcExternalSpatialElement that
-            the space boundary is related to.
-        :type relating_space: ifcopenshell.entity_instance.entity_instance
-        :param related_building_element: The IfcElement that defines the
-            boundary, typically an IfcWall.
-        :type relating_space: ifcopenshell.entity_instance.entity_instance
-        :param parent_boundary: A parent IfcRelSpaceBoundary, only provided if
-            this is an inner boundary. This can apply to 1st and 2nd level
-            boundaries.
-        :type parent_boundary: ifcopenshell.entity_instance.entity_instance,
-            optional
-        :param corresponding_boundary: The other IfcRelSpaceBoundary on the
-            other side of the related element. The pair together represents a
-            thermal boundary. This only applies to 2nd level boundaries.
-        :type corresponding_boundary: ifcopenshell.entity_instance.entity_instance,
-            optional
-        :return: None
-        :rtype: None
-        """
-        self.file = file
-        self.entity = entity
-        self.relating_space = relating_space
-        self.related_building_element = related_building_element
-        self.parent_boundary = parent_boundary
-        self.corresponding_boundary = corresponding_boundary
+    :param entity: The IfcRelSpaceBoundary to modify
+    :type entity: ifcopenshell.entity_instance
+    :param relating_space: The IfcSpace or IfcExternalSpatialElement that
+        the space boundary is related to.
+    :type relating_space: ifcopenshell.entity_instance
+    :param related_building_element: The IfcElement that defines the
+        boundary, typically an IfcWall.
+    :type relating_space: ifcopenshell.entity_instance
+    :param parent_boundary: A parent IfcRelSpaceBoundary, only provided if
+        this is an inner boundary. This can apply to 1st and 2nd level
+        boundaries.
+    :type parent_boundary: ifcopenshell.entity_instance,
+        optional
+    :param corresponding_boundary: The other IfcRelSpaceBoundary on the
+        other side of the related element. The pair together represents a
+        thermal boundary. This only applies to 2nd level boundaries.
+    :type corresponding_boundary: ifcopenshell.entity_instance,
+        optional
+    :return: None
+    :rtype: None
+    """
+    entity = entity
+    relating_space = relating_space
+    related_building_element = related_building_element
+    parent_boundary = parent_boundary
+    corresponding_boundary = corresponding_boundary
 
-    def execute(self):
-        self.entity.RelatingSpace = self.relating_space
-        self.entity.RelatedBuildingElement = self.related_building_element
-        if hasattr(self.entity, "ParentBoundary"):
-            self.entity.ParentBoundary = self.parent_boundary
-        if hasattr(self.entity, "CorrespondingBoundary"):
-            self.entity.CorrespondingBoundary = self.corresponding_boundary
+    entity.RelatingSpace = relating_space
+    entity.RelatedBuildingElement = related_building_element
+    if hasattr(entity, "ParentBoundary"):
+        entity.ParentBoundary = parent_boundary
+    if hasattr(entity, "CorrespondingBoundary"):
+        entity.CorrespondingBoundary = corresponding_boundary

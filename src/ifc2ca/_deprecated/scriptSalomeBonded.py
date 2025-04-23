@@ -30,6 +30,7 @@ from pathlib import Path
 
 flatten = itertools.chain.from_iterable
 
+
 class MODEL:
     def __init__(self, dataFilename, medFilename, meshSize, zGround):
         self.dataFilename = dataFilename
@@ -97,9 +98,7 @@ class MODEL:
             shapeType = "EDGE"
         if geometryType == "surface":
             shapeType = "FACE"
-        return self.geompy.MakePartition(
-            objects, [], [], [], self.geompy.ShapeType[shapeType], 0, [], 1
-        )
+        return self.geompy.MakePartition(objects, [], [], [], self.geompy.ShapeType[shapeType], 0, [], 1)
 
     def getLinkGeometry(self, ecc, orientation, finalPoint):
         vector = np.array(orientation).transpose().dot(ecc["vector"])
@@ -195,29 +194,21 @@ class MODEL:
 
             el["linkObjs"] = [None for _ in el["connections"]]
             for j, rel in enumerate(el["connections"]):
-                conn = [
-                    c for c in connections if c["referenceName"] == rel["relatedConnection"]
-                ][0]
+                conn = [c for c in connections if c["referenceName"] == rel["relatedConnection"]][0]
                 if rel["eccentricity"]:
                     rel["index"] = len(conn["relatedElements"]) + 1
 
-                    geometry = self.getLinkGeometry(
-                        rel["eccentricity"], el["orientation"], conn["geometry"]
-                    )
+                    geometry = self.getLinkGeometry(rel["eccentricity"], el["orientation"], conn["geometry"])
                     el["linkObjs"][j] = self.makeObject(geometry, "line")
                 conn["relatedElements"].append(rel)
 
         # Make assemble of Building Object
         bldObjs = []
         bldObjs.extend([el["elemObj"] for el in elements])
-        bldObjs.extend(
-            flatten([[link for link in el["linkObjs"] if link] for el in elements])
-        )
+        bldObjs.extend(flatten([[link for link in el["linkObjs"] if link] for el in elements]))
 
         # bldComp = geompy.MakeCompound(bldObjs)
-        bldComp = geompy.MakePartition(
-            bldObjs, [], [], [], self.geompy.ShapeType[buildingShapeType], 0, [], 1
-        )
+        bldComp = geompy.MakePartition(bldObjs, [], [], [], self.geompy.ShapeType[buildingShapeType], 0, [], 1)
         geompy.addToStudy(bldComp, "bldComp")
 
         elapsed_time = time.time() - init_time
@@ -227,25 +218,19 @@ class MODEL:
         # Define and add groups for all curve, surface and rigid members
         if len([e for e in elements if e["geometryType"] == "line"]) > 0:
             # Make compound of requested group
-            compoundTemp = geompy.MakeCompound(
-                [e["elemObj"] for e in elements if e["geometryType"] == "line"]
-            )
+            compoundTemp = geompy.MakeCompound([e["elemObj"] for e in elements if e["geometryType"] == "line"])
             # Define group object and add to study
             curveCompound = geompy.GetInPlace(bldComp, compoundTemp, True)
             geompy.addToStudyInFather(bldComp, curveCompound, "CurveMembers")
 
         if len([e for e in elements if e["geometryType"] == "surface"]) > 0:
             # Make compound of requested group
-            compoundTemp = geompy.MakeCompound(
-                [e["elemObj"] for e in elements if e["geometryType"] == "surface"]
-            )
+            compoundTemp = geompy.MakeCompound([e["elemObj"] for e in elements if e["geometryType"] == "surface"])
             # Define group object and add to study
             surfaceCompound = geompy.GetInPlace(bldComp, compoundTemp, True)
             geompy.addToStudyInFather(bldComp, surfaceCompound, "SurfaceMembers")
 
-        linkObjs = list(
-            flatten([[obj for obj in el["linkObjs"] if obj] for el in elements])
-        )
+        linkObjs = list(flatten([[obj for obj in el["linkObjs"] if obj] for el in elements]))
         if len(linkObjs) > 0:
             # Make compound of requested group
             compoundTemp = geompy.MakeCompound(linkObjs)
@@ -256,21 +241,15 @@ class MODEL:
         for el in elements:
             # el['partObj'] = geompy.RestoreGivenSubShapes(bldComp, [el['partObj']], GEOM.FSM_GetInPlace, False, False)[0]
             el["elemObj"] = geompy.GetInPlace(bldComp, el["elemObj"], True)
-            geompy.addToStudyInFather(
-                bldComp, el["elemObj"], self.getGroupName(el["referenceName"])
-            )
+            geompy.addToStudyInFather(bldComp, el["elemObj"], self.getGroupName(el["referenceName"]))
 
             for j, rel in enumerate(el["connections"]):
                 if rel["eccentricity"]:  # point geometry
-                    el["linkObjs"][j] = geompy.GetInPlace(
-                        bldComp, el["linkObjs"][j], True
-                    )
+                    el["linkObjs"][j] = geompy.GetInPlace(bldComp, el["linkObjs"][j], True)
                     geompy.addToStudyInFather(
                         bldComp,
                         el["linkObjs"][j],
-                        self.getGroupName(el["referenceName"])
-                        + "_1DR_"
-                        + self.getGroupName(rel["relatedConnection"]),
+                        self.getGroupName(el["referenceName"]) + "_1DR_" + self.getGroupName(rel["relatedConnection"]),
                     )
 
         elapsed_time = time.time() - init_time
@@ -307,9 +286,7 @@ class MODEL:
             NETGEN2D_Pars.SetFuseEdges(254)
 
         isDone = bldMesh.Compute()
-        coincident_nodes_on_part = bldMesh.FindCoincidentNodesOnPart(
-            [bldMesh], tolLoc, [], 0
-        )
+        coincident_nodes_on_part = bldMesh.FindCoincidentNodesOnPart([bldMesh], tolLoc, [], 0)
         if coincident_nodes_on_part:
             # bldMesh.MergeNodes(coincident_nodes_on_part, [], 0)
             # print(f'{len(coincident_nodes_on_part)} Sets of Coincident Nodes Found and Merged')
@@ -349,25 +326,19 @@ class MODEL:
                 shapeType = SMESH.EDGE
             if el["geometryType"] == "surface":
                 shapeType = SMESH.FACE
-            tempgroup = bldMesh.GroupOnGeom(
-                el["elemObj"], self.getGroupName(el["referenceName"]), shapeType
-            )
+            tempgroup = bldMesh.GroupOnGeom(el["elemObj"], self.getGroupName(el["referenceName"]), shapeType)
             smesh.SetName(tempgroup, self.getGroupName(el["referenceName"]))
 
             for j, rel in enumerate(el["connections"]):
                 if rel["eccentricity"]:
                     tempgroup = bldMesh.GroupOnGeom(
                         el["linkObjs"][j],
-                        self.getGroupName(el["referenceName"])
-                        + "_1DR_"
-                        + self.getGroupName(rel["relatedConnection"]),
+                        self.getGroupName(el["referenceName"]) + "_1DR_" + self.getGroupName(rel["relatedConnection"]),
                         SMESH.EDGE,
                     )
                     smesh.SetName(
                         tempgroup,
-                        self.getGroupName(el["referenceName"])
-                        + "_1DR_"
-                        + self.getGroupName(rel["relatedConnection"]),
+                        self.getGroupName(el["referenceName"]) + "_1DR_" + self.getGroupName(rel["relatedConnection"]),
                     )
 
         self.mesh = bldMesh
@@ -420,9 +391,7 @@ if __name__ == "__main__":
     zGround = 0
 
     for fileName in files:
-        BASE_PATH = Path(
-            "/home/jesusbill/Dev-Projects/github.com/IfcOpenShell/analysis-models/models/"
-        )
+        BASE_PATH = Path("/home/jesusbill/Dev-Projects/github.com/IfcOpenShell/analysis-models/models/")
         DATAFILENAME = BASE_PATH / fileName / f"{fileName}.json"
         MEDFILENAME = BASE_PATH / fileName / f"{fileName}.med"
         model = MODEL(DATAFILENAME, str(MEDFILENAME), meshSize, zGround)

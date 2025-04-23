@@ -51,7 +51,7 @@ def run(
 
 class TestIds:
     def test_failing_on_opening_invalid_ids_data(self):
-        with pytest.raises(xmlschema.validators.exceptions.XMLSchemaValidationError):
+        with pytest.raises(ids.IdsXmlValidationError):
             ids.open("""<?xml version="1.0" encoding="UTF-8"?><clearly_not_an_ids/>""")
 
     def test_create_an_ids_with_minimal_information(self):
@@ -60,10 +60,19 @@ class TestIds:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd",
             "info": {"title": "Untitled"},
             "specifications": {"specification": []},
         }
+
+    def test_reading_an_ids_from_an_xml_string(self):
+        specs = ids.Ids()
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Entity(name="IFCWALL"))
+        specs.specifications.append(spec)
+        xml = specs.to_string()
+        specs2 = ids.from_string(xml)
+        assert len(specs2.specifications) == 1
 
     def test_create_an_ids_with_all_possible_information(self):
         specs = ids.Ids(
@@ -80,7 +89,7 @@ class TestIds:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd",
             "info": {
                 "title": "title",
                 "copyright": "copyright",
@@ -100,7 +109,7 @@ class TestIds:
             "@xmlns": "http://standards.buildingsmart.org/IDS",
             "@xmlns:xs": "http://www.w3.org/2001/XMLSchema",
             "@xmlns:xsi": "http://www.w3.org/2001/XMLSchema-instance",
-            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/0.9.7/ids.xsd",
+            "@xsi:schemaLocation": "http://standards.buildingsmart.org/IDS http://standards.buildingsmart.org/IDS/1.0/ids.xsd",
             "info": {"title": "Untitled"},
             "specifications": {"specification": []},
         }
@@ -117,7 +126,7 @@ class TestIds:
         spec.requirements.append(ids.Attribute(name="Name", value="Waldo"))
         specs.specifications.append(spec)
         fn = "tmp.xml"
-        result = specs.to_xml(fn)
+        specs.to_xml(fn)
         os.remove(fn)
 
     def test_creating_a_minimal_ids_and_validating(self):
@@ -187,26 +196,10 @@ class TestIds:
         spec.set_usage("optional")
         model = ifcopenshell.file()
         wall = model.createIfcWall(Name="Waldo")
-        spec.requirements.append(description_attr := ids.Attribute(name="Description", value="Foobar"))
+        spec.requirements.append(ids.Attribute(name="Description", value="Foobar"))
         run("A specification passes only if all requirements pass 1/2", specs, model, False, [wall], [wall])
         wall.Description = "Foobar"
         run("A specification passes only if all requirements pass 2/2", specs, model, True, [wall])
-
-        # optional attribute
-        # description_attr.minOccurs = 0
-        # description_attr.maxOccurs = "unbounded"
-        # wall.Description = None
-        # run("Specification optionality and facet optionality can be combined", specs, model, True, [wall])
-
-        # double negative / required attributes
-        # spec.set_usage("prohibited")
-        # name_attr.minOccurs = 0
-        # name_attr.maxOccurs = 0
-        # description_attr.minOccurs = 0
-        # description_attr.maxOccurs = 0
-        # wall.Name = "Waldo"
-        # wall.Description = "Foobar"
-        # run("A prohibited specification and a prohibited facet results in a double negative", specs, model, True, [wall])
 
         # specs independency
         specs = ids.Ids(title="Title")
@@ -249,13 +242,36 @@ class TestIds:
         assert spec.requirements[0].failures[0]["element"] == wall
         assert spec2.requirements[0].failures[0]["element"] == wall
 
+    def test_parsing_entities_with_no_attributes(self):
+        model = ifcopenshell.file()
+        wall1 = model.createIfcWall(Name="Waldo")
+        wall2 = model.createIfcWall(Name="Wally")
+        model.createIfcWall(Name="Walter")
+        material = model.createIfcMaterial()
+        ifcopenshell.api.material.assign_material(model, products=[wall1, wall2], material=material)
+        specs = ids.Ids(title="Title")
+        spec = ids.Specification(name="Name")
+        spec.applicability.append(ids.Material())
+        spec.requirements.append(ids.Attribute(name="Name", value="Waldo"))
+        specs.specifications.append(spec)
+        xml = specs.to_string()
+        specs = ids.from_string(xml)
+        run(
+            "The material facet with no attributes selects elements with a material",
+            specs,
+            model,
+            False,
+            [wall1, wall2],
+            [wall2],
+        )
+
 
 class TestSpecification:
     def test_create_specification_with_minimal_information(self):
         spec = ids.Specification()
         assert spec.asdict() == {
             "@name": "Unnamed",
-            "@ifcVersion": ["IFC2X3", "IFC4"],
+            "@ifcVersion": ["IFC2X3", "IFC4", "IFC4X3_ADD2"],
             "applicability": {},
             "requirements": {},
         }

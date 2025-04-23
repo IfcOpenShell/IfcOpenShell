@@ -762,7 +762,7 @@ bool IfcGeom::util::create_solid_from_faces(const TopTools_ListOfShape& face_lis
 	return valid_shell;
 }
 
-bool IfcGeom::util::flatten_shape_list(const IfcGeom::ConversionResults& shapes, TopoDS_Shape& result, bool fuse, double tol) {
+bool IfcGeom::util::flatten_shape_list(const IfcGeom::ConversionResults& shapes, TopoDS_Shape& result, bool fuse, bool create_shell, double tol) {
 	TopoDS_Compound compound;
 	BRep_Builder builder;
 	builder.MakeCompound(compound);
@@ -772,8 +772,8 @@ bool IfcGeom::util::flatten_shape_list(const IfcGeom::ConversionResults& shapes,
 	for (IfcGeom::ConversionResults::const_iterator it = shapes.begin(); it != shapes.end(); ++it) {
 		TopoDS_Shape merged;
 		const TopoDS_Shape& s = std::static_pointer_cast<ifcopenshell::geometry::OpenCascadeShape>(it->Shape())->shape();
-		if (fuse) {
-			util::ensure_fit_for_subtraction(s, merged, tol);
+		if (fuse || create_shell) {
+			merged = util::ensure_fit_for_subtraction(s, tol);
 		} else {
 			merged = s;
 		}

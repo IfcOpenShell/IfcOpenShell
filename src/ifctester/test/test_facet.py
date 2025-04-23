@@ -20,6 +20,7 @@
 import uuid
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.guid
 import ifctester.facet
 from ifctester.facet import Entity, Attribute, Classification, Property, PartOf, Material, Restriction
 
@@ -258,9 +259,19 @@ class TestAttribute:
         facet = Attribute(name="Name", cardinality="prohibited")
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element, expected=False)
         facet = Attribute(name="Name", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 1/2",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
         facet = Attribute(name="Rabbit", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 2/2",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
 
         ifc = ifcopenshell.file()
         facet = Attribute(name="Name")
@@ -556,14 +567,19 @@ class TestAttribute:
             expected=False,
         )
 
-        facet = Attribute(name="IsMilestone", value="TRUE")
+        facet = Attribute(name="IsMilestone", value="true")
         ifc = ifcopenshell.file()
         element = ifc.createIfcTask(IsMilestone=False)
-        run("Booleans must be specified as uppercase strings 1/3", facet=facet, inst=element, expected=False)
-        facet = Attribute(name="IsMilestone", value="FALSE")
-        run("Booleans must be specified as uppercase strings 2/3", facet=facet, inst=element, expected=True)
+        run("Booleans must be specified as lowercase strings 1/3", facet=facet, inst=element, expected=False)
+        facet = Attribute(name="IsMilestone", value="false")
+        run("Booleans must be specified as lowercase strings 2/3", facet=facet, inst=element, expected=True)
         facet = Attribute(name="IsMilestone", value="False")
-        run("Booleans must be specified as uppercase strings 2/3", facet=facet, inst=element, expected=False)
+        run("Booleans must be specified as lowercase strings 2/3", facet=facet, inst=element, expected=False)
+
+        facet = Attribute(name="IsMilestone", value="0")
+        run("Booleans can be specified as a 0 or 1 1/2", facet=facet, inst=element, expected=True)
+        facet = Attribute(name="IsMilestone", value="1")
+        run("Booleans can be specified as a 0 or 1 2/2", facet=facet, inst=element, expected=False)
 
         facet = Attribute(name="EditionDate", value="2022-01-01")
         ifc = ifcopenshell.file()
@@ -706,24 +722,24 @@ class TestClassification:
         element0 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
         element1 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSlab")
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=element1, reference=ref1, classification=system_a
+            "classification.add_reference", ifc, products=[element1], reference=ref1, classification=system_a
         )
         element11 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcColumn")
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=element11, reference=ref11, classification=system_a
+            "classification.add_reference", ifc, products=[element11], reference=ref11, classification=system_a
         )
         element22 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBeam")
         ifcopenshell.api.run(
             "classification.add_reference",
             ifc,
-            product=element22,
+            products=[element22],
             reference=ref22,
             classification=system_a,
             is_lightweight=False,
         )
         material = ifc.createIfcMaterial(Name="Material")
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=material, reference=ref1, classification=system_a
+            "classification.add_reference", ifc, products=[material], reference=ref1, classification=system_a
         )
 
         facet = Classification(system="Foobar")
@@ -744,9 +760,19 @@ class TestClassification:
         facet = Classification(system="Foobar", cardinality="prohibited")
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element1, expected=False)
         facet = Classification(system="Foobar", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element0, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 1/2",
+            facet=facet,
+            inst=element0,
+            expected=True,
+        )
         facet = Classification(system="Foobar", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element1, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 2/2",
+            facet=facet,
+            inst=element1,
+            expected=True,
+        )
 
         facet = Classification(system="Foobar", value="1")
         run(
@@ -810,15 +836,15 @@ class TestClassification:
         wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
         ifcopenshell.api.run("type.assign_type", ifc, related_objects=[wall], relating_type=wall_type)
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=wall, reference=ref11, classification=system_a
+            "classification.add_reference", ifc, products=[wall], reference=ref11, classification=system_a
         )
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=wall_type, reference=ref22, classification=system_a
+            "classification.add_reference", ifc, products=[wall_type], reference=ref22, classification=system_a
         )
 
         system_b = ifcopenshell.api.run("classification.add_classification", ifc, classification=system_b)
         ifcopenshell.api.run(
-            "classification.add_reference", ifc, product=wall_type, reference=refx, classification=system_b
+            "classification.add_reference", ifc, products=[wall_type], reference=refx, classification=system_b
         )
 
         facet = Classification(system="Foobar", value="11")
@@ -881,17 +907,28 @@ class TestProperty:
         facet = Property(propertySet="Foo_Bar", baseName="Foo", dataType="IFCLABEL", cardinality="prohibited")
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element, expected=False)
         facet = Property(propertySet="Foo_Bar", baseName="Foo", dataType="IFCLABEL", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 1/2",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
         facet = Property(propertySet="Foo_Bar", baseName="Bar", dataType="IFCLABEL", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 2/2", facet=facet, inst=element, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 2/2",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
 
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ""})
-        facet = Property(propertySet="Foo_Bar", baseName="Foo", dataType="IFCLOGICAL")
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", dataType="IFCLABEL")
         run("An empty string is considered falsey and will not pass", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcLogical("UNKNOWN")})
-        facet = Property(propertySet="Foo_Bar", baseName="Foo", dataType="IFCDURATION")
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", dataType="IFCLOGICAL")
         run("A logical unknown is considered falsey and will not pass", facet=facet, inst=element, expected=False)
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDuration("P0D")})
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", dataType="IFCDURATION")
         run("A zero duration will pass", facet=facet, inst=element, expected=True)
         facet = Property(propertySet="Foo_Bar", baseName="Foo", dataType="IFCBOOLEAN")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcBoolean(True)})
@@ -981,13 +1018,18 @@ class TestProperty:
         )
         run("Floating point numbers are compared with a 1e-6 tolerance 4/4", facet=facet, inst=element, expected=False)
 
-        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="TRUE", dataType="IFCBOOLEAN")
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="true", dataType="IFCBOOLEAN")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcBoolean(False)})
         run("Booleans must be specified as uppercase strings 1/3", facet=facet, inst=element, expected=False)
-        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="FALSE", dataType="IFCBOOLEAN")
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="false", dataType="IFCBOOLEAN")
         run("Booleans must be specified as uppercase strings 2/3", facet=facet, inst=element, expected=True)
         facet = Property(propertySet="Foo_Bar", baseName="Foo", value="False", dataType="IFCBOOLEAN")
         run("Booleans must be specified as uppercase strings 3/3", facet=facet, inst=element, expected=False)
+
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="0", dataType="IFCBOOLEAN")
+        run("Booleans can be specified as as a 0 or 1 1/2", facet=facet, inst=element, expected=True)
+        facet = Property(propertySet="Foo_Bar", baseName="Foo", value="1", dataType="IFCBOOLEAN")
+        run("Booleans can be specified as as a 0 or 1 2/2", facet=facet, inst=element, expected=False)
 
         facet = Property(propertySet="Foo_Bar", baseName="Foo", value="2022-01-01", dataType="IFCDATE")
         ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": ifc.createIfcDate("2022-01-01")})
@@ -1267,9 +1309,19 @@ class TestMaterial:
         facet = Material(cardinality="prohibited")
         run("A prohibited facet returns the opposite of a required facet", facet=facet, inst=element, expected=False)
         facet = Material(cardinality="optional")
-        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 1/2",
+            facet=facet,
+            inst=element,
+            expected=True,
+        )
         facet = Material(value="Foo", cardinality="optional")
-        run("An optional facet always passes regardless of outcome 1/2", facet=facet, inst=element, expected=True)
+        run(
+            "An optional facet only checks requirements if there is a value to check 1/2",
+            facet=facet,
+            inst=element,
+            expected=False,
+        )
 
         ifc = ifcopenshell.file()
         facet = Material(value="Foo")

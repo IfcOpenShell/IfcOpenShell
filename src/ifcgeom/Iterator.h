@@ -61,7 +61,6 @@
 #include "../ifcparse/IfcFile.h"
 
 #include "../ifcgeom/IfcGeomElement.h"
-#include "../ifcgeom/IteratorSettings.h"
 #include "../ifcgeom/ConversionResult.h"
 #include "../ifcgeom/IfcGeomFilter.h"
 #include "../ifcgeom/taxonomy.h"
@@ -88,8 +87,15 @@
 namespace {
 	struct geometry_conversion_result {
 		int index;
+
+		// For NoParallelMapping==true
 		ifcopenshell::geometry::taxonomy::ptr item;
 		std::vector<std::pair<const IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::taxonomy::matrix4::ptr>> products;
+
+		// For NoParallelMapping==false
+		IfcUtil::IfcBaseEntity* representation;
+		aggregate_of_instance::ptr products_2;
+
 		std::vector<IfcGeom::BRepElement*> breps;
 		std::vector<IfcGeom::Element*> elements;
 	};
@@ -103,6 +109,7 @@ namespace IfcGeom {
 
 		std::atomic<bool> finished_{ false };
 		std::atomic<bool> terminating_{ false };
+		std::atomic<bool> had_error_processing_elements_ { false };
 		std::atomic<int> progress_{ 0 };
 
 		std::vector<geometry_conversion_result> tasks_;
@@ -119,14 +126,12 @@ namespace IfcGeom {
 		// ?
 		size_t async_elements_returned_ = 0;
 		size_t task_result_index_ = 0;
-
-		std::string geometry_library_;
 		
 		ifcopenshell::geometry::Settings settings_;
 		IfcParse::IfcFile* ifc_file;
 		std::vector<filter_t> filters_;
-		bool owns_ifc_file;
 		int num_threads_;
+		std::string geometry_library_;
 
 		// When single-threaded
 		ifcopenshell::geometry::Converter* converter_;
@@ -145,51 +150,81 @@ namespace IfcGeom {
 		int done;
 		int total;
 
-		// @todo these appear uninitialized?
-		std::string unit_name_;
-		double unit_magnitude_;
-
 		ifcopenshell::geometry::taxonomy::point3 bounds_min_;
 		ifcopenshell::geometry::taxonomy::point3 bounds_max_;
 
 		// Should not be destructed because, destructor is blocking
 		std::future<void> init_future_;
 
+		std::array<std::chrono::high_resolution_clock::time_point, 4> time_points;
+
 		/// @todo public/private sections all over the place: move all public to the beginning of the class
 	public:
 		void set_cache(GeometrySerializer* cache) { cache_ = cache; }
 
-		const std::string& unit_name() const { return unit_name_; }
-		double unit_magnitude() const { return unit_magnitude_; }
+		const std::string& unit_name() const { return converter_->mapping()->get_length_unit_name(); }
+		double unit_magnitude() const { return converter_->mapping()->get_length_unit(); }
+		// Check if error occurred during iterator initialization or iteration over elements.
+		bool had_error_processing_elements() const { return had_error_processing_elements_; }
 
 		boost::optional<bool> initialization_outcome_;
 
+		/**
+		 * @return Returns true if the iterator is initialized with any elements, false otherwise.
+		 *
+		 * @note
+		 * - A true return value does not guarantee successful initialization of all elements.
+		 *   Some elements may have failed to initialize. Check had_error_processing_elements()
+		 *   to see whether there were errors during the initialization.
+		 *
+		 * - For non-concurrent iterators, a false return may occur if initialization of the first
+		 *   element fails, even if subsequent elements could be initialized successfully.
+		 */
 		bool initialize() {
+			using std::chrono::high_resolution_clock;
+			
 			if (initialization_outcome_) {
 				return *initialization_outcome_;
 			}
 
-			converter_ = new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_);
+			time_points[0] = high_resolution_clock::now();
 			std::vector<ifcopenshell::geometry::geometry_conversion_task> reps;
-			converter_->mapping()->get_representations(reps, filters_);
+			if (num_threads_ != 1) {
+				// @todo this shouldn't be necessary with properly immutable taxonomy items
+				converter_->mapping()->use_caching() = false;
+			}
+			try {
+				converter_->mapping()->get_representations(reps, filters_);
+			} catch (const std::exception& e) {
+				Logger::Error(e);
+			}
+			time_points[1] = high_resolution_clock::now();
 
 			for (auto& task : reps) {
 				geometry_conversion_result res;
-				res.item = converter_->mapping()->map(task.representation);
-				if (!res.item) {
-					continue;
+				res.index = task.index;
+				if (!settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get()) {
+					res.representation = task.representation;
+					res.products_2 = task.products;
+				} else {
+					res.item = converter_->mapping()->map(task.representation);
+					if (!res.item) {
+						continue;
+					}
+					std::transform(task.products->begin(), task.products->end(), std::back_inserter(res.products), [this, &res](IfcUtil::IfcBaseClass* prod) {
+						auto prod_item = converter_->mapping()->map(prod);
+						return std::make_pair(prod->as<IfcUtil::IfcBaseEntity>(), ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix);
+					});
 				}
-				std::transform(task.products->begin(), task.products->end(), std::back_inserter(res.products), [this, &res](IfcUtil::IfcBaseClass* prod) {
-					auto prod_item = converter_->mapping()->map(prod);
-					return std::make_pair(prod->as<IfcUtil::IfcBaseEntity>(), ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix);
-				});
 				tasks_.push_back(res);
 			}
 
 			size_t num_products = 0;
 			for (auto& r : tasks_) {
-				num_products += r.products.size();
+				num_products += !settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get() ? r.products_2->size() : r.products.size();
 			}
+
+			time_points[2] = high_resolution_clock::now();
 
 			/*
 			// What to do, map representation and product individually?
@@ -310,7 +345,23 @@ namespace IfcGeom {
 						ifcopenshell::geometry::Converter* kernel,
 						ifcopenshell::geometry::Settings settings,
 						geometry_conversion_result* rep) {
-							this->create_element_(kernel, settings, rep); 
+							// Catch exceptions to be safe from freezing the iterator.
+							try {
+								this->create_element_(kernel, settings, rep);
+							} catch (const std::exception& e) {
+								Logger::Error(
+									std::string("Exception '") + e.what() + 
+									std::string("' occurred while iterator was creating a shape: "), 
+									rep->item->instance
+								);
+								had_error_processing_elements_ = true;
+							} catch (...) {
+								Logger::Error(
+									"Unknown exception occurred while iteartor was creating a shape: ", 
+									rep->item->instance
+								);
+								had_error_processing_elements_ = true;
+							}
 							return rep;
 						},
 					K,
@@ -365,7 +416,7 @@ namespace IfcGeom {
 
 						for (int i = 0; i < 3; ++i) {
 							bounds_min_.components()(i) = std::min(bounds_min_.components()(i), transformed(i));
-							bounds_max_.components()(i) = std::max(bounds_min_.components()(i), transformed(i));
+							bounds_max_.components()(i) = std::max(bounds_max_.components()(i), transformed(i));
 						}
 					}
 				} while (++num_created, next());
@@ -384,7 +435,7 @@ namespace IfcGeom {
 
 					for (int i = 0; i < 3; ++i) {
 						bounds_min_.components()(i) = std::min(bounds_min_.components()(i), vec(i));
-						bounds_max_.components()(i) = std::max(bounds_min_.components()(i), vec(i));
+						bounds_max_.components()(i) = std::max(bounds_max_.components()(i), vec(i));
 					}
 				}
 			}
@@ -468,7 +519,17 @@ namespace IfcGeom {
 			ifcopenshell::geometry::Settings settings,
 			geometry_conversion_result* rep)
 		{
-			auto representation = rep->item;
+			if (!settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get()) {
+				rep->item = kernel->mapping()->map(rep->representation);
+				if (!rep->item) {
+					return;
+				}
+				std::transform(rep->products_2->begin(), rep->products_2->end(), std::back_inserter(rep->products), [this, &rep, kernel](IfcUtil::IfcBaseClass* prod) {
+					auto prod_item = kernel->mapping()->map(prod);
+					return std::make_pair(prod->as<IfcUtil::IfcBaseEntity>(), ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(prod_item)->matrix);
+				});
+			} else {
+			}
 
 			auto product_node = rep->products.front();
 			const IfcUtil::IfcBaseEntity* product = product_node.first;
@@ -476,8 +537,8 @@ namespace IfcGeom {
 
 			Logger::SetProduct(product);
 			
-			IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)*product->get("GlobalId"), std::to_string(representation->instance->data().id()), [kernel, settings, product, place, representation]() {
-				return kernel->create_brep_for_representation_and_product(representation, product, place);
+			IfcGeom::BRepElement* brep = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product->get("GlobalId"), std::to_string(rep->item->instance->as<IfcUtil::IfcBaseEntity>()->id()), [kernel, settings, product, place, rep]() {
+				return kernel->create_brep_for_representation_and_product(rep->item, product, place);
 			}));
 
 			if (!brep) {
@@ -497,7 +558,7 @@ namespace IfcGeom {
 				const IfcUtil::IfcBaseEntity* product2 = p.first;
 				const auto& place2 = p.second;
 
-				IfcGeom::BRepElement* brep2 = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)*product2->get("GlobalId"), std::to_string(representation->instance->data().id()), [kernel, settings, product2, place2, representation, brep]() {
+				IfcGeom::BRepElement* brep2 = static_cast<IfcGeom::BRepElement*>(decorate_with_cache_(GeometrySerializer::READ_BREP, (std::string)product2->get("GlobalId"), std::to_string(rep->item->instance->as<IfcUtil::IfcBaseEntity>()->id()), [kernel, settings, product2, place2, brep]() {
 					return kernel->create_brep_for_processed_representation(product2, place2, brep);
 				}));
 				if (brep2) {
@@ -565,6 +626,24 @@ namespace IfcGeom {
 			}
 		}
 
+		void log_timepoints() const {
+			using std::chrono::high_resolution_clock;
+			using std::chrono::duration;
+			using namespace std::string_literals;
+
+			std::array<std::string, 3> labels = {
+				"Initializing mapping"s,
+				"Performing mapping"s,
+				"Geometry interpretation"s
+			};
+
+			for (auto it = time_points.begin() + 1; it != time_points.end(); ++it) {
+				auto jt = it - 1;
+				duration<double, std::milli> ms_double = (*it) - (*jt);
+				Logger::Notice(labels[std::distance(time_points.begin(), jt)] + " took " + std::to_string(ms_double.count()) + "ms");
+			}
+		}
+
 	public:
 		/// Returns what would be the product for the next shape representation
 		/// @todo Double-check and test the impl.
@@ -583,8 +662,18 @@ namespace IfcGeom {
 		/// Moves to the next shape representation, create its geometry, and returns the associated product.
 		/// Use get() to retrieve the created geometry.
 		const IfcUtil::IfcBaseClass* next() {
+			using std::chrono::high_resolution_clock;
+
+			if (*native_task_result_iterator_ != *task_result_iterator_) {
+				delete* native_task_result_iterator_;
+			}
+			delete *task_result_iterator_;
+
 			if (num_threads_ != 1) {
 				if (!wait_for_element()) {
+					Logger::SetProduct(boost::none);
+					time_points[3] = high_resolution_clock::now();
+					log_timepoints();
 					return nullptr;
 				}
 
@@ -598,6 +687,8 @@ namespace IfcGeom {
 				if (task_result_iterator_ == --all_processed_elements_.end()) {
 					if (!create()) {
 						Logger::SetProduct(boost::none);
+						time_points[3] = high_resolution_clock::now();
+						log_timepoints();
 						return nullptr;
 					}
 				}
@@ -612,6 +703,10 @@ namespace IfcGeom {
 		/// Gets the representation of the current geometrical entity.
 		Element* get()
 		{
+			if (!initialization_outcome_) {
+				throw std::runtime_error("Iterator not initialized");
+			}
+
 			auto ret = *task_result_iterator_;
 			
 			// If we want to organize the element considering their hierarchy
@@ -676,20 +771,26 @@ namespace IfcGeom {
 			IfcUtil::IfcBaseEntity* ifc_product = 0;
 
 			try {
-				IfcUtil::IfcBaseEntity* ifc_entity = ifc_file->instance_by_id(id)->as<IfcUtil::IfcBaseEntity>();
-				instance_type = ifc_entity->declaration().name();
+				ifc_product = ifc_file->instance_by_id(id)->as<IfcUtil::IfcBaseEntity>();
+				instance_type = ifc_product->declaration().name();
 
-				if (ifc_entity->declaration().is("IfcRoot")) {
-					product_guid = (std::string) *ifc_entity->get("GlobalId");
-					product_name = ifc_entity->get_value<std::string>("Name", "");
+				if (ifc_product->declaration().is("IfcRoot")) {
+					product_guid = (std::string) ifc_product->get("GlobalId");
+					product_name = ifc_product->get_value<std::string>("Name", "");
 				}
 
-				auto parent_object = converter_->mapping()->get_decomposing_entity(ifc_entity);
+				auto parent_object = converter_->mapping()->get_decomposing_entity(ifc_product);
 				if (parent_object) {
-					parent_id = parent_object->data().id();
+					parent_id = parent_object->id();
 				}
 
-				m4 = ifcopenshell::geometry::taxonomy::cast<ifcopenshell::geometry::taxonomy::geom_item>(converter_->mapping()->map(ifc_product))->matrix;
+				// fails in case of IfcProject
+				auto mapped = converter_->mapping()->map(ifc_product);
+				auto casted = mapped ? ifcopenshell::geometry::taxonomy::dcast<ifcopenshell::geometry::taxonomy::geom_item>(mapped) : nullptr;
+
+				if (casted) {
+					m4 = casted->matrix;
+				}
 			} catch (const std::exception& e) {
 				Logger::Error(e);
 			}
@@ -716,6 +817,7 @@ namespace IfcGeom {
 				product = create_shape_model_for_next_entity();
 			} catch (const std::exception& e) {
 				Logger::Error(e);
+				had_error_processing_elements_ = true;
 			}
 #ifdef IFOPSH_WITH_OPENCASCADE
 			catch (const Standard_Failure& e) {
@@ -724,10 +826,12 @@ namespace IfcGeom {
 				} else {
 					Logger::Error("Unknown error creating geometry");
 				}
-			}
+				had_error_processing_elements_ = true;
+			}		
 #endif
 			catch (...) {
 				Logger::Error("Unknown error creating geometry");
+				had_error_processing_elements_ = true;
 			}
 			return product;
 		}
@@ -736,9 +840,9 @@ namespace IfcGeom {
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
-			, owns_ifc_file(false)
 			, num_threads_(num_threads)
 			, geometry_library_(geometry_library)
+			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
 		{
 		}
 
@@ -746,36 +850,36 @@ namespace IfcGeom {
 			: settings_(settings)
 			, ifc_file(file)
 			, filters_(filters)
-			, owns_ifc_file(false)
 			, num_threads_(num_threads)
 			, geometry_library_("opencascade")
+			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
 		{
 		}
 
 		Iterator(const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file)
 			: settings_(settings)
 			, ifc_file(file)
-			, owns_ifc_file(false)
 			, num_threads_(1)
 			, geometry_library_("opencascade")
+			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
 		{
 		}
 
 		Iterator(const std::string& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file)
 			: settings_(settings)
 			, ifc_file(file)
-			, owns_ifc_file(false)
 			, num_threads_(1)
 			, geometry_library_(geometry_library)
+			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
 		{
 		}
 
 		Iterator(const std::string& geometry_library, const ifcopenshell::geometry::Settings& settings, IfcParse::IfcFile* file, int num_threads)
 			: settings_(settings)
 			, ifc_file(file)
-			, owns_ifc_file(false)
 			, num_threads_(num_threads)
 			, geometry_library_(geometry_library)
+			, converter_(new ifcopenshell::geometry::Converter(geometry_library_, ifc_file, settings_))
 		{
 		}
 
@@ -787,24 +891,22 @@ namespace IfcGeom {
 					init_future_.wait();
 				}
 			}
-
-			if (owns_ifc_file) {
-				delete ifc_file;
-			}
-
-			if (!settings_.get<ifcopenshell::geometry::settings::IteratorOutput>().get() == ifcopenshell::geometry::settings::NATIVE) {
-				for (auto& p : all_processed_native_elements_) {
-					delete p;
-				}
-			}
 			
 			for (auto& k : kernel_pool) {
 				delete k;
 			}
-			
-			for (auto& p : all_processed_elements_) {
-				delete p;
+
+			if (task_result_ptr_initialized) {
+				while (task_result_iterator_ != --all_processed_elements_.end()) {
+					if (*native_task_result_iterator_ != *task_result_iterator_) {
+						delete* native_task_result_iterator_;
+					}
+					delete *task_result_iterator_++;
+					native_task_result_iterator_++;
+				}
 			}
+
+			delete converter_;
 		}
 	};
 }

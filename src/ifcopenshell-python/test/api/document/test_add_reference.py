@@ -17,19 +17,19 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
-import ifcopenshell.api
+import ifcopenshell.api.document
 
 
 class TestAddReference(test.bootstrap.IFC4):
     def test_adding_a_reference(self):
-        element = ifcopenshell.api.run("document.add_reference", self.file, information=None)
+        element = ifcopenshell.api.document.add_reference(self.file, information=None)
         assert element.is_a("IfcDocumentReference")
         assert len(self.file.by_type("IfcDocumentReference")) == 1
 
     def test_adding_a_reference_to_an_information(self):
         self.file.createIfcProject()
-        information = ifcopenshell.api.run("document.add_information", self.file, parent=None)
-        element = ifcopenshell.api.run("document.add_reference", self.file, information=information)
+        information = ifcopenshell.api.document.add_information(self.file, parent=None)
+        element = ifcopenshell.api.document.add_reference(self.file, information=information)
         assert element.is_a("IfcDocumentReference")
         assert len(self.file.by_type("IfcDocumentReference")) == 1
         ifc2x3 = self.file.schema == "IFC2X3"

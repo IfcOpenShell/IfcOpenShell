@@ -16,16 +16,22 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
+
+
+def map_representation(
+    file: ifcopenshell.file, representation: ifcopenshell.entity_instance
+) -> ifcopenshell.entity_instance:
+    usecase = Usecase()
+    usecase.file = file
+    return usecase.execute(representation)
+
 
 class Usecase:
-    def __init__(self, file, **settings):
-        self.file = file
-        self.settings = {"representation": None}
-        self.ifc_vertices = []
-        for key, value in settings.items():
-            self.settings[key] = value
+    file: ifcopenshell.file
 
-    def execute(self):
+    def execute(self, representation: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        self.representation = representation
         mapping_source = self.get_mapping_source()
 
         zero = self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
@@ -38,15 +44,15 @@ class Usecase:
         return self.file.create_entity(
             "IfcShapeRepresentation",
             **{
-                "ContextOfItems": self.settings["representation"].ContextOfItems,
-                "RepresentationIdentifier": self.settings["representation"].RepresentationIdentifier,
+                "ContextOfItems": representation.ContextOfItems,
+                "RepresentationIdentifier": representation.RepresentationIdentifier,
                 "RepresentationType": "MappedRepresentation",
                 "Items": [mapped_item],
             }
         )
 
-    def get_mapping_source(self):
-        for inverse in self.file.get_inverse(self.settings["representation"]):
+    def get_mapping_source(self) -> ifcopenshell.entity_instance:
+        for inverse in self.file.get_inverse(self.representation):
             if inverse.is_a("IfcRepresentationMap"):
                 return inverse
         zero = self.file.createIfcCartesianPoint((0.0, 0.0, 0.0))
@@ -54,5 +60,5 @@ class Usecase:
         z_axis = self.file.createIfcDirection((0.0, 0.0, 1.0))
         mapping_origin = self.file.createIfcAxis2Placement3D(zero, z_axis, x_axis)
         return self.file.createIfcRepresentationMap(
-            MappingOrigin=mapping_origin, MappedRepresentation=self.settings["representation"]
+            MappingOrigin=mapping_origin, MappedRepresentation=self.representation
         )

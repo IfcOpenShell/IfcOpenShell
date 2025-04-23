@@ -36,11 +36,13 @@ class FoundationDB(MyDB):
                     CALL apoc.ttl.expireIn(ac, $time_delta, 's')
                     RETURN ac AS authorization_code
                     """
-            result = tx.run(cypher,
-                            username=username,
-                            authorization_code=authorization_code,
-                            scope=scope,
-                            time_delta=int(os.environ['SECURITY_AUTHORIZATION_CODE_EXPIRE_SECONDS']))
+            result = tx.run(
+                cypher,
+                username=username,
+                authorization_code=authorization_code,
+                scope=scope,
+                time_delta=int(os.environ["SECURITY_AUTHORIZATION_CODE_EXPIRE_SECONDS"]),
+            )
             summary = result.consume()
             if summary.counters.nodes_created < 1:
                 raise HTTPException(status_code=400, detail="Authorization code was not created.")
@@ -58,14 +60,13 @@ class FoundationDB(MyDB):
                         RETURN
                             username, scope
                         """
-            result = tx.run(cypher,
-                            authorization_code=authorization_code)
+            result = tx.run(cypher, authorization_code=authorization_code)
             first = result.single()
             if first is None:
                 raise HTTPException(status_code=404, detail="Authorization code not found.")
             authorized_user = TokenData()
             authorized_user.username = first.get("username")
-            authorized_user.scopes = first.get("scope").split(' ')
+            authorized_user.scopes = first.get("scope").split(" ")
             return authorized_user
 
         with self.driver.session() as session:
@@ -73,11 +74,11 @@ class FoundationDB(MyDB):
 
         token_info = TokenInfo()
         token_info.access_token = create_access_token(
-            user_info.dict(),
-            timedelta(seconds=int(os.environ['SECURITY_ACCESS_TOKEN_EXPIRE_SECONDS'])))
+            user_info.dict(), timedelta(seconds=int(os.environ["SECURITY_ACCESS_TOKEN_EXPIRE_SECONDS"]))
+        )
         token_info.refresh_token = create_access_token(
-            user_info.dict(),
-            timedelta(seconds=int(os.environ['SECURITY_REFRESH_TOKEN_EXPIRE_SECONDS'])))
+            user_info.dict(), timedelta(seconds=int(os.environ["SECURITY_REFRESH_TOKEN_EXPIRE_SECONDS"]))
+        )
 
         def add_tokens_and_delete_code_work(tx) -> bool:
             cypher = """
@@ -92,13 +93,15 @@ class FoundationDB(MyDB):
                             SET t3.value = $refresh_token
                             SET t3.hash = $refresh_token_hash
                             """
-            result = tx.run(cypher,
-                            authorization_code=authorization_code,
-                            username=user_info.username,
-                            access_token=token_info.access_token,
-                            access_token_hash=hashlib.md5(token_info.access_token.encode('utf-8')).hexdigest(),
-                            refresh_token=token_info.refresh_token,
-                            refresh_token_hash=hashlib.md5(token_info.refresh_token.encode('utf-8')).hexdigest())
+            result = tx.run(
+                cypher,
+                authorization_code=authorization_code,
+                username=user_info.username,
+                access_token=token_info.access_token,
+                access_token_hash=hashlib.md5(token_info.access_token.encode("utf-8")).hexdigest(),
+                refresh_token=token_info.refresh_token,
+                refresh_token_hash=hashlib.md5(token_info.refresh_token.encode("utf-8")).hexdigest(),
+            )
 
             summary = result.consume()
             if summary.counters.nodes_created < 1 or summary.counters.nodes_deleted < 1:
@@ -119,24 +122,25 @@ class FoundationDB(MyDB):
                         RETURN
                             at.value AS access_token
                         """
-            refresh_token_payload = jwt.decode(refresh_token,
-                                               secrets['security_secret_key'],
-                                               algorithms=[os.environ['SECURITY_ALGORITHM']])
+            refresh_token_payload = jwt.decode(
+                refresh_token, secrets["security_secret_key"], algorithms=[os.environ["SECURITY_ALGORITHM"]]
+            )
             username_from_refresh_token: str = refresh_token_payload.get("username")
-            print('refresh_token_username: ', username_from_refresh_token)
-            result = tx.run(cypher,
-                            username=username_from_refresh_token,
-                            refresh_token_hash=hashlib.md5(refresh_token.encode('utf-8')).hexdigest()
-                            )
+            print("refresh_token_username: ", username_from_refresh_token)
+            result = tx.run(
+                cypher,
+                username=username_from_refresh_token,
+                refresh_token_hash=hashlib.md5(refresh_token.encode("utf-8")).hexdigest(),
+            )
             first = result.single()
             if first is None:
                 raise HTTPException(status_code=404, detail="Access token not found.")
             token_info = TokenInfo()
             token_info.access_token = first.get("access_token")
             token_info.refresh_token = refresh_token
-            access_token_payload = jwt.decode(token_info.access_token,
-                                              secrets['security_secret_key'],
-                                              algorithms=[os.environ['SECURITY_ALGORITHM']])
+            access_token_payload = jwt.decode(
+                token_info.access_token, secrets["security_secret_key"], algorithms=[os.environ["SECURITY_ALGORITHM"]]
+            )
             username_from_access_token: str = access_token_payload.get("username")
             if username_from_access_token is None:
                 raise credentials_exception
@@ -148,11 +152,11 @@ class FoundationDB(MyDB):
             got_token_data, got_token_info = session.execute_read(use_refresh_to_get_access_work)
         new_token_info = TokenInfo()
         new_token_info.access_token = create_access_token(
-            got_token_data.dict(),
-            timedelta(seconds=int(os.environ['SECURITY_ACCESS_TOKEN_EXPIRE_SECONDS'])))
+            got_token_data.dict(), timedelta(seconds=int(os.environ["SECURITY_ACCESS_TOKEN_EXPIRE_SECONDS"]))
+        )
         new_token_info.refresh_token = create_access_token(
-            got_token_data.dict(),
-            timedelta(seconds=int(os.environ['SECURITY_REFRESH_TOKEN_EXPIRE_SECONDS'])))
+            got_token_data.dict(), timedelta(seconds=int(os.environ["SECURITY_REFRESH_TOKEN_EXPIRE_SECONDS"]))
+        )
 
         def update_tokens_work(tx) -> bool:
             cypher = """
@@ -168,12 +172,14 @@ class FoundationDB(MyDB):
                         rt.hash = $refresh_token_hash,
                         at.hash = $access_token_hash
                 """
-            result = tx.run(cypher,
-                            username=got_token_data.username,
-                            access_token=new_token_info.access_token,
-                            refresh_token=new_token_info.refresh_token,
-                            access_token_hash=hashlib.md5(new_token_info.access_token.encode('utf-8')).hexdigest(),
-                            refresh_token_hash=hashlib.md5(new_token_info.refresh_token.encode('utf-8')).hexdigest())
+            result = tx.run(
+                cypher,
+                username=got_token_data.username,
+                access_token=new_token_info.access_token,
+                refresh_token=new_token_info.refresh_token,
+                access_token_hash=hashlib.md5(new_token_info.access_token.encode("utf-8")).hexdigest(),
+                refresh_token_hash=hashlib.md5(new_token_info.refresh_token.encode("utf-8")).hexdigest(),
+            )
             summary = result.consume()
             if summary.counters.nodes_created < 2 or summary.counters.nodes_deleted < 2:
                 raise HTTPException(status_code=400, detail="Tokens were not deleted and created.")
@@ -182,5 +188,6 @@ class FoundationDB(MyDB):
         with self.driver.session() as session:
             session.execute_write(update_tokens_work)
         return new_token_info
+
 
 foundation_db = FoundationDB(driver)

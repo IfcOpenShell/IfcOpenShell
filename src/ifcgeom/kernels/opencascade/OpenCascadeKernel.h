@@ -79,22 +79,6 @@ private:
 		bool non_manifold_;
 		
 		void loop_(const ifcopenshell::geometry::taxonomy::loop::ptr ps, const std::function<void(int, int, bool)>& callback);
-
-		/*
-		bool construct(const IfcSchema::IfcCartesianPoint* cp, gp_Pnt* l);
-		bool construct(const std::vector<double>& cp, gp_Pnt* l);
-
-		const void* get_idx(const IfcSchema::IfcCartesianPoint* cp) {
-			return cp;
-		}
-
-		const void* get_idx(const std::vector<double>& cp) {
-			return &cp;
-		}
-
-		std::vector<const void*> get_idxs(const IfcSchema::IfcPolyLoop* lp);
-		std::vector<const void*> get_idxs(const std::vector<int>& it);
-		*/
 	public:
 		faceset_helper(OpenCascadeKernel* kernel, const ifcopenshell::geometry::taxonomy::shell::ptr l);
 		~faceset_helper();
@@ -111,15 +95,7 @@ private:
 
 	faceset_helper* faceset_helper_;
 
-	// @todo these should be moved to the mapping
-	/*
-	gp_Vec offset = gp_Vec{0.0, 0.0, 0.0};
-	gp_Quaternion rotation = gp_Quaternion{};
-	gp_Trsf offset_and_rotation = gp_Trsf();
-	*/
-
 	double precision_;
-
 public:
 	OpenCascadeKernel(const ifcopenshell::geometry::Settings& settings)
 		: AbstractKernel("opencascade", settings)
@@ -128,24 +104,33 @@ public:
 	{}
 
 	bool convert(const ifcopenshell::geometry::taxonomy::extrusion::ptr, TopoDS_Shape&);
-	bool convert(const ifcopenshell::geometry::taxonomy::face::ptr, TopoDS_Shape&);
+	bool convert(const ifcopenshell::geometry::taxonomy::face::ptr, TopoDS_Shape&, bool reversed_surface = false);
 	bool convert(const ifcopenshell::geometry::taxonomy::loop::ptr, TopoDS_Wire&);
 	bool convert(const ifcopenshell::geometry::taxonomy::matrix4::ptr, gp_GTrsf&);
 	bool convert(const ifcopenshell::geometry::taxonomy::shell::ptr, TopoDS_Shape&);
 	bool convert(const ifcopenshell::geometry::taxonomy::solid::ptr, TopoDS_Shape&);
 	bool convert(const ifcopenshell::geometry::taxonomy::loft::ptr, TopoDS_Shape&);
 	bool convert(const ifcopenshell::geometry::taxonomy::bspline_surface::ptr bs, Handle(Geom_Surface) surf);
+	bool convert(const ifcopenshell::geometry::taxonomy::sweep_along_curve::ptr, TopoDS_Shape&);
 
+	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::edge::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::loop::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::face::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::solid::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::shell::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::extrusion::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::revolve::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::boolean_result::ptr, IfcGeom::ConversionResults&);
 	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::loft::ptr, IfcGeom::ConversionResults&);
+	virtual bool convert_impl(const ifcopenshell::geometry::taxonomy::sweep_along_curve::ptr, IfcGeom::ConversionResults&);
 
 	virtual bool convert_openings(const IfcUtil::IfcBaseEntity* entity, const std::vector<std::pair<ifcopenshell::geometry::taxonomy::ptr, ifcopenshell::geometry::taxonomy::matrix4>>& openings,
 		const IfcGeom::ConversionResults& entity_shapes, const ifcopenshell::geometry::taxonomy::matrix4& entity_trsf, IfcGeom::ConversionResults& cut_shapes);
+	virtual bool unify_shapes(const IfcGeom::ConversionResults& input, IfcGeom::ConversionResults& output);
+
+	typedef boost::variant<boost::blank, Handle(Geom_Curve), TopoDS_Wire> curve_creation_visitor_result_type;
+	curve_creation_visitor_result_type convert_curve(const ifcopenshell::geometry::taxonomy::ptr);
+	Handle(Geom_Surface) convert_surface(const ifcopenshell::geometry::taxonomy::ptr);
 
 	template <typename T, typename U>
 	static T convert_xyz(const U& u) {

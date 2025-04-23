@@ -441,7 +441,7 @@ class IFC_PARSE_API instance_factory {
   public:
     virtual ~instance_factory() {}
 
-    virtual IfcUtil::IfcBaseClass* operator()(IfcEntityInstanceData* data) const = 0;
+    virtual IfcUtil::IfcBaseClass* operator()(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) const = 0;
 };
 
 class IFC_PARSE_API schema_definition {
@@ -495,8 +495,8 @@ class IFC_PARSE_API schema_definition {
         return *iter;
     }
 
-    const declaration* declaration_by_name(int name) const {
-        return declarations_[name];
+    const declaration* declaration_by_name(size_t name) const {
+        return declarations_.at(name);
     }
 
     const std::vector<const declaration*>& declarations() const { return declarations_; }
@@ -507,7 +507,7 @@ class IFC_PARSE_API schema_definition {
 
     const std::string& name() const { return name_; }
 
-    IfcUtil::IfcBaseClass* instantiate(IfcEntityInstanceData* data) const;
+    IfcUtil::IfcBaseClass* instantiate(const IfcParse::declaration* decl, IfcEntityInstanceData&& data) const;
 };
 
 IFC_PARSE_API const schema_definition* schema_by_name(const std::string&);

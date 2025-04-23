@@ -17,16 +17,14 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import time
 import uuid
 
 from .file import file
 from .guid import compress
-from . import main
+from .ifcopenshell_wrapper import version
+from typing import Optional
+
 
 # A quick way to setup an 'empty' IFC file, taken from:
 # http://academy.ifcopenshell.org/creating-a-simple-wall-with-property-set-and-quantity-information/
@@ -78,17 +76,17 @@ def get_pep440_version(ifcopenshell_wrapper_version):
     return ifcopenshell_wrapper_version.replace("-", "+", 1)
 
 def create(
-    filename=None,
-    timestring=None,
-    organization=None,
-    creator=None,
-    schema_identifier=None,
-    application_version=None,
-    timestamp=None,
-    application=None,
-    project_globalid=None,
-    project_name=None,
-):
+    filename: Optional[str] = None,
+    timestring: Optional[str] = None,
+    organization: Optional[str] = None,
+    creator: Optional[str] = None,
+    schema_identifier: Optional[str] = None,
+    application_version: Optional[str] = None,
+    timestamp: Optional[str] = None,
+    application: Optional[str] = None,
+    project_globalid: Optional[str] = None,
+    project_name: Optional[str] = None,
+) -> file:
     d = dict(locals())
 
     def _():

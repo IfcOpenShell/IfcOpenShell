@@ -30,17 +30,39 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('..'))
+
+sys.path.insert(0, os.path.abspath(".."))
 
 
 # -- Project information -----------------------------------------------------
 
 project = "IfcOpenShell"
-copyright = "2011-2024, IfcOpenShell Contributors"
+copyright = "2011-2024 IfcOpenShell Contributors"
 author = "IfcOpenShell Contributors"
 
 # The full version, including alpha/beta/rc tags
-release = "0.7.0"
+cwd = os.path.dirname(os.path.realpath(__file__))
+with open(os.path.join(cwd, "..", "..", "..", "VERSION"), "r") as f:
+    release = f.read().strip()
+
+from docutils import nodes
+
+
+def ios_python_url(name, rawtext, text, lineno, inliner, options={}, content=[]):
+    url = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/ifcopenshell-python-{release}/ifcopenshell-python-{release}-{text}.zip"
+    node = nodes.reference(rawtext, text, refuri=url, **options)
+    return [node], []
+
+
+def ifcconvert_url(name, rawtext, text, lineno, inliner, options={}, content=[]):
+    url = f"https://github.com/IfcOpenShell/IfcOpenShell/releases/download/ifcconvert-{release}/ifcconvert-{release}-{text}.zip"
+    node = nodes.reference(rawtext, text, refuri=url, **options)
+    return [node], []
+
+
+def setup(app):
+    app.add_role("ios_python_url", ios_python_url)
+    app.add_role("ifcconvert_url", ifcconvert_url)
 
 
 # -- General configuration ---------------------------------------------------
@@ -63,16 +85,27 @@ autosectionlabel_prefix_document = True
 autoapi_add_toctree_entry = True
 
 # We're only documenting Python here
-autoapi_type = 'python'
+autoapi_type = "python"
 
 # autoapi works by reading source code instead of importing modules
-autoapi_dirs = ['../ifcopenshell', '../../bcf/src', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
+autoapi_dirs = [
+    "../ifcopenshell",
+    "../../bcf/bcf",
+    "../../bsdd",
+    "../../ifccsv",
+    "../../ifcdiff",
+    "../../ifcpatch/ifcpatch",
+    "../../ifctester/ifctester",
+]
 # autoapi_dirs = ['../../ifcdiff']
 # autoapi_dirs = ['../../ifcdiff', '../ifcopenshell/util']
-# autoapi_dirs = ['../../bcf/src', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
+# autoapi_dirs = ['../../bcf/bcf', '../../bsdd', '../../ifccsv', '../../ifcdiff', '../../ifcpatch/ifcpatch', '../../ifctester/ifctester']
 
 # These are auto-generated based on the IFC schema, so exclude them
-autoapi_ignore = ['*ifcopenshell/express/rules*']
+autoapi_ignore = ["*ifcopenshell/express/rules*"]
+
+# Custom autoapi templates to make it easier to read our docs
+autoapi_template_dir = "_autoapi_templates"
 
 # autoapi_options doesn't have show-module-summary, as it tends to create one
 # page per function which contradicts the presentation of showing all functions
@@ -81,10 +114,10 @@ autoapi_ignore = ['*ifcopenshell/express/rules*']
 # ifcopenshell.file is imported from ifcopenshell.file.file, but it gets pretty
 # confusing to see the docs again in multiple places (seriously,
 # ifcopenshell.file.file is everywhere).
-autoapi_options = ['members', 'undoc-members', 'private-members', 'special-members', 'show-inheritance']
+autoapi_options = ["members", "undoc-members", "show-inheritance", "imported-members"]
 
 # This option is set to both to allow both class docstrings and __init__ docstrings.
-autoapi_python_class_content = 'both'
+autoapi_python_class_content = "both"
 
 # Group by type (e.g. attribute, class, function, etc) then alphabetically.
 autoapi_member_order = "groupwise"
@@ -116,10 +149,11 @@ html_css_files = ["custom.css"]
 pygments_style = "one-dark"
 pygments_dark_style = "one-dark"
 
+html_favicon = "https://ifcopenshell.org/assets/images/logo.png"
 html_logo = "https://ifcopenshell.org/assets/images/logo.png"
 html_theme_options = {
     "source_repository": "https://github.com/IfcOpenShell/IfcOpenShell/",
-    "source_branch": "v0.7.0",
+    "source_branch": "v0.8.0",
     "source_directory": "src/ifcopenshell-python/docs/",
     "light_css_variables": {
         "color-brand-primary": "#39b54a",
@@ -130,8 +164,11 @@ html_theme_options = {
         "color-background-border": "#cfd0cb",
         "color-foreground-primary": "#2e3436",
         "color-sidebar-item-background--hover": "#f7f7f6",
+        "color-link": "#39b54a",
+        "color-link--visited": "#39b54a",
         "color-link--hover": "#d98014",
-        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
+        "color-link--visited--hover": "#d98014",
+        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji",
     },
     "dark_css_variables": {
         "color-brand-primary": "#39b54a",
@@ -141,10 +178,12 @@ html_theme_options = {
         "color-background-border": "#2e3436",
         "color-foreground-primary": "#eeeeec",
         "color-sidebar-item-background--hover": "#2e3436",
+        "color-link": "#39b54a",
+        "color-link--visited": "#39b54a",
         "color-link--hover": "#d98014",
-        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji"
+        "color-link--visited--hover": "#d98014",
+        "font-stack": "Nunito, -apple-system, BlinkMacSystemFont, Segoe UI, Helvetica, Arial, sans-serif, Apple Color Emoji, Segoe UI Emoji",
     },
-
     "footer_icons": [
         {
             "name": "IfcOpenShell",
@@ -156,7 +195,7 @@ html_theme_options = {
         },
         {
             "name": "GitHub",
-            "url": "https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifcopenshell-python/docs",
+            "url": "https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifcopenshell-python/docs",
             "html": """
                 <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 16 16">
                     <path fill-rule="evenodd" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>

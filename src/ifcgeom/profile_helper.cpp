@@ -54,6 +54,32 @@ taxonomy::loop::ptr ifcopenshell::geometry::fillet_loop(taxonomy::loop::ptr loop
 	return loop;
 }
 
+void ifcopenshell::geometry::remove_duplicate_points_from_loop(std::vector<taxonomy::point3::ptr>& polygon, bool closed, double tol) {
+	tol *= tol;
+
+	for (;;) {
+		bool removed = false;
+		int n = polygon.size() - (closed ? 0 : 1);
+		for (size_t i = 0; i < n; ++i) {
+			// wrap around to the first point in case of a closed loop
+			auto j = (i + 1) % polygon.size();
+			double dist = (polygon[i]->ccomponents() - polygon[j]->ccomponents()).squaredNorm();
+			if (dist < tol) {
+				// do not remove the first or last point to
+				// maintain connectivity with other wires
+				if ((closed && j == 0) || (!closed && j == (n - 1))) {
+					polygon.erase(polygon.begin() + i);
+				} else {
+					polygon.erase(polygon.begin() + j);
+				}
+				removed = true;
+				break;
+			}
+		}
+		if (!removed) break;
+	}
+}
+
 taxonomy::loop::ptr ifcopenshell::geometry::polygon_from_points(const std::vector<taxonomy::point3::ptr>& ps, bool external) {
 	auto loop = taxonomy::make<taxonomy::loop>();
 	loop->external = external;
@@ -99,7 +125,7 @@ taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matri
 	}
 	*/
 
-	const bool has_position = !m4->is_identity();
+	const bool has_position = m4 && !m4->is_identity();
 
 	// @todo precision
 
@@ -118,9 +144,17 @@ taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matri
 
 	auto loop = polygon_from_points(ps);
 
+	for (auto& e : loop->children) {
+		// deduplicate points, now that we have shared pointers, polygon_from_points() creates shared
+		// instances of the points, but when doing fillets we assume we can split and create an intermediate
+		// circular edge.
+		// @todo only deduplicate when there is a fillet radius on that point
+		e->end = taxonomy::make<taxonomy::point3>(*boost::get<taxonomy::point3::ptr>(e->end)->components_);
+	}
+
 	std::vector<profile_point_with_edges> pps(points.size());
 	for (int b = 0; b < points.size(); ++b) {
-		int c = (b - 1) % points.size();
+		int c = (b + points.size() - 1) % points.size();
 		pps[b] = { Eigen::Vector2d(points[b].xy[0], points[b].xy[1]), points[b].radius, loop->children[c], loop->children[b] };
 	}
 
@@ -160,7 +194,7 @@ taxonomy::loop::ptr ifcopenshell::geometry::profile_helper(const taxonomy::matri
 			c->matrix = taxonomy::make<taxonomy::matrix4>(Eigen::Matrix4d(Eigen::Affine3d(Eigen::Translation3d(O)).matrix()));
 			c->radius = *p.radius;
 			e->basis = c;
-			c->orientation.reset(sign == -1.);
+			e->curve_sense.reset(sign == -1.);
 
 			loop->children.insert(std::find(loop->children.begin(), loop->children.end(), p.next), e);
 		}

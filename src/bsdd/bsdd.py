@@ -24,341 +24,377 @@ import requests
 import webbrowser
 import http.server
 from typing import TypedDict, Literal, Optional
+from typing_extensions import NotRequired
+
+
+__version__ = version = "0.0.0"
 
 Status = Literal["Preview", "Active", "Inactive"]
 ClassTypes = Literal["Class", "GroupOfProperties", "AlternativeUse", "Material"]
 
 
+# Use yml_to_classes.py to update classes.
 class DictionaryContractV1(TypedDict):
+    code: str
     uri: str
     name: str
     version: str
     organizationCodeOwner: str
     organizationNameOwner: str
     defaultLanguageCode: str
-    license: str
-    licenseUrl: str
-    qualityAssuranceProcedure: str
-    qualityAssuranceProcedureUrl: str
-    status: str
-    moreInfoUrl: str
-    releaseDate: str
-    lastUpdatedUtc: str
+    isLatestVersion: bool
+    isVerified: bool
+    license: NotRequired[str]
+    licenseUrl: NotRequired[str]
+    qualityAssuranceProcedure: NotRequired[str]
+    qualityAssuranceProcedureUrl: NotRequired[str]
+    status: NotRequired[str]
+    moreInfoUrl: NotRequired[str]
+    releaseDate: NotRequired[str]
+    lastUpdatedUtc: NotRequired[str]
+    availableLanguages: NotRequired[list[CodeNameDto]]
 
 
 class DictionaryResponseContractV1(TypedDict):
-    totalCount: int
-    offset: int
-    count: int
-    dictionaries: list[DictionaryContractV1]
+    totalCount: NotRequired[int]
+    offset: NotRequired[int]
+    count: NotRequired[int]
+    dictionaries: NotRequired[list[DictionaryContractV1]]
 
 
 class ClassListItemContractV1(TypedDict):
-    uri: str
-    code: str
-    name: str
-    classType: str
-    referenceCode: str
-    parentClassCode: str
-    children: list[ClassListItemContractV1]
+    uri: NotRequired[str]
+    code: NotRequired[str]
+    name: NotRequired[str]
+    classType: NotRequired[str]
+    referenceCode: NotRequired[str]
+    parentClassCode: NotRequired[str]
+    descriptionPart: NotRequired[str]
+    children: NotRequired[list[ClassListItemContractV1]]
 
 
 class DictionaryClassesResponseContractV1(TypedDict):
+    code: str
     uri: str
     name: str
     version: str
     organizationCodeOwner: str
     organizationNameOwner: str
     defaultLanguageCode: str
-    license: str
-    licenseUrl: str
-    qualityAssuranceProcedure: str
-    qualityAssuranceProcedureUrl: str
-    status: str
-    moreInfoUrl: str
-    releaseDate: str
-    lastUpdatedUtc: str
-    classes: list[ClassListItemContractV1]
-    classesTotalCount: int
-    classesOffset: int
-    classesCount: int
+    isLatestVersion: bool
+    isVerified: bool
+    license: NotRequired[str]
+    licenseUrl: NotRequired[str]
+    qualityAssuranceProcedure: NotRequired[str]
+    qualityAssuranceProcedureUrl: NotRequired[str]
+    status: NotRequired[str]
+    moreInfoUrl: NotRequired[str]
+    releaseDate: NotRequired[str]
+    lastUpdatedUtc: NotRequired[str]
+    classes: NotRequired[list[ClassListItemContractV1]]
+    classesTotalCount: NotRequired[int]
+    classesOffset: NotRequired[int]
+    classesCount: NotRequired[int]
 
 
 class PropertyListItemContractV1(TypedDict):
-    uri: str
-    code: str
-    name: str
+    uri: NotRequired[str]
+    code: NotRequired[str]
+    name: NotRequired[str]
+    descriptionPart: NotRequired[str]
 
 
 class DictionaryPropertiesResponseContractV1(TypedDict):
+    code: str
     uri: str
     name: str
     version: str
     organizationCodeOwner: str
     organizationNameOwner: str
     defaultLanguageCode: str
-    license: str
-    licenseUrl: str
-    qualityAssuranceProcedure: str
-    qualityAssuranceProcedureUrl: str
-    status: str
-    moreInfoUrl: str
-    releaseDate: str
-    lastUpdatedUtc: str
-    properties: list[PropertyListItemContractV1]
-    propertiesTotalCount: int
-    propertiesOffset: int
-    propertiesCount: int
+    isLatestVersion: bool
+    isVerified: bool
+    license: NotRequired[str]
+    licenseUrl: NotRequired[str]
+    qualityAssuranceProcedure: NotRequired[str]
+    qualityAssuranceProcedureUrl: NotRequired[str]
+    status: NotRequired[str]
+    moreInfoUrl: NotRequired[str]
+    releaseDate: NotRequired[str]
+    lastUpdatedUtc: NotRequired[str]
+    properties: NotRequired[list[PropertyListItemContractV1]]
+    propertiesTotalCount: NotRequired[int]
+    propertiesOffset: NotRequired[int]
+    propertiesCount: NotRequired[int]
 
 
 class ClassReferenceContractV1(TypedDict):
     uri: str
-    name: str
-    code: str
+    name: NotRequired[str]
+    code: NotRequired[str]
 
 
 class ClassPropertyValueContractV1(TypedDict):
-    uri: str
-    code: str
+    uri: NotRequired[str]
+    code: NotRequired[str]
     value: str
-    description: str
-    sortNumber: int
+    description: NotRequired[str]
+    sortNumber: NotRequired[int]
 
 
 class ClassPropertyContractV1(TypedDict):
     name: str
-    uri: str
-    description: str
-    dataType: str
-    dimension: str
-    dimensionLength: int
-    dimensionMass: int
-    dimensionTime: int
-    dimensionElectricCurrent: int
-    dimensionThermodynamicTemperature: int
-    dimensionAmountOfSubstance: int
-    dimensionLuminousIntensity: int
-    dynamicParameterPropertyCodes: list[str]
-    example: str
-    isDynamic: bool
-    isRequired: bool
-    isWritable: bool
-    maxExclusive: float
-    maxInclusive: float
-    minExclusive: float
-    minInclusive: float
-    pattern: str
-    physicalQuantity: str
-    allowedValues: list[ClassPropertyValueContractV1]
-    predefinedValue: str
-    propertyCode: str
-    propertyDictionaryName: str
-    propertyUri: str
-    propertySet: str
-    propertyStatus: str
-    propertyValueKind: str
-    symbol: str
-    units: list[str]
-    qudtCodes: list[str]
+    uri: NotRequired[str]
+    description: NotRequired[str]
+    definition: NotRequired[str]
+    dataType: NotRequired[str]
+    dimension: NotRequired[str]
+    dimensionLength: NotRequired[int]
+    dimensionMass: NotRequired[int]
+    dimensionTime: NotRequired[int]
+    dimensionElectricCurrent: NotRequired[int]
+    dimensionThermodynamicTemperature: NotRequired[int]
+    dimensionAmountOfSubstance: NotRequired[int]
+    dimensionLuminousIntensity: NotRequired[int]
+    dynamicParameterPropertyCodes: NotRequired[list[str]]
+    example: NotRequired[str]
+    isDynamic: NotRequired[bool]
+    isRequired: NotRequired[bool]
+    isWritable: NotRequired[bool]
+    maxExclusive: NotRequired[float]
+    maxInclusive: NotRequired[float]
+    minExclusive: NotRequired[float]
+    minInclusive: NotRequired[float]
+    pattern: NotRequired[str]
+    physicalQuantity: NotRequired[str]
+    allowedValues: NotRequired[list[ClassPropertyValueContractV1]]
+    predefinedValue: NotRequired[str]
+    propertyCode: NotRequired[str]
+    propertyDictionaryName: NotRequired[str]
+    propertyDictionaryUri: NotRequired[str]
+    propertyUri: NotRequired[str]
+    propertySet: NotRequired[str]
+    propertyStatus: NotRequired[str]
+    propertyValueKind: NotRequired[str]
+    symbol: NotRequired[str]
+    units: NotRequired[list[str]]
+    qudtCodes: NotRequired[list[str]]
 
 
 class PropertyContractV4(TypedDict):
-    dictionaryUri: str
+    dictionaryUri: NotRequired[str]
     activationDateUtc: str
     code: str
-    creatorLanguageCode: str
-    countriesOfUse: list[str]
-    countryOfOrigin: str
-    deActivationDateUtc: str
-    definition: str
-    deprecationExplanation: str
-    description: str
-    documentReference: str
+    creatorLanguageCode: NotRequired[str]
+    countriesOfUse: NotRequired[list[str]]
+    countryOfOrigin: NotRequired[str]
+    deActivationDateUtc: NotRequired[str]
+    definition: NotRequired[str]
+    deprecationExplanation: NotRequired[str]
+    description: NotRequired[str]
+    documentReference: NotRequired[str]
     name: str
     uri: str
-    replacedObjectCodes: list[str]
-    replacingObjectCodes: list[str]
-    revisionDateUtc: str
-    revisionNumber: int
+    replacedObjectCodes: NotRequired[list[str]]
+    replacingObjectCodes: NotRequired[list[str]]
+    revisionDateUtc: NotRequired[str]
+    revisionNumber: NotRequired[int]
     status: str
-    subdivisionsOfUse: list[str]
-    uid: str
+    subdivisionsOfUse: NotRequired[list[str]]
+    uid: NotRequired[str]
     versionDateUtc: str
-    versionNumber: int
-    visualRepresentationUri: str
-    connectedPropertyCodes: list[str]
-    dataType: str
-    dimension: str
-    dimensionLength: int
-    dimensionMass: int
-    dimensionTime: int
-    dimensionElectricCurrent: int
-    dimensionThermodynamicTemperature: int
-    dimensionAmountOfSubstance: int
-    dimensionLuminousIntensity: int
-    dynamicParameterPropertyCodes: list[str]
-    example: str
-    isDynamic: bool
-    maxExclusive: float
-    maxInclusive: float
-    methodOfMeasurement: str
-    minExclusive: float
-    minInclusive: float
-    pattern: str
-    physicalQuantity: str
-    allowedValues: list[PropertyValueContractV4]
-    propertyValueKind: str
-    propertyRelations: list[PropertyRelationContractV4]
-    textFormat: str
-    units: list[str]
-    qudtCodes: list[str]
-    propertyClasses: list[PropertyClassContractV4]
+    versionNumber: NotRequired[int]
+    visualRepresentationUri: NotRequired[str]
+    connectedPropertyCodes: NotRequired[list[str]]
+    dataType: NotRequired[str]
+    dimension: NotRequired[str]
+    dimensionLength: NotRequired[int]
+    dimensionMass: NotRequired[int]
+    dimensionTime: NotRequired[int]
+    dimensionElectricCurrent: NotRequired[int]
+    dimensionThermodynamicTemperature: NotRequired[int]
+    dimensionAmountOfSubstance: NotRequired[int]
+    dimensionLuminousIntensity: NotRequired[int]
+    dynamicParameterPropertyCodes: NotRequired[list[str]]
+    example: NotRequired[str]
+    isDynamic: NotRequired[bool]
+    maxExclusive: NotRequired[float]
+    maxInclusive: NotRequired[float]
+    methodOfMeasurement: NotRequired[str]
+    minExclusive: NotRequired[float]
+    minInclusive: NotRequired[float]
+    pattern: NotRequired[str]
+    physicalQuantity: NotRequired[str]
+    allowedValues: NotRequired[list[PropertyValueContractV4]]
+    propertyValueKind: NotRequired[str]
+    propertyRelations: NotRequired[list[PropertyRelationContractV4]]
+    textFormat: NotRequired[str]
+    units: NotRequired[list[str]]
+    qudtCodes: NotRequired[list[str]]
+    propertyClasses: NotRequired[list[PropertyClassContractV4]]
 
 
 class PropertyValueContractV4(TypedDict):
-    uri: str
-    code: str
+    uri: NotRequired[str]
+    code: NotRequired[str]
     value: str
-    description: str
-    sortNumber: int
+    description: NotRequired[str]
+    sortNumber: NotRequired[int]
 
 
 class PropertyRelationContractV4(TypedDict):
-    uri: str
-    relationType: str
-    relatedPropertyUri: str
-    relatedPropertyName: str
+    uri: NotRequired[str]
+    relationType: NotRequired[str]
+    relatedPropertyUri: NotRequired[str]
+    relatedPropertyName: NotRequired[str]
 
 
 class PropertyClassContractV4(TypedDict):
-    uri: str
-    code: str
+    uri: NotRequired[str]
+    code: NotRequired[str]
     name: str
-    definition: str
-    description: str
-    propertySet: str
+    definition: NotRequired[str]
+    description: NotRequired[str]
+    propertySet: NotRequired[str]
 
 
 class ClassRelationContractV1(TypedDict):
-    uri: str
+    uri: NotRequired[str]
     relationType: str
     relatedClassUri: str
-    relatedClassName: str
-    fraction: float
+    relatedClassName: NotRequired[str]
+    fraction: NotRequired[float]
 
 
 class TextSearchResponseContractV1(TypedDict):
-    totalCount: int
-    offset: int
-    count: int
-    classes: list[TextSearchResponseClassContractV1]
-    dictionaries: list[TextSearchResponseDictionaryContractV1]
-    properties: list[TextSearchResponsePropertyContractV1]
+    totalCount: NotRequired[int]
+    offset: NotRequired[int]
+    count: NotRequired[int]
+    classes: NotRequired[list[TextSearchResponseClassContractV1]]
+    dictionaries: NotRequired[list[TextSearchResponseDictionaryContractV1]]
+    properties: NotRequired[list[TextSearchResponsePropertyContractV1]]
 
 
 class TextSearchResponseClassContractV1(TypedDict):
-    dictionaryUri: str
-    dictionaryName: str
-    name: str
-    referenceCode: str
-    uri: str
-    classType: str
-    description: str
-    parentClassName: str
-    relatedIfcEntityNames: list[str]
+    dictionaryUri: NotRequired[str]
+    dictionaryName: NotRequired[str]
+    name: NotRequired[str]
+    referenceCode: NotRequired[str]
+    uri: NotRequired[str]
+    classType: NotRequired[str]
+    description: NotRequired[str]
+    parentClassName: NotRequired[str]
+    relatedIfcEntityNames: NotRequired[list[str]]
 
 
 class TextSearchResponseDictionaryContractV1(TypedDict):
-    uri: str
-    name: str
+    uri: NotRequired[str]
+    name: NotRequired[str]
 
 
 class TextSearchResponsePropertyContractV1(TypedDict):
-    dictionaryUri: str
-    dictionaryName: str
-    uri: str
-    name: str
-    description: str
+    dictionaryUri: NotRequired[str]
+    dictionaryName: NotRequired[str]
+    uri: NotRequired[str]
+    name: NotRequired[str]
+    description: NotRequired[str]
 
 
 class ClassContractV1(TypedDict):
-    dictionaryUri: str
+    dictionaryUri: NotRequired[str]
     activationDateUtc: str
     code: str
-    creatorLanguageCode: str
-    countriesOfUse: list[str]
-    countryOfOrigin: str
-    deActivationDateUtc: str
-    definition: str
-    deprecationExplanation: str
-    description: str
-    documentReference: str
+    creatorLanguageCode: NotRequired[str]
+    countriesOfUse: NotRequired[list[str]]
+    countryOfOrigin: NotRequired[str]
+    deActivationDateUtc: NotRequired[str]
+    definition: NotRequired[str]
+    deprecationExplanation: NotRequired[str]
+    description: NotRequired[str]
+    documentReference: NotRequired[str]
     name: str
     uri: str
-    replacedObjectCodes: list[str]
-    replacingObjectCodes: list[str]
-    revisionDateUtc: str
-    revisionNumber: int
+    replacedObjectCodes: NotRequired[list[str]]
+    replacingObjectCodes: NotRequired[list[str]]
+    revisionDateUtc: NotRequired[str]
+    revisionNumber: NotRequired[int]
     status: str
-    subdivisionsOfUse: list[str]
-    uid: str
+    subdivisionsOfUse: NotRequired[list[str]]
+    uid: NotRequired[str]
     versionDateUtc: str
-    versionNumber: int
-    visualRepresentationUri: str
-    classType: str
-    referenceCode: str
-    synonyms: list[str]
-    relatedIfcEntityNames: list[str]
-    parentClassReference: ClassReferenceContractV1
-    classProperties: list[ClassPropertyContractV1]
-    classRelations: list[ClassRelationContractV1]
-    childClassReferences: list[ClassReferenceContractV1]
+    versionNumber: NotRequired[int]
+    visualRepresentationUri: NotRequired[str]
+    classType: NotRequired[str]
+    referenceCode: NotRequired[str]
+    synonyms: NotRequired[list[str]]
+    relatedIfcEntityNames: NotRequired[list[str]]
+    parentClassReference: NotRequired[ClassReferenceContractV1]
+    classProperties: NotRequired[list[ClassPropertyContractV1]]
+    classRelations: NotRequired[list[ClassRelationContractV1]]
+    childClassReferences: NotRequired[list[ClassReferenceContractV1]]
+    reverseClassRelations: NotRequired[list[ClassReverseRelationContractV1]]
+    hierarchy: NotRequired[list[HierarchyItemContractV1]]
+
+
+class ClassReverseRelationContractV1(TypedDict):
+    relationType: str
+    classUri: str
+    className: NotRequired[str]
+    fraction: NotRequired[float]
+    dictionaryUri: NotRequired[str]
+
+
+class HierarchyItemContractV1(TypedDict):
+    level: int
+    name: str
+    code: str
+    uri: str
 
 
 class SearchInDictionaryResponseContractV1(TypedDict):
-    totalCount: int
-    offset: int
-    count: int
-    dictionary: DictionarySearchResultContractV1
+    totalCount: NotRequired[int]
+    offset: NotRequired[int]
+    count: NotRequired[int]
+    dictionary: NotRequired[DictionarySearchResultContractV1]
 
 
 class DictionarySearchResultContractV1(TypedDict):
-    name: str
-    uri: str
-    classes: list[ClassSearchResultContractV1]
+    name: NotRequired[str]
+    uri: NotRequired[str]
+    classes: NotRequired[list[ClassSearchResultContractV1]]
 
 
 class ClassSearchResultContractV1(TypedDict):
-    name: str
-    uri: str
-    referenceCode: str
-    classType: str
-    definition: str
-    synonyms: list[str]
+    name: NotRequired[str]
+    uri: NotRequired[str]
+    referenceCode: NotRequired[str]
+    classType: NotRequired[str]
+    definition: NotRequired[str]
+    synonyms: NotRequired[list[str]]
 
 
 class ClassSearchResponseContractV1(TypedDict):
-    totalCount: int
-    offset: int
-    count: int
-    classes: list[ClassSearchResponseClassContractV1]
+    totalCount: NotRequired[int]
+    offset: NotRequired[int]
+    count: NotRequired[int]
+    classes: NotRequired[list[ClassSearchResponseClassContractV1]]
 
 
 class ClassSearchResponseClassContractV1(TypedDict):
-    dictionaryUri: str
-    dictionaryName: str
-    name: str
-    referenceCode: str
-    uri: str
-    classType: str
-    description: str
-    parentClassName: str
-    relatedIfcEntityNames: list[str]
+    dictionaryUri: NotRequired[str]
+    dictionaryName: NotRequired[str]
+    name: NotRequired[str]
+    referenceCode: NotRequired[str]
+    uri: NotRequired[str]
+    classType: NotRequired[str]
+    description: NotRequired[str]
+    parentClassName: NotRequired[str]
+    relatedIfcEntityNames: NotRequired[list[str]]
 
 
 class CountryContractV1(TypedDict):
-    code: str
-    name: str
+    code: NotRequired[str]
+    name: NotRequired[str]
 
 
 class LanguageContractV1(TypedDict):
@@ -367,16 +403,21 @@ class LanguageContractV1(TypedDict):
 
 
 class ReferenceDocumentContractV1(TypedDict):
-    title: str
-    name: str
-    date: str
+    title: NotRequired[str]
+    name: NotRequired[str]
+    date: NotRequired[str]
 
 
 class UnitContractV1(TypedDict):
-    code: str
-    name: str
-    symbol: str
-    qudtUri: str
+    code: NotRequired[str]
+    name: NotRequired[str]
+    symbol: NotRequired[str]
+    qudtUri: NotRequired[str]
+
+
+class CodeNameDto(TypedDict):
+    code: NotRequired[str]
+    name: NotRequired[str]
 
 
 class OAuthReceiver(http.server.BaseHTTPRequestHandler):
@@ -402,16 +443,16 @@ class Client:
         self.client_id = "4aba821f-d4ff-498b-a462-c2837dbbba70"
 
     def get(self, endpoint, params=None, is_auth_required=False):
-        headers = {}
+        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.8.0"}
         if is_auth_required:
-            headers = {"Authorization": "Bearer " + self.get_access_token()}
+            headers["Authorization"] = "Bearer " + self.get_access_token()
         return requests.get(f"{self.baseurl}{endpoint}", timeout=10, headers=headers, params=params or None).json()
 
     def _get_deprecated(self, endpoint, params=None, is_auth_required=False):
-        headers = {}
+        headers = {"User-Agent": "IfcOpenShell.bSDD.py/0.8.0"}
         old_baseurl = "https://bs-dd-api-prototype.azurewebsites.net/"
         if is_auth_required:
-            headers = {"Authorization": "Bearer " + self.get_access_token()}
+            headers["Authorization"] = "Bearer " + self.get_access_token()
         return requests.get(f"{old_baseurl}{endpoint}", timeout=10, headers=headers, params=params or None).json()
 
     def post(self):
@@ -486,6 +527,10 @@ class Client:
     # deprecated
     def ClassificationSearchOpen(self, SearchText, version="v1", DomainNamespaceUris=None, RelatedIfcEntities=None):
         print(f"function 'Client.ClassificationSearchOpen' is deprecated, use 'Client.search_class' instead")
+
+        if len(SearchText) < 3:
+            raise ValueError("Search text must be at least 3 characters long.")
+
         if DomainNamespaceUris is None:
             DomainNamespaceUris = []
         if RelatedIfcEntities is None:
@@ -517,14 +562,16 @@ class Client:
     # deprecated
     def Property(self, namespaceUri, version="v2", languageCode=""):
         print(f"function 'Client.Property' is deprecated, use 'Client.get_property' instead")
-        return self._get_deprecated(f"api/Property/{version}",
-                                    {"namespaceUri": namespaceUri, "languageCode": languageCode})
+        return self._get_deprecated(
+            f"api/Property/{version}", {"namespaceUri": namespaceUri, "languageCode": languageCode}
+        )
 
     # deprecated
     def PropertyValue(self, namespaceUri, version="v1", languageCode=""):
         print(f"function 'Client.PropertyValue' is deprecated, use 'Client.get_property_value' instead")
-        return self._get_deprecated(f"api/PropertyValue/{version}",
-                                    {"namespaceUri": namespaceUri, "languageCode": languageCode})
+        return self._get_deprecated(
+            f"api/PropertyValue/{version}", {"namespaceUri": namespaceUri, "languageCode": languageCode}
+        )
 
     # deprecated
     def ReferenceDocument(self, version="v1"):
@@ -574,9 +621,16 @@ class Client:
         }
         return self.get(endpoint, params)
 
-    def get_classes(self, dictionary_uri: str, use_nested_classes: bool = True,
-                    class_type: ClassTypes = "Class",
-                    language_code: str = "", version: int = 1, offset=0, limit=1000) -> DictionaryClassesResponseContractV1:
+    def get_classes(
+        self,
+        dictionary_uri: str,
+        use_nested_classes: bool = True,
+        class_type: ClassTypes = "Class",
+        language_code: str = "",
+        version: int = 1,
+        offset=0,
+        limit=1000,
+    ) -> DictionaryClassesResponseContractV1:
         """
         Get Dictionary with tree of classes
         This API replaces Domain
@@ -587,29 +641,32 @@ class Client:
             "UseNestedClasses": use_nested_classes,
             "ClassType": class_type,
             "languageCode": language_code,
-            "offset" : offset,
-            "limit" : limit
+            "offset": offset,
+            "limit": limit,
         }
         return self.get(endpoint, params)
 
-    def get_properties(self, dictionary_uri: str, offset: int = 0, limit: int = 100, language_code: str = "",
-                       version: int = 1) -> DictionaryPropertiesResponseContractV1:
+    def get_properties(
+        self, dictionary_uri: str, offset: int = 0, limit: int = 100, language_code: str = "", version: int = 1
+    ) -> DictionaryPropertiesResponseContractV1:
         """
         Get Dictionary with its properties
         """
         endpoint = f"Dictionary/v{version}/Properties"
-        params = {
-            "Uri": dictionary_uri,
-            "languageCode": language_code,
-            "offset": offset,
-            "limit": limit 
-        }
+        params = {"Uri": dictionary_uri, "languageCode": language_code, "offset": offset, "limit": limit}
         return self.get(endpoint, params)
 
-    def get_class(self, class_uri: str, include_class_properties: bool = True,
-                  include_child_class_reference: bool = True, include_class_relations: bool = True,
-                  include_reverse_relations: bool = False, reverse_relation_dictionary_uris: Optional[list[str]]=None,
-                  language_code: str = "", version: int = 1) -> ClassContractV1:
+    def get_class(
+        self,
+        class_uri: str,
+        include_class_properties: bool = True,
+        include_child_class_reference: bool = True,
+        include_class_relations: bool = True,
+        include_reverse_relations: bool = False,
+        reverse_relation_dictionary_uris: Optional[list[str]] = None,
+        language_code: str = "",
+        version: int = 1,
+    ) -> ClassContractV1:
         """
         Get Class details
         this API replaces Classification
@@ -627,8 +684,7 @@ class Client:
         params = {k: v for k, v in params.items() if v is not None}
         return self.get(endpoint, params)
 
-    def get_property(self, uri, include_classes=False, language_code="",
-                     version: int = 4) -> PropertyContractV4:
+    def get_property(self, uri, include_classes=False, language_code="", version: int = 4) -> PropertyContractV4:
         """
         Get Property Detail
         this API replaces Property
@@ -654,14 +710,25 @@ class Client:
         }
         return self.get(endpoint, params)
 
-    def search_text(self, search_text: str, type_filter="All", dictionary_uris=None,
-                    version: int = 1, offset: int = 0, limit: int = 100) -> TextSearchResponseContractV1:
+    def search_text(
+        self,
+        search_text: str,
+        type_filter="All",
+        dictionary_uris=None,
+        version: int = 1,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> TextSearchResponseContractV1:
         """
         Search the bSDD database using free text, get list of Classes and/or Properties matching the text.
         Pagination options are for Classes and Properties combined.
         So if result consists of 10 classes and 5 properties, TotalCount will be 15.
         Classes will be listed first, so if you then use Offset=10 and Limit=5, you will get the 5 properties.
         """
+
+        if len(search_text) < 2:
+            raise ValueError("Search text must be at least 2 characters long.")
+
         if dictionary_uris is None:
             dictionary_uris = []
         endpoint = f"TextSearch/v{version}"
@@ -670,14 +737,20 @@ class Client:
             "TypeFilter": type_filter,
             "DictionaryUris": dictionary_uris,
             "offset": offset,
-            "limit": limit
+            "limit": limit,
         }
         return self.get(endpoint, params)
-        pass
 
-    def search_in_dictionary(self, dictionary_uri: str, search_text: str = "", language_code: str = "",
-                             related_ifc_entity: str = "",
-                             version: int = 1, offset: int = 0, limit: int = 100) -> SearchInDictionaryResponseContractV1:
+    def search_in_dictionary(
+        self,
+        dictionary_uri: str,
+        search_text: str = "",
+        language_code: str = "",
+        related_ifc_entity: str = "",
+        version: int = 1,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> SearchInDictionaryResponseContractV1:
         """
         Search the bSDD database, get list of Classes without details.
         This version uses new naming and returns one Dictionary instead of a list with always one Dictionary.
@@ -690,16 +763,26 @@ class Client:
             "LanguageCode": language_code,
             "RelatedIfcEntity": related_ifc_entity,
             "offset": offset,
-            "limit": limit
+            "limit": limit,
         }
         return self.get(endpoint, params)
 
-    def search_class(self, search_text: str, dictionary_uris=None, related_ifc_entities=None,
-                     version: int = 1, offset: int = 0, limit: int = 100) -> ClassSearchResponseContractV1:
+    def search_class(
+        self,
+        search_text: str,
+        dictionary_uris: Optional[list[str]] = None,
+        related_ifc_entities: Optional[list[str]] = None,
+        version: int = 1,
+        offset: int = 0,
+        limit: int = 100,
+    ) -> ClassSearchResponseContractV1:
         """
         Search the bSDD database using free text, get list of Classes matching the text and optional additional filters.
         this API replaces ClassificationSearch
         """
+
+        if len(search_text) < 3:
+            raise ValueError("Search text must be at least 3 characters long.")
 
         if related_ifc_entities is None:
             related_ifc_entities = []
@@ -711,13 +794,13 @@ class Client:
             "DictionaryUris": dictionary_uris,
             "RelatedIfcEntities": related_ifc_entities,
             "offset": offset,
-            "limit": limit
+            "limit": limit,
         }
         return self.get(endpoint, params)
 
     def get_countries(self, version: int = 1) -> list[CountryContractV1]:
         """
-        Get list of all Countries 
+        Get list of all Countries
         this API replaces Country
         """
         endpoint = f"Country/v{version}"

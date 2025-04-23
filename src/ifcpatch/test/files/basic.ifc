@@ -9,7 +9,7 @@ DATA;
 #2=IFCORGANIZATION('APTR','Aperture Science',$,$,$);
 #3=IFCACTORROLE(.USERDEFINED.,'CONTRIBUTOR',$);
 #4=IFCTELECOMADDRESS(.USERDEFINED.,'The main webpage of the software collection.','WEBPAGE',$,$,$,$,'https://ifcopenshell.org',$);
-#5=IFCTELECOMADDRESS(.USERDEFINED.,'The BlenderBIM Add-on webpage of the software collection.','WEBPAGE',$,$,$,$,'https://blenderbim.org',$);
+#5=IFCTELECOMADDRESS(.USERDEFINED.,'The BlenderBIM Add-on webpage of the software collection.','WEBPAGE',$,$,$,$,'https://bonsaibim.org',$);
 #6=IFCTELECOMADDRESS(.USERDEFINED.,'The source code repository of the software collection.','REPOSITORY',$,$,$,$,'https://github.com/IfcOpenShell/IfcOpenShell.git',$);
 #7=IFCORGANIZATION($,'IfcOpenShell','IfcOpenShell is an open source (LGPL) software library that helps users and software developers to work with the IFC file format.',(#3),(#4,#5,#6));
 #8=IFCAPPLICATION(#7,'0.0.999999','BlenderBIM Add-on','BlenderBIM');

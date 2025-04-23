@@ -10,7 +10,7 @@ type: software
 authors:
   - name: IfcOpenShell contributors
 repository-code: >-
-  https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.7.0/src/ifctester
+  https://github.com/IfcOpenShell/IfcOpenShell/tree/v0.8.0/src/ifctester
 abstract: 'Library, CLI and webapp for IDS model auditing'
 keywords:
   - IDS

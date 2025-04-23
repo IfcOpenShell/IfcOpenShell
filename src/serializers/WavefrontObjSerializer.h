@@ -39,7 +39,7 @@ public:
 	virtual ~WaveFrontOBJSerializer() {}
 	bool ready();
 	void writeHeader();
-	void writeMaterial(const ifcopenshell::geometry::taxonomy::style& style);
+	void writeMaterial(const ifcopenshell::geometry::taxonomy::style::ptr style);
 	void write(const IfcGeom::TriangulationElement* o);
 	void write(const IfcGeom::BRepElement* /*o*/) {}
 	void finalize() {}

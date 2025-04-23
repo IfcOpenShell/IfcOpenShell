@@ -26,9 +26,7 @@ from sverchok.node_tree import SverchCustomTreeNode
 from sverchok.data_structure import updateNode, flatten_data
 
 
-class SvIfcGetAttribute(
-    bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore
-):
+class SvIfcGetAttribute(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIfcCore):
     bl_idname = "SvIfcGetAttribute"
     bl_label = "IFC Get Attribute"
     entity: StringProperty(name="Entity Ids", update=updateNode)
@@ -40,30 +38,22 @@ class SvIfcGetAttribute(
 
     def sv_init(self, context):
         self.inputs.new("SvStringsSocket", "entity").prop_name = "entity"
-        self.inputs.new(
-            "SvStringsSocket", "attribute_name"
-        ).prop_name = "attribute_name"
+        self.inputs.new("SvStringsSocket", "attribute_name").prop_name = "attribute_name"
         self.outputs.new("SvStringsSocket", "value")
 
     def draw_buttons(self, context, layout):
-        layout.operator(
-            "node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False
-        ).tooltip = (
+        layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
             "Get the value of an attribute of an IfcEntity. Can take multiple entities."
         )
 
     def process(self):
         self.value_out = []
-        entity_nested_input_ids = flatten_data(
-            self.inputs["entity"].sv_get(), target_level=1
-        )
+        entity_nested_input_ids = flatten_data(self.inputs["entity"].sv_get(), target_level=1)
         if not entity_nested_input_ids[0]:
             return
         self.file = SvIfcStore.get_file()
         try:
-            entity_nested_inputs = [
-                self.file.by_id(int(step_id)) for step_id in entity_nested_input_ids
-            ]
+            entity_nested_inputs = [self.file.by_id(int(step_id)) for step_id in entity_nested_input_ids]
         except Exception as e:
             raise Exception("Instance ID not found", e)
         attribute_name = self.inputs["attribute_name"].sv_get()[0][0]

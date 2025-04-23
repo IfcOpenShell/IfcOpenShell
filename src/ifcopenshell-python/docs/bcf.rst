@@ -29,6 +29,13 @@ The upstream documentation by buildingSMART for BCF is available here:
 The IfcOpenShell **BCF** library supports BCF-XML version 2.1 and 3.0, and
 BCF-API 3.0.
 
+PyPI
+----
+
+.. code-block::
+
+    pip install bcf-client
+
 BCF-XML
 -------
 
@@ -71,7 +78,7 @@ memory until you call the `save` method.
                 print(comment.author)
 
         # Get a particular topic
-        topic = bcfxml.get_topic(guid)
+        topic = bcfxml.get_topic(guid).topic
 
         # Modify a topic
         topic.title = "New title"

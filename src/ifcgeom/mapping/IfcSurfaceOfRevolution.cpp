@@ -22,37 +22,20 @@
 using namespace ifcopenshell::geometry;
 
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSurfaceOfRevolution* inst) {
-	return nullptr;
-
-	/*
-	TopoDS_Wire wire;
-	if ( !convert_wire(inst->SweptCurve(), wire) ) {
-		TopoDS_Face face;
-		if ( !convert_face(inst->SweptCurve(),face) ) return false;
-		TopExp_Explorer exp(face, TopAbs_WIRE);
-		wire = TopoDS::Wire(exp.Current());
-	}
-
-	gp_Ax1 ax1;
-	IfcGeom::Kernel::convert(inst->AxisPosition(), ax1);
-
-	gp_Trsf trsf;
+	taxonomy::matrix4::ptr matrix;
 	bool has_position = true;
-#ifdef SCHEMA_IfcSweptSurface_Position_IS_OPTIONAL
+#ifdef SCHEMA_IfcSweptAreaSolid_Position_IS_OPTIONAL
 	has_position = inst->Position() != nullptr;
 #endif
 	if (has_position) {
-		IfcGeom::Kernel::convert(inst->Position(), trsf);
-	}
-	
-	shape = BRepPrimAPI_MakeRevol(wire, ax1);
-
-	if (has_position) {
-		// IfcSweptSurface.Position (trsf) is an IfcAxis2Placement3D
-		// and therefore has a unit scale factor
-		shape.Move(trsf);
+		matrix = taxonomy::cast<taxonomy::matrix4>(map(inst->Position()));
 	}
 
-	return !shape.IsNull();
-	*/
+	return taxonomy::make<taxonomy::revolve>(
+		matrix,
+		taxonomy::cast<taxonomy::loop>(map(inst->SweptCurve())),
+		taxonomy::cast<taxonomy::point3>(map(inst->AxisPosition()->Location())),
+		taxonomy::cast<taxonomy::direction3>(map(inst->AxisPosition()->Axis())),
+		boost::none
+	);
 }

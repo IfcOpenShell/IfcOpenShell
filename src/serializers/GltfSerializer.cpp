@@ -86,29 +86,29 @@ void GltfSerializer::writeHeader() {
 	json_["materials"] = json::array();
 }
 
-int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style& style) {
-	auto it = materials_.find(style.name);
+int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style::ptr style) {
+	auto it = materials_.find(style->name);
 	if (it != materials_.end()) {
 		return it->second;
 	}
 	
 	int idx = json_["materials"].size();
-	materials_[style.name] = idx;
+	materials_[style->name] = idx;
 
 	std::array<double, 4> base;
 	base.fill(1.0);
-	if (style.diffuse) {
+	if (style->get_color()) {
 		for (int i = 0; i < 3; ++i) {
-			base[i] = style.diffuse.ccomponents()(i);
+			base[i] = style->get_color().ccomponents()(i);
 		}
 	}
-	if (style.transparency == style.transparency) {
-		base[3] = 1. - style.transparency;
+	if (style->transparency == style->transparency) {
+		base[3] = 1. - style->transparency;
 	}
 
-	json_["materials"].push_back({ {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}} });
+	json_["materials"].push_back({ {"name", style->name}, {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}}});
 	
-	if (style.transparency == style.transparency && style.transparency > 1.e-9) {
+	if (style->transparency == style->transparency && style->transparency > 1.e-9) {
 		json_["materials"].back()["alphaMode"] = "BLEND";
 	}
 
@@ -141,12 +141,11 @@ size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end, int bufferV
 	accessor["componentType"] = component_type<typename It::value_type>::value;
 	accessor["count"] = num;
 
-	if (N == 1) {
+	if constexpr (N == 1) {
 		j["bufferViews"].push_back({ {"buffer", 0}, {"byteOffset", (size_t)ofs.tellp()}, { "byteLength", num *  4}, {"target", ELEMENT_ARRAY_BUFFER} });
 	} else {
 		j["bufferViews"].push_back({ {"buffer", 0}, {"byteStride", 12}, { "byteOffset", (size_t)ofs.tellp()}, { "byteLength", num * 12}, {"target", ARRAY_BUFFER}});
 	}
-
 
 	std::array<typename It::value_type, N> min, max;
 	min.fill(std::numeric_limits<typename It::value_type>::max());
@@ -451,29 +450,29 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 	}
 	if (coordops) {
 		for (auto& coordop : *coordops) {
-			IfcUtil::IfcBaseClass* source_crs = *coordop->as<IfcUtil::IfcBaseEntity>()->get("SourceCRS");
+			IfcUtil::IfcBaseClass* source_crs = coordop->as<IfcUtil::IfcBaseEntity>()->get("SourceCRS");
 			if (source_crs->declaration().is("IfcGeometricRepresentationContext")) {
-				IfcUtil::IfcBaseClass* target_crs = *coordop->as<IfcUtil::IfcBaseEntity>()->get("TargetCRS");
+				IfcUtil::IfcBaseClass* target_crs = coordop->as<IfcUtil::IfcBaseEntity>()->get("TargetCRS");
 				auto name_attr = target_crs->as<IfcUtil::IfcBaseEntity>()->get("Name");
 				if (coordop->declaration().is("IfcMapConversion")) {
 					
-					if (!name_attr->isNull()) {
-						std::string epsg_code = *name_attr;
+					if (!name_attr.isNull()) {
+						std::string epsg_code = name_attr;
 						crs_epsg = epsg_code;
 
 						// @todo in which unit are these?
-						double eastings = *coordop->as<IfcUtil::IfcBaseEntity>()->get("Eastings");
-						double northings = *coordop->as<IfcUtil::IfcBaseEntity>()->get("Northings");
-						double height = *coordop->as<IfcUtil::IfcBaseEntity>()->get("OrthogonalHeight");
+						double eastings = coordop->as<IfcUtil::IfcBaseEntity>()->get("Eastings");
+						double northings = coordop->as<IfcUtil::IfcBaseEntity>()->get("Northings");
+						double height = coordop->as<IfcUtil::IfcBaseEntity>()->get("OrthogonalHeight");
 						height = 0.;
 
 						eastings_northings_elevation = { { eastings, northings, height} };
 
 						auto xaxis_attr = coordop->as<IfcUtil::IfcBaseEntity>()->get("XAxisAbscissa");
 						auto yaxis_attr = coordop->as<IfcUtil::IfcBaseEntity>()->get("XAxisOrdinate");
-						if (!xaxis_attr->isNull() && !yaxis_attr->isNull()) {
-							double xaxis = *xaxis_attr;
-							double yaxis = *yaxis_attr;
+						if (!xaxis_attr.isNull() && !yaxis_attr.isNull()) {
+							double xaxis = xaxis_attr;
+							double yaxis = yaxis_attr;
 
 							crs_x_axis = { { xaxis, yaxis, 0. } };
 						}
@@ -490,9 +489,9 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 			auto lat_attr = (*sites->begin())->as<IfcUtil::IfcBaseEntity>()->get("RefLatitude");
 			auto lon_attr = (*sites->begin())->as<IfcUtil::IfcBaseEntity>()->get("RefLongitude");
 
-			if (!lat_attr->isNull() && !lon_attr->isNull()) {
-				std::vector<int> lat_dms = *lat_attr;
-				std::vector<int> lon_dms = *lon_attr;
+			if (!lat_attr.isNull() && !lon_attr.isNull()) {
+				std::vector<int> lat_dms = lat_attr;
+				std::vector<int> lon_dms = lon_attr;
 
 				auto to_decimal = [](const std::vector<int>& dms) {
 					double val = dms[0] + dms[1] / 60. + dms[2] / 3600.;
@@ -524,10 +523,10 @@ void GltfSerializer::setFile(IfcParse::IfcFile* f) {
 	if (contexts && contexts->size() > 0) {
 		auto context = (*contexts->begin())->as<IfcUtil::IfcBaseEntity>();
 		auto north_attr = context->get("TrueNorth");
-		if (!north_attr->isNull()) {
-			IfcUtil::IfcBaseClass* north = *north_attr;
+		if (!north_attr.isNull()) {
+			IfcUtil::IfcBaseClass* north = north_attr;
 			if (north->declaration().is("IfcDirection")) {
-				std::vector<double> ratios = *north->as<IfcUtil::IfcBaseEntity>()->get("DirectionRatios");
+				std::vector<double> ratios = north->as<IfcUtil::IfcBaseEntity>()->get("DirectionRatios");
 				crs_x_axis = { { ratios[1], -ratios[0], 0. } };
 			}
 		}

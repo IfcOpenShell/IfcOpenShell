@@ -27,11 +27,11 @@ if(CCACHE_FOUND)
     set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
 endif()
 
-project(IfcOpenShell VERSION 0.8.0)
+add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
 
 cmake_policy(SET CMP0048 NEW)
 cmake_policy(SET CMP0074 NEW)
-cmake_policy(SET CMP0078 OLD)
+cmake_policy(SET CMP0078 NEW)
 cmake_policy(SET CMP0086 NEW)
 if (POLICY CMP0144)
     cmake_policy(SET CMP0144 NEW) # find_package() uses upper-case <PACKAGENAME>_ROOT variables.
@@ -45,7 +45,9 @@ endif()
 include(utilities.cmake)
 
 # use extra version to make pre-release using eg semver
-set(EXTRA_VERSION "-alpha.3")
+if(NOT DEFINED EXTRA_VERSION)
+    set(EXTRA_VERSION "-alpha.3")
+endif()
 
 option(MINIMAL_BUILD "The build is to make a minimal version of IFC converter from OCCT into IFC." OFF)
 option(WASM_BUILD "Build a WebAssembly binary." OFF)
@@ -75,11 +77,22 @@ option(HDF5_SUPPORT "Enable HDF5 support (requires HDF5, zlib)" ON)
 option(WITH_PROJ "Enable output of Earth-Centered Earth-Fixed glTF output using the PROJ library" OFF)
 option(IFCXML_SUPPORT "Build IfcParse with ifcXML support (requires libxml2)." ON)
 option(USD_SUPPORT "Build IfcConvert with USD support (requires pixar's USD library)." OFF)
-option(CITYJSON_SUPPORT "Build IfcConvert with CityJSON support (requires CityJSON library)." ON)
+option(CITYJSON_SUPPORT "Build IfcConvert with CityJSON support (requires CityJSON library)." OFF)
 option(WITH_RELATIONSHIP_VALIDATION "Build IfcConvert with option to validate geometrical relationships." OFF)
 
 option(USERSPACE_PYTHON_PREFIX "Installs IfcPython for the current user only instead of system-wide." OFF)
 option(ADD_COMMIT_SHA "Add commit sha and branch in version number, warning results in many rebuilds, requires git" OFF)
+option(VERSION_OVERRIDE "Override the version defined in IfcParse.h with the file VERSION in the repository root" OFF)
+
+if (VERSION_OVERRIDE)
+    file(READ "../VERSION" "RELEASE_VERSION_")
+    string(STRIP "${RELEASE_VERSION_}" RELEASE_VERSION)
+    message(STATUS "Detected version '${RELEASE_VERSION}'")
+else()
+    set(RELEASE_VERSION "0.8.0")
+endif()
+
+project(IfcOpenShell VERSION ${RELEASE_VERSION})
 
 if(MINIMAL_BUILD)
     message(STATUS "Setting options for minimal build")
@@ -183,13 +196,25 @@ foreach(option_flag IN LISTS option_flags)
     convert_env_var_to_bool("${option_flag}")
 endforeach()
 
+set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
+
+macro(clear_wasm_sysroot)
 if(WASM_BUILD)
     # when using the nix/build-all.py build script we should not
     # look into the sysroot for most of the dependencies but rather
     # in the designated build/ folder created by the script.
-    set(CMAKE_FIND_ROOT_PATH_BACKUP "${CMAKE_FIND_ROOT_PATH}")
     set(CMAKE_FIND_ROOT_PATH "")
 endif()
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER)
+endmacro()
+
+macro(restore_wasm_sysroot)
+if(WASM_BUILD)
+    # reset to use sysroot
+    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
+endif()
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+endmacro()
 
 if(WITH_CGAL)
     add_definitions(-DIFOPSH_WITH_CGAL)
@@ -210,10 +235,13 @@ endif()
 
 if(GLTF_SUPPORT OR CITYJSON_SUPPORT)
     UNIFY_ENVVARS_AND_CACHE(JSON_INCLUDE_DIR)
-    find_file(json_hpp "json.hpp" ${JSON_INCLUDE_DIR}/nlohmann)
+    clear_wasm_sysroot()
+    find_path(json_header_path "nlohmann/json.hpp" HINTS ${JSON_INCLUDE_DIR})
+    restore_wasm_sysroot()
+    set(JSON_INCLUDE_DIR ${json_header_path})
 
-    if(json_hpp)
-        message(STATUS "JSON for Modern C++ header file found")
+    if(json_header_path)
+        message(STATUS "JSON for Modern C++ header file found in ${JSON_INCLUDE_DIR}")
     else()
         message(FATAL_ERROR "Unable to find JSON for Modern C++ header file, aborting")
     endif()
@@ -316,13 +344,17 @@ if(USE_MMAP)
     add_definitions(-DUSE_MMAP)
 endif()
 
+clear_wasm_sysroot()
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+restore_wasm_sysroot()
 message(STATUS "Boost include files found in ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost libraries found in ${Boost_LIBRARY_DIRS}")
 
 if(NOT MINIMAL_BUILD)
     # libxml2 is required for IFCXML (optional) and SVGFILL (mandatory)
+    clear_wasm_sysroot()
     find_package(LibXml2 REQUIRED)
+    restore_wasm_sysroot()
 endif()
 
 if(IFCXML_SUPPORT)
@@ -338,6 +370,7 @@ if(BUILD_IFCGEOM)
     # Open CASCADE
     if(WITH_OPENCASCADE)
     if("${OCC_INCLUDE_DIR}" STREQUAL "")
+	clear_wasm_sysroot()
         find_path(OCC_INCLUDE_DIR Standard_Version.hxx
             PATHS
                 /usr/include/occt
@@ -345,6 +378,7 @@ if(BUILD_IFCGEOM)
                 /usr/include/opencascade
             REQUIRED
         )
+	restore_wasm_sysroot()
 
         if(OCC_INCLUDE_DIR)
             message(STATUS "Found Open CASCADE include files in: ${OCC_INCLUDE_DIR}")
@@ -404,7 +438,9 @@ if(BUILD_IFCGEOM)
         message(STATUS "Looking for Open CASCADE library files in: ${OCC_LIBRARY_DIR}")
     endif()
 
+    clear_wasm_sysroot()
     find_library(libTKernel NAMES TKernel TKerneld PATHS ${OCC_LIBRARY_DIR} NO_DEFAULT_PATH)
+    restore_wasm_sysroot()
 
     if(libTKernel)
         message(STATUS "Required Open Cascade Library files found")
@@ -588,25 +624,27 @@ if(HDF5_SUPPORT)
         else()
             message(STATUS "Packaging hdf5 and zlib for conda distribution")
 
-            if(WIN32)
-                # Windows
-                set(zlib_post zlib)
-                set(lib_ext lib)
-            elseif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+            if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
                 # macOS
                 set(zlib_post libz)
                 set(lib_ext dylib)
-            else()
-                # linux
-                set(zlib_post libz)
-                set(lib_ext so)
-            endif()
-
-            set(HDF5_LIBRARIES
+                set(HDF5_LIBRARIES
                 "${HDF5_LIBRARY_DIR}/libhdf5_cpp.${lib_ext}"
                 "${HDF5_LIBRARY_DIR}/libhdf5.${lib_ext}"
                 "${HDF5_LIBRARY_DIR}/${zlib_post}.${lib_ext}"
             )
+            else()
+                # linux and windows
+                # Find HDF5 package
+                find_package(HDF5 REQUIRED COMPONENTS C CXX)
+                # Find ZLIB package
+                find_package(ZLIB REQUIRED)
+                # Include directories
+                include_directories(${HDF5_INCLUDE_DIRS} ${ZLIB_INCLUDE_DIRS})
+                # Link libraries
+                set(HDF5_LIBRARIES ${HDF5_LIBRARIES} ${ZLIB_LIBRARIES})
+                message(STATUS "HDF5 libraries: ${HDF5_LIBRARIES}")
+            endif()
         endif()
     endif()
 
@@ -624,11 +662,6 @@ if(HDF5_SUPPORT)
     add_definitions(-DWITH_HDF5)
     set(SWIG_DEFINES ${SWIG_DEFINES} -DWITH_HDF5)
 endif(HDF5_SUPPORT)
-
-if(WASM_BUILD)
-    # reset to use sysroot
-    set(CMAKE_FIND_ROOT_PATH "${CMAKE_FIND_ROOT_PATH_BACKUP}")
-endif()
 
 if(ENABLE_BUILD_OPTIMIZATIONS)
     if(MSVC)
@@ -716,6 +749,10 @@ if(MSVC)
     # endif()
 
 	add_definitions(-D_ENABLE_EXTENDED_ALIGNED_STORAGE)
+	# See #5158.
+	if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.40)
+		add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
+	endif()
 else()
     add_definitions(-Wall -Wextra)
 
@@ -739,6 +776,7 @@ endif(MSVC)
 include_directories(${INCLUDE_DIRECTORIES} ${OCC_INCLUDE_DIR} ${OPENCOLLADA_INCLUDE_DIRS}
 	${Boost_INCLUDE_DIRS} ${LIBXML2_INCLUDE_DIR} ${JSON_INCLUDE_DIR} ${HDF5_INCLUDE_DIR}
     ${EIGEN_DIR} ${CGAL_INCLUDE_DIR} ${GMP_INCLUDE_DIR} ${MPFR_INCLUDE_DIR} ${USD_INCLUDE_DIR}
+    ${TBB_INCLUDE_DIR}
 )
 
 if(NOT SCHEMA_VERSIONS)
@@ -746,7 +784,7 @@ if(NOT SCHEMA_VERSIONS)
         # super arbitrarily try to keep size down at least a little bit
         set(SCHEMA_VERSIONS "2x3" "4")
     else()
-        set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3_tc1" "4x3_add1" "4x3_add2")
+        set(SCHEMA_VERSIONS "2x3" "4" "4x1" "4x2" "4x3" "4x3_tc1" "4x3_add1" "4x3_add2")
     endif()
 endif()
 
@@ -904,8 +942,10 @@ endif()
 
 if(BUILD_IFCGEOM)
     if(WITH_CGAL)
+	clear_wasm_sysroot()
         find_library(libGMP NAMES gmp mpir PATHS ${GMP_LIBRARY_DIR} NO_DEFAULT_PATH)
         find_library(libMPFR NAMES mpfr PATHS ${MPFR_LIBRARY_DIR} NO_DEFAULT_PATH)
+	restore_wasm_sysroot()
         if(NOT libGMP)
             message(FATAL_ERROR "Unable to find GMP library files, aborting")
         endif()
@@ -1030,10 +1070,19 @@ if(BUILD_CONVERT)
         target_include_directories(cityjson_converter PRIVATE ../src)
         set(IFCOPENSHELL_LIBRARIES ${IFCOPENSHELL_LIBRARIES} cityjson_converter)
 
+        install(TARGETS cityjson_converter
+            ARCHIVE DESTINATION ${LIBDIR}
+            LIBRARY DESTINATION ${LIBDIR}
+        )
+
         add_executable(cityjson_converter_exe ${CITYJSON_CONVERT_FILES})
         set_target_properties(cityjson_converter_exe PROPERTIES COMPILE_FLAGS "-DCITYJSON_EXECUTABLE")
         target_include_directories(cityjson_converter_exe PRIVATE ../src)
         target_link_libraries(cityjson_converter_exe ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
+
+        install(TARGETS cityjson_converter_exe
+            RUNTIME DESTINATION ${BINDIR}
+        )
     endif()
 
     # IfcConvert
@@ -1049,7 +1098,11 @@ if(BUILD_CONVERT)
 
     target_link_libraries(IfcConvert ${IFCOPENSHELL_LIBRARIES} ${OPENCASCADE_LIBRARIES} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} ${USD_LIBRARIES})
 	if (WITH_RELATIONSHIP_VALIDATION)
-        set_target_properties(IfcConvert PROPERTIES COMPILE_FLAGS "-DWITH_RELATIONSHIP_VALIDATION")
+        set_property(TARGET IfcConvert APPEND_STRING PROPERTY COMPILE_FLAGS " -DWITH_RELATIONSHIP_VALIDATION")
+    endif()
+
+    if(WITH_CGAL AND CITYJSON_SUPPORT)
+        set_property(TARGET IfcConvert APPEND_STRING PROPERTY COMPILE_FLAGS " -DIFOPSH_WITH_CITYJSON")
     endif()
 
     if((NOT WIN32) AND BUILD_SHARED_LIBS)
@@ -1089,30 +1142,42 @@ if(ADD_COMMIT_SHA)
     find_package(Git)
 
     if(GIT_FOUND)
-        message("git found: ${GIT_EXECUTABLE} with version ${GIT_VERSION_STRING}")
-        execute_process(
-            COMMAND ${GIT_EXECUTABLE} branch -a --contains HEAD
-            OUTPUT_VARIABLE git_branches
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-        string(REPLACE "\n" ";" git_branch_list "${git_branches}")
+        if (VERSION_OVERRIDE)
+            set (git_branch ${RELEASE_VERSION})
+        else()
+            message("git found: ${GIT_EXECUTABLE} with version ${GIT_VERSION_STRING}")
+            execute_process(
+                COMMAND ${GIT_EXECUTABLE} branch -a --contains HEAD
+                WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+                OUTPUT_VARIABLE git_branches
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+            )
+            string(REPLACE "\n" ";" git_branch_list "${git_branches}")
 
-        foreach(git_branch_candidate IN ITEMS ${git_branch_list})
-		    string(REPLACE "*" "" git_branch_candidate_temp "${git_branch_candidate}")
-		    string(STRIP "${git_branch_candidate_temp}" git_branch_candidate_2)
-            if(NOT git_branch_candidate_2 MATCHES "^HEAD$")
-                string(REPLACE "/" ";" git_branch_candidate_2_list "${git_branch_candidate_2}")
-                list(GET git_branch_candidate_2_list -1 git_branch)
-            endif()
-        endforeach()
+            foreach(git_branch_candidate IN ITEMS ${git_branch_list})
+		        string(REPLACE "*" "" git_branch_candidate_temp "${git_branch_candidate}")
+		        string(STRIP "${git_branch_candidate_temp}" git_branch_candidate_2)
+                if(NOT git_branch_candidate_2 MATCHES "^HEAD$")
+                    string(REPLACE "/" ";" git_branch_candidate_2_list "${git_branch_candidate_2}")
+                    list(GET git_branch_candidate_2_list -1 git_branch)
+                endif()
+            endforeach()
+        endif()
 
         execute_process(
             COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
+            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
             OUTPUT_VARIABLE git_sha
             OUTPUT_STRIP_TRAILING_WHITESPACE
         )
+
         message(STATUS "IfcOpenShell branch: \"${git_branch}\"")
         message(STATUS "IfcOpenShell commit: \"${git_sha}\"")
+
+        if ("${git_branch}" STREQUAL "" OR "${git_sha}" STREQUAL "")
+            message(FATAL_ERROR "Unable to determine commit sha and/or branch")
+        endif()
+
         add_definitions(-DIFCOPENSHELL_BRANCH=${git_branch})
         add_definitions(-DIFCOPENSHELL_COMMIT=${git_sha})
     endif()
@@ -1163,15 +1228,22 @@ install(TARGETS IfcParse
 )
 
 if(BUILD_IFCGEOM)
-    install(FILES ${IFCGEOM_H_FILES}
+    # install(FILES ${IFCGEOM_H_FILES}
+    #     DESTINATION ${INCLUDEDIR}/ifcgeom
+    # )
+
+    install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
         DESTINATION ${INCLUDEDIR}/ifcgeom
     )
 
-    install(FILES ${SCHEMA_AGNOSTIC_H_FILES}
-        DESTINATION ${INCLUDEDIR}/ifcgeom_schema_agnostic
-    )
+    foreach(kernel ${GEOMETRY_KERNELS})
+        file(GLOB IFCGEOM_H_FILES ../src/ifcgeom/kernels/${kernel}/*.h)
+         install(FILES ${IFCGEOM_H_FILES}
+            DESTINATION ${INCLUDEDIR}/ifcgeom/kernels/${kernel}
+        )
+    endforeach()
 
-    install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} IfcGeom
+    install(TARGETS ${IFCGEOM_SCHEMA_LIBRARIES} ${kernel_libraries} IfcGeom
         ARCHIVE DESTINATION ${LIBDIR}
         LIBRARY DESTINATION ${LIBDIR}
         RUNTIME DESTINATION ${BINDIR}
@@ -1185,14 +1257,22 @@ if(BUILD_CONVERT)
         RUNTIME DESTINATION ${BINDIR}
     )
 
-    install(FILES ${SERIALIZERS_FILES}
+    install(FILES ${SERIALIZERS_H_FILES}
         DESTINATION ${INCLUDEDIR}/serializers/
     )
 
-    install(FILES ${SERIALIZERS_S_FILES}
+    install(FILES ${SERIALIZERS_S_H_FILES}
         DESTINATION ${INCLUDEDIR}/serializers/schema_dependent
     )
 endif(BUILD_CONVERT)
+
+if(BUILD_CONVERT OR BUILD_IFCPYTHON)
+    install(TARGETS geometry_serializer ${geometry_serializer_libraries}
+        ARCHIVE DESTINATION ${LIBDIR}
+        LIBRARY DESTINATION ${LIBDIR}
+        RUNTIME DESTINATION ${BINDIR}
+    )
+endif(BUILD_CONVERT OR BUILD_IFCPYTHON)
 
 # Cmake uninstall target
 if(NOT TARGET uninstall)
@@ -1207,9 +1287,10 @@ endif()
 
 # Packaging
 list(APPEND CPACK_SOURCE_IGNORE_FILES
-    .git
-    .gitignore
+    "/\\\\.git"
+    "/build/"
 )
+set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR}/..;/")
 set(CPACK_PACKAGE_NAME "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}")
 set(CPACK_SOURCE_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION}${EXTRA_VERSION}")
 SET(CPACK_PACKAGE_FILE_NAME "${PROJECT_NAME}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}${EXTRA_VERSION}-${CMAKE_SYSTEM_NAME}")
