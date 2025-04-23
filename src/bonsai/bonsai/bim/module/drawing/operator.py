@@ -3298,7 +3298,7 @@ class DisableEditingDrawings(bpy.types.Operator, tool.Ifc.Operator):
 class ExpandTargetView(bpy.types.Operator):
     bl_idname = "bim.expand_target_view"
     bl_label = "Expand Target View"
-    bl_description = "\nSHIFT+CLICK to expand all view categories "
+    bl_description = "\nSHIFT+CLICK to expand all view categories"
 
     bl_options = {"REGISTER", "UNDO"}
     target_view: bpy.props.StringProperty()
