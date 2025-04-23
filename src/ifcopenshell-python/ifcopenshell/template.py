@@ -63,7 +63,7 @@ END-ISO-10303-21;
 
 DEFAULTS = {
    "application": lambda d: "IfcOpenShell contributors - IfcOpenShell - v%s" % get_pep440_version(main.version),
-    "application_version": lambda d: main.version,
+    "application_version": lambda d: get_pep440_version(main.version),
     "project_globalid": lambda d: compress(uuid.uuid4().hex),
     "schema_identifier": lambda d: "IFC4",
     "timestamp": lambda d: int(time.time()),
