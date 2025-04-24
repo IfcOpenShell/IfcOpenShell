@@ -1605,3 +1605,157 @@ class BIM_OT_attribute_remove_subitem(bpy.types.Operator):
             attr.is_null = True
 
         return {"FINISHED"}
+
+TAB_PANELS = {
+    "PROJECT": [
+        "BIM_PT_tab_new_project_wizard",
+        "BIM_PT_tab_project_info",
+        "BIM_PT_tab_spatial",
+        "BIM_PT_tab_project_setup",
+        "BIM_PT_tab_geometry",
+        "BIM_PT_tab_stakeholders",
+        "BIM_PT_tab_grouping_and_filtering",
+    ],
+    "OBJECT": [
+        "BIM_PT_tab_object_metadata",
+        "BIM_PT_tab_misc",
+    ],
+    "GEOMETRY": [
+        "BIM_PT_tab_placement",
+        "BIM_PT_tab_representations",
+        "BIM_PT_tab_geometric_relationships",
+        "BIM_PT_tab_parametric_geometry",
+        "BIM_PT_tab_object_materials",
+        "BIM_PT_tab_materials",
+        "BIM_PT_tab_styles",
+        "BIM_PT_tab_profiles",
+    ],
+    "DRAWINGS": [
+        "BIM_PT_tab_sheets",
+        "BIM_PT_tab_drawings",
+        "BIM_PT_tab_schedules",
+        "BIM_PT_tab_references",
+    ],
+    "SERVICES": [
+        "BIM_PT_tab_services",
+        "BIM_PT_tab_zones",
+        "BIM_PT_tab_solar_analysis",
+        "BIM_PT_tab_lighting",
+    ],
+    "STRUCTURE": [
+        "BIM_PT_tab_structural",
+    ],
+    "SCHEDULING": [
+        "BIM_PT_tab_status",
+        "BIM_PT_tab_qto",
+        "BIM_PT_tab_resources",
+        "BIM_PT_tab_cost",
+        "BIM_PT_tab_sequence",
+    ],
+    "FM": [
+        "BIM_PT_tab_handover",
+        "BIM_PT_tab_operations",
+    ],
+    "QUALITY": [
+        "BIM_PT_tab_quality_control",
+        "BIM_PT_tab_clash_detection",
+        "BIM_PT_tab_collaboration",
+        "BIM_PT_tab_sandbox",
+    ],
+}
+
+class BIM_UL_tab_panels(bpy.types.UIList):
+    """UIList for Tab Panels"""
+
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+        # Draw the panel name
+        row = layout.row(align=True)
+        row.label(text=item.name)
+
+        # Add the eye icon for toggling visibility
+        row.operator(
+            "bim.toggle_panel_visibility",
+            text="",
+            icon="HIDE_OFF" if item.get("visible", True) else "HIDE_ON",
+        ).action = f"TOGGLE_VISIBILITY_{item.name}"
+
+        # Add the star icon for bookmarking
+        row.operator(
+            "bim.bookmark_panel",
+            text="",
+            icon="SOLO_ON" if item.get("bookmarked", False) else "SOLO_OFF",
+        ).action = f"BOOKMARK_{item.name}"
+
+
+class BIM_OT_toggle_panel_visibility(bpy.types.Operator):
+    """Toggle Panel Visibility"""
+    bl_idname = "bim.toggle_panel_visibility"
+    bl_label = "Toggle Panel Visibility"
+    bl_options = {"REGISTER", "UNDO"}
+
+    action: bpy.props.StringProperty()
+
+    def execute(self, context):
+        # Extract the panel name from the action
+        panel_name = self.action.replace("TOGGLE_VISIBILITY_", "")
+
+        # Logic to toggle visibility (placeholder)
+        print(f"Toggled visibility for panel: {panel_name}")
+
+        self.report({"INFO"}, f"Toggled visibility for {panel_name}.")
+        return {"FINISHED"}
+
+class BIM_OT_bookmark_panel(bpy.types.Operator):
+    """Bookmark Panel"""
+    bl_idname = "bim.bookmark_panel"
+    bl_label = "Bookmark Panel"
+    bl_options = {"REGISTER", "UNDO"}
+
+    action: bpy.props.StringProperty()
+
+    def execute(self, context):
+        # Extract the panel name from the action
+        panel_name = self.action.replace("BOOKMARK_", "")
+
+        # Logic to bookmark the panel (placeholder)
+        print(f"Bookmarked panel: {panel_name}")
+
+        self.report({"INFO"}, f"Bookmarked {panel_name}.")
+        return {"FINISHED"}
+    
+
+class BIM_OT_manage_tab_panels(bpy.types.Operator):
+    """Manage Tab Panels"""
+    bl_idname = "bim.manage_tab_panels"
+    bl_label = "Manage Tab Panels"
+    bl_options = {"REGISTER", "UNDO"}
+
+    tab_name: bpy.props.StringProperty()
+
+    def invoke(self, context, event):
+        # Set the active tab name in the scene
+        context.scene.active_tab_name = self.tab_name
+
+        # Populate the tab_panels collection
+        context.scene.tab_panels.clear()
+        for panel_name in TAB_PANELS.get(self.tab_name, []):
+            item = context.scene.tab_panels.add()
+            item.name = panel_name
+        print(f"Tab Panels for {self.tab_name}: {[item.name for item in context.scene.tab_panels]}")
+
+        return context.window_manager.invoke_props_dialog(self, width=400)
+
+    def draw(self, context):
+        layout = self.layout
+        layout.label(text=f"Manage Panels for {self.tab_name} Tab")
+
+        # Add a UIList for the panels
+        row = layout.row()
+        row.template_list("BIM_UL_tab_panels", "", context.scene, "tab_panels", context.scene, "active_tab_panel_index")
+
+
+    
+    def execute(self, context):
+        # Logic to handle the confirmation of the dialog
+        self.report({"INFO"}, f"Panels for {self.tab_name} managed successfully.")
+        return {"FINISHED"}
