@@ -206,6 +206,10 @@ classes = [
     ui.BIM_PT_section_with_cappings,
     ui.BIM_PT_decorators_overlay,
     ui.BIM_PT_snappping,
+    operator.BIM_UL_tab_panels,
+    operator.BIM_OT_toggle_panel_visibility,
+    operator.BIM_OT_bookmark_panel,
+    operator.BIM_OT_manage_tab_panels,
 ]
 
 for mod in modules.values():
@@ -307,6 +311,10 @@ def register():
     # RestrictedContext doesn't allow accessing scene attribute, postpone it for a bit.
     bpy.app.timers.register(tool.Blender.setup_user_data_dir, first_interval=0.1)
 
+    bpy.types.Scene.active_tab_name = bpy.props.StringProperty()
+    bpy.types.Scene.tab_panels = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
+    bpy.types.Scene.active_tab_panel_index = bpy.props.IntProperty()
+
 
 def unregister():
     global icons
@@ -348,3 +356,7 @@ def unregister():
         tool.Blender.remove_scene_panel_override(panel)
 
     bpy.app.translations.unregister("bonsai")
+
+    del bpy.types.Scene.active_tab_name
+    del bpy.types.Scene.tab_panels
+    del bpy.types.Scene.active_tab_panel_index

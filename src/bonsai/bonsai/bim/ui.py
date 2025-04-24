@@ -993,6 +993,24 @@ class BIM_PT_tabs(Panel):
         row = self.layout.row(align=True)
         row.prop(aprops, "tab", text="")
 
+        # Add gear icons for all tabs except BOOKMARKS and SWITCH_TAB
+        for tab in [
+            "PROJECT",
+            "OBJECT",
+            "GEOMETRY",
+            "DRAWINGS",
+            "SERVICES",
+            "STRUCTURE",
+            "SCHEDULING",
+            "FM",
+            "QUALITY",
+        ]:
+            if aprops.tab == tab:
+#                row = self.layout.row(align=True)
+                row.operator("bim.manage_tab_panels", text="", icon="PREFERENCES").tab_name = tab
+
+
+
         if bonsai.REINSTALLED_BBIM_VERSION:
             box = self.layout.box()
             box.alert = True
