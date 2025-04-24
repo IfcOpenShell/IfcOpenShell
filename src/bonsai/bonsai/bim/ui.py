@@ -1081,6 +1081,7 @@ class BIM_PT_tabs(Panel):
 
 
 class BIM_PT_tab_new_project_wizard(Panel):
+    bl_idname = "BIM_PT_tab_new_project_wizard"
     bl_label = "New Project Wizard"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -1088,6 +1089,8 @@ class BIM_PT_tab_new_project_wizard(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_new_project_wizard", True):
+            return False
         if not tool.Blender.is_tab(context, "PROJECT"):
             return False
         bim_props = tool.Blender.get_bim_props()
@@ -1103,6 +1106,7 @@ class BIM_PT_tab_new_project_wizard(Panel):
 
 
 class BIM_PT_tab_project_info(Panel):
+    bl_idname = "BIM_PT_tab_project_info"
     bl_label = "Project Info"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -1110,6 +1114,10 @@ class BIM_PT_tab_project_info(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_project_info", True):
+            return False
+
+        # Existing conditions
         if not tool.Blender.is_tab(context, "PROJECT"):
             return False
         bim_props = tool.Blender.get_bim_props()
@@ -1121,10 +1129,12 @@ class BIM_PT_tab_project_info(Panel):
         return False
 
     def draw(self, context):
-        pass
+        layout = self.layout
+        layout.label(text="This is the Project Info panel.")
 
 
 class BIM_PT_tab_spatial(Panel):
+    bl_idname = "BIM_PT_tab_spatial"
     bl_label = "Spatial"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -1132,6 +1142,8 @@ class BIM_PT_tab_spatial(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_spatial", True):
+            return False
         return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1139,6 +1151,7 @@ class BIM_PT_tab_spatial(Panel):
 
 
 class BIM_PT_tab_project_setup(Panel):
+    bl_idname = "BIM_PT_tab_project_setup"
     bl_label = "Project Setup"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -1146,6 +1159,8 @@ class BIM_PT_tab_project_setup(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_project_setup", True):
+            return False
         return tool.Blender.is_tab(context, "PROJECT")
 
     def draw(self, context):
@@ -1153,6 +1168,7 @@ class BIM_PT_tab_project_setup(Panel):
 
 
 class BIM_PT_tab_stakeholders(Panel):
+    bl_idname = "BIM_PT_tab_stakeholders"
     bl_label = "Stakeholders"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -1161,6 +1177,8 @@ class BIM_PT_tab_stakeholders(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_stakeholders", True):
+            return False
         return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1175,6 +1193,8 @@ class BIM_PT_tab_collaboration(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_collaboration", True):
+            return False
         return tool.Blender.is_tab(context, "QUALITY")
 
     def draw(self, context):
@@ -1182,6 +1202,7 @@ class BIM_PT_tab_collaboration(Panel):
 
 
 class BIM_PT_tab_grouping_and_filtering(Panel):
+    bl_idname = "BIM_PT_tab_grouping_and_filtering"
     bl_label = "Grouping and Filtering"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -1190,6 +1211,8 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_grouping_and_filtering", True):
+            return False
         return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1205,6 +1228,7 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
 
 
 class BIM_PT_tab_geometry(Panel):
+    bl_idname = "BIM_PT_tab_geometry"
     bl_label = "Geometry"
     bl_space_type = "PROPERTIES"
     bl_region_type = "WINDOW"
@@ -1212,6 +1236,8 @@ class BIM_PT_tab_geometry(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_geometry", True):
+            return False
         return tool.Blender.is_tab(context, "PROJECT") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1226,6 +1252,8 @@ class BIM_PT_tab_status(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_status", True):
+            return False
         return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1240,6 +1268,8 @@ class BIM_PT_tab_qto(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_qto", True):
+            return False
         return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1254,6 +1284,8 @@ class BIM_PT_tab_resources(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_resources", True):
+            return False
         return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1268,6 +1300,8 @@ class BIM_PT_tab_cost(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_cost", True):
+            return False
         return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1282,6 +1316,8 @@ class BIM_PT_tab_sequence(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_sequence", True):
+            return False        
         return tool.Blender.is_tab(context, "SCHEDULING") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1296,6 +1332,8 @@ class BIM_PT_tab_structural(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_structural", True):
+            return False
         return tool.Blender.is_tab(context, "STRUCTURE") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1310,6 +1348,8 @@ class BIM_PT_tab_services(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_services", True):
+            return False
         return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1324,6 +1364,8 @@ class BIM_PT_tab_lighting(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_lighting", True):
+            return False
         return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1338,6 +1380,8 @@ class BIM_PT_tab_zones(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_zones", True):
+            return False
         return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1352,6 +1396,8 @@ class BIM_PT_tab_solar_analysis(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_solar_analysis", True):
+            return False
         return tool.Blender.is_tab(context, "SERVICES") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1366,6 +1412,8 @@ class BIM_PT_tab_quality_control(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_quality_control", True):
+            return False
         return tool.Blender.is_tab(context, "QUALITY")
 
     def draw(self, context):
@@ -1380,6 +1428,8 @@ class BIM_PT_tab_clash_detection(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_clash_detection", True):
+            return False
         return tool.Blender.is_tab(context, "QUALITY")
 
     def draw(self, context):
@@ -1395,6 +1445,8 @@ class BIM_PT_tab_sandbox(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_sandbox", True):
+            return False
         return tool.Blender.is_tab(context, "QUALITY")
 
     def draw(self, context):
@@ -1412,6 +1464,8 @@ class BIM_PT_tab_object_metadata(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_object_metadata", True):
+            return False    
         props = tool.Project.get_project_props()
         return (
             tool.Blender.is_tab(context, "OBJECT")
@@ -1438,6 +1492,8 @@ class BIM_PT_tab_placement(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_placement", True):
+            return False
         return (
             tool.Blender.is_tab(context, "GEOMETRY")
             and tool.Ifc.get()
@@ -1458,6 +1514,8 @@ class BIM_PT_tab_representations(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_representations", True):
+            return False
         return (
             tool.Blender.is_tab(context, "GEOMETRY")
             and tool.Ifc.get()
@@ -1478,6 +1536,8 @@ class BIM_PT_tab_geometric_relationships(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_geometric_relationships", True):
+            return False
         return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1494,6 +1554,8 @@ class BIM_PT_tab_parametric_geometry(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_parametric_geometry", True):
+            return False
         return (
             tool.Blender.is_tab(context, "GEOMETRY")
             and tool.Ifc.get()
@@ -1514,6 +1576,8 @@ class BIM_PT_tab_object_materials(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_object_materials", True):
+            return False
         return (
             tool.Blender.is_tab(context, "GEOMETRY")
             and tool.Ifc.get()
@@ -1534,6 +1598,8 @@ class BIM_PT_tab_materials(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_materials", True):
+            return False
         return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1549,6 +1615,8 @@ class BIM_PT_tab_styles(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_styles", True):
+            return False
         return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1564,6 +1632,8 @@ class BIM_PT_tab_profiles(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_profiles", True):
+            return False
         return tool.Blender.is_tab(context, "GEOMETRY") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1579,6 +1649,8 @@ class BIM_PT_tab_sheets(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_sheets", True):
+            return False
         return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1594,6 +1666,8 @@ class BIM_PT_tab_drawings(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_drawings", True):
+            return False
         return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1609,6 +1683,8 @@ class BIM_PT_tab_schedules(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_schedules", True):
+            return False
         return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1624,6 +1700,8 @@ class BIM_PT_tab_references(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_references", True):
+            return False
         return tool.Blender.is_tab(context, "DRAWINGS") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1640,6 +1718,8 @@ class BIM_PT_tab_misc(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_misc", True):
+            return False
         return tool.Blender.is_tab(context, "OBJECT") and tool.Ifc.get()
 
     def draw(self, context):
@@ -1655,6 +1735,8 @@ class BIM_PT_tab_handover(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_handover", True):
+            return False
         return tool.Blender.is_tab(context, "FM")
 
     def draw(self, context):
@@ -1670,6 +1752,8 @@ class BIM_PT_tab_operations(Panel):
 
     @classmethod
     def poll(cls, context):
+        if not getattr(context.scene, "show_bim_pt_tab_operations", True):
+            return False
         return tool.Blender.is_tab(context, "FM")
 
     def draw(self, context):

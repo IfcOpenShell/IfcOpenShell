@@ -232,6 +232,27 @@ def on_register(scene):
         bpy.app.handlers.depsgraph_update_post.remove(on_register)
     is_registering = False
 
+def register_panel_visibility_properties():
+    for panel_name in operator.TAB_PANELS.values():
+        for panel in panel_name:
+            prop_name = f"show_{panel.lower()}"
+            setattr(
+                bpy.types.Scene,
+                prop_name,
+                bpy.props.BoolProperty(
+                    name=f"Show {panel}",
+                    description=f"Show or hide the {panel} panel",
+                    default=True,  # Panels are visible by default
+                ),
+            )
+
+
+def unregister_panel_visibility_properties():
+    for panel_name in operator.TAB_PANELS.values():
+        for panel in panel_name:
+            prop_name = f"show_{panel.lower()}"
+            if hasattr(bpy.types.Scene, prop_name):
+                delattr(bpy.types.Scene, prop_name)
 
 # Classes that need to be registered after modules (due to cross-module dependencies)
 late_classes = (
@@ -314,6 +335,7 @@ def register():
     bpy.types.Scene.active_tab_name = bpy.props.StringProperty()
     bpy.types.Scene.tab_panels = bpy.props.CollectionProperty(type=bpy.types.PropertyGroup)
     bpy.types.Scene.active_tab_panel_index = bpy.props.IntProperty()
+    register_panel_visibility_properties()
 
 
 def unregister():
@@ -360,3 +382,4 @@ def unregister():
     del bpy.types.Scene.active_tab_name
     del bpy.types.Scene.tab_panels
     del bpy.types.Scene.active_tab_panel_index
+    unregister_panel_visibility_properties()

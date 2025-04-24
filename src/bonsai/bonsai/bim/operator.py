@@ -1608,7 +1608,7 @@ class BIM_OT_attribute_remove_subitem(bpy.types.Operator):
 
 TAB_PANELS = {
     "PROJECT": [
-        "BIM_PT_tab_new_project_wizard",
+#        "BIM_PT_tab_new_project_wizard",
         "BIM_PT_tab_project_info",
         "BIM_PT_tab_spatial",
         "BIM_PT_tab_project_setup",
@@ -1699,8 +1699,25 @@ class BIM_OT_toggle_panel_visibility(bpy.types.Operator):
         # Extract the panel name from the action
         panel_name = self.action.replace("TOGGLE_VISIBILITY_", "")
 
-        # Logic to toggle visibility (placeholder)
-        print(f"Toggled visibility for panel: {panel_name}")
+        # Find the corresponding panel in the tab_panels collection
+        for item in context.scene.tab_panels:
+            if item.name == panel_name:
+                # Toggle the visibility state
+                item["visible"] = not item.get("visible", True)
+
+                # Update the corresponding BoolProperty on the Scene
+                prop_name = f"show_{panel_name.lower()}"
+                if hasattr(context.scene, prop_name):
+                    setattr(context.scene, prop_name, item["visible"])
+                    print(f"Toggled visibility for panel: {panel_name} to {'visible' if item['visible'] else 'hidden'}")
+                else:
+                    print(f"Property '{prop_name}' not found on Scene.")
+                break
+
+        # Redraw the UI to reflect the changes
+        for area in bpy.context.window.screen.areas:
+            if area.type == "PROPERTIES":
+                area.tag_redraw()
 
         self.report({"INFO"}, f"Toggled visibility for {panel_name}.")
         return {"FINISHED"}
@@ -1741,6 +1758,7 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
         for panel_name in TAB_PANELS.get(self.tab_name, []):
             item = context.scene.tab_panels.add()
             item.name = panel_name
+            item["visible"] = True  # Initialize the visibility state as visible
         print(f"Tab Panels for {self.tab_name}: {[item.name for item in context.scene.tab_panels]}")
 
         return context.window_manager.invoke_props_dialog(self, width=400)
