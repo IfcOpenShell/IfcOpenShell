@@ -33,6 +33,7 @@ import bonsai.bim
 import bonsai.tool as tool
 import bonsai.bim.handler
 from enum import Enum
+from bonsai.bim.ui import TAB_PANELS
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim import import_ifc
 from bonsai.bim.prop import StrProperty
@@ -1606,63 +1607,6 @@ class BIM_OT_attribute_remove_subitem(bpy.types.Operator):
 
         return {"FINISHED"}
 
-TAB_PANELS = {
-    "PROJECT": [
-#        "BIM_PT_tab_new_project_wizard",
-        "BIM_PT_tab_project_info",
-        "BIM_PT_tab_spatial",
-        "BIM_PT_tab_project_setup",
-        "BIM_PT_tab_geometry",
-        "BIM_PT_tab_stakeholders",
-        "BIM_PT_tab_grouping_and_filtering",
-    ],
-    "OBJECT": [
-        "BIM_PT_tab_object_metadata",
-        "BIM_PT_tab_misc",
-    ],
-    "GEOMETRY": [
-        "BIM_PT_tab_placement",
-        "BIM_PT_tab_representations",
-        "BIM_PT_tab_geometric_relationships",
-        "BIM_PT_tab_parametric_geometry",
-        "BIM_PT_tab_object_materials",
-        "BIM_PT_tab_materials",
-        "BIM_PT_tab_styles",
-        "BIM_PT_tab_profiles",
-    ],
-    "DRAWINGS": [
-        "BIM_PT_tab_sheets",
-        "BIM_PT_tab_drawings",
-        "BIM_PT_tab_schedules",
-        "BIM_PT_tab_references",
-    ],
-    "SERVICES": [
-        "BIM_PT_tab_services",
-        "BIM_PT_tab_zones",
-        "BIM_PT_tab_solar_analysis",
-        "BIM_PT_tab_lighting",
-    ],
-    "STRUCTURE": [
-        "BIM_PT_tab_structural",
-    ],
-    "SCHEDULING": [
-        "BIM_PT_tab_status",
-        "BIM_PT_tab_qto",
-        "BIM_PT_tab_resources",
-        "BIM_PT_tab_cost",
-        "BIM_PT_tab_sequence",
-    ],
-    "FM": [
-        "BIM_PT_tab_handover",
-        "BIM_PT_tab_operations",
-    ],
-    "QUALITY": [
-        "BIM_PT_tab_quality_control",
-        "BIM_PT_tab_clash_detection",
-        "BIM_PT_tab_collaboration",
-        "BIM_PT_tab_sandbox",
-    ],
-}
 
 class BIM_UL_tab_panels(bpy.types.UIList):
     """UIList for Tab Panels"""
@@ -1685,7 +1629,6 @@ class BIM_UL_tab_panels(bpy.types.UIList):
             text="",
             icon="SOLO_ON" if item.get("bookmarked", False) else "SOLO_OFF",
         ).action = f"BOOKMARK_{item.name}"
-
 
 class BIM_OT_toggle_panel_visibility(bpy.types.Operator):
     """Toggle Panel Visibility"""
@@ -1734,10 +1677,40 @@ class BIM_OT_bookmark_panel(bpy.types.Operator):
         # Extract the panel name from the action
         panel_name = self.action.replace("BOOKMARK_", "")
 
-        # Logic to bookmark the panel (placeholder)
-        print(f"Bookmarked panel: {panel_name}")
+        # Find the corresponding panel in the tab_panels collection
+        for item in context.scene.tab_panels:
+            if item.name == panel_name:
+                # Toggle the bookmarked state
+                item["bookmarked"] = not item.get("bookmarked", False)
 
-        self.report({"INFO"}, f"Bookmarked {panel_name}.")
+                # Update the corresponding BoolProperty on the Scene
+                prop_name = f"bookmark_{panel_name.lower()}"
+                if hasattr(context.scene, prop_name):
+                    setattr(context.scene, prop_name, item["bookmarked"])
+                    print(f"Toggled bookmark for panel: {panel_name} to {'bookmarked' if item['bookmarked'] else 'Not bookmarked'}")
+                else:
+                    print(f"Property '{prop_name}' not found on Scene.")
+
+                # Add or remove the panel from the TAB_PANELS["BOOKMARK"] list
+                if item["bookmarked"]:
+                    if panel_name not in TAB_PANELS["BOOKMARK"]:
+                        TAB_PANELS["BOOKMARK"].append(panel_name)
+                        print(f"Added {panel_name} to BOOKMARK tab.")
+                else:
+                    if panel_name in TAB_PANELS["BOOKMARK"]:
+                        TAB_PANELS["BOOKMARK"].remove(panel_name)
+                        print(f"Removed {panel_name} from BOOKMARK tab.")
+                        # Remove the panel from the tab_panels collection if in BOOKMARK tab
+                        if context.scene.active_tab_name == "BOOKMARK":
+                            context.scene.tab_panels.remove(context.scene.tab_panels.find(panel_name))
+                break
+
+        # Redraw the UI to reflect the changes
+        for area in bpy.context.window.screen.areas:
+            if area.type == "PROPERTIES":
+                area.tag_redraw()
+
+        self.report({"INFO"}, f"Toggled bookmark for {panel_name}.")
         return {"FINISHED"}
     
 
@@ -1758,7 +1731,15 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
         for panel_name in TAB_PANELS.get(self.tab_name, []):
             item = context.scene.tab_panels.add()
             item.name = panel_name
-            item["visible"] = True  # Initialize the visibility state as visible
+
+            # Use the registered properties to set visibility and bookmark states
+            show_prop_name = f"show_{panel_name.lower()}"
+            bookmark_prop_name = f"bookmark_{panel_name.lower()}"
+
+            # Retrieve the visibility and bookmark states from the Scene properties
+            item["visible"] = getattr(context.scene, show_prop_name, True)
+            item["bookmarked"] = getattr(context.scene, bookmark_prop_name, False)
+
         print(f"Tab Panels for {self.tab_name}: {[item.name for item in context.scene.tab_panels]}")
 
         return context.window_manager.invoke_props_dialog(self, width=400)
@@ -1771,9 +1752,15 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
         row = layout.row()
         row.template_list("BIM_UL_tab_panels", "", context.scene, "tab_panels", context.scene, "active_tab_panel_index")
 
-
-    
     def execute(self, context):
-        # Logic to handle the confirmation of the dialog
+        # Save the visibility and bookmark states back to the Scene properties
+        for item in context.scene.tab_panels:
+            show_prop_name = f"show_{item.name.lower()}"
+            bookmark_prop_name = f"bookmark_{item.name.lower()}"
+
+            # Update the Scene properties with the current states
+            setattr(context.scene, show_prop_name, item["visible"])
+            setattr(context.scene, bookmark_prop_name, item["bookmarked"])
+
         self.report({"INFO"}, f"Panels for {self.tab_name} managed successfully.")
         return {"FINISHED"}

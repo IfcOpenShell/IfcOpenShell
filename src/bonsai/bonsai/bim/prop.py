@@ -493,7 +493,7 @@ def get_tab(
             ("SCHEDULING", "Costing and Scheduling", "", "NLA", 6),
             ("FM", "Facility Management", "", "PACKAGE", 7),
             ("QUALITY", "Quality and Coordination", "", "COMMUNITY", 8),
-            ("BOOKMARKS", "Bookmarks", "", "SOLO_ON", 9),
+            ("BOOKMARK", "Bookmark", "", "SOLO_ON", 9),
             None,
             ("BLENDER", "Blender Properties", "", "BLENDER", 10),
         ]
