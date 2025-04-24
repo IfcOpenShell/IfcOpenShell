@@ -233,7 +233,7 @@ def on_register(scene):
     is_registering = False
 
 def register_panel_visibility_properties():
-    for panel_name in operator.TAB_PANELS.values():
+    for panel_name in ui.TAB_PANELS.values():
         for panel in panel_name:
             prop_name = f"show_{panel.lower()}"
             setattr(
@@ -245,14 +245,28 @@ def register_panel_visibility_properties():
                     default=True,  # Panels are visible by default
                 ),
             )
+            prop_name = f"bookmark_{panel.lower()}"
+            setattr(
+                bpy.types.Scene,
+                prop_name,
+                bpy.props.BoolProperty(
+                    name=f"Bookmark {panel}",
+                    description=f"Move to Bookmark or not {panel} panel",
+                    default=False,  # Panels are visible by default
+                ),
+            )
 
 
 def unregister_panel_visibility_properties():
-    for panel_name in operator.TAB_PANELS.values():
+    for panel_name in ui.TAB_PANELS.values():
         for panel in panel_name:
             prop_name = f"show_{panel.lower()}"
             if hasattr(bpy.types.Scene, prop_name):
                 delattr(bpy.types.Scene, prop_name)
+            prop_name = f"bookmark_{panel.lower()}"
+            if hasattr(bpy.types.Scene, prop_name):
+                delattr(bpy.types.Scene, prop_name)
+
 
 # Classes that need to be registered after modules (due to cross-module dependencies)
 late_classes = (
