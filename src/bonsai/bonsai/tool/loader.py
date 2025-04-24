@@ -815,15 +815,13 @@ class Loader(bonsai.core.tool.Loader):
         cls,
         element: ifcopenshell.entity_instance,
         representation: ifcopenshell.entity_instance,
-        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        shape: ifcopenshell.geom.ShapeElementType,
     ) -> bpy.types.Camera:
-        from bonsai.bim.module.drawing.prop import get_diagram_scales
+        """Create camera data.
 
-        if isinstance(shape, ifcopenshell.geom.ShapeElementType):
-            geometry = shape.geometry
-        else:
-            geometry = shape
-
+        Camera props are automatically updated based on ``element`` and ``shape``.
+        """
+        geometry = shape.geometry
         v = geometry.verts
         x = [v[i] for i in range(0, len(v), 3)]
         y = [v[i + 1] for i in range(0, len(v), 3)]
@@ -845,8 +843,8 @@ class Loader(bonsai.core.tool.Loader):
             camera.clip_start = 0.002  # Technically 0, but Blender doesn't allow this, so 2mm it is!
             camera.clip_end = depth
 
-            props.width = width
-            props.height = height
+            props["width"] = width
+            props["height"] = height
         elif camera_type == "PERSP":
             abs_min_z = abs(min(z))
             abs_max_z = abs(max(z))
@@ -854,8 +852,8 @@ class Loader(bonsai.core.tool.Loader):
             camera.clip_end = abs_min_z
             max_res = 1000
 
-            props.width = width
-            props.height = height
+            props["width"] = width
+            props["height"] = height
 
             if width > height:
                 fov = 2 * atan(width / (2 * abs_min_z))
@@ -865,6 +863,10 @@ class Loader(bonsai.core.tool.Loader):
             camera.angle = fov
 
         tool.Drawing.import_camera_props(element, camera)
+        props = tool.Drawing.get_camera_props(camera)
+        props.update_camera_resolution()  # Only after all props are imported.
+        mat = tool.Drawing.get_camera_shape_matrix(element, shape)
+        props.update_representation(mat)
         return camera
 
     @classmethod
