@@ -404,7 +404,7 @@ class IfcGit:
 
     @classmethod
     def colourise(cls, step_ids: STEP_IDS) -> None:
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area = tool.Blender.get_view3d_area()
         area.spaces[0].shading.color_type = "OBJECT"
         bpy.ops.object.select_all(action="DESELECT")
 
@@ -426,7 +426,7 @@ class IfcGit:
 
     @classmethod
     def decolourise(cls) -> None:
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area = tool.Blender.get_view3d_area()
         area.spaces[0].shading.color_type = "MATERIAL"
 
     @classmethod
