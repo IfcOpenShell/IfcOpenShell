@@ -103,11 +103,10 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
 
         non_ifc_objects: list[bpy.types.Object] = []
 
-        if len(context.selected_editable_objects) > 1:
-            self.report({"ERROR"}, "Separate for multiple elements is not yet supported. Select just 1.")
-            return {"CANCELLED"}
+        selected_objects = context.selected_editable_objects
+        bpy.ops.object.select_all(action="DESELECT")
 
-        for obj in context.selected_editable_objects:
+        for obj in selected_objects:
             if tool.Geometry.is_representation_item(obj):
                 self.separate_item(context, obj)
             elif element := tool.Ifc.get_entity(obj):
@@ -120,17 +119,17 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
                 bpy.ops.mesh.separate(type=self.type)
 
     def separate_item(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
+        tool.Blender.set_active_object(obj)
         item = tool.Geometry.get_active_representation(obj)
         representation_obj = tool.Geometry.get_geometry_props().representation_obj
         assert item and representation_obj
 
         if tool.Geometry.is_meshlike_item(item):
-            previous_selected_objects = context.selected_objects
             bpy.ops.mesh.separate(type=self.type)
-            for obj in context.selected_objects:
-                if obj in previous_selected_objects:
+            for obj_ in context.selected_objects:
+                if obj_ == obj:
                     continue
-                self.add_meshlike_item(obj)
+                self.add_meshlike_item(obj_)
             tool.Geometry.reload_representation(representation_obj)
         else:
             self.report({"INFO"}, f"Separating an {item.is_a()} is not supported")
@@ -174,6 +173,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
     ) -> None:
         # You cannot separate meshes if the representation is mapped.
         relating_type = tool.Root.get_element_type(element)
+        tool.Blender.set_active_object(obj)
         if relating_type and tool.Root.does_type_have_representations(relating_type):
             # We toggle edit mode to ensure that once representations are
             # unmapped, our Blender mesh only has a single user.
