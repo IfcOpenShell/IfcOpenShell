@@ -745,6 +745,16 @@ class Drawing(bonsai.core.tool.Drawing):
         for obj in ifc_importer.added_data.values():
             tool.Collector.assign(obj)
 
+    @classmethod
+    def get_camera_shape_matrix(
+        cls, drawing: ifcopenshell.entity_instance, shape: ifcopenshell.geom.ShapeElementType
+    ) -> Matrix:
+        mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
+
+        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
+            mat[1][1] *= -1
+        return mat
+
     # NOTE: EPsetDrawing pset is completely synced with BIMCameraProperties
     # but BIMCameraProperties are only synced with EPsetDrawing at drawing import
     # therefore camera props can differ from pset if the user changed them from pset.
@@ -763,11 +773,7 @@ class Drawing(bonsai.core.tool.Drawing):
         cls.import_camera_props(drawing, camera)
         tool.Ifc.link(drawing, obj)
 
-        mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
-        obj.matrix_world = mat
-
-        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
-            obj.matrix_world[1][1] *= -1
+        obj.matrix_world = cls.get_camera_shape_matrix(drawing, shape)
 
         tool.Geometry.record_object_position(obj)
         tool.Collector.assign(obj)
@@ -787,10 +793,8 @@ class Drawing(bonsai.core.tool.Drawing):
             obj.data = camera
         else:
             obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
-        mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
-        obj.matrix_world = mat
-        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
-            obj.matrix_world[1][1] *= -1
+
+        obj.matrix_world = cls.get_camera_shape_matrix(drawing, shape)
         return obj
 
     @classmethod
@@ -2225,8 +2229,8 @@ class Drawing(bonsai.core.tool.Drawing):
         return float(numerator) / float(denominator)
 
     @classmethod
-    def get_diagram_scale(cls, obj: bpy.types.Object) -> dict[str, str]:
-        props = cls.get_camera_props(obj)
+    def get_diagram_scale(cls, camera: Union[bpy.types.Object, bpy.types.Camera]) -> dict[str, str]:
+        props = cls.get_camera_props(camera)
         scale = props.diagram_scale
         if scale != "CUSTOM":
             human_scale, scale = scale.split("|")

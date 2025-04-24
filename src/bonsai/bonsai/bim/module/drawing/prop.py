@@ -28,6 +28,7 @@ import bonsai.tool as tool
 import bonsai.core.drawing as core
 import bonsai.bim.module.drawing.annotation as annotation
 import bonsai.bim.module.drawing.decoration as decoration
+from mathutils import Matrix
 from bonsai.bim.prop import BIMFilterGroup
 from bonsai.bim.module.drawing.data import DrawingsData, DecoratorData, SheetsData, AnnotationData
 from bonsai.bim.module.drawing.data import refresh as refresh_drawing_data
@@ -70,10 +71,9 @@ def update_diagram_scale(self: "BIMCameraProperties", context: bpy.types.Context
     if not self.update_props:
         return
     assert context.scene
-    if not context.scene.camera or context.scene.camera.data != self.id_data:
+    if not (camera := context.scene.camera) or camera.data != self.id_data:
         return
-    element = tool.Ifc.get_entity(context.scene.camera)
-    if not element:
+    if not (element := tool.Ifc.get_entity(camera)):
         return
     try:
         element = (
@@ -93,6 +93,7 @@ def update_diagram_scale(self: "BIMCameraProperties", context: bpy.types.Context
     else:
         pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="EPset_Drawing")
     ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties=diagram_scale)
+    self.update_camera_resolution()
 
 
 def update_is_nts(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
@@ -492,6 +493,10 @@ class DocProperties(PropertyGroup):
         classes_to_wireframe: str
 
 
+def update_width_height(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+    self.update_camera_resolution()
+
+
 class BIMCameraProperties(PropertyGroup):
     linework_mode: EnumProperty(
         items=[
@@ -553,8 +558,8 @@ class BIMCameraProperties(PropertyGroup):
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
     dpi: IntProperty(name="DPI", default=75, update=update_dpi)
-    width: FloatProperty(name="Width", default=50, subtype="DISTANCE")
-    height: FloatProperty(name="Height", default=50, subtype="DISTANCE")
+    width: FloatProperty(name="Width", default=50, subtype="DISTANCE", update=update_width_height)
+    height: FloatProperty(name="Height", default=50, subtype="DISTANCE", update=update_width_height)
     is_nts: BoolProperty(name="Is NTS", update=update_is_nts)
     active_drawing_style_index: IntProperty(name="Active Drawing Style Index")
     filter_mode: StringProperty(name="Filter Mode", default="NONE")
@@ -595,21 +600,64 @@ class BIMCameraProperties(PropertyGroup):
 
     # For now, this JSON dump are all the parameters that determine a camera's "Block representation"
     # By checking this, you will know whether or not the camera IFC representation needs to be refreshed
-    def update_representation(self, obj: bpy.types.Object) -> bool:
-        assert isinstance(obj.data, bpy.types.Camera)
+    def update_representation(self, matrix_world: Matrix) -> bool:
+        """Update ``representation`` based on current camera properties and the provided world matrix.
+
+        :return: ``True`` if ``representation`` was updated and
+            representation should also be updated in IFC.
+        """
+        # Matrix is used instead of Object so this works before the Object exists,
+        # allowing all camera initialization to stay encapsulated in `create_camera`.
+        camera = self.id_data
+        assert isinstance(camera, bpy.types.Camera)
         representation = json.dumps(
             {
-                "matrix": [list(x) for x in obj.matrix_world],
+                "matrix": [list(x) for x in matrix_world],
                 "raster_x": self.raster_x,
                 "raster_y": self.raster_y,
-                "ortho_scale": obj.data.ortho_scale,
-                "clip_end": obj.data.clip_end,
+                "ortho_scale": camera.ortho_scale,
+                "clip_end": camera.clip_end,
             }
         )
         if self.representation != representation:
             self.representation = representation
             return True
         return False
+
+    def update_camera_resolution(self) -> tuple[int, int]:
+        """Update ``camera.ortho_scale``, ``raster_x`` and ``raster_y``
+        based on current ``width`` and ``height`` and diagram scale props.
+
+        :return: tuple[resolution_x, resolution_y]
+        """
+        assert isinstance(camera := self.id_data, bpy.types.Camera)
+        ortho_scale, aspect_ratio = self.get_scale_and_aspect_ratio()
+        aspect_ratio = self.width / self.height
+
+        camera.ortho_scale = ortho_scale
+        diagram_scale = tool.Drawing.get_diagram_scale(camera)
+        scale_ratio = tool.Drawing.get_scale_ratio(diagram_scale["Scale"])
+
+        if self.width > self.height:
+            aspect_ratio = self.height / self.width
+            raster_x = ortho_scale * scale_ratio * self.dpi / 0.0254
+            raster_y = ortho_scale * aspect_ratio * scale_ratio * self.dpi / 0.0254
+        else:
+            aspect_ratio = self.width / self.height
+            raster_x = ortho_scale * aspect_ratio * scale_ratio * self.dpi / 0.0254
+            raster_y = ortho_scale * scale_ratio * self.dpi / 0.0254
+
+        raster_x, raster_y = int(raster_x), int(raster_y)
+        self.raster_x, self.raster_y = raster_x, raster_y
+        return raster_x, raster_y
+
+    def get_scale_and_aspect_ratio(self) -> tuple[float, float]:
+        """
+        :return: A tuple of calculated ortho scale and aspect ratio values.
+        """
+        ortho_scale = max(self.width, self.height)
+        aspect_ratio = self.width / self.height
+        return ortho_scale, aspect_ratio
 
 
 DEFAULT_BOX_ALIGNMENT = [False] * 6 + [True] + [False] * 2

@@ -277,7 +277,7 @@ class CreateDrawing(bpy.types.Operator):
                     self.drawing_name = self.drawing.Name
                     self.metadata = tool.Drawing.get_drawing_metadata(self.camera_element)
                     self.get_scale(context)
-                    if self.cprops.update_representation(self.camera):
+                    if self.cprops.update_representation(self.camera.matrix_world):
                         bpy.ops.bim.update_representation(obj=self.camera.name, ifc_representation_class="")
                         # Reassign props as data is recreated during the update.
                         self.cprops = tool.Drawing.get_camera_props(self.camera)
@@ -2164,7 +2164,7 @@ class ActivateDrawingBase:
         # Save drawing bounds to the .ifc file
         camera = context.scene.camera
         camera_props = tool.Drawing.get_camera_props(camera)
-        if camera_props.update_representation(camera):
+        if camera_props.update_representation(camera.matrix_world):
             bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
         # See 6452 and 6478.
         # bpy.ops.bim.refresh_clipping_planes("INVOKE_DEFAULT")
