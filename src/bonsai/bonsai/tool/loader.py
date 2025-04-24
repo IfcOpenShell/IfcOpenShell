@@ -822,13 +822,8 @@ class Loader(bonsai.core.tool.Loader):
         Camera props are automatically updated based on ``element`` and ``shape``.
         """
         geometry = shape.geometry
-        v = geometry.verts
-        x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i + 1] for i in range(0, len(v), 3)]
-        z = [v[i + 2] for i in range(0, len(v), 3)]
-        width = max(x) - min(x)
-        height = max(y) - min(y)
-        depth = max(z) - min(z)
+        width = ifcopenshell.util.shape.get_x(geometry)
+        height = ifcopenshell.util.shape.get_y(geometry)
 
         camera_type = "ORTHO"
         if "IfcRectangularPyramid" in next(e.is_a() for e in tool.Ifc.get().traverse(representation)):
@@ -840,14 +835,16 @@ class Loader(bonsai.core.tool.Loader):
         props = tool.Drawing.get_camera_props(camera)
 
         if camera_type == "ORTHO":
+            depth = ifcopenshell.util.shape.get_z(geometry)
             camera.clip_start = 0.002  # Technically 0, but Blender doesn't allow this, so 2mm it is!
             camera.clip_end = depth
 
             props["width"] = width
             props["height"] = height
         elif camera_type == "PERSP":
-            abs_min_z = abs(min(z))
-            abs_max_z = abs(max(z))
+            z_values = ifcopenshell.util.shape.get_vertices(geometry)[:, 2]
+            abs_min_z = abs(np.min(z_values).item())
+            abs_max_z = abs(np.max(z_values).item())
             camera.clip_start = abs_max_z
             camera.clip_end = abs_min_z
             max_res = 1000
