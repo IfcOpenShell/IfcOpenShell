@@ -64,6 +64,7 @@ def object_menu(self, context):
     self.layout.operator("bim.override_object_delete", icon="PLUGIN")
     self.layout.operator("bim.override_paste_buffer", icon="PLUGIN")
     self.layout.menu("BIM_MT_object_set_origin", icon="PLUGIN")
+    self.layout.menu("BIM_MT_separate", icon="PLUGIN")
 
 
 def edit_mesh_menu(self, context):
