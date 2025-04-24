@@ -1217,19 +1217,9 @@ class BIM_OT_show_system_info(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        os_version = platform.platform()
-        blender_version = bpy.app.version_string
-        if not UIData.is_loaded:
-            UIData.load()
-        bonsai_version = f"Bonsai v{UIData.data['version']}"
-        active_addons = [f"  -> {addon.module}" for addon in bpy.context.preferences.addons]
-
-        self.info_text = (
-            f"OS Version: {os_version}\n"
-            f"Blender Version: {blender_version}\n"
-            f"Bonsai Version: {bonsai_version}\n"
-            f"Active Addons:\n" + "\n".join(active_addons)
-        )
+        # Invoke the bim.copy_debug_information operator to get the info to the clipboard
+        bpy.ops.bim.copy_debug_information()
+        self.info_text = context.window_manager.clipboard
 
         return context.window_manager.invoke_props_dialog(self, width=600)
 

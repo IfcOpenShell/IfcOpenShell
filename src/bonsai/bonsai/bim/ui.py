@@ -1182,11 +1182,10 @@ class UIData:
 def draw_statusbar(self, context):
     if not UIData.is_loaded:
         UIData.load()
-    text = f"Bonsai v{UIData.data['version']}"
-    self.layout.label(text=text)
+    bonsaiVer = f"Bonsai v{UIData.data['version']}"
     layout = self.layout
     row = layout.row()
-    row.operator("bim.show_system_info", text="System Info", icon="INFO")
+    row.operator("bim.show_system_info", text=bonsaiVer, emboss=False)
 
 def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
     # https://blender.stackexchange.com/a/275555/86891
