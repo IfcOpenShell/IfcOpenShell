@@ -122,6 +122,7 @@ classes = [
     operator.SelectURIAttribute,
     operator.SetTab,
     operator.SwitchTab,
+    operator.Show_system_info,
     prop.StrProperty,
     operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
     prop.ObjProperty,
@@ -140,6 +141,7 @@ classes = [
     prop.BIMFilterGroup,
     prop.BIMSnapProperties,
     prop.BIMSnapGroups,
+    
     ui.BIM_UL_clipping_plane,
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
@@ -197,7 +199,6 @@ classes = [
     ui.BIM_PT_section_with_cappings,
     ui.BIM_PT_decorators_overlay,
     ui.BIM_PT_snappping,
-    operator.BIM_OT_show_system_info,
 ]
 
 for mod in modules.values():

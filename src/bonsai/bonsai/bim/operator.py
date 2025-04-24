@@ -1204,7 +1204,7 @@ class CopyTextToClipboard(bpy.types.Operator):
         context.window_manager.clipboard = self.text
         return {"FINISHED"}
 
-class BIM_OT_show_system_info(bpy.types.Operator):
+class Show_system_info(bpy.types.Operator):
     bl_idname = "bim.show_system_info"
     bl_label = "System Info"
     bl_options = {"REGISTER", "UNDO"}
@@ -1221,7 +1221,7 @@ class BIM_OT_show_system_info(bpy.types.Operator):
         bpy.ops.bim.copy_debug_information()
         self.info_text = context.window_manager.clipboard
 
-        return context.window_manager.invoke_props_dialog(self, width=600)
+        return context.window_manager.invoke_popup(self, width=600)
 
     def draw(self, context):
         layout = self.layout
