@@ -964,6 +964,7 @@ class BIM_PT_tabs(Panel):
         self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
         self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
         self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
+        self.draw_tab_entry(row, "SOLO_ON", "BOOKMARKS", True, aprops.tab == "BOOKMARKS")  # New BOOKMARKS tab
         row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
         # Yes, that's right.
@@ -980,6 +981,7 @@ class BIM_PT_tabs(Panel):
             "SCHEDULING",
             "FM",
             "QUALITY",
+            "BOOKMARKS",  # Include BOOKMARKS in the list
             "SWITCH",
         ]:
             # Draw a little underscore below the active tab icon.
