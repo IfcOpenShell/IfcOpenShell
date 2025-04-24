@@ -831,7 +831,7 @@ class Loader(bonsai.core.tool.Loader):
         depth = max(z) - min(z)
 
         camera_type = "ORTHO"
-        if "IfcRectangularPyramid" in {e.is_a() for e in tool.Ifc.get().traverse(representation)}:
+        if "IfcRectangularPyramid" in next(e.is_a() for e in tool.Ifc.get().traverse(representation)):
             camera_type = "PERSP"
 
         camera = bpy.data.cameras.new(tool.Loader.get_mesh_name_from_shape(geometry))
