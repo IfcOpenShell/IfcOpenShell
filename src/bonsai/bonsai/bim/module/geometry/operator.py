@@ -170,6 +170,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         representation.Items = list(representation.Items) + [item]
         obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
         tool.Ifc.link(item, obj)
+        tool.Ifc.link(item, obj.data)
         props.add_item_object(obj, item)
 
     def separate_element(
