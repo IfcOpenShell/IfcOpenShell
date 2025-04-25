@@ -2722,6 +2722,7 @@ class RemoveRepresentationItemFromShapeAspect(bpy.types.Operator, tool.Ifc.Opera
 class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.import_representation_items"
     bl_label = "Import Representation Items"
+    bl_description = "Import representation items for the active object."
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
