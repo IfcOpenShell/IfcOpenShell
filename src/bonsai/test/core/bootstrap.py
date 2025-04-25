@@ -20,7 +20,7 @@ import sys
 import json
 import pytest
 import bonsai.core.tool
-from typing import Any, Optional
+from typing import Any, Optional, Type, Union, TypedDict, Literal
 from typing_extensions import Self
 
 
@@ -241,20 +241,43 @@ def voider():
     prophet.verify()
 
 
+Call = TypedDict("Call", {"name": str, "args": tuple[Any, ...], "kwargs": dict[str, Any]})
+Prediction = TypedDict("Prediction", {"type": Literal["SHOULD_BE_CALLED"], "number": Optional[int], "call": Call})
+
+
 class Prophecy:
-    def __init__(self, cls):
+    """
+    Rough outline how it works:
+    1. Test run pass:
+    - Remember calls (all calls should also have ``.should_be_called()`` after).
+    - Remember predictions.
+    - Associate return values with calls.
+
+    2. Core function pass:
+    - Remember calls.
+    - Use return values from the first pass.
+
+    3. Verification pass:
+    - Ensure all predicted calls actually happened.
+    """
+
+    subject: Type
+
+    def __init__(self, cls: Type):
         self.subject = cls
-        self.predictions: list[dict] = []
-        self.calls: list[dict] = []
+        self.predictions: list[Prediction] = []
+        self.calls: list[Call] = []
         self.return_values: dict[str, Any] = {}
-        self.should_call: Optional[dict] = None
+        self.should_call: Optional[Call] = None
 
     def __getattr__(self, attr: str):
         if not hasattr(self.subject, attr):
             raise AttributeError(f"Prophecy {self.subject} has no attribute {attr}")
 
-        def decorate(*args, **kwargs):
-            call = {"name": attr, "args": args, "kwargs": kwargs}
+        # It also returns `Any` but it only happens during `subject.xxx` call.
+        def decorate(*args: Any, **kwargs: Any) -> Self:
+            """Remember a call."""
+            call: Call = {"name": attr, "args": args, "kwargs": kwargs}
             # Ensure that signature is valid
             getattr(self.subject, attr)(*args, **kwargs)
             key = json.dumps(call, sort_keys=True)
@@ -265,18 +288,20 @@ class Prophecy:
 
         return decorate
 
-    def should_be_called(self, number=None):
+    def should_be_called(self, number: Optional[int] = None) -> Self:
+        """Predict the last added call."""
         self.should_call = self.calls.pop()
         self.predictions.append({"type": "SHOULD_BE_CALLED", "number": number, "call": self.should_call})
         return self
 
     def will_return(self, value: Any) -> Self:
+        """Remember a return value for the last predicted call."""
         key = json.dumps(self.should_call, sort_keys=True)
         self.return_values[key] = value
         return self
 
     def verify(self) -> None:
-        predicted_calls = []
+        predicted_calls: list[Call] = []
         for prediction in self.predictions:
             predicted_calls.append(prediction["call"])
             if prediction["type"] == "SHOULD_BE_CALLED":
@@ -285,7 +310,7 @@ class Prophecy:
             if call not in predicted_calls:
                 raise Exception(f"Unpredicted call: {call}")
 
-    def verify_should_be_called(self, prediction: dict) -> None:
+    def verify_should_be_called(self, prediction: Prediction) -> None:
         if prediction["number"]:
             count = self.calls.count(prediction["call"])
             if count != prediction["number"]:

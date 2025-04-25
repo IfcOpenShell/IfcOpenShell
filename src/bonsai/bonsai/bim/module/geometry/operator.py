@@ -23,6 +23,7 @@ import numpy as np
 import numpy.typing as npt
 import ifcopenshell
 import ifcopenshell.api.layer
+import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -47,6 +48,9 @@ from bonsai.bim.ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
 from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never
 from bonsai.bim.module.model.decorator import ProfileDecorator
+
+if TYPE_CHECKING:
+    from bpy._typing import rna_enums
 
 
 class EditObjectPlacement(bpy.types.Operator, tool.Ifc.Operator):
@@ -1006,10 +1010,12 @@ class OverrideDuplicateMove(bpy.types.Operator):
         return OverrideDuplicateMove.execute_ifc_duplicate_operator(self, context)
 
     @staticmethod
-    def execute_duplicate_operator(self, context, linked=False):
+    def execute_duplicate_operator(
+        operator: bpy.types.Operator, context: bpy.types.Context, linked: bool = False
+    ) -> set["rna_enums.OperatorReturnItems"]:
         # Deep magick from the dawn of time
         if tool.Ifc.get():
-            IfcStore.execute_ifc_operator(self, context)
+            IfcStore.execute_ifc_operator(operator, context)
             return {"FINISHED"}
 
         if linked:
@@ -1019,15 +1025,15 @@ class OverrideDuplicateMove(bpy.types.Operator):
         return {"FINISHED"}
 
     @staticmethod
-    def execute_ifc_duplicate_operator(self, context, linked=False):
+    def execute_ifc_duplicate_operator(operator: bpy.types.Operator, context: bpy.types.Context, linked: bool = False):
         for obj in context.selected_objects:
             if element := tool.Ifc.get_entity(obj):
                 if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
                     tool.Blender.deselect_object(obj)
-                    self.report({"ERROR"}, "Drawing not duplicated.")
+                    operator.report({"ERROR"}, "Drawing not duplicated.")
                 elif tool.Geometry.is_locked(element):
                     tool.Blender.deselect_object(obj)
-                    self.report({"ERROR"}, lock_error_message(obj.name))
+                    operator.report({"ERROR"}, lock_error_message(obj.name))
         old_to_new, new_active_obj = tool.Geometry.duplicate_ifc_objects(
             set(context.selected_objects), linked=linked, active_object=context.active_object
         )
@@ -1557,7 +1563,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                     continue
                 element = tool.Ifc.get_entity(obj)
                 if element:
-                    ifcopenshell.api.run("root.remove_product", ifc_file, product=element)
+                    ifcopenshell.api.root.remove_product(ifc_file, product=element)
             bpy.ops.object.join()
             bpy.ops.bim.update_representation(obj=self.target.name, ifc_representation_class="")
         else:
@@ -1676,7 +1682,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                         assert False, f"Unexpected item type: {item.is_a()}. This is a bug."
 
                     items.append(copied_item)
-                ifcopenshell.api.run("root.remove_product", ifc_file, product=element)
+                ifcopenshell.api.root.remove_product(ifc_file, product=element)
             representation.Items = items
             bpy.ops.object.join()
             core.switch_representation(

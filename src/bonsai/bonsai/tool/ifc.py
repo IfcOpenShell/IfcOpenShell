@@ -114,7 +114,9 @@ class Ifc(bonsai.core.tool.Ifc):
         return IfcStore.get_schema()
 
     @classmethod
-    def get_entity(cls, obj: IFC_CONNECTED_TYPE) -> Union[ifcopenshell.entity_instance, None]:
+    def get_entity(
+        cls, obj: Union[IFC_CONNECTED_TYPE, tool.Geometry.TYPES_WITH_MESH_PROPERTIES]
+    ) -> Union[ifcopenshell.entity_instance, None]:
         """Get linked IFC entity based on obj's ifc_definition_id.
 
         Return None if object is not linked to IFC or it's linked to non-existent element.
