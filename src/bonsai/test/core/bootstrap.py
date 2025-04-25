@@ -241,6 +241,14 @@ def voider():
     prophet.verify()
 
 
+def flatten(iterable):
+    for item in iterable:
+        if isinstance(item, (list, tuple)):
+            yield from flatten(item)
+        else:
+            yield item
+
+
 Call = TypedDict("Call", {"name": str, "args": tuple[Any, ...], "kwargs": dict[str, Any]})
 Prediction = TypedDict("Prediction", {"type": Literal["SHOULD_BE_CALLED"], "number": Optional[int], "call": Call})
 
@@ -270,6 +278,13 @@ class Prophecy:
         self.return_values: dict[str, Any] = {}
         self.should_call: Optional[Call] = None
 
+    @staticmethod
+    def serialize(call: Call) -> str:
+        return json.dumps(call, sort_keys=True)
+
+    def __repr__(self) -> str:
+        return f"<Prophecy for '{self.subject.__original_qualname__}'>"
+
     def __getattr__(self, attr: str):
         if not hasattr(self.subject, attr):
             raise AttributeError(f"Interface '{self.subject.__original_qualname__}' has no attribute '{attr}'.")
@@ -280,7 +295,31 @@ class Prophecy:
             call: Call = {"name": attr, "args": args, "kwargs": kwargs}
             # Ensure that signature is valid
             getattr(self.subject, attr)(*args, **kwargs)
-            key = json.dumps(call, sort_keys=True)
+
+            try:
+                key = self.serialize(call)
+            except TypeError as e:
+                # Serialization error will occur if unpredicted return value
+                # will be used as an argument to other call
+                msg = f"Failed to serialize call: '{call}'."
+                values = list(flatten(args)) + list(flatten(kwargs.values()))
+                prophecy = next((value for value in values if isinstance(value, Prophecy)), None)
+                if prophecy is None:
+                    msg += "\nCouldn't find related Prophecy."
+                    raise TypeError(msg) from e
+
+                msg += "\nPossibly due to unpredicted return value for some call."
+                calls_strs: list[str] = []
+                for call in reversed(prophecy.calls):
+                    call_str = self.serialize(call)
+                    if call_str in prophecy.return_values:
+                        continue
+                    calls_strs.append(f"- {call}")
+                if calls_strs:
+                    msg += "\nSee the list of the recent calls without return values:\n"
+                    msg += "\n".join(calls_strs)
+                raise TypeError(msg) from e
+
             self.calls.append(call)
             if key in self.return_values:
                 return self.return_values[key]
@@ -296,7 +335,8 @@ class Prophecy:
 
     def will_return(self, value: Any) -> Self:
         """Remember a return value for the last predicted call."""
-        key = json.dumps(self.should_call, sort_keys=True)
+        assert self.should_call
+        key = self.serialize(self.should_call)
         self.return_values[key] = value
         return self
 
