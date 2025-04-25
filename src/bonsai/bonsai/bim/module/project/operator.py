@@ -1437,12 +1437,11 @@ class ReloadLink(bpy.types.Operator):
     filepath: bpy.props.StringProperty()
 
     def execute(self, context):
-        filepath = Path(self.filepath)
         is_abs = os.path.isabs(Path(self.filepath))
         use_relative_path = not is_abs
         bpy.ops.bim.unlink_ifc(filepath=self.filepath)
-        status = bpy.ops.bim.link_ifc(filepath=self.filepath, use_cache=False, use_relative_path=use_relative_path)
-
+        filepath = tool.Ifc.resolve_uri(self.filepath)
+        status = bpy.ops.bim.link_ifc(filepath=filepath, use_cache=False, use_relative_path=use_relative_path)
         return {"FINISHED"}
 
 
