@@ -272,7 +272,7 @@ class Prophecy:
 
     def __getattr__(self, attr: str):
         if not hasattr(self.subject, attr):
-            raise AttributeError(f"Prophecy {self.subject} has no attribute {attr}")
+            raise AttributeError(f"Interface '{self.subject.__original_qualname__}' has no attribute '{attr}'.")
 
         # It also returns `Any` but it only happens during `subject.xxx` call.
         def decorate(*args: Any, **kwargs: Any) -> Self:
@@ -317,7 +317,7 @@ class Prophecy:
                 raise Exception(f"Called {count}: {prediction}")
         else:
             if prediction["call"] not in self.calls:
-                error_msg = f"{self.subject} was not called with {prediction['call']['name']}:\n - {prediction}"
+                error_msg = f"Interface '{self.subject.__original_qualname__}' was not called with {prediction['call']['name']}:\n - {prediction}"
 
                 # Print all unprocessed calls if pytest was started in verbose mode.
                 if "-v" in sys.argv or "-vv" in sys.argv:
