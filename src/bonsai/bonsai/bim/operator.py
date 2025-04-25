@@ -1614,7 +1614,7 @@ class BIM_UL_tab_panels(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
         # Draw the panel name
         row = layout.row(align=True)
-        row.label(text=item.name)
+        row.label(text=item["bl_label"])
 
         # Add the eye icon for toggling visibility
         row.operator(
@@ -1692,18 +1692,21 @@ class BIM_OT_bookmark_panel(bpy.types.Operator):
                     print(f"Property '{prop_name}' not found on Scene.")
 
                 # Add or remove the panel from the TAB_PANELS["BOOKMARK"] list
+                panel_label = item["bl_label"]
                 if item["bookmarked"]:
-                    if panel_name not in TAB_PANELS["BOOKMARK"]:
-                        TAB_PANELS["BOOKMARK"].append(panel_name)
+                    if not any(p.get("bl_idname") == panel_name for p in TAB_PANELS["BOOKMARK"]):
+                        TAB_PANELS["BOOKMARK"].append({"bl_idname": panel_name, "bl_label": panel_label})
                         print(f"Added {panel_name} to BOOKMARK tab.")
                 else:
-                    if panel_name in TAB_PANELS["BOOKMARK"]:
-                        TAB_PANELS["BOOKMARK"].remove(panel_name)
-                        print(f"Removed {panel_name} from BOOKMARK tab.")
-                        # Remove the panel from the tab_panels collection if in BOOKMARK tab
-                        if context.scene.active_tab_name == "BOOKMARK":
-                            context.scene.tab_panels.remove(context.scene.tab_panels.find(panel_name))
-                break
+                    for i, p in enumerate(TAB_PANELS["BOOKMARK"]):
+                        if p.get("bl_idname") == panel_name:
+                            del TAB_PANELS["BOOKMARK"][i]
+                            print(f"Removed {panel_name} from BOOKMARK tab.")
+                            if context.scene.active_tab_name == "BOOKMARK":
+                                index = context.scene.tab_panels.find(panel_name)
+                                if index != -1:
+                                    context.scene.tab_panels.remove(index)
+                            break
 
         # Redraw the UI to reflect the changes
         for area in bpy.context.window.screen.areas:
@@ -1728,9 +1731,14 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
 
         # Populate the tab_panels collection
         context.scene.tab_panels.clear()
-        for panel_name in TAB_PANELS.get(self.tab_name, []):
+        for panel_data in TAB_PANELS.get(self.tab_name, []):
+            panel_name = panel_data.get("bl_idname","")
+            panel_label = panel_data.get("bl_label","")
+            if not panel_name or not panel_label:
+                continue
             item = context.scene.tab_panels.add()
             item.name = panel_name
+            item["bl_label"] = panel_label
 
             # Use the registered properties to set visibility and bookmark states
             show_prop_name = f"show_{panel_name.lower()}"
