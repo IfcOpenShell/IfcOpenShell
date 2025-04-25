@@ -33,7 +33,7 @@ import bonsai.bim
 import bonsai.tool as tool
 import bonsai.bim.handler
 from enum import Enum
-from bonsai.bim.ui import TAB_PANELS
+from bonsai.bim.ui import TAB_PANELS, TAB_VISIBILITY
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim import import_ifc
 from bonsai.bim.prop import StrProperty
@@ -1750,7 +1750,7 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
 
         print(f"Tab Panels for {self.tab_name}: {[item.name for item in context.scene.tab_panels]}")
 
-        return context.window_manager.invoke_props_dialog(self, width=400)
+        return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
         layout = self.layout
@@ -1772,3 +1772,102 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
 
         self.report({"INFO"}, f"Panels for {self.tab_name} managed successfully.")
         return {"FINISHED"}
+
+class BIM_OT_manage_tab_visibility(bpy.types.Operator):
+    """Manage Tab Visibility"""
+    bl_idname = "bim.manage_tab_visibility"
+    bl_label = "Manage Tab Visibility"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def draw(self, context):
+        layout = self.layout
+        for tab_name, is_visible in TAB_VISIBILITY.items():
+            row = layout.row()
+            row.label(text=tab_name)
+            icon = "HIDE_OFF" if is_visible else "HIDE_ON"
+            op = row.operator("bim.toggle_tab_visibility", text="", icon=icon)
+            op.tab_name = tab_name
+
+    def execute(self, context):
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self)
+
+class BIM_OT_toggle_tab_visibility(bpy.types.Operator):
+    """Toggle Tab Visibility"""
+    bl_idname = "bim.toggle_tab_visibility"
+    bl_label = "Toggle Tab Visibility"
+    bl_options = {"REGISTER", "UNDO"}
+
+    tab_name: bpy.props.StringProperty()
+
+    def execute(self, context):
+        # Toggle the visibility of the tab
+        if self.tab_name in TAB_VISIBILITY:
+            TAB_VISIBILITY[self.tab_name] = not TAB_VISIBILITY[self.tab_name]
+        
+        # Redraw the UI to reflect the changes
+        for area in bpy.context.window.screen.areas:
+            if area.type == "PROPERTIES":
+                area.tag_redraw()
+
+        self.report({"INFO"}, f"Toggled visibility for {self.tab_name}.")
+        return {"FINISHED"}
+
+import json
+import bpy
+
+class BIM_OT_load_json_layout(bpy.types.Operator):
+    """Load JSON Layout"""
+    bl_idname = "bim.load_json_layout"
+    bl_label = "Load UI Layout"
+    bl_options = {"REGISTER", "UNDO"}
+
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        try:
+            with open(self.filepath, "r") as file:
+                data = json.load(file)
+                # Process the loaded JSON data
+                self.report({"INFO"}, f"Loaded JSON layout from {self.filepath}")
+        except Exception as e:
+            self.report({"ERROR"}, f"Failed to load JSON layout: {e}")
+            return {"CANCELLED"}
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
+
+class BIM_OT_save_json_layout(bpy.types.Operator):
+    """Save JSON Layout"""
+    bl_idname = "bim.save_json_layout"
+    bl_label = "Save UI Layout"
+    bl_options = {"REGISTER", "UNDO"}
+
+    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    def execute(self, context):
+        try:
+            # Replace this with the data you want to save
+            data = {
+                "example_key": "example_value",
+                "tabs": list(TAB_VISIBILITY.keys()),
+                "visibility": TAB_VISIBILITY,
+            }
+
+            with open(self.filepath, "w") as file:
+                json.dump(data, file, indent=4)
+                self.report({"INFO"}, f"Saved JSON layout to {self.filepath}")
+        except Exception as e:
+            self.report({"ERROR"}, f"Failed to save JSON layout: {e}")
+            return {"CANCELLED"}
+
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {"RUNNING_MODAL"}
