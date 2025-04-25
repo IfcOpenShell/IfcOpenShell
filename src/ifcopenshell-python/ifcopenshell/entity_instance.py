@@ -181,6 +181,12 @@ class entity_instance:
         return file.from_pointer(self.wrapped_data.file_pointer())
 
     def __getattr__(self, name: str) -> Any:
+        """
+        Any aggregate attributes (e.g. `SET`) are returns as Python tuples.
+
+        Inverse attributes are always returned as tuples, even it's not a set origially in IFC
+        (e.g. IfcFeatureElementSubtraction.VoidsElements)
+        """
         INVALID, FORWARD, INVERSE = range(3)
         attr_cat = self.wrapped_data.get_attribute_category(name)
         if attr_cat == FORWARD:
