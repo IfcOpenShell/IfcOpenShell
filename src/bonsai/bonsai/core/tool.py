@@ -28,7 +28,9 @@ from typing import Optional
 class Interface(abc.ABC): pass
 def interface(cls):
     attrs = {n: classmethod(abc.abstractmethod(f)) for n, f in inspect.getmembers(cls, predicate=inspect.isfunction)}
-    return type(cls.__name__, (Interface, cls), attrs)
+    new_cls = type(cls.__name__, (Interface, cls), attrs)
+    new_cls.__original_qualname__ = cls.__module__ + "." + cls.__qualname__
+    return new_cls
 
 
 # ############################################################################ #
