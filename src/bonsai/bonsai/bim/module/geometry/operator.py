@@ -124,6 +124,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
             rep_obj = tool.Geometry.get_geometry_props().representation_obj
             assert rep_obj
             tool.Geometry.reload_representation(rep_obj)
+            tool.Root.reload_item_decorator()
 
         if non_ifc_objects:
             with context.temp_override(selected_editable_objects=non_ifc_objects):
