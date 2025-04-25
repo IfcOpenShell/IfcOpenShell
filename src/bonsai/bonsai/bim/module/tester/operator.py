@@ -70,6 +70,7 @@ class ExecuteIfcTester(bpy.types.Operator):
 
     def execute_tester(self, ifc_data: ifcopenshell.file, ifc_path: str, specs_path: str) -> Union[set[str], None]:
         props = bpy.context.scene.IfcTesterProperties
+        props.failed_entities.clear()
 
         # No need for if-statement, just postponing lots of diffs.
         if True:
