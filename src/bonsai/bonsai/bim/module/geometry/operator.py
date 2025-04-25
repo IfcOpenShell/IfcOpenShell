@@ -110,19 +110,29 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         selected_objects = context.selected_editable_objects
         bpy.ops.object.select_all(action="DESELECT")
 
+        should_reload_representation = False
         for obj in selected_objects:
             if tool.Geometry.is_representation_item(obj):
-                self.separate_item(context, obj)
+                res = self.separate_item(context, obj)
+                should_reload_representation |= res
             elif element := tool.Ifc.get_entity(obj):
                 self.separate_element(context, element, obj)
             else:
                 non_ifc_objects.append(obj)
 
+        if should_reload_representation:
+            rep_obj = tool.Geometry.get_geometry_props().representation_obj
+            assert rep_obj
+            tool.Geometry.reload_representation(rep_obj)
+
         if non_ifc_objects:
             with context.temp_override(selected_editable_objects=non_ifc_objects):
                 bpy.ops.mesh.separate(type=self.type)
 
-    def separate_item(self, context: bpy.types.Context, obj: bpy.types.Object) -> None:
+    def separate_item(self, context: bpy.types.Context, obj: bpy.types.Object) -> bool:
+        """
+        :return: True if item was changed and ``representation_obj`` should be reloaded.
+        """
         tool.Blender.set_active_object(obj)
         item = tool.Geometry.get_active_representation(obj)
         representation_obj = tool.Geometry.get_geometry_props().representation_obj
@@ -130,13 +140,17 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
 
         if tool.Geometry.is_meshlike_item(item):
             bpy.ops.mesh.separate(type=self.type)
+            # Nothing got separated.
+            if len(context.selected_objects) == 1:
+                return False
             for obj_ in context.selected_objects:
                 if obj_ == obj:
                     continue
                 self.add_meshlike_item(obj_)
-            tool.Geometry.reload_representation(representation_obj)
+            return True
         else:
             self.report({"INFO"}, f"Separating an {item.is_a()} is not supported")
+            return False
 
     def add_meshlike_item(self, obj: bpy.types.Object) -> None:
         props = tool.Geometry.get_geometry_props()
