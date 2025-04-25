@@ -119,6 +119,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
                 self.separate_element(context, element, obj)
             else:
                 non_ifc_objects.append(obj)
+            bpy.ops.object.select_all(action="DESELECT")
 
         if should_reload_representation:
             rep_obj = tool.Geometry.get_geometry_props().representation_obj
