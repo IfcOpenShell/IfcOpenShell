@@ -129,6 +129,14 @@ classes = [
     prop.StrProperty,
     operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
     operator.BIM_OT_attribute_search_values,
+    operator.BIM_UL_tab_panels,
+    operator.BIM_OT_toggle_panel_visibility,
+    operator.BIM_OT_bookmark_panel,
+    operator.BIM_OT_manage_tab_panels,
+    operator.BIM_OT_manage_tab_visibility,
+    operator.BIM_OT_toggle_tab_visibility,
+    operator.BIM_OT_load_json_layout,
+    operator.BIM_OT_save_json_layout,
     prop.ObjProperty,
     prop.MultipleFileSelect,
     prop.Attribute,
@@ -206,10 +214,7 @@ classes = [
     ui.BIM_PT_section_with_cappings,
     ui.BIM_PT_decorators_overlay,
     ui.BIM_PT_snappping,
-    operator.BIM_UL_tab_panels,
-    operator.BIM_OT_toggle_panel_visibility,
-    operator.BIM_OT_bookmark_panel,
-    operator.BIM_OT_manage_tab_panels,
+
 ]
 
 for mod in modules.values():
@@ -256,7 +261,6 @@ def register_panel_visibility_properties():
                     default=False,
                 ),
             )
-
 
 
 def unregister_panel_visibility_properties():
