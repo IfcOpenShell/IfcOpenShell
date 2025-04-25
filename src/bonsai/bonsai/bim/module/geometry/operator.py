@@ -137,22 +137,36 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         item = tool.Geometry.get_active_representation(obj)
         representation_obj = tool.Geometry.get_geometry_props().representation_obj
         assert item and representation_obj
+        assert (element := tool.Ifc.get_entity(representation_obj))
 
         if tool.Geometry.is_meshlike_item(item):
             bpy.ops.mesh.separate(type=self.type)
             # Nothing got separated.
             if len(context.selected_objects) == 1:
                 return False
+
+            gprops = tool.Geometry.get_geometry_props()
+            rep_obj = gprops.representation_obj
+            assert rep_obj
+            representation = tool.Geometry.get_active_representation(rep_obj)
+            assert representation
+            representation = ifcopenshell.util.representation.resolve_representation(representation)
+            representation_type: str = representation.RepresentationType
+
+            items: list[ifcopenshell.entity_instance] = list(representation.Items)
             for obj_ in context.selected_objects:
-                if obj_ == obj:
-                    continue
-                self.add_meshlike_item(obj_)
+                items.append(self.add_meshlike_item(obj_, representation_type))
+            items.remove(item)
+            representation.Items = items
+
+            gprops.remove_item_object_by_entity(item)
+            tool.Geometry.remove_representation_item(item, element)
             return True
         else:
             self.report({"INFO"}, f"Separating an {item.is_a()} is not supported")
             return False
 
-    def add_meshlike_item(self, obj: bpy.types.Object) -> None:
+    def add_meshlike_item(self, obj: bpy.types.Object, representation_type: str) -> ifcopenshell.entity_instance:
         props = tool.Geometry.get_geometry_props()
         obj.show_in_front = True
         tool.Geometry.lock_object(obj)
@@ -169,11 +183,6 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         verts /= unit_scale
         faces = [p.vertices[:] for p in obj.data.polygons]
 
-        representation = tool.Geometry.get_active_representation(rep_obj)
-        assert representation
-        representation = ifcopenshell.util.representation.resolve_representation(representation)
-
-        representation_type = representation.RepresentationType
         if representation_type in ("Brep", "AdvancedBrep"):
             item = builder.faceted_brep(verts, faces)
         elif representation_type == "Tessellation":
@@ -181,11 +190,11 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         else:
             assert False, f"Unexpected representation type: '{representation_type}'."
 
-        representation.Items = list(representation.Items) + [item]
         obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
         tool.Ifc.link(item, obj)
         tool.Ifc.link(item, obj.data)
         props.add_item_object(obj, item)
+        return item
 
     def separate_element(
         self, context: bpy.types.Context, element: ifcopenshell.entity_instance, obj: bpy.types.Object

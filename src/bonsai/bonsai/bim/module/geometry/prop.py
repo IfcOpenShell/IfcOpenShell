@@ -304,6 +304,14 @@ class BIMGeometryProperties(PropertyGroup):
             blender_item.name = name
         return blender_item
 
+    def remove_item_object_by_entity(self, item: ifcopenshell.entity_instance) -> None:
+        ifc_id = item.id()
+        for i, item_obj in enumerate(self.item_objs):
+            if item_obj.ifc_definition_id == ifc_id:
+                self.item_objs.remove(i)
+                return
+        assert False
+
     def is_object_valid_for_representation_copy(self, obj: bpy.types.Object) -> bool:
         return bool(obj != bpy.context.active_object and obj.data)
 
