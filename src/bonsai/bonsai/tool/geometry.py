@@ -43,6 +43,7 @@ import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.core.drawing
 import bonsai.core.geometry
+import bonsai.core.root
 import bonsai.core.spatial
 import bonsai.core.style
 import bonsai.core.system
@@ -2013,8 +2014,11 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def duplicate_ifc_objects(
-        cls, objects_to_duplicate: Iterable[bpy.types.Object], active_object=None, linked=False
-    ) -> dict:
+        cls,
+        objects_to_duplicate: Iterable[bpy.types.Object],
+        active_object: Optional[bpy.types.Object] = None,
+        linked: bool = False,
+    ) -> tuple[dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]], Union[bpy.types.Object, None]]:
         # Handle arrays
         objects_to_duplicate = set(objects_to_duplicate)
         arrays_to_duplicate, array_children = cls.process_arrays_for_duplication(objects_to_duplicate)
@@ -2026,7 +2030,7 @@ class Geometry(bonsai.core.tool.Geometry):
         # Track decompositions so they can be recreated after the operation
         decomposition_relationships = tool.Root.get_decomposition_relationships(objects_to_duplicate)
         connection_relationships = tool.Root.get_connection_relationships(objects_to_duplicate)
-        old_to_new = {}
+        old_to_new: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]] = {}
 
         for obj in objects_to_duplicate:
             element = tool.Ifc.get_entity(obj)
