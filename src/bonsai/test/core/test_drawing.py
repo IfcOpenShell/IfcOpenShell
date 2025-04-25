@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.drawing as subject
-from test.core.bootstrap import ifc, drawing, collector
+from test.core.bootstrap import ifc, drawing, collector, geometry, blender, Prophecy
 
 
 class TestEnableEditingText:
@@ -396,7 +396,7 @@ class TestAddDrawing:
 
 
 class TestDuplicateDrawing:
-    def test_run(self, ifc, drawing):
+    def test_run(self, ifc: Prophecy, blender: Prophecy, drawing: Prophecy, geometry: Prophecy):
         drawing.get_name("drawing").should_be_called().will_return("name")
         drawing.ensure_unique_drawing_name("name").should_be_called().will_return("unique_name")
         ifc.run("root.copy_class", product="drawing").should_be_called().will_return("new_drawing")
@@ -410,8 +410,13 @@ class TestDuplicateDrawing:
         ).should_be_called()
         ifc.run("group.assign_group", group="new_group", products=["new_drawing"]).should_be_called()
         drawing.get_group_elements("group").should_be_called().will_return(["drawing", "annotation"])
-        ifc.run("root.copy_class", product="annotation").should_be_called().will_return("new_annotation")
-        drawing.copy_representation("annotation", "new_annotation").should_be_called()
+        ifc.get_object("annotation").should_be_called().will_return("annotation_obj")
+        geometry.duplicate_ifc_objects(["annotation_obj"]).should_be_called().will_return(
+            ({"annotation": ["new_annotation"]}, None)
+        )
+        ifc.get_object("new_annotation").should_be_called().will_return("new_annotation_obj")
+        blender.remove_object("new_annotation_obj").should_be_called()
+
         ifc.run("group.unassign_group", group="group", products=["new_annotation"]).should_be_called()
         ifc.run("group.assign_group", group="new_group", products=["new_annotation"]).should_be_called()
 
@@ -433,7 +438,7 @@ class TestDuplicateDrawing:
         ifc.run("document.assign_document", products=["new_drawing"], document="reference").should_be_called()
 
         drawing.import_drawings().should_be_called()
-        subject.duplicate_drawing(ifc, drawing, drawing="drawing", should_duplicate_annotations=True)
+        subject.duplicate_drawing(ifc, blender, drawing, geometry, drawing="drawing", should_duplicate_annotations=True)
 
 
 class TestRemoveDrawing:

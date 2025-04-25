@@ -96,6 +96,7 @@ class Blender:
     def get_viewport_context(cls): pass
     def is_ifc_class_active(cls, ifc_class): pass
     def is_ifc_object(cls, obj): pass
+    def remove_object(cls, obj): pass
     def set_active_object(cls, obj): pass
     def update_viewport(cls): pass
 
@@ -407,6 +408,7 @@ class Geometry:
     def delete_ifc_object(cls, obj): pass
     def delete_opening_object_placement(cls, opening): pass
     def does_representation_id_exist(cls, representation_id): pass
+    def duplicate_ifc_objects(cls, objects_to_duplicate, active_object=None, duplicate_ifc_objects=None): pass
     def duplicate_object_data(cls, obj): pass
     def get_blender_offset_type(cls, obj): pass
     def get_cartesian_point_offset(cls, obj): pass
