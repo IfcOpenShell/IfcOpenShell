@@ -65,60 +65,70 @@ if TYPE_CHECKING:
 TAB_PANELS = {
     "PROJECT": [
 #        "BIM_PT_tab_new_project_wizard",
-        "BIM_PT_tab_project_info",
-        "BIM_PT_tab_spatial",
-        "BIM_PT_tab_project_setup",
-        "BIM_PT_tab_geometry",
-        "BIM_PT_tab_stakeholders",
-        "BIM_PT_tab_grouping_and_filtering",
+        {"bl_idname":"BIM_PT_tab_project_info", "bl_label":"Project Info"},
+        {"bl_idname":"BIM_PT_tab_spatial", "bl_label":"Spatial"},
+        {"bl_idname":"BIM_PT_tab_project_setup", "bl_label":"Project Setup"},
+        {"bl_idname":"BIM_PT_tab_geometry", "bl_label":"Geometry"},
+        {"bl_idname":"BIM_PT_tab_stakeholders", "bl_label":"Stakeholders"},
+        {"bl_idname":"BIM_PT_tab_grouping_and_filtering", "bl_label":"Grouping and Filtering"},
     ],
     "OBJECT": [
-        "BIM_PT_tab_object_metadata",
-        "BIM_PT_tab_misc",
+        {"bl_idname":"BIM_PT_tab_object_metadata", "bl_label":"Object Metadata"},
+        {"bl_idname":"BIM_PT_tab_misc", "bl_label":"Misc"},
+
     ],
     "GEOMETRY": [
-        "BIM_PT_tab_placement",
-        "BIM_PT_tab_representations",
-        "BIM_PT_tab_geometric_relationships",
-        "BIM_PT_tab_parametric_geometry",
-        "BIM_PT_tab_object_materials",
-        "BIM_PT_tab_materials",
-        "BIM_PT_tab_styles",
-        "BIM_PT_tab_profiles",
+        {"bl_idname":"BIM_PT_tab_placement", "bl_label":"Placement"},
+        {"bl_idname":"BIM_PT_tab_representations", "bl_label":"Representations"},
+        {"bl_idname":"BIM_PT_tab_geometric_relationships", "bl_label":"Geometric Relationships"},
+        {"bl_idname":"BIM_PT_tab_parametric_geometry", "bl_label":"Parametric Geometry"},
+        {"bl_idname":"BIM_PT_tab_object_materials", "bl_label":"Object Materials"},
+        {"bl_idname":"BIM_PT_tab_materials", "bl_label":"Materials"},
+        {"bl_idname":"BIM_PT_tab_styles", "bl_label":"Styles"},
+        {"bl_idname":"BIM_PT_tab_profiles", "bl_label":"Profiles"},
+
     ],
     "DRAWINGS": [
-        "BIM_PT_tab_sheets",
-        "BIM_PT_tab_drawings",
-        "BIM_PT_tab_schedules",
-        "BIM_PT_tab_references",
+        {"bl_idname":"BIM_PT_tab_sheets", "bl_label":"Sheets"},
+        {"bl_idname":"BIM_PT_tab_drawings", "bl_label":"Drawings"},
+        {"bl_idname":"BIM_PT_tab_schedules", "bl_label":"Schedules"},
+        {"bl_idname":"BIM_PT_tab_references", "bl_label":"References"},
+
     ],
     "SERVICES": [
-        "BIM_PT_tab_services",
-        "BIM_PT_tab_zones",
-        "BIM_PT_tab_solar_analysis",
-        "BIM_PT_tab_lighting",
+        {"bl_idname":"BIM_PT_tab_services", "bl_label":"Services"},
+        {"bl_idname":"BIM_PT_tab_zones", "bl_label":"Zones"},
+        {"bl_idname":"BIM_PT_tab_solar_analysis", "bl_label":"Solar Analysis"},
+        {"bl_idname":"BIM_PT_tab_lighting", "bl_label":"Lighting"},
+
     ],
     "STRUCTURE": [
-        "BIM_PT_tab_structural",
+        {"bl_idname":"BIM_PT_tab_structural", "bl_label":"Structural"},
+
     ],
     "SCHEDULING": [
-        "BIM_PT_tab_status",
-        "BIM_PT_tab_qto",
-        "BIM_PT_tab_resources",
-        "BIM_PT_tab_cost",
-        "BIM_PT_tab_sequence",
+        {"bl_idname":"BIM_PT_tab_status", "bl_label":"Status"},
+        {"bl_idname":"BIM_PT_tab_qto", "bl_label":"Quantity Take-off"},
+        {"bl_idname":"BIM_PT_tab_resources", "bl_label":"Resources"},
+        {"bl_idname":"BIM_PT_tab_cost", "bl_label":"Cost"},
+        {"bl_idname":"BIM_PT_tab_sequence", "bl_label":"Construction Scheduling"},
+
     ],
     "FM": [
-        "BIM_PT_tab_handover",
-        "BIM_PT_tab_operations",
+        {"bl_idname":"BIM_PT_tab_handover", "bl_label":"Handover"},
+        {"bl_idname":"BIM_PT_tab_operations", "bl_label":"Operations"},
+
     ],
     "QUALITY": [
-        "BIM_PT_tab_quality_control",
-        "BIM_PT_tab_clash_detection",
-        "BIM_PT_tab_collaboration",
-        "BIM_PT_tab_sandbox",
+        {"bl_idname":"BIM_PT_tab_quality_control", "bl_label":"Quality Control"},
+        {"bl_idname":"BIM_PT_tab_clash_detection", "bl_label":"Clash Detection"},
+        {"bl_idname":"BIM_PT_tab_collaboration", "bl_label":"Collaboration"},
+        {"bl_idname":"BIM_PT_tab_sandbox", "bl_label":"Sandbox"},
+
     ],
-    "BOOKMARK": [],
+    "BOOKMARK": [
+        {},
+    ],
 }
 
 
@@ -1181,7 +1191,8 @@ class BIM_PT_tab_project_info(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        if not tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")):
+        if not tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")):            
+            
             return False
         bim_props = tool.Blender.get_bim_props()
         pprops = tool.Project.get_project_props()
@@ -1211,7 +1222,7 @@ class BIM_PT_tab_spatial(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1232,7 +1243,7 @@ class BIM_PT_tab_project_setup(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK"))
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK"))
 
     def draw(self, context):
         pass
@@ -1254,7 +1265,7 @@ class BIM_PT_tab_stakeholders(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1275,7 +1286,7 @@ class BIM_PT_tab_collaboration(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK"))
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK"))
 
     def draw(self, context):
         pass
@@ -1297,7 +1308,7 @@ class BIM_PT_tab_grouping_and_filtering(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1326,7 +1337,7 @@ class BIM_PT_tab_geometry(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1347,7 +1358,7 @@ class BIM_PT_tab_status(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1368,7 +1379,7 @@ class BIM_PT_tab_qto(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1389,7 +1400,7 @@ class BIM_PT_tab_resources(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1410,7 +1421,7 @@ class BIM_PT_tab_cost(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1431,7 +1442,7 @@ class BIM_PT_tab_sequence(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1452,7 +1463,7 @@ class BIM_PT_tab_structural(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1473,7 +1484,7 @@ class BIM_PT_tab_services(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1494,7 +1505,7 @@ class BIM_PT_tab_lighting(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1515,7 +1526,7 @@ class BIM_PT_tab_zones(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1536,7 +1547,7 @@ class BIM_PT_tab_solar_analysis(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1557,7 +1568,7 @@ class BIM_PT_tab_quality_control(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK"))
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK"))
 
     def draw(self, context):
         pass
@@ -1578,7 +1589,7 @@ class BIM_PT_tab_clash_detection(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK"))
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK"))
 
     def draw(self, context):
         pass
@@ -1600,7 +1611,7 @@ class BIM_PT_tab_sandbox(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK"))
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK"))
 
     def draw(self, context):
         row = self.layout.row()
@@ -1627,7 +1638,7 @@ class BIM_PT_tab_object_metadata(Panel):
 
         props = tool.Project.get_project_props()
         return (
-            tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK"))
+            tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK"))
             and tool.Ifc.get()
             and (obj := context.active_object)
             # Hide links empty handles.
@@ -1660,7 +1671,7 @@ class BIM_PT_tab_placement(Panel):
             return tool.Blender.is_tab(context, "BOOKMARK")
     
         return (
-            tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK"))
+            tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK"))
             and tool.Ifc.get()
             and (obj := context.active_object)
             and tool.Ifc.get_entity(obj)
@@ -1687,7 +1698,7 @@ class BIM_PT_tab_representations(Panel):
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
         return (
-            tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK"))
+            tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK"))
             and tool.Ifc.get()
             and tool.Geometry.get_active_or_representation_obj()
         )
@@ -1713,7 +1724,7 @@ class BIM_PT_tab_geometric_relationships(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1737,7 +1748,7 @@ class BIM_PT_tab_parametric_geometry(Panel):
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
         return (
-            tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK"))
+            tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK"))
             and tool.Ifc.get()
             and (obj := context.active_object)
             and tool.Ifc.get_entity(obj)
@@ -1764,7 +1775,7 @@ class BIM_PT_tab_object_materials(Panel):
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
         return (
-            tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK"))
+            tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK"))
             and tool.Ifc.get()
             and (obj := context.active_object)
             and tool.Ifc.get_entity(obj)
@@ -1790,7 +1801,7 @@ class BIM_PT_tab_materials(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1812,7 +1823,7 @@ class BIM_PT_tab_styles(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1834,7 +1845,7 @@ class BIM_PT_tab_profiles(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1856,7 +1867,7 @@ class BIM_PT_tab_sheets(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1878,7 +1889,7 @@ class BIM_PT_tab_drawings(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1900,7 +1911,7 @@ class BIM_PT_tab_schedules(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1922,7 +1933,7 @@ class BIM_PT_tab_references(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1945,7 +1956,7 @@ class BIM_PT_tab_misc(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK")) and tool.Ifc.get()
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK")) and tool.Ifc.get()
 
     def draw(self, context):
         pass
@@ -1967,7 +1978,7 @@ class BIM_PT_tab_handover(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK"))
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK"))
 
     def draw(self, context):
         pass
@@ -1989,7 +2000,7 @@ class BIM_PT_tab_operations(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        return tool.Blender.is_tab(context, next((tab for tab, panels in TAB_PANELS.items() if cls.bl_idname in panels), "BOOKMARK"))
+        return tool.Blender.is_tab(context, next((k for k, v in TAB_PANELS.items() if any(p.get("bl_idname") == cls.bl_idname for p in v)), "BOOKMARK"))
 
     def draw(self, context):
         pass

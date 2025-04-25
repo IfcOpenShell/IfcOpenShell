@@ -233,37 +233,40 @@ def on_register(scene):
     is_registering = False
 
 def register_panel_visibility_properties():
-    for panel_name in ui.TAB_PANELS.values():
-        for panel in panel_name:
-            prop_name = f"show_{panel.lower()}"
+    for panel_list in ui.TAB_PANELS.values():
+        for panel in panel_list:
+            bl_idname = panel.get("bl_idname", "")
+            prop_name = f"show_{bl_idname.lower()}"
             setattr(
                 bpy.types.Scene,
                 prop_name,
                 bpy.props.BoolProperty(
-                    name=f"Show {panel}",
-                    description=f"Show or hide the {panel} panel",
-                    default=True,  # Panels are visible by default
+                    name=f"Show {bl_idname}",
+                    description=f"Show or hide the {bl_idname} panel",
+                    default=True,
                 ),
             )
-            prop_name = f"bookmark_{panel.lower()}"
+            prop_name = f"bookmark_{bl_idname.lower()}"
             setattr(
                 bpy.types.Scene,
                 prop_name,
                 bpy.props.BoolProperty(
-                    name=f"Bookmark {panel}",
-                    description=f"Move to Bookmark or not {panel} panel",
-                    default=False,  # Panels are visible by default
+                    name=f"Bookmark {bl_idname}",
+                    description=f"Move to Bookmark or not {bl_idname} panel",
+                    default=False,
                 ),
             )
+
 
 
 def unregister_panel_visibility_properties():
-    for panel_name in ui.TAB_PANELS.values():
-        for panel in panel_name:
-            prop_name = f"show_{panel.lower()}"
+    for panel_list in ui.TAB_PANELS.values():
+        for panel in panel_list:
+            bl_idname = panel.get("bl_idname", "")
+            prop_name = f"show_{bl_idname.lower()}"
             if hasattr(bpy.types.Scene, prop_name):
                 delattr(bpy.types.Scene, prop_name)
-            prop_name = f"bookmark_{panel.lower()}"
+            prop_name = f"bookmark_{bl_idname.lower()}"
             if hasattr(bpy.types.Scene, prop_name):
                 delattr(bpy.types.Scene, prop_name)
 
