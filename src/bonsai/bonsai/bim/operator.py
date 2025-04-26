@@ -1750,7 +1750,7 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
 
         print(f"Tab Panels for {self.tab_name}: {[item.name for item in context.scene.tab_panels]}")
 
-        return context.window_manager.invoke_props_dialog(self)
+        return context.window_manager.invoke_popup(self)
 
     def draw(self, context):
         layout = self.layout
@@ -1803,7 +1803,7 @@ class BIM_OT_manage_tab_visibility(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        return context.window_manager.invoke_props_dialog(self)
+        return context.window_manager.invoke_popup(self)
 
 class BIM_OT_toggle_tab_visibility(bpy.types.Operator):
     """Toggle Tab Visibility"""
@@ -1838,11 +1838,33 @@ class BIM_OT_load_json_layout(bpy.types.Operator):
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
+        global TAB_VISIBILITY, TAB_PANELS
+
         try:
+            # Load the JSON file
             with open(self.filepath, "r") as file:
                 data = json.load(file)
-                # Process the loaded JSON data
-                self.report({"INFO"}, f"Loaded JSON layout from {self.filepath}")
+
+            # Retrieve and apply TAB_VISIBILITY
+            if "TAB_VISIBILITY" in data:
+                TAB_VISIBILITY.update(data["TAB_VISIBILITY"])
+
+            # Retrieve and apply TAB_PANELS
+            if "TAB_PANELS" in data:
+                TAB_PANELS.update(data["TAB_PANELS"])
+
+            # Retrieve and apply scene properties
+            if "scene_properties" in data:
+                for prop_name, value in data["scene_properties"].items():
+                    if hasattr(context.scene, prop_name):
+                        setattr(context.scene, prop_name, value)
+
+            # Redraw the UI to reflect the changes
+            for area in bpy.context.window.screen.areas:
+                if area.type == "PROPERTIES":
+                    area.tag_redraw()
+
+            self.report({"INFO"}, f"Loaded JSON layout from {self.filepath}")
         except Exception as e:
             self.report({"ERROR"}, f"Failed to load JSON layout: {e}")
             return {"CANCELLED"}
@@ -1850,6 +1872,14 @@ class BIM_OT_load_json_layout(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
+        # Retrieve the directory of the IFC file
+        ifc_file_path = bpy.context.scene.BIMProperties['ifc_file']
+        if not ifc_file_path:
+            self.report({"ERROR"}, "No IFC file is associated with the project.")
+            return {"CANCELLED"}
+
+        # Set the default file path to the directory of the IFC file
+        self.filepath = os.path.join(os.path.dirname(ifc_file_path), ".bonsai_layout_json")
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
@@ -1863,15 +1893,35 @@ class BIM_OT_save_json_layout(bpy.types.Operator):
 
     def execute(self, context):
         try:
-            # Replace this with the data you want to save
-            data = {
-                "example_key": "example_value",
-                "tabs": list(TAB_VISIBILITY.keys()),
-                "visibility": TAB_VISIBILITY,
+            # Retrieve the directory of the IFC file
+            ifc_file_path = bpy.context.scene.BIMProperties['ifc_file']
+            if not ifc_file_path:
+                self.report({"ERROR"}, "No IFC file is associated with the project.")
+                return {"CANCELLED"}
+
+            # Collect data to save
+            layout_data = {
+                "TAB_VISIBILITY": TAB_VISIBILITY,
+                "TAB_PANELS": TAB_PANELS,
+                "scene_properties": {},
             }
 
+            # Save visibility and bookmark properties from the Scene
+            for tab_name, panels in TAB_PANELS.items():
+                for panel in panels:
+                    panel_name = panel.get("bl_idname", "")
+                    if not panel_name:
+                        continue
+
+                    # Collect visibility and bookmark states
+                    show_prop_name = f"show_{panel_name.lower()}"
+                    bookmark_prop_name = f"bookmark_{panel_name.lower()}"
+                    layout_data["scene_properties"][show_prop_name] = getattr(context.scene, show_prop_name, True)
+                    layout_data["scene_properties"][bookmark_prop_name] = getattr(context.scene, bookmark_prop_name, False)
+
+            # Write data to the JSON file
             with open(self.filepath, "w") as file:
-                json.dump(data, file, indent=4)
+                json.dump(layout_data, file, indent=4)
                 self.report({"INFO"}, f"Saved JSON layout to {self.filepath}")
         except Exception as e:
             self.report({"ERROR"}, f"Failed to save JSON layout: {e}")
@@ -1880,6 +1930,14 @@ class BIM_OT_save_json_layout(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
+        # Retrieve the directory of the IFC file
+        ifc_file_path = bpy.context.scene.BIMProperties['ifc_file']
+        if not ifc_file_path:
+            self.report({"ERROR"}, "No IFC file is associated with the project.")
+            return {"CANCELLED"}
+
+        # Set the default file path to the directory of the IFC file
+        self.filepath = os.path.join(os.path.dirname(ifc_file_path), ".bonsai_layout_json")
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
