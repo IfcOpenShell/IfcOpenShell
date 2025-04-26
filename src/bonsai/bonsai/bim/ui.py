@@ -1040,53 +1040,59 @@ class BIM_PT_tabs(Panel):
         aprops = tool.Blender.get_area_props(context)
         ifc_icon = f"{UIData.data['tabs_icon_color_mode']}_ifc"
 
-        row = self.layout.row(align=True)
-        row.alignment = "RIGHT"
-        row.operator("bim.load_json_layout", icon="IMPORT", text="")
-        row.operator("bim.save_json_layout", icon="EXPORT", text="")
-        row.operator("bim.manage_tab_visibility", icon="PREFERENCES", text="")
-
-        row = self.layout.row()
-        row.alignment = "CENTER"
+        split = self.layout.split(factor=0.9)
+        col_left = split.column(align=True)
+        row_left = col_left.row(align=True)
+        row_left.alignment = "CENTER"
         if TAB_VISIBILITY["PROJECT"]:
-            row.operator(
+            row_left.operator(
                 "bim.set_tab",
                 text="",
                 emboss=aprops.tab == "PROJECT",
                 icon_value=bonsai.bim.icons[ifc_icon].icon_id,
             ).tab = "PROJECT"
         if TAB_VISIBILITY["OBJECT"]:
-            self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
+            self.draw_tab_entry(row_left, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
         if TAB_VISIBILITY["GEOMETRY"]:    
-            self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
+            self.draw_tab_entry(row_left, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
         if TAB_VISIBILITY["DRAWINGS"]:
-            self.draw_tab_entry(row, "DOCUMENTS", "DRAWINGS", is_ifc_project, aprops.tab == "DRAWINGS")
+            self.draw_tab_entry(row_left, "DOCUMENTS", "DRAWINGS", is_ifc_project, aprops.tab == "DRAWINGS")
         if TAB_VISIBILITY["SERVICES"]:
-            self.draw_tab_entry(row, "NETWORK_DRIVE", "SERVICES", is_ifc_project, aprops.tab == "SERVICES")
+            self.draw_tab_entry(row_left, "NETWORK_DRIVE", "SERVICES", is_ifc_project, aprops.tab == "SERVICES")
         if TAB_VISIBILITY["STRUCTURE"]:
-            self.draw_tab_entry(row, "EDITMODE_HLT", "STRUCTURE", is_ifc_project, aprops.tab == "STRUCTURE")
+            self.draw_tab_entry(row_left, "EDITMODE_HLT", "STRUCTURE", is_ifc_project, aprops.tab == "STRUCTURE")
         if TAB_VISIBILITY["SCHEDULING"]:
-            self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
+            self.draw_tab_entry(row_left, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
         if TAB_VISIBILITY["FM"]:
-            self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
+            self.draw_tab_entry(row_left, "PACKAGE", "FM", True, aprops.tab == "FM")
         if TAB_VISIBILITY["QUALITY"]:
-            self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
+            self.draw_tab_entry(row_left, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
         if TAB_VISIBILITY["BOOKMARK"]:
-            self.draw_tab_entry(row, "SOLO_ON", "BOOKMARK", True, aprops.tab == "BOOKMARK")  # New BOOKMARK tab
-        row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
+            self.draw_tab_entry(row_left, "SOLO_ON", "BOOKMARK", True, aprops.tab == "BOOKMARK")  # New BOOKMARK tab
+        row_left.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
-            # Yes, that's right.
-        row = self.layout.row()
-        row.alignment = "CENTER"
-        row.scale_y = 0.2
+        row_left = col_left.row(align=True)
+        # Yes, that's right.
+        row_left.alignment = "CENTER"
+        row_left.scale_y = 0.2
         for tab in TAB_VISIBILITY.keys():
             # Draw a little underscore below the active tab icon.
             if TAB_VISIBILITY[tab]:
                 if aprops.tab == tab:
-                    row.prop(aprops, "active_tab", text="", icon="BLANK1")
+                    row_left.prop(aprops, "active_tab", text="", icon="BLANK1")
                 else:
-                    row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
-        row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False) #space for Switch
+                    row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
+        row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False) #space for Switch
+
+
+        col_right = split.column(align=True)
+        row_right = col_right.row(align=True)
+        row_right.alignment = 'RIGHT'
+
+        row_right.operator("bim.manage_tab_visibility", icon="PREFERENCES", text="")
+
+
+
 
 
 

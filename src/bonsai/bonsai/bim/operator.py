@@ -1781,6 +1781,17 @@ class BIM_OT_manage_tab_visibility(bpy.types.Operator):
 
     def draw(self, context):
         layout = self.layout
+        row = layout.row()
+        row = self.layout.row(align=True)
+        row.alignment = 'RIGHT'
+
+        row.operator("bim.reset_ui_layout", icon="FILE_REFRESH", text="")
+        row.operator("bim.load_json_layout", icon="IMPORT", text="")
+        row.operator("bim.save_json_layout", icon="EXPORT", text="")
+        row = layout.row()
+        row = self.layout.row(align=True)
+        row.alignment = 'CENTER'
+        
         for tab_name, is_visible in TAB_VISIBILITY.items():
             row = layout.row()
             row.label(text=tab_name)
@@ -1871,3 +1882,44 @@ class BIM_OT_save_json_layout(bpy.types.Operator):
     def invoke(self, context, event):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
+
+class BIM_OT_reset_ui_layout(bpy.types.Operator):
+    """Reset UI Layout to Default"""
+    bl_idname = "bim.reset_ui_layout"
+    bl_label = "Reset UI Layout"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        global TAB_VISIBILITY, TAB_PANELS
+
+        # Reset TAB_VISIBILITY to its default state
+        for tab_name in TAB_VISIBILITY.keys():
+            TAB_VISIBILITY[tab_name] = True
+
+        # Reset only the BOOKMARK entry in TAB_PANELS to an empty dictionary
+        TAB_PANELS["BOOKMARK"] = [{}]
+
+        # Reset visibility and bookmark states in Scene properties
+        for tab_name, panels in TAB_PANELS.items():
+            for panel in panels:
+                panel_name = panel.get("bl_idname", "")
+                if not panel_name:
+                    continue
+
+                # Reset visibility state
+                show_prop_name = f"show_{panel_name.lower()}"
+                if hasattr(context.scene, show_prop_name):
+                    setattr(context.scene, show_prop_name, True)
+
+                # Reset bookmark state
+                bookmark_prop_name = f"bookmark_{panel_name.lower()}"
+                if hasattr(context.scene, bookmark_prop_name):
+                    setattr(context.scene, bookmark_prop_name, False)
+
+        # Redraw the UI to reflect the changes
+        for area in bpy.context.window.screen.areas:
+            if area.type == "PROPERTIES":
+                area.tag_redraw()
+
+        self.report({"INFO"}, "UI layout reset to default.")
+        return {"FINISHED"}
