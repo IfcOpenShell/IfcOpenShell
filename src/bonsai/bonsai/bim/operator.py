@@ -1612,18 +1612,15 @@ class BIM_UL_tab_panels(bpy.types.UIList):
     """UIList for Tab Panels"""
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        # Draw the panel name
         row = layout.row(align=True)
         row.label(text=item["bl_label"])
 
-        # Add the eye icon for toggling visibility
         row.operator(
             "bim.toggle_panel_visibility",
             text="",
             icon="HIDE_OFF" if item.get("visible", True) else "HIDE_ON",
         ).action = f"TOGGLE_VISIBILITY_{item.name}"
 
-        # Add the star icon for bookmarking
         row.operator(
             "bim.bookmark_panel",
             text="",
@@ -1639,16 +1636,12 @@ class BIM_OT_toggle_panel_visibility(bpy.types.Operator):
     action: bpy.props.StringProperty()
 
     def execute(self, context):
-        # Extract the panel name from the action
         panel_name = self.action.replace("TOGGLE_VISIBILITY_", "")
 
-        # Find the corresponding panel in the tab_panels collection
         for item in context.scene.tab_panels:
             if item.name == panel_name:
-                # Toggle the visibility state
                 item["visible"] = not item.get("visible", True)
 
-                # Update the corresponding BoolProperty on the Scene
                 prop_name = f"show_{panel_name.lower()}"
                 if hasattr(context.scene, prop_name):
                     setattr(context.scene, prop_name, item["visible"])
@@ -1657,7 +1650,6 @@ class BIM_OT_toggle_panel_visibility(bpy.types.Operator):
                     print(f"Property '{prop_name}' not found on Scene.")
                 break
 
-        # Redraw the UI to reflect the changes
         for area in bpy.context.window.screen.areas:
             if area.type == "PROPERTIES":
                 area.tag_redraw()
@@ -1674,16 +1666,12 @@ class BIM_OT_bookmark_panel(bpy.types.Operator):
     action: bpy.props.StringProperty()
 
     def execute(self, context):
-        # Extract the panel name from the action
         panel_name = self.action.replace("BOOKMARK_", "")
 
-        # Find the corresponding panel in the tab_panels collection
         for item in context.scene.tab_panels:
             if item.name == panel_name:
-                # Toggle the bookmarked state
                 item["bookmarked"] = not item.get("bookmarked", False)
 
-                # Update the corresponding BoolProperty on the Scene
                 prop_name = f"bookmark_{panel_name.lower()}"
                 if hasattr(context.scene, prop_name):
                     setattr(context.scene, prop_name, item["bookmarked"])
@@ -1691,7 +1679,6 @@ class BIM_OT_bookmark_panel(bpy.types.Operator):
                 else:
                     print(f"Property '{prop_name}' not found on Scene.")
 
-                # Add or remove the panel from the TAB_PANELS["BOOKMARK"] list
                 panel_label = item["bl_label"]
                 if item["bookmarked"]:
                     if not any(p.get("bl_idname") == panel_name for p in TAB_PANELS["BOOKMARK"]):
@@ -1708,7 +1695,6 @@ class BIM_OT_bookmark_panel(bpy.types.Operator):
                                     context.scene.tab_panels.remove(index)
                             break
 
-        # Redraw the UI to reflect the changes
         for area in bpy.context.window.screen.areas:
             if area.type == "PROPERTIES":
                 area.tag_redraw()
@@ -1726,10 +1712,8 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
     tab_name: bpy.props.StringProperty()
 
     def invoke(self, context, event):
-        # Set the active tab name in the scene
         context.scene.active_tab_name = self.tab_name
 
-        # Populate the tab_panels collection
         context.scene.tab_panels.clear()
         for panel_data in TAB_PANELS.get(self.tab_name, []):
             panel_name = panel_data.get("bl_idname","")
@@ -1740,11 +1724,9 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
             item.name = panel_name
             item["bl_label"] = panel_label
 
-            # Use the registered properties to set visibility and bookmark states
             show_prop_name = f"show_{panel_name.lower()}"
             bookmark_prop_name = f"bookmark_{panel_name.lower()}"
 
-            # Retrieve the visibility and bookmark states from the Scene properties
             item["visible"] = getattr(context.scene, show_prop_name, True)
             item["bookmarked"] = getattr(context.scene, bookmark_prop_name, False)
 
@@ -1756,17 +1738,14 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
         layout = self.layout
         layout.label(text=f"Manage Panels for {self.tab_name} Tab")
 
-        # Add a UIList for the panels
         row = layout.row()
         row.template_list("BIM_UL_tab_panels", "", context.scene, "tab_panels", context.scene, "active_tab_panel_index")
 
     def execute(self, context):
-        # Save the visibility and bookmark states back to the Scene properties
         for item in context.scene.tab_panels:
             show_prop_name = f"show_{item.name.lower()}"
             bookmark_prop_name = f"bookmark_{item.name.lower()}"
 
-            # Update the Scene properties with the current states
             setattr(context.scene, show_prop_name, item["visible"])
             setattr(context.scene, bookmark_prop_name, item["bookmarked"])
 
@@ -1814,11 +1793,9 @@ class BIM_OT_toggle_tab_visibility(bpy.types.Operator):
     tab_name: bpy.props.StringProperty()
 
     def execute(self, context):
-        # Toggle the visibility of the tab
         if self.tab_name in TAB_VISIBILITY:
             TAB_VISIBILITY[self.tab_name] = not TAB_VISIBILITY[self.tab_name]
         
-        # Redraw the UI to reflect the changes
         for area in bpy.context.window.screen.areas:
             if area.type == "PROPERTIES":
                 area.tag_redraw()
@@ -1841,25 +1818,20 @@ class BIM_OT_load_json_layout(bpy.types.Operator):
         global TAB_VISIBILITY, TAB_PANELS
 
         try:
-            # Load the JSON file
             with open(self.filepath, "r") as file:
                 data = json.load(file)
 
-            # Retrieve and apply TAB_VISIBILITY
             if "TAB_VISIBILITY" in data:
                 TAB_VISIBILITY.update(data["TAB_VISIBILITY"])
 
-            # Retrieve and apply TAB_PANELS
             if "TAB_PANELS" in data:
                 TAB_PANELS.update(data["TAB_PANELS"])
 
-            # Retrieve and apply scene properties
             if "scene_properties" in data:
                 for prop_name, value in data["scene_properties"].items():
                     if hasattr(context.scene, prop_name):
                         setattr(context.scene, prop_name, value)
 
-            # Redraw the UI to reflect the changes
             for area in bpy.context.window.screen.areas:
                 if area.type == "PROPERTIES":
                     area.tag_redraw()
@@ -1872,13 +1844,11 @@ class BIM_OT_load_json_layout(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        # Retrieve the directory of the IFC file
         ifc_file_path = bpy.context.scene.BIMProperties['ifc_file']
         if not ifc_file_path:
             self.report({"ERROR"}, "No IFC file is associated with the project.")
             return {"CANCELLED"}
 
-        # Set the default file path to the directory of the IFC file
         self.filepath = os.path.join(os.path.dirname(ifc_file_path), ".bonsai_layout_json")
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
@@ -1893,33 +1863,28 @@ class BIM_OT_save_json_layout(bpy.types.Operator):
 
     def execute(self, context):
         try:
-            # Retrieve the directory of the IFC file
             ifc_file_path = bpy.context.scene.BIMProperties['ifc_file']
             if not ifc_file_path:
                 self.report({"ERROR"}, "No IFC file is associated with the project.")
                 return {"CANCELLED"}
 
-            # Collect data to save
             layout_data = {
                 "TAB_VISIBILITY": TAB_VISIBILITY,
                 "TAB_PANELS": TAB_PANELS,
                 "scene_properties": {},
             }
 
-            # Save visibility and bookmark properties from the Scene
             for tab_name, panels in TAB_PANELS.items():
                 for panel in panels:
                     panel_name = panel.get("bl_idname", "")
                     if not panel_name:
                         continue
 
-                    # Collect visibility and bookmark states
                     show_prop_name = f"show_{panel_name.lower()}"
                     bookmark_prop_name = f"bookmark_{panel_name.lower()}"
                     layout_data["scene_properties"][show_prop_name] = getattr(context.scene, show_prop_name, True)
                     layout_data["scene_properties"][bookmark_prop_name] = getattr(context.scene, bookmark_prop_name, False)
 
-            # Write data to the JSON file
             with open(self.filepath, "w") as file:
                 json.dump(layout_data, file, indent=4)
                 self.report({"INFO"}, f"Saved JSON layout to {self.filepath}")
@@ -1930,13 +1895,11 @@ class BIM_OT_save_json_layout(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        # Retrieve the directory of the IFC file
         ifc_file_path = bpy.context.scene.BIMProperties['ifc_file']
         if not ifc_file_path:
             self.report({"ERROR"}, "No IFC file is associated with the project.")
             return {"CANCELLED"}
 
-        # Set the default file path to the directory of the IFC file
         self.filepath = os.path.join(os.path.dirname(ifc_file_path), ".bonsai_layout_json")
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
@@ -1950,31 +1913,25 @@ class BIM_OT_reset_ui_layout(bpy.types.Operator):
     def execute(self, context):
         global TAB_VISIBILITY, TAB_PANELS
 
-        # Reset TAB_VISIBILITY to its default state
         for tab_name in TAB_VISIBILITY.keys():
             TAB_VISIBILITY[tab_name] = True
 
-        # Reset only the BOOKMARK entry in TAB_PANELS to an empty dictionary
         TAB_PANELS["BOOKMARK"] = [{}]
 
-        # Reset visibility and bookmark states in Scene properties
         for tab_name, panels in TAB_PANELS.items():
             for panel in panels:
                 panel_name = panel.get("bl_idname", "")
                 if not panel_name:
                     continue
 
-                # Reset visibility state
                 show_prop_name = f"show_{panel_name.lower()}"
                 if hasattr(context.scene, show_prop_name):
                     setattr(context.scene, show_prop_name, True)
 
-                # Reset bookmark state
                 bookmark_prop_name = f"bookmark_{panel_name.lower()}"
                 if hasattr(context.scene, bookmark_prop_name):
                     setattr(context.scene, bookmark_prop_name, False)
 
-        # Redraw the UI to reflect the changes
         for area in bpy.context.window.screen.areas:
             if area.type == "PROPERTIES":
                 area.tag_redraw()
