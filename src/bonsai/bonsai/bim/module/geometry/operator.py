@@ -1052,16 +1052,29 @@ class OverrideDuplicateMove(bpy.types.Operator):
 
     @staticmethod
     def execute_ifc_duplicate_operator(operator: bpy.types.Operator, context: bpy.types.Context, linked: bool = False):
+        objects_to_remove = set()
+
         for obj in context.selected_objects:
-            if element := tool.Ifc.get_entity(obj):
-                if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-                    tool.Blender.deselect_object(obj)
-                    operator.report({"ERROR"}, "Drawing not duplicated.")
-                elif tool.Geometry.is_locked(element):
-                    tool.Blender.deselect_object(obj)
-                    operator.report({"ERROR"}, lock_error_message(obj.name))
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+
+            if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
+                objects_to_remove.add(obj)
+                operator.report({"ERROR"}, f"Drawing '{obj.name}' not duplicated.")
+                continue
+
+            if tool.Geometry.is_locked(element):
+                objects_to_remove.add(obj)
+                operator.report({"ERROR"}, lock_error_message(obj.name))
+
+        for obj in objects_to_remove:
+            obj.select_set(False)
+
         old_to_new, new_active_obj = tool.Geometry.duplicate_ifc_objects(
-            set(context.selected_objects), linked=linked, active_object=context.active_object
+            set(context.selected_objects) - objects_to_remove,
+            linked=linked,
+            active_object=context.active_object,
         )
         if new_active_obj:
             context.view_layer.objects.active = new_active_obj
