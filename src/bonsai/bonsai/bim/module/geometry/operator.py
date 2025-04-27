@@ -1069,7 +1069,6 @@ class OverrideDuplicateMove(bpy.types.Operator):
                 operator.report({"ERROR"}, lock_error_message(obj.name))
 
         for obj in objects_to_remove:
-            # obj.select_set(False)
             tool.Blender.deselect_object(obj)
 
         old_to_new, new_active_obj = tool.Geometry.duplicate_ifc_objects(
