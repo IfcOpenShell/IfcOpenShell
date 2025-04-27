@@ -2128,7 +2128,8 @@ class Geometry(bonsai.core.tool.Geometry):
         cls.remove_linked_aggregate_data(old_to_new)
         bonsai.bim.handler.refresh_ui_data()
         tool.Root.reload_grid_decorator()
-        return old_to_new, active_object
+        return old_to_new, new_active_obj or active_object
+
 
     @classmethod
     def duplicate_ifc_item(cls, obj: bpy.types.Object) -> None:
