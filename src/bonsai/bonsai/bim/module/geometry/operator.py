@@ -73,9 +73,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_mesh_separate"
     bl_label = "IFC Mesh Separate"
     blender_op = bpy.ops.mesh.separate.get_rna_type()
-    bl_description = (
-        blender_op.description + ".\nAlso makes sure changes are in sync with IFC (operator works only on IFC objects)"
-    )
+    bl_description = blender_op.description + ".\nAlso makes sure changes are in sync with IFC."
     bl_options = {"REGISTER", "UNDO"}
     blender_type_prop = blender_op.properties["type"]
     type: bpy.props.EnumProperty(
@@ -1533,6 +1531,12 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
 class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_object_join"
     bl_label = "IFC Join"
+    blender_op = bpy.ops.mesh.separate.get_rna_type()
+    bl_description = (
+        blender_op.description
+        + ".\nAlso makes sure changes are in sync with IFC."
+        + "\nIf IFC object is joined into non-IFC object, it will be removed from IFC."
+    )
     bl_options = {"REGISTER", "UNDO"}
 
     target: bpy.types.Object
