@@ -67,6 +67,7 @@ from typing import (
     Generator,
     cast,
     TypeGuard,
+    Any,
 )
 from typing_extensions import TypeIs
 
@@ -1861,6 +1862,7 @@ class Geometry(bonsai.core.tool.Geometry):
             tool.Blender.set_active_object(props.representation_obj)
             cls.sync_item_positions()
             representation = cls.get_active_representation(props.representation_obj)
+            assert representation
             ifcopenshell.api.geometry.validate_type(tool.Ifc.get(), representation)
             props.is_changing_mode = True
             if props.mode != "OBJECT":
@@ -1873,6 +1875,7 @@ class Geometry(bonsai.core.tool.Geometry):
     def edit_meshlike_item(cls, obj: bpy.types.Object) -> None:
         item = tool.Geometry.get_active_representation(obj)
         assert item
+        assert isinstance(obj.data, (bpy.types.Curve, bpy.types.Mesh))
         mprops = tool.Geometry.get_mesh_props(obj.data)
         if mprops.mesh_checksum == cls.get_mesh_checksum(obj.data):
             return
@@ -1898,7 +1901,7 @@ class Geometry(bonsai.core.tool.Geometry):
             ifcopenshell.util.element.replace_attribute(inverse, item, new_item)
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
         tool.Ifc.link(new_item, obj.data)
-        cls.reload_representation(props.representation_obj)
+        cls.reload_representation(rep_obj)
 
     @classmethod
     def split_by_loose_parts(cls, obj: bpy.types.Object) -> List[bpy.types.Mesh]:
@@ -2130,7 +2133,6 @@ class Geometry(bonsai.core.tool.Geometry):
         tool.Root.reload_grid_decorator()
         return old_to_new, new_active_obj or active_object
 
-
     @classmethod
     def duplicate_ifc_item(cls, obj: bpy.types.Object) -> None:
         props = tool.Geometry.get_geometry_props()
@@ -2148,11 +2150,13 @@ class Geometry(bonsai.core.tool.Geometry):
         for collection in obj.users_collection:
             collection.objects.link(new_obj)
 
-        representation = tool.Geometry.get_active_representation(props.representation_obj)
+        assert (rep_obj := props.representation_obj)
+        representation = tool.Geometry.get_active_representation(rep_obj)
+        assert representation
         representation = ifcopenshell.util.representation.resolve_representation(representation)
         representation.Items = list(representation.Items) + [new_item]
 
-        tool.Geometry.reload_representation(props.representation_obj)
+        tool.Geometry.reload_representation(rep_obj)
 
         obj.select_set(False)
         tool.Root.reload_item_decorator()

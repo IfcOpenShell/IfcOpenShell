@@ -1103,8 +1103,8 @@ class LoadProjectElements(bpy.types.Operator):
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
-    def get_decomposition_elements(self):
-        containers = set()
+    def get_decomposition_elements(self) -> set[ifcopenshell.entity_instance]:
+        containers: set[ifcopenshell.entity_instance] = set()
         for filter_category in self.props.filter_categories:
             if not filter_category.is_selected:
                 continue
@@ -1116,15 +1116,15 @@ class LoadProjectElements(bpy.types.Operator):
                     container = None
                 elif self.file.schema != "IFC2X3" and container.is_a("IfcContext"):
                     container = None
-        elements = set()
+        elements: set[ifcopenshell.entity_instance] = set()
         for container in containers:
             for rel in container.ContainsElements:
                 elements.update(rel.RelatedElements)
         self.append_decomposed_elements(elements)
         return elements
 
-    def append_decomposed_elements(self, elements):
-        decomposed_elements = set()
+    def append_decomposed_elements(self, elements: set[ifcopenshell.entity_instance]) -> None:
+        decomposed_elements: set[ifcopenshell.entity_instance] = set()
         for element in elements:
             if element.IsDecomposedBy:
                 for subelement in element.IsDecomposedBy[0].RelatedObjects:
@@ -1133,26 +1133,26 @@ class LoadProjectElements(bpy.types.Operator):
             self.append_decomposed_elements(decomposed_elements)
         elements.update(decomposed_elements)
 
-    def get_ifc_class_elements(self):
-        elements = set()
+    def get_ifc_class_elements(self) -> set[ifcopenshell.entity_instance]:
+        elements: set[ifcopenshell.entity_instance] = set()
         for filter_category in self.props.filter_categories:
             if not filter_category.is_selected:
                 continue
             elements.update(self.file.by_type(filter_category.name, include_subtypes=False))
         return elements
 
-    def get_ifc_type_elements(self):
-        elements = set()
+    def get_ifc_type_elements(self) -> set[ifcopenshell.entity_instance]:
+        elements: set[ifcopenshell.entity_instance] = set()
         for filter_category in self.props.filter_categories:
             if not filter_category.is_selected:
                 continue
             elements.update(ifcopenshell.util.element.get_types(self.file.by_id(filter_category.ifc_definition_id)))
         return elements
 
-    def get_whitelist_elements(self):
+    def get_whitelist_elements(self) -> set[ifcopenshell.entity_instance]:
         return set(ifcopenshell.util.selector.filter_elements(self.file, self.props.filter_query))
 
-    def get_blacklist_elements(self):
+    def get_blacklist_elements(self) -> set[ifcopenshell.entity_instance]:
         return set(self.file.by_type("IfcElement")) - set(
             ifcopenshell.util.selector.filter_elements(self.file, self.props.filter_query)
         )
