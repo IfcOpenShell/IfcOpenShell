@@ -1536,6 +1536,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
         blender_op.description
         + ".\nAlso makes sure changes are in sync with IFC."
         + "\nIf IFC object is joined into non-IFC object, it will be removed from IFC."
+        + "\nJoining representation items only supported for joining with other representation items of the same representation."
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -1627,6 +1628,8 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 element = tool.Ifc.get_entity(obj)
                 if element:
                     ifcopenshell.api.root.remove_product(ifc_file, product=element)
+                elif tool.Geometry.is_representation_item(obj):
+                    obj.select_set(False)
             bpy.ops.object.join()
             bpy.ops.bim.update_representation(obj=self.target.name, ifc_representation_class="")
         else:
@@ -1656,6 +1659,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 element = tool.Ifc.get_entity(obj)
 
                 # Non IFC elements cannot be joined since we cannot guarantee SweptSolid compliance
+                # This check also is also needed to skip representation items.
                 if not element:
                     obj.select_set(False)
                     continue
@@ -1772,6 +1776,8 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get_entity(obj)
             if element:
                 ifcopenshell.api.root.remove_product(ifc_file, product=element)
+            elif tool.Geometry.is_representation_item(obj):
+                obj.select_set(False)
         bpy.ops.object.join()
 
 
