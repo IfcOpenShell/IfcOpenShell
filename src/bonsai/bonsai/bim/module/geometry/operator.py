@@ -1570,13 +1570,14 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
 
         if tool.Geometry.is_representation_item(self.target):
-            return self.join_item()
+            return self.join_item(context)
         elif target_element := tool.Ifc.get_entity(self.target):
             self.target_element = target_element
-            return self.join_ifc_obj()
-        return self.join_blender_obj()
+            return self.join_ifc_obj(context)
+        return self.join_blender_obj(context)
 
-    def join_item(self) -> None:
+    def join_item(self, context: bpy.types.Context) -> None:
+        assert context.view_layer
         props = tool.Geometry.get_geometry_props()
         ifc_file = tool.Ifc.get()
         item = tool.Geometry.get_active_representation(self.target)
@@ -1584,8 +1585,8 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
         if tool.Geometry.is_meshlike_item(item):
             tool.Geometry.dissolve_triangulated_edges(self.target)
             item_objs = [i.obj for i in props.item_objs if i.obj]
-            joined_objs = []
-            for selected_obj in bpy.context.selected_objects:
+            joined_objs: list[bpy.types.Object] = []
+            for selected_obj in context.selected_editable_objects:
                 if selected_obj in item_objs:
                     if selected_obj != self.target:
                         tool.Geometry.dissolve_triangulated_edges(selected_obj)
@@ -1603,11 +1604,12 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
             for item_data in items_data:
                 props.add_item_object(item_data["obj"], ifc_file.by_id(item_data["ifc_definition_id"]))
 
-            tool.Geometry.reload_representation(props.representation_obj)
-            bpy.context.view_layer.update()
+            assert (rep_obj := props.representation_obj)
+            tool.Geometry.reload_representation(rep_obj)
+            context.view_layer.update()
             tool.Root.reload_item_decorator()
 
-    def join_ifc_obj(self) -> None:
+    def join_ifc_obj(self, context: bpy.types.Context) -> None:
         ifc_file = tool.Ifc.get()
         builder = ShapeBuilder(ifc_file)
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
@@ -1615,8 +1617,12 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
         assert representation
         representation_type = representation.RepresentationType
         if representation_type in ("Tessellation", "Brep"):
-            for obj in bpy.context.selected_objects:
+            for obj in context.selected_editable_objects:
                 if obj == self.target:
+                    continue
+                if obj.type != self.target_type:
+                    # Should be safe to pass to object.join, but need to skip bim.update_representation.
+                    obj.select_set(False)
                     continue
                 element = tool.Ifc.get_entity(obj)
                 if element:
@@ -1629,8 +1635,9 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 self.report({"ERROR"}, "Joining representation of type Curve2D is not supported.")
                 return
 
+            M_TRANSLATION = (slice(0, 3), 3)
             target_placement = np.array(self.target.matrix_world)
-            target_placement[:, 3][:3] /= si_conversion
+            target_placement[M_TRANSLATION] /= si_conversion
 
             def apply_placement(
                 local_pos: npt.NDArray[np.float64], obj_placement: ifcopenshell.util.placement.MatrixType
@@ -1640,8 +1647,11 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 return position
 
             items = list(representation.Items)
-            for obj in bpy.context.selected_objects:
+            for obj in context.selected_editable_objects:
                 if obj == self.target:
+                    continue
+                if obj.type != self.target_type:
+                    obj.select_set((False))
                     continue
                 element = tool.Ifc.get_entity(obj)
 
@@ -1663,7 +1673,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                     return
 
                 placement = np.array(obj.matrix_world)
-                placement[:, 3][:3] /= si_conversion
+                placement[M_TRANSLATION] /= si_conversion
 
                 rep_items = list(obj_rep.Items)
                 curve_set_items = {}
@@ -1753,10 +1763,10 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 apply_openings=True,
             )
 
-    def join_blender_obj(self) -> None:
+    def join_blender_obj(self, context: bpy.types.Context) -> None:
         ifc_file = tool.Ifc.get()
-        for obj in bpy.context.selected_objects:
-            if obj == self.target:
+        for obj in context.selected_editable_objects:
+            if obj.type != self.target_type:
                 continue
             # TODO Properly handle element types, grid axes, and representation items
             element = tool.Ifc.get_entity(obj)
