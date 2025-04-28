@@ -190,7 +190,7 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         else:
             assert False, f"Unexpected representation type: '{representation_type}'."
 
-        obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
+        tool.Geometry.name_item_object(obj, item)
         tool.Ifc.link(item, obj)
         tool.Ifc.link(item, obj.data)
         props.add_item_object(obj, item)
@@ -2276,10 +2276,10 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                 representation = ifcopenshell.util.representation.resolve_representation(representation)
                 representation.Items = list(representation.Items) + [item]
 
-                name = f"Item/{item.is_a()}/{item.id()}"
-                mesh = bpy.data.meshes.new(name)
-                new_obj = bpy.data.objects.new(name, mesh)
-                tool.Ifc.link(item, new_obj.data)
+                mesh = bpy.data.meshes.new("temp")
+                new_obj = bpy.data.objects.new("temp", mesh)
+                tool.Geometry.name_item_object(new_obj, item)
+                tool.Ifc.link(item, mesh)
                 bpy.context.collection.objects.link(new_obj)
                 props.add_item_object(new_obj, item)
                 new_obj.matrix_world = obj.matrix_world
@@ -2832,10 +2832,10 @@ class ImportRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
                 queue.append(item.SecondOperand.id())
                 boolean_ids.add(item.SecondOperand.id())
                 continue
-            item_mesh = bpy.data.meshes.new(f"Item/{item.is_a()}/{item_id}")
+            item_mesh = bpy.data.meshes.new("tmp")
             tool.Ifc.link(item, item_mesh)
-
-            item_obj = bpy.data.objects.new(f"Item/{item.is_a()}/{item_id}", item_mesh)
+            item_obj = bpy.data.objects.new("tmp", item_mesh)
+            tool.Geometry.name_item_object(item_obj, item)
             item_obj.matrix_world = obj.matrix_world
             bpy.context.collection.objects.link(item_obj)
 
@@ -2969,7 +2969,7 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
         props.add_item_object(obj, item)
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(props.representation_obj)
-        obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
+        tool.Geometry.name_item_object(obj, item)
         tool.Geometry.get_mesh_props(obj.data).ifc_definition_id = item.id()
         tool.Root.reload_item_decorator()
 
@@ -3018,7 +3018,7 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(props.representation_obj)
 
-        obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
+        tool.Geometry.name_item_object(obj, item)
         tool.Geometry.get_mesh_props(obj.data).ifc_definition_id = item.id()
         tool.Geometry.import_item(obj)
         tool.Geometry.import_item_attributes(obj)
@@ -3089,7 +3089,7 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(props.representation_obj)
 
-        obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
+        tool.Geometry.name_item_object(obj, item)
         tool.Geometry.get_mesh_props(obj.data).ifc_definition_id = item.id()
         tool.Geometry.import_item(obj)
         tool.Geometry.import_item_attributes(obj)
@@ -3138,7 +3138,7 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(props.representation_obj)
 
-        obj.name = obj.data.name = f"Item/{item.is_a()}/{item.id()}"
+        tool.Geometry.name_item_object(obj, item)
         tool.Geometry.get_mesh_props(obj.data).ifc_definition_id = item.id()
         tool.Geometry.import_item(obj)
 
