@@ -191,7 +191,6 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
             assert False, f"Unexpected representation type: '{representation_type}'."
 
         tool.Geometry.name_item_object(obj, item)
-        tool.Ifc.link(item, obj)
         tool.Ifc.link(item, obj.data)
         props.add_item_object(obj, item)
         return item
@@ -2970,7 +2969,7 @@ class AddMeshlikeItem(bpy.types.Operator, tool.Ifc.Operator):
         representation.Items = list(representation.Items) + [item]
         tool.Geometry.reload_representation(props.representation_obj)
         tool.Geometry.name_item_object(obj, item)
-        tool.Geometry.get_mesh_props(obj.data).ifc_definition_id = item.id()
+        tool.Ifc.link(item, obj.data)
         tool.Root.reload_item_decorator()
 
 
@@ -3019,7 +3018,8 @@ class AddSweptAreaSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         tool.Geometry.reload_representation(props.representation_obj)
 
         tool.Geometry.name_item_object(obj, item)
-        tool.Geometry.get_mesh_props(obj.data).ifc_definition_id = item.id()
+        assert isinstance(obj.data, bpy.types.Mesh)
+        tool.Ifc.link(item, obj.data)
         tool.Geometry.import_item(obj)
         tool.Geometry.import_item_attributes(obj)
         tool.Root.reload_item_decorator()
@@ -3090,7 +3090,8 @@ class AddCurvelikeItem(bpy.types.Operator, tool.Ifc.Operator):
         tool.Geometry.reload_representation(props.representation_obj)
 
         tool.Geometry.name_item_object(obj, item)
-        tool.Geometry.get_mesh_props(obj.data).ifc_definition_id = item.id()
+        assert isinstance(obj.data, bpy.types.Mesh)
+        tool.Ifc.link(item, obj.data)
         tool.Geometry.import_item(obj)
         tool.Geometry.import_item_attributes(obj)
 
@@ -3139,7 +3140,8 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
         tool.Geometry.reload_representation(props.representation_obj)
 
         tool.Geometry.name_item_object(obj, item)
-        tool.Geometry.get_mesh_props(obj.data).ifc_definition_id = item.id()
+        assert isinstance(obj.data, bpy.types.Mesh)
+        tool.Ifc.link(item, obj.data)
         tool.Geometry.import_item(obj)
 
         # TODO refactor to core and not rely on selection
