@@ -1903,6 +1903,7 @@ class Geometry(bonsai.core.tool.Geometry):
         for inverse in tool.Ifc.get().get_inverse(item):
             ifcopenshell.util.element.replace_attribute(inverse, item, new_item)
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
+        cls.name_item_object(obj, new_item)
         tool.Ifc.link(new_item, obj.data)
         cls.reload_representation(rep_obj)
         return new_item
