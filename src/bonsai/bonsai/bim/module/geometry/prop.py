@@ -162,6 +162,11 @@ class RepresentationItemObject(PropertyGroup):
     obj: PointerProperty(type=bpy.types.Object)
     ifc_definition_id: IntProperty()
 
+    if TYPE_CHECKING:
+        name: str
+        obj: Union[bpy.types.Object, None]
+        ifc_definition_id: int
+
 
 class ShapeAspect(PropertyGroup):
     name: StringProperty(

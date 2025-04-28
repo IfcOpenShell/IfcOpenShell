@@ -38,7 +38,7 @@ import ifcopenshell.util.shape
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from bonsai.tool.loader import OBJECT_DATA_TYPE
-from typing import Dict, Union, Optional, Any, Literal
+from typing import Dict, Union, Optional, Any, Literal, Iterable
 from ifcopenshell.util.shape import MatrixType
 
 
@@ -319,16 +319,15 @@ class IfcImporter:
         tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
 
     def process_element_filter(self) -> None:
+        elements: list[ifcopenshell.entity_instance]
         if self.ifc_import_settings.has_filter:
-            self.elements = self.ifc_import_settings.elements
-            if isinstance(self.elements, set):
-                self.elements = list(self.elements)
+            elements = list(self.ifc_import_settings.elements)
             # TODO: enable filtering for annotations
         else:
             if self.file.schema in ("IFC2X3", "IFC4"):
-                self.elements = self.file.by_type("IfcElement") + self.file.by_type("IfcProxy")
+                elements = self.file.by_type("IfcElement") + self.file.by_type("IfcProxy")
             else:
-                self.elements = self.file.by_type("IfcElement")
+                elements = self.file.by_type("IfcElement")
 
         drawing_groups = [g for g in self.file.by_type("IfcGroup") if g.ObjectType == "DRAWING"]
         drawing_annotations = set()
@@ -338,16 +337,16 @@ class IfcImporter:
         self.annotations = set([a for a in self.file.by_type("IfcAnnotation")])
         self.annotations -= drawing_annotations
 
-        self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
+        elements = [e for e in elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
         if self.ifc_import_settings.element_limit_mode == "UNLIMITED":
-            self.elements = set(self.elements)
+            self.elements = set(elements)
         else:
             offset = self.ifc_import_settings.element_offset
             offset_limit = offset + self.ifc_import_settings.element_limit
-            self.elements = set(self.elements[offset:offset_limit])
+            self.elements = set(elements[offset:offset_limit])
 
         if self.ifc_import_settings.has_filter or self.ifc_import_settings.element_limit_mode != "UNLIMITED":
-            self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
+            self.element_types = {t for e in self.elements if (t := ifcopenshell.util.element.get_type(e))}
         else:
             self.element_types = set(self.file.by_type("IfcTypeProduct"))
 
@@ -1168,13 +1167,13 @@ class IfcImportSettings:
         self.element_limit_mode = "UNLIMITED"
         self.element_offset = 0
         self.element_limit = 30000
-        self.has_filter = None
+        self.has_filter = False
         self.should_filter_spatial_elements = True
         self.should_setup_viewport_camera = True
         self.contexts: list[ifcopenshell.entity_instance] = []
         self.context_settings: list[ifcopenshell.geom.main.settings] = []
         self.gross_context_settings: list[ifcopenshell.geom.main.settings] = []
-        self.elements: set[ifcopenshell.entity_instance] = set()
+        self.elements: Iterable[ifcopenshell.entity_instance] = set()
         self.load_indexed_maps = False
 
     @staticmethod

@@ -1736,13 +1736,14 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
             )
 
     def join_blender_obj(self) -> None:
+        ifc_file = tool.Ifc.get()
         for obj in bpy.context.selected_objects:
             if obj == self.target:
                 continue
             # TODO Properly handle element types, grid axes, and representation items
             element = tool.Ifc.get_entity(obj)
             if element:
-                ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+                ifcopenshell.api.root.remove_product(ifc_file, product=element)
         bpy.ops.object.join()
 
 
