@@ -1872,7 +1872,10 @@ class Geometry(bonsai.core.tool.Geometry):
         tool.Feature.get_boolean_props().is_editing = False
 
     @classmethod
-    def edit_meshlike_item(cls, obj: bpy.types.Object) -> None:
+    def edit_meshlike_item(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
+        """
+        :return: New IfcRepresentationItem or ``None`` if mesh hasn't changed.
+        """
         item = tool.Geometry.get_active_representation(obj)
         assert item
         assert isinstance(obj.data, (bpy.types.Curve, bpy.types.Mesh))
@@ -1902,6 +1905,7 @@ class Geometry(bonsai.core.tool.Geometry):
         ifcopenshell.util.element.remove_deep2(tool.Ifc.get(), item)
         tool.Ifc.link(new_item, obj.data)
         cls.reload_representation(rep_obj)
+        return new_item
 
     @classmethod
     def split_by_loose_parts(cls, obj: bpy.types.Object) -> List[bpy.types.Mesh]:
