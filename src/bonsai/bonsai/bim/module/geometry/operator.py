@@ -1591,6 +1591,9 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                     if selected_obj != self.target:
                         tool.Geometry.dissolve_triangulated_edges(selected_obj)
                         joined_ifc_item_objs.append(selected_obj)
+                elif not tool.Ifc.get_entity(selected_obj) and selected_obj.type == self.target_type:
+                    # Allow joining with non-ifc Blender objects.
+                    pass
                 else:
                     selected_obj.select_set(False)
 
