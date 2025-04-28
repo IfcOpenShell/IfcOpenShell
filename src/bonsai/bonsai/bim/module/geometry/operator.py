@@ -1586,24 +1586,31 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
         if tool.Geometry.is_meshlike_item(item):
             tool.Geometry.dissolve_triangulated_edges(self.target)
             item_objs = [i.obj for i in props.item_objs if i.obj]
-            joined_objs: list[bpy.types.Object] = []
+            joined_ifc_item_objs: list[bpy.types.Object] = []
             for selected_obj in context.selected_editable_objects:
                 if selected_obj in item_objs:
                     if selected_obj != self.target:
                         tool.Geometry.dissolve_triangulated_edges(selected_obj)
-                        joined_objs.append(selected_obj)
+                        joined_ifc_item_objs.append(selected_obj)
                 else:
                     selected_obj.select_set(False)
-            bpy.ops.object.join()
-            tool.Geometry.edit_meshlike_item(self.target)
 
-            for joined_obj in joined_objs:
+            bpy.ops.object.join()
+            new_item = tool.Geometry.edit_meshlike_item(self.target)
+            for joined_obj in joined_ifc_item_objs:
                 tool.Geometry.delete_ifc_item(joined_obj)
 
-            items_data = [dict(i) for i in props.item_objs if i.obj]
+            # Refresh `item_objs`.
+            items_data = {i.obj: i.ifc_definition_id for i in props.item_objs if i.obj}
             props.item_objs.clear()
-            for item_data in items_data:
-                props.add_item_object(item_data["obj"], ifc_file.by_id(item_data["ifc_definition_id"]))
+            if new_item:
+                items_data[self.target] = new_item.id()
+            for obj, ifc_id in items_data.items():
+                props.add_item_object(obj, ifc_file.by_id(ifc_id))
+
+            if new_item is None:
+                tool.Root.reload_item_decorator()
+                return
 
             assert (rep_obj := props.representation_obj)
             tool.Geometry.reload_representation(rep_obj)
