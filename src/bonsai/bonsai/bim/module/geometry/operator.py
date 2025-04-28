@@ -1538,6 +1538,16 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
     target: bpy.types.Object
     target_element: ifcopenshell.entity_instance
 
+    @classmethod
+    def poll(cls, context):
+        if not bpy.ops.object.join.poll():
+            cls.poll_message_set("Active object is not EDITable.")
+            return False
+        if not context.selected_editable_objects:
+            cls.poll_message_set("No objects are selected.")
+            return False
+        return True
+
     def invoke(self, context, event):
         if not tool.Ifc.get():
             return bpy.ops.object.join()
@@ -1547,10 +1557,14 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
         if not tool.Ifc.get():
             return bpy.ops.object.join()
 
-        if not context.active_object:
-            return
-
+        assert context.active_object
         self.target = context.active_object
+        self.target_type = self.target.type
+
+        if not any(obj.type == self.target_type and obj != self.target for obj in context.selected_editable_objects):
+            self.report({"ERROR"}, f"No additional objects of type '{self.target_type}' selected to join.")
+            return {"CANCELLED"}
+
         if tool.Geometry.is_representation_item(self.target):
             return self.join_item()
         elif target_element := tool.Ifc.get_entity(self.target):
