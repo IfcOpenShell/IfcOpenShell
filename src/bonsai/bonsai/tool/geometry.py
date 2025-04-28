@@ -2148,7 +2148,7 @@ class Geometry(bonsai.core.tool.Geometry):
         temp_data = obj.data.copy()
         new_obj.data = temp_data
         tool.Ifc.link(new_item, temp_data)
-        new_obj.name = obj.data.name = f"Item/{new_item.is_a()}/{new_item.id()}"
+        tool.Geometry.name_item_object(obj, item)
         props.add_item_object(new_obj, new_item)
 
         for collection in obj.users_collection:
@@ -2245,3 +2245,8 @@ class Geometry(bonsai.core.tool.Geometry):
                 ]
                 if linked_aggregate_group:
                     tool.Ifc.run("group.unassign_group", group=linked_aggregate_group[0], products=[new[0]])
+
+    @classmethod
+    def name_item_object(cls, obj: bpy.types.Object, item: ifcopenshell.entity_instance) -> None:
+        assert (data := obj.data)
+        obj.name = data.name = f"Item/{item.is_a()}/{item.id()}"
