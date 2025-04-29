@@ -742,6 +742,7 @@ class Drawing(bonsai.core.tool.Drawing):
         ifc_importer.load_existing_meshes()
         ifc_importer.material_creator.load_existing_materials()
         ifc_importer.create_generic_elements(elements)
+        ifc_importer.setup_arrays(elements)
         for obj in ifc_importer.added_data.values():
             tool.Collector.assign(obj)
 

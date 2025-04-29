@@ -1136,7 +1136,7 @@ class IfcImporter:
             bpy.ops.view3d.view_selected()
             bpy.ops.object.select_all(action="DESELECT")
 
-    def setup_arrays(self, elements: Optional[set[ifcopenshell.entity_instance]] = None):
+    def setup_arrays(self, annotations_to_import: Optional[set[ifcopenshell.entity_instance]] = None) -> None:
         for pset in self.file.by_type("IfcPropertySet"):
             if pset.Name != "BBIM_Array":
                 continue
@@ -1144,10 +1144,15 @@ class IfcImporter:
                 continue
             data = json.loads(data)
             for rel in pset.DefinesOccurrence:
+                element: ifcopenshell.entity_instance
                 for element in rel.RelatedObjects:
-                    if element.is_a("IfcAnnotation"):
+                    if annotations_to_import is None:
                         # IfcAnnotations are not loaded during base import.
-                        continue
+                        if element.is_a("IfcAnnotation"):
+                            continue
+                    else:
+                        if element not in annotations_to_import:
+                            continue
                     for i in range(len(data)):
                         tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
                         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
