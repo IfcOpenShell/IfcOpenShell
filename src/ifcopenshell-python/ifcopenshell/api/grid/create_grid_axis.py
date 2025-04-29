@@ -50,20 +50,15 @@ def create_grid_axis(
     :param axis_tag: The name of the axis, that would typically be labeled
         on drawings or described on site during coordination, such as A, B,
         C, 1, 2, 3, etc. Defaults to "A".
-    :type axis_tag: str, optional
     :param same_sense: Determines whether the direction of the axis's line
         is reversed. True means the direction the geometry is defined in
         represents the direction of the axis. False means the direction is
         reversed. Leave as True if unsure. Defaults to "True".
-    :type same_sense: bool, optional
     :param uvw_axes: Choose from "UAxes", "VAxes" or "WAxes" depending on
         which set of axes the new axis you are adding should belong to.
         Defaults to "UAxes".
-    :type uvw_axes: str, optional
     :param grid: The IfcGrid you are adding the axis to.
-    :type grid: ifcopenshell.entity_instance
     :return: The newly created IfcGridAxis
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
