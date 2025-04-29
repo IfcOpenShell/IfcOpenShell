@@ -46,7 +46,7 @@ import bonsai.bim.export_ifc
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
-from typing import NamedTuple, List, Union, Optional, Literal
+from typing import NamedTuple, List, Union, Optional, Literal, TYPE_CHECKING, Any
 from lxml import etree
 from math import radians
 from mathutils import Vector, Color, Matrix
@@ -55,6 +55,9 @@ from bonsai.bim.module.drawing.prop import RasterStyleProperty, RASTER_STYLE_PRO
 from bonsai.bim.ifc import IfcStore
 from pathlib import Path
 from bpy_extras.image_utils import load_image
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.project.prop import Link
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -833,9 +836,7 @@ class CreateDrawing(bpy.types.Operator):
         for link in props.links:
             if not link.is_loaded:
                 continue
-            if link.name not in IfcStore.session_files:
-                IfcStore.session_files[link.name] = ifcopenshell.open(link.name)
-            files[link.name] = IfcStore.session_files[link.name]
+            files[link.name] = self.get_linked_file(link)
 
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
         self.setup_serialiser(target_view)
@@ -1242,34 +1243,41 @@ class CreateDrawing(bpy.types.Operator):
         self.is_manifold_cache[obj.data.name] = True
         return True
 
-    def get_element_by_guid(self, guid):
+    def get_linked_file(self, link: "Link") -> ifcopenshell.file:
+        link_path = link.name
+        ifc_file = IfcStore.session_files.get(link_path, None)
+        if ifc_file is not None:
+            return ifc_file
+        resolved_path = tool.Ifc.resolve_uri(link_path)
+        ifc_file = IfcStore.session_files[link_path] = ifcopenshell.open(resolved_path)
+        return ifc_file
+
+    def get_element_by_guid(self, guid: str) -> Union[ifcopenshell.entity_instance, None]:
         try:
             return tool.Ifc.get().by_guid(guid)
-        except:
+        except RuntimeError:
             props = tool.Project.get_project_props()
             for link in props.links:
-                if link.name not in IfcStore.session_files:
-                    IfcStore.session_files[link.name] = ifcopenshell.open(link.name)
+                ifc_file = self.get_linked_file(link)
                 try:
-                    return IfcStore.session_files[link.name].by_guid(guid)
-                except:
+                    return ifc_file.by_guid(guid)
+                except RuntimeError:
                     continue
 
-    def get_element_by_id(self, step_id):
+    def get_element_by_id(self, step_id: Any) -> Union[ifcopenshell.entity_instance, None]:
         try:
             step_id = int(step_id)
         except:
             return
         try:
             return tool.Ifc.get().by_id(step_id)
-        except:
+        except RuntimeError:
             props = tool.Project.get_project_props()
             for link in props.links:
-                if link.name not in IfcStore.session_files:
-                    IfcStore.session_files[link.name] = ifcopenshell.open(link.name)
+                ifc_file = self.get_linked_file(link)
                 try:
-                    return IfcStore.session_files[link.name].by_id(step_id)
-                except:
+                    return ifc_file.by_id(step_id)
+                except RuntimeError:
                     continue
 
     def remove_cut_linework(self, root):
