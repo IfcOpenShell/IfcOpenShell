@@ -58,6 +58,7 @@ from bpy_extras.image_utils import load_image
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import Link
+    from bpy._typing import rna_enums
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
@@ -223,6 +224,7 @@ class CreateDrawing(bpy.types.Operator):
     )
 
     drawing_name: str
+    is_manifold_cache: dict[str, bool]
 
     @classmethod
     def poll(cls, context):
@@ -1225,7 +1227,7 @@ class CreateDrawing(bpy.types.Operator):
                 )
         return classes
 
-    def is_manifold(self, obj):
+    def is_manifold(self, obj) -> bool:
         result = self.is_manifold_cache.get(obj.data.name, None)
         if result is not None:
             return result
@@ -2127,14 +2129,14 @@ class ActivateModel(bpy.types.Operator):
 
 
 class ActivateDrawingBase:
-    def invoke(self, context, event):
+    def invoke(self, context, event) -> set["rna_enums.OperatorReturnItems"]:
         if event.type == "LEFTMOUSE" and event.alt:
             self.should_view_from_camera = False
         if event.type == "LEFTMOUSE" and event.shift:
             self.use_quick_preview = True
         return self.execute(context)
 
-    def execute(self, context):
+    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         props = tool.Drawing.get_document_props()
         if props.is_editing_drawings == False:
             bpy.ops.bim.load_drawings()

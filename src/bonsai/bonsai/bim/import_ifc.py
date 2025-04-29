@@ -198,11 +198,16 @@ class MaterialCreator:
 
 
 class IfcImporter:
+    file: ifcopenshell.file
+    """Either provided by user as an attribute or will be loaded from ``input_file`` during ``execute()``."""
+
+    elements: set[ifcopenshell.entity_instance]
+    """Set of IfcElements to import. Excluding ``gross_elements`` and ```native_elements``."""
+
     def __init__(self, ifc_import_settings: IfcImportSettings):
         self.ifc_import_settings = ifc_import_settings
         tool.Loader.set_settings(ifc_import_settings)
         self.diff = None
-        self.file: ifcopenshell.file = None
         self.project = None
         self.has_existing_project = False
         # element guids to blender collections mapping
@@ -300,6 +305,7 @@ class IfcImporter:
         bpy.context.window_manager.progress_end()
 
     def process_context_filter(self) -> None:
+        """Setup contexts. Necessary for importing elements representations."""
         contexts = self.file.by_type("IfcGeometricRepresentationContext")
         if len(contexts) > 100:  # Probably something strange happening. Encountered from Revizto.
             print("Warning! Excessive contexts were found and merged where applicable.")
@@ -384,6 +390,7 @@ class IfcImporter:
         return results
 
     def parse_native_elements(self) -> None:
+        # TODO: move to `process_element_filter` to incapsulate all `self.elements` logic.
         if not self.ifc_import_settings.should_load_geometry:
             return
         if not self.file.by_type("IfcSweptDiskSolid"):
@@ -1129,7 +1136,7 @@ class IfcImporter:
             bpy.ops.view3d.view_selected()
             bpy.ops.object.select_all(action="DESELECT")
 
-    def setup_arrays(self):
+    def setup_arrays(self, elements: Optional[set[ifcopenshell.entity_instance]] = None):
         for pset in self.file.by_type("IfcPropertySet"):
             if pset.Name != "BBIM_Array":
                 continue
@@ -1144,9 +1151,10 @@ class IfcImporter:
 
 
 class IfcImportSettings:
+    input_file: Union[str, None] = None
+    logger: Union[logging.Logger, None] = None
+
     def __init__(self):
-        self.logger: logging.Logger = None
-        self.input_file = None
         self.diff_file = None
         self.geometry_library = "opencascade"
         self.should_use_cpu_multiprocessing = True
@@ -1177,7 +1185,9 @@ class IfcImportSettings:
         self.load_indexed_maps = False
 
     @staticmethod
-    def factory(context=None, input_file=None, logger=None):
+    def factory(
+        context=None, input_file: Optional[str] = None, logger: Optional[logging.Logger] = None
+    ) -> IfcImportSettings:
         scene_diff = tool.Blender.get_diff_props()
         props = tool.Project.get_project_props()
         settings = IfcImportSettings()

@@ -18,14 +18,17 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.api.grid
 import bonsai.tool as tool
 import bonsai.core.root
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty
 from mathutils import Vector
+from typing import TYPE_CHECKING
 
 
-def add_object(self, context):
+def add_object(self: "BIM_OT_add_object", context: bpy.types.Context) -> None:
+    ifc_file = tool.Ifc.get()
     obj = bpy.data.objects.new("Grid", None)
     obj.name = "Grid"
 
@@ -33,6 +36,7 @@ def add_object(self, context):
         tool.Ifc, tool.Collector, tool.Root, obj=obj, ifc_class="IfcGrid", should_add_representation=False
     )
     grid = tool.Ifc.get_entity(obj)
+    assert grid
 
     for i in range(0, self.total_u):
         verts = [
@@ -46,9 +50,7 @@ def add_object(self, context):
         tag = chr(ord("A") + i)
         obj = bpy.data.objects.new(f"IfcGridAxis/{tag}", mesh)
 
-        result = ifcopenshell.api.run(
-            "grid.create_grid_axis", tool.Ifc.get(), axis_tag=tag, uvw_axes="UAxes", grid=grid
-        )
+        result = ifcopenshell.api.grid.create_grid_axis(ifc_file, axis_tag=tag, uvw_axes="UAxes", grid=grid)
         tool.Ifc.link(result, obj)
         tool.Model.create_axis_curve(obj, result)
         tool.Collector.assign(obj)
@@ -65,9 +67,7 @@ def add_object(self, context):
         tag = str(i + 1).zfill(2)
         obj = bpy.data.objects.new(f"IfcGridAxis/{tag}", mesh)
 
-        result = ifcopenshell.api.run(
-            "grid.create_grid_axis", tool.Ifc.get(), axis_tag=tag, uvw_axes="VAxes", grid=grid
-        )
+        result = ifcopenshell.api.grid.create_grid_axis(ifc_file, axis_tag=tag, uvw_axes="VAxes", grid=grid)
         tool.Ifc.link(result, obj)
         tool.Model.create_axis_curve(obj, result)
         tool.Collector.assign(obj)
@@ -78,12 +78,19 @@ def add_object(self, context):
 class BIM_OT_add_object(Operator, tool.Ifc.Operator):
     bl_idname = "mesh.add_grid"
     bl_label = "Grid"
+    bl_description = "Add IfcGrid."
     bl_options = {"REGISTER", "UNDO"}
 
     u_spacing: FloatProperty(name="U Spacing", default=10)
     total_u: IntProperty(name="Number of U Grids", default=3)
     v_spacing: FloatProperty(name="V Spacing", default=10)
     total_v: IntProperty(name="Number of V Grids", default=3)
+
+    if TYPE_CHECKING:
+        u_spacing: float
+        total_u: int
+        v_spacing: float
+        total_v: int
 
     @classmethod
     def poll(cls, context):
