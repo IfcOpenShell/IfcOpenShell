@@ -38,16 +38,6 @@ using namespace IfcGeom;
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
 
-void CgalKernel::remove_duplicate_points_from_loop(cgal_wire_t& polygon) {
-	std::set<cgal_point_t> points;
-	for (int i = 0; i < polygon.size(); ++i) {
-		if (points.count(polygon[i])) {
-			polygon.erase(polygon.begin() + i);
-			--i;
-		} else points.insert(polygon[i]);
-	}
-}
-
 namespace {
 	struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> {
 	private:
@@ -723,17 +713,29 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 	// A loop should consist of at least three vertices
 	std::size_t original_count = polygon.size();
 	if (original_count < 3) {
-		Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", loop->instance);
+		Logger::Warning("Not enough edges for:", loop->instance);
 		return false;
 	}
 
 	// Remove points that are too close to one another
-	remove_duplicate_points_from_loop(polygon);
+	// this is done now in the mapping layer with Eigen
+	// remove_duplicate_points_from_loop(polygon);
 
 	std::size_t count = polygon.size();
 	if (original_count - count != 0) {
 		std::stringstream ss; ss << (original_count - count) << " edges removed for:";
-		Logger::Message(Logger::LOG_WARNING, ss.str(), loop->instance);
+		Logger::Warning(ss.str(), loop->instance);
+	}
+
+	{
+		std::set<cgal_point_t> visited_points;
+		for (auto& p : polygon) {
+			if (visited_points.find(p) != visited_points.end()) {
+				Logger::Error("Skipping self-intersecting loop", loop->instance);
+				return false;
+			}
+			visited_points.insert(p);
+		}
 	}
 
 	std::vector<Kernel_::Segment_3> segments;
