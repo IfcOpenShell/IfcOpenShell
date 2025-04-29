@@ -20,6 +20,7 @@ import bpy
 import json
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import bonsai.tool as tool
@@ -33,8 +34,9 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
+        assert (obj := context.active_object)
+        assert (element := tool.Ifc.get_entity(obj))
+        ifc_file = tool.Ifc.get()
 
         array = {
             "children": [],
@@ -54,14 +56,13 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
             data.append(array)
             pset = tool.Ifc.get().by_id(pset["id"])
         else:
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Array")
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="BBIM_Array")
             data = [array]
 
-        ifcopenshell.api.run(
-            "pset.edit_pset",
-            tool.Ifc.get(),
+        ifcopenshell.api.pset.edit_pset(
+            ifc_file,
             pset=pset,
-            properties={"Parent": element.GlobalId, "Data": tool.Ifc.get().createIfcText(json.dumps(data))},
+            properties={"Parent": element.GlobalId, "Data": ifc_file.create_entity("IfcText", json.dumps(data))},
         )
         return {"FINISHED"}
 
