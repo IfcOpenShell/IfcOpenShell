@@ -81,9 +81,9 @@ class BIM_OT_add_object(Operator, tool.Ifc.Operator):
     bl_description = "Add IfcGrid."
     bl_options = {"REGISTER", "UNDO"}
 
-    u_spacing: FloatProperty(name="U Spacing", default=10)
+    u_spacing: FloatProperty(name="U Spacing", default=10, subtype="DISTANCE")
     total_u: IntProperty(name="Number of U Grids", default=3)
-    v_spacing: FloatProperty(name="V Spacing", default=10)
+    v_spacing: FloatProperty(name="V Spacing", default=10, subtype="DISTANCE")
     total_v: IntProperty(name="Number of V Grids", default=3)
 
     if TYPE_CHECKING:
