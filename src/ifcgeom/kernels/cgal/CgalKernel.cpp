@@ -732,6 +732,8 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 		for (auto& p : polygon) {
 			if (visited_points.find(p) != visited_points.end()) {
 				Logger::Error("Skipping self-intersecting loop", loop->instance);
+				// @todo signal somehow that occt kernel might be able to solve this
+				// @todo implement cycle detection using Arrangement_2, but that only works in exact kernel
 				return false;
 			}
 			visited_points.insert(p);
