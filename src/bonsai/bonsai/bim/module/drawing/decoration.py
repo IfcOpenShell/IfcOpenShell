@@ -590,7 +590,7 @@ class BaseDecorator:
         """if `text_world_position` is not provided, the object's location will be used"""
 
         if not text_world_position:
-            text_world_position = obj.location
+            text_world_position = obj.matrix_world.translation
 
         region = context.region
         region3d = context.region_data
