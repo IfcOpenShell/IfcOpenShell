@@ -38,6 +38,13 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
         assert (element := tool.Ifc.get_entity(obj))
         ifc_file = tool.Ifc.get()
 
+        if not element.is_a("IfcElement") and not element.is_a("IfcAnnotation"):
+            self.report(
+                {"ERROR"},
+                f"Adding array to element of type '{element.is_a()}' is not supported. Supported types: IfcElement, IfcAnnotation.",
+            )
+            return {"CANCELLED"}
+
         array = {
             "children": [],
             "count": 1,
