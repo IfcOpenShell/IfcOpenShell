@@ -35,7 +35,7 @@ from bpy.props import (
     IntProperty,
     StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, Union, get_args
+from typing import TYPE_CHECKING, Literal, Union, get_args, Generator
 from typing_extensions import assert_never
 
 
@@ -499,6 +499,12 @@ class BIMProjectProperties(PropertyGroup):
         if self.library_breadcrumb:
             return self.library_breadcrumb[-1]
         return None
+
+    def get_loaded_links(self) -> Generator[Link, None, None]:
+        for link in self.links:
+            if not link.is_loaded:
+                continue
+            yield link
 
 
 class MeasureToolSettings(PropertyGroup):

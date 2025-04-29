@@ -833,9 +833,7 @@ class CreateDrawing(bpy.types.Operator):
         files = {bim_props.ifc_file: tool.Ifc.get()}
 
         props = tool.Project.get_project_props()
-        for link in props.links:
-            if not link.is_loaded:
-                continue
+        for link in props.get_loaded_links():
             files[link.name] = self.get_linked_file(link)
 
         target_view = ifcopenshell.util.element.get_psets(self.camera_element)["EPset_Drawing"]["TargetView"]
@@ -1257,7 +1255,7 @@ class CreateDrawing(bpy.types.Operator):
             return tool.Ifc.get().by_guid(guid)
         except RuntimeError:
             props = tool.Project.get_project_props()
-            for link in props.links:
+            for link in props.get_loaded_links():
                 ifc_file = self.get_linked_file(link)
                 try:
                     return ifc_file.by_guid(guid)
@@ -1273,7 +1271,7 @@ class CreateDrawing(bpy.types.Operator):
             return tool.Ifc.get().by_id(step_id)
         except RuntimeError:
             props = tool.Project.get_project_props()
-            for link in props.links:
+            for link in props.get_loaded_links():
                 ifc_file = self.get_linked_file(link)
                 try:
                     return ifc_file.by_id(step_id)
