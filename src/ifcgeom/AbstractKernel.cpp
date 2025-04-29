@@ -212,6 +212,7 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 
 		for (auto it = kernels.begin(); it != kernels.end(); ++it) {
 			(**it).propagate_exceptions = it == kernels.begin();
+			(**it).partial_success_is_success = it == kernels.end() - 1;
 		}
 
 		if (!kernels.empty()) {
@@ -225,7 +226,9 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::collection::ptr collection, IfcGeom::ConversionResults& r) {
 	auto s = r.size();
 	for (auto& c : collection->children) {
-		convert(c, r);
+		if (!partial_success_is_success && !convert(c, r)) {
+			return false;
+		}
 	}
 	for (auto i = s; i < r.size(); ++i) {
 		if (collection->matrix) {
