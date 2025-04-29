@@ -263,31 +263,46 @@ class Ifc(bonsai.core.tool.Ifc):
         IfcStore.history_edit_object(obj, finish_editing=True)
 
     @classmethod
-    def resolve_uri(cls, uri: str) -> str:
-        """Get absolute path based on the active IFC file."""
-        if os.path.isabs(uri):
-            return uri
-        ifc_path = cls.get_path()
-        if os.path.isfile(ifc_path):
-            ifc_path = os.path.dirname(ifc_path)
-        return (uri if not uri else os.path.join(ifc_path, uri)).replace("\\", "/")
+    def normalize_path(cls, path: Union[Path, str]) -> str:
+        # Do not use `Path.resolve` as it will resolve symlinks too.
+        return Path(os.path.normpath(path)).as_posix()
 
     @classmethod
-    def get_uri(cls, uri: str | Path, use_relative_path: bool = False) -> str:
-        """Get path relative to the active IFC file, if `use_relative_path` is `True`.
-
-        If `use_relative_path` is `False` - get absolute filepath from uri.
-        """
-        if not use_relative_path:
-            return Path(uri).absolute().resolve().as_posix()
+    def resolve_uri(cls, uri: str | Path) -> str:
+        """Get absolute path based on the active IFC file."""
         uri = Path(uri)
-        if not os.path.isabs(uri) or not (ifc_path := cls.get_path()):
-            return uri.as_posix().replace("\\", "/")
-        if Path(uri).drive != Path(ifc_path).drive:
-            return uri.as_posix().replace("\\", "/")
-        if os.path.isfile(ifc_path):
-            ifc_path = os.path.dirname(ifc_path)
-        return Path(os.path.relpath(uri, ifc_path)).as_posix().replace("\\", "/")
+        if uri.is_absolute():
+            return cls.normalize_path(uri)
+        ifc_path = Path(cls.get_path())
+        if ifc_path.is_file():
+            ifc_path = ifc_path.parent
+        if not str(uri):
+            # TODO: When does it occur and why we return empty path in this case?
+            return str(uri)
+        return cls.normalize_path(ifc_path / uri)
+
+    @classmethod
+    def get_uri(cls, uri: str | Path, use_relative_path: bool) -> str:
+        """Get path relative to the active IFC file, if ``use_relative_path`` is ``True``.
+
+        ``use_relative_path`` is ``False``:
+        - return ``uri`` as-is if it's absolute
+        - raise ``ValueError`` if ``uri`` is relative (this condition indicates deeper code error)
+        """
+        uri = Path(uri)
+        if not use_relative_path:
+            if not uri.is_absolute():
+                raise ValueError(f"Unexpected relative path in get_uri: '{uri}'.")
+            return cls.normalize_path(uri)
+        if not uri.is_absolute() or not (ifc_path := cls.get_path()):
+            return cls.normalize_path(uri)
+        ifc_path = Path(ifc_path)
+        if uri.drive != ifc_path.drive:
+            return cls.normalize_path(uri)
+        if ifc_path.is_file():
+            ifc_path = ifc_path.parent
+        # Use `os.path.relpath` as it does support creating '..' paths.
+        return cls.normalize_path(Path(os.path.relpath(uri, ifc_path)))
 
     @classmethod
     def unlink(
