@@ -40,7 +40,7 @@ namespace ifcopenshell {
 			struct HasDefault<T, decltype((void)T::defaultvalue, 0)> : std::true_type { };
 #endif
 
-			template <typename Derived, typename T>
+			template <typename Derived, typename T, bool Internal=false>
 			struct SettingBase {
 				typedef T base_type;
 
@@ -61,7 +61,9 @@ namespace ifcopenshell {
 							return x;
 						}
 					};
-					if constexpr (std::is_same_v<T, bool>) {
+					if constexpr (Internal) {
+						// do nothing, this is an internal setting and not supposed to be set from the command line
+					} else if constexpr (std::is_same_v<T, bool>) {
 						// @todo bool_switch doesn't work with optional unfortunately...
 						value.emplace();
 						desc.add_options()(Derived::name, apply_default(po::bool_switch(&*value)), Derived::description);
@@ -120,19 +122,19 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = false;
 			};
 
-			struct LengthUnit : public SettingBase<LengthUnit, double> {
+			struct LengthUnit : public SettingBase<LengthUnit, double, true> {
 				static constexpr const char* const name = "length-unit";
 				static constexpr const char* const description = "";
 				static constexpr double defaultvalue = 1.0;
 			};
 
-			struct PlaneUnit : public SettingBase<PlaneUnit, double> {
+			struct PlaneUnit : public SettingBase<PlaneUnit, double, true> {
 				static constexpr const char* const name = "angle-unit";
 				static constexpr const char* const description = "";
 				static constexpr double defaultvalue = 1.0;
 			};
 
-			struct Precision : public SettingBase<Precision, double> {
+			struct Precision : public SettingBase<Precision, double, true> {
 				static constexpr const char* const name = "precision";
 				static constexpr const char* const description = "";
 				static constexpr double defaultvalue = 0.00001;
