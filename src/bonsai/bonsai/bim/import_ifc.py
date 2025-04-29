@@ -1145,6 +1145,9 @@ class IfcImporter:
             data = json.loads(data)
             for rel in pset.DefinesOccurrence:
                 for element in rel.RelatedObjects:
+                    if element.is_a("IfcAnnotation"):
+                        # IfcAnnotations are not loaded during base import.
+                        continue
                     for i in range(len(data)):
                         tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
                         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
