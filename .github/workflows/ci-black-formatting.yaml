@@ -32,6 +32,19 @@ jobs:
       #   run: |
       #     python3 -m black .
 
+      # black doesn't catch all syntax erors, so we check them explicitly.
+      - name: Check syntax errors
+        shell: sh
+        id: syntax-errors
+        run: |
+          ERROR=0
+          python3 -W error -m compileall -q src/ifcopenshell-python || ERROR=1
+          python3 -W error -m compileall -q src/bonsai || ERROR=1
+          if [ $ERROR -ne 0 ]; then \
+            echo "One or more tests failed"; \
+            exit 1; \
+          fi
+
       # QA STEP
       - name: QA Step - check linting
         shell: bash
