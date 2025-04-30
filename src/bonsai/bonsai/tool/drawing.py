@@ -1531,20 +1531,23 @@ class Drawing(bonsai.core.tool.Drawing):
         drawing: ifcopenshell.entity_instance,
         reference_element: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
-    ) -> ifcopenshell.entity_instance:
+    ) -> Union[ifcopenshell.entity_instance, None]:
         import bonsai.bim.module.drawing.helper as helper
 
         target_view = tool.Drawing.get_drawing_target_view(drawing)
 
         camera = tool.Ifc.get_object(drawing)
+        assert isinstance(camera, bpy.types.Object)
+        assert isinstance(camera_data := camera.data, bpy.types.Camera)
 
-        is_ortho = camera.data.type == "ORTHO"
-        bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
+        is_ortho = camera_data.type == "ORTHO"
+        bounds = helper.ortho_view_frame(camera_data) if is_ortho else None
         clipping = is_ortho and target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
         elevating = is_ortho and target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
 
         def clone(src: bpy.types.Object) -> bpy.types.Object:
             dst = src.copy()
+            assert isinstance(dst.data, bpy.types.Mesh)
             dst.data = dst.data.copy()
             dst.name = dst.name.replace("IfcGridAxis/", "")
             tool.Blender.get_object_bim_props(dst).ifc_definition_id = 0
@@ -1552,19 +1555,23 @@ class Drawing(bonsai.core.tool.Drawing):
             return dst
 
         def disassemble(obj: bpy.types.Object) -> tuple[bpy.types.Object, bmesh.types.BMesh]:
+            assert isinstance(obj.data, bpy.types.Mesh)
             mesh = bmesh.new()
             mesh.verts.ensure_lookup_table()
             mesh.from_mesh(obj.data)
             return obj, mesh
 
         def assemble(obj: bpy.types.Object, mesh: bmesh.types.BMesh) -> bpy.types.Object:
+            assert isinstance(obj.data, bpy.types.Mesh)
             mesh.to_mesh(obj.data)
             return obj
 
-        def to_camera_coords(obj: bpy.types.Object, mesh: bpy.types.Mesh) -> tuple[bpy.types.Object, bpy.types.Mesh]:
+        def to_camera_coords(
+            obj: bpy.types.Object, mesh: bmesh.types.BMesh
+        ) -> tuple[bpy.types.Object, bmesh.types.BMesh]:
             mesh.transform(camera.matrix_world.inverted() @ obj.matrix_world)
             obj.matrix_world = camera.matrix_world
-            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
+            annotation_offset = mathutils.Vector((0, 0, -camera_data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
             obj.matrix_world.translation += annotation_offset
             return obj, mesh
@@ -1595,6 +1602,7 @@ class Drawing(bonsai.core.tool.Drawing):
         obj = tool.Ifc.get_object(reference_element)
         if not obj:
             return
+        assert isinstance(obj, bpy.types.Object)
         obj, mesh = to_camera_coords(*disassemble(clone(obj)))
 
         if clipping:
