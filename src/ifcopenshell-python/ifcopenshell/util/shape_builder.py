@@ -129,6 +129,16 @@ def np_to_4x4(matrix_3x3: np.ndarray) -> np.ndarray:
     return matrix_4x4
 
 
+def np_apply_matrix(vectors: SequenceOfVectors, matrix: npt.NDArray) -> npt.NDArray:
+    """
+    :param vectors: Nx3 array of vectors.
+    :param matrix: 4x4 transformation matrix.
+    """
+    m3x3 = matrix[:3, :3]
+    translation = matrix[:3, 3]
+    return vectors @ m3x3.T + translation
+
+
 def np_angle(a: VectorType, b: VectorType) -> float:
     """Get angle between vectors in radians.
     Designed to work similar to `Vector.angle`.
