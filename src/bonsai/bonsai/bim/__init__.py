@@ -141,7 +141,6 @@ classes = [
     prop.BIMFilterGroup,
     prop.BIMSnapProperties,
     prop.BIMSnapGroups,
-    
     ui.BIM_UL_clipping_plane,
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,

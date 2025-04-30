@@ -1187,6 +1187,7 @@ def draw_statusbar(self, context):
     row = layout.row()
     row.operator("bim.show_system_info", text=bonsaiVer, emboss=False)
 
+
 def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
     # https://blender.stackexchange.com/a/275555/86891
     if (

@@ -1204,6 +1204,7 @@ class CopyTextToClipboard(bpy.types.Operator):
         context.window_manager.clipboard = self.text
         return {"FINISHED"}
 
+
 class Show_system_info(bpy.types.Operator):
     bl_idname = "bim.show_system_info"
     bl_label = "System Info"
