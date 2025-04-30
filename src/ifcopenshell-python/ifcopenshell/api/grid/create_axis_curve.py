@@ -70,10 +70,11 @@ def create_axis_curve(
     grid = [i for i in file.get_inverse(grid_axis) if i.is_a("IfcGrid")][0]
     grid_matrix_i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement))
     grid_axis.AxisCurve = file.create_entity(
-        "IfcPolyline"(
+        "IfcPolyline",
+        (
             file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(grid_matrix_i @ p1)),
             file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(grid_matrix_i @ p2)),
-        )
+        ),
     )
 
     if existing_curve:
