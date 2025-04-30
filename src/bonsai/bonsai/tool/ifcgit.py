@@ -570,6 +570,29 @@ class IfcGit:
         except FileNotFoundError:
             operator.report({"ERROR"}, "Winget is not available. Make sure Windows Package Manager is installed.")
 
+    @classmethod
+    def run_git_diff(cls, operator: bpy.types.Operator) -> None:
+        path = tool.Ifc.get_path()
+        ifc_file = tool.Ifc.get()
+        ifc_str = ifc_file.to_string()
+
+        # Avoid `text=True` as it's causing issues with colorful output.
+        result = subprocess.run(
+            ("git", "diff", "--no-index", "--color=always", "--", path, "-"),
+            input=ifc_str.encode(),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        if result.returncode == 0:
+            operator.report({"INFO"}, "No changes since last save.")
+            return
+        elif result.returncode == 1:
+            print(result.stdout.decode())
+            operator.report({"INFO"}, "See system console for git diff output.")
+            return
+        print(result)
+        raise Exception("Error running git diff, see system console.")
+
 
 class IfcGitRepo:
     repo: git.Repo = None

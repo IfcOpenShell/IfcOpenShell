@@ -283,3 +283,5 @@ class IFCGIT_PT_revision_inspector(bpy.types.Panel):
             "ifcgit.object_log",
             icon="TEXT",
         )
+        row = layout.row()
+        row.operator("ifcgit.git_diff")
