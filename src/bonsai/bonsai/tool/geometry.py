@@ -27,9 +27,11 @@ import numpy.typing as npt
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.boundary
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
 import ifcopenshell.api.profile
+import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.geom
 import ifcopenshell.guid
@@ -223,13 +225,14 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def delete_ifc_object(cls, obj: bpy.types.Object) -> None:
+        ifc_file = tool.Ifc.get()
         element = tool.Ifc.get_entity(obj)
         if not element:
             return
         elif element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
             return bonsai.core.drawing.remove_drawing(tool.Ifc, tool.Drawing, drawing=element)
         elif element.is_a("IfcRelSpaceBoundary"):
-            ifcopenshell.api.run("boundary.remove_boundary", tool.Ifc.get(), boundary=element)
+            ifcopenshell.api.boundary.remove_boundary(ifc_file, boundary=element)
             tool.Boundary.undecorate_boundary(obj)
             return bpy.data.objects.remove(obj)
         elif element.is_a("IfcGridAxis"):
@@ -241,14 +244,14 @@ class Geometry(bonsai.core.tool.Geometry):
                 is_last_axis = True
             if is_last_axis:
                 return
-            ifcopenshell.api.run("grid.remove_grid_axis", tool.Ifc.get(), axis=element)
+            ifcopenshell.api.grid.remove_grid_axis(ifc_file, axis=element)
             return bpy.data.objects.remove(obj)
         elif element.is_a("IfcGrid"):
             axes = list(element.UAxes or []) + list(element.VAxes or []) + list(element.WAxes or [])
             for axis in axes:
                 if axis_obj := tool.Ifc.get_object(axis):
                     bpy.data.objects.remove(axis_obj)
-                ifcopenshell.api.grid.remove_grid_axis(tool.Ifc.get(), axis=axis)
+                ifcopenshell.api.grid.remove_grid_axis(ifc_file, axis=axis)
 
         collection = tool.Blender.get_object_bim_props(obj).collection
         if collection:
@@ -286,7 +289,7 @@ class Geometry(bonsai.core.tool.Geometry):
                     bpy.ops.bim.remove_opening(opening_id=rel.RelatedOpeningElement.id())
             for port in ifcopenshell.util.system.get_ports(element):
                 bonsai.core.system.remove_port(tool.Ifc, tool.System, port=port)
-            ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+            ifcopenshell.api.root.remove_product(ifc_file, product=element)
 
             data = obj.data
             if (
