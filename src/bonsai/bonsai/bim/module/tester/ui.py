@@ -96,7 +96,11 @@ class BIM_PT_tester(Panel):
                 op2.spec_index = props.active_specification_index
                 op2.req_index = i
 
-        if props.old_index == props.active_specification_index and props.n_entities > 0 and len(props.failed_entities)>0:
+        if (
+            props.old_index == props.active_specification_index
+            and props.n_entities > 0
+            and len(props.failed_entities) > 0
+        ):
             row = self.layout.row()
             row.label(text=f"Failed entities [{props.n_entities}]:")
             self.layout.template_list(
