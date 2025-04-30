@@ -142,3 +142,7 @@ def install_git(ifcgit: tool.IfcGit, operator: bpy.types.Operator) -> None:
         ifcgit.install_git_windows(operator=operator)
     else:
         print("install_git() not implemented")
+
+
+def run_git_diff(ifcgit: tool.IfcGit, operator: bpy.types.Operator) -> None:
+    ifcgit.run_git_diff(operator)

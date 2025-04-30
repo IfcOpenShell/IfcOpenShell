@@ -409,3 +409,25 @@ class InstallGit(bpy.types.Operator):
         core.install_git(tool.IfcGit, self)
         refresh()
         return {"FINISHED"}
+
+
+class RunGitDiff(bpy.types.Operator):
+    """Run `git diff` for the current version of IFC file and the last saved one."""
+
+    bl_label = "Git Diff"
+    bl_idname = "ifcgit.git_diff"
+    bl_options = set()
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file loaded.")
+            return False
+        if not tool.Ifc.get_path():
+            cls.poll_message_set("Current IFC file was never saved.")
+            return False
+        return True
+
+    def execute(self, context):
+        core.run_git_diff(tool.IfcGit, self)
+        return {"FINISHED"}
