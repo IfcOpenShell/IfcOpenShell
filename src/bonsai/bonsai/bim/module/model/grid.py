@@ -20,6 +20,7 @@ import bpy
 import ifcopenshell.api
 import ifcopenshell.api.grid
 import bonsai.tool as tool
+import bonsai.core.geometry
 import bonsai.core.root
 from bpy.types import Operator
 from bpy.props import FloatProperty, IntProperty
@@ -37,6 +38,10 @@ def add_object(self: "BIM_OT_add_object", context: bpy.types.Context) -> None:
     )
     grid = tool.Ifc.get_entity(obj)
     assert grid
+
+    # Requirement in IFC4+.
+    if tool.Ifc.get_schema() != "IFC2X3":
+        bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj)
 
     for i in range(0, self.total_u):
         verts = [
