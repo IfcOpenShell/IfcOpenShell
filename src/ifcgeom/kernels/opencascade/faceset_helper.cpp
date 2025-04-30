@@ -41,11 +41,13 @@ IfcGeom::OpenCascadeKernel::faceset_helper::faceset_helper(
 		for (auto& l : f->children) {
 			loops.push_back(l);
 			for (auto& e : l->children) {
-				// @todo make sure only cartesian points are provided here
-				auto& p = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(e->orientation.get_value_or(true) ? e->start : e->end);
-				if (point_identities_visited.find(p->identity()) == point_identities_visited.end()) {
-					point_identities_visited.insert(p->identity());
-					points.push_back(p);
+				for (size_t i = 0; i < 2; ++i) {
+					// @todo make sure only cartesian points are provided here
+					auto& p = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(i == 0 ? e->start : e->end);
+					if (point_identities_visited.find(p->identity()) == point_identities_visited.end()) {
+						point_identities_visited.insert(p->identity());
+						points.push_back(p);
+					}
 				}
 			}
 		}
@@ -206,21 +208,19 @@ void IfcGeom::OpenCascadeKernel::faceset_helper::loop_(const ifcopenshell::geome
 		return;
 	}
 
-	auto a = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(ps->children.back()->orientation.get_value_or(true) ? ps->children.back()->start : ps->children.back()->end);
-	auto A = a->identity();
-	for (auto& b : ps->children) {
-		auto B = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(b->orientation.get_value_or(true) ? b->start : b->end)->identity();
+	for (auto& edge : ps->children) {
+		auto A = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(edge->start)->identity();
+		auto B = boost::get<ifcopenshell::geometry::taxonomy::point3::ptr>(edge->end)->identity();
 		auto C = vertex_mapping_[A], D = vertex_mapping_[B];
 		bool fwd = C < D;
-		if (!b->orientation) {
-			fwd = !fwd;
-		}
 		if (!fwd) {
 			std::swap(C, D);
 		}
+		if (!edge->orientation.get_value_or(true)) {
+			fwd = !fwd;
+		}
 		if (C != D) {
 			callback(C, D, fwd);
-			A = B;
 		}
 	}
 }
