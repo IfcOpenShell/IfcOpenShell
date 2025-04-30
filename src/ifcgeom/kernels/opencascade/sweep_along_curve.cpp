@@ -231,6 +231,9 @@ bool OpenCascadeKernel::convert(const taxonomy::sweep_along_curve::ptr scs, Topo
 			} else {
 				f0 = BRepBuilderAPI_MakeFace(w0).Face();
 				f1 = BRepBuilderAPI_MakeFace(w1).Face();
+				if (f0.IsNull() || f1.IsNull()) {
+					return false;
+				}
 				mf0.reset(new BRepBuilderAPI_MakeFace(f0));
 				mf1.reset(new BRepBuilderAPI_MakeFace(f1));
 			}
