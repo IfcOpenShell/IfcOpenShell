@@ -48,7 +48,7 @@ from bonsai.bim import import_ifc
 
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
-from ifcopenshell.util.shape_builder import ShapeBuilder
+from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
 from typing import Optional, Union, TypeVar, Any, Iterable, Literal, TYPE_CHECKING, Sequence, TypedDict
 
 T = TypeVar("T")
@@ -2126,7 +2126,7 @@ class Model(bonsai.core.tool.Model):
         assert isinstance(obj.data, bpy.types.Mesh)
         points = [m @ np.array(v.co.to_4d()) for v in obj.data.vertices[0:2]]
         ifcopenshell.api.grid.create_axis_curve(
-            tool.Ifc.get(), p1=points[0], p2=points[1], is_si=True, grid_axis=grid_axis
+            tool.Ifc.get(), p1=np_to_3d(points[0]), p2=np_to_3d(points[1]), is_si=True, grid_axis=grid_axis
         )
 
     @classmethod

@@ -22,7 +22,7 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import ifcopenshell.util.placement
 import numpy as np
-from ifcopenshell.util.shape_builder import VectorType, V, ifc_safe_vector_type
+from ifcopenshell.util.shape_builder import VectorType, V, ifc_safe_vector_type, np_apply_matrix
 
 
 def create_axis_curve(
@@ -37,6 +37,10 @@ def create_axis_curve(
 
     An IFC grid will have a minimum of two axes (typically perpendicular). Each
     axis will then have a line which represents the extents of the axis.
+
+    Points are provided as 3D coordinates in world space.
+    During axis creation, the coordinates will be localized relative to IfcGrid
+    and saved as 2D.
 
     :param p1: The first point of the grid axis
     :param p2: The second point of the grid axis
@@ -61,19 +65,19 @@ def create_axis_curve(
             model, p1=np.array((0., 0., 0.)), p2=np.array((0., 10., 0.)), grid_axis=axis_1)
     """
     existing_curve = grid_axis.AxisCurve
-    p1, p2 = V(p1), V(p2)
+    points = V([p1, p2])
     if is_si:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
-        p1 /= unit_scale
-        p2 /= unit_scale
+        points /= unit_scale
 
-    grid = [i for i in file.get_inverse(grid_axis) if i.is_a("IfcGrid")][0]
+    grid = next(i for i in file.get_inverse(grid_axis) if i.is_a("IfcGrid"))
     grid_matrix_i = np.linalg.inv(ifcopenshell.util.placement.get_local_placement(grid.ObjectPlacement))
+    p1, p2 = ifc_safe_vector_type(np_apply_matrix(points, grid_matrix_i))
     grid_axis.AxisCurve = file.create_entity(
         "IfcPolyline",
         (
-            file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(grid_matrix_i @ p1)),
-            file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(grid_matrix_i @ p2)),
+            file.create_entity("IfcCartesianPoint", p1[:2]),
+            file.create_entity("IfcCartesianPoint", p2[:2]),
         ),
     )
 
