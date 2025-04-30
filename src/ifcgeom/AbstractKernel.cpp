@@ -226,7 +226,7 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::collection::ptr collection, IfcGeom::ConversionResults& r) {
 	auto s = r.size();
 	for (auto& c : collection->children) {
-		if (!partial_success_is_success && !convert(c, r)) {
+		if (!convert(c, r) && !partial_success_is_success) {
 			return false;
 		}
 	}
