@@ -1229,7 +1229,7 @@ class Sequence(bonsai.core.tool.Sequence):
 
     @classmethod
     def set_object_shading(cls):
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area = tool.Blender.get_view3d_area()
         area.spaces[0].shading.color_type = "OBJECT"
 
     @classmethod
@@ -1368,7 +1368,7 @@ class Sequence(bonsai.core.tool.Sequence):
                     cls.animate_input(obj, settings["start_frame"], product_frame, animation_type)
                 elif product_frame["relationship"] == "output":
                     cls.animate_output(obj, settings["start_frame"], product_frame, animation_type)
-        area = next(area for area in bpy.context.screen.areas if area.type == "VIEW_3D")
+        area = tool.Blender.get_view3d_area()
         area.spaces[0].shading.color_type = "OBJECT"
         bpy.context.scene.frame_start = settings["start_frame"]
         bpy.context.scene.frame_end = int(settings["start_frame"] + settings["total_frames"] + 1)
