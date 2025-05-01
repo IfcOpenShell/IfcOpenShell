@@ -311,13 +311,20 @@ class FileAssociate(bpy.types.Operator):
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.BONSAI.value) as key:
             winreg.SetValueEx(key, "", 0, winreg.REG_SZ, filetype_name)
 
+        python_expression = """import bpy;
+        import sys;
+        filepath = sys.argv[sys.argv.index('--') + 1];
+        bpy.ops.bim.load_project(filepath=filepath)
+        """
+        python_expression = "".join(line.strip() for line in python_expression.splitlines())
         with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.BONSAI_COMMAND.value) as key:
             winreg.SetValueEx(
                 key,
                 "",
                 0,
                 winreg.REG_SZ,
-                f'"{binary_path}" --python-expr "import bpy; bpy.ops.bim.load_project(filepath=r\'%1\')"',
+                # Pass the file path after '--' to avoid issues with special characters.
+                f'"{binary_path}" --python-expr "{python_expression}" -- "%1"',
             )
 
         # Finally associate, changes take effect immediately, no need to restart explorer.
