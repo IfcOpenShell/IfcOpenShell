@@ -300,7 +300,7 @@ class FileAssociate(bpy.types.Operator):
         return {"FINISHED"}
 
     def install_desktop_windows(self, src_dir, binary_path):
-        # very important to clear this regitstry key before creating new association
+        # very important to clear this registry key before creating new association
         # tried to do the regitsry change from powershell/cmd - but even admin rights are not enough
         # this is why we're using .reg
         reg_change_path = os.path.join(src_dir, "windows_bbim_association.reg")
