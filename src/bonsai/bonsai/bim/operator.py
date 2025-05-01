@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import contextlib
 import bpy
 import bmesh
 import time
@@ -31,6 +32,7 @@ import ifcopenshell
 import bonsai.bim
 import bonsai.tool as tool
 import bonsai.bim.handler
+from enum import Enum
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim import import_ifc
 from bonsai.bim.prop import StrProperty
@@ -256,6 +258,23 @@ class SelectDir(bpy.types.Operator, ImportHelper):
         return ImportHelper.invoke(self, context, event)
 
 
+class WinRegistryKeys(Enum):
+    __bonsai_key = "bonsai.ifc"
+    # Have to list all keys here
+    # because .DeleteKey can't remove key that has subkeys.
+    BONSAI = rf"Software\Classes\{__bonsai_key}"
+    BONSAI_ICON = rf"{BONSAI}\DefaultIcon"
+    BONSAI_SHELL = rf"{BONSAI}\shell"
+    BONSAI_SHELL_OPEN = rf"{BONSAI}\shell\open"
+    BONSAI_COMMAND = rf"{BONSAI}\shell\open\command"
+    IFC_EXTENSION = r"Software\Classes\.ifc"
+    IFC_EXTENSION_OPEN_WITH = rf"{IFC_EXTENSION}\OpenWihProgids"
+
+    @classmethod
+    def get_bonsai_key(cls):
+        return cls.__bonsai_key
+
+
 class FileAssociate(bpy.types.Operator):
     bl_idname = "bim.file_associate"
     bl_label = "Associate Bonsai with *.ifc files"
@@ -271,23 +290,6 @@ class FileAssociate(bpy.types.Operator):
         # https://stackoverflow.com/questions/1082889/how-to-change-filetype-association-in-the-registry
         return False
 
-    def draw(self, context):
-        # NOTE: really weird thing on windows that typing this command in cmd works
-        # when even if you create .bat with the command below and run it as administrator it won't
-        # Haven't found a workaround yet to automate process completely.
-        command = "ASSOC .IFC=BONSAI"
-        self.layout.label(text="On the next step to create file association ")
-        self.layout.label(text="the system console will be opened ")
-        self.layout.label(text=f"and you will be asked to type command")
-        self.layout.label(text=f"{command}")
-        self.layout.label(text="to create an association.")
-
-    def invoke(self, context, event):
-        if platform.system() == "Windows":
-            return context.window_manager.invoke_props_dialog(self)
-        else:
-            return self.execute(context)
-
     def execute(self, context):
         src_dir = os.path.join(os.path.dirname(__file__), "../libs/desktop")
         binary_path = bpy.app.binary_path
@@ -295,20 +297,37 @@ class FileAssociate(bpy.types.Operator):
             destdir = os.path.join(os.environ["HOME"], ".local")
             self.install_desktop_linux(src_dir=src_dir, destdir=destdir, binary_path=binary_path)
         elif platform.system() == "Windows":
-            self.install_desktop_windows(src_dir, binary_path)
+            self.install_desktop_windows(binary_path)
         self.report({"INFO"}, "Associations established.")
         return {"FINISHED"}
 
-    def install_desktop_windows(self, src_dir, binary_path):
-        # very important to clear this registry key before creating new association
-        # tried to do the regitsry change from powershell/cmd - but even admin rights are not enough
-        # this is why we're using .reg
-        reg_change_path = os.path.join(src_dir, "windows_bbim_association.reg")
-        subprocess.run(["cmd", "/c", "call", reg_change_path])
+    def install_desktop_windows(self, binary_path: str) -> None:
+        import winreg
 
-        ps_script_path = os.path.join(src_dir, "windows_bbim_association.ps1")
-        # NOTE: call powershell with RunAs to get admin rights from user
-        subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", ps_script_path, binary_path], shell=True)
+        filetype_name = "Bonsai IFC Project"
+
+        # File association code from https://github.com/Victor-IX/Blender-Launcher-V2.
+        # Create a ProgID.
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.BONSAI.value) as key:
+            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, filetype_name)
+
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.BONSAI_COMMAND.value) as key:
+            winreg.SetValueEx(
+                key,
+                "",
+                0,
+                winreg.REG_SZ,
+                f'"{binary_path}" --python-expr "import bpy; bpy.ops.bim.load_project(filepath=r\'%1\')"',
+            )
+
+        # Finally associate, changes take effect immediately, no need to restart explorer.
+        # Haven't found any use of setting OpenWihProgids - just adding association makes "Open With" work too.
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.IFC_EXTENSION.value) as key:
+            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, WinRegistryKeys.get_bonsai_key())
+
+        # Add an icon.
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.BONSAI_ICON.value) as key:
+            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, f'"{binary_path}", 0')
 
     def install_desktop_linux(self, src_dir=None, destdir="/tmp", binary_path="/usr/bin/blender"):
         """Creates linux file assocations and launcher icon"""
@@ -383,14 +402,40 @@ class FileUnassociate(bpy.types.Operator):
             self.uninstall_desktop_windows()
         return {"FINISHED"}
 
-    def uninstall_desktop_windows(self):
-        # NOTE: call powershell with RunAs to get admin rights from user
-        cmd = [
-            "powershell",
-            "-Command",
-            "Start-Process -Verb RunAs -Wait cmd -ArgumentList '/c reg delete HKCR\\BONSAI /f'",
-        ]
-        subprocess.run(cmd, check=True)
+    def uninstall_desktop_windows(self) -> None:
+        import winreg
+
+        for key in reversed(WinRegistryKeys):
+            key_path = key.value
+            # Ignore IFC extension keys as you may never know what subkeys it might have.
+            # And removing Bonsai keys is good enough for removing association.
+            if key_path.startswith(WinRegistryKeys.IFC_EXTENSION.value):
+                continue
+            with contextlib.suppress(FileNotFoundError):
+                print(f"Removing registry key '{key_path}'.")
+                winreg.DeleteKey(winreg.HKEY_CURRENT_USER, key_path)
+
+        # TODO: Keys are deprecated since 25-05-01, remove the cleanup later.
+        # Clean up legacy keys, trying to be a good citizen.
+        with contextlib.suppress(FileNotFoundError):
+            with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, r"BLENDERBIM") as key:
+                cmd = (
+                    "powershell",
+                    "-Command",
+                    r"Start-Process -Verb RunAs -Wait cmd -ArgumentList '/c reg delete HKCR\BLENDERBIM /f'",
+                )
+                subprocess.run(cmd, check=True)
+                print("Successfully removed deprecated key 'BLENDERBIM'.")
+        with contextlib.suppress(FileNotFoundError):
+            with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, r"BONSAI") as key:
+                cmd = (
+                    "powershell",
+                    "-Command",
+                    r"Start-Process -Verb RunAs -Wait cmd -ArgumentList '/c reg delete HKCR\BONSAI /f'",
+                )
+                subprocess.run(cmd, check=True)
+                print("Successfully removed deprecated key 'BONSAI'.")
+
         self.report({"INFO"}, "Association removed.")
 
     def uninstall_desktop_linux(self, destdir="/tmp"):
