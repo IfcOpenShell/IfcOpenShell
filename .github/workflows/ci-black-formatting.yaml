@@ -19,68 +19,34 @@ jobs:
         with:
           python-version: "${{ env.PYTHON_VERSION }}"
 
-      - name: Step 1 - install dependencies
-        shell: bash
+      - name: Install dependencies
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install 'black>=24.10.0'
 
-      # NOTE: This would suffice, however it is less informative in terms of the 3 possible outcomes
-      # - name: QA Step - check linting
-      #   shell: bash
-      #   id: linting
-      #   run: |
-      #     python3 -m black .
-
-      # black doesn't catch all syntax erors, so we check them explicitly.
+      # black doesn't catch all syntax errors, so we check them explicitly.
       - name: Check syntax errors
-        shell: sh
         id: syntax-errors
         run: |
           ERROR=0
           python3 -W error -m compileall -q src/ifcopenshell-python || ERROR=1
           python3 -W error -m compileall -q src/bonsai || ERROR=1
-          if [ $ERROR -ne 0 ]; then \
-            echo "One or more tests failed"; \
-            exit 1; \
-          fi
-
-      # QA STEP
-      - name: QA Step - check linting
-        shell: bash
-        id: linting
-        run: |
-          python3 -m black --check . \
-          && exit 0 \
-          || (echo "exit_code=$?" >> "$GITHUB_OUTPUT" && exit 1);
+          exit $ERROR
         continue-on-error: true
 
-      # OUTCOME 1 of QA STEP
-      - name: QA Step - no linting errors
-        if: steps.linting.outcome == 'success'
-        shell: bash
-        run: |-
-          echo "::notice::QA step linting succeeded"
-          exit 0;
+      - name: Black formatter
+        id: linting
+        run: |
+          python3 -m black --check .
+        continue-on-error: true
 
-      # OUTCOME 2i of QA STEP
-      - name: QA Step - unprettified code with no syntax errors
-        if: steps.linting.outputs.exit_code == 1
-        shell: bash
-        run: |-
-          echo "::group::QA step succeeded with warnings"
-          echo "::warning::one or more files contains unformatted code but no syntax errors";
-          echo "::notice::please run the linter before pushing!";
-          echo "::endgroup::"
-          exit 0;
-
-      # OUTCOME 2ii of QA STEP
-      - name: QA Step - code contains syntax errors
-        if: steps.linting.outputs.exit_code == 123
-        shell: bash
-        run: |-
-          echo "::group::QA step failed"
-          echo "::error::one or more files contains syntax errors";
-          echo "::notice::please run the linter and fix syntax errors before pushing!";
-          echo "::endgroup::"
-          exit 1;
+      - name: Final check
+        run: |
+          ERROR=0
+          if [ "${{ steps.syntax-errors.outcome }}" != "success" ]; then
+            echo "::error::Syntax errors check failed, see 'syntax-errors' step for the details." && ERROR=1
+          fi
+          if [ "${{ steps.linting.outcome }}" != "success" ]; then
+            echo "::error::Black formatting check failed, see 'linting' step for the details." && ERROR=1
+          fi
+          exit $ERROR
