@@ -101,6 +101,7 @@ classes = [
     operator.BIM_OT_delete_object,
     operator.BIM_OT_remove_section_plane,
     operator.BIM_OT_select_entity,
+    operator.BIM_OT_select_entity_by_guid,
     operator.BIM_OT_select_object,
     operator.BIM_OT_show_description,
     operator.BIM_OT_multiple_file_selector,
