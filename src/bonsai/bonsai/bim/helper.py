@@ -392,6 +392,7 @@ def draw_filter(
         row = layout.row(align=True)
         row.label(text=f"{len(data.data['saved_searches'])} Saved Searches")
 
+        row.operator("bim.select_entity_by_guid", text="", icon="CON_OBJECTSOLVER")
         if data.data["saved_searches"]:
             row.operator("bim.load_search", text="", icon="IMPORT").module = module
         row.operator("bim.save_search", text="", icon="EXPORT").module = module
