@@ -1049,6 +1049,38 @@ class BIM_OT_select_entity(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class BIM_OT_select_entity_by_guid(bpy.types.Operator):
+    bl_idname = "bim.select_entity_by_guid"
+    bl_label = "Select Entity by Guid"
+    bl_description = "Select entity by guid currently saved to clipboard"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        assert context.window_manager
+        return f"{cls.bl_description}:\n'{context.window_manager.clipboard.strip()}'"
+
+    def execute(self, context):
+        assert context.window_manager
+
+        ifc_file = tool.Ifc.get()
+        guid = context.window_manager.clipboard.strip()
+        try:
+            element = ifc_file.by_guid(guid)
+        except RuntimeError:
+            self.report({"ERROR"}, f"No IFC element found with guid '{guid}'.")
+            return {"CANCELLED"}
+
+        obj = tool.Ifc.get_object(element)
+        if not isinstance(obj, bpy.types.Object):
+            self.report({"ERROR"}, f"The following element is not present in the scene as Blender object: '{element}'.")
+            return {"CANCELLED"}
+
+        tool.Blender.select_and_activate_single_object(context, obj)
+        self.report({"INFO"}, f"Found and selected element: '{obj.name}'.")
+        return {"FINISHED"}
+
+
 class BIM_OT_select_object(bpy.types.Operator):
     bl_idname = "bim.select_object"
     bl_label = "Select Object"
