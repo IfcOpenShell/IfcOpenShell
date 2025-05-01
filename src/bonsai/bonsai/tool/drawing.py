@@ -1850,7 +1850,7 @@ class Drawing(bonsai.core.tool.Drawing):
         if include:
             elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
         else:
-            if tool.Ifc.get_schema() == "IFC2X3":
+            if ifc_file.schema == "IFC2X3":
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
             else:
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
