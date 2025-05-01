@@ -30,7 +30,7 @@ from typing import Optional
 # http://academy.ifcopenshell.org/creating-a-simple-wall-with-property-set-and-quantity-information/
 TEMPLATE = """ISO-10303-21;
 HEADER;
-FILE_DESCRIPTION(('ViewDefinition [CoordinationView_V2.0]'),'2;1');
+FILE_DESCRIPTION(('ViewDefinition [%(mvd)s]'),'2;1');
 FILE_NAME('%(filename)s','%(timestring)s',('%(creator)s'),('%(organization)s'),'%(application)s','%(application)s','');
 FILE_SCHEMA(('%(schema_identifier)s'));
 ENDSEC;
@@ -60,12 +60,18 @@ END-ISO-10303-21;
 """
 
 DEFAULTS = {
-   "application": lambda d: "IfcOpenShell contributors - IfcOpenShell - v%s" % get_pep440_version(main.version),
-    "application_version": lambda d: get_pep440_version(main.version),
+   "application": lambda d: "IfcOpenShell contributors - IfcOpenShell - v%s" % get_pep440_version(version()),
+    "application_version": lambda d: get_pep440_version(version()),
     "project_globalid": lambda d: compress(uuid.uuid4().hex),
     "schema_identifier": lambda d: "IFC4",
     "timestamp": lambda d: int(time.time()),
     "timestring": lambda d: time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(d.get("timestamp") or time.time())),
+    "mvd": lambda d: (
+        "ReferenceView_V1.2" if d.get("schema_identifier") == "IFC4"
+        else "CoordinationView_V2.0" if d.get("schema_identifier") == "IFC2X3"
+        else "ReferenceView" if d.get("schema_identifier") == "IFC4X3_ADD2"
+        else "ReferenceView_V1.2"
+    ),
 }
 
 def get_pep440_version(ifcopenshell_wrapper_version):
@@ -86,6 +92,7 @@ def create(
     application: Optional[str] = None,
     project_globalid: Optional[str] = None,
     project_name: Optional[str] = None,
+    mvd: Optional[str] = None
 ) -> file:
     d = dict(locals())
 
