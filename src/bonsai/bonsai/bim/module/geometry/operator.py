@@ -46,7 +46,7 @@ from mathutils import Vector, Matrix, Quaternion
 from time import time
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.util.shape_builder import ShapeBuilder
-from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never
+from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never, NamedTuple
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 if TYPE_CHECKING:
@@ -813,9 +813,14 @@ class OverrideDelete(bpy.types.Operator):
         if self.is_batch:
             ifcopenshell.util.element.batch_remove_deep2(tool.Ifc.get())
 
+        # Very important to create a copy of selected objects before objects might get deleted.
+        # Acessing it after might produce a crash in Blender <4.4 and `None` values in >=4.4.
+        # See https://projects.blender.org/blender/blender/issues/138325
+        objects_to_remove = context.selected_objects
+
         self.process_arrays(context)
         clear_active_object = True
-        objects_to_remove = context.selected_objects
+
         for i, obj in enumerate(objects_to_remove, 1):
             # Log time.
             time_since_start = time() - start_time
@@ -903,7 +908,12 @@ class OverrideDelete(bpy.types.Operator):
                     break  # allows to remove only n last layers of an array
 
 
-class OverrideOutlinerDelete(bpy.types.Operator):
+class SelectedIdsData(NamedTuple):
+    objects: set[bpy.types.Object]
+    collections: set[bpy.types.Collection]
+
+
+class OverrideOutlinerDelete(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_outliner_delete"
     bl_label = "IFC Delete"
     bl_options = {"REGISTER", "UNDO"}
@@ -911,7 +921,7 @@ class OverrideOutlinerDelete(bpy.types.Operator):
     is_batch: bpy.props.BoolProperty(name="Is Batch", default=False)
 
     @classmethod
-    def poll(cls, context):
+    def poll(cls, context) -> bool:
         return len(getattr(context, "selected_ids", [])) > 0
 
     def execute(self, context):
@@ -924,24 +934,16 @@ class OverrideOutlinerDelete(bpy.types.Operator):
         if tool.Ifc.get():
             return IfcStore.execute_ifc_operator(self, context)
         # https://blender.stackexchange.com/questions/203729/python-get-selected-objects-in-outliner
-        objects_to_delete: set[bpy.types.Object] = set()
-        collections_to_delete: set[bpy.types.Collection] = set()
-        for item in context.selected_ids:
-            if item.bl_rna.identifier == "Collection":
-                collection = bpy.data.collections.get(item.name)
-                collection_data = self.get_collection_objects_and_children(collection)
-                objects_to_delete |= collection_data["objects"]
-                collections_to_delete |= collection_data["children"]
-                collections_to_delete.add(collection)
-            elif item.bl_rna.identifier == "Object":
-                objects_to_delete.add(bpy.data.objects.get(item.name))
-        for obj in objects_to_delete:
+        # TODO: replace with outliner.delete?
+        selected_ids_data = self.get_selected_ids_data(context)
+        for obj in selected_ids_data.objects:
             bpy.data.objects.remove(obj)
-        for collection in collections_to_delete:
+        for collection in selected_ids_data.collections:
             bpy.data.collections.remove(collection)
         return {"FINISHED"}
 
     def invoke(self, context, event):
+        # TODO: move to common method.
         if tool.Ifc.get():
             total_elements = len(tool.Ifc.get().wrapped_data.entity_names())
             total_polygons = sum([len(o.data.polygons) for o in context.selected_objects if o.type == "MESH"])
@@ -960,55 +962,37 @@ class OverrideOutlinerDelete(bpy.types.Operator):
             row.label(text="Warning: Faster deletion will use more memory.", icon="ERROR")
 
     def _execute(self, context):
-        if self.is_batch:
-            ifcopenshell.util.element.batch_remove_deep2(tool.Ifc.get())
-        objects_to_delete = set()
-        collections_to_delete = set()
-        for item in context.selected_ids:
-            if item.bl_rna.identifier == "Collection":
-                collection = bpy.data.collections.get(item.name)
-                collection_data = self.get_collection_objects_and_children(collection)
-                objects_to_delete |= collection_data["objects"]
-                collections_to_delete |= collection_data["children"]
-                collections_to_delete.add(collection)
-            elif item.bl_rna.identifier == "Object":
-                objects_to_delete.add(bpy.data.objects.get(item.name))
-        for obj in objects_to_delete:
-            if element := tool.Ifc.get_entity(obj):
-                if tool.Geometry.is_locked(element):
-                    self.report({"ERROR"}, lock_error_message(obj.name))
-                    if collection := tool.Blender.get_object_bim_props(obj).collection:
-                        collections_to_delete.discard(collection)
-                    continue
-                tool.Geometry.delete_ifc_object(obj)
-            else:
-                bpy.data.objects.remove(obj)
-        for collection in collections_to_delete:
+        selected_ids_data = self.get_selected_ids_data(context)
+        with context.temp_override(selected_objects=list(selected_ids_data.objects)):
+            bpy.ops.bim.override_object_delete(is_batch=self.is_batch)
+
+        for collection in selected_ids_data.collections:
             # Removing an aggregate object would also remove it's collection
             # making the collection data-block invalid.
             if not tool.Blender.is_valid_data_block(collection):
                 continue
+            if collection.all_objects:
+                continue
             bpy.data.collections.remove(collection)
-        if self.is_batch:
-            old_file = tool.Ifc.get()
-            old_file.end_transaction()
-            new_file = ifcopenshell.util.element.unbatch_remove_deep2(tool.Ifc.get())
-            new_file.begin_transaction()
-            tool.Ifc.set(new_file)
-            self.transaction_data = {"old_file": old_file, "new_file": new_file}
-            IfcStore.add_transaction_operation(self)
         return {"FINISHED"}
 
-    def get_collection_objects_and_children(self, collection: bpy.types.Collection) -> dict[str, Any]:
+    @classmethod
+    def get_selected_ids_data(cls, context: bpy.types.Context) -> SelectedIdsData:
+        objects_to_delete: set[bpy.types.Object] = set()
+        collections_to_delete: set[bpy.types.Collection] = set()
+        for item in context.selected_ids:
+            if isinstance(item, bpy.types.Collection):
+                collection_data = cls.get_collection_objects_and_children(item)
+                objects_to_delete |= collection_data["objects"]
+                collections_to_delete |= collection_data["children"]
+                collections_to_delete.add(item)
+            elif isinstance(item, bpy.types.Object):
+                objects_to_delete.add(item)
+        return SelectedIdsData(objects_to_delete, collections_to_delete)
+
+    @staticmethod
+    def get_collection_objects_and_children(collection: bpy.types.Collection) -> dict[str, Any]:
         return {"objects": set(collection.all_objects), "children": set(collection.children_recursive)}
-
-    def rollback(self, data):
-        tool.Ifc.set(data["old_file"])
-        data["old_file"].undo()
-
-    def commit(self, data):
-        data["old_file"].redo()
-        tool.Ifc.set(data["new_file"])
 
 
 class OverrideDuplicateMoveMacro(bpy.types.Macro):
