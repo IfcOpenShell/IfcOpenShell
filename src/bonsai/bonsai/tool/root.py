@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.style
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -26,12 +28,19 @@ import bonsai.core.tool
 import bonsai.core.aggregate
 import bonsai.core.geometry
 import bonsai.tool as tool
-from typing import Union, Optional, Any, Literal
+from typing import Union, Optional, Any, Literal, TYPE_CHECKING
 from bonsai.bim.module.spatial.decorator import GridDecorator
 from bonsai.bim.module.geometry.decorator import ItemDecorator
 
+if TYPE_CHECKING:
+    from bonsai.bim.module.root.prop import BIMRootProperties
+
 
 class Root(bonsai.core.tool.Root):
+    @classmethod
+    def get_root_props(cls) -> BIMRootProperties:
+        return bpy.context.scene.BIMRootProperties
+
     @classmethod
     def add_tracked_opening(cls, obj: bpy.types.Object, opening_type: Literal["OPENING", "BOOLEAN"]) -> None:
         """Add tracked opening or boolean object."""
@@ -49,19 +58,19 @@ class Root(bonsai.core.tool.Root):
                 tool.Geometry.run_style_add_style(obj=mat)
                 for mat in tool.Geometry.get_object_materials_without_styles(obj)
             ]
-            ifcopenshell.api.run(
-                "style.assign_representation_styles",
+            props = tool.Geometry.get_geometry_props()
+            ifcopenshell.api.style.assign_representation_styles(
                 tool.Ifc.get(),
                 shape_representation=body,
                 styles=tool.Geometry.get_styles(obj),
-                should_use_presentation_style_assignment=bpy.context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
+                should_use_presentation_style_assignment=props.should_use_presentation_style_assignment,
             )
 
     @classmethod
     def copy_representation(
         cls, source: ifcopenshell.entity_instance, dest: ifcopenshell.entity_instance
     ) -> dict[int, ifcopenshell.entity_instance]:
-        def exclude_callback(attribute):
+        def exclude_callback(attribute: ifcopenshell.entity_instance) -> bool:
             return attribute.is_a("IfcProfileDef") and attribute.ProfileName
 
         copied_entities: dict[int, ifcopenshell.entity_instance] = {}
@@ -111,13 +120,22 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def get_default_container(cls) -> Optional[ifcopenshell.entity_instance]:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = tool.Spatial.get_spatial_props()
         if container := props.default_container:
             try:
                 return tool.Ifc.get().by_id(container)
             except:
                 props.default_container = 0
         return None
+
+    @classmethod
+    def get_default_container_elevation(cls) -> float:
+        default_container = cls.get_default_container()
+        if not default_container:
+            return 0.0
+        obj = tool.Ifc.get_object(default_container)
+        assert isinstance(obj, bpy.types.Object)
+        return obj.location.z
 
     @classmethod
     def get_connection_relationships(
@@ -169,8 +187,8 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def get_object_representation(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
-        if obj.data and obj.data.BIMMeshProperties.ifc_definition_id:
-            return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        if obj.data and (mesh_props := tool.Geometry.get_mesh_props(obj.data)).ifc_definition_id:
+            return tool.Ifc.get().by_id(mesh_props.ifc_definition_id)
         element = tool.Ifc.get_entity(obj)
         if element.is_a("IfcTypeProduct"):
             if element.RepresentationMaps:
@@ -220,19 +238,19 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def is_in_aggregate_mode(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        props = bpy.context.scene.BIMAggregateProperties
+        props = tool.Aggregate.get_aggregate_props()
         if props.editing_aggregate and props.in_aggregate_mode:
             return tool.Ifc.get_entity(props.editing_aggregate)
 
     @classmethod
     def is_in_nest_mode(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
-        props = bpy.context.scene.BIMNestProperties
+        props = tool.Nest.get_nest_props()
         if props.editing_nest and props.in_nest_mode:
             return tool.Ifc.get_entity(props.editing_nest)
 
     @classmethod
     def reload_grid_decorator(cls) -> None:
-        axes = bpy.context.scene.BIMGridProperties.grid_axes
+        axes = tool.Spatial.get_grid_props().grid_axes
         axes.clear()
         for axis in tool.Ifc.get().by_type("IfcGridAxis"):
             if obj := tool.Ifc.get_object(axis):
@@ -302,8 +320,8 @@ class Root(bonsai.core.tool.Root):
                             voided_objs.append(subobj)
 
                     for voided_obj in voided_objs:
-                        if voided_obj.data:
-                            representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+                        if data := voided_obj.data:
+                            representation = tool.Ifc.get().by_id(tool.Geometry.get_mesh_props(data).ifc_definition_id)
                             bonsai.core.geometry.switch_representation(
                                 tool.Ifc,
                                 tool.Geometry,
@@ -400,7 +418,10 @@ class Root(bonsai.core.tool.Root):
     def set_object_name(cls, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
         name = tool.Loader.get_name(element)
         if obj.name != name:
-            obj.BIMObjectProperties.is_renaming = True
+            props = tool.Blender.get_object_bim_props(obj)
+            # If it's not an IFC object, then it doesn't have a name callback.
+            # So, we need to protect it writing to IFC.
+            props.is_renaming = bool(tool.Ifc.get_entity(obj))
             obj.name = name  # The handler will trigger, and reset is_renaming to False
 
     @classmethod
@@ -408,8 +429,8 @@ class Root(bonsai.core.tool.Root):
         """Rename material without triggerring name callback and unnecessary writing to IFC."""
         if material.name == name:
             return
-        props = material.BIMStyleProperties
-        props.is_renaming = True
+        msprops = tool.Style.get_material_style_props(material)
+        msprops.is_renaming = bool(tool.Ifc.get_entity(material))
         material.name = name  # The handler will trigger, and reset is_renaming to False.
 
     @classmethod
@@ -421,10 +442,36 @@ class Root(bonsai.core.tool.Root):
         to unlink them.
         """
         tool.Ifc.unlink(obj=obj)
-        if hasattr(obj.data, "BIMMeshProperties"):
-            obj.data.BIMMeshProperties.ifc_definition_id = 0
+        if tool.Geometry.has_mesh_properties((data := obj.data)):
+            tool.Geometry.get_mesh_props(data).ifc_definition_id = 0
         for material_slot in obj.material_slots:
             if material := material_slot.material:
                 tool.Ifc.unlink(obj=material)
         if "Ifc" in obj.name and "/" in obj.name:
             obj.name = obj.name.split("/", 1)[1]
+
+    @classmethod
+    def get_ifc_products(cls) -> tuple[str, ...]:
+        version = tool.Ifc.get_schema()
+        if version == "IFC2X3":
+            products = (
+                "IfcElementType",
+                "IfcElement",
+                "IfcFeatureElement",
+                "IfcSpatialStructureElement",
+                "IfcStructuralItem",
+                "IfcAnnotation",
+                "IfcRelSpaceBoundary",
+            )
+        else:
+            products = (
+                "IfcElementType",
+                "IfcElement",
+                "IfcFeatureElement",
+                "IfcSpatialElement",
+                "IfcSpatialElementType",
+                "IfcStructuralItem",
+                "IfcAnnotation",
+                "IfcRelSpaceBoundary",
+            )
+        return products

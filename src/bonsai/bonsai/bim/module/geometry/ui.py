@@ -20,7 +20,6 @@ import bpy
 import bonsai.bim
 import bonsai.tool as tool
 from bpy.types import Panel, Menu, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.geometry.data import (
     RepresentationsData,
@@ -53,9 +52,10 @@ def mode_menu(self, context):
         UIData.load()
     ifc_icon = f"{UIData.data['menu_icon_color_mode']}_ifc"
     row = self.layout.row(align=True)
-    if context.scene.BIMGeometryProperties.mode == "EDIT":
+    props = tool.Geometry.get_geometry_props()
+    if props.mode == "EDIT":
         row.operator("bim.override_mode_set_object", icon="CANCEL", text="Discard Changes").should_save = False
-    row.prop(context.scene.BIMGeometryProperties, "mode", text="", icon_value=bonsai.bim.icons[ifc_icon].icon_id)
+    row.prop(props, "mode", text="", icon_value=bonsai.bim.icons[ifc_icon].icon_id)
 
 
 def object_menu(self, context):
@@ -64,6 +64,7 @@ def object_menu(self, context):
     self.layout.operator("bim.override_object_delete", icon="PLUGIN")
     self.layout.operator("bim.override_paste_buffer", icon="PLUGIN")
     self.layout.menu("BIM_MT_object_set_origin", icon="PLUGIN")
+    self.layout.menu("BIM_MT_separate", icon="PLUGIN")
 
 
 def edit_mesh_menu(self, context):
@@ -76,25 +77,20 @@ class BIM_MT_separate(Menu):
     bl_label = "IFC Separate"
 
     def draw(self, context):
-        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC Selection").type = "SELECTED"
-        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC By Material").type = "MATERIAL"
-        self.layout.operator("bim.override_mesh_separate", icon="PLUGIN", text="IFC By Loose Parts").type = "LOOSE"
+        assert self.layout
+        self.layout.label(text="IFC Separate", icon_value=bonsai.bim.icons["IFC"].icon_id)
+        self.layout.operator_enum("bim.override_mesh_separate", "type")
 
 
+# TODO: remove as it's the same as BIM_MT_separate?
 class BIM_MT_hotkey_separate(Menu):
     bl_idname = "BIM_MT_hotkey_separate"
     bl_label = "Separate"
 
     def draw(self, context):
+        assert self.layout
         self.layout.label(text="IFC Separate", icon_value=bonsai.bim.icons["IFC"].icon_id)
-        self.layout.operator("bim.override_mesh_separate", text="Selection").type = "SELECTED"
-        self.layout.operator("bim.override_mesh_separate", text="By Material").type = "MATERIAL"
-        self.layout.operator("bim.override_mesh_separate", text="By Loose Parts").type = "LOOSE"
-        self.layout.separator()
-        self.layout.label(text="Blender Separate", icon="BLENDER")
-        self.layout.operator("mesh.separate", text="Selection").type = "SELECTED"
-        self.layout.operator("mesh.separate", text="By Material").type = "MATERIAL"
-        self.layout.operator("mesh.separate", text="By Loose Parts").type = "LOOSE"
+        self.layout.operator_enum("bim.override_mesh_separate", "type")
 
 
 class BIM_MT_object_set_origin(Menu):
@@ -102,21 +98,9 @@ class BIM_MT_object_set_origin(Menu):
     bl_label = "IFC Set Origin"
 
     def draw(self, context):
-        self.layout.operator("bim.override_origin_set", icon="PLUGIN", text="IFC Geometry to Origin").origin_type = (
-            "GEOMETRY_ORIGIN"
-        )
-        self.layout.operator("bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Geometry").origin_type = (
-            "ORIGIN_GEOMETRY"
-        )
-        self.layout.operator("bim.override_origin_set", icon="PLUGIN", text="IFC Origin to 3D Cursor").origin_type = (
-            "ORIGIN_CURSOR"
-        )
-        self.layout.operator(
-            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Center of Mass (Surface)"
-        ).origin_type = "ORIGIN_CENTER_OF_MASS"
-        self.layout.operator(
-            "bim.override_origin_set", icon="PLUGIN", text="IFC Origin to Center of Mass (Volume)"
-        ).origin_type = "ORIGIN_CENTER_OF_VOLUME"
+        assert self.layout
+        self.layout.label(text="IFC Set Origin", icon_value=bonsai.bim.icons["IFC"].icon_id)
+        self.layout.operator_enum("bim.override_origin_set", property="origin_type")
 
 
 def outliner_menu(self, context):
@@ -225,7 +209,7 @@ class BIM_PT_representation_items(Panel):
             RepresentationItemsData.load()
 
         props = tool.Geometry.get_geometry_props()
-        obj = props.representation_obj or tool.Blender.get_active_object()
+        obj = tool.Geometry.get_active_or_representation_obj()
         assert obj
         props = tool.Geometry.get_object_geometry_props(obj)
 
@@ -334,18 +318,17 @@ class BIM_PT_connections(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(tool.Blender.get_ifc_definition_id(obj)):
             return False
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not ConnectionsData.is_loaded:
             ConnectionsData.load()
 
         layout = self.layout
-        props = context.active_object.BIMObjectProperties
 
         if not ConnectionsData.data["connections"] and not ConnectionsData.data["is_connection_realization"]:
             layout.label(text="No connections found")
@@ -411,15 +394,18 @@ class BIM_PT_mesh(Panel):
     @classmethod
     def poll(cls, context):
         return (
-            context.active_object is not None
-            and context.active_object.type == "MESH"
-            and hasattr(context.active_object.data, "BIMMeshProperties")
-            and context.active_object.data.BIMMeshProperties.ifc_definition_id
+            (obj := context.active_object) is not None
+            and (mesh := obj.data)
+            and isinstance(mesh, bpy.types.Mesh)
+            and tool.Geometry.get_mesh_props(mesh).ifc_definition_id
         )
 
     def draw(self, context):
-        if not context.active_object.data:
-            return
+        obj = context.active_object
+        assert obj
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
+
         row = self.layout.row()
         row.label(text="Advanced Users Only", icon="ERROR")
 
@@ -427,7 +413,7 @@ class BIM_PT_mesh(Panel):
 
         row = layout.row()
         text = "Manually Save Representation"
-        if tool.Ifc.is_edited(context.active_object):
+        if tool.Ifc.is_edited(obj):
             text += "*"
         row.operator("bim.update_representation", text=text)
 
@@ -454,8 +440,8 @@ class BIM_PT_mesh(Panel):
         op = row.operator("bim.update_representation", text="Convert To Arbitrary Extrusion With Voids")
         op.ifc_representation_class = "IfcExtrudedAreaSolid/IfcArbitraryProfileDefWithVoids"
 
-        if context.active_object and context.active_object.data:
-            mprops = context.active_object.data.BIMMeshProperties
+        if True:
+            mprops = tool.Geometry.get_mesh_props(mesh)
             row = layout.row()
             row.operator("bim.get_representation_ifc_parameters")
             for index, ifc_parameter in enumerate(mprops.ifc_parameters):
@@ -477,11 +463,15 @@ class BIM_PT_placement(Panel):
 
     @classmethod
     def poll(cls, context):
-        return context.active_object and context.active_object.BIMObjectProperties.ifc_definition_id
+        return (obj := context.active_object) and tool.Blender.get_ifc_definition_id(obj)
 
     def draw(self, context):
         if not PlacementData.is_loaded:
             PlacementData.load()
+
+        obj = context.active_object
+        assert obj
+        props = tool.Blender.get_object_bim_props(obj)
 
         if not PlacementData.data["has_placement"]:
             row = self.layout.row()
@@ -493,12 +483,12 @@ class BIM_PT_placement(Panel):
         row = self.layout.row()
         row.prop(context.active_object, "rotation_euler", text="Rotation")
 
-        if context.active_object.BIMObjectProperties.blender_offset_type != "NONE":
+        if props.blender_offset_type != "NONE":
             row = self.layout.row(align=True)
             row.label(text="Blender Offset", icon="TRACKING_REFINE_FORWARDS")
-            row.label(text=context.active_object.BIMObjectProperties.blender_offset_type)
+            row.label(text=props.blender_offset_type)
 
-            if context.active_object.BIMObjectProperties.blender_offset_type != "NOT_APPLICABLE":
+            if props.blender_offset_type != "NOT_APPLICABLE":
                 row = self.layout.row(align=True)
                 row.label(text=PlacementData.data["original_x"], icon="EMPTY_AXIS")
                 row.label(text=PlacementData.data["original_y"])
@@ -571,10 +561,10 @@ class BIM_PT_workarounds(Panel):
     @classmethod
     def poll(cls, context):
         return (
-            context.active_object is not None
-            and context.active_object.type == "MESH"
-            and hasattr(context.active_object.data, "BIMMeshProperties")
-            and context.active_object.data.BIMMeshProperties.ifc_definition_id
+            (obj := context.active_object) is not None
+            and (mesh := obj.data)
+            and isinstance(mesh, bpy.types.Mesh)
+            and tool.Geometry.get_mesh_props(mesh).ifc_definition_id
         )
 
     def draw(self, context):
@@ -588,7 +578,7 @@ class BIM_PT_workarounds(Panel):
 
 
 class BIM_UL_representation_items(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(self, context, layout: bpy.types.UILayout, data, item, icon, active_data, active_propname):
         if item:
             icon = "MATERIAL" if item.surface_style else "MESH_UVSPHERE"
             row = layout.row(align=True)

@@ -45,7 +45,7 @@ class BIM_PT_brickschema_project_info(Panel):
     bl_parent_id = "BIM_PT_brickschema"
 
     def draw(self, context):
-        self.props = context.scene.BIMBrickProperties
+        self.props = tool.Brick.get_brick_props()
 
         if not BrickschemaData.data["is_loaded"]:
             row = self.layout.row(align=True)
@@ -87,7 +87,7 @@ class BIM_PT_brickschema_namespaces(Panel):
         return BrickStore.graph != None
 
     def draw(self, context):
-        self.props = context.scene.BIMBrickProperties
+        self.props = tool.Brick.get_brick_props()
 
         row = self.layout.row(align=True)
         row.label(text="Active Namespace:")
@@ -122,7 +122,7 @@ class BIM_PT_brickschema_create_entity(Panel):
         return BrickStore.graph != None
 
     def draw(self, context):
-        self.props = context.scene.BIMBrickProperties
+        self.props = tool.Brick.get_brick_props()
         # TO DO: hide this if selected entity already has a reference, or something similar
 
         row = self.layout.row(align=True)
@@ -156,7 +156,7 @@ class BIM_PT_brickschema_viewport(Panel):
         return BrickStore.graph != None
 
     def draw(self, context):
-        self.props = context.scene.BIMBrickProperties
+        self.props = tool.Brick.get_brick_props()
 
         row = self.layout.row(align=True)
         row.column().alignment = "RIGHT"
@@ -178,7 +178,14 @@ class BIM_PT_brickschema_viewport(Panel):
 
         row = grid_left.row()
         BIM_UL_bricks.split_screen = False
-        row.template_list("BIM_UL_bricks", "", self.props, "bricks", self.props, "active_brick_index")
+        row.template_list(
+            BIM_UL_bricks.__name__,
+            BIM_UL_bricks.__name__ + "_bricks",
+            self.props,
+            "bricks",
+            self.props,
+            "active_brick_index",
+        )
 
         if self.props.split_screen_toggled:
             grid_right = grid.column(align=True)
@@ -195,7 +202,12 @@ class BIM_PT_brickschema_viewport(Panel):
             row = grid_right.row()
             BIM_UL_bricks.split_screen = True
             row.template_list(
-                "BIM_UL_bricks", "", self.props, "split_screen_bricks", self.props, "split_screen_active_brick_index"
+                BIM_UL_bricks.__name__,
+                BIM_UL_bricks.__name__ + "_split_screen_bricks",
+                self.props,
+                "split_screen_bricks",
+                self.props,
+                "split_screen_active_brick_index",
             )
 
         if BrickschemaData.data["active_relations"]:
@@ -292,7 +304,7 @@ class BIM_PT_ifc_brickschema_references(Panel):
     def draw(self, context):
         if not BrickschemaReferencesData.is_loaded:
             BrickschemaReferencesData.load()
-        self.props = context.scene.BIMBrickProperties
+        self.props = tool.Brick.get_brick_props()
 
         if not BrickschemaReferencesData.data["is_loaded"]:
             row = self.layout.row()

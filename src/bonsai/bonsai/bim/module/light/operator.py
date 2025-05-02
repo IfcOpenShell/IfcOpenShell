@@ -638,6 +638,7 @@ class RADIANCE_OT_export_material_mappings(bpy.types.Operator, ExportHelper):
     bl_description = "Export material mappings to a JSON file"
 
     filename_ext = ".json"
+    filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
 
     def execute(self, context):
         props = context.scene.radiance_exporter_properties

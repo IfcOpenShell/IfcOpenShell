@@ -28,6 +28,7 @@ import ifctester.reporter
 import ifcopenshell
 import bonsai.tool as tool
 import bonsai.bim.handler
+from bpy_extras.io_utils import ExportHelper
 from pathlib import Path
 from typing import Union
 
@@ -69,10 +70,11 @@ class ExecuteIfcTester(bpy.types.Operator):
 
     def execute_tester(self, ifc_data: ifcopenshell.file, ifc_path: str, specs_path: str) -> Union[set[str], None]:
         props = bpy.context.scene.IfcTesterProperties
+        props.failed_entities.clear()
 
         # No need for if-statement, just postponing lots of diffs.
         if True:
-            dirpath = tempfile.mkdtemp()
+            dirpath = tempfile.mkdtemp(dir=tool.Blender.get_addon_preferences().tmp_dir or None)
             start = time.time()
             output = Path(os.path.join(dirpath, "{}_{}.html".format(Path(ifc_path).name, Path(specs_path).name)))
 
@@ -150,7 +152,8 @@ class SelectRequirement(bpy.types.Operator):
             area.spaces[0].shading.show_xray = True
             failed_ids = [e["id"] for e in failed_entities]
             for obj in context.scene.objects:
-                if obj.BIMObjectProperties.ifc_definition_id in failed_ids:
+                ifc_id = tool.Blender.get_ifc_definition_id(obj)
+                if ifc_id in failed_ids:
                     obj.color = (1, 0, 0, 1)
                 else:
                     obj.color = (1, 1, 1, 1)
@@ -175,7 +178,8 @@ class SelectFailedEntities(bpy.types.Operator):
 
         failed_ids = [e["id"] for e in failed_entities]
         for obj in context.scene.objects:
-            if obj.BIMObjectProperties.ifc_definition_id in failed_ids:
+            ifc_id = tool.Blender.get_ifc_definition_id(obj)
+            if ifc_id in failed_ids:
                 obj.select_set(True)
             else:
                 obj.select_set(False)
@@ -184,12 +188,13 @@ class SelectFailedEntities(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ExportBcf(bpy.types.Operator):
+class ExportBcf(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_bcf"
     bl_label = "Export BCF"
+    bl_description = "Save ifctester BCF report by the provided filepath."
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.bcf", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filename_ext = ".bcf"
 
     def execute(self, context):
         bcf_reporter = ifctester.reporter.Bcf(tool.Tester.specs)
@@ -197,7 +202,3 @@ class ExportBcf(bpy.types.Operator):
         bcf_reporter.to_file(self.filepath)
         self.report({"INFO"}, "Finished exporting!")
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}

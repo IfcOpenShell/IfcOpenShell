@@ -28,9 +28,7 @@ def remove_person_and_organisation(
     the "person and organisation" group.
 
     :param person_and_organisation: The IfcPersonAndOrganization to remove.
-    :type person_and_organisation: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -46,17 +44,15 @@ def remove_person_and_organisation(
 
         ifcopenshell.api.owner.remove_person_and_organisation(model, person_and_organisation=user)
     """
-    settings = {"person_and_organisation": person_and_organisation}
-
-    for inverse in file.get_inverse(settings["person_and_organisation"]):
+    for inverse in file.get_inverse(person_and_organisation):
         if inverse.is_a("IfcDocumentInformation"):
-            if inverse.Editors == (settings["person_and_organisation"],):
+            if inverse.Editors == (person_and_organisation,):
                 inverse.Editors = None
         elif inverse.is_a("IfcActor"):
             ifcopenshell.api.root.remove_product(file, product=inverse)
         elif inverse.is_a("IfcResourceLevelRelationship"):
-            if inverse.RelatedResourceObjects == (settings["person_and_organisation"],):
+            if inverse.RelatedResourceObjects == (person_and_organisation,):
                 file.remove(inverse)
         elif inverse.is_a("IfcOwnerHistory"):
             file.remove(inverse)
-    file.remove(settings["person_and_organisation"])
+    file.remove(person_and_organisation)

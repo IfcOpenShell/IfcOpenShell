@@ -143,24 +143,47 @@ def append_asset(
 
 
 class SafeRemovalContext:
+    """Context manager to ensure `remove_deep` won't create invalid entities
+    in `reuse_identities` leading to possible crashes.
+
+    Should be always used if removing an entity that was possibly added by `file_add`.
+    """
+
     file: ifcopenshell.file
     reuse_identities: dict[int, ifcopenshell.entity_instance]
 
-    def __init__(self, ifc_file: ifcopenshell.file, reuse_identities: dict[int, ifcopenshell.entity_instance]):
+    assume_asset_uniqueness_by_name: bool
+    """If `False`, then all job is done by `file.add`
+    and we don't need to worry about invalid entities."""
+
+    def __init__(
+        self,
+        ifc_file: ifcopenshell.file,
+        reuse_identities: dict[int, ifcopenshell.entity_instance],
+        assume_asset_uniqueness_by_name: bool,
+    ):
         self.file = ifc_file
         self.reuse_identities = reuse_identities
+        self.assume_asset_uniqueness_by_name = assume_asset_uniqueness_by_name
 
     def __enter__(self):
+        if not self.assume_asset_uniqueness_by_name:
+            return
+
         ifcopenshell.util.element.batch_remove_deep2(self.file)
 
     def __exit__(self, *args):
-        original_identities: dict[ifcopenshell.entity_instance, int] = {}
+        if not self.assume_asset_uniqueness_by_name:
+            return
+
+        # Collect identities.
+        removed_identities: dict[ifcopenshell.entity_instance, int] = {}
         assert self.file.to_delete is not None
-        elements = self.file.to_delete
+        removed_elements = self.file.to_delete
         for identity, element in self.reuse_identities.items():
-            if element in elements:
-                original_identities[element] = identity
-        assert len(original_identities) == len(elements)
+            if element in removed_elements:
+                removed_identities[element] = identity
+        assert len(removed_identities) == len(removed_elements)
 
         # Actually remove elements.
         for element in self.file.to_delete:
@@ -169,7 +192,7 @@ class SafeRemovalContext:
         self.file.to_delete = None
 
         # Clean up dead identities.
-        for identity in original_identities.values():
+        for identity in removed_identities.values():
             del self.reuse_identities[identity]
 
 
@@ -178,6 +201,12 @@ class Usecase:
     settings: dict[str, Any]
     assume_asset_uniqueness_by_name: bool
     whitelisted_inverse_attributes: dict[str, list[str]]
+
+    added_elements: dict[int, ifcopenshell.entity_instance]
+    """Elements added with ``add_element``."""
+
+    reuse_identities: dict[int, ifcopenshell.entity_instance]
+    """Mapping of old element ids to new elements, usually fiiled by ``file_add``."""
 
     def execute(self):
         # mapping of old element ids to new elements
@@ -213,6 +242,16 @@ class Usecase:
             return None
 
     def get_existing_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        """Get existing element for a library element.
+
+        Return element if it was already added with ``add_element``
+        or if it's not necessary (model already has a replacement for it).
+
+        Note that if element is returned, it will be accepted as-is,
+        it's subgraph inverses won't be checked.
+
+        Return ``None`` if element wasn't added before and needs to be added.
+        """
         if element.id() in self.added_elements:
             return self.added_elements[element.id()]
         if element.is_a("IfcRoot"):
@@ -229,7 +268,23 @@ class Usecase:
             return next((e for e in self.file.by_type("IfcProfileDef") if e.ProfileName == profile_name), None)
         elif element.is_a("IfcPresentationStyle"):
             name = element.Name
-            return next((e for e in self.file.by_type("IfcPresentationStyle") if e.Name == name), None)
+            if name is None:
+                return None
+            return next((e for e in self.file.by_type(element.is_a()) if e.Name == name), None)
+
+        # Not really assets but if we don't check them here,
+        # their subgraph entities may be appended twice.
+        elif (ifc_class := element.is_a()) == "IfcOrganization":
+            attr_name = "Id" if self.file.schema == "IFC2X3" else "Identification"
+            org_id = getattr(element, attr_name)
+            if org_id is not None:
+                return next((e for e in self.file.by_type("IfcOrganization") if getattr(e, attr_name) == org_id), None)
+        elif ifc_class == "IfcPerson":
+            attr_name = "Id" if self.file.schema == "IFC2X3" else "Identification"
+            person_id = getattr(element, attr_name)
+            if person_id is not None:
+                return next((e for e in self.file.by_type("IfcPerson") if getattr(e, attr_name) == person_id), None)
+
         else:
             return None
 
@@ -261,6 +316,8 @@ class Usecase:
             self.base_material_class: ["HasExternalReferences", "HasProperties", "HasRepresentation"],
             "IfcRepresentationItem": ["StyledByItem", "LayerAssignment"],
             "IfcRepresentation": ["LayerAssignments"],
+            "IfcProductDefinitionShape": ["HasShapeAspects"],
+            "IfcRepresentationMap": ["HasShapeAspects"],
         }
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
@@ -278,6 +335,8 @@ class Usecase:
                 "LayerAssignments" if self.file.schema == "IFC2X3" else "LayerAssignment",
             ],
             "IfcRepresentation": ["LayerAssignments"],
+            "IfcProductDefinitionShape": ["HasShapeAspects"],
+            "IfcRepresentationMap": ["HasShapeAspects"],
         }
         self.existing_contexts = self.file.by_type("IfcGeometricRepresentationContext")
         element = self.add_element(self.settings["element"])
@@ -288,7 +347,7 @@ class Usecase:
             matrix = ifcopenshell.util.placement.get_local_placement(placement)
             matrix = ifcopenshell.util.geolocation.auto_local2global(self.settings["library"], matrix)
             matrix = ifcopenshell.util.geolocation.auto_global2local(self.file, matrix)
-            with SafeRemovalContext(self.file, self.reuse_identities):
+            with SafeRemovalContext(self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name):
                 ifcopenshell.api.geometry.edit_object_placement(self.file, element, matrix, is_si=False)
 
         element_type = ifcopenshell.util.element.get_type(self.settings["element"])
@@ -312,6 +371,7 @@ class Usecase:
         return element
 
     def add_element(self, element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
+        """Add element and check all it's subgraph inverses."""
         if element.id() == 0:
             return
         existing_element = self.get_existing_element(element)
@@ -352,6 +412,7 @@ class Usecase:
         return False
 
     def check_inverses(self, element: ifcopenshell.entity_instance) -> None:
+        """Add inverse elements for the whitelisted inverse attributes."""
         for source_class, attributes in self.whitelisted_inverse_attributes.items():
             if not element.is_a(source_class):
                 continue
@@ -366,10 +427,15 @@ class Usecase:
                         self.add_inverse_element(inverse)
 
     def add_inverse_element(self, element: ifcopenshell.entity_instance) -> None:
-        # Inverse attributes are added manually because they are basically
-        # relationships that can reference many other assets that we are not
-        # interested in.
+        """Add inverse element.
 
+        Inverse elements are requiring different method than ``file_add``
+        because they can reference many other assets that we are not
+        interested in.
+
+        E.g. a IfcRelAssociatesMaterial referencing products unrelated
+        to the current asset.
+        """
         # For layer assignment we don't want to add it's items
         # to avoid adding representations / items that are not related to current append_asset.
         skip_not_reused_entities_attr_i = None
@@ -447,7 +513,7 @@ class Usecase:
             for inverse in self.file.get_inverse(added_context):
                 ifcopenshell.util.element.replace_attribute(inverse, added_context, equivalent_existing_context)
 
-        with SafeRemovalContext(self.file, self.reuse_identities):
+        with SafeRemovalContext(self.file, self.reuse_identities, self.assume_asset_uniqueness_by_name):
             for added_context in added_contexts:
                 ifcopenshell.util.element.remove_deep2(self.file, added_context)
 
@@ -519,6 +585,7 @@ class Usecase:
         if added_element := reuse_identities.get(element_identity):
             return added_element
 
+        ifc_class = element.is_a()
         attributes_ = None
 
         def get_attributes() -> tuple[W.attribute, ...]:
@@ -528,7 +595,32 @@ class Usecase:
             attributes_ = element.wrapped_data.declaration().as_entity().all_attributes()
             return attributes_
 
-        # Maybe element already exists.
+        def get_existing_element_(
+            subelement: ifcopenshell.entity_instance,
+        ) -> Union[ifcopenshell.entity_instance, None]:
+            # Check identity because `subelement` might not be the current `element`,
+            # e.g. for IfcPersonAndOrganization.
+            element_identity = subelement.wrapped_data.identity()
+            if subelement_ := reuse_identities.get(element_identity):
+                return subelement_
+
+            ifc_class = subelement.is_a()
+            assert ifc_class in ("IfcOrganization", "IfcPerson")
+            attr_name = "Id" if ifc_file.schema == "IFC2X3" else "Identification"
+            subelement_id = getattr(subelement, attr_name)
+
+            if subelement_id is not None:
+                existing_org = next(
+                    (e for e in ifc_file.by_type(ifc_class) if getattr(e, attr_name) == subelement_id), None
+                )
+                if existing_org is not None:
+                    reuse_identities[element_identity] = existing_org
+                    return existing_org
+
+        # Check if element already exists.
+        # NOTE: Ensure this part is in sync with `get_existing_element`,
+        # if some class is present here but not in `get_existing_element`,
+        # then it might create duplicated subelements.
         if element.is_a("IfcProfileDef"):
             profile_name = element.ProfileName
             if profile_name is not None:
@@ -538,6 +630,7 @@ class Usecase:
                 if existing_profile is not None:
                     reuse_identities[element_identity] = existing_profile
                     return existing_profile
+
         elif element.is_a("IfcMaterial"):
             material_name = element.Name
             existing_material = next((e for e in ifc_file.by_type("IfcMaterial") if e.Name == material_name), None)
@@ -545,7 +638,46 @@ class Usecase:
                 reuse_identities[element_identity] = existing_material
                 return existing_material
 
-        attrs = {}
+        elif element.is_a("IfcPresentationStyle"):
+            style_name = element.Name
+            if style_name is not None:
+                existing_style = next((e for e in ifc_file.by_type(ifc_class) if e.Name == style_name), None)
+                if existing_style is not None:
+                    reuse_identities[element_identity] = existing_style
+                    return existing_style
+
+        elif ifc_class == "IfcApplication":
+            app_id = element.ApplicationIdentifier
+            if app_id is not None:
+                existing_app = next(
+                    (e for e in ifc_file.by_type("IfcApplication") if e.ApplicationIdentifier == app_id), None
+                )
+                if existing_app is not None:
+                    reuse_identities[element_identity] = existing_app
+                    return existing_app
+
+        elif ifc_class == "IfcOrganization":
+            existing_org = get_existing_element_(element)
+            if existing_org is not None:
+                reuse_identities[element_identity] = existing_org
+                return existing_org
+
+        elif ifc_class == "IfcPerson":
+            existing_person = get_existing_element_(element)
+            if existing_person is not None:
+                reuse_identities[element_identity] = existing_person
+                return existing_person
+
+        elif ifc_class == "IfcPersonAndOrganization":
+            if (person := get_existing_element_(element.ThePerson)) and (
+                org := get_existing_element_(element.TheOrganization)
+            ):
+                for pao in ifc_file.by_type("IfcPersonAndOrganization"):
+                    if pao.ThePerson == person and pao.TheOrganization == org:
+                        reuse_identities[element_identity] = pao
+                        return pao
+
+        attrs: dict[int, Any] = {}
 
         # Utils method for the loop.
         def get_tuple_type(tuple_: tuple) -> type:
@@ -592,7 +724,7 @@ class Usecase:
             attrs[attr_index] = attr_value
 
         # Adding entity at the end just to keep it consistent with `file.add`.
-        new = ifc_file.create_entity(element.is_a())
+        new = ifc_file.create_entity(ifc_class)
         reuse_identities[element_identity] = new
         for attr_index, attr_value in attrs.items():
             new[attr_index] = attr_value

@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -30,8 +29,13 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING
 
 
 class BIMAttributeProperties(PropertyGroup):
     attributes: CollectionProperty(name="Attributes", type=Attribute)
     is_editing_attributes: BoolProperty(name="Is Editing Attributes")
+
+    if TYPE_CHECKING:
+        attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        is_editing_attributes: bool

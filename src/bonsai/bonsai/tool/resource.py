@@ -18,6 +18,7 @@
 
 # ############################################################################ #
 
+from __future__ import annotations
 import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -30,10 +31,17 @@ import ifcopenshell.util.date as ifcdateutils
 import ifcopenshell.util.cost
 import ifcopenshell.util.resource
 import ifcopenshell.util.constraint
-from typing import Any, Union
+from typing import Any, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.resource.prop import BIMResourceProperties
 
 
 class Resource(bonsai.core.tool.Resource):
+    @classmethod
+    def get_resource_props(cls) -> BIMResourceProperties:
+        return bpy.context.scene.BIMResourceProperties
+
     @classmethod
     def load_resources(cls) -> None:
         def create_new_resource_li(resource, level_index):

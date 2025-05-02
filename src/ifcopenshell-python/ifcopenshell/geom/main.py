@@ -66,7 +66,9 @@ SETTING = Literal[
     "apply-default-materials",
     "boolean-attempt-2d",
     "building-local-placement",
+    "cgal-original-edges",
     "circle-segments",
+    "compute-curvature",
     "context-identifiers",
     "context-ids",
     "context-types",
@@ -222,6 +224,55 @@ class settings_mixin:
             return k
         else:
             raise AttributeError("'Settings' object has no attribute '%s'" % k)
+
+    def build_parser(self, parser) -> None:
+        """
+        Accepts an argparse.ArgumentParser object, enumerates the settings in this container and
+        adds argument parser rules for each.
+        """
+        type_factories = {
+            "bool": bool,
+            "int": int,
+            "double": float,
+            "std::string": str,
+            "std::set<int>": lambda s: list(map(int, s.split(";"))),
+            "std::set<std::string>": lambda s: s.split(";"),
+            "std::vector<double>": lambda s: list(map(float, s.split(";"))),
+            "IteratorOutputOptions": int,
+            "FunctionStepMethod": int,
+            "OutputDimensionalityTypes": int,
+            "TriangulationMethod": int,
+        }
+        for nm in self.setting_names():
+            if nm == "use-python-opencascade":
+                ty == "bool"
+            else:
+                ty = self.get_type(nm)
+            if ty == "bool":
+                group = parser.add_mutually_exclusive_group()
+                group.add_argument(
+                    f"--{nm}",
+                    dest=nm.replace("-", "_"),
+                    action="store_true",
+                )
+                group.add_argument(
+                    f"--no-{nm}",
+                    dest=nm.replace("-", "_"),
+                    action="store_false",
+                )
+                parser.set_defaults(**{nm.replace("-", "_"): None})
+            else:
+                parser.add_argument(f"--{nm}", dest=nm.replace("-", "_"), type=type_factories[ty])
+
+    def apply_namespace(self, namespace) -> None:
+        """
+        Accepts an argparse.Namespace object, enumerates over the values in this namespace and
+        writes them to the settings when available
+        """
+        names = set(self.setting_names())
+        for k, v in namespace._get_kwargs():
+            if k.replace("_", "-") in names and v is not None:
+                self.set(k.replace("_", "-"), v)
 
 
 class serializer_settings(settings_mixin, ifcopenshell_wrapper.SerializerSettings):
@@ -590,7 +641,10 @@ class serializers:
         hdf5 = ifcopenshell_wrapper.HdfSerializer
     except:
         pass
-
+    try:
+        collada = ifcopenshell_wrapper.ColladaSerializer
+    except:
+        pass
     # ttl is always available since it doesn't depend on any C++ libraries,
     # just people might be using an outdated binary
     if hasattr(ifcopenshell_wrapper, "TtlWktSerializer"):
@@ -601,3 +655,22 @@ class serializers:
         ) -> ifcopenshell_wrapper.SvgSerializer:
             out_filename = transform_string(out_filename)
             return ifcopenshell_wrapper.TtlWktSerializer(out_filename, geometry_settings, settings)
+
+    @classmethod
+    def guess_from_extension(cls, filepath: str):
+        ext = filepath.split(".")[-1]
+        mapping = {
+            "glb": "gltf",
+            "hdf": "hdf5",
+            "h5": "hdf5",
+            "hdf5": "hdf5",
+            "obj": "obj",
+            "svg": "svg",
+            "ttl": "ttl",
+            "xml": "xml",
+            "dae": "collada",
+        }
+        serializer_name = mapping.get(ext)
+        if not serializer_name:
+            raise ValueError(f"No serializer available for .{ext} file")
+        return getattr(cls, serializer_name)

@@ -24,7 +24,7 @@ import ifcopenshell.util.schema
 
 def generate_ifc4_entity_map(filepath, schema_name, manual_corrections={}):
     filepath = filepath
-    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name)
+    schema = ifcopenshell.schema_by_name(schema_name)
 
     entity_to_type_map = {}
 
@@ -154,7 +154,7 @@ ifc4x3_corrections = {
     "IfcDistributionElement": ["IfcDistributionElementType"],
     "IfcBuiltElement": ["IfcBuiltElementType"],
 }
-entity_to_type_map4x3 = generate_ifc4_entity_map("IFC4X3_TC1.exp", "ifc4x3", ifc4x3_corrections)
+entity_to_type_map4x3 = generate_ifc4_entity_map("IFC4X3_TC1.exp", "IFC4X3", ifc4x3_corrections)
 
 # some manual IFC4 corrections (more details in entity_to_type_map_4.json commits history)
 ifc4_corrections = {
@@ -165,6 +165,6 @@ ifc4_corrections = {
     "IfcDistributionElement": ["IfcDistributionElementType"],
 }
 #
-entity_to_type_map4 = generate_ifc4_entity_map("IFC4.exp", "ifc4", ifc4_corrections)
+entity_to_type_map4 = generate_ifc4_entity_map("IFC4.exp", "IFC4", ifc4_corrections)
 
 entity_to_type_map2x3 = generate_ifc2x3_entity_map()

@@ -49,6 +49,8 @@ class GridDecorator:
         cls.is_installed = False
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -66,7 +68,8 @@ class GridDecorator:
         blf.size(font_id, 12)
         blf.enable(font_id, blf.SHADOW)
 
-        for axis in context.scene.BIMGridProperties.grid_axes:
+        grid_props = tool.Spatial.get_grid_props()
+        for axis in grid_props.grid_axes:
             if not (obj := axis.obj) or obj.hide_get() == True:
                 continue
             if obj.select_get() and context.mode != "OBJECT":
@@ -120,7 +123,8 @@ class GridDecorator:
         selected_edges = []
         unselected_verts = []
         unselected_edges = []
-        for axis in context.scene.BIMGridProperties.grid_axes:
+        grid_props = tool.Spatial.get_grid_props()
+        for axis in grid_props.grid_axes:
             if (obj := axis.obj) and obj.hide_get() == False:
                 if obj.select_get():
                     if context.mode != "OBJECT":

@@ -28,6 +28,10 @@ IN_BLENDER = sys.modules.get("bpy", None)
 if IN_BLENDER:
     import bpy
 
+# This file is executed twice - first as a bonsai-extension
+# and then as a bonsai-package.
+IN_PACKAGE = __package__ == "bonsai"
+
 import re
 import platform
 import traceback
@@ -40,6 +44,7 @@ from typing import Union, Any, Generator
 
 
 last_commit_hash = "8888888"
+last_commit_date = "9999999"
 
 
 def get_last_commit_hash() -> Union[str, None]:
@@ -49,6 +54,12 @@ def get_last_commit_hash() -> Union[str, None]:
     if last_commit_hash == str(8_888888):
         return None
     return last_commit_hash[:7]
+
+
+def get_last_commit_date() -> Union[str, None]:
+    if last_commit_date == str(9_999999):
+        return None
+    return last_commit_date
 
 
 # Accessed from bonsai extension:
@@ -96,6 +107,7 @@ def get_debug_info():
         "blender_version": bpy.app.version_string,
         "bonsai_version": bbim_version,
         "bonsai_commit_hash": get_last_commit_hash(),
+        "bonsai_commit_date": get_last_commit_date(),
         "last_actions": last_actions,
         "last_error": last_error,
     }
@@ -210,16 +222,21 @@ if IN_BLENDER:
         info["binary_python_version"] = version
         return info
 
-    try:
-        import git
+    def update_commit_data() -> None:
+        try:
+            import git
 
-        # We can't just use __file__ as bonsai/__init__.py is typically not symlinked
-        # as Blender have errors symlinking main addon package file.
-        path = Path(__file__).resolve().parent
-        repo = git.Repo(str(path), search_parent_directories=True)
-        last_commit_hash = repo.head.object.hexsha
-    except:
-        pass
+            global last_commit_hash
+            global last_commit_date
+            path = Path(__file__).resolve().parent
+            repo = git.Repo(str(path), search_parent_directories=True)
+            last_commit_hash = repo.head.object.hexsha
+            last_commit_date = repo.head.object.committed_datetime.isoformat()
+        except:
+            pass
+
+    if IN_PACKAGE:
+        update_commit_data()
 
     try:
         import ifcopenshell.api
@@ -234,6 +251,12 @@ if IN_BLENDER:
             )
 
         ifcopenshell.api.add_pre_listener("*", "action_logger", log_api)
+
+        def purge_cache():
+            """Purge cache left from previous session (e.g. after reload or update)."""
+            import bonsai.tool as tool
+
+            tool.Blender.get_bonsai_version.cache_clear()
 
         def register():
             if platform.system() == "Windows":
@@ -252,6 +275,7 @@ if IN_BLENDER:
                 bonsai.REINSTALLED_BBIM_VERSION = current_version
 
             bonsai.bim.register()
+            purge_cache()
 
         def unregister():
             if platform.system() == "Windows":

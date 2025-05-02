@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import json
 import bpy
@@ -30,10 +31,17 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from mathutils import Vector
 from collections import defaultdict
-from typing import Iterable, Literal
+from typing import Iterable, Literal, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.debug.prop import BIMDebugProperties
 
 
 class Debug(bonsai.core.tool.Debug):
+    @classmethod
+    def get_debug_props(cls) -> BIMDebugProperties:
+        return bpy.context.scene.BIMDebugProperties
+
     @classmethod
     def add_schema_identifier(cls, schema: W.schema_definition) -> None:
         IfcStore.schema_identifiers.append(schema.name())
@@ -46,13 +54,22 @@ class Debug(bonsai.core.tool.Debug):
 
     @classmethod
     def purge_hdf5_cache(cls) -> None:
-        cache_dir = bpy.context.scene.BIMProperties.cache_dir
+        props = tool.Blender.get_bim_props()
+        cache_dir = props.cache_dir
         filelist = [f for f in os.listdir(cache_dir) if f.endswith(".h5")]
         for f in filelist:
             try:
                 os.remove(os.path.join(cache_dir, f))
             except PermissionError:
                 pass
+
+    @classmethod
+    def debug_bmesh(cls, bm: bmesh.types.BMesh, name: str = "Debug") -> bpy.types.Object:
+        mesh = bpy.data.meshes.new("Debug")
+        bm.to_mesh(mesh)
+        obj = bpy.data.objects.new(name, mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        return obj
 
     @classmethod
     def debug_geometry(
@@ -111,8 +128,7 @@ class Debug(bonsai.core.tool.Debug):
         """
 
         def get_hash(element: ifcopenshell.entity_instance) -> int:
-            # TODO: replace with get_info_2 after bonsai build update.
-            return hash(json.dumps(element.get_info(include_identifier=False, recursive=True), sort_keys=True))
+            return hash(json.dumps(element.get_info_2(include_identifier=False, recursive=True), sort_keys=True))
 
         ifc_file = tool.Ifc.get()
         merged_element_types: dict[str, list[str]] = {}

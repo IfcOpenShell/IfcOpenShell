@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.guid
 import ifcopenshell.util.element
-from typing import Optional
+from typing import Optional, Any
 
 
 def connect_port(
@@ -110,6 +110,9 @@ def connect_port(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         # Note: there are a number of ambiguities with port connectivity. We
         # assume system topology is represented by a directed graph. In other

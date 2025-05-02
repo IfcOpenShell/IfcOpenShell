@@ -69,13 +69,11 @@ def assign_container(
     previous aggregation, containment, or nesting relationships it may have.
 
     :param products: A list of physical IfcElements existing in the space.
-    :type products: list[ifcopenshell.entity_instance]
     :param relating_structure: The IfcSpatialStructureElement element, such
         as IfcBuilding, IfcBuildingStorey, or IfcSpace that the element
         exists in.
     :return: The IfcRelContainedInSpatialStructure relationship instance
         or `None` if `products` was empty list.
-    :rtype: Union[ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -103,16 +101,10 @@ def assign_container(
         ifcopenshell.api.spatial.assign_container(model, products=[wall], relating_structure=storey)
         ifcopenshell.api.spatial.assign_container(model, products=[furniture], relating_structure=space)
     """
-    settings = {
-        "products": products,
-        "relating_structure": relating_structure,
-    }
-
-    if not settings["products"]:
+    if not products:
         return
 
-    products = set(settings["products"])
-    relating_structure = settings["relating_structure"]
+    products_set = set(products)
     structure_rel = next(iter(relating_structure.ContainsElements), None)
 
     previous_containers_rels: set[ifcopenshell.entity_instance] = set()
@@ -120,7 +112,7 @@ def assign_container(
     products_with_containers: list[ifcopenshell.entity_instance] = []
 
     # check if there is anything to change
-    for product in products:
+    for product in products_set:
         product_rel = next(iter(product.ContainedInStructure), None)
 
         if product_rel is None:
@@ -144,7 +136,7 @@ def assign_container(
 
     # unassign elements from previous containers
     for rel in previous_containers_rels:
-        related_elements = set(rel.RelatedElements) - products
+        related_elements = set(rel.RelatedElements) - products_set
         if related_elements:
             rel.RelatedElements = list(related_elements)
             ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
@@ -156,7 +148,7 @@ def assign_container(
 
     # assign elements to a new container
     if structure_rel:
-        structure_rel.RelatedElements = list(set(structure_rel.RelatedElements) | products)
+        structure_rel.RelatedElements = list(set(structure_rel.RelatedElements) | products_set)
         ifcopenshell.api.owner.update_owner_history(file, **{"element": structure_rel})
     else:
         structure_rel = file.create_entity(
@@ -164,8 +156,8 @@ def assign_container(
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedElements": list(products),
-                "RelatingStructure": settings["relating_structure"],
+                "RelatedElements": list(products_set),
+                "RelatingStructure": relating_structure,
             }
         )
 

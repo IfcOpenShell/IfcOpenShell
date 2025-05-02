@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.aggregate
 import ifcopenshell.util.element
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -167,7 +168,8 @@ class TestAssign(NewIfc):
         tool.Ifc.link(building_element, building_obj)
         building_collection = bpy.data.collections.new("Foobar")
         bpy.context.scene.collection.children.link(building_collection)
-        building_obj.BIMObjectProperties.collection = building_collection
+        props = tool.Blender.get_object_bim_props(building_obj)
+        props.collection = building_collection
         building_collection.objects.link(building_obj)
         ifcopenshell.api.aggregate.assign_object(
             tool.Ifc.get(),

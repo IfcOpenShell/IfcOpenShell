@@ -31,7 +31,8 @@ from typing import Union
 
 @persistent
 def toggle_decorations_on_load(*args):
-    if bpy.context.scene.BIMProjectProperties.clipping_planes:
+    props = tool.Project.get_project_props()
+    if props.clipping_planes:
         ClippingPlaneDecorator.install(bpy.context)
     else:
         ClippingPlaneDecorator.uninstall()
@@ -67,6 +68,8 @@ class ProjectDecorator:
         cls.installed = None
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -99,7 +102,7 @@ class ProjectDecorator:
         selected_edges = []
         selected_tris = []
 
-        props = context.scene.BIMProjectProperties
+        props = tool.Project.get_project_props()
         try:
             obj = props.queried_obj
             selected_vertices = obj["selected_vertices"]
@@ -136,6 +139,8 @@ class ClippingPlaneDecorator:
         cls.installed = None
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -171,7 +176,8 @@ class ClippingPlaneDecorator:
         unselected_edges = []
         unselected_tris = []
 
-        for clipping_plane in context.scene.BIMProjectProperties.clipping_planes:
+        props = tool.Project.get_project_props()
+        for clipping_plane in props.clipping_planes:
             obj = clipping_plane.obj
             if not obj or not obj.data:
                 continue
@@ -240,6 +246,8 @@ class MeasureDecorator:
         cls.is_installed = False
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -321,7 +329,7 @@ class MeasureDecorator:
 
             all_positions = []
             for i in range(len(polyline_points)):
-                if i < 2 and measure_type == "AREA":
+                if i < 1 and measure_type == "POLY_AREA":
                     continue
                 if i == 0:
                     continue
@@ -366,7 +374,7 @@ class MeasureDecorator:
             polyline_verts = [Vector((p.x, p.y, p.z)) for p in polyline_points]
 
             # Area
-            if measure_type == "AREA" and polyline_data.area:
+            if measure_type == "POLY_AREA" and polyline_data.area:
                 if len(polyline_verts) < 3:
                     continue
                 center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
@@ -384,7 +392,7 @@ class MeasureDecorator:
                 blf.draw(self.font_id, text)
 
             # Length
-            if measure_type in {"POLYLINE", "AREA"}:
+            if measure_type in {"POLYLINE", "POLY_AREA"}:
                 if len(polyline_verts) < 3:
                     continue
                 total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
@@ -447,7 +455,7 @@ class MeasureDecorator:
             # Area highlight
             if polyline_data:
                 area = polyline_data.area.split(" ")[0]
-                if area:
+                if polyline_data.measurement_type == "POLY_AREA" and area:
                     if float(area) > 0:
                         tris = self.calculate_polygon(polyline_verts)["tris"]
                         self.draw_batch("TRIS", polyline_verts, transparent_color(decorator_color_special), tris)

@@ -25,19 +25,16 @@ import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.bim.helper
+from bpy_extras.io_utils import ImportHelper
 from bonsai.bim.ifc import IfcStore
 
 
-class LoadClassificationLibrary(bpy.types.Operator, tool.Ifc.Operator):
+class LoadClassificationLibrary(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.load_classification_library"
     bl_label = "Load Classification Library"
+    bl_description = "Load classification library from the provided filepath."
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
     def _execute(self, context):
         IfcStore.classification_file = ifcopenshell.open(self.filepath)
@@ -201,7 +198,8 @@ class EnableEditingClassification(bpy.types.Operator):
     def execute(self, context):
         def callback(name, prop, data):
             if name == "ReferenceTokens":
-                new = bpy.context.scene.BIMGeoreferenceProperties.projected_crs.add()
+                geo_props = tool.Georeference.get_georeference_props()
+                new = geo_props.projected_crs.add()
                 new.name = name
                 new.data_type = "string"
                 new.is_null = data[name] is None
@@ -239,7 +237,7 @@ class RemoveClassification(bpy.types.Operator, tool.Ifc.Operator):
     classification: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         ifcopenshell.api.run(
             "classification.remove_classification",
             tool.Ifc.get(),
@@ -459,6 +457,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
                 for prop in blender_properties:
                     properties[prop.name] = prop.get_value()
 
+                # TODO: is this still the correct approach?
                 if classification_pset.name == "undefined_set":
                     if "ObjectType" in properties:
                         if hasattr(element, "ObjectType"):

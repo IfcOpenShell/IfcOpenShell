@@ -409,7 +409,8 @@ def update_roof_modifier_ifc_data(context: bpy.types.Context) -> None:
     since it's going to update ifc representation
     """
     obj = context.active_object
-    props = obj.BIMRoofProperties
+    assert obj
+    props = tool.Model.get_roof_props(obj)
     element = tool.Ifc.get_entity(obj)
 
     def roof_is_gabled() -> bool:
@@ -424,8 +425,14 @@ def update_roof_modifier_ifc_data(context: bpy.types.Context) -> None:
         return False
 
     # type attributes
-    if props.roof_type == "HIP/GABLE ROOF":
-        element.PredefinedType = "GABLE_ROOF" if roof_is_gabled() else "HIP_ROOF"
+    ifc_class = element.is_a()
+    if ifc_class in ("IfcRoof", "IfcRoofType"):
+        if props.roof_type == "HIP/GABLE ROOF":
+            element.PredefinedType = "GABLE_ROOF" if roof_is_gabled() else "HIP_ROOF"
+    elif ifc_class in ("IfcSlab", "IfcSlabType"):
+        element.PredefinedType = "ROOF"
+    elif ifc_class in ("IfcCoveringType", "IfcCoveringType"):
+        element.PredefinedType = "ROOFING"
 
     tool.Model.add_body_representation(obj)
 
@@ -442,7 +449,7 @@ def update_roof_modifier_bmesh(obj: bpy.types.Object) -> None:
     """before using should make sure that Data contains up-to-date information.
     If BBIM Pset just changed should call refresh() before updating bmesh
     """
-    props = obj.BIMRoofProperties
+    props = tool.Model.get_roof_props(obj)
     assert isinstance(obj.data, bpy.types.Mesh)
 
     # NOTE: using Data since bmesh update will hapen very often
@@ -543,7 +550,7 @@ class BIM_OT_add_roof(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
         bpy.context.view_layer.objects.active = obj
-        obj.select_set(True)
+        tool.Blender.select_object(obj)
         bpy.ops.bim.add_roof()
         return {"FINISHED"}
 
@@ -559,7 +566,7 @@ class AddRoof(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         assert obj
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMRoofProperties
+        props = tool.Model.get_roof_props(obj)
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         # rejecting original roof shape to be safe
@@ -607,7 +614,8 @@ class EnableEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        props = obj.BIMRoofProperties
+        assert obj
+        props = tool.Model.get_roof_props(obj)
         data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
         # required since we could load pset from .ifc and BIMRoofProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
@@ -624,7 +632,7 @@ class CancelEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         assert obj
         data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
-        props = obj.BIMRoofProperties
+        props = tool.Model.get_roof_props(obj)
 
         # restore previous settings since editing was canceled
         props.set_props_kwargs_from_ifc_data(data)
@@ -642,7 +650,7 @@ class FinishEditingRoof(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMRoofProperties
+        props = tool.Model.get_roof_props(obj)
 
         pset_data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")
         path_data = pset_data["data_dict"]["path_data"]
@@ -666,7 +674,7 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         assert obj
         [o.select_set(False) for o in context.selected_objects if o != obj]
-        props = obj.BIMRoofProperties
+        props = tool.Model.get_roof_props(obj)
         data = tool.Model.get_modeling_bbim_pset_data(obj, "BBIM_Roof")["data_dict"]
         # required since we could load pset from .ifc and BIMRoofProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
@@ -720,7 +728,7 @@ class EnableEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
 def cancel_editing_roof_path(context: bpy.types.Context) -> set[str]:
     obj = context.active_object
     assert obj
-    props = obj.BIMRoofProperties
+    props = tool.Model.get_roof_props(obj)
 
     ProfileDecorator.uninstall()
     props.is_editing_path = False
@@ -751,7 +759,8 @@ class CopyRoofParameters(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         source_obj = context.active_object
-        source_props = source_obj.BIMRoofProperties
+        assert source_obj
+        source_props = tool.Model.get_roof_props(source_obj)
         data = source_props.get_general_kwargs(convert_to_project_units=True)
 
         for target_obj in context.selected_objects:
@@ -763,7 +772,7 @@ class CopyRoofParameters(bpy.types.Operator, tool.Ifc.Operator):
                 continue
             data["path_data"] = RoofData.data["path_data"]
             target_element = tool.Ifc.get_entity(target_obj)
-            target_props = target_obj.BIMRoofProperties
+            target_props = tool.Model.get_roof_props(target_obj)
 
             target_props.set_props_kwargs_from_ifc_data(data)
             update_bbim_roof_pset(target_element, data)
@@ -783,7 +792,7 @@ class FinishEditingRoofPath(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMRoofProperties
+        props = tool.Model.get_roof_props(obj)
 
         bm = tool.Blender.get_bmesh_for_mesh(obj.data)
         op_status, error_message = is_valid_roof_footprint(bm)
@@ -815,9 +824,12 @@ class RemoveRoof(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         element = tool.Ifc.get_entity(obj)
-        obj.BIMRoofProperties.is_editing = False
+        props = tool.Model.get_roof_props(obj)
+        props.is_editing = False
 
+        assert element
         pset = tool.Pset.get_element_pset(element, "BBIM_Roof")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
         return {"FINISHED"}

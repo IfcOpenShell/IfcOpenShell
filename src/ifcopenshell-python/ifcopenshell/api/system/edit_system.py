@@ -26,11 +26,8 @@ def edit_system(file: ifcopenshell.file, system: ifcopenshell.entity_instance, a
     IfcSystem, consult the IFC documentation.
 
     :param system: The IfcSystem entity you want to edit
-    :type system: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -42,8 +39,5 @@ def edit_system(file: ifcopenshell.file, system: ifcopenshell.entity_instance, a
         # Change the name of the system to "HW" for Hot Water
         ifcopenshell.api.system.edit_system(model, system=system, attributes={"Name": "HW"})
     """
-
-    settings = {"system": system, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["system"], name, value)
+    for name, value in attributes.items():
+        setattr(system, name, value)

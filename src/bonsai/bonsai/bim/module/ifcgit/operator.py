@@ -374,16 +374,17 @@ class ObjectLog(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             cls.poll_message_set("No Active Object")
-        elif not context.active_object.BIMObjectProperties.ifc_definition_id:
+        elif not tool.Blender.get_ifc_definition_id(obj):
             cls.poll_message_set("Active Object doesn't have an IFC definition")
         else:
             return True
 
     def execute(self, context):
-
-        step_id = context.active_object.BIMObjectProperties.ifc_definition_id
+        obj = context.active_object
+        assert obj
+        step_id = tool.Blender.get_ifc_definition_id(obj)
         core.entity_log(tool.IfcGit, tool.Ifc, step_id, self)
         return {"FINISHED"}
 
@@ -407,4 +408,26 @@ class InstallGit(bpy.types.Operator):
     def execute(self, context):
         core.install_git(tool.IfcGit, self)
         refresh()
+        return {"FINISHED"}
+
+
+class RunGitDiff(bpy.types.Operator):
+    """Run `git diff` for the current version of IFC file and the last saved one."""
+
+    bl_label = "Git Diff"
+    bl_idname = "ifcgit.git_diff"
+    bl_options = set()
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file loaded.")
+            return False
+        if not tool.Ifc.get_path():
+            cls.poll_message_set("Current IFC file was never saved.")
+            return False
+        return True
+
+    def execute(self, context):
+        core.run_git_diff(tool.IfcGit, self)
         return {"FINISHED"}

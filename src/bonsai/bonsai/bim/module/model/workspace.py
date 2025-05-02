@@ -23,13 +23,14 @@ import bpy.utils.previews
 import bonsai.bim
 import bonsai.tool as tool
 import bonsai.core.model as core
-from bonsai.bim.module.model.wall import DumbWallJoiner
+from bonsai.bim.module.model.wall import DumbWallJoiner, DumbWallAligner
 from bonsai.bim.helper import prop_with_search, draw_attribute
 from bpy.types import WorkSpaceTool, Menu
 from bonsai.bim.module.model.data import AuthoringData, ItemData
 from bonsai.bim.module.system.data import PortData
 from bonsai.bim.module.model.prop import get_ifc_class
 from typing import Optional, Union
+from functools import partial
 
 
 def load_custom_icons():
@@ -96,14 +97,16 @@ class BimTool(WorkSpaceTool):
     def draw_settings(
         cls, context: bpy.types.Context, layout: bpy.types.UILayout, ws_tool: bpy.types.WorkSpaceTool
     ) -> None:
-        if context.scene.BIMGeometryProperties.mode == "ITEM":
+        props = tool.Geometry.get_geometry_props()
+        ifc_element_type = None if cls.ifc_element_type == "all" else cls.ifc_element_type
+        if props.mode == "ITEM":
             EditItemUI.draw(context, layout)
         elif (
             active_ifc_object := (context.active_object and tool.Ifc.get_entity(context.active_object))
         ) and context.selected_objects:
-            EditObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            EditObjectUI.draw(context, layout, ifc_element_type=ifc_element_type)
         else:
-            CreateObjectUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
+            CreateObjectUI.draw(context, layout, ifc_element_type=ifc_element_type)
 
 
 class WallTool(BimTool):
@@ -363,43 +366,7 @@ class CableTool(BimTool):
     ifc_element_type = "IfcCableSegmentType"
 
 
-def add_layout_hotkey_operator(
-    layout: bpy.types.UILayout,
-    text: str,
-    hotkey: str,
-    description: Union[str, None],
-    ui_context: str = "",
-    *,
-    operator: str = "bim.hotkey",
-) -> bpy.types.OperatorProperties:
-    """
-    :param operator: Operator to display in UI. Displaying the specific operator in UI can be useful
-        to provide poll error messages.
-    """
-    parts = hotkey.split("_") if hotkey else []
-    modifier, key = (parts + ["", ""])[:2]
-
-    op_text = "" if ui_context == "TOOL_HEADER" else text
-    custom_icon = custom_icon_previews.get(text.upper().replace(" ", "_"), custom_icon_previews["IFC"]).icon_id
-    modifier_icon, modifier_str = MODIFIERS.get(modifier, ("NONE", ""))
-
-    row = layout.row(align=True)
-    op = row.operator(operator, text=op_text, icon_value=custom_icon)
-
-    if ui_context != "TOOL_HEADER":
-        row.label(text="", icon=modifier_icon)
-        row.label(text="", icon=f"EVENT_{key}" if key else "BLANK1")
-
-    hotkey_description = f"Hotkey: {modifier_str} {key}".strip()
-    description = "\n\n".join(filter(None, [description, hotkey_description]))
-
-    if operator == "bim.hotkey":
-        op.hotkey = hotkey
-        if ui_context == "TOOL_HEADER":
-            op.description = text + "\n" + description
-        else:
-            op.description = description
-    return op
+add_layout_hotkey_operator = partial(tool.Blender.add_layout_hotkey_operator, tool_name="bim", module_name=__name__)
 
 
 def format_ifc_camel_case(string):
@@ -430,7 +397,7 @@ class EditItemUI:
         obj = context.active_object
         assert obj
 
-        mesh_props = obj.data.BIMMeshProperties
+        mesh_props = tool.Geometry.get_mesh_props(obj.data)
         if AuthoringData.data["is_representation_item_swept_solid"]:
             # TODO: support EndSweptArea for IfcRevolvedAreaSolidTapered,
             # will need to add second attribute for this.
@@ -439,11 +406,14 @@ class EditItemUI:
             if mesh_props.item_profile == "-":
                 op = row.operator("bim.name_profile", text="", icon="TAG")
                 op.extrusion_item_obj = obj.name
+            else:
+                op = row.operator("bim.profiles_ui_select", icon="ZOOM_SELECTED", text="")
+                op.profile_id = int(mesh_props.item_profile)
 
-        for item_attribute in obj.data.BIMMeshProperties.item_attributes:
+        for item_attribute in mesh_props.item_attributes:
             row = cls.layout.row()
             draw_attribute(item_attribute, cls.layout)
-        if len(obj.data.BIMMeshProperties.item_attributes) or AuthoringData.data["is_representation_item_swept_solid"]:
+        if len(mesh_props.item_attributes) or AuthoringData.data["is_representation_item_swept_solid"]:
             row = cls.layout.row()
             row.operator("bim.update_item_attributes", icon="FILE_REFRESH", text="")
 
@@ -499,9 +469,7 @@ class CreateObjectUI:
     layout: bpy.types.UILayout
 
     @classmethod
-    def draw(
-        cls, context: bpy.types.Context, layout: bpy.types.UILayout, ifc_element_type: Optional[str] = None
-    ) -> None:
+    def draw(cls, context: bpy.types.Context, layout: bpy.types.UILayout, ifc_element_type: Union[str, None]) -> None:
         cls.layout = layout
         cls.props = tool.Model.get_model_props()
 
@@ -515,15 +483,13 @@ class CreateObjectUI:
 
         if not AuthoringData.is_loaded:
             AuthoringData.load(ifc_element_type)
-        elif ifc_element_type == "all" and AuthoringData.data["ifc_element_type"] is not None:
-            AuthoringData.load("all")
         elif AuthoringData.data["ifc_element_type"] != ifc_element_type:
             AuthoringData.load(ifc_element_type)
 
-        if ifc_element_type and context.region.type == "TOOL_HEADER":
+        if context.region.type == "TOOL_HEADER":
             tool_name = (
                 "Multi Object Tool"
-                if ifc_element_type == "all"
+                if ifc_element_type is None
                 else format_ifc_camel_case(ifc_element_type.removesuffix("Type")) + " Tool"
             )
             cls.layout.label(text=tool_name, icon="TOOL_SETTINGS")
@@ -550,6 +516,7 @@ class CreateObjectUI:
     @classmethod
     def draw_type_manager_launcher(cls, context):
         ui_context = context.region.type
+        props = tool.Model.get_model_props()
         row = cls.layout.row(align=True)
         box = cls.layout.box()
         row1 = box.row(align=True)
@@ -632,11 +599,11 @@ class CreateObjectUI:
                 data=cls.props, property="x_angle", text="Slope" if ui_context != "TOOL_HEADER" else "A", icon="FILE_3D"
             )
 
-        elif ifc_class in ("IfcColumnType", "IfcMemberType"):
+        elif ifc_class in ("IfcColumnType", "IfcPileType"):
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
             row.prop(data=cls.props, property="extrusion_depth", text="Height" if ui_context != "TOOL_HEADER" else "H")
 
-        elif ifc_class in ("IfcBeamType"):
+        elif ifc_class in ("IfcBeamType", "IfcMemberType"):
             row.prop(data=cls.props, property="cardinal_point", text="Axis")
             row.prop(data=cls.props, property="extrusion_depth", text="Length" if ui_context != "TOOL_HEADER" else "L")
 
@@ -676,12 +643,13 @@ class CreateObjectUI:
         if not (ifc_class := AuthoringData.data["ifc_class_current"]):
             return
 
+        relating_type_data = AuthoringData.data["relating_type_data"]
         box = cls.layout.box()
 
         row = box.row(align=True)
-        thumbnail: int = AuthoringData.data["type_thumbnail"]
+        thumbnail: int = AuthoringData.type_thumbnails.get(relating_type_data["id"], 0)
         row.template_icon(icon_value=thumbnail)
-        row.operator("bim.launch_type_manager", text=AuthoringData.data["relating_type_name"], emboss=False)
+        row.operator("bim.launch_type_manager", text=relating_type_data["name"], emboss=False)
         row.operator(
             "bim.launch_type_manager",
             icon=tool.Blender.TYPE_MANAGER_ICON,
@@ -695,7 +663,7 @@ class CreateObjectUI:
         row.alignment = "CENTER"
         row.operator(
             "bim.launch_type_manager",
-            text=AuthoringData.data["relating_type_description"],
+            text=relating_type_data["description"],
             emboss=False,
         )
 
@@ -708,19 +676,18 @@ class CreateObjectUI:
             for _ in range(4):
                 row2.operator("bim.launch_type_manager", text="", emboss=False)
         else:
-            op = box.operator(
+            box.operator(
                 "bim.load_type_thumbnails",
                 text="",
                 icon="FILE_REFRESH",
                 emboss=False,
             )
-            op.ifc_class = ifc_class
 
         row = box.row(align=True)
         row.alignment = "CENTER"
         row.operator(
             "bim.launch_type_manager",
-            text=AuthoringData.data["predefined_type"],
+            text=AuthoringData.data["relating_type_data"].get("predefined_type"),
             emboss=False,
         )
 
@@ -746,18 +713,18 @@ class EditObjectUI:
 
         if not AuthoringData.is_loaded:
             AuthoringData.load(ifc_element_type)
-        elif ifc_element_type == "all" and AuthoringData.data["ifc_element_type"] is not None:
-            AuthoringData.load("all")
         elif AuthoringData.data["ifc_element_type"] != ifc_element_type:
             AuthoringData.load(ifc_element_type)
 
         if context.region.type == "TOOL_HEADER":
-            if context.scene.BIMAggregateProperties.in_aggregate_mode:
+            aprops = tool.Aggregate.get_aggregate_props()
+            if aprops.in_aggregate_mode:
                 layout.label(text=f"Aggregate Mode", icon="EMPTY_AXIS")
                 row = cls.layout.row(align=True)
                 op = row.operator("bim.disable_aggregate_mode", text="", icon="X")
                 op = row.operator("bim.toggle_aggregate_mode_local_view", text="", icon="ZOOM_SELECTED")
-            if context.scene.BIMNestProperties.in_nest_mode:
+            nprops = tool.Nest.get_nest_props()
+            if nprops.in_nest_mode:
                 layout.label(text=f"Nest Mode", icon="EMPTY_AXIS")
                 row = cls.layout.row(align=True)
                 op = row.operator("bim.disable_nest_mode", text="", icon="X")
@@ -806,6 +773,12 @@ class EditObjectUI:
             op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
             op.x_angle = cls.props.x_angle
 
+            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            row.prop(
+                data=cls.props, property="offset_type_vertical", text="Offset" if ui_context != "TOOL_HEADER" else ""
+            )
+            row.operator("bim.offset_walls", icon="FILE_REFRESH", text="")
+
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             row.prop(data=cls.props, property="x_angle", text="Angle" if ui_context != "TOOL_HEADER" else "A")
             op = row.operator("bim.change_extrusion_x_angle", icon="FILE_REFRESH", text="")
@@ -817,7 +790,9 @@ class EditObjectUI:
             op.cardinal_point = int(cls.props.cardinal_point)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             label = (
-                "Height" if AuthoringData.data["active_class"] in ("IfcColumn", "IfcColumnStandardCase") else "Length"
+                "Height"
+                if AuthoringData.data["active_class"] in ("IfcColumn", "IfcColumnStandardCase", "IfcPile")
+                else "Length"
             )
             row.prop(
                 data=cls.props, property="extrusion_depth", text=label if ui_context != "TOOL_HEADER" else label[0]
@@ -856,11 +831,7 @@ class EditObjectUI:
             add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(
-                row, "Butt", "S_T", "Intersects two non-parallel elements to a butt corner junction", ui_context
-            )
-            row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-            add_layout_hotkey_operator(
-                row, "Mitre", "S_Y", "Intersects two non-parallel elements to a mitred corner junction", ui_context
+                row, "Trim", "S_T", "Connects and trims two non-parallel elements into a joint", ui_context
             )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Unjoin Walls", "S_U", "", ui_context)
@@ -872,7 +843,7 @@ class EditObjectUI:
             )
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             add_layout_hotkey_operator(row, "Rotate 90", "S_R", "Rotate the selected Element by 90 degrees", ui_context)
-            if AuthoringData.data["relating_type_material_usage"] == "LAYER3":
+            if AuthoringData.data["relating_type_data"].get("usage") == "LAYER3":
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(
                     row,
@@ -885,8 +856,8 @@ class EditObjectUI:
         elif AuthoringData.data["active_material_usage"] == "LAYER3":
             if "LAYER2" in AuthoringData.data["selected_material_usages"]:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-                add_layout_hotkey_operator(cls.layout, "Extend Wall To Slab", "S_E", "", ui_context)
-            if AuthoringData.data["relating_type_material_usage"] == "LAYER2":
+                add_layout_hotkey_operator(cls.layout, "Extend To Underside", "S_E", "", ui_context)
+            if AuthoringData.data["relating_type_data"].get("usage") == "LAYER2":
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(
                     row,
@@ -944,6 +915,13 @@ class EditObjectUI:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(row, "Rotate 90", "S_R", bpy.ops.bim.rotate_90.__doc__, ui_context)
 
+        else:
+            if "LAYER2" in AuthoringData.data["selected_material_usages"]:
+                row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+                add_layout_hotkey_operator(
+                    cls.layout, "Extend To Underside", "S_E", bpy.ops.bim.extend_to_underside.__doc__, ui_context
+                )
+
         if AuthoringData.data["is_flippable_element"]:
             cls.draw_flip(ui_context, row)
 
@@ -992,6 +970,13 @@ class EditObjectUI:
             op_text = "Add Void" if ui_context != "TOOL_HEADER" else ""
             op_icon = custom_icon_previews["ADD_VOID"].icon_id
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
+            op = row.operator("bim.add_element", text=op_text, icon_value=op_icon)
+            op.ifc_product = "IfcFeatureElement"
+            op.ifc_class = "IfcOpeningElement"
+            op.skip_dialog = True
+            if ui_context != "TOOL_HEADER":
+                row.label(text="", icon="EVENT_SHIFT")
+                row.label(text="", icon="EVENT_O")
 
         if AuthoringData.data["is_voidable_element"]:
             if AuthoringData.data["has_visible_openings"]:
@@ -1014,12 +999,19 @@ class EditObjectUI:
         row = cls.layout.row(align=True)
         row.separator()
         row.label(text="Align") if ui_context != "TOOL_HEADER" else row
+
+        description: str
+        if AuthoringData.data["active_material_usage"] == "LAYER2":
+            description = bpy.ops.bim.align_wall.__doc__
+        else:
+            description = bpy.ops.bim.align_product.__doc__
+
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(row, "Exterior", "S_X", "", ui_context)
+        add_layout_hotkey_operator(row, "Exterior", "S_X", description, ui_context)
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(row, "Centreline", "S_C", "", ui_context)
+        add_layout_hotkey_operator(row, "Centreline", "S_C", description, ui_context)
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
-        add_layout_hotkey_operator(row, "Interior", "S_V", "", ui_context)
+        add_layout_hotkey_operator(row, "Interior", "S_V", description, ui_context)
         row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
         add_layout_hotkey_operator(row, "Mirror", "S_M", bpy.ops.bim.mirror_elements.__doc__, ui_context)
 
@@ -1047,6 +1039,7 @@ class EditObjectUI:
 
     @classmethod
     def draw_modes(cls, context: bpy.types.Context) -> None:
+        obj = context.active_object
         ui_context = str(context.region.type)
         row = cls.layout.row(align=True)
         row.separator()
@@ -1056,9 +1049,7 @@ class EditObjectUI:
             if len(context.selected_objects) == 1 and AuthoringData.data["has_extrusion"]:
                 row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
                 add_layout_hotkey_operator(row, "Edit Profile", "S_E", "", ui_context)
-        elif (
-            tool.Model.is_parametric_railing_active() and not context.active_object.BIMRailingProperties.is_editing_path
-        ):
+        elif tool.Model.is_parametric_railing_active() and not tool.Model.get_railing_props(obj).is_editing_path:
             row = cls.layout.row(align=True) if ui_context != "TOOL_HEADER" else row
             row.operator(
                 "bim.enable_editing_railing_path",
@@ -1082,8 +1073,8 @@ class EditObjectUI:
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.hotkey"
-    bl_label = "BIM Hotkey"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_label = ""
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
     x: bpy.props.FloatProperty(name="X", default=0.5)
@@ -1134,7 +1125,8 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             row.prop(self, "z")
 
     def hotkey_S_A(self):
-        if bpy.context.scene.BIMGeometryProperties.mode == "ITEM":
+        gprops = tool.Geometry.get_geometry_props()
+        if gprops.mode == "ITEM":
             bpy.ops.wm.call_menu(name="BIM_MT_add_representation_item")
             return
 
@@ -1168,9 +1160,12 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return bpy.ops.bim.draw_polyline_wall("INVOKE_DEFAULT")
         elif tool.Model.get_usage_type(relating_type) == "LAYER3":
             return bpy.ops.bim.draw_polyline_slab("INVOKE_DEFAULT")
-        elif tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type_class != "IfcColumnType":
+        elif tool.Model.get_usage_type(relating_type) == "PROFILE" and relating_type_class not in (
+            "IfcColumnType",
+            "IfcPileType",
+        ):
             return bpy.ops.bim.draw_polyline_profile("INVOKE_DEFAULT")
-        return bpy.ops.bim.add_occurrence("INVOKE_DEFAULT")
+        return bpy.ops.bim.draw_occurrence("INVOKE_DEFAULT")
 
     def hotkey_S_Q(self):
         if not bpy.context.selected_objects:
@@ -1192,30 +1187,18 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
         if self.active_material_usage == "LAYER2":
-            if bpy.ops.bim.align_wall.poll():
-                bpy.ops.bim.align_wall(align_type="CENTERLINE")
+            try:
+                core.align_walls(tool.Ifc, tool.Blender, tool.Model, DumbWallAligner(), "CENTER")
+            except core.RequireAtLeastTwoLayeredElements as e:
+                self.report({"ERROR"}, str(e))
         else:
-            bpy.ops.bim.align_product(align_type="CENTERLINE")
+            try:
+                core.align_objects(tool.Blender, tool.Model, "CENTER")
+            except core.RequireAtLeastTwoElements as e:
+                self.report({"ERROR"}, str(e))
 
     def hotkey_S_E(self):
         if not bpy.context.selected_objects or not (active_object := bpy.context.active_object):
-            return
-
-        # NOTE: placing it before the other operations because railing can also be SweptSolid
-        # and it might conflict with one of the conditions below
-        if (
-            tool.Model.is_parametric_railing_active()
-            and not bpy.context.active_object.BIMRailingProperties.is_editing_path
-        ):
-            bpy.ops.bim.enable_editing_railing_path()
-            return
-
-        elif tool.Model.is_parametric_roof_active() and not bpy.context.active_object.BIMRoofProperties.is_editing_path:
-            # undo the unselection done above because roof has no usage type
-            bpy.ops.bim.enable_editing_roof_path()
-            return
-
-        elif tool.Model.is_parametric_window_active() or tool.Model.is_parametric_door_active():
             return
 
         selected_usages: dict[str, list[bpy.types.Object]] = {}
@@ -1228,11 +1211,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             if not usage:
                 representation = tool.Geometry.get_active_representation(obj)
                 representation = tool.Geometry.resolve_mapped_representation(representation)
-                if representation and representation.RepresentationType == "SweptSolid":
-                    usage = "SWEPTSOLID"
-                else:
-                    obj.select_set(False)
-                    continue
             selected_usages.setdefault(usage, []).append(obj)
 
         if len(bpy.context.selected_objects) == 1:
@@ -1261,9 +1239,6 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             elif self.active_material_usage == "PROFILE":
                 # Extend PROFILE to cursor
                 bpy.ops.bim.extend_profile(join_type="T")
-            else:
-                # Edit SWEPTSOLID profile (assuming single profile for now)
-                bpy.ops.bim.enable_editing_extrusion_profile()
 
         elif self.active_material_usage == "LAYER2" and selected_usages.get("PROFILE", []):
             # Extend PROFILEs to LAYER2
@@ -1271,29 +1246,17 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             [o.select_set(False) for o in selected_usages.get("LAYER2", []) if o != bpy.context.active_object]
             bpy.ops.bim.extend_profile(join_type="T")
 
-        elif self.active_material_usage == "LAYER3" and selected_usages.get("LAYER2", []):
-            # Extend LAYER2s to LAYER3
-            [o.select_set(False) for o in selected_usages.get("PROFILE", [])]
-            [o.select_set(False) for o in selected_usages.get("LAYER3", []) if o != bpy.context.active_object]
-            try:
-                core.join_walls_TZ(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
-            except core.RequireAtLeastTwoLayeredElements as e:
-                self.report({"ERROR"}, str(e))
-
         elif self.active_material_usage == "LAYER2":
-            # Extend LAYER2s to LAYER2
-            [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
-            [o.select_set(False) for o in selected_usages.get("PROFILE", [])]
-            try:
-                core.join_walls_TZ(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
-            except core.RequireAtLeastTwoLayeredElements as e:
-                self.report({"ERROR"}, str(e))
+            bpy.ops.bim.extend_walls_to_wall()
 
         elif self.active_material_usage == "PROFILE":
             # Extend PROFILEs to PROFILE
             [o.select_set(False) for o in selected_usages.get("LAYER3", [])]
             [o.select_set(False) for o in selected_usages.get("LAYER2", [])]
             bpy.ops.bim.extend_profile(join_type="T")
+
+        else:
+            bpy.ops.bim.extend_walls_to_underside()
 
     def hotkey_S_F(self):
         if not bpy.context.selected_objects:
@@ -1350,7 +1313,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             bpy.ops.bim.rotate_90(axis="Z")
-        elif self.active_class in ("IfcColumn", "IfcColumnStandardCase"):
+        elif self.active_class in ("IfcColumn", "IfcColumnStandardCase", "IfcPile"):
             bpy.ops.bim.rotate_90(axis="Z")
         elif self.active_class in ("IfcBeam", "IfcBeamStandardCase", "IfcMember", "IfcMemberStandardCase"):
             bpy.ops.bim.rotate_90(axis="Y")
@@ -1366,7 +1329,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
             return
         if self.active_material_usage == "LAYER2":
             try:
-                core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model, join_type="L")
+                core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model)
             except core.RequireTwoWallsError as e:
                 self.report({"ERROR"}, str(e))
         elif self.active_material_usage == "PROFILE":
@@ -1376,28 +1339,34 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.selected_objects:
             return
         elif self.active_material_usage == "LAYER2":
-            bpy.ops.bim.align_wall(align_type="INTERIOR")
+            try:
+                core.align_walls(tool.Ifc, tool.Blender, tool.Model, DumbWallAligner(), "INTERIOR")
+            except core.RequireAtLeastTwoLayeredElements as e:
+                self.report({"ERROR"}, str(e))
         else:
-            bpy.ops.bim.align_product(align_type="POSITIVE")
+            try:
+                core.align_objects(tool.Blender, tool.Model, "POSITIVE")
+            except core.RequireAtLeastTwoElements as e:
+                self.report({"ERROR"}, str(e))
 
     def hotkey_S_X(self):
         if not bpy.context.selected_objects:
             return
         if self.active_material_usage == "LAYER2":
-            if bpy.ops.bim.align_wall.poll():
-                bpy.ops.bim.align_wall(align_type="EXTERIOR")
+            try:
+                core.align_walls(tool.Ifc, tool.Blender, tool.Model, DumbWallAligner(), "EXTERIOR")
+            except core.RequireAtLeastTwoLayeredElements as e:
+                self.report({"ERROR"}, str(e))
         else:
-            bpy.ops.bim.align_product(align_type="NEGATIVE")
+            try:
+                core.align_objects(tool.Blender, tool.Model, "NEGATIVE")
+            except core.RequireAtLeastTwoElements as e:
+                self.report({"ERROR"}, str(e))
 
     def hotkey_S_Y(self):
         if not bpy.context.selected_objects:
             return
-        if self.active_material_usage == "LAYER2":
-            try:
-                core.join_walls_LV(tool.Ifc, tool.Blender, tool.Geometry, DumbWallJoiner(), tool.Model, join_type="V")
-            except core.RequireTwoWallsError as e:
-                self.report({"ERROR"}, str(e))
-        elif self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
+        if self.active_class in ("IfcDuctSegment", "IfcPipeSegment", "IfcCableCarrierSegment", "IfcCableSegment"):
             bpy.ops.bim.fit_flow_segments()
         elif self.active_material_usage == "PROFILE":
             bpy.ops.bim.extend_profile(join_type="V")
@@ -1406,8 +1375,12 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.add_boundary()
 
     def hotkey_S_O(self):
-        if len(bpy.context.selected_objects) == 2:
+        if len(bpy.context.selected_objects) > 1:
             bpy.ops.bim.add_opening()
+        else:
+            bpy.ops.bim.add_element(
+                "INVOKE_DEFAULT", ifc_product="IfcFeatureElement", ifc_class="IfcOpeningElement", skip_dialog=True
+            )
 
     def hotkey_S_L(self):
         if AuthoringData.data["active_class"] in ("IfcOpeningElement",):
@@ -1439,10 +1412,3 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
 
 custom_icon_previews = None
 display_mode = None
-
-MODIFIERS = {
-    "A": ("EVENT_ALT", "OPTION" if sys.platform == "Darwin" else "ALT"),
-    "C": ("EVENT_CTRL", "CTRL"),
-    "S": ("EVENT_SHIFT", "⇧"),
-    "E": ("EVENT_PADENTER", "ENTER" if sys.platform == "Darwin" else "RETURN"),
-}

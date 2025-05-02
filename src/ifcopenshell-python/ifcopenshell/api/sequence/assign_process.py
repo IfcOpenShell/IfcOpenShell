@@ -65,12 +65,9 @@ def assign_process(
 
     :param relating_process: The IfcProcess (typically IfcTask) that the
         input, control, or resource is related to.
-    :type relating_process: ifcopenshell.entity_instance
     :param related_object: The IfcProduct (for input), IfcCostItem (for
         control) or IfcConstructionResource (for resource).
-    :type related_object: ifcopenshell.entity_instance
     :return: The newly created IfcRelAssignsToProcess relationship
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -91,23 +88,18 @@ def assign_process(
         # Let's demolish that wall!
         ifcopenshell.api.sequence.assign_process(model, relating_process=task, related_object=wall)
     """
-    settings = {
-        "relating_process": relating_process,
-        "related_object": related_object,
-    }
-
-    if settings["related_object"].HasAssignments:
-        for assignment in settings["related_object"].HasAssignments:
-            if assignment.is_a("IfcRelAssignsToProcess") and assignment.RelatingProcess == settings["relating_process"]:
+    if related_object.HasAssignments:
+        for assignment in related_object.HasAssignments:
+            if assignment.is_a("IfcRelAssignsToProcess") and assignment.RelatingProcess == relating_process:
                 return
 
     operates_on = None
-    if settings["relating_process"].OperatesOn:
-        operates_on = settings["relating_process"].OperatesOn[0]
+    if relating_process.OperatesOn:
+        operates_on = relating_process.OperatesOn[0]
 
     if operates_on:
         related_objects = list(operates_on.RelatedObjects)
-        related_objects.append(settings["related_object"])
+        related_objects.append(related_object)
         operates_on.RelatedObjects = related_objects
         ifcopenshell.api.owner.update_owner_history(file, **{"element": operates_on})
     else:
@@ -116,8 +108,8 @@ def assign_process(
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": [settings["related_object"]],
-                "RelatingProcess": settings["relating_process"],
+                "RelatedObjects": [related_object],
+                "RelatingProcess": relating_process,
             }
         )
     return operates_on

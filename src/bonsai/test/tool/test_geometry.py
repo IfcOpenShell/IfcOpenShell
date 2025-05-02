@@ -20,6 +20,7 @@ import bpy
 import math
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api.geometry
 import ifcopenshell.api.type
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -112,7 +113,8 @@ class TestGetObjectMaterialsWithoutStyles(NewFile):
         material1 = bpy.data.materials.new("Material")
         material2 = bpy.data.materials.new("Material")
         material3 = bpy.data.materials.new("Material")
-        material3.BIMStyleProperties.ifc_definition_id = 1
+        props = tool.Style.get_material_style_props(material3)
+        props.ifc_definition_id = 1
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
         obj.data.materials.append(material1)
         obj.data.materials.append(material2)
@@ -170,23 +172,26 @@ class TestGetTextLiteral(NewFile):
 class TestGetCartesianPointCoordinateOffset(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        oprops = tool.Blender.get_object_bim_props(obj)
+        oprops.blender_offset_type = "CARTESIAN_POINT"
+        props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True
-        obj.BIMObjectProperties.cartesian_point_offset = "1,2,3"
+        oprops.cartesian_point_offset = "1,2,3"
         assert np.allclose(subject.get_cartesian_point_offset(obj), np.array((1.0, 2.0, 3.0)))
 
     def test_get_null_if_not_a_cartesian_point_offset_type(self):
         obj = bpy.data.objects.new("Object", None)
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = True
-        obj.BIMObjectProperties.cartesian_point_offset = "1,2,3"
+        oprops = tool.Blender.get_object_bim_props(obj)
+        oprops.cartesian_point_offset = "1,2,3"
         assert subject.get_cartesian_point_offset(obj) is None
 
     def test_get_null_if_no_blender_offset(self):
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        oprops = tool.Blender.get_object_bim_props(obj)
+        oprops.blender_offset_type = "CARTESIAN_POINT"
+        props = tool.Georeference.get_georeference_props()
         props.has_blender_offset = False
         assert subject.get_cartesian_point_offset(obj) is None
 
@@ -237,14 +242,15 @@ class TestImportRepresentationParameters(NewFile):
         item = ifc.createIfcExtrudedAreaSolid(SweptArea=swept_area, Depth=2)
         representation = ifc.createIfcShapeRepresentation(Items=[item])
         data = bpy.data.meshes.new("Mesh")
-        data.BIMMeshProperties.ifc_definition_id = representation.id()
+        mprops = tool.Geometry.get_mesh_props(data)
+        mprops.ifc_definition_id = representation.id()
         subject.import_representation_parameters(data)
-        assert data.BIMMeshProperties.ifc_parameters[0].name == "IfcExtrudedAreaSolid/Depth"
-        assert data.BIMMeshProperties.ifc_parameters[0].step_id == item.id()
-        assert data.BIMMeshProperties.ifc_parameters[0].index == 3
-        assert data.BIMMeshProperties.ifc_parameters[1].name == "IfcCircleProfileDef/Radius"
-        assert data.BIMMeshProperties.ifc_parameters[1].step_id == swept_area.id()
-        assert data.BIMMeshProperties.ifc_parameters[1].index == 3
+        assert mprops.ifc_parameters[0].name == "IfcExtrudedAreaSolid/Depth"
+        assert mprops.ifc_parameters[0].step_id == item.id()
+        assert mprops.ifc_parameters[0].index == 3
+        assert mprops.ifc_parameters[1].name == "IfcCircleProfileDef/Radius"
+        assert mprops.ifc_parameters[1].step_id == swept_area.id()
+        assert mprops.ifc_parameters[1].index == 3
 
 
 class TestIsBodyRepresentation(NewFile):
@@ -293,7 +299,7 @@ class TestLink(NewFile):
         element = ifc.createIfcShapeRepresentation()
         obj = bpy.data.meshes.new("Mesh")
         subject.link(element, obj)
-        assert obj.BIMMeshProperties.ifc_definition_id == element.id()
+        assert tool.Geometry.get_mesh_props(obj).ifc_definition_id == element.id()
 
 
 class TestRecordObjectMaterials(NewFile):
@@ -303,18 +309,19 @@ class TestRecordObjectMaterials(NewFile):
         tool.Ifc.set(ifc)
         style = ifc.createIfcSurfaceStyle()
         material = bpy.data.materials.new("Material")
-        material.BIMStyleProperties.ifc_definition_id = style.id()
+        tool.Ifc.link(style, material)
         obj.data.materials.append(material)
         subject.record_object_materials(obj)
-        assert obj.data.BIMMeshProperties.material_checksum == str([style.id()])
+        assert tool.Geometry.get_mesh_props(obj.data).material_checksum == str([style.id()])
 
 
 class TestRecordObjectPosition(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
+        props = tool.Blender.get_object_bim_props(obj)
         subject.record_object_position(obj)
-        assert obj.BIMObjectProperties.location_checksum == repr(np.array(obj.matrix_world.translation).tobytes())
-        assert obj.BIMObjectProperties.rotation_checksum == repr(np.array(obj.matrix_world.to_3x3()).tobytes())
+        assert props.location_checksum == repr(np.array(obj.matrix_world.translation).tobytes())
+        assert props.rotation_checksum == repr(np.array(obj.matrix_world.to_3x3()).tobytes())
 
 
 class TestRemoveConnection(NewFile):
@@ -600,13 +607,13 @@ class TestRemoveRepresentationItem(NewFile):
 
         items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
         representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
-        tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
+        ifcopenshell.api.geometry.assign_representation(ifc, product=element, representation=representation)
 
         product_shape = element.Representation
         shape_aspect = subject.create_shape_aspect(product_shape, representation, items[:1], None)
         shape_aspect_id = shape_aspect.id()
 
-        subject.remove_representation_item(items[0])
+        subject.remove_representation_item(items[0], element)
         assert tool.Ifc.get_entity_by_id(shape_aspect_id) is None
         assert set(representation.Items) == {items[1]}
 

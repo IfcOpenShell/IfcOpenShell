@@ -24,7 +24,6 @@ import test.bim.bootstrap
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.misc import Misc as subject
-from bonsai.bim.ifc import IfcStore
 
 
 class TestImplementsTool(test.bim.bootstrap.NewFile):
@@ -174,7 +173,7 @@ class TestSplitObjectsWithCutter(test.bim.bootstrap.NewFile):
         obj = bpy.data.objects.get("Cube")
         cutter = bpy.data.objects.get("Plane")
         assert obj.dimensions[2] == 2
-        new_objs = subject.split_objects_with_cutter([obj], cutter)
+        new_objs = subject.boolean_objects_with_cutter([obj], cutter)
         assert new_objs[0].name == "Cube.001"
         assert obj.dimensions[2] == 1
         assert new_objs[0].dimensions[2] == 1

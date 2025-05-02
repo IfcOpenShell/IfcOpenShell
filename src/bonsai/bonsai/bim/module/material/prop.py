@@ -22,7 +22,6 @@ from ifcopenshell.util.doc import get_entity_doc
 import bonsai.tool as tool
 from bonsai.bim.module.material.data import MaterialsData, ObjectMaterialData
 from bonsai.bim.module.profile.data import ProfileData
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
 from bpy.props import (
@@ -121,7 +120,7 @@ def set_material_name(self: "Material", new_category_name: str) -> None:
             material.Category = new_category_name
 
     # Reload UI elements if necessary.
-    props: "BIMMaterialProperties" = self.id_data.BIMMaterialProperties
+    props = tool.Material.get_material_props()
     new_category_name_already_in_use = bool(
         next((m for m in props.materials if m.is_category and m.name == new_category_name), None)
     )

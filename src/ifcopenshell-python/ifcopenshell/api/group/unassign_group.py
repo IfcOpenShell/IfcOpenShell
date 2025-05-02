@@ -46,17 +46,12 @@ def unassign_group(
         bad_furniture = furniture[0]
         ifcopenshell.api.group.unassign_group(model, products=[bad_furniture], group=group)
     """
-    settings = {
-        "products": products,
-        "group": group,
-    }
-
-    if not settings["group"].IsGroupedBy:
+    if not group.IsGroupedBy:
         return
-    rel = settings["group"].IsGroupedBy[0]
+    rel = group.IsGroupedBy[0]
     related_objects = set(rel.RelatedObjects) or set()
-    products = set(settings["products"])
-    related_objects -= products
+    products_set = set(products)
+    related_objects -= products_set
     if related_objects:
         rel.RelatedObjects = list(related_objects)
         ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})

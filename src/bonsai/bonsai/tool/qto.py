@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.core.tool
 import bonsai.bim.schema
@@ -24,12 +25,19 @@ import ifcopenshell
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 from mathutils import Vector
-from typing import Optional, Union, Literal
+from typing import Optional, Union, Literal, TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.qto.prop import BIMQtoProperties
 
 QuantityTypes = Literal["Q_LENGTH", "Q_AREA", "Q_VOLUME"]
 
 
 class Qto(bonsai.core.tool.Qto):
+    @classmethod
+    def get_qto_props(cls) -> BIMQtoProperties:
+        return bpy.context.scene.BIMQtoProperties
+
     @classmethod
     def get_radius_of_selected_vertices(cls, obj: bpy.types.Object) -> float:
         selected_verts = [v.co for v in obj.data.vertices if v.select]
@@ -41,7 +49,8 @@ class Qto(bonsai.core.tool.Qto):
 
     @classmethod
     def set_qto_result(cls, result: float) -> None:
-        bpy.context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        props = cls.get_qto_props()
+        props.qto_result = str(round(result, 3))
 
     @classmethod
     def get_rounded_value(cls, new_quantity: float) -> float:
@@ -158,3 +167,23 @@ class Qto(bonsai.core.tool.Qto):
                             }
                         )
         return result
+
+    @classmethod
+    def get_qto_rules(cls) -> dict[str, dict[str, Any]]:
+        import ifc5d.qto
+
+        ifc_file = tool.Ifc.get()
+        is_ifc4x3 = ifc_file.schema == "IFC4X3"
+        return {rule_id: rule for rule_id, rule in ifc5d.qto.rules.items() if rule_id.startswith("IFC4X3") == is_ifc4x3}
+
+    @classmethod
+    def get_not_quantified_elements_message(cls, not_quantified_elements: set[ifcopenshell.entity_instance]) -> str:
+        not_quantified_message = ""
+        if not_quantified_elements:
+            print("Elements that were not quantified:")
+            for element in not_quantified_elements:
+                print(f"- {element}")
+            not_quantified_message = (
+                f" {len(not_quantified_elements)} of them were not quantified, see system console for the details."
+            )
+        return not_quantified_message

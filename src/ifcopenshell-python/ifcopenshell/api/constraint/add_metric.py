@@ -28,9 +28,7 @@ def add_metric(file: ifcopenshell.file, objective: ifcopenshell.entity_instance)
     to meet the objective of the constraint.
 
     :param objective: The IfcObjective that this metric is a benchmark of.
-    :type objective: ifcopenshell.entity_instance
     :return: The newly created IfcMetric entity
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -40,10 +38,6 @@ def add_metric(file: ifcopenshell.file, objective: ifcopenshell.entity_instance)
         metric = ifcopenshell.api.constraint.add_metric(model,
             objective=objective)
     """
-    settings = {
-        "objective": objective,
-    }
-
     metric = file.create_entity(
         "IfcMetric",
         **{
@@ -52,8 +46,9 @@ def add_metric(file: ifcopenshell.file, objective: ifcopenshell.entity_instance)
             "Benchmark": "EQUALTO",
         },
     )
-    if settings["objective"]:
-        benchmark_values = list(settings["objective"].BenchmarkValues or [])
+    if objective:
+        benchmark_values: list[ifcopenshell.entity_instance]
+        benchmark_values = list(objective.BenchmarkValues or [])
         benchmark_values.append(metric)
-        settings["objective"].BenchmarkValues = benchmark_values
+        objective.BenchmarkValues = benchmark_values
     return metric

@@ -32,7 +32,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union, Literal
 
 
 def get_contexts(self, context):
@@ -121,7 +121,7 @@ def get_layers_no_active(self, context):
     return LayersData.data["layers_enum_no_active"]
 
 
-def update_shape_aspect(self, context):
+def update_shape_aspect(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> None:
     shape_aspect_id = self.representation_item_shape_aspect
     attrs = self.shape_aspect_attrs
 
@@ -161,6 +161,11 @@ class RepresentationItemObject(PropertyGroup):
     name: StringProperty(name="Name")
     obj: PointerProperty(type=bpy.types.Object)
     ifc_definition_id: IntProperty()
+
+    if TYPE_CHECKING:
+        name: str
+        obj: Union[bpy.types.Object, None]
+        ifc_definition_id: int
 
 
 class ShapeAspect(PropertyGroup):
@@ -209,6 +214,7 @@ def update_is_editing_item_layer(self: "BIMObjectGeometryProperties", context: b
         item = ifc_file.by_id(active_ui_item.ifc_definition_id)
         if layer := next(iter(item.LayerAssignment), None):
             self.representation_item_layer = str(layer.id())
+        return
 
     if "representation_item_layer" in self:
         del self["representation_item_layer"]
@@ -250,9 +256,8 @@ class BIMObjectGeometryProperties(PropertyGroup):
     representation_item_layer: EnumProperty(items=get_layers, name="Representation Item's Layer")
 
     @property
-    def active_item(self):
-        if 0 <= self.active_item_index < len(self.items):
-            return self.items[self.active_item_index]
+    def active_item(self) -> Union[RepresentationItem, None]:
+        return tool.Blender.get_active_uilist_element(self.items, self.active_item_index)
 
     if TYPE_CHECKING:
         contexts: str
@@ -270,6 +275,9 @@ class BIMObjectGeometryProperties(PropertyGroup):
         representation_item_layer: str
 
 
+GeometryMode = Literal["OBJECT", "ITEM", "EDIT"]
+
+
 class BIMGeometryProperties(PropertyGroup):
     # Revit workaround
     should_use_presentation_style_assignment: BoolProperty(name="Force Presentation Style Assignment", default=False)
@@ -280,7 +288,14 @@ class BIMGeometryProperties(PropertyGroup):
     is_changing_mode: BoolProperty(name="Is Changing Mode", default=False)
     mode: EnumProperty(items=get_mode, name="IFC Interaction Mode", update=update_mode)
     representation_obj: PointerProperty(
-        name="Representation Object", type=bpy.types.Object, update=update_representation_obj
+        name="Representation Object",
+        description=(
+            "Only used for Item Mode. When element is in Item Mode, new objects are imported "
+            "for each element's representation item, original element's object is hidden and "
+            "representation_obj pointing to it. None if no object in Item Mode."
+        ),
+        type=bpy.types.Object,
+        update=update_representation_obj,
     )
     item_objs: CollectionProperty(name="Item Objects", type=RepresentationItemObject)
 
@@ -293,6 +308,14 @@ class BIMGeometryProperties(PropertyGroup):
         if name is not None:
             blender_item.name = name
         return blender_item
+
+    def remove_item_object_by_entity(self, item: ifcopenshell.entity_instance) -> None:
+        ifc_id = item.id()
+        for i, item_obj in enumerate(self.item_objs):
+            if item_obj.ifc_definition_id == ifc_id:
+                self.item_objs.remove(i)
+                return
+        assert False
 
     def is_object_valid_for_representation_copy(self, obj: bpy.types.Object) -> bool:
         return bool(obj != bpy.context.active_object and obj.data)
@@ -308,7 +331,7 @@ class BIMGeometryProperties(PropertyGroup):
         should_force_faceted_brep: bool
         should_force_triangulation: bool
         is_changing_mode: bool
-        mode: str
+        mode: GeometryMode
         representation_obj: Union[bpy.types.Object, None]
         item_objs: bpy.types.bpy_prop_collection_idprop[RepresentationItemObject]
         representation_from_object: Union[bpy.types.Object, None]

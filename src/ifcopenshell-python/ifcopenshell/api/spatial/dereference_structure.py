@@ -29,12 +29,10 @@ def dereference_structure(
     """Dereferences a list of products and space
 
     :param products: The list of physical IfcElements that exists in the space.
-    :type products: list[ifcopenshell.entity_instance]
     :param relating_structure: The IfcSpatialStructureElement element, such
         as IfcBuilding, IfcBuildingStorey, or IfcSpace that the element
         exists in.
     :return: None
-    :rtype: None
 
     Example:
 
@@ -68,14 +66,12 @@ def dereference_structure(
         # Actually, it only goes up to storey 2.
         ifcopenshell.api.spatial.dereference_structure(model, products=[column], relating_structure=storey3)
     """
-    settings = {"products": products, "relating_structure": relating_structure}
-
-    products = set(settings["products"])
-    for rel in settings["relating_structure"].ReferencesElements:
+    products_set = set(products)
+    for rel in relating_structure.ReferencesElements:
         related_elements = set(rel.RelatedElements)
-        if not related_elements.intersection(products):
+        if not related_elements.intersection(products_set):
             continue
-        related_elements = related_elements - products
+        related_elements = related_elements - products_set
         if related_elements:
             rel.RelatedElements = list(related_elements)
             ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})

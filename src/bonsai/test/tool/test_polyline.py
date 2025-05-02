@@ -18,6 +18,9 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.project
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile

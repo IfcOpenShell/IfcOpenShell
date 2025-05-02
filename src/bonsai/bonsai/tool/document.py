@@ -16,56 +16,68 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell.util.system
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Any, Union, Sequence
+from typing import Any, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.document.prop import BIMDocumentProperties
 
 
 class Document(bonsai.core.tool.Document):
     @classmethod
+    def get_document_props(cls) -> BIMDocumentProperties:
+        return bpy.context.scene.BIMDocumentProperties
+
+    @classmethod
     def add_breadcrumb(cls, document: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMDocumentProperties
+        props = cls.get_document_props()
         new = props.breadcrumbs.add()
         new.name = str(document.id())
 
     @classmethod
     def clear_breadcrumbs(cls) -> None:
-        props = bpy.context.scene.BIMDocumentProperties
+        props = cls.get_document_props()
         props.breadcrumbs.clear()
 
     @classmethod
     def clear_document_tree(cls) -> None:
-        props = bpy.context.scene.BIMDocumentProperties
+        props = cls.get_document_props()
         props.documents.clear()
 
     @classmethod
     def disable_editing_document(cls) -> None:
-        bpy.context.scene.BIMDocumentProperties.active_document_id = 0
+        props = cls.get_document_props()
+        props.active_document_id = 0
 
     @classmethod
     def disable_editing_ui(cls) -> None:
-        bpy.context.scene.BIMDocumentProperties.is_editing = False
+        props = cls.get_document_props()
+        props.is_editing = False
 
     @classmethod
     def enable_editing_ui(cls) -> None:
-        bpy.context.scene.BIMDocumentProperties.is_editing = True
+        props = cls.get_document_props()
+        props.is_editing = True
 
     @classmethod
     def export_document_attributes(cls) -> dict[str, Any]:
-        return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMDocumentProperties.document_attributes)
+        props = cls.get_document_props()
+        return bonsai.bim.helper.export_attributes(props.document_attributes)
 
     @classmethod
     def get_active_breadcrumb(cls) -> Union[ifcopenshell.entity_instance, None]:
-        props = bpy.context.scene.BIMDocumentProperties
+        props = cls.get_document_props()
         if len(props.breadcrumbs):
             return tool.Ifc.get().by_id(int(props.breadcrumbs[-1].name))
 
     @classmethod
     def import_document_attributes(cls, document: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMDocumentProperties
+        props = cls.get_document_props()
         props.document_attributes.clear()
 
         def callback(attr_name: str, _, data: dict[str, Any]) -> Union[bool, None]:
@@ -86,7 +98,7 @@ class Document(bonsai.core.tool.Document):
 
     @classmethod
     def import_project_documents(cls) -> None:
-        props = bpy.context.scene.BIMDocumentProperties
+        props = cls.get_document_props()
         props.documents.clear()
         project = tool.Ifc.get().by_type("IfcProject")[0]
         for rel in project.HasAssociations or []:
@@ -100,7 +112,7 @@ class Document(bonsai.core.tool.Document):
 
     @classmethod
     def import_references(cls, document: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMDocumentProperties
+        props = cls.get_document_props()
         is_ifc2x3 = tool.Ifc.get_schema() == "IFC2X3"
         references = cls.get_document_references(document)
         for element in references:
@@ -115,7 +127,7 @@ class Document(bonsai.core.tool.Document):
 
     @classmethod
     def import_subdocuments(cls, document: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMDocumentProperties
+        props = cls.get_document_props()
         if document.IsPointer:
             for element in document.IsPointer[0].RelatedDocuments or []:
                 new = props.documents.add()
@@ -130,13 +142,14 @@ class Document(bonsai.core.tool.Document):
 
     @classmethod
     def remove_latest_breadcrumb(cls) -> None:
-        props = bpy.context.scene.BIMDocumentProperties
+        props = cls.get_document_props()
         if len(props.breadcrumbs):
             props.breadcrumbs.remove(len(props.breadcrumbs) - 1)
 
     @classmethod
     def set_active_document(cls, document: ifcopenshell.entity_instance) -> None:
-        bpy.context.scene.BIMDocumentProperties.active_document_id = document.id()
+        props = cls.get_document_props()
+        props.active_document_id = document.id()
 
     @classmethod
     def get_document_information_id(cls, document: ifcopenshell.entity_instance) -> Union[str, None]:

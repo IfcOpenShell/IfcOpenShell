@@ -20,7 +20,6 @@ from __future__ import annotations
 import os
 import re
 import bpy
-import math
 import bmesh
 import logging
 import ifcopenshell.geom
@@ -36,6 +35,7 @@ import bonsai.bim.import_ifc
 import numpy as np
 import numpy.typing as npt
 from ifcopenshell.util.shape_builder import np_to_4d
+from math import atan, radians
 from mathutils import Vector, Matrix
 from pathlib import Path
 from typing import Union, Any, Optional
@@ -89,7 +89,7 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def get_mesh_name(cls, representation: ifcopenshell.entity_instance) -> str:
-        context_id = representation.ContextOfItems.id() if hasattr(representation, "ContextOfItems") else 0
+        context_id = context.id() if (context := getattr(representation, "ContextOfItems", None)) else 0
         return "{}/{}".format(context_id, representation.id())
 
     @classmethod
@@ -105,7 +105,7 @@ class Loader(bonsai.core.tool.Loader):
         mesh: tool.Geometry.TYPES_WITH_MESH_PROPERTIES,
     ) -> None:
         geometry = shape.geometry if hasattr(shape, "geometry") else shape
-        mesh.BIMMeshProperties.ifc_definition_id = int(geometry.id.split("-")[0])
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = int(geometry.id.split("-")[0])
 
     @classmethod
     def create_surface_style_shading(
@@ -592,33 +592,42 @@ class Loader(bonsai.core.tool.Loader):
             opacity = opacity if opacity is not None else 1.0
             data_list = [d + (opacity,) for d in data_list]
 
-        faces_tex_coord_data = {}
-        for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True):
-            faces_tex_coord_data[tuple(face_remap)] = (tex_coord_index, face_remap)
+        if index_map.is_a("IfcIndexedColourMap") and len(index_map.Colours.ColourList) == 1:
+            # Early return scenario in case there is only one colour
+            data_colour = data_list[0]
+            for bface in bm.faces:
+                for loop in bface.loops:
+                    loop[layer] = data_colour
+        elif len(texture_map) != len(faces_remap):
+            print(f"Warning: invalid index map found: {index_map}")
+        else:
+            faces_tex_coord_data = {}
+            for tex_coord_index, face_remap in zip(texture_map, faces_remap, strict=True):
+                faces_tex_coord_data[tuple(face_remap)] = (tex_coord_index, face_remap)
 
-        # Apply attribute to each face
-        for bface in bm.faces:
-            face = tuple(loop.vert.index for loop in bface.loops)
-            # Find the corresponding index in data list by matching ifc faceset with blender face.
-            data_index = None
-            if tex_coord_data := faces_tex_coord_data.get(face):
-                tex_coord_index, face_remap = tex_coord_data
-                # Subtract 1 as tex_coord_index starts with 1.
-                if map_type == "UV":
-                    data_index = [tex_coord_index[face_remap.index(i)] - 1 for i in face]
+            # Apply attribute to each face
+            for bface in bm.faces:
+                face = tuple(loop.vert.index for loop in bface.loops)
+                # Find the corresponding index in data list by matching ifc faceset with blender face.
+                data_index = None
+                if tex_coord_data := faces_tex_coord_data.get(face):
+                    tex_coord_index, face_remap = tex_coord_data
+                    # Subtract 1 as tex_coord_index starts with 1.
+                    if map_type == "UV":
+                        data_index = [tex_coord_index[face_remap.index(i)] - 1 for i in face]
+                    else:
+                        data_index = [tex_coord_index - 1 for i in face]
                 else:
-                    data_index = [tex_coord_index - 1 for i in face]
-            else:
-                # This face may be part of another representation item
-                # Or we couldn't match it due to georeferencing.
-                continue
+                    # This face may be part of another representation item
+                    # Or we couldn't match it due to georeferencing.
+                    continue
 
-            # apply uv to each loop
-            for loop, i in zip(bface.loops, data_index):
-                if map_type == "UV":
-                    loop[layer].uv = data_list[i]
-                else:
-                    loop[layer] = data_list[i]
+                # apply uv to each loop
+                for loop, i in zip(bface.loops, data_index):
+                    if map_type == "UV":
+                        loop[layer].uv = data_list[i]
+                    else:
+                        loop[layer] = data_list[i]
 
         # Finish up, write the bmesh back to the mesh
         bm.to_mesh(mesh)
@@ -689,7 +698,7 @@ class Loader(bonsai.core.tool.Loader):
             project_north = 0
 
         if has_offset or has_rotation:
-            props = bpy.context.scene.BIMGeoreferenceProperties
+            props = tool.Georeference.get_georeference_props()
             props.blender_offset_x = str(model_offset[0])
             props.blender_offset_y = str(model_offset[1])
             props.blender_offset_z = str(model_offset[2])
@@ -738,7 +747,7 @@ class Loader(bonsai.core.tool.Loader):
         cls, element: ifcopenshell.entity_instance, is_gross: bool = False
     ) -> Union[ifcopenshell.geom.ShapeElementType, None]:
         context_settings = cls.settings.gross_context_settings if is_gross else cls.settings.context_settings
-        geometry_library = bpy.context.scene.BIMProjectProperties.geometry_library
+        geometry_library = tool.Project.get_project_props().geometry_library
         for settings in context_settings:
             try:
                 result = ifcopenshell.geom.create_shape(settings, element, geometry_library=geometry_library)
@@ -757,16 +766,15 @@ class Loader(bonsai.core.tool.Loader):
             coords = None
             if item.is_a("IfcCartesianPointList3D"):  # PointCloud.c
                 coords = np.array(item.CoordList)
-                vertex_list.extend(Vector(list(coordinates)) * unit_scale for coordinates in item.CoordList)
             # Is it ever used? In IFC4+ PointCloud is requiring 3D list, before IFC4 there were no coord lists at all.
             elif item.is_a("IfcCartesianPointList2D"):
-                vertex_list.extend(Vector(list(coordinates)).to_3d() * unit_scale for coordinates in item.CoordList)
-            elif item.is_a("IfcPoint"):  # Point
-                if item.is_a("IfcCartesianPoint"):
-                    vertex_list.append(Vector(list(item.Coordinates)) * unit_scale)
-                else:
-                    # TODO: implement non cartesian point vertices.
-                    continue
+                coords = np.array(item.CoordList)
+                coords = np.column_stack((coords, np.zeros(coords.shape[0])))
+            elif item.is_a("IfcCartesianPoint"):  # Point
+                coord = np.array(item.Coordinates)
+                if len(coord) == 2:
+                    coord = np.append(coord, (0.0,))
+                coords = np.array((coord,))
             else:
                 assert False
             assert coords is not None
@@ -791,6 +799,7 @@ class Loader(bonsai.core.tool.Loader):
 
         # TODO implement non cartesian point vertices.
         if not point.is_a("IfcCartesianPoint"):
+            print(f"WARNING. Unsupported point type for IfcStructuralPointConnection: {point}.")
             return
 
         ifc_file = tool.Ifc.get()
@@ -806,55 +815,55 @@ class Loader(bonsai.core.tool.Loader):
         cls,
         element: ifcopenshell.entity_instance,
         representation: ifcopenshell.entity_instance,
-        shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
+        shape: ifcopenshell.geom.ShapeElementType,
     ) -> bpy.types.Camera:
-        from bonsai.bim.module.drawing.prop import get_diagram_scales
+        """Create camera data.
 
-        if isinstance(shape, ifcopenshell.geom.ShapeElementType):
-            geometry = shape.geometry
-        else:
-            geometry = shape
-
-        v = geometry.verts
-        x = [v[i] for i in range(0, len(v), 3)]
-        y = [v[i + 1] for i in range(0, len(v), 3)]
-        z = [v[i + 2] for i in range(0, len(v), 3)]
-        width = max(x) - min(x)
-        height = max(y) - min(y)
-        depth = max(z) - min(z)
+        Camera props are automatically updated based on ``element`` and ``shape``.
+        """
+        geometry = shape.geometry
+        width = ifcopenshell.util.shape.get_x(geometry)
+        height = ifcopenshell.util.shape.get_y(geometry)
 
         camera_type = "ORTHO"
-        if "IfcRectangularPyramid" in {e.is_a() for e in tool.Ifc.get().traverse(representation)}:
+        if "IfcRectangularPyramid" in next(e.is_a() for e in tool.Ifc.get().traverse(representation)):
             camera_type = "PERSP"
 
         camera = bpy.data.cameras.new(tool.Loader.get_mesh_name_from_shape(geometry))
         camera.type = camera_type
         camera.show_limits = True
+        props = tool.Drawing.get_camera_props(camera)
 
         if camera_type == "ORTHO":
+            depth = ifcopenshell.util.shape.get_z(geometry)
             camera.clip_start = 0.002  # Technically 0, but Blender doesn't allow this, so 2mm it is!
             camera.clip_end = depth
 
-            camera.BIMCameraProperties.width = width
-            camera.BIMCameraProperties.height = height
+            props["width"] = width
+            props["height"] = height
         elif camera_type == "PERSP":
-            abs_min_z = abs(min(z))
-            abs_max_z = abs(max(z))
+            z_values = ifcopenshell.util.shape.get_vertices(geometry)[:, 2]
+            abs_min_z = abs(np.min(z_values).item())
+            abs_max_z = abs(np.max(z_values).item())
             camera.clip_start = abs_max_z
             camera.clip_end = abs_min_z
             max_res = 1000
 
-            camera.BIMCameraProperties.width = width
-            camera.BIMCameraProperties.height = height
+            props["width"] = width
+            props["height"] = height
 
             if width > height:
-                fov = 2 * math.atan(width / (2 * abs_min_z))
+                fov = 2 * atan(width / (2 * abs_min_z))
             else:
-                fov = 2 * math.atan(height / (2 * abs_min_z))
+                fov = 2 * atan(height / (2 * abs_min_z))
 
             camera.angle = fov
 
         tool.Drawing.import_camera_props(element, camera)
+        props = tool.Drawing.get_camera_props(camera)
+        props.update_camera_resolution()  # Only after all props are imported.
+        mat = tool.Drawing.get_camera_shape_matrix(element, shape)
+        props.update_representation(mat)
         return camera
 
     @classmethod
@@ -920,33 +929,34 @@ class Loader(bonsai.core.tool.Loader):
 
     @classmethod
     def apply_blender_offset_to_matrix_world(cls, obj: bpy.types.Object, matrix: np.ndarray) -> Matrix:
-        if (
-            not obj.data
-            and tool.Cad.is_x(matrix[0][3], 0)
-            and tool.Cad.is_x(matrix[1][3], 0)
-            and tool.Cad.is_x(matrix[2][3], 0)
-        ):
+        """
+        :param matrix: 4x4 numpy matrix.
+        """
+        # Shouldn't mutate original matrix as we return a different object anyway.
+        M_TRANSLATION = (slice(0, 3), 3)
+        oprops = tool.Blender.get_object_bim_props(obj)
+        translation = matrix[M_TRANSLATION]
+        if not obj.data and np.allclose(translation, 0.0, atol=1e-5):
             # We assume any non-geometric matrix at 0,0,0 is not
             # positionally significant and is left alone. This handles
             # scenarios where often spatial elements are left at 0,0,0 and
             # everything else is at map coordinates.
-            obj.BIMObjectProperties.blender_offset_type = "NOT_APPLICABLE"
+            oprops.blender_offset_type = "NOT_APPLICABLE"
             return Matrix(matrix.tolist())
 
         if obj.data and obj.data.get("has_cartesian_point_offset", None):
-            obj.BIMObjectProperties.blender_offset_type = "CARTESIAN_POINT"
+            oprops.blender_offset_type = "CARTESIAN_POINT"
             if cartesian_point_offset := obj.data.get("cartesian_point_offset", None):
-                obj.BIMObjectProperties.cartesian_point_offset = cartesian_point_offset
+                oprops.cartesian_point_offset = cartesian_point_offset
+                matrix = matrix.copy()
                 offset_xyz = list(map(float, cartesian_point_offset.split(","))) + [1.0]
                 offset_xyz = matrix @ offset_xyz
-                matrix[0][3] = offset_xyz[0]
-                matrix[1][3] = offset_xyz[1]
-                matrix[2][3] = offset_xyz[2]
+                matrix[M_TRANSLATION] = offset_xyz[:3]
 
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if props.has_blender_offset:
-            if obj.BIMObjectProperties.blender_offset_type == "NONE":
-                obj.BIMObjectProperties.blender_offset_type = "OBJECT_PLACEMENT"
+            if oprops.blender_offset_type == "NONE":
+                oprops.blender_offset_type = "OBJECT_PLACEMENT"
             matrix = ifcopenshell.util.geolocation.global2local(
                 matrix,
                 float(props.blender_offset_x) * cls.unit_scale,
@@ -996,11 +1006,7 @@ class Loader(bonsai.core.tool.Loader):
         else:
             edges = ifcopenshell.util.shape.get_edges(geometry)
             mesh.from_pydata(verts.tolist(), edges.tolist(), [])
-            # TODO: remove error handling after we update build in Bonsai.
-            try:
-                edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
-            except AttributeError:
-                edges_item_ids = []
+            edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
             mesh["ios_edges_item_ids"] = edges_item_ids
             tool.Blender.Attribute.fill_attribute(mesh, "ios_edges_item_ids", "EDGE", "INT", edges_item_ids)
             tool.Blender.Attribute.fill_attribute(mesh, "ios_material_ids", "EDGE", "INT", geometry.material_ids)
@@ -1008,6 +1014,98 @@ class Loader(bonsai.core.tool.Loader):
         mesh["ios_materials"] = [m.instance_id() for m in ifcopenshell.util.shape.get_shape_material_styles(geometry)]
         mesh["ios_material_ids"] = ifcopenshell.util.shape.get_faces_material_style_ids(geometry).tolist()
         return mesh
+
+    @classmethod
+    def slice_layerset_mesh(cls, element: ifcopenshell.entity_instance, mesh: bpy.types.Mesh) -> bpy.types.Mesh:
+        if not (material := ifcopenshell.util.element.get_material(element)):
+            return mesh
+        elif material.is_a("IfcMaterialLayerSetUsage"):
+            usage = material
+            layer_set = material.ForLayerSet
+            offset = usage.OffsetFromReferenceLine * cls.unit_scale
+            sense_factor = 1 if usage.DirectionSense == "POSITIVE" else -1
+        elif material.is_a("IfcMaterialLayerSet"):
+            usage = None
+            layer_set = material
+            offset = 0
+            sense_factor = 1
+        else:
+            return mesh
+        if len(layer_set.MaterialLayers) == 1:
+            return mesh
+        bm = bmesh.new()
+        bm.from_mesh(mesh)
+        prev_co = None
+        if not usage:
+            sense_factor = 1  # Assume the extrusion vector points in the direction sense
+            no = cls.get_extrusion_vector(element).normalized()
+            co = Vector((0.0, 0.0, offset))
+        elif usage.LayerSetDirection == "AXIS2":
+            co = Vector((0.0, offset, 0.0))
+            no = cls.get_extrusion_vector(element).normalized()
+            no = no.cross(Vector([1.0, 0.0, 0.0]))
+        elif usage.LayerSetDirection == "AXIS3":
+            co = Vector((0.0, 0.0, offset))
+            no = cls.get_extrusion_vector(element).normalized()
+            no = Vector([0.0, 0.0, 1.0])
+        elif usage.LayerSetDirection == "AXIS1":
+            co = Vector((0.0, 0.0, offset))
+            no = cls.get_extrusion_vector(element).normalized()
+            no = Vector([1.0, 0.0, 0.0])
+        no *= sense_factor
+        # Cache this
+        body = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body", "MODEL_VIEW")
+        styles = {}
+        has_layer_styles = False
+        for i, material in enumerate(mesh.materials):
+            if style := tool.Ifc.get_entity(material):
+                styles[style] = i
+        last_i = len(layer_set.MaterialLayers) - 1
+        for i, layer in enumerate(layer_set.MaterialLayers):
+            if i != last_i:
+                prev_co = co.copy()
+                co += no * layer.LayerThickness * cls.unit_scale
+                bisect_geom = bmesh.ops.bisect_plane(
+                    bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], dist=0.0001, plane_co=co, plane_no=no
+                )
+                bmesh.ops.duplicate(bm, geom=bisect_geom["geom_cut"])
+            if not (style := ifcopenshell.util.representation.get_material_style(layer.Material, body)):
+                continue
+            if (material_index := styles.get(style, None)) is None:
+                material_index = len(mesh.materials)
+                mesh.materials.append(tool.Ifc.get_object(style))
+            if i == last_i:
+                for face in bisect_geom["geom"]:
+                    if isinstance(face, bmesh.types.BMFace):
+                        center = face.calc_center_median()
+                        if (center - co).dot(no) >= 0:
+                            face.material_index = material_index
+                            has_layer_styles = True
+            else:
+                for face in bisect_geom["geom"]:
+                    if isinstance(face, bmesh.types.BMFace):
+                        center = face.calc_center_median()
+                        if (center - co).dot(no) < 0 and (center - prev_co).dot(no) >= 0:
+                            face.material_index = material_index
+                            has_layer_styles = True
+
+        bmesh.ops.dissolve_limit(bm, angle_limit=radians(1), verts=bm.verts, edges=bm.edges, delimit={"MATERIAL"})
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+
+        bm.to_mesh(mesh)
+        bm.free()
+        mesh["has_layer_styles"] = has_layer_styles
+        return mesh
+
+    @classmethod
+    def get_extrusion_vector(cls, wall):
+        if body := ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW"):
+            for item in ifcopenshell.util.representation.resolve_representation(body).Items:
+                while item.is_a("IfcBooleanResult"):
+                    item = item.FirstOperand
+                if item.is_a("IfcExtrudedAreaSolid"):
+                    return Vector(item.ExtrudedDirection.DirectionRatios)
+        return Vector([0.0, 0.0, 1.0])
 
     @classmethod
     def create_mesh_from_shape(
@@ -1048,7 +1146,7 @@ class Loader(bonsai.core.tool.Loader):
         if is_triangulated:
             loop_start = np.arange(0, num_vertex_indices, 3, dtype="I")
             loop_total = np.full(total_faces, 3, dtype="I")
-            use_smooth = np.zeros(num_vertex_indices, dtype="?")
+            use_smooth = np.zeros(total_faces, dtype="?")
 
             mesh.loops.add(num_vertex_indices)
             mesh.loops.foreach_set("vertex_index", faces.ravel().astype("I"))
@@ -1057,16 +1155,16 @@ class Loader(bonsai.core.tool.Loader):
             mesh.polygons.foreach_set("loop_total", loop_total)
             mesh.polygons.foreach_set("use_smooth", use_smooth)
         else:
-            # TODO: optimize using correct numpy array types.
             faces_array = np.array(geometry.faces, dtype=object)
-            loop_total = np.array(tuple(len(face) for face in faces_array), dtype="I")
-            loop_start = np.cumsum((0,) + loop_total)[:-1]
-            vertex_index = np.concatenate(faces_array)
-            use_smooth = np.zeros(num_vertex_indices, dtype="?")
+            total_faces = len(faces_array)
+            loop_total = np.fromiter((len(face) for face in faces_array), dtype="I")
+            loop_start = np.cumsum((0,) + loop_total, dtype="I")[:-1]
+            vertex_index = np.concatenate(faces_array, dtype="I", casting="unsafe")
+            use_smooth = np.zeros(total_faces, dtype="?")
 
             mesh.loops.add(len(vertex_index))
             mesh.loops.foreach_set("vertex_index", vertex_index)
-            mesh.polygons.add(len(loop_start))
+            mesh.polygons.add(total_faces)
             mesh.polygons.foreach_set("loop_start", loop_start)
             mesh.polygons.foreach_set("loop_total", loop_total)
             mesh.polygons.foreach_set("use_smooth", use_smooth)

@@ -65,28 +65,22 @@ def assign_material(
 
     :param products: The list of IfcProducts to assign the material or material set
         to.
-    :type products: list[ifcopenshell.entity_instance]
     :param type: Choose from "IfcMaterial", "IfcMaterialConstituentSet",
         "IfcMaterialLayerSet", "IfcMaterialLayerSetUsage",
         "IfcMaterialProfileSet", "IfcMaterialProfileSetUsage", or
         "IfcMaterialList". Note that "Set Usages" may only be assigned to
         occurrences, not types. Defaults to "IfcMaterial".
-    :type type: str
     :param material: The IfcMaterial or material set you are assigning here.
         If type is Usage then no need to provide `material`, it will be deduced
         from the element type automatically.
         If IfcMaterial is provided as material and type is not IfcMaterial,
         provided material will be ignored except for IfcMaterialList
         where it will be used as part of the list.
-    :type material: ifcopenshell.entity_instance, optional
     :return: IfcRelAssociatesMaterial entity
         or a list of IfcRelAssociatesMaterial entities
         (possible if `type` is Usage
         and `products` require different Usages)
         or `None` if `products` was empty list.
-    :rtype: Union[
-        ifcopenshell.entity_instance,
-        list[ifcopenshell.entity_instance], None]
 
     Example:
 

@@ -29,11 +29,8 @@ def unassign_sequence(
     """Removes a sequence relationship between tasks
 
     :param relating_process: The previous / predecessor task.
-    :type relating_process: ifcopenshell.entity_instance
     :param related_process: The next / successor task.
-    :type related_process: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -60,15 +57,10 @@ def unassign_sequence(
         ifcopenshell.api.sequence.unassign_sequence(model,
             relating_process=zone1, related_process=zone2)
     """
-    settings = {
-        "relating_process": relating_process,
-        "related_process": related_process,
-    }
-
-    for rel in settings["related_process"].IsSuccessorFrom or []:
-        if rel.RelatingProcess == settings["relating_process"]:
+    for rel in related_process.IsSuccessorFrom or []:
+        if rel.RelatingProcess == relating_process:
             history = rel.OwnerHistory
             file.remove(rel)
             if history:
                 ifcopenshell.util.element.remove_deep2(file, history)
-    ifcopenshell.api.sequence.cascade_schedule(file, task=settings["related_process"])
+    ifcopenshell.api.sequence.cascade_schedule(file, task=related_process)

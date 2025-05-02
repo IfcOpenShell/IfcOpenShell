@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
@@ -28,6 +29,10 @@ from bonsai.bim.module.drawing.data import (
     ElementFiltersData,
     DecoratorData,
 )
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.drawing.prop import DocProperties, Drawing
 
 
 class BIM_PT_camera(Panel):
@@ -39,18 +44,21 @@ class BIM_PT_camera(Panel):
     bl_parent_id = "BIM_PT_tab_drawings"
 
     def draw(self, context):
-        if not (context.scene.camera and hasattr(context.scene.camera.data, "BIMCameraProperties")):
+        assert context.scene and self.layout
+        camera = context.scene.camera
+        if not camera:
             row = self.layout.row()
             row.label(text="No Active Drawing", icon="ERROR")
             return
 
-        if "/" not in context.scene.camera.name:
+        if not tool.Ifc.get_entity(camera):
             self.layout.label(text="This is not a BIM camera.")
             return
 
+        assert isinstance(camera_data := camera.data, bpy.types.Camera)
+        props = tool.Drawing.get_camera_props(camera)
         self.layout.use_property_split = True
-        dprops = context.scene.DocProperties
-        props = context.scene.camera.data.BIMCameraProperties
+        dprops = tool.Drawing.get_document_props()
 
         col = self.layout.column(align=True)
         row = col.row(align=True)
@@ -62,6 +70,9 @@ class BIM_PT_camera(Panel):
         row = col.row(align=True)
         row.prop(props, "has_annotation", icon="MOD_EDGESPLIT")
         row.prop(dprops, "should_use_annotation_cache", text="", icon="FILE_REFRESH")
+
+        row = self.layout.row(align=True)
+        row.prop(props, "target_view")
 
         row = self.layout.row()
         row.prop(props, "linework_mode")
@@ -77,7 +88,7 @@ class BIM_PT_camera(Panel):
         row.prop(props, "height")
 
         row = self.layout.row()
-        row.prop(context.scene.camera.data, "clip_end", text="Depth")
+        row.prop(camera_data, "clip_end", text="Depth")
 
         row = self.layout.row(align=True)
         row.prop(props, "diagram_scale", text="Scale")
@@ -110,7 +121,8 @@ class BIM_PT_element_filters(Panel):
         if not ElementFiltersData.is_loaded:
             ElementFiltersData.load()
 
-        props = context.scene.camera.data.BIMCameraProperties
+        assert context.scene and (camera := context.scene.camera)
+        props = tool.Drawing.get_camera_props(camera)
 
         if props.filter_mode == "INCLUDE":
             bonsai.bim.helper.draw_filter(
@@ -159,10 +171,9 @@ class BIM_PT_drawing_underlay(Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        camera = context.scene.camera
-        assert camera
-        dprops = context.scene.DocProperties
-        props = camera.data.BIMCameraProperties
+        assert context.scene and (camera := context.scene.camera)
+        dprops = tool.Drawing.get_document_props()
+        props = tool.Drawing.get_camera_props(camera)
         drawing_index_is_valid = props.active_drawing_style_index < len(dprops.drawing_styles)
 
         if not DrawingsData.is_loaded:
@@ -183,7 +194,14 @@ class BIM_PT_drawing_underlay(Panel):
 
         if not dprops.drawing_styles:
             return
-        layout.template_list("BIM_UL_generic", "", dprops, "drawing_styles", props, "active_drawing_style_index")
+        layout.template_list(
+            "BIM_UL_generic",
+            "BIM_UL_generic_drawing_styles",
+            dprops,
+            "drawing_styles",
+            props,
+            "active_drawing_style_index",
+        )
 
         if not drawing_index_is_valid:
             return
@@ -229,7 +247,7 @@ class BIM_PT_drawings(Panel):
             draw_project_not_saved_ui(self)
             return
 
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
 
         if not self.props.is_editing_drawings:
             row = self.layout.row(align=True)
@@ -302,7 +320,7 @@ class BIM_PT_schedules(Panel):
             draw_project_not_saved_ui(self)
             return
 
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
 
         if not self.props.is_editing_schedules:
             row = self.layout.row(align=True)
@@ -326,7 +344,12 @@ class BIM_PT_schedules(Panel):
                 row.operator("bim.remove_schedule", icon="X", text="").schedule = active_schedule.ifc_definition_id
 
             self.layout.template_list(
-                "BIM_UL_generic", "", self.props, "schedules", self.props, "active_schedule_index"
+                "BIM_UL_generic",
+                "BIM_UL_generic_schedules",
+                self.props,
+                "schedules",
+                self.props,
+                "active_schedule_index",
             )
 
 
@@ -352,7 +375,7 @@ class BIM_PT_references(Panel):
             draw_project_not_saved_ui(self)
             return
 
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
 
         if not self.props.is_editing_references:
             row = self.layout.row(align=True)
@@ -373,7 +396,12 @@ class BIM_PT_references(Panel):
                 row.operator("bim.remove_reference", icon="X", text="").reference = active_reference.ifc_definition_id
 
             self.layout.template_list(
-                "BIM_UL_generic", "", self.props, "references", self.props, "active_reference_index"
+                "BIM_UL_generic",
+                "BIM_UL_generic_references",
+                self.props,
+                "references",
+                self.props,
+                "active_reference_index",
             )
 
 
@@ -394,7 +422,7 @@ class BIM_PT_sheets(Panel):
             draw_project_not_saved_ui(self)
             return
 
-        self.props = context.scene.DocProperties
+        self.props = tool.Drawing.get_document_props()
 
         if not self.props.is_editing_sheets:
             row = self.layout.row(align=True)
@@ -590,7 +618,7 @@ class BIM_PT_text(Panel):
 
 
 class BIM_UL_drawinglist(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(self, context, layout, data: DocProperties, item: Drawing, icon, active_data, active_propname):
         if not item:
             layout.label(text="", translate=False)
             return
@@ -601,7 +629,7 @@ class BIM_UL_drawinglist(bpy.types.UIList):
             selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
             row.prop(item, "is_selected", text="", icon=selected_icon, emboss=False)
             row.prop(item, "name", text="", emboss=False)
-            self.props = context.scene.DocProperties
+            self.props = tool.Drawing.get_document_props()
             if (
                 self.props.drawings
                 and self.props.active_drawing_id

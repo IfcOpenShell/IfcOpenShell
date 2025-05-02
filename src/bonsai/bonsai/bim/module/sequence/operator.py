@@ -19,6 +19,7 @@
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
 import os
+
 import bpy
 import json
 import time
@@ -31,8 +32,7 @@ import ifcopenshell.util.sequence
 import ifcopenshell.util.selector
 from datetime import datetime
 from dateutil import parser, relativedelta
-from bonsai.bim.ifc import IfcStore
-from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from typing import get_args, TYPE_CHECKING
 from typing_extensions import assert_never
 
@@ -232,7 +232,7 @@ class AddWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     def draw(self, context):
         layout = self.layout
         layout.prop(self, "name", text="Name")
-        self.props = context.scene.BIMWorkScheduleProperties
+        self.props = tool.Sequence.get_work_schedule_props()
         layout.prop(self.props, "work_schedule_predefined_types", text="Type")
         if self.props.work_schedule_predefined_types == "USERDEFINED":
             layout.prop(self.props, "object_type", text="Object type")
@@ -247,10 +247,11 @@ class EditWorkSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Sequence.get_work_schedule_props()
         core.edit_work_schedule(
             tool.Ifc,
             tool.Sequence,
-            work_schedule=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_work_schedule_id),
+            work_schedule=tool.Ifc.get().by_id(props.active_work_schedule_id),
         )
 
 
@@ -376,11 +377,12 @@ class EditTaskTime(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Sequence.get_work_schedule_props()
         core.edit_task_time(
             tool.Ifc,
             tool.Sequence,
             tool.Resource,
-            task_time=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_task_time_id),
+            task_time=tool.Ifc.get().by_id(props.active_task_time_id),
         )
 
 
@@ -411,9 +413,8 @@ class EditTask(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        core.edit_task(
-            tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_task_id)
-        )
+        props = tool.Sequence.get_work_schedule_props()
+        core.edit_task(tool.Ifc, tool.Sequence, task=tool.Ifc.get().by_id(props.active_task_id))
 
 
 class CopyTaskAttribute(bpy.types.Operator, tool.Ifc.Operator):
@@ -658,6 +659,7 @@ class DisableEditingWorkCalendar(bpy.types.Operator):
 class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_csv"
     bl_label = "Import CSV"
+    bl_description = "Import work schedule from the provided .csv file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
@@ -685,6 +687,7 @@ class ImportCSV(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 class ImportP6(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_p6"
     bl_label = "Import P6"
+    bl_description = "Import provided .xml P6 file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
@@ -700,7 +703,7 @@ class ImportP6(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.p62ifc import P62Ifc
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         p62ifc = P62Ifc()
         p62ifc.xml = self.filepath
@@ -713,6 +716,7 @@ class ImportP6(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 class ImportP6XER(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_p6xer"
     bl_label = "Import P6 XER"
+    bl_description = "Import provided .xer P6 file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xer"
     filter_glob: bpy.props.StringProperty(default="*.xer", options={"HIDDEN"})
@@ -728,7 +732,7 @@ class ImportP6XER(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.p6xer2ifc import P6XER2Ifc
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         p6xer2ifc = P6XER2Ifc()
         p6xer2ifc.xer = self.filepath
@@ -741,6 +745,7 @@ class ImportP6XER(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 class ImportPP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_pp"
     bl_label = "Import Powerproject .pp"
+    bl_description = "Import provided .pp file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".pp"
     filter_glob: bpy.props.StringProperty(default="*.pp", options={"HIDDEN"})
@@ -756,7 +761,7 @@ class ImportPP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.pp2ifc import PP2Ifc
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         pp2ifc = PP2Ifc()
         pp2ifc.pp = self.filepath
@@ -769,6 +774,7 @@ class ImportPP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
 class ImportMSP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_msp"
     bl_label = "Import MSP"
+    bl_description = "Import provided .xml MSP file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
@@ -784,7 +790,7 @@ class ImportMSP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     def _execute(self, context):
         from ifc4d.msp2ifc import MSP2Ifc
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         msp2ifc = MSP2Ifc()
         msp2ifc.xml = self.filepath
@@ -794,9 +800,10 @@ class ImportMSP(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         self.report({"INFO"}, "Import finished in {:.2f} seconds".format(time.time() - start))
 
 
-class ExportMSP(bpy.types.Operator, ImportHelper):
+class ExportMSP(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_msp"
     bl_label = "Export MSP"
+    bl_description = "Export work schedule as .xml MSP file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
@@ -814,7 +821,7 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         from ifc4d.ifc2msp import Ifc2Msp
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         ifc2msp = Ifc2Msp()
         ifc2msp.work_schedule = self.file.by_type("IfcWorkSchedule")[0]
@@ -827,9 +834,10 @@ class ExportMSP(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
-class ExportP6(bpy.types.Operator, ImportHelper):
+class ExportP6(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_p6"
     bl_label = "Export P6"
+    bl_description = "Export work schedule as .xml P6 file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".xml"
     filter_glob: bpy.props.StringProperty(default="*.xml", options={"HIDDEN"})
@@ -847,7 +855,7 @@ class ExportP6(bpy.types.Operator, ImportHelper):
     def execute(self, context):
         from ifc4d.ifc2p6 import Ifc2P6
 
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         start = time.time()
         ifc2p6 = Ifc2P6()
         ifc2p6.xml = bpy.path.ensure_ext(self.filepath, ".xml")
@@ -1083,10 +1091,11 @@ class EditSequenceAttributes(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Sequence.get_work_schedule_props()
         core.edit_sequence_attributes(
             tool.Ifc,
             tool.Sequence,
-            rel_sequence=tool.Ifc.get().by_id(context.scene.BIMWorkScheduleProperties.active_sequence_id),
+            rel_sequence=tool.Ifc.get().by_id(props.active_sequence_id),
         )
 
 
@@ -1138,7 +1147,8 @@ class VisualiseWorkScheduleDate(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return bool(bpy.context.scene.BIMWorkScheduleProperties.visualisation_start)
+        props = tool.Sequence.get_work_schedule_props()
+        return bool(props.visualisation_start)
 
     def execute(self, context):
         core.visualise_work_schedule_date(tool.Sequence, work_schedule=tool.Ifc.get().by_id(self.work_schedule))
@@ -1163,10 +1173,8 @@ class VisualiseWorkScheduleDateRange(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        has_start, has_finish = (
-            bpy.context.scene.BIMWorkScheduleProperties.visualisation_start,
-            bpy.context.scene.BIMWorkScheduleProperties.visualisation_finish,
-        )
+        props = tool.Sequence.get_work_schedule_props()
+        has_start, has_finish = props.visualisation_start, props.visualisation_finish
         return bool(has_start and has_finish) and not "-" in (has_start, has_finish)
 
     def execute(self, context):
@@ -1421,11 +1429,12 @@ class LoadAnimationColorScheme(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Loads the animation color scheme"
 
     def _execute(self, context):
-        group = tool.Ifc.get().by_id(int(context.scene.BIMAnimationProperties.saved_color_schemes))
+        props = tool.Sequence.get_animation_props()
+        group = tool.Ifc.get().by_id(int(props.saved_color_schemes))
         core.load_animation_color_scheme(tool.Sequence, scheme=group)
 
     def draw(self, context):
-        props = context.scene.BIMAnimationProperties
+        props = tool.Sequence.get_animation_props()
         row = self.layout.row()
         row.prop(props, "saved_color_schemes", text="")
 
@@ -1450,15 +1459,17 @@ class LoadProductTasks(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not tool.Ifc.get() or not (obj := context.active_object) or not (obj.BIMObjectProperties.ifc_definition_id):
+        if not tool.Ifc.get() or not (obj := context.active_object) or not (tool.Blender.get_ifc_definition_id(obj)):
             cls.poll_message_set("No IFC object is active.")
             return False
         return True
 
     def execute(self, context):
-        result = core.load_product_related_tasks(
-            tool.Sequence, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
-        )
+        obj = context.active_object
+        assert obj
+        product = tool.Ifc.get_entity(obj)
+        assert product
+        result = core.load_product_related_tasks(tool.Sequence, product=product)
         if isinstance(result, str):
             self.report({"INFO"}, result)
         else:

@@ -35,3 +35,4 @@ extend-exclude = '''
 [tool.pyright]
 reportInvalidTypeForm = false
 disableBytesTypePromotions = true
+reportUnnecessaryTypeIgnoreComment = true

@@ -349,9 +349,10 @@ Scenario: Animate the construction of a wall
     And I press "bim.edit_task_time"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.assign_product(task={task})"
     And I set "scene.BIMWorkScheduleProperties.visualisation_start" to "01/01/21"
@@ -386,9 +387,10 @@ Scenario: Animate the demolition of a wall
     And I press "bim.edit_task_time"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.assign_process(task={task}, related_object=0, related_object_type='PRODUCT')"
     And I set "scene.BIMWorkScheduleProperties.visualisation_start" to "01/01/21"
@@ -426,9 +428,10 @@ Scenario: Animate the operation of a wall
     And I press "bim.edit_task_time"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.assign_product(task={task}, relating_product=0)"
     And I set "scene.BIMWorkScheduleProperties.visualisation_start" to "01/01/21"
@@ -512,9 +515,10 @@ Scenario: Animate the consumption of a wall
     And I press "bim.edit_task_time"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.assign_process(task={task}, related_object_type='PRODUCT', related_object=0)"
     And I set "scene.BIMWorkScheduleProperties.visualisation_start" to "01/01/21"
@@ -554,9 +558,10 @@ Scenario: Clear Previous Animation
     And I press "bim.edit_task_time"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I press "bim.assign_product(task={task})"
     And I set "scene.BIMWorkScheduleProperties.visualisation_start" to "01/01/21"
@@ -858,8 +863,9 @@ Scenario: Add Animation Camera
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I press "bim.add_animation_camera"
     Then "scene.objects.get('4D Camera').name" is "4D Camera"

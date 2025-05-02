@@ -150,10 +150,6 @@ namespace IfcGeom {
 		int done;
 		int total;
 
-		// @todo these appear uninitialized?
-		std::string unit_name_;
-		double unit_magnitude_;
-
 		ifcopenshell::geometry::taxonomy::point3 bounds_min_;
 		ifcopenshell::geometry::taxonomy::point3 bounds_max_;
 
@@ -166,8 +162,8 @@ namespace IfcGeom {
 	public:
 		void set_cache(GeometrySerializer* cache) { cache_ = cache; }
 
-		const std::string& unit_name() const { return unit_name_; }
-		double unit_magnitude() const { return unit_magnitude_; }
+		const std::string& unit_name() const { return converter_->mapping()->get_length_unit_name(); }
+		double unit_magnitude() const { return converter_->mapping()->get_length_unit(); }
 		// Check if error occurred during iterator initialization or iteration over elements.
 		bool had_error_processing_elements() const { return had_error_processing_elements_; }
 
@@ -667,6 +663,12 @@ namespace IfcGeom {
 		/// Use get() to retrieve the created geometry.
 		const IfcUtil::IfcBaseClass* next() {
 			using std::chrono::high_resolution_clock;
+
+			if (*native_task_result_iterator_ != *task_result_iterator_) {
+				delete* native_task_result_iterator_;
+			}
+			delete *task_result_iterator_;
+
 			if (num_threads_ != 1) {
 				if (!wait_for_element()) {
 					Logger::SetProduct(boost::none);
@@ -889,20 +891,22 @@ namespace IfcGeom {
 					init_future_.wait();
 				}
 			}
-
-			if (settings_.get<ifcopenshell::geometry::settings::IteratorOutput>().get() != ifcopenshell::geometry::settings::NATIVE) {
-				for (auto& p : all_processed_native_elements_) {
-					delete p;
-				}
-			}
 			
 			for (auto& k : kernel_pool) {
 				delete k;
 			}
-			
-			for (auto& p : all_processed_elements_) {
-				delete p;
+
+			if (task_result_ptr_initialized) {
+				while (task_result_iterator_ != --all_processed_elements_.end()) {
+					if (*native_task_result_iterator_ != *task_result_iterator_) {
+						delete* native_task_result_iterator_;
+					}
+					delete *task_result_iterator_++;
+					native_task_result_iterator_++;
+				}
 			}
+
+			delete converter_;
 		}
 	};
 }

@@ -20,6 +20,7 @@ import os
 import bpy
 import bpy.utils.previews
 import importlib
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from . import handler, ui, prop, operator
 from typing import Callable, Union
 
@@ -83,6 +84,7 @@ modules = {
     "covering": None,
     "web": None,
     "light": None,
+    "alignment": None,
     # Uncomment this line to enable loading of the demo module. Happy hacking!
     # The name "demo" must correlate to a folder name in `bim/module/`.
     # "demo": None,
@@ -99,6 +101,7 @@ classes = [
     operator.BIM_OT_delete_object,
     operator.BIM_OT_remove_section_plane,
     operator.BIM_OT_select_entity,
+    operator.BIM_OT_select_entity_by_guid,
     operator.BIM_OT_select_object,
     operator.BIM_OT_show_description,
     operator.BIM_OT_multiple_file_selector,
@@ -115,10 +118,8 @@ classes = [
     operator.ReloadIfcFile,
     operator.RemoveIfcFile,
     operator.RevertClippingPlaneCut,
-    operator.SelectDataDir,
-    operator.SelectCacheDir,
+    operator.SelectDir,
     operator.SelectIfcFile,
-    operator.SelectSchemaDir,
     operator.SelectURIAttribute,
     operator.SetTab,
     operator.SwitchTab,
@@ -222,7 +223,12 @@ def on_register(scene):
 
 def register():
     for cls in classes:
+        # Prevent crashes in Blender 4.4.0, see #6420.
+        if issubclass(cls, (ImportHelper, ExportHelper)):
+            assert getattr(cls, "bl_description", "") or cls.__doc__, cls
+
         bpy.utils.register_class(cls)
+
     bpy.app.handlers.depsgraph_update_post.append(on_register)
     bpy.app.handlers.undo_post.append(handler.undo_post)
     bpy.app.handlers.redo_post.append(handler.redo_post)

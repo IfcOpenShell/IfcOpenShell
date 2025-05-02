@@ -21,10 +21,11 @@
 import bpy
 import ifcopenshell.api
 import bonsai.tool as tool
-from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 import bonsai.tool as tool
 import bonsai.core.cost as core
-from typing import get_args, TYPE_CHECKING
+from pathlib import Path
+from typing import get_args, TYPE_CHECKING, Literal
 
 
 class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -36,16 +37,18 @@ class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     object_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        predefined_type = context.scene.BIMCostProperties.cost_schedule_predefined_types
+        props = tool.Cost.get_cost_props()
+        predefined_type = props.cost_schedule_predefined_types
         if predefined_type == "USERDEFINED":
             predefined_type = self.object_type
         core.add_cost_schedule(tool.Ifc, name=self.name, predefined_type=predefined_type)
 
     def draw(self, context):
         layout = self.layout
+        props = tool.Cost.get_cost_props()
         layout.prop(self, "name", text="Name")
-        layout.prop(context.scene.BIMCostProperties, "cost_schedule_predefined_types", text="Type")
-        if context.scene.BIMCostProperties.cost_schedule_predefined_types == "USERDEFINED":
+        layout.prop(props, "cost_schedule_predefined_types", text="Type")
+        if props.cost_schedule_predefined_types == "USERDEFINED":
             layout.prop(self, "object_type", text="Object type")
 
     def invoke(self, context, event):
@@ -58,10 +61,11 @@ class EditCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Cost.get_cost_props()
         core.edit_cost_schedule(
             tool.Ifc,
             tool.Cost,
-            cost_schedule=tool.Ifc.get().by_id(context.scene.BIMCostProperties.active_cost_schedule_id),
+            cost_schedule=tool.Ifc.get().by_id(props.active_cost_schedule_id),
         )
 
 
@@ -533,6 +537,7 @@ class SelectCostScheduleProducts(bpy.types.Operator):
 class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
     bl_idname = "bim.import_cost_schedule_csv"
     bl_label = "Import Cost Schedule CSV"
+    bl_description = "Import cost schdule from the provided .csv file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
@@ -547,7 +552,19 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator)
         return True
 
     def _execute(self, context):
-        core.import_cost_schedule_csv(tool.Cost, self.filepath, self.is_schedule_of_rates)
+        cost_schedule = core.import_cost_schedule_csv(tool.Cost, self.filepath, self.is_schedule_of_rates)
+        core.add_csv_filepath(tool.Cost, self.filepath, self.is_schedule_of_rates, cost_schedule)
+        return {"FINISHED"}
+
+
+class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.refresh_cost_schedule_csv"
+    bl_label = "Refresh Cost Schedule CSV"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def _execute(self, context):
+        core.refresh_cost_schedule_csv(tool.Ifc, tool.Cost)
         return {"FINISHED"}
 
 
@@ -559,7 +576,8 @@ class AddCostColumn(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not context.scene.BIMCostProperties.cost_column:
+        props = tool.Cost.get_cost_props()
+        if not props.cost_column:
             cls.poll_message_set("Cost column name is empty")
             return False
         return True
@@ -678,12 +696,13 @@ class CalculateCostItemResourceValue(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class ExportCostSchedules(bpy.types.Operator):
+class ExportCostSchedules(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_cost_schedules"
     bl_label = "Export Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Export a cost schedule to a CSV, XSLX OR ODS file"
-    cost_schedule: bpy.props.IntProperty()
+    bl_description = "Export current/all cost schedules as CSV, XSLX or ODS files to the provided directory."
+
+    cost_schedule: bpy.props.IntProperty(options={"SKIP_SAVE"})
     format: bpy.props.EnumProperty(name="Format", items=(("CSV", "CSV", ""), ("XLSX", "XLSX", ""), ("ODS", "ODS", "")))
     directory: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_folder: bpy.props.BoolProperty(
@@ -691,19 +710,29 @@ class ExportCostSchedules(bpy.types.Operator):
         default=True,
     )
 
+    if TYPE_CHECKING:
+        cost_schedule: int
+        format: Literal["CSV", "XLSX", "ODS"]
+        directory: str
+
+    def check(self, context):
+        if self.filepath != self.directory:
+            self.filepath = self.directory
+            return True
+        return False
+
+    @property
+    def filename_ext(self) -> str:
+        return f".{self.format.lower()}"
+
     def execute(self, context):
         cost_schedule = tool.Ifc.get().by_id(self.cost_schedule) if self.cost_schedule else None
         r = core.export_cost_schedules(
-            tool.Cost, filepath=self.directory, format=self.format, cost_schedule=cost_schedule
+            tool.Cost, dirpath=self.directory, format=self.format, cost_schedule=cost_schedule
         )
         if isinstance(r, str):
             self.report({"ERROR"}, r)
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        wm.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
     def draw(self, context):
         self.layout.label(text="Choose a format")
@@ -740,15 +769,14 @@ class LoadProductCostItems(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not tool.Ifc.get() or not (obj := context.active_object) or not (obj.BIMObjectProperties.ifc_definition_id):
+        if not tool.Ifc.get() or not (obj := context.active_object) or not (tool.Blender.get_ifc_definition_id(obj)):
             cls.poll_message_set("No IFC object is active.")
             return False
         return True
 
     def execute(self, context):
-        core.load_product_cost_items(
-            tool.Cost, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
-        )
+        obj = context.active_object
+        core.load_product_cost_items(tool.Cost, product=tool.Ifc.get_entity(obj))
         return {"FINISHED"}
 
 

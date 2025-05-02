@@ -26,14 +26,9 @@ def add_footprint_representation(
     # A list of IFC curves to include in the curve set
     curves: list[ifcopenshell.entity_instance],
 ) -> ifcopenshell.entity_instance:
-    settings = {
-        "context": context,
-        "curves": curves,
-    }
-
     return file.createIfcShapeRepresentation(
-        settings["context"],
-        settings["context"].ContextIdentifier,
+        context,
+        context.ContextIdentifier,
         "GeometricCurveSet",
-        [file.createIfcGeometricCurveSet(settings["curves"])],
+        [file.createIfcGeometricCurveSet(curves)],
     )

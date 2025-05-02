@@ -28,6 +28,7 @@ import bonsai.core.root
 import bonsai.core.geometry
 from ifcopenshell.api.geometry.add_window_representation import DEFAULT_PANEL_SCHEMAS
 import ifcopenshell.api
+import ifcopenshell.api.material
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
@@ -41,8 +42,10 @@ V_ = tool.Blender.V_
 
 def update_window_modifier_representation(context: bpy.types.Context) -> None:
     obj = context.active_object
+    assert obj
     element = tool.Ifc.get_entity(obj)
-    props = obj.BIMWindowProperties
+    assert element
+    props = tool.Model.get_window_props(obj)
     ifc_file = tool.Ifc.get()
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
 
@@ -73,7 +76,7 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
         }
         representation_data["panel_properties"].append(panel_data)
 
-    previously_active_context = tool.Geometry.get_active_representation_context(obj)
+    active_context = tool.Geometry.get_active_representation_context(obj)
 
     # ELEVATION_VIEW representation
     profile = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
@@ -88,8 +91,25 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
     # (Model/Body defined only BEFORE Plan/Body to prevent #2744)
     body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
     representation_data["context"] = body
+    representation_data["part_of_product"] = ifcopenshell.util.representation.get_part_of_product(element, body)
     model_representation = ifcopenshell.api.run("geometry.add_window_representation", ifc_file, **representation_data)
+    representation_data["part_of_product"] = None
     tool.Model.replace_object_ifc_representation(body, obj, model_representation)
+    if fallback_material := (int(props.lining_material) or int(props.framing_material) or int(props.glazing_material)):
+        ifcopenshell.api.material.set_shape_aspect_constituents(
+            ifc_file,
+            element=element,
+            context=body,
+            materials={
+                "Lining": tool.Ifc.get().by_id(int(props.lining_material) or fallback_material),
+                "Framing": tool.Ifc.get().by_id(int(props.framing_material) or fallback_material),
+                "Glazing": tool.Ifc.get().by_id(int(props.glazing_material) or fallback_material),
+            },
+        )
+    elif material := ifcopenshell.util.element.get_material(element):
+        ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+        if not material.is_a("IfcMaterial") and not ifc_file.get_total_inverses(material):
+            ifcopenshell.api.material.remove_material_set(ifc_file, material=material)
 
     # PLAN_VIEW representation
     plan = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Body", "PLAN_VIEW")
@@ -100,24 +120,15 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
         )
         tool.Model.replace_object_ifc_representation(plan, obj, plan_representation)
 
-    # adding switch representation at the end instead of changing order of representations
-    # to prevent #2744
-    if tool.Geometry.get_active_representation_context(obj) != previously_active_context:
-        previously_active_representation = ifcopenshell.util.representation.get_representation(
-            element,
-            previously_active_context.ContextType,
-            previously_active_context.ContextIdentifier,
-            previously_active_context.TargetView,
-        )
-        bonsai.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=previously_active_representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=True,
-        )
+    bonsai.core.geometry.switch_representation(
+        tool.Ifc,
+        tool.Geometry,
+        obj=obj,
+        representation=ifcopenshell.util.representation.get_representation(element, active_context),
+        should_reload=True,
+        is_global=True,
+        should_sync_changes_first=True,
+    )
 
     # type attributes
     if tool.Ifc.get_schema() != "IFC2X3":
@@ -250,7 +261,8 @@ def create_bm_window(
 
 def update_window_modifier_bmesh(context: bpy.types.Context) -> None:
     obj = context.active_object
-    props = obj.BIMWindowProperties
+    assert obj
+    props = tool.Model.get_window_props(obj)
     panel_schema = DEFAULT_PANEL_SCHEMAS[props.window_type]
     accumulated_height = [0] * len(panel_schema[0])
     built_panels = []
@@ -425,7 +437,7 @@ class BIM_OT_add_window(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
         bpy.context.view_layer.objects.active = obj
-        obj.select_set(True)
+        tool.Blender.select_object(obj)
         bpy.ops.bim.add_window()
         return {"FINISHED"}
 
@@ -439,8 +451,10 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMWindowProperties
+        assert element
+        props = tool.Model.get_window_props(obj)
 
         window_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
@@ -469,11 +483,13 @@ class CancelEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         element = tool.Ifc.get_entity(obj)
+        assert element
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Window", "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
-        props = obj.BIMWindowProperties
+        props = tool.Model.get_window_props(obj)
         props.set_props_kwargs_from_ifc_data(data)
 
         body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
@@ -498,8 +514,10 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMWindowProperties
+        assert element
+        props = tool.Model.get_window_props(obj)
 
         window_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
@@ -525,11 +543,14 @@ class EnableEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        props = obj.BIMWindowProperties
+        assert obj
+        props = tool.Model.get_window_props(obj)
         element = tool.Ifc.get_entity(obj)
+        assert element
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Window", "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
+        data.update(tool.Model.get_constituents_props_data(element))
 
         # required since we could load pset from .ifc and BIMWindowProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
@@ -545,9 +566,11 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        props = obj.BIMWindowProperties
+        assert obj
         element = tool.Ifc.get_entity(obj)
-        obj.BIMWindowProperties.is_editing = False
+        assert element
+        props = tool.Model.get_window_props(obj)
+        props.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)

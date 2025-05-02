@@ -25,11 +25,21 @@ Can be used to run validation on IFC file from the command line:
 
     python -m ifcopenshell.validate /path/to/model.ifc --rules
 
-Available flags:
+```
+$ python -m ifcopenshell.validate -h
+usage: validate.py [-h] [--rules] [--json] [--fields] [--spf] files [files ...]
 
-- ``--rules``: Also check express rules.
-- ``--json``: Produce JSON output.
-- ``--fields``: Output more detailed information about failed entities (available only with ``--json``).
+positional arguments:
+  files       The IFC file to validate.
+
+options:
+  -h, --help  show this help message and exit
+  --rules     Run express rules.
+  --json      Output in JSON format.
+  --fields    Output more detailed information about failed entities (only with --json).
+  --spf       Output entities in SPF format (only with --json).
+```
+
 """
 
 import os
@@ -37,6 +47,7 @@ import sys
 import json
 import functools
 import types
+import argparse
 
 from collections import namedtuple
 from typing import Union, Iterator, Any, Optional
@@ -75,7 +86,7 @@ class json_logger:
         self.statements = []
         self.state = {}
 
-    def set_state(self, key, value):
+    def set_state(self, key: str, value: Any):
         self.state[key] = value
 
     def log(self, level, message, *args):
@@ -100,6 +111,20 @@ simple_type_python_mapping = {
 def annotate_inst_attr_pos(
     inst: Union[ifcopenshell.entity_instance, W.HeaderEntity], pos: int, entity_str: str = ""
 ) -> str:
+    """Add a caret annotation to the entity string at the given attribute index.
+
+    :param inst: Instance to annotate.
+    :param pos: Attribute index to annotate.
+    :param entity_str: Entity string to annotate. If not provided, ``str(inst)`` is used.
+
+    Example:
+
+    .. code:: python
+        annotate_inst_attr_pos(inst, 2)
+        # #7=IfcApplication(#6,'0.8.1-alpha241113-xxxxxxx','Bonsai','Bonsai')
+        #                                                  ^^^^^^^^
+    """
+
     def get_pos() -> Iterator[int]:
         depth = 0
         idx = -1
@@ -397,6 +422,7 @@ def validate(f: Union[ifcopenshell.file, str], logger: Logger, express_rules=Fal
         log_internal_cpp_errors(f, filename, logger)
 
     validate_ifc_header(f, logger)
+    validate_ifc_applications(f, logger)
 
     schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(f.schema_identifier)
     used_guids: dict[str, ifcopenshell.entity_instance] = dict()
@@ -619,6 +645,49 @@ def validate_ifc_header(f: ifcopenshell.file, logger: Logger) -> None:
     validate_attribute(file_name, "authorization", 6)
 
 
+def validate_ifc_applications(f: ifcopenshell.file, logger: Logger) -> None:
+    used_names: dict[str, ifcopenshell.entity_instance] = dict()
+    used_ids: dict[str, ifcopenshell.entity_instance] = dict()
+
+    for inst in f.by_type("IfcApplication"):
+        app_name: str = inst.ApplicationFullName
+        app_id: str = inst.ApplicationIdentifier
+
+        if app_name is not None:
+            if app_name not in used_names:
+                used_names[app_name] = inst
+            else:
+                if hasattr(logger, "set_state"):
+                    logger.set_state("instance", inst)
+                rule = "Rule IfcApplication.UR1:\n    The attribute ApplicationFullName should be unique"
+                previous_element = used_names[app_name]
+                logger.error(
+                    "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
+                    inst,
+                    annotate_inst_attr_pos(inst, 2),
+                    rule,
+                    previous_element,
+                    annotate_inst_attr_pos(previous_element, 2),
+                )
+
+        if app_id is not None:
+            if app_id not in used_ids:
+                used_ids[app_id] = inst
+            else:
+                if hasattr(logger, "set_state"):
+                    logger.set_state("instance", inst)
+                rule = "Rule IfcApplication.UR2:\n    The attribute ApplicationIdentifier should be unique"
+                previous_element = used_ids[app_id]
+                logger.error(
+                    "On instance:\n    %s\n    %s\n%s\nViolated by:\n    %s\n    %s",
+                    inst,
+                    annotate_inst_attr_pos(inst, 3),
+                    rule,
+                    previous_element,
+                    annotate_inst_attr_pos(previous_element, 3),
+                )
+
+
 class LogDetectionHandler(Handler):
     message_logged = False
 
@@ -647,13 +716,24 @@ if __name__ == "__main__":
 
     sys.excepthook = handle_exception
 
-    filenames = [x for x in sys.argv[1:] if not x.startswith("--")]
-    flags = set(x for x in sys.argv[1:] if x.startswith("--"))
+    parser = argparse.ArgumentParser()
+    parser.add_argument("files", nargs="+", help="The IFC file to validate.")
+    parser.add_argument("--rules", action="store_true", help="Run express rules.")
+    parser.add_argument("--json", action="store_true", help="Output in JSON format.")
+    parser.add_argument(
+        "--fields",
+        action="store_true",
+        help="Output more detailed information about failed entities (only with --json).",
+    )
+    parser.add_argument("--spf", action="store_true", help="Output entities in SPF format (only with --json).")
+    args = parser.parse_args()
+
+    filenames: list[str] = args.files
     some_file_is_invalid = False
 
     for fn in filenames:
         handler = None
-        if "--json" in flags:
+        if args.json:
             logger = json_logger()
         else:
             logger = logging.getLogger("validate")
@@ -662,14 +742,14 @@ if __name__ == "__main__":
             logger.setLevel(logging.DEBUG)
 
         print("Validating", fn, file=sys.stderr)
-        validate(fn, logger, "--rules" in flags)
+        validate(fn, logger, args.rules)
 
-        if "--json" in flags:
+        if args.json:
             sys.stdout.reconfigure(encoding="utf-8")
             conv = str
-            if "--spf" in flags:
+            if args.spf:
                 conv = lambda x: x.to_string() if isinstance(x, ifcopenshell.entity_instance) else str(x)
-            if "--fields" in flags:
+            if args.fields:
 
                 def conv(x):
                     if isinstance(x, ifcopenshell.entity_instance):

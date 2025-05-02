@@ -34,16 +34,15 @@ from pathlib import Path
 class TestIfc2Sql:
     def test_run(self):
         TEST_FILE = Path(__file__).parent / "files" / "basic.ifc"
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".ifcsqlite")
-        sqlite_path = ifcpatch.execute(
+        temp = tempfile.NamedTemporaryFile(delete=False, suffix=".ifcsqlite")
+        sqlite_path = Path(temp.name)
+        ifcpatch.execute(
             {
                 "file": ifcopenshell.open(TEST_FILE),
                 "recipe": "Ifc2Sql",
-                "arguments": ["sqlite", None, None, None, tmp.name],
+                "arguments": ["sqlite", None, None, None, sqlite_path],
             }
         )
-        assert isinstance(sqlite_path, str)
-        assert sqlite_path.endswith(".ifcsqlite")
 
         # Ensure file is valid.
         ifc_sqlite = ifcopenshell.open(sqlite_path)

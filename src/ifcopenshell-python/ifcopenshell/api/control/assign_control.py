@@ -42,12 +42,9 @@ def assign_control(
 
     :param relating_control: The IfcControl entity that is creating the
         control or constraint
-    :type relating_control: ifcopenshell.entity_instance
     :param related_object: The IfcObjectDefinition that is being controlled
-    :type related_object: ifcopenshell.entity_instance
     :return: The newly created IfcRelAssignsToControl. If relationship already
         existed before and wasn't changed then returns None.
-    :rtype: ifcopenshell.entity_instance, None
 
     Example:
 
@@ -72,25 +69,20 @@ def assign_control(
         ifcopenshell.api.control.assign_control(model,
             relating_control=cost_item, related_object=wall)
     """
-    settings = {
-        "relating_control": relating_control,
-        "related_object": related_object,
-    }
-
-    if settings["related_object"].HasAssignments:
-        for assignment in settings["related_object"].HasAssignments:
-            if assignment.is_a("IfcRelAssignsToControl") and assignment.RelatingControl == settings["relating_control"]:
+    if related_object.HasAssignments:
+        for assignment in related_object.HasAssignments:
+            if assignment.is_a("IfcRelAssignsToControl") and assignment.RelatingControl == relating_control:
                 return
 
     controls = None
-    if settings["relating_control"].Controls:
-        controls = settings["relating_control"].Controls[0]
+    if relating_control.Controls:
+        controls = relating_control.Controls[0]
 
     if controls:
-        if settings["related_object"] in controls.RelatedObjects:
+        if related_object in controls.RelatedObjects:
             return
         related_objects = set(controls.RelatedObjects)
-        related_objects.add(settings["related_object"])
+        related_objects.add(related_object)
         controls.RelatedObjects = list(related_objects)
         ifcopenshell.api.owner.update_owner_history(file, **{"element": controls})
     else:
@@ -99,8 +91,8 @@ def assign_control(
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": [settings["related_object"]],
-                "RelatingControl": settings["relating_control"],
+                "RelatedObjects": [related_object],
+                "RelatingControl": relating_control,
             },
         )
     return controls

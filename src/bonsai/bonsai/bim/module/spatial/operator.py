@@ -73,15 +73,85 @@ class DereferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
                 core.dereference_structure(tool.Ifc, tool.Spatial, structure=container, element=element)
 
 
+class ReferenceFromProvidedStructure(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.reference_from_provided_structure"
+    bl_label = "Reference from Provided Structure"
+    bl_description = "Reference selected objects from the provided structure.\n\n" "ALT + Click to dereference instead."
+    bl_options = {"REGISTER", "UNDO"}
+
+    structure: bpy.props.IntProperty(options={"SKIP_SAVE"})
+    dereference: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Blender.get_selected_objects():
+            cls.poll_message_set("No objects selected.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        self.dereference = event.alt
+        return self.execute(context)
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        structure = ifc_file.by_id(self.structure)
+
+        objs = tool.Spatial.get_selected_objects_without_containers()
+        if not objs:
+            self.report({"INFO"}, "No non-spatial objects are selected.")
+            return
+
+        elements = [e for o in objs if (e := tool.Ifc.get_entity(o))]
+        for element in elements:
+            if self.dereference:
+                core.dereference_structure(tool.Ifc, tool.Spatial, structure=structure, element=element)
+            else:
+                core.reference_structure(tool.Ifc, tool.Spatial, structure=structure, element=element)
+
+        msg = "dereferenced" if self.dereference else "referenced"
+        self.report({"INFO"}, f"{len(elements)} elements {msg} from the structure.")
+
+
+class DereferenceFromProvidedStructure(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.dereference_from_provided_structure"
+    bl_label = "Dereference from Provided Structure"
+    bl_description = "Dereference selected objects from the provided structure."
+    bl_options = {"REGISTER", "UNDO"}
+
+    structure: bpy.props.IntProperty(options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Blender.get_selected_objects():
+            cls.poll_message_set("No objects selected.")
+            return False
+        return True
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        structure = ifc_file.by_id(self.structure)
+        objs = tool.Spatial.get_selected_objects_without_containers()
+        if not objs:
+            self.report({"INFO"}, "No non-spatial objects are selected.")
+            return
+
+        elements = [e for o in objs if (e := tool.Ifc.get_entity(o))]
+        for element in elements:
+            core.dereference_structure(tool.Ifc, tool.Spatial, structure=structure, element=element)
+
+        self.report({"INFO"}, f"{len(elements)} elements dereferenced from the structure.")
+
+
 class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_container"
     bl_label = "Assign Container"
-    bl_description = "\n".join(
-        (
-            "Assign the selected objects to the selected container.",
-            "This will move objects to the container collection in the outliner.",
-            "ALT + Click to ensure objects are only linked in the container collection",
-        )
+    bl_description = (
+        "Assign the selected objects to the container selected in Spatial Manager.\n\n"
+        "All elements-parts of an aggregate will be skipped.\n"
+        "To assign a container, they should be unassigned from an aggregate first.\n\n"
+        "This will also move objects to the container collection in the outliner.\n"
+        "ALT + Click to ensure objects are only linked in the container collection"
     )
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty(options={"SKIP_SAVE"})
@@ -96,18 +166,39 @@ class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
             container = tool.Ifc.get().by_id(self.container)
         elif (
             (obj := tool.Blender.get_active_object())
-            and (props := obj.BIMObjectSpatialProperties)
+            and (props := tool.Spatial.get_object_spatial_props(obj))
             and (container_obj := props.container_obj)
             and (container := tool.Ifc.get_entity(container_obj))
         ):
             pass
         else:
             return
-        for element_obj in tool.Blender.get_selected_objects():
+
+        objs: list[bpy.types.Object] = []
+        # In IFC element can be either contained of aggregated,
+        # tehrefore we skip aggregated elements here to prevent confusion.
+        # Can't handle it in `poll` since user might just select bunch of elements
+        # and try to assign a container to them
+        # and excluding aggregates because of the `poll` failing might get awkward.
+        skipped_aggregates = 0
+        for obj in tool.Blender.get_selected_objects():
+            if not (element := tool.Ifc.get_entity(obj)):
+                continue
+            if ifcopenshell.util.element.get_aggregate(element):
+                skipped_aggregates += 1
+                continue
+            objs.append(obj)
+
+        for element_obj in objs:
             if self.remove_from_other_containers:
                 for col in element_obj.users_collection[:]:
                     col.objects.unlink(element_obj)
             core.assign_container(tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj)
+
+        aggregates_msg = ""
+        if skipped_aggregates:
+            aggregates_msg = f" {skipped_aggregates} aggregated elements skipped."
+        self.report({"INFO"}, f"{len(objs)} elements assigned.{aggregates_msg}")
 
 
 class EnableEditingContainer(bpy.types.Operator):
@@ -242,17 +333,6 @@ class ImportSpatialDecomposition(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditContainerAttributes(bpy.types.Operator):
-    bl_idname = "bim.edit_container_attributes"
-    bl_label = "Edit container attributes"
-    bl_options = {"REGISTER", "UNDO"}
-    container: bpy.props.IntProperty()
-
-    def execute(self, context):
-        core.edit_container_attributes(tool.Spatial, entity=tool.Ifc.get().by_id(self.container))
-        return {"FINISHED"}
-
-
 class ContractContainer(bpy.types.Operator):
     bl_idname = "bim.contract_container"
     bl_label = "Contract Container"
@@ -280,6 +360,18 @@ class DeleteContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Delete Container"
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.Spatial.get_spatial_props()
+        active_container = props.active_container
+        if not active_container:
+            cls.poll_message_set("No active container.")
+            return False
+        if active_container.ifc_class == "IfcProject":
+            cls.poll_message_set("Cannot delete IfcProject.")
+            return False
+        return True
 
     def _execute(self, context):
         core.delete_container(tool.Ifc, tool.Spatial, tool.Geometry, container=tool.Ifc.get().by_id(self.container))
@@ -343,8 +435,21 @@ class SetDefaultContainer(bpy.types.Operator):
     bl_description = "Set this as the default container that all new elements will be contained in"
     container: bpy.props.IntProperty()
 
+    @classmethod
+    def poll(cls, context):
+        props = tool.Spatial.get_spatial_props()
+        active_container = props.active_container
+        if not active_container:
+            cls.poll_message_set("No active container.")
+            return False
+        if active_container.ifc_class == "IfcProject":
+            cls.poll_message_set("Cannot set default IfcProject as default container.")
+            return False
+        return True
+
     def execute(self, context):
         core.set_default_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        core.set_orientation_slot(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
         return {"FINISHED"}
 
 

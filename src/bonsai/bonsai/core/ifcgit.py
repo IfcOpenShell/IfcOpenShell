@@ -99,15 +99,19 @@ def colourise_revision(ifcgit: tool.IfcGit) -> None:
     step_ids = ifcgit.get_revisions_step_ids()
     if not step_ids:
         return
-    modified_shape_object_step_ids = ifcgit.get_modified_shape_object_step_ids(step_ids)
-    final_step_ids = ifcgit.update_step_ids(step_ids, modified_shape_object_step_ids)
+    modified_step_ids = ifcgit.get_modified_step_ids(step_ids)
+    final_step_ids = ifcgit.update_step_ids(step_ids, modified_step_ids)
     ifcgit.colourise(final_step_ids)
 
 
 def colourise_uncommitted(ifcgit: tool.IfcGit, ifc: tool.Ifc, repo: git.Repo) -> None:
     path_ifc = ifc.get_path()
     step_ids = ifcgit.ifc_diff_ids(repo, None, "HEAD", path_ifc)
-    ifcgit.colourise(step_ids)
+    if not step_ids:
+        return
+    modified_step_ids = ifcgit.get_modified_step_ids(step_ids)
+    final_step_ids = ifcgit.update_step_ids(step_ids, modified_step_ids)
+    ifcgit.colourise(final_step_ids)
 
 
 def switch_revision(ifcgit: tool.IfcGit, ifc: tool.Ifc) -> None:
@@ -138,3 +142,7 @@ def install_git(ifcgit: tool.IfcGit, operator: bpy.types.Operator) -> None:
         ifcgit.install_git_windows(operator=operator)
     else:
         print("install_git() not implemented")
+
+
+def run_git_diff(ifcgit: tool.IfcGit, operator: bpy.types.Operator) -> None:
+    ifcgit.run_git_diff(operator)

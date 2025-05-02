@@ -28,7 +28,9 @@ from typing import Optional
 class Interface(abc.ABC): pass
 def interface(cls):
     attrs = {n: classmethod(abc.abstractmethod(f)) for n, f in inspect.getmembers(cls, predicate=inspect.isfunction)}
-    return type(cls.__name__, (Interface, cls), attrs)
+    new_cls = type(cls.__name__, (Interface, cls), attrs)
+    new_cls.__original_qualname__ = cls.__module__ + "." + cls.__qualname__
+    return new_cls
 
 
 # ############################################################################ #
@@ -94,6 +96,7 @@ class Blender:
     def get_viewport_context(cls): pass
     def is_ifc_class_active(cls, ifc_class): pass
     def is_ifc_object(cls, obj): pass
+    def remove_object(cls, obj): pass
     def set_active_object(cls, obj): pass
     def update_viewport(cls): pass
 
@@ -246,6 +249,10 @@ class Cost:
     def has_schedules(cls): pass
     def highlight_cost_item(cls, cost_item): pass
     def import_cost_schedule_csv(cls, file_path, is_schedule_of_rates): pass
+    def add_csv_filepath(cls, file_path, is_schedule_of_rates, cost_schedule): pass
+    def remove_csv_filepath(cls, cost_schedule): pass
+    def delete_all_cost_items(cls): pass
+    def refresh_cost_schedule_csv(cls): pass
     def is_active_schedule_of_rates(cls): pass
     def is_cost_schedule_active(cls, cost_schedule): pass
     def is_root_cost_item(cls, cost_item): pass
@@ -401,6 +408,7 @@ class Geometry:
     def delete_ifc_object(cls, obj): pass
     def delete_opening_object_placement(cls, opening): pass
     def does_representation_id_exist(cls, representation_id): pass
+    def duplicate_ifc_objects(cls, objects_to_duplicate, active_object=None, duplicate_ifc_objects=None): pass
     def duplicate_object_data(cls, obj): pass
     def get_blender_offset_type(cls, obj): pass
     def get_cartesian_point_offset(cls, obj): pass
@@ -432,6 +440,7 @@ class Geometry:
     def rename_object(cls, obj, name): pass
     def replace_object_data_globally(cls, old_data, new_data): pass
     def resolve_mapped_representation(cls, representation): pass
+    def run_edit_object_placement(cls, obj=None): pass
     def run_geometry_update_representation(cls, obj=None): pass
     def run_style_add_style(cls, obj=None): pass
     def select_connection(cls, connection): pass
@@ -557,27 +566,31 @@ class Misc:
     def run_root_copy_class(cls, obj=None): pass
     def scale_object_to_height(cls, obj, height): pass
     def set_object_origin_to_bottom(cls, obj): pass
-    def split_objects_with_cutter(cls, objs, cutter): pass
+    def boolean_objects_with_cutter(cls, objs, cutter): pass
 
 
 @interface
 class Model:
+    def clip_wall_to_slab(cls, element, bm): pass
+    def connect_wall_to_slab(cls, wall, slab): pass
     def convert_si_to_unit(cls, value): pass
     def convert_unit_to_si(cls, value): pass
     def export_points(cls, position, indices): pass
     def export_profile(cls, obj, position=None): pass
     def generate_occurrence_name(cls, element_type, ifc_class): pass
     def get_extrusion(cls, representation): pass
-    def import_profile(cls, profile, obj=None, position=None): pass
+    def get_manual_booleans(cls, element): pass
+    def get_material_layer_parameters(cls, element): pass
+    def get_slab_clipping_bmesh(cls, obj): pass
+    def get_usage_type(cls, element): pass
+    def get_wall_axis(cls, obj, layers=None): pass
     def import_curve(cls, curve, obj=None, position=None): pass
+    def import_profile(cls, profile, obj=None, position=None): pass
     def import_rectangle(cls, obj, position, profile): pass
     def load_openings(cls, openings): pass
     def purge_scene_openings(cls): pass
-    def get_usage_type(cls, element): pass
-    def get_material_layer_parameters(cls, element): pass
-    def get_manual_booleans(cls, element): pass
-    def get_wall_axis(cls, obj, layers=None): pass
     def regenerate_array(cls, parent, data): pass
+    def reload_body_representation(cls, obj_or_objects): pass
     def replace_object_ifc_representation(cls, ifc_file, ifc_context, obj, new_representation): pass
 
 
@@ -901,7 +914,6 @@ class Spatial:
     def deselect_objects(cls): pass
     def disable_editing(cls, obj): pass
     def duplicate_object_and_data(cls, obj): pass
-    def edit_container_attributes(cls, entity): pass
     def edit_container_name(cls, container, name): pass
     def enable_editing(cls, obj): pass
     def expand_container(cls, container): pass

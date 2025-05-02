@@ -175,7 +175,7 @@ class MaterialPsetsData(Data):
     @classmethod
     def load(cls):
         ifc_definition_id = None
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         if props.materials and props.active_material_index < len(props.materials):
             ifc_definition_id = props.materials[props.active_material_index].ifc_definition_id
 
@@ -188,7 +188,7 @@ class MaterialPsetsData(Data):
 
     @classmethod
     def pset_name(cls):
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         if props.materials and props.active_material_index < len(props.materials):
             material = props.materials[props.active_material_index]
             if material.ifc_definition_id:
@@ -212,7 +212,9 @@ class MaterialSetItemPsetsData(Data):
     @classmethod
     def load(cls):
         psets = {}
-        ifc_definition_id = bpy.context.active_object.BIMObjectMaterialProperties.active_material_set_item_id
+        obj = bpy.context.active_object
+        assert obj
+        ifc_definition_id = tool.Material.get_object_material_props(obj).active_material_set_item_id
         if ifc_definition_id:
             psets = cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id))
         cls.data = {"psets": psets}
@@ -225,7 +227,7 @@ class TaskQtosData(Data):
 
     @classmethod
     def load(cls):
-        wprops = bpy.context.scene.BIMWorkScheduleProperties
+        wprops = tool.Sequence.get_work_schedule_props()
         tprops = tool.Sequence.get_task_tree_props()
         ifc_definition_id = tprops.tasks[wprops.active_task_index].ifc_definition_id
         cls.data = {"qtos": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), qtos_only=True)}
@@ -309,7 +311,8 @@ class WorkSchedulePsetsData(Data):
 
     @classmethod
     def load(cls):
-        ifc_definition_id = bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id
+        props = tool.Sequence.get_work_schedule_props()
+        ifc_definition_id = props.active_work_schedule_id
         cls.data = {"psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)}
         cls.is_loaded = True
 

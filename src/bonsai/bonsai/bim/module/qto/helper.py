@@ -18,6 +18,7 @@
 
 import bpy
 import bmesh
+import bonsai.tool as tool
 from typing import Callable
 
 
@@ -50,6 +51,7 @@ def calculate_mesh_quantity(
     result = 0
     edit_mode = context.active_object.mode == "EDIT"
     for obj in objs:
+        assert isinstance(obj.data, bpy.types.Mesh)
         if edit_mode:
             bm = bmesh.from_edit_mesh(obj.data)
             result += operation(bm)
@@ -86,7 +88,7 @@ def calculate_formwork_area(objs: list[bpy.types.Object], context: bpy.types.Con
                 bpy.ops.object.modifier_apply(modifier="Boolean")
 
     copied_obj.name = "Formwork"
-    copied_obj.BIMObjectProperties.ifc_definition_id = 0
+    tool.Blender.get_object_bim_props(copied_obj).ifc_definition_id = 0
     modifier = copied_obj.modifiers.new("Formwork", "REMESH")
     assert isinstance(modifier, bpy.types.RemeshModifier)
     modifier.mode = "SHARP"

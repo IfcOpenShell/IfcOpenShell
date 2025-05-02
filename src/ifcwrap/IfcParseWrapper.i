@@ -142,6 +142,9 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 
 	void write(const std::string& fn) {
 		std::ofstream f(IfcUtil::path::from_utf8(fn).c_str());
+		if (!f.good()) {
+			throw std::runtime_error("Failed to write to path: '" + fn + "', check folder and file permissions.");
+		}
 		f << (*$self);
 	}
 

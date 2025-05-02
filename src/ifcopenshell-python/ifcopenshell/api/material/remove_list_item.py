@@ -54,8 +54,6 @@ def remove_list_item(
         # Let's remove the glass
         ifcopenshell.api.material.remove_list_item(model, material_list=material_set, material_index=1)
     """
-    settings = {"material_list": material_list, "material_index": material_index}
-
-    materials = list(settings["material_list"].Materials)
-    materials.pop(settings["material_index"])
-    settings["material_list"].Materials = materials
+    materials = list(material_list.Materials)
+    materials.pop(material_index)
+    material_list.Materials = materials

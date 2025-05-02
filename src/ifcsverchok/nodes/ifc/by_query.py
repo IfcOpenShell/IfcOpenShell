@@ -42,7 +42,7 @@ class SvIfcByQuery(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.SvIf
         self.sv_input_names = ["query"]
         super().process()
 
-    def process_ifc(self, query):
+    def process_ifc(self, query: str) -> None:
         selector = ifcopenshell.util.selector.Selector()
         self.outputs["Entity"].sv_set([selector.parse(self.file, query)])
 

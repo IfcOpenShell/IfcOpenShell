@@ -34,21 +34,29 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
-from typing import Any
+from pathlib import Path
+from ifcopenshell.geom import ShapeType
+from typing import Any, TYPE_CHECKING, Literal
 
 SQLTypes = typing.Literal["SQLite", "MySQL"]
 
-try:
+if TYPE_CHECKING:
     import sqlite3
-except:
-    print("No SQLite support")
-    SQLTypes = typing.Literal["MySQL"]
-
-try:
     import mysql.connector
-except:
-    print("No MySQL support")
-    SQLTypes = typing.Literal["SQLite"]
+else:
+    try:
+        import sqlite3
+    except:
+        print("No SQLite support")
+        SQLTypes = typing.Literal["MySQL"]
+
+    try:
+        import mysql.connector
+    except:
+        print("No MySQL support")
+        SQLTypes = typing.Literal["SQLite"]
+
+DEFAULT_DATABASE_NAME = "database"
 
 
 class Patcher:
@@ -60,7 +68,7 @@ class Patcher:
         host: str = "localhost",
         username: str = "root",
         password: str = "pass",
-        database: str = "test",
+        database: str = f"{DEFAULT_DATABASE_NAME}.sqlite",
         full_schema: bool = True,
         is_strict: bool = False,
         should_expand: bool = False,
@@ -71,29 +79,29 @@ class Patcher:
     ):
         """Convert an IFC-SPF model to SQLite or MySQL.
 
-        There are certain controls which are hardcoded in this recipe that you
-        may modify, including:
-
-        - full_schema: if True, will create tables for all IFC classes,
-          regardless if they are used or not in the dataset. If False, will
-          only create tables for classes in the dataset.
-        - is_strict: whether or not to enforce null or not null. If your
-          dataset might contain invalid data, set this to False.
-        - should_expand: if True, entities with attributes containing lists of
-          entities will be separated into multiple rows. This means the ifc_id
-          is no longer a unique primary key. If False, lists will be stored as
-          JSON.
-        - should_get_psets: if True, a separate psets table will be created to
-          make it easy to query properties. This is in addition to regular IFC
-          tables like IfcPropertySet.
-        - should_get_geometry: Whether or not to process and store explicit
-          geometry data as a blob in a separate geometry and shape table.
-        - should_skip_geometry_data: Whether or not to also create tables for
-          IfcRepresentation and IfcRepresentationItem classes. These tables are
-          unnecessary if you are not interested in geometry.
-
         :param sql_type: Choose between "SQLite" or "MySQL"
-        :type sql_type: typing.Literal["SQLite", "MySQL"]
+        :param database: Database path to save the SQL database to (already existing or not).
+            Could also be a directory, then the database will be stored
+            using default filename (e.g. 'database.sqlite').
+        :filter_glob database: *.db;*.sqlite
+        :param full_schema: if True, will create tables for all IFC classes,
+            regardless if they are used or not in the dataset. If False, will
+            only create tables for classes in the dataset.
+        :param is_strict: whether or not to enforce null or not null. If your
+            dataset might contain invalid data, set this to False.
+        :param should_expand: if True, entities with attributes containing lists of
+            entities will be separated into multiple rows. This means the ifc_id
+            is no longer a unique primary key. If False, lists will be stored as
+            JSON.
+        :param should_get_psets: if True, a separate psets table will be created to
+            make it easy to query properties. This is in addition to regular IFC
+            tables like IfcPropertySet.
+        :param should_get_geometry: Whether or not to process and store explicit
+            geometry data as a blob in a separate geometry and shape table.
+        :param should_skip_geometry_data: Whether or not to also create tables for
+            IfcRepresentation and IfcRepresentationItem classes. These tables are
+            unnecessary if you are not interested in geometry.
+
 
         Example:
 
@@ -106,7 +114,7 @@ class Patcher:
         """
         self.file = file
         self.logger = logger
-        self.sql_type = sql_type.lower()
+        self.sql_type: Literal["sqlite", "mysql"] = sql_type.lower()
         self.host = host
         self.username = username
         self.password = password
@@ -122,19 +130,26 @@ class Patcher:
         self.should_skip_geometry_data = should_skip_geometry_data
 
     def patch(self) -> None:
-        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema)
+        suffix = ".db" if self.sql_type == "SQLite" else ".sqlite"
+        database = Path(self.database)
+        if database.is_dir():
+            database = (database / DEFAULT_DATABASE_NAME).with_suffix(suffix)
+        elif not database.parent.exists():
+            database.parent.mkdir(parents=True, exist_ok=True)
+        else:
+            # Assume it's a filepath - existing or not.
+            pass
+
+        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema_identifier)
 
         if self.sql_type == "sqlite":
-            db_file = self.database  # Use the given datapath
-            self.db = sqlite3.connect(db_file)
+            self.db = sqlite3.connect(database)
             self.c = self.db.cursor()
-            self.file_patched = db_file
         elif self.sql_type == "mysql":
             self.db = mysql.connector.connect(
-                host=self.host, user=self.username, password=self.password, database=self.database
+                host=self.host, user=self.username, password=self.password, database=str(database)
             )
             self.c = self.db.cursor()
-            self.file_patched = None
 
         self.create_id_map()
         self.create_metadata()
@@ -231,20 +246,22 @@ class Patcher:
                 checkpoint = time.time()
             shape = iterator.get()
             if shape:
-                if shape.geometry.id not in self.geometry_rows:
-                    v = np.array(shape.geometry.verts).tobytes()
-                    e = np.array(shape.geometry.edges).tobytes()
-                    f = np.array(shape.geometry.faces).tobytes()
-                    mids = np.array(shape.geometry.material_ids).tobytes()
+                shape_id = shape.id
+                geometry_id = shape.geometry.id
+                if geometry_id not in self.geometry_rows:
+                    geometry: ShapeType
+                    geometry = shape.geometry
+                    v = geometry.verts_buffer
+                    e = geometry.edges_buffer
+                    f = geometry.faces_buffer
+                    mids = geometry.material_ids_buffer
                     m = json.dumps([m.instance_id() for m in shape.geometry.materials])
-                    self.geometry_rows[shape.geometry.id] = [shape.geometry.id, v, e, f, mids, m]
+                    self.geometry_rows[geometry_id] = [geometry_id, v, e, f, mids, m]
                 # Copy required since otherwise it is read-only
                 m = ifcopenshell.util.shape.get_shape_matrix(shape).copy()
-                m[0][3] /= self.unit_scale
-                m[1][3] /= self.unit_scale
-                m[2][3] /= self.unit_scale
-                x, y, z = m[:, 3][0:3]
-                self.shape_rows[shape.id] = [shape.id, float(x), float(y), float(z), m.tobytes(), shape.geometry.id]
+                m[:3, 3] /= self.unit_scale
+                x, y, z = m[:, 3][0:3].tolist()
+                self.shape_rows[shape_id] = [shape_id, x, y, z, m.tobytes(), geometry_id]
             if not iterator.next():
                 break
 
@@ -469,10 +486,10 @@ class Patcher:
                         pset_rows.append([element.id(), pset_name, prop_name, value])
 
             if self.should_get_geometry:
-                if element.id() not in self.shape_rows and getattr(element, "ObjectPlacement", None):
-                    m = ifcopenshell.util.placement.get_local_placement(element.ObjectPlacement)
-                    x, y, z = m[:, 3][0:3]
-                    self.shape_rows[element.id()] = [element.id(), float(x), float(y), float(z), m.tobytes(), None]
+                if element.id() not in self.shape_rows and (placement := getattr(element, "ObjectPlacement", None)):
+                    m = ifcopenshell.util.placement.get_local_placement(placement)
+                    x, y, z = m[:, 3][0:3].tolist()
+                    self.shape_rows[element.id()] = [element.id(), x, y, z, m.tobytes(), None]
 
         if self.sql_type == "sqlite":
             if rows:

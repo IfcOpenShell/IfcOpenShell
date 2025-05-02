@@ -37,8 +37,7 @@ class BIM_PT_bcf(Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        scene = context.scene
-        props = scene.BCFProperties
+        props = tool.Bcf.get_bcf_props()
 
         if not bcfstore.BcfStore.get_bcfxml():
             row = layout.row(align=True)
@@ -63,18 +62,17 @@ class BIM_PT_bcf(Panel):
         row = layout.row()
         row.prop(props, "author")
 
-        props = context.scene.BCFProperties
         row = layout.row()
         row.template_list("BIM_UL_topics", "", props, "topics", props, "active_topic_index")
         col = row.column(align=True)
         col.operator("bim.add_bcf_topic", icon="ADD", text="")
         col.operator("bim.remove_bcf_topic", icon="REMOVE", text="")
-        if props.active_topic_index < len(props.topics):
-            topic = props.active_topic
+
+        topic = props.active_topic
+        if topic is not None:
             is_editable = topic.is_editable
             col.prop(topic, "is_editable", icon="CHECKMARK" if topic.is_editable else "GREASEPENCIL", icon_only=True)
 
-            topic = props.active_topic
             row = layout.row()
             row.enabled = is_editable
             row.prop(topic, "description", text="")
@@ -131,8 +129,7 @@ class BIM_PT_bcf_metadata(Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        scene = context.scene
-        props = scene.BCFProperties
+        props = tool.Bcf.get_bcf_props()
 
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         if not bcfxml or props.active_topic_index >= len(props.topics):
@@ -296,8 +293,7 @@ class BIM_PT_bcf_comments(Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        scene = context.scene
-        props = scene.BCFProperties
+        props = tool.Bcf.get_bcf_props()
 
         if props.active_topic_index >= len(props.topics):
             layout.label(text="No BCF project is loaded")

@@ -62,7 +62,7 @@ Instead, stuff happens in Blender operators.
             return IfcStore.execute_ifc_operator(self, context)
 
         def _execute(self, context):
-            ifcopenshell.api.run("foo.bar", IfcStore.get_file())
+            ifcopenshell.api.run("foo.bar", tool.Ifc.get())
             return {"FINISHED"}
 
 When your operator manipulates (creates, removes, or edits) IFC data directly or

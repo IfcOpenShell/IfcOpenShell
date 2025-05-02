@@ -19,7 +19,6 @@
 import bpy
 import ifcopenshell.api
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.classification.data import CostClassificationsData
 from bonsai.bim.module.cost.data import CostSchedulesData, CostItemRatesData, CostItemQuantitiesData
 from bonsai.bim.prop import StrProperty, Attribute
@@ -34,6 +33,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Literal
 
 
 def get_schedule_of_rates(self, context):
@@ -79,11 +79,11 @@ def update_active_cost_item_index(self, context):
     CostClassificationsData.load()
 
 
-def update_cost_item_identification(self, context):
-    props = context.scene.BIMCostProperties
+def update_cost_item_identification(self: "CostItem", context: bpy.types.Context):
+    props = tool.Cost.get_cost_props()
     if not props.is_cost_update_enabled or self.identification == "XXX":
         return
-    self.file = IfcStore.get_file()
+    self.file = tool.Ifc.get()
     ifcopenshell.api.run(
         "cost.edit_cost_item",
         self.file,
@@ -94,11 +94,11 @@ def update_cost_item_identification(self, context):
         attribute.string_value = self.identification
 
 
-def update_cost_item_name(self, context):
-    props = context.scene.BIMCostProperties
+def update_cost_item_name(self: "CostItem", context: bpy.types.Context) -> None:
+    props = tool.Cost.get_cost_props()
     if not props.is_cost_update_enabled or self.name == "Unnamed":
         return
-    self.file = IfcStore.get_file()
+    self.file = tool.Ifc.get()
     ifcopenshell.api.run(
         "cost.edit_cost_item",
         self.file,
@@ -143,6 +143,14 @@ class CostItem(PropertyGroup):
     is_expanded: BoolProperty(name="Is Expanded")
     level_index: IntProperty(name="Level Index")
 
+    if TYPE_CHECKING:
+        name: str
+        identification: str
+        ifc_definition_id: int
+        has_children: bool
+        is_expanded: bool
+        level_index: int
+
 
 class CostItemQuantity(PropertyGroup):
     name: StringProperty(name="Name")
@@ -151,10 +159,30 @@ class CostItemQuantity(PropertyGroup):
     unit_symbol: StringProperty(name="Unit Symbol")
     total_cost_quantity: FloatProperty(name="Total Quantity")
 
+    if TYPE_CHECKING:
+        name: str
+        ifc_definition_id: int
+        total_quantity: float
+        unit_symbol: str
+        total_cost_quantity: float
+
+
+class CostItemsMapping(PropertyGroup):
+    cost_item_id: IntProperty(name="cost_item_id")
+    csv_filepath: StringProperty(name="filepath")
+
+    if TYPE_CHECKING:
+        cost_item_id: int
+        csv_filepath: str
+
 
 class CostItemType(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+    if TYPE_CHECKING:
+        name: str
+        ifc_definition_id: int
 
 
 def update_cost_item_parent(self, context):
@@ -176,6 +204,9 @@ def update_active_cost_item_resources(self, context):
 
 class ScheduleColumn(PropertyGroup):
     schedule_id: IntProperty()
+
+    if TYPE_CHECKING:
+        schedule_id: int
 
 
 class BIMCostProperties(PropertyGroup):
@@ -250,3 +281,59 @@ class BIMCostProperties(PropertyGroup):
     custom_currency: StringProperty(
         name="Custom Currency", default="USD", description="Custom Currency in ISO 4217 format"
     )
+    cost_schedule_files: CollectionProperty(name="Cost Schedule Files", type=CostItemsMapping)
+
+    if TYPE_CHECKING:
+        cost_schedule_predefined_types: str
+        is_cost_update_enabled: bool
+        cost_schedule_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        is_editing: str
+        active_cost_schedule_id: int
+        cost_items: bpy.types.bpy_prop_collection_idprop[CostItem]
+        active_cost_item_id: int
+        cost_item_editing_type: str
+        active_cost_item_index: int
+        cost_item_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        contracted_cost_items: str
+        quantity_types: str
+        product_quantity_names: str
+        process_quantity_names: str
+        resource_quantity_names: str
+        active_cost_item_quantity_id: int
+        quantity_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        cost_types: Literal["FIXED", "SUM", "CATEGORY"]
+        cost_category: str
+        fixed_cost_value: float
+        active_cost_value_id: int
+        cost_value_editing_type: str
+        cost_value_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        cost_value_formula: str
+        cost_column: str
+        should_show_column_ui: bool
+        should_show_currency_ui: bool
+        columns: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        columns_storage: bpy.types.bpy_prop_collection_idprop[ScheduleColumn]
+        active_column_index: int
+        cost_item_products: bpy.types.bpy_prop_collection_idprop[CostItemQuantity]
+        active_cost_item_product_index: int
+        cost_item_processes: bpy.types.bpy_prop_collection_idprop[CostItemQuantity]
+        active_cost_item_process_index: int
+        cost_item_resources: bpy.types.bpy_prop_collection_idprop[CostItemQuantity]
+        active_cost_item_resource_index: int
+        cost_item_type_products: bpy.types.bpy_prop_collection_idprop[CostItemType]
+        active_cost_item_type_product_index: int
+        schedule_of_rates: str
+        cost_item_rates: bpy.types.bpy_prop_collection_idprop[CostItem]
+        active_cost_item_rate_index: int
+        contracted_cost_item_rates: str
+        product_cost_items: bpy.types.bpy_prop_collection_idprop[CostItemQuantity]
+        active_product_cost_item_index: int
+        enable_reorder: bool
+        show_nested_elements: bool
+        show_nested_tasks: bool
+        show_nested_resources: bool
+        change_cost_item_parent: bool
+        show_cost_item_operators: bool
+        currency: str
+        custom_currency: str
+        cost_schedule_files: bpy.types.bpy_prop_collection_idprop[CostItemsMapping]

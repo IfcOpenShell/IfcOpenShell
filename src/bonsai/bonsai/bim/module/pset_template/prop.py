@@ -21,6 +21,7 @@ import bpy
 import ifcopenshell
 import ifcopenshell.util.attribute
 from ifcopenshell.util.doc import get_attribute_doc
+import bonsai.tool as tool
 from bonsai.bim.module.pset_template.data import PsetTemplatesData
 from bonsai.bim.prop import StrProperty, Attribute
 from bonsai.bim.ifc import IfcStore
@@ -183,7 +184,8 @@ class PropTemplate(PropertyGroup):
     def get_value_name(self) -> str:
         if self.primary_measure_type == "-":
             return "string_value"
-        ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)
+        schema = tool.Ifc.schema()
+        ifc_data_type = schema.declaration_by_name(self.primary_measure_type)
         data_type = ifcopenshell.util.attribute.get_primitive_type(ifc_data_type)
         if data_type == "string":
             return "string_value"

@@ -257,7 +257,7 @@ class Attribute(Facet):
             return super().filter(ifc_file, elements)
 
         results = []
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
         entities = {entity.name(): entity for entity in schema.entities()}
 
         def ignore_subtypes(entity):

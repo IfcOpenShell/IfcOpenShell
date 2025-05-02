@@ -30,30 +30,36 @@ from typing import Union, Literal, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import BIMFilterGroup
+    from bonsai.bim.module.search.prop import BIMSearchProperties
 
 
 class Search(bonsai.core.tool.Search):
+    @classmethod
+    def get_search_props(cls) -> BIMSearchProperties:
+        return bpy.context.scene.BIMSearchProperties
+
     @classmethod
     def get_group_query(cls, group: ifcopenshell.entity_instance) -> str:
         return json.loads(group.Description)["query"]
 
     @classmethod
-    def get_filter_groups(cls, module: str) -> bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]:
+    def get_filter_groups(cls, module: FilterModule) -> bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]:
         if module == "search":
-            return bpy.context.scene.BIMSearchProperties.filter_groups
+            return cls.get_search_props().filter_groups
         elif module == "csv":
-            return bpy.context.scene.CsvProperties.filter_groups
+            return tool.Blender.get_csv_props().filter_groups
         elif module == "diff":
-            return bpy.context.scene.DiffProperties.filter_groups
+            return tool.Blender.get_diff_props().filter_groups
         elif module == "drawing_include":
-            return bpy.context.scene.camera.data.BIMCameraProperties.include_filter_groups
+            assert (scene := bpy.context.scene) and (camera_obj := (scene.camera))
+            return tool.Drawing.get_camera_props(camera_obj).include_filter_groups
         elif module == "drawing_exclude":
-            return bpy.context.scene.camera.data.BIMCameraProperties.exclude_filter_groups
+            assert (scene := bpy.context.scene) and (camera_obj := (scene.camera))
+            return tool.Drawing.get_camera_props(camera_obj).exclude_filter_groups
         elif module.startswith("clash"):
             _, clash_set_index, ab, clash_source_index = module.split("_")
-            return getattr(bpy.context.scene.BIMClashProperties.clash_sets[int(clash_set_index)], ab)[
-                int(clash_source_index)
-            ].filter_groups
+            props = tool.Clash.get_clash_props()
+            return getattr(props.clash_sets[int(clash_set_index)], ab)[int(clash_source_index)].filter_groups
         assert False, f"Unsupported module: {module}"
 
     @classmethod

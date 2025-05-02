@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from . import bcfstore
 from bonsai.bim.prop import StrProperty
 from bpy.types import PropertyGroup
@@ -34,6 +35,7 @@ from functools import partial
 from typing import Literal
 from typing_extensions import assert_never
 from bcf.agnostic.extensions import get_extensions_attributes
+from typing import TYPE_CHECKING, Union
 
 
 bcfviewpoints_enum = None
@@ -95,7 +97,7 @@ def getBcfViewpoints(self, context, force_update=False):
     global bcfviewpoints_enum
     if bcfviewpoints_enum is None or force_update:  # Retrieving Viewpoints is slow. Make sure we only do when needed
         bcfviewpoints_enum = []
-        props = context.scene.BCFProperties
+        props = tool.Bcf.get_bcf_props()
         bcfxml = bcfstore.BcfStore.get_bcfxml()
         assert bcfxml
         topic = props.active_topic
@@ -110,12 +112,24 @@ class BcfBimSnippet(PropertyGroup):
     type: StringProperty(name="Type")
     is_external: BoolProperty(name="Is External")
 
+    if TYPE_CHECKING:
+        schema: str
+        reference: str
+        type: str
+        is_external: bool
+
 
 class BcfDocumentReference(PropertyGroup):
     reference: StringProperty(name="Reference")
     description: StringProperty(name="Description")
     guid: StringProperty(name="GUID")
     is_external: BoolProperty(name="Is External")
+
+    if TYPE_CHECKING:
+        reference: str
+        description: str
+        guid: str
+        is_external: bool
 
 
 class BcfComment(PropertyGroup):
@@ -127,6 +141,16 @@ class BcfComment(PropertyGroup):
     modified_date: StringProperty(name="Modified Date")
     modified_author: StringProperty(name="Modified Author")
     is_editable: BoolProperty(name="Is Editable", default=False, update=updateBcfCommentIsEditable)
+
+    if TYPE_CHECKING:
+        name: str
+        date: str
+        author: str
+        comment: str
+        viewpoint: str
+        modified_date: str
+        modified_author: str
+        is_editable: bool
 
 
 def get_extensions_items(
@@ -183,6 +207,30 @@ class BcfTopic(PropertyGroup):
     comments: CollectionProperty(name="Comments", type=BcfComment)
     is_editable: BoolProperty(name="Edit Topic Attributes", default=False, update=updateBcfTopicIsEditable)
 
+    if TYPE_CHECKING:
+        name: str
+        title: str
+        type: str
+        status: str
+        priority: str
+        stage: str
+        creation_date: str
+        creation_author: str
+        modified_date: str
+        modified_author: str
+        assigned_to: str
+        due_date: str
+        description: str
+        viewpoints: str
+        files: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        reference_links: bpy.types.bpy_prop_collection_idprop[BcfReferenceLink]
+        labels: bpy.types.bpy_prop_collection_idprop[BcfLabel]
+        bim_snippet: BcfBimSnippet
+        document_references: bpy.types.bpy_prop_collection_idprop[BcfDocumentReference]
+        related_topics: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        comments: bpy.types.bpy_prop_collection_idprop[BcfComment]
+        is_editable: bool
+
 
 def get_related_topics(self: "BCFProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     global RELATED_TOPICS_ENUM_ITEMS
@@ -235,7 +283,30 @@ class BCFProperties(PropertyGroup):
     comment: StringProperty(default="", name="Comment")
     has_related_viewpoint: BoolProperty(name="Has Related Viewpoint", default=False)
 
-    def clear_input_fields(self):
+    if TYPE_CHECKING:
+        bcf_file: str
+        bcf_version: str
+        comment_text_width: int
+        name: str
+        author: str
+        topics: bpy.types.bpy_prop_collection_idprop[BcfTopic]
+        active_topic_index: int
+        file_reference: str
+        file_ifc_project: str
+        file_ifc_spatial_structure_element: str
+        reference_link: str
+        label: str
+        bim_snippet_reference: str
+        bim_snippet_type: str
+        bim_snippet_schema: str
+        document_reference: str
+        document_reference_description: str
+        document_description: str
+        related_topic: str
+        comment: str
+        has_related_viewpoint: bool
+
+    def clear_input_fields(self) -> None:
         self.file_reference = ""
         self.file_ifc_project = ""
         self.file_ifc_spatial_structure_element = ""
@@ -250,7 +321,7 @@ class BCFProperties(PropertyGroup):
         self.has_related_viewpoint = False
 
     @property
-    def active_topic(self):
+    def active_topic(self) -> Union[BcfTopic, None]:
         if len(self.topics) == 0:
             return None
         if self.active_topic_index < 0:
@@ -259,5 +330,5 @@ class BCFProperties(PropertyGroup):
             self.active_topic_index = len(self.topics) - 1
         return self.topics[self.active_topic_index]
 
-    def refresh_topic(self, context):
+    def refresh_topic(self, context: bpy.types.Context) -> None:
         refreshBcfTopic(self, context)

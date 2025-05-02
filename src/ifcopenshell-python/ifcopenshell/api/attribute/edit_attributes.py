@@ -39,11 +39,8 @@ def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instan
 
     :param product: The product you want to edit. This may be any rooted IFC
         entity.
-    :type product: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 

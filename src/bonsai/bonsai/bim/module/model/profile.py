@@ -22,6 +22,7 @@ import bmesh
 import mathutils.geometry
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
@@ -32,10 +33,9 @@ import bonsai.core.type
 import bonsai.core.geometry
 import bonsai.core.material
 import bonsai.core.root
-from math import pi, degrees, inf, atan2
-from mathutils import Vector, Matrix, Quaternion
-from bonsai.bim.module.geometry.helper import Helper
-from bonsai.bim.module.model.wall import DumbWallRecalculator
+from bonsai.bim.ifc import IfcStore
+from math import pi, degrees, atan2
+from mathutils import Vector, Matrix
 from bonsai.bim.module.model.decorator import ProfileDecorator, PolylineDecorator, ProductDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from typing import Union, Any, Optional
@@ -47,6 +47,7 @@ class DumbProfileGenerator:
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
     def generate(self, insertion_type="CURSOR"):
+        self.insertion_type = insertion_type
         self.file = tool.Ifc.get()
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         material = ifcopenshell.util.element.get_material(self.relating_type)
@@ -69,9 +70,9 @@ class DumbProfileGenerator:
         self.rotation = 0
         self.location = Vector((0, 0, 0))
         self.cardinal_point = int(props.cardinal_point)
-        if insertion_type == "POLYLINE":
+        if self.insertion_type == "POLYLINE":
             return self.derive_from_polyline()
-        elif insertion_type == "CURSOR":
+        elif self.insertion_type == "CURSOR":
             return self.derive_from_cursor()
 
     def derive_from_polyline(self) -> tuple[list[Union[dict[str, Any], None]], bool]:
@@ -105,15 +106,17 @@ class DumbProfileGenerator:
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
 
         matrix_world = Matrix()
-        if not self.relating_type.is_a("IfcColumnType"):
-            matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
-
-            matrix_world = Matrix.Rotation(self.rotation, 4, "Z") @ matrix_world
+        if self.relating_type.is_a() not in ("IfcColumnType", "IfcPileType"):
+            if self.insertion_type not in {"POLYLINE"}:
+                matrix_world = Matrix.Rotation(pi / 2, 4, "Z") @ Matrix.Rotation(pi / 2, 4, "X") @ matrix_world
+                matrix_world = Matrix.Rotation(self.rotation, 4, "Z") @ matrix_world
+            else:
+                rotation_matrix = self.direction.to_track_quat("Z", "Y")
+                matrix_world = rotation_matrix.to_matrix().to_4x4() @ matrix_world
 
         matrix_world.translation = self.location
-        if self.container_obj:
+        if self.insertion_type not in {"POLYLINE"} and self.container_obj:
             matrix_world.translation.z = self.container_obj.location.z
-
         element = bonsai.core.root.assign_class(
             tool.Ifc,
             tool.Collector,
@@ -166,24 +169,24 @@ class DumbProfileGenerator:
         pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
         ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbProfile"})
 
-        obj.select_set(True)
+        tool.Blender.select_object(obj)
 
         return obj
 
     def create_profile_from_2_points(self, coords, should_round=False) -> Union[dict[str, Any], None]:
-        direction = coords[1] - coords[0]
-        length = direction.length
+        self.direction = coords[1] - coords[0]
+        length = self.direction.length
         if round(length, 4) < 0.1:
             return
         data = {"coords": coords}
 
         self.depth = length
-        self.rotation = atan2(direction[1], direction[0])
+        self.rotation = atan2(self.direction[1], self.direction[0])
         if should_round:
             # Round to nearest 50mm (yes, metric for now)
             self.length = 0.05 * round(length / 0.05)
             # Round to nearest 5 degrees
-            nearest_degree = (math.pi / 180) * 5
+            nearest_degree = (pi / 180) * 5
             self.rotation = nearest_degree * round(self.rotation / nearest_degree)
         self.location = coords[0]
         data["obj"] = self.create_profile()
@@ -266,7 +269,7 @@ class DumbProfileRegenerator:
 
     def _regenerate_from_type(self, related_object: ifcopenshell.entity_instance) -> None:
         obj = tool.Ifc.get_object(related_object)
-        if not obj or not obj.data or not obj.data.BIMMeshProperties.ifc_definition_id:
+        if not obj or not tool.Geometry.get_active_representation(obj):
             return
         DumbProfileRecalculator().recalculate([obj])
 
@@ -502,7 +505,9 @@ class DumbProfileJoiner:
                     "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_axis
                 )
 
-        def get_placement_axes(body_representation):
+        def get_placement_axes(
+            body_representation: Union[ifcopenshell.entity_instance, None],
+        ) -> Union[tuple[tuple[float, float, float], tuple[float, float, float]], tuple[None, None]]:
             if not body_representation:
                 return None, None
             extrusion = tool.Model.get_extrusion(body_representation)
@@ -514,8 +519,7 @@ class DumbProfileJoiner:
             return ((0.0, 0.0, 1.0), (1.0, 0.0, 0.0))
 
         old_body = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
-        new_body = ifcopenshell.api.run(
-            "geometry.add_profile_representation",
+        new_body = ifcopenshell.api.geometry.add_profile_representation(
             tool.Ifc.get(),
             context=self.body_context,
             profile=self.profile,
@@ -528,8 +532,9 @@ class DumbProfileJoiner:
         if old_body:
             for inverse in tool.Ifc.get().get_inverse(old_body):
                 ifcopenshell.util.element.replace_attribute(inverse, old_body, new_body)
-            obj.data.BIMMeshProperties.ifc_definition_id = int(new_body.id())
-            obj.data.name = f"{self.body_context.id()}/{new_body.id()}"
+            assert isinstance(mesh := obj.data, bpy.types.Mesh)
+            tool.Ifc.link(new_body, mesh)
+            mesh.name = tool.Loader.get_mesh_name(new_body)
             bonsai.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_body)
         else:
             ifcopenshell.api.run(
@@ -905,7 +910,7 @@ class ChangeProfileDepth(bpy.types.Operator, tool.Ifc.Operator):
 class ChangeCardinalPoint(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.change_cardinal_point"
     bl_label = "Update"
-    bl_description = "Update Cardinal Point"
+    bl_description = "Update Cardinal Point for all selected objects."
     bl_options = {"REGISTER", "UNDO"}
     cardinal_point: bpy.props.IntProperty()
 
@@ -920,6 +925,8 @@ class ChangeCardinalPoint(bpy.types.Operator, tool.Ifc.Operator):
             if not element:
                 continue
             material = ifcopenshell.util.element.get_material(element, should_skip_usage=False)
+            if not material:
+                continue
             if material.is_a("IfcMaterialProfileSetUsage"):
                 material.CardinalPoint = self.cardinal_point
                 objs.append(obj)
@@ -961,7 +968,7 @@ class Rotate90(bpy.types.Operator, tool.Ifc.Operator):
             obj.matrix_world @= rotate_matrix
         bpy.context.view_layer.update()
         DumbProfileRecalculator().recalculate(profile_objs)
-        DumbWallRecalculator().recalculate(layer2_objs)
+        tool.Model.recalculate_walls(layer2_objs)
         return {"FINISHED"}
 
 
@@ -1011,7 +1018,7 @@ class EnableEditingExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
                 position = Matrix()
 
             direction = Vector(extrusion.ExtrudedDirection.DirectionRatios).normalized()
-            tool.Model.import_axis([Vector((0, 0, 0)), direction * extrusion.Depth], obj=obj, position=position)
+            tool.Model.import_axis((Vector((0, 0, 0)), direction * extrusion.Depth), obj=obj, position=position)
 
         bpy.ops.object.mode_set(mode="EDIT")
         ProfileDecorator.install(context, exit_edit_mode_callback=lambda: disable_editing_extrusion_axis(context))
@@ -1109,7 +1116,7 @@ class EditExtrusionAxis(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
+class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
     bl_idname = "bim.draw_polyline_profile"
     bl_label = "Draw Polyline Profile"
     bl_options = {"REGISTER", "UNDO"}
@@ -1118,8 +1125,11 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
+        self.input_options = ["D", "A", "X", "Y", "Z"]
+        self.input_ui = tool.Polyline.create_input_ui(input_options=self.input_options)
         self.relating_type = None
         props = tool.Model.get_model_props()
         relating_type_id = props.relating_type_id
@@ -1138,10 +1148,22 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
                 for profile1, profile2 in zip(profiles, profiles[1:] + [profiles[0]]):
                     DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
             else:
-                for profile1, profile2 in zip(profiles[:-1], profiles[1:]):
-                    DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
+                if len(profiles) == 1:
+                    profile1 = profiles[0]
+                    element1 = tool.Ifc.get_entity(profile1["obj"])
+                    if element1.is_a("IfcFlowSegment") or element1.is_a("IfcFlowFitting"):
+                        # lazy import to avoid circular import errors
+                        from bonsai.bim.module.model.mep import MEPGenerator
+
+                        MEPGenerator().setup_ports(profile1["obj"])
+                else:
+                    for profile1, profile2 in zip(profiles[:-1], profiles[1:]):
+                        DumbProfileJoiner().join_V(profile2["obj"], profile1["obj"])
 
     def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _modal(self, context, event):
         if not self.relating_type:
             self.report({"WARNING"}, "You need to select a profile type.")
             PolylineDecorator.uninstall()
@@ -1161,7 +1183,9 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
 
         self.handle_mouse_move(context, event, should_round=True)
 
-        self.choose_axis(event)
+        self.choose_axis(event, z=True)
+
+        self.choose_plane(event)
 
         self.handle_snap_selection(context, event)
 
@@ -1192,8 +1216,11 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator):
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
         super().invoke(context, event)
         ProductDecorator.install(context)
-        self.tool_state.use_default_container = True
-        self.tool_state.plane_method = "XY"
+        self.tool_state.use_default_container = False
+        self.tool_state.plane_method = None
         return {"RUNNING_MODAL"}

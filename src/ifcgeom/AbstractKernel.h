@@ -39,10 +39,13 @@ namespace ifcopenshell {
 		Settings settings_;
 	public:
 		bool propagate_exceptions = false;
+		bool partial_success_is_success = true;
 			
 		AbstractKernel(const std::string& geometry_library, const Settings& settings)
 			: geometry_library_(geometry_library)
 			, settings_(settings) {}
+
+		virtual ~AbstractKernel() = default;
 
 		virtual bool convert(const taxonomy::ptr, IfcGeom::ConversionResults&);
 		const Settings& settings() const;

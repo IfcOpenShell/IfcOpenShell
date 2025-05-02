@@ -16,9 +16,9 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bonsai.tool as tool
 from bpy.types import Panel
 from bonsai.bim.module.nest.data import NestData
-from bonsai.bim.ifc import IfcStore
 
 
 class BIM_PT_nest(Panel):
@@ -32,14 +32,14 @@ class BIM_PT_nest(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
-        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcObjectDefinition"):
+        if not tool.Ifc.get().by_id(ifc_id).is_a("IfcObjectDefinition"):
             return False
         return True
 
@@ -48,14 +48,15 @@ class BIM_PT_nest(Panel):
         if not NestData.is_loaded:
             NestData.load()
 
-        props = context.active_object.BIMObjectNestProperties
+        assert (obj := context.active_object)
+        props = tool.Nest.get_object_nest_props(obj)
 
         if props.is_editing:
             row = layout.row(align=True)
             row.prop(props, "relating_object", text="")
             if props.relating_object:
                 op = row.operator("bim.nest_assign_object", icon="CHECKMARK", text="")
-                op.relating_object = props.relating_object.BIMObjectProperties.ifc_definition_id
+                op.relating_object = tool.Blender.get_ifc_definition_id(props.relating_object)
             row.operator("bim.disable_editing_nest", icon="CANCEL", text="")
         else:
             row = layout.row(align=True)

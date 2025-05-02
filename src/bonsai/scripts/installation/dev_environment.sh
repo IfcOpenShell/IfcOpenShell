@@ -1,6 +1,6 @@
 # Please update REPO_PATH and BLENDER_PATH in the script below.
-# Default BLENDER_PATH on Mac: "/Users/$USER/Library/Application Support/Blender/4.3"
-# Default BLENDER_PATH on Linux: "$HOME/.config/blender/4.3"
+# Default BLENDER_PATH on Mac: "/Users/$USER/Library/Application Support/Blender/4.4"
+# Default BLENDER_PATH on Linux: "$HOME/.config/blender/4.4"
 # REPO_PATH="/path/to/where/your/git/repository/is/cloned/IfcOpenShell"
 set -e
 REPO_PATH=""
@@ -9,6 +9,10 @@ PACKAGE_PATH="${BLENDER_PATH}/extensions/.local/lib/python3.11/site-packages"
 # If you are installing offline, use this instead:
 # BONSAI_PATH="${BLENDER_PATH}/extensions/user_default/bonsai"
 BONSAI_PATH="${BLENDER_PATH}/extensions/raw_githubusercontent_com/bonsai"
+
+# Validate inputs.
+[ -z "$REPO_PATH" ] && echo "Error: REPO_PATH is not set." && exit 1
+[ -z "$BLENDER_PATH" ] && echo "Error: BLENDER_PATH is not set." && exit 1
 
 # Changing to the Git repository directory
 cd "${REPO_PATH}"

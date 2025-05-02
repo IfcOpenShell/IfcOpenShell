@@ -20,7 +20,7 @@ import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.schema
 import ifcopenshell.util.date
-from typing import Union
+from typing import Union, Any
 
 
 def add_classification(
@@ -61,9 +61,7 @@ def add_classification(
         classification library. The latter approach is preferred if you are
         using a commonly known system such as Uniclass, as this will ensure
         all metadata is added correctly.
-    :type classification: str,ifcopenshell.entity_instance
     :return: The added IfcClassification element
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -81,28 +79,28 @@ def add_classification(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {
-        "classification": classification,
-    }
-    return usecase.execute()
+    return usecase.execute(classification)
 
 
 class Usecase:
-    def execute(self):
-        if isinstance(self.settings["classification"], str):
-            classification = self.file.createIfcClassification(Name=self.settings["classification"])
+    file: ifcopenshell.file
+
+    def execute(self, classification: Union[str, ifcopenshell.entity_instance]) -> ifcopenshell.entity_instance:
+        self.classification = classification
+        if isinstance(self.classification, str):
+            classification = self.file.create_entity("IfcClassification", Name=self.classification)
             self.relate_to_project(classification)
             return classification
         return self.add_from_library()
 
-    def add_from_library(self):
+    def add_from_library(self) -> ifcopenshell.entity_instance:
         edition_date = None
-        if self.settings["classification"].EditionDate:
-            edition_date = ifcopenshell.util.date.ifc2datetime(self.settings["classification"].EditionDate)
-            self.settings["classification"].EditionDate = None
+        if self.classification.EditionDate:
+            edition_date = ifcopenshell.util.date.ifc2datetime(self.classification.EditionDate)
+            self.classification.EditionDate = None
 
         migrator = ifcopenshell.util.schema.Migrator()
-        result = migrator.migrate(self.settings["classification"], self.file)
+        result = migrator.migrate(self.classification, self.file)
 
         # TODO: should auto date migration be part of the migrator?
         if self.file.schema == "IFC2X3" and edition_date:
@@ -118,7 +116,7 @@ class Usecase:
 
         return result
 
-    def relate_to_project(self, classification):
+    def relate_to_project(self, classification: ifcopenshell.entity_instance) -> None:
         self.file.create_entity(
             "IfcRelAssociatesClassification",
             GlobalId=ifcopenshell.guid.new(),

@@ -16,9 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api.style
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import bonsai.core.style
@@ -26,7 +28,11 @@ import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
 from mathutils import Color
-from typing import Union, Any, Optional, Literal
+from typing import Union, Any, Optional, Literal, TYPE_CHECKING, Sequence
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
+    from bonsai.bim.module.style.prop import BIMStylesProperties, BIMStyleProperties, ColourRgb
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {
@@ -44,10 +50,18 @@ STYLE_PROPS_MAP = {
     "specular_colour": "SpecularColour",
 }
 
-STYLE_TYPES = Literal["Shading", "External"]
-
 
 class Style(bonsai.core.tool.Style):
+    StyleType = Literal["Shading", "External"]
+
+    @classmethod
+    def get_style_props(cls) -> BIMStylesProperties:
+        return bpy.context.scene.BIMStylesProperties
+
+    @classmethod
+    def get_material_style_props(cls, material: bpy.types.Material) -> BIMStyleProperties:
+        return material.BIMStyleProperties
+
     @classmethod
     def can_support_rendering_style(cls, obj: bpy.types.Material) -> bool:
         return obj.use_nodes and hasattr(obj.node_tree, "nodes")
@@ -58,19 +72,19 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def enable_adding_presentation_style(cls) -> None:
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         props.is_adding = True
         props.update_graph = False
 
     @classmethod
     def disable_adding_presentation_style(cls) -> None:
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         props.is_adding = False
         props.update_graph = True
 
     @classmethod
     def disable_editing(cls) -> None:
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         props.is_editing_style = 0
         props.is_editing_class = ""
         props.attributes.clear()
@@ -81,7 +95,7 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def disable_editing_styles(cls) -> None:
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         props.is_editing = False
         props.styles.clear()
 
@@ -100,27 +114,29 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def enable_editing(cls, style: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         props.is_editing_style = style.id()
         props.is_editing_class = "IfcSurfaceStyle"
 
     @classmethod
     def enable_editing_styles(cls) -> None:
-        bpy.context.scene.BIMStylesProperties.is_editing = True
+        props = cls.get_style_props()
+        props.is_editing = True
 
     @classmethod
     def export_surface_attributes(cls) -> dict[str, Any]:
-        props = bpy.context.scene.BIMStylesProperties
+        props = cls.get_style_props()
         return bonsai.bim.helper.export_attributes(props.attributes)
 
     @classmethod
     def get_active_style_in_ui(cls) -> Union[bpy.types.PropertyGroup, None]:
-        props = bpy.context.scene.BIMStylesProperties
+        props = cls.get_style_props()
         return props.active_style
 
     @classmethod
     def get_active_style_type(cls) -> str:
-        return bpy.context.scene.BIMStylesProperties.style_type
+        props = cls.get_style_props()
+        return props.style_type
 
     @classmethod
     def get_context(cls) -> Union[ifcopenshell.entity_instance, None]:
@@ -136,7 +152,7 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def get_currently_edited_material(cls) -> bpy.types.Material:
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         style = tool.Ifc.get().by_id(props.is_editing_style)
         obj = tool.Ifc.get_object(style)
         assert isinstance(obj, bpy.types.Material)
@@ -147,14 +163,14 @@ class Style(bonsai.core.tool.Style):
         cls, blender_material_or_style: Union[bpy.types.Material, ifcopenshell.entity_instance]
     ) -> dict[str, ifcopenshell.entity_instance]:
         if isinstance(blender_material_or_style, bpy.types.Material):
-            if not (ifc_definition_id := blender_material_or_style.BIMStyleProperties.ifc_definition_id):
+            style = tool.Ifc.get_entity(blender_material_or_style)
+            if not style:
                 return {}
-            style = tool.Ifc.get().by_id(ifc_definition_id)
         else:
             style = blender_material_or_style
         style_elements = {}
-        for style in style.Styles:
-            style_elements[style.is_a()] = style
+        for style_ in style.Styles:
+            style_elements[style_.is_a()] = style_
         return style_elements
 
     @classmethod
@@ -162,7 +178,7 @@ class Style(bonsai.core.tool.Style):
         """returns style data from blender props in similar way to `Loader.surface_style_to_dict`
         to be compatible with `Loader.create_surface_style_rendering`"""
         surface_style_data = dict()
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
 
         available_props = props.bl_rna.properties.keys()
         for prop_blender, prop_ifc in STYLE_PROPS_MAP.items():
@@ -189,7 +205,7 @@ class Style(bonsai.core.tool.Style):
     def get_texture_style_data_from_props(cls) -> list[dict[str, Any]]:
         """returns style data from blender props in similar way to `Loader.surface_texture_to_dict`
         to be compatible with `Loader.create_surface_style_with_textures`"""
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
 
         textures = []
         for texture in props.textures:
@@ -210,7 +226,7 @@ class Style(bonsai.core.tool.Style):
         """set blender style props based on currently edited IfcSurfaceStyle,
         reset unrelated props to default values"""
 
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         style = tool.Ifc.get().by_id(props.is_editing_style)
         # make sure won't be updating while we changing it
         prev_update_graph_value = props.update_graph
@@ -276,7 +292,7 @@ class Style(bonsai.core.tool.Style):
     def get_surface_rendering_attributes(cls, obj: bpy.types.Material, verbose: bool = False) -> dict[str, Any]:
         report = (lambda *x: print(*x)) if verbose else (lambda *x: None)
 
-        def color_to_ifc_format(color):
+        def color_to_ifc_format(color: Sequence[float]) -> dict[str, Any]:
             return {
                 "Name": None,
                 "Red": color[0],
@@ -290,7 +306,7 @@ class Style(bonsai.core.tool.Style):
                 return next((l.from_node for l in input_pin.links if l.from_node.type == of_type), None)
             return next((l.from_node for l in input_pin.links), None)
 
-        props = obj.BIMStyleProperties
+        props = tool.Style.get_material_style_props(obj)
         transparency = 1 - obj.diffuse_color[3]
         diffuse_color = obj.diffuse_color
         viewport_color = color_to_ifc_format(obj.diffuse_color)
@@ -309,6 +325,7 @@ class Style(bonsai.core.tool.Style):
         report(f"{GREEN}Viewport color{R} saved as {GREEN}SurfaceColour{R}")
 
         # TODO: make sure bsdf is connected to the output?
+        assert obj.node_tree
         bsdfs = {n.type: n for n in obj.node_tree.nodes if n.outputs and n.outputs[0].is_linked}
         if "BSDF_PRINCIPLED" not in bsdfs:
             report(f"{GREEN}Viewport color alpha{R} saved as {GREEN}Transparency{R}")
@@ -371,10 +388,10 @@ class Style(bonsai.core.tool.Style):
             report(f"BSDF {GREEN}Color{R} saved as {GREEN}DiffuseColour{R}")
             diffuse_color = bsdf.inputs["Color"].default_value
 
-        elif "BSDF_DIFFUSE" in bsdfs:
+        elif "BSDF_DIFFUSE" in bsdfs or "DIFFUSE_BSDF" in bsdfs:
             report(f"Because of {BLUE}BSDF_DIFFUSE{R} node reflectance method identified as {BLUE}MATT{R}")
             attributes["ReflectanceMethod"] = "MATT"
-            bsdf = bsdfs["BSDF_DIFFUSE"]
+            bsdf = bsdfs["BSDF_DIFFUSE"] if "BSDF_DIFFUSE" in bsdfs else bsdfs["DIFFUSE_BSDF"]
 
             report(f"BSDF {GREEN}Roughness{R} saved as {GREEN}IfcSpecularRoughness{R}")
             attributes["SpecularHighlight"] = {"IfcSpecularRoughness": round(bsdf.inputs["Roughness"].default_value, 3)}
@@ -472,16 +489,14 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def get_surface_shading_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
-        if ifc_definition_id := obj.BIMStyleProperties.ifc_definition_id:
-            style = tool.Ifc.get().by_id(ifc_definition_id)
+        if style := tool.Ifc.get_entity(obj):
             items = [s for s in style.Styles if s.is_a() == "IfcSurfaceStyleShading"]
             if items:
                 return items[0]
 
     @classmethod
     def get_surface_texture_style(cls, obj: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
-        if ifc_definition_id := obj.BIMStyleProperties.ifc_definition_id:
-            style = tool.Ifc.get().by_id(ifc_definition_id)
+        if style := tool.Ifc.get_entity(obj):
             items = [s for s in style.Styles if s.is_a("IfcSurfaceStyleWithTextures")]
             if items:
                 return items[0]
@@ -502,8 +517,12 @@ class Style(bonsai.core.tool.Style):
         return results
 
     @classmethod
-    def get_style_ui_props_attributes(cls, style_type: str) -> Union[bpy.types.PropertyGroup, None]:
-        props = bpy.context.scene.BIMStylesProperties
+    def get_style_ui_props_attributes(cls, style_type: str) -> Union[
+        bpy.types.bpy_prop_collection_idprop[Attribute],
+        bpy.types.bpy_prop_collection_idprop[ColourRgb],
+        None,
+    ]:
+        props = tool.Style.get_style_props()
         if style_type == "IfcExternallyDefinedSurfaceStyle":
             return props.external_style_attributes
         elif style_type == "IfcSurfaceStyleRefraction":
@@ -514,7 +533,7 @@ class Style(bonsai.core.tool.Style):
     @classmethod
     def import_presentation_styles(cls, style_type: str) -> None:
         color_to_tuple = lambda x: (x.Red, x.Green, x.Blue)
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         props.styles.clear()
         styles = sorted(tool.Ifc.get().by_type(style_type), key=lambda x: x.Name or "Unnamed")
         for style in styles:
@@ -537,7 +556,8 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def import_surface_attributes(cls, style: ifcopenshell.entity_instance) -> None:
-        attributes = bpy.context.scene.BIMStylesProperties.attributes
+        props = cls.get_style_props()
+        attributes = props.attributes
         attributes.clear()
         bonsai.bim.helper.import_attributes2(style, attributes)
 
@@ -548,11 +568,13 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def is_editing_styles(cls) -> bool:
-        return bpy.context.scene.BIMStylesProperties.is_editing
+        props = cls.get_style_props()
+        return props.is_editing
 
     @classmethod
     def is_editing_style(cls) -> bool:
-        return bpy.context.scene.BIMStylesProperties.is_editing_style
+        props = cls.get_style_props()
+        return bool(props.is_editing_style)
 
     @classmethod
     def select_elements(cls, elements: list[ifcopenshell.entity_instance]) -> None:
@@ -563,7 +585,8 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def change_current_style_type(cls, blender_material: bpy.types.Material, style_type: str) -> None:
-        blender_material.BIMStyleProperties.active_style_type = style_type
+        props = cls.get_material_style_props(blender_material)
+        props.active_style_type = style_type
 
     @classmethod
     def get_styled_items(cls, style: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -614,10 +637,11 @@ class Style(bonsai.core.tool.Style):
 
     @classmethod
     def reload_material_from_ifc(cls, blender_material: bpy.types.Material) -> None:
-        blender_material.BIMStyleProperties.active_style_type = blender_material.BIMStyleProperties.active_style_type
+        props = cls.get_material_style_props(blender_material)
+        props.active_style_type = props.active_style_type
 
     @classmethod
-    def switch_shading(cls, blender_material: bpy.types.Material, style_type: STYLE_TYPES) -> None:
+    def switch_shading(cls, blender_material: bpy.types.Material, style_type: StyleType) -> None:
         if style_type == "External":
             try:
                 bpy.ops.bim.activate_external_style(material_name=blender_material.name)
@@ -647,9 +671,12 @@ class Style(bonsai.core.tool.Style):
     @classmethod
     def rename_style(cls, style: ifcopenshell.entity_instance, name: str) -> None:
         """Rename style and related blender material."""
+        if style.Name == name:
+            return
+        style.Name = name
         blender_material = tool.Ifc.get_object(style)
-        # Will implicitly update the style name using handler.
-        blender_material.name = name
+        assert isinstance(blender_material, bpy.types.Material)
+        tool.Root.set_material_name(blender_material, name)
 
     @classmethod
     def purge_unused_styles(cls) -> int:

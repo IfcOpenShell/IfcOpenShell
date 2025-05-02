@@ -28,11 +28,8 @@ def edit_library(file: ifcopenshell.file, library: ifcopenshell.entity_instance,
     IfcLibraryInformation, consult the IFC documentation.
 
     :param library: The IfcLibraryInformation entity you want to edit
-    :type library: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 

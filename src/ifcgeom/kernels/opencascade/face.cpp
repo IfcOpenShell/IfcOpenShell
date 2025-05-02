@@ -270,7 +270,8 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 
 	face_definition fd;
 
-	if (face->basis) {
+	// when the surface is planar we do not care about it
+	if (face->basis && face->basis->kind() != taxonomy::PLANE) {
 		fd.surface() = convert_surface(face->basis);
 	}
 

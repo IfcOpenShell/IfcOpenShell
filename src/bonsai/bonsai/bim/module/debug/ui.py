@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bpy.types import Panel
 
 
@@ -32,10 +33,11 @@ class BIM_PT_debug(Panel):
     def draw(self, context):
         layout = self.layout
 
-        props = context.scene.BIMDebugProperties
+        props = tool.Debug.get_debug_props()
+        bim_props = tool.Blender.get_bim_props()
 
         row = self.layout.row(align=True)
-        row.prop(context.scene.BIMProperties, "ifc_file", text="")
+        row.prop(bim_props, "ifc_file", text="")
         row.operator("bim.validate_ifc_file", icon="CHECKMARK", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
@@ -47,6 +49,8 @@ class BIM_PT_debug(Panel):
         row = self.layout.row(align=True)
         row.prop(props, "package_name", text="")
         row.operator("bim.pip_install", icon="EVENT_PAGEDOWN").name = props.package_name
+
+        layout.operator("bim.validate_ifc_assets", icon="CHECKMARK")
 
         row = layout.row()
         row.operator("bim.reload_ifc_file", text="Incrementally Reload Changes")
@@ -87,27 +91,25 @@ class BIM_PT_debug(Panel):
         row.prop(props, "step_id", text="")
 
         row = layout.split(factor=0.7, align=True)
-        row.operator("bim.select_high_polygon_meshes").threshold = context.scene.BIMDebugProperties.number_of_polygons
+        row.operator("bim.select_high_polygon_meshes").threshold = props.number_of_polygons
         row.prop(props, "number_of_polygons", text="")
         row = layout.split(factor=0.7, align=True)
-        row.operator("bim.select_highest_polygon_meshes").percentile = (
-            context.scene.BIMDebugProperties.percentile_of_polygons
-        )
+        row.operator("bim.select_highest_polygon_meshes").percentile = props.percentile_of_polygons
         row.prop(props, "percentile_of_polygons", text="")
 
         row = layout.split(factor=0.5, align=True)
         row.prop(props, "display_type", text="")
-        row.operator("bim.override_display_type").display = context.scene.BIMDebugProperties.display_type
+        row.operator("bim.override_display_type").display = props.display_type
 
         layout.operator("bim.purge_unused_representations")
 
         row = layout.row(align=True)
-        row.prop(context.scene.BIMDebugProperties, "ifc_class_purge", text="")
+        row.prop(props, "ifc_class_purge", text="")
         row.operator("bim.purge_unused_elements_by_class", text="Purge Orphaned", icon="TRASH")
         row.operator("bim.print_unused_elements_stats", text="", icon="INFO")
 
-        if context.active_object and context.active_object.data:
-            mprops = context.active_object.data.BIMMeshProperties
+        if context.active_object and (data := context.active_object.data):
+            mprops = tool.Geometry.get_mesh_props(data)
             row = layout.row()
             row.operator("bim.get_representation_ifc_parameters")
             for index, ifc_parameter in enumerate(mprops.ifc_parameters):
@@ -123,7 +125,7 @@ class BIM_PT_debug(Panel):
             row.operator("bim.rewind_inspector", icon="FRAME_PREV", text="")
         row.prop(props, "active_step_id", text="")
         row = layout.row(align=True)
-        row.operator("bim.inspect_from_step_id").step_id = context.scene.BIMDebugProperties.active_step_id
+        row.operator("bim.inspect_from_step_id").step_id = props.active_step_id
         row.operator("bim.inspect_from_object")
 
         if props.attributes:

@@ -20,6 +20,7 @@ import bpy
 import json
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
 import bonsai.tool as tool
@@ -33,8 +34,16 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
+        assert (obj := context.active_object)
+        assert (element := tool.Ifc.get_entity(obj))
+        ifc_file = tool.Ifc.get()
+
+        if not element.is_a("IfcElement") and not element.is_a("IfcAnnotation"):
+            self.report(
+                {"ERROR"},
+                f"Adding array to element of type '{element.is_a()}' is not supported. Supported types: IfcElement, IfcAnnotation.",
+            )
+            return {"CANCELLED"}
 
         array = {
             "children": [],
@@ -54,14 +63,13 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
             data.append(array)
             pset = tool.Ifc.get().by_id(pset["id"])
         else:
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Array")
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="BBIM_Array")
             data = [array]
 
-        ifcopenshell.api.run(
-            "pset.edit_pset",
-            tool.Ifc.get(),
+        ifcopenshell.api.pset.edit_pset(
+            ifc_file,
             pset=pset,
-            properties={"Parent": element.GlobalId, "Data": tool.Ifc.get().createIfcText(json.dumps(data))},
+            properties={"Parent": element.GlobalId, "Data": ifc_file.create_entity("IfcText", json.dumps(data))},
         )
         return {"FINISHED"}
 
@@ -72,7 +80,9 @@ class DisableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        context.active_object.BIMArrayProperties.is_editing = -1
+        obj = context.active_object
+        assert obj
+        tool.Model.get_array_props(obj).is_editing = -1
         return {"FINISHED"}
 
 
@@ -84,8 +94,9 @@ class EnableEditingArray(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMArrayProperties
+        props = tool.Model.get_array_props(obj)
 
         relating_obj = props.relating_array_object
 
@@ -119,7 +130,7 @@ class EditArray(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMArrayProperties
+        props = tool.Model.get_array_props(obj)
         si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
 
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
@@ -182,7 +193,7 @@ class RemoveArray(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         obj = context.active_object
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMArrayProperties
+        props = tool.Model.get_array_props(obj)
 
         pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
         data = json.loads(pset["Data"])
@@ -302,7 +313,8 @@ class Input3DCursorXArray(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        props = obj.BIMArrayProperties
+        assert obj
+        props = tool.Model.get_array_props(obj)
         cursor = context.scene.cursor
         if props.use_local_space:
             props.x = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.translation).x
@@ -318,7 +330,8 @@ class Input3DCursorYArray(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        props = obj.BIMArrayProperties
+        assert obj
+        props = tool.Model.get_array_props(obj)
         cursor = context.scene.cursor
         if props.use_local_space:
             props.y = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.translation).y
@@ -334,7 +347,8 @@ class Input3DCursorZArray(bpy.types.Operator):
 
     def execute(self, context):
         obj = context.active_object
-        props = obj.BIMArrayProperties
+        assert obj
+        props = tool.Model.get_array_props(obj)
         cursor = context.scene.cursor
         if props.use_local_space:
             props.z = (Matrix.inverted(obj.matrix_world) @ cursor.matrix.translation).z

@@ -26,11 +26,8 @@ def edit_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance, attri
     IfcTask, consult the IFC documentation.
 
     :param task: The IfcTask entity you want to edit
-    :type task: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -48,7 +45,5 @@ def edit_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance, attri
         # Change the identification
         ifcopenshell.api.sequence.edit_task(model, task=task, attributes={"Identification": "M"})
     """
-    settings = {"task": task, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["task"], name, value)
+    for name, value in attributes.items():
+        setattr(task, name, value)

@@ -24,6 +24,7 @@ import zipfile
 import functools
 import ifcopenshell
 from pathlib import Path
+from typing import Any
 from typing import Callable
 from typing import Generator
 from typing import Optional
@@ -360,7 +361,6 @@ class file:
         of those methods.
 
         :param type: Case insensitive name of the IFC class
-        :type type: string
         :param args: The positional arguments of the IFC class
         :param kwargs: The keyword arguments of the IFC class
         :returns: An entity instance
@@ -491,12 +491,10 @@ class file:
         """Return an IFC entity instance filtered by IFC ID.
 
         :param id: STEP numerical identifier
-        :type id: int
 
         :raises RuntimeError: If `id` is not found.
 
         :returns: An ifcopenshell.entity_instance
-        :rtype: ifcopenshell.entity_instance
         """
         return self[id]
 
@@ -504,13 +502,10 @@ class file:
         """Return an IFC entity instance filtered by IFC GUID.
 
         :param guid: GlobalId value in 22-character encoded form
-        :type guid: string
 
         :raises RuntimeError: If `guid` is not found.
 
         :returns: An ifcopenshell.entity_instance
-        :rtype: ifcopenshell.entity_instance
-
         """
         return self[guid]
 
@@ -519,9 +514,7 @@ class file:
         If the entity already exists, it is not re-added. Existence of entity is checked by it's `.identity()`.
 
         :param inst: The entity instance to add
-        :type inst: ifcopenshell.entity_instance
         :returns: An ifcopenshell.entity_instance
-        :rtype: ifcopenshell.entity_instance
         """
 
         if self.transaction:
@@ -539,14 +532,11 @@ class file:
         If an IFC type class has subclasses, all entities of those subclasses are also returned.
 
         :param type: The case insensitive type of IFC class to return.
-        :type type: string
         :param include_subtypes: Whether or not to return subtypes of the IFC class
-        :type include_subtypes: bool
 
         :raises RuntimeError: If `type` is not found in IFC schema.
 
         :returns: A list of ifcopenshell.entity_instance objects
-        :rtype: list[ifcopenshell.entity_instance]
         """
         if include_subtypes:
             return [entity_instance(e, self) for e in self.wrapped_data.by_type(type)]
@@ -634,9 +624,7 @@ class file:
         significantly faster.
 
         :param inst: The entity instance to get inverse relationships
-        :type inst: ifcopenshell.entity_instance
         :returns: The total number of references
-        :rtype: int
         """
         return self.wrapped_data.get_total_inverses(inst.wrapped_data)
 
@@ -648,8 +636,6 @@ class file:
         the reference to the deleted will be removed from the aggregate.
 
         :param inst: The entity instance to delete
-        :type inst: ifcopenshell.entity_instance
-        :rtype: None
         """
         if self.transaction:
             self.transaction.store_delete(inst)
@@ -685,9 +671,7 @@ class file:
             if None.  Supported formats : .ifc, .ifcXML, .ifcZIP (equivalent to
             format=".ifc" with zipped=True) For zipped .ifcXML use
             format=".ifcXML" with zipped=True
-        :type format: str
         :param zipped: zip the file after it is written
-        :type zipped: bool
 
         Example:
 
@@ -701,6 +685,7 @@ class file:
         """
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
+
         if format == None:
             format = ifcopenshell.guess_format(path)
         if format == ".ifcXML":
@@ -716,8 +701,7 @@ class file:
         if format == ".ifcZIP":
             return self.write(path, ".ifc", zipped=True)
         self.wrapped_data.write(str(path))
-        if not path.exists():
-            raise PermissionError(f"Failed to write to '{path}', check folder permissions.")
+
         if zipped:
             unzipped_path = path.with_suffix(format)
             path.rename(unzipped_path)

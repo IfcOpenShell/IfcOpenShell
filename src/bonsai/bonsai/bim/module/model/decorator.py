@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import blf
 import bpy
@@ -33,6 +34,8 @@ from gpu_extras.batch import batch_for_shader
 from gpu_extras.presets import draw_circle_2d
 from typing import Union
 from bonsai.bim.module.drawing.helper import format_distance
+from itertools import chain
+from typing import Union, Any
 
 
 def transparent_color(color, alpha=0.1):
@@ -71,6 +74,8 @@ class ProfileDecorator:
         cls.installed = None
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -320,14 +325,19 @@ class PolylineDecorator:
     relating_type = None
 
     @classmethod
-    def install(cls, context):
+    def install(cls, context, ui_only=False):
         if cls.is_installed:
             cls.uninstall()
         handler = cls()
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_snap_point, (context,), "WINDOW", "POST_PIXEL"))
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL"))
         cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_input_ui, (context,), "WINDOW", "POST_PIXEL"))
-        cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
+        if not ui_only:
+            cls.handlers.append(
+                SpaceView3D.draw_handler_add(handler.draw_snap_point, (context,), "WINDOW", "POST_PIXEL")
+            )
+            cls.handlers.append(
+                SpaceView3D.draw_handler_add(handler.draw_measurements, (context,), "WINDOW", "POST_PIXEL")
+            )
+            cls.handlers.append(SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_VIEW"))
         cls.is_installed = True
 
     @classmethod
@@ -340,21 +350,28 @@ class PolylineDecorator:
         cls.is_installed = False
 
     @classmethod
-    def update(cls, event, tool_state, input_ui, snapping_point):
+    def update(
+        cls,
+        event: bpy.types.Event,
+        tool_state: tool.Polyline.ToolState,
+        input_ui: tool.Polyline.PolylineUI,
+        snapping_point: Vector,
+    ) -> None:
         cls.event = event
         cls.tool_state = tool_state
         cls.input_ui = input_ui
 
+    # TODO: unused?
     @classmethod
-    def set_input_ui(cls, input_ui):
+    def set_input_ui(cls, input_ui: tool.Polyline.PolylineUI) -> None:
         cls.input_ui = input_ui
 
     @classmethod
-    def set_angle_axis_line(cls, start, end):
+    def set_angle_axis_line(cls, start: Vector, end: Vector) -> None:
         cls.axis_start = start
         cls.axis_end = end
 
-    def calculate_measurement_x_y_and_z(self, context):
+    def calculate_measurement_x_y_and_z(self, context: bpy.types.Context) -> None:
         polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
         polyline_points = polyline_data[0].polyline_points if polyline_data else []
 
@@ -376,7 +393,8 @@ class PolylineDecorator:
 
         return (x_axis, y_axis, z_axis), (x_middle, y_middle, z_middle)
 
-    def calculate_polygon(self, points):
+    @classmethod
+    def calculate_polygon(cls, points: list[Vector]) -> dict[str, Any]:
         bm = bmesh.new()
 
         new_verts = [bm.verts.new(v) for v in points]
@@ -389,8 +407,8 @@ class PolylineDecorator:
 
         bm.verts.index_update()
         bm.edges.index_update()
-        verts = bm.verts
-        edges = bm.edges
+        verts = [v.co for v in bm.verts]
+        edges = [[v.index for v in e.verts] for e in bm.edges]
         tris = [[loop.vert.index for loop in triangles] for triangles in bm.calc_loop_triangles()]
 
         bm.free()
@@ -398,20 +416,24 @@ class PolylineDecorator:
         return {"verts": verts, "edges": edges, "tris": tris}
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
         batch.draw(shader)
 
-    def draw_input_ui(self, context):
+    def draw_input_ui(self, context: bpy.types.Context) -> None:
         texts = {
             "D": "Distance: ",
             "A": "Angle: ",
             "X": "X coord: ",
             "Y": "Y coord: ",
             "Z": "Z coord:",
+            "AREA": "Area:",
         }
         try:
+            assert self.event
             mouse_pos = self.event.mouse_region_x, self.event.mouse_region_y
         except:
             mouse_pos = (None, None)
@@ -425,11 +447,14 @@ class PolylineDecorator:
         color = self.addon_prefs.decorations_colour
         color_highlight = self.addon_prefs.decorator_color_special
         offset = 20
-        new_line = 20
+        new_line = 0
         for i, (key, field_name) in enumerate(texts.items()):
-
             formatted_value = None
             if self.input_ui:
+                # Controls which options are displayed in the UI
+                if key not in self.input_ui.input_options:
+                    continue
+                new_line += 20
                 if self.tool_state and key != self.tool_state.input_type:
                     formatted_value = self.input_ui.get_formatted_value(key)
                 else:
@@ -441,7 +466,7 @@ class PolylineDecorator:
                 blf.color(self.font_id, *color_highlight)
             else:
                 blf.color(self.font_id, *color)
-            blf.position(self.font_id, mouse_pos[0] + offset, mouse_pos[1] - (new_line * i), 0)
+            blf.position(self.font_id, mouse_pos[0] + offset, mouse_pos[1] - (new_line), 0)
             blf.draw(self.font_id, field_name + formatted_value)
         blf.disable(self.font_id, blf.SHADOW)
 
@@ -523,7 +548,7 @@ class PolylineDecorator:
         polyline_verts = [Vector((p.x, p.y, p.z)) for p in polyline_points]
 
         # Area
-        if measure_type == "AREA" and polyline_data.area:
+        if measure_type == "POLY_AREA" and polyline_data.area:
             if len(polyline_verts) < 3:
                 return
             center = sum(polyline_verts, Vector()) / len(polyline_verts)  # Center between all polyline points
@@ -541,7 +566,7 @@ class PolylineDecorator:
             blf.draw(self.font_id, text)
 
         # Length
-        if measure_type in {"POLYLINE", "AREA"}:
+        if measure_type in {"POLYLINE", "POLY_AREA"}:
             if len(polyline_verts) < 3:
                 return
             total_length_text_coords = view3d_utils.location_3d_to_region_2d(region, rv3d, polyline_verts[-1])
@@ -637,7 +662,10 @@ class PolylineDecorator:
         mouse_point = [Vector((snap_prop.x, snap_prop.y, snap_prop.z))]
 
         # Plane Method or Default Container
-        default_container_elevation = tool.Ifc.get_object(tool.Root.get_default_container()).location.z
+        if tool.Ifc.get():
+            default_container_elevation = tool.Root.get_default_container_elevation()
+        else:
+            default_container_elevation = 0.0
         projection_point = []
         if not self.tool_state:
             pass
@@ -695,6 +723,8 @@ class PolylineDecorator:
                     self.draw_batch("LINES", mouse_point + projection_point, decorator_color_unselected, edges)
 
                 if axis1 and axis2:
+                    axis1 = [tuple(tool.Polyline.use_transform_orientations(Vector(v))) for v in axis1]
+                    axis2 = [tuple(tool.Polyline.use_transform_orientations(Vector(v))) for v in axis2]
                     self.line_shader.uniform_float("lineWidth", 1.5)
                     self.draw_batch("LINES", axis1, highlight_color(axis_color1), [(0, 1)])
                     self.draw_batch("LINES", axis2, highlight_color(axis_color2), [(0, 1)])
@@ -706,8 +736,8 @@ class PolylineDecorator:
             polyline_points = polyline_data.polyline_points
         else:
             polyline_points = []
-        polyline_verts = []
-        polyline_edges = []
+        polyline_verts: list[Vector] = []
+        polyline_edges: list[list[int]] = []
         for point_prop in polyline_points:
             point = Vector((point_prop.x, point_prop.y, point_prop.z))
             polyline_verts.append(point)
@@ -745,7 +775,7 @@ class PolylineDecorator:
         # Area highlight
         if polyline_data:
             area = polyline_data.area.split(" ")[0]
-            if area:
+            if polyline_data.measurement_type == "POLY_AREA" and area:
                 if float(area) > 0:
                     tris = self.calculate_polygon(polyline_verts)["tris"]
                     self.draw_batch("TRIS", polyline_verts, transparent_color(decorator_color_special), tris)
@@ -799,6 +829,8 @@ class ProductDecorator:
         cls.is_installed = False
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -866,6 +898,8 @@ class WallAxisDecorator:
         cls.is_installed = False
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -930,6 +964,8 @@ class SlabDirectionDecorator:
         cls.is_installed = False
 
     def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
         shader = self.line_shader if shader_type == "LINES" else self.shader
         batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
         shader.uniform_float("color", color)
@@ -961,3 +997,60 @@ class SlabDirectionDecorator:
             base = [obj.matrix_world @ Vector(d) for d in base]
             self.draw_batch("LINES", dir, selected_elements_color, [(0, 1), (1, 2), (1, 3)])
             self.draw_batch("LINES", base, selected_elements_color, [(0, 1)])
+
+
+class FaceAreaDecorator:
+    is_installed = False
+    handlers = []
+
+    @classmethod
+    def install(cls, context):
+        if cls.is_installed:
+            cls.uninstall()
+        handler = cls()
+        cls.handlers.append(SpaceView3D.draw_handler_add(handler.draw_face_area, (context,), "WINDOW", "POST_VIEW"))
+        cls.is_installed = True
+
+    @classmethod
+    def uninstall(cls):
+        for handler in cls.handlers:
+            try:
+                SpaceView3D.draw_handler_remove(handler, "WINDOW")
+            except ValueError:
+                pass
+        cls.is_installed = False
+
+    def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
+        shader = self.line_shader if shader_type == "LINES" else self.shader
+        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+        shader.uniform_float("color", color)
+        batch.draw(shader)
+
+    def draw_face_area(self, context):
+        def transparent_color(color, alpha=0.1):
+            color = [i for i in color]
+            color[3] = alpha
+            return color
+
+        self.addon_prefs = tool.Blender.get_addon_preferences()
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()  # required to be able to change uniforms of the shader
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        self.line_shader.uniform_float("lineWidth", 2.0)
+        gpu.state.point_size_set(6)
+        gpu.state.blend_set("ALPHA")
+        decorator_color = self.addon_prefs.decorator_color_special
+
+        polyline_data = context.scene.BIMPolylineProperties.insertion_polyline
+        for i, polyline in enumerate(polyline_data):
+            vertices = []
+            for point in polyline.polyline_points:
+                vertices.append((point.x, point.y, point.z))
+            data = PolylineDecorator.calculate_polygon(vertices)
+            if data:
+                self.draw_batch("POINTS", data["verts"], decorator_color)
+                self.draw_batch("LINES", data["verts"], decorator_color, data["edges"])
+                self.draw_batch("TRIS", data["verts"], transparent_color(decorator_color, alpha=0.5), data["tris"])

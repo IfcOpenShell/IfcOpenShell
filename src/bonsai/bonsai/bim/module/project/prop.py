@@ -35,7 +35,8 @@ from bpy.props import (
     IntProperty,
     StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Literal, Union, get_args, Generator
+from typing_extensions import assert_never
 
 
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -67,15 +68,15 @@ def update_library_file(self: "BIMProjectProperties", context: bpy.types.Context
         bpy.ops.bim.select_library_file(filepath=filepath.__str__())
         ProjectLibraryData.load()
         props = tool.Project.get_project_props()
-        props.selected_project_library = "*"
+        library_file = IfcStore.library_file
+        assert library_file
+        project_library = next(iter(library_file.by_type("IfcProjectLibrary")), None)
+        props.selected_project_library = str(project_library.id()) if project_library else "-"
 
 
 def update_selected_project_library(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
-    if self.filter_by_library:
-        bpy.ops.bim.refresh_library()
-    else:
-        # Ensure `.is_declared` up to date.
-        tool.Project.update_current_library_page()
+    # Ensure `.is_declared` up to date.
+    tool.Project.update_current_library_page()
 
 
 def get_project_libaries(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -84,10 +85,7 @@ def get_project_libaries(self: "BIMProjectProperties", context: bpy.types.Contex
     return ProjectLibraryData.data["project_libraries_enum"]
 
 
-def filter_by_library_update(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
-    if self.filter_by_library and self.selected_project_library == "*":
-        # Filter is toggled from OFF to ON, so it was showing all elements previously either way.
-        return
+def show_library_tree_update(self: "BIMProjectProperties", context: bpy.types.Context) -> None:
     bpy.ops.bim.refresh_library()
 
 
@@ -123,7 +121,7 @@ def update_filter_mode(self: "BIMProjectProperties", context: bpy.types.Context)
     self.filter_categories.clear()
     if self.filter_mode == "NONE":
         return
-    file = IfcStore.get_file()
+    file = tool.Ifc.get()
     if self.filter_mode == "DECOMPOSITION":
         if file.schema == "IFC2X3":
             elements = file.by_type("IfcSpatialStructureElement")
@@ -150,10 +148,40 @@ def update_filter_mode(self: "BIMProjectProperties", context: bpy.types.Context)
             new.total_elements = len(ifcopenshell.util.element.get_types(ifc_type))
 
 
+def update_library_element_name(self: "LibraryElement", context: bpy.types.Context) -> None:
+    library_file = IfcStore.library_file
+    assert library_file
+
+    if self.element_type == "CLASS":
+        raise Exception("Unexpected element type for rename: 'CLASS'.")
+
+    def update_element_name(ifc_definition_id: int, name: str) -> None:
+        element = library_file.by_id(ifc_definition_id)
+        attr_name = tool.Project.get_library_element_attr_name(element)
+        previous_name = getattr(element, attr_name)
+        if name == previous_name:
+            return
+        setattr(element, attr_name, name)
+
+    if self.element_type == "ASSET":
+        update_element_name(self.ifc_definition_id, self.name)
+    elif self.element_type == "LIBRARY":
+        assert self.ifc_definition_id, "Renaming for unassigned elements library is not supported."
+        update_element_name(self.ifc_definition_id, self.name)
+    else:
+        assert_never(self.element_type)
+
+
+LibraryElementType = Literal["ASSET", "CLASS", "LIBRARY"]
+
+
 class LibraryElement(PropertyGroup):
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name", update=update_library_element_name)
+    element_type: EnumProperty(items=[(i, i, "") for i in get_args(LibraryElementType)], name="Element Type")
     # Asset group.
     asset_count: IntProperty(name="Asset Count")
+    # Asset library.
+    has_sublibraries: BoolProperty(name="Has Sublibraries", default=False)
     # Asset.
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     is_declared: BoolProperty(name="Is Declared", default=False)
@@ -166,7 +194,9 @@ class LibraryElement(PropertyGroup):
 
     if TYPE_CHECKING:
         name: str
+        element_type: LibraryElementType
         asset_count: int
+        has_sublibraries: bool
         ifc_definition_id: int
         is_declared: bool
         is_appended: bool
@@ -189,7 +219,7 @@ class FilterCategory(PropertyGroup):
 class Link(PropertyGroup):
     name: StringProperty(
         name="Name",
-        description="Filepath to linked .ifc file, stored in posix format (could be relative to .blend file, not to .ifc)",
+        description="Filepath to linked .ifc file, stored in posix format (could be relative to .ifc file, not to .blend)",
     )
     is_loaded: BoolProperty(name="Is Loaded", default=False)
     is_selectable: BoolProperty(name="Is Selectable", default=True)
@@ -217,6 +247,18 @@ class EditedObj(PropertyGroup):
         obj: Union[bpy.types.Object, None]
 
 
+BreadcrumbType = Literal["LIBRARY", "CLASS"]
+
+
+class LibraryBreadcrumb(PropertyGroup):
+    breadcrumb_type: EnumProperty(items=[(i, i, "") for i in get_args(BreadcrumbType)])
+    library_id: IntProperty(description="IFC Definition ID for libraries.")
+
+    if TYPE_CHECKING:
+        breadcrumb_type: BreadcrumbType
+        library_id: int
+
+
 class BIMProjectProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
     is_loading: BoolProperty(name="Is Loading", default=False)
@@ -226,8 +268,7 @@ class BIMProjectProperties(PropertyGroup):
     organisation_name: StringProperty(name="Organisation")
     organisation_email: StringProperty(name="Organisation Email")
     authorisation: StringProperty(name="Authoriser")
-    active_library_element: StringProperty(name="Enable Authoring Mode", default="")
-    library_breadcrumb: CollectionProperty(name="Library Breadcrumb", type=StrProperty)
+    library_breadcrumb: CollectionProperty(name="Library Breadcrumb", type=LibraryBreadcrumb)
     library_elements: CollectionProperty(name="Library Elements", type=LibraryElement)
     active_library_element_index: IntProperty(name="Active Library Element Index")
     filter_mode: bpy.props.EnumProperty(
@@ -261,7 +302,14 @@ class BIMProjectProperties(PropertyGroup):
     should_merge_materials_by_colour: BoolProperty(name="Merge Materials by Colour", default=False)
     should_stream: BoolProperty(name="Stream Data From IFC-SPF (Only for advanced users)", default=False)
     should_load_geometry: BoolProperty(name="Load Geometry", default=True)
-    should_clean_mesh: BoolProperty(name="Clean Meshes", default=False)
+    should_clean_mesh: BoolProperty(
+        name="Clean Meshes",
+        description=(
+            "Convert all triangles to quads for meshes. "
+            "By default Bonsai is importing meshes triangulated (even if they are not stored as triangulated in IFC)."
+        ),
+        default=False,
+    )
     should_cache: BoolProperty(name="Cache", default=False)
     deflection_tolerance: FloatProperty(name="Deflection Tolerance", default=0.001)
     angular_tolerance: FloatProperty(name="Angular Tolerance", default=0.5)
@@ -269,6 +317,11 @@ class BIMProjectProperties(PropertyGroup):
         name="Void Limit",
         default=30,
         description="Maxium number of openings that object can have. If object has more openings, it will be loaded without openings",
+    )
+    style_limit: IntProperty(
+        name="Style Limit",
+        default=300,
+        description="Maxium number of styles before styles are automatically merged",
     )
     distance_limit: FloatProperty(name="Distance Limit", default=1000, subtype="DISTANCE")
     false_origin_mode: bpy.props.EnumProperty(
@@ -315,21 +368,27 @@ class BIMProjectProperties(PropertyGroup):
     links: CollectionProperty(name="Links", type=Link)
     active_link_index: IntProperty(name="Active Link Index")
     export_schema: EnumProperty(items=get_export_schema, name="IFC Schema", update=update_export_schema)
-    template_file: EnumProperty(items=get_template_file, name="Template File")
+    template_file: EnumProperty(
+        items=get_template_file,
+        name="Template File",
+        description=(
+            "Template to use for a new project. All types from the template will be appended to a new project."
+        ),
+    )
 
     # Project library UI.
     library_file: EnumProperty(items=get_library_file, name="Library File", update=update_library_file)
     selected_project_library: EnumProperty(
         items=get_project_libaries,
-        name="Project Library",
-        description="Project library to display elements from",
+        name="Selected Project Library",
+        description="Selected project library to edit or to assign elements to",
         update=update_selected_project_library,
     )
-    filter_by_library: BoolProperty(
-        name="Filter by Library",
-        description="Filter library elements based on selected library. If unselected can be used to assign selected library to library elements.",
+    show_library_tree: BoolProperty(
+        name="Show Library Tree",
+        description="Show project libraries hierarchy or just show the assets classes.",
         default=True,
-        update=filter_by_library_update,
+        update=show_library_tree_update,
     )
     is_editing_project_library: BoolProperty(
         name="Is Editing Project Library",
@@ -357,10 +416,22 @@ class BIMProjectProperties(PropertyGroup):
     def clipping_planes_objs(self) -> list[bpy.types.Object]:
         return list({cp.obj for cp in self.clipping_planes if cp.obj})
 
-    def add_library_asset_group(self, name: str, asset_count: int) -> LibraryElement:
+    def add_library_project_library(
+        self, name: str, asset_count: int, ifc_definition_id: int, has_sublibraries: bool
+    ) -> LibraryElement:
         new = self.library_elements.add()
-        new.name = name
+        new["name"] = name
         new.asset_count = asset_count
+        new.element_type = "LIBRARY"
+        new.ifc_definition_id = ifc_definition_id
+        new.has_sublibraries = has_sublibraries
+        return new
+
+    def add_library_asset_class(self, name: str, asset_count: int) -> LibraryElement:
+        new = self.library_elements.add()
+        new["name"] = name
+        new.asset_count = asset_count
+        new.element_type = "CLASS"
         return new
 
     def get_library_element_index(self, lib_element: LibraryElement) -> int:
@@ -375,8 +446,7 @@ class BIMProjectProperties(PropertyGroup):
         organisation_name: str
         organisation_email: str
         authorisation: str
-        active_library_element: str
-        library_breadcrumb: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        library_breadcrumb: bpy.types.bpy_prop_collection_idprop[LibraryBreadcrumb]
         library_elements: bpy.types.bpy_prop_collection_idprop[LibraryElement]
         active_library_element_index: int
         filter_mode: Literal["NONE", "DECOMPOSITION", "IFC_CLASS", "IFC_TYPE", "WHITELIST", "BLACKLIST"]
@@ -395,6 +465,7 @@ class BIMProjectProperties(PropertyGroup):
         deflection_tolerance: float
         angular_tolerance: float
         void_limit: int
+        style_limit: int
         distance_limit: float
         false_origin_mode: Literal["AUTOMATIC", "MANUAL", "DISABLED"]
         false_origin: str
@@ -410,8 +481,8 @@ class BIMProjectProperties(PropertyGroup):
         template_file: str
 
         library_file: str
-        selected_project_library: Union[Literal["*", "-"], str]
-        filter_by_library: bool
+        selected_project_library: Union[Literal["-"], str]
+        show_library_tree: bool
         is_editing_project_library: bool
         editing_project_library_id: int
         project_library_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
@@ -424,12 +495,24 @@ class BIMProjectProperties(PropertyGroup):
         clipping_planes_active: int
         edited_objs: bpy.types.bpy_prop_collection_idprop[EditedObj]
 
+    def get_active_library_breadcrumb(self) -> Union[LibraryBreadcrumb, None]:
+        if self.library_breadcrumb:
+            return self.library_breadcrumb[-1]
+        return None
+
+    def get_loaded_links(self) -> Generator[Link, None, None]:
+        for link in self.links:
+            if not link.is_loaded:
+                continue
+            yield link
+
 
 class MeasureToolSettings(PropertyGroup):
     measurement_type_items = [
         ("SINGLE", "SINGLE", "Single", "FIXED_SIZE", 1),
         ("POLYLINE", "POLYLINE", "Polyline", "DRIVER_ROTATIONAL_DIFFERENCE", 2),
-        ("AREA", "AREA", "Area", "OUTLINER_DATA_LIGHTPROBE", 3),
+        ("POLY_AREA", "POLY_AREA", "Poyline Area", "OUTLINER_DATA_LIGHTPROBE", 3),
+        ("FACE_AREA", "FACE_AREA", "Face Area", "FACESEL", 4),
     ]
 
     measurement_type: bpy.props.EnumProperty(items=measurement_type_items, default="POLYLINE")

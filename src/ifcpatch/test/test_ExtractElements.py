@@ -75,6 +75,14 @@ class TestExtractElements(test.bootstrap.IFC4):
         assert output.by_type("IfcWall")
         assert not output.by_type("IfcSlab")
 
+    def test_extracting_non_standard_schema_version(self):
+        self.file = ifcopenshell.file(schema_version=(4, 3, 0, 0))
+        project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
+        assert output.by_type("IfcProject")[0].GlobalId == project.GlobalId
+        assert output.by_type("IfcWall")[0].GlobalId == wall.GlobalId
+
 
 class TestExtractElementsIFC2X3(test.bootstrap.IFC2X3, TestExtractElements):
     pass

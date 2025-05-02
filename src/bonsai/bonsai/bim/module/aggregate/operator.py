@@ -23,7 +23,7 @@ import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.core.aggregate as core
 import bonsai.core.spatial
-from bonsai.bim.ifc import IfcStore
+from typing import TYPE_CHECKING
 
 
 class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
@@ -31,23 +31,30 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Assign Object To Aggregation"
     bl_description = (
         "Assign object as an aggregate to the selected IFC elements.\n\n"
-        "If called from Bonsai UI, then either 'Relating Whole' or 'Related Part' must be provided.\n"
+        "If called from Object Aggregates UI, then either 'Relating Whole' or 'Related Part' must be provided.\n"
         "If called directly, active object will be considered a relating whole"
     )
     bl_options = {"REGISTER", "UNDO"}
     relating_object: bpy.props.IntProperty()
     related_object: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        relating_object: int
+        related_object: int
+
     def _execute(self, context):
         relating_obj = None
         if self.relating_object:
             relating_obj = tool.Ifc.get_object(tool.Ifc.get().by_id(self.relating_object))
+            assert relating_obj
         elif self.related_object:
             aggregate = ifcopenshell.util.element.get_aggregate(tool.Ifc.get().by_id(self.related_object))
             if aggregate:
                 relating_obj = tool.Ifc.get_object(aggregate)
-        elif context.active_object:
+                assert relating_obj
+        else:
             relating_obj = context.active_object
+
         if not relating_obj:
             self.report({"ERROR"}, "No relating object is provided.")
             return
@@ -67,7 +74,7 @@ class BIM_OT_aggregate_assign_object(bpy.types.Operator, tool.Ifc.Operator):
                     relating_obj=relating_obj,
                     related_obj=obj,
                 )
-                props = context.scene.BIMAggregateProperties
+                props = tool.Aggregate.get_aggregate_props()
                 if relating_obj == props.editing_aggregate and props.in_aggregate_mode:
                     new_editing_obj = props.editing_objects.add()
                     new_editing_obj.obj = obj
@@ -183,7 +190,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
                 )
             core.assign_object(tool.Ifc, tool.Aggregate, tool.Collector, relating_obj=aggregate, related_obj=obj)
 
-    def create_aggregate(self, context, ifc_class, aggregate_name):
+    def create_aggregate(self, context: bpy.types.Context, ifc_class: str, aggregate_name: str) -> bpy.types.Object:
         aggregate = bpy.data.objects.new(aggregate_name, None)
         aggregate.location = context.scene.cursor.location
         bpy.ops.bim.assign_class(obj=aggregate.name, ifc_class=ifc_class)
@@ -379,7 +386,7 @@ class BIM_OT_disable_aggregate_mode(bpy.types.Operator):
 
     def execute(self, context):
         bpy.ops.object.select_all(action="DESELECT")
-        bonsai.core.aggregate.disable_aggregate_mode(tool.Aggregate)
+        bonsai.core.aggregate.exit_aggregate_mode(tool.Aggregate)
         return {"FINISHED"}
 
 
@@ -389,7 +396,7 @@ class BIM_OT_toggle_aggregate_mode_local_view(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMAggregateProperties
+        props = tool.Aggregate.get_aggregate_props()
         objs = [o.obj for o in props.editing_objects]
         if props.in_aggregate_mode:
             if context.space_data.local_view:

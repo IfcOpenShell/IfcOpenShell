@@ -307,20 +307,19 @@ class WorkScheduleData:
         cls.is_loaded = True
 
     @classmethod
-    def can_have_baselines(cls):
-        if not bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
+    def can_have_baselines(cls) -> bool:
+        props = tool.Sequence.get_work_schedule_props()
+        if not props.active_work_schedule_id:
             return False
-        return (
-            tool.Ifc.get().by_id(bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id).PredefinedType
-            == "PLANNED"
-        )
+        return tool.Ifc.get().by_id(props.active_work_schedule_id).PredefinedType == "PLANNED"
 
     @classmethod
-    def active_work_schedule_baselines(cls):
+    def active_work_schedule_baselines(cls) -> list[dict[str, Any]]:
         results = []
-        if not bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
+        props = tool.Sequence.get_work_schedule_props()
+        if not props.active_work_schedule_id:
             return []
-        for rel in tool.Ifc.get().by_id(bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id).Declares:
+        for rel in tool.Ifc.get().by_id(props.active_work_schedule_id).Declares:
             for work_schedule in rel.RelatedObjects:
                 if work_schedule.PredefinedType == "BASELINE":
                     results.append(

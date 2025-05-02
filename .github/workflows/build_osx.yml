@@ -128,10 +128,8 @@ jobs:
           #
           # To force the link and overwrite all conflicting files:
           #   brew link --overwrite python@3.13
-          brew link --overwrite python@3.12
-          brew link --overwrite python@3.13
           # https://github.com/rust-lang/rustup/pull/3989/files
-          brew install --overwrite awscli
+          brew install --overwrite awscli | true
 
       - name: Upload .zip archives to S3
         run: |

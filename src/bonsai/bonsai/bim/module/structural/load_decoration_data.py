@@ -24,9 +24,9 @@ from mathutils import Vector
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.attribute
+import ifcopenshell.util.placement
 import ifcopenshell.util.unit as ifcunit
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.structural.shader import DecorationShader
 from typing import Literal, TypedDict, Iterable
 
@@ -305,9 +305,9 @@ class ShaderInfo:
                                         populate_members_dict("surface_members", element, activity, factor)
                     recursive_subgroups(subgorups, rec_limit - 1, activity_type, factor=factor)
 
-        props = bpy.context.scene.BIMStructuralProperties
+        props = tool.Structural.get_structural_props()
         group_definition_id = int(props.load_group_to_show)
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         groups = [file.by_id(group_definition_id)]
         recursive_subgroups(groups, 10, props.activity_type)
 
@@ -328,12 +328,12 @@ class ShaderInfo:
                 maximum = max([abs(float(i)) for i in values])
                 if maximum == 0:
                     continue
-            props = bpy.context.scene.BIMStructuralProperties
+            props = tool.Structural.get_structural_props()
             reference_frame = props.reference_frame
             orientation = np.eye(3)
             if reference_frame == "LOCAL_COORDS":
                 orientation = rotation
-            blender_object: bpy.types.Object = IfcStore.get_element(getattr(surf, "GlobalId", None))
+            blender_object: bpy.types.Object = tool.Ifc.get_object_by_identifier(getattr(surf, "GlobalId", None))
             mat = blender_object.matrix_world
             mesh: bpy.types.Mesh = blender_object.data
 
@@ -436,7 +436,7 @@ class ShaderInfo:
     ) -> np.ndarray:
         "provides the transformation matrix to convert between reference frames"
         global_or_local = activity.GlobalOrLocal
-        props = bpy.context.scene.BIMStructuralProperties
+        props = tool.Structural.get_structural_props()
         reference_frame = props.reference_frame
         transform_matrix = np.eye(3)
         if reference_frame == "LOCAL_COORDS" and global_or_local != reference_frame:
@@ -454,7 +454,7 @@ class ShaderInfo:
             activity_list = value["activities"]
             if len(activity_list) == 0:
                 continue
-            blender_object = IfcStore.get_element(getattr(conn, "GlobalId", None))
+            blender_object = tool.Ifc.get_object_by_identifier(getattr(conn, "GlobalId", None))
             if blender_object.type == "MESH":
                 conn_location = blender_object.matrix_world @ blender_object.data.vertices[0].co
                 rotation = self.get_point_connection_rotation(conn)
@@ -474,7 +474,7 @@ class ShaderInfo:
             "mz": (np.array((1, 0, 0)), np.array((0, 1, 0))),
         }
         keys = ["fx", "fy", "fz", "mx", "my", "mz"]
-        props = bpy.context.scene.BIMStructuralProperties
+        props = tool.Structural.get_structural_props()
         reference_frame = props.reference_frame
         if reference_frame == "LOCAL_COORDS":
             for key in keys:
@@ -580,7 +580,7 @@ class ShaderInfo:
             if len(activity_list) == 0:
                 continue
 
-            blender_object = IfcStore.get_element(getattr(member, "GlobalId", None))
+            blender_object = tool.Ifc.get_object_by_identifier(getattr(member, "GlobalId", None))
 
             start_co = blender_object.matrix_world @ blender_object.data.vertices[0].co
             end_co = blender_object.matrix_world @ blender_object.data.vertices[1].co
@@ -592,7 +592,7 @@ class ShaderInfo:
             z_axis = x_axis.cross(y_axis).normalized()
             rotation = self.get_curve_member_rotation(member)
 
-            props = bpy.context.scene.BIMStructuralProperties
+            props = tool.Structural.get_structural_props()
             reference_frame = props.reference_frame
             is_local = reference_frame == "LOCAL_COORDS"
             x_match = abs(Vector((1, 0, 0)).dot(x_axis)) > 0.99

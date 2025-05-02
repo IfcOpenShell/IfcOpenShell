@@ -48,11 +48,16 @@ class TestRemoveContext(test.bootstrap.IFC4):
             assert len(self.file.by_type("IfcMapConversion")) == 0
             assert len(self.file.by_type("IfcProjectedCRS")) == 0
 
-    def test_removing_a_context_with_references(self):
+    def test_removing_a_context_with_assigned_representations(self):
         context = self.file.createIfcGeometricRepresentationContext()
-        representation = self.file.createIfcRepresentation(ContextOfItems=context)
+        element = ifcopenshell.api.root.create_entity(self.file)
+        rep = self.file.createIfcRepresentation(ContextOfItems=context)
+        ifcopenshell.api.geometry.assign_representation(self.file, product=element, representation=rep)
         ifcopenshell.api.context.remove_context(self.file, context=context)
-        assert len([e for e in self.file]) == 0
+        if self.file.schema == "IFC2X3":
+            assert len([e for e in self.file]) == 6
+        else:
+            assert len([e for e in self.file]) == 1
 
 
 class TestRemoveContextIFC2X3(test.bootstrap.IFC2X3, TestRemoveContext):
