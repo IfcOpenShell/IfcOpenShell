@@ -202,7 +202,12 @@ class BIMSearchProperties(PropertyGroup):
     filter_classes_index: IntProperty(name="Filter Classes Index")
     filter_container: CollectionProperty(type=BIMFilterBuildingStoreys, name="Filter Level")
     filter_container_index: IntProperty(name="Filter Level Index")
-    show_flat_colours: BoolProperty(name="Flat Colours", default=False, update=update_show_flat_colours)
+    show_flat_colours: BoolProperty(
+        name="Flat Colours",
+        description="Toggle flat shading in the active viewport.",
+        default=False,
+        update=update_show_flat_colours,
+    )
 
     if TYPE_CHECKING:
         element_key: str
