@@ -54,6 +54,7 @@ from typing import Union, Iterator, Any, Optional
 from logging import Logger, Handler
 
 import ifcopenshell
+import ifcopenshell.simple_spf
 import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.express.rule_executor
@@ -597,8 +598,11 @@ def validate_guid(guid: str) -> Union[str, None]:
     return None
 
 
-def validate_ifc_header(f: ifcopenshell.file, logger: Logger) -> None:
-    header: W.IfcSpfHeader = f.wrapped_data.header
+def validate_ifc_header(f: Union[ifcopenshell.file, ifcopenshell.simple_spf.file], logger: Logger) -> None:
+    if type(f) is ifcopenshell.file:
+        header: W.IfcSpfHeader = f.wrapped_data.header
+    else:
+        header: types.SimpleNamespace = f.header
     AGGREGATE_TYPE = "LIST [ 1 : ? ] OF STRING (256)"
     STRING_TYPE = "STRING (256)"
 
