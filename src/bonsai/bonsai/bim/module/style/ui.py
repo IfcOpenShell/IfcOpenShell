@@ -55,6 +55,7 @@ class BIM_PT_styles(Panel):
             row.operator("bim.load_styles", text="", icon="IMPORT").style_type = style_type
             return
 
+        self.is_ifc2x3 = tool.Ifc.get_schema() == "IFC2X3"
         active_style = self.props.active_style
         row = self.layout.row(align=True)
         row.label(text="{} {}s".format(len(self.props.styles), self.props.style_type), icon="SHADING_RENDERED")
@@ -158,8 +159,9 @@ class BIM_PT_styles(Panel):
     def draw_surface_style_shading(self):
         row = self.layout.row()
         row.prop(self.props, "surface_colour")
-        row = self.layout.row()
-        row.prop(self.props, "transparency")
+        if not self.is_ifc2x3:
+            row = self.layout.row()
+            row.prop(self.props, "transparency")
 
     def draw_surface_style_rendering(self):
         row = self.layout.row()
