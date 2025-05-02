@@ -239,6 +239,7 @@ class LoadSearch(Operator, tool.Ifc.Operator):
 class ColourByProperty(Operator):
     bl_idname = "bim.colour_by_property"
     bl_label = "Colour by Property"
+    bl_description = "Color all visible objects by the provided property."
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -365,6 +366,7 @@ class ColourByProperty(Operator):
 class SelectByProperty(Operator):
     bl_idname = "bim.select_by_property"
     bl_label = "Select by Property"
+    bl_description = "Select objects based on currently selected colored property value."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
