@@ -291,7 +291,7 @@ class Blender(bonsai.core.tool.Blender):
             return area.spaces.active
 
     @classmethod
-    def get_blender_prop_default_value(cls, props, prop_name: str) -> Any:
+    def get_blender_prop_default_value(cls, props: bpy.types.bpy_struct, prop_name: str) -> Any:
         prop_bl_rna = props.bl_rna.properties[prop_name]
         if getattr(prop_bl_rna, "array_length", 0) > 0:
             prop_value = prop_bl_rna.default_array
