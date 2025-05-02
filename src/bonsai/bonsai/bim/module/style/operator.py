@@ -815,10 +815,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
                 "style.edit_surface_style",
                 tool.Ifc.get(),
                 style=self.surface_style,
-                attributes={
-                    "SurfaceColour": self.color_to_dict(self.props.surface_colour),
-                    "Transparency": self.props.transparency or None,
-                },
+                attributes=self.get_shading_attributes(),
             )
             tool.Loader.create_surface_style_shading(material, self.surface_style)
         elif self.surface_style.is_a() == "IfcSurfaceStyleRendering":
@@ -912,10 +909,11 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             )
 
     def get_shading_attributes(self) -> dict[str, Any]:
-        return {
-            "SurfaceColour": self.color_to_dict(self.props.surface_colour),
-            "Transparency": self.props.transparency or None,
-        }
+        attributes = {}
+        attributes["SurfaceColour"] = self.color_to_dict(self.props.surface_colour)
+        if tool.Ifc.get_schema() != "IFC2X3":
+            attributes["Transparency"] = self.props.transparency or None
+        return attributes
 
     def get_rendering_attributes(self) -> dict[str, Any]:
         if self.props.is_diffuse_colour_null:
