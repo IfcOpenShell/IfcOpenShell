@@ -31,7 +31,8 @@ from mathutils import Color
 from typing import Union, Any, Optional, Literal, TYPE_CHECKING, Sequence
 
 if TYPE_CHECKING:
-    from bonsai.bim.module.style.prop import BIMStylesProperties, BIMStyleProperties
+    from bonsai.bim.prop import Attribute
+    from bonsai.bim.module.style.prop import BIMStylesProperties, BIMStyleProperties, ColourRgb
 
 # fmt: off
 TEXTURE_MAPS_BY_METHODS = {
@@ -516,7 +517,11 @@ class Style(bonsai.core.tool.Style):
         return results
 
     @classmethod
-    def get_style_ui_props_attributes(cls, style_type: str) -> Union[bpy.types.PropertyGroup, None]:
+    def get_style_ui_props_attributes(cls, style_type: str) -> Union[
+        bpy.types.bpy_prop_collection_idprop[Attribute],
+        bpy.types.bpy_prop_collection_idprop[ColourRgb],
+        None,
+    ]:
         props = tool.Style.get_style_props()
         if style_type == "IfcExternallyDefinedSurfaceStyle":
             return props.external_style_attributes
