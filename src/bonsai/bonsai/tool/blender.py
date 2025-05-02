@@ -1243,16 +1243,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def get_last_commit_hash(cls) -> Union[str, None]:
-        """Get 8 symbols of last commit hash if it's present or return None otherwise."""
-        bbim = cls.get_bbim_extension_package()
-        commit_hash = bbim.last_commit_hash
-
-        # Commit hash is unset - user is using __init__ from repo
-        # without setting up git repository.
-        if commit_hash == "8888888":
-            return None
-
-        return commit_hash[:7]
+        return bonsai.get_last_commit_hash()
 
     @classmethod
     def get_bonsai_version(cls) -> str:

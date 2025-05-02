@@ -28,6 +28,10 @@ IN_BLENDER = sys.modules.get("bpy", None)
 if IN_BLENDER:
     import bpy
 
+# This file is executed twice - first as a bonsai-extension
+# and then as a bonsai-package.
+IN_PACKAGE = __package__ == "bonsai"
+
 import re
 import platform
 import traceback
@@ -218,17 +222,21 @@ if IN_BLENDER:
         info["binary_python_version"] = version
         return info
 
-    try:
-        import git
+    def update_commit_data() -> None:
+        try:
+            import git
 
-        # We can't just use __file__ as bonsai/__init__.py is typically not symlinked
-        # as Blender have errors symlinking main addon package file.
-        path = Path(__file__).resolve().parent
-        repo = git.Repo(str(path), search_parent_directories=True)
-        last_commit_hash = repo.head.object.hexsha
-        last_commit_date = repo.head.object.committed_datetime.isoformat()
-    except:
-        pass
+            global last_commit_hash
+            global last_commit_date
+            path = Path(__file__).resolve().parent
+            repo = git.Repo(str(path), search_parent_directories=True)
+            last_commit_hash = repo.head.object.hexsha
+            last_commit_date = repo.head.object.committed_datetime.isoformat()
+        except:
+            pass
+
+    if IN_PACKAGE:
+        update_commit_data()
 
     try:
         import ifcopenshell.api
