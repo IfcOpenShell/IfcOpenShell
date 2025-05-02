@@ -763,6 +763,13 @@ def lock_error_message(name: str) -> str:
 class OverrideDelete(bpy.types.Operator):
     bl_idname = "bim.override_object_delete"
     bl_label = "IFC Delete"
+    blender_op = bpy.ops.object.delete.get_rna_type()
+    bl_description = (
+        blender_op.description
+        + ".\nAlso makes sure changes in sync with IFC."
+        + "\n\nIn IFC projects should be used always instead of 'object.delete'"
+        + " to avoid producing invalid IFC objects."
+    )
     bl_options = {"REGISTER", "UNDO"}
     use_global: bpy.props.BoolProperty(default=False)
     confirm: bpy.props.BoolProperty(default=True)
@@ -916,6 +923,13 @@ class SelectedIdsData(NamedTuple):
 class OverrideOutlinerDelete(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.override_outliner_delete"
     bl_label = "IFC Delete"
+    blender_op = bpy.ops.outliner.delete.get_rna_type()
+    bl_description = (
+        blender_op.description
+        + ".\nAlso makes sure changes in sync with IFC."
+        + "\n\nIn IFC projects should be used always instead of 'outliner.delete'"
+        + " to avoid producing invalid IFC objects."
+    )
     bl_options = {"REGISTER", "UNDO"}
     hierarchy: bpy.props.BoolProperty(default=False)
     is_batch: bpy.props.BoolProperty(name="Is Batch", default=False)
