@@ -24,6 +24,7 @@ import json
 import os
 import platform
 import subprocess
+import contextlib
 import numpy as np
 import numpy.typing as npt
 from ifcopenshell import entity_instance
@@ -34,9 +35,10 @@ import bonsai.tool as tool
 import bonsai.bim
 import types
 import importlib
+from datetime import datetime
 from mathutils import Vector
 from pathlib import Path
-from functools import lru_cache
+from functools import lru_cache, cache
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
 from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator, TYPE_CHECKING
 from typing_extensions import assert_never
@@ -1246,9 +1248,27 @@ class Blender(bonsai.core.tool.Blender):
         return bonsai.get_last_commit_hash()
 
     @classmethod
+    @cache
     def get_bonsai_version(cls) -> str:
-        bbim = cls.get_bbim_extension_package()
-        version = bbim.bbim_semver["version"]
+        version = None
+
+        # Try to retrieve actual version for live-dev environment.
+        with contextlib.suppress(Exception):
+            import git
+
+            path = Path(__file__).resolve().parent
+            repo = git.Repo(str(path), search_parent_directories=True)
+            repo_path = repo.working_tree_dir
+            assert repo_path
+            version_ = (Path(repo_path) / "VERSION").read_text().strip()
+            commit_date = bonsai.get_last_commit_date()
+            assert commit_date
+            commit_date = datetime.fromisoformat(commit_date)
+            version = f"{version_}-alpha{commit_date.strftime('%y%m%d')}"
+
+        if version is None:
+            bbim = cls.get_bbim_extension_package()
+            version = bbim.bbim_semver["version"]
         if commit_hash := cls.get_last_commit_hash():
             version += f"-{commit_hash}"
         return version

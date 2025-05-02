@@ -252,6 +252,12 @@ if IN_BLENDER:
 
         ifcopenshell.api.add_pre_listener("*", "action_logger", log_api)
 
+        def purge_cache():
+            """Purge cache left from previous session (e.g. after reload or update)."""
+            import bonsai.tool as tool
+
+            tool.Blender.get_bonsai_version.cache_clear()
+
         def register():
             if platform.system() == "Windows":
                 clean_up_dlls_safe_links()
@@ -269,6 +275,7 @@ if IN_BLENDER:
                 bonsai.REINSTALLED_BBIM_VERSION = current_version
 
             bonsai.bim.register()
+            purge_cache()
 
         def unregister():
             if platform.system() == "Windows":
