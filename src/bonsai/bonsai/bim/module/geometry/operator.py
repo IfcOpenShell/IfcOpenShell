@@ -878,8 +878,9 @@ class OverrideDelete(bpy.types.Operator):
         tool.Ifc.set(data["new_file"])
 
     def process_arrays(self, context: bpy.types.Context) -> None:
+        ifc_file = tool.Ifc.get()
         selected_objects = set(context.selected_objects)
-        array_parents = set()
+        array_parents: set[ifcopenshell.entity_instance] = set()
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -887,7 +888,7 @@ class OverrideDelete(bpy.types.Operator):
             pset = ifcopenshell.util.element.get_pset(element, "BBIM_Array")
             if not pset:
                 continue
-            array_parents.add(tool.Ifc.get().by_guid(pset["Parent"]))
+            array_parents.add(ifc_file.by_guid(pset["Parent"]))
 
         for array_parent in array_parents:
             array_parent_obj = tool.Ifc.get_object(array_parent)
@@ -923,8 +924,8 @@ class OverrideOutlinerDelete(bpy.types.Operator):
         if tool.Ifc.get():
             return IfcStore.execute_ifc_operator(self, context)
         # https://blender.stackexchange.com/questions/203729/python-get-selected-objects-in-outliner
-        objects_to_delete = set()
-        collections_to_delete = set()
+        objects_to_delete: set[bpy.types.Object] = set()
+        collections_to_delete: set[bpy.types.Collection] = set()
         for item in context.selected_ids:
             if item.bl_rna.identifier == "Collection":
                 collection = bpy.data.collections.get(item.name)
