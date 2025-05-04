@@ -442,7 +442,7 @@ Now let's find out how to interact with GitHub in order to make changes to the B
     Click twice in "Add Item" within the *Blender: Additonal Arguments* section and add the following two items (adapt *Testing.ifc* to the name of the IFC file you want to test during Bonsai development):
 
     - --python-expr
-    - import bpy; bpy.ops.bim.load_project(filepath="/home/falken10vdl/bonsaiDevel/Testing.ifc", should_start_fresh_session=True, use_detailed_tooltip=True)
+    - import bpy; import os; os.chdir('/home/falken10vdl'); bpy.ops.bim.load_project(filepath='/home/falken10vdl/Documents/sampleIFC/Testing.ifc', should_start_fresh_session=True, use_detailed_tooltip=True)
 
     .. image:: images/VSCode-blender-additional-arguments-linux.png
        :width: 1000 px
@@ -482,7 +482,7 @@ Now let's find out how to interact with GitHub in order to make changes to the B
     .. image:: images/VSCode-and-blender.png
        :width: 1000 px
 
-    In order to be able to restart blender (and reload the addons + reload teh Testing file) we need to 
+    In order to be able to restart blender (and reload the addons + reload the Testing file) we need to 
     enable "Developer Extras" and also a good practice is to enable "Python Tooltips" in :menuselection:`Edit --> Preferences --> Interface`.
 
     .. image:: images/enable-developer-extras.png
@@ -492,6 +492,53 @@ Now let's find out how to interact with GitHub in order to make changes to the B
 
     .. image:: images/restart-blender.png
        :width: 1000 px
+
+   
+    .. note::
+
+       Once you enable "Developer Extras" you will see that you can right click in the UI and select "Source Code" to see the code behind the UI. For example in the image below you can
+       right click in the "Generate SVG" and select "Edit Source".
+
+         .. image:: images/edit_source.png
+            :width: 1000 px
+      
+      Then in the "Scripting" tab you can click and select a new editor windows that has been created (in this case it is called "uy.py").
+
+      .. image:: images/scripting_ui_code.png
+         :width: 500 px
+   
+      If you select it, you will see the relevant code with a vertical blue line marking the exact point in the source code where the UI element is defined.
+      
+      .. image:: images/marked_code.png
+         :width: 1000 px
+
+      From there it is quite usefull to search in VSCode to find the relevant file within the Bonsai source code. For that you can go to :menuselection:`Edit --> Find in Files`.
+
+      .. image:: images/vscode_search_in_files.png
+         :width: 350 px
+
+      Then you can click in the results to get the file opened in the editor.
+      
+      .. image:: images/vscode_search_results.png
+         :width: 1000 px
+
+
+    .. tip::
+
+       Once you enable "developer Extras" you will be able to select in :menuselection:`Edit --> Preferences --> Experimental --> Debugging` a number of options related to code development.
+
+       .. image:: images/blender_experimental_debugging.png
+          :width: 500 px
+       
+       In the case case of Bonsai. You have the TAB :menuselection:`Quality & Coordination --> Debug --> Experimental --> Debugging` that also provides a number of tools to ease the development process.
+
+       .. image:: images/bonsai_debug.png
+          :width: 500 px
+       
+       Finally, there are a number of usefull Blender addons that can also help you in the development process. For example "Icon Viewer" or "Math vis".
+
+       .. image:: images/blender_development_addons.png
+          :width: 500 px
 
 13. **Add a break-point**: Let's add a break-point in the code to see how it works.
     Press CTRL_SHIFT_P and type "Blender: Start". Blender will start.
@@ -592,6 +639,20 @@ Now let's find out how to interact with GitHub in order to make changes to the B
 
        .. image:: images/make-changes-linux.png
           :width: 1000 px
+
+       .. note::
+
+          Bonsai uses "Black" as the code formatter. You can install it by running the following command in the terminal:
+
+          .. code-block:: bash
+
+             python3.11 -m pip install black
+
+          Please make sure that before you commit the changes you run the following command in the terminal in the IfcOpenShell root folder:
+          
+          .. code-block:: bash
+
+             black .
 
     g. Commit the changes.
        First provide your user name and email to Git.
