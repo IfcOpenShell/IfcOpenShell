@@ -710,3 +710,10 @@ Now let's find out how to interact with GitHub in order to make changes to the B
        :width: 1000 px
 
     This will fetch the branch of the Pull Request and you will be able to test it as if you had created your own branch.
+
+    .. image:: images/pull_request_see.png
+       :width: 1000 px
+    
+    You can also use the GitHub Pull Request extension to review the Pull Request and provide comments. And of course the rest of the VSCode functionality to test, debug, improve, etc. the code.
+
+    CONGRATULATIONS! and happy testing!
