@@ -138,9 +138,11 @@ class CsvProperties(PropertyGroup):
         should_show_formatting: bool
         should_load_from_memory: bool
 
+
 class IfcFile(bpy.types.PropertyGroup):
     file_path: StringProperty(name="File Path")
     is_selected: BoolProperty(name="Selected", default=True)
+
 
 class IfcProperties(bpy.types.PropertyGroup):
     ifc_files: CollectionProperty(type=IfcFile)

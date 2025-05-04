@@ -207,7 +207,7 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
 
     def invoke(self, context, event):
         return self.execute(context)
-       
+
     def execute(self, context):
         import ifccsv
 
@@ -219,7 +219,7 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
             for node in propsIfc.ifc_files:
                 node.is_selected = False
             for node in propsIfc.ifc_files:
-                if  tool.Ifc.resolve_uri(node.file_path) == ifc_file_path:
+                if tool.Ifc.resolve_uri(node.file_path) == ifc_file_path:
                     node.is_selected = True
                     break
             if not any(node.is_selected for node in propsIfc.ifc_files):
@@ -227,7 +227,6 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                 new_file = propsIfc.ifc_files.add()
                 new_file.file_path = ifc_file_path
                 new_file.is_selected = True
-
 
         dataframes = []
         for node in propsIfc.ifc_files:
@@ -256,7 +255,9 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                 if attribute.sort != "NONE":
                     sort.append({"name": attribute.name, "order": attribute.sort})
                 if attribute.group != "NONE":
-                    groups.append({"name": attribute.name, "type": attribute.group, "varies_value": attribute.varies_value})
+                    groups.append(
+                        {"name": attribute.name, "type": attribute.group, "varies_value": attribute.varies_value}
+                    )
                 if attribute.summary != "NONE":
                     summaries.append({"name": attribute.name, "type": attribute.summary})
 
@@ -305,12 +306,14 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
 
             self.report({"INFO"}, f"Data is exported for {outFilename}.")
 
-
         if props.format == "web":
             concatenated_df = pd.concat(dataframes, ignore_index=True)
             concatenated_df.columns = self.get_unique_column_names(concatenated_df)
             tool.Web.send_webui_data(data=concatenated_df.to_csv(index=False), data_key="csv_data", event="csv_data")
-            self.report({"INFO"}, f"Data is exported to {props.format.upper()}. http://127.0.0.1:{bpy.context.scene.WebProperties['webserver_port']}") 
+            self.report(
+                {"INFO"},
+                f"Data is exported to {props.format.upper()}. http://127.0.0.1:{bpy.context.scene.WebProperties['webserver_port']}",
+            )
         else:
             self.report({"INFO"}, f"Data is exported to {props.format.upper()}.")
         return {"FINISHED"}
@@ -385,12 +388,12 @@ class SelectCsvIfcFile(bpy.types.Operator, ImportHelper):
         props.csv_ifc_file = self.filepath
         return {"FINISHED"}
 
+
 class AddIfcFiles(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.add_ifc_files"
     bl_label = "Add IFC Files"
     bl_description = "Select IFC files to add to the list"
     bl_options = {"REGISTER", "UNDO"}
-
 
     files: bpy.props.CollectionProperty(name="Files", type=bpy.types.OperatorFileListElement)
     directory: bpy.props.StringProperty(subtype="DIR_PATH")
@@ -408,12 +411,12 @@ class AddIfcFiles(bpy.types.Operator, ImportHelper):
         for file in self.files:
             new_file = propsIfc.ifc_files.add()
             new_file.file_path = tool.Ifc.get_uri(
-                os.path.join(self.directory, file.name), 
-                use_relative_path=self.use_relative_path
+                os.path.join(self.directory, file.name), use_relative_path=self.use_relative_path
             )
             new_file.is_selected = True
 
         return {"FINISHED"}
+
 
 class RemoveIfcFile(bpy.types.Operator):
     bl_idname = "bim.remove_ifc_file"
@@ -425,7 +428,8 @@ class RemoveIfcFile(bpy.types.Operator):
         props = tool.Blender.get_ifc_props()
         props.ifc_files.remove(self.index)
         return {"FINISHED"}
-    
+
+
 class AddlinkedFiles(bpy.types.Operator):
     bl_idname = "bim.add_linked_files"
     bl_label = "Add Linked Files"
@@ -458,11 +462,13 @@ class OpenIfcFile(bpy.types.Operator):
 
     def execute(self, context):
         try:
-            subprocess.Popen([
-                "blender",
-                "--python-expr",
-                f"import bpy; bpy.ops.bim.load_project(filepath='{tool.Ifc.resolve_uri(self.file_path)}', should_start_fresh_session=True)"
-            ])
+            subprocess.Popen(
+                [
+                    "blender",
+                    "--python-expr",
+                    f"import bpy; bpy.ops.bim.load_project(filepath='{tool.Ifc.resolve_uri(self.file_path)}', should_start_fresh_session=True)",
+                ]
+            )
             self.report({"INFO"}, f"Opening file: {tool.Ifc.resolve_uri(self.file_path)} in a new Blender instance.")
         except Exception as e:
             self.report({"ERROR"}, f"Failed to open file: {e}")

@@ -46,6 +46,7 @@ def register():
     bpy.types.Scene.CsvProperties = bpy.props.PointerProperty(type=prop.CsvProperties)
     bpy.types.Scene.IfcProperties = bpy.props.PointerProperty(type=prop.IfcProperties)
 
+
 def unregister():
     del bpy.types.Scene.CsvProperties
     del bpy.types.Scene.IfcProperties
