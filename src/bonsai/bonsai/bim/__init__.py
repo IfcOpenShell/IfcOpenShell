@@ -215,7 +215,6 @@ classes = [
     ui.BIM_PT_section_with_cappings,
     ui.BIM_PT_decorators_overlay,
     ui.BIM_PT_snappping,
-
 ]
 
 for mod in modules.values():
@@ -237,6 +236,7 @@ def on_register(scene):
     if not bpy.app.background:
         bpy.app.handlers.depsgraph_update_post.remove(on_register)
     is_registering = False
+
 
 def register_panel_visibility_properties():
     for panel_list in ui.TAB_PANELS.values():

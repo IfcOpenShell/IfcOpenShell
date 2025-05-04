@@ -64,67 +64,59 @@ if TYPE_CHECKING:
 
 TAB_PANELS = {
     "PROJECT": [
-#        "BIM_PT_tab_new_project_wizard",
-        {"bl_idname":"BIM_PT_tab_project_info", "bl_label":"Project Info"},
-        {"bl_idname":"BIM_PT_tab_spatial", "bl_label":"Spatial"},
-        {"bl_idname":"BIM_PT_tab_project_setup", "bl_label":"Project Setup"},
-        {"bl_idname":"BIM_PT_tab_geometry", "bl_label":"Geometry"},
-        {"bl_idname":"BIM_PT_tab_stakeholders", "bl_label":"Stakeholders"},
-        {"bl_idname":"BIM_PT_tab_grouping_and_filtering", "bl_label":"Grouping and Filtering"},
+        #        "BIM_PT_tab_new_project_wizard",
+        {"bl_idname": "BIM_PT_tab_project_info", "bl_label": "Project Info"},
+        {"bl_idname": "BIM_PT_tab_spatial", "bl_label": "Spatial"},
+        {"bl_idname": "BIM_PT_tab_project_setup", "bl_label": "Project Setup"},
+        {"bl_idname": "BIM_PT_tab_geometry", "bl_label": "Geometry"},
+        {"bl_idname": "BIM_PT_tab_stakeholders", "bl_label": "Stakeholders"},
+        {"bl_idname": "BIM_PT_tab_grouping_and_filtering", "bl_label": "Grouping and Filtering"},
     ],
     "OBJECT": [
-        {"bl_idname":"BIM_PT_tab_object_metadata", "bl_label":"Object Metadata"},
-        {"bl_idname":"BIM_PT_tab_misc", "bl_label":"Misc"},
-
+        {"bl_idname": "BIM_PT_tab_object_metadata", "bl_label": "Object Metadata"},
+        {"bl_idname": "BIM_PT_tab_misc", "bl_label": "Misc"},
     ],
     "GEOMETRY": [
-        {"bl_idname":"BIM_PT_tab_placement", "bl_label":"Placement"},
-        {"bl_idname":"BIM_PT_tab_representations", "bl_label":"Representations"},
-        {"bl_idname":"BIM_PT_tab_geometric_relationships", "bl_label":"Geometric Relationships"},
-        {"bl_idname":"BIM_PT_tab_parametric_geometry", "bl_label":"Parametric Geometry"},
-        {"bl_idname":"BIM_PT_tab_object_materials", "bl_label":"Object Materials"},
-        {"bl_idname":"BIM_PT_tab_materials", "bl_label":"Materials"},
-        {"bl_idname":"BIM_PT_tab_styles", "bl_label":"Styles"},
-        {"bl_idname":"BIM_PT_tab_profiles", "bl_label":"Profiles"},
-
+        {"bl_idname": "BIM_PT_tab_placement", "bl_label": "Placement"},
+        {"bl_idname": "BIM_PT_tab_representations", "bl_label": "Representations"},
+        {"bl_idname": "BIM_PT_tab_geometric_relationships", "bl_label": "Geometric Relationships"},
+        {"bl_idname": "BIM_PT_tab_parametric_geometry", "bl_label": "Parametric Geometry"},
+        {"bl_idname": "BIM_PT_tab_object_materials", "bl_label": "Object Materials"},
+        {"bl_idname": "BIM_PT_tab_materials", "bl_label": "Materials"},
+        {"bl_idname": "BIM_PT_tab_styles", "bl_label": "Styles"},
+        {"bl_idname": "BIM_PT_tab_profiles", "bl_label": "Profiles"},
     ],
     "DRAWINGS": [
-        {"bl_idname":"BIM_PT_tab_sheets", "bl_label":"Sheets"},
-        {"bl_idname":"BIM_PT_tab_drawings", "bl_label":"Drawings"},
-        {"bl_idname":"BIM_PT_tab_schedules", "bl_label":"Schedules"},
-        {"bl_idname":"BIM_PT_tab_references", "bl_label":"References"},
-
+        {"bl_idname": "BIM_PT_tab_sheets", "bl_label": "Sheets"},
+        {"bl_idname": "BIM_PT_tab_drawings", "bl_label": "Drawings"},
+        {"bl_idname": "BIM_PT_tab_schedules", "bl_label": "Schedules"},
+        {"bl_idname": "BIM_PT_tab_references", "bl_label": "References"},
     ],
     "SERVICES": [
-        {"bl_idname":"BIM_PT_tab_services", "bl_label":"Services"},
-        {"bl_idname":"BIM_PT_tab_zones", "bl_label":"Zones"},
-        {"bl_idname":"BIM_PT_tab_solar_analysis", "bl_label":"Solar Analysis"},
-        {"bl_idname":"BIM_PT_tab_lighting", "bl_label":"Lighting"},
-
+        {"bl_idname": "BIM_PT_tab_services", "bl_label": "Services"},
+        {"bl_idname": "BIM_PT_tab_zones", "bl_label": "Zones"},
+        {"bl_idname": "BIM_PT_tab_solar_analysis", "bl_label": "Solar Analysis"},
+        {"bl_idname": "BIM_PT_tab_lighting", "bl_label": "Lighting"},
     ],
     "STRUCTURE": [
-        {"bl_idname":"BIM_PT_tab_structural", "bl_label":"Structural"},
-
+        {"bl_idname": "BIM_PT_tab_structural", "bl_label": "Structural"},
     ],
     "SCHEDULING": [
-        {"bl_idname":"BIM_PT_tab_status", "bl_label":"Status"},
-        {"bl_idname":"BIM_PT_tab_qto", "bl_label":"Quantity Take-off"},
-        {"bl_idname":"BIM_PT_tab_resources", "bl_label":"Resources"},
-        {"bl_idname":"BIM_PT_tab_cost", "bl_label":"Cost"},
-        {"bl_idname":"BIM_PT_tab_sequence", "bl_label":"Construction Scheduling"},
-
+        {"bl_idname": "BIM_PT_tab_status", "bl_label": "Status"},
+        {"bl_idname": "BIM_PT_tab_qto", "bl_label": "Quantity Take-off"},
+        {"bl_idname": "BIM_PT_tab_resources", "bl_label": "Resources"},
+        {"bl_idname": "BIM_PT_tab_cost", "bl_label": "Cost"},
+        {"bl_idname": "BIM_PT_tab_sequence", "bl_label": "Construction Scheduling"},
     ],
     "FM": [
-        {"bl_idname":"BIM_PT_tab_handover", "bl_label":"Handover"},
-        {"bl_idname":"BIM_PT_tab_operations", "bl_label":"Operations"},
-
+        {"bl_idname": "BIM_PT_tab_handover", "bl_label": "Handover"},
+        {"bl_idname": "BIM_PT_tab_operations", "bl_label": "Operations"},
     ],
     "QUALITY": [
-        {"bl_idname":"BIM_PT_tab_quality_control", "bl_label":"Quality Control"},
-        {"bl_idname":"BIM_PT_tab_clash_detection", "bl_label":"Clash Detection"},
-        {"bl_idname":"BIM_PT_tab_collaboration", "bl_label":"Collaboration"},
-        {"bl_idname":"BIM_PT_tab_sandbox", "bl_label":"Sandbox"},
-
+        {"bl_idname": "BIM_PT_tab_quality_control", "bl_label": "Quality Control"},
+        {"bl_idname": "BIM_PT_tab_clash_detection", "bl_label": "Clash Detection"},
+        {"bl_idname": "BIM_PT_tab_collaboration", "bl_label": "Collaboration"},
+        {"bl_idname": "BIM_PT_tab_sandbox", "bl_label": "Sandbox"},
     ],
     "BOOKMARK": [
         {},
@@ -147,10 +139,22 @@ TAB_VISIBILITY = {
 
 
 def get_tab_name(bl_idname):
-    return next((k for k, v in reversed(list(TAB_PANELS.items())) if any(d.get("bl_idname") == bl_idname for d in v)), "BOOKMARK")
+    return next(
+        (k for k, v in reversed(list(TAB_PANELS.items())) if any(d.get("bl_idname") == bl_idname for d in v)),
+        "BOOKMARK",
+    )
+
 
 def get_bl_label(bl_idname):
-    return next((panel["bl_label"] for panels in TAB_PANELS.values() for panel in panels if isinstance(panel, dict) and panel.get("bl_idname") == bl_idname), "NO LABEL")
+    return next(
+        (
+            panel["bl_label"]
+            for panels in TAB_PANELS.values()
+            for panel in panels
+            if isinstance(panel, dict) and panel.get("bl_idname") == bl_idname
+        ),
+        "NO LABEL",
+    )
 
 
 class IFCFileSelector:
@@ -1053,7 +1057,7 @@ class BIM_PT_tabs(Panel):
             ).tab = "PROJECT"
         if TAB_VISIBILITY["OBJECT"]:
             self.draw_tab_entry(row_left, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
-        if TAB_VISIBILITY["GEOMETRY"]:    
+        if TAB_VISIBILITY["GEOMETRY"]:
             self.draw_tab_entry(row_left, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
         if TAB_VISIBILITY["DRAWINGS"]:
             self.draw_tab_entry(row_left, "DOCUMENTS", "DRAWINGS", is_ifc_project, aprops.tab == "DRAWINGS")
@@ -1082,19 +1086,13 @@ class BIM_PT_tabs(Panel):
                     row_left.prop(aprops, "active_tab", text="", icon="BLANK1")
                 else:
                     row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
-        row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False) #space for Switch
-
+        row_left.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)  # space for Switch
 
         col_right = split.column(align=True)
         row_right = col_right.row(align=True)
-        row_right.alignment = 'RIGHT'
+        row_right.alignment = "RIGHT"
 
         row_right.operator("bim.manage_tab_visibility", icon="PREFERENCES", text="")
-
-
-
-
-
 
         row = self.layout.row(align=True)
         row.prop(aprops, "tab", text="")
@@ -1104,8 +1102,6 @@ class BIM_PT_tabs(Panel):
             if TAB_VISIBILITY[tab]:
                 if aprops.tab == tab:
                     row.operator("bim.manage_tab_panels", text="", icon="PREFERENCES").tab_name = tab
-
-
 
         if bonsai.REINSTALLED_BBIM_VERSION:
             box = self.layout.box()
@@ -1218,8 +1214,8 @@ class BIM_PT_tab_project_info(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-        if not tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)):            
-            
+        if not tool.Blender.is_tab(context, get_tab_name(cls.bl_idname)):
+
             return False
         bim_props = tool.Blender.get_bim_props()
         pprops = tool.Project.get_project_props()
@@ -1738,7 +1734,7 @@ class BIM_PT_tab_placement(Panel):
             return False
         if getattr(context.scene, prop_bookmark, False):
             return tool.Blender.is_tab(context, "BOOKMARK")
-    
+
         return (
             tool.Blender.is_tab(context, get_tab_name(cls.bl_idname))
             and tool.Ifc.get()
