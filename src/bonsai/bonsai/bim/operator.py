@@ -1627,8 +1627,10 @@ class BIM_UL_tab_panels(bpy.types.UIList):
             icon="SOLO_ON" if item.get("bookmarked", False) else "SOLO_OFF",
         ).action = f"BOOKMARK_{item.name}"
 
+
 class BIM_OT_toggle_panel_visibility(bpy.types.Operator):
     """Toggle Panel Visibility"""
+
     bl_idname = "bim.toggle_panel_visibility"
     bl_label = "Toggle Panel Visibility"
     bl_options = {"REGISTER", "UNDO"}
@@ -1657,8 +1659,10 @@ class BIM_OT_toggle_panel_visibility(bpy.types.Operator):
         self.report({"INFO"}, f"Toggled visibility for {panel_name}.")
         return {"FINISHED"}
 
+
 class BIM_OT_bookmark_panel(bpy.types.Operator):
     """Bookmark Panel"""
+
     bl_idname = "bim.bookmark_panel"
     bl_label = "Bookmark Panel"
     bl_options = {"REGISTER", "UNDO"}
@@ -1675,7 +1679,9 @@ class BIM_OT_bookmark_panel(bpy.types.Operator):
                 prop_name = f"bookmark_{panel_name.lower()}"
                 if hasattr(context.scene, prop_name):
                     setattr(context.scene, prop_name, item["bookmarked"])
-                    print(f"Toggled bookmark for panel: {panel_name} to {'bookmarked' if item['bookmarked'] else 'Not bookmarked'}")
+                    print(
+                        f"Toggled bookmark for panel: {panel_name} to {'bookmarked' if item['bookmarked'] else 'Not bookmarked'}"
+                    )
                 else:
                     print(f"Property '{prop_name}' not found on Scene.")
 
@@ -1701,10 +1707,11 @@ class BIM_OT_bookmark_panel(bpy.types.Operator):
 
         self.report({"INFO"}, f"Toggled bookmark for {panel_name}.")
         return {"FINISHED"}
-    
+
 
 class BIM_OT_manage_tab_panels(bpy.types.Operator):
     """Manage Tab Panels"""
+
     bl_idname = "bim.manage_tab_panels"
     bl_label = "Manage Tab Panels"
     bl_options = {"REGISTER", "UNDO"}
@@ -1716,8 +1723,8 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
 
         context.scene.tab_panels.clear()
         for panel_data in TAB_PANELS.get(self.tab_name, []):
-            panel_name = panel_data.get("bl_idname","")
-            panel_label = panel_data.get("bl_label","")
+            panel_name = panel_data.get("bl_idname", "")
+            panel_label = panel_data.get("bl_label", "")
             if not panel_name or not panel_label:
                 continue
             item = context.scene.tab_panels.add()
@@ -1752,8 +1759,10 @@ class BIM_OT_manage_tab_panels(bpy.types.Operator):
         self.report({"INFO"}, f"Panels for {self.tab_name} managed successfully.")
         return {"FINISHED"}
 
+
 class BIM_OT_manage_tab_visibility(bpy.types.Operator):
     """Manage Tab Visibility"""
+
     bl_idname = "bim.manage_tab_visibility"
     bl_label = "Manage Tab Visibility"
     bl_options = {"REGISTER", "UNDO"}
@@ -1762,15 +1771,15 @@ class BIM_OT_manage_tab_visibility(bpy.types.Operator):
         layout = self.layout
         row = layout.row()
         row = self.layout.row(align=True)
-        row.alignment = 'RIGHT'
+        row.alignment = "RIGHT"
 
         row.operator("bim.reset_ui_layout", icon="FILE_REFRESH", text="")
         row.operator("bim.load_json_layout", icon="IMPORT", text="")
         row.operator("bim.save_json_layout", icon="EXPORT", text="")
         row = layout.row()
         row = self.layout.row(align=True)
-        row.alignment = 'CENTER'
-        
+        row.alignment = "CENTER"
+
         for tab_name, is_visible in TAB_VISIBILITY.items():
             row = layout.row()
             row.label(text=tab_name)
@@ -1784,8 +1793,10 @@ class BIM_OT_manage_tab_visibility(bpy.types.Operator):
     def invoke(self, context, event):
         return context.window_manager.invoke_popup(self)
 
+
 class BIM_OT_toggle_tab_visibility(bpy.types.Operator):
     """Toggle Tab Visibility"""
+
     bl_idname = "bim.toggle_tab_visibility"
     bl_label = "Toggle Tab Visibility"
     bl_options = {"REGISTER", "UNDO"}
@@ -1795,7 +1806,7 @@ class BIM_OT_toggle_tab_visibility(bpy.types.Operator):
     def execute(self, context):
         if self.tab_name in TAB_VISIBILITY:
             TAB_VISIBILITY[self.tab_name] = not TAB_VISIBILITY[self.tab_name]
-        
+
         for area in bpy.context.window.screen.areas:
             if area.type == "PROPERTIES":
                 area.tag_redraw()
@@ -1803,11 +1814,14 @@ class BIM_OT_toggle_tab_visibility(bpy.types.Operator):
         self.report({"INFO"}, f"Toggled visibility for {self.tab_name}.")
         return {"FINISHED"}
 
+
 import json
 import bpy
 
+
 class BIM_OT_load_json_layout(bpy.types.Operator):
     """Load JSON Layout"""
+
     bl_idname = "bim.load_json_layout"
     bl_label = "Load UI Layout"
     bl_options = {"REGISTER", "UNDO"}
@@ -1844,7 +1858,7 @@ class BIM_OT_load_json_layout(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        ifc_file_path = bpy.context.scene.BIMProperties['ifc_file']
+        ifc_file_path = bpy.context.scene.BIMProperties["ifc_file"]
         if not ifc_file_path:
             self.report({"ERROR"}, "No IFC file is associated with the project.")
             return {"CANCELLED"}
@@ -1853,8 +1867,10 @@ class BIM_OT_load_json_layout(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
+
 class BIM_OT_save_json_layout(bpy.types.Operator):
     """Save JSON Layout"""
+
     bl_idname = "bim.save_json_layout"
     bl_label = "Save UI Layout"
     bl_options = {"REGISTER", "UNDO"}
@@ -1863,7 +1879,7 @@ class BIM_OT_save_json_layout(bpy.types.Operator):
 
     def execute(self, context):
         try:
-            ifc_file_path = bpy.context.scene.BIMProperties['ifc_file']
+            ifc_file_path = bpy.context.scene.BIMProperties["ifc_file"]
             if not ifc_file_path:
                 self.report({"ERROR"}, "No IFC file is associated with the project.")
                 return {"CANCELLED"}
@@ -1883,7 +1899,9 @@ class BIM_OT_save_json_layout(bpy.types.Operator):
                     show_prop_name = f"show_{panel_name.lower()}"
                     bookmark_prop_name = f"bookmark_{panel_name.lower()}"
                     layout_data["scene_properties"][show_prop_name] = getattr(context.scene, show_prop_name, True)
-                    layout_data["scene_properties"][bookmark_prop_name] = getattr(context.scene, bookmark_prop_name, False)
+                    layout_data["scene_properties"][bookmark_prop_name] = getattr(
+                        context.scene, bookmark_prop_name, False
+                    )
 
             with open(self.filepath, "w") as file:
                 json.dump(layout_data, file, indent=4)
@@ -1895,7 +1913,7 @@ class BIM_OT_save_json_layout(bpy.types.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        ifc_file_path = bpy.context.scene.BIMProperties['ifc_file']
+        ifc_file_path = bpy.context.scene.BIMProperties["ifc_file"]
         if not ifc_file_path:
             self.report({"ERROR"}, "No IFC file is associated with the project.")
             return {"CANCELLED"}
@@ -1904,8 +1922,10 @@ class BIM_OT_save_json_layout(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {"RUNNING_MODAL"}
 
+
 class BIM_OT_reset_ui_layout(bpy.types.Operator):
     """Reset UI Layout to Default"""
+
     bl_idname = "bim.reset_ui_layout"
     bl_label = "Reset UI Layout"
     bl_options = {"REGISTER", "UNDO"}
