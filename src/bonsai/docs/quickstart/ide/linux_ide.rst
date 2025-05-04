@@ -11,6 +11,8 @@ variable and stack contents, etc. ) and see the results in blender
 
 - Steps 7-14 will allow you to interact with GitHub to make changes to the Bonsai project.
 
+- Step 15 will allow you to download someone else's pull request and test it in your local machine.
+
 We will be using AlmaLinux 9 as our operating system and Visual Studio Code as our 
 Integrated Development Environment (IDE) and we will create a dedicated user for Development.
 
@@ -691,6 +693,20 @@ Now let's find out how to interact with GitHub in order to make changes to the B
 
        .. image:: images/pull-request-linux.png
           :width: 1000 px
+       
+       .. note::
+
+          If you need to update the Pull Request with new changes, you can do it by making the changes in the local repository and then commit and push them to the same branch. 
+          The Pull Request will be updated automatically. You can also add comments to the Pull Request to explain the changes made.
+
+
 
     CONGRATULATIONS! You have now made a change in the Bonsai project and created a Pull Request to the main branch of the project. Happy coding and documenting!
 
+15. **Test someone else's Pull Request**: Ofen times you want to provide feedback to someone else's Pull Request. 
+    A simple way to do this is by using the GitHub Pull Request extension in VSCode. Please refer to `GitHub Pull Requests in Visual Studio Code <https://code.visualstudio.com/blogs/2018/09/10/introducing-github-pullrequests>`__  for more information.
+
+    .. image:: images/checkout_pull_request_vscode.png
+       :width: 1000 px
+
+    This will fetch the branch of the Pull Request and you will be able to test it as if you had created your own branch.
