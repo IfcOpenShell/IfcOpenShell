@@ -271,6 +271,7 @@ class RemoveType(bpy.types.Operator, tool.Ifc.Operator):
         obj = tool.Ifc.get_object(element)
         tool.Geometry.delete_ifc_object(obj)
 
+
 class RefreshTumbnail(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.refresh_thumbnail"
     bl_label = "Refresh Thumbnail"

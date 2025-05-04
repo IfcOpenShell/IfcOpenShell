@@ -70,7 +70,6 @@ class BIM_MT_type_menu(bpy.types.Menu):
         op.element = props.menu_relating_type_id
 
 
-
 class LaunchTypeMenu(bpy.types.Operator):
     bl_idname = "bim.launch_type_menu"
     bl_label = "Launch Type Menu"
