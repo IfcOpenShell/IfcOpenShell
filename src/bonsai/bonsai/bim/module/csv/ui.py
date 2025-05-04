@@ -22,17 +22,19 @@ import bonsai.tool as tool
 from bpy.types import Panel
 from bonsai.bim.module.search.data import SearchData
 
+
 class BIM_UL_ifc_files(bpy.types.UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-        if self.layout_type in {'DEFAULT', 'COMPACT'}:
+        if self.layout_type in {"DEFAULT", "COMPACT"}:
             row = layout.row(align=True)
-            row.prop(item, "file_path", text="")  
-            row.prop(item, "is_selected", text="")  
+            row.prop(item, "file_path", text="")
+            row.prop(item, "is_selected", text="")
             op = row.operator("bim.open_ifc_file", icon="HIDE_OFF", text="")
             op.file_path = item.file_path
             row.operator("bim.remove_ifc_file", icon="X", text="").index = index
-        elif self.layout_type in {'GRID'}:
+        elif self.layout_type in {"GRID"}:
             layout.label(text=item.file_path)
+
 
 class BIM_PT_ifccsv(Panel):
     bl_label = "Spreadsheet Import/Export"
