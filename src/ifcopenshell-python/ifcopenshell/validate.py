@@ -603,9 +603,6 @@ def to_string_header_entity(header_entity):
     # Prefer native .toString() if available (native IfcOpenShell wrapper)
     if hasattr(header_entity, 'toString'):
         return header_entity.toString()
-
-    if hasattr(header_entity, 'toString'):
-        return header_entity.toString()
     elif hasattr(header_entity, '_fields'):
         values = [repr(getattr(header_entity, f)) for f in header_entity._fields]
         return f"{type(header_entity).__name__.upper()}({','.join(values)})"
