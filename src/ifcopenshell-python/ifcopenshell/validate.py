@@ -601,9 +601,9 @@ def to_string_header_entity(header_entity):
     """Recreate IFC header string representation, like FILE_NAME(...)"""
     
     # Prefer native .toString() if available (native IfcOpenShell wrapper)
-    if hasattr(header_entity, 'toString'):
+    if isinstance(header_entity, W.HeaderEntity):
         return header_entity.toString()
-    elif hasattr(header_entity, '_fields'):
+    elif isinstance(header_entity, tuple):
         values = [repr(getattr(header_entity, f)) for f in header_entity._fields]
         return f"{type(header_entity).__name__.upper()}({','.join(values)})"
     else:
@@ -614,7 +614,7 @@ def validate_ifc_header(f: Union[ifcopenshell.file, ifcopenshell.simple_spf.file
     AGGREGATE_TYPE = "LIST [ 1 : ? ] OF STRING (256)"
     STRING_TYPE = "STRING (256)"
 
-    def log_error(header_entity: W.HeaderEntity, name: str, index: int, expected_type: str, provided_type: str) -> None:
+    def log_error(header_entity: Union[W.HeaderEntity, tuple], name: str, index: int, expected_type: str, provided_type: str) -> None:
         logger.error(
             (
                 "For instance:\n    %s\n    %s\n"
