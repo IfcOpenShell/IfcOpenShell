@@ -165,6 +165,8 @@ def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) ->
     if inst.is_a("IfcCartesianTransformationOperator3DnonUniform"):
         scale2 = inst.Scale2 if inst.Scale2 is not None else scale1
         scale3 = inst.Scale3 if inst.Scale3 is not None else scale1
+    else:
+        scale2 = scale3 = scale1
 
     m4.T[0] *= scale1
     m4.T[1] *= scale2
