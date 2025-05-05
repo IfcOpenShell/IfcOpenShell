@@ -3179,7 +3179,7 @@ class OverrideMove(bpy.types.Operator):
 
     def _execute(self, context):
         # Get filling objects
-        selection = []
+        selection: list[bpy.types.Object] = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -3196,8 +3196,8 @@ class OverrideMove(bpy.types.Operator):
 
         # Get aggregates
         props = tool.Aggregate.get_aggregate_props()
-        not_editing_objs = [o.obj for o in props.not_editing_objects]
-        aggregates_to_move = []
+        not_editing_objs = [obj for o in props.not_editing_objects if (obj := o.obj)]
+        aggregates_to_move: list[bpy.types.Object] = []
         for obj in context.selected_objects:
             self.new_active_obj = None
             if obj in not_editing_objs:
@@ -3229,10 +3229,9 @@ class OverrideMove(bpy.types.Operator):
             if aggregate:
                 aggregates_to_move.append(tool.Ifc.get_object(aggregate))
                 obj.select_set(False)
-        aggregates_to_move = set(aggregates_to_move)
 
         if aggregates_to_move:
-            for obj in aggregates_to_move:
+            for obj in set(aggregates_to_move):
                 obj.select_set(True)
                 for part in tool.Aggregate.get_parts_recursively(tool.Ifc.get_entity(obj)):
                     part_obj = tool.Ifc.get_object(part)
@@ -3291,6 +3290,7 @@ class EditRepresentationItemLayer(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Geometry.get_object_geometry_props(obj)
         new_layer = ifc_file.by_id(int(props.representation_item_layer))
 
+        assert props.active_item
         item = ifc_file.by_id(int(props.active_item.ifc_definition_id))
         item_layer = next(iter(item.LayerAssignment), None)
 
