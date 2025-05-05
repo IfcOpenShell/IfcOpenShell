@@ -599,29 +599,21 @@ def validate_guid(guid: str) -> Union[str, None]:
 
 def to_string_header_entity(header_entity):
     """Recreate IFC header string representation, like FILE_NAME(...)"""
-    def format_value(val):
-        if isinstance(val, str):
-            return f"'{val}'"
-        elif isinstance(val, tuple):
-            return "(" + ",".join(format_value(v) for v in val) + ")"
-        return str(val)
-
+    
     # Prefer native .toString() if available (native IfcOpenShell wrapper)
     if hasattr(header_entity, 'toString'):
         return header_entity.toString()
 
-    if hasattr(header_entity, '_fields'):
-        values = [format_value(getattr(header_entity, f)) for f in header_entity._fields]
+    if hasattr(header_entity, 'toString'):
+        return header_entity.toString()
+    elif hasattr(header_entity, '_fields'):
+        values = [repr(getattr(header_entity, f)) for f in header_entity._fields]
+        return f"{type(header_entity).__name__.upper()}({','.join(values)})"
     else:
         raise TypeError(f"Cannot stringify header_entity of type {type(header_entity)}")
 
-    return f"{type(header_entity).__name__.upper()}({','.join(values)})"
-
 def validate_ifc_header(f: Union[ifcopenshell.file, ifcopenshell.simple_spf.file], logger: Logger) -> None:
-    if type(f) is ifcopenshell.file:
-        header: W.IfcSpfHeader = f.wrapped_data.header
-    else:
-        header: types.SimpleNamespace = f.header
+    header: Union[W.IfcSpfHeader, types.SimpleNamespace] = f.header
     AGGREGATE_TYPE = "LIST [ 1 : ? ] OF STRING (256)"
     STRING_TYPE = "STRING (256)"
 
