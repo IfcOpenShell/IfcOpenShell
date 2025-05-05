@@ -10,6 +10,8 @@ variable and stack contents, etc. ) and see the results in blender
 
 - Steps 7-14 will allow you to interact with GitHub to make changes to the Bonsai project.
 
+- Step 15 will allow you to download someone else's pull request and test it in your local machine.
+
 We will be using Windows 11 as our operating system and Visual Studio Code as our 
 Integrated Development Environment (IDE) and we will create a dedicated user for Development.
 
@@ -446,20 +448,66 @@ Now let's find out how to interact with GitHub in order to make changes to the B
     .. image:: images/restart-blender.png
        :width: 1000 px
 
-   .. note::
-      The Windows conpty Dll will force the terminal to be detached once Blender is restarted and you will lose the console output. 
-      In order to avoid that, you can enable the following settings in VSCode:
 
-      Go to :menuselection:`File --> Preferences --> Settings` and search for "terminal.integrated.windows". Enable both *terminal.integrated.windowsEnableConpty* 
-      and *terminal.integrated.windowsUseConptyDll*.
+    .. warning::
+       The Windows conpty Dll will force the terminal to be detached once Blender is restarted and you will lose the console output. 
+       In order to avoid that, you can enable the following settings in VSCode:
 
-      .. image:: images/terminal-integrated-windows.png
-         :width: 1000 px
+       Go to :menuselection:`File --> Preferences --> Settings` and search for "terminal.integrated.windows". Enable both *terminal.integrated.windowsEnableConpty* 
+       and *terminal.integrated.windowsUseConptyDll*.
 
-      - *terminal.integrated.windowsEnableConpty* makes it possible to restart blender from Bonsai restart_blender command.
+       .. image:: images/terminal-integrated-windows.png
+          :width: 1000 px
 
-      - *terminal.integrated.windowsUseConptyDll* makes it possible to maintain the console attached so the output of the reloaded blender instance is still visible in the terminal.
+       - *terminal.integrated.windowsEnableConpty* makes it possible to restart blender from Bonsai restart_blender command.
+
+       - *terminal.integrated.windowsUseConptyDll* makes it possible to maintain the console attached so the output of the reloaded blender instance is still visible in the terminal.
       
+    .. note::
+
+       Once you enable "Developer Extras" you will see that you can right click in the UI and select "Source Code" to see the code behind the UI. For example in the image below you can
+       right click in the "Generate SVG" and select "Edit Source".
+
+         .. image:: images/edit_source.png
+            :width: 1000 px
+      
+       Then in the "Scripting" tab you can click and select a new editor windows that has been created (in this case it is called "uy.py").
+
+       .. image:: images/scripting_ui_code.png
+          :width: 500 px
+   
+       If you select it, you will see the relevant code with a vertical blue line marking the exact point in the source code where the UI element is defined.
+      
+       .. image:: images/marked_code.png
+          :width: 1000 px
+
+       From there it is quite usefull to search in VSCode to find the relevant file within the Bonsai source code. For that you can go to :menuselection:`Edit --> Find in Files`.
+
+       .. image:: images/vscode_search_in_files.png
+          :width: 350 px
+
+       Then you can click in the results to get the file opened in the editor.
+      
+       .. image:: images/vscode_search_results.png
+          :width: 1000 px
+
+
+    .. tip::
+
+       Once you enable "developer Extras" you will be able to select in :menuselection:`Edit --> Preferences --> Experimental --> Debugging` a number of options related to code development.
+
+       .. image:: images/blender_experimental_debugging.png
+          :width: 500 px
+       
+       In the case case of Bonsai. You have the TAB :menuselection:`Quality & Coordination --> Debug --> Experimental --> Debugging` that also provides a number of tools to ease the development process.
+
+       .. image:: images/bonsai_debug.png
+          :width: 500 px
+       
+       Finally, there are a number of usefull Blender addons that can also help you in the development process. For example "Icon Viewer" or "Math vis".
+
+       .. image:: images/blender_development_addons.png
+          :width: 500 px
 
 
 13. **Add a break-point**: Let's add a break-point in the code to see how it works.
@@ -605,3 +653,17 @@ Now let's find out how to interact with GitHub in order to make changes to the B
 
     CONGRATULATIONS! You have now made a change in the Bonsai project and created a Pull Request to the main branch of the project. Happy coding and documenting!
 
+15. **Test someone else's Pull Request**: Ofen times you want to provide feedback to someone else's Pull Request. 
+    A simple way to do this is by using the GitHub Pull Request extension in VSCode. Please refer to `GitHub Pull Requests in Visual Studio Code <https://code.visualstudio.com/blogs/2018/09/10/introducing-github-pullrequests>`__  for more information.
+
+    .. image:: images/checkout_pull_request_vscode.png
+       :width: 1000 px
+
+    This will fetch the branch of the Pull Request and you will be able to test it as if you had created your own branch.
+
+    .. image:: images/pull_request_see.png
+       :width: 1000 px
+    
+    You can also use the GitHub Pull Request extension to review the Pull Request and provide comments. And of course the rest of the VSCode functionality to test, debug, improve, etc. the code.
+
+    CONGRATULATIONS! and happy testing!
