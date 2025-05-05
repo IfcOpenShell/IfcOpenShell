@@ -771,7 +771,11 @@ class OverrideDelete(bpy.types.Operator):
         + " to avoid producing invalid IFC objects."
     )
     bl_options = {"REGISTER", "UNDO"}
+
+    # IFC Delete is always global as we assume just 1 scene in IFC project.
+    # The prop is only needed to support default Blender behaviour when IFC project is not loaded.
     use_global: bpy.props.BoolProperty(default=False)
+
     confirm: bpy.props.BoolProperty(default=True)
     is_batch: bpy.props.BoolProperty(name="Is Batch", default=False)
 
@@ -781,16 +785,19 @@ class OverrideDelete(bpy.types.Operator):
 
     def execute(self, context):
         # Deep magick from the dawn of time
-        if tool.Ifc.get():
+        if tool.Ifc.get() is None:
+            bpy.ops.object.delete(use_global=self.use_global, confirm=self.confirm)
+            # TODO: is this still needed?
+            # Required otherwise gizmos are still visible
+            context.view_layer.objects.active = None
+            return {"FINISHED"}
+        else:
             return IfcStore.execute_ifc_operator(self, context)
-        for obj in context.selected_objects:
-            bpy.data.objects.remove(obj)
-        # Required otherwise gizmos are still visible
-        context.view_layer.objects.active = None
-        return {"FINISHED"}
 
     def invoke(self, context, event):
-        if tool.Ifc.get():
+        if tool.Ifc.get() is None:
+            return bpy.ops.object.delete("INVOKE_DEFAULT", use_global=self.use_global, confirm=self.confirm)
+        else:
             total_elements = len(tool.Ifc.get().wrapped_data.entity_names())
             total_polygons = sum([len(o.data.polygons) for o in context.selected_objects if o.type == "MESH"])
             # These numbers are a bit arbitrary, but basically batching is only
@@ -800,8 +807,6 @@ class OverrideDelete(bpy.types.Operator):
                 return context.window_manager.invoke_props_dialog(self)
             elif self.confirm:
                 return context.window_manager.invoke_confirm(self, event)
-        elif self.confirm:
-            return context.window_manager.invoke_confirm(self, event)
         self.confirm = True
         return self.execute(context)
 
