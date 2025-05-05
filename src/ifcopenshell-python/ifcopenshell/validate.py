@@ -603,7 +603,7 @@ def to_string_header_entity(header_entity):
     # Prefer native .toString() if available (native IfcOpenShell wrapper)
     if isinstance(header_entity, W.HeaderEntity):
         return header_entity.toString()
-    elif isinstance(header_entity, tuple):
+    elif hasattr(header_entity, '_fields'):
         values = [repr(getattr(header_entity, f)) for f in header_entity._fields]
         return f"{type(header_entity).__name__.upper()}({','.join(values)})"
     else:
