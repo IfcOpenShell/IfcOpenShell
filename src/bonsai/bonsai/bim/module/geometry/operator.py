@@ -99,8 +99,18 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
-        if self.type == "SELECTED" and context.mode != "EDIT":
-            self.report({"ERROR"}, "Separate by selection requires EDIT mode.")
+        if not tool.Ifc.get():
+            return bpy.ops.mesh.separate(type=self.type)
+        elif context.mode == "EDIT_MESH":
+            if any(
+                tool.Ifc.get_entity(obj) or tool.Geometry.is_representation_item(obj) for obj in context.objects_in_mode
+            ):
+                self.report({"WARNING"}, "IFC Separate is not yet supported for EDIT mode with IFC elements.")
+                return {"CANCELLED"}
+            return bpy.ops.mesh.separate(type=self.type)
+
+        if self.type == "SELECTED":
+            self.report({"ERROR"}, "Separate by selection requires 'EDIT_MESH' mode.")
             return {"CANCELLED"}
 
         non_ifc_objects: list[bpy.types.Object] = []
