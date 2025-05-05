@@ -276,6 +276,8 @@ class ColourByProperty(Operator):
             colourscheme = {cs.name: {"colour": cs.colour[0:3], "total": 0} for cs in props.colourscheme}
 
         for obj in context.visible_objects:
+            if obj.type not in ("MESH", "CURVE"):
+                continue
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
