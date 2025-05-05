@@ -699,6 +699,14 @@ Now let's find out how to interact with GitHub in order to make changes to the B
           If you need to update the Pull Request with new changes, you can do it by making the changes in the local repository and then commit and push them to the same branch. 
           The Pull Request will be updated automatically. You can also add comments to the Pull Request to explain the changes made.
 
+       .. warning::
+
+          Sometimes the process of changing the initial code for the Pull Request takes enough time that already the upstream main branch has changed significately. This means that a direct merge to the upstream branch
+          is not possible without conflicts. In this case you will need to rebase the Pull Request branch with the upstream main branch.This takes all your commits from the current PR branch and reapplies them one by one on top of the latest commits 
+          in the target branch (which should be the upstream main branch). This is a bit more complex process and you can refer to the `Using Git source control in VS Code <https://code.visualstudio.com/docs/sourcecontrol/overview>`__ for more information.
+
+          .. image:: images/rebase_branch.png
+             :width: 1000 px
 
 
     CONGRATULATIONS! You have now made a change in the Bonsai project and created a Pull Request to the main branch of the project. Happy coding and documenting!
