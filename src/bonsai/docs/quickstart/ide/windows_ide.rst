@@ -387,7 +387,7 @@ Now let's find out how to interact with GitHub in order to make changes to the B
     test during Bonsai development):
 
     - --python-expr
-    - import bpy; bpy.ops.bim.load_project(filepath="C:\\\\Users\\\\falke\\\\Documents\\\\bonsaiDevel\\\\Testing.ifc", should_start_fresh_session=True, use_detailed_tooltip=True)
+    - import bpy; import os; os.chdir("C:\\\\Users\\\\falke\\\\Documents\\\\blender-4.2.8-windows-x64"); bpy.ops.bim.load_project(filepath="C:\\\\Users\\\\falke\\\\Documents\\\\bonsaiDevel\\\\Testing.ifc", should_start_fresh_session=True, use_detailed_tooltip=True)
 
     .. image:: images/VSCode-blender-additional-arguments-windows.png
        :width: 1000 px
