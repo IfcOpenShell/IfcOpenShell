@@ -244,8 +244,12 @@ def assert_valid(
             invalid = not any(type(val) == t for t in simple_type_python)
         else:
             invalid = type(val) != simple_type_python
-    elif isinstance(attr_type, (entity_type, type_declaration)):
+    elif isinstance(attr_type, entity_type):
         invalid = not isinstance(val, ifcopenshell.entity_instance) or not val.is_a(attr_type.name())
+    elif isinstance(attr_type, type_declaration):
+        # @nb this only applies to direct type declarations, not those indirectly referenced
+        # by means of one or more selects.
+        invalid = isinstance(val, ifcopenshell.entity_instance)
     elif isinstance(attr_type, select_type):
         if not isinstance(val, ifcopenshell.entity_instance):
             invalid = True
@@ -254,7 +258,10 @@ def assert_valid(
             if not isinstance(value_type, entity_type):
                 # we need to check two things: is (enumeration) literal/value valid
                 # for this type and is enumeration/value type valid for this select.
-                assert_valid(value_type, val.wrappedValue, schema, no_throw=no_throw)
+                try:
+                    invalid = invalid or not assert_valid(value_type, val.wrappedValue, schema, no_throw=True)
+                except RuntimeError as _:
+                    invalid = True
 
             # Previously we relied on `is_a(x) for x in attr_type.select_items()`
             # this was linear in the number of select leafs, which is very large
@@ -262,7 +269,7 @@ def assert_valid(
             # calculate (and cache) the select leafs (including entity subtypes)
             # for the select definition and simply check for membership in this
             # set.
-            invalid = val.is_a() not in get_select_members(schema, attr_type)
+            invalid = invalid or val.is_a() not in get_select_members(schema, attr_type)
     elif isinstance(attr_type, enumeration_type):
         invalid = val not in attr_type.enumeration_items()
     elif isinstance(attr_type, aggregation_type):
@@ -610,7 +617,11 @@ def validate_ifc_header(f: ifcopenshell.file, logger: Logger) -> None:
         )
 
     def validate_attribute(header_entity: W.HeaderEntity, name: str, index: int, *, aggregate: bool = False) -> None:
-        value = getattr(header_entity, name)
+        try:
+            value = getattr(header_entity, name)
+        except RuntimeError as _:
+            log_error(header_entity, name, index, AGGREGATE_TYPE if aggregate else STRING_TYPE, "INVALID")
+            return
         if aggregate:
             if not isinstance(value, tuple):
                 log_error(header_entity, name, index, AGGREGATE_TYPE, type(value).__name__)
