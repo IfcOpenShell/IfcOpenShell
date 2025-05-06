@@ -770,6 +770,15 @@ def lock_error_message(name: str) -> str:
     return f"'{name}' is locked. Unlock it via the Spatial panel in the Project Overview tab."
 
 
+def calc_delete_is_batch(ifc_file: ifcopenshell.file, context: bpy.types.Context) -> bool:
+    total_elements = len(tool.Ifc.get().wrapped_data.entity_names())
+    total_polygons = sum([len(o.data.polygons) for o in context.selected_objects if o.type == "MESH"])
+    # These numbers are a bit arbitrary, but basically batching is only
+    # really necessary on large models and large geometry removals.
+    is_batch = total_elements > 500000 and total_polygons > 2000
+    return is_batch
+
+
 class OverrideDelete(bpy.types.Operator):
     bl_idname = "bim.override_object_delete"
     bl_label = "IFC Delete"
@@ -805,14 +814,12 @@ class OverrideDelete(bpy.types.Operator):
             return IfcStore.execute_ifc_operator(self, context)
 
     def invoke(self, context, event):
-        if tool.Ifc.get() is None:
+        assert context.window_manager
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
             return bpy.ops.object.delete("INVOKE_DEFAULT", use_global=self.use_global, confirm=self.confirm)
         else:
-            total_elements = len(tool.Ifc.get().wrapped_data.entity_names())
-            total_polygons = sum([len(o.data.polygons) for o in context.selected_objects if o.type == "MESH"])
-            # These numbers are a bit arbitrary, but basically batching is only
-            # really necessary on large models and large geometry removals.
-            self.is_batch = total_elements > 500000 and total_polygons > 2000
+            self.is_batch = calc_delete_is_batch(ifc_file, context)
             if self.is_batch:
                 return context.window_manager.invoke_props_dialog(self)
             elif self.confirm:
@@ -972,13 +979,10 @@ class OverrideOutlinerDelete(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        # TODO: move to common method.
-        if tool.Ifc.get():
-            total_elements = len(tool.Ifc.get().wrapped_data.entity_names())
-            total_polygons = sum([len(o.data.polygons) for o in context.selected_objects if o.type == "MESH"])
-            # These numbers are a bit arbitrary, but basically batching is only
-            # really necessary on large models and large geometry removals.
-            self.is_batch = total_elements > 500000 and total_polygons > 2000
+        assert context.window_manager
+        ifc_file = tool.Ifc.get()
+        if ifc_file:
+            self.is_batch = calc_delete_is_batch(ifc_file, context)
             if self.is_batch:
                 return context.window_manager.invoke_props_dialog(self)
         return self.execute(context)
