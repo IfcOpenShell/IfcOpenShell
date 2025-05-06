@@ -51,6 +51,13 @@ Scenario: Flat colours
 
 Scenario: Select by property
     Given an empty IFC project
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+
     And I look at the "Colour By Property" panel
     And I click "Colour by Property"
     When I click "RESTRICT_SELECT_OFF"
