@@ -140,7 +140,7 @@ class BIM_OT_disable_editing_aggregate(bpy.types.Operator):
 
 
 class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
-    """Add aggregate to IFC element"""
+    """Add aggregate to selected IFC elements."""
 
     bl_idname = "bim.add_aggregate"
     bl_label = "Add Aggregate"
