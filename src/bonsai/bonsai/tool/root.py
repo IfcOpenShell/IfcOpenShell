@@ -357,6 +357,7 @@ class Root(bonsai.core.tool.Root):
     def recreate_aggregate(
         cls, old_to_new: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
     ) -> None:
+        new_aggregate = None
         for old, new in old_to_new.items():
             old_aggregate = ifcopenshell.util.element.get_aggregate(old)
             if old_aggregate:
@@ -393,6 +394,8 @@ class Root(bonsai.core.tool.Root):
                             related_obj=tool.Ifc.get_object(tool.Ifc.get_entity(obj)),
                         )
 
+        if new_aggregate is None:
+            return
         tool.Blender.select_and_activate_single_object(bpy.context, tool.Ifc.get_object(new_aggregate[0]))
 
     @classmethod
