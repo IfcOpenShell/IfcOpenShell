@@ -78,10 +78,8 @@ class BIM_PT_aggregate(Panel):
             if AggregateData.data["has_relating_object"]:
                 row.label(text=AggregateData.data["relating_object_label"], icon="TRIA_UP")
                 op = row.operator("bim.select_aggregate", icon="OBJECT_DATA", text="")
-                op.obj = context.active_object.name
                 op.select_parts = False
                 op = row.operator("bim.select_aggregate", icon="RESTRICT_SELECT_OFF", text="")
-                op.obj = context.active_object.name
                 op.select_parts = True
                 row.operator("bim.enable_editing_aggregate", icon="GREASEPENCIL", text="")
                 row.operator("bim.add_aggregate", icon="ADD", text="")

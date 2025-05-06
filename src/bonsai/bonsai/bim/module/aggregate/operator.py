@@ -145,7 +145,6 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_aggregate"
     bl_label = "Add Aggregate"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
     ifc_class: bpy.props.StringProperty(name="IFC Class", default="IfcElementAssembly")
     aggregate_name: bpy.props.StringProperty(name="Name", default="Default_Name")
 
