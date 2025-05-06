@@ -52,9 +52,10 @@ class TestChangeObjectData(NewFile):
 class TestDisableEditing(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMTypeProperties.is_editing_type = True
+        props = tool.Type.get_object_type_props(obj)
+        props.is_editing_type = True
         subject.disable_editing(obj)
-        assert obj.BIMTypeProperties.is_editing_type is False
+        assert props.is_editing_type is False
 
 
 class TestGetBodyContext(NewFile):

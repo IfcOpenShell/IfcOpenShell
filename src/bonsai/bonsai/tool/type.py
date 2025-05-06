@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcopenshell.util.element
@@ -23,18 +24,25 @@ import ifcopenshell.util.representation
 import bonsai.core.tool
 import bonsai.core.geometry
 import bonsai.tool as tool
-import bonsai.bim.helper
-from typing import Union
+from typing import Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.type.prop import BIMTypeProperties
 
 
 class Type(bonsai.core.tool.Type):
+    @classmethod
+    def get_object_type_props(cls, obj: bpy.types.Object) -> BIMTypeProperties:
+        return obj.BIMTypeProperties
+
     @classmethod
     def change_object_data(cls, obj: bpy.types.Object, data: bpy.types.ID, is_global: bool = False) -> None:
         tool.Geometry.change_object_data(obj, data, is_global)
 
     @classmethod
     def disable_editing(cls, obj: bpy.types.Object) -> None:
-        obj.BIMTypeProperties.is_editing_type = False
+        props = cls.get_object_type_props(obj)
+        props.is_editing_type = False
 
     @classmethod
     def get_body_context(cls) -> ifcopenshell.entity_instance:
