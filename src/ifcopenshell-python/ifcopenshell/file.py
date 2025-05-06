@@ -209,6 +209,7 @@ NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
 UNSUPPORTED_SCHEMA = ifcopenshell_wrapper.file_open_status.UNSUPPORTED_SCHEMA
 INVALID_SYNTAX = ifcopenshell_wrapper.file_open_status.INVALID_SYNTAX
 
+
 class file:
     """Base class for containing IFC files.
 
@@ -466,14 +467,12 @@ class file:
             number = re.search(prefix + r"(\d)", schema)
             version.append(int(number.group(1)) if number else 0)
         return tuple(version)
-        
-    @property 
+
+    @property
     def mvd(self):
         if not LARK_AVAILABLE:
             return None
-        return MvdInfo(
-            self.header
-        )
+        return MvdInfo(self.header)
 
     def __getattr__(self, attr) -> Union[Any, Callable[..., ifcopenshell.entity_instance]]:
         if attr[0:6] == "create":

@@ -597,24 +597,28 @@ def validate_guid(guid: str) -> Union[str, None]:
         return "Couldn't decompress guid, it's not base64 encoded."
     return None
 
+
 def to_string_header_entity(header_entity):
     """Recreate IFC header string representation, like FILE_NAME(...)"""
-    
+
     # Prefer native .toString() if available (native IfcOpenShell wrapper)
     if isinstance(header_entity, W.HeaderEntity):
         return header_entity.toString()
-    elif hasattr(header_entity, '_fields'):
+    elif hasattr(header_entity, "_fields"):
         values = [repr(getattr(header_entity, f)) for f in header_entity._fields]
         return f"{type(header_entity).__name__.upper()}({','.join(values)})"
     else:
         raise TypeError(f"Cannot stringify header_entity of type {type(header_entity)}")
+
 
 def validate_ifc_header(f: Union[ifcopenshell.file, ifcopenshell.simple_spf.file], logger: Logger) -> None:
     header: Union[W.IfcSpfHeader, types.SimpleNamespace] = f.header
     AGGREGATE_TYPE = "LIST [ 1 : ? ] OF STRING (256)"
     STRING_TYPE = "STRING (256)"
 
-    def log_error(header_entity: Union[W.HeaderEntity, tuple], name: str, index: int, expected_type: str, provided_type: str) -> None:
+    def log_error(
+        header_entity: Union[W.HeaderEntity, tuple], name: str, index: int, expected_type: str, provided_type: str
+    ) -> None:
         logger.error(
             (
                 "For instance:\n    %s\n    %s\n"
