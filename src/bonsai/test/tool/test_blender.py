@@ -59,3 +59,47 @@ class TestSortPanelsForRegister(NewFile):
 
         with pytest.raises(AssertionError):
             subject.sort_panels_for_register(items, {"J": "A"})
+
+
+class TestBlenderErrorMessageExtraction(NewFile):
+    def test_extract_operator_reports(self) -> None:
+
+        ERROR_REPORTS = ["ERROR!!!\nERROR", "ERROR"]
+
+        class OBJECT_OT_test_fail_operator(bpy.types.Operator):
+            bl_idname = "object.test_fail_operator"
+            bl_label = "Test Fail Operator"
+
+            def execute(self, context):
+                self.report({"INFO"}, "Info message.")
+                subject.report_operator_errors(self, ERROR_REPORTS)
+                return {"FINISHED"}
+
+        bpy.utils.register_class(OBJECT_OT_test_fail_operator)
+
+        try:
+            bpy.ops.object.test_fail_operator()
+        except RuntimeError as e:
+            error_reports = subject.extract_error_reports(e)
+            assert error_reports == ERROR_REPORTS
+
+        bpy.utils.unregister_class(OBJECT_OT_test_fail_operator)
+
+    def test_ignore_actual_runtime_errors_from_operators(self) -> None:
+
+        class OBJECT_OT_test_fail_operator(bpy.types.Operator):
+            bl_idname = "object.test_fail_operator"
+            bl_label = "Test Fail Operator"
+
+            def execute(self, context):
+                raise RuntimeError("Intentional runtime error.")
+
+        bpy.utils.register_class(OBJECT_OT_test_fail_operator)
+
+        try:
+            bpy.ops.object.test_fail_operator()
+        except RuntimeError as e:
+            error_reports = subject.extract_error_reports(e)
+            assert error_reports == []
+
+        bpy.utils.unregister_class(OBJECT_OT_test_fail_operator)
