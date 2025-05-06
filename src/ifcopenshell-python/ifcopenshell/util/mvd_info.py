@@ -1,6 +1,7 @@
 try:
     from lark import Lark, Transformer
     from lark.exceptions import UnexpectedCharacters, UnexpectedEOF, UnexpectedToken
+
     LARK_AVAILABLE = True
 except ImportError:
     LARK_AVAILABLE = False
@@ -9,7 +10,7 @@ from typing import Callable
 import re
 
 if LARK_AVAILABLE:
-    mvd_grammar = r'''
+    mvd_grammar = r"""
         start: entry+
 
         entry: "ViewDefinition" "[" simple_value_list "]"   -> view_definition
@@ -36,9 +37,9 @@ if LARK_AVAILABLE:
 
         %import common.WS
         %ignore WS
-    '''
+    """
 
-    parser = Lark(mvd_grammar, parser='lalr')
+    parser = Lark(mvd_grammar, parser="lalr")
 
     class DescriptionTransform(Transformer):
         def __init__(self):
@@ -50,7 +51,7 @@ if LARK_AVAILABLE:
             self._dynamic = {}
 
         def view_definition(self, args):
-            self.keywords.add('view_definitions')
+            self.keywords.add("view_definitions")
             self.view_definitions.extend(args[0])
 
         def store_text_attribute(self, args, keyword):
@@ -66,17 +67,17 @@ if LARK_AVAILABLE:
 
         def option(self, args):
             if v := parse_semicolon_separated_kv(" ".join(" ".join(str(child) for child in args[0].children).split())):
-                setattr(self, 'options', v)
+                setattr(self, "options", v)
             else:
                 self.store_text_attribute(args, "options")
 
         def dynamic_option(self, args):
             try:
-                original_keyword = str(args[0])  
-                key = original_keyword.lower()   
+                original_keyword = str(args[0])
+                key = original_keyword.lower()
                 raw_text = args[1].children[0].value
                 parsed_value = parse_semicolon_separated_kv(raw_text)
-                self._dynamic[key] = (parsed_value, original_keyword)  
+                self._dynamic[key] = (parsed_value, original_keyword)
                 self.keywords.add(key)
                 setattr(self, key, parsed_value)
             except Exception:
@@ -98,7 +99,7 @@ if LARK_AVAILABLE:
             return str(args[0])
 
     def parse_mvd(description):
-        text = ' '.join(description)
+        text = " ".join(description)
         parsed_description = DescriptionTransform()
         try:
             if not text:
@@ -111,21 +112,23 @@ if LARK_AVAILABLE:
         return parsed_description
 
     def parse_semicolon_separated_kv(text: str) -> dict[str, str | list[str]] | None:
-        if not re.search(r'\w+\s*:\s*[^:]+', text):
+        if not re.search(r"\w+\s*:\s*[^:]+", text):
             return None
         result = {}
         try:
-            pairs = text.split(';')
+            pairs = text.split(";")
             for pair in pairs:
-                if ':' in pair:
-                    key, value = pair.split(':', 1)
+                if ":" in pair:
+                    key, value = pair.split(":", 1)
                     key = key.strip()
-                    values = [v.strip() for v in value.split(',')]
+                    values = [v.strip() for v in value.split(",")]
                     result[key] = values[0] if len(values) == 1 else values
             return result
         except Exception:
             return None
+
 else:
+
     def parse_mvd(description):
         return None
 
@@ -161,7 +164,7 @@ class MvdInfo:
         return AutoCommitList(
             vd_list,
             callback=lambda val: (self._update_keyword("ViewDefinition", val), setattr(self, "_parsed", None)),
-            formatter=lambda lst: ",".join(str(i) for i in lst)
+            formatter=lambda lst: ",".join(str(i) for i in lst),
         )
 
     @view_definitions.setter
@@ -180,7 +183,7 @@ class MvdInfo:
         return AutoCommitList(
             comment_list,
             callback=lambda val: self._update_keyword("Comment", val),
-            formatter=lambda lst: ", ".join(str(i) for i in lst)
+            formatter=lambda lst: ", ".join(str(i) for i in lst),
         )
 
     @comments.setter
@@ -232,7 +235,7 @@ class MvdInfo:
 
     def __getattr__(self, name):
         self._ensure_parsed()
-        if hasattr(self._parsed, '_dynamic'):
+        if hasattr(self._parsed, "_dynamic"):
             name_lc = name.lower()
             if name_lc in self._parsed._dynamic:
                 value, original_keyword = self._parsed._dynamic[name_lc]
@@ -241,7 +244,7 @@ class MvdInfo:
 
     def __dir__(self):
         base = super().__dir__()
-        if self._parsed and hasattr(self._parsed, '_dynamic'):
+        if self._parsed and hasattr(self._parsed, "_dynamic"):
             return base + [kw for _, kw in self._parsed._dynamic.values()]
         return base
 
@@ -258,10 +261,7 @@ class DictionaryHandler(dict):
                 super().__setitem__(k, v)
 
     def _commit(self):
-        new_value = "; ".join(
-            f"{k}: {', '.join(v) if isinstance(v, list) else v}"
-            for k, v in self.items()
-        )
+        new_value = "; ".join(f"{k}: {', '.join(v) if isinstance(v, list) else v}" for k, v in self.items())
         self._mvdinfo._update_keyword(self._keyword, new_value)
 
     def __setitem__(self, key, value):
@@ -277,10 +277,11 @@ class DictionaryHandler(dict):
 
 class AutoCommitList(list):
     "ensures keyword attributes are written back to ifcopenshell.file.header"
+
     def __init__(self, iterable, callback, formatter=None):
         super().__init__(iterable)
         self._callback = callback
-        self._formatter = formatter  
+        self._formatter = formatter
 
     def _commit(self):
         if self._formatter:
