@@ -3170,12 +3170,14 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
 class OverrideMoveMacro(bpy.types.Macro):
     bl_idname = "bim.override_move_macro"
     bl_label = "IFC Move Aggregate"
+    bl_description = "Move selected items.\n\nAutomatically select all parts of an aggregate/nesting to move."
     bl_options = {"REGISTER", "UNDO"}
 
 
-class OverrideMove(bpy.types.Operator):
-    bl_idname = "bim.override_move"
-    bl_label = "IFC Move"
+class OverrideMoveSelect(bpy.types.Operator):
+    bl_idname = "bim.override_move_select"
+    bl_label = "IFC Move Select"
+    bl_description = "Select items for IFC Move Aggregate."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
