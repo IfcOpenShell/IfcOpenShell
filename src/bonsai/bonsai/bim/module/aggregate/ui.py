@@ -50,7 +50,8 @@ class BIM_PT_aggregate(Panel):
         row = layout.row()
         row.label(text="Aggregate Decorator")
         props = tool.Aggregate.get_aggregate_props()
-        row.prop(props, "aggregate_decorator", icon="HIDE_OFF", text="")
+        icon = "HIDE_OFF" if props.aggregate_decorator else "HIDE_ON"
+        row.prop(props, "aggregate_decorator", icon=icon, text="")
         if not AggregateData.is_loaded:
             AggregateData.load()
 
