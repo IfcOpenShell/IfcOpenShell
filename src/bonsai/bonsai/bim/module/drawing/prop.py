@@ -509,9 +509,9 @@ def update_camera_type(self: "BIMCameraProperties", context: bpy.types.Context) 
 
 
 CameraType = Literal["PERSP", "ORTHO"]
-CAMERA_TYPE_NAMES: dict[CameraType, str] = {
-    "PERSP": "Perspective",
-    "ORTHO": "Ortographic",
+CAMERA_TYPE_ENUM_ITEMS: dict[CameraType, tuple[str, str]] = {
+    "ORTHO": ("Ortographic", "Most common camera for the drawings, supporting all of the features."),
+    "PERSP": ("Perspective", "The only avilable features for perspective camera: freestyle linework, underlay."),
 }
 
 
@@ -582,7 +582,7 @@ class BIMCameraProperties(PropertyGroup):
     camera_type: EnumProperty(
         name="Camera Type",
         default="ORTHO",
-        items=[(key, name, "") for key, name in CAMERA_TYPE_NAMES.items()],
+        items=[(k, *v) for k, v in CAMERA_TYPE_ENUM_ITEMS.items()],
         update=update_camera_type,
     )
     is_nts: BoolProperty(name="Is NTS", update=update_is_nts)
