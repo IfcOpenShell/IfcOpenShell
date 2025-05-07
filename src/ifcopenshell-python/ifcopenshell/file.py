@@ -59,6 +59,12 @@ HEADER_FIELDS = {
 }
 
 
+class UndoSystemError(Exception):
+    def __init__(self, message: str, transaction: Transaction):
+        super().__init__(message)
+        self.transaction = transaction
+
+
 class Transaction:
     def __init__(self, ifc_file: file):
         self.file: file = ifc_file
@@ -342,14 +348,20 @@ class file:
         if not self.history:
             return
         transaction = self.history.pop()
-        transaction.rollback()
+        try:
+            transaction.rollback()
+        except Exception as e:
+            raise UndoSystemError("Error during transaction undo.", transaction) from e
         self.future.append(transaction)
 
     def redo(self) -> None:
         if not self.future:
             return
         transaction = self.future.pop()
-        transaction.commit()
+        try:
+            transaction.commit()
+        except Exception as e:
+            raise UndoSystemError("Error during transaction redo.", transaction) from e
         self.history.append(transaction)
 
     def create_entity(self, type: str, *args, **kwargs) -> ifcopenshell.entity_instance:
