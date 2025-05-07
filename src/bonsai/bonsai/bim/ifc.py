@@ -31,9 +31,10 @@ import ifcopenshell.ifcopenshell_wrapper
 import bonsai
 import bonsai.bim.handler
 import bonsai.tool as tool
+from ifcopenshell.file import UndoSystemError
 from pathlib import Path
 from bonsai.tool.brick import BrickStore
-from typing import Set, Union, Optional, TypedDict, Callable, NotRequired
+from typing import Set, Union, Optional, TypedDict, Callable, NotRequired, Literal
 
 
 IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
@@ -418,6 +419,32 @@ class IfcStore:
             props.ifc_definition_id = 0
 
     @staticmethod
+    def get_ifc_file_undo_callback(callback_type: Literal["UNDO", "REDO"]):
+        def callback(_) -> None:
+            try:
+                if callback_type == "UNDO":
+                    tool.Ifc.get().undo()
+                else:
+                    tool.Ifc.get().redo()
+            except Exception as e:
+                # Persistent callbacks errors are not visible from UI and we set `last_error`
+                # to make it visible.
+                error_msg = ""
+                # In theory it should always be UndoSystemError, but just to be safe.
+                if isinstance(e, UndoSystemError):
+                    error_msg += "Undo transaction operations:\n"
+                    transaction = e.transaction
+                    for operation in transaction.operations:
+                        error_msg += f"- {str(operation)}\n"
+                    # Show it in system console too, not just in last message.
+                    print(error_msg)
+                error_msg += traceback.format_exc()
+                bonsai.last_error = error_msg
+                raise
+
+        return callback
+
+    @staticmethod
     def execute_ifc_operator(
         operator: tool.Ifc.Operator,
         context: bpy.types.Context,
@@ -446,7 +473,9 @@ class IfcStore:
                 if tool.Ifc.get():
                     tool.Ifc.get().end_transaction()
                     IfcStore.add_transaction_operation(
-                        operator, rollback=lambda d: tool.Ifc.get().undo(), commit=lambda d: tool.Ifc.get().redo()
+                        operator,
+                        rollback=IfcStore.get_ifc_file_undo_callback("UNDO"),
+                        commit=IfcStore.get_ifc_file_undo_callback("REDO"),
                     )
                 if BrickStore.graph is not None:  # `if BrickStore.graph` by itself takes ages.
                     BrickStore.end_transaction()
