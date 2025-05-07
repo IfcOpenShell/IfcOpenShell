@@ -66,6 +66,7 @@ class Raycast(bonsai.core.tool.Raycast):
         cls, context: bpy.types.Context, obj: bpy.types.Object
     ) -> Union[tuple[bpy.types.Object, list[float]], None]:
         rv3d = context.region_data
+        assert rv3d
         view_location = rv3d.view_matrix.inverted().translation
         obj_matrix = obj.matrix_world.copy()
         bbox = [obj_matrix @ Vector(v) for v in obj.bound_box]
@@ -138,6 +139,7 @@ class Raycast(bonsai.core.tool.Raycast):
     ):
         region = context.region
         rv3d = context.region_data
+        assert rv3d and region
         original_perspective = rv3d.view_perspective
 
         # TODO The raycast was working for orthographic view, but not when you are inside a camera view. This solution feels hacky,

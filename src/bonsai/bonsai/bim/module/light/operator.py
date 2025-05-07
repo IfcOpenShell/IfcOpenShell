@@ -392,6 +392,7 @@ ground_glow source ground
         scene.add_surface(scene_path)
         scene.add_source(sky_file_path)
         print("Setting up view...")
+        assert isinstance(camera.data, bpy.types.Camera)
         if camera.data.type == "PERSP":
             # Perspective camera
             camera_fov = camera.data.angle
@@ -547,9 +548,11 @@ class ViewFromSun(bpy.types.Operator):
     def execute(self, context):
         if not (camera := bpy.data.objects.get("SunPathCamera")):
             camera = bpy.data.objects.new("SunPathCamera", bpy.data.cameras.new("SunPathCamera"))
+            assert isinstance(camera.data, bpy.types.Camera)
+            assert context.scene
             camera.data.type = "ORTHO"
             camera.data.ortho_scale = 100  # The default of 6m is too small
-            bpy.context.scene.collection.objects.link(camera)
+            context.scene.collection.objects.link(camera)
         tool.Blender.activate_camera(camera)
         props = context.scene.BIMSolarProperties
         props.hour = props.hour  # Just to refresh camera position

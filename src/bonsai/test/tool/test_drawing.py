@@ -58,6 +58,7 @@ class TestCreateCamera(NewFile):
         obj = subject.create_camera("Name", mathutils.Matrix(), "PERSPECTIVE")
         assert obj.name == "Name"
         assert obj.matrix_world == mathutils.Matrix()
+        assert isinstance(obj.data, bpy.types.Camera)
         assert obj.data.type == "PERSP"
         assert obj.data.ortho_scale == 50
         assert obj.data.clip_end == 10
