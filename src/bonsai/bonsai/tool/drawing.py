@@ -303,9 +303,9 @@ class Drawing(bonsai.core.tool.Drawing):
         camera.location = (0, 0, 1.5)  # The view shall be 1.5m above the origin
         camera_data.show_limits = True
         if location_hint == "PERSPECTIVE":
-            camera_data.type = "PERSP"
+            props.camera_type = "PERSP"
         else:
-            camera_data.type = "ORTHO"
+            props.camera_type = "ORTHO"
         camera_data.ortho_scale = 50  # The default of 6m is too small
         camera_data.clip_start = 0.002  # 2mm is close to zero but allows any GPU-drawn lines to be visible.
         camera_data.clip_end = 10  # A slightly more reasonable default

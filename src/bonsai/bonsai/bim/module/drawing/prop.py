@@ -46,7 +46,7 @@ from bpy.props import (
     CollectionProperty,
     BoolVectorProperty,
 )
-from typing import TYPE_CHECKING, Literal, Any, Callable
+from typing import TYPE_CHECKING, Literal, Any, Callable, get_args
 
 
 diagram_scales_enum = []
@@ -57,11 +57,11 @@ def purge():
     diagram_scales_enum = []
 
 
-def update_target_view(self, context):
+def update_target_view(self: "DocProperties", context: bpy.types.Context) -> None:
     DrawingsData.data["location_hint"] = DrawingsData.location_hint()
 
 
-def get_location_hint(self, context):
+def get_location_hint(self: "DocProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not DrawingsData.is_loaded:
         DrawingsData.load()
     return DrawingsData.data["location_hint"]
@@ -230,6 +230,12 @@ def get_update_layer_callback(
 
 def update_has_linework(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     update_layer(self, context, "HasLinework", self.has_linework)
+
+
+def update_target_view(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+    if self.target_view != "MODEL_VIEW":
+        self.camera_type = "ORTHO"
+    update_layer(self, context, "TargetView", self.target_view)
 
 
 def update_dpi(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
@@ -497,6 +503,18 @@ def update_width_height(self: "BIMCameraProperties", context: bpy.types.Context)
     self.update_camera_resolution()
 
 
+def update_camera_type(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+    assert isinstance(camera := self.id_data, bpy.types.Camera)
+    camera.type = self.camera_type
+
+
+CameraType = Literal["PERSP", "ORTHO"]
+CAMERA_TYPE_NAMES: dict[CameraType, str] = {
+    "PERSP": "Perspective",
+    "ORTHO": "Ortographic",
+}
+
+
 class BIMCameraProperties(PropertyGroup):
     linework_mode: EnumProperty(
         items=[
@@ -547,7 +565,7 @@ class BIMCameraProperties(PropertyGroup):
         name="Target View",
         default="PLAN_VIEW",
         items=TARGET_VIEW_ITEMS,
-        update=get_update_layer_callback("target_view", "TargetView"),
+        update=update_target_view,
     )
 
     representation: StringProperty(name="Representation")
@@ -560,6 +578,13 @@ class BIMCameraProperties(PropertyGroup):
     dpi: IntProperty(name="DPI", default=75, update=update_dpi)
     width: FloatProperty(name="Width", default=50, subtype="DISTANCE", update=update_width_height)
     height: FloatProperty(name="Height", default=50, subtype="DISTANCE", update=update_width_height)
+    # Bonsai property is needed to prevent user from using unsupported panoramic camera.
+    camera_type: EnumProperty(
+        name="Camera Type",
+        default="ORTHO",
+        items=[(key, name, "") for key, name in CAMERA_TYPE_NAMES.items()],
+        update=update_camera_type,
+    )
     is_nts: BoolProperty(name="Is NTS", update=update_is_nts)
     active_drawing_style_index: IntProperty(name="Active Drawing Style Index")
     filter_mode: StringProperty(name="Filter Mode", default="NONE")
@@ -591,6 +616,7 @@ class BIMCameraProperties(PropertyGroup):
         dpi: int
         width: float
         height: float
+        camera_type: CameraType
         is_nts: bool
         active_drawing_style_index: int
         filter_mode: str
@@ -618,6 +644,7 @@ class BIMCameraProperties(PropertyGroup):
 
         representation = json.dumps(
             {
+                "type": self.camera_type,
                 "matrix": [[round_(v) for v in row] for row in matrix_world],
                 "raster_x": self.raster_x,
                 "raster_y": self.raster_y,

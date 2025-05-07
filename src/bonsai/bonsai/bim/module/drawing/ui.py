@@ -74,6 +74,10 @@ class BIM_PT_camera(Panel):
         row = self.layout.row(align=True)
         row.prop(props, "target_view")
 
+        if props.target_view == "MODEL_VIEW":
+            row = self.layout.row()
+            row.prop(props, "camera_type")
+
         row = self.layout.row()
         row.prop(props, "linework_mode")
         if props.linework_mode == "OPENCASCADE":
