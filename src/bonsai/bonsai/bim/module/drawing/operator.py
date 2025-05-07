@@ -2128,7 +2128,9 @@ class ActivateModel(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ActivateDrawingBase:
+class ActivateDrawingBase(tool.Ifc.Operator):
+    # Ifc Operator is necessary, because sync_references may create or remove IFC elements.
+
     def invoke(self, context, event) -> set["rna_enums.OperatorReturnItems"]:
         if event.type == "LEFTMOUSE" and event.alt:
             self.should_view_from_camera = False
@@ -2136,7 +2138,7 @@ class ActivateDrawingBase:
             self.use_quick_preview = True
         return self.execute(context)
 
-    def execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+    def _execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
         props = tool.Drawing.get_document_props()
         if props.is_editing_drawings == False:
             bpy.ops.bim.load_drawings()
