@@ -130,6 +130,7 @@ class LoadsDecorator:
 
         coord = Vector(coord)
         rv3d = context.region_data
+        assert rv3d and context.region
         perspective = rv3d.view_perspective
         view_matrix = rv3d.view_matrix
         point_view_space = view_matrix @ coord
