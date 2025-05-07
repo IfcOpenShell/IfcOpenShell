@@ -610,13 +610,19 @@ class BIMCameraProperties(PropertyGroup):
         # allowing all camera initialization to stay encapsulated in `create_camera`.
         camera = self.id_data
         assert isinstance(camera, bpy.types.Camera)
+
+        # Rounding is necessary to avoid float garbage differences
+        # forcing unnecessary representation update.
+        def round_(f: float) -> float:
+            return round(f, 6)
+
         representation = json.dumps(
             {
-                "matrix": [list(x) for x in matrix_world],
+                "matrix": [[round_(v) for v in row] for row in matrix_world],
                 "raster_x": self.raster_x,
                 "raster_y": self.raster_y,
-                "ortho_scale": camera.ortho_scale,
-                "clip_end": camera.clip_end,
+                "ortho_scale": round_(camera.ortho_scale),
+                "clip_end": round_(camera.clip_end),
             }
         )
         if self.representation != representation:
