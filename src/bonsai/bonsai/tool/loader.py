@@ -826,7 +826,7 @@ class Loader(bonsai.core.tool.Loader):
         height = ifcopenshell.util.shape.get_y(geometry)
 
         camera_type = "ORTHO"
-        if "IfcRectangularPyramid" in next(e.is_a() for e in tool.Ifc.get().traverse(representation)):
+        if any(e.is_a() == "IfcRectangularPyramid" for e in tool.Ifc.get().traverse(representation)):
             camera_type = "PERSP"
 
         camera = bpy.data.cameras.new(tool.Loader.get_mesh_name_from_shape(geometry))
