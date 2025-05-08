@@ -57,7 +57,7 @@ def purge():
     diagram_scales_enum = []
 
 
-def update_target_view(self: "DocProperties", context: bpy.types.Context) -> None:
+def update_target_view_doc(self: "DocProperties", context: bpy.types.Context) -> None:
     DrawingsData.data["location_hint"] = DrawingsData.location_hint()
 
 
@@ -232,7 +232,7 @@ def update_has_linework(self: "BIMCameraProperties", context: bpy.types.Context)
     update_layer(self, context, "HasLinework", self.has_linework)
 
 
-def update_target_view(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+def update_target_view_camera(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
     if self.update_props and self.target_view != "MODEL_VIEW":
         self.camera_type = "ORTHO"
     update_layer(self, context, "TargetView", self.target_view)
@@ -410,7 +410,7 @@ class DocProperties(PropertyGroup):
         items=TARGET_VIEW_ITEMS,
         name="Target View",
         default="PLAN_VIEW",
-        update=update_target_view,
+        update=update_target_view_doc,
     )
     location_hint: EnumProperty(items=get_location_hint, name="Location Hint")
     drawings: CollectionProperty(name="Drawings", type=Drawing)
@@ -565,7 +565,7 @@ class BIMCameraProperties(PropertyGroup):
         name="Target View",
         default="PLAN_VIEW",
         items=TARGET_VIEW_ITEMS,
-        update=update_target_view,
+        update=update_target_view_camera,
     )
 
     representation: StringProperty(name="Representation")
