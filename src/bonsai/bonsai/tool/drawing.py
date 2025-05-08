@@ -299,7 +299,11 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def create_camera(
-        cls, name: str, matrix: Matrix, location_hint: Union[LocationHintLiteral, int]
+        cls,
+        name: str,
+        matrix: Matrix,
+        location_hint: Union[LocationHintLiteral, int],
+        target_view: ifcopenshell.util.representation.TARGET_VIEW,
     ) -> bpy.types.Object:
         camera = bpy.data.objects.new(name, (camera_data := bpy.data.cameras.new(name)))
         props = cls.get_camera_props(camera_data)
@@ -311,7 +315,11 @@ class Drawing(bonsai.core.tool.Drawing):
             props.camera_type = "ORTHO"
         camera_data.ortho_scale = 50  # The default of 6m is too small
         camera_data.clip_start = 0.002  # 2mm is close to zero but allows any GPU-drawn lines to be visible.
-        camera_data.clip_end = 10  # A slightly more reasonable default
+        if target_view == "MODEL_VIEW":
+            assert (space := tool.Blender.get_view3d_space())
+            camera_data.clip_end = max(space.clip_end, 10)
+        else:
+            camera_data.clip_end = 10  # A slightly more reasonable default
         if bpy.context.scene.unit_settings.system == "IMPERIAL":
             props.diagram_scale = '1/8"=1\'-0"|1/96'
         else:
@@ -628,7 +636,9 @@ class Drawing(bonsai.core.tool.Drawing):
             elif location_hint == "WEST":
                 return mathutils.Matrix(((0, 0, 1, x), (1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
         elif target_view == "MODEL_VIEW":
-            return mathutils.Matrix(((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z), (0, 0, 0, 1)))
+            assert (space := tool.Blender.get_view3d_space())
+            assert (r3d := space.region_3d)
+            return r3d.view_matrix.inverted()
         return mathutils.Matrix()
 
     @classmethod

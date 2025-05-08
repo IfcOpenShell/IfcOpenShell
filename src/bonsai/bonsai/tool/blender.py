@@ -86,8 +86,11 @@ class Blender(bonsai.core.tool.Blender):
     def activate_camera(cls, obj: bpy.types.Object) -> None:
 
         area = cls.get_view3d_area()
-        is_local_view = area.spaces[0].local_view is not None
+        assert area
+        assert isinstance((space := area.spaces[0]), bpy.types.SpaceView3D)
+        is_local_view = space.local_view is not None
 
+        assert bpy.context.screen and bpy.context.scene
         if is_local_view:
             # Turn off local view before activating drawing, and then turn it on again.
             for a in bpy.context.screen.areas:
@@ -100,7 +103,8 @@ class Blender(bonsai.core.tool.Blender):
         else:
             bpy.context.scene.camera = obj
 
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
+        assert space.region_3d
+        space.region_3d.view_perspective = "CAMERA"
 
     @classmethod
     def get_area_props(cls, context: bpy.types.Context) -> bpy.types.PropertyGroup:
