@@ -305,7 +305,7 @@ def format_distance(
             if unit_length == "MILLIMETERS":
                 value = value / 1000
 
-        if precision:
+        if precision and isinstance(precision, float):
             value = precision * round(float(value) / precision)
 
         if decimal_places is not None:
