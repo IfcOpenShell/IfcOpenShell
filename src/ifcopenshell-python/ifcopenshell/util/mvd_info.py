@@ -6,7 +6,7 @@ try:
 except ImportError:
     LARK_AVAILABLE = False
 
-from typing import Callable
+from typing import Callable, Union
 import re
 
 if LARK_AVAILABLE:
@@ -168,7 +168,7 @@ class MvdInfo:
         )
 
     @view_definitions.setter
-    def view_definitions(self, new_value: str | list[str]):
+    def view_definitions(self, new_value: Union[str, list[str]]):
         if isinstance(new_value, list):
             value = ", ".join(new_value)
         else:
@@ -187,7 +187,7 @@ class MvdInfo:
         )
 
     @comments.setter
-    def comments(self, new_value: str | list[str]):
+    def comments(self, new_value: Union[str, list[str]]):
         if isinstance(new_value, list):
             value = ", ".join(new_value)
         else:
