@@ -51,7 +51,7 @@ from shapely.ops import unary_union
 from lxml import etree
 from mathutils import Vector, Matrix
 from fractions import Fraction
-from typing import Optional, Union, Iterable, Any, Literal, Sequence, TYPE_CHECKING, NamedTuple
+from typing import Optional, Union, Iterable, Any, Literal, Sequence, TYPE_CHECKING, NamedTuple, get_args
 from pathlib import Path
 
 if TYPE_CHECKING:
@@ -68,6 +68,9 @@ if TYPE_CHECKING:
 class Drawing(bonsai.core.tool.Drawing):
     ANNOTATION_DATA_TYPE = Literal["empty", "curve", "mesh"]
     DOCUMENT_TYPE = Literal["SCHEDULE", "REFERENCE"]
+    LocationHintLiteral = Literal["PERSPECTIVE", "ORTHOGRAPHIC", "NORTH", "SOUTH", "EAST", "WEST"]
+    LOCATION_HINT_LITERALS = ("PERSPECTIVE", "ORTHOGRAPHIC", "NORTH", "SOUTH", "EAST", "WEST")
+    LocationHintType = Union[LocationHintLiteral, str]
 
     # ObjectType: annotation_name, description, icon, data_type
     # fmt: off
@@ -296,7 +299,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def create_camera(
-        cls, name: str, matrix: Matrix, location_hint: Literal["PERSPECTIVE", "ORTHOGRAPHIC"]
+        cls, name: str, matrix: Matrix, location_hint: Union[LocationHintLiteral, int]
     ) -> bpy.types.Object:
         camera = bpy.data.objects.new(name, (camera_data := bpy.data.cameras.new(name)))
         props = cls.get_camera_props(camera_data)
@@ -590,20 +593,21 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def generate_drawing_matrix(
-        cls, target_view: ifcopenshell.util.representation.TARGET_VIEW, location_hint: str
+        cls,
+        target_view: ifcopenshell.util.representation.TARGET_VIEW,
+        location_hint: Union[LocationHintLiteral, int],
     ) -> Matrix:
         x, y, z = (0, 0, 0) if location_hint == 0 else bpy.context.scene.cursor.matrix.translation
-        if target_view == "PLAN_VIEW":
+        if isinstance(location_hint, int):
             if location_hint:
                 z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.translation.z
-                return mathutils.Matrix(((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z + 1.6), (0, 0, 0, 1)))
-        elif target_view == "REFLECTED_PLAN_VIEW":
-            if location_hint:
-                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.translation.z
-                m = mathutils.Matrix()
-                m[2][2] = -1
-                m.translation = (x, y, z + 1.6)
-                return m
+                if target_view == "PLAN_VIEW":
+                    return mathutils.Matrix(((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z + 1.6), (0, 0, 0, 1)))
+                elif target_view == "REFLECTED_PLAN_VIEW":
+                    m = mathutils.Matrix()
+                    m[2][2] = -1
+                    m.translation = (x, y, z + 1.6)
+                    return m
             return mathutils.Matrix(((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
         elif target_view == "ELEVATION_VIEW":
             if location_hint == "NORTH":
@@ -1174,13 +1178,17 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def generate_drawing_name(
-        cls, target_view: ifcopenshell.util.representation.TARGET_VIEW, location_hint: str
+        cls,
+        target_view: ifcopenshell.util.representation.TARGET_VIEW,
+        location_hint: Union[LocationHintLiteral, int],
     ) -> str:
-        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and location_hint:
-            location = tool.Ifc.get().by_id(location_hint)
-            if target_view == "REFLECTED_PLAN_VIEW":
-                target_view = "RCP_VIEW"
-            return (location.Name or "UNNAMED").upper() + " " + target_view.split("_")[0]
+        if isinstance(location_hint, int):
+            if location_hint:
+                location = tool.Ifc.get().by_id(location_hint)
+                target_view_ = target_view
+                if target_view == "REFLECTED_PLAN_VIEW":
+                    target_view_ = "RCP_VIEW"
+                return (location.Name or "UNNAMED").upper() + " " + target_view_.split("_")[0]
         elif target_view in ("SECTION_VIEW", "ELEVATION_VIEW") and location_hint:
             return location_hint + " " + target_view.split("_")[0]
         elif target_view == "MODEL_VIEW" and location_hint:

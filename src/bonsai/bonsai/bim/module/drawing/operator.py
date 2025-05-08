@@ -143,6 +143,8 @@ class AddDrawing(bpy.types.Operator, tool.Ifc.Operator):
         hint = props.location_hint
         if props.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
             hint = int(hint)
+        else:
+            assert hint in tool.Drawing.LOCATION_HINT_LITERALS
         core.add_drawing(
             tool.Ifc,
             tool.Collector,
@@ -167,7 +169,6 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = tool.Drawing.get_document_props()
         if not tool.Drawing.get_active_drawing_item():
             cls.poll_message_set("No drawing selected.")
             return False
