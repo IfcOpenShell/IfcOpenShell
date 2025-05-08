@@ -249,7 +249,7 @@ def add_drawing(
     assert location_hint is not None
     drawing_name = drawing.ensure_unique_drawing_name(drawing.generate_drawing_name(target_view, location_hint))
     drawing_matrix = drawing.generate_drawing_matrix(target_view, location_hint)
-    camera = drawing.create_camera(drawing_name, drawing_matrix, location_hint)
+    camera = drawing.create_camera(drawing_name, drawing_matrix, location_hint, target_view)
     element = drawing.run_root_assign_class(
         obj=camera,
         ifc_class="IfcAnnotation",
