@@ -130,7 +130,11 @@ class Annotator:
         drawing: ifcopenshell.entity_instance, object_type: str, data_type: tool.Drawing.ANNOTATION_DATA_TYPE
     ) -> bpy.types.Object:
         camera = tool.Ifc.get_object(drawing)
-        co1, _, _, _ = Annotator.get_placeholder_coords(camera)
+        # those annotations you want to obey the depth of the 3d cursor
+        if object_type == 'PLAN_LEVEL':
+            co1 = bpy.context.scene.cursor.location.copy()
+        else:
+            co1, _, _, _ = Annotator.get_placeholder_coords(camera)
         matrix_world = tool.Drawing.get_camera_matrix(camera)
         matrix_world.translation = co1
         collection = tool.Blender.get_object_bim_props(camera).collection
