@@ -599,46 +599,76 @@ class Drawing(bonsai.core.tool.Drawing):
         return element.Name
 
     @classmethod
+    def update_camera_matrix(
+        cls,
+        matrix: Matrix,
+        *,
+        camera_dir: Vector,
+        up: Vector,
+    ) -> None:
+        # Camera dir is actually Z-.
+        camera_dir = -camera_dir
+        right = up.cross(camera_dir)
+        assert isinstance(right, Vector)
+        matrix.col[0][:3] = right
+        matrix.col[1][:3] = up
+        matrix.col[2][:3] = camera_dir
+
+    @classmethod
     def generate_drawing_matrix(
         cls,
         target_view: ifcopenshell.util.representation.TARGET_VIEW,
         location_hint: Union[LocationHintLiteral, int],
     ) -> Matrix:
+        assert bpy.context.scene
+        m = Matrix()
         x, y, z = (0, 0, 0) if location_hint == 0 else bpy.context.scene.cursor.matrix.translation
+        X, Y, Z = m.to_3x3()
         if isinstance(location_hint, int):
+            if target_view == "REFLECTED_PLAN_VIEW":
+                # Flip Z axis.
+                m.col[2] *= -1
             if location_hint:
-                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.translation.z
+                storey = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint))
+                assert isinstance(storey, bpy.types.Object)
+                z = storey.matrix_world.translation.z
                 if target_view == "PLAN_VIEW":
-                    return mathutils.Matrix(((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z + 1.6), (0, 0, 0, 1)))
-                elif target_view == "REFLECTED_PLAN_VIEW":
-                    m = mathutils.Matrix()
-                    m[2][2] = -1
+                    # Keep default camera direction - Z-.
                     m.translation = (x, y, z + 1.6)
                     return m
-            return mathutils.Matrix(((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
+                elif target_view == "REFLECTED_PLAN_VIEW":
+                    m.translation = (x, y, z + 1.6)
+                else:
+                    assert False, target_view
+            return m
         elif target_view == "ELEVATION_VIEW":
+            m.translation = (x, y, z)
             if location_hint == "NORTH":
-                return mathutils.Matrix(((-1, 0, 0, x), (0, 0, 1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=-Y, up=Z)
             elif location_hint == "SOUTH":
-                return mathutils.Matrix(((1, 0, 0, x), (0, 0, -1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=Y, up=Z)
             elif location_hint == "EAST":
-                return mathutils.Matrix(((0, 0, 1, x), (1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=-X, up=Z)
             elif location_hint == "WEST":
-                return mathutils.Matrix(((0, 0, -1, x), (-1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=X, up=Z)
+            return m
         elif target_view == "SECTION_VIEW":
+            m.translation = (x, y, z)
+            X, Y, Z = m.to_3x3()
             if location_hint == "NORTH":
-                return mathutils.Matrix(((1, 0, 0, x), (0, 0, -1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=Y, up=Z)
             elif location_hint == "SOUTH":
-                return mathutils.Matrix(((-1, 0, 0, x), (0, 0, 1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=-Y, up=Z)
             elif location_hint == "EAST":
-                return mathutils.Matrix(((0, 0, -1, x), (-1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=X, up=Z)
             elif location_hint == "WEST":
-                return mathutils.Matrix(((0, 0, 1, x), (1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=-X, up=Z)
+            return m
         elif target_view == "MODEL_VIEW":
             assert (space := tool.Blender.get_view3d_space())
             assert (r3d := space.region_3d)
             return r3d.view_matrix.inverted()
-        return mathutils.Matrix()
+        return m
 
     @classmethod
     def generate_sheet_identification(cls) -> str:
