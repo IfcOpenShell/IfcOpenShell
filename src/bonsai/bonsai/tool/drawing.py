@@ -307,7 +307,6 @@ class Drawing(bonsai.core.tool.Drawing):
     ) -> bpy.types.Object:
         camera = bpy.data.objects.new(name, (camera_data := bpy.data.cameras.new(name)))
         props = cls.get_camera_props(camera_data)
-        camera.location = (0, 0, 1.5)  # The view shall be 1.5m above the origin
         camera_data.show_limits = True
         if location_hint == "PERSPECTIVE":
             props.camera_type = "PERSP"
