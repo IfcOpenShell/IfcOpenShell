@@ -233,7 +233,7 @@ def update_has_linework(self: "BIMCameraProperties", context: bpy.types.Context)
 
 
 def update_target_view(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
-    if self.target_view != "MODEL_VIEW":
+    if self.update_props and self.target_view != "MODEL_VIEW":
         self.camera_type = "ORTHO"
     update_layer(self, context, "TargetView", self.target_view)
 
