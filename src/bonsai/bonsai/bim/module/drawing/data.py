@@ -118,7 +118,7 @@ class DrawingsData:
         return len([e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"])
 
     @classmethod
-    def location_hint(cls):
+    def location_hint(cls) -> list[tuple[tool.Drawing.LocationHintType, str, str]]:
         props = tool.Drawing.get_document_props()
         if props.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
             results = [("0", "Origin", "")]

@@ -465,7 +465,7 @@ class DocProperties(PropertyGroup):
         is_editing_schedules: bool
         is_editing_references: bool
         target_view: Literal["PLAN_VIEW", "ELEVATION_VIEW", "SECTION_VIEW", "REFLECTED_PLAN_VIEW", "MODEL_VIEW"]
-        location_hint: str
+        location_hint: tool.Drawing.LocationHintType
         drawings: bpy.types.bpy_prop_collection_idprop[Drawing]
         active_drawing_id: int
         active_drawing_index: int
