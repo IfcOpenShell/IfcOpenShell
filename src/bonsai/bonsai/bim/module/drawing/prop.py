@@ -510,7 +510,7 @@ def update_camera_type(self: "BIMCameraProperties", context: bpy.types.Context) 
 
 CameraType = Literal["PERSP", "ORTHO"]
 CAMERA_TYPE_ENUM_ITEMS: dict[CameraType, tuple[str, str]] = {
-    "ORTHO": ("Ortographic", "Most common camera for the drawings, supporting all of the features."),
+    "ORTHO": ("Orthographic", "Most common camera for the drawings, supporting all of the features."),
     "PERSP": ("Perspective", "The only avilable features for perspective camera: freestyle linework, underlay."),
 }
 
