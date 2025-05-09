@@ -2365,12 +2365,15 @@ class ReloadDrawingStyles(bpy.types.Operator):
         return {"FINISHED"}
 
 
+# NOTE: Ifc Operator is not necessary for add and remove,
+# as underlying save operator creates ifc undo step for us,
+# but we keep it to make it more safe in case operators composition will change.
 class AddDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_drawing_style"
     bl_label = "Add Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         assert context.scene and (camera_obj := context.scene.camera)
         props = tool.Drawing.get_document_props()
         drawing_styles = props.drawing_styles
@@ -2388,7 +2391,7 @@ class RemoveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     index: bpy.props.IntProperty()
 
-    def execute(self, context):
+    def _execute(self, context):
         assert context.scene and (camera_obj := context.scene.camera)
         props = tool.Drawing.get_document_props()
         props.drawing_styles.remove(self.index)
@@ -2407,7 +2410,7 @@ class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     index: bpy.props.StringProperty()
     # TODO: check undo redo
 
-    def execute(self, context):
+    def _execute(self, context):
         space = self.get_view_3d(context)  # Do not remove. It is used later in eval
         scene = context.scene
         assert scene
@@ -2475,7 +2478,7 @@ class SaveDrawingStylesData(bpy.types.Operator, tool.Ifc.Operator):
     rename_style_from: bpy.props.StringProperty(default="")
     rename_style_to: bpy.props.StringProperty(default="")
 
-    def execute(self, context):
+    def _execute(self, context):
         if not DrawingsData.is_loaded:
             DrawingsData.load()
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
@@ -2522,7 +2525,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Activate Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
 
-    def execute(self, context):
+    def _execute(self, context):
         scene = context.scene
         assert scene and (camera := scene.camera)
         camera_props = tool.Drawing.get_camera_props(camera)
