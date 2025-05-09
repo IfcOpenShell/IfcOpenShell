@@ -81,6 +81,27 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         # make sure it's still valid
         assert context.WorldCoordinateSystem
 
+    def test_add_new_contexts_if_necessary(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        lib_context = ifcopenshell.api.context.add_context(library, context_type="Model")
+        lib_subcontext = ifcopenshell.api.context.add_context(library, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=lib_context)
+
+        # It has no contexts right now
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+
+        material = ifcopenshell.api.material.add_material(library, name="Material")
+        style = ifcopenshell.api.style.add_style(library)
+        ifcopenshell.api.style.assign_material_style(library, material=material, style=style, context=lib_subcontext)
+
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=material)
+        assert len(self.file.by_type("IfcProject")) == 1
+        assert len(self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)) == 1
+        assert len(self.file.by_type("IfcGeometricRepresentationSubContext", include_subtypes=False)) == 1
+        context = self.file.by_type("IfcMaterial")[0].HasRepresentation[0].Representations[0].ContextOfItems
+        # make sure it's still valid
+        assert context.WorldCoordinateSystem
+
     def test_append_a_single_type_product_even_though_an_inverse_material_relationship_is_shared(self):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
