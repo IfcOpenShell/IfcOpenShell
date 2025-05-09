@@ -55,7 +55,7 @@ class TestCreateAnnotationObject(NewFile):
 
 class TestCreateCamera(NewFile):
     def test_run(self):
-        obj = subject.create_camera("Name", mathutils.Matrix(), "PERSPECTIVE")
+        obj = subject.create_camera("Name", mathutils.Matrix(), "PERSPECTIVE", "PLAN_VIEW")
         assert obj.name == "Name"
         assert obj.matrix_world == mathutils.Matrix()
         assert isinstance(obj.data, bpy.types.Camera)
