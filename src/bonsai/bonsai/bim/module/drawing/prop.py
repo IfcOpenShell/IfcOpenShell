@@ -560,7 +560,7 @@ class BIMCameraProperties(PropertyGroup):
     has_underlay: BoolProperty(
         name="Underlay",
         default=False,
-        update=get_update_layer_callback("has_underlay", "HasUnderlay"),
+        update=update_has_underlay,
     )
     has_linework: BoolProperty(
         name="Linework",
