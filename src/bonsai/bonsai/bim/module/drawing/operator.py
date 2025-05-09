@@ -2325,24 +2325,6 @@ class ReloadDrawingStyles(bpy.types.Operator):
         assert context.scene and (camera := context.scene.camera)
         camera_props = tool.Drawing.get_camera_props(camera)
 
-        # added this part as a temporary fallback
-        # TODO: should remove it a bit later when projects get more accommodated
-        # with saving shadingstyles to ifc and separate json file
-        if "ShadingStyles" not in drawing_pset_data:
-            ifc_file = tool.Ifc.get()
-            pset = ifc_file.by_id(drawing_pset_data["id"])
-            edit_properties = {
-                "ShadingStyles": (
-                    shading_styles_path := tool.Drawing.get_default_drawing_resource_path("ShadingStyles")
-                ),
-                "CurrentShadingStyle": tool.Drawing.get_default_shading_style(),
-            }
-            ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties=edit_properties)
-            tool.Drawing.setup_shading_styles_path(shading_styles_path)
-
-            DrawingsData.load()
-            drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
-
         if "ShadingStyles" not in drawing_pset_data:
             self.report({"ERROR"}, "Could not find shading styles path in EPset_Drawing.ShadingStyles.")
             return {"CANCELLED"}
