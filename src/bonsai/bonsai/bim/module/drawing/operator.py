@@ -402,13 +402,14 @@ class CreateDrawing(bpy.types.Operator):
         for obj in bpy.context.view_layer.objects:
             obj.hide_render = obj.name not in visible_object_names
 
+        assert context.scene and context.view_layer and context.screen
         context.scene.render.filepath = str(Path(svg_path).with_suffix(".png"))
         drawing_style = self.props.drawing_styles[self.cprops.active_drawing_style_index]
 
         if drawing_style.render_type == "DEFAULT":
             bpy.ops.render.render(write_still=True)
         else:
-            previous_visibility = {}
+            previous_visibility: dict[str, bool] = {}
             for obj in tool.Blender.get_object_bim_props(self.camera).collection.objects:
                 if bpy.context.view_layer.objects.get(obj.name):
                     previous_visibility[obj.name] = obj.hide_get()
@@ -421,11 +422,11 @@ class CreateDrawing(bpy.types.Operator):
                     or "IfcGridAxis/" in obj.name
                     or "IfcOpeningElement/" in obj.name
                 ):
-                    if bpy.context.view_layer.objects.get(obj.name):
+                    if context.view_layer.objects.get(obj.name):
                         previous_visibility[obj.name] = obj.hide_get()
                         obj.hide_set(True)
 
-            space = self.get_view_3d(context.screen.areas)
+            assert (space := tool.Blender.get_view3d_space())
             previous_shading = space.shading.type
             previous_format = context.scene.render.image_settings.file_format
             space.shading.type = "RENDERED"
@@ -1574,12 +1575,6 @@ class CreateDrawing(bpy.types.Operator):
     def is_landscape(self, render):
         return render.resolution_x > render.resolution_y
 
-    def get_view_3d(self, areas):
-        for area in areas:
-            if area.type != "VIEW_3D":
-                continue
-            return area.spaces.active
-
     def get_material_name(self, element: ifcopenshell.entity_instance) -> str:
         if hasattr(element, "Name") and element.Name:
             return element.Name
@@ -2411,7 +2406,7 @@ class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     # TODO: check undo redo
 
     def _execute(self, context):
-        space = self.get_view_3d(context)  # Do not remove. It is used later in eval
+        assert (space := tool.Blender.get_view3d_space())  # Do not remove. It is used later in eval
         scene = context.scene
         assert scene
         style = {}
@@ -2459,12 +2454,6 @@ class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
 
         bpy.ops.bim.save_drawing_styles_data()
         return {"FINISHED"}
-
-    def get_view_3d(self, context):
-        for area in context.screen.areas:
-            if area.type != "VIEW_3D":
-                continue
-            return area.spaces.active
 
 
 class SaveDrawingStylesData(bpy.types.Operator, tool.Ifc.Operator):
@@ -2553,7 +2542,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     def set_raster_style(self, context: bpy.types.Context) -> None:
         scene = context.scene  # Do not remove. It is used in exec later
-        space = self.get_view_3d(context)  # Do not remove. It is used in exec later
+        assert (space := tool.Blender.get_view3d_space())  # Do not remove. It is used in exec later
         style = json.loads(self.drawing_style.raster_style)
         for path, value in style.items():
             try:
@@ -2603,13 +2592,6 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
             elif mode == "EXCLUDE":
                 if global_id in self.exclude_global_ids:
                     obj.hide_viewport = True  # Note: this breaks alt-H
-
-    def get_view_3d(self, context: bpy.types.Context) -> bpy.types.SpaceView3D:
-        for area in context.screen.areas:
-            if area.type != "VIEW_3D":
-                continue
-            return area.spaces.active
-        assert False, "Space is not found."
 
 
 class RemoveSheet(bpy.types.Operator, tool.Ifc.Operator):
