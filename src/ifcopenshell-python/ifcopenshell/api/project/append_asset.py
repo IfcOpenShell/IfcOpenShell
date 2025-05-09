@@ -506,7 +506,9 @@ class Usecase:
     def reuse_existing_contexts(self) -> None:
         added_contexts = set([e for e in self.added_elements.values() if e.is_a("IfcGeometricRepresentationContext")])
         added_contexts -= set(self.existing_contexts)
-        for added_context in added_contexts:
+        sorted_added_contexts = [c for c in added_contexts if c.is_a() == "IfcGeometricRepresentationContext"]
+        sorted_added_contexts.extend([c for c in added_contexts if c.is_a() == "IfcGeometricRepresentationSubContext"])
+        for added_context in sorted_added_contexts:
             equivalent_existing_context = self.get_equivalent_existing_context(added_context)
             if not equivalent_existing_context:
                 equivalent_existing_context = self.create_equivalent_context(added_context)
@@ -541,18 +543,22 @@ class Usecase:
             parent = self.get_equivalent_existing_context(added_context.ParentContext)
             if not parent:
                 parent = self.create_equivalent_context(added_context.ParentContext)
-            return ifcopenshell.api.context.add_context(
+                self.existing_contexts.append(parent)
+            context = ifcopenshell.api.context.add_context(
                 self.file,
                 parent=parent,
                 context_type=added_context.ContextType,
                 context_identifier=added_context.ContextIdentifier,
                 target_view=added_context.TargetView,
             )
-        return ifcopenshell.api.context.add_context(
-            self.file,
-            context_type=added_context.ContextType,
-            context_identifier=added_context.ContextIdentifier,
-        )
+        else:
+            context = ifcopenshell.api.context.add_context(
+                self.file,
+                context_type=added_context.ContextType,
+                context_identifier=added_context.ContextIdentifier,
+            )
+        self.existing_contexts.append(context)
+        return context
 
     def file_add(
         self, element: ifcopenshell.entity_instance, conversion_factor: Optional[float] = None
