@@ -131,7 +131,7 @@ class Annotator:
     ) -> bpy.types.Object:
         camera = tool.Ifc.get_object(drawing)
         # those annotations you want to obey the depth of the 3d cursor
-        if object_type == 'PLAN_LEVEL':
+        if object_type == "PLAN_LEVEL":
             co1 = bpy.context.scene.cursor.location.copy()
         else:
             co1, _, _, _ = Annotator.get_placeholder_coords(camera)

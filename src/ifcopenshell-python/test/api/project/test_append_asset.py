@@ -85,7 +85,9 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
         lib_context = ifcopenshell.api.context.add_context(library, context_type="Model")
-        lib_subcontext = ifcopenshell.api.context.add_context(library, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=lib_context)
+        lib_subcontext = ifcopenshell.api.context.add_context(
+            library, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=lib_context
+        )
 
         # It has no contexts right now
         ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
