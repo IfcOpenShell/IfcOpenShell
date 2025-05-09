@@ -2514,6 +2514,8 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Activate Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
 
+    has_errors_during_activation = False
+
     def _execute(self, context):
         scene = context.scene
         assert scene and (camera := scene.camera)
@@ -2538,6 +2540,13 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
             ifc_file, pset=pset, properties={"CurrentShadingStyle": self.drawing_style.name}
         )
         bonsai.bim.handler.refresh_ui_data()
+
+        if self.has_errors_during_activation:
+            self.report(
+                {"WARNING"},
+                "There were errors setting some drawing style properies, see system console for the details.",
+            )
+
         return {"FINISHED"}
 
     def set_raster_style(self, context: bpy.types.Context) -> None:
@@ -2550,9 +2559,12 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
                     exec(f"{path} = '{value}'")
                 else:
                     exec(f"{path} = {value}")
-            except:
+            except Exception as e:
                 # Differences in Blender versions mean result in failures here
-                print(f"Failed to set shading style {path} to {value}")
+                print(f"Failed to set drawing style property '{path}' to '{value}'. Error: '{str(e)}'")
+                self.has_errors_during_activation = True
+                if "PYTEST_VERSION" in os.environ:
+                    raise
 
     def set_query(self, context: bpy.types.Context) -> None:
         self.include_global_ids = []
