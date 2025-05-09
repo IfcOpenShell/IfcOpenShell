@@ -1182,8 +1182,10 @@ class UIData:
 def draw_statusbar(self, context):
     if not UIData.is_loaded:
         UIData.load()
-    text = f"Bonsai v{UIData.data['version']}"
-    self.layout.label(text=text)
+    bonsai_version = f"Bonsai v{UIData.data['version']}"
+    layout = self.layout
+    row = layout.row()
+    row.operator("bim.show_system_info", text=bonsai_version, emboss=False)
 
 
 def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
