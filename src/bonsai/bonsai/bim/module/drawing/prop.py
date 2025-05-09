@@ -366,21 +366,32 @@ class Sheet(PropertyGroup):
         is_expanded: bool
 
 
+RenderType = Literal["NONE", "DEFAULT", "VIEWPORT"]
+
+
 class DrawingStyle(PropertyGroup):
     name: StringProperty(name="Name", get=get_drawing_style_name, set=set_drawing_style_name)
-    raster_style: StringProperty(name="Raster Style", default="{}")
+    raster_style: StringProperty(
+        name="Raster Style",
+        description="JSON string for drawing style settings.",
+        default="{}",
+    )
     render_type: EnumProperty(
-        items=[
-            ("NONE", "None", ""),
-            ("DEFAULT", "Default", ""),
-            ("VIEWPORT", "Viewport", ""),
-        ],
+        items=[(t, t.capitalize(), "") for t in get_args(RenderType)],
         name="Render Type",
         default="VIEWPORT",
     )
     include_query: StringProperty(name="Include Query")
     exclude_query: StringProperty(name="Exclude Query")
     attributes: CollectionProperty(name="Attributes", type=StrProperty)
+
+    if TYPE_CHECKING:
+        name: str
+        raster_style: str
+        render_type: RenderType
+        include_query: str
+        exclude_query: str
+        attributes: bpy.types.bpy_prop_collection_idprop[StrProperty]
 
 
 class RasterStyleProperty(enum.Enum):

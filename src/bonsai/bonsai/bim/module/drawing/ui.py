@@ -622,7 +622,16 @@ class BIM_PT_text(Panel):
 
 
 class BIM_UL_drawinglist(bpy.types.UIList):
-    def draw_item(self, context, layout, data: DocProperties, item: Drawing, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: DocProperties,
+        item: Drawing,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if not item:
             layout.label(text="", translate=False)
             return
