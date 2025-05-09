@@ -66,7 +66,7 @@ class Patcher:
 
     def patch(self) -> None:
         self.qto_template_cache: dict[str, list[ifcopenshell.entity_instance]] = {}
-        templates_schema = self.file.schema
+        templates_schema = self.file.schema_identifier
         # No official qto templates in IFC2X3, fallback to IFC4.
         if templates_schema == "IFC2X3":
             templates_schema = "IFC4"
