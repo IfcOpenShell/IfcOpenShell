@@ -375,7 +375,7 @@ class TestGetName(NewFile):
 
 class TestGenerateDrawingMatrix(NewFile):
     def test_returning_the_origin_as_a_fallback(self):
-        assert subject.generate_drawing_matrix("PLAN_VIEW", None) == mathutils.Matrix()
+        assert subject.generate_drawing_matrix("PLAN_VIEW", 0) == mathutils.Matrix()
 
     def test_creating_a_plan_view_at_the_cursor_at_a_storey(self):
         ifc = ifcopenshell.file()
@@ -392,7 +392,7 @@ class TestGenerateDrawingMatrix(NewFile):
         assert round(m[2][3], 3) == 4.6
 
     def test_creating_an_rcp_at_the_origin(self):
-        assert subject.generate_drawing_matrix("REFLECTED_PLAN_VIEW", None) == mathutils.Matrix(
+        assert subject.generate_drawing_matrix("REFLECTED_PLAN_VIEW", 0) == mathutils.Matrix(
             ((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1))
         )
 
