@@ -35,7 +35,7 @@ jobs:
 
       - name: Version + date str
         id: verdate
-        run: echo "verdate='${{ steps.version.outputs.version }}alpha${{ steps.date.outputs.date }}'" >> $GITHUB_OUTPUT
+        run: echo "verdate=${{ steps.version.outputs.version }}alpha${{ steps.date.outputs.date }}" >> $GITHUB_OUTPUT
 
       
   test:
