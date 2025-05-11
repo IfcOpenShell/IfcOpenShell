@@ -54,7 +54,7 @@ jobs:
         platform: [
           { name: win, distver: windows-latest, pkg_dir: 'win-64' },
           { name: linux, distver: ubuntu-latest, pkg_dir: 'linux-64' },
-          { name: macOS-arm, distver: macos-latest, pkg_dir: 'osx-arm64' }
+          { name: macOS-arm, distver: macos-latest, pkg_dir: 'osx-arm64' },
           { name: macOS-x86, distver: macos-13, pkg_dir: 'osx-64' }
         ]
     steps:
