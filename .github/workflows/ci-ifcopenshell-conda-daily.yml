@@ -10,7 +10,7 @@ on:
   #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
   #         *  * * * *
   - cron: "49 23 * * *" # 11min before utc midnight every day
-env
+
 jobs:
   activate:
     runs-on: ubuntu-latest
