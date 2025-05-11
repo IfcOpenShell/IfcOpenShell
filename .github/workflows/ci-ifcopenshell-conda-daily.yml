@@ -60,7 +60,11 @@ jobs:
     steps:
       - name: Maximize build space
         if: runner.os == 'Linux'
-        uses: easimon/maximize-build-space@master
+        uses: easimon/maximize-build-space@master  # https://github.com/easimon/maximize-build-space
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 2024
+          remove-dotnet: 'true'      
       
       - uses: actions/checkout@v4
         with:
