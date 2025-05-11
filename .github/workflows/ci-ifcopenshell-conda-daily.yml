@@ -1,7 +1,6 @@
 name: ci-ifcopenshell-conda-daily-v0.8.0
 
 on:
-  pull_request:
   workflow_dispatch:
   schedule:
   #         ┌───────────── minute (0 - 59)
