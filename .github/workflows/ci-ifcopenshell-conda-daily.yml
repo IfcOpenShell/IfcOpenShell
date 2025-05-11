@@ -10,7 +10,7 @@ on:
   #         │  │ │ │ ┌───────────── day of the week (0 - 6 or SUN-SAT)
   #         *  * * * *
   - cron: "49 23 * * *" # 11min before utc midnight every day
-
+env
 jobs:
   activate:
     runs-on: ubuntu-latest
@@ -58,13 +58,23 @@ jobs:
           { name: macOS-x86, distver: macos-13, pkg_dir: 'osx-64' }
         ]
     steps:
-      - name: Maximize build space
+      - name: Set Swap Space
         if: runner.os == 'Linux'
-        uses: easimon/maximize-build-space@master  # https://github.com/easimon/maximize-build-space
+        uses: pierotofy/set-swap-space@master
         with:
-          root-reserve-mb: 512
-          swap-size-mb: 2024
-          remove-dotnet: 'true'      
+          swap-size-gb: 10
+      
+      - name: set ARTIFACTS ENV vars
+        shell: bash
+        run: |
+          pwd
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "ARTIFACTS_DIR=D:/a/artifacts" >> $GITHUB_ENV
+          elif [[ "$RUNNER_OS" == "macOS" ]]; then
+            echo "ARTIFACTS_DIR=/Users/runner/work/artifacts" >> $GITHUB_ENV
+          elif [[ "$RUNNER_OS" == "Linux" ]]; then
+            echo "ARTIFACTS_DIR=/home/runner/work/artifacts" >> $GITHUB_ENV
+          fi
       
       - uses: actions/checkout@v4
         with:
@@ -85,20 +95,20 @@ jobs:
 
       - name: create conda package dist dir
         run: |
-          mkdir -p ${{ github.workspace }}/dist
+          mkdir -p ${{ env.ARTIFACTS_DIR }}
 
       - name: build & test ifcopenshell
         run: |
-          rattler-build  build -r conda/recipe.yaml --output-dir '${{ github.workspace }}/dist'
+          rattler-build  build -r conda/recipe.yaml --output-dir '${{ env.ARTIFACTS_DIR }}'
         env:
           VERSION_OVERRIDE: ${{ needs.activate.outputs.verdate }}
 
       - name: upload to anaconda
         if: ${{ matrix.platform.name == 'win' }}
         run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell '${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.conda'
+          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell '${{ env.ARTIFACTS_DIR }}/${{ matrix.platform.pkg_dir }}/*.conda'
 
       - name: upload to anaconda
         if: ${{ matrix.platform.name != 'win' }}
         run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell ${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.conda
+          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell ${{ env.ARTIFACTS_DIR }}/${{ matrix.platform.pkg_dir }}/*.conda
