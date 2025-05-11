@@ -1,7 +1,3 @@
-variant:
-  - novtk
-  - all
-
 occt:
   - 7.8.1
 
@@ -27,9 +23,9 @@ c_stdlib_version:
 - '2.12'    # [linux]
 - '10.13'   # [osx]
 hdf5:
-- 1.14.3
+- 1.14.6
 libboost_devel:
-- '1.84'
+- '1.86'
 libxml2:
 - '2'
 mpfr:

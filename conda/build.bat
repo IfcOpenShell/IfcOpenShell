@@ -49,3 +49,7 @@ if errorlevel 1 exit 1
 ninja install -j 1
 
 if errorlevel 1 exit 1
+
+python %RECIPE_DIR%/update_version_init.py %PKG_VERSION% %SP_DIR%/ifcopenshell/__init__.py
+
+if errorlevel 1 exit 1
