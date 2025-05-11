@@ -86,7 +86,7 @@ jobs:
 
       - name: build & test ifcopenshell
         run: |
-          rattler-build  build -r conda/recipe.yaml --python ${{ matrix.pyver.distver }} --output-folder '${{ github.workspace }}/dist'
+          rattler-build  build -r conda/recipe.yaml --output-dir '${{ github.workspace }}/dist'
         env:
           VERSION_OVERRIDE: ${{ needs.activate.outputs.verdate }}
 
