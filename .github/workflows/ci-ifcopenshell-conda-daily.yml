@@ -39,7 +39,7 @@ jobs:
 
       
   test:
-    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}-${{ matrix.variant }}
+    name: ${{ matrix.platform.distver }}-${{ matrix.pyver.name }}
     needs: activate
     runs-on: ${{ matrix.platform.distver }}
     defaults:
@@ -48,9 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [novtk, all]
         pyver: [
-#          { name: py311, distver: '3.11'},
           { name: py312, distver: '3.12'}
         ]
         platform: [
@@ -74,13 +72,13 @@ jobs:
         run: |
           curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz | tar -xvJf - -C /Users/runner/work/
 
-      - uses: mamba-org/setup-micromamba@v1 # https://github.com/mamba-org/setup-micromamba
+      - uses: mamba-org/setup-micromamba@v2 # https://github.com/mamba-org/setup-micromamba
         with:
           environment-name: test-env
           create-args: >-
-            python=3.11
+            python=3.12
             anaconda-client
-            boa
+            rattler-build
 
       - name: create conda package dist dir
         run: |
@@ -88,17 +86,16 @@ jobs:
 
       - name: build & test ifcopenshell
         run: |
-          conda mambabuild . --python ${{ matrix.pyver.distver }} --no-remove-work-dir --output-folder '${{ github.workspace }}/dist' --variants='{variant: ${{ matrix.variant }}}'
-        working-directory: ./conda
+          rattler-build  build -r conda/recipe.yaml --python ${{ matrix.pyver.distver }} --output-folder '${{ github.workspace }}/dist'
         env:
           VERSION_OVERRIDE: ${{ needs.activate.outputs.verdate }}
 
       - name: upload to anaconda
         if: ${{ matrix.platform.name == 'win' }}
         run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell '${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2'
+          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell '${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.conda'
 
       - name: upload to anaconda
         if: ${{ matrix.platform.name != 'win' }}
         run: |
-          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell ${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.tar.bz2
+          anaconda -t ${{ secrets.ANACONDA_TOKEN }} upload --force --user ifcopenshell ${{ github.workspace }}/dist/${{ matrix.platform.pkg_dir }}/*.conda
