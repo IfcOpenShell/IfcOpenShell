@@ -193,9 +193,18 @@ def load_cost_item_resource_quantities(cost: tool.Cost) -> None:
 
 
 def assign_cost_value(
-    ifc: tool.Ifc, cost_item: ifcopenshell.entity_instance, cost_rate: ifcopenshell.entity_instance
+    ifc: tool.Ifc,
+    cost: tool.Cost,
+    cost_item: ifcopenshell.entity_instance,
+    cost_rate: ifcopenshell.entity_instance
 ) -> None:
     ifc.run("cost.assign_cost_value", cost_item=cost_item, cost_rate=cost_rate)
+    existing_cost_rate = cost.get_cost_item_rate_assignment(cost_item)
+    if existing_cost_rate is None:
+        ifc.run("control.assign_control", relating_control=cost_rate, related_object=cost_item)
+    else:
+        ifc.run("control.unassign_control", relating_control=existing_cost_rate, related_object=cost_item)
+        ifc.run("control.assign_control", relating_control=cost_rate, related_object=cost_item)
 
 
 def load_schedule_of_rates(cost: tool.Cost, schedule_of_rates: ifcopenshell.entity_instance) -> None:

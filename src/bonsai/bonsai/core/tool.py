@@ -228,6 +228,7 @@ class Cost:
     def get_active_cost_schedule(cls): pass
     def get_active_cost_schedule(cls): pass
     def get_attributes_for_cost_value(cls, cost_type, cost_category): pass
+    def get_assigned_rate_cost_item(cls, cost_item): pass
     def get_cost_item_attributes(cls, cost_item): pass
     def get_cost_item_products(cls): pass
     def get_cost_item_quantity_attributes(cls): pass

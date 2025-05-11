@@ -836,6 +836,12 @@ class Cost(bonsai.core.tool.Cost):
         return bool(cost_items)
 
     @classmethod
+    def get_assigned_rate_cost_item(cls, cost_item: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        for assignment in cost_item.HasAssignments:
+            if assignment.RelatingControl.is_a() == "IfcCostItem":
+                return assignment.RelatingControl
+
+    @classmethod
     def load_product_cost_items(cls, product: ifcopenshell.entity_instance) -> None:
         props = cls.get_cost_props()
         props.is_cost_update_enabled = False
