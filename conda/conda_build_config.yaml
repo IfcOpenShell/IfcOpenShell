@@ -20,8 +20,9 @@ cxx_compiler_version:
 - '12'    # [linux]
 - '16'    # [osx]
 c_stdlib_version:
-- '2.12'    # [linux]
-- '10.13'   # [osx]
+  - 2.17    # [linux]
+  - 10.13   # [osx and x86_64]
+  - 11.0    # [osx and arm64]
 hdf5:
 - 1.14.6
 libboost_devel:
@@ -43,12 +44,12 @@ target_platform:
 - win-64    # [win]
 - linux-64  # [linux]
 - osx-64    # [osx]
-macos_machine:
-- x86_64-apple-darwin13.4.0
-MACOSX_DEPLOYMENT_TARGET:
-- '10.13'
-MACOSX_SDK_VERSION:
-- '10.13'
+macos_machine:                 # [osx]
+  - x86_64-apple-darwin13.4.0  # [osx and x86_64]
+  - arm64-apple-darwin20.0.0   # [osx and arm64]
+MACOSX_DEPLOYMENT_TARGET:      # [osx]
+  - 11.0                       # [osx and arm64]
+  - 10.13                      # [osx and x86_64]
 
-CONDA_BUILD_SYSROOT:
-  - "/Users/runner/work/MacOSX10.13.sdk"  # [osx]
+CONDA_BUILD_SYSROOT:  # [osx]
+  - "/Users/runner/work/MacOSX10.13.sdk"  # [osx and x86_64]

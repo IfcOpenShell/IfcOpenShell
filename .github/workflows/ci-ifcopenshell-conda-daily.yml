@@ -54,7 +54,8 @@ jobs:
         platform: [
           { name: win, distver: windows-latest, pkg_dir: 'win-64' },
           { name: linux, distver: ubuntu-latest, pkg_dir: 'linux-64' },
-          { name: macOS, distver: macos-latest, pkg_dir: 'osx-64' }
+          { name: macOS-arm, distver: macos-latest, pkg_dir: 'osx-arm64' }
+          { name: macOS-x86, distver: macos-13, pkg_dir: 'osx-64' }
         ]
     steps:
       - name: Set up swap space
@@ -68,7 +69,7 @@ jobs:
           submodules: recursive
 
       - name: Download and extract MacOSX SDK
-        if: ${{ runner.os == 'macOS' }}
+        if: ${{ matrix.platform.name == 'macOS-x86' }}
         run: |
           curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.13.sdk.tar.xz | tar -xvJf - -C /Users/runner/work/
 
