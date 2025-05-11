@@ -64,6 +64,7 @@ classes = (
     operator.RefreshCostScheduleCsv,
     operator.LoadCostItemElementQuantities,
     operator.LoadCostItemQuantities,
+    operator.ShowAssignedCostRate,
     operator.LoadCostItemResourceQuantities,
     operator.LoadCostItemTaskQuantities,
     operator.LoadCostItemTypes,

@@ -19,6 +19,7 @@
 # pyright: reportUnnecessaryTypeIgnoreComment=error
 
 import bpy
+import textwrap
 import ifcopenshell.api
 import bonsai.tool as tool
 from bpy_extras.io_utils import ImportHelper, ExportHelper
@@ -607,6 +608,33 @@ class LoadCostItemQuantities(bpy.types.Operator):
         core.load_cost_item_quantities(tool.Cost)
         return {"FINISHED"}
 
+class ShowAssignedCostRate(bpy.types.Operator):
+    bl_idname = "bim.show_assigned_cost_rate"
+    bl_label = "Info about the assigned cost item rate"
+    bl_options = {"REGISTER"}
+    assigned_rate_id: bpy.props.IntProperty()
+    assigned_rate_name: bpy.props.StringProperty()
+    assigned_rate_description: bpy.props.StringProperty()
+    assigned_rate_total_value: bpy.props.FloatProperty()
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=450)
+
+    def execute(self, context):
+        #core.load_cost_item_quantities(tool.Cost) IS IT NECESSARY?
+        return {"FINISHED"}
+    
+    def draw(self, context):
+        layout = self.layout
+        wrapper = textwrap.TextWrapper(width=80)
+        layout.label(text=f"ID: {self.assigned_rate_id}")
+        layout.label(text=f"Name: {self.assigned_rate_name}")
+        layout.label(text="Description:")
+        for line in wrapper.wrap(str(self.assigned_rate_description)):
+            layout.label(text=line)
+        layout.label(text=f"Value: {self.assigned_rate_total_value}")
+
 
 class LoadCostItemElementQuantities(bpy.types.Operator):
     bl_idname = "bim.load_cost_item_element_quantities"
@@ -658,7 +686,10 @@ class AssignCostValue(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         core.assign_cost_value(
-            tool.Ifc, cost_item=tool.Ifc.get().by_id(self.cost_item), cost_rate=tool.Ifc.get().by_id(self.cost_rate)
+            tool.Ifc,
+            tool.Cost,
+            cost_item=tool.Ifc.get().by_id(self.cost_item),
+            cost_rate=tool.Ifc.get().by_id(self.cost_rate)
         )
 
 

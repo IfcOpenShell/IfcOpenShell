@@ -655,6 +655,8 @@ class BIM_UL_cost_items_trait:
         for column in props.columns:
             split2.label(text=column.name)
         split2.label(text="Total Cost")
+        split2.alignment = "LEFT"
+        split2.label(text="Rate")
 
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
@@ -684,6 +686,8 @@ class BIM_UL_cost_items_trait:
 
             if self.props.change_cost_item_parent:
                 self.draw_parent_operator(row, item.ifc_definition_id)
+            
+            self.draw_assigned_rate_column(split2, cost_item)
 
             # TODO: reimplement "bim.copy_cost_item_values" somewhere with better UX
 
@@ -723,6 +727,18 @@ class BIM_UL_cost_items_trait:
             layout.label(text=label)
         else:
             layout.label(text="-")
+    
+    def draw_assigned_rate_column(self, layout, cost_item):
+        row=layout.row()
+        row.alignment= "LEFT"
+        if cost_item["AssignedCostRate"] is not None:
+            op = row.operator("bim.show_assigned_cost_rate", text="", emboss=False, icon="ZOOM_IN")
+            op.assigned_rate_id = cost_item["AssignedCostRate"].id()
+            op.assigned_rate_name = cost_item["AssignedCostRate"].Name or ""
+            op.assigned_rate_description = cost_item["AssignedCostRate"].Description or ""
+            op.assigned_rate_total_value = CostSchedulesData.data["cost_items"][cost_item["AssignedCostRate"].id()]["TotalAppliedValue"]
+        else:
+            row.label(text="-")
 
     def draw_value_column(self, layout, cost_item):
         if cost_item["TotalAppliedValue"]:

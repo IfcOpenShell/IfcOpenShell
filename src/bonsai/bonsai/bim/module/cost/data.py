@@ -110,6 +110,7 @@ class CostSchedulesData:
             cls._load_cost_item_quantities(cost_item, data)
             cls._load_cost_values(cost_item, data)
             cls._load_nesting_index(cost_item, data)
+            cls._load_assigned_cost_rate(cost_item, data)
             results[cost_item.id()] = data
         return results
 
@@ -154,7 +155,12 @@ class CostSchedulesData:
         else:
             data["TotalCost"] = data["TotalAppliedValue"] * cost_quantity
         if is_sum:
+            #pass If it is None it doesn't allow me to assign a cost rate composed by sum
             data["TotalAppliedValue"] = None
+    
+    @classmethod
+    def _load_assigned_cost_rate(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
+        data["AssignedCostRate"] = tool.Cost.get_cost_item_rate_assignment(cost_item)
 
     @classmethod
     def _load_cost_item_quantities(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
@@ -248,6 +254,8 @@ class CostSchedulesData:
     ) -> None:
         value_data = cost_value.get_info()
         del value_data["AppliedValue"]
+        if tool.Cost.get_assigned_rate_cost_item(root_element):
+            root_element = tool.Cost.get_assigned_rate_cost_item(root_element)
         if value_data["UnitBasis"]:
             data = cost_value.UnitBasis.get_info()
             data["ValueComponent"] = data["ValueComponent"].wrappedValue
