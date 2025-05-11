@@ -47,11 +47,11 @@ requirements:
     - ${{ pin_compatible('cgal-cpp', upper_bound='x.x') }}
   run_exports:
     - ${{ pin_subpackage('ifcopenshell', upper_bound='x.x.x') }}
+
 tests:
   - python:
       imports:
         - ifcopenshell
-        #- ifcopenshell.util.shape_builder
       pip_check: false
   - script:
       - python -c "import ifcopenshell; assert ifcopenshell.version == '${{ version }}', 'print(ifcopenshell.version)'"
