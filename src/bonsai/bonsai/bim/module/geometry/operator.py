@@ -3404,3 +3404,32 @@ class UnassignRepresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
         layer = ifc_file.by_id(self.layer_id)
         ifcopenshell.api.layer.unassign_layer(ifc_file, [representation], layer)
         return {"FINISHED"}
+
+class BIM_OT_set_local_orientation(bpy.types.Operator):
+    bl_idname = "bim.set_local_orientation"
+    bl_label = "Set Local Orientation"
+
+    def execute(self, context):
+        scene = bpy.context.scene
+        area_3d = next((area for area in bpy.context.screen.areas if area.type == 'VIEW_3D'), None)
+        space_3d = next((space for space in area_3d.spaces if space.type == 'VIEW_3D'), None) if area_3d else None
+
+        try:
+            if context.scene.show_colored_dimensions:
+                if space_3d:
+                    scene.bonsai_prev_orientation_type = scene.transform_orientation_slots[1].type
+                    scene.bonsai_prev_gizmo_translate = space_3d.show_gizmo_object_translate                
+                scene.transform_orientation_slots[1].type = "LOCAL"
+                space_3d.show_gizmo_object_translate = True
+
+                # Note: You can't color the text, but you could use custom icons or emojis as a visual cue
+            else:
+                if space_3d:
+                    if hasattr(scene, "bonsai_prev_orientation_type"):
+                        scene.transform_orientation_slots[1].type = scene.bonsai_prev_orientation_type
+                    if hasattr(scene, "bonsai_prev_gizmo_translate"):
+                        space_3d.show_gizmo_object_translate = scene.bonsai_prev_gizmo_translate
+
+        except Exception:
+            self.report({'WARNING'}, "Could not set transform orientation.")
+        return {'FINISHED'}
