@@ -41,6 +41,7 @@ def test_add_stationing_to_alignment():
     alignment = ifcopenshell.api.alignment.create_alignment_by_pi_method(
         file, "TestAlignment", coordinates, radii, vpoints, lengths
     )
+    ifcopenshell.api.alignment.create_geometric_representation(file, alignment)
 
     ifcopenshell.api.alignment.add_stationing_to_alignment(file, alignment, 2000.0)
 
@@ -54,3 +55,4 @@ def test_add_stationing_to_alignment():
                     ifcopenshell.util.element.get_pset(element=referent, name="Pset_Stationing", prop="Station")
                     == 2000.0
                 )
+                assert(referent.ObjectPlacement != None)
