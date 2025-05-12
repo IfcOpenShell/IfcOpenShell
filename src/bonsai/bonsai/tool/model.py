@@ -1060,6 +1060,7 @@ class Model(bonsai.core.tool.Model):
         if not refresh and element.id() in AuthoringData.type_thumbnails:
             return  # Already processed
 
+        assert isinstance(obj, bpy.types.Object)
         obj.asset_generate_preview()
         while not obj.preview:
             pass
