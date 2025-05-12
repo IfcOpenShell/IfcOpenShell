@@ -212,7 +212,7 @@ class DumbProfileRegenerator:
 
         # update related thumbnails
         for element in self.get_element_types_using_profile(profile):
-            tool.Model.update_thumbnail_for_element(element, refresh=True)
+            tool.Model.mark_thumbnail_for_update(element)
 
     def regenerate_from_profile(self, usecase_path, ifc_file, settings):
         self.file = ifc_file
