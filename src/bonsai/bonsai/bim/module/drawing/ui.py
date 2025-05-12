@@ -133,18 +133,18 @@ class BIM_PT_element_filters(Panel):
                 self.layout, props.include_filter_groups, ElementFiltersData, "drawing_include"
             )
             row = self.layout.row(align=True)
-            row.operator("bim.edit_element_filter", icon="CHECKMARK", text="Save Include Filter").filter_mode = (
-                "INCLUDE"
-            )
+            row.operator(
+                "bim.edit_element_filter", icon="CHECKMARK", text="Save Include Filter"
+            ).filter_mode = "INCLUDE"
             row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
         elif props.filter_mode == "EXCLUDE":
             bonsai.bim.helper.draw_filter(
                 self.layout, props.exclude_filter_groups, ElementFiltersData, "drawing_exclude"
             )
             row = self.layout.row(align=True)
-            row.operator("bim.edit_element_filter", icon="CHECKMARK", text="Save Exclude Filter").filter_mode = (
-                "EXCLUDE"
-            )
+            row.operator(
+                "bim.edit_element_filter", icon="CHECKMARK", text="Save Exclude Filter"
+            ).filter_mode = "EXCLUDE"
             row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
         else:
             row = self.layout.row(align=True)
@@ -274,9 +274,9 @@ class BIM_PT_drawings(Panel):
 
                 row2.separator(factor=0.5, type="SPACE")
 
-                row2.operator("bim.duplicate_drawing", icon="DUPLICATE", text="").drawing = (
-                    active_drawing.ifc_definition_id
-                )
+                row2.operator(
+                    "bim.duplicate_drawing", icon="DUPLICATE", text=""
+                ).drawing = active_drawing.ifc_definition_id
 
                 row3 = row.row(align=True)
                 row3.alignment = "RIGHT"
@@ -339,9 +339,9 @@ class BIM_PT_schedules(Panel):
                 row = self.layout.row(align=True)
                 row.alignment = "RIGHT"
                 row.operator("bim.open_schedule", icon="URL", text="").schedule = active_schedule.ifc_definition_id
-                row.operator("bim.build_schedule", icon="LINENUMBERS_ON", text="").schedule = (
-                    active_schedule.ifc_definition_id
-                )
+                row.operator(
+                    "bim.build_schedule", icon="LINENUMBERS_ON", text=""
+                ).schedule = active_schedule.ifc_definition_id
                 row.operator("bim.remove_schedule", icon="X", text="").schedule = active_schedule.ifc_definition_id
 
             self.layout.template_list(
@@ -443,9 +443,9 @@ class BIM_PT_sheets(Panel):
             if active_sheet.is_sheet:
                 row2.operator("bim.remove_sheet", icon="X", text="").sheet = active_sheet.ifc_definition_id
             else:
-                row2.operator("bim.remove_drawing_from_sheet", icon="X", text="").reference = (
-                    active_sheet.ifc_definition_id
-                )
+                row2.operator(
+                    "bim.remove_drawing_from_sheet", icon="X", text=""
+                ).reference = active_sheet.ifc_definition_id
 
             row2.separator(factor=0.5, type="SPACE")
 
@@ -647,9 +647,13 @@ class BIM_UL_drawinglist(bpy.types.UIList):
                 and self.props.active_drawing_id
                 and item.ifc_definition_id == self.props.active_drawing_id
             ):
-                row.operator("bim.activate_drawing", text="", icon="VIEW_CAMERA", emboss=True, depress=True).drawing = item.ifc_definition_id
+                row.operator(
+                    "bim.activate_drawing", text="", icon="VIEW_CAMERA", emboss=True, depress=True
+                ).drawing = item.ifc_definition_id
             else:
-                row.operator("bim.activate_drawing", text="", icon="VIEW_CAMERA_UNSELECTED", emboss=False).drawing = item.ifc_definition_id
+                row.operator(
+                    "bim.activate_drawing", text="", icon="VIEW_CAMERA_UNSELECTED", emboss=False
+                ).drawing = item.ifc_definition_id
         else:
             if item.target_view == "PLAN_VIEW":
                 icon = "UV_FACESEL"
@@ -683,13 +687,13 @@ class BIM_UL_sheets(bpy.types.UIList):
         row = layout.row(align=True)
         if item.is_sheet:
             if item.is_expanded:
-                row.operator("bim.contract_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN").sheet = (
-                    item.ifc_definition_id
-                )
+                row.operator(
+                    "bim.contract_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_DOWN"
+                ).sheet = item.ifc_definition_id
             else:
-                row.operator("bim.expand_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT").sheet = (
-                    item.ifc_definition_id
-                )
+                row.operator(
+                    "bim.expand_sheet", text="", emboss=False, icon="DISCLOSURE_TRI_RIGHT"
+                ).sheet = item.ifc_definition_id
 
             selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
             row.prop(item, "is_selected", text="", icon=selected_icon, emboss=False)
