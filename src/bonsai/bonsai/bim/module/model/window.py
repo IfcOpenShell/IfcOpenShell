@@ -529,6 +529,9 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing = False
 
         update_window_modifier_representation(context)
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type:
+            tool.Model.update_thumbnail_for_element(element_type, refresh=True)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         window_data = tool.Ifc.get().createIfcText(json.dumps(window_data, default=list))
