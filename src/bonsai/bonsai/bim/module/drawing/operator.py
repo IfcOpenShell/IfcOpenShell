@@ -2195,13 +2195,6 @@ class ActivateDrawing(bpy.types.Operator, ActivateDrawingBase):
     should_view_from_camera: bpy.props.BoolProperty(name="Should View From Camera", default=True, options={"SKIP_SAVE"})
     use_quick_preview: bpy.props.BoolProperty(name="Use Quick Preview", default=False, options={"SKIP_SAVE"})
 
-    @classmethod
-    def poll(cls, context):
-        if not tool.Drawing.get_active_drawing_item():
-            cls.poll_message_set("No drawing selected.")
-            return False
-        return True
-
 
 class ActivateDrawingFromSheet(bpy.types.Operator, ActivateDrawingBase):
     bl_idname = "bim.activate_drawing_from_sheet"

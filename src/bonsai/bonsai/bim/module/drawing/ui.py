@@ -281,9 +281,6 @@ class BIM_PT_drawings(Panel):
                 row3 = row.row(align=True)
                 row3.alignment = "RIGHT"
 
-                row3.operator("bim.activate_drawing", icon="OUTLINER_OB_CAMERA", text="").drawing = (
-                    active_drawing.ifc_definition_id
-                )
                 row3.operator("bim.activate_model", icon="VIEW3D", text="")
 
                 row3.separator(factor=0.5, type="SPACE")
@@ -641,14 +638,22 @@ class BIM_UL_drawinglist(bpy.types.UIList):
             row.label(text="", icon="BLANK1")
             selected_icon = "CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT"
             row.prop(item, "is_selected", text="", icon=selected_icon, emboss=False)
+            row.separator(factor=0.5, type="SPACE")
             row.prop(item, "name", text="", emboss=False)
+            row.separator(factor=0.25, type="SPACE")
             self.props = tool.Drawing.get_document_props()
             if (
                 self.props.drawings
                 and self.props.active_drawing_id
                 and item.ifc_definition_id == self.props.active_drawing_id
             ):
-                row.label(text="", icon="OUTLINER_OB_CAMERA")
+                row.operator("bim.activate_drawing", text="", icon="VIEW_CAMERA", emboss=True, depress=True).drawing = (
+                    item.ifc_definition_id
+                )
+            else:
+                row.operator("bim.activate_drawing", text="", icon="VIEW_CAMERA_UNSELECTED", emboss=False).drawing = (
+                    item.ifc_definition_id
+                )
         else:
             if item.target_view == "PLAN_VIEW":
                 icon = "UV_FACESEL"
