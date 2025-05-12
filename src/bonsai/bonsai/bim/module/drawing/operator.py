@@ -2515,6 +2515,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     has_errors_during_activation = False
+    has_warnings_during_activation = False
 
     def _execute(self, context):
         scene = context.scene
@@ -2541,6 +2542,11 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         )
         bonsai.bim.handler.refresh_ui_data()
 
+        if self.has_warnings_during_activation:
+            self.report(
+                {"WARNING"},
+                "There were warnings setting some drawing style properies, see system console for the details.",
+            )
         if self.has_errors_during_activation:
             self.report(
                 {"WARNING"},
@@ -2553,7 +2559,60 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         scene = context.scene  # Do not remove. It is used in exec later
         assert (space := tool.Blender.get_view3d_space())  # Do not remove. It is used in exec later
         style = json.loads(self.drawing_style.raster_style)
+
+        def preprocess(path: str, value: Any) -> tuple[str, Any, bool, bool]:
+            warning = False
+            skip = False
+            # @25.05.12
+            if path == "scene.render.engine" and value == "BLENDER_EEVEE":
+                value = "BLENDER_EEVEE_NEXT"
+                print(
+                    f"Warning: Value 'BLENDER_EEVEE' is outdated for property '{path}' "
+                    "since Blender 4.2 and should be replaced with 'BLENDER_EEVEE_NEXT' in shading_styles.json."
+                )
+                warning = True
+            # @25.05.12
+            if path == "scene.display.shading.wireframe_color_type" and value == "MATERIAL":
+                value = "THEME"
+                print(
+                    f"Warning: Value 'MATERIAL' is outdated for property '{path}' "
+                    "since Blender 4.0 and should be replaced with 'THEME' in shading_styles.json."
+                )
+                warning = True
+            # @25.05.12
+            elif path in ("scene.render.simplify_shadows", "scene.render.simplify_shadows_render"):
+                print(
+                    f"Warning: Property '{path}' is removed "
+                    "since Blender 4.2 and should be also removed from shading_styles.json."
+                )
+                warning = True
+                skip = True
+            # @25.05.12
+            elif path in ("space.overlay.backwire_opacity", "space.overlay.show_edges"):
+                print(
+                    f"Warning: Property '{path}' is removed "
+                    "since Blender 4.1 and should be also removed from shading_styles.json."
+                )
+                warning = True
+                skip = True
+            # @25.05.12
+            elif path in ("space.overlay.show_occlude_wire",):
+                print(
+                    f"Warning: Property '{path}' is removed "
+                    "since Blender 3.6 and should be also removed from shading_styles.json."
+                )
+                warning = True
+                skip = True
+
+            return path, value, warning, skip
+
         for path, value in style.items():
+            path, value, warning, skip = preprocess(path, value)
+            self.has_warnings_during_activation |= warning
+
+            if skip:
+                continue
+
             try:
                 if isinstance(value, str):
                     exec(f"{path} = '{value}'")
