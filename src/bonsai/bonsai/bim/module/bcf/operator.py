@@ -1401,6 +1401,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
             self.hide_spaces(context)
 
     def hide_spaces(self, context: bpy.types.Context) -> None:
+        assert context.area
         old = context.area.type
         context.area.type = "VIEW_3D"
         bpy.ops.object.select_all(action="DESELECT")
