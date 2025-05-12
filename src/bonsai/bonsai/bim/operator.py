@@ -1288,19 +1288,20 @@ class CopyTextToClipboard(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class Show_system_info(bpy.types.Operator):
+class ShowSystemInfo(bpy.types.Operator):
     bl_idname = "bim.show_system_info"
     bl_label = "System Info"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_description = "Show debug information and copy it to the clipboard."
+    bl_options = set()
 
     info_text: bpy.props.StringProperty()
 
     def execute(self, context):
-        context.window_manager.clipboard = self.info_text
-        self.report({"INFO"}, "System information copied to clipboard.")
+        # invoke_popup doesn't show a popup, if there's no `execute` method.
         return {"FINISHED"}
 
     def invoke(self, context, event):
+        assert context.window_manager
         # Invoke the bim.copy_debug_information operator to get the info to the clipboard
         bpy.ops.bim.copy_debug_information()
         self.info_text = context.window_manager.clipboard
@@ -1308,6 +1309,7 @@ class Show_system_info(bpy.types.Operator):
         return context.window_manager.invoke_popup(self, width=600)
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
         col = layout.column()
 
