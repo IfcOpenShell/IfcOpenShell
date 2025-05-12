@@ -1146,6 +1146,17 @@ class Model(bonsai.core.tool.Model):
         AuthoringData.type_thumbnails[element.id()] = obj.preview.icon_id
 
     @classmethod
+    def mark_thumbnail_for_update(cls, element: ifcopenshell.entity_instance) -> None:
+        """Mark the thumbnail for the provided element as outdated.
+
+        Allows postponing the thumbnail update until it is actually needed by the user.
+        """
+        element_id = element.id()
+        if element_id not in AuthoringData.type_thumbnails:
+            return
+        del AuthoringData.type_thumbnails[element_id]
+
+    @classmethod
     def get_selected_ifc_objects(cls) -> list[bpy.types.Object]:
         return [obj for obj in tool.Blender.get_selected_objects() if tool.Ifc.get_entity(obj)]
 

@@ -618,7 +618,7 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         update_door_modifier_representation(obj)
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type:
-            tool.Model.update_thumbnail_for_element(element_type, refresh=True)
+            tool.Model.mark_thumbnail_for_update(element_type)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         door_data = tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))
