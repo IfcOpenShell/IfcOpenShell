@@ -77,6 +77,7 @@ classes = (
     operator.UpdateItemAttributes,
     operator.UpdateParametricRepresentation,
     operator.UpdateRepresentation,
+    operator.BIM_OT_set_local_orientation,
     operator.CreateInstance,
     prop.RepresentationItem,
     prop.RepresentationItemObject,
@@ -134,6 +135,10 @@ def register():
 
     bpy.types.Object.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMObjectGeometryProperties)
     bpy.types.Scene.BIMGeometryProperties = bpy.props.PointerProperty(type=prop.BIMGeometryProperties)
+    bpy.types.Scene.show_colored_dimensions = bpy.props.BoolProperty(name="Show Colored Dimensions", description="Show XYZ dimensions in color", default=False, update=ui.BIM_PT_derived_coordinates.update_show_colored_dimensions)
+    bpy.types.Scene.bonsai_prev_orientation_type = bpy.props.StringProperty(name="Prev Orientation Type")
+    bpy.types.Scene.bonsai_prev_gizmo_translate = bpy.props.BoolProperty(name="Prev Gizmo Translate")
+
     bpy.types.VIEW3D_MT_object.append(ui.object_menu)
     bpy.types.OUTLINER_MT_object.append(ui.outliner_menu)
     bpy.types.VIEW3D_MT_object_context_menu.append(ui.object_menu)
@@ -214,3 +219,7 @@ def unregister():
         for km, kmi in addon_keymaps:
             km.keymap_items.remove(kmi)
     addon_keymaps.clear()
+
+    del bpy.types.Scene.show_colored_dimensions
+    del bpy.types.Scene._bonsai_prev_orientation_type
+    del bpy.types.Scene._bonsai_prev_gizmo_translate
