@@ -86,8 +86,11 @@ class Blender(bonsai.core.tool.Blender):
     def activate_camera(cls, obj: bpy.types.Object) -> None:
 
         area = cls.get_view3d_area()
-        is_local_view = area.spaces[0].local_view is not None
+        assert area
+        assert isinstance((space := area.spaces[0]), bpy.types.SpaceView3D)
+        is_local_view = space.local_view is not None
 
+        assert bpy.context.screen and bpy.context.scene
         if is_local_view:
             # Turn off local view before activating drawing, and then turn it on again.
             for a in bpy.context.screen.areas:
@@ -100,7 +103,8 @@ class Blender(bonsai.core.tool.Blender):
         else:
             bpy.context.scene.camera = obj
 
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
+        assert space.region_3d
+        space.region_3d.view_perspective = "CAMERA"
 
     @classmethod
     def get_area_props(cls, context: bpy.types.Context) -> bpy.types.PropertyGroup:
@@ -1716,3 +1720,40 @@ class Blender(bonsai.core.tool.Blender):
         if len(pos) == 0 or (indices is not None and len(indices) == 0):
             return False
         return True
+
+    @classmethod
+    def extract_error_reports(cls, exception: RuntimeError) -> list[str]:
+        """Extracts error report lines from a runtime exception during operator execution.
+
+        If operator had any `ERROR` reports, it will always raise a `RuntimeError`,
+        no matter what status is returned.
+        And sometimes it's useful to pass those reports to another operator
+        that called it. That way user won't get to see a scary traceback.
+
+        If empty list is returned, then exception should be reraised,
+        as it is an actual unhandled runtime error.
+        """
+        error_message = str(exception)
+        extracted: list[str] = []
+
+        # If operator was cancelled and had error message,
+        # it will always start with this (warnings and info msgs are ignored).
+        if not error_message.startswith("Error: "):
+            return extracted
+
+        # Ignore actual runtime errors, as they has to be handled separately
+        # and not just rereported.
+        if error_message.startswith("Error: Python: Traceback (most recent call last):"):
+            return extracted
+
+        for report in error_message.strip().split("Error: "):
+            report = report.strip()
+            if not report:
+                continue
+            extracted.append(report)
+        return extracted
+
+    @classmethod
+    def report_operator_errors(cls, operator: bpy.types.Operator, error_reports: list[str]) -> None:
+        for report in error_reports:
+            operator.report({"ERROR"}, report)

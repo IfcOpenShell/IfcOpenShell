@@ -74,6 +74,10 @@ class BIM_PT_camera(Panel):
         row = self.layout.row(align=True)
         row.prop(props, "target_view")
 
+        if props.target_view == "MODEL_VIEW":
+            row = self.layout.row()
+            row.prop(props, "camera_type")
+
         row = self.layout.row()
         row.prop(props, "linework_mode")
         if props.linework_mode == "OPENCASCADE":
@@ -615,7 +619,16 @@ class BIM_PT_text(Panel):
 
 
 class BIM_UL_drawinglist(bpy.types.UIList):
-    def draw_item(self, context, layout, data: DocProperties, item: Drawing, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: DocProperties,
+        item: Drawing,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if not item:
             layout.label(text="", translate=False)
             return

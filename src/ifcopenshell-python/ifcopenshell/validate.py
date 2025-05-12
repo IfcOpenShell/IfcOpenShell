@@ -54,6 +54,7 @@ from typing import Union, Iterator, Any, Optional
 from logging import Logger, Handler
 
 import ifcopenshell
+import ifcopenshell.simple_spf
 import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.express.rule_executor
@@ -597,19 +598,34 @@ def validate_guid(guid: str) -> Union[str, None]:
     return None
 
 
-def validate_ifc_header(f: ifcopenshell.file, logger: Logger) -> None:
-    header: W.IfcSpfHeader = f.wrapped_data.header
+def to_string_header_entity(header_entity):
+    """Recreate IFC header string representation, like FILE_NAME(...)"""
+
+    # Prefer native .toString() if available (native IfcOpenShell wrapper)
+    if isinstance(header_entity, W.HeaderEntity):
+        return header_entity.toString()
+    elif hasattr(header_entity, "_fields"):
+        values = [repr(getattr(header_entity, f)) for f in header_entity._fields]
+        return f"{type(header_entity).__name__.upper()}({','.join(values)})"
+    else:
+        raise TypeError(f"Cannot stringify header_entity of type {type(header_entity)}")
+
+
+def validate_ifc_header(f: Union[ifcopenshell.file, ifcopenshell.simple_spf.file], logger: Logger) -> None:
+    header: Union[W.IfcSpfHeader, types.SimpleNamespace] = f.header
     AGGREGATE_TYPE = "LIST [ 1 : ? ] OF STRING (256)"
     STRING_TYPE = "STRING (256)"
 
-    def log_error(header_entity: W.HeaderEntity, name: str, index: int, expected_type: str, provided_type: str) -> None:
+    def log_error(
+        header_entity: Union[W.HeaderEntity, tuple], name: str, index: int, expected_type: str, provided_type: str
+    ) -> None:
         logger.error(
             (
                 "For instance:\n    %s\n    %s\n"
                 "Attribute '%s' has invalid type:\n"
                 "    Expected: %s\n    Current value type: %s\n"
             ),
-            (s := header_entity.toString()),
+            (s := to_string_header_entity(header_entity)),
             annotate_inst_attr_pos(header_entity, index, s),
             name,
             expected_type,

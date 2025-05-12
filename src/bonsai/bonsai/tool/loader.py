@@ -826,13 +826,13 @@ class Loader(bonsai.core.tool.Loader):
         height = ifcopenshell.util.shape.get_y(geometry)
 
         camera_type = "ORTHO"
-        if "IfcRectangularPyramid" in next(e.is_a() for e in tool.Ifc.get().traverse(representation)):
+        if any(e.is_a() == "IfcRectangularPyramid" for e in tool.Ifc.get().traverse(representation)):
             camera_type = "PERSP"
 
         camera = bpy.data.cameras.new(tool.Loader.get_mesh_name_from_shape(geometry))
-        camera.type = camera_type
-        camera.show_limits = True
         props = tool.Drawing.get_camera_props(camera)
+        props.camera_type = camera_type
+        camera.show_limits = True
 
         if camera_type == "ORTHO":
             depth = ifcopenshell.util.shape.get_z(geometry)
@@ -860,7 +860,6 @@ class Loader(bonsai.core.tool.Loader):
             camera.angle = fov
 
         tool.Drawing.import_camera_props(element, camera)
-        props = tool.Drawing.get_camera_props(camera)
         props.update_camera_resolution()  # Only after all props are imported.
         mat = tool.Drawing.get_camera_shape_matrix(element, shape)
         props.update_representation(mat)

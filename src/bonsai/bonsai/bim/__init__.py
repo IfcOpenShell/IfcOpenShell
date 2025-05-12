@@ -123,6 +123,7 @@ classes = [
     operator.SelectURIAttribute,
     operator.SetTab,
     operator.SwitchTab,
+    operator.Show_system_info,
     prop.StrProperty,
     operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
     prop.ObjProperty,

@@ -300,11 +300,13 @@ class Usecase:
             return self.create_swept_disk_solid_representation()
         elif isinstance(self.settings["geometry"], bpy.types.Curve):
             return self.create_curve3d_representation()
-        elif isinstance(self.settings["geometry"], bpy.types.Camera):
-            if self.settings["geometry"].type == "ORTHO":
+        elif isinstance(self.geometry, bpy.types.Camera):
+            if self.geometry.type == "ORTHO":
                 return self.create_camera_block_representation()
-            elif self.settings["geometry"].type == "PERSP":
+            elif self.geometry.type == "PERSP":
                 return self.create_camera_pyramid_representation()
+            else:
+                raise ValueError(f"Unsupported camera type: '{self.geometry.type}'.")
         elif not len(self.settings["geometry"].edges):
             return self.create_point_cloud_representation()
         elif not len(self.settings["geometry"].polygons):

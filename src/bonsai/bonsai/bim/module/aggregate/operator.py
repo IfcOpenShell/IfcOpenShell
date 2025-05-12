@@ -140,12 +140,11 @@ class BIM_OT_disable_editing_aggregate(bpy.types.Operator):
 
 
 class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
-    """Add aggregate to IFC element"""
+    """Add aggregate to selected IFC elements."""
 
     bl_idname = "bim.add_aggregate"
     bl_label = "Add Aggregate"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
     ifc_class: bpy.props.StringProperty(name="IFC Class", default="IfcElementAssembly")
     aggregate_name: bpy.props.StringProperty(name="Name", default="Default_Name")
 
@@ -165,7 +164,7 @@ class BIM_OT_add_aggregate(bpy.types.Operator, tool.Ifc.Operator):
             return
         aggregate = self.create_aggregate(context, ifc_class, self.aggregate_name)
 
-        for obj in context.selected_objects:
+        for obj in tool.Blender.get_selected_objects():
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue

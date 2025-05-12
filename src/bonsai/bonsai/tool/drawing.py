@@ -51,7 +51,7 @@ from shapely.ops import unary_union
 from lxml import etree
 from mathutils import Vector, Matrix
 from fractions import Fraction
-from typing import Optional, Union, Iterable, Any, Literal, Sequence, TYPE_CHECKING, NamedTuple
+from typing import Optional, Union, Iterable, Any, Literal, Sequence, TYPE_CHECKING, NamedTuple, get_args
 from pathlib import Path
 
 if TYPE_CHECKING:
@@ -68,6 +68,9 @@ if TYPE_CHECKING:
 class Drawing(bonsai.core.tool.Drawing):
     ANNOTATION_DATA_TYPE = Literal["empty", "curve", "mesh"]
     DOCUMENT_TYPE = Literal["SCHEDULE", "REFERENCE"]
+    LocationHintLiteral = Literal["PERSPECTIVE", "ORTHOGRAPHIC", "NORTH", "SOUTH", "EAST", "WEST"]
+    LOCATION_HINT_LITERALS = ("PERSPECTIVE", "ORTHOGRAPHIC", "NORTH", "SOUTH", "EAST", "WEST")
+    LocationHintType = Union[LocationHintLiteral, str]
 
     # ObjectType: annotation_name, description, icon, data_type
     # fmt: off
@@ -296,19 +299,26 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def create_camera(
-        cls, name: str, matrix: Matrix, location_hint: Literal["PERSPECTIVE", "ORTHOGRAPHIC"]
+        cls,
+        name: str,
+        matrix: Matrix,
+        location_hint: Union[LocationHintLiteral, int],
+        target_view: ifcopenshell.util.representation.TARGET_VIEW,
     ) -> bpy.types.Object:
         camera = bpy.data.objects.new(name, (camera_data := bpy.data.cameras.new(name)))
         props = cls.get_camera_props(camera_data)
-        camera.location = (0, 0, 1.5)  # The view shall be 1.5m above the origin
         camera_data.show_limits = True
         if location_hint == "PERSPECTIVE":
-            camera_data.type = "PERSP"
+            props.camera_type = "PERSP"
         else:
-            camera_data.type = "ORTHO"
+            props.camera_type = "ORTHO"
         camera_data.ortho_scale = 50  # The default of 6m is too small
         camera_data.clip_start = 0.002  # 2mm is close to zero but allows any GPU-drawn lines to be visible.
-        camera_data.clip_end = 10  # A slightly more reasonable default
+        if target_view == "MODEL_VIEW":
+            assert (space := tool.Blender.get_view3d_space())
+            camera_data.clip_end = max(space.clip_end, 10)
+        else:
+            camera_data.clip_end = 10  # A slightly more reasonable default
         if bpy.context.scene.unit_settings.system == "IMPERIAL":
             props.diagram_scale = '1/8"=1\'-0"|1/96'
         else:
@@ -589,43 +599,76 @@ class Drawing(bonsai.core.tool.Drawing):
         return element.Name
 
     @classmethod
+    def update_camera_matrix(
+        cls,
+        matrix: Matrix,
+        *,
+        camera_dir: Vector,
+        up: Vector,
+    ) -> None:
+        # Camera dir is actually Z-.
+        camera_dir = -camera_dir
+        right = up.cross(camera_dir)
+        assert isinstance(right, Vector)
+        matrix.col[0][:3] = right
+        matrix.col[1][:3] = up
+        matrix.col[2][:3] = camera_dir
+
+    @classmethod
     def generate_drawing_matrix(
-        cls, target_view: ifcopenshell.util.representation.TARGET_VIEW, location_hint: str
+        cls,
+        target_view: ifcopenshell.util.representation.TARGET_VIEW,
+        location_hint: Union[LocationHintLiteral, int],
     ) -> Matrix:
+        assert bpy.context.scene
+        m = Matrix()
         x, y, z = (0, 0, 0) if location_hint == 0 else bpy.context.scene.cursor.matrix.translation
-        if target_view == "PLAN_VIEW":
+        X, Y, Z = m.to_3x3()
+        if isinstance(location_hint, int):
+            if target_view == "REFLECTED_PLAN_VIEW":
+                # Flip Z axis.
+                m.col[2] *= -1
             if location_hint:
-                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.translation.z
-                return mathutils.Matrix(((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z + 1.6), (0, 0, 0, 1)))
-        elif target_view == "REFLECTED_PLAN_VIEW":
-            if location_hint:
-                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.translation.z
-                m = mathutils.Matrix()
-                m[2][2] = -1
-                m.translation = (x, y, z + 1.6)
-                return m
-            return mathutils.Matrix(((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
+                storey = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint))
+                assert isinstance(storey, bpy.types.Object)
+                z = storey.matrix_world.translation.z
+                if target_view == "PLAN_VIEW":
+                    # Keep default camera direction - Z-.
+                    m.translation = (x, y, z + 1.6)
+                    return m
+                elif target_view == "REFLECTED_PLAN_VIEW":
+                    m.translation = (x, y, z + 1.6)
+                else:
+                    assert False, target_view
+            return m
         elif target_view == "ELEVATION_VIEW":
+            m.translation = (x, y, z)
             if location_hint == "NORTH":
-                return mathutils.Matrix(((-1, 0, 0, x), (0, 0, 1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=-Y, up=Z)
             elif location_hint == "SOUTH":
-                return mathutils.Matrix(((1, 0, 0, x), (0, 0, -1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=Y, up=Z)
             elif location_hint == "EAST":
-                return mathutils.Matrix(((0, 0, 1, x), (1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=-X, up=Z)
             elif location_hint == "WEST":
-                return mathutils.Matrix(((0, 0, -1, x), (-1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=X, up=Z)
+            return m
         elif target_view == "SECTION_VIEW":
+            m.translation = (x, y, z)
+            X, Y, Z = m.to_3x3()
             if location_hint == "NORTH":
-                return mathutils.Matrix(((1, 0, 0, x), (0, 0, -1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=Y, up=Z)
             elif location_hint == "SOUTH":
-                return mathutils.Matrix(((-1, 0, 0, x), (0, 0, 1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=-Y, up=Z)
             elif location_hint == "EAST":
-                return mathutils.Matrix(((0, 0, -1, x), (-1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=X, up=Z)
             elif location_hint == "WEST":
-                return mathutils.Matrix(((0, 0, 1, x), (1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=-X, up=Z)
+            return m
         elif target_view == "MODEL_VIEW":
-            return mathutils.Matrix(((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z), (0, 0, 0, 1)))
-        return mathutils.Matrix()
+            assert (space := tool.Blender.get_view3d_space())
+            assert (r3d := space.region_3d)
+            return r3d.view_matrix.inverted()
+        return m
 
     @classmethod
     def generate_sheet_identification(cls) -> str:
@@ -1174,13 +1217,17 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def generate_drawing_name(
-        cls, target_view: ifcopenshell.util.representation.TARGET_VIEW, location_hint: str
+        cls,
+        target_view: ifcopenshell.util.representation.TARGET_VIEW,
+        location_hint: Union[LocationHintLiteral, int],
     ) -> str:
-        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and location_hint:
-            location = tool.Ifc.get().by_id(location_hint)
-            if target_view == "REFLECTED_PLAN_VIEW":
-                target_view = "RCP_VIEW"
-            return (location.Name or "UNNAMED").upper() + " " + target_view.split("_")[0]
+        if isinstance(location_hint, int):
+            if location_hint:
+                location = tool.Ifc.get().by_id(location_hint)
+                target_view_ = target_view
+                if target_view == "REFLECTED_PLAN_VIEW":
+                    target_view_ = "RCP_VIEW"
+                return (location.Name or "UNNAMED").upper() + " " + target_view_.split("_")[0]
         elif target_view in ("SECTION_VIEW", "ELEVATION_VIEW") and location_hint:
             return location_hint + " " + target_view.split("_")[0]
         elif target_view == "MODEL_VIEW" and location_hint:

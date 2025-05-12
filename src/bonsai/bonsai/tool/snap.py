@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.bim.module.model.decorator import PolylineDecorator
@@ -44,8 +45,9 @@ class Snap(bonsai.core.tool.Snap):
         cls.snap_plane_method = value
 
     @classmethod
-    def get_increment_snap_value(cls, context):
+    def get_increment_snap_value(cls, context: bpy.types.Context) -> Union[float, None]:
         rv3d = context.region_data
+        assert rv3d
 
         factor = 1
         fractions = [100, 20, 10, 2]

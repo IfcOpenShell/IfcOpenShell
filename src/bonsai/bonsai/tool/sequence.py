@@ -1666,9 +1666,11 @@ class Sequence(bonsai.core.tool.Sequence):
         return predefined_type, object_type
 
     @classmethod
-    def add_animation_camera(cls):
+    def add_animation_camera(cls) -> None:
         bpy.ops.object.camera_add()
         camera = bpy.context.active_object
+        assert camera and isinstance(camera.data, bpy.types.Camera)
+        assert bpy.context.scene
         camera.data.lens = 26
         camera.name = "4D Camera"
         camera.location = mathutils.Vector((15, 0, 15))

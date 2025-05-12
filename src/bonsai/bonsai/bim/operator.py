@@ -1286,3 +1286,33 @@ class CopyTextToClipboard(bpy.types.Operator):
     def execute(self, context):
         context.window_manager.clipboard = self.text
         return {"FINISHED"}
+
+
+class Show_system_info(bpy.types.Operator):
+    bl_idname = "bim.show_system_info"
+    bl_label = "System Info"
+    bl_options = {"REGISTER", "UNDO"}
+
+    info_text: bpy.props.StringProperty()
+
+    def execute(self, context):
+        context.window_manager.clipboard = self.info_text
+        self.report({"INFO"}, "System information copied to clipboard.")
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        # Invoke the bim.copy_debug_information operator to get the info to the clipboard
+        bpy.ops.bim.copy_debug_information()
+        self.info_text = context.window_manager.clipboard
+
+        return context.window_manager.invoke_popup(self, width=600)
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+
+        for line in self.info_text.split("\n"):
+            col.label(text=line)
+
+        col.separator()
+        col.label(text="(The information has been copied to the clipboard.)")

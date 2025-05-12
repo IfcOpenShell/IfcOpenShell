@@ -32,12 +32,41 @@ from typing import TYPE_CHECKING
 from typing import Union
 from typing import overload
 from typing import Literal
+from typing import TypedDict
+from typing_extensions import assert_never
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
 
+from ifcopenshell.util.mvd_info import MvdInfo, LARK_AVAILABLE
+
 if TYPE_CHECKING:
     import ifcopenshell.util.schema
+
+    InverseReference = tuple[int, Any]
+    ElementInverses = dict[int, list[InverseReference]]
+
+    class CreateOperation(TypedDict):
+        action: Literal["create"]
+        value: Any
+
+    class EditOperation(TypedDict):
+        action: Literal["edit"]
+        id: int
+        index: int
+        old: Any
+        new: Any
+
+    class DeleteOperation(TypedDict):
+        action: Literal["delete"]
+        inverses: ElementInverses
+        value: Any
+
+    class BatchDeleteOperation(TypedDict):
+        action: Literal["batch_delete"]
+        inverses: ElementInverses
+
+    TransactionOperation = Union[CreateOperation, EditOperation, DeleteOperation, BatchDeleteOperation]
 
 HEADER_FIELDS = {
     "file_description": [
@@ -56,7 +85,17 @@ HEADER_FIELDS = {
 }
 
 
+class UndoSystemError(Exception):
+    def __init__(self, message: str, transaction: Transaction):
+        super().__init__(message)
+        self.transaction = transaction
+
+
 class Transaction:
+    operations: list[TransactionOperation]
+    batch_inverses: list[ElementInverses]
+    batch_delete_ids: set[int]
+
     def __init__(self, ifc_file: file):
         self.file: file = ifc_file
         self.operations = []
@@ -71,14 +110,14 @@ class Transaction:
             info[key] = self.serialise_value(element, value)
         return info
 
-    def serialise_value(self, element, value):
+    def serialise_value(self, element, value) -> Any:
         return element.walk(
             lambda v: isinstance(v, entity_instance),
             lambda v: {"id": v.id()} if v.id() else {"type": v.is_a(), "value": v.wrappedValue},
             value,
         )
 
-    def unserialise_value(self, element, value):
+    def unserialise_value(self, element, value) -> Any:
         return element.walk(
             lambda v: isinstance(v, dict),
             lambda v: self.file.by_id(v["id"]) if v.get("id") else self.file.create_entity(v["type"], v["value"]),
@@ -128,10 +167,10 @@ class Transaction:
             {"action": "delete", "inverses": inverses, "value": self.serialise_entity_instance(element)}
         )
 
-    def get_element_inverses(self, element):
-        inverses = {}
+    def get_element_inverses(self, element: ifcopenshell.entity_instance) -> ElementInverses:
+        inverses: ElementInverses = {}
         for inverse in self.file.get_inverse(element):
-            inverse_references = []
+            inverse_references: list[InverseReference] = []
             for i, attribute in enumerate(inverse):
                 if self.has_element_reference(attribute, element):
                     inverse_references.append((i, self.serialise_value(inverse, attribute)))
@@ -178,6 +217,8 @@ class Transaction:
                     inverse = self.file.by_id(inverse_id)
                     for index, value in data:
                         inverse[index] = self.unserialise_value(inverse, value)
+            else:
+                assert_never(operation["action"])
 
     def commit(self) -> None:
         for operation in self.operations:
@@ -197,6 +238,8 @@ class Transaction:
                 self.file.remove(element)
             elif operation["action"] == "batch_delete":
                 pass
+            else:
+                assert_never(operation["action"])
 
 
 file_dict = {}
@@ -226,6 +269,10 @@ class file:
     wrapped_data: ifcopenshell_wrapper.file
     units: dict[str, entity_instance] = {}
     history_size: int = 64
+    history: list[Transaction]
+    """Chronological order - from oldest to newest."""
+    future: list[Transaction]
+    """Reversed chronological order - from newest to oldest."""
 
     to_delete: Union[set[ifcopenshell.entity_instance], None] = None
     """Entities for batch removal."""
@@ -339,14 +386,20 @@ class file:
         if not self.history:
             return
         transaction = self.history.pop()
-        transaction.rollback()
+        try:
+            transaction.rollback()
+        except Exception as e:
+            raise UndoSystemError("Error during transaction undo.", transaction) from e
         self.future.append(transaction)
 
     def redo(self) -> None:
         if not self.future:
             return
         transaction = self.future.pop()
-        transaction.commit()
+        try:
+            transaction.commit()
+        except Exception as e:
+            raise UndoSystemError("Error during transaction redo.", transaction) from e
         self.history.append(transaction)
 
     def create_entity(self, type: str, *args, **kwargs) -> ifcopenshell.entity_instance:
@@ -464,6 +517,12 @@ class file:
             number = re.search(prefix + r"(\d)", schema)
             version.append(int(number.group(1)) if number else 0)
         return tuple(version)
+
+    @property
+    def mvd(self):
+        if not LARK_AVAILABLE:
+            return None
+        return MvdInfo(self.header)
 
     def __getattr__(self, attr) -> Union[Any, Callable[..., ifcopenshell.entity_instance]]:
         if attr[0:6] == "create":

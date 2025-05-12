@@ -1283,6 +1283,7 @@ class ActivateBcfViewpoint(bpy.types.Operator):
         cam_aspect: float,
         context: bpy.types.Context,
     ) -> None:
+        assert isinstance(obj.data, bpy.types.Camera)
         if viewpoint.visualization_info.orthogonal_camera:
             camera = viewpoint.visualization_info.orthogonal_camera
             obj.data.type = "ORTHO"

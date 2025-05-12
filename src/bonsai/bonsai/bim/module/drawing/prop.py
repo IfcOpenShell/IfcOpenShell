@@ -46,7 +46,7 @@ from bpy.props import (
     CollectionProperty,
     BoolVectorProperty,
 )
-from typing import TYPE_CHECKING, Literal, Any, Callable
+from typing import TYPE_CHECKING, Literal, Any, Callable, get_args
 
 
 diagram_scales_enum = []
@@ -57,11 +57,11 @@ def purge():
     diagram_scales_enum = []
 
 
-def update_target_view(self, context):
+def update_target_view_doc(self: "DocProperties", context: bpy.types.Context) -> None:
     DrawingsData.data["location_hint"] = DrawingsData.location_hint()
 
 
-def get_location_hint(self, context):
+def get_location_hint(self: "DocProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not DrawingsData.is_loaded:
         DrawingsData.load()
     return DrawingsData.data["location_hint"]
@@ -228,24 +228,10 @@ def get_update_layer_callback(
     return update_layer_callback
 
 
-def update_has_linework(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
-    update_layer(self, context, "HasLinework", self.has_linework)
-
-
-def update_dpi(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
-    update_layer(self, context, "DPI", self.dpi)
-
-
-def update_linework_mode(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
-    update_layer(self, context, "LineworkMode", self.linework_mode)
-
-
-def update_fill_mode(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
-    update_layer(self, context, "FillMode", self.fill_mode)
-
-
-def update_cut_mode(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
-    update_layer(self, context, "CutMode", self.cut_mode)
+def update_target_view_camera(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+    if self.update_props and self.target_view != "MODEL_VIEW":
+        self.camera_type = "ORTHO"
+    update_layer(self, context, "TargetView", self.target_view)
 
 
 def update_layer(self: "BIMCameraProperties", context: bpy.types.Context, name: str, value: Any) -> None:
@@ -360,21 +346,32 @@ class Sheet(PropertyGroup):
         is_expanded: bool
 
 
+RenderType = Literal["NONE", "DEFAULT", "VIEWPORT"]
+
+
 class DrawingStyle(PropertyGroup):
     name: StringProperty(name="Name", get=get_drawing_style_name, set=set_drawing_style_name)
-    raster_style: StringProperty(name="Raster Style", default="{}")
+    raster_style: StringProperty(
+        name="Raster Style",
+        description="JSON string for drawing style settings.",
+        default="{}",
+    )
     render_type: EnumProperty(
-        items=[
-            ("NONE", "None", ""),
-            ("DEFAULT", "Default", ""),
-            ("VIEWPORT", "Viewport", ""),
-        ],
+        items=[(t, t.capitalize(), "") for t in get_args(RenderType)],
         name="Render Type",
         default="VIEWPORT",
     )
     include_query: StringProperty(name="Include Query")
     exclude_query: StringProperty(name="Exclude Query")
     attributes: CollectionProperty(name="Attributes", type=StrProperty)
+
+    if TYPE_CHECKING:
+        name: str
+        raster_style: str
+        render_type: RenderType
+        include_query: str
+        exclude_query: str
+        attributes: bpy.types.bpy_prop_collection_idprop[StrProperty]
 
 
 class RasterStyleProperty(enum.Enum):
@@ -404,7 +401,7 @@ class DocProperties(PropertyGroup):
         items=TARGET_VIEW_ITEMS,
         name="Target View",
         default="PLAN_VIEW",
-        update=update_target_view,
+        update=update_target_view_doc,
     )
     location_hint: EnumProperty(items=get_location_hint, name="Location Hint")
     drawings: CollectionProperty(name="Drawings", type=Drawing)
@@ -459,7 +456,7 @@ class DocProperties(PropertyGroup):
         is_editing_schedules: bool
         is_editing_references: bool
         target_view: Literal["PLAN_VIEW", "ELEVATION_VIEW", "SECTION_VIEW", "REFLECTED_PLAN_VIEW", "MODEL_VIEW"]
-        location_hint: str
+        location_hint: tool.Drawing.LocationHintType
         drawings: bpy.types.bpy_prop_collection_idprop[Drawing]
         active_drawing_id: int
         active_drawing_index: int
@@ -497,6 +494,18 @@ def update_width_height(self: "BIMCameraProperties", context: bpy.types.Context)
     self.update_camera_resolution()
 
 
+def update_camera_type(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+    assert isinstance(camera := self.id_data, bpy.types.Camera)
+    camera.type = self.camera_type
+
+
+CameraType = Literal["PERSP", "ORTHO"]
+CAMERA_TYPE_ENUM_ITEMS: dict[CameraType, tuple[str, str]] = {
+    "ORTHO": ("Orthographic", "Most common camera for the drawings, supporting all of the features."),
+    "PERSP": ("Perspective", "The only avilable features for perspective camera: freestyle linework, underlay."),
+}
+
+
 class BIMCameraProperties(PropertyGroup):
     linework_mode: EnumProperty(
         items=[
@@ -505,7 +514,7 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="OPENCASCADE",
         name="Linework Mode",
-        update=update_linework_mode,
+        update=get_update_layer_callback("LineworkMode", "linework_mode"),
     )
     fill_mode: EnumProperty(
         items=[
@@ -515,7 +524,7 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="NONE",
         name="Fill Mode",
-        update=update_fill_mode,
+        update=get_update_layer_callback("FillMode", "fill_mode"),
     )
     cut_mode: EnumProperty(
         items=[
@@ -524,14 +533,14 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="BISECT",
         name="Cut Mode",
-        update=update_cut_mode,
+        update=get_update_layer_callback("CutMode", "cut_mode"),
     )
 
     # EPset_Drawing.
     has_underlay: BoolProperty(
         name="Underlay",
         default=False,
-        update=get_update_layer_callback("has_underlay", "HasUnderlay"),
+        update=update_has_underlay,
     )
     has_linework: BoolProperty(
         name="Linework",
@@ -547,7 +556,7 @@ class BIMCameraProperties(PropertyGroup):
         name="Target View",
         default="PLAN_VIEW",
         items=TARGET_VIEW_ITEMS,
-        update=get_update_layer_callback("target_view", "TargetView"),
+        update=update_target_view_camera,
     )
 
     representation: StringProperty(name="Representation")
@@ -557,9 +566,16 @@ class BIMCameraProperties(PropertyGroup):
     custom_scale_denominator: bpy.props.StringProperty(default="100", update=update_diagram_scale)
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
-    dpi: IntProperty(name="DPI", default=75, update=update_dpi)
+    dpi: IntProperty(name="DPI", default=75, update=get_update_layer_callback("DPI", "dpi"))
     width: FloatProperty(name="Width", default=50, subtype="DISTANCE", update=update_width_height)
     height: FloatProperty(name="Height", default=50, subtype="DISTANCE", update=update_width_height)
+    # Bonsai property is needed to prevent user from using unsupported panoramic camera.
+    camera_type: EnumProperty(
+        name="Camera Type",
+        default="ORTHO",
+        items=[(k, *v) for k, v in CAMERA_TYPE_ENUM_ITEMS.items()],
+        update=update_camera_type,
+    )
     is_nts: BoolProperty(name="Is NTS", update=update_is_nts)
     active_drawing_style_index: IntProperty(name="Active Drawing Style Index")
     filter_mode: StringProperty(name="Filter Mode", default="NONE")
@@ -591,6 +607,7 @@ class BIMCameraProperties(PropertyGroup):
         dpi: int
         width: float
         height: float
+        camera_type: CameraType
         is_nts: bool
         active_drawing_style_index: int
         filter_mode: str
@@ -610,13 +627,20 @@ class BIMCameraProperties(PropertyGroup):
         # allowing all camera initialization to stay encapsulated in `create_camera`.
         camera = self.id_data
         assert isinstance(camera, bpy.types.Camera)
+
+        # Rounding is necessary to avoid float garbage differences
+        # forcing unnecessary representation update.
+        def round_(f: float) -> float:
+            return round(f, 6)
+
         representation = json.dumps(
             {
-                "matrix": [list(x) for x in matrix_world],
+                "type": self.camera_type,
+                "matrix": [[round_(v) for v in row] for row in matrix_world],
                 "raster_x": self.raster_x,
                 "raster_y": self.raster_y,
-                "ortho_scale": camera.ortho_scale,
-                "clip_end": camera.clip_end,
+                "ortho_scale": round_(camera.ortho_scale),
+                "clip_end": round_(camera.clip_end),
             }
         )
         if self.representation != representation:

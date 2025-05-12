@@ -1,64 +1,78 @@
-{% set version = environ.get('VERSION_OVERRIDE', '0.8.0') %}
-{% set build = 0 %}
-
-# Higher number -> Always prioritize "novtk" variant over "all" variant
-{% set build = build + 200 %}   # [variant == "novtk"]
-{% set build = build + 100 %}   # [variant == "all"]
+context:
+  version: ${{ env.get("VERSION_OVERRIDE", default="0.8.2.1") }}
+  build: 1
 
 package:
   name: ifcopenshell
-  version: {{ version }}
+  version: ${{ version }}
 
 source:
-  path: ../
+  - path: ..
 
 
 build:
-  number: {{ build }}
-  skip: true  # [py<39]
-  binary_relocation: false  # [osx]
-  string: py{{ CONDA_PY }}_{{ variant }}_h{{ PKG_HASH }}_{{ build }}
-  run_exports:
-    - {{ pin_subpackage('ifcopenshell', max_pin='x.x.x') }} *{{ variant }}*
-
+  number: ${{ build }}
+  dynamic_linking:
+    binary_relocation: ${{ true if osx }}
 
 requirements:
   build:
-    - cmake
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - cmake <4
     - ninja
     - swig >=4.1.1
-    - {{ stdlib("c") }}
-    - {{ compiler('c') }}
-    - {{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
   host:
     - python
     - libboost-devel
-    - occt *=*{{ variant }}*
+    - occt
     - libxml2
     - cgal-cpp
     - hdf5
     - eigen
     - mpfr
     - nlohmann_json
-    - gmp  # [unix]
-    - mpir  # [win]
+    - gmp
     - zlib
   run:
     - python
-    - {{ pin_compatible('occt', max_pin='x.x.x') }} *{{ variant }}*
-    - {{ pin_compatible('cgal-cpp', max_pin='x.x') }}
+    - shapely
+    - typing_extensions
+    - ${{ pin_compatible('occt', upper_bound='x.x.x') }}
+    - ${{ pin_compatible('cgal-cpp', upper_bound='x.x') }}
+  run_exports:
+    - ${{ pin_subpackage('ifcopenshell', upper_bound='x.x.x') }}
 
-
-test:
-  imports:
-    - ifcopenshell
-
+tests:
+  - python:
+      imports:
+        - ifcopenshell
+      pip_check: false
+  - script:
+      - python -c "import ifcopenshell; assert ifcopenshell.version == '${{ version }}', 'print(ifcopenshell.version)'"
+    requirements:
+      run:
+        - occt * *novtk*  # Ensure that even though compiled against OCCT with VTK, it can still run with OCCT without VTK
+        - pytest
+        - python-dateutil
+        - xmlschema
+        - xsdata
+        - lxml
+        - isodate
+        - lark
+        - networkx
+        - tabulate
+        - shapely
 
 about:
-  home: https://ifcopenshell.org
   license: LGPL-3.0-or-later
   license_file: COPYING
-  summary: 'IfcOpenShell is a library to support the IFC file format'
+  summary: IfcOpenShell is a library to support the IFC file format
   description: |
     IfcOpenShell
     ============
@@ -293,8 +307,9 @@ about:
     [MSYS2]: https://msys2.github.io/ "MSYS2"
     [win/readme.md]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/win/readme.md "win/readme.md"
     [nix/build-all.py]: https://github.com/IfcOpenShell/IfcOpenShell/tree/master/nix/build-all.py "nix/build-all.py"
-  doc_url: https://ifcopenshell.org/
-  dev_url: https://github.com/IfcOpenShell/IfcOpenShell
+  homepage: https://ifcopenshell.org
+  repository: https://github.com/IfcOpenShell/IfcOpenShell
+  documentation: https://ifcopenshell.org/
 
 extra:
   recipe-maintainers:

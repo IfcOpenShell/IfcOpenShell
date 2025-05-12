@@ -99,8 +99,18 @@ class OverrideMeshSeparate(bpy.types.Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
-        if self.type == "SELECTED" and context.mode != "EDIT":
-            self.report({"ERROR"}, "Separate by selection requires EDIT mode.")
+        if not tool.Ifc.get():
+            return bpy.ops.mesh.separate(type=self.type)
+        elif context.mode == "EDIT_MESH":
+            if any(
+                tool.Ifc.get_entity(obj) or tool.Geometry.is_representation_item(obj) for obj in context.objects_in_mode
+            ):
+                self.report({"WARNING"}, "IFC Separate is not yet supported for EDIT mode with IFC elements.")
+                return {"CANCELLED"}
+            return bpy.ops.mesh.separate(type=self.type)
+
+        if self.type == "SELECTED":
+            self.report({"ERROR"}, "Separate by selection requires 'EDIT_MESH' mode.")
             return {"CANCELLED"}
 
         non_ifc_objects: list[bpy.types.Object] = []
@@ -760,6 +770,15 @@ def lock_error_message(name: str) -> str:
     return f"'{name}' is locked. Unlock it via the Spatial panel in the Project Overview tab."
 
 
+def calc_delete_is_batch(ifc_file: ifcopenshell.file, context: bpy.types.Context) -> bool:
+    total_elements = len(tool.Ifc.get().wrapped_data.entity_names())
+    total_polygons = sum([len(o.data.polygons) for o in context.selected_objects if o.type == "MESH"])
+    # These numbers are a bit arbitrary, but basically batching is only
+    # really necessary on large models and large geometry removals.
+    is_batch = total_elements > 500000 and total_polygons > 2000
+    return is_batch
+
+
 class OverrideDelete(bpy.types.Operator):
     bl_idname = "bim.override_object_delete"
     bl_label = "IFC Delete"
@@ -771,7 +790,11 @@ class OverrideDelete(bpy.types.Operator):
         + " to avoid producing invalid IFC objects."
     )
     bl_options = {"REGISTER", "UNDO"}
+
+    # IFC Delete is always global as we assume just 1 scene in IFC project.
+    # The prop is only needed to support default Blender behaviour when IFC project is not loaded.
     use_global: bpy.props.BoolProperty(default=False)
+
     confirm: bpy.props.BoolProperty(default=True)
     is_batch: bpy.props.BoolProperty(name="Is Batch", default=False)
 
@@ -781,27 +804,26 @@ class OverrideDelete(bpy.types.Operator):
 
     def execute(self, context):
         # Deep magick from the dawn of time
-        if tool.Ifc.get():
+        if tool.Ifc.get() is None:
+            bpy.ops.object.delete(use_global=self.use_global, confirm=self.confirm)
+            # TODO: is this still needed?
+            # Required otherwise gizmos are still visible
+            context.view_layer.objects.active = None
+            return {"FINISHED"}
+        else:
             return IfcStore.execute_ifc_operator(self, context)
-        for obj in context.selected_objects:
-            bpy.data.objects.remove(obj)
-        # Required otherwise gizmos are still visible
-        context.view_layer.objects.active = None
-        return {"FINISHED"}
 
     def invoke(self, context, event):
-        if tool.Ifc.get():
-            total_elements = len(tool.Ifc.get().wrapped_data.entity_names())
-            total_polygons = sum([len(o.data.polygons) for o in context.selected_objects if o.type == "MESH"])
-            # These numbers are a bit arbitrary, but basically batching is only
-            # really necessary on large models and large geometry removals.
-            self.is_batch = total_elements > 500000 and total_polygons > 2000
+        assert context.window_manager
+        ifc_file = tool.Ifc.get()
+        if ifc_file is None:
+            return bpy.ops.object.delete("INVOKE_DEFAULT", use_global=self.use_global, confirm=self.confirm)
+        else:
+            self.is_batch = calc_delete_is_batch(ifc_file, context)
             if self.is_batch:
                 return context.window_manager.invoke_props_dialog(self)
             elif self.confirm:
                 return context.window_manager.invoke_confirm(self, event)
-        elif self.confirm:
-            return context.window_manager.invoke_confirm(self, event)
         self.confirm = True
         return self.execute(context)
 
@@ -957,13 +979,10 @@ class OverrideOutlinerDelete(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        # TODO: move to common method.
-        if tool.Ifc.get():
-            total_elements = len(tool.Ifc.get().wrapped_data.entity_names())
-            total_polygons = sum([len(o.data.polygons) for o in context.selected_objects if o.type == "MESH"])
-            # These numbers are a bit arbitrary, but basically batching is only
-            # really necessary on large models and large geometry removals.
-            self.is_batch = total_elements > 500000 and total_polygons > 2000
+        assert context.window_manager
+        ifc_file = tool.Ifc.get()
+        if ifc_file:
+            self.is_batch = calc_delete_is_batch(ifc_file, context)
             if self.is_batch:
                 return context.window_manager.invoke_props_dialog(self)
         return self.execute(context)
@@ -977,8 +996,14 @@ class OverrideOutlinerDelete(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         selected_ids_data = self.get_selected_ids_data(context)
-        with context.temp_override(selected_objects=list(selected_ids_data.objects)):
-            bpy.ops.bim.override_object_delete(is_batch=self.is_batch)
+        try:
+            with context.temp_override(selected_objects=list(selected_ids_data.objects)):
+                bpy.ops.bim.override_object_delete(is_batch=self.is_batch)
+        except RuntimeError as e:
+            error_reports = tool.Blender.extract_error_reports(e)
+            if not error_reports:
+                raise
+            tool.Blender.report_operator_errors(self, error_reports)
 
         for collection in selected_ids_data.collections:
             # Removing an aggregate object would also remove it's collection
@@ -3155,12 +3180,14 @@ class AddHalfSpaceSolidItem(bpy.types.Operator, tool.Ifc.Operator):
 class OverrideMoveMacro(bpy.types.Macro):
     bl_idname = "bim.override_move_macro"
     bl_label = "IFC Move Aggregate"
+    bl_description = "Move selected items.\n\nAutomatically select all parts of an aggregate/nesting to move."
     bl_options = {"REGISTER", "UNDO"}
 
 
-class OverrideMove(bpy.types.Operator):
-    bl_idname = "bim.override_move"
-    bl_label = "IFC Move"
+class OverrideMoveSelect(bpy.types.Operator):
+    bl_idname = "bim.override_move_select"
+    bl_label = "IFC Move Select"
+    bl_description = "Select items for IFC Move Aggregate."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -3179,7 +3206,7 @@ class OverrideMove(bpy.types.Operator):
 
     def _execute(self, context):
         # Get filling objects
-        selection = []
+        selection: list[bpy.types.Object] = []
         for obj in context.selected_objects:
             element = tool.Ifc.get_entity(obj)
             if not element:
@@ -3196,8 +3223,8 @@ class OverrideMove(bpy.types.Operator):
 
         # Get aggregates
         props = tool.Aggregate.get_aggregate_props()
-        not_editing_objs = [o.obj for o in props.not_editing_objects]
-        aggregates_to_move = []
+        not_editing_objs = [obj for o in props.not_editing_objects if (obj := o.obj)]
+        aggregates_to_move: list[bpy.types.Object] = []
         for obj in context.selected_objects:
             self.new_active_obj = None
             if obj in not_editing_objs:
@@ -3229,10 +3256,9 @@ class OverrideMove(bpy.types.Operator):
             if aggregate:
                 aggregates_to_move.append(tool.Ifc.get_object(aggregate))
                 obj.select_set(False)
-        aggregates_to_move = set(aggregates_to_move)
 
         if aggregates_to_move:
-            for obj in aggregates_to_move:
+            for obj in set(aggregates_to_move):
                 obj.select_set(True)
                 for part in tool.Aggregate.get_parts_recursively(tool.Ifc.get_entity(obj)):
                     part_obj = tool.Ifc.get_object(part)
@@ -3291,6 +3317,7 @@ class EditRepresentationItemLayer(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Geometry.get_object_geometry_props(obj)
         new_layer = ifc_file.by_id(int(props.representation_item_layer))
 
+        assert props.active_item
         item = ifc_file.by_id(int(props.active_item.ifc_definition_id))
         item_layer = next(iter(item.LayerAssignment), None)
 

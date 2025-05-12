@@ -45,6 +45,10 @@ def set_active_camera_resolution(scene: bpy.types.Scene) -> None:
         return
     assert isinstance((camera := camera_obj.data), bpy.types.Camera)
     props = tool.Drawing.get_camera_props(camera)
+
+    if camera.type != props.camera_type:
+        camera.type = props.camera_type
+
     ortho_scale, aspect_ratio = props.get_scale_and_aspect_ratio()
     scene_render = scene.render
     if (camera.ortho_scale != ortho_scale) or not tool.Cad.is_x(

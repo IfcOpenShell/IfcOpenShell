@@ -46,9 +46,13 @@ class AssignType(bpy.types.Operator, tool.Ifc.Operator):
         related_object: str
 
     def _execute(self, context):
-        relating_type = tool.Ifc.get().by_id(
-            self.relating_type or int(context.active_object.BIMTypeProperties.relating_type)
-        )
+        if self.relating_type:
+            relating_type = self.relating_type
+        else:
+            assert (obj := context.active_object)
+            props = tool.Type.get_object_type_props(obj)
+            relating_type = int(props.relating_type)
+        relating_type = tool.Ifc.get().by_id(relating_type)
         if self.related_object:
             related_objects = [bpy.data.objects[self.related_object]]
         else:
@@ -130,8 +134,10 @@ class EnableEditingType(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.active_object.BIMTypeProperties.is_editing_type = True
-        context.active_object.BIMTypeProperties.relating_type_object = None
+        assert (obj := context.active_object)
+        props = tool.Type.get_object_type_props(obj)
+        props.is_editing_type = True
+        props.relating_type_object = None
         return {"FINISHED"}
 
 
@@ -142,8 +148,10 @@ class DisableEditingType(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        obj.BIMTypeProperties.is_editing_type = False
+        obj = bpy.data.objects[self.obj] if self.obj else context.active_object
+        assert obj
+        props = tool.Type.get_object_type_props(obj)
+        props.is_editing_type = False
         return {"FINISHED"}
 
 

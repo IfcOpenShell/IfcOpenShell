@@ -625,6 +625,26 @@ class EditAssignedMaterial(bpy.types.Operator, tool.Ifc.Operator):
                     wall.DumbWallPlaner().regenerate_from_layer_set(layer_set)
                     slab.DumbSlabPlaner().regenerate_from_layer_set(layer_set)
 
+            if material_set_usage.is_a("IfcMaterialProfileSetUsage"):
+                attributes["CardinalPoint"] = int(attributes["CardinalPoint"])
+                ifcopenshell.api.material.edit_profile_usage(
+                    self.file,
+                    usage=material_set_usage,
+                    attributes=attributes,
+                )
+                profile_sets_to_regenerate = set()
+
+                for obj in objects:
+                    obj_element = tool.Ifc.get_entity(obj)
+                    obj_material_usage = ifcopenshell.util.element.get_material(obj_element)
+
+                    if obj_material_usage and obj_material_usage.is_a("IfcMaterialProfileSetUsage"):
+                        profile_sets_to_regenerate.add(obj_material_usage.ForProfileSet)
+
+                    for profile_set in profile_sets_to_regenerate:
+                        for material_profile in profile_set.MaterialProfiles:
+                            model_profile.DumbProfileRegenerator().regenerate_from_profile_def(material_profile.Profile)
+
         bpy.ops.bim.disable_editing_assigned_material(obj=active_obj.name)
 
 

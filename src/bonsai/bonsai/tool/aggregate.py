@@ -89,9 +89,9 @@ class Aggregate(bonsai.core.tool.Aggregate):
                 return rel.RelatingObject
 
     @classmethod
-    def get_aggregates_recursively(cls, element: ifcopenshell.entity_instance) -> set[ifcopenshell.entity_instance]:
+    def get_aggregates_recursively(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         """Get elements aggregates recursively, resulting set includes `element`."""
-        aggregates = list()
+        aggregates: list[ifcopenshell.entity_instance] = list()
         queue = {element}
         while queue:
             element = queue.pop()
