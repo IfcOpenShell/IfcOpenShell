@@ -37,7 +37,7 @@ jobs:
       - name: Black formatter
         id: linting
         run: |
-          python3 -m black --check .
+          python3 -m black --diff --check .
         continue-on-error: true
 
       - name: Final check
