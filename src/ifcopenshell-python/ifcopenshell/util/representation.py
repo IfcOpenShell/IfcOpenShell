@@ -294,6 +294,7 @@ def resolve_representation(representation: ifcopenshell.entity_instance) -> ifco
     :param representation: IfcRepresentation
     :return: Representation resolved from mappings
     """
+    # Tekla 2023 has missing items and mapped representation, though it's invalid IFC.
     if (
         len(representation.Items or []) == 1
         and representation.Items[0].is_a("IfcMappedItem")
