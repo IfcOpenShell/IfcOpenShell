@@ -1255,10 +1255,15 @@ def get_aggregate(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.e
         element = file.by_type("IfcBeam")[0]
         aggregate = ifcopenshell.util.element.get_aggregate(element)
     """
-    if decomposes := getattr(element, "Decomposes", None):
-        is_not_ifc2x3 = element.file.schema != "IFC2X3"
-        if is_not_ifc2x3 or decomposes[0].is_a("IfcRelAggregates"):
-            return decomposes[0].RelatingObject
+    if not (decomposes := getattr(element, "Decomposes", None)):
+        return
+    is_ifc2x3 = element.file.schema == "IFC2X3"
+    rel: ifcopenshell.entity_instance = decomposes[0]
+    if is_ifc2x3 and not rel.is_a("IfcRelAggregates"):
+        # In IFCF2X3 Decomposes is used for both aggregates and nests,
+        # but only for 1 at the time.
+        return
+    return rel.RelatingObject
 
 
 def get_nest(element: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
