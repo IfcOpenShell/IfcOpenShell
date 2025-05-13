@@ -23,7 +23,9 @@ import ifcopenshell.guid
 from ifcopenshell import entity_instance
 
 
-def add_stationing_to_alignment(file: ifcopenshell.file, alignment: entity_instance, start_station: float, plus_seperator=3,accuracy=3) -> None:
+def add_stationing_to_alignment(
+    file: ifcopenshell.file, alignment: entity_instance, start_station: float, plus_seperator=3, accuracy=3
+) -> None:
     """
     Adds stationing to an alignment by creating an IfcReferent with the Pset_Stationing property set to establish the stationing at the start of the alignment.
     Note - this function assumes the stationing has not been previously defined
@@ -45,18 +47,18 @@ def add_stationing_to_alignment(file: ifcopenshell.file, alignment: entity_insta
     representation = None
     basis_curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
     if basis_curve:
-       object_placement = file.createIfcLinearPlacement(
-           RelativePlacement=file.createIfcAxis2PlacementLinear(
-               Location=file.createIfcPointByDistanceExpression(
-                   DistanceAlong=file.createIfcLengthMeasure(0.0),
-                   OffsetLateral=None,
-                   OffsetVertical=None,
-                   OffsetLongitudinal=None,
-                   BasisCurve=basis_curve,
-               )
-           ),
-           CartesianPosition=None,
-       )
+        object_placement = file.createIfcLinearPlacement(
+            RelativePlacement=file.createIfcAxis2PlacementLinear(
+                Location=file.createIfcPointByDistanceExpression(
+                    DistanceAlong=file.createIfcLengthMeasure(0.0),
+                    OffsetLateral=None,
+                    OffsetVertical=None,
+                    OffsetLongitudinal=None,
+                    BasisCurve=basis_curve,
+                )
+            ),
+            CartesianPosition=None,
+        )
     #    representation = file.create_entity(
     #        name="IfcCircle",
     #        position=file.createIfcAxis2Placement2D(Location=file.createIfcCartesianPoint(Coordinates=(0.0, 0.0)),
@@ -67,7 +69,7 @@ def add_stationing_to_alignment(file: ifcopenshell.file, alignment: entity_insta
     start_referent = file.createIfcReferent(
         GlobalId=ifcopenshell.guid.new(),
         OwnerHistory=None,
-        Name=ifcopenshell.util.stationing.station_as_string(start_station,plus_seperator,accuracy),
+        Name=ifcopenshell.util.stationing.station_as_string(start_station, plus_seperator, accuracy),
         Description=None,
         ObjectType=None,
         ObjectPlacement=object_placement,
