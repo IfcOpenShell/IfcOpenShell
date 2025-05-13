@@ -489,22 +489,10 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        objs = list(context.selected_objects)
-        # If several parts of an aggregation are selected, the aggregate openings may be queried more than once
-        objects_element_map: set[tuple[bpy.types.Object, ifcopenshell.entity_instance]] = set()
-        while objs:
-            obj = objs.pop(0)
+        for obj in tool.Blender.get_selected_objects():
             element = tool.Ifc.get_entity(obj)
-            if element:
-                if getattr(element, "Decomposes", None):
-                    # Select aggregate recursively
-                    if element.Decomposes and (aggregate := element.Decomposes[0].RelatingObject):
-                        aggregate_obj = tool.Ifc.get_object(aggregate)
-                        assert isinstance(aggregate_obj, bpy.types.Object)
-                        objs.append(aggregate_obj)
-                objects_element_map.add((obj, element))
-
-        for obj, element in objects_element_map:
+            if element is None:
+                continue
             self.show_object_openings(obj, element)
         DecorationsHandler.install(bpy.context)
         bpy.ops.bim.update_openings_focus()
