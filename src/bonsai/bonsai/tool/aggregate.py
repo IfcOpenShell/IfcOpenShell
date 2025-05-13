@@ -164,6 +164,9 @@ class Aggregate(bonsai.core.tool.Aggregate):
                 if obj.original not in parts_objs:
                     if obj == props.editing_aggregate:
                         continue
+                    # Skips adding the object to not_editing_objects if it already exists in the list
+                    if any(obj == existing_obj.obj.original for existing_obj in props.not_editing_objects):
+                        continue
                     not_editing_obj = props.not_editing_objects.add()
                     not_editing_obj.obj = obj.original
                     not_editing_obj.previous_display_type = obj.original.display_type
