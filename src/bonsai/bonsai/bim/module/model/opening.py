@@ -484,8 +484,8 @@ class AddBoolean(Operator, tool.Ifc.Operator):
 
 class ShowOpenings(Operator, tool.Ifc.Operator):
     bl_idname = "bim.show_openings"
-    bl_label = "Show"
-    bl_description = "Show Openings"
+    bl_label = "Show Openings"
+    bl_description = "Show openings for selected objects"
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
