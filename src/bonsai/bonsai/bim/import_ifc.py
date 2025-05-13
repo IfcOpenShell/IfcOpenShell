@@ -596,6 +596,7 @@ class IfcImporter:
             return self.create_generic_sqlite_elements(elements)
 
         if self.ifc_import_settings.should_load_geometry:
+            elements = elements.copy()  # Prevent argument mutation.
             context_settings = (
                 tool.Loader.settings.gross_context_settings if is_gross else tool.Loader.settings.context_settings
             )
