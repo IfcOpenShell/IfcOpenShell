@@ -1138,7 +1138,22 @@ class IfcImporter:
             bpy.ops.view3d.view_selected()
             bpy.ops.object.select_all(action="DESELECT")
 
-    def setup_arrays(self, annotations_to_import: Optional[set[ifcopenshell.entity_instance]] = None) -> None:
+    def setup_arrays(
+        self,
+        *,
+        annotations_to_import: Optional[set[ifcopenshell.entity_instance]] = None,
+        openings_to_import: Optional[set[ifcopenshell.entity_instance]] = None,
+    ) -> None:
+        # During base import some elements are skipped.
+        is_base_import = True
+        elements_to_import: set[ifcopenshell.entity_instance] = set()
+        if annotations_to_import is not None:
+            is_base_import = False
+            elements_to_import = annotations_to_import
+        elif openings_to_import is not None:
+            is_base_import = False
+            elements_to_import = openings_to_import
+
         for pset in self.file.by_type("IfcPropertySet"):
             if pset.Name != "BBIM_Array":
                 continue
@@ -1148,12 +1163,11 @@ class IfcImporter:
             for rel in pset.DefinesOccurrence:
                 element: ifcopenshell.entity_instance
                 for element in rel.RelatedObjects:
-                    if annotations_to_import is None:
-                        # IfcAnnotations are not loaded during base import.
-                        if element.is_a("IfcAnnotation"):
+                    if is_base_import:
+                        if element.is_a("IfcAnnotation") or element.is_a("IfcOpeningElement"):
                             continue
                     else:
-                        if element not in annotations_to_import:
+                        if element not in elements_to_import:
                             continue
                     for i in range(len(data)):
                         tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)

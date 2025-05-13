@@ -587,13 +587,15 @@ class Model(bonsai.core.tool.Model):
     def load_openings(cls, openings: list[ifcopenshell.entity_instance]) -> Iterable[bpy.types.Object]:
         if not openings:
             return []
+        elements = set(openings)
         ifc_import_settings = import_ifc.IfcImportSettings.factory()
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
         ifc_importer.material_creator.load_existing_materials()
-        ifc_importer.create_generic_elements(set(openings))
+        ifc_importer.create_generic_elements(elements)
+        ifc_importer.setup_arrays(openings_to_import=elements)
         for opening_obj in ifc_importer.added_data.values():
             tool.Collector.assign(opening_obj, should_clean_users_collection=False)
         return ifc_importer.added_data.values()
