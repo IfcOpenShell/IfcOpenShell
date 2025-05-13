@@ -19,6 +19,9 @@
 import bpy
 import bonsai.bim
 import bonsai.tool as tool
+import gpu
+import mathutils
+from gpu_extras.batch import batch_for_shader
 from bpy.types import Panel, Menu, UIList
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.geometry.data import (
@@ -30,6 +33,53 @@ from bonsai.bim.module.geometry.data import (
 )
 from bonsai.bim.module.layer.data import LayersData
 
+
+_draw_handler = None
+
+def draw_bounding_box_wire_cube(context):
+    obj = context.active_object
+    if not obj or not hasattr(obj, "bound_box"):
+        return
+
+    corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
+
+    edges = [
+        # X edges (red)
+        (0, 4, (1, 0, 0, 1)), (1, 5, (1, 0, 0, 1)),
+        (2, 6, (1, 0, 0, 1)), (3, 7, (1, 0, 0, 1)),
+        # Y edges (green)
+        (0, 3, (0, 1, 0, 1)), (1, 2, (0, 1, 0, 1)),
+        (4, 7, (0, 1, 0, 1)), (5, 6, (0, 1, 0, 1)),
+        # Z edges (blue)
+        (0, 1, (0, 0, 1, 1)), (2, 3, (0, 0, 1, 1)),
+        (4, 5, (0, 0, 1, 1)), (6, 7, (0, 0, 1, 1)),
+    ]
+
+
+    shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+    gpu.state.line_width_set(2.0)
+
+    for i1, i2, color in edges:
+        shader.bind()
+        shader.uniform_float("color", color)
+        batch = batch_for_shader(shader, 'LINES', {"pos": [corners[i1], corners[i2]]})
+        batch.draw(shader)
+
+def draw_callback_px(self, context):
+    draw_bounding_box_wire_cube(context)
+
+def enable_bounding_box_wire_cube():
+    global _draw_handler
+    if _draw_handler is None:
+        _draw_handler = bpy.types.SpaceView3D.draw_handler_add(
+            draw_callback_px, (None, bpy.context), 'WINDOW', 'POST_VIEW'
+        )
+
+def disable_bounding_box_wire_cube():
+    global _draw_handler
+    if _draw_handler is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(_draw_handler, 'WINDOW')
+        _draw_handler = None
 
 class UIData:
     data = {}
@@ -540,12 +590,12 @@ class BIM_PT_derived_coordinates(Panel):
         space_3d = next((space for space in area_3d.spaces if space.type == 'VIEW_3D'), None)
 
         if context.scene.show_colored_dimensions:
+            enable_bounding_box_wire_cube()
             for axis, icon, idx in [("X", 'STRIP_COLOR_01', 0), ("Y", 'STRIP_COLOR_04', 1), ("Z", 'STRIP_COLOR_05', 2)]:
-                split = row.split(factor=0.30, align=True)
-                split.label(text=axis, icon=icon)
-                split.prop(context.active_object, "dimensions", text="", index=idx)
+                row.label(text="", icon=icon)
+                row.prop(context.active_object, "dimensions", text=axis, index=idx)
         else:
-
+            disable_bounding_box_wire_cube()
             row.prop(context.active_object, "dimensions", text="X", index=0)
             row.prop(context.active_object, "dimensions", text="Y", index=1)
             row.prop(context.active_object, "dimensions", text="Z", index=2)
