@@ -294,8 +294,12 @@ def resolve_representation(representation: ifcopenshell.entity_instance) -> ifco
     :param representation: IfcRepresentation
     :return: Representation resolved from mappings
     """
-    if len(representation.Items) == 1 and representation.Items[0].is_a("IfcMappedItem"):
-        return resolve_representation(representation.Items[0].MappingSource.MappedRepresentation)
+    if (
+        len(representation.Items or []) == 1
+        and representation.Items[0].is_a("IfcMappedItem")
+        and (mapped_rep := representation.Items[0].MappingSource.MappedRepresentation)
+    ):
+        return resolve_representation(mapped_rep)
     return representation
 
 
