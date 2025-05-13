@@ -3487,7 +3487,6 @@ class BIM_OT_set_local_orientation(bpy.types.Operator):
                 scene.transform_orientation_slots[1].type = "LOCAL"
                 space_3d.show_gizmo_object_translate = True
 
-                # Note: You can't color the text, but you could use custom icons or emojis as a visual cue
             else:
                 if space_3d:
                     if hasattr(scene, "bonsai_prev_orientation_type"):
