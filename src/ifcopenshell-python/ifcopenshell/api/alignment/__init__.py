@@ -30,7 +30,7 @@ Presently, this API supports:
     4. Creating geometric representations from a business logical definition
     5. Mapping individual business logical segments to geometric segments (complete for horizontal, missing clothoid for vertical, not implemented for cant)
     6. Using curve geometry to determine IfcCurveSegment.Transition transition code.
-    7. Utility functions for printing business logical and geometric representations, as well as minimumal geometry evaluations
+    7. Utility functions for printing business logical and geometric representations, as well as minimal geometry evaluations
 
 Future versions of this API will support:
     1. Defining alignments using the PI method, including transition spirals
