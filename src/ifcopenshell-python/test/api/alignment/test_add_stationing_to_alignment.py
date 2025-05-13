@@ -55,4 +55,4 @@ def test_add_stationing_to_alignment():
                     ifcopenshell.util.element.get_pset(element=referent, name="Pset_Stationing", prop="Station")
                     == 2000.0
                 )
-                assert(referent.ObjectPlacement != None)
+                assert referent.ObjectPlacement != None
