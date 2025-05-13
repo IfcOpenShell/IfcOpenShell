@@ -195,6 +195,17 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
         should_add_representation: bool
         ifc_representation_class: str
 
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC project loaded.")
+            return False
+        # object.select_all operator's requirement and it's generally more safe.
+        elif context.mode != "OBJECT":
+            cls.poll_message_set(f"Can only assign class in OBJECT mode, not in {context.mode} mode.")
+            return False
+        return True
+
     def _execute(self, context):
         ifc_file = tool.Ifc.get()
         props = tool.Root.get_root_props()
