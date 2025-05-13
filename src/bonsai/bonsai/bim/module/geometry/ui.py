@@ -42,17 +42,20 @@ def draw_bounding_box_wire_cube(context):
         return
 
     corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
+    red = (0.9568627450980393, 0.2823529411764706, 0.3215686274509804, 1)
+    blue = (0.19607843137254902, 0.5294117647058824,0.9294117647058824 , 1)
+    green = (0.5647058823529412, 0.8117647058823529, 0.12549019607843137, 1)
 
     edges = [
         # X edges (red)
-        (0, 4, (1, 0, 0, 1)), (1, 5, (1, 0, 0, 1)),
-        (2, 6, (1, 0, 0, 1)), (3, 7, (1, 0, 0, 1)),
+        (0, 4, red), (1, 5, red),
+        (2, 6, red), (3, 7, red),
         # Y edges (green)
-        (0, 3, (0, 1, 0, 1)), (1, 2, (0, 1, 0, 1)),
-        (4, 7, (0, 1, 0, 1)), (5, 6, (0, 1, 0, 1)),
+        (0, 3, green), (1, 2, green),
+        (4, 7, green), (5, 6, green),
         # Z edges (blue)
-        (0, 1, (0, 0, 1, 1)), (2, 3, (0, 0, 1, 1)),
-        (4, 5, (0, 0, 1, 1)), (6, 7, (0, 0, 1, 1)),
+        (0, 1, blue), (2, 3, blue),
+        (4, 5, blue), (6, 7, blue),
     ]
 
 
@@ -582,7 +585,7 @@ class BIM_PT_derived_coordinates(Panel):
         # --- XYZ Dimensions with checkbox ---
         row = self.layout.row(align=True)
         row.label(text="XYZ Dimensions")
-        row.prop(context.scene, "show_colored_dimensions", text="Show Locals Gizmo")
+        row.prop(context.scene, "show_colored_dimensions", text="Show colored dimensions")
 
         row = self.layout.row(align=True)
         row.enabled = False
