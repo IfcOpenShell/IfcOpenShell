@@ -531,11 +531,18 @@ class BIM_PT_tabs(Panel):
             row.operator("bim.close_blend_warning", text="", icon="CANCEL")
 
         gprops = tool.Geometry.get_geometry_props()
+        # Check that Blender mode and IFC Mode do match.
         if context.mode == "OBJECT" and gprops.mode in ("OBJECT", "ITEM"):
             pass
         elif context.mode.startswith("EDIT") and gprops.mode == "EDIT":
             pass
-        else:
+        # Occurs when user wasn't using IFC mode or TAB/Esc hotkeys to change mode.
+        # E.g. if user used TAB to set object's mode to EDIT and then used
+        # Blender mode property to set it back to OBJECT.
+        #
+        # We show warning only for objects connected to IFC,
+        # so users with vanilla Blender objects won't be affected.
+        elif tool.Geometry.get_active_or_representation_obj():
             box = self.layout.box()
             box.alert = True
             row = box.row(align=True)
