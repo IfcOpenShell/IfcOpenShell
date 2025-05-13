@@ -428,7 +428,7 @@ class IfcImporter:
 
         rep = representation
         while True:
-            if len(rep.Items) == 1 and rep.Items[0].is_a("IfcMappedItem"):
+            if rep.Items and len(rep.Items) == 1 and rep.Items[0].is_a("IfcMappedItem"):
                 rep_matrix = ifcopenshell.util.placement.get_mappeditem_transformation(rep.Items[0])
                 if not np.allclose(rep_matrix, np.eye(4)):
                     matrix = rep_matrix @ matrix
