@@ -35,13 +35,13 @@ from bpy.props import (
 from typing import Optional, TYPE_CHECKING, Union, Literal
 
 
-def get_contexts(self, context):
+def get_contexts(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not RepresentationsData.is_loaded:
         RepresentationsData.load()
     return RepresentationsData.data["contexts"]
 
 
-def update_mode(self, context):
+def update_mode(self: "BIMGeometryProperties", context: bpy.types.Context) -> None:
     if self.is_changing_mode:
         return
     if context.mode.startswith("EDIT"):
@@ -62,7 +62,7 @@ def update_mode(self, context):
             bpy.ops.bim.override_mode_set_edit("INVOKE_DEFAULT")
 
 
-def update_representation_obj(self, context):
+def update_representation_obj(self: "BIMGeometryProperties", context: bpy.types.Context) -> None:
     for item_obj in self.item_objs:
         if item_obj.obj:
             data = item_obj.obj.data
@@ -76,13 +76,13 @@ def update_representation_obj(self, context):
         self.is_changing_mode = False
 
 
-def get_mode(self, context):
+def get_mode(self: "BIMGeometryProperties", context: bpy.types.Context) -> list[tuple[str, str, str, str, int]]:
     if not ViewportData.is_loaded:
         ViewportData.load()
     return ViewportData.data["mode"]
 
 
-def get_styles(self, context):
+def get_styles(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     # postponed import to avoid circular import
     from bonsai.bim.module.material.data import MaterialsData
 
@@ -91,13 +91,13 @@ def get_styles(self, context):
     return MaterialsData.data["styles"]
 
 
-def get_shape_aspects(self, context):
+def get_shape_aspects(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not RepresentationsData.is_loaded:
         RepresentationsData.load()
     return RepresentationsData.data["shape_aspects"]
 
 
-def get_material_constituents(self, context, edit_text):
+def get_material_constituents(self: "ShapeAspect", context: bpy.types.Context, edit_text: str) -> list[str]:
     from bonsai.bim.module.material.data import ObjectMaterialData
 
     if not ObjectMaterialData.is_loaded:
@@ -105,7 +105,7 @@ def get_material_constituents(self, context, edit_text):
     return ObjectMaterialData.data["active_material_constituents"]
 
 
-def get_layers(self, context):
+def get_layers(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     from bonsai.bim.module.layer.data import LayersData
 
     if not LayersData.is_loaded:
@@ -113,7 +113,7 @@ def get_layers(self, context):
     return LayersData.data["layers_enum"]
 
 
-def get_layers_no_active(self, context):
+def get_layers_no_active(self: "BIMObjectGeometryProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     from bonsai.bim.module.layer.data import LayersData
 
     if not LayersData.is_loaded:

@@ -394,7 +394,7 @@ class ObjectMaterialData:
         return [(m, m, ifcopenshell.util.doc.get_entity_doc(version, m).get("description", "")) for m in material_types]
 
     @classmethod
-    def active_material_constituents(cls):
+    def active_material_constituents(cls) -> list[str]:
         material = cls.material
         if not cls.material or not material.is_a("IfcMaterialConstituentSet"):
             return []

@@ -491,7 +491,7 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
     def _execute(self, context):
         objs = list(context.selected_objects)
         # If several parts of an aggregation are selected, the aggregate openings may be queried more than once
-        objects_element_map = set()
+        objects_element_map: set[tuple[bpy.types.Object, ifcopenshell.entity_instance]] = set()
         while objs:
             obj = objs.pop(0)
             element = tool.Ifc.get_entity(obj)
@@ -500,6 +500,7 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
                     # Select aggregate recursively
                     if element.Decomposes and (aggregate := element.Decomposes[0].RelatingObject):
                         aggregate_obj = tool.Ifc.get_object(aggregate)
+                        assert isinstance(aggregate_obj, bpy.types.Object)
                         objs.append(aggregate_obj)
                 objects_element_map.add((obj, element))
 
@@ -509,7 +510,7 @@ class ShowOpenings(Operator, tool.Ifc.Operator):
         bpy.ops.bim.update_openings_focus()
         return {"FINISHED"}
 
-    def show_object_openings(self, obj, element):
+    def show_object_openings(self, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
         openings_elements = [rel.RelatedOpeningElement for rel in tool.Geometry.get_openings(element)]
         if not openings_elements:
             return
@@ -531,15 +532,18 @@ class UpdateOpeningsFocus(Operator):
         preferences = tool.Blender.get_addon_preferences()
         if preferences.opening_focus_opacity == 100:
             return {"FINISHED"}
-        openings = set()
-        building_objects = set()
+        openings: set[bpy.types.Object] = set()
+        building_objects: set[bpy.types.Object] = set()
         props = tool.Model.get_model_props()
         for opening in props.openings:
             if opening.obj:
                 openings.add(opening.obj)
                 opening_element = tool.Ifc.get_entity(opening.obj)
+                assert opening_element
                 building_element = opening_element.VoidsElements[0].RelatingBuildingElement
-                building_objects.add(tool.Ifc.get_object(building_element))
+                building_obj = tool.Ifc.get_object(building_element)
+                assert isinstance(building_obj, bpy.types.Object)
+                building_objects.add(building_obj)
 
         for obj in context.scene.objects:
             obj.color = [
