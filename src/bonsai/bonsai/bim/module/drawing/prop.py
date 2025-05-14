@@ -625,6 +625,10 @@ class BIMCameraProperties(PropertyGroup):
         exclude_filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
         update_props: bool
 
+    def get_active_drawing_style(self) -> Union[DrawingStyle, None]:
+        dprops = tool.Drawing.get_document_props()
+        return tool.Blender.get_active_uilist_element(dprops.drawing_styles, self.active_drawing_style_index)
+
     # For now, this JSON dump are all the parameters that determine a camera's "Block representation"
     # By checking this, you will know whether or not the camera IFC representation needs to be refreshed
     def update_representation(self, matrix_world: Matrix) -> bool:

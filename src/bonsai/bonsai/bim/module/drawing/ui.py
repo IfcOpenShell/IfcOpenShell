@@ -173,12 +173,13 @@ class BIM_PT_drawing_underlay(Panel):
         return bool((camera := context.scene.camera) and tool.Ifc.get_entity(camera))
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
         layout.use_property_split = True
         assert context.scene and (camera := context.scene.camera)
         dprops = tool.Drawing.get_document_props()
         props = tool.Drawing.get_camera_props(camera)
-        drawing_index_is_valid = props.active_drawing_style_index < len(dprops.drawing_styles)
+        drawing_style = props.get_active_drawing_style()
 
         if not DrawingsData.is_loaded:
             DrawingsData.load()
@@ -192,7 +193,7 @@ class BIM_PT_drawing_underlay(Panel):
             row.label(text="Current Shading Style:")
             row.label(text=current_shading_style)
         row.operator("bim.add_drawing_style", icon="ADD", text="")
-        if drawing_index_is_valid:
+        if drawing_style:
             row.operator("bim.remove_drawing_style", icon="X", text="").index = props.active_drawing_style_index
         row.operator("bim.reload_drawing_styles", icon="FILE_REFRESH", text="")
 
@@ -207,9 +208,8 @@ class BIM_PT_drawing_underlay(Panel):
             "active_drawing_style_index",
         )
 
-        if not drawing_index_is_valid:
+        if drawing_style is None:
             return
-        drawing_style = dprops.drawing_styles[props.active_drawing_style_index]
 
         row = layout.row(align=True)
         row.prop(drawing_style, "name")

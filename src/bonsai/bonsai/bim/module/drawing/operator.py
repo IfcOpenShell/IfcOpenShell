@@ -406,7 +406,7 @@ class CreateDrawing(bpy.types.Operator):
 
         assert context.scene and context.view_layer and context.screen
         context.scene.render.filepath = str(Path(svg_path).with_suffix(".png"))
-        drawing_style = self.props.drawing_styles[self.cprops.active_drawing_style_index]
+        assert (drawing_style := self.cprops.get_active_drawing_style())
 
         if drawing_style.render_type == "DEFAULT":
             bpy.ops.render.render(write_still=True)
@@ -2398,7 +2398,7 @@ class SaveDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.save_drawing_style"
     bl_label = "Save Drawing Style"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Save current render setting to currently selected drawing style. Also resaves styles data to IFC"
+    bl_description = "Save current render settings to currently selected drawing style. Also resaves styles data to IFC"
 
     index: bpy.props.StringProperty()
     # TODO: check undo redo
@@ -2519,18 +2519,17 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         assert scene and (camera := scene.camera)
         camera_props = tool.Drawing.get_camera_props(camera)
         ifc_file = tool.Ifc.get()
-        active_drawing_style_index = camera_props.active_drawing_style_index
-        props = tool.Drawing.get_document_props()
 
-        if active_drawing_style_index >= len(props.drawing_styles):
+        drawing_style = camera_props.get_active_drawing_style()
+        if drawing_style is None:
             self.report({"ERROR"}, "Could not find active drawing style")
             return {"CANCELLED"}
-
-        self.drawing_style = props.drawing_styles[active_drawing_style_index]
+        self.drawing_style = drawing_style
 
         self.set_raster_style(context)
         self.set_query(context)
 
+        props = tool.Drawing.get_document_props()
         assert (drawing := props.get_active_drawing())
         pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
         assert pset
@@ -2903,8 +2902,8 @@ class AddDrawingStyleAttribute(bpy.types.Operator):
     def execute(self, context):
         assert context.scene and (camera := context.scene.camera)
         props = tool.Drawing.get_camera_props(camera)
-        dprops = tool.Drawing.get_document_props()
-        dprops.drawing_styles[props.active_drawing_style_index].attributes.add()
+        assert (drawing_style := props.get_active_drawing_style())
+        drawing_style.attributes.add()
         return {"FINISHED"}
 
 
@@ -2918,8 +2917,8 @@ class RemoveDrawingStyleAttribute(bpy.types.Operator):
     def execute(self, context):
         assert context.scene and (camera := context.scene.camera)
         props = tool.Drawing.get_camera_props(camera)
-        dprops = tool.Drawing.get_document_props()
-        dprops.drawing_styles[props.active_drawing_style_index].attributes.remove(self.index)
+        assert (drawing_style := props.get_active_drawing_style())
+        drawing_style.attributes.remove(self.index)
         return {"FINISHED"}
 
 
