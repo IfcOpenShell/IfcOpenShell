@@ -1209,8 +1209,10 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
     prop: bpy.types.Property = context.button_prop
     prop_name = prop.identifier
     # TODO: when `prop_struct` doesn't have `prop_name`?
-    prop_value = getattr(prop_struct, prop_name, None)
-    if not isinstance(prop_value, str):
+    if not hasattr(prop_struct, prop_name):
+        return
+    prop_value = getattr(prop_struct, prop_name, ...)
+    if prop_value is ...:
         return
     version = tool.Ifc.get_schema()
     assert self.layout
@@ -1240,6 +1242,13 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
             op = layout.operator("bim.copy_text_to_clipboard", text="Copy Attribute Name", icon="COPYDOWN")
             op.text = attr_name
     else:
+        # Basically context menu for any Blender property will end up here,
+        # and will check 3 types of docs.
+        # So at least we're skipping all non-string properties.
+        if not isinstance(prop_value, str):
+            return
+
+        docs = None
         # Ugly but we can't know which type of data is under the cursor so we test everything until it clicks
         try:
             docs = get_entity_doc(version, prop_value)
