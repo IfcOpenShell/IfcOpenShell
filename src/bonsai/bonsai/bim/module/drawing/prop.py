@@ -346,7 +346,11 @@ class Sheet(PropertyGroup):
         is_expanded: bool
 
 
-RenderType = Literal["NONE", "DEFAULT", "VIEWPORT"]
+RenderType = Literal["DEFAULT", "VIEWPORT"]
+RENDER_TYPE_ENUM_ITEMS: dict[RenderType, tuple[str, str]] = {
+    "DEFAULT": ("Default", "Use default Blender render."),
+    "VIEWPORT": ("Viewport", "Render active viewport."),
+}
 
 
 class DrawingStyle(PropertyGroup):
@@ -357,7 +361,7 @@ class DrawingStyle(PropertyGroup):
         default="{}",
     )
     render_type: EnumProperty(
-        items=[(t, t.capitalize(), "") for t in get_args(RenderType)],
+        items=[(k, *v) for k, v in RENDER_TYPE_ENUM_ITEMS.items()],
         name="Render Type",
         default="VIEWPORT",
     )
