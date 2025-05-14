@@ -164,8 +164,6 @@ class AggregateDecorator:
 
     def draw_aggregate(self, context):
         props = tool.Aggregate.get_aggregate_props()
-        if props.in_aggregate_mode:
-            return
         self.addon_prefs = tool.Blender.get_addon_preferences()
         decorator_color_special = self.addon_prefs.decorator_color_special
         decorator_color_selected = self.addon_prefs.decorator_color_selected
@@ -194,7 +192,13 @@ class AggregateDecorator:
                 aggregates.append(obj)
                 continue
 
-            aggregate = ifcopenshell.util.element.get_aggregate(element)
+            aggregates_list = tool.Aggregate.get_aggregates_recursively(element)
+            if props.in_aggregate_mode and props.editing_aggregate:
+                index = aggregates_list.index(tool.Ifc.get_entity(props.editing_aggregate))
+                if index > 0:
+                    aggregate = aggregates_list[index - 1]
+            else:
+                aggregate = aggregates_list[-1]
             if aggregate:
                 aggregates.append(tool.Ifc.get_object(aggregate))
 
@@ -212,9 +216,7 @@ class AggregateDecorator:
             self.draw_batch("LINES", line_y, color, [(0, 1)])
             line_z = (location - Vector((0.0, 0.0, size)), location + Vector((0.0, 0.0, size)))
             self.draw_batch("LINES", line_z, color, [(0, 1)])
-            if props.in_aggregate_mode:
-                return
-            parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(aggregate))
+            parts = tool.Aggregate.get_parts_recursively(tool.Ifc.get_entity(aggregate))
             parts_objs = [tool.Ifc.get_object(p) for p in parts]
 
             indices, edges = create_bounding_box(parts_objs)
@@ -333,7 +335,7 @@ class AggregateModeDecorator:
                     self.draw_batch("LINES", line_y, color, [(0, 1)])
                     line_z = (location - Vector((0.0, 0.0, size)), location + Vector((0.0, 0.0, size)))
                     self.draw_batch("LINES", line_z, color, [(0, 1)])
-                    parts = ifcopenshell.util.element.get_parts(tool.Ifc.get_entity(aggregate_obj))
+                    parts = tool.Aggregate.get_parts_recursively(tool.Ifc.get_entity(aggregate_obj))
 
         color = self.addon_prefs.decorator_color_selected
         parts_objs = [tool.Ifc.get_object(p) for p in parts]
