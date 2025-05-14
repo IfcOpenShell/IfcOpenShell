@@ -2893,35 +2893,6 @@ class OpenReference(bpy.types.Operator, tool.Ifc.Operator):
         core.open_reference(tool.Drawing, reference=tool.Ifc.get().by_id(self.reference))
 
 
-# TODO: dead code - drawing style attributes are never used?
-class AddDrawingStyleAttribute(bpy.types.Operator):
-    bl_idname = "bim.add_drawing_style_attribute"
-    bl_label = "Add Drawing Style Attribute"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        assert context.scene and (camera := context.scene.camera)
-        props = tool.Drawing.get_camera_props(camera)
-        assert (drawing_style := props.get_active_drawing_style())
-        drawing_style.attributes.add()
-        return {"FINISHED"}
-
-
-# TODO: dead code - drawing style attributes are never used?
-class RemoveDrawingStyleAttribute(bpy.types.Operator):
-    bl_idname = "bim.remove_drawing_style_attribute"
-    bl_label = "Remove Drawing Style Attribute"
-    bl_options = {"REGISTER", "UNDO"}
-    index: bpy.props.IntProperty()
-
-    def execute(self, context):
-        assert context.scene and (camera := context.scene.camera)
-        props = tool.Drawing.get_camera_props(camera)
-        assert (drawing_style := props.get_active_drawing_style())
-        drawing_style.attributes.remove(self.index)
-        return {"FINISHED"}
-
-
 class CleanWireframes(bpy.types.Operator):
     bl_idname = "bim.clean_wireframes"
     bl_label = "Clean Wireframes"
