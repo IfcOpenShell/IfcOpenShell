@@ -47,7 +47,7 @@ import bonsai.bim.module.drawing.sheeter as sheeter
 import bonsai.bim.export_ifc
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim.module.drawing.decoration import CutDecorator
-from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
+from bonsai.bim.module.drawing.data import DecoratorData
 from typing import NamedTuple, List, Union, Optional, Literal, TYPE_CHECKING, Any, TypedDict
 from lxml import etree
 from math import radians
@@ -2165,8 +2165,6 @@ class ActivateDrawingBase(tool.Ifc.Operator):
             tool.Blender.set_viewport_position(viewport_position)
 
         dprops.active_drawing_id = self.drawing
-        # reset DrawingsData to reload_drawing_styles work correctly
-        DrawingsData.is_loaded = False
         dprops.drawing_styles.clear()
         if ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing", "HasUnderlay"):
             bpy.ops.bim.reload_drawing_styles()
@@ -2314,9 +2312,10 @@ class ReloadDrawingStyles(bpy.types.Operator):
     bl_description = "Reload drawing styles for the active camera from the related JSON file."
 
     def execute(self, context):
-        if not DrawingsData.is_loaded:
-            DrawingsData.load()
-        drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
+        props = tool.Drawing.get_document_props()
+        assert (drawing := props.get_active_drawing())
+        drawing_pset_data = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
+
         assert context.scene and (camera := context.scene.camera)
         camera_props = tool.Drawing.get_camera_props(camera)
 
@@ -2341,7 +2340,6 @@ class ReloadDrawingStyles(bpy.types.Operator):
         with open(json_path, "r") as fi:
             shading_styles_json: dict[str, DrawingStyleJson] = json.load(fi)
 
-        props = tool.Drawing.get_document_props()
         drawing_styles = props.drawing_styles
         drawing_styles.clear()
         styles = [style for style in shading_styles_json]
@@ -2468,10 +2466,9 @@ class SaveDrawingStylesData(bpy.types.Operator, tool.Ifc.Operator):
     rename_style_to: bpy.props.StringProperty(default="")
 
     def _execute(self, context):
-        if not DrawingsData.is_loaded:
-            DrawingsData.load()
-        drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
         props = tool.Drawing.get_document_props()
+        assert (drawing := props.get_active_drawing())
+        drawing_pset_data = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
         drawing_styles = props.drawing_styles
 
         rel_path = drawing_pset_data["ShadingStyles"]
