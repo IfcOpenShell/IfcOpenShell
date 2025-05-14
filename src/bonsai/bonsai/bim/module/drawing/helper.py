@@ -392,18 +392,6 @@ def format_distance(
     return tx_dist
 
 
-def get_active_drawing(
-    scene: bpy.types.Scene,
-) -> Union[tuple[bpy.types.Collection, bpy.types.Camera], tuple[None, None]]:
-    """Get active drawing collection and camera"""
-    props = tool.Drawing.get_document_props()
-    try:
-        camera = tool.Ifc.get_object(tool.Ifc.get().by_id(props.active_drawing_id))
-        return tool.Blender.get_object_bim_props(camera).collection, camera
-    except:
-        return None, None
-
-
 def get_project_collection(scene):
     """Get main project collection"""
 

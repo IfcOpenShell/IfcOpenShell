@@ -155,11 +155,12 @@ class AddDrawing(bpy.types.Operator, tool.Ifc.Operator):
             target_view=props.target_view,
             location_hint=hint,
         )
-        try:
-            drawing = tool.Ifc.get().by_id(props.active_drawing_id)
-            core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
-        except:
-            pass
+
+        # TODO: Why need to resync active drawing, if it wasn't changed.
+        drawing = props.get_active_drawing()
+        if drawing is None:
+            return
+        core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
 
 
 class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
@@ -194,11 +195,12 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
             drawing=tool.Ifc.get().by_id(self.drawing),
             should_duplicate_annotations=self.should_duplicate_annotations,
         )
-        try:
-            drawing = tool.Ifc.get().by_id(props.active_drawing_id)
-            core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
-        except:
-            pass
+
+        # TODO: Why need to resync active drawing, if it wasn't changed.
+        drawing = props.get_active_drawing()
+        if drawing is None:
+            return
+        core.sync_references(tool.Ifc, tool.Collector, tool.Drawing, drawing=drawing)
 
 
 class CreateDrawing(bpy.types.Operator):
@@ -2498,7 +2500,7 @@ class SaveDrawingStylesData(bpy.types.Operator, tool.Ifc.Operator):
                 new_style_name = None
 
             ifc_file = tool.Ifc.get()
-            drawing = ifc_file.by_id(props.active_drawing_id)
+            assert (drawing := props.get_active_drawing())
             pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
             assert pset
             ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={"CurrentShadingStyle": new_style_name})
@@ -2532,7 +2534,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
         self.set_raster_style(context)
         self.set_query(context)
 
-        drawing = ifc_file.by_id(props.active_drawing_id)
+        assert (drawing := props.get_active_drawing())
         pset = tool.Pset.get_element_pset(drawing, "EPset_Drawing")
         assert pset
         ifcopenshell.api.pset.edit_pset(

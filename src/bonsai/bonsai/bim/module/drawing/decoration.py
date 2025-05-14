@@ -1982,9 +1982,15 @@ class DecorationsHandler:
         return results
 
     def __call__(self, context):
-        collection, _ = helper.get_active_drawing(context.scene)
-        if collection is None:
+        props = tool.Drawing.get_document_props()
+        drawing = props.get_active_drawing()
+        if drawing is None:
             return
+
+        camera = tool.Ifc.get_object(drawing)
+        assert isinstance(camera, bpy.types.Object)
+        collection = tool.Blender.get_object_bim_props(camera).collection
+        assert collection
 
         if not DrawingsData.is_loaded:
             DrawingsData.load()
