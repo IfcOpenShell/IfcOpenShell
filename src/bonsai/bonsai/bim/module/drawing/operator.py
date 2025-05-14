@@ -410,10 +410,15 @@ class CreateDrawing(bpy.types.Operator):
             bpy.ops.render.render(write_still=True)
         else:
             previous_visibility: dict[str, bool] = {}
-            for obj in tool.Blender.get_object_bim_props(self.camera).collection.objects:
-                if bpy.context.view_layer.objects.get(obj.name):
+            collection = tool.Blender.get_object_bim_props(self.camera).collection
+            assert collection
+            # Hie annotations.
+            for obj in collection.objects:
+                if context.view_layer.objects.get(obj.name):
                     previous_visibility[obj.name] = obj.hide_get()
                     obj.hide_set(True)
+
+            # Hide objects that shouldn't appear on render - empties, camera, grids, etc.
             for obj in context.visible_objects:
                 if (
                     (not obj.data and not obj.instance_collection)
@@ -442,15 +447,15 @@ class CreateDrawing(bpy.types.Operator):
         return svg_path
 
     def get_linework_contexts(self, ifc: ifcopenshell.file, target_view: str) -> LineworkContexts:
-        plan_body_target_contexts = []
-        plan_body_model_contexts = []
-        model_body_target_contexts = []
-        model_body_model_contexts = []
+        plan_body_target_contexts: list[int] = []
+        plan_body_model_contexts: list[int] = []
+        model_body_target_contexts: list[int] = []
+        model_body_model_contexts: list[int] = []
 
-        plan_annotation_target_contexts = []
-        plan_annotation_model_contexts = []
-        model_annotation_target_contexts = []
-        model_annotation_model_contexts = []
+        plan_annotation_target_contexts: list[int] = []
+        plan_annotation_model_contexts: list[int] = []
+        model_annotation_target_contexts: list[int] = []
+        model_annotation_model_contexts: list[int] = []
 
         for rep_context in ifc.by_type("IfcGeometricRepresentationContext"):
             if rep_context.is_a("IfcGeometricRepresentationSubContext"):
@@ -522,8 +527,8 @@ class CreateDrawing(bpy.types.Operator):
         target_view: str,
     ) -> None:
         drawing_elements = drawing_elements.copy()
-        contexts: list[list[int]] = getattr(contexts, context_type)
-        for context in contexts:
+        contexts_: list[list[int]] = getattr(contexts, context_type)
+        for context in contexts_:
             with profile(f"Processing {context_type} context"):
                 if not context or not drawing_elements:
                     continue
@@ -546,7 +551,7 @@ class CreateDrawing(bpy.types.Operator):
                     tree.add_element(elem)
                 drawing_elements -= processed
 
-    def generate_bisect_linework(self, context: bpy.types.Context, root):
+    def generate_bisect_linework(self, context: bpy.types.Context, root) -> None:
         camera_matrix_i = context.scene.camera.matrix_world.inverted()
 
         group = root.find("{http://www.w3.org/2000/svg}g")
@@ -581,7 +586,7 @@ class CreateDrawing(bpy.types.Operator):
                 path.attrib["d"] = d
             group.append(g)
 
-    def generate_wall_layers(self, context: bpy.types.Context, root):
+    def generate_wall_layers(self, context: bpy.types.Context, root) -> None:
         for el in root.findall(".//{http://www.w3.org/2000/svg}g[@{http://www.ifcopenshell.org/ns}guid]"):
             if "projection" in el.get("class", "").split():
                 continue
