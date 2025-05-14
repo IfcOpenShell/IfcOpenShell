@@ -46,7 +46,7 @@ from bpy.props import (
     CollectionProperty,
     BoolVectorProperty,
 )
-from typing import TYPE_CHECKING, Literal, Any, Callable, get_args
+from typing import TYPE_CHECKING, Literal, Any, Callable, get_args, Union
 
 
 diagram_scales_enum = []
@@ -488,6 +488,12 @@ class DocProperties(PropertyGroup):
         imperial_precision: str
         tolerance: float
         classes_to_wireframe: str
+
+    def get_active_drawing(self) -> Union[ifcopenshell.entity_instance, None]:
+        drawing_id = self.active_drawing_id
+        if drawing_id == 0:
+            return None
+        return tool.Ifc.get().by_id(drawing_id)
 
 
 def update_width_height(self: "BIMCameraProperties", context: bpy.types.Context) -> None:

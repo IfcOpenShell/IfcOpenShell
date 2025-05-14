@@ -132,12 +132,10 @@ class DrawingsData:
 
     @classmethod
     def active_drawing_pset_data(cls):
-        ifc_file = tool.Ifc.get()
         props = tool.Drawing.get_document_props()
-        drawing_id = props.active_drawing_id
-        if drawing_id == 0:
+        drawing = props.get_active_drawing()
+        if drawing is None:
             return {}
-        drawing = ifc_file.by_id(drawing_id)
         return ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
 
 
