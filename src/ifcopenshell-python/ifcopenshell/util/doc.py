@@ -23,7 +23,7 @@ import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 import ifcopenshell.util.attribute
 import ifcopenshell.util.schema
-from typing import Optional, Literal
+from typing import Optional, Literal, Any, Union, TypedDict, NotRequired
 
 try:
     import glob
@@ -48,20 +48,44 @@ IFC4x3_HTML_LOCATION = BASE_MODULE_PATH / "IFC4.3-html"
 IFC4x3_DEV_LOCATION = BASE_MODULE_PATH / "IFC4.3.x-development"
 IFC4x3_SPEC_URL_TEMPLATE = "https://ifc43-docs.standards.buildingsmart.org/IFC/RELEASE/IFC4x3/HTML/lexical/%s.htm"
 
-# entities schema
-# entity -> description, spec_url, attributes[], predefined_types[]
 
-# types schema
-# type -> description, spec_url
+class BaseData(TypedDict):
+    description: str
+    spec_url: str
 
-# properties schema
-# pset/qset -> description, spec_url, properties[]
-# property -> description, children[]
-# child -> description
-# note: in IFC4x3 there is no children[] for properties
+
+class EntityData(BaseData):
+    attributes: NotRequired[dict[str, str]]
+    predefined_types: NotRequired[dict[str, str]]
+
+
+class PsetData(TypedDict):
+    # Apparently some psets in ifc4 are missing spec url / description.
+    description: NotRequired[str]
+    spec_url: NotRequired[str]
+    properties: dict[str, str]
+
+
+class PropertyData(TypedDict):
+    description: str
+    # in IFC4x3 there is no children[] for properties
+    children: NotRequired[dict[str, "PropertyData"]]
+
+
+class ClassesSuggestions(TypedDict):
+    name: str
+    predefined_type: NotRequired[str]
+
+
+class SchemaData(TypedDict):
+    entities: dict[str, EntityData]
+    types: dict[str, BaseData]
+    properties: dict[str, PsetData]
+    classes_suggestions: dict[str, ClassesSuggestions]
+
 
 SUPPORTED_SCHEMA = ifcopenshell.util.schema.IFC_SCHEMA
-SCHEMA_FILES: dict[SUPPORTED_SCHEMA, dict] = {
+SCHEMA_FILES: dict[SUPPORTED_SCHEMA, dict[str, Path]] = {
     "IFC2X3": {
         "entities": BASE_MODULE_PATH / "schema/ifc2x3_entities.json",
         "properties": BASE_MODULE_PATH / "schema/ifc2x3_properties.json",
@@ -82,7 +106,7 @@ SCHEMA_FILES: dict[SUPPORTED_SCHEMA, dict] = {
     },
 }
 
-db = None
+db: dict[SUPPORTED_SCHEMA, SchemaData] = None
 schema_by_name: dict[SUPPORTED_SCHEMA, Optional[ifcopenshell_wrapper.schema_definition]] = {
     "IFC2X3": None,
     "IFC4": None,
@@ -90,7 +114,7 @@ schema_by_name: dict[SUPPORTED_SCHEMA, Optional[ifcopenshell_wrapper.schema_defi
 }
 
 
-def get_db(version):
+def get_db(version: ifcopenshell.util.schema.IFC_SCHEMA) -> Union[SchemaData, None]:
     global db
     if not db:
         db = {ifc_version: dict() for ifc_version in SCHEMA_FILES}
@@ -117,7 +141,10 @@ def get_schema_by_name(version: str) -> ifcopenshell_wrapper.schema_definition:
     return schema_by_name[version]
 
 
-def get_class_suggestions(version, class_name):
+def get_class_suggestions(
+    version: ifcopenshell.util.schema.IFC_SCHEMA,
+    class_name: str,
+) -> Union[ClassesSuggestions, None]:
     db = get_db(version)
     if not db:
         return
@@ -125,7 +152,11 @@ def get_class_suggestions(version, class_name):
     return class_suggestions
 
 
-def get_entity_doc(version, entity_name, recursive=True):
+def get_entity_doc(
+    version: ifcopenshell.util.schema.IFC_SCHEMA,
+    entity_name: str,
+    recursive: bool = True,
+) -> Union[EntityData, None]:
     db = get_db(version)
     if db:
         entity = copy.deepcopy(db["entities"].get(entity_name))
@@ -144,37 +175,46 @@ def get_entity_doc(version, entity_name, recursive=True):
         return entity
 
 
-def get_attribute_doc(version, entity, attribute, recursive=True):
+def get_attribute_doc(
+    version: ifcopenshell.util.schema.IFC_SCHEMA,
+    entity: str,
+    attribute: str,
+    recursive=True,
+) -> Union[str, None]:
     db = get_db(version)
     if db:
-        entity = get_entity_doc(version, entity, recursive)
-        if entity:
-            return entity["attributes"].get(attribute)
+        entity_ = get_entity_doc(version, entity, recursive)
+        if entity_ and "attributes" in entity_:
+            return entity_["attributes"].get(attribute)
 
 
-def get_predefined_type_doc(version, entity, predefined_type):
+def get_predefined_type_doc(
+    version: ifcopenshell.util.schema.IFC_SCHEMA,
+    entity: str,
+    predefined_type: str,
+) -> Union[str, None]:
     db = get_db(version)
     if db:
-        entity = db["entities"].get(entity)
-        if entity:
-            return entity.get("predefined_types", {}).get(predefined_type)
+        entity_ = db["entities"].get(entity)
+        if entity_:
+            return entity_.get("predefined_types", {}).get(predefined_type)
 
 
-def get_property_set_doc(version, pset):
+def get_property_set_doc(version: ifcopenshell.util.schema.IFC_SCHEMA, pset: str) -> Union[PsetData, None]:
     db = get_db(version)
     if db:
         return db["properties"].get(pset)
 
 
-def get_property_doc(version, pset, prop):
+def get_property_doc(version: ifcopenshell.util.schema.IFC_SCHEMA, pset: str, prop: str) -> Union[str, None]:
     db = get_db(version)
     if db:
-        pset = db["properties"].get(pset)
-        if pset:
-            return pset["properties"].get(prop)
+        pset_ = db["properties"].get(pset)
+        if pset_:
+            return pset_["properties"].get(prop)
 
 
-def get_type_doc(version, ifc_type):
+def get_type_doc(version: ifcopenshell.util.schema.IFC_SCHEMA, ifc_type: str) -> Union[BaseData, None]:
     db = get_db(version)
     if db:
         return db["types"].get(ifc_type)
@@ -209,7 +249,7 @@ def get_inverse_attributes(el):
 
 
 class DocExtractor:
-    def clean_highlighted_words(self, text):
+    def clean_highlighted_words(self, text: str) -> str:
         text = re.sub(r"\b_([a-zA-Z0-9]+)_\b", r"\1", text)
         text = re.sub(r"\*\*([a-zA-Z0-9]+)\*\*", r"\1", text)
         return text
