@@ -130,7 +130,7 @@ void print_usage(bool suggest_help = true)
 #ifdef WITH_HDF5
 		<< "  .h5    HDF            Hierarchical Data Format storing positions, normals and indices\n"
 #endif
-#ifdef IFOPSH_WITH_CGAL
+#ifdef IFOPSH_WITH_CITYJSON
 		<< "  .cityjson             City JSON format for geospatial data\n"
 #endif
 		<< "  .ttl   TTL/WKT        RDF Turtle with Well-Known-Text geometry\n"
