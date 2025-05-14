@@ -1846,15 +1846,9 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_drawing_metadata(cls, drawing: ifcopenshell.entity_instance) -> list[str]:
-        # fmt: off
-        return [
-            v.strip()
-            for v in (
-                ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("Metadata", "") or ""
-            ).split(",")
-            if v
-        ]
-        # fmt: on
+        pset_data = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
+        metadata_str = pset_data.get("Metadata", "") or ""
+        return [v_ for v in metadata_str.split(",") if (v_ := v.strip())]
 
     @classmethod
     def get_annotation_z_index(cls, drawing: ifcopenshell.entity_instance) -> float:
