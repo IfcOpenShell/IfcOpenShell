@@ -1203,16 +1203,21 @@ def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -
         or not hasattr(context.button_prop, "identifier")
     ):
         return
-    prop = context.button_pointer
-    prop_name = context.button_prop.identifier
-    prop_value = getattr(prop, prop_name, None)
+    # E.g. `bim.props.Attribute`.
+    prop_struct: bpy.types.bpy_struct = context.button_pointer
+    # E.g. `IntProperty("int_value")`
+    prop: bpy.types.Property = context.button_prop
+    prop_name = prop.identifier
+    # TODO: when `prop_struct` doesn't have `prop_name`?
+    prop_value = getattr(prop_struct, prop_name, None)
     if not isinstance(prop_value, str):
         return
     version = tool.Ifc.get_schema()
+    assert self.layout
     layout = self.layout
 
-    if isinstance(context.button_pointer, Attribute):
-        attr = context.button_pointer
+    if isinstance(prop_struct, Attribute):
+        attr = prop_struct
         description = attr.description
         ifc_class = attr.ifc_class
         if ifc_class:
