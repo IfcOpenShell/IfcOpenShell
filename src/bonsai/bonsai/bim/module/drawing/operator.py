@@ -139,7 +139,11 @@ class AddDrawing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_drawing"
     bl_label = "Add Drawing"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Add a drawing view to the IFC project"
+    bl_description = (
+        "Add a drawing view to the IFC project.\n\n"
+        "For all views besides MODEL_VIEW camera will be placed at the current cursor position,\n"
+        "for MODEL_VIEW camera will be aligned to the current viewport position and orientation."
+    )
 
     def _execute(self, context):
         props = tool.Drawing.get_document_props()
