@@ -1030,7 +1030,7 @@ class Geometry(bonsai.core.tool.Geometry):
         return item.is_a("IfcSweptAreaSolid") or item.is_a("IfcHalfSpaceSolid")
 
     @classmethod
-    def is_profile_based(cls, data: bpy.types.Mesh) -> bool:
+    def is_profile_based(cls, data: TYPES_WITH_MESH_PROPERTIES) -> bool:
         props = tool.Geometry.get_mesh_props(data)
         return props.subshape_type == "PROFILE"
 

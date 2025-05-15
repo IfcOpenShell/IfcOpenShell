@@ -339,7 +339,7 @@ class Sequence(bonsai.core.tool.Sequence):
     @classmethod
     def get_task_attribute_value(cls, attribute_name: str) -> Any:
         props = cls.get_work_schedule_props()
-        return props.task_attributes.get(attribute_name).get_value()
+        return props.task_attributes[attribute_name].get_value()
 
     @classmethod
     def get_active_task(cls) -> ifcopenshell.entity_instance:

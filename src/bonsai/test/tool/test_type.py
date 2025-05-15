@@ -18,6 +18,8 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.root
+import ifcopenshell.api.type
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -153,9 +155,9 @@ class TestGetTypeOccurrences(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        wall_type = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWallType")
-        wall = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[wall], relating_type=wall_type)
+        wall_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWallType")
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[wall], relating_type=wall_type)
         assert subject.get_type_occurrences(wall_type) == (wall,)
 
 

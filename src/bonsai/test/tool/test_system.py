@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 import numpy as np
@@ -43,6 +44,7 @@ class TestAddPorts(NewFile):
         element = tool.Ifc.get_entity(obj)
         obj.matrix_world = Euler((pi / 2, 0, pi / 2)).to_matrix().to_4x4() @ obj.matrix_world
         # move origin
+        assert isinstance(obj.data, bpy.types.Mesh)
         for v in obj.data.vertices:
             v.co += Vector((0, 0, 2.5))
         return obj, element
@@ -90,6 +92,7 @@ class TestAddPorts(NewFile):
 
 class TestCreateEmptyAtCursorWithElementOrientation(NewFile):
     def test_run(self):
+        assert bpy.context.scene
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
         obj = bpy.data.objects.new("Object", None)
@@ -175,10 +178,10 @@ class TestImportSystemAttributes(NewFile):
         system.ObjectType = "ObjectType"
         subject().import_system_attributes(system)
         props = tool.System.get_system_props()
-        assert props.system_attributes.get("GlobalId").string_value == "GlobalId"
-        assert props.system_attributes.get("Name").string_value == "Name"
-        assert props.system_attributes.get("Description").string_value == "Description"
-        assert props.system_attributes.get("ObjectType").string_value == "ObjectType"
+        assert props.system_attributes["GlobalId"].string_value == "GlobalId"
+        assert props.system_attributes["Name"].string_value == "Name"
+        assert props.system_attributes["Description"].string_value == "Description"
+        assert props.system_attributes["ObjectType"].string_value == "ObjectType"
 
     def test_importing_a_building_system(self):
         ifc = ifcopenshell.file()
@@ -192,12 +195,12 @@ class TestImportSystemAttributes(NewFile):
         system.LongName = "LongName"
         subject().import_system_attributes(system)
         props = tool.System.get_system_props()
-        assert props.system_attributes.get("GlobalId").string_value == "GlobalId"
-        assert props.system_attributes.get("Name").string_value == "Name"
-        assert props.system_attributes.get("Description").string_value == "Description"
-        assert props.system_attributes.get("ObjectType").string_value == "ObjectType"
-        assert props.system_attributes.get("PredefinedType").enum_value == "SHADING"
-        assert props.system_attributes.get("LongName").string_value == "LongName"
+        assert props.system_attributes["GlobalId"].string_value == "GlobalId"
+        assert props.system_attributes["Name"].string_value == "Name"
+        assert props.system_attributes["Description"].string_value == "Description"
+        assert props.system_attributes["ObjectType"].string_value == "ObjectType"
+        assert props.system_attributes["PredefinedType"].enum_value == "SHADING"
+        assert props.system_attributes["LongName"].string_value == "LongName"
 
     def test_importing_a_distribution_system(self):
         ifc = ifcopenshell.file()
@@ -211,12 +214,12 @@ class TestImportSystemAttributes(NewFile):
         system.LongName = "LongName"
         subject().import_system_attributes(system)
         props = tool.System.get_system_props()
-        assert props.system_attributes.get("GlobalId").string_value == "GlobalId"
-        assert props.system_attributes.get("Name").string_value == "Name"
-        assert props.system_attributes.get("Description").string_value == "Description"
-        assert props.system_attributes.get("ObjectType").string_value == "ObjectType"
-        assert props.system_attributes.get("PredefinedType").enum_value == "ELECTRICAL"
-        assert props.system_attributes.get("LongName").string_value == "LongName"
+        assert props.system_attributes["GlobalId"].string_value == "GlobalId"
+        assert props.system_attributes["Name"].string_value == "Name"
+        assert props.system_attributes["Description"].string_value == "Description"
+        assert props.system_attributes["ObjectType"].string_value == "ObjectType"
+        assert props.system_attributes["PredefinedType"].enum_value == "ELECTRICAL"
+        assert props.system_attributes["LongName"].string_value == "LongName"
 
 
 class TestImportSystems(NewFile):
@@ -245,7 +248,7 @@ class TestLoadPorts(NewFile):
         port = ifc.create_entity("IfcDistributionPort")
         subject.load_ports(element, [port])
         obj = tool.Ifc.get_object(port)
-        assert obj
+        assert isinstance(obj, bpy.types.Object)
         assert obj.users_collection
         assert list(obj.location) == [0, 0, 0]
 
@@ -262,6 +265,7 @@ class TestRunRootAssignClass(NewFile):
 
 class TestSelectSystemProducts(NewFile):
     def test_run(self):
+        assert bpy.context.scene
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcPump")

@@ -16,22 +16,33 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.tool
 import ifcopenshell
-from typing import Any, Union
+from typing import Any, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
+    from bonsai.bim.module.context.prop import BIMContextProperties
 
 
 class Context(bonsai.core.tool.Context):
     @classmethod
+    def get_context_props(cls) -> BIMContextProperties:
+        assert bpy.context.scene
+        return bpy.context.scene.BIMContextProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
     def set_context(cls, context: ifcopenshell.entity_instance) -> None:
-        bpy.context.scene.BIMContextProperties.active_context_id = context.id()
+        props = cls.get_context_props()
+        props.active_context_id = context.id()
 
     @classmethod
     def import_attributes(cls) -> None:
-        props = bpy.context.scene.BIMContextProperties
+        props = cls.get_context_props()
         props.context_attributes.clear()
         context = cls.get_context()
 
@@ -52,20 +63,22 @@ class Context(bonsai.core.tool.Context):
 
     @classmethod
     def clear_context(cls) -> None:
-        bpy.context.scene.BIMContextProperties.active_context_id = 0
+        props = cls.get_context_props()
+        props.active_context_id = 0
 
     @classmethod
     def get_context(cls) -> ifcopenshell.entity_instance:
-        return tool.Ifc.get().by_id(bpy.context.scene.BIMContextProperties.active_context_id)
+        props = cls.get_context_props()
+        return tool.Ifc.get().by_id(props.active_context_id)
 
     @classmethod
     def export_attributes(cls) -> dict[str, Any]:
-        def callback(attributes, blender_attribute) -> bool:
+        props = cls.get_context_props()
+
+        def callback(attributes: dict[str, Any], blender_attribute: Attribute) -> bool:
             if blender_attribute.name == "Precision":
                 attributes["Precision"] = float(blender_attribute.get_value())
                 return True
             return False
 
-        return bonsai.bim.helper.export_attributes(
-            bpy.context.scene.BIMContextProperties.context_attributes, callback=callback
-        )
+        return bonsai.bim.helper.export_attributes(props.context_attributes, callback=callback)

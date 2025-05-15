@@ -34,7 +34,8 @@ class TestSetContext(test.bim.bootstrap.NewFile):
         ifc = ifcopenshell.file()
         context = ifc.createIfcGeometricRepresentationContext()
         subject.set_context(context)
-        assert bpy.context.scene.BIMContextProperties.active_context_id == context.id()
+        props = subject.get_context_props()
+        assert props.active_context_id == context.id()
 
 
 class TestImportAttributes(test.bim.bootstrap.NewFile):
@@ -48,11 +49,11 @@ class TestImportAttributes(test.bim.bootstrap.NewFile):
         context.Precision = 1
         subject.set_context(context)
         subject.import_attributes()
-        props = bpy.context.scene.BIMContextProperties
-        assert props.context_attributes.get("ContextIdentifier").string_value == "ContextIdentifier"
-        assert props.context_attributes.get("ContextType").string_value == "ContextType"
-        assert props.context_attributes.get("CoordinateSpaceDimension").int_value == 1
-        assert props.context_attributes.get("Precision").string_value == "1.0"
+        props = subject.get_context_props()
+        assert props.context_attributes["ContextIdentifier"].string_value == "ContextIdentifier"
+        assert props.context_attributes["ContextType"].string_value == "ContextType"
+        assert props.context_attributes["CoordinateSpaceDimension"].int_value == 1
+        assert props.context_attributes["Precision"].string_value == "1.0"
 
     def test_importing_a_subcontext(self):
         ifc = ifcopenshell.file()
@@ -63,11 +64,11 @@ class TestImportAttributes(test.bim.bootstrap.NewFile):
         subcontext.UserDefinedTargetView = "UserDefinedTargetView"
         subject.set_context(subcontext)
         subject.import_attributes()
-        props = bpy.context.scene.BIMContextProperties
-        assert props.context_attributes.get("TargetScale").float_value == 0.5
-        assert props.context_attributes.get("TargetView").enum_value == "NOTDEFINED"
-        assert props.context_attributes.get("UserDefinedTargetView").string_value == "UserDefinedTargetView"
-        assert not props.context_attributes.get("Precision")
+        props = subject.get_context_props()
+        assert props.context_attributes["TargetScale"].float_value == 0.5
+        assert props.context_attributes["TargetView"].enum_value == "NOTDEFINED"
+        assert props.context_attributes["UserDefinedTargetView"].string_value == "UserDefinedTargetView"
+        assert not props.context_attributes["Precision"]
 
     def test_importing_twice(self):
         ifc = ifcopenshell.file()
@@ -78,15 +79,16 @@ class TestImportAttributes(test.bim.bootstrap.NewFile):
         subject.import_attributes()
         context.ContextIdentifier = "ContextIdentifier2"
         subject.import_attributes()
-        props = bpy.context.scene.BIMContextProperties
-        assert props.context_attributes.get("ContextIdentifier").string_value == "ContextIdentifier2"
+        props = subject.get_context_props()
+        assert props.context_attributes["ContextIdentifier"].string_value == "ContextIdentifier2"
 
 
 class TestClearContext(test.bim.bootstrap.NewFile):
     def test_run(self):
         TestSetContext().test_run()
         subject.clear_context()
-        assert bpy.context.scene.BIMContextProperties.active_context_id == 0
+        props = subject.get_context_props()
+        assert props.active_context_id == 0
 
 
 class TestGetContext(test.bim.bootstrap.NewFile):

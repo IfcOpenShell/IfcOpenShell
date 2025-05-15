@@ -752,6 +752,12 @@ class LiteralProps(PropertyGroup):
         }
         return text_data
 
+    if TYPE_CHECKING:
+        attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        value: str
+        box_alignment: str
+        ifc_definition_id: int
+
 
 class BIMTextProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing", default=False)
@@ -801,6 +807,10 @@ def relating_product_poll(self: "BIMAssignedProductProperties", obj: bpy.types.O
 class BIMAssignedProductProperties(PropertyGroup):
     is_editing_product: BoolProperty(name="Is Editing Product", default=False)
     relating_product: PointerProperty(name="Relating Product", type=bpy.types.Object, poll=relating_product_poll)
+
+    if TYPE_CHECKING:
+        is_editing_product: bool
+        relating_product: Union[bpy.types.Object, None]
 
 
 annotation_classes = [

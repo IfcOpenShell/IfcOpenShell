@@ -19,7 +19,9 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api.material
+import ifcopenshell.api.root
 import ifcopenshell.api.style
+import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit

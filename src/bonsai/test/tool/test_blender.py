@@ -22,7 +22,11 @@ import bonsai.core.tool
 import bonsai.tool as tool
 import pytest
 from test.bim.bootstrap import NewFile
+from typing import TYPE_CHECKING
 from bonsai.tool.blender import Blender as subject
+
+if TYPE_CHECKING:
+    import bpy._typing.rna_enums as rna_enums
 
 
 class TestImplementsTool(NewFile):
@@ -34,6 +38,7 @@ class TestCopyNodeGraph(NewFile):
     def test_run(self):
         material_to = bpy.data.materials.new("material_to")
         material_to.use_nodes = True
+        assert material_to.node_tree
         material_to_nodes = material_to.node_tree.nodes
         assert len(material_to_nodes) == 2
         for node in material_to_nodes:
@@ -70,7 +75,7 @@ class TestBlenderErrorMessageExtraction(NewFile):
             bl_idname = "object.test_fail_operator"
             bl_label = "Test Fail Operator"
 
-            def execute(self, context):
+            def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
                 self.report({"INFO"}, "Info message.")
                 subject.report_operator_errors(self, ERROR_REPORTS)
                 return {"FINISHED"}

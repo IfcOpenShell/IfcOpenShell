@@ -17,7 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import ifcopenshell
 import bonsai.tool as tool
+from typing import Any, Union
 from ifcopenshell.util.doc import get_entity_doc
 
 
@@ -31,42 +33,46 @@ def refresh():
 
 class RolesAddressesData:
     @classmethod
-    def get_roles(cls, parent):
-        results = []
+    def get_roles(cls, parent: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
+        props = tool.Owner.get_owner_props()
+        results: list[dict[str, Any]] = []
         for role in parent.Roles or []:
             results.append(
                 {
                     "id": role.id(),
-                    "is_editing": bpy.context.scene.BIMOwnerProperties.active_role_id == role.id(),
+                    "is_editing": props.active_role_id == role.id(),
                     "label": role.UserDefinedRole or role.Role,
-                    "props": bpy.context.scene.BIMOwnerProperties.role_attributes,
+                    "props": props.role_attributes,
                 }
             )
         return results
 
     @classmethod
-    def get_addresses(cls, parent):
-        results = []
+    def get_addresses(cls, parent: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
+        props = tool.Owner.get_owner_props()
+        results: list[dict[str, Any]] = []
         for address in parent.Addresses or []:
             results.append(
                 {
                     "id": address.id(),
-                    "is_editing": bpy.context.scene.BIMOwnerProperties.active_address_id == address.id(),
+                    "is_editing": props.active_address_id == address.id(),
                     "label": address.is_a(),
-                    "props": bpy.context.scene.BIMOwnerProperties.address_attributes,
+                    "props": props.address_attributes,
                     "list_attributes": cls.get_address_list_attributes(address),
                 }
             )
         return results
 
     @classmethod
-    def get_address_list_attributes(cls, address):
-        results = []
-        props = bpy.context.scene.BIMOwnerProperties
+    def get_address_list_attributes(cls, address: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        props = tool.Owner.get_owner_props()
         if address.is_a("IfcPostalAddress"):
             names = ["AddressLines"]
         elif address.is_a("IfcTelecomAddress"):
             names = ["TelephoneNumbers", "FacsimileNumbers", "ElectronicMailAddresses", "MessagingIDs"]
+        else:
+            assert False, f"Unexpected entity: {address}"
         for name in names:
             if name == "AddressLines":
                 items = [{"id": id, "prop": prop} for id, prop in enumerate(props.address_lines)]
@@ -78,6 +84,8 @@ class RolesAddressesData:
                 items = [{"id": id, "prop": prop} for id, prop in enumerate(props.electronic_mail_addresses)]
             elif name == "MessagingIDs":
                 items = [{"id": id, "prop": prop} for id, prop in enumerate(props.messaging_ids)]
+            else:
+                assert False, f"Unexpected name: {name}"
             results.append({"name": name, "items": items})
         return results
 
@@ -92,14 +100,15 @@ class PeopleData(RolesAddressesData):
         cls.is_loaded = True
 
     @classmethod
-    def get_people(cls):
-        people = []
+    def get_people(cls) -> list[dict[str, Any]]:
+        props = tool.Owner.get_owner_props()
+        people: list[dict[str, Any]] = []
         for person in tool.Ifc.get().by_type("IfcPerson"):
             roles = cls.get_roles(person)
             people.append(
                 {
                     "id": person.id(),
-                    "props": bpy.context.scene.BIMOwnerProperties.person_attributes,
+                    "props": props.person_attributes,
                     "name": cls.get_person_name(person),
                     "roles_label": ", ".join([r["label"] for r in roles]),
                     "is_editing": cls.get_person_is_editing(person),
@@ -112,7 +121,7 @@ class PeopleData(RolesAddressesData):
         return people
 
     @classmethod
-    def get_person_name(cls, person):
+    def get_person_name(cls, person: ifcopenshell.entity_instance) -> str:
         if tool.Ifc.get_schema() == "IFC2X3":
             name = person.Id
         else:
@@ -124,20 +133,24 @@ class PeopleData(RolesAddressesData):
         return name
 
     @classmethod
-    def get_person_is_editing(cls, person):
-        return bpy.context.scene.BIMOwnerProperties.active_person_id == person.id()
+    def get_person_is_editing(cls, person: ifcopenshell.entity_instance) -> bool:
+        props = tool.Owner.get_owner_props()
+        return props.active_person_id == person.id()
 
     @classmethod
-    def get_person_list_attributes(cls, person):
-        results = []
-        props = bpy.context.scene.BIMOwnerProperties
-        for name in ["MiddleNames", "PrefixTitles", "SuffixTitles"]:
+    def get_person_list_attributes(cls, person: ifcopenshell.entity_instance) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        props = tool.Owner.get_owner_props()
+        name: tool.Owner.PersonAttributeType
+        for name in ("MiddleNames", "PrefixTitles", "SuffixTitles"):
             if name == "MiddleNames":
                 items = [{"id": id, "prop": prop} for id, prop in enumerate(props.middle_names)]
             elif name == "PrefixTitles":
                 items = [{"id": id, "prop": prop} for id, prop in enumerate(props.prefix_titles)]
             elif name == "SuffixTitles":
                 items = [{"id": id, "prop": prop} for id, prop in enumerate(props.suffix_titles)]
+            else:
+                assert False, name
             results.append({"name": name, "items": items})
         return results
 
@@ -152,17 +165,18 @@ class OrganisationsData(RolesAddressesData):
         cls.is_loaded = True
 
     @classmethod
-    def get_organisations(cls):
-        organisations = []
+    def get_organisations(cls) -> list[dict[str, Any]]:
+        props = tool.Owner.get_owner_props()
+        organisations: list[dict[str, Any]] = []
         for organisation in tool.Ifc.get().by_type("IfcOrganization"):
             roles = cls.get_roles(organisation)
             organisations.append(
                 {
                     "id": organisation.id(),
-                    "props": bpy.context.scene.BIMOwnerProperties.organisation_attributes,
+                    "props": props.organisation_attributes,
                     "name": organisation.Name,
                     "roles_label": ", ".join([r["label"] for r in roles]),
-                    "is_editing": bpy.context.scene.BIMOwnerProperties.active_organisation_id == organisation.id(),
+                    "is_editing": props.active_organisation_id == organisation.id(),
                     "is_engaged": bool(organisation.Engages),
                     "roles": roles,
                     "addresses": cls.get_addresses(organisation),
@@ -186,26 +200,27 @@ class OwnerData:
         cls.is_loaded = True
 
     @classmethod
-    def get_user_person(cls):
+    def get_user_person(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         return [(str(p.id()), p[0] or "Unnamed", "") for p in tool.Ifc.get().by_type("IfcPerson")]
 
     @classmethod
-    def get_user_organisation(cls):
+    def get_user_organisation(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         return [(str(p.id()), p[0] or "Unnamed", "") for p in tool.Ifc.get().by_type("IfcOrganization")]
 
     @classmethod
-    def can_add_user(cls):
-        return tool.Ifc.get().by_type("IfcPerson") and tool.Ifc.get().by_type("IfcOrganization")
+    def can_add_user(cls) -> bool:
+        return bool(tool.Ifc.get().by_type("IfcPerson") and tool.Ifc.get().by_type("IfcOrganization"))
 
     @classmethod
-    def get_users(cls):
-        results = []
+    def get_users(cls) -> list[dict[str, Any]]:
+        props = tool.Owner.get_owner_props()
+        results: list[dict[str, Any]] = []
         for user in tool.Ifc.get().by_type("IfcPersonAndOrganization"):
             results.append(
                 {
                     "id": user.id(),
                     "label": "{} ({})".format(user.ThePerson[0] or "Unnamed", user.TheOrganization[0] or "Unnamed"),
-                    "is_active": bpy.context.scene.BIMOwnerProperties.active_user_id == user.id(),
+                    "is_active": props.active_user_id == user.id(),
                 }
             )
         return results
@@ -224,48 +239,60 @@ class ActorData:
         cls.data["actors"] = cls.actors()
 
     @classmethod
-    def the_actor(cls):
-        if not (ifc_class := bpy.context.scene.BIMOwnerProperties.actor_type):
+    def the_actor(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        props = tool.Owner.get_owner_props()
+        if not (ifc_class := props.actor_type):
             ifc_class = cls.actor_type()[0][0]
         return [(str(p.id()), p[0] or "Unnamed", "") for p in tool.Ifc.get().by_type(ifc_class)]
 
     @classmethod
-    def actors(cls):
-        actors = []
-        props = bpy.context.scene.BIMOwnerProperties
+    def actors(cls) -> list[dict[str, Any]]:
+        actors: list[dict[str, Any]] = []
+        props = tool.Owner.get_owner_props()
         for actor in tool.Ifc.get().by_type(props.actor_class, include_subtypes=False):
             is_editing = props.active_actor_id == actor.id()
-            if actor.TheActor.is_a("IfcPerson"):
-                the_actor = actor.TheActor.Identification or "N/A"
-            elif actor.TheActor.is_a("IfcOrganization"):
-                the_actor = actor.TheActor.Identification or "N/A"
-            elif actor.TheActor.is_a("IfcPersonAndOrganization"):
-                the_actor = actor.TheActor.ThePerson.Identification or "N/A"
-                the_actor += "-" + actor.TheActor.TheOrganization.Identification or "N/A"
+            the_actor: ifcopenshell.entity_instance = actor.TheActor
+            if the_actor.is_a("IfcPerson"):
+                the_actor_ = the_actor.Identification or "N/A"
+            elif the_actor.is_a("IfcOrganization"):
+                the_actor_ = the_actor.Identification or "N/A"
+            elif the_actor.is_a("IfcPersonAndOrganization"):
+                the_actor_ = the_actor.ThePerson.Identification or "N/A"
+                the_actor_ += "-" + the_actor.TheOrganization.Identification or "N/A"
+            else:
+                assert False, the_actor
             actors.append(
-                {"id": actor.id(), "name": actor.Name or "Unnamed", "the_actor": the_actor, "is_editing": is_editing}
+                {
+                    "id": actor.id(),
+                    "name": actor.Name or "Unnamed",
+                    "the_actor": the_actor_,
+                    "is_editing": is_editing,
+                }
             )
         return actors
 
     @classmethod
-    def actor_class(cls) -> list[tuple[str, str, str]]:
+    def actor_class(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         version = tool.Ifc.get_schema()
+        actor_doc = get_entity_doc(version, "IfcActor")
+        occupant_doc = get_entity_doc(version, "IfcOccupant")
+        assert actor_doc and occupant_doc
         return [
-            ("IfcActor", "Actor", get_entity_doc(version, "IfcActor").get("description", "")),
-            ("IfcOccupant", "Occupant", get_entity_doc(version, "IfcOccupant").get("description", "")),
+            ("IfcActor", "Actor", actor_doc.get("description", "")),
+            ("IfcOccupant", "Occupant", occupant_doc.get("description", "")),
         ]
 
     @classmethod
-    def actor_type(cls) -> list[tuple[str, str, str]]:
+    def actor_type(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         version = tool.Ifc.get_schema()
+        person_doc = get_entity_doc(version, "IfcPerson")
+        organization_doc = get_entity_doc(version, "IfcOrganization")
+        pao_doc = get_entity_doc(version, "IfcPersonAndOrganization")
+        assert person_doc and organization_doc and pao_doc
         return [
-            ("IfcPerson", "Person", get_entity_doc(version, "IfcPerson").get("description", "")),
-            ("IfcOrganization", "Organisation", get_entity_doc(version, "IfcOrganization").get("description", "")),
-            (
-                "IfcPersonAndOrganization",
-                "User",
-                get_entity_doc(version, "IfcPersonAndOrganization").get("description", ""),
-            ),
+            ("IfcPerson", "Person", person_doc.get("description", "")),
+            ("IfcOrganization", "Organisation", organization_doc.get("description", "")),
+            ("IfcPersonAndOrganization", "User", pao_doc.get("description", "")),
         ]
 
 
@@ -279,25 +306,31 @@ class ObjectActorData:
         cls.data = {"actor": cls.actor(), "actors": cls.actors()}
 
     @classmethod
-    def actor(cls):
+    def actor(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         return [(str(p.id()), p.Name or "Unnamed", "") for p in tool.Ifc.get().by_type("IfcActor")]
 
     @classmethod
-    def actors(cls):
-        results = []
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+    def actors(cls) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        obj = bpy.context.active_object
+        if not obj:
+            return results
+        element = tool.Ifc.get_entity(obj)
         if not element:
             return results
         for rel in getattr(element, "HasAssignments", []):
             if rel.is_a("IfcRelAssignsToActor"):
                 actor = rel.RelatingActor
-                if actor.TheActor.is_a("IfcPerson"):
-                    roles = cls.get_roles(actor.TheActor)
-                elif actor.TheActor.is_a("IfcOrganization"):
-                    roles = cls.get_roles(actor.TheActor)
-                elif actor.TheActor.is_a("IfcPersonAndOrganization"):
-                    roles = cls.get_roles(actor.TheActor.ThePerson)
-                    roles.extend(cls.get_roles(actor.TheActor.TheOrganization))
+                the_actor: ifcopenshell.entity_instance = actor.TheActor
+                if the_actor.is_a("IfcPerson"):
+                    roles = cls.get_roles(the_actor)
+                elif the_actor.is_a("IfcOrganization"):
+                    roles = cls.get_roles(the_actor)
+                elif the_actor.is_a("IfcPersonAndOrganization"):
+                    roles = cls.get_roles(the_actor.ThePerson)
+                    roles.extend(cls.get_roles(the_actor.TheOrganization))
+                else:
+                    assert False, the_actor
                 role = ", ".join(roles)
                 results.append(
                     {"id": actor.id(), "name": actor.Name or "Unnamed", "role": role, "ifc_class": actor.is_a()}
@@ -305,5 +338,5 @@ class ObjectActorData:
         return results
 
     @classmethod
-    def get_roles(cls, parent):
+    def get_roles(cls, parent: ifcopenshell.entity_instance) -> list[Union[str, None]]:
         return [r.UserDefinedRole or r.Role for r in parent.Roles or []]

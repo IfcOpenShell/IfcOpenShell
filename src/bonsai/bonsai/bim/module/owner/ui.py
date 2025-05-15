@@ -19,10 +19,11 @@
 import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
+from typing import Any
 from bonsai.bim.module.owner.data import PeopleData, OrganisationsData, OwnerData, ActorData, ObjectActorData
 
 
-def draw_roles(box, parent):
+def draw_roles(box: bpy.types.UILayout, parent: dict[str, Any]) -> None:
     row = box.row(align=True)
     row.label(text="Roles")
     op = row.operator("bim.add_role", icon="ADD", text="")
@@ -41,7 +42,7 @@ def draw_roles(box, parent):
             row.operator("bim.remove_role", icon="X", text="").role = role["id"]
 
 
-def draw_addresses(box, parent):
+def draw_addresses(box: bpy.types.UILayout, parent: dict[str, Any]) -> None:
     row = box.row(align=True)
     row.label(text="Addresses")
     op = row.operator("bim.add_address", icon="LINK_BLEND", text="")
@@ -87,12 +88,13 @@ class BIM_PT_people(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return bool(tool.Ifc.get())
 
     def draw(self, context):
         if not PeopleData.is_loaded:
             PeopleData.load()
 
+        assert self.layout
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
 
@@ -102,7 +104,8 @@ class BIM_PT_people(bpy.types.Panel):
         for person in PeopleData.data["people"]:
             self.draw_person(person)
 
-    def draw_person(self, person):
+    def draw_person(self, person: dict[str, Any]) -> None:
+        assert self.layout
         if person["is_editing"]:
             box = self.layout.box()
             row = box.row(align=True)
@@ -146,12 +149,13 @@ class BIM_PT_organisations(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return bool(tool.Ifc.get())
 
     def draw(self, context):
         if not OrganisationsData.is_loaded:
             OrganisationsData.load()
 
+        assert self.layout
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
 
@@ -161,7 +165,8 @@ class BIM_PT_organisations(bpy.types.Panel):
         for organisation in OrganisationsData.data["organisations"]:
             self.draw_organisation(organisation)
 
-    def draw_organisation(self, organisation):
+    def draw_organisation(self, organisation: dict[str, Any]) -> None:
+        assert self.layout
         if organisation["is_editing"]:
             box = self.layout.box()
             row = box.row(align=True)
@@ -193,15 +198,16 @@ class BIM_PT_owner(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return bool(tool.Ifc.get())
 
     def draw(self, context):
         if not OwnerData.is_loaded:
             OwnerData.load()
 
+        assert self.layout
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
-        props = context.scene.BIMOwnerProperties
+        props = tool.Owner.get_owner_props()
 
         if not OwnerData.data["user_person"]:
             self.layout.label(text="No people found.")
@@ -244,13 +250,14 @@ class BIM_PT_actor(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return bool(tool.Ifc.get())
 
     def draw(self, context):
         if not ActorData.is_loaded:
             ActorData.load()
 
-        self.props = context.scene.BIMOwnerProperties
+        assert self.layout
+        self.props = tool.Owner.get_owner_props()
 
         self.layout.use_property_split = True
         self.layout.use_property_decorate = False
@@ -268,7 +275,8 @@ class BIM_PT_actor(bpy.types.Panel):
         for actor in ActorData.data["actors"]:
             self.draw_actor(actor)
 
-    def draw_actor(self, actor):
+    def draw_actor(self, actor: dict[str, Any]) -> None:
+        assert self.layout
         if actor["is_editing"]:
             box = self.layout.box()
             row = box.row(align=True)
@@ -295,13 +303,14 @@ class BIM_PT_object_actor(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return bool(tool.Ifc.get())
 
     def draw(self, context):
         if not ObjectActorData.is_loaded:
             ObjectActorData.load()
 
-        self.props = context.scene.BIMOwnerProperties
+        assert self.layout
+        self.props = tool.Owner.get_owner_props()
 
         if not ObjectActorData.data["actor"]:
             row = self.layout.row(align=True)

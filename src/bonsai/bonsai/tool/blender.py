@@ -71,7 +71,7 @@ class Blender(bonsai.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
     TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME"
 
-    BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, str], tuple[str, str, str, str, str]]
+    BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int]]
     """
     Options:
 
@@ -81,6 +81,7 @@ class Blender(bonsai.core.tool.Blender):
 
     - (identifier, name, description, icon, number)
     """
+    BLENDER_ENUM_ITEMS = list[BLENDER_ENUM_ITEM]
 
     @classmethod
     def activate_camera(cls, obj: bpy.types.Object) -> None:

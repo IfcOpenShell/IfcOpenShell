@@ -58,7 +58,7 @@ def updateResourceName(self, context):
         attributes={"Name": self.name},
     )
     if props.active_resource_id == self.ifc_definition_id:
-        attribute = props.resource_attributes.get("Name")
+        attribute = props.resource_attributes["Name"]
         attribute.string_value = self.name
     bonsai.bim.module.resource.data.refresh()
     tool.Sequence.refresh_task_resources()

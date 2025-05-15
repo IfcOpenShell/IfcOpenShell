@@ -23,6 +23,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.schema
 import ifcopenshell.util.unit
 import bonsai.tool as tool
+from typing import Any, Union
 from mathutils import Vector
 
 
@@ -45,13 +46,12 @@ class ViewportData:
         cls.data = {"mode": cls.mode()}
 
     @classmethod
-    def mode(cls):
+    def mode(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         obj_mode = ("OBJECT", "IFC Object Mode", "View and move the placements of objects", "OBJECT_DATAMODE", 0)
         item_mode = ("ITEM", "IFC Item Mode", "View individual representation items", "MESH_DATA", 1)
         edit_mode = ("EDIT", "IFC Edit Mode", "Edit representation items", "EDITMODE_HLT", 2)
 
         obj = bpy.context.active_object
-        element = tool.Ifc.get_entity(obj)
 
         modes: list[tuple[str, str, str, str, int]] = [obj_mode]
         gprops = tool.Geometry.get_geometry_props()
@@ -61,13 +61,14 @@ class ViewportData:
         if not obj:
             return modes
 
+        element = tool.Ifc.get_entity(obj)
         pprops = tool.Project.get_project_props()
         if obj in pprops.clipping_planes_objs:
             pass
         elif element:
             if tool.Geometry.is_locked(element):
                 pass
-            elif obj.data and tool.Geometry.is_profile_based(obj.data):
+            elif obj.data and tool.Geometry.has_mesh_properties(obj.data) and tool.Geometry.is_profile_based(obj.data):
                 modes.append(edit_mode)
             elif element.is_a("IfcRelSpaceBoundary"):
                 modes.append(edit_mode)
@@ -88,7 +89,7 @@ class ViewportData:
 
 
 class RepresentationsData:
-    data = {}
+    data: dict[str, Any] = {}
     is_loaded = False
 
     @classmethod
@@ -102,10 +103,12 @@ class RepresentationsData:
         cls.is_loaded = True
 
     @classmethod
-    def representations(cls):
-        results = []
+    def representations(cls) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
         obj = tool.Geometry.get_active_or_representation_obj()
+        assert obj
         element = tool.Ifc.get_entity(obj)
+        assert element
 
         active_representation_id = None
         active_representation = tool.Geometry.get_active_representation(obj)
@@ -132,8 +135,8 @@ class RepresentationsData:
         return results
 
     @classmethod
-    def contexts(cls):
-        results = []
+    def contexts(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        results: list[tuple[str, str, str]] = []
         for element in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             results.append((str(element.id()), element.ContextType or "Unnamed", ""))
         for element in tool.Ifc.get().by_type("IfcGeometricRepresentationSubContext", include_subtypes=False):
@@ -219,9 +222,12 @@ class ConnectionsData:
         cls.is_loaded = True
 
     @classmethod
-    def connections(cls):
-        results = []
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+    def connections(cls) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        obj = bpy.context.active_object
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        assert element
 
         connected_to = getattr(element, "ConnectedTo", [])
         connected_from = getattr(element, "ConnectedFrom", [])
@@ -285,13 +291,16 @@ class ConnectionsData:
         return results
 
     @classmethod
-    def is_connection_realization(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+    def is_connection_realization(cls) -> Union[list[dict[str, Any]], None]:
+        obj = bpy.context.active_object
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        assert element
         connections = getattr(element, "IsConnectionRealization", None)
         if not connections:
             return
 
-        results = []
+        results: list[dict[str, Any]] = []
         for rel in connections:
             data = {
                 "realizing_elements_connection_type": rel.ConnectionType,
@@ -322,16 +331,19 @@ class DerivedCoordinatesData:
         cls.is_loaded = True
 
     @classmethod
-    def load_z_values(cls):
+    def load_z_values(cls) -> None:
         cls.z_values = [
             (bpy.context.active_object.matrix_world @ Vector(co))[2] for co in bpy.context.active_object.bound_box
         ]
 
     @classmethod
-    def load_collection(cls):
+    def load_collection(cls) -> None:
         cls.collection = None
         cls.collection_z = 0
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        obj = bpy.context.active_object
+        if not obj:
+            return
+        element = tool.Ifc.get_entity(obj)
         if not element:
             return
         parent = ifcopenshell.util.element.get_aggregate(element)
@@ -392,7 +404,7 @@ class PlacementData:
 
     @classmethod
     def load(cls):
-        cls.data = {"has_placement": cls.has_placement()}
+        cls.data: dict[str, Any] = {"has_placement": cls.has_placement()}
 
         props = tool.Georeference.get_georeference_props()
         obj = bpy.context.active_object
@@ -415,13 +427,14 @@ class PlacementData:
         return False
 
     @classmethod
-    def original_xyz(cls, obj):
+    def original_xyz(cls, obj: bpy.types.Object) -> list[float]:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         props = tool.Georeference.get_georeference_props()
+        translation = obj.matrix_world.translation
         xyz = ifcopenshell.util.geolocation.xyz2enh(
-            obj.matrix_world[0][3],
-            obj.matrix_world[1][3],
-            obj.matrix_world[2][3],
+            translation[0],
+            translation[1],
+            translation[2],
             float(props.blender_offset_x) * unit_scale,
             float(props.blender_offset_y) * unit_scale,
             float(props.blender_offset_z) * unit_scale,

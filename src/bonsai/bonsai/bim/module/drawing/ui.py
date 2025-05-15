@@ -494,17 +494,19 @@ class BIM_PT_product_assignments(Panel):
     @classmethod
     def poll(cls, context):
         if not tool.Ifc.get() or not context.active_object:
-            return
+            return False
         element = tool.Ifc.get_entity(context.active_object)
         if not element:
-            return
+            return False
         return element.is_a("IfcAnnotation")
 
     def draw(self, context):
         if not ProductAssignmentsData.is_loaded:
             ProductAssignmentsData.load()
 
-        props = context.active_object.BIMAssignedProductProperties
+        assert self.layout
+        assert (obj := context.active_object)
+        props = tool.Drawing.get_object_assigned_product_props(obj)
 
         if props.is_editing_product:
             row = self.layout.row(align=True)

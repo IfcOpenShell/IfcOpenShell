@@ -90,7 +90,7 @@ def update_cost_item_identification(self: "CostItem", context: bpy.types.Context
         **{"cost_item": self.file.by_id(self.ifc_definition_id), "attributes": {"Identification": self.identification}},
     )
     if props.active_cost_item_id == self.ifc_definition_id:
-        attribute = props.cost_item_attributes.get("Identification")
+        attribute = props.cost_item_attributes["Identification"]
         attribute.string_value = self.identification
 
 
@@ -105,7 +105,7 @@ def update_cost_item_name(self: "CostItem", context: bpy.types.Context) -> None:
         **{"cost_item": self.file.by_id(self.ifc_definition_id), "attributes": {"Name": self.name}},
     )
     if props.active_cost_item_id == self.ifc_definition_id:
-        attribute = props.cost_item_attributes.get("Name")
+        attribute = props.cost_item_attributes["Name"]
         attribute.string_value = self.name
 
 

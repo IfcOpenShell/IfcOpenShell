@@ -138,6 +138,7 @@ class TestAddBrickifcProject(NewFile):
 class TestAddBrickifcReference(NewFile):
     def test_run(self):
         TestAddBrickifcProject().test_run()
+        assert BrickStore.graph
         element = tool.Ifc.get().createIfcChiller(ifcopenshell.guid.new())
         element.Name = "Chiller"
         project = URIRef(f"http://example.org/digitaltwin#{tool.Ifc.get().by_type('IfcProject')[0].GlobalId}")
@@ -173,6 +174,7 @@ class TestAddRelation(NewFile):
 class TestRemoveRelation(NewFile):
     def test_run(self):
         TestAddRelation().test_run()
+        assert BrickStore.graph
         source, relation, destination = list(
             BrickStore.graph.triples((None, URIRef("https://brickschema.org/schema/Brick#feeds"), None))
         )[0]
@@ -321,7 +323,7 @@ class TestGetConvertableBrickSystems(NewFile):
 
 
 class TestGetParentSpace(NewFile):
-    def test_run(cls):
+    def test_run(self):
         ifc = ifcopenshell.file()
         element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBuildingStorey")
         subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
@@ -333,17 +335,17 @@ class TestGetParentSpace(NewFile):
 
 
 class TestGetElementContainer(NewFile):
-    def test_nothing(cls):
+    def test_nothing(self):
         pass
 
 
 class TestGetElementSystems(NewFile):
-    def test_nothing(cls):
+    def test_nothing(self):
         pass
 
 
 class TestGetElementFeeds(NewFile):
-    def test_run(cls):
+    def test_run(self):
         pass
 
 
