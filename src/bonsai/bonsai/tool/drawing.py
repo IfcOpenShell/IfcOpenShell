@@ -682,6 +682,7 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def generate_sheet_identification(cls) -> str:
         number = len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"])
+        number += 1
         return "A" + str(number).zfill(2)
 
     @classmethod

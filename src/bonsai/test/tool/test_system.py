@@ -164,7 +164,7 @@ class TestGetPorts(NewFile):
         element = ifc.createIfcDuctSegment()
         port = ifc.createIfcDistributionPort()
         ifcopenshell.api.run("system.assign_port", ifc, element=element, port=port)
-        subject.get_ports(element) == [port]
+        assert subject.get_ports(element) == [port]
 
 
 class TestImportSystemAttributes(NewFile):

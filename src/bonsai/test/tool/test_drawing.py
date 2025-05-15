@@ -478,9 +478,9 @@ class TestGenerateSheetIdentification(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        subject.generate_sheet_identification() == "A01"
+        assert subject.generate_sheet_identification() == "A01"
         document = ifc.createIfcDocumentInformation()
-        subject.generate_sheet_identification() == "A02"
+        assert subject.generate_sheet_identification() == "A02"
 
 
 class TestGetTextLiteral(NewFile):
