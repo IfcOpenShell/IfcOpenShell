@@ -3470,30 +3470,79 @@ class CreateInstance(bpy.types.Operator, tool.Ifc.Operator):
 
         return {"FINISHED"}
 
-class BIM_OT_set_local_orientation(bpy.types.Operator):
-    bl_idname = "bim.set_local_orientation"
-    bl_label = "Set Local Orientation"
+
+previous_selection = set()
+
+
+def selection_monitor_handler(scene, depsgraph):
+    global previous_selection
+
+    # Get the current selection
+    current_selection = {obj.name for obj in scene.objects if obj.select_get()}
+
+    # If selection changed, print and update
+    if current_selection != previous_selection:
+        if len(bpy.context.selected_objects) == 1:
+            scene.transform_orientation_slots[1].type = "LOCAL"
+        else:
+            scene.transform_orientation_slots[1].type = "GLOBAL"
+        area = next((a for a in bpy.context.screen.areas if a.type == "VIEW_3D"), None)
+        space = next((s for s in area.spaces if s.type == "VIEW_3D"), None)
+        space.show_gizmo_object_translate = True
+        previous_selection = current_selection
+
+
+def register_handler():
+    unregister_handler()
+    bpy.app.handlers.depsgraph_update_post.append(selection_monitor_handler)
+
+
+def unregister_handler():
+    handlers = bpy.app.handlers.depsgraph_update_post
+    handlers[:] = [h for h in handlers if h.__name__ != "selection_monitor_handler"]
+
+
+class BIM_OT_local_coordinates_gizmo(bpy.types.Operator):
+    bl_idname = "bim.toggle_local_gizmo"
+    bl_label = "Show Local Gizmo"
 
     def execute(self, context):
         scene = bpy.context.scene
-        area_3d = next((area for area in bpy.context.screen.areas if area.type == 'VIEW_3D'), None)
-        space_3d = next((space for space in area_3d.spaces if space.type == 'VIEW_3D'), None) if area_3d else None
+        area_3d = next((area for area in bpy.context.screen.areas if area.type == "VIEW_3D"), None)
+        space_3d = next((space for space in area_3d.spaces if space.type == "VIEW_3D"), None) if area_3d else None
 
         try:
             if context.scene.show_colored_dimensions:
+                register_handler()
+                bpy.app.handlers.depsgraph_update_post.append(
+                    selection_monitor_handler
+                )  # Save initial state only if not already saved
+                if not scene.get("bonsai_prev_orientation_type", None):
+                    scene["bonsai_prev_orientation_type"] = scene.transform_orientation_slots[1].type
+                if not scene.get("bonsai_prev_gizmo_translate", None):
+                    scene["bonsai_prev_gizmo_translate"] = space_3d.show_gizmo_object_translate if space_3d else False
+
+                # Set orientation and gizmo based on selection count
                 if space_3d:
-                    scene.bonsai_prev_orientation_type = scene.transform_orientation_slots[1].type
-                    scene.bonsai_prev_gizmo_translate = space_3d.show_gizmo_object_translate                
-                scene.transform_orientation_slots[1].type = "LOCAL"
-                space_3d.show_gizmo_object_translate = True
+                    if len(context.selected_objects) == 1:
+                        scene.transform_orientation_slots[1].type = "LOCAL"
+                    else:
+                        scene.transform_orientation_slots[1].type = "GLOBAL"
+                    space_3d.show_gizmo_object_translate = True
 
             else:
+                unregister_handler()
+                # Restore previous state
                 if space_3d:
-                    if hasattr(scene, "bonsai_prev_orientation_type"):
-                        scene.transform_orientation_slots[1].type = scene.bonsai_prev_orientation_type
-                    if hasattr(scene, "bonsai_prev_gizmo_translate"):
-                        space_3d.show_gizmo_object_translate = scene.bonsai_prev_gizmo_translate
+                    prev_orientation = scene.get("bonsai_prev_orientation_type", None)
+                    if prev_orientation:
+                        scene.transform_orientation_slots[1].type = prev_orientation
+                        scene["bonsai_prev_orientation_type"] = ""
+                    prev_gizmo = scene.get("bonsai_prev_gizmo_translate", None)
+                    if prev_gizmo is not None:
+                        space_3d.show_gizmo_object_translate = prev_gizmo
+                        scene["bonsai_prev_gizmo_translate"] = None
 
         except Exception:
-            self.report({'WARNING'}, "Could not set transform orientation.")
-        return {'FINISHED'}
+            self.report({"WARNING"}, "Could not set transform orientation.")
+        return {"FINISHED"}
