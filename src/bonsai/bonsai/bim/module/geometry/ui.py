@@ -21,6 +21,7 @@ import bonsai.bim
 import bonsai.tool as tool
 import gpu
 import mathutils
+import blf
 from gpu_extras.batch import batch_for_shader
 from bpy.types import Panel, Menu, UIList
 from bonsai.bim.helper import prop_with_search
@@ -34,55 +35,195 @@ from bonsai.bim.module.geometry.data import (
 from bonsai.bim.module.layer.data import LayersData
 
 
-_draw_handler = None
+_draw_handler_box = None
+_draw_handler_text = None
 
-def draw_bounding_box_wire_cube(context):
-    obj = context.active_object
-    if not obj or not hasattr(obj, "bound_box"):
-        return
 
-    corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
-    red = (0.9568627450980393, 0.2823529411764706, 0.3215686274509804, 1)
-    blue = (0.19607843137254902, 0.5294117647058824,0.9294117647058824 , 1)
-    green = (0.5647058823529412, 0.8117647058823529, 0.12549019607843137, 1)
+def get_combined_bounding_box_corners(objects):
+    import mathutils
+
+    if not objects:
+        return None, None, None
+
+    if len(objects) == 1:
+        obj = bpy.context.active_object
+        corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
+
+    else:
+        all_corners = []
+        for obj in objects:
+            if hasattr(obj, "bound_box"):
+                all_corners.extend([obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box])
+
+        min_corner = mathutils.Vector(
+            (min(v.x for v in all_corners), min(v.y for v in all_corners), min(v.z for v in all_corners))
+        )
+        max_corner = mathutils.Vector(
+            (max(v.x for v in all_corners), max(v.y for v in all_corners), max(v.z for v in all_corners))
+        )
+        corners = [
+            mathutils.Vector((min_corner.x, min_corner.y, min_corner.z)),
+            mathutils.Vector((min_corner.x, min_corner.y, max_corner.z)),
+            mathutils.Vector((min_corner.x, max_corner.y, max_corner.z)),
+            mathutils.Vector((min_corner.x, max_corner.y, min_corner.z)),
+            mathutils.Vector((max_corner.x, min_corner.y, min_corner.z)),
+            mathutils.Vector((max_corner.x, min_corner.y, max_corner.z)),
+            mathutils.Vector((max_corner.x, max_corner.y, max_corner.z)),
+            mathutils.Vector((max_corner.x, max_corner.y, min_corner.z)),
+        ]
 
     edges = [
-        # X edges (red)
-        (0, 4, red), (1, 5, red),
-        (2, 6, red), (3, 7, red),
-        # Y edges (green)
-        (0, 3, green), (1, 2, green),
-        (4, 7, green), (5, 6, green),
-        # Z edges (blue)
-        (0, 1, blue), (2, 3, blue),
-        (4, 5, blue), (6, 7, blue),
+        (0, 1, "Z"),
+        (1, 2, "Y"),
+        (2, 3, "Z"),
+        (3, 0, "Y"),
+        (4, 5, "Z"),
+        (5, 6, "Y"),
+        (6, 7, "Z"),
+        (7, 4, "Y"),
+        (0, 4, "X"),
+        (1, 5, "X"),
+        (2, 6, "X"),
+        (3, 7, "X"),
+    ]
+    axis_colors = {
+        "X": (0.956, 0.282, 0.322, 1),
+        "Y": (0.565, 0.812, 0.125, 1),
+        "Z": (0.196, 0.529, 0.929, 1),
+    }
+    return corners, edges, axis_colors
+
+
+def find_closest_trihedron(corners, edges, region, rv3d):
+    from bpy_extras.view3d_utils import location_3d_to_region_2d
+
+    # Project all corners to 2D and find the one with the lowest Y value
+    min_y = float("inf")
+    best_origin = None
+    for idx, corner in enumerate(corners):
+        screen_co = location_3d_to_region_2d(region, rv3d, corner)
+        if screen_co is not None and screen_co.y < min_y:
+            min_y = screen_co.y
+            best_origin = idx
+
+    trihedron = [
+        {"X": (0, 4), "Y": (0, 3), "Z": (0, 1)},
+        {"X": (1, 5), "Y": (1, 2), "Z": (1, 0)},
+        {"X": (2, 6), "Y": (2, 1), "Z": (2, 3)},
+        {"X": (3, 7), "Y": (3, 0), "Z": (3, 2)},
+        {"X": (4, 0), "Y": (4, 7), "Z": (4, 5)},
+        {"X": (5, 1), "Y": (5, 6), "Z": (5, 4)},
+        {"X": (6, 2), "Y": (6, 5), "Z": (6, 7)},
+        {"X": (7, 3), "Y": (7, 4), "Z": (7, 6)},
     ]
 
+    return trihedron[best_origin]
 
-    shader = gpu.shader.from_builtin('UNIFORM_COLOR')
+
+def draw_bounding_box_wire_cube():
+    selected_objects = [obj for obj in bpy.context.selected_objects if hasattr(obj, "bound_box")]
+    if not selected_objects:
+        return
+    corners, edges, axis_colors = get_combined_bounding_box_corners(selected_objects)
+    region = bpy.context.region
+    rv3d = bpy.context.region_data
+
+    shader = gpu.shader.from_builtin("UNIFORM_COLOR")
     gpu.state.line_width_set(2.0)
 
-    for i1, i2, color in edges:
+    # Draw the bounding box edges
+    for i1, i2, axis in edges:
+        color = (0.5, 0.5, 0.5, 0.75)
         shader.bind()
         shader.uniform_float("color", color)
-        batch = batch_for_shader(shader, 'LINES', {"pos": [corners[i1], corners[i2]]})
+        batch = batch_for_shader(shader, "LINES", {"pos": [corners[i1], corners[i2]]})
         batch.draw(shader)
 
-def draw_callback_px(self, context):
-    draw_bounding_box_wire_cube(context)
+    # Draw the trihedron edges
+    closest_indices = find_closest_trihedron(corners, edges, region, rv3d)
+    for axis in "XYZ":
+        pair = closest_indices[axis]
+        if pair is not None:
+            i1, i2 = pair
+            color = axis_colors[axis]
+            shader.bind()
+            shader.uniform_float("color", color)
+            batch = batch_for_shader(shader, "LINES", {"pos": [corners[i1], corners[i2]]})
+            batch.draw(shader)
+
+
+def draw_dimension_text():
+    from bpy_extras.view3d_utils import location_3d_to_region_2d
+    from bonsai.bim.module.drawing.helper import format_distance
+
+    selected_objects = [obj for obj in bpy.context.selected_objects if hasattr(obj, "bound_box")]
+    if not selected_objects:
+        return
+    corners, edges, axis_colors = get_combined_bounding_box_corners(selected_objects)
+    if not corners:
+        return
+
+    dims = mathutils.Vector(
+        (
+            (corners[4] - corners[0]).length,
+            (corners[3] - corners[0]).length,
+            (corners[1] - corners[0]).length,
+        )
+    )
+
+    region = bpy.context.region
+    rv3d = bpy.context.region_data
+    closest_indices = find_closest_trihedron(corners, edges, region, rv3d)
+
+    font_id = 0
+    blf.size(font_id, 20)
+    for axis in "XYZ":
+        pair = closest_indices[axis]
+        if pair is not None:
+            i1, i2 = pair
+            center = (corners[i1] + corners[i2]) / 2
+            value = getattr(dims, axis.lower())
+            screen_co = location_3d_to_region_2d(region, rv3d, center)
+            if screen_co is not None:
+                # Draw axis label in color
+                blf.position(font_id, screen_co.x, screen_co.y, 0)
+                blf.color(font_id, *axis_colors[axis])
+                blf.draw(font_id, f"{axis}: ")
+                axis_width, _ = blf.dimensions(font_id, f"{axis}: ")
+                # Draw value+unit in white
+                blf.position(font_id, screen_co.x + axis_width, screen_co.y, 0)
+                blf.color(font_id, 1, 1, 1, 1)
+                value_str = format_distance(value, hide_units=False)
+                blf.draw(font_id, value_str)
+
+    # To show the corners indexes, uncomment the following lines
+    # for idx, corner in enumerate(corners):
+    #    screen_co = location_3d_to_region_2d(region, rv3d, corner)
+    #    if screen_co is not None:
+    #        blf.position(font_id, screen_co.x, screen_co.y, 0)
+    #        blf.color(font_id, 1, 1, 0, 1)
+    #        blf.draw(font_id, str(idx))
+
 
 def enable_bounding_box_wire_cube():
-    global _draw_handler
-    if _draw_handler is None:
-        _draw_handler = bpy.types.SpaceView3D.draw_handler_add(
-            draw_callback_px, (None, bpy.context), 'WINDOW', 'POST_VIEW'
+    global _draw_handler_box, _draw_handler_text
+    if _draw_handler_box is None:
+        _draw_handler_box = bpy.types.SpaceView3D.draw_handler_add(
+            draw_bounding_box_wire_cube, (), "WINDOW", "POST_VIEW"
         )
+    if _draw_handler_text is None:
+        _draw_handler_text = bpy.types.SpaceView3D.draw_handler_add(draw_dimension_text, (), "WINDOW", "POST_PIXEL")
+
 
 def disable_bounding_box_wire_cube():
-    global _draw_handler
-    if _draw_handler is not None:
-        bpy.types.SpaceView3D.draw_handler_remove(_draw_handler, 'WINDOW')
-        _draw_handler = None
+    global _draw_handler_box, _draw_handler_text
+    if _draw_handler_box is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(_draw_handler_box, "WINDOW")
+        _draw_handler_box = None
+    if _draw_handler_text is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(_draw_handler_text, "WINDOW")
+        _draw_handler_text = None
+
 
 class UIData:
     data = {}
@@ -569,7 +710,7 @@ class BIM_PT_derived_coordinates(Panel):
         return context.active_object is not None
 
     def update_show_colored_dimensions(self, context):
-        bpy.ops.bim.set_local_orientation()
+        bpy.ops.bim.toggle_local_gizmo()
 
     def draw(self, context):
         if not DerivedCoordinatesData.is_loaded:
@@ -581,7 +722,6 @@ class BIM_PT_derived_coordinates(Panel):
             text += "*"
         row.operator("bim.edit_object_placement", text=text, icon="EXPORT")
 
-
         # --- XYZ Dimensions with checkbox ---
         row = self.layout.row(align=True)
         row.label(text="XYZ Dimensions")
@@ -589,12 +729,12 @@ class BIM_PT_derived_coordinates(Panel):
 
         row = self.layout.row(align=True)
         row.enabled = False
-        area_3d = next((area for area in context.screen.areas if area.type == 'VIEW_3D'), None)
-        space_3d = next((space for space in area_3d.spaces if space.type == 'VIEW_3D'), None)
+        area_3d = next((area for area in context.screen.areas if area.type == "VIEW_3D"), None)
+        space_3d = next((space for space in area_3d.spaces if space.type == "VIEW_3D"), None)
 
         if context.scene.show_colored_dimensions:
             enable_bounding_box_wire_cube()
-            for axis, icon, idx in [("X", 'STRIP_COLOR_01', 0), ("Y", 'STRIP_COLOR_04', 1), ("Z", 'STRIP_COLOR_05', 2)]:
+            for axis, icon, idx in [("X", "STRIP_COLOR_01", 0), ("Y", "STRIP_COLOR_04", 1), ("Z", "STRIP_COLOR_05", 2)]:
                 row.label(text="", icon=icon)
                 row.prop(context.active_object, "dimensions", text=axis, index=idx)
         else:
