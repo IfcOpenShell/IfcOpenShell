@@ -38,10 +38,17 @@ class AddArray(bpy.types.Operator, tool.Ifc.Operator):
         assert (element := tool.Ifc.get_entity(obj))
         ifc_file = tool.Ifc.get()
 
-        if not element.is_a("IfcElement") and not element.is_a("IfcAnnotation"):
+        allowed_types = (
+            "IfcElement",
+            "IfcAnnotation",
+            "IfcOpeningElement",
+            "IfcSpatialElement",
+        )
+
+        if not any(element.is_a(c) for c in allowed_types):
             self.report(
                 {"ERROR"},
-                f"Adding array to element of type '{element.is_a()}' is not supported. Supported types: IfcElement, IfcAnnotation.",
+                f"Adding array to element of type '{element.is_a()}' is not supported. Supported types: {','.join(allowed_types)}.",
             )
             return {"CANCELLED"}
 
