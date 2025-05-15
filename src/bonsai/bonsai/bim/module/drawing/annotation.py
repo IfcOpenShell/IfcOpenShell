@@ -129,7 +129,9 @@ class Annotator:
     def get_annotation_obj(
         drawing: ifcopenshell.entity_instance, object_type: str, data_type: tool.Drawing.ANNOTATION_DATA_TYPE
     ) -> bpy.types.Object:
+        assert bpy.context.scene
         camera = tool.Ifc.get_object(drawing)
+        assert isinstance(camera, bpy.types.Object)
         # those annotations you want to obey the depth of the 3d cursor
         if object_type == "PLAN_LEVEL":
             co1 = bpy.context.scene.cursor.location.copy()

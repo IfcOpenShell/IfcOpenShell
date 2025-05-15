@@ -391,8 +391,8 @@ class TestImportSurfaceAttributes(NewFile):
         props = tool.Style.get_style_props()
         style = ifc.create_entity("IfcSurfaceStyle", "Name", "BOTH")
         subject.import_surface_attributes(style)
-        assert props.attributes.get("Name").string_value == "Name"
-        assert props.attributes.get("Side").enum_value == "BOTH"
+        assert props.attributes["Name"].string_value == "Name"
+        assert props.attributes["Side"].enum_value == "BOTH"
 
     def test_importing_surface_attributes_twice(self):
         tool.Ifc.set(ifc := ifcopenshell.file())
@@ -400,12 +400,12 @@ class TestImportSurfaceAttributes(NewFile):
         props = tool.Style.get_style_props()
         subject.import_surface_attributes(style)
         assert len(props.attributes) == 2
-        assert props.attributes.get("Name").string_value == "Name"
-        assert props.attributes.get("Side").enum_value == "BOTH"
+        assert props.attributes["Name"].string_value == "Name"
+        assert props.attributes["Side"].enum_value == "BOTH"
         subject.import_surface_attributes(style)
         assert len(props.attributes) == 2
-        assert props.attributes.get("Name").string_value == "Name"
-        assert props.attributes.get("Side").enum_value == "BOTH"
+        assert props.attributes["Name"].string_value == "Name"
+        assert props.attributes["Side"].enum_value == "BOTH"
 
 
 class TestImportPresentationStyles(NewFile):

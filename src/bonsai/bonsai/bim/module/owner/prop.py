@@ -20,6 +20,7 @@ import bpy
 import bonsai.tool as tool
 from bonsai.bim.prop import StrProperty, Attribute
 from bonsai.bim.module.owner.data import OwnerData, ActorData, ObjectActorData
+from typing import TYPE_CHECKING, Literal
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -33,45 +34,45 @@ from bpy.props import (
 )
 
 
-def get_user_person(self, context):
+def get_user_person(self: "BIMOwnerProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not OwnerData.is_loaded:
         OwnerData.load()
     return OwnerData.data["user_person"]
 
 
-def get_user_organisation(self, context):
+def get_user_organisation(self: "BIMOwnerProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not OwnerData.is_loaded:
         OwnerData.load()
     return OwnerData.data["user_organisation"]
 
 
-def get_the_actor(self, context):
+def get_the_actor(self: "BIMOwnerProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not ActorData.is_loaded:
         ActorData.load()
     return ActorData.data["the_actor"]
 
 
-def get_actor(self, context):
+def get_actor(self: "BIMOwnerProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not ObjectActorData.is_loaded:
         ObjectActorData.load()
     return ObjectActorData.data["actor"]
 
 
-def update_actor_type(self, context):
+def update_actor_type(self: "BIMOwnerProperties", context: bpy.types.Context) -> None:
     ActorData.data["the_actor"] = ActorData.the_actor()
 
 
-def update_actor_class(self, context):
+def update_actor_class(self: "BIMOwnerProperties", context: bpy.types.Context) -> None:
     ActorData.data["actors"] = ActorData.actors()
 
 
-def get_actor_class(self, context):
+def get_actor_class(self: "BIMOwnerProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not ActorData.is_loaded:
         ActorData.load()
     return ActorData.data["actor_class"]
 
 
-def get_actor_type(self, context):
+def get_actor_type(self: "BIMOwnerProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
     if not ActorData.is_loaded:
         ActorData.load()
     return ActorData.data["actor_type"]
@@ -119,3 +120,30 @@ class BIMOwnerProperties(PropertyGroup):
         items=get_the_actor, name="Actor", description="This entity represents an individual human being."
     )
     actor: EnumProperty(items=get_actor, name="Actor")
+
+    if TYPE_CHECKING:
+        active_person_id: int
+        person_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        middle_names: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        prefix_titles: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        suffix_titles: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        active_organisation_id: int
+        organisation_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        active_role_id: int
+        role_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        active_address_id: int
+        address_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        address_lines: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        telephone_numbers: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        facsimile_numbers: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        electronic_mail_addresses: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        messaging_ids: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        user_person: str
+        user_organisation: str
+        active_user_id: int
+        active_actor_id: int
+        actor_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        actor_class: Literal["IfcActor", "IfcOccupant"]
+        actor_type: str
+        the_actor: str
+        actor: str

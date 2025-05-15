@@ -61,6 +61,7 @@ if TYPE_CHECKING:
         BIMAnnotationProperties,
         BIMTextProperties,
         BIMCameraProperties,
+        BIMAssignedProductProperties,
     )
     from bonsai.bim.module.drawing.prop import Drawing as DrawingProperties
 
@@ -105,15 +106,17 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_document_props(cls) -> DocProperties:
-        return bpy.context.scene.DocProperties
+        assert (scene := bpy.context.scene)
+        return scene.DocProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_annotation_props(cls) -> BIMAnnotationProperties:
-        return bpy.context.scene.BIMAnnotationProperties
+        assert (scene := bpy.context.scene)
+        return scene.BIMAnnotationProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_text_props(cls, obj: bpy.types.Object) -> BIMTextProperties:
-        return obj.BIMTextProperties
+        return obj.BIMTextProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def get_camera_props(cls, camera: Union[bpy.types.Object, bpy.types.Camera]) -> BIMCameraProperties:
@@ -124,7 +127,11 @@ class Drawing(bonsai.core.tool.Drawing):
             data = camera
         else:
             assert isinstance(data := camera.data, bpy.types.Camera)
-        return data.BIMCameraProperties
+        return data.BIMCameraProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_object_assigned_product_props(cls, obj: bpy.types.Object) -> BIMAssignedProductProperties:
+        return obj.BIMAssignedProductProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def canonicalise_class_name(cls, name: str) -> str:
@@ -406,7 +413,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def disable_editing_assigned_product(cls, obj: bpy.types.Object) -> None:
-        obj.BIMAssignedProductProperties.is_editing_product = False
+        props = cls.get_object_assigned_product_props(obj)
+        props.is_editing_product = False
 
     @classmethod
     def enable_editing(cls, obj: bpy.types.Object) -> None:
@@ -447,7 +455,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def enable_editing_assigned_product(cls, obj: bpy.types.Object) -> None:
-        obj.BIMAssignedProductProperties.is_editing_product = True
+        props = cls.get_object_assigned_product_props(obj)
+        props.is_editing_product = True
 
     @classmethod
     def ensure_unique_drawing_name(cls, name: str) -> str:
@@ -1045,11 +1054,14 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def import_assigned_product(cls, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
+        assert element
         product = cls.get_assigned_product(element)
+        props = cls.get_object_assigned_product_props(obj)
         if product:
-            obj.BIMAssignedProductProperties.relating_product = tool.Ifc.get_object(product)
+            assert isinstance(product_obj := tool.Ifc.get_object(product), bpy.types.Object)
+            props.relating_product = product_obj
         else:
-            obj.BIMAssignedProductProperties.relating_product = None
+            props.relating_product = None
 
     @classmethod
     def open_with_user_command(cls, user_command: str, path: str) -> None:

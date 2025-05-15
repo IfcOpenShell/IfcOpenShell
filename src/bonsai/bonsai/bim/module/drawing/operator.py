@@ -1619,8 +1619,9 @@ class AddAnnotation(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = tool.Drawing.get_annotation_props()
-        if not (drawing := tool.Ifc.get_entity(context.scene.camera)):
-            self.report({"WARNING"}, "Not a BIM camera")
+        dprops = tool.Drawing.get_document_props()
+        if not (drawing := dprops.get_active_drawing()):
+            self.report({"WARNING"}, "No active drawing.")
             return
 
         obj = core.add_annotation(
@@ -2643,6 +2644,7 @@ class ActivateDrawingStyle(bpy.types.Operator, tool.Ifc.Operator):
 
     def parse_filter_query(self, mode: Literal["INCLUDE", "EXCLUDE"], context: bpy.types.Context) -> None:
         if mode == "INCLUDE":
+            assert context.scene
             objects = context.scene.objects
         elif mode == "EXCLUDE":
             objects = context.visible_objects
@@ -3103,6 +3105,7 @@ class OrderTextLiteralDown(bpy.types.Operator):
         return {"FINISHED"}
 
 
+# Ifc Operator is unnecessary, because suboperator is handling IFC changes.
 class AssignSelectedObjectAsProduct(bpy.types.Operator):
     bl_idname = "bim.assign_selected_as_product"
     bl_label = "Assign Selected Object As Product"
@@ -3116,18 +3119,25 @@ class AssignSelectedObjectAsProduct(bpy.types.Operator):
         return True
 
     def execute(self, context):
+        assert bpy.context.view_layer
         objs = context.selected_objects[:]
-        obj1 = objs[0]
+        obj1, obj2 = objs
         element1 = tool.Ifc.get_entity(obj1)
-        obj2 = objs[1]
         element2 = tool.Ifc.get_entity(obj2)
+        assert element1 and element2
         if element1.is_a("IfcAnnotation"):
             other_selected_object = obj2
             bpy.context.view_layer.objects.active = obj1
         elif element2.is_a("IfcAnnotation"):
             other_selected_object = obj1
             bpy.context.view_layer.objects.active = obj2
-        context.active_object.BIMAssignedProductProperties.relating_product = other_selected_object
+        else:
+            self.report({"ERROR"}, "One of the selected objects must be IfcAnnotation.")
+            return {"CANCELLED"}
+
+        assert (active_obj := context.active_object)
+        props = tool.Drawing.get_object_assigned_product_props(active_obj)
+        props.relating_product = other_selected_object
         bpy.ops.bim.edit_assigned_product()
         return {"FINISHED"}
 
@@ -3139,9 +3149,11 @@ class EditAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         product = None
-        if context.active_object.BIMAssignedProductProperties.relating_product:
-            product = tool.Ifc.get_entity(context.active_object.BIMAssignedProductProperties.relating_product)
-        core.edit_assigned_product(tool.Ifc, tool.Drawing, obj=context.active_object, product=product)
+        assert (obj := context.active_object)
+        props = tool.Drawing.get_object_assigned_product_props(obj)
+        if props.relating_product:
+            product = tool.Ifc.get_entity(props.relating_product)
+        core.edit_assigned_product(tool.Ifc, tool.Drawing, obj=obj, product=product)
         tool.Blender.update_viewport()
 
 
@@ -3151,6 +3163,7 @@ class EnableEditingAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        assert context.active_object
         core.enable_editing_assigned_product(tool.Drawing, obj=context.active_object)
 
 
@@ -3160,6 +3173,7 @@ class DisableEditingAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        assert context.active_object
         core.disable_editing_assigned_product(tool.Drawing, obj=context.active_object)
 
 
@@ -3203,6 +3217,7 @@ class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
     document_type: Literal["SHEET", "TITLEBLOCK", "EMBEDDED"]
 
     def invoke(self, context, event):
+        assert context.window_manager
         self.props = tool.Drawing.get_document_props()
         sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
         if sheet.is_a("IfcDocumentInformation"):

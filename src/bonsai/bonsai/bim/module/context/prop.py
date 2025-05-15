@@ -30,6 +30,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING
 
 
 class BIMContextProperties(PropertyGroup):
@@ -66,3 +67,10 @@ class BIMContextProperties(PropertyGroup):
     )
     active_context_id: IntProperty(name="Active Context Id")
     context_attributes: CollectionProperty(name="Context Attributes", type=Attribute)
+
+    if TYPE_CHECKING:
+        contexts: str
+        subcontexts: str
+        target_views: str
+        active_context_id: int
+        context_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]

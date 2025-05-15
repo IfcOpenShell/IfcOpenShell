@@ -104,6 +104,7 @@ class TestExportUnitAttributes(NewFile):
 
 class TestGetSceneUnitName(NewFile):
     def test_getting_an_imperial_name(self):
+        assert bpy.context.scene
         props = tool.Blender.get_bim_props()
         bpy.context.scene.unit_settings.system = "IMPERIAL"
         bpy.context.scene.unit_settings.length_unit = "MILES"
@@ -130,12 +131,14 @@ class TestGetSceneUnitName(NewFile):
         assert subject.get_scene_unit_name("VOLUMEUNIT") == "cubic inch"
 
     def test_getting_a_name_with_no_unit_system(self):
+        assert bpy.context.scene
         bpy.context.scene.unit_settings.system = "NONE"
         assert subject.get_scene_unit_name("LENGTHUNIT") == "foot"
 
 
 class TestGetSceneUnitSIPrefix:
     def test_run(self):
+        assert bpy.context.scene
         bpy.context.scene.unit_settings.system = "METRIC"
         bpy.context.scene.unit_settings.length_unit = "METERS"
         assert subject.get_scene_unit_si_prefix("LENGTHUNIT") is None
@@ -298,6 +301,7 @@ class TestImportUnits(NewFile):
 
 class TestIsSceneUnitMetric(NewFile):
     def test_run(self):
+        assert bpy.context.scene
         props = bpy.context.scene.unit_settings
         props.system = "METRIC"
         assert subject.is_scene_unit_metric() is True

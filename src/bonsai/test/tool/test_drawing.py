@@ -21,6 +21,7 @@ from pathlib import Path
 import bpy
 import mathutils
 import ifcopenshell
+import ifcopenshell.api.root
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import bonsai.core.tool
@@ -68,7 +69,7 @@ class TestCreateCamera(NewFile):
 class TestCreateSvgSheet(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
-        ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
         tool.Ifc.set(ifc)
         ifc_path = Path("test/files/temp/test.ifc").absolute()
         bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
@@ -92,6 +93,7 @@ class TestDeleteCollection(NewFile):
 
 class TestDeleteDrawingElements(NewFile):
     def test_run(self):
+        assert bpy.context.scene
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
@@ -155,13 +157,15 @@ class TestDisableEditingText(NewFile):
 class TestDisableEditingAssignedProduct(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMAssignedProductProperties.is_editing_product = True
+        props = subject.get_object_assigned_product_props(obj)
+        props.is_editing_product = True
         subject.disable_editing_assigned_product(obj)
-        assert obj.BIMAssignedProductProperties.is_editing_product == False
+        assert props.is_editing_product == False
 
 
 class TestEnableEditing(NewFile):
     def test_run(self):
+        assert bpy.context.scene
         obj = bpy.data.objects.new("Object", None)
         bpy.context.scene.collection.objects.link(obj)
         subject.enable_editing(obj)
@@ -211,8 +215,9 @@ class TestEnableEditingText(NewFile):
 class TestEnableEditingAssignedProduct(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
+        props = subject.get_object_assigned_product_props(obj)
         subject.enable_editing_assigned_product(obj)
-        assert obj.BIMAssignedProductProperties.is_editing_product == True
+        assert props.is_editing_product == True
 
 
 class TestEnsureUniqueDrawingName(NewFile):
@@ -314,6 +319,7 @@ class TestGetDocumentUri(NewFile):
 
 class TestGetDrawingCollection(NewFile):
     def test_run(self):
+        assert bpy.context.scene
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", None)
@@ -378,6 +384,7 @@ class TestGenerateDrawingMatrix(NewFile):
         assert subject.generate_drawing_matrix("PLAN_VIEW", 0) == mathutils.Matrix()
 
     def test_creating_a_plan_view_at_the_cursor_at_a_storey(self):
+        assert bpy.context.scene
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", None)
@@ -397,6 +404,7 @@ class TestGenerateDrawingMatrix(NewFile):
         )
 
     def test_creating_an_rcp_at_the_cursor_at_a_storey(self):
+        assert bpy.context.scene
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         obj = bpy.data.objects.new("Object", None)
@@ -410,48 +418,56 @@ class TestGenerateDrawingMatrix(NewFile):
         )
 
     def test_creating_a_north_elevation_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("ELEVATION_VIEW", "NORTH") == mathutils.Matrix(
             ((-1, 0, 0, 1), (0, 0, 1, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_a_south_elevation_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("ELEVATION_VIEW", "SOUTH") == mathutils.Matrix(
             ((1, 0, 0, 1), (0, 0, -1, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_an_east_elevation_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("ELEVATION_VIEW", "EAST") == mathutils.Matrix(
             ((0, 0, 1, 1), (1, 0, 0, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_a_west_elevation_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("ELEVATION_VIEW", "WEST") == mathutils.Matrix(
             ((0, 0, -1, 1), (-1, 0, 0, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_a_north_section_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("SECTION_VIEW", "NORTH") == mathutils.Matrix(
             ((1, 0, 0, 1), (0, 0, -1, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_a_south_section_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("SECTION_VIEW", "SOUTH") == mathutils.Matrix(
             ((-1, 0, 0, 1), (0, 0, 1, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_an_east_section_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("SECTION_VIEW", "EAST") == mathutils.Matrix(
             ((0, 0, -1, 1), (-1, 0, 0, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
 
     def test_creating_a_west_section_at_the_cursor(self):
+        assert bpy.context.scene
         bpy.context.scene.cursor.location = (1.0, 2.0, 3.0)
         assert subject.generate_drawing_matrix("SECTION_VIEW", "WEST") == mathutils.Matrix(
             ((0, 0, 1, 1), (1, 0, 0, 2), (0, 1, 0, 3), (0, 0, 0, 1))
@@ -598,9 +614,9 @@ class TestImportTextAttributes(NewFile):
         subject.import_text_attributes(obj)
         props = tool.Drawing.get_text_props(obj)
         literal_props = props.literals[0]
-        assert literal_props.attributes.get("Literal").string_value == "Literal"
-        assert literal_props.attributes.get("Path").enum_value == "RIGHT"
-        assert literal_props.attributes.get("BoxAlignment").string_value == "bottom-left"
+        assert literal_props.attributes["Literal"].string_value == "Literal"
+        assert literal_props.attributes["Path"].enum_value == "RIGHT"
+        assert literal_props.attributes["BoxAlignment"].string_value == "bottom-left"
 
 
 class TestImportAssignedProduct(NewFile):
@@ -615,7 +631,8 @@ class TestImportAssignedProduct(NewFile):
         tool.Ifc.link(wall, wall_obj)
         tool.Ifc.link(label, label_obj)
         subject.import_assigned_product(label_obj)
-        assert label_obj.BIMAssignedProductProperties.relating_product == wall_obj
+        props = subject.get_object_assigned_product_props(label_obj)
+        assert props.relating_product == wall_obj
 
     def test_doing_nothing_if_no_product_to_import(self):
         ifc = ifcopenshell.file()
@@ -624,7 +641,8 @@ class TestImportAssignedProduct(NewFile):
         label_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(label, label_obj)
         subject.import_assigned_product(label_obj)
-        assert label_obj.BIMAssignedProductProperties.relating_product is None
+        props = subject.get_object_assigned_product_props(label_obj)
+        assert props.relating_product is None
 
 
 class TestOpenSchedule(NewFile):
