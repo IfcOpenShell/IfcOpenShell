@@ -18,6 +18,7 @@
 
 import os
 from pathlib import Path
+import numpy as np
 import bpy
 import mathutils
 import ifcopenshell
@@ -472,6 +473,15 @@ class TestGenerateDrawingMatrix(NewFile):
         assert subject.generate_drawing_matrix("SECTION_VIEW", "WEST") == mathutils.Matrix(
             ((0, 0, 1, 1), (1, 0, 0, 2), (0, 1, 0, 3), (0, 0, 0, 1))
         )
+
+    def test_aligning_model_view_camera_to_viewport(self):
+        assert (space := tool.Blender.get_view3d_space())
+        assert (r3d := space.region_3d)
+        viewport = r3d.view_matrix.inverted()
+        generated = subject.generate_drawing_matrix("MODEL_VIEW", "PERSPECTIVE")
+        assert np.allclose(generated, viewport)
+        generated = subject.generate_drawing_matrix("MODEL_VIEW", "ORTHOGRAPHIC")
+        assert np.allclose(generated, viewport)
 
 
 class TestGenerateSheetIdentification(NewFile):
