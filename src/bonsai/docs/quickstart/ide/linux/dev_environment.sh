@@ -1,11 +1,11 @@
 #!/bin/bash
 # Please update REPO_PATH and BLENDER_PATH in the script below.
-# Default BLENDER_PATH on Mac: "/Users/$USER/Library/Application Support/Blender/4.3"
-# Default BLENDER_PATH on Linux: "$HOME/.config/blender/4.3"
+# Default BLENDER_PATH on Mac: "/Users/$USER/Library/Application Support/Blender/4.4"
+# Default BLENDER_PATH on Linux: "$HOME/.config/blender/4.4"
 # REPO_PATH="/path/to/where/your/git/repository/is/cloned/IfcOpenShell"
 set -e
 REPO_PATH="$HOME/bonsaiDevel/IfcOpenShell"
-BLENDER_PATH="$HOME/.config/blender/4.2"
+BLENDER_PATH="$HOME/.config/blender/4.4"
 PACKAGE_PATH="${BLENDER_PATH}/extensions/.local/lib/python3.11/site-packages"
 # If you are installing offline, use this instead:
 # BONSAI_PATH="${BLENDER_PATH}/extensions/user_default/bonsai"
@@ -39,7 +39,19 @@ echo "BONSAI PATH (...../extensions/raw_githubusercontent_com/bonsai): ${BONSAI_
 read -p "Press any key to START or CTRL-C to stop ..."
 
 # Copy over compiled IfcOpenShell files
-cp "${PACKAGE_PATH}/ifcopenshell/"*_wrapper* "${PWD}/src/ifcopenshell-python/ifcopenshell/"
+for src_file in "${PACKAGE_PATH}/ifcopenshell/"*_wrapper*; do
+    dest_file="${PWD}/src/ifcopenshell-python/ifcopenshell/$(basename "$src_file")"
+    # Only copy if source and destination are not the same file
+    if [ "$(realpath "$src_file")" != "$(realpath "$dest_file")" ]; then
+        cp "$src_file" "$dest_file"
+        echo "Copied: $(basename "$src_file")"
+    else
+        echo "Skipped (same file): $(basename "$src_file")"
+    fi
+done
+
+
+
 
 # Remove extension and link to Git
 rm "${BONSAI_PATH}/__init__.py"
@@ -74,10 +86,9 @@ ln -s "${PWD}/src/ifcfm/ifcfm" "${PACKAGE_PATH}/ifcfm"
 
 # Manually download some third party dependencies
 cd "${PACKAGE_PATH}/bonsai/bim/data/gantt"
-wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
-wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
+wget -O jsgantt.js https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
+wget -O jsgantt.css https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
 
 [ -d "$PACKAGE_PATH/bonsai/bim/schema" ] || mkdir -p "$PACKAGE_PATH/bonsai/bim/schema"
 cd "${PACKAGE_PATH}/bonsai/bim/schema"
-wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
-
+wget -O Brick.ttl https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
