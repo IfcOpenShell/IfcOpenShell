@@ -83,7 +83,6 @@ classes = (
     operator.RemoveSchedule,
     operator.RemoveSheet,
     operator.RemoveTextLiteral,
-    operator.ResizeText,
     operator.SaveDrawingStyle,
     operator.SaveDrawingStylesData,
     operator.SelectAllDrawings,

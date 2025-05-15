@@ -2241,19 +2241,6 @@ class SelectDocIfcFile(bpy.types.Operator, ImportHelper):
         return {"FINISHED"}
 
 
-class ResizeText(bpy.types.Operator):
-    bl_idname = "bim.resize_text"
-    bl_label = "Resize Text"
-    bl_options = {"REGISTER", "UNDO"}
-    # TODO: check undo redo
-
-    def execute(self, context):
-        for obj in tool.Blender.get_object_bim_props(context.scene.camera).collection.objects:
-            if isinstance(obj.data, bpy.types.TextCurve):
-                annotation.Annotator.resize_text(obj)
-        return {"FINISHED"}
-
-
 class RemoveDrawing(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_drawing"
     bl_label = "Remove Drawing"
