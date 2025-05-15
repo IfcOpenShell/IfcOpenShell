@@ -426,7 +426,7 @@ class EnableEditingZone(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class DisableEditingZone(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingZone(bpy.types.Operator):
     bl_idname = "bim.disable_editing_zone"
     bl_label = "Disable Editing Zone"
     bl_options = {"REGISTER", "UNDO"}

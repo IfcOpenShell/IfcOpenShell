@@ -1724,7 +1724,7 @@ class SelectAllSheets(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class OpenSheet(bpy.types.Operator, tool.Ifc.Operator):
+class OpenSheet(bpy.types.Operator):
     bl_idname = "bim.open_sheet"
     bl_label = "Open Sheet"
     bl_description = (
