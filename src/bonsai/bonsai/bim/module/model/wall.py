@@ -1127,7 +1127,7 @@ class DumbWallJoiner:
         p3 = (matrix1i @ matrix2 @ np.concatenate((p3, (0, 1))))[:2]
         p4 = (matrix1i @ matrix2 @ np.concatenate((p4, (0, 1))))[:2]
 
-        if not np.isclose(p1[1], p4[1]) or not np.isclose(p3[1], p4[1]):
+        if not np.isclose(p1[1], p4[1], atol=1e-02) or not np.isclose(p3[1], p4[1], atol=1e-02):
             return
 
         x_ordinates = tuple(co[0] for co in (p1, p2, p3, p4))
