@@ -30,52 +30,6 @@ from typing import Optional
 
 class Annotator:
     @staticmethod
-    def add_text(related_element: Optional[ifcopenshell.entity_instance] = None) -> bpy.types.Object:
-        curve = bpy.data.curves.new(type="FONT", name="Text")
-        curve.body = "TEXT"
-        obj = bpy.data.objects.new("Text", curve)
-        obj.matrix_world = bpy.context.scene.camera.matrix_world
-        if related_element is None:
-            location, _, _, _ = Annotator.get_placeholder_coords(bpy.context)
-        else:
-            curve.BIMAssignedProductProperties.related_element = related_element
-            location = related_element.location
-        obj.location = location
-        obj.hide_render = True
-        font = bpy.data.fonts.get("OpenGost TypeB TT")
-        if not font:
-            font = bpy.data.fonts.load(
-                tool.Blender.get_data_dir_path(Path("fonts") / "OpenGost Type B TT.ttf").__str__()
-            )
-            font.name = "OpenGost Type B TT"
-        curve.font = font
-        props = tool.Drawing.get_text_props(obj)
-        props.font_size = "2.5"
-        collection = tool.Blender.get_object_bim_props(bpy.context.scene.camera).collection
-        collection.objects.link(obj)
-        Annotator.resize_text(obj)
-        return obj
-
-    @staticmethod
-    def resize_text(text_obj: bpy.types.Object) -> None:
-        camera = None
-        group = tool.Drawing.get_drawing_group(tool.Ifc.get_entity(text_obj))
-        for element in tool.Drawing.get_drawing_elements(group):
-            if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-                camera = tool.Ifc.get_object(element)
-                break
-        if not camera:
-            return
-        # This is a magic number for OpenGost
-        font_size = 1.6 / 1000
-        props = tool.Drawing.get_text_props(text_obj)
-        font_size *= float(props.font_size)
-
-        font_size /= tool.Drawing.get_scale_ratio(tool.Drawing.get_diagram_scale(camera)["Scale"])
-
-        text_obj.data.size = font_size
-
-    @staticmethod
     def add_line_to_annotation(
         obj: bpy.types.Object, co1: Optional[Vector] = None, co2: Optional[Vector] = None
     ) -> bpy.types.Object:
