@@ -367,7 +367,6 @@ class DrawingStyle(PropertyGroup):
     )
     include_query: StringProperty(name="Include Query")
     exclude_query: StringProperty(name="Exclude Query")
-    attributes: CollectionProperty(name="Attributes", type=StrProperty)
 
     if TYPE_CHECKING:
         name: str
@@ -375,7 +374,6 @@ class DrawingStyle(PropertyGroup):
         render_type: RenderType
         include_query: str
         exclude_query: str
-        attributes: bpy.types.bpy_prop_collection_idprop[StrProperty]
 
 
 class RasterStyleProperty(enum.Enum):
