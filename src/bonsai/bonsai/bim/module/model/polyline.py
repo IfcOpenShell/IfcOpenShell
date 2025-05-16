@@ -651,7 +651,7 @@ class PolylineOperator:
             else:
                 reference_point = Vector((0.0, 0.0, 0.0))
             self.tool_state.plane_origin = Vector((reference_point.x, reference_point.y, reference_point.z))
-            
+
         if x:
             if event.shift and event.value == "PRESS" and event.type == "X":
                 self.tool_state.use_default_container = False
@@ -675,7 +675,6 @@ class PolylineOperator:
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
                 get_plane_origin()
-
 
     def handle_instructions(
         self, context: bpy.types.Context, custom_instructions: dict = {}, custom_info: str = "", overwrite: bool = False
