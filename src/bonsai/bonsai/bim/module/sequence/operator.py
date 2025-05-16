@@ -512,7 +512,7 @@ class AssignProcess(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Assign Process"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
-    related_object_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+    related_object_type: bpy.props.EnumProperty(  # pyright: ignore [reportRedeclaration]
         items=[(i, i, "") for i in get_args(tool.Sequence.RELATED_OBJECT_TYPE)],
     )
     related_object: bpy.props.IntProperty()
@@ -549,7 +549,7 @@ class UnassignProcess(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Unassign Process"
     bl_options = {"REGISTER", "UNDO"}
     task: bpy.props.IntProperty()
-    related_object_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+    related_object_type: bpy.props.EnumProperty(  # pyright: ignore [reportRedeclaration]
         items=[(i, i, "") for i in get_args(tool.Sequence.RELATED_OBJECT_TYPE)],
     )
     related_object: bpy.props.IntProperty()

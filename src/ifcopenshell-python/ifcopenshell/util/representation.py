@@ -142,7 +142,7 @@ def get_representation(
     :param target_view: A TargetView string, or any if left blank.
     :return: The first IfcShapeRepresentation matching the criteria.
     """
-    for r in get_representations_iter(element):  # type: ignore
+    for r in get_representations_iter(element):
         if is_representation_of_context(r, context, subcontext, target_view):
             return r
 

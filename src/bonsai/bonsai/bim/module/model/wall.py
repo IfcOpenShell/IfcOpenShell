@@ -133,7 +133,7 @@ class AlignWall(bpy.types.Operator):
     'Int.': align to the INTERIOR face"""
 
     AlignType = Literal["CENTER", "EXTERIOR", "INTERIOR"]
-    align_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+    align_type: bpy.props.EnumProperty(  # pyright: ignore [reportRedeclaration]
         items=((i, i, "") for i in get_args(AlignType))
     )
 

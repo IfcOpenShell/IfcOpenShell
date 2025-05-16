@@ -36,3 +36,5 @@ extend-exclude = '''
 reportInvalidTypeForm = false
 disableBytesTypePromotions = true
 reportUnnecessaryTypeIgnoreComment = true
+# Just to add a quick insert of `# pyright: ignore[xxx]` comments in Pylance.
+enableTypeIgnoreComments = false
