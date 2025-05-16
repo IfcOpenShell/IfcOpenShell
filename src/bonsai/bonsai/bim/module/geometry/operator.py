@@ -3435,7 +3435,6 @@ class UnassignRepresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
         ifcopenshell.api.layer.unassign_layer(ifc_file, [representation], layer)
         return {"FINISHED"}
 
-
 class CreateInstance(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.create_instance"
     bl_label = "IFC Create Instance"
