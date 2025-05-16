@@ -589,6 +589,7 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                     tool.Material.ensure_material_unassigned([element_type])
                 ifcopenshell.api.material.unassign_material(self.file, products=[product])
                 tool.Material.ensure_material_unassigned([product])
+                data = obj.data  # Required after ensure_material_unassigned
             else:
                 # These objects are parametrically based on an axis and should not be modified as a mesh
                 if extrusion := tool.Model.get_extrusion(old_representation):
