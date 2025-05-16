@@ -2903,6 +2903,30 @@ class MeasureXYZDimensionsTool(bpy.types.Operator):
                 batch.draw(shader)
 
     @classmethod
+    def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
+        # shader = self.line_shader if shader_type == "LINES" else self.shader
+        shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+        shader.uniform_float("color", color)
+        batch.draw(shader)
+
+    @classmethod
+    def draw_text_background(self, context, coords_dim, text_dim):
+        padding = 5
+        theme = context.preferences.themes.items()[0][1]
+        color = (*theme.user_interface.wcol_menu_back.inner[:3], 0.5)  # unwrap color values and adds alpha
+        top_left = (coords_dim[0] - padding, coords_dim[1] + text_dim[1] + padding)
+        bottom_left = (coords_dim[0] - padding, coords_dim[1] - padding)
+        top_right = (coords_dim[0] + text_dim[0] + padding, coords_dim[1] + text_dim[1] + padding)
+        bottom_right = (coords_dim[0] + text_dim[0] + padding, coords_dim[1] - padding)
+
+        verts = [top_left, bottom_left, top_right, bottom_right]
+        gpu.state.blend_set("ALPHA")
+        self.draw_batch("TRIS", verts, color, [(0, 1, 2), (1, 2, 3)])
+
+    @classmethod
     def draw_dimension_text(cls):
         from bpy_extras.view3d_utils import location_3d_to_region_2d
         from bonsai.bim.module.drawing.helper import format_distance
@@ -2923,8 +2947,16 @@ class MeasureXYZDimensionsTool(bpy.types.Operator):
         region = bpy.context.region
         rv3d = bpy.context.region_data
         closest_indices = cls.find_closest_trihedron(corners, edges, region, rv3d)
+
+        addon_prefs = tool.Blender.get_addon_preferences()
         font_id = 0
-        blf.size(font_id, 20)
+        font_size = tool.Blender.scale_font_size(12)
+        blf.size(font_id, font_size)
+        blf.enable(font_id, blf.SHADOW)
+        blf.shadow(font_id, 6, 0, 0, 0, 1)
+        color = addon_prefs.decorations_colour
+        blf.color(font_id, *color)
+
         for axis in "XYZ":
             pair = closest_indices[axis]
             if pair is not None:
@@ -2934,12 +2966,10 @@ class MeasureXYZDimensionsTool(bpy.types.Operator):
                 screen_co = location_3d_to_region_2d(region, rv3d, center)
                 if screen_co is not None:
                     blf.position(font_id, screen_co.x, screen_co.y, 0)
-                    blf.color(font_id, *axis_colors[axis])
-                    blf.draw(font_id, f"{axis}: ")
-                    axis_width, _ = blf.dimensions(font_id, f"{axis}: ")
-                    blf.position(font_id, screen_co.x + axis_width, screen_co.y, 0)
                     blf.color(font_id, 1, 1, 1, 1)
-                    value_str = format_distance(value, hide_units=False)
+                    value_str = f"D{axis.lower()}: " + format_distance(value, hide_units=False)
+                    text_length = blf.dimensions(font_id, value_str)
+                    cls.draw_text_background(bpy.context, screen_co, text_length)
                     blf.draw(font_id, value_str)
 
     @classmethod
