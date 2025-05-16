@@ -61,15 +61,28 @@ class External(svgwrite.container.Group):
 
 class SvgWriter:
     metadata: list[str]
+    resource_paths: dict[tool.Drawing.ResourceType, Union[str, None]]
 
-    def __init__(self):
+    def __init__(
+        self,
+        *,
+        camera_width: float,
+        camera_height: float,
+        camera: bpy.types.Object,
+        camera_projection: Vector,
+        scale: float = 1 / 100,  # 1:100
+        human_scale: str = "NTS",
+    ):
         self.data_dir = None
-        self.human_scale = "NTS"
+        self.human_scale = human_scale
         self.metadata = []
-        self.scale = 1 / 100  # 1:100
-        self.camera_width = None
-        self.camera_height = None
+        self.scale = scale
+        self.camera = camera
+        self.camera_width = camera_width
+        self.camera_height = camera_height
+        self.camera_projection = camera_projection
         self.resource_paths = {}
+        self.calculate_scale()
 
     def create_blank_svg(self, output_path: str) -> Self:
         self.calculate_scale()
@@ -93,7 +106,7 @@ class SvgWriter:
 
     def setup_drawing_resource_paths(self, element: ifcopenshell.entity_instance) -> None:
         pset = ifcopenshell.util.element.get_pset(element, "EPset_Drawing")
-        for resource in ("Stylesheet", "Markers", "Symbols", "Patterns", "ShadingStyles"):
+        for resource in tool.Drawing.RESOURCE_TYPES:
             resource_path = pset.get(resource)
             if not resource_path:
                 self.resource_paths[resource] = None
@@ -1085,7 +1098,7 @@ class SvgWriter:
         # When rewriting to use polylines, we should use this normal instead.
         # center = tool.Cad.get_center_of_arc([p.to_3d() for p in arc_points], None).to_2d()
         # normal = mathutils.geometry.normal([arc_end_pts[0], arc_end_pts[1], center])
-        # normal = Vector(self.camera_projection)
+        # normal = self.camera_projection
         # dir1 = (arc_end_pts[0] - center).normalized()
         # arc_mid_dir = (arc_end_pts[1] - center).normalized()
 
@@ -1462,9 +1475,9 @@ class SvgWriter:
         # TODO is this needlessly complex?
         return self.camera.matrix_world.inverted() @ geometry.intersect_line_plane(
             point.xyz,
-            point.xyz - Vector(self.camera_projection),
+            point.xyz - self.camera_projection,
             self.camera.location,
-            Vector(self.camera_projection),
+            self.camera_projection,
         )
 
     def get_spline_points(self, spline: bpy.types.Spline) -> Union[SplineBezierPoints, SplinePoints]:
