@@ -507,9 +507,18 @@ class BIMProjectProperties(PropertyGroup):
             yield link
 
 
+prev_measurement_type = ""
+
+
 def measurement_type_update(self, context):
+    global prev_measurement_type
     # We enable/disable the measure_xyz_dimensions_tool depending on the selected type
-    bpy.ops.bim.measure_xyz_dimensions_tool()
+    if prev_measurement_type != self.measurement_type:
+        bpy.ops.bim.measure_xyz_dimensions_tool()
+    else:
+        #  toggle to default
+        self.measurement_type = "POLYLINE"
+    prev_measurement_type = self.measurement_type
 
 
 class MeasureToolSettings(PropertyGroup):
