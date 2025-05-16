@@ -27,6 +27,8 @@ import bonsai.core.misc as core
 import bonsai.core.geometry as core_geometry
 import bonsai.core.root
 from mathutils import Vector, Matrix, Euler
+from typing import TYPE_CHECKING, Literal, get_args
+from typing_extensions import assert_never
 
 
 class SetOverrideColour(bpy.types.Operator):
@@ -117,23 +119,45 @@ class ResizeToStorey(bpy.types.Operator, tool.Ifc.Operator):
             core.resize_to_storey(tool.Misc, tool.Ifc, obj=obj, total_storeys=self.total_storeys)
 
 
+SplitAlongEdgeMode = Literal["BOOLEAN", "BISECT"]
+
+
 class SplitAlongEdge(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.split_along_edge"
     bl_label = "Split Along Edge"
     bl_description = (
-        "Active object is considered to be a cutting object."
+        "Split selected objects by the face of the cutter object.\n"
+        "Active object is considered to be a cutting object. "
+        "It can be a simple Blender object (e.g. a plane), not connected to IFC. "
         "Will unassign element from a type if type has a representation."
     )
     bl_options = {"REGISTER", "UNDO"}
-    mode: bpy.props.StringProperty(default="BOOLEAN")
+    mode: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
+        default="BOOLEAN",
+        items=tuple((i, i, "") for i in get_args(SplitAlongEdgeMode)),
+    )
+
+    if TYPE_CHECKING:
+        mode: SplitAlongEdgeMode
 
     @classmethod
     def poll(cls, context):
-        return context.selected_objects
+        if not (obj := context.active_object) or obj.type != "MESH":
+            cls.poll_message_set("No active mesh object is selected.")
+            return False
+        if not context.selected_objects:
+            cls.poll_message_set("No objects selected")
+            return False
+        return True
 
     def _execute(self, context):
         cutter = context.active_object
-        objs = [o for o in context.selected_objects if o != cutter]
+        assert cutter
+
+        objs = [o for o in context.selected_objects if o != cutter and o.type == "MESH"]
+        if not objs:
+            self.report({"ERROR"}, "No other mesh objects selected besides the cutter object.")
+            return {"CANCELLED"}
 
         if not tool.Ifc.get():
             if self.mode == "BOOLEAN":
@@ -142,9 +166,11 @@ class SplitAlongEdge(bpy.types.Operator, tool.Ifc.Operator):
                 tool.Misc.bisect_objects_with_cutter(objs, cutter)
                 for obj in objs:
                     bpy.data.objects.remove(obj)
+            else:
+                assert_never(self.mode)
             return
 
-        objs_to_cut = []
+        objs_to_cut: list[bpy.types.Object] = []
         # Splitting only works on meshes
         for obj in objs:
             # You cannot split meshes if the representation is mapped.
@@ -183,6 +209,8 @@ class SplitAlongEdge(bpy.types.Operator, tool.Ifc.Operator):
             new_objs = tool.Misc.boolean_objects_with_cutter(objs_to_cut, cutter)
         elif self.mode == "BISECT":
             new_objs = tool.Misc.bisect_objects_with_cutter(objs_to_cut, cutter)
+        else:
+            assert_never(self.mode)
 
         for obj in new_objs:
             bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=obj)
@@ -191,6 +219,7 @@ class SplitAlongEdge(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.update_representation(obj=obj.name)
 
             representation = tool.Geometry.get_active_representation(obj)
+            assert representation
             core_geometry.switch_representation(
                 tool.Ifc,
                 tool.Geometry,

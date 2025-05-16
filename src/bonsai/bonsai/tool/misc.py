@@ -102,6 +102,9 @@ class Misc(bonsai.core.tool.Misc):
     def boolean_objects_with_cutter(
         cls, objs: list[bpy.types.Object], cutter: bpy.types.Object
     ) -> list[bpy.types.Object]:
+        """
+        :return: List of newly added objects.
+        """
         cutter_mesh = cutter.data
         assert isinstance(cutter_mesh, bpy.types.Mesh)
 
@@ -111,7 +114,7 @@ class Misc(bonsai.core.tool.Misc):
         for f in bm_flipped.faces:
             f.normal_flip()
 
-        new_objs = []
+        new_objs: list[bpy.types.Object] = []
         for obj in objs:
             mesh = obj.data
             if not isinstance(mesh, bpy.types.Mesh) or obj == cutter:
