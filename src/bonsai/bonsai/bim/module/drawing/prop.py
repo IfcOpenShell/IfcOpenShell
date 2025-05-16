@@ -455,7 +455,6 @@ class DocProperties(PropertyGroup):
         description="The cut decoractor will be turned off for these classes\nEx: IfcVirtualelement, IfcSpace",
     )
 
-
     if TYPE_CHECKING:
         should_use_underlay_cache: bool
         should_use_linework_cache: bool

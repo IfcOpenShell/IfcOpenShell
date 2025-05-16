@@ -127,13 +127,16 @@ class Cad:
         if new_angle is not None:
             rot_mat = Matrix.Rotation(new_angle, 3, axis)
             rot_vector = (d1 @ rot_mat) if parameter else (rot_mat @ d1)
-             
+
             # 180 degrees special cases
             if abs(round(a, 4)) == round(math.pi, 4) and (
-                rot_vector.x == 0.0 and rot_vector.y == 0.0 or
-                rot_vector.x == 0.0 and rot_vector.z == 0.0 or
-                rot_vector.y == 0.0 and rot_vector.z == 0.0
-                ):
+                rot_vector.x == 0.0
+                and rot_vector.y == 0.0
+                or rot_vector.x == 0.0
+                and rot_vector.z == 0.0
+                or rot_vector.y == 0.0
+                and rot_vector.z == 0.0
+            ):
                 rot_vector *= -1
             return rot_vector
         else:
@@ -141,7 +144,7 @@ class Cad:
 
             if degrees:
                 a = math.degrees(a)
-                 
+
                 # 180 degrees special cases
                 if abs(round(a, 2)) == abs(180.00):
                     return -180.0
