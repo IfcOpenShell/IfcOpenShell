@@ -117,22 +117,24 @@ class AddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
             bpy.ops.bim.add_reference_image("INVOKE_DEFAULT", use_existing_object_by_name=obj.name)
 
 
-class EnableAddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
+class EnableAddAnnotationType(bpy.types.Operator):
     bl_idname = "bim.enable_add_annotation_type"
     bl_label = "Enable Add Annotation Type"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
         tool.Drawing.get_annotation_props().is_adding_type = True
+        return {"FINISHED"}
 
 
-class DisableAddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):
+class DisableAddAnnotationType(bpy.types.Operator):
     bl_idname = "bim.disable_add_annotation_type"
     bl_label = "Disable Add Annotation Type"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context) -> "set[rna_enums.OperatorReturnItems]":
         tool.Drawing.get_annotation_props().is_adding_type = False
+        return {"FINISHED"}
 
 
 class AddDrawing(bpy.types.Operator, tool.Ifc.Operator):
