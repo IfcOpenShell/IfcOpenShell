@@ -643,12 +643,22 @@ class PolylineOperator:
             tool.Blender.update_viewport()
 
     def choose_plane(self, event: bpy.types.Event, x: bool = True, y: bool = True, z: bool = True) -> None:
+        def get_plane_origin():
+            polyline_data = bpy.context.scene.BIMPolylineProperties.insertion_polyline
+            polyline_points = polyline_data[0].polyline_points if polyline_data else []
+            if len(polyline_points) > 0:
+                reference_point = polyline_points[-1]
+            else:
+                reference_point = Vector((0.0, 0.0, 0.0))
+            self.tool_state.plane_origin = Vector((reference_point.x, reference_point.y, reference_point.z))
+            
         if x:
             if event.shift and event.value == "PRESS" and event.type == "X":
                 self.tool_state.use_default_container = False
                 self.tool_state.plane_method = "YZ" if self.tool_state.plane_method != "YZ" else None
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
+                get_plane_origin()
 
         if y:
             if event.shift and event.value == "PRESS" and event.type == "Y":
@@ -656,6 +666,7 @@ class PolylineOperator:
                 self.tool_state.plane_method = "XZ" if self.tool_state.plane_method != "XZ" else None
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
+                get_plane_origin()
 
         if z:
             if event.shift and event.value == "PRESS" and event.type == "Z":
@@ -663,6 +674,8 @@ class PolylineOperator:
                 self.tool_state.plane_method = "XY" if self.tool_state.plane_method != "XY" else None
                 self.tool_state.axis_method = None
                 tool.Blender.update_viewport()
+                get_plane_origin()
+
 
     def handle_instructions(
         self, context: bpy.types.Context, custom_instructions: dict = {}, custom_info: str = "", overwrite: bool = False
@@ -880,6 +893,7 @@ class PolylineOperator:
         else:
             if event.value == "RELEASE" and event.type in {"ESC"}:
                 self.tool_state.axis_method = None
+                self.tool_state.plane_method = None
                 context.workspace.status_text_set(text=None)
                 PolylineDecorator.uninstall()
                 tool.Polyline.clear_polyline()

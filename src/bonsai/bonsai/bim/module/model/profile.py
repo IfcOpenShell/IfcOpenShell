@@ -1196,6 +1196,7 @@ class DrawPolylineProfile(bpy.types.Operator, PolylineOperator, tool.Ifc.Operato
         ):
             self.create_profiles_from_polyline(context)
             context.workspace.status_text_set(text=None)
+            self.tool_state.plane_method = None
             ProductDecorator.uninstall()
             PolylineDecorator.uninstall()
             tool.Polyline.clear_polyline()

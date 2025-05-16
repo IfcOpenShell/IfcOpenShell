@@ -2633,6 +2633,7 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
             and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
         ) or single_mode:
             context.workspace.status_text_set(text=None)
+            self.tool_state.plane_method = None
             PolylineDecorator.uninstall()
             tool.Polyline.move_polyline_to_measure(context, self.input_ui)
             tool.Polyline.clear_polyline()
