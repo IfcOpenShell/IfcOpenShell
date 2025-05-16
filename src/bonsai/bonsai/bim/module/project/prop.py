@@ -508,7 +508,7 @@ class BIMProjectProperties(PropertyGroup):
 
 
 def measurement_type_update(self, context):
-    print(f"Measurement type changed to: {self.measurement_type}")
+    #We enable/disable the measure_xyz_dimensions_tool depending on the selected type
     bpy.ops.bim.measure_xyz_dimensions_tool()
 
 class MeasureToolSettings(PropertyGroup):
