@@ -25,6 +25,9 @@ import tempfile
 import traceback
 import subprocess
 import datetime
+import blf
+import mathutils
+import gpu
 import ifcopenshell.api.attribute
 import numpy as np
 import ifcopenshell
@@ -64,6 +67,7 @@ from bonsai.bim.module.project.prop import BreadcrumbType
 from bonsai.bim.module.model.decorator import PolylineDecorator, FaceAreaDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from typing import Union, TYPE_CHECKING, get_args, Literal
+from gpu_extras.batch import batch_for_shader
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums
@@ -2790,6 +2794,278 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
         PolylineDecorator.install(context, ui_only=True)
         FaceAreaDecorator.install(context)
         return {"RUNNING_MODAL"}
+
+_draw_handler_box = None
+_draw_handler_text = None
+
+
+def get_combined_bounding_box_corners(objects):
+    import mathutils
+
+    if not objects:
+        return None, None, None
+
+    if len(objects) == 1:
+        obj = bpy.context.active_object
+        corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
+
+    else:
+        all_corners = []
+        for obj in objects:
+            if hasattr(obj, "bound_box"):
+                all_corners.extend([obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box])
+
+        min_corner = mathutils.Vector(
+            (min(v.x for v in all_corners), min(v.y for v in all_corners), min(v.z for v in all_corners))
+        )
+        max_corner = mathutils.Vector(
+            (max(v.x for v in all_corners), max(v.y for v in all_corners), max(v.z for v in all_corners))
+        )
+        corners = [
+            mathutils.Vector((min_corner.x, min_corner.y, min_corner.z)),
+            mathutils.Vector((min_corner.x, min_corner.y, max_corner.z)),
+            mathutils.Vector((min_corner.x, max_corner.y, max_corner.z)),
+            mathutils.Vector((min_corner.x, max_corner.y, min_corner.z)),
+            mathutils.Vector((max_corner.x, min_corner.y, min_corner.z)),
+            mathutils.Vector((max_corner.x, min_corner.y, max_corner.z)),
+            mathutils.Vector((max_corner.x, max_corner.y, max_corner.z)),
+            mathutils.Vector((max_corner.x, max_corner.y, min_corner.z)),
+        ]
+
+    edges = [
+        (0, 1, "Z"),
+        (1, 2, "Y"),
+        (2, 3, "Z"),
+        (3, 0, "Y"),
+        (4, 5, "Z"),
+        (5, 6, "Y"),
+        (6, 7, "Z"),
+        (7, 4, "Y"),
+        (0, 4, "X"),
+        (1, 5, "X"),
+        (2, 6, "X"),
+        (3, 7, "X"),
+    ]
+    axis_colors = {
+        "X": (0.956, 0.282, 0.322, 1),
+        "Y": (0.565, 0.812, 0.125, 1),
+        "Z": (0.196, 0.529, 0.929, 1),
+    }
+    return corners, edges, axis_colors
+
+
+def find_closest_trihedron(corners, edges, region, rv3d):
+    from bpy_extras.view3d_utils import location_3d_to_region_2d
+
+    # Project all corners to 2D and find the one with the lowest Y value
+    min_y = float("inf")
+    best_origin = None
+    for idx, corner in enumerate(corners):
+        screen_co = location_3d_to_region_2d(region, rv3d, corner)
+        if screen_co is not None and screen_co.y < min_y:
+            min_y = screen_co.y
+            best_origin = idx
+
+    trihedron = [
+        {"X": (0, 4), "Y": (0, 3), "Z": (0, 1)},
+        {"X": (1, 5), "Y": (1, 2), "Z": (1, 0)},
+        {"X": (2, 6), "Y": (2, 1), "Z": (2, 3)},
+        {"X": (3, 7), "Y": (3, 0), "Z": (3, 2)},
+        {"X": (4, 0), "Y": (4, 7), "Z": (4, 5)},
+        {"X": (5, 1), "Y": (5, 6), "Z": (5, 4)},
+        {"X": (6, 2), "Y": (6, 5), "Z": (6, 7)},
+        {"X": (7, 3), "Y": (7, 4), "Z": (7, 6)},
+    ]
+
+    return trihedron[best_origin]
+
+
+def draw_bounding_box_wire_cube():
+    selected_objects = [obj for obj in bpy.context.selected_objects if hasattr(obj, "bound_box")]
+    if not selected_objects:
+        return
+    corners, edges, axis_colors = get_combined_bounding_box_corners(selected_objects)
+    region = bpy.context.region
+    rv3d = bpy.context.region_data
+
+    shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+    gpu.state.line_width_set(2.0)
+
+    # Draw the bounding box edges
+    for i1, i2, axis in edges:
+        color = (0.5, 0.5, 0.5, 0.75)
+        shader.bind()
+        shader.uniform_float("color", color)
+        batch = batch_for_shader(shader, "LINES", {"pos": [corners[i1], corners[i2]]})
+        batch.draw(shader)
+
+    # Draw the trihedron edges
+    closest_indices = find_closest_trihedron(corners, edges, region, rv3d)
+    for axis in "XYZ":
+        pair = closest_indices[axis]
+        if pair is not None:
+            i1, i2 = pair
+            color = axis_colors[axis]
+            shader.bind()
+            shader.uniform_float("color", color)
+            batch = batch_for_shader(shader, "LINES", {"pos": [corners[i1], corners[i2]]})
+            batch.draw(shader)
+
+
+def draw_dimension_text():
+    from bpy_extras.view3d_utils import location_3d_to_region_2d
+    from bonsai.bim.module.drawing.helper import format_distance
+
+    selected_objects = [obj for obj in bpy.context.selected_objects if hasattr(obj, "bound_box")]
+    if not selected_objects:
+        return
+    corners, edges, axis_colors = get_combined_bounding_box_corners(selected_objects)
+    if not corners:
+        return
+
+    dims = mathutils.Vector(
+        (
+            (corners[4] - corners[0]).length,
+            (corners[3] - corners[0]).length,
+            (corners[1] - corners[0]).length,
+        )
+    )
+
+    region = bpy.context.region
+    rv3d = bpy.context.region_data
+    closest_indices = find_closest_trihedron(corners, edges, region, rv3d)
+
+    font_id = 0
+    blf.size(font_id, 20)
+    for axis in "XYZ":
+        pair = closest_indices[axis]
+        if pair is not None:
+            i1, i2 = pair
+            center = (corners[i1] + corners[i2]) / 2
+            value = getattr(dims, axis.lower())
+            screen_co = location_3d_to_region_2d(region, rv3d, center)
+            if screen_co is not None:
+                # Draw axis label in color
+                blf.position(font_id, screen_co.x, screen_co.y, 0)
+                blf.color(font_id, *axis_colors[axis])
+                blf.draw(font_id, f"{axis}: ")
+                axis_width, _ = blf.dimensions(font_id, f"{axis}: ")
+                # Draw value+unit in white
+                blf.position(font_id, screen_co.x + axis_width, screen_co.y, 0)
+                blf.color(font_id, 1, 1, 1, 1)
+                value_str = format_distance(value, hide_units=False)
+                blf.draw(font_id, value_str)
+
+    # To show the corners indexes, uncomment the following lines
+    # for idx, corner in enumerate(corners):
+    #    screen_co = location_3d_to_region_2d(region, rv3d, corner)
+    #    if screen_co is not None:
+    #        blf.position(font_id, screen_co.x, screen_co.y, 0)
+    #        blf.color(font_id, 1, 1, 0, 1)
+    #        blf.draw(font_id, str(idx))
+
+
+def enable_bounding_box_wire_cube():
+    global _draw_handler_box, _draw_handler_text
+    if _draw_handler_box is None:
+        _draw_handler_box = bpy.types.SpaceView3D.draw_handler_add(
+            draw_bounding_box_wire_cube, (), "WINDOW", "POST_VIEW"
+        )
+    if _draw_handler_text is None:
+        _draw_handler_text = bpy.types.SpaceView3D.draw_handler_add(draw_dimension_text, (), "WINDOW", "POST_PIXEL")
+
+
+def disable_bounding_box_wire_cube():
+    global _draw_handler_box, _draw_handler_text
+    if _draw_handler_box is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(_draw_handler_box, "WINDOW")
+        _draw_handler_box = None
+    if _draw_handler_text is not None:
+        bpy.types.SpaceView3D.draw_handler_remove(_draw_handler_text, "WINDOW")
+        _draw_handler_text = None
+
+
+previous_selection = set()
+
+
+def selection_monitor_handler(scene, depsgraph):
+    global previous_selection
+
+    # Get the current selection
+    current_selection = {obj.name for obj in scene.objects if obj.select_get()}
+
+    # If selection changed, print and update
+    print("Selection changed:", current_selection)
+    if current_selection != previous_selection:
+        if len(bpy.context.selected_objects) == 1:
+            scene.transform_orientation_slots[1].type = "LOCAL"
+        else:
+            scene.transform_orientation_slots[1].type = "GLOBAL"
+        area = next((a for a in bpy.context.screen.areas if a.type == "VIEW_3D"), None)
+        space = next((s for s in area.spaces if s.type == "VIEW_3D"), None)
+        space.show_gizmo_object_translate = True
+        previous_selection = current_selection
+
+
+def register_handler():
+    unregister_handler()
+    bpy.app.handlers.depsgraph_update_post.append(selection_monitor_handler)
+
+
+def unregister_handler():
+    handlers = bpy.app.handlers.depsgraph_update_post
+    handlers[:] = [h for h in handlers if h.__name__ != "selection_monitor_handler"]
+
+
+
+class MeasureXYZDimensionsTool(bpy.types.Operator):
+    bl_idname = "bim.measure_xyz_dimensions_tool"
+    bl_label = "Show bonding box dimensions"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+
+        scene = bpy.context.scene
+        area_3d = next((area for area in bpy.context.screen.areas if area.type == "VIEW_3D"), None)
+        space_3d = next((space for space in area_3d.spaces if space.type == "VIEW_3D"), None) if area_3d else None
+
+        try:
+            if bpy.context.scene.MeasureToolSettings.measurement_type == "XYZ_DIMENSIONS":
+                enable_bounding_box_wire_cube()
+                register_handler()
+                if not scene.get("prev_transform_orientation_slot_type", None):
+                    scene["prev_transform_orientation_slot_type"] = scene.transform_orientation_slots[1].type
+                if not scene.get("prev_show_gizmo_object_translate", None):
+                    scene["prev_show_gizmo_object_translate"] = space_3d.show_gizmo_object_translate if space_3d else False
+
+                # Set orientation and gizmo based on selection count
+                if space_3d:
+                    if len(context.selected_objects) == 1:
+                        scene.transform_orientation_slots[1].type = "LOCAL"
+                    else:
+                        scene.transform_orientation_slots[1].type = "GLOBAL"
+                    space_3d.show_gizmo_object_translate = True
+
+            else:
+                disable_bounding_box_wire_cube()
+                unregister_handler()
+                # Restore previous state
+                if space_3d:
+                    prev_orientation = scene.get("prev_transform_orientation_slot_type", None)
+                    if prev_orientation:
+                        scene.transform_orientation_slots[1].type = prev_orientation
+                        scene["prev_transform_orientation_slot_type"] = ""
+                    prev_gizmo = scene.get("prev_show_gizmo_object_translate", None)
+                    if prev_gizmo is not None:
+                        space_3d.show_gizmo_object_translate = prev_gizmo
+                        scene["prev_show_gizmo_object_translate"] = None
+
+        except Exception:
+            self.report({"WARNING"}, "Could not set transform orientation.")
+        return {"FINISHED"}
+
+
+
 
 
 class ClearMeasurement(bpy.types.Operator):
