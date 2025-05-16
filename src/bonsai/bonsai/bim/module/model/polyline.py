@@ -830,12 +830,14 @@ class PolylineOperator:
                 if not (
                     first_point.x == last_point.x and first_point.y == last_point.y and first_point.z == last_point.z
                 ):
-                    self.input_ui.set_value("X", first_point.x)
-                    self.input_ui.set_value("Y", first_point.y)
+                    mouse_point = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+                    mouse_point.x = first_point.x
+                    mouse_point.y = first_point.y
                     if self.input_ui.get_number_value("Z") is not None:
-                        self.input_ui.set_value("Z", first_point.z)
+                        mouse_point.z = first_point.z
                     else:
-                        self.input_ui.set_value("Z", 0)
+                        mouse_point.z = 0
+                tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
             result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
             if result:
                 self.report({"WARNING"}, result)
