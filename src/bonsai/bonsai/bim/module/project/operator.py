@@ -2791,6 +2791,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
         FaceAreaDecorator.install(context)
         return {"RUNNING_MODAL"}
 
+
 class MeasureXYZDimensionsTool(bpy.types.Operator):
     bl_idname = "bim.measure_xyz_dimensions_tool"
     bl_label = "Show bonding box dimensions"
@@ -2803,6 +2804,7 @@ class MeasureXYZDimensionsTool(bpy.types.Operator):
     @staticmethod
     def get_combined_bounding_box_corners(objects):
         import mathutils
+
         if not objects:
             return None, None, None
         if len(objects) == 1:
@@ -2830,9 +2832,18 @@ class MeasureXYZDimensionsTool(bpy.types.Operator):
                 mathutils.Vector((max_corner.x, max_corner.y, min_corner.z)),
             ]
         edges = [
-            (0, 1, "Z"), (1, 2, "Y"), (2, 3, "Z"), (3, 0, "Y"),
-            (4, 5, "Z"), (5, 6, "Y"), (6, 7, "Z"), (7, 4, "Y"),
-            (0, 4, "X"), (1, 5, "X"), (2, 6, "X"), (3, 7, "X"),
+            (0, 1, "Z"),
+            (1, 2, "Y"),
+            (2, 3, "Z"),
+            (3, 0, "Y"),
+            (4, 5, "Z"),
+            (5, 6, "Y"),
+            (6, 7, "Z"),
+            (7, 4, "Y"),
+            (0, 4, "X"),
+            (1, 5, "X"),
+            (2, 6, "X"),
+            (3, 7, "X"),
         ]
         axis_colors = {
             "X": (0.956, 0.282, 0.322, 1),
@@ -2844,6 +2855,7 @@ class MeasureXYZDimensionsTool(bpy.types.Operator):
     @staticmethod
     def find_closest_trihedron(corners, edges, region, rv3d):
         from bpy_extras.view3d_utils import location_3d_to_region_2d
+
         min_y = float("inf")
         best_origin = None
         for idx, corner in enumerate(corners):
@@ -2894,6 +2906,7 @@ class MeasureXYZDimensionsTool(bpy.types.Operator):
     def draw_dimension_text(cls):
         from bpy_extras.view3d_utils import location_3d_to_region_2d
         from bonsai.bim.module.drawing.helper import format_distance
+
         selected_objects = [obj for obj in bpy.context.selected_objects if hasattr(obj, "bound_box")]
         if not selected_objects:
             return
@@ -2983,7 +2996,9 @@ class MeasureXYZDimensionsTool(bpy.types.Operator):
                 if not scene.get("prev_transform_orientation_slot_type", None):
                     scene["prev_transform_orientation_slot_type"] = scene.transform_orientation_slots[1].type
                 if not scene.get("prev_show_gizmo_object_translate", None):
-                    scene["prev_show_gizmo_object_translate"] = space_3d.show_gizmo_object_translate if space_3d else False
+                    scene["prev_show_gizmo_object_translate"] = (
+                        space_3d.show_gizmo_object_translate if space_3d else False
+                    )
                 if space_3d:
                     if len(context.selected_objects) == 1:
                         scene.transform_orientation_slots[1].type = "LOCAL"
@@ -3005,6 +3020,7 @@ class MeasureXYZDimensionsTool(bpy.types.Operator):
         except Exception:
             self.report({"WARNING"}, "Could not set transform orientation.")
         return {"FINISHED"}
+
 
 class ClearMeasurement(bpy.types.Operator):
     bl_idname = "bim.clear_measurement"
