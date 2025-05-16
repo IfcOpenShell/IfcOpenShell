@@ -571,6 +571,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
         ):
             self.create_walls_from_polyline(context)
             context.workspace.status_text_set(text=None)
+            self.tool_state.plane_method = None
             ProductDecorator.uninstall()
             PolylineDecorator.uninstall()
             tool.Polyline.clear_polyline()
