@@ -22,7 +22,9 @@ import bmesh
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
+import ifcopenshell.api.geometry
 import ifcopenshell.api.layer
+import ifcopenshell.api.material
 import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.util.element
@@ -583,9 +585,9 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 # We are explicitly casting to a tessellation, so remove all parametric materials.
                 element_type = ifcopenshell.util.element.get_type(product)
                 if element_type:  # Some invalid IFCs use material sets without a type.
-                    ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), products=[element_type])
+                    ifcopenshell.api.material.unassign_material(self.file, products=[element_type])
                     tool.Material.ensure_material_unassigned([element_type])
-                ifcopenshell.api.run("material.unassign_material", tool.Ifc.get(), products=[product])
+                ifcopenshell.api.material.unassign_material(self.file, products=[product])
                 tool.Material.ensure_material_unassigned([product])
             else:
                 # These objects are parametrically based on an axis and should not be modified as a mesh
@@ -603,6 +605,7 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
         # added this as a fallback for easier transition some annotation types to 3d
         # if they were create before as 2d
         element = tool.Ifc.get_entity(obj)
+        assert element
         if tool.Drawing.is_annotation_object_type(element, ("FALL", "SECTION_LEVEL", "PLAN_LEVEL")):
             context_of_items = tool.Drawing.get_annotation_context("MODEL_VIEW")
 
@@ -626,7 +629,7 @@ class UpdateRepresentation(bpy.types.Operator, tool.Ifc.Operator):
             representation_data["text_literal"] = tool.Geometry.get_text_literal(old_representation)
 
         # TODO: replace with core.add_representation?
-        new_representation = ifcopenshell.api.run("geometry.add_representation", self.file, **representation_data)
+        new_representation = ifcopenshell.api.geometry.add_representation(self.file, **representation_data)
         if new_representation is None:
             self.report({"ERROR"}, "Error creating representation for Blender object.")
             return {"CANCELLED"}

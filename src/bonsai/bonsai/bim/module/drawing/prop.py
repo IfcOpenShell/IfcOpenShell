@@ -496,6 +496,7 @@ class DocProperties(PropertyGroup):
         imperial_precision: str
         tolerance: float
         classes_to_wireframe: str
+        classes_no_cut: str
 
     def get_active_drawing(self) -> Union[ifcopenshell.entity_instance, None]:
         drawing_id = self.active_drawing_id

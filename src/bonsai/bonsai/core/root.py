@@ -26,7 +26,11 @@ if TYPE_CHECKING:
 
 
 def copy_class(
-    ifc: tool.Ifc, collector: tool.Collector, geometry: tool.Geometry, root: tool.Root, obj: bpy.types.Object
+    ifc: type[tool.Ifc],
+    collector: type[tool.Collector],
+    geometry: type[tool.Geometry],
+    root: type[tool.Root],
+    obj: bpy.types.Object,
 ) -> ifcopenshell.entity_instance | None:
     element = ifc.get_entity(obj)
     if not element:
@@ -55,9 +59,9 @@ def copy_class(
 
 
 def assign_class(
-    ifc: tool.Ifc,
-    collector: tool.Collector,
-    root: tool.Root,
+    ifc: type[tool.Ifc],
+    collector: type[tool.Collector],
+    root: type[tool.Root],
     obj: bpy.types.Object,
     ifc_class: str,
     context: Optional[ifcopenshell.entity_instance] = None,

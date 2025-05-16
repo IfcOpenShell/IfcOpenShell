@@ -225,13 +225,26 @@ class CreateDrawing(bpy.types.Operator):
         + "Add the CTRL modifier to optionally open drawings to view them as\n"
         + "they are created"
     )
-    print_all: bpy.props.BoolProperty(name="Print All", default=False, options={"SKIP_SAVE"})
-    open_viewer: bpy.props.BoolProperty(name="Open in Viewer", default=False, options={"SKIP_SAVE"})
-    sync: bpy.props.BoolProperty(
+    print_all: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Print All",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
+    open_viewer: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+        name="Open in Viewer",
+        default=False,
+        options={"SKIP_SAVE"},
+    )
+    sync: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
         name="Sync Before Creating Drawing",
         description="Could save some time if you're sure IFC and current Blender session are already in sync",
         default=True,
     )
+
+    if TYPE_CHECKING:
+        print_all: bool
+        open_viewer: bool
+        sync: bool
 
     drawing_name: str
     is_manifold_cache: dict[str, bool]
@@ -268,6 +281,7 @@ class CreateDrawing(bpy.types.Operator):
         assert context.scene and context.scene.camera
 
         active_drawing_id = tool.Blender.get_ifc_definition_id(context.scene.camera)
+        original_drawing_id = None
         if self.print_all:
             original_drawing_id = active_drawing_id
             drawings_to_print = [d.ifc_definition_id for d in self.props.drawings if d.is_selected and d.is_drawing]
@@ -338,6 +352,7 @@ class CreateDrawing(bpy.types.Operator):
         if not self.open_viewer:
             self.report({"INFO"}, f"{len(drawings_to_print)} drawings created...")
         if self.print_all:
+            assert original_drawing_id is not None
             bpy.ops.bim.activate_drawing(drawing=original_drawing_id, should_view_from_camera=False)
         return {"FINISHED"}
 
@@ -2150,6 +2165,7 @@ class ActivateDrawingBase(tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context) -> set["rna_enums.OperatorReturnItems"]:
+        assert context.scene
         props = tool.Drawing.get_document_props()
         if props.is_editing_drawings == False:
             bpy.ops.bim.load_drawings()
@@ -2161,12 +2177,14 @@ class ActivateDrawingBase(tool.Ifc.Operator):
             tool.Blender.activate_camera(tool.Drawing.import_temporary_drawing_camera(drawing))
             return {"FINISHED"}
 
+        viewport_position = None
         if not self.should_view_from_camera:
             viewport_position = tool.Blender.get_viewport_position()
 
         core.activate_drawing_view(tool.Ifc, tool.Blender, tool.Drawing, drawing=drawing)
 
         if not self.should_view_from_camera:
+            assert viewport_position
             tool.Blender.set_viewport_position(viewport_position)
 
         dprops.active_drawing_id = self.drawing
@@ -2182,6 +2200,7 @@ class ActivateDrawingBase(tool.Ifc.Operator):
 
         # Save drawing bounds to the .ifc file
         camera = context.scene.camera
+        assert camera
         camera_props = tool.Drawing.get_camera_props(camera)
         if camera_props.update_representation(camera.matrix_world):
             bpy.ops.bim.update_representation(obj=camera.name, ifc_representation_class="")
