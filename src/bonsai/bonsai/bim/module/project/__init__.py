@@ -49,6 +49,7 @@ classes = (
     operator.LoadProjectElements,
     operator.MeasureTool,
     operator.MeasureFaceAreaTool,
+    operator.MeasureXYZDimensionsTool,
     operator.ClearMeasurement,
     operator.NewProject,
     operator.QueryLinkedElement,
@@ -100,6 +101,8 @@ def register():
     bpy.types.TOPBAR_MT_file_import.append(ui.file_import_menu)
     bpy.types.TOPBAR_MT_file.prepend(ui.file_menu)
     bpy.types.TOPBAR_MT_file_context_menu.prepend(ui.file_menu)
+    bpy.types.Scene.prev_transform_orientation_slot_type = bpy.props.StringProperty(name="Previous Gizmo Orientation Type")
+    bpy.types.Scene.prev_show_gizmo_object_translate = bpy.props.BoolProperty(name="Previous Gizmo Translate")
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:
         km = wm.keyconfigs.addon.keymaps.get("Window")
@@ -120,6 +123,8 @@ def unregister():
         bpy.utils.unregister_tool(workspace.ExploreTool)
     del bpy.types.Scene.BIMProjectProperties
     del bpy.types.Scene.MeasureToolSettings
+    del bpy.types.Scene.prev_transform_orientation_slot_type
+    del bpy.types.Scene.prev_show_gizmo_object_translate
     bpy.app.handlers.load_post.remove(decorator.toggle_decorations_on_load)
     bpy.types.TOPBAR_MT_file.remove(ui.file_menu)
     bpy.types.TOPBAR_MT_file_context_menu.remove(ui.file_menu)
