@@ -420,6 +420,7 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         layout.prop(dprops, "imperial_precision")
         layout.prop(dprops, "tolerance")
         layout.prop(dprops, "classes_to_wireframe")
+        layout.prop(dprops, "classes_no_cut")
 
     def draw_decorator_colors(self, layout, context):
         layout.row().prop(self, "decorations_colour")

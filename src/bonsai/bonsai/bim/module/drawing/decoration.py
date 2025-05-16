@@ -1650,8 +1650,14 @@ class CutDecorator:
         all_vertex_i_offset = 0
         selected_vertex_i_offset = 0
 
+        classes_no_cut_str = bpy.context.scene.DocProperties.classes_no_cut
+        classes_no_cut = [word.strip() for word in classes_no_cut_str.split(",")]
+
         for obj in [o for o in bpy.context.visible_objects if o.type == "MESH"]:
             if not (element := tool.Ifc.get_entity(obj)):
+                continue
+            #Skip the elements in the following classes
+            if element.is_a() in classes_no_cut:
                 continue
             self.decorate(context, obj, element)
 
@@ -1720,6 +1726,9 @@ class CutDecorator:
         batch.draw(shader)
 
     def decorate(self, context, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
+        
+
+
         has_cut_cache = element.id() in DecoratorData.cut_cache
         has_fill_cache = element.id() in DecoratorData.fill_cache
 
