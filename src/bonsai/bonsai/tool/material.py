@@ -329,7 +329,10 @@ class Material(bonsai.core.tool.Material):
         or some other may be applied now since it's no longer overridden,
         therefore we need to make sure blender materials reflect correct styles.
 
-        Designed to be called after material.unassign_material API call."""
+        Designed to be called after material.unassign_material API call.
+
+        Will reload representations, invalidating existing object data.
+        """
         elements = elements.copy()  # Avoid argument mutation.
         for element in elements[:]:
             if element.is_a("IfcElementType"):
