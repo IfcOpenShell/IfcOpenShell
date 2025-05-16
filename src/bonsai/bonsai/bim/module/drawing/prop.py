@@ -449,6 +449,12 @@ class DocProperties(PropertyGroup):
         name="Classes to Wireframe",
         description="Upon import, these classes will display as wireframe.\nEx: IfcVirtualelement, IfcSpace",
     )
+    classes_no_cut: StringProperty(
+        default="IfcVirtualElement, IfcSpace",
+        name="Classes that are not cut",
+        description="The cut decoractor will be turned off for these classes\nEx: IfcVirtualelement, IfcSpace",
+    )
+
 
     if TYPE_CHECKING:
         should_use_underlay_cache: bool
