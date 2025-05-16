@@ -569,7 +569,7 @@ class AlignProduct(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     AlignType = Literal["CENTERLINE", "POSITIVE", "NEGATIVE"]
-    align_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
+    align_type: bpy.props.EnumProperty(  # pyright: ignore [reportRedeclaration]
         items=[(i, i, "") for i in get_args(AlignType)]
     )
 

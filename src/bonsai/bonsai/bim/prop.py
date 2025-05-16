@@ -287,11 +287,11 @@ AttributeSpecialType = Literal["", "DATE", "DATETIME", "LENGTH", "AREA", "VOLUME
 
 class Attribute(PropertyGroup):
     tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
-    name: StringProperty(name="Name")  # type: ignore [reportRedeclaration]
+    name: StringProperty(name="Name")  # pyright: ignore [reportRedeclaration]
     display_name: StringProperty(name="Display Name", get=get_display_name)
-    description: StringProperty(name="Description")  # type: ignore [reportRedeclaration]
-    ifc_class: StringProperty(name="Ifc Class")  # type: ignore [reportRedeclaration]
-    data_type: EnumProperty(  # type: ignore [reportRedeclaration]
+    description: StringProperty(name="Description")  # pyright: ignore [reportRedeclaration]
+    ifc_class: StringProperty(name="Ifc Class")  # pyright: ignore [reportRedeclaration]
+    data_type: EnumProperty(  # pyright: ignore [reportRedeclaration]
         name="Data Type",
         items=[(i, i, "") for i in get_args(AttributeDataType)],
     )

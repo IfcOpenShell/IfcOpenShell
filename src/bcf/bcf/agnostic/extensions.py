@@ -20,7 +20,7 @@ def get_extensions_attributes(extensions: Extensions) -> dict[str, AttributeData
     - subattribute name"""
     possible_attributes = {}
     for field in fields(type(extensions)):
-        field_type = field.type.__args__[0]  # type: ignore [reportAttributeAccessIssue]
+        field_type = field.type.__args__[0]  # pyright: ignore [reportAttributeAccessIssue]
         subfield = next(iter(fields(field_type)))
         xsd_name = subfield.metadata["name"]
         possible_attributes[field.name] = AttributeData(field_type, subfield.name, xsd_name)
