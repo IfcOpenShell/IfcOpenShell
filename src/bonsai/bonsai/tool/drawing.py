@@ -1285,6 +1285,9 @@ class Drawing(bonsai.core.tool.Drawing):
     def sanitise_filename(cls, name: str) -> str:
         return "".join(x for x in name if (x.isalnum() or x in "._- "))
 
+    ResourceType = Literal["Stylesheet", "Markers", "Symbols", "Patterns", "ShadingStyles"]
+    RESOURCE_TYPES = ("Stylesheet", "Markers", "Symbols", "Patterns", "ShadingStyles")
+
     @classmethod
     def get_default_drawing_resource_path(cls, resource: str) -> Union[str, None]:
         project = tool.Ifc.get().by_type("IfcProject")[0]

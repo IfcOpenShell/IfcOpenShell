@@ -313,16 +313,15 @@ class CreateDrawing(bpy.types.Operator):
                         # Reassign props as data is recreated during the update.
                         self.cprops = tool.Drawing.get_camera_props(self.camera)
 
-                    self.svg_writer = svgwriter.SvgWriter()
-                    self.svg_writer.human_scale = self.human_scale
-                    self.svg_writer.scale = self.scale
-                    self.svg_writer.camera = self.camera
-                    self.svg_writer.camera_width, self.svg_writer.camera_height = self.get_camera_dimensions()
-                    self.svg_writer.camera_projection = tuple(
-                        self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))
+                    camera_dims = self.get_camera_dimensions()
+                    self.svg_writer = svgwriter.SvgWriter(
+                        camera_width=camera_dims[0],
+                        camera_height=camera_dims[1],
+                        camera=self.camera,
+                        camera_projection=(self.camera.matrix_world.to_quaternion() @ Vector((0, 0, -1))),
+                        scale=self.scale,
+                        human_scale=self.human_scale,
                     )
-                    self.svg_writer.calculate_scale()
-
                     self.svg_writer.setup_drawing_resource_paths(self.camera_element)
 
                 underlay_svg = None
@@ -358,8 +357,10 @@ class CreateDrawing(bpy.types.Operator):
             bpy.ops.bim.activate_drawing(drawing=original_drawing_id, should_view_from_camera=False)
         return {"FINISHED"}
 
-    def get_camera_dimensions(self):
+    def get_camera_dimensions(self) -> tuple[float, float]:
+        assert bpy.context.scene
         render = bpy.context.scene.render
+        assert isinstance(self.camera.data, bpy.types.Camera)
         if self.is_landscape(render):
             width = self.camera.data.ortho_scale
             height = width / render.resolution_x * render.resolution_y
