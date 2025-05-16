@@ -508,8 +508,9 @@ class BIMProjectProperties(PropertyGroup):
 
 
 def measurement_type_update(self, context):
-    #We enable/disable the measure_xyz_dimensions_tool depending on the selected type
+    # We enable/disable the measure_xyz_dimensions_tool depending on the selected type
     bpy.ops.bim.measure_xyz_dimensions_tool()
+
 
 class MeasureToolSettings(PropertyGroup):
     measurement_type_items = [
@@ -520,7 +521,9 @@ class MeasureToolSettings(PropertyGroup):
         ("XYZ_DIMENSIONS", "XYZ_DIMENSIONS", "XYZ Dimensions", "ORIENTATION_LOCAL", 5),
     ]
 
-    measurement_type: bpy.props.EnumProperty(items=measurement_type_items, default="POLYLINE", update= measurement_type_update)
+    measurement_type: bpy.props.EnumProperty(
+        items=measurement_type_items, default="POLYLINE", update=measurement_type_update
+    )
 
     if TYPE_CHECKING:
         measurement_type: Literal["SINGLE", "POLYLINE", "AREA"]

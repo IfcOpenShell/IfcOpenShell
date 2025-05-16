@@ -101,7 +101,9 @@ def register():
     bpy.types.TOPBAR_MT_file_import.append(ui.file_import_menu)
     bpy.types.TOPBAR_MT_file.prepend(ui.file_menu)
     bpy.types.TOPBAR_MT_file_context_menu.prepend(ui.file_menu)
-    bpy.types.Scene.prev_transform_orientation_slot_type = bpy.props.StringProperty(name="Previous Gizmo Orientation Type")
+    bpy.types.Scene.prev_transform_orientation_slot_type = bpy.props.StringProperty(
+        name="Previous Gizmo Orientation Type"
+    )
     bpy.types.Scene.prev_show_gizmo_object_translate = bpy.props.BoolProperty(name="Previous Gizmo Translate")
     wm = bpy.context.window_manager
     if wm.keyconfigs.addon:

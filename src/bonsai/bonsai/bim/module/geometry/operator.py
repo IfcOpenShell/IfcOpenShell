@@ -3404,4 +3404,3 @@ class UnassignRepresentationLayer(bpy.types.Operator, tool.Ifc.Operator):
         layer = ifc_file.by_id(self.layer_id)
         ifcopenshell.api.layer.unassign_layer(ifc_file, [representation], layer)
         return {"FINISHED"}
-
