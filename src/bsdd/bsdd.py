@@ -610,15 +610,15 @@ class Client:
         print(f"function 'Client.Unit' is deprecated, use 'Client.get_units' instead")
         return self.get(f"api/Unit/{version}")
 
-    def get_dictionary(self, dictionary_uri: str = "", version: int = 1) -> DictionaryResponseContractV1:
+    def get_dictionary(
+        self, dictionary_uri: str = "", include_test_dictionaries: bool = "False", version: int = 1
+    ) -> DictionaryResponseContractV1:
         """
         Get list of available Dictionaries
         This API replaces Domain
         """
         endpoint = f"Dictionary/v{version}"
-        params = {
-            "Uri": dictionary_uri,
-        }
+        params = {"Uri": dictionary_uri, "IncludeTestDictionaries": "true" if include_test_dictionaries else "false"}
         return self.get(endpoint, params)
 
     def get_classes(
@@ -626,6 +626,8 @@ class Client:
         dictionary_uri: str,
         use_nested_classes: bool = True,
         class_type: ClassTypes = "Class",
+        search_text: str = "",
+        related_ifc_entity: str = "",
         language_code: str = "",
         version: int = 1,
         offset=0,
@@ -636,14 +638,23 @@ class Client:
         This API replaces Domain
         """
         endpoint = f"Dictionary/v{version}/Classes"
-        params = {
-            "Uri": dictionary_uri,
+        params = {"Uri": dictionary_uri}
+        for param, value in {
             "UseNestedClasses": use_nested_classes,
             "ClassType": class_type,
             "languageCode": language_code,
             "offset": offset,
             "limit": limit,
-        }
+        }.items():
+            if value:
+                params[param] = value
+        if not use_nested_classes:
+            for param, value in {
+                "SearchText": search_text,
+                "RelatedIfcEntity": related_ifc_entity,
+            }.items():
+                if value:
+                    params[param] = value
         return self.get(endpoint, params)
 
     def get_properties(
@@ -781,8 +792,8 @@ class Client:
         this API replaces ClassificationSearch
         """
 
-        if len(search_text) < 3:
-            raise ValueError("Search text must be at least 3 characters long.")
+        if len(search_text) < 1:
+            raise ValueError("Search text must be at least 1 characters long.")
 
         if related_ifc_entities is None:
             related_ifc_entities = []

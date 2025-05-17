@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.tool as tool
+from bonsai.bim.module.bsdd.data import BSDDData
 from bpy.types import Panel, UIList
 
 
@@ -30,65 +31,54 @@ class BIM_PT_bsdd(Panel):
     bl_parent_id = "BIM_PT_tab_project_setup"
 
     def draw(self, context):
+        if not BSDDData.is_loaded:
+            BSDDData.load()
         props = context.scene.BIMBSDDProperties
         layout = self.layout
-        row = self.layout.row(align=True)
-        row.prop(props, "load_preview_domains")
-        if len(props.domains):
-            row.operator("bim.load_bsdd_domains", text="", icon="FILE_REFRESH")
-
-        if props.active_domain:
+        if len(props.dictionaries):
             row = self.layout.row()
-            row.label(text="Active: " + props.active_domain, icon="URL")
-        else:
-            row = self.layout.row()
-            row.label(text="No Active bSDD Domain", icon="ERROR")
+            row.operator("bim.load_bsdd_dictionaries", icon="FILE_REFRESH")
 
-        if len(props.domains):
+        if len(props.dictionaries):
             self.layout.template_list(
-                "BIM_UL_bsdd_domains",
+                "BIM_UL_bsdd_dictionaries",
                 "",
                 props,
-                "domains",
+                "dictionaries",
                 props,
-                "active_domain_index",
+                "active_dictionary_index",
             )
-            if 0 <= props.active_domain_index < len(props.domains):
-                selected_domain = props.domains[props.active_domain_index]
+            if 0 <= props.active_dictionary_index < len(props.dictionaries):
+                selected_dictionary = props.dictionaries[props.active_dictionary_index]
             else:
-                selected_domain = None
+                selected_dictionary = None
 
-            if selected_domain:
-                layout.label(text="Selected domain:")
+            if selected_dictionary:
+                layout.label(text="Selected dictionary:")
                 box = layout.box()
                 row = box.row(align=True)
                 row.label(text="Language")
-                row.label(text=selected_domain.default_language_code)
+                row.label(text=selected_dictionary.default_language_code)
                 row = box.row(align=True)
                 row.label(text="Version")
-                row.label(text=selected_domain.version)
-                box.operator("bim.open_uri", text="Open bSDD In Browser", icon="URL").uri = selected_domain.uri
+                row.label(text=selected_dictionary.version)
+                box.operator("bim.open_uri", text="Open bSDD In Browser", icon="URL").uri = selected_dictionary.uri
 
         else:
             row = self.layout.row()
-            row.operator("bim.load_bsdd_domains")
+            row.operator("bim.load_bsdd_dictionaries")
 
 
-class BIM_UL_bsdd_domains(UIList):
+class BIM_UL_bsdd_dictionaries(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             props = context.scene.BIMBSDDProperties
             row = layout.row(align=True)
             if item.status != "Active":
-                row.label(text=f"{item.name} ({item.organization_name_owner}) - {item.status}", icon="ERROR")
+                row.label(text=f"{item.name} ({item.organization_name_owner}) v{item.version} - {item.status}", icon="ERROR")
             else:
-                row.label(text=f"{item.name} ({item.organization_name_owner})")
-            if item.uri == props.active_uri:
-                row.label(text="", icon="URL")
-            else:
-                op = row.operator("bim.set_active_bsdd_domain", text="", icon="RESTRICT_SELECT_OFF")
-                op.name = item.name
-                op.uri = item.uri
+                row.label(text=f"{item.name} ({item.organization_name_owner}) v{item.version}")
+            row.prop(item, "is_active", icon="CHECKBOX_HLT" if item.is_active else "CHECKBOX_DEHLT", text="", emboss=False)
 
 
 class BIM_UL_bsdd_classifications(UIList):
