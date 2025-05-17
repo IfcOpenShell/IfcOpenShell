@@ -78,13 +78,8 @@ class BIM_PT_classifications(Panel):
     def draw_add_bsdd_ui(self, context):
         self.bprops = context.scene.BIMBSDDProperties
 
-        if not self.bprops.active_domain:
-            row = self.layout.row()
-            row.label(text="No Active bSDD Domain", icon="ERROR")
-            return
-
         row = self.layout.row()
-        row.label(text="Active: " + self.bprops.active_domain, icon="URL")
+        row.prop(self.bprops, "active_dictionary", text="")
 
         row = self.layout.row()
         row.operator("bim.add_classification_from_bsdd", icon="ADD")
@@ -163,13 +158,8 @@ class ReferenceUI:
             row.operator("bim.enable_adding_manual_classification_reference", text="Add Reference", icon="ADD")
 
     def draw_add_bsdd_ui(self, context):
-        if not self.bprops.active_domain:
-            row = self.layout.row()
-            row.label(text="No Active bSDD Domain", icon="ERROR")
-            return
-
         row = self.layout.row()
-        row.label(text="Active: " + self.bprops.active_domain, icon="URL")
+        row.prop(self.bprops, "active_dictionary", text="")
 
         row = self.layout.row(align=True)
         row.prop(self.bprops, "keyword", text="")

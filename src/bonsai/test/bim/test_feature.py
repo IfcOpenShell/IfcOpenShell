@@ -50,6 +50,67 @@ variables = {
 webbrowser.open = lambda x: True
 
 
+class bSDDClientStub:
+    def get_dictionary(self, dictionary_uri=None, include_test_dictionaries=False):
+        dicts = {
+            "dictionaries": [
+                {
+                    "availableLanguages": [{"code": "EN", "name": "English"}],
+                    "code": "LCA",
+                    "uri": "https://identifier.buildingsmart.org/uri/LCA/LCA/3.0",
+                    "name": "LCA indicators and modules",
+                    "version": "3.0",
+                    "organizationCodeOwner": "LCA",
+                    "organizationNameOwner": "buildingSMART Sustainability Strategic Group",
+                    "defaultLanguageCode": "EN",
+                    "isLatestVersion": True,
+                    "isVerified": False,
+                    "isPrivate": False,
+                    "license": "No license (rights reserved)",
+                    "licenseUrl": "https://technical.buildingsmart.org/services/bsdd/license/",
+                    "qualityAssuranceProcedure": "EN ISO 23386:2020",
+                    "status": "Active",
+                    "moreInfoUrl": "https://www.lignum.ch/leistungen/projekte/buildingsmart-data-dictionary-bsdd/",
+                    "releaseDate": "2023-12-01T14:14:19Z",
+                    "lastUpdatedUtc": "2023-12-01T14:17:53Z",
+                },
+                {
+                    "availableLanguages": [{"code": "EN", "name": "English"}],
+                    "code": "BonsaiTestDict",
+                    "uri": "https://identifier.buildingsmart.org/uri/BonsaiTestDict",
+                    "name": "BonsaiTestDict",
+                    "version": "3.0",
+                    "organizationCodeOwner": "LCA",
+                    "organizationNameOwner": "buildingSMART Sustainability Strategic Group",
+                    "defaultLanguageCode": "EN",
+                    "isLatestVersion": True,
+                    "isVerified": False,
+                    "isPrivate": False,
+                    "license": "No license (rights reserved)",
+                    "licenseUrl": "https://technical.buildingsmart.org/services/bsdd/license/",
+                    "qualityAssuranceProcedure": "EN ISO 23386:2020",
+                    "status": "Active",
+                    "moreInfoUrl": "https://www.lignum.ch/leistungen/projekte/buildingsmart-data-dictionary-bsdd/",
+                    "releaseDate": "2023-12-01T14:14:19Z",
+                    "lastUpdatedUtc": "2023-12-01T14:17:53Z",
+                }
+            ],
+            "totalCount": 2,
+            "offset": 0,
+            "count": 2,
+        }
+        if not dictionary_uri:
+            return dicts
+        for dictionary in dicts["dictionaries"]:
+            if dictionary["uri"] == dictionary_uri:
+                dicts["dictionaries"] = [dictionary]
+                return dicts
+        assert False, f"Could not find dictionary uri {dictionary_uri}"
+
+
+tool.Bsdd.client = bSDDClientStub()
+
+
 class PanelSpy:
     def __init__(self, panel: type[bpy.types.Panel]):
         self.is_spy_dirty = True
@@ -86,8 +147,9 @@ class PanelSpy:
                 "active_dataptr": active_dataptr,
                 "active_propname": active_propname,
             }
-            self.spied_lists.append(spied_data)
-            return TemplateListSpy(spied_data)
+            template_list = TemplateListSpy(getattr(bpy.types, listtype_name), spied_data)
+            self.spied_lists.append(template_list)
+            return template_list
         elif self.spied_attr == "context_pointer_set":
             return lambda *args, **kwargs: None
         elif self.spied_attr == "label":
@@ -157,9 +219,39 @@ class OperatorSpy:
             self.spied_data["kwargs"][name] = value
 
 
-class TemplateListSpy:
-    def __init__(self, spied_data):
+class TemplateListSpy(PanelSpy):
+    def __init__(self, template_list: type[bpy.types.UIList], spied_data: dict):
         self.spied_data = spied_data
+        self.items = getattr(self.spied_data["dataptr"], self.spied_data["propname"])
+        self.active_index = getattr(self.spied_data["active_dataptr"], self.spied_data["active_propname"])
+        try:
+            self.active_item = self.items[self.active_index]
+        except:
+            self.active_item = None
+        self.panel = template_list
+
+        self.rows = []
+        for item in self.items:
+            self.rows.append(TemplateListItemSpy(self, item))
+
+
+class TemplateListItemSpy(PanelSpy):
+    def __init__(self, parent: TemplateListSpy, item):
+        self.panel = parent.panel
+        self.spied_attr: Union[str, None] = None
+        self.spied_labels: list[str] = []
+        self.spied_props: list[dict[str, Any]] = []
+        self.spied_operators: list[dict[str, Any]] = []
+        parent.panel.draw_item(
+            self,
+            bpy.context,
+            self,
+            parent.spied_data["dataptr"],
+            item,
+            "",
+            parent.spied_data["active_dataptr"],
+            parent.spied_data["active_propname"],
+        )
 
 
 ui_name_cache = {}
@@ -181,6 +273,8 @@ def create_ui_name_cache():
                 if panel_type.bl_label == "Add" and bl_idname != "VIEW3D_MT_add":
                     continue  # Non-unique, but "VIEW3D_MT_add" is the one we care about
                 ui_name_cache[panel_type.bl_label] = bl_idname
+            elif panel_type.bl_rna.base.name == "UIList":
+                ui_name_cache[panel_type.bl_rna.name] = bl_idname
         except:
             pass
 
@@ -291,6 +385,57 @@ def i_see_text(text):
     assert panel_spy
     panel_spy.refresh_spy()
     assert [l for l in panel_spy.spied_labels if text in l], f"Text {text} not found in {panel_spy.spied_labels}"
+
+
+@given(parsers.parse('I see "{text}" in the "{nth}" list'))
+@when(parsers.parse('I see "{text}" in the "{nth}" list'))
+@then(parsers.parse('I see "{text}" in the "{nth}" list'))
+def i_see_text_in_the_nth_list(text, nth):
+    assert panel_spy
+    panel_spy.refresh_spy()
+    nth = int("".join([c for c in nth if c.isnumeric()]))
+    if len(panel_spy.spied_lists) < nth:
+        assert False, f"{nth} list does not exist. Actual number of lists: {len(panel_spy.spied_lists)}"
+    debug = []
+    for i, template_list in enumerate(panel_spy.spied_lists):
+        if i + 1 != nth:
+            continue
+        for row in template_list.rows:
+            for l in row.spied_labels:
+                debug.append(l)
+                if text in l:
+                    return True
+    debug = "\n".join(debug)
+    assert False, f"Could not see '{text}' in any list. We saw:\n{debug}"
+
+
+@given(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
+@when(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
+@then(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
+def i_click_button_in_the_row_where_i_see_text_in_the_nth_list(button, text, nth):
+    """
+    :param button: The text or icon of the button to click.
+    """
+    assert panel_spy
+    panel_spy.refresh_spy()
+    nth = int("".join([c for c in nth if c.isnumeric()]))
+    if len(panel_spy.spied_lists) < nth:
+        assert False, f"{nth} list does not exist. Actual number of lists: {len(panel_spy.spied_lists)}"
+    debug = []
+    for i, template_list in enumerate(panel_spy.spied_lists):
+        if i + 1 != nth:
+            continue
+        for row in template_list.rows:
+            is_row = False
+            for l in row.spied_labels:
+                debug.append(l)
+                if text in l:
+                    is_row = True
+            if is_row:
+                i_click_button_on_panel(button, row)
+                return True
+    debug = "\n".join(debug)
+    assert False, f"Could not see '{text}' in any list. We saw:\n{debug}"
 
 
 @given(parsers.parse('I don\'t see "{text}"'))
@@ -564,15 +709,7 @@ def i_press_operator(operator):
         assert False, f"Failed to run operator bpy.ops.{operator} because of {e}"
 
 
-@given(parsers.parse('I click "{button}"'))
-@when(parsers.parse('I click "{button}"'))
-@then(parsers.parse('I click "{button}"'))
-def i_click_button(button):
-    """
-    :param button: The text or icon of the button to click.
-    """
-    assert panel_spy
-    panel_spy.refresh_spy()
+def i_click_button_on_panel(button, panel_spy):
     for spied_operator in panel_spy.spied_operators:
         if spied_operator["text"] == button or spied_operator["icon"] == button:
             spied_operator["operator"]("INVOKE_DEFAULT", **spied_operator["kwargs"])
@@ -590,6 +727,18 @@ def i_click_button(button):
     debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
     debug += f"\nHere is the text we see: {panel_spy.spied_labels}"
     assert False, f"Could not find {button}:\n{debug}"
+
+
+@given(parsers.parse('I click "{button}"'))
+@when(parsers.parse('I click "{button}"'))
+@then(parsers.parse('I click "{button}"'))
+def i_click_button(button):
+    """
+    :param button: The text or icon of the button to click.
+    """
+    assert panel_spy
+    panel_spy.refresh_spy()
+    i_click_button_on_panel(button, panel_spy)
 
 
 @given(parsers.parse('I click the "{button}" after the text "{text}"'))

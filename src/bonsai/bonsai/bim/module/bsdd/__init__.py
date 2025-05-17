@@ -21,14 +21,13 @@ from . import ui, prop, operator
 
 classes = (
     operator.GetBSDDClassificationProperties,
-    operator.LoadBSDDDomains,
+    operator.LoadBSDDDictionaries,
     operator.SearchBSDDClass,
-    operator.SetActiveBSDDDictionary,
-    prop.BSDDDomain,
+    prop.BSDDDictionary,
     prop.BSDDClassification,
     prop.BSDDPset,
     prop.BIMBSDDProperties,
-    ui.BIM_UL_bsdd_domains,
+    ui.BIM_UL_bsdd_dictionaries,
     ui.BIM_UL_bsdd_classifications,
     ui.BIM_PT_bsdd,
 )
