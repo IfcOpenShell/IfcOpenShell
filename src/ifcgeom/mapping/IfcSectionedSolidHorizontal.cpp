@@ -55,7 +55,7 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 	for (auto& cs : *css) {
 		faces.push_back(std::move(taxonomy::cast<taxonomy::face>(map(cs))));
 	}
-#ifdef SCHEMA_HAS_IfcPointByDistanceExpression
+#if defined(SCHEMA_HAS_IfcPointByDistanceExpression) && !defined(SCHEMA_IfcSectionedSurface_HAS_FixedAxisVertical)
 	for (auto& csp : *csps) {
 		auto pbde = csp->Location()->as<IfcSchema::IfcPointByDistanceExpression>(true);
 

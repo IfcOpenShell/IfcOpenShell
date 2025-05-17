@@ -55,8 +55,10 @@ double translate_to_length_measure(const IfcSchema::IfcCurve* crv, double param_
         return fabs(clothoid->ClothoidConstant()*sqrt(PI))*param_value;
     } else if (auto circ = crv->as<IfcSchema::IfcCircle>()) {
         return circ->Radius() * param_value;
+#ifdef SCHEMA_HAS_IfcPolynomialCurve
     } else if (auto poly = crv->as<IfcSchema::IfcPolynomialCurve>()) {
         return param_value;
+#endif
     } else {
         throw std::runtime_error("Unsupported curve measure type");
     }
@@ -75,7 +77,9 @@ double translate_if_param_value(const IfcSchema::IfcCurve* crv, IfcSchema::IfcCu
 typedef boost::mpl::vector<
       IfcSchema::IfcLine
     , IfcSchema::IfcCircle
+#ifdef SCHEMA_HAS_IfcPolynomialCurve
     , IfcSchema::IfcPolynomialCurve
+#endif
 #ifdef SCHEMA_HAS_IfcClothoid
     , IfcSchema::IfcClothoid
 #endif
@@ -198,8 +202,12 @@ class curve_segment_evaluator {
           inst_(inst),
           length_unit_(length_unit),
           parent_curve_(inst->ParentCurve()) {
-
+#ifdef SCHEMA_IfcCurveSegment_HAS_UsingCurves
            auto composite_curves = inst->UsingCurves();
+#else
+        aggregate_of<IfcSchema::IfcCompositeCurve>::ptr composite_curves;
+        throw std::runtime_error("Schema not supported");
+#endif
 
         // Find the next segment after inst
         const IfcSchema::IfcCurveSegment* next_inst = nullptr;
@@ -245,17 +253,23 @@ class curve_segment_evaluator {
 
         segment_type_ = is_horizontal ? ST_HORIZONTAL : is_vertical ? ST_VERTICAL : is_cant  ? ST_CANT : ST_HORIZONTAL;
 
-
+#ifdef SCHEMA_IfcCurveSegment_HAS_SegmentStart
         start_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentStart()) * length_unit;
+#else
+        throw std::runtime_error("Schema not supported");
+#endif
         length_ = translate_if_param_value(inst->ParentCurve(), inst->SegmentLength()) * length_unit;
         projected_length_ = length_; // initialize with something reasonable
 
         if (inst) {
+#ifdef SCHEMA_IfcCurveSegment_HAS_Placement
             curve_segment_placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst->Placement()))->ccomponents();
+#endif
         }
-
         if (next_inst) {
+#ifdef SCHEMA_IfcCurveSegment_HAS_Placement
             next_segment_placement_ = taxonomy::cast<taxonomy::matrix4>(mapping_->map(next_inst->Placement()))->ccomponents();
+#endif
         } else {
            // there is not a next segment, however IfcGradientCurve and IfcSegmentReferenceCurve have an
            // optional EndPoint which services the same purpose as the zero-length last segment.
@@ -264,7 +278,9 @@ class curve_segment_evaluator {
                 auto& cc = *(composite_curves)->begin();
                 if (segment_type_ == ST_VERTICAL) {
                     auto gradient_curve = cc->as<IfcSchema::IfcGradientCurve>();
+#ifdef SCHEMA_IfcCurveSegment_HAS_Placement
                     end_point = gradient_curve->EndPoint();
+#endif
                 } else if (segment_type_ == ST_CANT) {
                     auto segmented_reference_curve = cc->as<IfcSchema::IfcSegmentedReferenceCurve>();
                     end_point = segmented_reference_curve->EndPoint();
@@ -776,9 +792,13 @@ class curve_segment_evaluator {
         auto A0 = c->ConstantTerm();
         auto A1 = c->LinearTerm();
         auto A2 = c->QuadraticTerm();
-        auto A3 = c->CubicTerm();
-        boost::optional<double> A4, A5, A6, A7;
-
+        boost::optional<double> A3, A4, A5, A6, A7;
+#ifdef SCHEMA_IfcThirdOrderPolynomialSpiral_HAS_CubicTerm
+        A3 = c->CubicTerm();
+#else
+        A3 = c->QubicTerm();
+#endif
+        
         if (segment_type_ == ST_CANT) {
             polynomial_cant_spiral(A0, A1, A2, A3, A4, A5, A6, A7);
         } else {
@@ -832,7 +852,10 @@ class curve_segment_evaluator {
             if (segment_type_ == ST_HORIZONTAL) {
                 convert_u = [](double u) { return u; };
             } else {
-                auto curve_segment_placement = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst_->Placement()))->ccomponents();
+                Eigen::Matrix4d curve_segment_placement;
+#ifdef SCHEMA_IfcCurveSegment_HAS_Placement
+                curve_segment_placement = taxonomy::cast<taxonomy::matrix4>(mapping_->map(inst_->Placement()))->ccomponents();
+#endif
                 auto csStartX = curve_segment_placement(0, 3);
                 auto csStartY = curve_segment_placement(1, 3);
                 auto csStartDx = curve_segment_placement(0, 0);
@@ -1015,6 +1038,7 @@ class curve_segment_evaluator {
        }
     }
 
+#ifdef SCHEMA_HAS_IfcPolynomialCurve
     void operator()(const IfcSchema::IfcPolynomialCurve* pc) {
         // see https://forums.buildingsmart.org/t/ifcpolynomialcurve-clarification/4716 for discussion on IfcPolynomialCurve
         auto coeffX = pc->CoefficientsX().get_value_or(std::vector<double>());
@@ -1159,6 +1183,7 @@ class curve_segment_evaluator {
                 [](double /*u*/) -> Eigen::Matrix4d { return Eigen::Matrix4d::Identity(); });
         }
     }
+#endif
 };
 } // namespace
 

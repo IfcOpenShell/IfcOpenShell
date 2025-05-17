@@ -38,7 +38,8 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
       function_item_evaluator evaluator(settings_,fn);
 		double start = 0;
       double end = fn->length();
-#ifdef SCHEMA_HAS_IfcDirectrixCurveSweptAreaSolid
+	  // IfcPointByDistanceExpression is introduced in rc2, the code below doesn't work on rc1 because startparam is optional<double>
+#if defined(SCHEMA_HAS_IfcDirectrixCurveSweptAreaSolid) && defined(SCHEMA_HAS_IfcPointByDistanceExpression)
 		// IfcDirectrixCurveSweptAreaSolid introduced in 4.3 changed attribute type
 		// from optional IfcParamValue to optional IfcCurveMeasureSelect.
 		// Invocation of mapping on pre-4.3 models can never result in a piecewise_function.
