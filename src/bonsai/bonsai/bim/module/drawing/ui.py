@@ -592,7 +592,7 @@ class BIM_PT_text(Panel):
                 col.label(text=f'    {literal_props.attributes["BoxAlignment"].string_value}')
 
         else:
-            text_data = DecoratorData.get_ifc_text_data(obj)
+            text_data = DecoratorData.get_text_data(obj)
 
             row = self.layout.row()
             row.operator("bim.enable_editing_text", icon="GREASEPENCIL")

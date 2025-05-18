@@ -236,23 +236,39 @@ class DecoratorData:
     fill_cache = {}
 
     @classmethod
-    def load(cls):
+    def load(cls, handler):
         cls.is_loaded = True
         cls.cut_cache = {}
         cls.layerset_cache = {}
 
         text = {}
         dimension = {}
+        fall = {}
+        symbol = {}
         for obj in bpy.context.visible_objects:
             if not (element := tool.Ifc.get_entity(obj)):
                 continue
-            if tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
-                text[obj.name] = cls.get_ifc_text_data(obj)
+            if tool.Drawing.is_annotation_object_type(element, ("TEXT", "TEXT_LEADER")):
+                text[obj.name] = cls.get_text_data(obj)
+                if text[obj.name]["Symbol"]:
+                    symbol[obj.name] = cls.get_symbol_data(obj)
             elif tool.Drawing.is_annotation_object_type(
                 element, ("DIMENSION", "DIAMETER", "SECTION_LEVEL", "PLAN_LEVEL", "RADIUS")
             ):
                 dimension[obj.name] = cls.get_dimension_data(obj)
-        cls.data = {"text": text, "dimension": dimension}
+            elif tool.Drawing.is_annotation_object_type(
+                element, ("FALL", "SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT")
+            ):
+                fall[obj.name] = cls.get_fall_data(obj)
+            elif tool.Drawing.is_annotation_object_type(element, ("SYMBOL",)):
+                symbol[obj.name] = cls.get_symbol_data(obj)
+        cls.data = {
+            "text": text,
+            "dimension": dimension,
+            "fall": fall,
+            "symbol": symbol,
+            "object_decorators": cls.object_decorators(handler),
+        }
 
     @classmethod
     def get_batting_thickness(cls, obj):
@@ -311,7 +327,7 @@ class DecoratorData:
         return display_data
 
     @classmethod
-    def get_ifc_text_data(cls, obj: bpy.types.Object) -> dict:
+    def get_text_data(cls, obj: bpy.types.Object) -> dict:
         """used by Ifc Annotations with ObjectType = "TEXT" / "TEXT_LEADER"\n
         returns font size in mm for current ifc text object"""
         element = tool.Ifc.get_entity(obj)
@@ -355,11 +371,6 @@ class DecoratorData:
         return {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol, "Newline_At": newline_at}
 
     @classmethod
-    def get_symbol(cls, obj: bpy.types.Object) -> Union[str, None]:
-        """used by IfcAnnotations with ObjectType MULTI_SYMBOL"""
-        return tool.Drawing.get_annotation_symbol(tool.Ifc.get_entity(obj))
-
-    @classmethod
     def get_dimension_data(cls, obj):
         """used by Ifc Annotations with ObjectType:
 
@@ -393,6 +404,59 @@ class DecoratorData:
             "fill_bg": fill_bg,
             "custom_unit": custom_unit,
         }
+
+    @classmethod
+    def get_fall_data(cls, obj):
+        object_type = None
+        if element := tool.Ifc.get_entity(obj):
+            object_type = ifcopenshell.util.element.get_predefined_type(element)
+        return {"object_type": object_type}
+
+    @classmethod
+    def get_symbol_data(cls, obj):
+        return tool.Drawing.get_annotation_symbol(tool.Ifc.get_entity(obj))
+
+    @classmethod
+    def object_decorators(cls, handler):
+        import bonsai.bim.module.drawing.decoration
+
+        if not bonsai.bim.module.drawing.decoration.DecorationsHandler.installed:
+            return []
+
+        props = tool.Drawing.get_document_props()
+        if (drawing := props.get_active_drawing()) is None:
+            return []
+
+        camera = tool.Ifc.get_object(drawing)
+        assert isinstance(camera, bpy.types.Object)
+        collection = tool.Blender.get_object_bim_props(camera).collection
+        assert collection
+
+        results = []
+        viewport = tool.Blender.get_view3d_space()
+
+        for obj in collection.all_objects:
+            if not obj.visible_get(viewport=viewport):
+                continue
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if not element.is_a("IfcAnnotation"):
+                continue
+            object_type: Union[str, None] = ifcopenshell.util.element.get_predefined_type(element)
+            if object_type == "DRAWING":
+                continue
+            if dec := handler.decorators.get(object_type, None):
+                results.append((obj, dec))
+            elif isinstance(obj.data, bpy.types.Mesh):
+                if object_type == "LINEWORK" and "dashed" in str(
+                    ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
+                ).split(" "):
+                    results.append((obj, handler.decorators["HIDDEN_LINE"]))
+                else:
+                    results.append((obj, handler.decorators["MISC"]))
+
+        return results
 
 
 class AnnotationData:

@@ -562,8 +562,7 @@ class BaseDecorator:
                 MiscDecorator.decorate(self, context, obj)
                 return
 
-            symbol = DecoratorData.get_symbol(obj)
-            if not symbol:
+            if not (symbol := DecoratorData.data["symbol"].get(obj.name, None)):
                 return
 
             for vert in mesh.vertices:
@@ -572,8 +571,7 @@ class BaseDecorator:
             return
 
         # EMPTY objects
-        symbol = DecoratorData.get_symbol(obj)
-        if not symbol:
+        if not (symbol := DecoratorData.data["symbol"].get(obj.name, None)):
             return
 
         rotation = -Vector((1, 0)).angle_signed(annotation_dir)
@@ -998,8 +996,6 @@ class FallDecorator(BaseDecorator):
         # generate label text
         # same function as in svgwriter.py
         def get_label_text():
-            element = tool.Ifc.get_entity(obj)
-            assert element
             B, A = [v.co.xyz for v in spline_points[:2]]
             rise = abs(A.z - B.z)
             O = A.copy()
@@ -1011,8 +1007,8 @@ class FallDecorator(BaseDecorator):
             else:
                 angle = 90
 
-            # ues SLOPE_ANGLE as default
-            object_type = ifcopenshell.util.element.get_predefined_type(element)
+            # uses SLOPE_ANGLE as default
+            DecoratorData.data["fall"].get(obj, {}).get("object_type", None)
             if object_type in ("FALL", "SLOPE_ANGLE"):
                 return f"{angle}°"
             elif object_type == "SLOPE_FRACTION":
@@ -1023,6 +1019,7 @@ class FallDecorator(BaseDecorator):
                 if angle == 90:
                     return "-"
                 return f"{round(angle_tg * 100)} %"
+            return "NO DATA"
 
         if spline_points:
             text = get_label_text()
@@ -1921,17 +1918,18 @@ class DecorationsHandler:
     ]
 
     installed = None
+    handler = None
 
     @classmethod
     def install(cls, context):
         if cls.installed:
             cls.uninstall()
-        if not DecoratorData.is_loaded:
-            DecoratorData.load()
         handler = cls()
         # NOTE: we USE POST_PIXEL here so that we can use both POLYLINE_UNIFORM_COLOR
         # and drawing text in the same handler. BUT this means that we supply coordinates in WINSPACE
         cls.installed = SpaceView3D.draw_handler_add(handler, (context,), "WINDOW", "POST_PIXEL")
+        if not DecoratorData.is_loaded:
+            DecoratorData.load(handler)
 
     @classmethod
     def uninstall(cls):
@@ -1954,53 +1952,9 @@ class DecorationsHandler:
                 for decorator in self.decorators.values():
                     decorator.font_id = font_id
 
-    def get_objects_and_decorators(self, collection):
-        # TODO: do it in data instead of the handler for performance?
-        results = []
-        viewport = bpy.context.space_data
-
-        for obj in collection.all_objects:
-            if not obj.visible_get(viewport=viewport):
-                continue
-
-            element = tool.Ifc.get_entity(obj)
-            if not element:
-                continue
-
-            if not element.is_a("IfcAnnotation"):
-                continue
-
-            object_type: Union[str, None] = ifcopenshell.util.element.get_predefined_type(element)
-            if object_type == "DRAWING":
-                continue
-
-            if dec := self.decorators.get(object_type, None):
-                results.append((obj, dec))
-
-            elif isinstance(obj.data, bpy.types.Mesh):
-                if object_type == "LINEWORK" and "dashed" in str(
-                    ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
-                ).split(" "):
-                    results.append((obj, self.decorators["HIDDEN_LINE"]))
-                else:
-                    results.append((obj, self.decorators["MISC"]))
-
-        return results
-
     def __call__(self, context):
-        props = tool.Drawing.get_document_props()
-        drawing = props.get_active_drawing()
-        if drawing is None:
-            return
-
-        camera = tool.Ifc.get_object(drawing)
-        assert isinstance(camera, bpy.types.Object)
-        collection = tool.Blender.get_object_bim_props(camera).collection
-        assert collection
-
         if not DrawingsData.is_loaded:
             DrawingsData.load()
 
-        object_decorators = self.get_objects_and_decorators(collection)
-        for obj, decorator in object_decorators:
+        for obj, decorator in DecoratorData.data["object_decorators"]:
             decorator.decorate(context, obj)
