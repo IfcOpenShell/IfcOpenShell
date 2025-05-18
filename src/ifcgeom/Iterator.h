@@ -219,6 +219,50 @@ namespace IfcGeom {
 				tasks_.push_back(res);
 			}
 
+			if (settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get() && settings_.get<ifcopenshell::geometry::settings::PermissiveShapeReuse>().get()) {
+				std::unordered_map<
+					ifcopenshell::geometry::taxonomy::item::ptr,
+					std::vector<std::pair<const IfcUtil::IfcBaseEntity*, ifcopenshell::geometry::taxonomy::matrix4::ptr>>> folded;
+
+				for (auto& r : tasks_) {
+					auto i = r.item;
+					
+					Eigen::Matrix4d m4 = Eigen::Matrix4d::Identity();
+					
+					while (auto col = std::dynamic_pointer_cast<ifcopenshell::geometry::taxonomy::collection>(i)) {
+						if (col->children.size() == 1) {
+							if (col->matrix) {
+								m4 *= col->matrix->ccomponents();
+							}
+							i = col->children[0];
+						} else {
+							break;
+						}
+					}
+
+					for (auto& p : r.products) {
+						auto pl = ifcopenshell::geometry::taxonomy::matrix4::ptr(p.second->clone_());
+						pl->components() *= m4;
+						folded[i].push_back(
+							{ p.first, pl }
+						);
+					}
+				}
+
+				if (folded.size() < tasks_.size()) {
+					auto old_size = tasks_.size();
+					tasks_.clear();
+					size_t i = 0;
+					for (auto& p : folded) {
+						tasks_.emplace_back();
+						tasks_.back().index = i++;
+						tasks_.back().item = p.first;
+						tasks_.back().products = p.second;
+					}
+					Logger::Notice("Merged " + std::to_string(old_size) + " tasks into " + std::to_string(tasks_.size()) + " tasks due to permissive shape reuse");
+				}				
+			}
+
 			size_t num_products = 0;
 			for (auto& r : tasks_) {
 				num_products += !settings_.get<ifcopenshell::geometry::settings::NoParallelMapping>().get() ? r.products_2->size() : r.products.size();

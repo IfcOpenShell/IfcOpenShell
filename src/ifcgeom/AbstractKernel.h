@@ -34,6 +34,8 @@ namespace ifcopenshell {
 	namespace geometry { namespace kernels {
 
 	class IFC_GEOM_API AbstractKernel {
+	private:
+		std::unordered_map<taxonomy::item::ptr, IfcGeom::ConversionResults, ifcopenshell::geometry::taxonomy::hash_functor, ifcopenshell::geometry::taxonomy::equal_functor> cache_;
 	protected:
 		std::string geometry_library_;
 		Settings settings_;

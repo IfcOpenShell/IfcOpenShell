@@ -593,6 +593,24 @@ typedef item const* ptr;
 				}
 			};
 
+			struct equal_functor {
+				bool operator()(taxonomy::item::ptr const& a,
+					taxonomy::item::ptr const& b) const 
+				{
+					if (a == b) {
+						return true;
+					}
+					return !less(a, b) && !less(b, a);
+				}
+			};
+
+			struct hash_functor {
+				size_t operator()(taxonomy::item::ptr const& a) const
+				{
+					return a->hash();
+				}
+			};
+
 			// @todo make 4d for easier multiplication
 			template <size_t N>
 			struct cartesian_base : public item, public eigen_base<Eigen::Vector3d> {
