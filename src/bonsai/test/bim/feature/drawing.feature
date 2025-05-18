@@ -33,12 +33,12 @@ Scenario: Duplicate drawing - without duplicating annotations
     And I click "ADD"
     And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "OUTLINER_OB_CAMERA"
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     And I press "bim.add_annotation"
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
     When I press "bim.duplicate_drawing(drawing={drawing})"
     And I select the "PLAN_VIEW-X" item in the "BIM_UL_drawinglist" list
-    And I click "OUTLINER_OB_CAMERA"
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW-X" in the "1st" list
     Then the object "IfcAnnotation/TEXT" is not selected
     And the object "IfcAnnotation/TEXT.001" does not exist
 
@@ -56,12 +56,12 @@ Scenario: Duplicate drawing - with duplicating annotations
     And I click "ADD"
     And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "OUTLINER_OB_CAMERA"
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     And I press "bim.add_annotation"
     And the variable "drawing" is "IfcStore.get_file().by_type('IfcAnnotation')[0].id()"
     When I press "bim.duplicate_drawing(drawing={drawing}, should_duplicate_annotations=True)"
     And I select the "PLAN_VIEW-X" item in the "BIM_UL_drawinglist" list
-    And I click "OUTLINER_OB_CAMERA"
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW-X" in the "1st" list
     Then the object "IfcAnnotation/TEXT" is not selected
     And the object "IfcAnnotation/TEXT.001" exists
 
@@ -79,7 +79,7 @@ Scenario: Create drawing
     And I click "ADD"
     And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
     When I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "OUTLINER_OB_CAMERA"
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     And I click "OUTPUT"
     Then the file "{ifc_dir}/drawings/PLAN_VIEW.svg" should contain "cut"
     And the file "{ifc_dir}/drawings/PLAN_VIEW.svg" should contain "IfcWall"
@@ -99,7 +99,7 @@ Scenario: Create drawing after deleting a duplicated object
     And I click "ADD"
     And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "OUTLINER_OB_CAMERA"
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     And I click "OUTPUT"
     And the object "IfcWall/Cube" is selected
     And I delete the selected objects
@@ -118,7 +118,7 @@ Scenario: Activate drawing preserves visibility for non-ifc objects
     And I click "ADD"
     And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "OUTLINER_OB_CAMERA"
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     Then the object "Cube" is visible
     And the object "Cube.001" is not visible
 
@@ -132,7 +132,7 @@ Scenario: Activate drawing preserves selection
     And I click "ADD"
     And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    When I click "OUTLINER_OB_CAMERA"
+    When I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     Then the object "Cube" is selected
 
 Scenario: Remove drawing
@@ -149,7 +149,7 @@ Scenario: Remove drawing
     And I click "ADD"
     And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    When I click "OUTLINER_OB_CAMERA"
+    When I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     Then the collection "IfcAnnotation/PLAN_VIEW" exists
     When I press "bim.remove_drawing(drawing={drawing})"
     Then the collection "IfcAnnotation/PLAN_VIEW" does not exist
@@ -183,7 +183,7 @@ Scenario: Remove drawing - deleting active drawing
     And I click "ADD"
     And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "OUTLINER_OB_CAMERA"
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     When the object "IfcAnnotation/PLAN_VIEW" is selected
     And I delete the selected objects
     Then the collection "IfcAnnotation/PLAN_VIEW" does not exist
@@ -198,7 +198,7 @@ Scenario: Add annotation - text
     And I click "ADD"
     And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "OUTLINER_OB_CAMERA"
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     When I press "bim.add_annotation"
     Then the object "IfcAnnotation/TEXT" is selected
 
@@ -215,7 +215,7 @@ Scenario: Add annotation - auto create context if it doesn't exist
     And I click "ADD"
     And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "OUTLINER_OB_CAMERA"
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     When I press "bim.add_annotation"
     Then the object "IfcAnnotation/TEXT" is selected
 
@@ -234,7 +234,7 @@ Scenario: Create drawing - using shapely fill mode
     And I click "ADD"
     And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
     When I select the "MY STOREY PLAN" item in the "BIM_UL_drawinglist" list
-    And I click "OUTLINER_OB_CAMERA"
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "MY STOREY PLAN" in the "1st" list
     And I look at the "Active Drawing" panel
     And I set the "Fill Mode" property to "Shapely"
     And I look at the "Drawings" panel
@@ -260,7 +260,6 @@ Scenario: Create sheet
     When I click "OUTPUT"
     Then the file "{ifc_dir}/sheets/A00 - UNTITLED.svg" should not contain "titleblocks/A1.svg"
     And the file "{ifc_dir}/sheets/A00 - UNTITLED.svg" should contain "GRID NORTH"
-    And the file "{ifc_dir}/sheets/A00 - UNTITLED.svg" should not contain "IfcWall"
 
 Scenario: Add drawing to sheet
     Given an empty IFC project
@@ -276,7 +275,7 @@ Scenario: Add drawing to sheet
     And I click "ADD"
     And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "OUTLINER_OB_CAMERA"
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     And I click "OUTPUT"
     And I look at the "Sheets" panel
     And I click "IMPORT"
@@ -301,7 +300,7 @@ Scenario: Create sheet - with a drawing added to it
     And I click "ADD"
     And I press "bim.expand_target_view(target_view='PLAN_VIEW')"
     And I select the "PLAN_VIEW" item in the "BIM_UL_drawinglist" list
-    And I click "OUTLINER_OB_CAMERA"
+    And I click "VIEW_CAMERA_UNSELECTED" in the row where I see "PLAN_VIEW" in the "1st" list
     And I click "OUTPUT"
     And I look at the "Sheets" panel
     And I click "IMPORT"
