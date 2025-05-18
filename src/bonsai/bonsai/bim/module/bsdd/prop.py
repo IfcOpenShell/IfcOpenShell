@@ -84,7 +84,7 @@ class BIMBSDDProperties(PropertyGroup):
     use_only_ifc_properties: BoolProperty(
         name="Only IFC Properties",
         description="Whether to display and assign only properties from IFC dictionary",
-        default=True,
+        default=False,
     )
     load_preview_dictionaries: BoolProperty(
         name="Load Preview Dictionaries", description="Load dictionaries marked as Preview status", default=False

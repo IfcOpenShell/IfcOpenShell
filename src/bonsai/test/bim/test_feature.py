@@ -22,6 +22,7 @@ import pytest
 import traceback
 import webbrowser
 import numpy as np
+import test.bim.stub
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
@@ -50,65 +51,7 @@ variables = {
 webbrowser.open = lambda x: True
 
 
-class bSDDClientStub:
-    def get_dictionary(self, dictionary_uri=None, include_test_dictionaries=False):
-        dicts = {
-            "dictionaries": [
-                {
-                    "availableLanguages": [{"code": "EN", "name": "English"}],
-                    "code": "LCA",
-                    "uri": "https://identifier.buildingsmart.org/uri/LCA/LCA/3.0",
-                    "name": "LCA indicators and modules",
-                    "version": "3.0",
-                    "organizationCodeOwner": "LCA",
-                    "organizationNameOwner": "buildingSMART Sustainability Strategic Group",
-                    "defaultLanguageCode": "EN",
-                    "isLatestVersion": True,
-                    "isVerified": False,
-                    "isPrivate": False,
-                    "license": "No license (rights reserved)",
-                    "licenseUrl": "https://technical.buildingsmart.org/services/bsdd/license/",
-                    "qualityAssuranceProcedure": "EN ISO 23386:2020",
-                    "status": "Active",
-                    "moreInfoUrl": "https://www.lignum.ch/leistungen/projekte/buildingsmart-data-dictionary-bsdd/",
-                    "releaseDate": "2023-12-01T14:14:19Z",
-                    "lastUpdatedUtc": "2023-12-01T14:17:53Z",
-                },
-                {
-                    "availableLanguages": [{"code": "EN", "name": "English"}],
-                    "code": "BonsaiTestDict",
-                    "uri": "https://identifier.buildingsmart.org/uri/BonsaiTestDict",
-                    "name": "BonsaiTestDict",
-                    "version": "3.0",
-                    "organizationCodeOwner": "LCA",
-                    "organizationNameOwner": "buildingSMART Sustainability Strategic Group",
-                    "defaultLanguageCode": "EN",
-                    "isLatestVersion": True,
-                    "isVerified": False,
-                    "isPrivate": False,
-                    "license": "No license (rights reserved)",
-                    "licenseUrl": "https://technical.buildingsmart.org/services/bsdd/license/",
-                    "qualityAssuranceProcedure": "EN ISO 23386:2020",
-                    "status": "Active",
-                    "moreInfoUrl": "https://www.lignum.ch/leistungen/projekte/buildingsmart-data-dictionary-bsdd/",
-                    "releaseDate": "2023-12-01T14:14:19Z",
-                    "lastUpdatedUtc": "2023-12-01T14:17:53Z",
-                }
-            ],
-            "totalCount": 2,
-            "offset": 0,
-            "count": 2,
-        }
-        if not dictionary_uri:
-            return dicts
-        for dictionary in dicts["dictionaries"]:
-            if dictionary["uri"] == dictionary_uri:
-                dicts["dictionaries"] = [dictionary]
-                return dicts
-        assert False, f"Could not find dictionary uri {dictionary_uri}"
-
-
-tool.Bsdd.client = bSDDClientStub()
+tool.Bsdd.client = test.bim.stub.bSDDClientStub()
 
 
 class PanelSpy:
@@ -220,7 +163,7 @@ class OperatorSpy:
 
 
 class TemplateListSpy(PanelSpy):
-    def __init__(self, template_list: type[bpy.types.UIList], spied_data: dict):
+    def __init__(self, template_list: type[bpy.types.UIList], spied_data: dict) -> None:
         self.spied_data = spied_data
         self.items = getattr(self.spied_data["dataptr"], self.spied_data["propname"])
         self.active_index = getattr(self.spied_data["active_dataptr"], self.spied_data["active_propname"])
@@ -233,6 +176,14 @@ class TemplateListSpy(PanelSpy):
         self.rows = []
         for item in self.items:
             self.rows.append(TemplateListItemSpy(self, item))
+
+    def set_active_index(self, index: int) -> None:
+        self.active_index = index
+        setattr(self.spied_data["active_dataptr"], self.spied_data["active_propname"], self.active_index)
+        try:
+            self.active_item = self.items[self.active_index]
+        except:
+            assert False, f"Could not set active index {index}"
 
 
 class TemplateListItemSpy(PanelSpy):
@@ -409,6 +360,27 @@ def i_see_text_in_the_nth_list(text, nth):
     assert False, f"Could not see '{text}' in any list. We saw:\n{debug}"
 
 
+@given(parsers.parse('I don\'t see "{text}" in the "{nth}" list'))
+@when(parsers.parse('I don\'t see "{text}" in the "{nth}" list'))
+@then(parsers.parse('I don\'t see "{text}" in the "{nth}" list'))
+def i_dont_see_text_in_the_nth_list(text, nth):
+    assert panel_spy
+    panel_spy.refresh_spy()
+    nth = int("".join([c for c in nth if c.isnumeric()]))
+    if len(panel_spy.spied_lists) < nth:
+        assert False, f"{nth} list does not exist. Actual number of lists: {len(panel_spy.spied_lists)}"
+    debug = []
+    for i, template_list in enumerate(panel_spy.spied_lists):
+        if i + 1 != nth:
+            continue
+        for row in template_list.rows:
+            for l in row.spied_labels:
+                debug.append(l)
+                if text in l:
+                    debug = "\n".join(debug)
+                    assert False, f"We see saw '{text}' in the {nth} list but should not have. We saw:\n{debug}"
+
+
 @given(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
 @when(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
 @then(parsers.parse('I click "{button}" in the row where I see "{text}" in the "{nth}" list'))
@@ -433,6 +405,32 @@ def i_click_button_in_the_row_where_i_see_text_in_the_nth_list(button, text, nth
                     is_row = True
             if is_row:
                 i_click_button_on_panel(button, row)
+                return True
+    debug = "\n".join(debug)
+    assert False, f"Could not see '{text}' in any list. We saw:\n{debug}"
+
+
+@given(parsers.parse('I select the row where I see "{text}" in the "{nth}" list'))
+@when(parsers.parse('I select the row where I see "{text}" in the "{nth}" list'))
+@then(parsers.parse('I select the row where I see "{text}" in the "{nth}" list'))
+def i_select_the_row_where_i_see_text_in_the_nth_list(text, nth):
+    assert panel_spy
+    panel_spy.refresh_spy()
+    nth = int("".join([c for c in nth if c.isnumeric()]))
+    if len(panel_spy.spied_lists) < nth:
+        assert False, f"{nth} list does not exist. Actual number of lists: {len(panel_spy.spied_lists)}"
+    debug = []
+    for i, template_list in enumerate(panel_spy.spied_lists):
+        if i + 1 != nth:
+            continue
+        for i, row in enumerate(template_list.rows):
+            is_row = False
+            for l in row.spied_labels:
+                debug.append(l)
+                if text in l:
+                    is_row = True
+            if is_row:
+                template_list.set_active_index(i)
                 return True
     debug = "\n".join(debug)
     assert False, f"Could not see '{text}' in any list. We saw:\n{debug}"
