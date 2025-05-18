@@ -789,7 +789,7 @@ class BIMTextProperties(PropertyGroup):
 
     def get_text_edited_data(self) -> dict[str, Any]:
         """should be called only if `is_editing`
-        otherwise should use `DecoratorData.get_ifc_text_data(obj)` instead
+        otherwise should use `DecoratorData.get_text_data(obj)` instead
         because this data could be out of date
         """
         literals_data = []

@@ -1048,7 +1048,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
         from bonsai.bim.module.drawing.data import DecoratorData
 
-        text_data = DecoratorData.get_ifc_text_data(obj)
+        text_data = DecoratorData.get_text_data(obj)
         props.font_size = str(text_data["FontSize"])
         props.newline_at = text_data["Newline_At"]
 

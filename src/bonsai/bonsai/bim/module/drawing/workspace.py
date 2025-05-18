@@ -218,7 +218,7 @@ class AnnotationToolUI:
 
     @classmethod
     def draw_edit_object_interface(cls, context):
-        if DecoratorData.get_ifc_text_data(bpy.context.active_object):
+        if DecoratorData.get_text_data(bpy.context.active_object):
             add_layout_hotkey_operator(cls.layout, "Edit Text", "S_E", "")
 
     @classmethod
@@ -311,7 +311,7 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         if not bpy.context.active_object:
             return
 
-        if DecoratorData.get_ifc_text_data(bpy.context.active_object):
+        if DecoratorData.get_text_data(bpy.context.active_object):
             bpy.ops.bim.edit_text_popup()
 
     def hotkey_S_G(self):
