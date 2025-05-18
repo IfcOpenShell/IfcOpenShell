@@ -1008,7 +1008,7 @@ class FallDecorator(BaseDecorator):
                 angle = 90
 
             # uses SLOPE_ANGLE as default
-            DecoratorData.data["fall"].get(obj, {}).get("object_type", None)
+            object_type = DecoratorData.data["fall"].get(obj, {}).get("object_type", None)
             if object_type in ("FALL", "SLOPE_ANGLE"):
                 return f"{angle}°"
             elif object_type == "SLOPE_FRACTION":

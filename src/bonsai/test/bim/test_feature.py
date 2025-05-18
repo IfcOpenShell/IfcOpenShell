@@ -32,6 +32,7 @@ from bonsai.bim.ifc import IfcStore
 from bonsai.tool.brick import BrickStore
 from bonsai.bim.module.model.data import AuthoringData
 from pytest_bdd import scenarios, given, when, then, parsers
+from inspect import signature
 from mathutils import Vector
 from math import radians
 from pathlib import Path
@@ -75,6 +76,8 @@ class PanelSpy:
             return annotation.keywords.get("default", None)  # An operator property
         if attr == "layout":
             return self
+        if hasattr(self.panel, attr) and not callable(getattr(self.panel, attr)):
+            return getattr(self.panel, attr)
         return self
 
     def __call__(self, *args, **kwargs):
@@ -193,16 +196,30 @@ class TemplateListItemSpy(PanelSpy):
         self.spied_labels: list[str] = []
         self.spied_props: list[dict[str, Any]] = []
         self.spied_operators: list[dict[str, Any]] = []
-        parent.panel.draw_item(
-            self,
-            bpy.context,
-            self,
-            parent.spied_data["dataptr"],
-            item,
-            "",
-            parent.spied_data["active_dataptr"],
-            parent.spied_data["active_propname"],
-        )
+        if len(signature(parent.panel.draw_item).parameters) == 8:
+            parent.panel.draw_item(
+                self,
+                bpy.context,
+                self,
+                parent.spied_data["dataptr"],
+                item,
+                "",
+                parent.spied_data["active_dataptr"],
+                parent.spied_data["active_propname"],
+            )
+        else:
+            parent.panel.draw_item(
+                self,
+                bpy.context,
+                self,
+                parent.spied_data["dataptr"],
+                item,
+                "",
+                parent.spied_data["active_dataptr"],
+                parent.spied_data["active_propname"],
+                0, # Index?
+                None
+            )
 
 
 ui_name_cache = {}
@@ -403,8 +420,12 @@ def i_click_button_in_the_row_where_i_see_text_in_the_nth_list(button, text, nth
                 debug.append(l)
                 if text in l:
                     is_row = True
+            for p in row.spied_props:
+                debug.append(str(p))
+                if isinstance(p["value"], str) and text in p["value"]:
+                    is_row = True
             if is_row:
-                i_click_button_on_panel(button, row)
+                _i_click_button_on_panel(button, row)
                 return True
     debug = "\n".join(debug)
     assert False, f"Could not see '{text}' in any list. We saw:\n{debug}"
@@ -539,9 +560,9 @@ def the_name_list_has_total_items(name, total):
     total = int(total)
     assert panel_spy
     panel_spy.refresh_spy()
-    for spied_list in panel_spy.spied_lists:
-        if name == spied_list["listtype_name"]:
-            actual_total = len(getattr(spied_list["dataptr"], spied_list["propname"]))
+    for template_list in panel_spy.spied_lists:
+        if name == template_list.spied_data["listtype_name"]:
+            actual_total = len(template_list.items)
             assert actual_total == total, f"The actual number of items in {name} is {actual_total} not {total}"
             return
     assert False, f"List {name} not found in {panel_spy.spied_lists}"
@@ -553,13 +574,13 @@ def the_name_list_has_total_items(name, total):
 def i_select_the_item_name_item_in_the_list_name_list(item_name, list_name):
     assert panel_spy
     panel_spy.refresh_spy()
-    for spied_list in panel_spy.spied_lists:
-        if list_name == spied_list["listtype_name"]:
+    for template_list in panel_spy.spied_lists:
+        if list_name == template_list.spied_data["listtype_name"]:
             item_names = []
-            for i, item in enumerate(getattr(spied_list["dataptr"], spied_list["propname"])):
+            for i, item in enumerate(template_list.items):
                 item_names.append(item.name)
                 if item.name == item_name:
-                    setattr(spied_list["active_dataptr"], spied_list["active_propname"], i)
+                    template_list.set_active_index(i)
                     panel_spy.is_spy_dirty = True
                     return
             assert False, f"Could not find item {item_name} in {item_names}"
@@ -707,7 +728,7 @@ def i_press_operator(operator):
         assert False, f"Failed to run operator bpy.ops.{operator} because of {e}"
 
 
-def i_click_button_on_panel(button, panel_spy):
+def _i_click_button_on_panel(button, panel_spy):
     for spied_operator in panel_spy.spied_operators:
         if spied_operator["text"] == button or spied_operator["icon"] == button:
             spied_operator["operator"]("INVOKE_DEFAULT", **spied_operator["kwargs"])
@@ -736,7 +757,7 @@ def i_click_button(button):
     """
     assert panel_spy
     panel_spy.refresh_spy()
-    i_click_button_on_panel(button, panel_spy)
+    _i_click_button_on_panel(button, panel_spy)
 
 
 @given(parsers.parse('I click the "{button}" after the text "{text}"'))

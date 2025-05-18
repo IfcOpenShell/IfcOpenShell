@@ -214,6 +214,7 @@ class RemoveAddressAttribute(bpy.types.Operator):
     name: bpy.props.EnumProperty(  # pyright: ignore[reportRedeclaration]
         items=tuple((i, i, "") for i in get_args(tool.Owner.AddressAttributeType)),
     )
+    id: bpy.props.IntProperty()  # pyright: ignore[reportRedeclaration]
 
     if TYPE_CHECKING:
         name: tool.Owner.AddressAttributeType  # pyright: ignore[reportIncompatibleVariableOverride]
