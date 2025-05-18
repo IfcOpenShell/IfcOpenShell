@@ -472,7 +472,7 @@ def i_dont_see_text(text):
 def i_dont_see_the_name_list(name):
     assert panel_spy
     panel_spy.refresh_spy()
-    assert name not in [l["listtype_name"] for l in panel_spy.spied_lists]
+    assert name not in [l.spied_data["listtype_name"] for l in panel_spy.spied_lists]
 
 
 @given(parsers.parse('I see the "{prop}" property'))
