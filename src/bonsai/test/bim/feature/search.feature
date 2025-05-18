@@ -24,9 +24,12 @@ Scenario: Edit filter query
 
 Scenario: Colour by property - default class query
     Given an empty IFC project
+    And I load the demo construction library
+    And I set "scene.BIMModelProperties.ifc_class" to "IfcColumnType"
+    And I add the construction type
     When I look at the "Colour By Property" panel
     And I click "Colour by Property"
-    Then the "BIM_UL_colourscheme" list has 4 items
+    Then the "BIM_UL_colourscheme" list has 1 items
 
 Scenario: Colour by property - no query
     Given an empty IFC project
