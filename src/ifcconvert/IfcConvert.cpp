@@ -820,6 +820,13 @@ int main(int argc, char** argv) {
 		}
 	}
 
+	// The OS will clean up for us if there is a leak
+	geometry_settings.get<ifcopenshell::geometry::settings::OcctNoCleanTriangulation>().value = true;
+
+	if (geometry_settings.get<ifcopenshell::geometry::settings::PermissiveShapeReuse>().get()) {
+		geometry_settings.get<ifcopenshell::geometry::settings::NoParallelMapping>().value = true;
+	}
+
 	if (geometry_settings.get<ifcopenshell::geometry::settings::UseElementHierarchy>().get() && output_extension != DAE && output_extension != USD && output_extension != USDA && output_extension != USDC) {
 		cerr_ << "[Error] --use-element-hierarchy can be used only with .dae or .usd output.\n";
 		/// @todo Lots of duplicate error-and-exit code.
