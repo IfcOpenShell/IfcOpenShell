@@ -528,7 +528,7 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="OPENCASCADE",
         name="Linework Mode",
-        update=get_update_layer_callback("LineworkMode", "linework_mode"),
+        update=get_update_layer_callback("linework_mode", "LineworkMode"),
     )
     fill_mode: EnumProperty(
         items=[
@@ -538,7 +538,7 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="NONE",
         name="Fill Mode",
-        update=get_update_layer_callback("FillMode", "fill_mode"),
+        update=get_update_layer_callback("fill_mode", "FillMode"),
     )
     cut_mode: EnumProperty(
         items=[
@@ -547,7 +547,7 @@ class BIMCameraProperties(PropertyGroup):
         ],
         default="BISECT",
         name="Cut Mode",
-        update=get_update_layer_callback("CutMode", "cut_mode"),
+        update=get_update_layer_callback("cut_mode", "CutMode"),
     )
 
     # EPset_Drawing.
@@ -580,7 +580,7 @@ class BIMCameraProperties(PropertyGroup):
     custom_scale_denominator: bpy.props.StringProperty(default="100", update=update_diagram_scale)
     raster_x: IntProperty(name="Raster X", default=1000)
     raster_y: IntProperty(name="Raster Y", default=1000)
-    dpi: IntProperty(name="DPI", default=75, update=get_update_layer_callback("DPI", "dpi"))
+    dpi: IntProperty(name="DPI", default=75, update=get_update_layer_callback("dpi", "DPI"))
     width: FloatProperty(name="Width", default=50, subtype="DISTANCE", update=update_width_height)
     height: FloatProperty(name="Height", default=50, subtype="DISTANCE", update=update_width_height)
     # Bonsai property is needed to prevent user from using unsupported panoramic camera.
