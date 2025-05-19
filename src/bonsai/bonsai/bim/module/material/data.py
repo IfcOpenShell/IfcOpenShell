@@ -39,11 +39,11 @@ class MaterialsData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data["material_types"] = cls.material_types()
+        cls.data["material_types"] = sorted(cls.material_types(), key=lambda x: x[1].lower())
         cls.data["total_materials"] = cls.total_materials()
-        cls.data["profiles"] = cls.profiles()
-        cls.data["styles"] = cls.styles()
-        cls.data["contexts"] = cls.contexts()
+        cls.data["profiles"] = sorted(cls.profiles(), key=lambda x: x[1].lower())
+        cls.data["styles"] = sorted(cls.styles(), key=lambda x: x[1].lower() )
+        cls.data["contexts"] = sorted(cls.contexts(), key=lambda x: x[1].lower())
         cls.data["material_styles_data"] = cls.material_styles_data()
 
     @classmethod
