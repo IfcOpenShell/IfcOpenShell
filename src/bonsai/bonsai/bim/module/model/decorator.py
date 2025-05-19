@@ -1123,3 +1123,204 @@ class FaceAreaDecorator:
                 self.draw_batch("POINTS", data["verts"], decorator_color)
                 self.draw_batch("LINES", data["verts"], decorator_color, data["edges"])
                 self.draw_batch("TRIS", data["verts"], transparent_color(decorator_color, alpha=0.5), data["tris"])
+
+class BoundingBoxDecorator:
+    is_installed = False
+    handlers = []
+
+    def __init__(self):
+        context = bpy.context
+        theme = context.preferences.themes.items()[0][1]
+        self.decorator_color_x_axis = (*theme.user_interface.axis_x, 1)
+        self.decorator_color_y_axis = (*theme.user_interface.axis_y, 1)
+        self.decorator_color_z_axis = (*theme.user_interface.axis_z, 1)
+        self.decorator_color_wire = (*theme.view_3d.bone_solid, 1)
+        self.decorator_color_special = tool.Blender.get_addon_preferences().decorator_color_special
+
+    @classmethod
+    def install(cls, context):
+        if cls.is_installed:
+            cls.uninstall()
+        handler = cls()
+        cls.handlers.append(
+            bpy.types.SpaceView3D.draw_handler_add(handler.draw_bounding_box_wire_cube, (context,), "WINDOW", "POST_VIEW")
+        )
+        cls.handlers.append(
+            bpy.types.SpaceView3D.draw_handler_add(handler.draw_dimension_text, (context,), "WINDOW", "POST_PIXEL")
+        )
+        cls.is_installed = True
+
+    @classmethod
+    def uninstall(cls):
+        for handler in cls.handlers:
+            try:
+                bpy.types.SpaceView3D.draw_handler_remove(handler, "WINDOW")
+            except Exception:
+                pass
+        cls.handlers.clear()
+        cls.is_installed = False
+
+    @staticmethod
+    def get_combined_bounding_box_corners(objects):
+        import mathutils
+        if not objects:
+            return None, None, None
+        if len(objects) == 1:
+            obj = objects[0]
+            corners = [obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box]
+        else:
+            all_corners = []
+            for obj in objects:
+                if hasattr(obj, "bound_box"):
+                    all_corners.extend([obj.matrix_world @ mathutils.Vector(corner) for corner in obj.bound_box])
+            min_corner = mathutils.Vector(
+                (min(v.x for v in all_corners), min(v.y for v in all_corners), min(v.z for v in all_corners))
+            )
+            max_corner = mathutils.Vector(
+                (max(v.x for v in all_corners), max(v.y for v in all_corners), max(v.z for v in all_corners))
+            )
+            corners = [
+                mathutils.Vector((min_corner.x, min_corner.y, min_corner.z)),
+                mathutils.Vector((min_corner.x, min_corner.y, max_corner.z)),
+                mathutils.Vector((min_corner.x, max_corner.y, max_corner.z)),
+                mathutils.Vector((min_corner.x, max_corner.y, min_corner.z)),
+                mathutils.Vector((max_corner.x, min_corner.y, min_corner.z)),
+                mathutils.Vector((max_corner.x, min_corner.y, max_corner.z)),
+                mathutils.Vector((max_corner.x, max_corner.y, max_corner.z)),
+                mathutils.Vector((max_corner.x, max_corner.y, min_corner.z)),
+            ]
+        edges = [
+            (0, 1, "Z"), (1, 2, "Y"), (2, 3, "Z"), (3, 0, "Y"),
+            (4, 5, "Z"), (5, 6, "Y"), (6, 7, "Z"), (7, 4, "Y"),
+            (0, 4, "X"), (1, 5, "X"), (2, 6, "X"), (3, 7, "X"),
+        ]
+        axis_colors = {
+            "X": (0.956, 0.282, 0.322, 1),
+            "Y": (0.565, 0.812, 0.125, 1),
+            "Z": (0.196, 0.529, 0.929, 1),
+        }
+        return corners, edges, axis_colors
+
+    @staticmethod
+    def find_closest_trihedron(corners, edges, region, rv3d):
+        from bpy_extras.view3d_utils import location_3d_to_region_2d
+        min_y = float("inf")
+        best_origin = None
+        for idx, corner in enumerate(corners):
+            screen_co = location_3d_to_region_2d(region, rv3d, corner)
+            if screen_co is not None and screen_co.y < min_y:
+                min_y = screen_co.y
+                best_origin = idx
+        trihedron = [
+            {"X": (0, 4), "Y": (0, 3), "Z": (0, 1)},
+            {"X": (1, 5), "Y": (1, 2), "Z": (1, 0)},
+            {"X": (2, 6), "Y": (2, 1), "Z": (2, 3)},
+            {"X": (3, 7), "Y": (3, 0), "Z": (3, 2)},
+            {"X": (4, 0), "Y": (4, 7), "Z": (4, 5)},
+            {"X": (5, 1), "Y": (5, 6), "Z": (5, 4)},
+            {"X": (6, 2), "Y": (6, 5), "Z": (6, 7)},
+            {"X": (7, 3), "Y": (7, 4), "Z": (7, 6)},
+        ]
+        return trihedron[best_origin]
+
+    def draw_batch(self, shader_type, content_pos, color, indices=None):
+        if not tool.Blender.validate_shader_batch_data(content_pos, indices):
+            return
+        shader = self.line_shader if shader_type == "LINES" else self.shader
+        batch = batch_for_shader(shader, shader_type, {"pos": content_pos}, indices=indices)
+        shader.uniform_float("color", color)
+        batch.draw(shader)
+
+    def draw_text_background(self, context, coords_dim, text_dim):
+        padding = 5
+        theme = context.preferences.themes.items()[0][1]
+        color = (*theme.user_interface.wcol_menu_back.inner[:3], 0.5)  # unwrap color values and adds alpha
+        top_left = (coords_dim[0] - padding, coords_dim[1] + text_dim[1] + padding)
+        bottom_left = (coords_dim[0] - padding, coords_dim[1] - padding)
+        top_right = (coords_dim[0] + text_dim[0] + padding, coords_dim[1] + text_dim[1] + padding)
+        bottom_right = (coords_dim[0] + text_dim[0] + padding, coords_dim[1] - padding)
+
+        verts = [top_left, bottom_left, top_right, bottom_right]
+        gpu.state.blend_set("ALPHA")
+        self.draw_batch("TRIS", verts, color, [(0, 1, 2), (1, 2, 3)])
+        
+    def draw_bounding_box_wire_cube(self, context):
+        import gpu
+        from gpu_extras.batch import batch_for_shader
+
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+
+        selected_objects = [obj for obj in bpy.context.selected_objects if hasattr(obj, "bound_box")]
+        if not selected_objects:
+            return
+        corners, edges, axis_colors = self.get_combined_bounding_box_corners(selected_objects)
+        region = bpy.context.region
+        rv3d = bpy.context.region_data
+        gpu.state.line_width_set(2.0)
+        for i1, i2, axis in edges:
+            self.draw_batch("LINES", [corners[i1], corners[i2]], self.decorator_color_wire)
+        closest_indices = self.find_closest_trihedron(corners, edges, region, rv3d)
+        for axis in "XYZ":
+            pair = closest_indices[axis]
+            if pair is not None:
+                i1, i2 = pair
+                color = getattr(self, f"decorator_color_{axis.lower()}_axis")
+                self.draw_batch("LINES", [corners[i1], corners[i2]], color)
+
+    def draw_dimension_text(self, context):
+        from bpy_extras.view3d_utils import location_3d_to_region_2d
+        from bonsai.bim.module.drawing.helper import format_distance
+        import mathutils
+        import blf
+
+        self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
+        self.line_shader.bind()
+        self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
+        self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
+
+
+        selected_objects = [obj for obj in bpy.context.selected_objects if hasattr(obj, "bound_box")]
+        if not selected_objects:
+            return
+        corners, edges, axis_colors = self.get_combined_bounding_box_corners(selected_objects)
+        if not corners:
+            return
+        dims = mathutils.Vector(
+            (
+                (corners[4] - corners[0]).length,
+                (corners[3] - corners[0]).length,
+                (corners[1] - corners[0]).length,
+            )
+        )
+        region = bpy.context.region
+        rv3d = bpy.context.region_data
+
+        # Preferences
+        addon_prefs = tool.Blender.get_addon_preferences()
+        font_id = 0
+        font_size = tool.Blender.scale_font_size(12)
+        blf.size(font_id, font_size)
+        blf.enable(font_id, blf.SHADOW)
+        blf.shadow(font_id, 6, 0, 0, 0, 1)
+        color = addon_prefs.decorations_colour
+        blf.color(font_id, *color)
+
+        closest_indices = self.find_closest_trihedron(corners, edges, region, rv3d)
+        for axis in "XYZ":
+            pair = closest_indices[axis]
+            if pair is not None:
+                i1, i2 = pair
+                center = (corners[i1] + corners[i2]) / 2
+                value = getattr(dims, axis.lower())
+                screen_co = location_3d_to_region_2d(region, rv3d, center)
+                if screen_co is not None:
+                    blf.position(font_id, screen_co.x, screen_co.y, 0)
+                    blf.color(font_id, 1, 1, 1, 1)
+                    value_str = f"D{axis.lower()}: " + format_distance(value, hide_units=False)
+                    text_length = blf.dimensions(font_id, value_str)
+                    self.draw_text_background(context, screen_co, text_length)
+                    blf.draw(font_id, value_str)
+        blf.disable(font_id, blf.SHADOW)
