@@ -125,7 +125,9 @@ class AddClassificationFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
                 continue
             has_classification = False
             for element in tool.Ifc.get().by_type("IfcClassification"):
-                if element.Name == dictionary["name"] or (tool.Classification.get_location(element) == dictionary["uri"]):
+                if element.Name == dictionary["name"] or (
+                    tool.Classification.get_location(element) == dictionary["uri"]
+                ):
                     self.report({"INFO"}, f"Classification '{dictionary['name']}' is already added to the project.")
                     has_classification = True
             if has_classification:

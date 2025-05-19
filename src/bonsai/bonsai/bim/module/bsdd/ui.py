@@ -75,10 +75,14 @@ class BIM_UL_bsdd_dictionaries(UIList):
             props = context.scene.BIMBSDDProperties
             row = layout.row(align=True)
             if item.status != "Active":
-                row.label(text=f"{item.name} ({item.organization_name_owner}) v{item.version} - {item.status}", icon="ERROR")
+                row.label(
+                    text=f"{item.name} ({item.organization_name_owner}) v{item.version} - {item.status}", icon="ERROR"
+                )
             else:
                 row.label(text=f"{item.name} ({item.organization_name_owner}) v{item.version}")
-            row.prop(item, "is_active", icon="CHECKBOX_HLT" if item.is_active else "CHECKBOX_DEHLT", text="", emboss=False)
+            row.prop(
+                item, "is_active", icon="CHECKBOX_HLT" if item.is_active else "CHECKBOX_DEHLT", text="", emboss=False
+            )
 
 
 class BIM_UL_bsdd_classifications(UIList):

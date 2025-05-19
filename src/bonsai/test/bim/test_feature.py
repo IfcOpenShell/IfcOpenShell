@@ -217,8 +217,8 @@ class TemplateListItemSpy(PanelSpy):
                 "",
                 parent.spied_data["active_dataptr"],
                 parent.spied_data["active_propname"],
-                0, # Index?
-                None
+                0,  # Index?
+                None,
             )
 
 
