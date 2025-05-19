@@ -25,9 +25,6 @@ import tempfile
 import traceback
 import subprocess
 import datetime
-import blf
-import mathutils
-import gpu
 import ifcopenshell.api.attribute
 import numpy as np
 import ifcopenshell
@@ -67,7 +64,6 @@ from bonsai.bim.module.project.prop import BreadcrumbType
 from bonsai.bim.module.model.decorator import PolylineDecorator, FaceAreaDecorator
 from bonsai.bim.module.model.polyline import PolylineOperator
 from typing import Union, TYPE_CHECKING, get_args, Literal
-from gpu_extras.batch import batch_for_shader
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums
@@ -2652,7 +2648,6 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
             and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
         ) or single_mode:
             context.workspace.status_text_set(text=None)
-            self.tool_state.plane_method = None
             PolylineDecorator.uninstall()
             tool.Polyline.move_polyline_to_measure(context, self.input_ui)
             tool.Polyline.clear_polyline()
