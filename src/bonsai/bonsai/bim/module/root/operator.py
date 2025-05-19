@@ -467,8 +467,15 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                 props.representation_template = "EXTRUSION"
                 props.representation_obj = None
         elif (obj := tool.Blender.get_active_object(is_selected=True)) and obj.type == "MESH":
-            props.representation_template = "OBJ"
-            props.representation_obj = obj
+            if (
+                props.ifc_class.startswith("IfcStructuralPoint")
+                or props.ifc_class.startswith("IfcStructuralCurve")
+                or props.ifc_class.startswith("IfcStructuralSurface")
+            ):
+                pass  # Implement auto association?
+            else:
+                props.representation_template = "OBJ"
+                props.representation_obj = obj
         # For convenience, preselect IFC class
         if self.ifc_product:
             props.ifc_product = self.ifc_product
@@ -677,6 +684,49 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
         elif representation_template == "ROOF":
             with context.temp_override(active_object=obj, selected_objects=[]):
                 bpy.ops.bim.add_roof()
+        elif representation_template == "VERTEX":
+            builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+            representation = builder.get_representation(ifc_context, [builder.vertex()])
+            ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+            )
+        elif representation_template == "EDGE":
+            builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            end = Vector((1, 0, 0)) / unit_scale
+            representation = builder.get_representation(ifc_context, [builder.edge(end=end)])
+            ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+            )
+        elif representation_template == "FACE":
+            builder = ifcopenshell.util.shape_builder.ShapeBuilder(tool.Ifc.get())
+            unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            points = [Vector(p) / unit_scale for p in ((0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0))]
+            representation = builder.get_representation(ifc_context, [builder.face(points)])
+            ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), element, representation)
+            bonsai.core.geometry.switch_representation(
+                tool.Ifc,
+                tool.Geometry,
+                obj=obj,
+                representation=representation,
+                should_reload=True,
+                is_global=True,
+                should_sync_changes_first=False,
+            )
 
         bpy.context.view_layer.update()  # Ensures obj.matrix_world is correct
 

@@ -203,6 +203,31 @@ class TestMirror(test.bootstrap.IFC4):
         assert np.allclose(rectangle.Points.CoordList, ((0.0, 0.0), (-100.0, 0.0), (-100.0, 100.0), (0.0, 100.0)))
 
 
+class TestVertex(test.bootstrap.IFC4):
+    def test_run(self):
+        builder = ShapeBuilder(self.file)
+        vertex = builder.vertex((1, 2, 3))
+        assert np.allclose(vertex.VertexGeometry.Coordinates, (1, 2, 3))
+
+
+class TestEdge(test.bootstrap.IFC4):
+    def test_run(self):
+        builder = ShapeBuilder(self.file)
+        edge = builder.edge((1, 0, 0), (1, 2, 3))
+        assert np.allclose(edge.EdgeStart.VertexGeometry.Coordinates, (1, 0, 0))
+        assert np.allclose(edge.EdgeEnd.VertexGeometry.Coordinates, (1, 2, 3))
+
+
+class TestFace(test.bootstrap.IFC4):
+    def test_run(self):
+        builder = ShapeBuilder(self.file)
+        face = builder.face(((0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0)))
+        assert np.allclose(face.Bounds[0].Bound.Polygon[0], (0, 0, 0))
+        assert np.allclose(face.Bounds[0].Bound.Polygon[1], (1, 0, 0))
+        assert np.allclose(face.Bounds[0].Bound.Polygon[2], (1, 1, 0))
+        assert np.allclose(face.Bounds[0].Bound.Polygon[3], (0, 1, 0))
+
+
 class TestCalculateTransitions(test.bootstrap.IFC4):
     def calculate_and_test(self, params: dict[str, Any], length: Union[float, None]):
         np_X, np_Y = 0, 1

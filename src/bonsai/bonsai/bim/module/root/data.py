@@ -118,29 +118,31 @@ class IfcClassData:
     def representation_template(cls):
         rprops = tool.Root.get_root_props()
         ifc_class = rprops.ifc_class
+        if ifc_class.startswith("IfcStructuralPoint"):
+            return [("VERTEX", "Vertex", "A single 3D point")]
+        elif ifc_class.startswith("IfcStructuralCurve"):
+            return [("EDGE", "Edge", "A straight edge between two points")]
+        elif ifc_class.startswith("IfcStructuralSurface"):
+            return [("FACE", "Face", "A planar face surface")]
         templates = [
             ("EMPTY", "No Geometry", "Start with an empty object"),
             None,
+            (
+                "OBJ",
+                "Tessellation From Object",
+                "Use an object as a template to create a new tessellation",
+            ),
+            (
+                "MESH",
+                "Custom Tessellation",
+                "Create a basic tessellated or faceted cube",
+            ),
+            (
+                "EXTRUSION",
+                "Custom Extruded Solid",
+                "An extrusion from an arbitrary profile",
+            ),
         ]
-        templates.extend(
-            [
-                (
-                    "OBJ",
-                    "Tessellation From Object",
-                    "Use an object as a template to create a new tessellation",
-                ),
-                (
-                    "MESH",
-                    "Custom Tessellation",
-                    "Create a basic tessellated or faceted cube",
-                ),
-                (
-                    "EXTRUSION",
-                    "Custom Extruded Solid",
-                    "An extrusion from an arbitrary profile",
-                ),
-            ]
-        )
         if ifc_class.endswith("Type") or ifc_class.endswith("Style"):
             templates.extend(
                 [

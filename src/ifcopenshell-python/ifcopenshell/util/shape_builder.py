@@ -785,6 +785,41 @@ class ShapeBuilder:
             RefDirection=ref_direction,
         )
 
+    def vertex(self, position: VectorType = (0.0, 0.0, 0.0)) -> ifcopenshell.entity_instance:
+        """Create a topological vertex
+
+        Commonly used in structural point elements.
+
+        :param position: The 3D coordinate of the vertex
+        :return: IfcVertexPoint
+        """
+        return self.file.create_entity(
+            "IfcVertexPoint", self.file.create_entity("IfcCartesianPoint", ifc_safe_vector_type(position))
+        )
+
+    def edge(
+        self, start: VectorType = (0.0, 0.0, 0.0), end: VectorType = (1.0, 0.0, 0.0)
+    ) -> ifcopenshell.entity_instance:
+        """Create a topological edge
+
+        :param start: The start coordinates of the vertex.
+        :param end: The end coordinates of the vertex.
+        :return: IfcEdge
+        """
+        return self.file.create_entity("IfcEdge", self.vertex(start), self.vertex(end))
+
+    def face(self, points: SequenceOfVectors) -> ifcopenshell.entity_instance:
+        """Create a single topological face
+
+        There are many types of faces, but for now we only support planar
+        polyloop defined faces with an outer boundary.
+
+        :param points: ordered list of 3d coordinates representing the outer boundary
+        :return: IfcFace
+        """
+        verts = [self.file.createIfcCartesianPoint(p) for p in ifc_safe_vector_type(points)]
+        return self.file.createIfcFace([self.file.createIfcFaceOuterBound(self.file.createIfcPolyLoop(verts), True)])
+
     def mirror(
         self,
         curve_or_item: Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]],
@@ -1025,13 +1060,17 @@ class ShapeBuilder:
         if not representation_type:
             representation_type = ifcopenshell.util.representation.guess_type(items)
 
-        representation = self.file.createIfcShapeRepresentation(
+        return self.file.create_entity(
+            (
+                "IfcTopologyRepresentation"
+                if representation_type in ("Vertex", "Edge", "Path", "Face", "Shell")
+                else "IfcShapeRepresentation"
+            ),
             ContextOfItems=context,
             RepresentationIdentifier=context.ContextIdentifier,
             RepresentationType=representation_type,
             Items=items,
         )
-        return representation
 
     def deep_copy(self, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         return ifcopenshell.util.element.copy_deep(self.file, element)

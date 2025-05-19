@@ -658,6 +658,12 @@ def i_add_a_new_collection_item(collection):
         assert False, "Collection does not exist"
 
 
+@given(parsers.parse('I make the collection "{name}" visible'))
+@when(parsers.parse('I make the collection "{name}" visible'))
+def i_make_the_collection_name_visible(name):
+    tool.Blender.get_layer_collection(bpy.data.collections.get(name)).hide_viewport = False
+
+
 @given(parsers.parse('the material "{name}" colour is set to "{colour}"'))
 @when(parsers.parse('the material "{name}" colour is set to "{colour}"'))
 def the_material_name_colour_is_set_to_colour(name, colour):

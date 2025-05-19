@@ -286,6 +286,16 @@ def guess_type(items: Sequence[ifcopenshell.entity_instance]) -> Union[str, None
         return "SectionedSpine"
     elif all([True if i.is_a("IfcLightSource") else False for i in items]):
         return "LightSource"
+    elif all([True if i.is_a("IfcVertex") else False for i in items]):
+        return "Vertex"
+    elif all([True if i.is_a("IfcEdge") else False for i in items]):
+        return "Edge"
+    elif all([True if i.is_a("IfcPath") else False for i in items]):
+        return "Path"
+    elif all([True if i.is_a("IfcFace") else False for i in items]):
+        return "Face"
+    elif all([True if i.is_a("IfcOpenShell") else False for i in items]):
+        return "Shell"
 
 
 def resolve_representation(representation: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
