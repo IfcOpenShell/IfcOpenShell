@@ -274,8 +274,15 @@ class AssignClass(bpy.types.Operator, tool.Ifc.Operator):
                 # Apply geometry.
                 if obj.modifiers:
                     ensure_single_user_mesh(obj.data)
+                    # In older Blender versions 'object.convert'
+                    # still requires object to be both selected and active.
+                    is_old_blender = bpy.app.version < (4, 4, 0)
                     with context.temp_override(selected_editable_objects=[obj]):
+                        if is_old_blender:
+                            tool.Blender.set_active_object(obj)
                         bpy.ops.object.convert(target="MESH")
+                        if is_old_blender:
+                            tool.Blender.clear_objects_selection()
 
                 # Apply scale.
                 if obj.scale != (1, 1, 1):
