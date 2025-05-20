@@ -507,32 +507,15 @@ class BIMProjectProperties(PropertyGroup):
             yield link
 
 
-prev_measurement_type = ""
-
-
-def measurement_type_update(self, context):
-    global prev_measurement_type
-    # We enable/disable the measure_xyz_dimensions_tool depending on the selected type
-    if prev_measurement_type != self.measurement_type:
-        bpy.ops.bim.measure_xyz_dimensions_tool()
-    else:
-        #  toggle to default
-        self.measurement_type = "POLYLINE"
-    prev_measurement_type = self.measurement_type
-
-
 class MeasureToolSettings(PropertyGroup):
     measurement_type_items = [
         ("SINGLE", "SINGLE", "Single", "FIXED_SIZE", 1),
         ("POLYLINE", "POLYLINE", "Polyline", "DRIVER_ROTATIONAL_DIFFERENCE", 2),
         ("POLY_AREA", "POLY_AREA", "Poyline Area", "OUTLINER_DATA_LIGHTPROBE", 3),
         ("FACE_AREA", "FACE_AREA", "Face Area", "FACESEL", 4),
-        ("XYZ_DIMENSIONS", "XYZ_DIMENSIONS", "XYZ Dimensions", "ORIENTATION_LOCAL", 5),
     ]
 
-    measurement_type: bpy.props.EnumProperty(
-        items=measurement_type_items, default="POLYLINE", update=measurement_type_update
-    )
+    measurement_type: bpy.props.EnumProperty(items=measurement_type_items, default="POLYLINE")
 
     if TYPE_CHECKING:
         measurement_type: Literal["SINGLE", "POLYLINE", "AREA"]

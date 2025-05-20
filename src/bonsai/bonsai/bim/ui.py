@@ -1315,6 +1315,8 @@ class BIM_PT_decorators_overlay(Panel):
         row.prop(model_props, "show_wall_axis", text="Wall Axis")
         row = col.row(align=True)
         row.prop(model_props, "show_slab_direction", text="Slab Direction")
+        row = col.row(align=True)
+        row.prop(model_props, "measure_xyz_dimensions", text="Bounding Box Dimensions")      
 
 
 class BIM_PT_snappping(Panel):

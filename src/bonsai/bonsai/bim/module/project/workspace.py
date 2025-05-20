@@ -108,7 +108,6 @@ class ExploreHotkey(bpy.types.Operator):
         measure_type = bpy.context.scene.MeasureToolSettings.measurement_type
         if measure_type == "FACE_AREA":
             bpy.ops.bim.measure_face_area_tool("INVOKE_DEFAULT")
-        elif measure_type == "XYZ_DIMENSIONS":
-            pass
+
         else:
             bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type=measure_type)
