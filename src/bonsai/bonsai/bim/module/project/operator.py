@@ -2652,6 +2652,7 @@ class MeasureTool(bpy.types.Operator, PolylineOperator):
             and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE"}
         ) or single_mode:
             context.workspace.status_text_set(text=None)
+            self.tool_state.plane_method = None
             PolylineDecorator.uninstall()
             tool.Polyline.move_polyline_to_measure(context, self.input_ui)
             tool.Polyline.clear_polyline()
@@ -2803,44 +2804,4 @@ class ClearMeasurement(bpy.types.Operator):
         context.scene.BIMPolylineProperties.measurement_polyline.clear()
         MeasureDecorator.uninstall()
         tool.Blender.update_viewport()
-        return {"FINISHED"}
-
-from bonsai.bim.module.model.decorator import BoundingBoxDecorator
-
-class MeasureXYZDimensionsTool(bpy.types.Operator):
-    bl_idname = "bim.measure_xyz_dimensions_tool"
-    bl_label = "Show bounding box dimensions"
-    bl_options = {"REGISTER", "UNDO"}
-
-    def execute(self, context):
-        scene = context.scene
-        area_3d = next((area for area in context.screen.areas if area.type == "VIEW_3D"), None)
-        space_3d = next((space for space in area_3d.spaces if space.type == "VIEW_3D"), None) if area_3d else None
-
-        if scene.MeasureToolSettings.measurement_type == "XYZ_DIMENSIONS":
-            BoundingBoxDecorator.install(context)
-            # Save previous state if not already saved
-            if not scene.get("prev_transform_orientation_slot_type", None):
-                scene["prev_transform_orientation_slot_type"] = scene.transform_orientation_slots[1].type
-            if not scene.get("prev_show_gizmo_object_translate", None) and space_3d:
-                scene["prev_show_gizmo_object_translate"] = space_3d.show_gizmo_object_translate
-            # Set new state
-            if space_3d:
-                if len(context.selected_objects) == 1:
-                    scene.transform_orientation_slots[1].type = "LOCAL"
-                else:
-                    scene.transform_orientation_slots[1].type = "GLOBAL"
-                space_3d.show_gizmo_object_translate = True
-        else:
-            BoundingBoxDecorator.uninstall()
-            # Restore previous state
-            if space_3d:
-                prev_orientation = scene.get("prev_transform_orientation_slot_type", None)
-                if prev_orientation:
-                    scene.transform_orientation_slots[1].type = prev_orientation
-                    scene["prev_transform_orientation_slot_type"] = ""
-                prev_gizmo = scene.get("prev_show_gizmo_object_translate", None)
-                if prev_gizmo is not None:
-                    space_3d.show_gizmo_object_translate = prev_gizmo
-                    scene["prev_show_gizmo_object_translate"] = None
         return {"FINISHED"}
