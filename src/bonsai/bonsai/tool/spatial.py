@@ -291,7 +291,7 @@ class Spatial(bonsai.core.tool.Spatial):
             ifc_class = element.is_a()
             ifc_definition_id = element_type.id() if element_type else 0
             type_name = (
-                element_type.is_a() + "/" + element_type.Name or "Unnamed"
+                element_type.is_a() + "/" + (element_type.Name or "Unnamed")
                 if element_type
                 else f"Untyped {element.is_a()}"
             )
