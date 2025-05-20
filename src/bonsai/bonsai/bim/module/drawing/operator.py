@@ -460,7 +460,10 @@ class CreateDrawing(bpy.types.Operator):
             previous_format = context.scene.render.image_settings.file_format
             space.shading.type = "RENDERED"
             context.scene.render.image_settings.file_format = "PNG"
-            bpy.ops.render.opengl(write_still=True)
+
+            with tool.Blender.bonsai_crash_txt("render.opengl"):
+                bpy.ops.render.opengl(write_still=True)
+
             space.shading.type = previous_shading
             context.scene.render.image_settings.file_format = previous_format
 

@@ -25,6 +25,8 @@ import os
 import platform
 import subprocess
 import contextlib
+import tempfile
+import traceback
 import numpy as np
 import numpy.typing as npt
 from ifcopenshell import entity_instance
@@ -1758,3 +1760,35 @@ class Blender(bonsai.core.tool.Blender):
     def report_operator_errors(cls, operator: bpy.types.Operator, error_reports: list[str]) -> None:
         for report in error_reports:
             operator.report({"ERROR"}, report)
+
+    @classmethod
+    @contextlib.contextmanager
+    def bonsai_crash_txt(cls, s: str = "") -> Generator[Path, Any, None]:
+        """Create a temporary bonsai.crash.txt file the with current traceback.
+
+        Useful in case Blender crash might occur too unexpectedly (e.g. #6686),
+        and at least we'll have a slightest clue on what happened.
+
+        Intended to be used via `with` block.
+        `atexit` wouldn't work for this as crash breaks everything
+        and no callbacks are called.
+
+        :param s: Optional string to add at the top of the txt file.
+        """
+        # TODO: Indicate that crash occurred after Blender restart?
+
+        # Create a temp file with the traceback.
+        temp_dir = tempfile.gettempdir()
+        path = Path(temp_dir) / "bonsai.crash.txt"
+        traceback_ = "\n".join(traceback.format_stack())
+        output = ""
+        if s:
+            output += f"{s}\n\n"
+        time = datetime.now().isoformat()
+        output += f"Created at: {time} (local time).\n"
+        output += f"Traceback (most recent called last):\n{traceback_}"
+        path.write_text(output)
+        yield path
+
+        # Remove file if crash didn't happened.
+        path.unlink()
