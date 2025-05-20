@@ -521,6 +521,7 @@ class SheetBuilder:
         )
         titleblock_path = tool.Ifc.resolve_uri(tool.Drawing.get_default_titleblock_path(titleblock_name))
         sheet_path = tool.Drawing.get_document_uri(sheet, "LAYOUT")
+        assert sheet_path is not None
         sheet_dir = os.path.dirname(sheet_path)
 
         os.makedirs(sheet_dir, exist_ok=True)
@@ -532,8 +533,8 @@ class SheetBuilder:
         ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
 
         view_root = ET.parse(ootb_titleblock_path).getroot()
-        view_width = self.convert_to_mm(view_root.attrib.get("width"))
-        view_height = self.convert_to_mm(view_root.attrib.get("height"))
+        view_width = self.convert_to_mm(view_root.attrib["width"])
+        view_height = self.convert_to_mm(view_root.attrib["height"])
 
         sheet_tree = ET.parse(sheet_path)
         root = sheet_tree.getroot()

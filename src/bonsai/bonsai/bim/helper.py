@@ -351,7 +351,13 @@ def get_enum_items(
     return items
 
 
-def draw_expandable_panel(layout, context, label: str, ui_func, default_closed: bool = True):
+def draw_expandable_panel(
+    layout: bpy.types.UILayout,
+    context: bpy.types.Context,
+    label: str,
+    ui_func: Callable[[bpy.types.UILayout, bpy.types.Context], None],
+    default_closed: bool = True,
+) -> None:
     header, panel = layout.panel(label, default_closed=default_closed)
     header.label(text=label)
     if panel:

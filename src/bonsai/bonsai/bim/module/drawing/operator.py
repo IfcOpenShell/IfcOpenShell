@@ -29,6 +29,7 @@ import numpy as np
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.document
 import ifcopenshell.api.pset
 import ifcopenshell.api.style
 import ifcopenshell.ifcopenshell_wrapper
@@ -185,9 +186,11 @@ class DuplicateDrawing(bpy.types.Operator, tool.Ifc.Operator):
         return True
 
     def invoke(self, context, event):
+        assert context.window_manager
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
+        assert self.layout
         row = self.layout
         row.prop(self, "should_duplicate_annotations")
 
@@ -1839,6 +1842,7 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Drawing.get_document_props()
         active_drawing = props.drawings[props.active_drawing_index]
         assert active_drawing
+        ifc_file = tool.Ifc.get()
 
         active_sheet = tool.Drawing.get_active_sheet(context)
         drawing = tool.Ifc.get().by_id(active_drawing.ifc_definition_id)
@@ -1862,7 +1866,7 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "The drawing must be generated before adding to a sheet.")
             return
 
-        reference = tool.Ifc.run("document.add_reference", information=sheet)
+        reference = ifcopenshell.api.document.add_reference(ifc_file, information=sheet)
         attributes = tool.Drawing.generate_reference_attributes(
             reference,
             Identification=str(
@@ -1878,7 +1882,7 @@ class AddDrawingToSheet(bpy.types.Operator, tool.Ifc.Operator):
             Location=drawing_reference.Location,
             Description="DRAWING",
         )
-        tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
+        ifcopenshell.api.document.edit_reference(ifc_file, reference=reference, attributes=attributes)
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.add_drawing(reference, drawing, sheet)
 
@@ -1949,6 +1953,7 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Drawing.get_document_props()
         svg2pdf_command = tool.Blender.get_addon_preferences().svg2pdf_command
         svg2dxf_command = tool.Blender.get_addon_preferences().svg2dxf_command
+        ifc_file = tool.Ifc.get()
 
         if self.create_all:
             sheets = [tool.Ifc.get().by_id(s.ifc_definition_id) for s in props.sheets if s.is_sheet and s.is_selected]
@@ -1987,9 +1992,9 @@ class CreateSheets(bpy.types.Operator, tool.Ifc.Operator):
                     has_sheet_reference = True
 
             if not has_sheet_reference:
-                reference = tool.Ifc.run("document.add_reference", information=sheet)
-                tool.Ifc.run(
-                    "document.edit_reference",
+                reference = ifcopenshell.api.document.add_reference(ifc_file, information=sheet)
+                ifcopenshell.api.document.edit_reference(
+                    ifc_file,
                     reference=reference,
                     attributes=tool.Drawing.generate_reference_attributes(
                         reference, Location=tool.Ifc.get_uri(svg, use_relative_path=True), Description="SHEET"
@@ -2757,6 +2762,7 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Drawing.get_document_props()
         active_schedule = props.schedules[props.active_schedule_index]
         active_sheet = tool.Drawing.get_active_sheet(context)
+        ifc_file = tool.Ifc.get()
         schedule = tool.Ifc.get().by_id(active_schedule.ifc_definition_id)
         if tool.Ifc.get_schema() == "IFC2X3":
             schedule_location = tool.Drawing.get_path_with_ext(schedule.DocumentReferences[0].Location, "svg")
@@ -2781,7 +2787,7 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, "The schedule must be generated before adding to a sheet.")
             return
 
-        reference = tool.Ifc.run("document.add_reference", information=sheet)
+        reference = ifcopenshell.api.document.add_reference(ifc_file, information=sheet)
         attributes = tool.Drawing.generate_reference_attributes(
             reference,
             Identification=str(
@@ -2797,7 +2803,7 @@ class AddScheduleToSheet(bpy.types.Operator, tool.Ifc.Operator):
             Location=schedule_location,
             Description="SCHEDULE",
         )
-        tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
+        ifcopenshell.api.document.edit_reference(ifc_file, reference=reference, attributes=attributes)
 
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.add_document(reference, schedule, sheet)
@@ -2824,6 +2830,7 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Drawing.get_document_props()
         active_reference = props.references[props.active_reference_index]
         active_sheet = tool.Drawing.get_active_sheet(context)
+        ifc_file = tool.Ifc.get()
         extref = tool.Ifc.get().by_id(active_reference.ifc_definition_id)
         if tool.Ifc.get_schema() == "IFC2X3":
             extref_location = tool.Drawing.get_path_with_ext(extref.DocumentReferences[0].Location, "svg")
@@ -2848,7 +2855,7 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, f"Cannot find reference svg by path {extref_location}.")
             return
 
-        reference = tool.Ifc.run("document.add_reference", information=sheet)
+        reference = ifcopenshell.api.document.add_reference(ifc_file, information=sheet)
         attributes = tool.Drawing.generate_reference_attributes(
             reference,
             Identification=str(
@@ -2864,7 +2871,7 @@ class AddReferenceToSheet(bpy.types.Operator, tool.Ifc.Operator):
             Location=extref_location,
             Description="REFERENCE",
         )
-        tool.Ifc.run("document.edit_reference", reference=reference, attributes=attributes)
+        ifcopenshell.api.document.edit_reference(ifc_file, reference=reference, attributes=attributes)
 
         sheet_builder = sheeter.SheetBuilder()
         sheet_builder.add_document(reference, extref, sheet)
@@ -2937,6 +2944,7 @@ class EditTextPopup(bpy.types.Operator):
         # need to keep them in sync or move to some common function
         # NOTE: that `popup_active_attribute` is used here when it's not used in `BIM_PT_text.draw()`
 
+        assert self.layout
         obj = context.active_object
         assert obj
         props = tool.Drawing.get_text_props(obj)
@@ -3211,6 +3219,7 @@ class LoadSheets(bpy.types.Operator, tool.Ifc.Operator):
 
             sheet = tool.Ifc.get().by_id(sheet_prop.ifc_definition_id)
             document_uri = tool.Drawing.get_document_uri(sheet)
+            assert document_uri is not None
 
             filepath = Path(document_uri)
             if not filepath.is_file():
@@ -3248,6 +3257,7 @@ class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
     def draw(self, context):
+        assert self.layout
         props = tool.Drawing.get_document_props()
         if self.document_type == "SHEET":
             row = self.layout.row()
@@ -3263,6 +3273,7 @@ class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.props = tool.Drawing.get_document_props()
+        ifc_file = tool.Ifc.get()
         sheet = tool.Ifc.get().by_id(self.props.sheets[self.props.active_sheet_index].ifc_definition_id)
         if self.document_type == "SHEET":
             core.rename_sheet(tool.Ifc, tool.Drawing, sheet=sheet, identification=self.identification, name=self.name)
@@ -3272,8 +3283,9 @@ class EditSheet(bpy.types.Operator, tool.Ifc.Operator):
             titleblock = self.props.titleblock
             reference = sheet
             sheet = tool.Drawing.get_reference_document(reference)
-            tool.Ifc.run(
-                "document.edit_reference",
+            assert sheet
+            ifcopenshell.api.document.edit_reference(
+                ifc_file,
                 reference=reference,
                 attributes={"Location": tool.Drawing.get_default_titleblock_path(titleblock)},
             )
@@ -3609,8 +3621,8 @@ class AddReferenceImage(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         texture = ifc_file.create_entity("IfcImageTexture", Mode="DIFFUSE", URLReference=image_filepath.as_posix())
         textures = [texture]
         ifc_file.create_entity("IfcTextureCoordinateGenerator", Maps=textures, Mode="COORD")  # UV map
-        tool.Ifc.run(
-            "style.add_surface_style",
+        ifcopenshell.api.style.add_surface_style(
+            ifc_file,
             style=style,
             ifc_class="IfcSurfaceStyleWithTextures",
             attributes={"Textures": textures},
