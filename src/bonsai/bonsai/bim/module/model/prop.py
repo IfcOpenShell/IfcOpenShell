@@ -117,7 +117,7 @@ def update_measure_xyz(self: "BIMModelProperties", context: bpy.types.Context) -
     area_3d = next((area for area in context.screen.areas if area.type == "VIEW_3D"), None)
     space_3d = next((space for space in area_3d.spaces if space.type == "VIEW_3D"), None) if area_3d else None
     scene = context.scene
-    
+
     if self.measure_xyz_dimensions:
         BoundingBoxDecorator.install(context)
         # Save previous state if not already saved
@@ -144,7 +144,8 @@ def update_measure_xyz(self: "BIMModelProperties", context: bpy.types.Context) -
             if prev_gizmo is not None:
                 space_3d.show_gizmo_object_translate = prev_gizmo
                 self.prev_show_gizmo_object_translate = False
-                
+
+
 def update_search_name(self: "BIMModelProperties", context: bpy.types.Context) -> None:
     AuthoringData.load()
     # Total number of pages may decrease when using the search bar :
@@ -273,17 +274,11 @@ class BIMModelProperties(PropertyGroup):
         update=update_slab_direction_decorator,
     )
 
-    prev_transform_orientation_slot_type: bpy.props.StringProperty(
-        name="Previous Gizmo Orientation Type"
-    )
-    prev_show_gizmo_object_translate: bpy.props.BoolProperty(
-        name="Previous Gizmo Translate"
-    )
+    prev_transform_orientation_slot_type: bpy.props.StringProperty(name="Previous Gizmo Orientation Type")
+    prev_show_gizmo_object_translate: bpy.props.BoolProperty(name="Previous Gizmo Translate")
 
     measure_xyz_dimensions: bpy.props.BoolProperty(
-        name="Measure XYZ Dimensions",
-        default=False,
-        update=update_measure_xyz
+        name="Measure XYZ Dimensions", default=False, update=update_measure_xyz
     )
 
     if TYPE_CHECKING:
