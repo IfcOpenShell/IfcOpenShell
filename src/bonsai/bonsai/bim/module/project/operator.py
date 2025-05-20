@@ -2791,6 +2791,7 @@ class MeasureFaceAreaTool(bpy.types.Operator, PolylineOperator):
         FaceAreaDecorator.install(context)
         return {"RUNNING_MODAL"}
 
+
 class ClearMeasurement(bpy.types.Operator):
     bl_idname = "bim.clear_measurement"
     bl_label = "Clear measurement from the screen"

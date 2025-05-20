@@ -533,7 +533,7 @@ class BIM_PT_derived_coordinates(Panel):
         area_3d = next((area for area in context.screen.areas if area.type == "VIEW_3D"), None)
         space_3d = next((space for space in area_3d.spaces if space.type == "VIEW_3D"), None)
 
-        if  bpy.context.scene.BIMModelProperties.measure_xyz_dimensions:
+        if bpy.context.scene.BIMModelProperties.measure_xyz_dimensions:
             for axis, icon, idx in [("X", "STRIP_COLOR_01", 0), ("Y", "STRIP_COLOR_04", 1), ("Z", "STRIP_COLOR_05", 2)]:
                 row.label(text="", icon=icon)
                 row.prop(context.active_object, "dimensions", text=axis, index=idx)

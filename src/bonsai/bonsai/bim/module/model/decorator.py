@@ -1124,6 +1124,7 @@ class FaceAreaDecorator:
                 self.draw_batch("LINES", data["verts"], decorator_color, data["edges"])
                 self.draw_batch("TRIS", data["verts"], transparent_color(decorator_color, alpha=0.5), data["tris"])
 
+
 class BoundingBoxDecorator:
     is_installed = False
     handlers = []
@@ -1143,7 +1144,9 @@ class BoundingBoxDecorator:
             cls.uninstall()
         handler = cls()
         cls.handlers.append(
-            bpy.types.SpaceView3D.draw_handler_add(handler.draw_bounding_box_wire_cube, (context,), "WINDOW", "POST_VIEW")
+            bpy.types.SpaceView3D.draw_handler_add(
+                handler.draw_bounding_box_wire_cube, (context,), "WINDOW", "POST_VIEW"
+            )
         )
         cls.handlers.append(
             bpy.types.SpaceView3D.draw_handler_add(handler.draw_dimension_text, (context,), "WINDOW", "POST_PIXEL")
@@ -1163,6 +1166,7 @@ class BoundingBoxDecorator:
     @staticmethod
     def get_combined_bounding_box_corners(objects):
         import mathutils
+
         if not objects:
             return None, None, None
         if len(objects) == 1:
@@ -1190,9 +1194,18 @@ class BoundingBoxDecorator:
                 mathutils.Vector((max_corner.x, max_corner.y, min_corner.z)),
             ]
         edges = [
-            (0, 1, "Z"), (1, 2, "Y"), (2, 3, "Z"), (3, 0, "Y"),
-            (4, 5, "Z"), (5, 6, "Y"), (6, 7, "Z"), (7, 4, "Y"),
-            (0, 4, "X"), (1, 5, "X"), (2, 6, "X"), (3, 7, "X"),
+            (0, 1, "Z"),
+            (1, 2, "Y"),
+            (2, 3, "Z"),
+            (3, 0, "Y"),
+            (4, 5, "Z"),
+            (5, 6, "Y"),
+            (6, 7, "Z"),
+            (7, 4, "Y"),
+            (0, 4, "X"),
+            (1, 5, "X"),
+            (2, 6, "X"),
+            (3, 7, "X"),
         ]
         axis_colors = {
             "X": (0.956, 0.282, 0.322, 1),
@@ -1204,6 +1217,7 @@ class BoundingBoxDecorator:
     @staticmethod
     def find_closest_trihedron(corners, edges, region, rv3d):
         from bpy_extras.view3d_utils import location_3d_to_region_2d
+
         min_y = float("inf")
         best_origin = None
         for idx, corner in enumerate(corners):
@@ -1243,7 +1257,7 @@ class BoundingBoxDecorator:
         verts = [top_left, bottom_left, top_right, bottom_right]
         gpu.state.blend_set("ALPHA")
         self.draw_batch("TRIS", verts, color, [(0, 1, 2), (1, 2, 3)])
-        
+
     def draw_bounding_box_wire_cube(self, context):
         import gpu
         from gpu_extras.batch import batch_for_shader
@@ -1280,7 +1294,6 @@ class BoundingBoxDecorator:
         self.line_shader.bind()
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
         self.shader = gpu.shader.from_builtin("UNIFORM_COLOR")
-
 
         selected_objects = [obj for obj in bpy.context.selected_objects if hasattr(obj, "bound_box")]
         if not selected_objects:
