@@ -351,7 +351,7 @@ class Sheet(PropertyGroup):
 RenderType = Literal["DEFAULT", "VIEWPORT"]
 RENDER_TYPE_ENUM_ITEMS: dict[RenderType, tuple[str, str]] = {
     "DEFAULT": ("Default", "Use default Blender render."),
-    "VIEWPORT": ("Viewport", "Render active viewport."),
+    "VIEWPORT": ("Viewport", "Render active viewport (using 'Rendered' viewport shading type)."),
 }
 
 
