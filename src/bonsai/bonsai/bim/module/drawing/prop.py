@@ -211,6 +211,8 @@ def update_document_name(self: "Document", context: bpy.types.Context) -> None:
 
 
 def update_has_underlay(self: "BIMCameraProperties", context: bpy.types.Context) -> None:
+    if not self.update_props:
+        return
     update_layer(self, context, "HasUnderlay", self.has_underlay)
     assert context.scene
     # making sure that camera is active
