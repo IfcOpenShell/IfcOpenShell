@@ -74,6 +74,12 @@ class Clash(PropertyGroup):
         status: bool
 
 
+def clashes_loaded_update(self: "ClashSet", context: bpy.types.Context) -> None:
+    if self.clashes_loaded:
+        return
+    tool.Clash.clear_active_clash_set_results()
+
+
 class ClashSet(PropertyGroup):
     mode: EnumProperty(
         items=[
@@ -96,6 +102,11 @@ class ClashSet(PropertyGroup):
     a: CollectionProperty(name="Group A", type=ClashSource)
     b: CollectionProperty(name="Group B", type=ClashSource)
     clashes: CollectionProperty(name="Clashes", type=Clash)
+    clashes_loaded: BoolProperty(
+        name="Clash Results Are Loaded",
+        description="Click to unload clash results for the clash set.",
+        update=clashes_loaded_update,
+    )
 
     if TYPE_CHECKING:
         mode: Literal["intersection", "collision", "clearance"]
@@ -106,6 +117,7 @@ class ClashSet(PropertyGroup):
         a: bpy.types.bpy_prop_collection_idprop[ClashSource]
         b: bpy.types.bpy_prop_collection_idprop[ClashSource]
         clashes: bpy.types.bpy_prop_collection_idprop[Clash]
+        clashes_loaded: bool
 
     def get_clash_sources_group(
         self, group: tool.Clash.ClashSourceGroup

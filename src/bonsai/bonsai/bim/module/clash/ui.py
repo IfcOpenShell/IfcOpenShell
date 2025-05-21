@@ -145,11 +145,18 @@ class BIM_PT_ifcclash(Panel):
         op.filepath = props.export_path
 
         row = layout.row()
-        row.label(text=f"{len(clash_set.clashes)} Clashes Found", icon="PIVOT_CURSOR")
+        if clash_set.clashes_loaded:
+            row.column().label(text=f"{len(clash_set.clashes)} Clashes Found", icon="PIVOT_CURSOR")
 
-        layout.template_list("BIM_UL_clashes", "", props.active_clash_set, "clashes", props, "active_clash_index")
-        row = layout.row()
-        row.operator("bim.select_clash")
+            col = row.column()
+            col.alignment = "RIGHT"
+            col.prop(clash_set, "clashes_loaded", text="", icon="TRASH", invert_checkbox=True)
+
+            layout.template_list("BIM_UL_clashes", "", props.active_clash_set, "clashes", props, "active_clash_index")
+            row = layout.row()
+            row.operator("bim.select_clash")
+        else:
+            row.label(text="Clashes Are Not Loaded", icon="PIVOT_CURSOR")
 
 
 class BIM_PT_clash_manager(Panel):

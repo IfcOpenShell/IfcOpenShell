@@ -109,6 +109,17 @@ class Clash(bonsai.core.tool.Clash):
             blender_clash.a_name = "{}/{}".format(clash["a_ifc_class"], clash["a_name"])
             blender_clash.b_name = "{}/{}".format(clash["b_ifc_class"], clash["b_name"])
             blender_clash.status = False if not "status" in clash else clash["status"]
+        clash_set.clashes_loaded = True
+
+    @classmethod
+    def clear_active_clash_set_results(cls) -> None:
+        props = cls.get_clash_props()
+        clash_set = props.active_clash_set
+        if not clash_set:
+            return
+        clash_set.clashes.clear()
+        if "clashes_loaded" in clash_set:
+            del clash_set["clashes_loaded"]
 
     @classmethod
     def load_clash_sets(cls, fn: str) -> None:
