@@ -90,10 +90,10 @@ class BIM_PT_ifcclash(Panel):
             for index, source in enumerate(sources):
                 row = layout.row(align=True)
                 row.prop(source, "name", text="")
-                row.prop(source, "mode", text="")
                 op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
                 op.index = index
                 op.group = group
+                row.prop(source, "mode", text="")
                 op = row.operator("bim.remove_clash_source", icon="X", text="")
                 op.index = index
                 op.group = group
