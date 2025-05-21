@@ -39,6 +39,8 @@ jobs:
           }
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - uses: actions/setup-python@v2 # https://github.com/actions/setup-python
         with:
           python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
