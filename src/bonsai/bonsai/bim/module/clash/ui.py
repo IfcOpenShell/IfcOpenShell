@@ -81,45 +81,30 @@ class BIM_PT_ifcclash(Panel):
             row = layout.row()
             row.prop(clash_set, "check_all")
 
-        row = layout.row(align=True)
-        row.label(text="Group A:", icon="OUTLINER_OB_POINTCLOUD")
-        row.operator("bim.add_clash_source", icon="ADD", text="").group = "a"
-
-        for index, source in enumerate(clash_set.a):
+        def draw_clash_set_group(group: tool.Clash.ClashSourceGroup) -> None:
             row = layout.row(align=True)
-            row.prop(source, "name", text="")
-            row.prop(source, "mode", text="")
-            op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
-            op.index = index
-            op.group = "a"
-            op = row.operator("bim.remove_clash_source", icon="X", text="")
-            op.index = index
-            op.group = "a"
+            row.label(text=f"Group {group.upper()}:", icon="OUTLINER_OB_POINTCLOUD")
+            row.operator("bim.add_clash_source", icon="ADD", text="").group = group
 
-            if source.mode != "a":
-                bonsai.bim.helper.draw_filter(
-                    layout, source.filter_groups, ClashData, f"clash_{props.active_clash_set_index}_a_{index}"
-                )
+            sources = clash_set.get_clash_sources_group(group)
+            for index, source in enumerate(sources):
+                row = layout.row(align=True)
+                row.prop(source, "name", text="")
+                row.prop(source, "mode", text="")
+                op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
+                op.index = index
+                op.group = group
+                op = row.operator("bim.remove_clash_source", icon="X", text="")
+                op.index = index
+                op.group = group
 
-        row = layout.row(align=True)
-        row.label(text="Group B:", icon="OUTLINER_OB_POINTCLOUD")
-        row.operator("bim.add_clash_source", icon="ADD", text="").group = "b"
+                if source.mode != "a":
+                    bonsai.bim.helper.draw_filter(
+                        layout, source.filter_groups, ClashData, f"clash_{props.active_clash_set_index}_{group}_{index}"
+                    )
 
-        for index, source in enumerate(clash_set.b):
-            row = layout.row(align=True)
-            row.prop(source, "name", text="")
-            row.prop(source, "mode", text="")
-            op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
-            op.index = index
-            op.group = "b"
-            op = row.operator("bim.remove_clash_source", icon="X", text="")
-            op.index = index
-            op.group = "b"
-
-            if source.mode != "a":
-                bonsai.bim.helper.draw_filter(
-                    layout, source.filter_groups, ClashData, f"clash_{props.active_clash_set_index}_b_{index}"
-                )
+        draw_clash_set_group("a")
+        draw_clash_set_group("b")
 
         row = layout.row()
         row.prop(props, "should_create_clash_snapshots")
