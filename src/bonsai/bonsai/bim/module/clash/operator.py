@@ -24,6 +24,7 @@ import logging
 import numpy as np
 import ifcopenshell
 import bonsai.tool as tool
+from pathlib import Path
 from bpy_extras.io_utils import ExportHelper, ImportHelper
 from math import radians
 from mathutils import Matrix, Vector
@@ -225,6 +226,16 @@ class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
         from ifcclash import ifcclash
 
         self.props = tool.Clash.get_clash_props()
+
+        for clash_set in self.props.clash_sets:
+            for clash_sources in clash_set.get_clash_sources().values():
+                for clash_source in clash_sources:
+                    if not Path(clash_source.name).is_file():
+                        self.report(
+                            {"ERROR"},
+                            f"One of the provided clash source filepaths do not exist: '{clash_source.name}'.",
+                        )
+                        return {"CANCELLED"}
 
         _, extension = os.path.splitext(self.filepath)
         if extension != ".bcf":
