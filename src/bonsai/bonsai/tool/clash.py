@@ -112,6 +112,9 @@ class Clash(bonsai.core.tool.Clash):
 
     @classmethod
     def load_clash_sets(cls, fn: str) -> None:
+        """
+        :param fn: .json filepath to load clash results from.
+        """
         with open(fn) as f:
             ClashStore.clash_sets = json.load(f)
 

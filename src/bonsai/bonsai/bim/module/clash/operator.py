@@ -19,6 +19,7 @@
 import os
 import bpy
 import json
+import tempfile
 import bmesh
 import logging
 import numpy as np
@@ -237,12 +238,13 @@ class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
                         )
                         return {"CANCELLED"}
 
-        _, extension = os.path.splitext(self.filepath)
+        extension = Path(self.filepath).suffix.lower()
         if extension != ".bcf":
             self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
         # TODO Temporarily until BCF support comes back
         if extension != ".json":
             self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
+        assert extension in (".bcf", ".json")
 
         self.props.export_path = self.filepath
         settings = ifcclash.ClashSettings()
@@ -300,9 +302,20 @@ class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
         clasher.clash()
         clasher.export()
 
-        if extension == ".json":
+        # Load clash results to UI.
+        if extension == ".bcf":
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+                try:
+                    tmp.close()
+                    settings.output = tmp.name
+                    clasher.export()
+                    tool.Clash.load_clash_sets(tmp.name)
+                finally:
+                    Path(tmp.name).unlink()
+        else:
             tool.Clash.load_clash_sets(self.filepath)
-            tool.Clash.import_active_clashes()
+        tool.Clash.import_active_clashes()
+
         self.report({"INFO"}, f"IFC Clash results are saved to '{Path(self.filepath).name}'.")
         return {"FINISHED"}
 
