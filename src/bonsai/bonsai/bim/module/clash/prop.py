@@ -35,9 +35,12 @@ from typing import TYPE_CHECKING, Literal, Union
 
 
 class ClashSource(PropertyGroup):
-    name: StringProperty(name="File")
-    filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")
-    mode: EnumProperty(
+    name: StringProperty(  # pyright: ignore[reportRedeclaration]
+        name="File",
+        description="Absolute filepath to existing .ifc file to use as a clash source.",
+    )
+    filter_groups: CollectionProperty(type=BIMFilterGroup, name="Filter Groups")  # pyright: ignore[reportRedeclaration]
+    mode: EnumProperty(  # pyright: ignore[reportRedeclaration]
         items=[
             ("a", "All Elements", "All elements will be used for clashing"),
             ("i", "Include", "Only the selected elements are included for clashing"),
@@ -47,6 +50,7 @@ class ClashSource(PropertyGroup):
     )
 
     if TYPE_CHECKING:
+        name: str
         filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
         mode: Literal["a", "i", "e"]
 
@@ -56,7 +60,11 @@ class Clash(PropertyGroup):
     b_global_id: StringProperty(name="B")
     a_name: StringProperty(name="A Name")
     b_name: StringProperty(name="B Name")
-    status: BoolProperty(name="Status", default=False)
+    status: BoolProperty(
+        name="Status",
+        description="Clash status, not stored anywhere - currently just displayed in UI for convenience.",
+        default=False,
+    )
 
     if TYPE_CHECKING:
         a_global_id: str
@@ -98,6 +106,16 @@ class ClashSet(PropertyGroup):
         a: bpy.types.bpy_prop_collection_idprop[ClashSource]
         b: bpy.types.bpy_prop_collection_idprop[ClashSource]
         clashes: bpy.types.bpy_prop_collection_idprop[Clash]
+
+    def get_clash_sources_group(
+        self, group: tool.Clash.ClashSourceGroup
+    ) -> "bpy.types.bpy_prop_collection_idprop[ClashSource]":
+        return getattr(self, group)
+
+    def get_clash_sources(
+        self,
+    ) -> "dict[tool.Clash.ClashSourceGroup, bpy.types.bpy_prop_collection_idprop[ClashSource]]":
+        return {g: self.get_clash_sources_group(g) for g in tool.Clash.CLASH_SOURCE_GROUP_LITERALS}
 
 
 class SmartClashGroup(PropertyGroup):

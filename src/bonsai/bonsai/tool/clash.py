@@ -26,7 +26,8 @@ import bonsai.tool as tool
 from contextlib import contextmanager
 from mathutils import Vector
 from ifcclash import ifcclash
-from typing import TYPE_CHECKING, Union
+from ifcclash.ifcclash import ClashSource
+from typing import TYPE_CHECKING, Union, Literal, get_args
 
 if TYPE_CHECKING:
     from bonsai.bim.module.clash.prop import BIMClashProperties
@@ -38,16 +39,19 @@ class Clash(bonsai.core.tool.Clash):
     def get_clash_props(cls) -> BIMClashProperties:
         return bpy.context.scene.BIMClashProperties
 
+    ClashSourceGroup = Literal["a", "b"]
+    CLASH_SOURCE_GROUP_LITERALS = ("a", "b")
+
     @classmethod
     def export_clash_sets(cls) -> list[ifcclash.ClashSet]:
         clash_sets: list[ifcclash.ClashSet] = []
         props = cls.get_clash_props()
         for clash_set in props.clash_sets:
-            a = []
-            b = []
-            for ab in ["a", "b"]:
-                for data in getattr(clash_set, ab):
-                    clash_source = {"file": data.name}
+            a: list[ClashSource] = []
+            b: list[ClashSource] = []
+            for ab, ab_data in clash_set.get_clash_sources().items():
+                for data in ab_data:
+                    clash_source: ClashSource = {"file": data.name}
                     query = tool.Search.export_filter_query(data.filter_groups)
                     if query and data.mode != "a":
                         clash_source["selector"] = query
@@ -96,13 +100,15 @@ class Clash(bonsai.core.tool.Clash):
         clash_set.clashes.clear()
         result = tool.Clash.get_clash_set(clash_set.name)
         assert result is not None
-        for clash in sorted(result.get("clashes", {}).values(), key=lambda x: x["distance"]):
+        if "clashes" not in result:
+            return
+        for clash in sorted(result["clashes"].values(), key=lambda x: x["distance"]):
             blender_clash = clash_set.clashes.add()
             blender_clash.a_global_id = clash["a_global_id"]
             blender_clash.b_global_id = clash["b_global_id"]
             blender_clash.a_name = "{}/{}".format(clash["a_ifc_class"], clash["a_name"])
             blender_clash.b_name = "{}/{}".format(clash["b_ifc_class"], clash["b_name"])
-            blender_clash.status = False if not "status" in clash.keys() else clash["status"]
+            blender_clash.status = False if not "status" in clash else clash["status"]
 
     @classmethod
     def load_clash_sets(cls, fn: str) -> None:

@@ -28,7 +28,7 @@ import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.selector
 from logging import Logger
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, Union
 from typing_extensions import NotRequired
 
 
@@ -206,6 +206,7 @@ class Clasher:
         start = time.time()
 
     def export(self) -> None:
+        """Save clash results to ``settings.output``."""
         if len(self.settings.output) > 4 and self.settings.output[-4:] == ".bcf":
             return self.export_bcfxml()
         self.export_json()
@@ -230,12 +231,12 @@ class Clasher:
             suffix = f".{i}" if i else ""
             bcfxml.save(f"{self.settings.output}{suffix}")
 
-    def get_viewpoint_snapshot(self, viewpoint) -> None:
+    def get_viewpoint_snapshot(self, viewpoint) -> Union[None, tuple[str, bytes]]:
         # Possible to overload this function in a GUI application if used as a library.
-        # Should return a tuple of (filename, bytes).
         return None
 
     def export_json(self) -> None:
+        """Saved clash results as ``list[ClashSet]``."""
         clash_sets = self.clash_sets.copy()
         for clash_set in clash_sets:
             for source in clash_set["a"]:

@@ -16,11 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 import bonsai.bim.helper
 from bpy.types import Panel
 from bonsai.bim.module.clash.data import ClashData
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.clash.prop import BIMClashProperties, ClashSet, SmartClashGroup, Clash
 
 
 class BIM_PT_ifcclash(Panel):
@@ -36,6 +41,7 @@ class BIM_PT_ifcclash(Panel):
         if not ClashData.is_loaded:
             ClashData.load()
 
+        assert self.layout
         layout = self.layout
         props = tool.Clash.get_clash_props()
 
@@ -155,6 +161,7 @@ class BIM_PT_smart_clash_manager(Panel):
     bl_parent_id = "BIM_PT_clash_manager"
 
     def draw(self, context):
+        assert self.layout
         layout = self.layout
         props = tool.Clash.get_clash_props()
 
@@ -188,8 +195,16 @@ class BIM_PT_smart_clash_manager(Panel):
 
 
 class BIM_UL_clash_sets(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        ob = data
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMClashProperties,
+        item: ClashSet,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
             layout.prop(item, "name", text="", emboss=False)
         else:
@@ -197,8 +212,16 @@ class BIM_UL_clash_sets(bpy.types.UIList):
 
 
 class BIM_UL_smart_groups(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        ob = data
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMClashProperties,
+        item: SmartClashGroup,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
             layout.label(text=str(item.number), translate=False, icon="NONE", icon_value=0)
         else:
@@ -206,7 +229,16 @@ class BIM_UL_smart_groups(bpy.types.UIList):
 
 
 class BIM_UL_clashes(bpy.types.UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMClashProperties,
+        item: Clash,
+        icon,
+        active_data,
+        active_propname,
+    ) -> None:
         if item:
             row = layout.row(align=True)
             row.label(text=str(item.a_name), translate=False, icon="NONE", icon_value=0)
