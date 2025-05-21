@@ -156,8 +156,8 @@ class SelectClashSource(bpy.types.Operator, ImportHelper):
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select an IFC file to add as a clash source"
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
-    index: bpy.props.IntProperty()
-    group: bpy.props.StringProperty()
+    index: bpy.props.IntProperty(options={"HIDDEN"})
+    group: bpy.props.StringProperty(options={"HIDDEN"})
     filename_ext = ".ifc"
 
     def execute(self, context):
