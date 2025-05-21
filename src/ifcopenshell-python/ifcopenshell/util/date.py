@@ -93,14 +93,14 @@ def readable_ifc_duration(duration: str) -> str:
     for designator in ("Y", "M", "W", "D"):
         if designator in period_duration:
             value, period_duration = period_duration.split(designator)
-            if int(value):
+            if float(value):
                 result.append(f"{value}{designator}")
 
     if time_duration:
         for designator in ("H", "M", "S"):
             if designator in time_duration:
                 value, time_duration = time_duration.split(designator)
-                if int(value):
+                if float(value):
                     result.append(f"{value}{designator.lower()}")
     return " ".join(result)
 

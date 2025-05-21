@@ -26,3 +26,7 @@ class TestReadableIFCDuration:
         assert subject.readable_ifc_duration("P0Y0M1DT16H0M0S") == "1D 16h"
         assert subject.readable_ifc_duration("P2Y3M1W4DT5H45M30S") == "2Y 3M 1W 4D 5h 45m 30s"
         assert subject.readable_ifc_duration("PT40H") == "40h"
+
+        # Float values.
+        assert subject.readable_ifc_duration("P2.5D") == "2.5D"
+        assert subject.readable_ifc_duration("PT1.5H") == "1.5h"
