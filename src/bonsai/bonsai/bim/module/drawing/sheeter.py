@@ -532,7 +532,7 @@ class SheetBuilder:
         ET.register_namespace("", "http://www.w3.org/2000/svg")
         ET.register_namespace("xlink", "http://www.w3.org/1999/xlink")
 
-        view_root = ET.parse(ootb_titleblock_path).getroot()
+        view_root = ET.parse(titleblock_path).getroot()
         view_width = self.convert_to_mm(view_root.attrib["width"])
         view_height = self.convert_to_mm(view_root.attrib["height"])
 
