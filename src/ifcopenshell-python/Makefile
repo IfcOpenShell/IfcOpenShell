@@ -1,3 +1,4 @@
+SHELL := sh
 IS_STABLE:=FALSE
 VERSION:=$(shell cat ../../VERSION)
 VERSION_DATE:=$(shell date '+%y%m%d')
