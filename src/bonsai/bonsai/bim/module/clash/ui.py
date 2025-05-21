@@ -87,24 +87,53 @@ class BIM_PT_ifcclash(Panel):
             row.operator("bim.add_clash_source", icon="ADD", text="").group = group
 
             sources = clash_set.get_clash_sources_group(group)
+            if not sources:
+                return
+            layout_ = layout.box()
             for index, source in enumerate(sources):
-                row = layout.row(align=True)
-                row.prop(source, "name", text="")
+                row = layout_.row(align=True)
+                row.column().label(text="", icon="POINTCLOUD_POINT")
+
+                # Draw user attention to empty filepaths.
+                col = row.column()
+                col.alert = not bool(source.name)
+                col.prop(source, "name", text="", placeholder="source.ifc")
+
                 op = row.operator("bim.select_clash_source", icon="FILE_FOLDER", text="")
                 op.index = index
                 op.group = group
+                # Make sure file selection sticks to "name" field.
+                row.label(text="", icon="BLANK1")
+
                 row.prop(source, "mode", text="")
                 op = row.operator("bim.remove_clash_source", icon="X", text="")
                 op.index = index
                 op.group = group
 
                 if source.mode != "a":
-                    bonsai.bim.helper.draw_filter(
-                        layout, source.filter_groups, ClashData, f"clash_{props.active_clash_set_index}_{group}_{index}"
+
+                    def draw_filter(layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+                        bonsai.bim.helper.draw_filter(
+                            layout,
+                            source.filter_groups,
+                            ClashData,
+                            f"clash_{props.active_clash_set_index}_{group}_{index}",
+                        )
+
+                    bonsai.bim.helper.draw_expandable_panel(
+                        layout_,
+                        context,
+                        "Filter",
+                        draw_filter,
+                        default_closed=True,
+                        panel_id=f"filter_{group}_{index}",
                     )
 
+        layout.separator()
         draw_clash_set_group("a")
+        layout.separator()
         draw_clash_set_group("b")
+        layout.separator()
 
         row = layout.row()
         row.prop(props, "should_create_clash_snapshots")
