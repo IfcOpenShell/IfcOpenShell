@@ -733,7 +733,7 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
         objects = context.selected_objects or [context.active_object]
         if not objects:
             self.report({"WARNING"}, "No selected or active object found.")
-            return {'CANCELLED'}
+            return {"CANCELLED"}
         for obj in objects:
             element = tool.Ifc.get_entity(obj)
             key = self.key

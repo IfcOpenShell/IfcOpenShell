@@ -122,6 +122,7 @@ class ExtendWallsToWall(bpy.types.Operator, tool.Ifc.Operator):
         else:
             self.report({"ERROR"}, "Please select at least one LAYER2 element and one active LAYER2 element")
 
+
 class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
     bl_idname = "bim.extend_walls_to_polyline_point"
     bl_label = "Extend Walls To Polyline Point"
@@ -135,7 +136,7 @@ class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.
         for obj in context.selected_objects:
             if not tool.Ifc.get_entity(obj).is_a("IfcWall"):
                 walls = False
-            
+
         return bool(context.selected_objects) and is_view_3d and walls
 
     def __init__(self):
@@ -150,7 +151,7 @@ class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.
         start = Vector((axis["reference"][0][0], axis["reference"][0][1], obj.location.z))
         end = Vector((axis["reference"][1][0], axis["reference"][1][1], obj.location.z))
         direcion = end - start
-        value = end if connection=="ATSTART" else start
+        value = end if connection == "ATSTART" else start
         self.input_ui.set_value("X", value[0])
         self.input_ui.set_value("Y", value[1])
         self.input_ui.set_value("Z", value[2])
@@ -194,13 +195,10 @@ class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.
 
         if event.value == "RELEASE" and event.type == "F":
             tool.Polyline.clear_polyline()
-            self.connection = "ATSTART" if self.connection=="ATEND" else "ATEND"
+            self.connection = "ATSTART" if self.connection == "ATEND" else "ATEND"
             self.set_origin(context, event, self.connection)
 
-        if (
-            event.value == "RELEASE"
-            and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE", "LEFTMOUSE"}
-        ):
+        if event.value == "RELEASE" and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE", "LEFTMOUSE"}:
             if self.tool_state.is_input_on:
                 is_valid = self.recalculate_inputs(context)
                 if is_valid:
@@ -235,7 +233,6 @@ class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.
             tool.Blender.update_viewport()
             return {"FINISHED"}
 
-
         self.handle_keyboard_input(context, event)
 
         cancel = self.handle_cancelation(context, event)
@@ -255,6 +252,7 @@ class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.
         tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
         tool.Blender.update_viewport()
         return {"RUNNING_MODAL"}
+
 
 class AlignWall(bpy.types.Operator):
     bl_idname = "bim.align_wall"
