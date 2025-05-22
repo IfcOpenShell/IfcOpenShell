@@ -438,23 +438,8 @@ def get_enum_items(
     return items
 
 
-def draw_expandable_panel(
-    layout: bpy.types.UILayout,
-    context: bpy.types.Context,
-    label: str,
-    ui_func: Callable[[bpy.types.UILayout, bpy.types.Context], None],
-    default_closed: bool = True,
-    *,
-    panel_id: str = "",
-) -> None:
-    """
-    :param panel_id: Optional unique identifier for the panel.
-        By default is matching ``label``, but if more than one panel with the same name is used,
-        then ``panel_id`` can be provided explicitly to ensure panels can be expanded/collapsed separately.
-    """
-    if not panel_id:
-        panel_id = label
-    header, panel = layout.panel(panel_id, default_closed=default_closed)
+def draw_expandable_panel(layout, context, label: str, ui_func, default_closed: bool = True):
+    header, panel = layout.panel(label, default_closed=default_closed)
     header.label(text=label)
     if panel:
         ui_func(panel, context)
