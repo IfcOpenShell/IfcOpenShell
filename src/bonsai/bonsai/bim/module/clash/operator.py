@@ -197,7 +197,10 @@ class SelectSmartGroupedClashesPath(bpy.types.Operator, ImportHelper):
 class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.execute_ifc_clash"
     bl_label = "Execute IFC Clash"
-    bl_description = "Execute clash detection and save the information to a .bcf or .json file"
+    bl_description = (
+        "Execute clash detection and save the information to a .bcf or .json file.\n\n"
+        "ALT+click to run a quick clash without selecting a file to save."
+    )
 
     filter_glob: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
         default="*.bcf;*.json", options={"HIDDEN"}
@@ -208,17 +211,25 @@ class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
     filepath: bpy.props.StringProperty(  # pyright: ignore[reportRedeclaration]
         subtype="FILE_PATH", options={"SKIP_SAVE"}
     )
+    quick_clash: bpy.props.BoolProperty(  # pyright: ignore[reportRedeclaration]
+        options={"SKIP_SAVE"},
+    )
 
     if TYPE_CHECKING:
         filter_glob: str
         format: str
         filepath: str
+        quick_clash: bool
 
     @property
     def filename_ext(self) -> str:
         return f".{self.format.lower()}"
 
     def invoke(self, context, event):
+        if event.alt:
+            self.quick_clash = True
+            return self.execute(context)
+
         if self.filepath:
             return self.execute(context)
         return ExportHelper.invoke(self, context, event)
@@ -238,15 +249,22 @@ class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
                         )
                         return {"CANCELLED"}
 
-        extension = Path(self.filepath).suffix.lower()
-        if extension != ".bcf":
-            self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
-        # TODO Temporarily until BCF support comes back
-        if extension != ".json":
-            self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
-        assert extension in (".bcf", ".json")
+        temp_file = None
+        if self.quick_clash:
+            temp_file = tempfile.NamedTemporaryFile(suffix=".json", delete=False, mode="w")
+            temp_file.close()
+            extension = ".json"
+            self.filepath = temp_file.name
+        else:
+            extension = Path(self.filepath).suffix.lower()
+            if extension != ".bcf":
+                self.filepath = bpy.path.ensure_ext(self.filepath, ".json")
+            # TODO Temporarily until BCF support comes back
+            if extension != ".json":
+                self.filepath = bpy.path.ensure_ext(self.filepath, ".bcf")
+            assert extension in (".bcf", ".json")
+            self.props.export_path = self.filepath
 
-        self.props.export_path = self.filepath
         settings = ifcclash.ClashSettings()
         settings.output = self.filepath
         settings.logger = logging.getLogger("Clash")
@@ -316,7 +334,12 @@ class ExecuteIfcClash(bpy.types.Operator, ExportHelper):
             tool.Clash.load_clash_sets(self.filepath)
         tool.Clash.import_active_clashes()
 
-        self.report({"INFO"}, f"IFC Clash results are saved to '{Path(self.filepath).name}'.")
+        if self.quick_clash:
+            assert temp_file is not None
+            Path(temp_file.name).unlink()
+            self.report({"INFO"}, "IFC Clash completed and results are loaded.")
+        else:
+            self.report({"INFO"}, f"IFC Clash results are saved to '{Path(self.filepath).name}'.")
         return {"FINISHED"}
 
 
