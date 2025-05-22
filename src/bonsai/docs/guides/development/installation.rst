@@ -158,8 +158,11 @@ For Linux or Mac:
    :language: bash
    :caption: dev_environment.sh
 
-For Windows, run this batch script as an administrator. Before running it
-follow the instructions described in the `rem` tags.
+For Windows, run this batch script as an administrator. Make sure to 
+run the script with blender closed. By default the script assumes its 
+in the root directory of the IFCOpenShell repository. If you want to run
+it from another directory, set the environment variables described in the
+`rem` tags.
 
 .. literalinclude:: ../../../scripts/installation/dev_environment.bat
    :language: bat
