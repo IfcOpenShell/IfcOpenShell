@@ -75,7 +75,6 @@ class ClashSet(TypedDict):
 
 class ClashGroup(TypedDict):
     elements: dict[str, ifcopenshell.entity_instance]
-    objects: dict
 
 
 class Clasher:
@@ -157,7 +156,7 @@ class Clasher:
 
     def create_group(self, name: str) -> None:
         self.logger.info(f"Creating group {name}")
-        self.groups[name] = {"elements": {}, "objects": {}}
+        self.groups[name] = {"elements": {}}
 
     def load_ifc(self, path: str) -> ifcopenshell.file:
         start = time.time()
