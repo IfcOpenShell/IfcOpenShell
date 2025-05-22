@@ -132,14 +132,10 @@ class Clash(bonsai.core.tool.Clash):
     @classmethod
     def look_at(cls, target: Vector, location: Vector) -> None:
         camera_location = location
-        area = tool.Blender.get_view3d_area()
-        region = next(region for region in area.regions if region.type == "WINDOW")
-        space = next(space for space in area.spaces if space.type == "VIEW_3D")
-        override = {"area": area, "region": region, "space_data": space}
-        assert isinstance(space, bpy.types.SpaceView3D)
-        assert space.region_3d
+        space = tool.Blender.get_view3d_space()
+        assert space and space.region_3d
         space.region_3d.view_location = target
-        space.region_3d.view_rotation = Vector((camera_location - target)).to_track_quat("Z", "Y")
+        space.region_3d.view_rotation = (camera_location - target).to_track_quat("Z", "Y")
         space.region_3d.view_distance = (camera_location - target).length
         space.shading.show_xray = True
 

@@ -23,6 +23,7 @@ import bonsai.bim.helper
 from bpy.types import Panel
 from bonsai.bim.module.clash.data import ClashData
 from typing import TYPE_CHECKING
+from typing_extensions import assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.module.clash.prop import BIMClashProperties, ClashSet, SmartClashGroup, Clash
@@ -80,6 +81,8 @@ class BIM_PT_ifcclash(Panel):
             row.prop(clash_set, "clearance")
             row = layout.row()
             row.prop(clash_set, "check_all")
+        else:
+            assert_never(clash_set.mode)
 
         def draw_clash_set_group(group: tool.Clash.ClashSourceGroup) -> None:
             row = layout.row(align=True)

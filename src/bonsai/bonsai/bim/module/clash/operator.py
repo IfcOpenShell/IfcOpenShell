@@ -425,7 +425,7 @@ class SelectClash(bpy.types.Operator):
         if not clash:
             return {"FINISHED"}
 
-        products = []
+        products: list[ifcopenshell.entity_instance] = []
 
         for global_id in (clash["a_global_id"], clash["b_global_id"]):
             try:

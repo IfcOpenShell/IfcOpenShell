@@ -29,7 +29,7 @@ import ifcopenshell.geom
 import ifcopenshell.util.selector
 from logging import Logger
 from typing import Literal, TypedDict, Union
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, assert_never
 
 
 class ClashSource(TypedDict):
@@ -61,7 +61,7 @@ class ClashSet(TypedDict):
     a: list[ClashSource]
     b: NotRequired[list[ClashSource]]
     mode: Literal["intersection", "collision", "clearance"]
-    # Added during clash.
+    # Clash results, added during clash.
     clashes: NotRequired[dict[str, ClashResult]]
     # intersection, clearance modes.
     check_all: NotRequired[bool]
@@ -74,7 +74,7 @@ class ClashSet(TypedDict):
 
 
 class ClashGroup(TypedDict):
-    elements: dict
+    elements: dict[str, ifcopenshell.entity_instance]
     objects: dict
 
 
@@ -110,6 +110,7 @@ class Clasher:
 
         mode = clash_set["mode"]
         if mode == "intersection":
+            assert "tolerance" in clash_set and "check_all" in clash_set
             results = self.tree.clash_intersection_many(
                 list(self.groups["a"]["elements"].values()),
                 list(self.groups[b]["elements"].values()),
@@ -117,12 +118,14 @@ class Clasher:
                 check_all=clash_set["check_all"],
             )
         elif mode == "collision":
+            assert "allow_touching" in clash_set
             results = self.tree.clash_collision_many(
                 list(self.groups["a"]["elements"].values()),
                 list(self.groups[b]["elements"].values()),
                 allow_touching=clash_set["allow_touching"],
             )
         elif mode == "clearance":
+            assert "clearance" in clash_set and "check_all" in clash_set
             results = self.tree.clash_clearance_many(
                 list(self.groups["a"]["elements"].values()),
                 list(self.groups[b]["elements"].values()),
@@ -130,7 +133,7 @@ class Clasher:
                 check_all=clash_set["check_all"],
             )
         else:
-            assert False, f"Unexpected mode '{mode}'."
+            assert_never(mode)
 
         processed_results: dict[str, ClashResult] = {}
         for result in results:
@@ -144,7 +147,7 @@ class Clasher:
                 b_ifc_class=element2.is_a(),
                 a_name=element1.get_argument(2),
                 b_name=element2.get_argument(2),
-                type=["protrusion", "pierce", "collision", "clearance"][result.clash_type],
+                type=("protrusion", "pierce", "collision", "clearance")[result.clash_type],
                 p1=list(result.p1),
                 p2=list(result.p2),
                 distance=result.distance,
@@ -173,10 +176,14 @@ class Clasher:
         ifc_file: ifcopenshell.file,
         source: ClashSource,
     ) -> None:
+        """Process filters, add tree and group elements."""
+        assert self.tree
         mode = source.get("mode")
         selector = source.get("selector")
         start = time.time()
         self.settings.logger.info("Creating iterator")
+
+        # Process filters.
         if not mode or mode == "a" or not selector:
             elements = set(ifc_file.by_type("IfcElement"))
             elements -= set(ifc_file.by_type("IfcFeatureElement"))
@@ -186,11 +193,15 @@ class Clasher:
             elements -= set(ifcopenshell.util.selector.filter_elements(ifc_file, selector))
         elif mode == "i":
             elements = set(ifcopenshell.util.selector.filter_elements(ifc_file, selector))
+        else:
+            assert_never(mode)
+
         iterator = ifcopenshell.geom.iterator(
             self.geom_settings, ifc_file, multiprocessing.cpu_count(), include=elements
         )
         self.settings.logger.info(f"Iterator creation finished {time.time() - start}")
 
+        # Add tree elements.
         start = time.time()
         self.logger.info(f"Adding objects {name} ({len(elements)} elements)")
         assert iterator.initialize()
@@ -200,6 +211,8 @@ class Clasher:
             if not iterator.next():
                 break
         self.logger.info(f"Tree finished {time.time() - start}")
+
+        # Add group elements.
         start = time.time()
         self.groups[name]["elements"].update({e.GlobalId: e for e in elements})
         self.logger.info(f"Element metadata finished {time.time() - start}")
