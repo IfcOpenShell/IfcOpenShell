@@ -730,72 +730,76 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
         return self.execute(context)
 
     def _execute(self, context):
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        key = self.key
-        if key == "PredefinedType":
-            key = "predefined_type"
-        value = ifcopenshell.util.selector.get_element_value(element, key)
-        dprops = tool.Drawing.get_document_props()
-        tolerance = dprops.tolerance
+        objects = context.selected_objects or [context.active_object]
+        if not objects:
+            self.report({"WARNING"}, "No selected or active object found.")
+            return {'CANCELLED'}
+        for obj in objects:
+            element = tool.Ifc.get_entity(obj)
+            key = self.key
+            if key == "PredefinedType":
+                key = "predefined_type"
+            value = ifcopenshell.util.selector.get_element_value(element, key)
+            dprops = tool.Drawing.get_document_props()
+            tolerance = dprops.tolerance
 
-        # Determine the number of decimal places based on the magnitude of the rounding value
-        if tolerance < 1:
-            decimal_places = max(0, -int(f"{tolerance:.1e}".split("e")[-1]))  # Exponent in scientific notation
-            formatted_tolerance = f"{tolerance:.{decimal_places}f}"
-        else:
-            formatted_tolerance = f"{tolerance:.1f}"  # For values >= 1, one decimal place is enough
+            # Determine the number of decimal places based on the magnitude of the rounding value
+            if tolerance < 1:
+                decimal_places = max(0, -int(f"{tolerance:.1e}".split("e")[-1]))  # Exponent in scientific notation
+                formatted_tolerance = f"{tolerance:.{decimal_places}f}"
+            else:
+                formatted_tolerance = f"{tolerance:.1f}"  # For values >= 1, one decimal place is enough
 
-        if self.calculate_sum and isinstance(value, (int, float)):
-            total = 0
-            for obj in context.selected_objects:
-                element = tool.Ifc.get_entity(obj)
-                if not element:
-                    continue
-                value = ifcopenshell.util.selector.get_element_value(element, key)
-                if value:
-                    total += value
-            self.calculated_sum = total
-            bpy.context.window_manager.clipboard = str(self.calculated_sum)
-            self.report({"INFO"}, f"({self.calculated_sum}) was copied to the clipboard.")
-        else:
-            self.calculated_sum = 0
-            for obj in context.visible_objects:
-                element = tool.Ifc.get_entity(obj)
-                if not element:
-                    continue
-                obj_value = ifcopenshell.util.selector.get_element_value(element, key)
-                if isinstance(obj_value, (int, float)):
-                    # Check within rounding value
-                    if abs(obj_value - value) <= tolerance:
+            if self.calculate_sum and isinstance(value, (int, float)):
+                total = 0
+                for obj in context.selected_objects:
+                    element = tool.Ifc.get_entity(obj)
+                    if not element:
+                        continue
+                    value = ifcopenshell.util.selector.get_element_value(element, key)
+                    if value:
+                        total += value
+                self.calculated_sum = total
+                bpy.context.window_manager.clipboard = str(self.calculated_sum)
+                self.report({"INFO"}, f"({self.calculated_sum}) was copied to the clipboard.")
+            else:
+                self.calculated_sum = 0
+                for obj in context.visible_objects:
+                    element = tool.Ifc.get_entity(obj)
+                    if not element:
+                        continue
+                    obj_value = ifcopenshell.util.selector.get_element_value(element, key)
+                    if isinstance(obj_value, (int, float)):
+                        # Check within rounding value
+                        if abs(obj_value - value) <= tolerance:
+                            obj.select_set(True)
+                    elif obj_value == value:
                         obj.select_set(True)
-                elif obj_value == value:
-                    obj.select_set(True)
-            if isinstance(value, (int, float)):
-                self.report(
-                    {"INFO"},
-                    f"Selected all objects that share the same ({key}) value--within a ({formatted_tolerance}) tolerance.",
-                )
-            else:
-                self.report({"INFO"}, f"Selected all objects that share the same ({key}) value")
+                if isinstance(value, (int, float)):
+                    self.report(
+                        {"INFO"},
+                        f"Selected all objects that share the same ({key}) value--within a ({formatted_tolerance}) tolerance.",
+                    )
+                else:
+                    self.report({"INFO"}, f"Selected all objects that share the same ({key}) value")
 
-        # copy selection query to clipboard
-        if not self.calculate_sum:
-            result = ""
-            if value == True:
-                value = "TRUE"
-            if value == False:
-                value = "FALSE"
-            if key == "predefined_type":
-                key = "PredefinedType"
-            if isinstance(value, list) and value:
-                for item in value:
-                    sub_result = f'{key} = "{item}"'
-                    if not result:
-                        result = sub_result
-                    else:
-                        result += f", {sub_result}"
-            else:
-                result = f'{key} = "{value}"'
-            bpy.context.window_manager.clipboard = result
-            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+            # copy selection query to clipboard
+            if not self.calculate_sum:
+                result = ""
+                if value == True:
+                    value = "TRUE"
+                if value == False:
+                    value = "FALSE"
+                if key == "predefined_type":
+                    key = "PredefinedType"
+                if isinstance(value, list) and value:
+                    for item in value:
+                        sub_result = f'{key} = "{item}"'
+                        if not result:
+                            result = sub_result
+                        else:
+                            result += f", {sub_result}"
+                else:
+                    result = f'{key} = "{value}"'
+                bpy.context.window_manager.clipboard = result
+                self.report({"INFO"}, f"({result}) was copied to the clipboard.")
