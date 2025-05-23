@@ -155,6 +155,14 @@ class BIM_PT_ifcclash(Panel):
             col.alignment = "RIGHT"
             col.prop(clash_set, "clashes_loaded", text="", icon="TRASH", invert_checkbox=True)
 
+            split = layout.split(factor=0.07, align=True)
+            split.label(text="#")
+
+            row = split.row(align=True)
+            row.label(text="Group A Element")
+            row.label(text="Group B Element")
+            row.label(text="Type")
+
             layout.template_list("BIM_UL_clashes", "", props.active_clash_set, "clashes", props, "active_clash_index")
             row = layout.row()
             row.operator("bim.select_clash")
@@ -262,14 +270,21 @@ class BIM_UL_clashes(bpy.types.UIList):
         icon,
         active_data,
         active_propname,
+        index,
+        fit_flag,
     ) -> None:
         if item:
-            row = layout.row(align=False)
+            split = layout.split(factor=0.05, align=True)
+            split.label(text=str(index + 1))
+
+            row = split.row(align=False)
             row.label(text=str(item.a_name), translate=False, icon="NONE", icon_value=0)
             row.label(text=str(item.b_name), translate=False, icon="NONE", icon_value=0)
+
             col = row.column()
             col.enabled = False
             col.prop(item, "clash_type", text="")
+
             row.prop(item, "status", text="")
         else:
             layout.label(text="", translate=False)
