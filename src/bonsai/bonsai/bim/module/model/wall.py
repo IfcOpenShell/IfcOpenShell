@@ -321,7 +321,6 @@ class ChangeExtrusionXAngle(bpy.types.Operator, tool.Ifc.Operator):
                 x, y, z = extrusion.ExtrudedDirection.DirectionRatios
                 depth = extrusion.Depth / abs(1 / cos(existing_x_angle))
                 perpendicular_depth = depth * abs(1 / cos(x_angle))
-                print(extrusion.Depth, perpendicular_depth)
                 extrusion.ExtrudedDirection.DirectionRatios = (0.0, sin(x_angle), cos(x_angle))
                 layer2_objs.append(obj)
                 extrusion.Depth = perpendicular_depth
