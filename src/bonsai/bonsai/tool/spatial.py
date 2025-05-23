@@ -558,18 +558,28 @@ class Spatial(bonsai.core.tool.Spatial):
             return container
 
     @classmethod
-    def contract_container(cls, container: ifcopenshell.entity_instance) -> None:
+    def contract_container(cls, container: ifcopenshell.entity_instance, is_recursive: bool) -> None:
         props = cls.get_spatial_props()
-        contracted_containers = json.loads(props.contracted_containers)
-        contracted_containers.append(container.id())
-        props.contracted_containers = json.dumps(contracted_containers)
+        contracted_containers = set(json.loads(props.contracted_containers))
+        queue = [container]
+        while queue:
+            item = queue.pop()
+            if is_recursive and (children := ifcopenshell.util.element.get_parts(item)):
+                queue.extend(children)
+            contracted_containers.add(item.id())
+        props.contracted_containers = json.dumps(list(contracted_containers))
 
     @classmethod
-    def expand_container(cls, container: ifcopenshell.entity_instance) -> None:
+    def expand_container(cls, container: ifcopenshell.entity_instance, is_recursive: bool) -> None:
         props = cls.get_spatial_props()
-        contracted_containers = json.loads(props.contracted_containers)
-        contracted_containers.remove(container.id())
-        props.contracted_containers = json.dumps(contracted_containers)
+        contracted_containers = set(json.loads(props.contracted_containers))
+        queue = [container]
+        while queue:
+            item = queue.pop()
+            if is_recursive and (children := ifcopenshell.util.element.get_parts(item)):
+                queue.extend(children)
+            contracted_containers.discard(item.id())
+        props.contracted_containers = json.dumps(list(contracted_containers))
 
     @classmethod
     def toggle_container_element(cls, element_index: int, is_recursive: bool) -> None:

@@ -336,22 +336,40 @@ class ImportSpatialDecomposition(bpy.types.Operator):
 class ContractContainer(bpy.types.Operator):
     bl_idname = "bim.contract_container"
     bl_label = "Contract Container"
+    bl_description = "Contract the hierarchy\nALT+CLICK to recursively contract"
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty()
+    is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.is_recursive = True
+        return self.execute(context)
 
     def execute(self, context):
-        core.contract_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        core.contract_container(
+            tool.Spatial, container=tool.Ifc.get().by_id(self.container), is_recursive=self.is_recursive
+        )
         return {"FINISHED"}
 
 
 class ExpandContainer(bpy.types.Operator):
     bl_idname = "bim.expand_container"
     bl_label = "Expand Container"
+    bl_description = "Expand the hierarchy\nALT+CLICK to recursively contract"
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty()
+    is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.is_recursive = True
+        return self.execute(context)
 
     def execute(self, context):
-        core.expand_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        core.expand_container(
+            tool.Spatial, container=tool.Ifc.get().by_id(self.container), is_recursive=self.is_recursive
+        )
         return {"FINISHED"}
 
 
