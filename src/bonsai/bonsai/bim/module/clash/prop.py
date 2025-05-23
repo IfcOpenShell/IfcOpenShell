@@ -30,6 +30,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from ifcopenshell.geom.main import ClashType, CLASH_TYPE_ITEMS
 from mathutils import Vector
 from typing import TYPE_CHECKING, Literal, Union
 
@@ -60,6 +61,10 @@ class Clash(PropertyGroup):
     b_global_id: StringProperty(name="B")
     a_name: StringProperty(name="A Name")
     b_name: StringProperty(name="B Name")
+    clash_type: EnumProperty(  # pyright: ignore[reportRedeclaration]
+        name="Clash Type",
+        items=tuple((i, i, "") for i in CLASH_TYPE_ITEMS),
+    )
     status: BoolProperty(
         name="Status",
         description="Clash status, not stored anywhere - currently just displayed in UI for convenience.",
@@ -71,6 +76,7 @@ class Clash(PropertyGroup):
         b_global_id: str
         a_name: str
         b_name: str
+        clash_type: ClashType
         status: bool
 
 

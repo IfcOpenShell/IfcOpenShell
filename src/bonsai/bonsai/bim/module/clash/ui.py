@@ -264,9 +264,12 @@ class BIM_UL_clashes(bpy.types.UIList):
         active_propname,
     ) -> None:
         if item:
-            row = layout.row(align=True)
+            row = layout.row(align=False)
             row.label(text=str(item.a_name), translate=False, icon="NONE", icon_value=0)
             row.label(text=str(item.b_name), translate=False, icon="NONE", icon_value=0)
+            col = row.column()
+            col.enabled = False
+            col.prop(item, "clash_type", text="")
             row.prop(item, "status", text="")
         else:
             layout.label(text="", translate=False)

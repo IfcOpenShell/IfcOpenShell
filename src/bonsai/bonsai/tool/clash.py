@@ -108,6 +108,7 @@ class Clash(bonsai.core.tool.Clash):
             blender_clash.b_global_id = clash["b_global_id"]
             blender_clash.a_name = "{}/{}".format(clash["a_ifc_class"], clash["a_name"])
             blender_clash.b_name = "{}/{}".format(clash["b_ifc_class"], clash["b_name"])
+            blender_clash.clash_type = clash["type"]
             blender_clash.status = False if not "status" in clash else clash["status"]
         clash_set.clashes_loaded = True
 
