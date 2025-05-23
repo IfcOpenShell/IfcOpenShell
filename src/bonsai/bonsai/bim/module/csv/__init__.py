@@ -22,6 +22,10 @@ from . import ui, prop, operator
 classes = (
     operator.AddCsvAttribute,
     operator.ExportCsvAttributes,
+    operator.AddOutputFilterGroup,
+    operator.RemoveOutputFilterGroup,
+    operator.AddOutputFilter,
+    operator.RemoveOutputFilter,
     operator.ExportIfcCsv,
     operator.ImportCsvAttributes,
     operator.ImportIfcCsv,
@@ -30,6 +34,8 @@ classes = (
     operator.ReorderCsvAttribute,
     operator.SelectCsvIfcFile,
     prop.CsvAttribute,
+    prop.CsvOutputFilter,
+    prop.CsvOutputFilterGroup,
     prop.CsvProperties,
     ui.BIM_PT_ifccsv,
 )

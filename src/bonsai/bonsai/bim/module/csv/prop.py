@@ -70,6 +70,45 @@ class CsvAttribute(PropertyGroup):
         formatting: str
 
 
+def filter_column_items(self, context):
+    props = context.scene.CsvProperties
+    items = [("__ALL__", "<All Columns>", "Apply to all columns (for regex only)")]
+    for attr in props.csv_attributes:
+        if attr.header:
+            items.append((attr.header, attr.header, ""))
+    return items
+
+
+class CsvOutputFilter(PropertyGroup):
+    name: StringProperty()
+    column: EnumProperty(
+        name="Column",
+        description="Column to filter",
+        items=filter_column_items,
+    )
+    comparison: EnumProperty(
+        items=[
+            ("regex", "regex", "Apply regex pattern"),
+            ("=", "equal", "Equal to"),
+            ("!=", "not equal", "Not equal to"),
+            (">", "greater", "Greater than"),
+            (">=", "greater or equal", "Greater than or equal to"),
+            ("<", "less", "Less than"),
+            ("<=", "less or equal", "Less than or equal to"),
+            ("*=", "contains", "Contains"),
+            ("!*=", "not contains", "Does not contain"),
+        ],
+        name="Operator",
+        default="=",
+    )
+    value: StringProperty(name="Value")
+
+
+class CsvOutputFilterGroup(bpy.types.PropertyGroup):
+    filters: bpy.props.CollectionProperty(type=CsvOutputFilter)
+    active_output_filter: bpy.props.IntProperty(default=-1, name="Active Output Filter")
+
+
 class CsvProperties(PropertyGroup):
     csv_ifc_file: StringProperty(default="", name="IFC File")
     ifc_selector: StringProperty(default="", name="IFC Selector")
@@ -115,6 +154,10 @@ class CsvProperties(PropertyGroup):
         description="Use IFC file currently loaded in Bonsai",
     )
 
+    output_filters: CollectionProperty(type=CsvOutputFilter, name="Output Filters")
+    active_output_filter: IntProperty(default=-1, name="Active Output Filter")
+    output_filter_groups: bpy.props.CollectionProperty(type=CsvOutputFilterGroup)
+
     if TYPE_CHECKING:
         csv_ifc_file: str
         ifc_selector: str
@@ -128,7 +171,7 @@ class CsvProperties(PropertyGroup):
         true_value: str
         false_value: str
         concat_value: str
-        csv_delimiter: Literal["NONE", "ASC", "DESC"]
+        csv_delimiter: Literal[";", ",", ".", "CUSTOM"]
         format: Literal["csv", "xlsx", "ods", "web"]
         csv_custom_delimiter: str
         should_show_settings: bool

@@ -124,6 +124,33 @@ class BIM_PT_ifccsv(Panel):
                     op.new_index = index + 1
             row.operator("bim.remove_csv_attribute", icon="X", text="").index = index
 
+        box = layout.box()
+        row = box.row(align=True)
+        row.operator("bim.add_output_filter_group", icon="ADD", text="Add Output Filter Group")
+
+        if len(props.output_filter_groups) > 0:
+            for group_idx, group in enumerate(props.output_filter_groups):
+                group_box = box.box()
+                group_row = group_box.row(align=True)
+                group_row.label(text="")
+                add = group_row.operator("bim.add_output_filter", text="Add Output Filter")
+                add.group_index = group_idx
+                remove = group_row.operator("bim.remove_output_filter_group", icon="X", text="")
+                remove.group_index = group_idx
+                if len(group.filters) > 0:
+                    for i, filter in enumerate(group.filters):
+                        row = group_box.row(align=True)
+                        row.prop(filter, "column", text="")
+                        row.prop(filter, "comparison", text="")
+                        row.prop(filter, "value", text="")
+                        op = row.operator("bim.remove_output_filter", icon="X", text="")
+                        op.group_index = group_idx
+                        op.filter_index = i
+                else:
+                    group_box.label(text="No filters in this group")
+        else:
+            box.label(text="No filter groups added")
+
         row = layout.row(align=True)
         if props.format == "web":
             row.operator("bim.export_ifccsv", icon="EXPORT", text="Open Web UI")

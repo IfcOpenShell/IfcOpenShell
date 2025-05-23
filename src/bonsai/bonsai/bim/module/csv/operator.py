@@ -23,6 +23,7 @@ import json
 import ifccsv
 import logging
 import tempfile
+import pandas as pd
 import ifcopenshell
 import ifcopenshell.util.selector
 import bonsai.tool as tool
@@ -31,9 +32,6 @@ from bpy_extras.io_utils import ExportHelper, ImportHelper
 from bonsai.bim.handler import refresh_ui_data
 from typing import TYPE_CHECKING
 from collections import Counter
-
-if TYPE_CHECKING:
-    import pandas as pd
 
 
 class AddCsvAttribute(bpy.types.Operator):
@@ -176,6 +174,57 @@ class ExportCsvAttributes(bpy.types.Operator, ExportHelper):
         return {"FINISHED"}
 
 
+class AddOutputFilterGroup(bpy.types.Operator):
+    bl_idname = "bim.add_output_filter_group"
+    bl_label = "Add Output Filter Group"
+
+    def execute(self, context):
+        props = context.scene.CsvProperties
+        props.output_filter_groups.add()
+        return {"FINISHED"}
+
+
+class RemoveOutputFilterGroup(bpy.types.Operator):
+    bl_idname = "bim.remove_output_filter_group"
+    bl_label = "Remove Output Filter Group"
+    group_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.CsvProperties
+        props.output_filter_groups.remove(self.group_index)
+        return {"FINISHED"}
+
+
+class AddOutputFilter(bpy.types.Operator):
+    bl_idname = "bim.add_output_filter"
+    bl_label = "Add Output Filter"
+    group_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.CsvProperties
+        group = props.output_filter_groups[self.group_index]
+        group.filters.add()
+        group.active_output_filter = len(group.filters) - 1
+        return {"FINISHED"}
+
+
+class RemoveOutputFilter(bpy.types.Operator):
+    bl_idname = "bim.remove_output_filter"
+    bl_label = "Remove Output Filter"
+    bl_options = {"REGISTER", "UNDO"}
+
+    group_index: bpy.props.IntProperty()
+    filter_index: bpy.props.IntProperty()
+
+    def execute(self, context):
+        props = context.scene.CsvProperties
+        group = props.output_filter_groups[self.group_index]
+        group.filters.remove(self.filter_index)
+        if group.active_output_filter >= len(group.filters):
+            group.active_output_filter = len(group.filters) - 1
+        return {"FINISHED"}
+
+
 class ExportIfcCsv(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_ifccsv"
     bl_label = "Export IFC"
@@ -207,8 +256,16 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
         self.filename_ext = f".{props.format}"
         return ExportHelper.invoke(self, context, event)
 
+    def get_unique_column_names(self, dataframe: pd.DataFrame) -> list[str]:
+        count = Counter()
+        return [
+            f"{col}.{i:03d}" if duped and not count.update([col]) and (i := count[col]) else col
+            for col, duped in zip(dataframe.columns, dataframe.columns.duplicated())
+        ]
+
     def execute(self, context):
         import ifccsv
+        import re
 
         props = tool.Blender.get_csv_props()
         self.filepath = bpy.path.ensure_ext(self.filepath, f".{props.format}")
@@ -244,13 +301,17 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
             file_format = "pd"
 
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
+
+        # 1. Build the DataFrame (ifc_csv.dataframe is set here)
+        # 1. Build results (do NOT write file yet)
+
         ifc_csv.export(
             ifc_file,
             results,
             attributes,
             headers=headers,
-            output=self.filepath,
-            format=file_format,
+            output=None,
+            format=None,
             should_preserve_existing=props.should_preserve_existing,
             delimiter=sep,
             include_global_id=props.include_global_id,
@@ -264,6 +325,103 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
             summaries=summaries,
             formatting=formatting,
         )
+        # 2. Create DataFrame
+        ifc_csv.export_pd()
+
+
+        # 2. Apply output filter groups BEFORE export
+        if len(props.output_filter_groups) > 0:
+            original_df = ifc_csv.dataframe
+            if original_df is None:
+                self.report({"ERROR"}, "No data was generated for filtering. Please check your input and export settings.")
+                return {'CANCELLED'}
+
+            original_df.columns = self.get_unique_column_names(original_df)
+            group_results = []
+
+            for group in props.output_filter_groups:
+                df = original_df.copy()
+                for filter in group.filters:
+                    column_name = filter.column
+                    comparison_operator = filter.comparison
+                    comparison_value = filter.value
+
+                    if not comparison_value:
+                        continue
+
+                    if comparison_operator == "regex":
+                        try:
+                            pattern = re.compile(comparison_value)
+                            if column_name == "__ALL__":
+                                mask = df.astype(str).apply(lambda x: x.str.contains(pattern, na=False)).any(axis=1)
+                                df = df[mask]
+                            else:
+                                mask = df[filter.column].astype(str).str.contains(pattern, na=False)
+                                df = df[mask]
+                        except Exception as e:
+                            self.report({"ERROR"}, f"Invalid regular expression pattern: {str(e)}")
+                            continue
+                    else:
+                        if not column_name:
+                            self.report({"WARNING"}, "Column must be specified for non-regex comparisons")
+                            continue
+
+                        col_match = next((col for col in df.columns if col.lower() == column_name.lower()), None)
+                        if not col_match:
+                            continue
+
+                        try:
+                            column = df[col_match]
+                            value = comparison_value
+                            try:
+                                numeric_column = pd.to_numeric(column)
+                                numeric_value = float(value)
+                                column = numeric_column
+                                value = numeric_value
+                            except (ValueError, TypeError):
+                                pass
+
+                            if comparison_operator == "=":
+                                mask = column == value
+                            elif comparison_operator == "!=":
+                                mask = column != value
+                            elif comparison_operator == ">":
+                                mask = column > value
+                            elif comparison_operator == ">=":
+                                mask = column >= value
+                            elif comparison_operator == "<":
+                                mask = column < value
+                            elif comparison_operator == "<=":
+                                mask = column <= value
+                            elif comparison_operator == "*=":
+                                mask = column.astype(str).str.contains(str(value), na=False)
+                            elif comparison_operator == "!*=":
+                                mask = ~column.astype(str).str.contains(str(value), na=False)
+                            else:
+                                continue
+
+                            df = df[mask]
+                        except Exception as e:
+                            self.report({"ERROR"}, f"Comparison filter error: {str(e)}")
+                group_results.append(df)
+
+            if group_results:
+                df = pd.concat(group_results).drop_duplicates().reset_index(drop=True)
+                ifc_csv.dataframe = df
+
+        # 3. Now export the filtered DataFrame
+        ifc_csv.results = ifc_csv.dataframe.values.tolist()
+        ifc_csv.headers = list(ifc_csv.dataframe.columns)
+
+        # 5. Write the filtered file
+        if file_format == "csv":
+            ifc_csv.export_csv(self.filepath, delimiter=sep)
+        elif file_format == "ods":
+            ifc_csv.export_ods(self.filepath, should_preserve_existing=props.should_preserve_existing)
+        elif file_format == "xlsx":
+            ifc_csv.export_xlsx(self.filepath, should_preserve_existing=props.should_preserve_existing)
+        elif file_format == "pd":
+            ifc_csv.export_pd()
 
         if props.format != "csv" and props.should_generate_svg:
             schedule_creator = scheduler.Scheduler()
@@ -280,13 +438,6 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
 
         self.report({"INFO"}, f"Data is exported to {props.format.upper()}.")
         return {"FINISHED"}
-
-    def get_unique_column_names(self, dataframe: pd.DataFrame) -> list[str]:
-        count = Counter()
-        return [
-            f"{col}.{i:03d}" if duped and not count.update([col]) and (i := count[col]) else col
-            for col, duped in zip(dataframe.columns, dataframe.columns.duplicated())
-        ]
 
 
 class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
