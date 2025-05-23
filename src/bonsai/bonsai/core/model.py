@@ -51,13 +51,14 @@ def extend_walls(
     joiner: DumbWallJoiner,
     model: tool.Model,
     target: Vector,
+    connection: Optional[str]=None,
 ) -> None:
     """Extend selected walls to the target."""
     for obj in blender.get_selected_objects():
         if not (element := ifc.get_entity(obj)) or model.get_usage_type(element) != "LAYER2":
             continue
         geometry.clear_scale(obj)
-        joiner.extend(obj, target)
+        joiner.extend(obj, target, connection)
 
 
 def join_walls_LV(

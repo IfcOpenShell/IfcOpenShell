@@ -38,7 +38,7 @@ import bonsai.core.geometry
 import bonsai.core.model as core
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
-from math import pi, sin, cos, degrees
+from math import pi, sin, cos, degrees, atan2
 from mathutils import Vector, Matrix
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from bonsai.bim.module.model.decorator import PolylineDecorator, ProductDecorator
@@ -122,6 +122,139 @@ class ExtendWallsToWall(bpy.types.Operator, tool.Ifc.Operator):
         else:
             self.report({"ERROR"}, "Please select at least one LAYER2 element and one active LAYER2 element")
 
+class ExtendWallsToPolylinePoint(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
+    bl_idname = "bim.extend_walls_to_polyline_point"
+    bl_label = "Extend Walls To Polyline Point"
+    bl_description = "Extend and trim selected walls to another wall"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def poll(cls, context):
+        is_view_3d = context.space_data.type == "VIEW_3D"
+        walls = True
+        for obj in context.selected_objects:
+            if not tool.Ifc.get_entity(obj).is_a("IfcWall"):
+                walls = False
+            
+        return bool(context.selected_objects) and is_view_3d and walls
+
+    def __init__(self):
+        super().__init__()
+        self.connection = "ATEND"
+
+    def set_origin(self, context, event, connection="ATSTART"):
+        obj = context.active_object
+        element = tool.Ifc.get_entity(obj)
+        layers = tool.Model.get_material_layer_parameters(element)
+        axis = tool.Model.get_wall_axis(obj, layers)
+        start = Vector((axis["reference"][0][0], axis["reference"][0][1], obj.location.z))
+        end = Vector((axis["reference"][1][0], axis["reference"][1][1], obj.location.z))
+        direcion = end - start
+        value = end if connection=="ATSTART" else start
+        self.input_ui.set_value("X", value[0])
+        self.input_ui.set_value("Y", value[1])
+        self.input_ui.set_value("Z", value[2])
+        result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+        # Point related to the mouse
+        snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+        mouse_point = Vector((snap_prop.x, snap_prop.y, snap_prop.z))
+
+        angle = atan2(direcion.y, direcion.x)
+
+        self.tool_state.lock_axis = True
+        self.tool_state.snap_angle = degrees(angle)
+
+    def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _modal(self, context, event):
+        PolylineDecorator.update(event, self.tool_state, self.input_ui, self.snapping_points[0])
+        tool.Blender.update_viewport()
+        self.handle_lock_axis(context, event)  # Must come before "PASS_THROUGH"
+        self.handle_mouse_move(context, event)
+
+        if event.type in {"MIDDLEMOUSE", "WHEELUPMOUSE", "WHEELDOWNMOUSE"}:
+            self.handle_mouse_move(context, event)
+            return {"PASS_THROUGH"}
+
+        custom_instructions = {
+            "Cycle Input": {"icons": True, "keys": ["EVENT_TAB"]},
+            "Distance Input": {"icons": True, "keys": ["EVENT_D"]},
+            "Flip starting point": {"icons": True, "keys": ["EVENT_F"]},
+            "Confirm": {"icons": True, "keys": ["MOUSE_LMB"]},
+            "Cancel": {"icons": True, "keys": ["MOUSE_RMB", "EVENT_ESC"]},
+        }
+        custom_info = []
+        self.handle_instructions(context, custom_instructions, custom_info, overwrite=True)
+        self.handle_mouse_move(context, event, should_round=True)
+        self.choose_axis(event)
+        self.handle_snap_selection(context, event)
+
+        if event.value == "RELEASE" and event.type == "F":
+            tool.Polyline.clear_polyline()
+            self.connection = "ATSTART" if self.connection=="ATEND" else "ATEND"
+            self.set_origin(context, event, self.connection)
+
+        if (
+            event.value == "RELEASE"
+            and event.type in {"RET", "NUMPAD_ENTER", "RIGHTMOUSE", "LEFTMOUSE"}
+        ):
+            if self.tool_state.is_input_on:
+                is_valid = self.recalculate_inputs(context)
+                if is_valid:
+                    result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+                    if result:
+                        self.report({"WARNING"}, result)
+            else:
+                result = tool.Polyline.insert_polyline_point(self.input_ui, self.tool_state)
+                if result:
+                    self.report({"WARNING"}, result)
+
+            snap_prop = context.scene.BIMPolylineProperties.snap_mouse_point[0]
+            snap_obj = bpy.data.objects.get(snap_prop.snap_object)
+            if snap_obj and tool.Ifc.get_entity(snap_obj).is_a("IfcWall"):
+                tool.Blender.set_active_object(snap_obj)
+                ExtendWallsToWall._execute(self, context)
+            else:
+                point = context.scene.BIMPolylineProperties.insertion_polyline[0].polyline_points[1]
+                core.extend_walls(
+                    tool.Ifc,
+                    tool.Blender,
+                    tool.Geometry,
+                    DumbWallJoiner(),
+                    tool.Model,
+                    Vector((point.x, point.y, point.z)),
+                    self.connection,
+                )
+
+            tool.Polyline.clear_polyline()
+            context.workspace.status_text_set(text=None)
+            PolylineDecorator.uninstall()
+            tool.Blender.update_viewport()
+            return {"FINISHED"}
+
+
+        self.handle_keyboard_input(context, event)
+
+        cancel = self.handle_cancelation(context, event)
+        if cancel is not None:
+            return cancel
+
+        return {"RUNNING_MODAL"}
+
+    def invoke(self, context, event):
+        super().invoke(context, event)
+        self.set_origin(context, event, self.connection)
+        self.tool_state.use_default_container = True
+        self.tool_state.plane_method = "XY"
+        # Update snaps after changing plane_method
+        detected_snaps = tool.Snap.detect_snapping_points(context, event, self.objs_2d_bbox, self.tool_state)
+        self.snapping_points = tool.Snap.select_snapping_points(context, event, self.tool_state, detected_snaps)
+        tool.Polyline.calculate_distance_and_angle(context, self.input_ui, self.tool_state)
+        tool.Blender.update_viewport()
+        return {"RUNNING_MODAL"}
 
 class AlignWall(bpy.types.Operator):
     bl_idname = "bim.align_wall"
@@ -1205,15 +1338,16 @@ class DumbWallJoiner:
         else:
             ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), product=wall, representation=rep)
 
-    def extend(self, wall1, target):
+    def extend(self, wall1, target, connection=False):
         if tool.Ifc.is_moved(wall1):
             bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=wall1)
         element1 = tool.Ifc.get_entity(wall1)
         p1, p2 = ifcopenshell.util.representation.get_reference_line(element1)
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         target = (wall1.matrix_world.inverted() @ target).to_2d() / unit_scale
-        intersect, connection = mathutils.geometry.intersect_point_line(target, p1, p2)
-        connection = "ATEND" if connection > 0.5 else "ATSTART"
+        intersect, intersection_point = mathutils.geometry.intersect_point_line(target, p1, p2)
+        if not connection:
+            connection = "ATEND" if intersection_point > 0.5 else "ATSTART"
 
         ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection)
 
