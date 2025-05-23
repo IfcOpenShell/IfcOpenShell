@@ -267,6 +267,7 @@ class file:
     """
 
     wrapped_data: ifcopenshell_wrapper.file
+    header: ifcopenshell_wrapper.IfcSpfHeader
     units: dict[str, entity_instance] = {}
     history_size: int = 64
     history: list[Transaction]
