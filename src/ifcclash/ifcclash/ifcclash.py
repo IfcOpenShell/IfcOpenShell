@@ -40,9 +40,6 @@ class ClashSource(TypedDict):
     ifc: NotRequired[ifcopenshell.file]
 
 
-ClashType = Literal["protrusion", "pierce", "collision", "clearance"]
-
-
 class ClashResult(TypedDict):
     a_global_id: str
     b_global_id: str
@@ -50,7 +47,7 @@ class ClashResult(TypedDict):
     b_ifc_class: str
     a_name: str
     b_name: str
-    type: ClashType
+    type: ifcopenshell.geom.main.ClashType
     p1: list[float]
     p2: list[float]
     distance: float
@@ -146,7 +143,7 @@ class Clasher:
                 b_ifc_class=element2.is_a(),
                 a_name=element1.get_argument(2),
                 b_name=element2.get_argument(2),
-                type=("protrusion", "pierce", "collision", "clearance")[result.clash_type],
+                type=self.tree.get_clash_type(result.clash_type),
                 p1=list(result.p1),
                 p2=list(result.p2),
                 distance=result.distance,

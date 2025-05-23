@@ -343,6 +343,10 @@ class iterator(ifcopenshell_wrapper.Iterator):
                     break
 
 
+ClashType = Literal["protrusion", "pierce", "collision", "clearance"]
+CLASH_TYPE_ITEMS = ("protrusion", "pierce", "collision", "clearance")
+
+
 class tree(ifcopenshell_wrapper.tree):
     def __init__(self, file: Optional[file] = None, settings: Optional[settings] = None):
         args = [self]
@@ -428,6 +432,14 @@ class tree(ifcopenshell_wrapper.tree):
     ) -> tuple[ifcopenshell_wrapper.clash, ...]:
         args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], clearance, check_all]
         return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
+
+    @staticmethod
+    def get_clash_type(clash_type_i: int) -> ClashType:
+        """Convert clash type index to a readable string format.
+
+        :param clash_type_i: Type index that comes from ``clash.clash_type``.
+        """
+        return CLASH_TYPE_ITEMS[clash_type_i]
 
 
 def create_shape(
