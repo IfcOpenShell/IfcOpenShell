@@ -302,9 +302,6 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
 
         sep = props.csv_custom_delimiter if props.csv_delimiter == "CUSTOM" else props.csv_delimiter
 
-        # 1. Build the DataFrame (ifc_csv.dataframe is set here)
-        # 1. Build results (do NOT write file yet)
-
         ifc_csv.export(
             ifc_file,
             results,
@@ -325,16 +322,14 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
             summaries=summaries,
             formatting=formatting,
         )
-        # 2. Create DataFrame
         ifc_csv.export_pd()
-
-
-        # 2. Apply output filter groups BEFORE export
         if len(props.output_filter_groups) > 0:
             original_df = ifc_csv.dataframe
             if original_df is None:
-                self.report({"ERROR"}, "No data was generated for filtering. Please check your input and export settings.")
-                return {'CANCELLED'}
+                self.report(
+                    {"ERROR"}, "No data was generated for filtering. Please check your input and export settings."
+                )
+                return {"CANCELLED"}
 
             original_df.columns = self.get_unique_column_names(original_df)
             group_results = []
@@ -409,11 +404,9 @@ class ExportIfcCsv(bpy.types.Operator, ExportHelper):
                 df = pd.concat(group_results).drop_duplicates().reset_index(drop=True)
                 ifc_csv.dataframe = df
 
-        # 3. Now export the filtered DataFrame
         ifc_csv.results = ifc_csv.dataframe.values.tolist()
         ifc_csv.headers = list(ifc_csv.dataframe.columns)
 
-        # 5. Write the filtered file
         if file_format == "csv":
             ifc_csv.export_csv(self.filepath, delimiter=sep)
         elif file_format == "ods":
