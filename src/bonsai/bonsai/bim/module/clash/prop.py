@@ -95,8 +95,8 @@ class ClashSet(PropertyGroup):
         ],
         name="Mode",
     )
-    tolerance: FloatProperty(name="Tolerance", default=0.002)
-    clearance: FloatProperty(name="Clearance", default=0.01)
+    tolerance: FloatProperty(name="Tolerance", default=0.002, subtype="DISTANCE")
+    clearance: FloatProperty(name="Clearance", default=0.01, subtype="DISTANCE")
     allow_touching: BoolProperty(name="Allow Touching", default=False)
     check_all: BoolProperty(name="Check All", default=False)
     a: CollectionProperty(name="Group A", type=ClashSource)
