@@ -41,10 +41,14 @@ def get_schedule_of_rates(self, context):
         CostItemRatesData.load()
     return CostItemRatesData.data["schedule_of_rates"]
 
+def get_cost_schedules(self, context):
+    if not CostItemRatesData.is_loaded:
+        CostItemRatesData.load()
+    return CostItemRatesData.data["cost_schedules"]
+
 
 def update_schedule_of_rates(self, context):
     tool.Cost.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(self.schedule_of_rates)))
-
 
 def get_quantity_types(self, context):
     if not CostSchedulesData.is_loaded:
@@ -263,6 +267,9 @@ class BIMCostProperties(PropertyGroup):
     active_cost_item_type_product_index: IntProperty(name="Active Cost Item Type Product Index")
     schedule_of_rates: EnumProperty(
         items=get_schedule_of_rates, name="Schedule Of Rates", update=update_schedule_of_rates
+    )
+    cost_schedules: EnumProperty(
+        items=get_cost_schedules, name="Cost Schedules", update=update_schedule_of_rates
     )
     cost_item_rates: CollectionProperty(name="Cost Item Rates", type=CostItem)
     active_cost_item_rate_index: IntProperty(name="Active Cost Rate Index")
