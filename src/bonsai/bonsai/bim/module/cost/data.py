@@ -319,6 +319,7 @@ class CostItemRatesData:
     def load(cls):
         cls.data = {
             "schedule_of_rates": cls.schedule_of_rates(),
+            "cost_schedules": cls.cost_schedules(),
         }
         cls.is_loaded = True
 
@@ -328,6 +329,13 @@ class CostItemRatesData:
             (str(s.id()), s.Name or "Unnamed", "")
             for s in tool.Ifc.get().by_type("IfcCostSchedule")
             if s.PredefinedType == "SCHEDULEOFRATES"
+        ]
+    
+    @classmethod
+    def cost_schedules(cls) -> list[tuple[str, str, str]]:
+        return [
+            (str(s.id()), s.Name or "Unnamed", "")
+            for s in tool.Ifc.get().by_type("IfcCostSchedule")
         ]
 
 

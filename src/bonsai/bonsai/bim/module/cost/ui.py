@@ -608,8 +608,8 @@ class BIM_PT_cost_item_rates(Panel):
             return False
         if not CostSchedulesData.is_loaded:
             return False
-        if CostSchedulesData.data["is_editing_rates"]:
-            return False
+        #if CostSchedulesData.data["is_editing_rates"]:
+        #    return False
         if total_cost_items > 0 and props.active_cost_item_index < total_cost_items:
             return True
         return False
@@ -617,7 +617,8 @@ class BIM_PT_cost_item_rates(Panel):
     def draw(self, context):
         self.props = tool.Cost.get_cost_props()
         row = self.layout.row(align=True)
-        row.prop(self.props, "schedule_of_rates", text="")
+        #row.prop(self.props, "schedule_of_rates", text="")
+        row.prop(self.props, "cost_schedules", text="")
         if self.props.active_cost_item_rate_index < len(self.props.cost_item_rates):
             cost_item = self.props.cost_items[self.props.active_cost_item_index]
             cost_item_rate = self.props.cost_item_rates[self.props.active_cost_item_rate_index]
