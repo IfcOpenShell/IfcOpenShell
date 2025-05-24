@@ -724,6 +724,13 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
     )
     calculated_sum: bpy.props.FloatProperty(name="Calculated Sum", default=0.0)
 
+    @classmethod
+    def poll(cls, context):
+        if context.selected_objects or context.active_object:
+            return True
+        cls.poll_message_set("No selected or active object found.")
+        return False
+    
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.shift:
             self.calculate_sum = True
@@ -731,9 +738,6 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         objects = context.selected_objects or [context.active_object]
-        if not objects:
-            self.report({"WARNING"}, "No selected or active object found.")
-            return {"CANCELLED"}
         for obj in objects:
             element = tool.Ifc.get_entity(obj)
             key = self.key
