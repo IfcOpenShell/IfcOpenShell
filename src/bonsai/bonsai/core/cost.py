@@ -199,7 +199,7 @@ def assign_cost_value(
     cost_rate: ifcopenshell.entity_instance
 ) -> None:
     ifc.run("cost.assign_cost_value", cost_item=cost_item, cost_rate=cost_rate)
-    existing_cost_rate = cost.get_cost_item_rate_assignment(cost_item)
+    existing_cost_rate = cost.get_assigned_rate_cost_item(cost_item)
     if existing_cost_rate is None:
         ifc.run("control.assign_control", relating_control=cost_rate, related_object=cost_item)
     else:
