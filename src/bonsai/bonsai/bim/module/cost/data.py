@@ -160,7 +160,7 @@ class CostSchedulesData:
     
     @classmethod
     def _load_assigned_cost_rate(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
-        data["AssignedCostRate"] = tool.Cost.get_cost_item_rate_assignment(cost_item)
+        data["AssignedCostRate"] = tool.Cost.get_assigned_rate_cost_item(cost_item)
 
     @classmethod
     def _load_cost_item_quantities(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
