@@ -155,8 +155,8 @@ class CostSchedulesData:
         else:
             data["TotalCost"] = data["TotalAppliedValue"] * cost_quantity
         if is_sum:
-            #pass If it is None it doesn't allow me to assign a cost rate composed by sum
-            data["TotalAppliedValue"] = None
+            pass #If it is None it doesn't allow me to assign a cost rate composed by sum
+            #data["TotalAppliedValue"] = None
     
     @classmethod
     def _load_assigned_cost_rate(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:

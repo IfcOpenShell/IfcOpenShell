@@ -441,7 +441,8 @@ class Cost(bonsai.core.tool.Cost):
 
         props = cls.get_cost_props()
         props.cost_value_attributes.clear()
-        is_rates = cls.is_active_schedule_of_rates()
+        #is_rates = cls.is_active_schedule_of_rates()
+        is_rates = True #so it is possible to assign a cost item rate that it not only from a  Schedule of Rate
         callback = lambda name, prop, data: import_attributes(
             name, prop, data, cost_value, is_rates, props.cost_value_attributes
         )
