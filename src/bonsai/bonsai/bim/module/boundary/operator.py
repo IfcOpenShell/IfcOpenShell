@@ -605,7 +605,12 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
         parent_boundaries: list[ifcopenshell.entity_instance] = []
 
         objs = tool.Blender.get_selected_objects()
-        ifc_objects = {element: obj for obj in objs if (element := tool.Ifc.get_entity(obj))}
+        ifc_objects = {
+            element: obj
+            for obj in objs
+            if (element := tool.Ifc.get_entity(obj)) and isinstance(obj.data, bpy.types.Mesh) and obj.data.vertices
+        }
+
         if len(ifc_objects) not in (1, 2):
             self.report({"ERROR"}, "Please select one or two IFC elements.")
             return {"CANCELLED"}
@@ -647,46 +652,6 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
                 return {"FINISHED"}
             parent_boundaries.extend(res)
 
-        elif len(objs) == 1 and False:
-            # Optionally the user may select just the space, and the building element shall be auto-detected
-            # TODO : refactor to be able to generate all boundaries for selected space automatically or with an option
-
-            relating_space = None
-            related_building_element = None
-            relating_space_obj = None
-            related_building_element_obj = None
-
-            def msg(self, context):
-                self.layout.label(text="Please set an active container to detect space boundaries from.")
-
-            element = tool.Ifc.get_entity(objs[0])
-            if element.is_a("IfcSpace"):
-                relating_space = element
-                relating_space_obj = objs[0]
-
-            if not (container := tool.Root.get_default_container()):
-                bpy.context.window_manager.popup_menu(msg, title="Error", icon="ERROR")
-                return
-
-            for subelement in ifcopenshell.util.element.get_decomposition(container):
-                if not (
-                    subelement.is_a("IfcWall") or subelement.is_a("IfcSlab") or subelement.is_a("IfcVirtualElement")
-                ):
-                    continue
-                obj = tool.Ifc.get_object(subelement)
-                if obj:
-                    related_building_element = subelement
-                    related_building_element_obj = obj
-                    parent_boundary = self.create_element_boundary(
-                        context,
-                        relating_space,
-                        relating_space_obj,
-                        related_building_element,
-                        related_building_element_obj,
-                    )
-                    if parent_boundary:
-                        parent_boundaries.append(parent_boundary)
-
         bpy.ops.bim.show_boundaries()
         for parent_boundary in parent_boundaries:
             obj = tool.Ifc.get_object(parent_boundary)
@@ -727,7 +692,10 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             while True:
                 tree.add_element(iterator.get_native())
                 shape = iterator.get()
-                shapes[shape.id] = shape
+                shapes[shape.id] = {
+                    "verts": ifcopenshell.util.shape.get_vertices(shape.geometry),
+                    "faces": ifcopenshell.util.shape.get_faces(shape.geometry),
+                }
                 if not iterator.next():
                     break
 
@@ -748,13 +716,11 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             bm = bmesh.new()
             shape = shapes[building_element.id()]
 
-            verts = ifcopenshell.util.shape.get_vertices(shape.geometry)
-            for vert in verts:
+            for vert in shape["verts"]:
                 bm.verts.new(Vector(vert))
             bm.verts.ensure_lookup_table()
 
-            faces = ifcopenshell.util.shape.get_faces(shape.geometry)
-            for face in faces:
+            for face in shape["faces"]:
                 bm.faces.new([bm.verts[i] for i in face])
             bm.verts.ensure_lookup_table()
             bm.faces.ensure_lookup_table()
