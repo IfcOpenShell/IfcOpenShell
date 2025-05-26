@@ -957,7 +957,7 @@ class Spatial(bonsai.core.tool.Spatial):
         converted_tolerance = cls.get_converted_tolerance(tolerance_si=0.03)
         poly = poly.buffer(
             converted_tolerance,
-            single_sided=True,
+#            single_sided=True,
             cap_style=shapely.BufferCapStyle.flat,
             join_style=shapely.BufferJoinStyle.mitre,
         )
@@ -976,8 +976,11 @@ class Spatial(bonsai.core.tool.Spatial):
 
         mat_invert = mat.inverted()
         si_conversion = 1.0 if polygon_is_si else ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+        #print(poly)
+        #print(shapely.get_exterior_ring(poly))
         new_verts = [
-            bm.verts.new(mat_invert @ (Vector([v[0], v[1], 0]) * si_conversion)) for v in poly.exterior.coords[0:-1]
+            #bm.verts.new(mat_invert @ (Vector([v[0], v[1], 0]) * si_conversion)) for v in poly.exterior.coords[0:-1]
+            bm.verts.new(mat_invert @ (Vector([v[0], v[1], 0]) * si_conversion)) for v in shapely.get_exterior_ring(poly).coords[0:-1]
         ]
         [bm.edges.new((new_verts[i], new_verts[i + 1])) for i in range(len(new_verts) - 1)]
         bm.edges.new((new_verts[len(new_verts) - 1], new_verts[0]))
