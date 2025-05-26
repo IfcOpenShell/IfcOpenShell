@@ -281,9 +281,12 @@ class Spatial(bonsai.core.tool.Spatial):
         if props.should_include_children:
             elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
         else:
-            elements = set(ifcopenshell.util.element.get_contained(container))
-            for e in elements:
-                elements.update(ifcopenshell.util.element.get_decomposition(e))
+            queue = list(set(ifcopenshell.util.element.get_contained(container)))
+            elements = set()
+            while queue:
+                item = queue.pop()
+                elements.add(item)
+                queue.extend(ifcopenshell.util.element.get_decomposition(item))
         for element in elements:
             if element.is_a("IfcOpeningElement") or tool.Root.is_spatial_element(element):
                 continue
@@ -1306,9 +1309,12 @@ class Spatial(bonsai.core.tool.Spatial):
             if props.should_include_children:
                 elements = ifcopenshell.util.element.get_decomposition(container, is_recursive=True)
             else:
-                elements = set(ifcopenshell.util.element.get_contained(container))
-                for e in elements:
-                    elements.update(ifcopenshell.util.element.get_decomposition(e))
+                queue = list(set(ifcopenshell.util.element.get_contained(container)))
+                elements = set()
+                while queue:
+                    item = queue.pop()
+                    elements.add(item)
+                    queue.extend(ifcopenshell.util.element.get_decomposition(item))
             if not element_filter:
                 return elements
 

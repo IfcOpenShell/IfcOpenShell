@@ -355,6 +355,16 @@ def i_see_text(text):
     assert [l for l in panel_spy.spied_labels if text in l], f"Text {text} not found in {panel_spy.spied_labels}"
 
 
+@given(parsers.parse('there are "{n}" lists'))
+@when(parsers.parse('there are "{n}" lists'))
+@then(parsers.parse('there are "{n}" lists'))
+def there_are_n_lists(n):
+    assert panel_spy
+    panel_spy.refresh_spy()
+    if len(panel_spy.spied_lists) != int(n):
+        assert False, f"Actual number of lists {len(panel_spy.spied_lists)} not {n}"
+
+
 @given(parsers.parse('I see "{text}" in the "{nth}" list'))
 @when(parsers.parse('I see "{text}" in the "{nth}" list'))
 @then(parsers.parse('I see "{text}" in the "{nth}" list'))
@@ -369,6 +379,10 @@ def i_see_text_in_the_nth_list(text, nth):
         if i + 1 != nth:
             continue
         for row in template_list.rows:
+            for p in row.spied_props:
+                debug.append(str(p))
+                if isinstance(p["value"], str) and text in p["value"]:
+                    return True
             for l in row.spied_labels:
                 debug.append(l)
                 if text in l:
@@ -446,12 +460,17 @@ def i_select_the_row_where_i_see_text_in_the_nth_list(text, nth):
             continue
         for i, row in enumerate(template_list.rows):
             is_row = False
+            for p in row.spied_props:
+                debug.append(str(p))
+                if isinstance(p["value"], str) and text in p["value"]:
+                    is_row = True
             for l in row.spied_labels:
                 debug.append(l)
                 if text in l:
                     is_row = True
             if is_row:
                 template_list.set_active_index(i)
+                panel_spy.is_spy_dirty = True
                 return True
     debug = "\n".join(debug)
     assert False, f"Could not see '{text}' in any list. We saw:\n{debug}"
@@ -745,12 +764,13 @@ def _i_click_button_on_panel(button, panel_spy):
         if button in (spied_prop["name"], spied_prop["text"], spied_prop["icon"]):
             val = getattr(spied_prop["props"], spied_prop["name"])
             setattr(spied_prop["props"], spied_prop["name"], not bool(val))
+            panel_spy.is_spy_dirty = True
             return
     if button == "OK" and panel_spy.panel.bl_rna.base.name == "Operator":
         # Clicked confirm on an operator's draw dialog
         return i_press_operator(panel_spy.panel.bl_idname)
     debug = "\n".join([f"{i} {v}" for i, v in enumerate(panel_spy.spied_operators)])
-    debug += f"\nHere is the text we see: {panel_spy.spied_labels}"
+    debug += f"\nHere is the text we see:\n{panel_spy.spied_labels}\n... and props:\n {panel_spy.spied_props}"
     assert False, f"Could not find {button}:\n{debug}"
 
 
