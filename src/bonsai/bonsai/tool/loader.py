@@ -802,8 +802,7 @@ class Loader(bonsai.core.tool.Loader):
             print(f"WARNING. Unsupported point type for IfcStructuralPointConnection: {point}.")
             return
 
-        ifc_file = tool.Ifc.get()
-        co = np.array(point.Coordinates) * ifcopenshell.util.unit.calculate_unit_scale(ifc_file)
+        co = np.array(point.Coordinates) * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         mesh_name = tool.Geometry.get_representation_name(representation)
         mesh = bpy.data.meshes.new(mesh_name)
         mesh.from_pydata([co], [], [])

@@ -2190,7 +2190,9 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
         item = tool.Geometry.get_active_representation(obj)
         assert item
         if tool.Geometry.is_meshlike_item(item):
-            if tool.Geometry.is_geometric_data(obj.data) and obj.data.polygons:
+            if tool.Geometry.is_geometric_data(obj.data) and (
+                item.is_a("IfcVertex") or item.is_a("IfcEdge") or obj.data.polygons
+            ):
                 tool.Geometry.edit_meshlike_item(obj)
             else:
                 tool.Geometry.import_item(obj)

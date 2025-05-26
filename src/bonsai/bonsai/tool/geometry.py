@@ -1014,7 +1014,13 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def is_meshlike_item(cls, item: ifcopenshell.entity_instance) -> bool:
-        return item.is_a("IfcTessellatedItem") or item.is_a("IfcManifoldSolidBrep")
+        return (
+            item.is_a("IfcTessellatedItem")
+            or item.is_a("IfcManifoldSolidBrep")
+            or item.is_a("IfcVertex")
+            or item.is_a("IfcEdge")
+            or item.is_a("IfcFace")
+        )
 
     @classmethod
     def is_curvelike_item(cls, item: ifcopenshell.entity_instance) -> bool:
@@ -1824,6 +1830,9 @@ class Geometry(bonsai.core.tool.Geometry):
             position = Matrix(ifcopenshell.util.placement.get_axis2placement(position).tolist())
             position.translation *= unit_scale
             obj.matrix_world = rep_obj.matrix_world @ position
+        elif item.is_a("IfcVertex"):
+            co = np.array(item.VertexGeometry.Coordinates) * ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
+            obj.data.from_pydata([co], [], [])
         else:
             geometry = tool.Loader.create_generic_shape(item)
             verts = ifcopenshell.util.shape.get_vertices(geometry)
@@ -1901,6 +1910,12 @@ class Geometry(bonsai.core.tool.Geometry):
         faces = [p.vertices[:] for p in obj.data.polygons]
         if item.is_a("IfcAdvancedBrep"):
             new_item = builder.faceted_brep(verts, faces)
+        elif item.is_a("IfcVertex"):
+            new_item = builder.vertex(verts[0])
+        elif item.is_a("IfcEdge"):
+            new_item = builder.edge(start=verts[0], end=verts[1])
+        elif item.is_a("IfcFace"):
+            new_item = builder.face([verts[i] for i in faces[0]])
         else:
             new_item = builder.mesh(verts, faces)
         for inverse in tool.Ifc.get().get_inverse(item):
