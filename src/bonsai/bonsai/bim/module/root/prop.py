@@ -63,8 +63,15 @@ def refresh_classes(self: "BIMRootProperties", context: bpy.types.Context) -> No
             self.representation_template = "EXTRUSION"
             self.representation_obj = None
     elif (obj := tool.Blender.get_active_object(is_selected=True)) and obj.type == "MESH":
-        self.representation_template = "OBJ"
-        self.representation_obj = obj
+        if (
+            self.ifc_class.startswith("IfcStructuralPoint")
+            or self.ifc_class.startswith("IfcStructuralCurve")
+            or self.ifc_class.startswith("IfcStructuralSurface")
+        ):
+            pass  # Implement auto association?
+        else:
+            self.representation_template = "OBJ"
+            self.representation_obj = obj
 
     ifc_file = tool.Ifc.get()
     # When switching between ElementType and Element, keep the same class and predefined type if possible
