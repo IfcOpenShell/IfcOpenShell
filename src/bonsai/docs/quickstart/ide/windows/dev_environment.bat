@@ -2,13 +2,19 @@
 
 setlocal enabledelayedexpansion
 
+:: Ensure script runs from its own directory
+cd /d "%~dp0"
+:: Use pushd/popd in case we need to return later
+pushd .
 
-rem ADAPT setting REPO_PATH to use custom path for IfcOpenShell repository.
-rem Otherwise by default it is assumed script is executed from IfcOpenShell directory.
+:: ADAPT setting REPO_PATH to use custom path for IfcOpenShell repository.
+:: Otherwise by default it is assumed script is executed from IfcOpenShell directory.
 SET REPO_PATH=%HOMEDRIVE%\Users\%USERNAME%\Documents\bonsaiDevel\IfcOpenShell
 SET BLENDER_PATH=%HOMEDRIVE%\Users\%USERNAME%\AppData\Roaming\Blender Foundation\Blender\4.2
 SET PACKAGE_PATH=%BLENDER_PATH%\extensions\.local\lib\python3.11\site-packages
 SET BONSAI_PATH=%BLENDER_PATH%\extensions\raw_githubusercontent_com\bonsai
+:: Note: If you manually installed Bonsai, the path will be the following instead...
+:: SET BONSAI_PATH=%BLENDER_PATH%\extensions\user_default\bonsai
 
 echo SETUP BONSAI ADD-ON LIVE DEVELOPMENT ENVIRONMENT
 echo Update REPO_PATH, BLENDER_PATH, PACKAGE_PATH, BONSAI_PATH in the script above.
@@ -20,7 +26,7 @@ if not defined REPO_PATH (
     echo REPO_PATH is not set, assuming we're already in IfcOpenShell directory.
     set REPO_PATH=%cd%
 )
-rem Print summary of paths
+:: Print summary of paths
 echo.
 echo Please review if the following is right:
 echo PWD: %CD%
@@ -29,18 +35,24 @@ echo BLENDER PATH: %BLENDER_PATH%
 echo PACKAGE PATH (.....\extensions\.local\lib\python3.11\site-packages): %PACKAGE_PATH%
 echo BONSAI PATH (.....\extensions\raw_githubusercontent_com\bonsai): %BONSAI_PATH%
 echo.
-rem Prompt user to continue
+:: Prompt user to continue
 pause
-
 
 echo Changing to the Git repository directory...
 cd %REPO_PATH%
 
-rem Add files that need to be ignored in push to GiHub (.gitignore)
+:: Handle symlinks (they could be disabled by default on Windows).
+git config --local core.symlinks true
+
+:: Delete and checkout is the only way to ensure files are added as symlinks.
+del /Q src\bonsai\bonsai\bim\data\templates\projects\*.ifc
+git checkout -- src/bonsai/bonsai/bim/data/templates/projects/*.ifc
+
+:: Add files that need to be ignored in push to GiHub (.gitignore)
 set "FILE=.gitignore"
 set "STRING=*.so"
 
-rem Check if the file exists and contains the string
+:: Check if the file exists and contains the string
 if not exist "%FILE%" (
     echo %STRING% >> "%FILE%"
     echo "%FILE%" does not exist
@@ -93,8 +105,7 @@ mklink /D "%PACKAGE_PATH%\ifcfm" "%CD%\src\ifcfm\ifcfm"
 echo Manually downloading some third party dependencies...
 curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -o "%PACKAGE_PATH%\bonsai\bim\data\gantt\jsgantt.js"
 curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -o "%PACKAGE_PATH%\bonsai\bim\data\gantt\jsgantt.css"
-IF NOT EXIST "%PACKAGE_PATH%\bonsai\bim\schema" mkdir "%PACKAGE_PATH%\bonsai\bim\schema"
-curl -L https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o "%PACKAGE_PATH%\bonsai\bim\schema\Brick.ttl"
+curl -L https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o "%PACKAGE_PATH%\bonsai\bim\data\brick\Brick.ttl"
 
-
+popd
 pause
