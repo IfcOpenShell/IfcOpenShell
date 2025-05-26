@@ -300,7 +300,6 @@ class IfcImporter:
         tool.Spatial.run_spatial_import_spatial_decomposition()
         if default_container := tool.Spatial.guess_default_container():
             tool.Spatial.set_default_container(default_container)
-        tool.Loader.setup_active_bsdd_classification()
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 

@@ -3,6 +3,8 @@ import bonsai.tool as tool
 import bpy
 import json
 import bsdd
+import ifcopenshell.util.type
+import ifcopenshell.util.element
 from typing import Any, Union, Optional, TYPE_CHECKING
 
 
@@ -131,9 +133,17 @@ class Bsdd(bonsai.core.tool.Bsdd):
         active_object = bpy.context.active_object
         related_ifc_entities = []
         if cls.should_filter_ifc_class() and active_object:
-            element = tool.Ifc.get_entity(active_object)
-            if element:
-                related_ifc_entities = [element.is_a()]
+            if element := tool.Ifc.get_entity(active_object):
+                ifc_class = element.is_a()
+                if element.is_a("IfcElementType"):
+                    ifc_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, schema=tool.Ifc.get().schema)[
+                        0
+                    ]
+                related_ifc_entities = [ifc_class]
+                if (
+                    predefined_type := ifcopenshell.util.element.get_predefined_type(element)
+                ) and predefined_type != "NOTDEFINED":
+                    related_ifc_entities.append(ifc_class + predefined_type)
         return related_ifc_entities
 
     @classmethod
@@ -152,23 +162,24 @@ class Bsdd(bonsai.core.tool.Bsdd):
             else [props.active_dictionary]
         )
         for dictionary_uri in dictionary_uris:
-            response = cls.client.get_classes(
-                dictionary_uri=dictionary_uri,
-                use_nested_classes=False,
-                search_text=keyword,
-                related_ifc_entity=related_ifc_entities[0] if related_ifc_entities else None,
-                offset=offset,
-                limit=limit,
-            )
-            dictionary_name = response.get("name", "")
-            dictionary_namespace_uri = response.get("uri", "")
-            for _class in sorted(response.get("classes", []), key=lambda c: c["referenceCode"]):
-                prop = props.classifications.add()
-                prop.name = _class["name"]
-                prop.reference_code = _class["referenceCode"]
-                prop.uri = _class["uri"]
-                prop.dictionary_name = dictionary_name
-                prop.dictionary_namespace_uri = dictionary_namespace_uri
+            for related_ifc_entity in related_ifc_entities or [None]:
+                response = cls.client.get_classes(
+                    dictionary_uri=dictionary_uri,
+                    use_nested_classes=False,
+                    search_text=keyword,
+                    related_ifc_entity=related_ifc_entity,
+                    offset=offset,
+                    limit=limit,
+                )
+                dictionary_name = response.get("name", "")
+                dictionary_namespace_uri = response.get("uri", "")
+                for _class in sorted(response.get("classes", []), key=lambda c: c["referenceCode"]):
+                    prop = props.classifications.add()
+                    prop.name = _class["name"]
+                    prop.reference_code = _class["referenceCode"]
+                    prop.uri = _class["uri"]
+                    prop.dictionary_name = dictionary_name
+                    prop.dictionary_namespace_uri = dictionary_namespace_uri
 
         total_results = response.get("count", response.get("classesCount"))
         # For now, hard limit at 1000 results because any more and Blender
