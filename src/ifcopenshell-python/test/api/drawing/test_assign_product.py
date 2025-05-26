@@ -38,6 +38,17 @@ class TestAssignProduct(test.bootstrap.IFC4):
         assert len(wall.ReferencedBy) == 1
         assert wall.ReferencedBy[0].RelatedObjects == (label,)
 
+    def test_assigning_a_grid_axis(self):
+        axis = self.file.createIfcGridAxis(AxisTag="A")
+        grid = self.file.createIfcGrid(UAxes=[axis])
+        line = self.file.createIfcAnnotation()
+        ifcopenshell.api.drawing.assign_product(self.file, relating_product=axis, related_object=line)
+        assert grid.ReferencedBy[0].RelatedObjects == (line,)
+        assert grid.ReferencedBy[0].Name == "A"
+        assert len(self.file.by_type("IfcRelAssignsToProduct")) == 1
+        ifcopenshell.api.drawing.assign_product(self.file, relating_product=axis, related_object=line)
+        assert len(self.file.by_type("IfcRelAssignsToProduct")) == 1
+
 
 class TestAssignProductIFC2X3(test.bootstrap.IFC2X3, TestAssignProduct):
     pass

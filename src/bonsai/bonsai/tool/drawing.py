@@ -1342,17 +1342,32 @@ class Drawing(bonsai.core.tool.Drawing):
     ) -> Union[ifcopenshell.entity_instance, bool, None]:
         if drawing == reference_element:
             return True
+        if reference_element.is_a("IfcGridAxis"):
+            # We cannot associate IfcGridAxis directly, so we establish a convention:
+            # IfcRelAssignsToProduct.RelatingProduct = IfcGrid
+            # IfcRelAssignsToProduct.Name = IfcGridAxis.AxisTag
+            grid = None
+            for attribute in ("PartOfW", "PartOfV", "PartOfU"):
+                if getattr(reference_element, attribute, None):
+                    grid = getattr(reference_element, attribute)[0]
+                    break
+
+            for element in cls.get_group_elements(cls.get_drawing_group(drawing)):
+                if not element.is_a("IfcAnnotation"):
+                    continue
+                for rel in element.HasAssignments:
+                    if (
+                        rel.is_a("IfcRelAssignsToProduct")
+                        and rel.RelatingProduct == grid
+                        and rel.Name == reference_element.AxisTag
+                    ):
+                        return element
+            return
         for element in cls.get_group_elements(cls.get_drawing_group(drawing)):
             if element.is_a("IfcAnnotation"):
                 for rel in element.HasAssignments:
-                    if rel.is_a("IfcRelAssignsToProduct"):
-                        if rel.RelatingProduct == reference_element:
-                            return element
-                        # We cannot associate IfcGridAxis directly, so we establish a convention:
-                        # IfcRelAssignsToProduct.RelatingProduct = IfcGrid
-                        # IfcRelAssignsToProduct.Name = IfcGridAxis.AxisTag
-                        elif reference_element.is_a("IfcGridAxis") and rel.Name == reference_element.AxisTag:
-                            return element
+                    if rel.is_a("IfcRelAssignsToProduct") and rel.RelatingProduct == reference_element:
+                        return element
 
     @classmethod
     def generate_reference_annotation(
