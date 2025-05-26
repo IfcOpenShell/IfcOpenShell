@@ -976,8 +976,6 @@ class Spatial(bonsai.core.tool.Spatial):
 
         mat_invert = mat.inverted()
         si_conversion = 1.0 if polygon_is_si else ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        #print(poly)
-        #print(shapely.get_exterior_ring(poly))
         new_verts = [
             #bm.verts.new(mat_invert @ (Vector([v[0], v[1], 0]) * si_conversion)) for v in poly.exterior.coords[0:-1]
             bm.verts.new(mat_invert @ (Vector([v[0], v[1], 0]) * si_conversion)) for v in shapely.get_exterior_ring(poly).coords[0:-1]
