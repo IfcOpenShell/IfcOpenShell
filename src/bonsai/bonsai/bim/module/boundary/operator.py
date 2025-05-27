@@ -676,6 +676,14 @@ class AddBoundary(bpy.types.Operator, tool.Ifc.Operator):
             + tool.Ifc.get().by_type("IfcVirtualElement")
         )
 
+        for building_element in building_elements:
+            if obj := tool.Ifc.get_object(building_element):
+                if tool.Ifc.is_moved(obj):
+                    bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
+
+        if tool.Ifc.is_moved(space_obj):
+            bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=space_obj)
+
         # Don't generate boundaries of building elements that we've already got bounaries for.
         for boundary in space.BoundedBy:
             if boundary.RelatedBuildingElement in building_elements:
