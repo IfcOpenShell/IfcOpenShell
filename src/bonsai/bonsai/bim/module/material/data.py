@@ -25,6 +25,7 @@ import ifcopenshell.util.schema
 import bonsai.tool as tool
 from bonsai.bim.module.drawing.helper import format_distance
 from typing import Any, Union
+from natsort import natsorted
 
 
 def refresh():
@@ -39,11 +40,11 @@ class MaterialsData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.data["material_types"] = sorted(cls.material_types(), key=lambda x: x[1].lower())
+        cls.data["material_types"] = cls.material_types()
         cls.data["total_materials"] = cls.total_materials()
-        cls.data["profiles"] = sorted(cls.profiles(), key=lambda x: x[1].lower())
-        cls.data["styles"] = sorted(cls.styles(), key=lambda x: x[1].lower())
-        cls.data["contexts"] = sorted(cls.contexts(), key=lambda x: x[1].lower())
+        cls.data["profiles"] = cls.profiles()
+        cls.data["styles"] = cls.styles()
+        cls.data["contexts"] = cls.contexts()
         cls.data["material_styles_data"] = cls.material_styles_data()
 
     @classmethod
@@ -67,15 +68,16 @@ class MaterialsData:
 
     @classmethod
     def profiles(cls):
-        return [
+        results = [
             (str(p.id()), p.ProfileName or "Unnamed", "")
             for p in tool.Ifc.get().by_type("IfcProfileDef")
-            if p.ProfileName
+            if (profile_name := p.ProfileName) is not None
         ]
+        return natsorted(results, key=lambda i: i[1])
 
     @classmethod
     def contexts(cls):
-        results = []
+        results: list[tuple[str, str, str]] = []
         for element in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             results.append((str(element.id()), element.ContextType or "Unnamed", ""))
         for element in tool.Ifc.get().by_type("IfcGeometricRepresentationSubContext", include_subtypes=False):
@@ -90,15 +92,16 @@ class MaterialsData:
                     "",
                 )
             )
-        return results
+        return natsorted(results, key=lambda i: i[1])
 
     @classmethod
     def styles(cls) -> list[tuple[str, str, str]]:
-        return [
+        results = [
             (str(s.id()), style_name or "Unnamed", "")
             for s in tool.Ifc.get().by_type("IfcPresentationStyle")
-            if (style_name := s.Name)
+            if (style_name := s.Name) is not None
         ]
+        return natsorted(results, key=lambda i: i[1])
 
     @classmethod
     def material_styles_data(cls) -> dict[int, list[dict[str, Any]]]:
