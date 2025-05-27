@@ -608,7 +608,7 @@ class BIM_PT_cost_item_rates(Panel):
             return False
         if not CostSchedulesData.is_loaded:
             return False
-        #if CostSchedulesData.data["is_editing_rates"]:
+        # if CostSchedulesData.data["is_editing_rates"]:
         #    return False
         if total_cost_items > 0 and props.active_cost_item_index < total_cost_items:
             return True
@@ -686,7 +686,7 @@ class BIM_UL_cost_items_trait:
 
             if self.props.change_cost_item_parent:
                 self.draw_parent_operator(row, item.ifc_definition_id)
-            
+
             self.draw_assigned_rate_column(split2, cost_item)
 
             # TODO: reimplement "bim.copy_cost_item_values" somewhere with better UX
@@ -727,16 +727,18 @@ class BIM_UL_cost_items_trait:
             layout.label(text=label)
         else:
             layout.label(text="-")
-    
+
     def draw_assigned_rate_column(self, layout, cost_item):
-        row=layout.row()
-        row.alignment= "LEFT"
+        row = layout.row()
+        row.alignment = "LEFT"
         if cost_item["AssignedCostRate"] is not None:
             op = row.operator("bim.show_assigned_cost_rate", text="", emboss=False, icon="ZOOM_IN")
             op.assigned_rate_id = cost_item["AssignedCostRate"].id()
             op.assigned_rate_name = cost_item["AssignedCostRate"].Name or ""
             op.assigned_rate_description = cost_item["AssignedCostRate"].Description or ""
-            op.assigned_rate_total_value = CostSchedulesData.data["cost_items"][cost_item["AssignedCostRate"].id()]["TotalAppliedValue"]
+            op.assigned_rate_total_value = CostSchedulesData.data["cost_items"][cost_item["AssignedCostRate"].id()][
+                "TotalAppliedValue"
+            ]
         else:
             row.label(text="-")
 

@@ -193,10 +193,7 @@ def load_cost_item_resource_quantities(cost: tool.Cost) -> None:
 
 
 def assign_cost_value(
-    ifc: tool.Ifc,
-    cost: tool.Cost,
-    cost_item: ifcopenshell.entity_instance,
-    cost_rate: ifcopenshell.entity_instance
+    ifc: tool.Ifc, cost: tool.Cost, cost_item: ifcopenshell.entity_instance, cost_rate: ifcopenshell.entity_instance
 ) -> None:
     ifc.run("cost.assign_cost_value", cost_item=cost_item, cost_rate=cost_rate)
     existing_cost_rate = cost.get_assigned_rate_cost_item(cost_item)

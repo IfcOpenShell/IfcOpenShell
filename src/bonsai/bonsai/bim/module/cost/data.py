@@ -155,9 +155,9 @@ class CostSchedulesData:
         else:
             data["TotalCost"] = data["TotalAppliedValue"] * cost_quantity
         if is_sum:
-            pass #If it is None it doesn't allow me to assign a cost rate composed by sum
-            #data["TotalAppliedValue"] = None
-    
+            pass  # If it is None it doesn't allow me to assign a cost rate composed by sum
+            # data["TotalAppliedValue"] = None
+
     @classmethod
     def _load_assigned_cost_rate(cls, cost_item: ifcopenshell.entity_instance, data: CostItem) -> None:
         data["AssignedCostRate"] = tool.Cost.get_assigned_rate_cost_item(cost_item)
@@ -330,13 +330,10 @@ class CostItemRatesData:
             for s in tool.Ifc.get().by_type("IfcCostSchedule")
             if s.PredefinedType == "SCHEDULEOFRATES"
         ]
-    
+
     @classmethod
     def cost_schedules(cls) -> list[tuple[str, str, str]]:
-        return [
-            (str(s.id()), s.Name or "Unnamed", "")
-            for s in tool.Ifc.get().by_type("IfcCostSchedule")
-        ]
+        return [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcCostSchedule")]
 
 
 class CostItemQuantitiesData:

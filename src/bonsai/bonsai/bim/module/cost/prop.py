@@ -39,12 +39,13 @@ from typing import TYPE_CHECKING, Literal
 def get_schedule_of_rates(self, context):
     if not CostItemRatesData.is_loaded:
         CostItemRatesData.load()
-    #return CostItemRatesData.data["schedule_of_rates"]
+    # return CostItemRatesData.data["schedule_of_rates"]
     return CostItemRatesData.data["cost_schedules"]
 
 
 def update_schedule_of_rates(self, context):
     tool.Cost.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(self.schedule_of_rates)))
+
 
 def get_quantity_types(self, context):
     if not CostSchedulesData.is_loaded:

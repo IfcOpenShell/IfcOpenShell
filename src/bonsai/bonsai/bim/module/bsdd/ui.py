@@ -110,4 +110,10 @@ class BIM_UL_bsdd_properties(UIList):
             if item.pset:
                 row.label(text=item.pset)
             row.operator("bim.open_uri", text="", icon="URL").uri = item.uri
-            row.prop(item, "is_selected", icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT", text="", emboss=False)
+            row.prop(
+                item,
+                "is_selected",
+                icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT",
+                text="",
+                emboss=False,
+            )

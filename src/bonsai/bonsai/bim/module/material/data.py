@@ -42,7 +42,7 @@ class MaterialsData:
         cls.data["material_types"] = sorted(cls.material_types(), key=lambda x: x[1].lower())
         cls.data["total_materials"] = cls.total_materials()
         cls.data["profiles"] = sorted(cls.profiles(), key=lambda x: x[1].lower())
-        cls.data["styles"] = sorted(cls.styles(), key=lambda x: x[1].lower() )
+        cls.data["styles"] = sorted(cls.styles(), key=lambda x: x[1].lower())
         cls.data["contexts"] = sorted(cls.contexts(), key=lambda x: x[1].lower())
         cls.data["material_styles_data"] = cls.material_styles_data()
 

@@ -608,6 +608,7 @@ class LoadCostItemQuantities(bpy.types.Operator):
         core.load_cost_item_quantities(tool.Cost)
         return {"FINISHED"}
 
+
 class ShowAssignedCostRate(bpy.types.Operator):
     bl_idname = "bim.show_assigned_cost_rate"
     bl_label = "Info about the assigned cost item rate"
@@ -622,9 +623,9 @@ class ShowAssignedCostRate(bpy.types.Operator):
         return wm.invoke_props_dialog(self, width=450)
 
     def execute(self, context):
-        #core.load_cost_item_quantities(tool.Cost) IS IT NECESSARY?
+        # core.load_cost_item_quantities(tool.Cost) IS IT NECESSARY?
         return {"FINISHED"}
-    
+
     def draw(self, context):
         layout = self.layout
         wrapper = textwrap.TextWrapper(width=80)
@@ -689,7 +690,7 @@ class AssignCostValue(bpy.types.Operator, tool.Ifc.Operator):
             tool.Ifc,
             tool.Cost,
             cost_item=tool.Ifc.get().by_id(self.cost_item),
-            cost_rate=tool.Ifc.get().by_id(self.cost_rate)
+            cost_rate=tool.Ifc.get().by_id(self.cost_rate),
         )
 
 
