@@ -44,13 +44,15 @@ class PsetQto:
         "IFC4X3_ADD2": "Pset_IFC4X3.ifc"
     }
     # fmt: on
+    templates: list[ifcopenshell.file]
 
-    def __init__(self, schema_identifier: str, templates=None) -> None:
+    def __init__(self, schema_identifier: str, templates: Optional[list[ifcopenshell.file]] = None) -> None:
         self.schema = ifcopenshell.schema_by_name(schema_identifier)
         if not templates:
             folder_path = pathlib.Path(__file__).parent.absolute()
             path = str(folder_path.joinpath("schema", self.templates_path[schema_identifier]))
-            templates = [ifcopenshell.open(path)]
+            ifc_file: ifcopenshell.file = ifcopenshell.open(path)
+            templates = [ifc_file]
             # See bug 3583. We backport this change from IFC4X3 because it just makes sense.
             # Users aren't forced to use it.
             if schema_identifier == "IFC4":
