@@ -54,10 +54,10 @@ class BIM_PT_classifications(Panel):
 
         if self.props.classification_source == "FILE":
             self.draw_add_file_ui(context)
-        elif self.props.classification_source == "BSDD":
-            self.draw_add_bsdd_ui(context)
         elif self.props.classification_source == "MANUAL":
             self.draw_add_manual_ui(context)
+        else:
+            self.draw_add_bsdd_ui(context)
 
         for classification in ClassificationsData.data["classifications"]:
             if self.props.active_classification_id == classification["id"]:
@@ -76,11 +76,6 @@ class BIM_PT_classifications(Panel):
             row.operator("bim.enable_adding_manual_classification", text="Add Classification", icon="ADD")
 
     def draw_add_bsdd_ui(self, context):
-        self.bprops = context.scene.BIMBSDDProperties
-
-        row = self.layout.row()
-        row.prop(self.bprops, "active_dictionary", text="")
-
         row = self.layout.row()
         row.operator("bim.add_classification_from_bsdd", icon="ADD")
 
@@ -139,10 +134,10 @@ class ReferenceUI:
 
         if self.sprops.classification_source == "FILE":
             self.draw_add_file_ui(context)
-        elif self.sprops.classification_source == "BSDD":
-            self.draw_add_bsdd_ui(context)
         elif self.sprops.classification_source == "MANUAL":
             self.draw_add_manual_ui(context)
+        else:
+            self.draw_add_bsdd_ui(context)
 
     def draw_add_manual_ui(self, context):
         row = self.layout.row()
@@ -158,16 +153,10 @@ class ReferenceUI:
             row.operator("bim.enable_adding_manual_classification_reference", text="Add Reference", icon="ADD")
 
     def draw_add_bsdd_ui(self, context):
-        row = self.layout.row()
-        row.prop(self.bprops, "active_dictionary", text="")
-
         row = self.layout.row(align=True)
         row.prop(self.bprops, "keyword", text="")
+        row.prop(self.bprops, "should_filter_ifc_class", text="", icon="FILTER")
         row.operator("bim.search_bsdd_classifications", text="", icon="VIEWZOOM")
-
-        row = self.layout.row()
-        row.prop(self.bprops, "should_filter_ifc_class")
-        row.prop(self.bprops, "use_only_ifc_properties")
 
         if len(self.bprops.classifications):
             self.layout.template_list(
@@ -189,21 +178,6 @@ class ReferenceUI:
             )
             op.obj = self.obj
             op.obj_type = self.obj_type
-            row.operator("bim.get_bsdd_classification_properties", text="", icon="COPY_ID")
-
-            if len(self.bprops.classification_psets):
-                use_only_ifc_properties = self.bprops.use_only_ifc_properties
-                for pset in self.bprops.classification_psets:
-                    properties = pset.properties
-                    if use_only_ifc_properties:
-                        properties = [p for p in properties if p.metadata == "IFC"]
-                    if not properties:
-                        continue
-
-                    box = self.layout.box()
-                    row = box.row()
-                    row.label(text=pset.name, icon="COPY_ID")
-                    bonsai.bim.helper.draw_attributes(properties, box)
 
     def draw_add_file_ui(self, context):
         if not self.data.data["active_classification_library"]:

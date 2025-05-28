@@ -41,6 +41,7 @@ class ClassificationsData:
         cls.data["has_classification_file"] = cls.has_classification_file()
         cls.data["classifications"] = cls.classifications()
         cls.data["available_classifications"] = cls.available_classifications()
+        cls.data["classification_source"] = cls.classification_source()
 
     @classmethod
     def has_classification_file(cls):
@@ -61,6 +62,19 @@ class ClassificationsData:
         if not IfcStore.classification_file:
             return []
         return [(str(e.id()), e.Name, "") for e in IfcStore.classification_file.by_type("IfcClassification")]
+
+    @classmethod
+    def classification_source(cls):
+        items = [
+            ("FILE", "IFC File", ""),
+            ("MANUAL", "Manual Entry", ""),
+        ]
+        bprops = tool.Bsdd.get_bsdd_props()
+        dictionaries = [(d.uri, f"bSDD: {d.name}", "") for d in bprops.dictionaries if d.is_active]
+        if dictionaries:
+            items.append(("BSDD", "All Active bSDDs", ""))
+        items.extend(dictionaries)
+        return items
 
 
 class ReferencesData:

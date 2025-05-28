@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bpy.types import PropertyGroup
 from bonsai.bim.module.bsdd.data import BSDDData
 from bonsai.bim.prop import Attribute, StrProperty
@@ -30,6 +31,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import Union
 
 
 def get_active_dictionary(self, context):
@@ -39,6 +41,15 @@ def get_active_dictionary(self, context):
 
 
 def update_is_active(self: "BSDDDictionary", context: bpy.types.Context) -> None:
+    BSDDData.data["active_dictionary"] = BSDDData.active_dictionary()
+
+
+def update_is_selected(self: "BSDDProperty", context: bpy.types.Context) -> None:
+    tool.Bsdd.import_selected_properties()
+
+
+def update_active_class_index(self: "BIMBSDDProperties", context: bpy.types.Context) -> None:
+    tool.Bsdd.import_class_properties()
     BSDDData.data["active_dictionary"] = BSDDData.active_dictionary()
 
 
@@ -57,9 +68,19 @@ class BSDDDictionary(PropertyGroup):
 class BSDDClassification(PropertyGroup):
     name: StringProperty(name="Name")
     reference_code: StringProperty(name="Reference Code")
-    uri: StringProperty(name="Namespace URI")
+    uri: StringProperty(name="URI")
     dictionary_name: StringProperty(name="Dictionary Name")
     dictionary_namespace_uri: StringProperty(name="Dictionary Namespace URI")
+
+
+class BSDDProperty(PropertyGroup):
+    name: StringProperty(name="Name")
+    code: StringProperty(name="Code")
+    uri: StringProperty(name="URI")
+    pset: StringProperty(name="Pset")
+    is_selected: BoolProperty(
+        name="Is Selected", description="Select to add or edit this property", default=False, update=update_is_selected
+    )
 
 
 class BSDDPset(PropertyGroup):
@@ -75,6 +96,19 @@ class BIMBSDDProperties(PropertyGroup):
     active_dictionary_index: IntProperty(name="Active Dictionary Index")
     classifications: CollectionProperty(name="Classifications", type=BSDDClassification)
     active_classification_index: IntProperty(name="Active Classification Index")
+    property_filter_mode: EnumProperty(
+        name="Property Filter Mode",
+        items=[
+            ("CLASS", "By Class", "Browse properties by class or group"),
+            ("KEYWORD", "By Keyword", "Search properties directly using a keyword"),
+        ],
+        default="CLASS",
+    )
+    classes: CollectionProperty(name="Classes", type=BSDDClassification)
+    active_class_index: IntProperty(name="Active Class Index", update=update_active_class_index)
+    properties: CollectionProperty(name="Properties", type=BSDDProperty)
+    active_property_index: IntProperty(name="Active Property Index")
+    selected_properties: CollectionProperty(name="Selected Properties", type=Attribute)
     keyword: StringProperty(name="Keyword", description="Query for bsdd classes search, case and accent insensitive")
     should_filter_ifc_class: BoolProperty(
         name="Filter Active IFC Class",
@@ -96,3 +130,7 @@ class BIMBSDDProperties(PropertyGroup):
         name="Load Test Dictionaries", description="Load dictionaries that are for testing only", default=False
     )
     classification_psets: CollectionProperty(name="Classification Psets", type=BSDDPset)
+
+    @property
+    def active_class(self) -> Union[BSDDClassification, None]:
+        return tool.Blender.get_active_uilist_element(self.classes, self.active_class_index)

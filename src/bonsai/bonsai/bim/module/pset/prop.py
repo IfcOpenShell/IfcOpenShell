@@ -81,7 +81,24 @@ def get_pset_name(self, context):
         results = get_profile_pset_names(self, context)
     elif prop_type == "WorkSchedulePsetProperties":
         results = get_work_schedule_pset_names(self, context)
-    return [("BBIM_CUSTOM", "Custom Pset", "Create a property set without using a template."), None] + results
+    items = [("BBIM_CUSTOM", "Custom Pset", "Create a property set without using a template.")]
+    bprops = tool.Bsdd.get_bsdd_props()
+    dictionaries = [(d.uri, f"bSDD: {d.name}", "") for d in bprops.dictionaries if d.is_active]
+    if dictionaries:
+        items.extend(
+            [
+                None,
+                (
+                    "BBIM_BSDD",
+                    "All Data Dictionaries",
+                    "Manage properties from all active buildingSMART Data Dictionaries",
+                ),
+            ]
+        )
+        items.extend(dictionaries)
+    items.append(None)
+    items.extend(results)
+    return items
 
 
 def get_object_pset_name(self, context):

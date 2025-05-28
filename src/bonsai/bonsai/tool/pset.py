@@ -73,7 +73,7 @@ class Pset(bonsai.core.tool.Pset):
     def get_pset_name(cls, obj: str, obj_type: tool.Ifc.OBJECT_TYPE, pset_type: PSET_TYPE = "PSET") -> str:
         props = cls.get_pset_props(obj, obj_type)
         name = props.pset_name if pset_type == "PSET" else props.qto_name
-        if name == "BBIM_CUSTOM":
+        if name in ("BBIM_CUSTOM", "BBIM_BSDD"):
             return ""
         return name
 

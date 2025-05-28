@@ -20,15 +20,20 @@ import bpy
 from . import ui, prop, operator
 
 classes = (
-    operator.GetBSDDClassificationProperties,
+    operator.AddBSDDProperties,
+    operator.ImportBSDDClasses,
     operator.LoadBSDDDictionaries,
-    operator.SearchBSDDClass,
+    operator.SearchBSDDClassifications,
+    operator.SearchBSDDProperties,
     prop.BSDDDictionary,
     prop.BSDDClassification,
+    prop.BSDDProperty,
     prop.BSDDPset,
     prop.BIMBSDDProperties,
-    ui.BIM_UL_bsdd_dictionaries,
     ui.BIM_UL_bsdd_classifications,
+    ui.BIM_UL_bsdd_dictionaries,
+    ui.BIM_UL_bsdd_classes,
+    ui.BIM_UL_bsdd_properties,
     ui.BIM_PT_bsdd,
 )
 

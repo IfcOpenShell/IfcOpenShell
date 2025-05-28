@@ -54,7 +54,7 @@ class BIM_PT_bsdd(Panel):
                 selected_dictionary = None
 
             if selected_dictionary:
-                layout.label(text="Selected dictionary:")
+                layout.label(text="Selected Dictionary:")
                 box = layout.box()
                 row = box.row(align=True)
                 row.label(text="Language")
@@ -92,3 +92,22 @@ class BIM_UL_bsdd_classifications(UIList):
             row.label(text=item.reference_code)
             row.label(text=item.name)
             row.operator("bim.open_uri", text="", icon="URL").uri = item.uri
+
+
+class BIM_UL_bsdd_classes(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
+            row.operator("bim.open_uri", text="", icon="URL").uri = item.uri
+
+
+class BIM_UL_bsdd_properties(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            row = layout.row(align=True)
+            row.label(text=item.name)
+            if item.pset:
+                row.label(text=item.pset)
+            row.operator("bim.open_uri", text="", icon="URL").uri = item.uri
+            row.prop(item, "is_selected", icon="CHECKBOX_HLT" if item.is_selected else "CHECKBOX_DEHLT", text="", emboss=False)

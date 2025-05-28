@@ -44,6 +44,12 @@ def get_classifications(self, context):
     return ClassificationReferencesData.data["classifications"]
 
 
+def get_classification_source(self, context):
+    if not ClassificationsData.is_loaded:
+        ClassificationsData.load()
+    return ClassificationsData.data["classification_source"]
+
+
 class ClassificationReference(PropertyGroup):
     name: StringProperty(name="Name")
     identification: StringProperty(name="Identification")
@@ -54,15 +60,7 @@ class ClassificationReference(PropertyGroup):
 
 class BIMClassificationProperties(PropertyGroup):
     is_adding: BoolProperty(name="Is Adding", default=False)
-    classification_source: EnumProperty(
-        items=[
-            ("FILE", "IFC File", ""),
-            ("BSDD", "buildingSMART Data Dictionary", ""),
-            ("MANUAL", "Manual Entry", ""),
-        ],
-        name="Classification Source",
-        default="FILE",
-    )
+    classification_source: EnumProperty(items=get_classification_source, name="Classification Source")
     available_classifications: EnumProperty(items=get_available_classifications, name="Available Classifications")
     classification_attributes: CollectionProperty(name="Classification Attributes", type=Attribute)
     active_classification_id: IntProperty(name="Active Classification Id")

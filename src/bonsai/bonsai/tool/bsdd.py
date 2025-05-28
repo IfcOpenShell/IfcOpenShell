@@ -5,11 +5,15 @@ import json
 import bsdd
 import ifcopenshell.util.type
 import ifcopenshell.util.element
+import ifcopenshell.util.classification
 from typing import Any, Union, Optional, TYPE_CHECKING
 
 
 class Bsdd(bonsai.core.tool.Bsdd):
+    identifier_url = "https://identifier.buildingsmart.org"
     client = bsdd.Client()
+    bsdd_classes: dict[str, dict] = {}
+    bsdd_properties: dict[str, dict] = {}
 
     @classmethod
     def get_bsdd_props(cls):
@@ -22,6 +26,10 @@ class Bsdd(bonsai.core.tool.Bsdd):
     @classmethod
     def clear_classes(cls) -> None:
         bpy.context.scene.BIMBSDDProperties.classifications.clear()
+
+    @classmethod
+    def clear_properties(cls) -> None:
+        bpy.context.scene.BIMBSDDProperties.properties.clear()
 
     @classmethod
     def clear_dictionaries(cls) -> None:
@@ -94,10 +102,12 @@ class Bsdd(bonsai.core.tool.Bsdd):
         return list(filter(lambda d: d["status"] in statuses, dicts))
 
     @classmethod
-    def get_property_dict(cls, class_data: Union[bsdd.ClassContractV1, dict]) -> Union[dict[str, dict[str, Any]], None]:
+    def get_class_properties(
+        cls, class_data: Union[bsdd.ClassContractV1, dict]
+    ) -> Union[dict[str, dict[str, Any]], None]:
         properties = class_data.get("classProperties", None)
         if not properties:
-            return None
+            return {}
 
         ifc_class = class_data.get("relatedIfcEntityNames") or ""
         if ifc_class:
@@ -155,11 +165,12 @@ class Bsdd(bonsai.core.tool.Bsdd):
         limit: int = 100,
         should_paginate: bool = True,
     ):
-        props = cls.get_bsdd_props()
+        cprops = bpy.context.scene.BIMClassificationProperties
+        bprops = cls.get_bsdd_props()
         dictionary_uris = (
-            [d.uri for d in props.dictionaries if d.is_active]
-            if props.active_dictionary == "ALL"
-            else [props.active_dictionary]
+            [d.uri for d in bprops.dictionaries if d.is_active]
+            if cprops.classification_source == "BSDD"
+            else [cprops.classification_source]
         )
         for dictionary_uri in dictionary_uris:
             for related_ifc_entity in related_ifc_entities or [None]:
@@ -174,7 +185,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
                 dictionary_name = response.get("name", "")
                 dictionary_namespace_uri = response.get("uri", "")
                 for _class in sorted(response.get("classes", []), key=lambda c: c["referenceCode"]):
-                    prop = props.classifications.add()
+                    prop = bprops.classifications.add()
                     prop.name = _class["name"]
                     prop.reference_code = _class["referenceCode"]
                     prop.uri = _class["uri"]
@@ -198,3 +209,159 @@ class Bsdd(bonsai.core.tool.Bsdd):
     @classmethod
     def should_filter_ifc_class(cls) -> bool:
         return bpy.context.scene.BIMBSDDProperties.should_filter_ifc_class
+
+    @classmethod
+    def get_bsdd_class(cls, uri: str) -> dict:
+        if not (bsdd_class := cls.bsdd_classes.get(uri, {})):
+            bsdd_class = cls.client.get_class(uri)
+            cls.bsdd_classes[uri] = bsdd_class
+        return bsdd_class
+
+    @classmethod
+    def get_bsdd_property(cls, uri: str) -> dict:
+        if not (bsdd_property := cls.bsdd_properties.get(uri, {})):
+            bsdd_property = cls.client.get_property(uri, include_classes=True)
+            cls.bsdd_properties[uri] = bsdd_property
+        return bsdd_property
+
+    @classmethod
+    def import_classes(cls, obj, obj_type) -> None:
+        pprops = tool.Pset.get_pset_props(obj, obj_type)
+        props = cls.get_bsdd_props()
+        props.classes.clear()
+
+        classes = set()
+        for obj in tool.Blender.get_selected_objects(include_active=True):
+            if element := tool.Ifc.get_entity(obj):
+                for reference in ifcopenshell.util.classification.get_references(element):
+                    if (uri := reference.Location) and uri.startswith(cls.identifier_url):
+                        classes.add((reference[1] or reference[2] or "Unnamed", uri))
+
+        dictionary_uris = (
+            [d.uri for d in props.dictionaries if d.is_active]
+            if pprops.pset_name == "BBIM_BSDD"
+            else [pprops.pset_name]
+        )
+        related_ifc_entities = cls.get_related_ifc_entities()
+        for dictionary_uri in dictionary_uris:
+            for related_ifc_entity in related_ifc_entities or [None]:
+                bsdd_classes = cls.client.get_classes(
+                    dictionary_uri=dictionary_uri,
+                    class_type="GroupOfProperties",
+                    use_nested_classes=False,
+                    related_ifc_entity=related_ifc_entity,
+                )
+                for bsdd_class in bsdd_classes["classes"]:
+                    classes.add((bsdd_class["name"], bsdd_class["uri"]))
+
+        for bsdd_class in classes:
+            new = props.classes.add()
+            new.name = bsdd_class[0]
+            new.uri = bsdd_class[1]
+
+    @classmethod
+    def import_class_properties(cls) -> None:
+        props = cls.get_bsdd_props()
+        props.properties.clear()
+        if not (active_class := props.active_class):
+            return
+        if not (bsdd_class := cls.get_bsdd_class(active_class.uri)):
+            return
+        for bsdd_prop in bsdd_class.get("classProperties", []):
+            if not bsdd_prop.get("propertySet", None):
+                continue
+            cls.bsdd_properties[bsdd_prop["uri"]] = bsdd_prop
+            new = props.properties.add()
+            new.name = bsdd_prop["name"]
+            new.pset = bsdd_prop["propertySet"]
+            new.uri = bsdd_prop["uri"]
+
+    @classmethod
+    def import_properties(cls, obj, obj_type, keyword) -> None:
+        props = cls.get_bsdd_props()
+        props.properties.clear()
+        pprops = tool.Pset.get_pset_props(obj, obj_type)
+        dictionary_uris = (
+            [d.uri for d in props.dictionaries if d.is_active]
+            if pprops.pset_name == "BBIM_BSDD"
+            else [pprops.pset_name]
+        )
+        for dictionary_uri in dictionary_uris:
+            for bsdd_prop in cls.client.get_properties(dictionary_uri, keyword)["properties"]:
+                new = props.properties.add()
+                new.name = bsdd_prop["name"]
+                new.uri = bsdd_prop["uri"]
+
+    @classmethod
+    def import_selected_properties(cls) -> None:
+        props = cls.get_bsdd_props()
+        data_type_map = {
+            "String": "string",
+            "Real": "float",
+            "Boolean": "boolean",
+        }
+        imported_props = set()
+        for bsdd_prop in props.properties:
+            if not bsdd_prop.is_selected:
+                continue
+            if not (pset_name := bsdd_prop.pset):
+                prop_data = cls.get_bsdd_property(bsdd_prop.uri)
+                pset_name = prop_data.get("propertyClasses", [{}])[0].get("propertySet", "")
+
+            imported_props.add((pset_name, bsdd_prop.name))
+            if (
+                selected_property := props.selected_properties.get(bsdd_prop.name)
+            ) and selected_property.metadata == pset_name:
+                continue
+
+            data = cls.bsdd_properties[bsdd_prop.uri]
+
+            predefined_value = data.get("predefinedValue")
+            if predefined_value:
+                possible_values = [predefined_value]
+            else:
+                possible_values = data.get("allowedValues", []) or []
+                possible_values = [v["value"] for v in possible_values]
+
+            new = props.selected_properties.add()
+            new.name = bsdd_prop.name
+            if possible_values:
+                new.enum_items = json.dumps(possible_values)
+                new.data_type = "enum"
+            else:
+                new.data_type = data_type_map.get(data["dataType"], "string")
+            new.description = data.get("description", "")
+            new.metadata = pset_name
+
+        to_remove = []
+        for i, selected_property in enumerate(props.selected_properties):
+            if (selected_property.metadata, selected_property.name) not in imported_props:
+                to_remove.append(i)
+
+        for i in to_remove[::-1]:
+            props.selected_properties.remove(i)
+
+    @classmethod
+    def get_applicable_psets(cls, element: ifcopenshell.entity_instance):
+        uris = set()
+        for reference in ifcopenshell.util.classification.get_references(element):
+            if (uri := reference.Location) and uri.startswith(cls.identifier_url):
+                uris.add(uri)
+        psets = set()
+        for uri in uris:
+            if not (bsdd_class := cls.bsdd_classes.get(uri, None)):
+                continue
+            for class_pset in bsdd_class.get("classProperties", []):
+                if not (pset_name := class_pset.get("propertySet", None)):
+                    continue
+                psets.add((uri, bsdd_class["name"], pset_name))
+        return psets
+
+    @classmethod
+    def is_applicable(cls, pset_uri: str, element: ifcopenshell.entity_instance) -> bool:
+        uris = set()
+        for reference in ifcopenshell.util.classification.get_references(element):
+            if (uri := reference.Location) and uri.startswith(cls.identifier_url):
+                uris.add(uri)
+        class_uri, pset_name = pset_uri.rsplit("#", 1)
+        return class_uri in uris

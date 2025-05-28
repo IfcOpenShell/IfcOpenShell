@@ -20,7 +20,7 @@ from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 from bpy.types import Panel
-from bonsai.bim.helper import prop_with_search, get_display_value
+from bonsai.bim.helper import prop_with_search, get_display_value, draw_attribute
 from bonsai.bim.module.pset.data import (
     ObjectPsetsData,
     ObjectQtosData,
@@ -256,11 +256,74 @@ class BIM_PT_object_psets(Panel):
             ObjectPsetsData.load()
 
         props = context.active_object.PsetProperties
+        self.bprops = context.scene.BIMBSDDProperties
         row = self.layout.row(align=True)
         prop_with_search(row, props, "pset_name", text="")
-        op = row.operator("bim.add_pset", icon="ADD", text="")
-        op.obj = context.active_object.name
-        op.obj_type = "Object"
+        if props.pset_name != "BBIM_BSDD" and not props.pset_name.startswith(tool.Bsdd.identifier_url):
+            op = row.operator("bim.add_pset", icon="ADD", text="")
+            op.obj = context.active_object.name
+            op.obj_type = "Object"
+        else:
+            row = self.layout.row(align=True)
+            row.prop(self.bprops, "property_filter_mode", text="")
+            if self.bprops.property_filter_mode == "CLASS":
+                row.prop(self.bprops, "should_filter_ifc_class", text="", icon="FILTER")
+                op = row.operator("bim.import_bsdd_classes", text="", icon="FILE_REFRESH")
+                op.obj = context.active_object.name
+                op.obj_type = "Object"
+
+                if len(self.bprops.classes):
+                    self.layout.template_list(
+                        "BIM_UL_bsdd_classes",
+                        "",
+                        self.bprops,
+                        "classes",
+                        self.bprops,
+                        "active_class_index",
+                    )
+                    if len(self.bprops.properties):
+                        self.layout.template_list(
+                            "BIM_UL_bsdd_properties",
+                            "",
+                            self.bprops,
+                            "properties",
+                            self.bprops,
+                            "active_property_index",
+                        )
+                    else:
+                        row = self.layout.row()
+                        row.label(text="No Results")
+                else:
+                    row = self.layout.row()
+                    row.label(text="No Results")
+            elif self.bprops.property_filter_mode == "KEYWORD":
+                row.prop(self.bprops, "keyword", text="")
+                op = row.operator("bim.search_bsdd_properties", text="", icon="VIEWZOOM")
+                op.obj = context.active_object.name
+                op.obj_type = "Object"
+
+                if len(self.bprops.properties):
+                    self.layout.template_list(
+                        "BIM_UL_bsdd_properties",
+                        "",
+                        self.bprops,
+                        "properties",
+                        self.bprops,
+                        "active_property_index",
+                    )
+                else:
+                    row = self.layout.row()
+                    row.label(text="No Results")
+
+            for selected_property in self.bprops.selected_properties:
+                row = self.layout.row(align=True)
+                # row.prop(selected_property, "metadata", text="")
+                draw_attribute(selected_property, row)
+
+            row = self.layout.row()
+            op = row.operator("bim.add_bsdd_properties", icon="ADD")
+            op.obj = context.active_object.name
+            op.obj_type = "Object"
 
         global_props = tool.Pset.get_global_pset_props()
         if not props.active_pset_id and props.active_pset_name and props.active_pset_type == "PSET":

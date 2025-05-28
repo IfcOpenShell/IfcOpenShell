@@ -658,13 +658,25 @@ class Client:
         return self.get(endpoint, params)
 
     def get_properties(
-        self, dictionary_uri: str, offset: int = 0, limit: int = 100, language_code: str = "", version: int = 1
+        self,
+        dictionary_uri: str,
+        search_text: str = "",
+        offset: int = 0,
+        limit: int = 100,
+        language_code: str = "",
+        version: int = 1,
     ) -> DictionaryPropertiesResponseContractV1:
         """
         Get Dictionary with its properties
         """
         endpoint = f"Dictionary/v{version}/Properties"
-        params = {"Uri": dictionary_uri, "languageCode": language_code, "offset": offset, "limit": limit}
+        params = {
+            "Uri": dictionary_uri,
+            "SearchText": search_text,
+            "languageCode": language_code,
+            "offset": offset,
+            "limit": limit,
+        }
         return self.get(endpoint, params)
 
     def get_class(

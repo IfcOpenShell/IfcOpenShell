@@ -115,11 +115,12 @@ class AddClassificationFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMBSDDProperties
-        if props.active_dictionary == "ALL":
-            dictionaries = [d.uri for d in props.dictionaries if d.is_active]
+        cprops = context.scene.BIMClassificationProperties
+        bprops = tool.Bsdd.get_bsdd_props()
+        if cprops.classification_source == "BSDD":
+            dictionaries = [d.uri for d in bprops.dictionaries if d.is_active]
         else:
-            dictionaries = [props.active_dictionary]
+            dictionaries = [cprops.classification_source]
         for uri in dictionaries:
             if not (dictionary := tool.Bsdd.get_dictionary(uri)):
                 continue
