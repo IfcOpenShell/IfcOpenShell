@@ -27,11 +27,11 @@ def calculate_height(obj: bpy.types.Object) -> float:
 
 
 def calculate_edges_lengths(objs: list[bpy.types.Object], context: bpy.types.Context):
-    return calculate_mesh_quantity(objs, context, lambda bm: sum((e.calc_length() for e in bm.edges if e.select)))
+    return calculate_mesh_quantity(objs, context, lambda bm: sum(e.calc_length() for e in bm.edges if e.select))
 
 
 def calculate_faces_areas(objs: list[bpy.types.Object], context: bpy.types.Context) -> float:
-    return calculate_mesh_quantity(objs, context, lambda bm: sum((f.calc_area() for f in bm.faces if f.select)))
+    return calculate_mesh_quantity(objs, context, lambda bm: sum(f.calc_area() for f in bm.faces if f.select))
 
 
 def calculate_volumes(objs: list[bpy.types.Object], context: bpy.types.Context) -> float:

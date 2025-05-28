@@ -302,7 +302,7 @@ class Settings:
     def set_(self, *args): ...
     def setting_names(self): ...
 
-class SvgSerializer (WriteOnlyGeometrySerializer):
+class SvgSerializer(WriteOnlyGeometrySerializer):
     SH_NONE: Any
     SH_FULL: Any
     SH_LEFT: Any

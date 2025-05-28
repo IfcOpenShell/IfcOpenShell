@@ -70,7 +70,7 @@ def add_zero_length_segment(file: ifcopenshell.file, entity: entity_instance) ->
         curve_segment = file.createIfcCurveSegment(
             Transition="DISCONTINUOUS",
             Placement=file.createIfcAxis2Placement2D(
-                Location=file.createIfcCartesianPoint(((x, y))),
+                Location=file.createIfcCartesianPoint((x, y)),
                 RefDirection=file.createIfcDirection((dx, dy)),
             ),
             SegmentStart=file.createIfcLengthMeasure(0.0),

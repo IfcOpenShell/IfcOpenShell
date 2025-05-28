@@ -1709,7 +1709,7 @@ class Drawing(bonsai.core.tool.Drawing):
         a_quaternion = a.matrix_world.to_quaternion()
         b_quaternion = b.matrix_world.to_quaternion()
         for axis in axes:
-            if abs((a_quaternion @ axis).angle((b_quaternion @ axis)) - (math.pi / 2)) < 1e-5:
+            if abs((a_quaternion @ axis).angle(b_quaternion @ axis) - (math.pi / 2)) < 1e-5:
                 return True
         return False
 

@@ -135,7 +135,7 @@ def offset_date(start, duration, duration_type: DURATION_TYPE, calendar: ifcopen
     months = getattr(duration, "months", 0)
     years = getattr(duration, "years", 0)
 
-    abs_duration = abs((duration.days + months * 30 + years * 12 * 30))
+    abs_duration = abs(duration.days + months * 30 + years * 12 * 30)
     date_offset = datetime.timedelta(days=1 if duration.days > 0 else -1)
     while abs_duration > 0:
         if duration_type == "ELAPSEDTIME" or not is_calendar_applicable(current_date, calendar):

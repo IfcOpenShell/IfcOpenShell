@@ -71,7 +71,7 @@ class TestCreatingStyles(NewFile):
         subject.create_surface_style_with_textures(material, style_data, texture_data)
 
         used_node_types = set([n.type for n in material.node_tree.nodes[:]])
-        assert used_node_types == set((["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"]))
+        assert used_node_types == set(["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"])
 
         bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
         alpha = 1 - style_data["Transparency"]
@@ -137,7 +137,7 @@ class TestCreatingStyles(NewFile):
         subject.create_surface_style_with_textures(material, rendering_style, texture_style)
 
         used_node_types = set([n.type for n in material.node_tree.nodes[:]])
-        assert used_node_types == set((["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"]))
+        assert used_node_types == set(["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"])
 
         color_to_tuple = lambda x: (x.Red, x.Green, x.Blue)
         bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
@@ -250,7 +250,7 @@ class TestCreatingStyles(NewFile):
         subject.create_surface_style_with_textures(material, rendering_style, texture_style)
 
         used_node_types = set([n.type for n in material.node_tree.nodes[:]])
-        assert used_node_types == set((["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"]))
+        assert used_node_types == set(["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"])
 
         image_node = tool.Blender.get_material_node(material, "TEX_IMAGE")
         assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"
@@ -385,7 +385,7 @@ class TestCreatingStyles(NewFile):
         subject.create_surface_style_with_textures(material, rendering_style, texture_style)
 
         used_node_types = set([n.type for n in material.node_tree.nodes[:]])
-        assert used_node_types == set((["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"]))
+        assert used_node_types == set(["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"])
 
         image_node = tool.Blender.get_material_node(material, "TEX_IMAGE")
         assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"

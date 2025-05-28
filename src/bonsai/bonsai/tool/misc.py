@@ -73,7 +73,7 @@ class Misc(bonsai.core.tool.Misc):
         assert isinstance(obj.data, bpy.types.Mesh)
         obj.data.transform(
             Matrix.Translation(
-                (obj.matrix_world.inverted().to_quaternion() @ (obj.matrix_world.translation - new_origin))
+                obj.matrix_world.inverted().to_quaternion() @ (obj.matrix_world.translation - new_origin)
             )
         )
         obj.matrix_world.translation = new_origin

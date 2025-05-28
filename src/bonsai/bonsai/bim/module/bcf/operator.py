@@ -397,7 +397,7 @@ class AddBcfBimSnippet(bpy.types.Operator):
     def poll(cls, context):
         props = tool.Bcf.get_bcf_props()
         props_are_filled = all(
-            (getattr(props, attr) for attr in ("bim_snippet_reference", "bim_snippet_schema", "bim_snippet_type"))
+            getattr(props, attr) for attr in ("bim_snippet_reference", "bim_snippet_schema", "bim_snippet_type")
         )
         if not props_are_filled:
             cls.poll_message_set("Some BIM snippet fields are empty.")

@@ -724,7 +724,7 @@ class GetRepresentationIfcParameters(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        assert obj and tool.Geometry.has_mesh_properties((data := obj.data))
+        assert obj and tool.Geometry.has_mesh_properties(data := obj.data)
         core.get_representation_ifc_parameters(tool.Geometry, obj=obj)
         parameters = tool.Geometry.get_mesh_props(data).ifc_parameters
         self.report({"INFO"}, f"{len(parameters)} parameters found.")
@@ -1691,7 +1691,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                 if obj == self.target:
                     continue
                 if obj.type != self.target_type:
-                    obj.select_set((False))
+                    obj.select_set(False)
                     continue
                 element = tool.Ifc.get_entity(obj)
 
@@ -1752,7 +1752,7 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
                         copied_item = ifcopenshell.util.element.copy_deep(
                             ifc_file, item, exclude=("IfcCartesianPointList",)
                         )
-                        new_points = processed_point_lists.get((points := item.Points))
+                        new_points = processed_point_lists.get(points := item.Points)
                         if new_points is None:
                             new_points = ifcopenshell.util.element.copy_deep(ifc_file, points)
                             dim = item.Dim
@@ -2365,7 +2365,7 @@ class EnableEditingRepresentationItems(bpy.types.Operator, tool.Ifc.Operator):
                 item.tags += ","
             item.tags += tag
 
-        if tool.Geometry.has_mesh_properties((data := obj.data)):
+        if tool.Geometry.has_mesh_properties(data := obj.data):
             representation = tool.Geometry.get_data_representation(data)
             assert representation
 

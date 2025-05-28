@@ -103,8 +103,8 @@ class Cad:
         d2 = v3 - v2
 
         # Rounding avoids problems when dealing with 180 degrees
-        d1 = Vector((round(c, 6) for c in d1))
-        d2 = Vector((round(c, 6) for c in d2))
+        d1 = Vector(round(c, 6) for c in d1)
+        d2 = Vector(round(c, 6) for c in d2)
 
         d1.normalize()
         d2.normalize()

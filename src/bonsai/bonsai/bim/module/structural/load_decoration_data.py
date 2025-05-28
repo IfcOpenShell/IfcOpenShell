@@ -398,12 +398,12 @@ class ShaderInfo:
         returns a numpy array with the sum of the values of structural activities
         applied loads in each direction, multiplied by the factors in load combinations
         """
-        values = np.zeros((3))
+        values = np.zeros(3)
         for item in activity_list:
             activity = item[0]
             factor = item[1]
             load = activity.AppliedLoad
-            temp = np.zeros((3))
+            temp = np.zeros(3)
             if load is not None and load.is_a("IfcStructuralLoadPlanarForce"):
                 temp[0] = load.PlanarForceX if load.PlanarForceX is not None else 0
                 temp[1] = load.PlanarForceY if load.PlanarForceY is not None else 0

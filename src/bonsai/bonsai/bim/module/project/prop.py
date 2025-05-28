@@ -435,7 +435,7 @@ class BIMProjectProperties(PropertyGroup):
         return new
 
     def get_library_element_index(self, lib_element: LibraryElement) -> int:
-        return next((i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element))
+        return next(i for i in range(len(self.library_elements)) if self.library_elements[i] == lib_element)
 
     if TYPE_CHECKING:
         is_editing: bool

@@ -489,14 +489,14 @@ class TestApplyIfcMaterialChanges(NewFile):
         sprops = tool.Style.get_style_props()
         sprops.style_name = "Red"
         bpy.ops.bim.add_presentation_style()
-        red_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Red"))
+        red_style = next(i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Red")
         ifcopenshell.api.style.assign_material_style(ifc_file, red_material, red_style, context)
 
         blue_material = ifcopenshell.api.material.add_material(ifc_file, "Blue Material")
         bpy.ops.bim.enable_adding_presentation_style()
         sprops.style_name = "Blue"
         bpy.ops.bim.add_presentation_style()
-        blue_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Blue"))
+        blue_style = next(i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Blue")
         ifcopenshell.api.style.assign_material_style(ifc_file, blue_material, blue_style, context)
 
         bpy.ops.bim.enable_adding_presentation_style()
@@ -508,7 +508,7 @@ class TestApplyIfcMaterialChanges(NewFile):
 
     def setup_elements(self) -> None:
         ifc_file = tool.Ifc.get()
-        blue_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Blue Material"))
+        blue_material = next(i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Blue Material")
         blue_style = tool.Material.get_style(blue_material)
 
         # Element type.
@@ -552,9 +552,9 @@ class TestApplyIfcMaterialChanges(NewFile):
         self.setup_test()
         ifc_file = tool.Ifc.get()
         element_type = next(ifc_file.by_type("IfcActuatorType").__iter__())
-        red_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material"))
+        red_material = next(i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material")
         red_style = tool.Material.get_style(red_material)
-        blue_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Blue"))
+        blue_style = next(i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Blue")
 
         ifcopenshell.api.material.assign_material(ifc_file, material=red_material, products=[element_type])
         tool.Material.ensure_material_assigned([element_type], material=red_material)
@@ -576,8 +576,8 @@ class TestApplyIfcMaterialChanges(NewFile):
         self.setup_test()
         ifc_file = tool.Ifc.get()
         element_type = next(ifc_file.by_type("IfcActuatorType").__iter__())
-        red_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material"))
-        green_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Green"))
+        red_material = next(i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material")
+        green_style = next(i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Green")
 
         # Occurrence with a style.
         element_type_obj = tool.Ifc.get_object(element_type)
@@ -601,9 +601,9 @@ class TestApplyIfcMaterialChanges(NewFile):
     def test_assign_material_to_representation_that_has_2_items_and_1_item_has_a_style(self):
         self.setup_test(and_elements=False)
         ifc_file = tool.Ifc.get()
-        red_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material"))
+        red_material = next(i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material")
         red_style = tool.Material.get_style(red_material)
-        green_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Green"))
+        green_style = next(i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Green")
 
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
@@ -664,7 +664,7 @@ class TestApplyIfcMaterialChanges(NewFile):
         self.setup_test(and_elements=True)
         ifc_file = tool.Ifc.get()
         element_type = next(ifc_file.by_type("IfcActuatorType").__iter__())
-        red_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material"))
+        red_material = next(i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material")
         no_style_material = ifcopenshell.api.material.add_material(ifc_file, "No Style")
         obj = bpy.data.objects["Simple"]
         element = tool.Ifc.get_entity(obj)

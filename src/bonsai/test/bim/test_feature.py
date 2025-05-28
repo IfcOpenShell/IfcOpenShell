@@ -1134,7 +1134,7 @@ def the_object_name_should_display_as_mode(name, mode):
 def the_object_name_is_voided_by_void(name, void):
     ifc = tool.Ifc.get()
     element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
-    assert any((rel for rel in element.HasOpenings if rel.RelatedOpeningElement.Name == void)), "No void found"
+    assert any(rel for rel in element.HasOpenings if rel.RelatedOpeningElement.Name == void), "No void found"
 
 
 @then(parsers.parse('the object "{name}" is not voided by "{void}"'))
@@ -1158,7 +1158,7 @@ def the_object_name_is_a_void(name):
     ifc = tool.Ifc.get()
     obj = the_object_name_exists(name)
     element = ifc.by_id(tool.Blender.get_ifc_definition_id(obj))
-    assert any((element.VoidsElements)), "No void was found"
+    assert any(element.VoidsElements), "No void was found"
 
 
 @then(parsers.parse('the object "{name}" is not a void'))
@@ -1282,7 +1282,7 @@ def the_object_name_is_filled_by_filling(name, name2):
 def the_void_name_is_filled_by_filling(name, filling):
     ifc = tool.Ifc.get()
     element = ifc.by_id(tool.Blender.get_ifc_definition_id(the_object_name_exists(name)))
-    assert any((rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings)), "No filling found"
+    assert any(rel.RelatedBuildingElement.Name == filling for rel in element.HasFillings), "No filling found"
 
 
 @then(parsers.parse('the void "{name}" is not filled by "{filling}"'))
@@ -1468,7 +1468,7 @@ def the_object_name_has_a_vertex_at_location(name, location):
     target = Vector([float(co) for co in location.split(",")])
     verts = []
     for v in obj.data.vertices:
-        verts.append((obj.matrix_world @ v.co))
+        verts.append(obj.matrix_world @ v.co)
         if (verts[-1] - target).length < 0.001:
             is_pass = True
     assert is_pass, f"No verts found at {location}: {verts}"

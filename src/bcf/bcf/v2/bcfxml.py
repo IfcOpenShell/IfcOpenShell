@@ -100,7 +100,7 @@ class BcfXml:
             extensions = mdl_extensions.Extensions()
 
             xs = "{http://www.w3.org/2001/XMLSchema}"
-            root = etree.parse(io.BytesIO((self.extension_schema)))
+            root = etree.parse(io.BytesIO(self.extension_schema))
 
             attrs = bcf.agnostic.extensions.get_extensions_attributes(extensions)
             xsd_to_attrs = {v.subattr_xsd_name: k for k, v in attrs.items()}

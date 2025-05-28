@@ -38,7 +38,7 @@ class Dxf2Ifc:
                                 self.file.createIfcFaceOuterBound(
                                     self.file.createIfcPolyLoop(
                                         [
-                                            self.file.createIfcCartesianPoint((face[index].dxf.location))
+                                            self.file.createIfcCartesianPoint(face[index].dxf.location)
                                             for index in range(len(face) - 1)
                                         ]
                                     ),

@@ -116,7 +116,7 @@ class Usecase:
         offset_direction = direction_ratios  # offset direction doesn't change if direction_sense is negative
         extrusion_direction = self.file.createIfcDirection(direction_ratios)
         if self.direction_sense == "NEGATIVE":
-            direction_ratios = tuple((-n for n in direction_ratios))
+            direction_ratios = tuple(-n for n in direction_ratios)
             extrusion_direction = self.file.createIfcDirection(direction_ratios)
 
         perpendicular_offset = self.convert_si_to_unit(self.offset) * abs(1 / cos(self.x_angle))
