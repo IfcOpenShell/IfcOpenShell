@@ -428,7 +428,7 @@ class OAuthReceiver(http.server.BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-type", "text/plain")
         self.end_headers()
-        self.wfile.write("You have now authenticated :) You may now close this browser window.".encode("utf-8"))
+        self.wfile.write(b"You have now authenticated :) You may now close this browser window.")
 
 
 class Client:
