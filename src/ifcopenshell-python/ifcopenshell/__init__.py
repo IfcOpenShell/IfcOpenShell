@@ -166,7 +166,7 @@ def open(
         f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()))
         if f:
             return file(f)
-        raise IOError(f"Failed to parse .ifcXML file from {path}")
+        raise OSError(f"Failed to parse .ifcXML file from {path}")
     if format == ".ifcZIP":
         with tempfile.TemporaryDirectory() as unzipped_path:
             with zipfile.ZipFile(path) as zf:
