@@ -37,7 +37,7 @@ from bonsai.bim.module.drawing.data import DecoratorData, DrawingsData
 from bonsai.bim.module.drawing.shaders import add_verts_sequence, add_offsets
 from bonsai.bim.module.drawing.helper import format_distance
 from timeit import default_timer as timer
-from functools import lru_cache
+from functools import cache
 from typing import Optional, Iterator, Type, Union
 
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
@@ -495,7 +495,7 @@ class BaseDecorator:
 
         self.draw_label(context, text=text, line_no=line_number_start, multiline=True, **draw_label_kwargs)
 
-    @lru_cache(maxsize=None)
+    @cache
     def format_value(self, context, value, custom_unit=None):
         drawing_pset_data = DrawingsData.data["active_drawing_pset_data"]
         precision = drawing_pset_data.get("MetricPrecision", None)

@@ -19,7 +19,7 @@
 import datetime
 import ifcopenshell.util.date
 from math import floor
-from functools import lru_cache
+from functools import cache
 from typing import Union, Literal, Optional, Iterator
 
 
@@ -170,7 +170,7 @@ def get_recent_working_day(start, duration_type: DURATION_TYPE, calendar: ifcope
     return start
 
 
-@lru_cache(maxsize=None)
+@cache
 def is_working_day(day, calendar: ifcopenshell.entity_instance) -> bool:
     is_working_day = False
     for work_time in calendar.WorkingTimes or []:
@@ -186,7 +186,7 @@ def is_working_day(day, calendar: ifcopenshell.entity_instance) -> bool:
     return is_working_day
 
 
-@lru_cache(maxsize=None)
+@cache
 def is_calendar_applicable(day, calendar: ifcopenshell.entity_instance) -> bool:
     if not calendar or not calendar.WorkingTimes:
         return False
