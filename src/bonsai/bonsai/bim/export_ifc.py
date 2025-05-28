@@ -76,11 +76,7 @@ class IfcExporter:
     def set_header(self):
         self.file.wrapped_data.header.file_name.name = os.path.basename(self.ifc_export_settings.output_file)
         self.file.wrapped_data.header.file_name.time_stamp = (
-            datetime.datetime.utcnow()
-            .replace(tzinfo=datetime.timezone.utc)
-            .astimezone()
-            .replace(microsecond=0)
-            .isoformat()
+            datetime.datetime.utcnow().replace(tzinfo=datetime.UTC).astimezone().replace(microsecond=0).isoformat()
         )
         self.file.wrapped_data.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
         self.file.wrapped_data.header.file_name.originating_system = "{} {}".format(
