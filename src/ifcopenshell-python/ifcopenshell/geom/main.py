@@ -365,7 +365,7 @@ class tree(ifcopenshell_wrapper.tree):
     def select(
         self,
         value: Union[
-            entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float], "TopoDS.TopoDS_Shape"
+            entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float], TopoDS.TopoDS_Shape
         ],
         **kwargs,
     ) -> list[entity_instance]:

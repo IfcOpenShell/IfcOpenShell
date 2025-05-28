@@ -124,7 +124,7 @@ class PsetTemplate(bonsai.core.tool.PsetTemplate):
     PSET_TEMPLATE_LOCATION = Literal["Global Pset Template", "Project Pset Template"]
 
     @classmethod
-    def get_pset_template_files(cls) -> list[tuple[Path, "PSET_TEMPLATE_LOCATION"]]:
+    def get_pset_template_files(cls) -> list[tuple[Path, PSET_TEMPLATE_LOCATION]]:
         """
         :return: List of pset template files. Each template file is represented
             by a tuple of the filepath and pset template location source.

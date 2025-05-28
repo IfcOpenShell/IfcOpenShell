@@ -153,7 +153,7 @@ class TopicHandler:
         topic_type: str = "",
         topic_status: str = "",
         xml_handler: Optional[AbstractXmlParserSerializer] = None,
-    ) -> "TopicHandler":
+    ) -> TopicHandler:
         """
         Create a new BCF topic.
 

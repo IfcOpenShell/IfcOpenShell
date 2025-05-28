@@ -32,7 +32,7 @@ class BcfXml:
         self._extension_schema: Optional[bytes] = None
         self._zip_file = self._load_zip_file()
 
-    def __enter__(self) -> "BcfXml":
+    def __enter__(self) -> BcfXml:
         return self
 
     def __exit__(self, *args: Any) -> None:
@@ -149,7 +149,7 @@ class BcfXml:
         return topics
 
     @classmethod
-    def load(cls, filename: Path, xml_handler: Optional[AbstractXmlParserSerializer] = None) -> Optional["BcfXml"]:
+    def load(cls, filename: Path, xml_handler: Optional[AbstractXmlParserSerializer] = None) -> Optional[BcfXml]:
         """
         Create a BcfXml object from a file.
 
@@ -173,7 +173,7 @@ class BcfXml:
         cls,
         project_name: Optional[str] = None,
         xml_handler: Optional[AbstractXmlParserSerializer] = None,
-    ) -> "BcfXml":
+    ) -> BcfXml:
         """
         Create a new BcfXml object.
 
@@ -262,7 +262,7 @@ class BcfXml:
         )
 
     # region Deprecated methods
-    def new_project(self) -> "BcfXml":
+    def new_project(self) -> BcfXml:
         """Deprecated method."""
         warnings.warn("new_project is deprecated, use create_new instead.", DeprecationWarning)
         return self.create_new()

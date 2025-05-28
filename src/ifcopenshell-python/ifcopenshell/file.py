@@ -714,7 +714,7 @@ class file:
                 except:
                     pass  # Header is invalid
 
-    def write(self, path: "os.PathLike | str", format: Optional[str] = None, zipped: bool = False) -> None:
+    def write(self, path: os.PathLike | str, format: Optional[str] = None, zipped: bool = False) -> None:
         """Write ifc model to file.
 
         :param format: Force use of a specific format. Guessed from file name
@@ -765,11 +765,11 @@ class file:
         return
 
     @staticmethod
-    def from_string(s: str) -> "file":
+    def from_string(s: str) -> file:
         return file(ifcopenshell_wrapper.read(s))
 
     @staticmethod
-    def from_pointer(v) -> "file":
+    def from_pointer(v) -> file:
         return file_dict.get(v)()
 
     def to_string(self) -> str:

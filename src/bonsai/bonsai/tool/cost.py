@@ -40,7 +40,7 @@ class Cost(bonsai.core.tool.Cost):
     RELATED_OBJECT_TYPE = Literal["PRODUCT", "PROCESS", "RESOURCE"]
 
     @classmethod
-    def get_cost_props(cls) -> "BIMCostProperties":
+    def get_cost_props(cls) -> BIMCostProperties:
         return bpy.context.scene.BIMCostProperties
 
     @classmethod

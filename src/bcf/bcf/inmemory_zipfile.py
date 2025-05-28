@@ -48,7 +48,7 @@ class InMemoryZipFile:
     def data(self) -> bytes:
         return self.in_memory_data.getvalue()
 
-    def __enter__(self) -> "InMemoryZipFile":
+    def __enter__(self) -> InMemoryZipFile:
         return self
 
     def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> None:

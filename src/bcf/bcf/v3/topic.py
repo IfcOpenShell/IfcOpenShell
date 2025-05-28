@@ -92,12 +92,12 @@ class TopicHandler:
         self._bim_snippet = value
 
     @property
-    def viewpoints(self) -> dict[str, "VisualizationInfoHandler"]:
+    def viewpoints(self) -> dict[str, VisualizationInfoHandler]:
         if self._viewpoints is None:
             self._viewpoints = self._load_viewpoints()
         return self._viewpoints
 
-    def _load_viewpoints(self) -> dict[str, "VisualizationInfoHandler"]:
+    def _load_viewpoints(self) -> dict[str, VisualizationInfoHandler]:
         if self._topic_dir and self.topic.viewpoints and (viewpoints := self.topic.viewpoints.view_point):
             return VisualizationInfoHandler.from_topic_viewpoints(self._topic_dir, viewpoints)
         return {}
@@ -140,7 +140,7 @@ class TopicHandler:
         topic_type: str = "",
         topic_status: str = "",
         xml_handler: Optional[AbstractXmlParserSerializer] = None,
-    ) -> "TopicHandler":
+    ) -> TopicHandler:
         """
         Create a new BCF topic.
 
