@@ -139,7 +139,7 @@ def check_if_element_exists_by_types_with_attribute_name(ifc_types, attribute_na
     assert not errors, "Errors occured:\n{}".format("\n".join(errors))
 
 
-class TableModel(object):
+class TableModel:
     """This class represents a table of data."""
 
     def __init__(self):

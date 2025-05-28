@@ -293,7 +293,7 @@ class IFC_PT_write_file_panel(bpy.types.Panel):
 CLASSES = [IFC_Sv_UpdateCurrent, IFC_Sv_write_file, IFC_PT_write_file_panel]
 
 
-class SvExCategoryProvider(object):
+class SvExCategoryProvider:
     def __init__(self, identifier, menu):
         self.identifier = identifier
         self.menu = menu
