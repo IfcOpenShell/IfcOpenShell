@@ -577,7 +577,7 @@ class BCFDB(MyDB):
                 project_id=str(project_id),
                 topic_id=str(topic_id),
                 viewpoint_id=str(comment.viewpoint_guid),
-                reply_to_comment_id=str("comment.reply_to_comment_guid"),
+                reply_to_comment_id="comment.reply_to_comment_guid",
                 comment_id=str(this_comment_guid),
                 creation_date=self.timestamp(),
                 comment=comment.comment,
