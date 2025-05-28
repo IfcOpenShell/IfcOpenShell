@@ -23,6 +23,8 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install 'black>=24.10.0'
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv tool install ruff
 
       # black doesn't catch all syntax errors, so we check them explicitly.
       - name: Check syntax errors
@@ -35,9 +37,15 @@ jobs:
         continue-on-error: true
 
       - name: Black formatter
-        id: linting
+        id: black
         run: |
           python3 -m black --diff --check .
+        continue-on-error: true
+
+      - name: Ruff check
+        id: ruff
+        run: |
+          uvx ruff check
         continue-on-error: true
 
       - name: Final check
@@ -46,7 +54,10 @@ jobs:
           if [ "${{ steps.syntax-errors.outcome }}" != "success" ]; then
             echo "::error::Syntax errors check failed, see 'syntax-errors' step for the details." && ERROR=1
           fi
-          if [ "${{ steps.linting.outcome }}" != "success" ]; then
-            echo "::error::Black formatting check failed, see 'linting' step for the details." && ERROR=1
+          if [ "${{ steps.black.outcome }}" != "success" ]; then
+            echo "::error::Black formatting check failed, see 'black' step for the details." && ERROR=1
+          fi
+          if [ "${{ steps.ruff.outcome }}" != "success" ]; then
+            echo "::error::Ruff check failed, see 'ruff' step for the details." && ERROR=1
           fi
           exit $ERROR

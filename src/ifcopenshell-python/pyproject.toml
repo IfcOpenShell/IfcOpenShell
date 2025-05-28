@@ -36,3 +36,6 @@ include = ["ifcopenshell*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.*"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"

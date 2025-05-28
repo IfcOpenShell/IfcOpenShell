@@ -38,3 +38,46 @@ disableBytesTypePromotions = true
 reportUnnecessaryTypeIgnoreComment = true
 # Just to add a quick insert of `# pyright: ignore[xxx]` comments in Pylance.
 enableTypeIgnoreComments = false
+
+# Define here general ruff settings,
+# then they will be inherited projects .toml files.
+# This allows using assuming different Python version for different projects.
+[tool.ruff]
+exclude = [
+    # Submodules.
+    "src/ifcopenshell-python/ifcopenshell/express",
+    "src/ifcopenshell-python/ifcopenshell/mvd",
+    "src/ifcopenshell-python/ifcopenshell/simple_spf",
+    "src/svgfill",
+    #
+    # Unformatted.
+    "src/exterior-shell-extractor",
+    # Incompatible with linter.
+    "src/ifc2ca/templates",
+]
+[tool.ruff.lint]
+select = [
+    # Default Ruff rules.
+    # "E4",  # imports
+    # "E7",  # statements
+    "E9",  # io errors
+    # "F",  # pyflakes
+    #
+    "FA",  # future annotations
+    "UP",  # pyupgrade
+]
+ignore = [
+    "FA100", # Conflicts with Blender using annotations for props definitions.
+    # Maybe will enable later:
+    "UP006", # deprecated symbols
+    "UP007", # Optional to X | Y
+    "UP015", # Unnecessary mode argument
+    "UP028", # yield for -> yield from
+    "UP030", # implicit references for positional format fields
+    "UP031", # Replace % with .format
+    "UP032", # Replace .format with f-string
+    "UP035", # List -> list
+
+    # Deprecated Ruff rules.
+    "UP038", # Use X | Y in isinstance
+]
