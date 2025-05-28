@@ -1,3 +1,4 @@
+from __future__ import annotations
 from fastapi import Depends, HTTPException, status, Security
 from fastapi.security import OAuth2AuthorizationCodeBearer, SecurityScopes
 

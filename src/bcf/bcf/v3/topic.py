@@ -1,5 +1,6 @@
 """BCF XML V3 Topic handler."""
 
+from __future__ import annotations
 import datetime
 import uuid
 import zipfile
