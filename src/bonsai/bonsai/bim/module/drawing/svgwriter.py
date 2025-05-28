@@ -53,7 +53,7 @@ class External(svgwrite.container.Group):
             if elem.tag.startswith(ns):
                 elem.tag = elem.tag[nsl:]
 
-        super(External, self).__init__(**extra)
+        super().__init__(**extra)
 
     def get_xml(self):
         return self.xml

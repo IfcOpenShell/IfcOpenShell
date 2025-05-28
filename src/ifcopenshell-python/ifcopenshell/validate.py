@@ -75,7 +75,7 @@ attribute_types = Union[simple_type, named_type, enumeration_type, select_type, 
 
 class ValidationError(Exception):
     def __init__(self, message, attribute=None):
-        super(ValidationError, self).__init__(message)
+        super().__init__(message)
         self.attribute = attribute
 
 

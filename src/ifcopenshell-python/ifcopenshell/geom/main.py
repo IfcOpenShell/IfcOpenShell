@@ -141,7 +141,7 @@ class settings_mixin:
     """
 
     def __init__(self, **kwargs):
-        super(settings_mixin, self).__init__()
+        super().__init__()
         for k, v in kwargs.items():
             self.set(getattr(self, k), v)
 

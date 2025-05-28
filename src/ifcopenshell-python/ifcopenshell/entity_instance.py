@@ -152,8 +152,8 @@ class entity_instance:
     def __init__(self, e, file=None):
         if isinstance(e, tuple):
             e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
-        super(entity_instance, self).__setattr__("wrapped_data", e)
-        super(entity_instance, self).__setattr__("method_list", None)
+        super().__setattr__("wrapped_data", e)
+        super().__setattr__("method_list", None)
 
         # Make sure the file is not gc'ed while we have live instances
         self.wrapped_data.file = file
@@ -339,7 +339,7 @@ class entity_instance:
             self.wrapped_data.file.transaction.store_edit(self, idx, value)
 
         if self.method_list is None:
-            super(entity_instance, self).__setattr__("method_list", _method_dict[self.is_a(True)])
+            super().__setattr__("method_list", _method_dict[self.is_a(True)])
 
         method = self.method_list[idx]
 

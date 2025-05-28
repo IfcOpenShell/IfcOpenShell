@@ -38,7 +38,7 @@ def run():
 
 class GuiWidgetBimTester(QtWidgets.QWidget):
     def __init__(self, args=None):
-        super(GuiWidgetBimTester, self).__init__()
+        super().__init__()
 
         if args is not None and args != {}:
             self.args = args
