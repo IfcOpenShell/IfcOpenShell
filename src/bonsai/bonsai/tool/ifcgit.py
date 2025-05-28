@@ -564,7 +564,7 @@ class IfcGit:
         """Command to install Git on Windows using winget"""
         command = ["winget", "install", "--id", "Git.Git", "-e", "--source", "winget"]
         try:
-            subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.check_output(command)
         except subprocess.CalledProcessError as e:
             operator.report({"ERROR"}, f"Called Process Error occurred: {e}")
         except FileNotFoundError:
@@ -577,21 +577,20 @@ class IfcGit:
         ifc_str = ifc_file.to_string()
 
         # Avoid `text=True` as it's causing issues with colorful output.
-        result = subprocess.run(
-            ("git", "diff", "--no-index", "--color=always", "--", path, "-"),
-            input=ifc_str.encode(),
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        if result.returncode == 0:
-            operator.report({"INFO"}, "No changes since last save.")
-            return
-        elif result.returncode == 1:
-            print(result.stdout.decode())
-            operator.report({"INFO"}, "See system console for git diff output.")
-            return
-        print(result)
-        raise Exception("Error running git diff, see system console.")
+        try:
+            subprocess.check_output(
+                ("git", "diff", "--no-index", "--color=always", "--", path, "-"),
+                input=ifc_str.encode(),
+            )
+        except subprocess.CalledProcessError as e:
+            if e.returncode == 1:
+                print(e.stdout.decode())
+                operator.report({"INFO"}, "See system console for git diff output.")
+                return
+            print(e.output)
+            raise Exception("Error running git diff, see system console.")
+
+        operator.report({"INFO"}, "No changes since last save.")
 
 
 class IfcGitRepo:
