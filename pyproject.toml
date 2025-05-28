@@ -22,7 +22,7 @@ include = '''
         |ifcopenshell-python
         |ifcsverchok
         |opencdeserver
-    )/.*.py$
+    )/.*.pyi?$
 '''
 extend-exclude = '''
     src/ifcopenshell-python/ifcopenshell/express/*
