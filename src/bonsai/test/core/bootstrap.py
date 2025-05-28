@@ -249,8 +249,16 @@ def flatten(iterable):
             yield item
 
 
-Call = TypedDict("Call", {"name": str, "args": tuple[Any, ...], "kwargs": dict[str, Any]})
-Prediction = TypedDict("Prediction", {"type": Literal["SHOULD_BE_CALLED"], "number": Optional[int], "call": Call})
+class Call(TypedDict):
+    name: str
+    args: tuple[Any, ...]
+    kwargs: dict[str, Any]
+
+
+class Prediction(TypedDict):
+    type: Literal["SHOULD_BE_CALLED"]
+    number: Optional[int]
+    call: Call
 
 
 class Prophecy:

@@ -30,16 +30,21 @@ import bonsai.tool as tool
 from bonsai.bim.module.structural.shader import DecorationShader
 from typing import Literal, TypedDict, Iterable
 
-MemberInfo = TypedDict(
-    "MemberInfo",
-    {"member": ifcopenshell.entity_instance, "activities": list[tuple[ifcopenshell.entity_instance, float]]},
-)
+
+class MemberInfo(TypedDict):
+    member: ifcopenshell.entity_instance
+    activities: list[tuple[ifcopenshell.entity_instance, float]]
+
 
 LoadConfigItem = TypedDict(
     "LoadConfigItem", {"pos": float, "descr": Literal["start", "end", "middle"], "load values": np.ndarray}
 )
 
-DiscreteConfigItem = TypedDict("DiscreteConfigItem", {"pos": float, "values": list[float]})
+
+class DiscreteConfigItem(TypedDict):
+    pos: float
+    values: list[float]
+
 
 ParsedLoad = TypedDict(
     "ParsedLoad",
@@ -51,9 +56,14 @@ ParsedLoad = TypedDict(
         "point load configuration": list[list[DiscreteConfigItem]],
     },
 )
-LoadByDirection = TypedDict(
-    "LoadByDirection", {"constant": float, "quadratic": float, "sinus": float, "polyline": list[list[float]]}
-)
+
+
+class LoadByDirection(TypedDict):
+    constant: float
+    quadratic: float
+    sinus: float
+    polyline: list[list[float]]
+
 
 ProcessedLoad = TypedDict(
     "ProcessedLoad",
