@@ -61,7 +61,7 @@ class PsetQto:
                         element.TemplateType = "QTO_TYPEDRIVENOVERRIDE"
         self.templates = templates
 
-    @lru_cache()
+    @lru_cache
     def get_applicable(
         self,
         ifc_class="",
@@ -89,7 +89,7 @@ class PsetQto:
                     result.append(prop_set)
         return result
 
-    @lru_cache()
+    @lru_cache
     def get_applicable_names(
         self,
         ifc_class: str,
@@ -164,7 +164,7 @@ class PsetQto:
                         return True
         return False
 
-    @lru_cache()
+    @lru_cache
     def get_by_name(self, name: str) -> Optional[entity_instance]:
         for template in self.templates:
             for prop_set in template.by_type("IfcPropertySetTemplate"):
