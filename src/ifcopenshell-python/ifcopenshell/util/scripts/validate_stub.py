@@ -171,6 +171,17 @@ def get_names_tree_lines(tree: ast.Module) -> list[str]:
             node_name = get_function_node_name(node)
             assert isinstance(node_name, str)
 
+        elif isinstance(node, ast.Assign):
+            targets = node.targets
+            if not len(targets) == 1 or not isinstance(target := targets[0], ast.Name):
+                continue
+            node_name = target.id
+
+        elif isinstance(node, ast.AnnAssign):
+            target = node.target
+            assert isinstance(target, ast.Name)
+            node_name = target.id
+
         if node_name is not None:
             names_tree[node_name] = subnames
 
