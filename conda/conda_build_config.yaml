@@ -1,3 +1,6 @@
+python:
+  - 3.12
+
 occt:
   - 7.8.1
 
@@ -28,7 +31,7 @@ hdf5:
 libboost_devel:
 - '1.86'
 libxml2:
-- '2'
+- 2.13
 mpfr:
 - '4'
 gmp:
