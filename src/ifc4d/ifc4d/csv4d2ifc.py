@@ -20,6 +20,7 @@
 import csv
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.util.date
 import locale
 import re
 

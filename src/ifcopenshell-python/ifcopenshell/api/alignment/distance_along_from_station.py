@@ -17,9 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
-import ifcopenshell.api.alignment
-import ifcopenshell.api.nest
-import ifcopenshell.guid
+import ifcopenshell.util.element
 from ifcopenshell import entity_instance
 
 

@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api.georeference
+import ifcopenshell.util.geolocation
 from ifcpatch.recipes import OffsetObjectPlacements, SetWorldCoordinateSystem
 import typing
 

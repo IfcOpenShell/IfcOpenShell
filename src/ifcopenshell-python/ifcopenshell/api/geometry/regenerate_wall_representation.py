@@ -19,11 +19,13 @@
 import json
 import numpy as np
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.geometry
-import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
 import ifcopenshell.util.shape_builder
+import ifcopenshell.util.unit
 from collections import namedtuple
 from math import sin, cos
 from typing import Optional

@@ -22,9 +22,9 @@ import numpy as np
 from math import sin
 from mathutils import Vector
 import ifcopenshell
-import ifcopenshell.api
-import ifcopenshell.util.attribute
 import ifcopenshell.util.placement
+import ifcopenshell.util.representation
+import ifcopenshell.util.unit
 import ifcopenshell.util.unit as ifcunit
 import bonsai.tool as tool
 from bonsai.bim.module.structural.shader import DecorationShader

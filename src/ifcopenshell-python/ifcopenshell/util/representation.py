@@ -19,8 +19,9 @@
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
-import ifcopenshell.util.shape
+import ifcopenshell.util.representation
 import ifcopenshell.util.placement
+import ifcopenshell.util.shape
 from typing import Optional, Union, TypedDict, Literal, Generator, Sequence
 
 

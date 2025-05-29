@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.guid
+import ifcopenshell.util.element
 
 
 class Patcher:

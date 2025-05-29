@@ -17,7 +17,9 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
+import ifcopenshell.api.nest
 from ifcopenshell import entity_instance
 from typing import Sequence
 

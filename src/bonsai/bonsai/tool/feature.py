@@ -21,7 +21,9 @@ import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
+import bonsai.core.geometry
 import ifcopenshell
+import ifcopenshell.util.representation
 from typing import Iterable, TYPE_CHECKING
 
 if TYPE_CHECKING:

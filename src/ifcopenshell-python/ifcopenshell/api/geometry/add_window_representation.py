@@ -19,6 +19,7 @@
 from __future__ import annotations
 import numpy as np
 import dataclasses
+import ifcopenshell.api.geometry
 import ifcopenshell.util.unit
 from itertools import chain
 from ifcopenshell.util.shape_builder import ShapeBuilder, V

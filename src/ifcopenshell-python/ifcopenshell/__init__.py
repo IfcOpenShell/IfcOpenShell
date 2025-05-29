@@ -65,7 +65,7 @@ if TYPE_CHECKING:
     import ifcopenshell.express.schema_class
 
 
-if hasattr(os, "uname"):
+if sys.platform != "win32":
     platform_system = os.uname()[0].lower()
 else:
     platform_system = "windows"

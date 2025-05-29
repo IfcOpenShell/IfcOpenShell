@@ -19,6 +19,8 @@
 import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
+import ifcopenshell.api.pset
+import ifcopenshell.util.stationing
 import ifcopenshell.guid
 from ifcopenshell import entity_instance
 

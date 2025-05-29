@@ -29,7 +29,7 @@ import ifcopenshell.util.cost
 import ifcopenshell.util.date
 import ifcopenshell.util.unit
 from collections import Counter
-from typing import Union, Optional, Any, TypedDict, NotRequired
+from typing import Union, Optional, Any, TypedDict
 
 
 class CostItem(TypedDict):

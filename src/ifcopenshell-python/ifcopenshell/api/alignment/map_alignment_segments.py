@@ -49,8 +49,6 @@ def map_alignment_segments(
     elif alignment.is_a("IfcAlignmentCant") and not composite_curve.is_a("IfcSegmentedReferenceCurve"):
         raise TypeError(f"Expected to see IfcSegmentedReferenceCurve, instead received '{composite_curve.is_a()}'.")
 
-    settings = ifcopenshell.geom.settings()
-
     composite_curve.SelfIntersect = False
 
     for rel_nests in alignment.IsNestedBy:
@@ -64,6 +62,8 @@ def map_alignment_segments(
                     mapped_segments = ifcopenshell.api.alignment.map_alignment_cant_segment(
                         file, layout, alignment.RailHeadDistance
                     )
+                else:
+                    assert False
                 for mapped_segment in mapped_segments:
                     if mapped_segment:
                         ifcopenshell.api.alignment.add_segment_to_curve(file, mapped_segment, composite_curve)

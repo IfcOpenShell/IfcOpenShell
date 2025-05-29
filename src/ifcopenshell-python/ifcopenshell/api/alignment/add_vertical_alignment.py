@@ -21,6 +21,7 @@ import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
 import ifcopenshell.api.geometry
 import ifcopenshell.api.nest
+import ifcopenshell.api.root
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation

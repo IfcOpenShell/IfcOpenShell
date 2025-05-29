@@ -258,6 +258,7 @@ class Cityjson2ifc:
             # TODO but maybe there is a better method.
             file = self.properties["file_destination"] + lod + self.properties["file_extension"]
             self.IFC_model.write(file)
+            IFC_copied_model: ifcopenshell.file
             IFC_copied_model = ifcopenshell.open(file)
             IFC_copied_model_sub_contexts = IFC_copied_model.by_type("IfcGeometricRepresentationSubContext")
             for sub_context in IFC_copied_model_sub_contexts:

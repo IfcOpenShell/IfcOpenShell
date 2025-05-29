@@ -17,11 +17,10 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell
+import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.api.alignment
 from ifcopenshell import entity_instance
-from ifcopenshell import ifcopenshell_wrapper
-import math
-from typing import Sequence
 
 
 def create_segment_representations(
