@@ -81,7 +81,7 @@ def get_names_tree_lines(tree: ast.Module) -> list[str]:
         if isinstance(node, ast.ClassDef):
             # Skip `object_` as it's just a reference to `object`,
             # which is implied by default.
-            bases = [b.id for b in node.bases if isinstance(b, ast.Name) and b.id != "_object"]
+            bases = [b.id for b in node.bases if isinstance(b, ast.Name) and b.id not in ("_object", "object")]
             bases_str = f"({', '.join(bases)})" if bases else ""
             node_name = f"class {node.name}{bases_str}:"
 
