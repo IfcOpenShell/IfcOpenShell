@@ -102,63 +102,73 @@ def get_names_tree_lines(tree: ast.Module) -> list[str]:
                         continue
                     subname_ = target.id
 
-                    if subname_.startswith("_"):
+                    if subname_.startswith(("_", "thisown")):
                         continue
 
                     value = subnode.value
-                    # Catching wrappers like:
-                    # - `matrix = property(matrix_getter)`
-                    # - `matrix = property(matrix_getter, matrix_setter)`
-                    # - `operation_str = staticmethod(operation_str)`
-                    if isinstance(value, ast.Call):
+                    if not isinstance(value, ast.Call):
+                        subname = subname_
+                    else:
+                        # Catching wrappers like:
+                        # - `matrix = property(matrix_getter)`
+                        # - `matrix = property(matrix_getter, matrix_setter)`
+                        # - `operation_str = staticmethod(operation_str)`
                         func = value.func
                         if not isinstance(func, ast.Name) or ((func_id := func.id) not in ("property", "staticmethod")):
                             continue
                         args = [arg.id for arg in value.args if isinstance(arg, ast.Name)]
                         len_args = len(args)
-                        assert len_args in (1, 2)
+                        if len_args in (1, 2):
 
-                        def find_method_by_name(name: str) -> Union[str, None]:
-                            function_def = f"def {name}("
-                            return next(
-                                (
-                                    func_
-                                    for func_ in subnames
-                                    if isinstance(func_, str) and func_.startswith(function_def)
-                                ),
-                                None,
-                            )
+                            def find_method_by_name(name: str) -> Union[str, None]:
+                                function_def = f"def {name}("
+                                return next(
+                                    (
+                                        func_
+                                        for func_ in subnames
+                                        if isinstance(func_, str) and func_.startswith(function_def)
+                                    ),
+                                    None,
+                                )
 
-                        # Use `set` for cases like `description = property(description, description)`.
-                        wrapped_function = None
-                        for arg in set(args):
-                            assert (wrapped_function := find_method_by_name(arg))
-                            subnames.remove(wrapped_function)
+                            # Use `set` for cases like `description = property(description, description)`.
+                            wrapped_function = None
+                            for arg in set(args):
+                                assert (wrapped_function := find_method_by_name(arg))
+                                subnames.remove(wrapped_function)
 
-                        # TODO: sort it out in wrapper.py
-                        # There's one annoying case in Element.product
-                        # when property is overriding existing function, without using it.
-                        # We should probably just exclude that function from the wrapper.
-                        overridden_name = find_method_by_name(subname_)
-                        if overridden_name:
-                            subnames.remove(overridden_name)
+                            # TODO: sort it out in wrapper.py
+                            # There's one annoying case in Element.product
+                            # when property is overriding existing function, without using it.
+                            # We should probably just exclude that function from the wrapper.
+                            overridden_name = find_method_by_name(subname_)
+                            if overridden_name:
+                                subnames.remove(overridden_name)
 
-                        if len_args == 2:
-                            # Has both getter and setter, can be defined as a simple attribute.
-                            subname = subname_
-                        elif len_args == 1:
-                            if func_id == "property":
-                                # Has just getter, read-only, need to define it using a wrapper.
-                                subname = (f"@{func_id}", f"def {subname_}(self): ...")
-                            elif func_id == "staticmethod":
-                                assert wrapped_function is not None
-                                subname = (f"@{func_id}", f"def {subname_}({wrapped_function.split('(')[1]}")
+                            if len_args == 2:
+                                # Has both getter and setter, can be defined as a simple attribute.
+                                subname = subname_
+                            elif len_args == 1:
+                                if func_id == "property":
+                                    # Has just getter, read-only, need to define it using a wrapper.
+                                    subname = (f"@{func_id}", f"def {subname_}(self): ...")
+                                elif func_id == "staticmethod":
+                                    assert wrapped_function is not None
+                                    subname = (f"@{func_id}", f"def {subname_}({wrapped_function.split('(')[1]}")
+                                else:
+                                    assert_never(func_id)
                             else:
-                                assert_never(func_id)
+                                assert_never(len_args)
                         else:
-                            assert_never(len_args)
-                    else:
-                        subname = subname_
+                            attr_args = [
+                                arg
+                                for arg in value.args
+                                if isinstance(arg, ast.Attribute)
+                                and isinstance(arg.value, ast.Name)
+                                and arg.value.id == "_ifcopenshell_wrapper"
+                            ]
+                            assert len(attr_args) == 2
+                            subname = subname_
 
                 if subname is not None:
                     subnames.add(subname)
@@ -226,6 +236,7 @@ def main() -> None:
         fromfile="stub.pyi classes",
         tofile="wrapper.py classes",
         lineterm="",
+        n=10,
     )
     diff = list(diff)
 
