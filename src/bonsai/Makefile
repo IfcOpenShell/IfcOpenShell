@@ -201,8 +201,7 @@ endif
 	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
 
 	# Provides IFCJSON functionality
-	# TODO: replace with main repo if https://github.com/IFCJSON-Team/IFC2JSON_python/pull/3 is merged.
-	cd build && wget -O ifc2json.zip https://github.com/Moult/IFC2JSON_python/archive/refs/heads/feature-ios-v0.8.0.zip
+	cd build && wget -O ifc2json.zip https://github.com/IFCJSON-Team/IFC2JSON_python/archive/refs/heads/master.zip
 	cd build && unzip ifc2json.zip && rm ifc2json.zip
 	# IFCJSON doesn't have pyproject.toml, so we use python command.
 	cd build && . env/$(VENV_ACTIVATE) && cd IFC2JSON_python-*/file_converters && \
