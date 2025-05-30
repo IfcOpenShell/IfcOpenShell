@@ -94,6 +94,8 @@ class Patcher:
             entities will be separated into multiple rows. This means the ifc_id
             is no longer a unique primary key. If False, lists will be stored as
             JSON.
+        :param should_get_inverses: if True, a list of entity inverses ids will be stored
+            in a separate column as a json string.
         :param should_get_psets: if True, a separate psets table will be created to
             make it easy to query properties. This is in addition to regular IFC
             tables like IfcPropertySet.
