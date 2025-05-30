@@ -25,6 +25,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+advanced = [
+  "networkx",
+]
 dev = [
   "pytest",
   "tabulate",
