@@ -25,7 +25,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest"]
+dev = [
+  "pytest",
+  "tabulate",
+]
 
 [project.urls]
 "Homepage" = "http://ifcopenshell.org"
