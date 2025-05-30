@@ -350,6 +350,11 @@ def load_post(scene):
     aggregate_props = tool.Aggregate.get_aggregate_props()
     nest_props = tool.Nest.get_nest_props()
     model_props = tool.Model.get_model_props()
+    GeoreferenceDecorator.uninstall()
+    AggregateDecorator.uninstall()
+    NestDecorator.uninstall()
+    WallAxisDecorator.uninstall()
+    SlabDirectionDecorator.uninstall()
     if georeference_props.should_visualise:
         GeoreferenceDecorator.install(bpy.context)
     if aggregate_props.aggregate_decorator:
