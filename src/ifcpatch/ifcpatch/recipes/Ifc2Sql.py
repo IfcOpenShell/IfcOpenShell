@@ -519,6 +519,20 @@ class Patcher:
         )
 
     def get_permutations(self, lst: list[Any], indexes: list[int]) -> list[Any]:
+        """
+        Original row (`lst`):
+        ```
+        ifc_id, x, (a, b), (c,d)
+        ```
+
+        Resulting permutations:
+        ```
+        ifc_id, x, a, c
+        ifc_id, x, a, d
+        ifc_id, x, b, c
+        ifc_id, x, b, d
+        ```
+        """
         nested_lists = [lst[i] for i in indexes]
 
         # Generate the Cartesian product of the nested lists
