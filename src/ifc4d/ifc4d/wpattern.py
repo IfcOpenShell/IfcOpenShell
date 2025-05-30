@@ -6,10 +6,13 @@ for each day as a key there is a list of working times with the format
 
 """
 
+import sys
 import re
 from datetime import time, datetime
 from typing import Any
 from ifc4d.common import WorkSlot
+
+ZIP_STRICT = {} if sys.version_info < (3, 10) else {"strict": True}
 
 
 class AstaCalendarWorkPattern:
@@ -120,7 +123,7 @@ class AstaCalendarWorkPattern:
         self.values = self.get_values(string)
         self.dict_wp: list[WorkSlot] = []
 
-        for value, day_name in zip(self.values[1:], self.day_names, strict=True):
+        for value, day_name in zip(self.values[1:], self.day_names, **ZIP_STRICT):
             splt_data = value.strip().split(",")
             workhours: list[dict[str, Any]] = []
             if len(splt_data) >= 7:
