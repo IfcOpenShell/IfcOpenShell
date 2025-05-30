@@ -766,7 +766,7 @@ def _ParabolicArc_100_0_10_0__1_0__0_5_1_Meter(file):
 
 
 def test_map_alignment_vertical_segment():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    file = ifcopenshell.file(schema="IFC4X3")
     _CircularArc_100_0_10_0_0_0_0_5_1_Meter(file)
     _CircularArc_100_0_10_0_0_0__0_5_1_Meter(file)
     _CircularArc_100_0_10_0_0_5_0_0_1_Meter(file)

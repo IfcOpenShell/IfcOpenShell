@@ -2032,7 +2032,7 @@ def _SineCurve_100_0__inf__300_1_Meter(file):
 
 
 def test_map_alignment_horizontal_segment():
-    file = ifcopenshell.file(schema="IFC4X3_ADD2")
+    file = ifcopenshell.file(schema="IFC4X3")
     _BlossCurve_100_0_300_1000_1_Meter(file)
     _BlossCurve_100_0__300__1000_1_Meter(file)
     _BlossCurve_100_0_300_inf_1_Meter(file)
