@@ -559,6 +559,7 @@ if __name__ == "__main__":
         )
     elif getattr(args, "import"):
         ifc_csv = IfcCsv()
+        ifc_file: ifcopenshell.file
         ifc_file = ifcopenshell.open(args.ifc)
         ifc_csv.Import(
             ifc_file,

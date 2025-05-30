@@ -24,6 +24,7 @@ import time
 import tempfile
 import typing
 import itertools
+import logging
 import numpy as np
 import multiprocessing
 import ifcopenshell
@@ -62,8 +63,8 @@ DEFAULT_DATABASE_NAME = "database"
 class Patcher:
     def __init__(
         self,
-        file,
-        logger,
+        file: ifcopenshell.file,
+        logger: logging.Logger,
         sql_type: SQLTypes = "SQLite",
         host: str = "localhost",
         username: str = "root",
@@ -140,7 +141,7 @@ class Patcher:
             # Assume it's a filepath - existing or not.
             pass
 
-        self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.file.schema_identifier)
+        self.schema = ifcopenshell.schema_by_name(self.file.schema_identifier)
 
         if self.sql_type == "sqlite":
             self.db = sqlite3.connect(database)
@@ -278,6 +279,8 @@ class Patcher:
               PRIMARY KEY (`ifc_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_general_ci;
             """
+        else:
+            assert False
         self.c.execute(statement)
 
     def create_metadata(self) -> None:
@@ -353,6 +356,7 @@ class Patcher:
         else:
             statement += "ifc_id INTEGER PRIMARY KEY NOT NULL UNIQUE"
 
+        assert isinstance(declaration, ifcopenshell.ifcopenshell_wrapper.entity)
         total_attributes = declaration.attribute_count()
 
         if total_attributes:
@@ -393,6 +397,7 @@ class Patcher:
         statement = f"CREATE TABLE IF NOT EXISTS {ifc_class} ("
         statement += "`ifc_id` int(10) unsigned NOT NULL,"
 
+        assert isinstance(declaration, ifcopenshell.ifcopenshell_wrapper.entity)
         derived = declaration.derived()
         for attribute in declaration.all_attributes():
             primitive = ifcopenshell.util.attribute.get_primitive_type(attribute)
@@ -434,13 +439,13 @@ class Patcher:
     def insert_data(self, ifc_class: str) -> None:
         elements = self.file.by_type(ifc_class, include_subtypes=False)
 
-        rows = []
-        id_map_rows = []
-        pset_rows = []
+        rows: list[Any] = []
+        id_map_rows: list[tuple[int, str]] = []
+        pset_rows: list[tuple[int, str, str, Any]] = []
 
         for element in elements:
-            nested_indices = []
-            values = [element.id()]
+            nested_indices: list[int] = []
+            values: list[Any] = [element.id()]
             for i, attribute in enumerate(element):
                 if isinstance(attribute, ifcopenshell.entity_instance):
                     if attribute.id():
@@ -473,7 +478,7 @@ class Patcher:
             else:
                 rows.append(values)
 
-            id_map_rows.append([element.id(), ifc_class])
+            id_map_rows.append((element.id(), ifc_class))
 
             if self.should_get_psets:
                 psets = ifcopenshell.util.element.get_psets(element)
@@ -483,7 +488,7 @@ class Patcher:
                             continue
                         if isinstance(value, list):
                             value = json.dumps(value)
-                        pset_rows.append([element.id(), pset_name, prop_name, value])
+                        pset_rows.append((element.id(), pset_name, prop_name, value))
 
             if self.should_get_geometry:
                 if element.id() not in self.shape_rows and (placement := getattr(element, "ObjectPlacement", None)):

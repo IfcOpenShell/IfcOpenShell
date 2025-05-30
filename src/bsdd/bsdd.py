@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import uuid
 import time
-import urllib
+import urllib.parse
 import requests
 import webbrowser
 import http.server

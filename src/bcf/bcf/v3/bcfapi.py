@@ -21,7 +21,7 @@ import http.server
 import os
 import tempfile
 import time
-import urllib
+import urllib.parse
 import uuid
 import webbrowser
 from re import A

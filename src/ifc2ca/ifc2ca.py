@@ -40,6 +40,8 @@ from .scriptCodeAster import CommandFileConstructor
 
 
 class Ifc2CA:
+    file: ifcopenshell.file
+
     folder_path = None
     salome_path = None
     model_keys = ["id", "type", "GlobalId", "Name", "LoadedBy", "HasResults"]
