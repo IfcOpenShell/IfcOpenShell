@@ -101,7 +101,9 @@ class MaterialsData:
             for s in tool.Ifc.get().by_type("IfcPresentationStyle")
             if (style_name := s.Name) is not None
         ]
-        return natsorted(results, key=lambda i: i[1])
+        results = natsorted(results, key=lambda i: i[1])
+        results.insert(0, ("-", "No Surface Style", ""))
+        return results
 
     @classmethod
     def material_styles_data(cls) -> dict[int, list[dict[str, Any]]]:

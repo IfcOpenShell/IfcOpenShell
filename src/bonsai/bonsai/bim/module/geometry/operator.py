@@ -2558,7 +2558,8 @@ class EnableEditingRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator
         ifc_file = tool.Ifc.get()
 
         # set dropdown to currently active style
-        representation_item_id = props.active_item.ifc_definition_id
+        assert (active_item := props.active_item)
+        representation_item_id = active_item.ifc_definition_id
         representation_item = ifc_file.by_id(representation_item_id)
         style = tool.Style.get_representation_item_style(representation_item)
         if style:
@@ -2577,8 +2578,14 @@ class EditRepresentationItemStyle(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing_item_style = False
         ifc_file = tool.Ifc.get()
 
-        surface_style = ifc_file.by_id(int(props.representation_item_style))
-        representation_item_id = props.active_item.ifc_definition_id
+        surface_style_id = tool.Blender.get_enum_safe(props, "representation_item_style")
+        if surface_style_id in (None, "-"):
+            surface_style = None
+        else:
+            surface_style = ifc_file.by_id(int(props.representation_item_style))
+
+        assert (active_item := props.active_item)
+        representation_item_id = active_item.ifc_definition_id
         representation_item = ifc_file.by_id(representation_item_id)
 
         tool.Style.assign_style_to_representation_item(representation_item, surface_style)
