@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+import sys
 import numpy as np
 import dataclasses
 import ifcopenshell.api.geometry
@@ -25,6 +26,7 @@ from itertools import chain
 from ifcopenshell.util.shape_builder import ShapeBuilder, V
 from typing import Any, Optional, Literal, Union, overload
 
+DATACLASS_SLOTS = {} if sys.version_info < (3, 10) else {"slots": True}
 
 # SCHEMAS describe panels setup
 # where:
@@ -238,7 +240,7 @@ def create_ifc_window(
 
 # we use dataclass as we need default values for arguments
 # it's okay to use slots since we don't need dynamic attributes
-@dataclasses.dataclass(slots=True)
+@dataclasses.dataclass(**DATACLASS_SLOTS)
 class WindowLiningProperties:
     LiningDepth: Optional[float] = None
     """Optional, defaults to 50mm."""
@@ -321,7 +323,7 @@ class WindowLiningProperties:
             setattr(self, attr, default_value * si_conversion)
 
 
-@dataclasses.dataclass(slots=True)
+@dataclasses.dataclass(**DATACLASS_SLOTS)
 class WindowPanelProperties:
     FrameDepth: Optional[float] = None
     """Frame thickness by Y axis. Optional, defaults to 35 mm."""

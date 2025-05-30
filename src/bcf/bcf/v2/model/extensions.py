@@ -14,11 +14,15 @@
 # Currently extensions support for v2 is only read-only.
 
 
+import sys
 from dataclasses import dataclass, field, fields
 from typing import List, NamedTuple, Optional
 
 
-@dataclass(slots=True, kw_only=True)
+DATACLASS_KWARGS = {} if sys.version_info < (3, 10) else {"slots": True, "kw_only": True}
+
+
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsPriorities:
     class Meta:
         global_type = False
@@ -35,7 +39,7 @@ class ExtensionsPriorities:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsSnippetTypes:
     class Meta:
         global_type = False
@@ -52,7 +56,7 @@ class ExtensionsSnippetTypes:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsStages:
     class Meta:
         global_type = False
@@ -69,7 +73,7 @@ class ExtensionsStages:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsTopicLabels:
     class Meta:
         global_type = False
@@ -86,7 +90,7 @@ class ExtensionsTopicLabels:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsTopicStatuses:
     class Meta:
         global_type = False
@@ -103,7 +107,7 @@ class ExtensionsTopicStatuses:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsTopicTypes:
     class Meta:
         global_type = False
@@ -120,7 +124,7 @@ class ExtensionsTopicTypes:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ExtensionsUsers:
     class Meta:
         global_type = False
@@ -137,7 +141,7 @@ class ExtensionsUsers:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Extensions:
     topic_types: Optional[ExtensionsTopicTypes] = field(
         default=None,

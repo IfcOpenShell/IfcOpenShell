@@ -1,8 +1,11 @@
+import sys
 from dataclasses import dataclass, field
 from typing import List, Optional
 
+DATACLASS_KWARGS = {} if sys.version_info < (3, 10) else {"slots": True, "kw_only": True}
 
-@dataclass(slots=True, kw_only=True)
+
+@dataclass(**DATACLASS_KWARGS)
 class Document:
     filename: str = field(
         metadata={
@@ -34,7 +37,7 @@ class Document:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class DocumentInfoDocuments:
     class Meta:
         global_type = False
@@ -49,7 +52,7 @@ class DocumentInfoDocuments:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class DocumentInfo:
     documents: Optional[DocumentInfoDocuments] = field(
         default=None,

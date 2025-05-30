@@ -1,10 +1,13 @@
+import sys
 from dataclasses import dataclass, field
 from typing import List, Optional
 
 from xsdata.models.datatype import XmlDateTime
 
+DATACLASS_KWARGS = {} if sys.version_info < (3, 10) else {"slots": True, "kw_only": True}
 
-@dataclass(slots=True, kw_only=True)
+
+@dataclass(**DATACLASS_KWARGS)
 class BimSnippet:
     reference: str = field(
         metadata={
@@ -38,7 +41,7 @@ class BimSnippet:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class CommentViewpoint:
     class Meta:
         global_type = False
@@ -53,7 +56,7 @@ class CommentViewpoint:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class HeaderFile:
     class Meta:
         global_type = False
@@ -109,7 +112,7 @@ class HeaderFile:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class TopicDocumentReference:
     class Meta:
         global_type = False
@@ -147,7 +150,7 @@ class TopicDocumentReference:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class TopicRelatedTopic:
     class Meta:
         global_type = False
@@ -162,7 +165,7 @@ class TopicRelatedTopic:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class ViewPoint:
     viewpoint: Optional[str] = field(
         default=None,
@@ -198,7 +201,7 @@ class ViewPoint:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Comment:
     date: XmlDateTime = field(
         metadata={
@@ -258,7 +261,7 @@ class Comment:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Header:
     file: List[HeaderFile] = field(
         default_factory=list,
@@ -271,7 +274,7 @@ class Header:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Topic:
     reference_link: List[str] = field(
         default_factory=list,
@@ -425,7 +428,7 @@ class Topic:
     )
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(**DATACLASS_KWARGS)
 class Markup:
     header: Optional[Header] = field(
         default=None,
