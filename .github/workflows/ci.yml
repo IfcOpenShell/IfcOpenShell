@@ -136,3 +136,7 @@ jobs:
           cd ../ifcpatch && make test
           pip install -e ../ifctester --no-deps
           cd ../ifctester && make test
+          # Run mathutils related tests at the end to ensure no other code is relying on mathutils.
+          cd ../ifcopenshell-python
+          pip install mathutils
+          make test-mathutils
