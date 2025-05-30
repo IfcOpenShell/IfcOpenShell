@@ -73,7 +73,7 @@ def get_declaration(element: ifcopenshell.entity_instance):
     return element.wrapped_data.declaration().as_entity()
 
 
-def is_a(declaration: ifcopenshell.ifcopenshell_wrapper.entity, ifc_class: str) -> bool:
+def is_a(declaration: ifcopenshell.ifcopenshell_wrapper.declaration, ifc_class: str) -> bool:
     """Checks if a schema declaration is a class
 
     :param declaration: The declaration from the schema.
