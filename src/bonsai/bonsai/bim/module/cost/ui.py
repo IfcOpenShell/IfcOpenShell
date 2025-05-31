@@ -733,7 +733,8 @@ class BIM_UL_cost_items_trait:
         row.alignment = "LEFT"
         if cost_item["AssignedCostRate"] is not None:
             op = row.operator("bim.show_assigned_cost_rate", text="", emboss=False, icon="ZOOM_IN")
-            op.assigned_rate_id = cost_item["AssignedCostRate"].id()
+            identification = cost_item["AssignedCostRate"].Identification
+            op.assigned_rate_identification = identification if identification is not None else "XXX"
             op.assigned_rate_name = cost_item["AssignedCostRate"].Name or ""
             op.assigned_rate_description = cost_item["AssignedCostRate"].Description or ""
             op.assigned_rate_total_value = CostSchedulesData.data["cost_items"][cost_item["AssignedCostRate"].id()][
