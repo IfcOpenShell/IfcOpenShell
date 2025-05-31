@@ -613,7 +613,7 @@ class ShowAssignedCostRate(bpy.types.Operator):
     bl_idname = "bim.show_assigned_cost_rate"
     bl_label = "Info about the assigned cost item rate"
     bl_options = {"REGISTER"}
-    assigned_rate_id: bpy.props.IntProperty()
+    assigned_rate_identification: bpy.props.StringProperty()
     assigned_rate_name: bpy.props.StringProperty()
     assigned_rate_description: bpy.props.StringProperty()
     assigned_rate_total_value: bpy.props.FloatProperty()
@@ -629,7 +629,7 @@ class ShowAssignedCostRate(bpy.types.Operator):
     def draw(self, context):
         layout = self.layout
         wrapper = textwrap.TextWrapper(width=80)
-        layout.label(text=f"ID: {self.assigned_rate_id}")
+        layout.label(text=f"ID: {self.assigned_rate_identification}")
         layout.label(text=f"Name: {self.assigned_rate_name}")
         layout.label(text="Description:")
         for line in wrapper.wrap(str(self.assigned_rate_description)):
