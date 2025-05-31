@@ -1334,7 +1334,7 @@ class BIM_PT_decorators_overlay(Panel):
         row = col.row(align=True)
         row.prop(model_props, "show_slab_direction", text="Slab Direction")
         row = col.row(align=True)
-        row.prop(model_props, "measure_xyz_dimensions", text="Bounding Box Dimensions")      
+        row.prop(model_props, "show_bounding_box", text="Bounding Box Dimensions")      
         row = col.row(align=True)
         row.prop(model_props, "show_cut_decorator", text="Cut Decorator")
         row.prop(model_props, "show_cut_decorator_fill", text="Fill Cut Decorator")

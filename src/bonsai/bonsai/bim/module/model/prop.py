@@ -119,7 +119,7 @@ def update_measure_xyz(self: "BIMModelProperties", context: bpy.types.Context) -
     space_3d = next((space for space in area_3d.spaces if space.type == "VIEW_3D"), None) if area_3d else None
     scene = context.scene
 
-    if self.measure_xyz_dimensions:
+    if self.show_bounding_box:
         BoundingBoxDecorator.install(context)
         # Save previous state if not already saved
         if not self.prev_transform_orientation_slot_type:
@@ -286,7 +286,7 @@ class BIMModelProperties(PropertyGroup):
     prev_transform_orientation_slot_type: bpy.props.StringProperty(name="Previous Gizmo Orientation Type")
     prev_show_gizmo_object_translate: bpy.props.BoolProperty(name="Previous Gizmo Translate")
 
-    measure_xyz_dimensions: bpy.props.BoolProperty(
+    show_bounding_box: bpy.props.BoolProperty(
         name="Measure XYZ Dimensions",
         default=False,
         update=update_measure_xyz

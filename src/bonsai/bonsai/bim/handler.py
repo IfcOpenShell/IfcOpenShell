@@ -30,7 +30,7 @@ from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.model.data import AuthoringData
 from bonsai.bim.module.aggregate.decorator import AggregateDecorator
 from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
-from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
+from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator, BoundingBoxDecorator
 from bonsai.bim.module.nest.decorator import NestDecorator
 from mathutils import Vector
 from math import cos
@@ -409,6 +409,8 @@ def load_post(scene):
         WallAxisDecorator.install(bpy.context)
     if model_props.show_slab_direction:
         SlabDirectionDecorator.install(bpy.context)
+    if model_props.show_bounding_box:
+        BoundingBoxDecorator.install(bpy.context)
 
     if preferences.should_use_snap and (scene := bpy.context.scene):
         # Snapping is off by default in Blender, but in BIM, it's more useful to be on
