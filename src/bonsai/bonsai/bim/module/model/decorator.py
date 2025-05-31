@@ -21,11 +21,11 @@ import bpy
 import blf
 import bpy
 import gpu
-import gpu_extras
 import bmesh
 import ifcopenshell
 import bonsai.tool as tool
 import math
+import mathutils
 from math import sin, cos, radians
 from bpy.types import SpaceView3D
 from bpy_extras import view3d_utils
@@ -36,6 +36,7 @@ from typing import Union
 from bonsai.bim.module.drawing.helper import format_distance
 from itertools import chain
 from typing import Union, Any
+from bpy_extras.view3d_utils import location_3d_to_region_2d
 
 
 def transparent_color(color, alpha=0.1):
@@ -1096,7 +1097,6 @@ class BoundingBoxDecorator:
 
     @staticmethod
     def get_combined_bounding_box_corners(objects):
-        import mathutils
 
         if not objects:
             return None, None, None
@@ -1147,7 +1147,6 @@ class BoundingBoxDecorator:
 
     @staticmethod
     def find_closest_trihedron(corners, edges, region, rv3d):
-        from bpy_extras.view3d_utils import location_3d_to_region_2d
 
         min_y = float("inf")
         best_origin = None
@@ -1190,8 +1189,7 @@ class BoundingBoxDecorator:
         self.draw_batch("TRIS", verts, color, [(0, 1, 2), (1, 2, 3)])
 
     def draw_bounding_box_wire_cube(self, context):
-        import gpu
-        from gpu_extras.batch import batch_for_shader
+
 
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()
@@ -1216,11 +1214,6 @@ class BoundingBoxDecorator:
                 self.draw_batch("LINES", [corners[i1], corners[i2]], color)
 
     def draw_dimension_text(self, context):
-        from bpy_extras.view3d_utils import location_3d_to_region_2d
-        from bonsai.bim.module.drawing.helper import format_distance
-        import mathutils
-        import blf
-
         self.line_shader = gpu.shader.from_builtin("POLYLINE_UNIFORM_COLOR")
         self.line_shader.bind()
         self.line_shader.uniform_float("viewportSize", (context.region.width, context.region.height))
