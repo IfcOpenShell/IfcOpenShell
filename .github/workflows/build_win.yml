@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: IfcOpenShell/build-outputs
-          path: _deps-vs2019-x64-installed
+          path: _deps-vs2022-x64-installed
           ref: windows-${{ matrix.arch }}
           lfs: true
           token: ${{ secrets.BUILD_REPO_TOKEN }}
@@ -40,7 +40,7 @@ jobs:
 
       - name: Unpack Dependencies
         run: |
-          cd _deps-vs2019-x64-installed
+          cd _deps-vs2022-x64-installed
           Get-ChildItem -Path . -Filter 'cache-*.zip' | ForEach-Object {
             7z x $_.FullName
           }
@@ -56,14 +56,14 @@ jobs:
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           SET IFCOS_INSTALL_PYTHON=FALSE
           cd win
-          echo y | call build-deps.cmd vs2019-x64 Release
+          echo y | call build-deps.cmd vs2022-x64 Release
           SET PYTHONHOME=C:\Python\${{ matrix.python }}
-          call run-cmake.bat vs2019-x64 -DENABLE_BUILD_OPTIMIZATIONS=On -DGLTF_SUPPORT=ON -DADD_COMMIT_SHA=ON -DVERSION_OVERRIDE=ON
-          call install-ifcopenshell.bat vs2019-x64 Release
+          call run-cmake.bat vs2022-x64 -DENABLE_BUILD_OPTIMIZATIONS=On -DGLTF_SUPPORT=ON -DADD_COMMIT_SHA=ON -DVERSION_OVERRIDE=ON
+          call install-ifcopenshell.bat vs2022-x64 Release
 
       - name: Pack Dependencies
         run: |
-          cd _deps-vs2019-x64-installed
+          cd _deps-vs2022-x64-installed
           Get-ChildItem -Path . -Directory | ForEach-Object {
             $cacheFile = "cache-$($_.Name).zip"
             echo $cacheFile
@@ -74,7 +74,7 @@ jobs:
 
       - name: Commit and Push Changes to Build Repository
         run: |
-          cd _deps-vs2019-x64-installed
+          cd _deps-vs2022-x64-installed
           git config user.name "IfcOpenBot"
           git config user.email "ifcopenbot@ifcopenshell.org"
           git add *.zip
@@ -90,7 +90,7 @@ jobs:
 
           if ("${{ matrix.python }}" -eq "3.9.11") {
             # only for the first python version the executables are assembled for upload
-            cd _installed-vs2019-x64/bin
+            cd _installed-vs2022-x64/bin
             Get-ChildItem -Path . | ForEach-Object {
               echo $_
               $exe = $_.Name
