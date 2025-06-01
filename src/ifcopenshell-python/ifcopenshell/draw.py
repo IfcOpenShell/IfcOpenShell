@@ -75,6 +75,7 @@ class draw_settings:
     include_curves: bool = False
     unify_inputs: bool = True
     arrange_spaces: bool = False
+    mirror_y: bool = False
 
 
 def main(
@@ -169,6 +170,7 @@ def main(
     sr.setUseHlrPoly(settings.hlr_poly)
     sr.setUsePrefiltering(settings.prefilter)
     sr.setUnifyInputs(settings.unify_inputs)
+    sr.setMirrorY(settings.mirror_y)
 
     try:
         sh = ["none", "full", "left"].index(settings.storey_heights)
