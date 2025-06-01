@@ -124,4 +124,7 @@ jobs:
           AWS_MAX_ATTEMPTS: 3
         run: |
           dir "$env:USERPROFILE\output"
-          aws s3 cp "$env:USERPROFILE\output" s3://ifcopenshell-builds/ --recursive --debug
+          foreach ($zip in Get-ChildItem -Path "$env:USERPROFILE\output" -Filter *.zip) {
+              aws s3 cp "$($zip.FullName)" s3://ifcopenshell-builds/ --debug
+              Start-Sleep -Seconds 5
+          }
