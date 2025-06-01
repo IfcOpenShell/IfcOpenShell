@@ -53,7 +53,7 @@ jobs:
           for /f "tokens=1,2,3 delims=." %%a in ("%PYTHON_VERSION%") do ( 
               set PY_VER_MAJOR_MINOR=%%a%%b
           )
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           SET IFCOS_INSTALL_PYTHON=FALSE
           cd win
           echo y | call build-deps.cmd vs2022-x64 Release
