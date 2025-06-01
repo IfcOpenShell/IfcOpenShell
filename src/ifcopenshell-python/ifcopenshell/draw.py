@@ -441,8 +441,16 @@ def main(
                 for p in yield_groups(svg1, "path")
                 if "IfcSpace" in p.parentNode.getAttribute("class")
             ]
-            assert all(s.count("M") == 1 for s in polies)
-            polies = [[[*map(float, s[1:].split(","))] for s in d.split(" ")[:-1]] for d in polies]
+
+            def break_at_second(char, s, offset=1):
+                i = s.find(char, offset)
+                if i == -1:
+                    return s
+                else:
+                    warnings.warn('Polygons with holes are not supported')
+                    return s[0:i]
+
+            polies = [[[*map(float, s[1:].split(","))] for s in break_at_second('M', d).split(" ")[:-1]] for d in polies]
 
             def create_poly(b):
                 p = ifcopenshell.ifcopenshell_wrapper.polygon_2()
