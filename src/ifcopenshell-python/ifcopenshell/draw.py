@@ -447,10 +447,12 @@ def main(
                 if i == -1:
                     return s
                 else:
-                    warnings.warn('Polygons with holes are not supported')
+                    warnings.warn("Polygons with holes are not supported")
                     return s[0:i]
 
-            polies = [[[*map(float, s[1:].split(","))] for s in break_at_second('M', d).split(" ")[:-1]] for d in polies]
+            polies = [
+                [[*map(float, s[1:].split(","))] for s in break_at_second("M", d).split(" ")[:-1]] for d in polies
+            ]
 
             def create_poly(b):
                 p = ifcopenshell.ifcopenshell_wrapper.polygon_2()
