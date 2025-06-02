@@ -202,7 +202,7 @@ class curve_segment_evaluator {
           inst_(inst),
           length_unit_(length_unit),
           parent_curve_(inst->ParentCurve()) {
-#ifdef SCHEMA_IfcCurveSegment_HAS_UsingCurves
+#ifdef SCHEMA_IfcSegment_HAS_UsingCurves
            auto composite_curves = inst->UsingCurves();
 #else
         aggregate_of<IfcSchema::IfcCompositeCurve>::ptr composite_curves;

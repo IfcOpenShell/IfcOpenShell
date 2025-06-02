@@ -33,7 +33,8 @@ from typing import Union
 from typing import overload
 from typing import Literal
 from typing import TypedDict
-from typing_extensions import assert_never
+# py39 compat: re-enable when support is dropped
+# from typing_extensions import assert_never
 
 from . import ifcopenshell_wrapper
 from .entity_instance import entity_instance
@@ -218,7 +219,9 @@ class Transaction:
                     for index, value in data:
                         inverse[index] = self.unserialise_value(inverse, value)
             else:
-                assert_never(operation["action"])
+                # py39 compat: re-enable when support is dropped
+                # assert_never(operation["action"])
+                pass
 
     def commit(self) -> None:
         for operation in self.operations:
@@ -239,7 +242,9 @@ class Transaction:
             elif operation["action"] == "batch_delete":
                 pass
             else:
-                assert_never(operation["action"])
+                # py39 compat: re-enable when support is dropped
+                # assert_never(operation["action"])
+                pass
 
 
 file_dict = {}

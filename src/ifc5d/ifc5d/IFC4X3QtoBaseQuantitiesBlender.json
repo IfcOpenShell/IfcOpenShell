@@ -194,12 +194,12 @@
             },
             "IfcCourse + IfcCourseType": {
                 "Qto_CourseBaseQuantities": {
-                    "GrossVolume": null,
-                    "Length": null,
-                    "Thickness": null,
-                    "Volume": null,
+                    "GrossVolume": "get_gross_volume",
+                    "Length": "get_length",
+                    "Thickness": "get_height",
+                    "Volume": "get_net_volume",
                     "Weight": null,
-                    "Width": null
+                    "Width": "get_width"
                 }
             },
             "IfcCovering + IfcCoveringType": {
