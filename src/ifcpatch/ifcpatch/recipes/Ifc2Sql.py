@@ -29,6 +29,7 @@ import numpy as np
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -36,8 +37,8 @@ import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
 from pathlib import Path
-from ifcopenshell.geom import ShapeType
-from typing import Any, TYPE_CHECKING, Literal
+from typing import Any, TYPE_CHECKING, Literal, Union
+from typing_extensions import assert_never
 
 SQLTypes = typing.Literal["SQLite", "MySQL"]
 
@@ -132,6 +133,9 @@ class Patcher:
         self.should_get_geometry = should_get_geometry
         self.should_skip_geometry_data = should_skip_geometry_data
 
+    geometry_rows: dict[str, tuple[str, bytes, bytes, bytes, bytes, str]]
+    shape_rows: dict[int, tuple[int, list[float], list[float], list[float], bytes, str]]
+
     def patch(self) -> None:
         suffix = ".db" if self.sql_type == "SQLite" else ".sqlite"
         database = Path(self.database)
@@ -153,6 +157,8 @@ class Patcher:
                 host=self.host, user=self.username, password=self.password, database=str(database)
             )
             self.c = self.db.cursor()
+        else:
+            assert False
 
         self.create_id_map()
         self.create_metadata()
@@ -165,7 +171,9 @@ class Patcher:
             self.create_geometry()
 
         if self.full_schema:
-            ifc_classes = [d.name() for d in self.schema.declarations() if str(d).startswith("<entity")]
+            ifc_classes = [
+                d.name() for d in self.schema.declarations() if isinstance(d, ifcopenshell.ifcopenshell_wrapper.entity)
+            ]
         else:
             ifc_classes = self.file.wrapped_data.types()
 
@@ -249,22 +257,22 @@ class Patcher:
                 checkpoint = time.time()
             shape = iterator.get()
             if shape:
+                assert isinstance(shape, W.TriangulationElement)
                 shape_id = shape.id
-                geometry_id = shape.geometry.id
+                geometry = shape.geometry
+                geometry_id = geometry.id
                 if geometry_id not in self.geometry_rows:
-                    geometry: ShapeType
-                    geometry = shape.geometry
                     v = geometry.verts_buffer
                     e = geometry.edges_buffer
                     f = geometry.faces_buffer
                     mids = geometry.material_ids_buffer
-                    m = json.dumps([m.instance_id() for m in shape.geometry.materials])
-                    self.geometry_rows[geometry_id] = [geometry_id, v, e, f, mids, m]
+                    m = json.dumps([m.instance_id() for m in geometry.materials])
+                    self.geometry_rows[geometry_id] = (geometry_id, v, e, f, mids, m)
                 # Copy required since otherwise it is read-only
                 m = ifcopenshell.util.shape.get_shape_matrix(shape).copy()
                 m[:3, 3] /= self.unit_scale
                 x, y, z = m[:, 3][0:3].tolist()
-                self.shape_rows[shape_id] = [shape_id, x, y, z, m.tobytes(), geometry_id]
+                self.shape_rows[shape_id] = (shape_id, x, y, z, m.tobytes(), geometry_id)
             if not iterator.next():
                 break
 

@@ -29,6 +29,7 @@ import collections
 import importlib
 import importlib.util
 import re
+from pathlib import Path
 from typing import Union, Iterable, Optional, Any, TypedDict, Literal, Sequence
 from typing_extensions import NotRequired
 
@@ -106,19 +107,16 @@ def execute(args: ArgumentsDict) -> Union[ifcopenshell.file, str]:
     return output
 
 
-def write(output: Union[ifcopenshell.file, str], filepath: str) -> None:
+def write(output: Union[ifcopenshell.file, str], filepath: Union[Path, str]) -> None:
     """Write the output of an IFC patch to a file
 
     Typically a patch output would be a patched IFC model file object, or as a
     string. This function lets you agnostically write that output to a filepath.
 
     :param output: The results from ifcpatch.execute()
-    :type output: ifcopenshell.file.file,str
     :param filepath: A filepath to where the results of the patched model should
         be written to.
-    :type filepath: str
     :return: None
-    :rtype: None
     """
     if output is None:
         return

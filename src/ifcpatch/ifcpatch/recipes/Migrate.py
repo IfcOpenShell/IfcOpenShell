@@ -35,7 +35,6 @@ class Patcher:
         possible. Upgrading to IFC4 is more stable than downgrading to IFC2X3.
 
         :param schema: The schema identifier of the IFC version to migrate to.
-        :type schema: str
 
         Example:
 

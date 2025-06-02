@@ -63,7 +63,6 @@ class Patcher:
         Allowed imperial units include INCH, FOOT, MILE.
 
         :param unit: The name of the desired unit, defaults to "METER"
-        :type unit: LengthUnit
 
         Example:
 
