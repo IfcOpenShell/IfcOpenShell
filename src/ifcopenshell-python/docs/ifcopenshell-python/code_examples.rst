@@ -17,21 +17,22 @@ functions, check out the API Reference.
 Get all entites (STEP ID items)
 -------------------------------
 
-IFC file opened through IfcOpenShell is iterable. This means you can get all entities (all STEP ID items) that occurs in the file with a simple loop.
+
+IFC file opened through IfcOpenShell is iterable. This means you can get all instance (all STEP ID items) that occurs in the file with a simple loop.
 
 .. code-block:: python
 
-    for entity in model:
+    for inst in model:
         # It prints out entire entity as it appears in IFC file, e.g
-        print("The STEP entity is: ", entity)
+        print("The STEP entity is: ", inst)
         # You can get info about attributes of an instance as you normally would, e.g. name, type, get_info()
-        print(entity.get_info())
-        # Get entity type
-        print(entity.is_a())
-        # Get entity name. IF statement is necessary to ensure that the entity is actual instance such as walls, properties, tasks etc.
+        print(inst.get_info())
+        # Get instance type
+        print(inst.is_a())
+        # Get instance name. To ensure you get instances that have attribute Name, simple IF statement will suffice.
         # For more information check submodule: ifcopenshell.entity_instance
-        if isinstance(entity, ifcopenshell.ifcopenshell_wrapper.entity_instance):
-            print(entity.Name)
+        if hasattr(inst, "Name"):
+            print(inst.Name)
 
 Get all wall types
 ------------------
