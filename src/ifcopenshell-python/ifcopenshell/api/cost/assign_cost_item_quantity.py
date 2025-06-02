@@ -154,5 +154,8 @@ class Usecase:
             if quantity.is_a("IfcQuantityCount"):
                 count = 0
                 for rel in self.settings["cost_item"].Controls:
-                    count += len(rel.RelatedObjects)
+                    for obj in rel.RelatedObjects:
+                        #Only increment if not a resource
+                        if not obj.is_a("IfcConstructionResource"):
+                            count +=1
                 quantity[3] = count
