@@ -57,6 +57,19 @@ example, we'll extract out all `IfcWall` elements.
     ifcpatch -i input.ifc -o output.ifc -r ExtractElements -a "IfcWall"
     cat output.ifc
 
+You can also alias it to a command:
+
+.. code-block:: bash
+
+    alias ifcpatch='python -m ifcpatch'
+
+Alternatively, you can package it as an executable.
+
+.. code-block:: bash
+
+    python make.py
+    ./dist/ifcpatch
+
 Here is a minimal example of how to use IfcPatch as a library:
 
 .. code-block:: python
@@ -71,18 +84,22 @@ Here is a minimal example of how to use IfcPatch as a library:
     })
     ifcpatch.write(output, "output.ifc")
 
-You can also alias it to a command:
 
-.. code-block:: bash
+Alternatively, there is a less dynamic way to use IfcPatch
+that allows seeing available arguments, their descriptions, types, default values, etc.
 
-    alias ifcpatch='python -m ifcpatch'
+..code-block:: python
 
-Alternatively, you can package it as an executable.
+    import ifcopenshell
+    import ifcpatch
+    from ifcpatch.recipes import ExtractElements
 
-.. code-block:: bash
-
-    python make.py
-    ./dist/ifcpatch
+    patcher = ExtractElements.Patcher(
+        ifcopenshell.open("input.ifc"),
+        query="IfcWall",
+    )
+    patcher.patch()
+    ifcpatch.write(patcher.get_output(), "output.ifc")
 
 Patch recipes
 -------------

@@ -18,15 +18,17 @@
 
 import ifcopenshell
 import ifcopenshell.util.schema
+import ifcpatch
 import typing
+from typing import Union
 from logging import Logger
 
 
-class Patcher:
+class Patcher(ifcpatch.BasePatcher):
     def __init__(
         self,
         file: ifcopenshell.file,
-        logger: Logger,
+        logger: Union[Logger, None] = None,
         schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4",
     ):
         """Migrate from one IFC version to another
@@ -43,8 +45,7 @@ class Patcher:
             # Upgrade an IFC2X3 model to IFC4
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "Migrate", "arguments": ["IFC4"]})
         """
-        self.file = file
-        self.logger = logger
+        super().__init__(file, logger)
         self.schema = schema
 
     def patch(self):

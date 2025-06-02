@@ -22,9 +22,11 @@ import ifcopenshell.api.owner.settings
 import ifcopenshell.util.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
+import ifcpatch
 from logging import Logger
 
 import typing
+from typing import Union
 
 LengthUnit = typing.Literal[
     "ATTOMETER",
@@ -50,11 +52,11 @@ LengthUnit = typing.Literal[
 ]
 
 
-class Patcher:
+class Patcher(ifcpatch.BasePatcher):
     def __init__(
         self,
         file: ifcopenshell.file,
-        logger: Logger,
+        logger: Union[Logger, None] = None,
         unit: LengthUnit = "METER",
     ):
         """Converts the length unit of a model to the specified unit
@@ -74,8 +76,7 @@ class Patcher:
             # Convert to feet
             model = ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ConvertLengthUnit", "arguments": ["FOOT"]})
         """
-        self.file = file
-        self.logger = logger
+        super().__init__(file, logger)
         self.unit = unit
         self.file_patched: ifcopenshell.file
 

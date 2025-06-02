@@ -36,6 +36,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.schema
 import ifcopenshell.util.shape
 import ifcopenshell.util.unit
+import ifcpatch
 from pathlib import Path
 from typing import Any, TYPE_CHECKING, Literal, Union
 from typing_extensions import assert_never
@@ -61,11 +62,11 @@ else:
 DEFAULT_DATABASE_NAME = "database"
 
 
-class Patcher:
+class Patcher(ifcpatch.BasePatcher):
     def __init__(
         self,
         file: ifcopenshell.file,
-        logger: logging.Logger,
+        logger: Union[logging.Logger, None] = None,
         sql_type: SQLTypes = "SQLite",
         host: str = "localhost",
         username: str = "root",
@@ -116,7 +117,7 @@ class Patcher:
                 {"input": "input.ifc", "file": model, "recipe": "Ifc2Sql", "arguments": ["sqlite"]}
             )
         """
-        self.file = file
+        super().__init__(file, logger)
         self.logger = logger
         self.sql_type: Literal["sqlite", "mysql"] = sql_type.lower()
         self.host = host

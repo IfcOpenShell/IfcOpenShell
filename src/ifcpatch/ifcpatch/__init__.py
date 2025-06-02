@@ -45,7 +45,27 @@ class ArgumentsDict(TypedDict):
     arguments: NotRequired[Sequence[Any]]
 
 
-def execute(args: ArgumentsDict) -> Union[ifcopenshell.file, str]:
+class BasePatcher:
+    def __init__(self, file: ifcopenshell.file, logger: Union[logging.Logger, None]):
+        self.file = file
+        self.logger = ensure_logger(logger)
+
+    def patch(self) -> None:
+        raise NotImplementedError
+
+    def get_output(self) -> Union[ifcopenshell.file, str, None]:
+        if hasattr(self, "file_patched"):
+            return self.file_patched  # pyright: ignore[reportAttributeAccessIssue]
+        return self.file
+
+
+def ensure_logger(logger: Union[logging.Logger, None] = None) -> logging.Logger:
+    if logger is not None:
+        return logger
+    return logging.getLogger("IFCPatch")
+
+
+def execute(args: ArgumentsDict) -> Union[ifcopenshell.file, str, None]:
     """Execute a patch recipe
 
     The details of how the patch recipe is executed depends on the definition of
@@ -88,7 +108,7 @@ def execute(args: ArgumentsDict) -> Union[ifcopenshell.file, str]:
     """
     if "log" in args:
         logging.basicConfig(filename=args["log"], filemode="a", level=logging.DEBUG)
-    logger = logging.getLogger("IFCPatch")
+    logger = ensure_logger()
     if recipe_dir := os.environ.get("IFCPATCH_RECIPE_DIR"):
         spec = importlib.util.spec_from_file_location(args["recipe"], os.path.join(recipe_dir, args["recipe"] + ".py"))
         recipe = importlib.util.module_from_spec(spec)
@@ -103,17 +123,17 @@ def execute(args: ArgumentsDict) -> Union[ifcopenshell.file, str]:
     else:
         patcher = recipe.Patcher(args.get("file"), logger, arguments)
     patcher.patch()
-    output = getattr(patcher, "file_patched", patcher.file)
+    output = BasePatcher.get_output(patcher)
     return output
 
 
-def write(output: Union[ifcopenshell.file, str], filepath: Union[Path, str]) -> None:
+def write(output: Union[ifcopenshell.file, str, None], filepath: Union[Path, str]) -> None:
     """Write the output of an IFC patch to a file
 
     Typically a patch output would be a patched IFC model file object, or as a
     string. This function lets you agnostically write that output to a filepath.
 
-    :param output: The results from ifcpatch.execute()
+    :param output: The results from ``ifcpatch.execute()`` / ``Patcher.get_output()``
     :param filepath: A filepath to where the results of the patched model should
         be written to.
     :return: None
