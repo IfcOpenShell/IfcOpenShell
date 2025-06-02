@@ -391,7 +391,12 @@ void TtlWktSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 	double x1, y1, zmin, x2, y2, zmax;
 	bb.Get(x1, y1, zmin, x2, y2, zmax);
 
-	gp_Pln pln(gp_Pnt(0, 0, zmin + 1.), gp::DZ());
+    auto height = zmax - zmin;
+    auto section_height = (height < (1. + 1.e-5)) ? (height / 2.0) : 1.0;
+
+    filename_.stream << ttl_object_id(brep_obj) << " geo:hasMetricLength " << height << " .\n\n";
+
+    gp_Pln pln(gp_Pnt(0, 0, zmin + section_height), gp::DZ());
 
 	Handle(TopTools_HSequenceOfShape) wires = new TopTools_HSequenceOfShape();
 
