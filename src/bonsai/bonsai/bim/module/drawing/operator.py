@@ -3470,11 +3470,15 @@ class SelectAssignedProduct(bpy.types.Operator, tool.Ifc.Operator):
 
 class EnableEditingElementFilter(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_element_filter"
-    bl_label = "Enable Editing Element Filter"
-    bl_description = "Enable editing options for the include or exclude filter"
-
+    bl_label = "Element Filter Mode"
     bl_options = {"REGISTER", "UNDO"}
     filter_mode: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        if properties.filter_mode == 'NONE':
+            return "Cancel filter"
+        return "Enable editing options for the include or exclude filter"
 
     def _execute(self, context):
         assert context.scene
@@ -3497,6 +3501,7 @@ class EnableEditingElementFilter(bpy.types.Operator, tool.Ifc.Operator):
 class EditElementFilter(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_element_filter"
     bl_label = "Edit Element Filter"
+    bl_description = "Saves the filter"
     bl_options = {"REGISTER", "UNDO"}
     filter_mode: bpy.props.StringProperty()
 
