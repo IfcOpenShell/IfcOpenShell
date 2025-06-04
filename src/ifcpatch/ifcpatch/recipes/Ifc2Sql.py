@@ -144,6 +144,13 @@ class Patcher(ifcpatch.BasePatcher):
         """Return resulting database filepath for sqlite and ``None`` for mysql."""
         return self.file_patched
 
+    my_sql_classes_json_attrs: dict[str, list[int]]
+    """Mapping ifc_class -> list of attr indices.
+
+    Needed to mark json attributes
+    that should be converted to string explicitly
+    (mysql doesn't convert them automatically, unlike sqlite)"""
+
     def patch(self) -> None:
         if self.sql_type == "sqlite":
             database = Path(self.database)
@@ -208,6 +215,7 @@ class Patcher(ifcpatch.BasePatcher):
             if self.sql_type == "sqlite":
                 self.create_sqlite_table(ifc_class, declaration)
             elif self.sql_type == "mysql":
+                self.my_sql_classes_json_attrs = {}
                 self.create_mysql_table(ifc_class, declaration)
             self.insert_data(ifc_class)
 
@@ -453,7 +461,8 @@ class Patcher(ifcpatch.BasePatcher):
 
         assert isinstance(declaration, ifcopenshell.ifcopenshell_wrapper.entity)
         derived = declaration.derived()
-        for attribute in declaration.all_attributes():
+        json_attrs: list[int] = []
+        for i, attribute in enumerate(declaration.all_attributes(), 1):
             primitive = ifcopenshell.util.attribute.get_primitive_type(attribute)
             if primitive in ("string", "enum"):
                 if "IfcText" in str(attribute.type_of_attribute()):
@@ -474,6 +483,7 @@ class Patcher(ifcpatch.BasePatcher):
                 data_type = "int(10) unsigned"
             elif isinstance(primitive, tuple):
                 data_type = "JSON"
+                json_attrs.append(i)
             else:
                 print("Possibly not implemented attribute data type:", attribute, primitive)
             if not self.is_strict or derived[i]:
@@ -481,6 +491,10 @@ class Patcher(ifcpatch.BasePatcher):
             else:
                 optional = "DEFAULT NULL" if attribute.optional() else "NOT NULL"
             statement += f" `{attribute.name()}` {data_type} {optional},"
+
+        if json_attrs:
+            # Don't add inverses column to json attrs, as it is json by definition.
+            self.my_sql_classes_json_attrs[ifc_class] = json_attrs
 
         if self.should_get_inverses:
             statement += "inverses JSON, "
@@ -496,7 +510,7 @@ class Patcher(ifcpatch.BasePatcher):
     def insert_data(self, ifc_class: str) -> None:
         elements = self.file.by_type(ifc_class, include_subtypes=False)
 
-        rows: list[Any] = []
+        rows: list[list[Any]] = []
         id_map_rows: list[tuple[int, str]] = []
         pset_rows: list[tuple[int, str, str, Any]] = []
 
@@ -561,6 +575,13 @@ class Patcher(ifcpatch.BasePatcher):
                 self.c.executemany("INSERT INTO psets VALUES (?, ?, ?, ?);", pset_rows)
         elif self.sql_type == "mysql":
             if rows:
+                if json_attrs := self.my_sql_classes_json_attrs.get(ifc_class):
+                    for attr_i in json_attrs:
+                        for row in rows:
+                            # None automatically converted to null.
+                            if (value := row[attr_i]) is None:
+                                continue
+                            row[attr_i] = str(row[attr_i])
                 self.c.executemany(f"INSERT INTO {ifc_class} VALUES ({','.join(['%s']*len(rows[0]))});", rows)
                 self.c.executemany("INSERT INTO id_map VALUES (%s, %s);", id_map_rows)
             if pset_rows:
