@@ -224,6 +224,7 @@ class Patcher(ifcpatch.BasePatcher):
                     self.c.execute("INSERT INTO geometry VALUES (%s, %s, %s, %s, %s, %s);", row)
 
         self.db.commit()
+        self.c.close()  # Important for static use of Patcher on Windows.
         self.db.close()
 
     def create_geometry(self) -> None:
