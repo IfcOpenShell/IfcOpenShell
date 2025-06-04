@@ -71,7 +71,7 @@ class Patcher(ifcpatch.BasePatcher):
         host: str = "localhost",
         username: str = "root",
         password: str = "pass",
-        database: str = f"{DEFAULT_DATABASE_NAME}.sqlite",
+        database: str = DEFAULT_DATABASE_NAME,
         full_schema: bool = True,
         is_strict: bool = False,
         should_expand: bool = False,
@@ -83,9 +83,12 @@ class Patcher(ifcpatch.BasePatcher):
         """Convert an IFC-SPF model to SQLite or MySQL.
 
         :param sql_type: Choose between "SQLite" or "MySQL"
-        :param database: Database path to save the SQL database to (already existing or not).
+        :param database:
+            For SQLite - database path to save the SQL database to (already existing or not).
             Could also be a directory, then the database will be stored
             using default filename (e.g. 'database.sqlite').
+
+            For MySQL - database name.
         :filter_glob database: *.db;*.sqlite
         :param full_schema: if True, will create tables for all IFC classes,
             regardless if they are used or not in the dataset. If False, will
@@ -137,27 +140,41 @@ class Patcher(ifcpatch.BasePatcher):
     geometry_rows: dict[str, tuple[str, bytes, bytes, bytes, bytes, str]]
     shape_rows: dict[int, tuple[int, list[float], list[float], list[float], bytes, str]]
 
+    def get_output(self) -> Union[str, None]:
+        """Return resulting database filepath for sqlite and ``None`` for mysql."""
+        return self.file_patched
+
     def patch(self) -> None:
-        suffix = ".db" if self.sql_type == "SQLite" else ".sqlite"
-        database = Path(self.database)
-        if database.is_dir():
-            database = (database / DEFAULT_DATABASE_NAME).with_suffix(suffix)
-        elif not database.parent.exists():
-            database.parent.mkdir(parents=True, exist_ok=True)
+        if self.sql_type == "sqlite":
+            database = Path(self.database)
+            if database.is_dir():
+                database = database / DEFAULT_DATABASE_NAME
+            elif not database.parent.exists():
+                database.parent.mkdir(parents=True, exist_ok=True)
+            else:
+                # Assume it's a filepath - existing or not.
+                pass
+
+            if database.suffix.lower() not in (".sqlite", ".db"):
+                database = database.with_suffix(database.suffix + ".sqlite")
+            database = str(database)
+        elif self.sql_type == "mysql":
+            database = self.database
         else:
-            # Assume it's a filepath - existing or not.
-            pass
+            assert False
 
         self.schema = ifcopenshell.schema_by_name(self.file.schema_identifier)
 
         if self.sql_type == "sqlite":
             self.db = sqlite3.connect(database)
             self.c = self.db.cursor()
+            self.file_patched = database
         elif self.sql_type == "mysql":
             self.db = mysql.connector.connect(
-                host=self.host, user=self.username, password=self.password, database=str(database)
+                host=self.host, user=self.username, password=self.password, database=database
             )
             self.c = self.db.cursor()
+            self.file_patched = None
         else:
             assert False
 
