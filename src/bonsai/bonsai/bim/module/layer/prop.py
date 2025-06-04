@@ -59,6 +59,14 @@ class Layer(PropertyGroup):
         update=lambda self, context: update_layer_property(self, context, property="blocked"),
     )
 
+    if TYPE_CHECKING:
+        name: str
+        ifc_definition_id: int
+        with_style: bool
+        on: bool
+        frozen: bool
+        blocked: bool
+
 
 class BIMLayerProperties(PropertyGroup):
     layer_attributes: CollectionProperty(name="Layer Attributes", type=Attribute)

@@ -50,6 +50,7 @@ if TYPE_CHECKING:
     from bonsai.bim.prop import BIMProperties, BIMObjectProperties
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
     from bonsai.bim.module.csv.prop import CsvProperties
+    from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
     from bonsai.bim.module.diff.prop import DiffProperties
 
     T = TypeVar("T")
@@ -1645,12 +1646,23 @@ class Blender(bonsai.core.tool.Blender):
         return types.MappingProxyType(dct)
 
     @classmethod
+    def get_object_constraint_props(cls, obj: bpy.types.Object) -> BIMObjectConstraintProperties:
+        return obj.BIMObjectConstraintProperties
+
+    @classmethod
+    def get_constraint_props(cls) -> BIMConstraintProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMConstraintProperties
+
+    @classmethod
     def get_csv_props(cls) -> CsvProperties:
-        return bpy.context.scene.CsvProperties
+        assert (scene := bpy.context.scene)
+        return scene.CsvProperties
 
     @classmethod
     def get_diff_props(cls) -> DiffProperties:
-        return bpy.context.scene.DiffProperties
+        assert (scene := bpy.context.scene)
+        return scene.DiffProperties
 
     @classmethod
     def get_bim_props(cls, scene: Optional[bpy.types.Scene] = None) -> BIMProperties:

@@ -1033,7 +1033,7 @@ class IfcImporter:
         element: ifcopenshell.entity_instance,
         shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
     ) -> bpy.types.Curve:
-        if hasattr(shape, "geometry"):
+        if isinstance(shape, ifcopenshell.geom.ShapeElementType):
             geometry = shape.geometry
         else:
             geometry = shape
@@ -1066,7 +1066,7 @@ class IfcImporter:
         cartesian_point_offset: Union[npt.NDArray[np.float64], Literal[False]] = None,
     ) -> Union[bpy.types.Mesh, None]:
         try:
-            if hasattr(shape, "geometry"):
+            if isinstance(shape, ifcopenshell.geom.ShapeElementType):
                 # shape is ShapeElementType
                 geometry = shape.geometry
             else:

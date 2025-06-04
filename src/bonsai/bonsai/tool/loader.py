@@ -101,7 +101,7 @@ class Loader(bonsai.core.tool.Loader):
         shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
         mesh: tool.Geometry.TYPES_WITH_MESH_PROPERTIES,
     ) -> None:
-        geometry = shape.geometry if hasattr(shape, "geometry") else shape
+        geometry = shape.geometry if isinstance(shape, ifcopenshell.geom.ShapeElementType) else shape
         tool.Geometry.get_mesh_props(mesh).ifc_definition_id = int(geometry.id.split("-")[0])
 
     @classmethod
