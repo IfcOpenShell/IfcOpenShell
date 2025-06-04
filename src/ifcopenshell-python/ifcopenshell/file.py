@@ -33,6 +33,7 @@ from typing import Union
 from typing import overload
 from typing import Literal
 from typing import TypedDict
+
 # py39 compat: re-enable when support is dropped
 # from typing_extensions import assert_never
 

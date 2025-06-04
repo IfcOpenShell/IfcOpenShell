@@ -411,15 +411,11 @@ def draw_filter(
         if data.data["saved_searches"]:
             row.operator("bim.load_search", text="", icon="IMPORT").module = module
         row.operator("bim.save_search", text="", icon="EXPORT").module = module
-        if module != 'search':
-            if module == 'drawing_include':
-                row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = (
-                    "INCLUDE"
-                )
-            if module == 'drawing_exclude':
-                row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = (
-                    "EXCLUDE"
-                )
+        if module != "search":
+            if module == "drawing_include":
+                row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = "INCLUDE"
+            if module == "drawing_exclude":
+                row.operator("bim.edit_element_filter", icon="CHECKMARK", text="").filter_mode = "EXCLUDE"
             row.operator("bim.enable_editing_element_filter", icon="CANCEL", text="").filter_mode = "NONE"
     row = layout.row(align=True)
     row.operator("bim.add_filter_group", text="Add Search Group", icon="ADD").module = module

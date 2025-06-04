@@ -3476,7 +3476,7 @@ class EnableEditingElementFilter(bpy.types.Operator, tool.Ifc.Operator):
 
     @classmethod
     def description(cls, context, properties):
-        if properties.filter_mode == 'NONE':
+        if properties.filter_mode == "NONE":
             return "Cancel filter"
         return "Enable editing options for the include or exclude filter"
 
