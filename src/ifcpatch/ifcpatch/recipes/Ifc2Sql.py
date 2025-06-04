@@ -46,6 +46,7 @@ SQLTypes = typing.Literal["SQLite", "MySQL"]
 if TYPE_CHECKING:
     import sqlite3
     import mysql.connector
+    import mysql.connector.abstracts
 else:
     try:
         import sqlite3
@@ -55,6 +56,7 @@ else:
 
     try:
         import mysql.connector
+        import mysql.connector.abstracts
     except:
         print("No MySQL support")
         SQLTypes = typing.Literal["SQLite"]
@@ -221,13 +223,17 @@ class Patcher(ifcpatch.BasePatcher):
 
         if self.should_get_geometry:
             if self.sql_type == "sqlite":
+                assert isinstance(self.c, sqlite3.Cursor)
                 if self.shape_rows:
                     self.c.executemany("INSERT INTO shape VALUES (?, ?, ?, ?, ?, ?);", self.shape_rows.values())
                 if self.geometry_rows:
                     self.c.executemany("INSERT INTO geometry VALUES (?, ?, ?, ?, ?, ?);", self.geometry_rows.values())
             elif self.sql_type == "mysql":
+                assert isinstance(self.c, mysql.connector.abstracts.MySQLCursorAbstract)
                 if self.shape_rows:
-                    self.c.executemany("INSERT INTO shape VALUES (%s, %s, %s, %s, %s, %s);", self.shape_rows.values())
+                    # mysql is requiring it to be a list or a tuple.
+                    values = list(self.shape_rows.values())
+                    self.c.executemany("INSERT INTO shape VALUES (%s, %s, %s, %s, %s, %s);", values)
                 # Do row by row in case of max_allowed_packet
                 for row in self.geometry_rows.values():
                     self.c.execute("INSERT INTO geometry VALUES (%s, %s, %s, %s, %s, %s);", row)
