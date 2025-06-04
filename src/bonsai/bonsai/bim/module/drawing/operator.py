@@ -62,7 +62,7 @@ from bpy_extras.image_utils import load_image
 if TYPE_CHECKING:
     from bonsai.bim.module.drawing.prop import RenderType
     from bonsai.bim.module.project.prop import Link
-    from bpy._typing import rna_enums
+    from bpy.stub_internal import rna_enums
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 

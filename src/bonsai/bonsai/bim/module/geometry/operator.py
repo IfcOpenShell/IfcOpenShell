@@ -52,7 +52,7 @@ from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never, N
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 if TYPE_CHECKING:
-    from bpy._typing import rna_enums
+    from bpy.stub_internal import rna_enums
 
 
 class EditObjectPlacement(bpy.types.Operator, tool.Ifc.Operator):

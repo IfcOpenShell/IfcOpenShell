@@ -23,7 +23,7 @@ from ifcopenshell.api.owner.add_address import ADDRESS_TYPE
 from typing import TYPE_CHECKING, get_args
 
 if TYPE_CHECKING:
-    import bpy._typing.rna_enums as rna_enums
+    import bpy.stub_internal.rna_enums as rna_enums
 
 
 class EnableEditingPerson(bpy.types.Operator):

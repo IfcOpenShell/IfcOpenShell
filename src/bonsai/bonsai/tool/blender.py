@@ -46,7 +46,7 @@ from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, G
 from typing_extensions import assert_never
 
 if TYPE_CHECKING:
-    import bpy._typing.rna_enums as rna_enums
+    import bpy.stub_internal.rna_enums as rna_enums
     from bonsai.bim.prop import BIMProperties, BIMObjectProperties
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
     from bonsai.bim.module.csv.prop import CsvProperties

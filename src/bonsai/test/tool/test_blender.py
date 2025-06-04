@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING
 from bonsai.tool.blender import Blender as subject
 
 if TYPE_CHECKING:
-    import bpy._typing.rna_enums as rna_enums
+    import bpy.stub_internal.rna_enums as rna_enums
 
 
 class TestImplementsTool(NewFile):
