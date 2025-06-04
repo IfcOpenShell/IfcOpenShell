@@ -178,6 +178,7 @@ class Patcher(ifcpatch.BasePatcher):
         else:
             assert False
 
+        self.check_existing_ifc_database()
         self.create_id_map()
         self.create_metadata()
 
@@ -294,6 +295,30 @@ class Patcher(ifcpatch.BasePatcher):
                 self.shape_rows[shape_id] = (shape_id, x, y, z, m.tobytes(), geometry_id)
             if not iterator.next():
                 break
+
+    def check_existing_ifc_database(self) -> None:
+        if self.sql_type == "sqlite":
+            cursor = self.c.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='id_map'")
+            assert cursor is not None
+            row = cursor.fetchone()
+        elif self.sql_type == "mysql":
+            cursor = self.c.execute(
+                f"""
+                SELECT 1 FROM information_schema.tables
+                WHERE table_schema = '{self.database}' AND table_name = 'id_map'
+                LIMIT 1;
+                """
+            )
+            row = self.c.fetchone()
+        else:
+            assert_never(self.sql_type)
+
+        if row is not None:
+            # TODO: convert to error as it's unsafe?
+            print(
+                f"WARNING. {self.sql_type} database ('{self.database}') was already used for ifc2sql patch before ('id_map' table found). "
+                "Which could lead to mixed up ids and other unexpected results."
+            )
 
     def create_id_map(self) -> None:
         if self.sql_type == "sqlite":
