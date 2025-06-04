@@ -273,6 +273,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
             cls.bsdd_properties[bsdd_prop["uri"]] = bsdd_prop
             new = props.properties.add()
             new.name = bsdd_prop["name"]
+            new.code = bsdd_prop["propertyCode"]
             new.pset = bsdd_prop["propertySet"]
             new.uri = bsdd_prop["uri"]
 
@@ -290,6 +291,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
             for bsdd_prop in cls.client.get_properties(dictionary_uri, keyword)["properties"]:
                 new = props.properties.add()
                 new.name = bsdd_prop["name"]
+                new.code = bsdd_prop["code"]
                 new.uri = bsdd_prop["uri"]
 
     @classmethod
@@ -308,9 +310,9 @@ class Bsdd(bonsai.core.tool.Bsdd):
                 prop_data = cls.get_bsdd_property(bsdd_prop.uri)
                 pset_name = prop_data.get("propertyClasses", [{}])[0].get("propertySet", "")
 
-            imported_props.add((pset_name, bsdd_prop.name))
+            imported_props.add((pset_name, bsdd_prop.code))
             if (
-                selected_property := props.selected_properties.get(bsdd_prop.name)
+                selected_property := props.selected_properties.get(bsdd_prop.code)
             ) and selected_property.metadata == pset_name:
                 continue
 
@@ -324,7 +326,7 @@ class Bsdd(bonsai.core.tool.Bsdd):
                 possible_values = [v["value"] for v in possible_values]
 
             new = props.selected_properties.add()
-            new.name = bsdd_prop.name
+            new.name = bsdd_prop.code
             if possible_values:
                 new.enum_items = json.dumps(possible_values)
                 new.data_type = "enum"

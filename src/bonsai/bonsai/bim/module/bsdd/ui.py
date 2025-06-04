@@ -106,7 +106,10 @@ class BIM_UL_bsdd_properties(UIList):
     def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
         if item:
             row = layout.row(align=True)
-            row.label(text=item.name)
+            name = item.name
+            if name != item.code:
+                name += f" ({item.code})"
+            row.label(text=name)
             if item.pset:
                 row.label(text=item.pset)
             row.operator("bim.open_uri", text="", icon="URL").uri = item.uri
