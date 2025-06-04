@@ -46,7 +46,14 @@ class IFC2X3:
     @pytest.fixture(autouse=True)
     def setup(self):
         self.file: ifcopenshell.file = ifcopenshell.api.run("project.create_file", version="IFC2X3")
-        ifcopenshell.api.owner.settings.get_user = lambda ifc: ifc.createIfcPersonAndOrganization()
+
+        def get_user(ifc_file: ifcopenshell.file) -> ifcopenshell.entity_instance:
+            person = ifcopenshell.api.owner.add_person(ifc_file)
+            organization = ifcopenshell.api.owner.add_organisation(ifc_file)
+            pao = ifcopenshell.api.owner.add_person_and_organisation(ifc_file, person, organization)
+            return pao
+
+        ifcopenshell.api.owner.settings.get_user = get_user
         ifcopenshell.api.owner.settings.get_application = lambda ifc: ifc.createIfcApplication()
         ifcopenshell.api.pre_listeners = {}
         ifcopenshell.api.post_listeners = {}
