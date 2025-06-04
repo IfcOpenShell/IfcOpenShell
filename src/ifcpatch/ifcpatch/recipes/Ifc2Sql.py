@@ -475,15 +475,18 @@ class Patcher(ifcpatch.BasePatcher):
             elif isinstance(primitive, tuple):
                 data_type = "JSON"
             else:
-                print(attribute, primitive)  # Not implemented?
+                print("Possibly not implemented attribute data type:", attribute, primitive)
             if not self.is_strict or derived[i]:
                 optional = "DEFAULT NULL"
             else:
                 optional = "DEFAULT NULL" if attribute.optional() else "NOT NULL"
             statement += f" `{attribute.name()}` {data_type} {optional},"
 
+        if self.should_get_inverses:
+            statement += "inverses JSON, "
+
         if self.should_expand:
-            statement = statement[0:-1]
+            statement = statement.removesuffix(",")
         else:
             statement += " PRIMARY KEY (`ifc_id`)"
 
