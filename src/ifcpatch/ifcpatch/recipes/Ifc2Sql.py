@@ -85,11 +85,11 @@ class Patcher(ifcpatch.BasePatcher):
         """Convert an IFC-SPF model to SQLite or MySQL.
 
         :param sql_type: Choose between "SQLite" or "MySQL"
-        :param database:
+        :param database: Database filepath / name.
             For SQLite - database path to save the SQL database to (already existing or not).
             Could also be a directory, then the database will be stored
             using default filename (e.g. 'database.sqlite').
-
+            If filepath is missing fitting suffix, it will be added.
             For MySQL - database name.
         :filter_glob database: *.db;*.sqlite
         :param full_schema: if True, will create tables for all IFC classes,
