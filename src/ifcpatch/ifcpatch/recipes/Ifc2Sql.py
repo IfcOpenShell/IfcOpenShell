@@ -164,7 +164,7 @@ class Patcher(ifcpatch.BasePatcher):
                 # Assume it's a filepath - existing or not.
                 pass
 
-            if database.suffix.lower() not in (".sqlite", ".db"):
+            if database.suffix.lower() not in (".sqlite", ".db", ".ifcsqlite"):
                 database = database.with_suffix(database.suffix + ".sqlite")
             database = str(database)
         elif self.sql_type == "mysql":
