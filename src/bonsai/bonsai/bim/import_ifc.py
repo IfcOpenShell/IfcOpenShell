@@ -856,7 +856,7 @@ class IfcImporter:
         return obj
 
     def load_existing_meshes(self) -> None:
-        self.meshes.update({m.name: m for m in bpy.data.meshes})
+        self.meshes.update({m.name: m for m in bpy.data.meshes if m.library is None})
 
     def merge_materials_by_colour(self):
         cleaned_materials = {}
@@ -1075,7 +1075,7 @@ class IfcImporter:
             # Mesh may already exists (e.g. during representation reimport)
             # and we assign some suffix to it to prevent Blender from adding '.001' suffix to the new mesh.
             mesh_name = tool.Loader.get_mesh_name_from_shape(geometry)
-            if old_mesh := bpy.data.meshes.get(mesh_name):
+            if old_mesh := bpy.data.meshes.get((mesh_name, None)):
                 old_mesh.name = mesh_name + ".old"
             mesh = bpy.data.meshes.new(mesh_name)
 

@@ -674,7 +674,7 @@ class Geometry(bonsai.core.tool.Geometry):
 
     @classmethod
     def get_representation_data(cls, representation: ifcopenshell.entity_instance) -> Union[bpy.types.Mesh, None]:
-        return bpy.data.meshes.get(cls.get_representation_name(representation))
+        return bpy.data.meshes.get((cls.get_representation_name(representation), None))
 
     @classmethod
     def get_representation_id(cls, representation: ifcopenshell.entity_instance) -> int:
