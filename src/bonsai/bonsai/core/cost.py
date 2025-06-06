@@ -76,8 +76,8 @@ def add_cost_item(ifc: type[tool.Ifc], cost: type[tool.Cost], cost_item: ifcopen
     # cost.enable_editing_cost_schedule_attributes(cost_schedule)
 
 
-def expand_cost_item(cost: type[tool.Cost], cost_item: ifcopenshell.entity_instance) -> None:
-    cost.expand_cost_item(cost_item)
+def expand_cost_item(cost: type[tool.Cost], cost_item_id: int) -> None:
+    cost.expand_cost_item(cost_item_id)
     cost.load_cost_schedule_tree()
 
 
@@ -86,8 +86,8 @@ def expand_cost_items(cost: type[tool.Cost]) -> None:
     cost.load_cost_schedule_tree()
 
 
-def contract_cost_item(cost: type[tool.Cost], cost_item: ifcopenshell.entity_instance) -> None:
-    cost.contract_cost_item(cost_item)
+def contract_cost_item(cost: type[tool.Cost], cost_item_id: int) -> None:
+    cost.contract_cost_item(cost_item_id)
     cost.load_cost_schedule_tree()
 
 
@@ -368,12 +368,18 @@ def remove_cost_column(cost: type[tool.Cost], name: str) -> None:
     cost.remove_cost_column(name)
 
 
-def expand_cost_item_rate(cost: type[tool.Cost], cost_item: int) -> None:
-    cost.expand_cost_item_rate(cost_item)
+def expand_cost_item_rate(cost: type[tool.Cost], cost_item_id: int) -> None:
+    cost.expand_cost_item_rate(cost_item_id)
+    schedule_of_rates = cost.get_active_schedule_of_rates()
+    assert schedule_of_rates
+    cost.load_schedule_of_rates_tree(schedule_of_rates)
 
 
-def contract_cost_item_rate(cost: type[tool.Cost], cost_item: int) -> None:
-    cost.contract_cost_item_rate(cost_item)
+def contract_cost_item_rate(cost: type[tool.Cost], cost_item_id: int) -> None:
+    cost.contract_cost_item_rate(cost_item_id)
+    schedule_of_rates = cost.get_active_schedule_of_rates()
+    assert schedule_of_rates
+    cost.load_schedule_of_rates_tree(schedule_of_rates)
 
 
 def calculate_cost_item_resource_value(ifc: type[tool.Ifc], cost_item: ifcopenshell.entity_instance) -> None:

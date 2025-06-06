@@ -154,7 +154,7 @@ class ExpandCostItem(bpy.types.Operator, tool.Ifc.Operator):
         cost_item: int
 
     def _execute(self, context):
-        core.expand_cost_item(tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+        core.expand_cost_item(tool.Cost, cost_item_id=self.cost_item)
 
 
 class ExpandCostItems(bpy.types.Operator, tool.Ifc.Operator):
@@ -179,7 +179,7 @@ class ContractCostItem(bpy.types.Operator, tool.Ifc.Operator):
         cost_item: int
 
     def _execute(self, context):
-        core.contract_cost_item(tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+        core.contract_cost_item(tool.Cost, cost_item_id=self.cost_item)
 
 
 class ContractCostItems(bpy.types.Operator, tool.Ifc.Operator):
