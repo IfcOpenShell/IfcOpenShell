@@ -174,6 +174,39 @@ class TestSetObjectName(NewFile):
 
 
 class TestReassignClass(NewFile):
+    def test_reassign_type_to_reassign_occurrences(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        context = bpy.context
+
+        n_wall_types = len(ifc_file.by_type("IfcWallType"))
+        n_slab_types = len(ifc_file.by_type("IfcSlabType"))
+        relating_type = ifc_file.by_type("IfcSlabType")[0]
+        relating_type_obj = tool.Ifc.get_object(relating_type)
+        assert isinstance(relating_type_obj, bpy.types.Object)
+        relating_type_id = relating_type.id()
+
+        # Add occurrences.
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+
+        # Run operator.
+        tool.Blender.set_objects_selection(context, relating_type_obj, selected_objects=(relating_type_obj,))
+        props = tool.Root.get_root_props()
+        props.ifc_product = "IfcElementType"
+        props.ifc_class = "IfcWallType"
+        bpy.ops.bim.reassign_class()
+
+        assert len(ifc_file.by_type("IfcWall")) == 3
+        assert len(ifc_file.by_type("IfcSlab")) == 0
+        assert len(ifc_file.by_type("IfcWallType")) == n_wall_types + 1
+        assert len(ifc_file.by_type("IfcSlabType")) == n_slab_types - 1
+        for wall in ifc_file.by_type("IfcWall"):
+            assert isinstance(obj := tool.Ifc.get_object(wall), bpy.types.Object)
+            assert obj.name.startswith("IfcWall/")
+
     def test_reassigning_multiple_occurrences_of_the_same_type(self):
         tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
         bpy.ops.bim.create_project()
