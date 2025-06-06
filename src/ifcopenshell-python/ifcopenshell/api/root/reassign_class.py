@@ -97,7 +97,7 @@ class Usecase:
     ) -> ifcopenshell.entity_instance:
         self.occurrence_class = occurrence_class
         was_type_product_before = product.is_a("IfcTypeProduct")
-        schema = ifcopenshell.schema_by_name(self.file.schema)
+        self.schema = schema = ifcopenshell.schema_by_name(self.file.schema)
         is_type_product_after: bool
         is_type_product_after = schema.declaration_by_name(ifc_class)._is("IfcTypeProduct")
 
@@ -199,6 +199,9 @@ class Usecase:
                 occurrence_class = next(
                     iter(ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema))
                 )
+            assert not self.schema.declaration_by_name(occurrence_class)._is(
+                "IfcTypeProduct"
+            ), f"Unexpected occurrence_class: '{occurrence_class}' / '{self.occurrence_class}'."
 
             for occurrence in ifcopenshell.util.element.get_types(element):
                 self.reassign_class(occurrence, occurrence_class, predefined_type)
