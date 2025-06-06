@@ -93,11 +93,14 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
+    if TYPE_CHECKING:
+        obj: str
+
     def _execute(self, context):
         if self.obj:
-            objects = [bpy.data.objects.get(self.obj)]
+            objects = [bpy.data.objects[self.obj]]
         else:
-            objects = set(context.selected_objects + [context.active_object])
+            objects = tool.Blender.get_selected_objects()
         self.file = tool.Ifc.get()
         root_props = tool.Root.get_root_props()
         ifc_product = root_props.ifc_product

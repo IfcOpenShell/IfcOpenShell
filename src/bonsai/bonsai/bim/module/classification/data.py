@@ -21,6 +21,7 @@ import ifcopenshell
 import ifcopenshell.util.date
 import ifcopenshell.util.classification
 import bonsai.tool as tool
+from typing import Any
 from bonsai.bim.ifc import IfcStore
 
 
@@ -157,8 +158,8 @@ class CostClassificationsData(ReferencesData):
         cls.data["object_type"] = "Cost"
 
     @classmethod
-    def references(cls):
-        results = []
+    def references(cls) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
         props = tool.Cost.get_cost_props()
         element = tool.Ifc.get().by_id(props.cost_items[props.active_cost_item_index].ifc_definition_id)
         if element:

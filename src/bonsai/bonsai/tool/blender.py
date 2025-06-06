@@ -42,7 +42,7 @@ from mathutils import Vector
 from pathlib import Path
 from functools import lru_cache, cache
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator, TYPE_CHECKING
+from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator, TYPE_CHECKING, Sequence
 from typing_extensions import assert_never
 
 if TYPE_CHECKING:
@@ -657,7 +657,7 @@ class Blender(bonsai.core.tool.Blender):
         cls,
         context: bpy.types.Context,
         active_object: Optional[bpy.types.Object] = None,
-        selected_objects: list[bpy.types.Object] = list(),
+        selected_objects: Sequence[bpy.types.Object] = (),
         clear_previous_selection=True,
     ) -> None:
         if clear_previous_selection:

@@ -102,7 +102,7 @@ class RemoveProfileDef(bpy.types.Operator, tool.Ifc.Operator):
             self.report({"ERROR"}, error_msg)
             return {"CANCELLED"}
 
-        ifcopenshell.api.run("profile.remove_profile", ifc_file, profile=profile)
+        ifcopenshell.api.profile.remove_profile(ifc_file, profile=profile)
         bpy.ops.bim.load_profiles()
 
         # preserve selected index if possible
@@ -145,7 +145,7 @@ class EditProfile(bpy.types.Operator, tool.Ifc.Operator):
         props = tool.Profile.get_profile_props()
         attributes = bonsai.bim.helper.export_attributes(props.profile_attributes)
         profile = tool.Ifc.get().by_id(props.active_profile_id)
-        ifcopenshell.api.run("profile.edit_profile", tool.Ifc.get(), profile=profile, attributes=attributes)
+        ifcopenshell.api.profile.edit_profile(tool.Ifc.get(), profile=profile, attributes=attributes)
         model_profile.DumbProfileRegenerator().regenerate_from_profile_def(profile)
         bpy.ops.bim.load_profiles()
         generate_thumbnail_for_active_profile()
@@ -179,6 +179,7 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
                 points = [(0, 0), (0.1, 0), (0.1, 0.1), (0, 0.1), (0, 0)]
                 profile = ifcopenshell.api.profile.add_arbitrary_profile(tool.Ifc.get(), profile=points)
             else:
+                assert obj and isinstance(obj.data, bpy.types.Mesh)
                 if "inner_curves" not in indices:
                     points = [(obj.data.vertices[i].co.x, obj.data.vertices[i].co.y) for i in indices["profile"]]
                     points.append(points[0])
@@ -199,7 +200,7 @@ class AddProfileDef(bpy.types.Operator, tool.Ifc.Operator):
                     )
 
         else:
-            profile = ifcopenshell.api.run("profile.add_parameterized_profile", tool.Ifc.get(), ifc_class=profile_class)
+            profile = ifcopenshell.api.profile.add_parameterized_profile(tool.Ifc.get(), ifc_class=profile_class)
             tool.Profile.set_default_profile_attrs(profile)
         profile.ProfileName = "New Profile"
         bpy.ops.bim.load_profiles()

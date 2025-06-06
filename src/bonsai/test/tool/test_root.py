@@ -221,7 +221,9 @@ class TestReassignClass(NewFile):
         bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
         bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
 
-        slabs = [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSlab")]
+        slabs = [
+            obj for e in ifc_file.by_type("IfcSlab") if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)
+        ]
         assert len(slabs) == 3
         tool.Blender.set_objects_selection(context, slabs[0], (slabs[1],))
 
