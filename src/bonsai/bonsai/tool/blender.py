@@ -42,7 +42,7 @@ from mathutils import Vector
 from pathlib import Path
 from functools import lru_cache, cache
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator, TYPE_CHECKING, Sequence
+from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator, TYPE_CHECKING, Sequence, Sized
 from typing_extensions import assert_never
 
 if TYPE_CHECKING:
@@ -1691,6 +1691,14 @@ class Blender(bonsai.core.tool.Blender):
         if 0 <= index < len(collection):
             return collection[index]
         return None
+
+    @classmethod
+    def get_valid_uilist_index(cls, current_index: int, items: Sized) -> int:
+        """
+        Method to help maintaining item selection after some uilist item was removed
+        and items were reloaded.
+        """
+        return max(0, min(current_index, len(items) - 1))
 
     @classmethod
     def clear_undo_history(cls) -> None:

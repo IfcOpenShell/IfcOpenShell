@@ -161,7 +161,10 @@ class CostClassificationsData(ReferencesData):
     def references(cls) -> list[dict[str, Any]]:
         results: list[dict[str, Any]] = []
         props = tool.Cost.get_cost_props()
-        element = tool.Ifc.get().by_id(props.cost_items[props.active_cost_item_index].ifc_definition_id)
+        active_cost_item = props.active_cost_item
+        if not active_cost_item:
+            return results
+        element = tool.Ifc.get().by_id(active_cost_item.ifc_definition_id)
         if element:
             for reference in ifcopenshell.util.classification.get_references(element):
                 data = reference.get_info()

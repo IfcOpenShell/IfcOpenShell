@@ -106,8 +106,7 @@ class RemoveProfileDef(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.bim.load_profiles()
 
         # preserve selected index if possible
-        if props.profiles:
-            props.active_profile_index = min(current_index, len(props.profiles) - 1)
+        props.active_profile_index = tool.Blender.get_valid_uilist_index(props.active_profile_index, props.profiles)
 
 
 class EnableEditingProfile(bpy.types.Operator):

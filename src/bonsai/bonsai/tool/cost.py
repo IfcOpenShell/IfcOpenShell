@@ -168,6 +168,9 @@ class Cost(bonsai.core.tool.Cost):
             for rel in cost_schedule.Controls or []
             for cost_item in rel.RelatedObjects or []
         ]
+        props.active_cost_item_index = tool.Blender.get_valid_uilist_index(
+            props.active_cost_item_index, props.cost_items
+        )
         props.is_cost_update_enabled = True
 
     @classmethod
@@ -208,6 +211,7 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def clean_up_cost_item_tree(cls, cost_item_id: int) -> None:
+        """Clean up cost item tree after ``cost_item_id`` was deleted."""
         props = cls.get_cost_props()
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)

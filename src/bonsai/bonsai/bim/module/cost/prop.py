@@ -34,7 +34,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Union
 
 
 def get_schedule_of_rates(self: "BIMCostProperties", context: bpy.types.Context) -> tool.Blender.BLENDER_ENUM_ITEMS:
@@ -345,3 +345,7 @@ class BIMCostProperties(PropertyGroup):
         currency: str
         custom_currency: str
         cost_schedule_files: bpy.types.bpy_prop_collection_idprop[CostItemsMapping]
+
+    @property
+    def active_cost_item(self) -> Union[CostItem, None]:
+        return tool.Blender.get_active_uilist_element(self.cost_items, self.active_cost_item_index)
