@@ -162,7 +162,6 @@ class ExpandCostItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Expand Cost Items"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Expand all cost items"
-    cost_items: bpy.props.StringProperty()
 
     def _execute(self, context):
         core.expand_cost_items(tool.Cost)
@@ -187,7 +186,6 @@ class ContractCostItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Contract Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Collapse cost item tree"
-    cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
         core.contract_cost_items(tool.Cost)
