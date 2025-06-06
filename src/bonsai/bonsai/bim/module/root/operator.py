@@ -150,6 +150,7 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
         # after class reassignment
         elements_to_update = elements_to_update | set(elements_to_reassign)
         objects_to_update = set(o for e in elements_to_update if (o := tool.Ifc.get_object(e)))
+        occurrence_class = None if tool.Ifc.schema().declaration_by_name(ifc_class)._is("IfcTypeProduct") else ifc_class
 
         reassigned_elements: set[ifcopenshell.entity_instance] = set()
         for element, ifc_class_ in elements_to_reassign.items():
@@ -160,7 +161,7 @@ class ReassignClass(bpy.types.Operator, tool.Ifc.Operator):
                 predefined_type=predefined_type,
                 # Provide occurrence class in all cases as it won't really matter
                 # for non-IfcTypeProducts.
-                occurrence_class=ifc_class,
+                occurrence_class=occurrence_class,
             )
             reassigned_elements.add(element)
 
