@@ -1539,7 +1539,7 @@ class ExportIFC(bpy.types.Operator, ExportHelper):
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     supported_filexts = (".ifc", ".ifczip", ".ifcjson")
-    filter_glob: bpy.props.StringProperty(default=",".join(f"*{ext}" for ext in supported_filexts), options={"HIDDEN"})
+    filter_glob: bpy.props.StringProperty(default=";".join(f"*{ext}" for ext in supported_filexts), options={"HIDDEN"})
     json_version: bpy.props.EnumProperty(items=[("4", "4", ""), ("5a", "5a", "")], name="IFC JSON Version")
     json_compact: bpy.props.BoolProperty(name="Export Compact IFCJSON", default=False)
     should_save_as: bpy.props.BoolProperty(name="Should Save As", default=False, options={"HIDDEN"})
