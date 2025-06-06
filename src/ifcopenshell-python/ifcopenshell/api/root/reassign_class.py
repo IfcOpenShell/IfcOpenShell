@@ -177,18 +177,31 @@ class Usecase:
         ifc_class: str,
         predefined_type: Union[str, None],
     ) -> ifcopenshell.entity_instance:
+        """
+        Simple class reassignment doesn't involve changing class type.
+
+        E.g. IfcWindow (IfcProduct class) -> IfcWall (other IfcProduct class).
+
+        Changing class type (e.g. IfcWindowType -> IfcWindow) is more complex
+        as it requires to recreate some entities / assign them in different way
+        (e.g. representations, property sets and their rels).
+        """
         element = self.reassign_class(element, ifc_class, predefined_type)
         if element.is_a("IfcTypeProduct"):
+
+            if self.occurrence_class:
+                occurrence_class = self.occurrence_class
+            else:
+                # NOTE: in theory we can skip reassignment in IFC2X3 in some cases
+                # e.g. if occurrence is IfcRoof and we're reassigning to IfcBuildingElementProxyType
+                # but currently type_to_entity_map doesn't completely match entity_to_type_map,
+                # see type.py for more details.
+                occurrence_class = next(
+                    iter(ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema))
+                )
+
             for occurrence in ifcopenshell.util.element.get_types(element):
-                if self.occurrence_class:
-                    ifc_class_ = self.occurrence_class
-                else:
-                    # NOTE: in theory we can skip reassignment in IFC2X3 in some cases
-                    # e.g. if occurrence is IfcRoof and we're reassigning to IfcBuildingElementProxyType
-                    # but currently type_to_entity_map doesn't completely match entity_to_type_map,
-                    # see type.py for more details.
-                    ifc_class_ = next(iter(ifcopenshell.util.type.get_applicable_entities(ifc_class, self.file.schema)))
-                self.reassign_class(occurrence, ifc_class_, predefined_type)
+                self.reassign_class(occurrence, occurrence_class, predefined_type)
         else:
             element_type = ifcopenshell.util.element.get_type(element)
             if element_type:
