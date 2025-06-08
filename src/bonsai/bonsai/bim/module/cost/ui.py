@@ -76,12 +76,12 @@ class BIM_PT_cost_schedules(Panel):
             col = row0.column()
             col.label(text="Linked CSV:")
             row_1 = col.row(align=True)
-            if self.props.active_cost_schedule_id in [item.cost_item_id for item in self.props.cost_schedule_files]:
+            if self.props.active_cost_schedule_id in [item.cost_schedule_id for item in self.props.cost_schedule_files]:
                 file = next(
                     (
                         item.csv_filepath
                         for item in self.props.cost_schedule_files
-                        if item.cost_item_id == self.props.active_cost_schedule_id
+                        if item.cost_schedule_id == self.props.active_cost_schedule_id
                     ),
                     None,
                 )
