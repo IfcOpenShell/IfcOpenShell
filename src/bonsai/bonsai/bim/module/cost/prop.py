@@ -168,12 +168,12 @@ class CostItemQuantity(PropertyGroup):
         total_cost_quantity: float
 
 
-class CostItemsMapping(PropertyGroup):
-    cost_item_id: IntProperty(name="cost_item_id")
+class CostSchedulesMapping(PropertyGroup):
+    cost_schedule_id: IntProperty(name="cost_schedule_id")
     csv_filepath: StringProperty(name="filepath")
 
     if TYPE_CHECKING:
-        cost_item_id: int
+        cost_schedule_id: int
         csv_filepath: str
 
 
@@ -282,7 +282,7 @@ class BIMCostProperties(PropertyGroup):
     custom_currency: StringProperty(
         name="Custom Currency", default="USD", description="Custom Currency in ISO 4217 format"
     )
-    cost_schedule_files: CollectionProperty(name="Cost Schedule Files", type=CostItemsMapping)
+    cost_schedule_files: CollectionProperty(name="Cost Schedule Files", type=CostSchedulesMapping)
 
     if TYPE_CHECKING:
         cost_schedule_predefined_types: str
@@ -337,4 +337,4 @@ class BIMCostProperties(PropertyGroup):
         show_cost_item_operators: bool
         currency: str
         custom_currency: str
-        cost_schedule_files: bpy.types.bpy_prop_collection_idprop[CostItemsMapping]
+        cost_schedule_files: bpy.types.bpy_prop_collection_idprop[CostSchedulesMapping]
