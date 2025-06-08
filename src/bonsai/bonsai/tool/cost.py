@@ -598,9 +598,9 @@ class Cost(bonsai.core.tool.Cost):
             return
 
         props = cls.get_cost_props()
-        if not props.active_cost_schedule_id in [item.cost_item_id for item in props.cost_schedule_files]:
+        if not props.active_cost_schedule_id in [item.cost_schedule_id for item in props.cost_schedule_files]:
             item = props.cost_schedule_files.add()
-            item.cost_item_id = cost_schedule.id()
+            item.cost_schedule_id = cost_schedule.id()
             item.csv_filepath = file_path
         else:
             return
@@ -612,9 +612,9 @@ class Cost(bonsai.core.tool.Cost):
 
         props = cls.get_cost_props()
         cost_schedule_id = cost_schedule.id()
-        if cost_schedule_id in [item.cost_item_id for item in props.cost_schedule_files]:
+        if cost_schedule_id in [item.cost_schedule_id for item in props.cost_schedule_files]:
             for i, item in enumerate(props.cost_schedule_files):
-                if item.cost_item_id == cost_schedule_id:
+                if item.cost_schedule_id == cost_schedule_id:
                     props.cost_schedule_files.remove(i)
                     print(f"Cost schedule id={cost_schedule_id} csv filepath correctly removed")
                     return
@@ -637,7 +637,7 @@ class Cost(bonsai.core.tool.Cost):
         props = cls.get_cost_props()
         cost_schedule_id = props.active_cost_schedule_id
         file_path = next(
-            (item.csv_filepath for item in props.cost_schedule_files if item.cost_item_id == cost_schedule_id), None
+            (item.csv_filepath for item in props.cost_schedule_files if item.cost_schedule_id == cost_schedule_id), None
         )
         if not file_path:
             return
