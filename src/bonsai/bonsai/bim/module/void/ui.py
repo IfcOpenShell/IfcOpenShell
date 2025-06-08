@@ -24,7 +24,7 @@ from bonsai.bim.module.void.data import BooleansData, VoidsData
 from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    import bpy._typing.rna_enums as rna_enums
+    import bpy.stub_internal.rna_enums as rna_enums
 
 
 OPENING_ICON = "SELECT_SUBTRACT"

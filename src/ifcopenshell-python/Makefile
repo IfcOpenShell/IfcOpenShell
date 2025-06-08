@@ -58,6 +58,11 @@ endif
 IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.8.3-ec13294-$(PLATFORM).zip
 IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.8.3-ec13294-$(PLATFORM).zip
 
+.PHONY: build-urls
+build-urls:
+	@echo ${IOS_URL}
+	@echo ${IFCCONVERT_URL}
+
 .PHONY: test
 test:
 	pytest -p no:pytest-blender test --ignore=test/util/test_shape_builder.py

@@ -52,7 +52,7 @@ from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never, N
 from bonsai.bim.module.model.decorator import ProfileDecorator
 
 if TYPE_CHECKING:
-    from bpy._typing import rna_enums
+    from bpy.stub_internal import rna_enums
 
 
 class EditObjectPlacement(bpy.types.Operator, tool.Ifc.Operator):
@@ -1000,14 +1000,16 @@ class OverrideOutlinerDelete(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         selected_ids_data = self.get_selected_ids_data(context)
-        try:
-            with context.temp_override(selected_objects=list(selected_ids_data.objects)):
-                bpy.ops.bim.override_object_delete(is_batch=self.is_batch)
-        except RuntimeError as e:
-            error_reports = tool.Blender.extract_error_reports(e)
-            if not error_reports:
-                raise
-            tool.Blender.report_operator_errors(self, error_reports)
+
+        if selected_ids_data.objects:
+            try:
+                with context.temp_override(selected_objects=list(selected_ids_data.objects)):
+                    bpy.ops.bim.override_object_delete(is_batch=self.is_batch)
+            except RuntimeError as e:
+                error_reports = tool.Blender.extract_error_reports(e)
+                if not error_reports:
+                    raise
+                tool.Blender.report_operator_errors(self, error_reports)
 
         for collection in selected_ids_data.collections:
             # Removing an aggregate object would also remove it's collection

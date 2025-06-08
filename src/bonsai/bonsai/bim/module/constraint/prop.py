@@ -32,6 +32,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Literal
 
 
 def get_available_constraint_types(self, context):
@@ -44,6 +45,10 @@ class Constraint(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
+    if TYPE_CHECKING:
+        name: str
+        ifc_definition_id: int
+
 
 class BIMConstraintProperties(PropertyGroup):
     constraint_attributes: CollectionProperty(name="Constraint Attributes", type=Attribute)
@@ -52,7 +57,18 @@ class BIMConstraintProperties(PropertyGroup):
     active_constraint_index: IntProperty(name="Active Constraint Index")
     is_editing: StringProperty(name="Is Editing")
 
+    if TYPE_CHECKING:
+        constraint_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        active_constraint_id: int
+        constraints: bpy.types.bpy_prop_collection_idprop[Constraint]
+        active_constraint_index: int
+        is_editing: str
+
 
 class BIMObjectConstraintProperties(PropertyGroup):
     is_adding: StringProperty(name="Is Adding")
     available_constraint_types: EnumProperty(items=get_available_constraint_types, name="Available Constraint Types")
+
+    if TYPE_CHECKING:
+        is_adding: str
+        available_constraint_types: Literal["IfcObjective"]

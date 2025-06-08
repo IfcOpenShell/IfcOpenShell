@@ -260,7 +260,7 @@ def schema_by_name(
     return ifcopenshell_wrapper.schema_by_name(schema)
 
 
-def guess_format(path: Path) -> Union[str, None]:
+def guess_format(path: Path) -> Literal[".ifc", ".ifcZIP", ".ifcXML", ".ifcJSON", ".ifcSQLite", None]:
     """Guesses the IFC format using file extension
 
     IFCs may be serialised as different formats. The most common is a ``.ifc``
@@ -273,8 +273,6 @@ def guess_format(path: Path) -> Union[str, None]:
 
     Users generally won't call this function. The :func:`open` function uses
     this internally to guess the file format.
-
-    :return: Either .ifc, .ifcZIP, .ifcXML, .ifcJSON, .ifcSQLite, or None.
     """
     suffix = path.suffix.lower()
     if suffix == ".ifc":

@@ -74,9 +74,6 @@ class Loader(bonsai.core.tool.Loader):
     def get_representation_id_from_shape(cls, geometry: ifcopenshell.geom.ShapeType) -> int:
         representation_id: str = geometry.id
         if "-" in representation_id:
-            # Example: 2432-openings-2468, where
-            # 2432 is mapped representation id
-            # and 2468 is IFCRELVOIDSELEMENT
             representation_id = re.sub(r"\D", "", representation_id.split("-")[0])
         else:
             representation_id = re.sub(r"\D", "", representation_id)
@@ -104,7 +101,7 @@ class Loader(bonsai.core.tool.Loader):
         shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
         mesh: tool.Geometry.TYPES_WITH_MESH_PROPERTIES,
     ) -> None:
-        geometry = shape.geometry if hasattr(shape, "geometry") else shape
+        geometry = shape.geometry if isinstance(shape, ifcopenshell.geom.ShapeElementType) else shape
         tool.Geometry.get_mesh_props(mesh).ifc_definition_id = int(geometry.id.split("-")[0])
 
     @classmethod

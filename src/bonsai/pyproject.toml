@@ -18,6 +18,12 @@ dependencies = [
     "ifcopenshell",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest-blender",
+  "pytest-bdd",
+]
+
 [project.urls]
 Homepage = "http://bonsaibim.org"
 Documentation = "https://docs.bonsaibim.org"

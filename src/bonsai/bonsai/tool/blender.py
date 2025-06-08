@@ -42,14 +42,15 @@ from mathutils import Vector
 from pathlib import Path
 from functools import lru_cache, cache
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator, TYPE_CHECKING
+from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator, TYPE_CHECKING, Sequence, Sized
 from typing_extensions import assert_never
 
 if TYPE_CHECKING:
-    import bpy._typing.rna_enums as rna_enums
+    import bpy.stub_internal.rna_enums as rna_enums
     from bonsai.bim.prop import BIMProperties, BIMObjectProperties
     from bonsai.bim.module.attribute.prop import BIMAttributeProperties
     from bonsai.bim.module.csv.prop import CsvProperties
+    from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
     from bonsai.bim.module.diff.prop import DiffProperties
 
     T = TypeVar("T")
@@ -656,7 +657,7 @@ class Blender(bonsai.core.tool.Blender):
         cls,
         context: bpy.types.Context,
         active_object: Optional[bpy.types.Object] = None,
-        selected_objects: list[bpy.types.Object] = list(),
+        selected_objects: Sequence[bpy.types.Object] = (),
         clear_previous_selection=True,
     ) -> None:
         if clear_previous_selection:
@@ -1645,12 +1646,23 @@ class Blender(bonsai.core.tool.Blender):
         return types.MappingProxyType(dct)
 
     @classmethod
+    def get_object_constraint_props(cls, obj: bpy.types.Object) -> BIMObjectConstraintProperties:
+        return obj.BIMObjectConstraintProperties
+
+    @classmethod
+    def get_constraint_props(cls) -> BIMConstraintProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMConstraintProperties
+
+    @classmethod
     def get_csv_props(cls) -> CsvProperties:
-        return bpy.context.scene.CsvProperties
+        assert (scene := bpy.context.scene)
+        return scene.CsvProperties
 
     @classmethod
     def get_diff_props(cls) -> DiffProperties:
-        return bpy.context.scene.DiffProperties
+        assert (scene := bpy.context.scene)
+        return scene.DiffProperties
 
     @classmethod
     def get_bim_props(cls, scene: Optional[bpy.types.Scene] = None) -> BIMProperties:
@@ -1679,6 +1691,14 @@ class Blender(bonsai.core.tool.Blender):
         if 0 <= index < len(collection):
             return collection[index]
         return None
+
+    @classmethod
+    def get_valid_uilist_index(cls, current_index: int, items: Sized) -> int:
+        """
+        Method to help maintaining item selection after some uilist item was removed
+        and items were reloaded.
+        """
+        return max(0, min(current_index, len(items) - 1))
 
     @classmethod
     def clear_undo_history(cls) -> None:

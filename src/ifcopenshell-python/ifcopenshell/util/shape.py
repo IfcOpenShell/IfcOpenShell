@@ -277,17 +277,7 @@ def get_normals(geometry: ShapeType) -> npt.NDArray[np.float64]:
 
 
 def get_shape_material_styles(geometry: ShapeType) -> tuple[W.style, ...]:
-    """Get list of material styles.
-
-    Possible values for `style.instance_id()`:
-    - IFC style id if style assigned to the representation items directly
-    or through material with a style;
-    - IFC material id if both true:
-      - element has a material without a style;
-      - there are parts of the geometry that has no other style assigned to them;
-    - -1 in case if there is no material;
-    - 0 in case if there are default materials used.
-    """
+    """Get list of material styles."""
     return geometry.materials
 
 

@@ -39,6 +39,7 @@ from dateutil import parser
 from datetime import datetime
 from datetime import time as datetime_time
 from typing import Optional, Any, Union, Literal, TYPE_CHECKING, Iterable
+from mathutils import Color
 
 if TYPE_CHECKING:
     import bonsai.bim.prop
@@ -1449,7 +1450,7 @@ class Sequence(bonsai.core.tool.Sequence):
         obj.keyframe_insert(data_path="color", frame=product_frame["COMPLETED"])
 
     @classmethod
-    def animate_operation(cls, obj, start_frame, product_frame, color):
+    def animate_operation(cls, obj: bpy.types.Object, start_frame: int, product_frame, color: Color) -> None:
         if cls.earliest_frame is None or product_frame["STARTED"] < cls.earliest_frame:
             obj.color = (1.0, 1.0, 1.0, 1)
             obj.keyframe_insert(data_path="color", frame=start_frame)

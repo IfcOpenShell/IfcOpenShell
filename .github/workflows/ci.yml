@@ -127,16 +127,21 @@ jobs:
           cd ../src/ifcopenshell-python
           mv ifcopenshell ifcopenshell-local # Force testing on installed module
           pip install -e ../ifcpatch --no-deps # Needed for sql.py tests.
-          make test
-          cd ../bcf && make test
+          ERROR=0
+          make test || ERROR=1
+          cd ../bcf && make test || ERROR=1
           pip install requests
-          cd ../bsdd && make test
+          cd ../bsdd && make test || ERROR=1
           pip install deepdiff
-          cd ../ifcdiff && make test
-          cd ../ifcpatch && make test
+          cd ../ifcdiff && make test || ERROR=1
+          cd ../ifcpatch && make test || ERROR=1
           pip install -e ../ifctester --no-deps
-          cd ../ifctester && make test
+          cd ../ifctester && make test || ERROR=1
           # Run mathutils related tests at the end to ensure no other code is relying on mathutils.
           cd ../ifcopenshell-python
           pip install mathutils
-          make test-mathutils
+          make test-mathutils || ERROR=1
+          if [ $ERROR -ne 0 ]; then
+            echo "One or more tests failed";
+            exit 1;
+          fi

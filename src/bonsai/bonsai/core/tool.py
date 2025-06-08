@@ -203,7 +203,7 @@ class Cost:
     def change_parent_cost_item(cls, cost_item, new_parent): pass
     def clean_up_cost_item_tree(cls, cost_item): pass
     def contract_cost_item_rate(cls, cost_item): pass
-    def contract_cost_item(cls, cost_item): pass
+    def contract_cost_item(cls, cost_item_id): pass
     def contract_cost_items(cls): pass
     def create_new_cost_item_li(props_collection, cost_item, level_index, type): pass
     def disable_editing_cost_item_parent(cls): pass
@@ -220,7 +220,7 @@ class Cost:
     def enable_editing_cost_items(cls, cost_schedule): pass
     def enable_editing_cost_schedule_attributes(cls, cost_schedule): pass
     def expand_cost_item_rate(cls, cost_item): pass
-    def expand_cost_item(cls, cost_item): pass
+    def expand_cost_item(cls, cost_item_id): pass
     def expand_cost_items(cls): pass
     def export_cost_schedules(cls, filepath, format, cost_schedule): pass
     def format_unit(cls, unit): pass

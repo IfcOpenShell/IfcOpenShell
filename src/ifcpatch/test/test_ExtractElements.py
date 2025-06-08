@@ -75,6 +75,13 @@ class TestExtractElements(test.bootstrap.IFC4):
         assert output.by_type("IfcWall")
         assert not output.by_type("IfcSlab")
 
+    @pytest.mark.skipif(
+        "IFC4X3" not in ifcopenshell.ifcopenshell_wrapper.schema_names(),
+        reason=(
+            "Need some non-standard schema available for this test."
+            "IFC4X3 is typically available in the full build, but not in CI."
+        ),
+    )
     def test_extracting_non_standard_schema_version(self):
         self.file = ifcopenshell.file(schema_version=(4, 3, 0, 0))
         project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")

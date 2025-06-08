@@ -1,3 +1,4 @@
+SHELL := sh
 IS_STABLE:=FALSE
 PYTHON:=python3.11
 PIP:=pip3.11

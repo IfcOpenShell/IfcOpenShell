@@ -39,6 +39,13 @@ class Cost(bonsai.core.tool.Cost):
 
     RELATED_OBJECT_TYPE = Literal["PRODUCT", "PROCESS", "RESOURCE"]
 
+    # TODO: Do we really need them cached as class attributes?
+    contracted_cost_items: list[int]
+    """List of contracted cost item ids."""
+
+    contracted_cost_item_rates: list[int]
+    """List of contracted const item rates ids."""
+
     @classmethod
     def get_cost_props(cls) -> BIMCostProperties:
         return bpy.context.scene.BIMCostProperties
@@ -161,15 +168,18 @@ class Cost(bonsai.core.tool.Cost):
             for rel in cost_schedule.Controls or []
             for cost_item in rel.RelatedObjects or []
         ]
+        props.active_cost_item_index = tool.Blender.get_valid_uilist_index(
+            props.active_cost_item_index, props.cost_items
+        )
         props.is_cost_update_enabled = True
 
     @classmethod
-    def expand_cost_item(cls, cost_item: ifcopenshell.entity_instance) -> None:
+    def expand_cost_item(cls, cost_item_id: int) -> None:
         props = cls.get_cost_props()
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        if cost_item.id() in cls.contracted_cost_items:
-            cls.contracted_cost_items.remove(cost_item.id())
+        if cost_item_id in cls.contracted_cost_items:
+            cls.contracted_cost_items.remove(cost_item_id)
             props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
@@ -182,11 +192,11 @@ class Cost(bonsai.core.tool.Cost):
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
-    def contract_cost_item(cls, cost_item: ifcopenshell.entity_instance) -> None:
+    def contract_cost_item(cls, cost_item_id: int) -> None:
         props = cls.get_cost_props()
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        cls.contracted_cost_items.append(cost_item.id())
+        cls.contracted_cost_items.append(cost_item_id)
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
@@ -201,13 +211,14 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def clean_up_cost_item_tree(cls, cost_item_id: int) -> None:
+        """Clean up cost item tree after ``cost_item_id`` was deleted."""
         props = cls.get_cost_props()
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
         if props.active_cost_item_id == cost_item_id:
             props.active_cost_item_id = 0
-        if props.active_cost_item_index in cls.contracted_cost_items:
-            cls.contracted_cost_items.remove(props.active_cost_item_index)
+        if cost_item_id in cls.contracted_cost_items:
+            cls.contracted_cost_items.remove(cost_item_id)
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
         cls.enable_editing_cost_items(cost_schedule=tool.Ifc.get().by_id(props.active_cost_schedule_id))
 
@@ -662,20 +673,21 @@ class Cost(bonsai.core.tool.Cost):
         return tool.Ifc.get().by_id(int(schedule_id))
 
     @classmethod
-    def expand_cost_item_rate(cls, cost_item: ifcopenshell.entity_instance) -> None:
+    def expand_cost_item_rate(cls, cost_item_id: int) -> None:
         props = cls.get_cost_props()
-        contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
-        contracted_cost_item_rates.remove(cost_item)
-        props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
-        cls.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
+        if not hasattr(cls, "contracted_cost_item_rates"):
+            cls.contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
+        if cost_item_id in cls.contracted_cost_item_rates:
+            cls.contracted_cost_item_rates.remove(cost_item_id)
+            props.contracted_cost_item_rates = json.dumps(cls.contracted_cost_item_rates)
 
     @classmethod
-    def contract_cost_item_rate(cls, cost_item: ifcopenshell.entity_instance) -> None:
+    def contract_cost_item_rate(cls, cost_item_id: int) -> None:
         props = cls.get_cost_props()
-        contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
-        contracted_cost_item_rates.append(cost_item)
-        props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
-        cls.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
+        if not hasattr(cls, "contracted_cost_item_rates"):
+            cls.contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
+        cls.contracted_cost_item_rates.append(cost_item_id)
+        props.contracted_cost_item_rates = json.dumps(cls.contracted_cost_item_rates)
 
     @classmethod
     def create_new_cost_item_li(
@@ -807,8 +819,8 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def highlight_cost_item(cls, cost_item: ifcopenshell.entity_instance) -> None:
-        def expand_ancestors(cost_item):
-            cls.expand_cost_item(cost_item)
+        def expand_ancestors(cost_item: ifcopenshell.entity_instance) -> None:
+            cls.expand_cost_item(cost_item.id())
             for rel in cost_item.Nests or []:
                 parent_cost = rel.RelatingObject if rel.RelatingObject.is_a("IfcCostItem") else None
                 if parent_cost:

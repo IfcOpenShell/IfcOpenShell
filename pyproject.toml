@@ -45,6 +45,7 @@ enableTypeIgnoreComments = false
 [tool.ruff]
 exclude = [
     # Submodules.
+    "src/ifcconvert/cityjson",
     "src/ifcopenshell-python/ifcopenshell/express",
     "src/ifcopenshell-python/ifcopenshell/mvd",
     "src/ifcopenshell-python/ifcopenshell/simple_spf",

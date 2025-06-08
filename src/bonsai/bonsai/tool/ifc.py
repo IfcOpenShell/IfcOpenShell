@@ -32,7 +32,7 @@ from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from typing import Optional, Union, Any, final, Literal, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from bpy._typing import rna_enums
+    from bpy.stub_internal import rna_enums
 
 
 class Ifc(bonsai.core.tool.Ifc):

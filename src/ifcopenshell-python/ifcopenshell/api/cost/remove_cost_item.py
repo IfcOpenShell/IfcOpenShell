@@ -51,6 +51,8 @@ def remove_cost_item(file: ifcopenshell.file, cost_item: ifcopenshell.entity_ins
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
         elif inverse.is_a("IfcRelAssignsToControl"):
+            if len(inverse.RelatedObjects) >= 2 or inverse.RelatingControl == cost_item:
+                continue
             history = inverse.OwnerHistory
             file.remove(inverse)
             if history:

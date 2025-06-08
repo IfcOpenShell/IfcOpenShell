@@ -46,6 +46,7 @@ class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
 
     def draw(self, context):
         layout = self.layout
+        assert layout
         props = tool.Cost.get_cost_props()
         layout.prop(self, "name", text="Name")
         layout.prop(props, "cost_schedule_predefined_types", text="Type")
@@ -149,8 +150,11 @@ class ExpandCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Expand this cost item"
     cost_item: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        cost_item: int
+
     def _execute(self, context):
-        core.expand_cost_item(tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+        core.expand_cost_item(tool.Cost, cost_item_id=self.cost_item)
 
 
 class ExpandCostItems(bpy.types.Operator, tool.Ifc.Operator):
@@ -158,7 +162,6 @@ class ExpandCostItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Expand Cost Items"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Expand all cost items"
-    cost_items: bpy.props.StringProperty()
 
     def _execute(self, context):
         core.expand_cost_items(tool.Cost)
@@ -171,8 +174,11 @@ class ContractCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Contract a cost item"
     cost_item: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        cost_item: int
+
     def _execute(self, context):
-        core.contract_cost_item(tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+        core.contract_cost_item(tool.Cost, cost_item_id=self.cost_item)
 
 
 class ContractCostItems(bpy.types.Operator, tool.Ifc.Operator):
@@ -180,7 +186,6 @@ class ContractCostItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Contract Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Collapse cost item tree"
-    cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
         core.contract_cost_items(tool.Cost)
@@ -191,6 +196,9 @@ class RemoveCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Remove Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        cost_item: int
 
     def _execute(self, context):
         core.remove_cost_item(tool.Ifc, tool.Cost, cost_item_id=self.cost_item)
@@ -700,6 +708,9 @@ class ExpandCostItemRate(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        cost_item: int
+
     def _execute(self, context):
         core.expand_cost_item_rate(tool.Cost, self.cost_item)
         return {"FINISHED"}
@@ -710,6 +721,9 @@ class ContractCostItemRate(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Contract Cost Item Rate"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        cost_item: int
 
     def _execute(self, context):
         core.contract_cost_item_rate(tool.Cost, self.cost_item)

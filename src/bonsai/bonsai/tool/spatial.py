@@ -475,7 +475,7 @@ class Spatial(bonsai.core.tool.Spatial):
         props.containers.clear()
         cls.contracted_containers = json.loads(props.contracted_containers)
         cls.import_spatial_element(tool.Ifc.get().by_type("IfcProject")[0], 0)
-        props.active_container_index = min(previous_container_index, len(props.containers) - 1)
+        props.active_container_index = tool.Blender.get_valid_uilist_index(previous_container_index, props.containers)
 
     @classmethod
     def import_spatial_element(cls, element: ifcopenshell.entity_instance, level_index: int) -> None:
