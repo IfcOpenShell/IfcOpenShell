@@ -47,7 +47,9 @@ def assign_cost_item_quantity(
 
     If cost item has just 1 quantity and it's IfcQuantityCount, API will
     assume that quantity is used for counting controlled objects
-    and it will recalculate the quantity value at the end of the API call.
+    and it will recalculate the quantity value at the end of the API call
+    as long as the relaedObjects are not IfcConstructionResource which do not
+    count towards the cost item (they only provide value).
 
     :param cost_item: The IfcCostItem to assign parametric quantities to
     :type cost_item: ifcopenshell.entity_instance
