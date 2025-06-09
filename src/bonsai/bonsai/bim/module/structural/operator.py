@@ -20,6 +20,7 @@ import bpy
 import json
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.aggregate
 import ifcopenshell.api.group
 import ifcopenshell.api.structural
 import ifcopenshell.util.attribute
@@ -136,7 +137,7 @@ class RemoveStructuralConnectionCondition(bpy.types.Operator, tool.Ifc.Operator)
         file = tool.Ifc.get()
         relation = file.by_id(self.connects_structural_member)
         connection = relation.RelatedStructuralConnection
-        ifcopenshell.api.run("structural.remove_structural_connection_condition", file, **{"relation": relation})
+        ifcopenshell.api.structural.remove_structural_connection_condition(file, **{"relation": relation})
         return {"FINISHED"}
 
 
@@ -149,7 +150,7 @@ class AddStructuralBoundaryCondition(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         file = tool.Ifc.get()
         connection = file.by_id(self.connection)
-        ifcopenshell.api.run("structural.add_structural_boundary_condition", file, **{"connection": connection})
+        ifcopenshell.api.structural.add_structural_boundary_condition(file, **{"connection": connection})
         return {"FINISHED"}
 
 
@@ -162,7 +163,7 @@ class RemoveStructuralBoundaryCondition(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         file = tool.Ifc.get()
         connection = file.by_id(self.connection)
-        ifcopenshell.api.run("structural.remove_structural_boundary_condition", file, **{"connection": connection})
+        ifcopenshell.api.structural.remove_structural_boundary_condition(file, **{"connection": connection})
         return {"FINISHED"}
 
 
@@ -233,8 +234,8 @@ class EditStructuralBoundaryCondition(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 attributes[attribute.name] = {"value": attribute.float_value, "type": attribute.enum_value}
 
-        ifcopenshell.api.run(
-            "structural.edit_structural_boundary_condition", file, **{"condition": condition, "attributes": attributes}
+        ifcopenshell.api.structural.edit_structural_boundary_condition(
+            file, **{"condition": condition, "attributes": attributes}
         )
         bpy.ops.bim.disable_editing_structural_boundary_condition()
         return {"FINISHED"}
@@ -425,8 +426,7 @@ class EditStructuralItemAxis(bpy.types.Operator, tool.Ifc.Operator):
         relative_matrix = props.axis_empty.matrix_world @ obj.matrix_world.inverted()
         z_axis = relative_matrix.col[2][0:3]
         self.file = tool.Ifc.get()
-        ifcopenshell.api.run(
-            "structural.edit_structural_item_axis",
+        ifcopenshell.api.structural.edit_structural_item_axis(
             self.file,
             structural_item=self.file.by_id(oprops.ifc_definition_id),
             axis=z_axis,
@@ -536,8 +536,7 @@ class AssignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        ifcopenshell.api.run(
-            "aggregate.assign_object",
+        ifcopenshell.api.aggregate.assign_object(
             self.file,
             **{
                 "relating_object": self.file.by_id(self.work_plan),
@@ -555,8 +554,7 @@ class UnassignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        ifcopenshell.api.run(
-            "aggregate.unassign_object",
+        ifcopenshell.api.aggregate.unassign_object(
             self.file,
             **{
                 "relating_object": self.file.by_id(self.work_plan),
@@ -572,7 +570,7 @@ class AddStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        ifcopenshell.api.run("structural.add_structural_load_case", tool.Ifc.get())
+        ifcopenshell.api.structural.add_structural_load_case(tool.Ifc.get())
         return {"FINISHED"}
 
 
@@ -799,8 +797,8 @@ class AddStructuralLoad(bpy.types.Operator, tool.Ifc.Operator):
     ifc_class: bpy.props.StringProperty()
 
     def _execute(self, context):
-        result = ifcopenshell.api.run(
-            "structural.add_structural_load", tool.Ifc.get(), name="New Load", ifc_class=self.ifc_class
+        result = ifcopenshell.api.structural.add_structural_load(
+            tool.Ifc.get(), name="New Load", ifc_class=self.ifc_class
         )
         bpy.ops.bim.load_structural_loads()
         bpy.ops.bim.enable_editing_structural_load(structural_load=result.id())

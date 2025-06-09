@@ -690,10 +690,10 @@ class Model(bonsai.core.tool.Model):
             data.extend(boolean_ids)
             data = list(set(data))
         else:
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Boolean")
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Boolean")
             data = boolean_ids
         data = tool.Ifc.get().createIfcText(json.dumps(data))
-        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
 
     @classmethod
     def unmark_manual_booleans(cls, element: ifcopenshell.entity_instance, boolean_ids: list[int]) -> None:
@@ -712,9 +712,9 @@ class Model(bonsai.core.tool.Model):
         pset = tool.Ifc.get().by_id(pset["id"])
         if data:
             data = tool.Ifc.get().createIfcText(json.dumps(data))
-            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
+            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
         else:
-            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+            ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
 
     @classmethod
     def get_flow_segment_axis(cls, obj: bpy.types.Object) -> tuple[Vector, Vector]:
@@ -880,7 +880,7 @@ class Model(bonsai.core.tool.Model):
             # can be reverted later.
             array_pset_data = array_pset.get("Data", None)
             array_pset = tool.Ifc.get().by_id(array_pset["id"])
-            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=array_pset)
+            ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=array_pset)
 
             # remove constraints
             obj = tool.Ifc.get_object(element)
@@ -899,8 +899,7 @@ class Model(bonsai.core.tool.Model):
             obj = tool.Ifc.get_object(element)
             array_pset = tool.Pset.get_element_pset(element, "BBIM_Array")
             default_data = tool.Ifc.get().createIfcText('[{"children": []}]')
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            ifcopenshell.api.pset.edit_pset(
                 tool.Ifc.get(),
                 pset=array_pset,
                 properties={"Parent": element.GlobalId, "Data": default_data},
@@ -909,7 +908,7 @@ class Model(bonsai.core.tool.Model):
             tool.Model.regenerate_array(obj, array_data)
 
             json_data = tool.Ifc.get().createIfcText(json.dumps(array_data))
-            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=array_pset, properties={"Data": json_data})
+            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=array_pset, properties={"Data": json_data})
 
             for i in range(len(array_data)):
                 tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
@@ -1007,7 +1006,7 @@ class Model(bonsai.core.tool.Model):
             if array_i in array_layers_to_apply:
                 for child_element in children_elements:
                     pset = tool.Pset.get_element_pset(child_element, "BBIM_Array")
-                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=child_element, pset=pset)
+                    ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=child_element, pset=pset)
 
                 array["children"] = []
                 array["count"] = 1
@@ -1034,10 +1033,10 @@ class Model(bonsai.core.tool.Model):
             old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
             for inverse in ifc_file.get_inverse(old_representation):
                 ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
-            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=old_representation)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_representation)
         else:
-            ifcopenshell.api.run(
-                "geometry.assign_representation", ifc_file, product=ifc_element, representation=new_representation
+            ifcopenshell.api.geometry.assign_representation(
+                ifc_file, product=ifc_element, representation=new_representation
             )
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
@@ -1559,8 +1558,8 @@ class Model(bonsai.core.tool.Model):
                 opening, "Model", "Body", "MODEL_VIEW"
             )
             old_representation = tool.Geometry.resolve_mapped_representation(old_representation)
-            ifcopenshell.api.run(
-                "geometry.unassign_representation", ifc_file, product=opening, representation=old_representation
+            ifcopenshell.api.geometry.unassign_representation(
+                ifc_file, product=opening, representation=old_representation
             )
 
             new_representation = FilledOpeningGenerator().generate_opening_from_filling(
@@ -1570,7 +1569,7 @@ class Model(bonsai.core.tool.Model):
             for inverse in ifc_file.get_inverse(old_representation):
                 ifcopenshell.util.element.replace_attribute(inverse, old_representation, new_representation)
 
-            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=old_representation)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=old_representation)
 
             has_replaced_opening_representation = True
 

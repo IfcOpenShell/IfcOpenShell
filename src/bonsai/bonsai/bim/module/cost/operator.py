@@ -20,12 +20,11 @@
 
 import bpy
 import textwrap
-import ifcopenshell.api
+import ifcopenshell.api.nest
 import bonsai.tool as tool
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 import bonsai.tool as tool
 import bonsai.core.cost as core
-from pathlib import Path
 from typing import get_args, TYPE_CHECKING, Literal
 
 
@@ -847,8 +846,7 @@ class ReorderCostItem(bpy.types.Operator, tool.Ifc.Operator):
     cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
-        ifcopenshell.api.run(
-            "nest.reorder_nesting",
+        ifcopenshell.api.nest.reorder_nesting(
             tool.Ifc.get(),
             **{
                 "item": tool.Ifc.get().by_id(self.cost_item),

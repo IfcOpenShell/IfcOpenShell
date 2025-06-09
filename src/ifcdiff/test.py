@@ -21,14 +21,15 @@ import ifcopenshell
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.util.representation
 
 
 def setup_project() -> ifcopenshell.file:
     ifc_file = ifcopenshell.file(schema="IFC4")
-    ifcopenshell.api.run("root.create_entity", ifc_file, ifc_class="IfcProject")
-    unit = ifcopenshell.api.run("unit.add_si_unit", ifc_file, unit_type="LENGTHUNIT", prefix="MILLI")
-    ifcopenshell.api.run("unit.assign_unit", ifc_file, units=[unit])
+    ifcopenshell.api.root.create_entity(ifc_file, ifc_class="IfcProject")
+    unit = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="LENGTHUNIT", prefix="MILLI")
+    ifcopenshell.api.unit.assign_unit(ifc_file, units=[unit])
     model = ifcopenshell.api.context.add_context(ifc_file, "Model")
     ifcopenshell.api.context.add_context(ifc_file, "Model", "Body", "MODEL_VIEW", parent=model)
     return ifc_file

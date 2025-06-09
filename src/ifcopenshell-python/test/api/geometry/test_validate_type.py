@@ -20,6 +20,7 @@ import test.bootstrap
 import ifcopenshell.api.root
 import ifcopenshell.api.context
 import ifcopenshell.api.geometry
+import ifcopenshell.util.shape_builder
 
 
 class TestValidateType(test.bootstrap.IFC4):

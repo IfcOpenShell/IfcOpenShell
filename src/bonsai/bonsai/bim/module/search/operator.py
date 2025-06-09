@@ -21,7 +21,7 @@ import json
 import bisect
 import ifcopenshell
 import ifcopenshell.api
-import ifcopenshell.guid
+import ifcopenshell.api.group
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import bonsai.tool as tool
@@ -201,9 +201,9 @@ class SaveSearch(Operator, tool.Ifc.Operator):
             group = group[0]
             group.Description = description
         else:
-            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), name=self.name, description=description)
+            group = ifcopenshell.api.group.add_group(tool.Ifc.get(), name=self.name, description=description)
         if results:
-            ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=list(results), group=group)
+            ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=list(results), group=group)
 
     def draw(self, context):
         row = self.layout.row()
@@ -447,7 +447,7 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
             group.Description = json.dumps(description)
         else:
             description = json.dumps({"type": "BBIM_Search", "colourscheme": colourscheme, "colourscheme_query": query})
-            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), name=self.name, description=description)
+            group = ifcopenshell.api.group.add_group(tool.Ifc.get(), name=self.name, description=description)
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)

@@ -18,6 +18,7 @@
 
 import bpy
 import ifcopenshell.api
+import ifcopenshell.api.feature
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import bonsai.tool as tool
@@ -110,7 +111,7 @@ class AddOpening(bpy.types.Operator, tool.Ifc.Operator):
                     should_add_representation=True,
                     context=body_context,
                 )
-            ifcopenshell.api.run("feature.add_feature", tool.Ifc.get(), feature=element2, element=element1)
+            ifcopenshell.api.feature.add_feature(tool.Ifc.get(), feature=element2, element=element1)
 
             if tool.Ifc.is_moved(obj2):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj2)
@@ -180,7 +181,7 @@ class RemoveOpening(bpy.types.Operator, tool.Ifc.Operator):
             opening_obj.name = "/".join(opening_obj.name.split("/")[1:])
             tool.Ifc.unlink(element=opening)
 
-        ifcopenshell.api.run("feature.remove_feature", tool.Ifc.get(), feature=opening)
+        ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
 
         decomposed_building_elements = {element}
         decomposed_building_elements.update(tool.Aggregate.get_parts_recursively(element))
@@ -221,8 +222,8 @@ class AddFilling(bpy.types.Operator, tool.Ifc.Operator):
         opening_id = tool.Blender.get_object_bim_props(opening).ifc_definition_id
         if not element_id or not opening_id or element_id == opening_id:
             return {"FINISHED"}
-        ifcopenshell.api.run(
-            "feature.add_filling", self.file, opening=self.file.by_id(opening_id), element=self.file.by_id(element_id)
+        ifcopenshell.api.feature.add_filling(
+            self.file, opening=self.file.by_id(opening_id), element=self.file.by_id(element_id)
         )
         return {"FINISHED"}
 
@@ -237,7 +238,7 @@ class RemoveFilling(bpy.types.Operator, tool.Ifc.Operator):
         filling = tool.Ifc.get().by_id(self.filling)
         for rel in filling.FillsVoids:
             bpy.ops.bim.remove_opening(opening_id=rel.RelatingOpeningElement.id())
-        ifcopenshell.api.run("feature.remove_filling", tool.Ifc.get(), element=filling)
+        ifcopenshell.api.feature.remove_filling(tool.Ifc.get(), element=filling)
         return {"FINISHED"}
 
 

@@ -26,6 +26,7 @@ from bpy.types import SplineBezierPoints, SplinePoints
 import mathutils
 import xml.etree.ElementTree as ET
 import svgwrite
+import svgwrite.container
 import svgwrite.text
 import ifcopenshell
 import ifcopenshell.util.element

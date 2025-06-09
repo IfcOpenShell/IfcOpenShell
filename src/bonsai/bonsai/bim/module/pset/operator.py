@@ -76,8 +76,8 @@ class DisablePsetEditing(bpy.types.Operator, tool.Ifc.Operator):
             pset = tool.Ifc.get().by_id(props.active_pset_id)
             ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
             if tool.Pset.is_pset_empty(pset):
-                ifcopenshell.api.run(
-                    "pset.remove_pset", tool.Ifc.get(), product=tool.Ifc.get().by_id(ifc_definition_id), pset=pset
+                ifcopenshell.api.pset.remove_pset(
+                    tool.Ifc.get(), product=tool.Ifc.get().by_id(ifc_definition_id), pset=pset
                 )
         props.active_pset_id = 0
         props.active_pset_name = ""
@@ -104,10 +104,10 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
         if pset_id:
             pset = self.file.by_id(pset_id)
         elif props.active_pset_type == "PSET":
-            pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name=props.active_pset_name)
+            pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name=props.active_pset_name)
             props.active_pset_id = pset.id()
         elif props.active_pset_type == "QTO":
-            pset = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name=props.active_pset_name)
+            pset = ifcopenshell.api.pset.add_qto(self.file, product=element, name=props.active_pset_name)
             props.active_pset_id = pset.id()
 
         if self.properties:
@@ -123,8 +123,7 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
                     ]
 
         if pset.is_a() in ("IfcPropertySet", "IfcMaterialProperties", "IfcProfileProperties"):
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            ifcopenshell.api.pset.edit_pset(
                 self.file,
                 pset=pset,
                 name=props.active_pset_name,
@@ -139,8 +138,7 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
                     properties[key] = round(value, 4)
                 elif not isinstance(value, int):
                     properties[key] = 0
-            ifcopenshell.api.run(
-                "pset.edit_qto",
+            ifcopenshell.api.pset.edit_qto(
                 self.file,
                 qto=pset,
                 name=props.active_pset_name,
@@ -175,8 +173,8 @@ class RemovePset(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get().by_id(ifc_definition_id)
             pset = ifcopenshell.util.element.get_psets(element, should_inherit=False).get(pset_name, None)
             if pset:
-                ifcopenshell.api.run(
-                    "pset.remove_pset", tool.Ifc.get(), product=element, pset=tool.Ifc.get().by_id(pset["id"])
+                ifcopenshell.api.pset.remove_pset(
+                    tool.Ifc.get(), product=element, pset=tool.Ifc.get().by_id(pset["id"])
                 )
 
 
@@ -364,9 +362,9 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator, tool.Ifc.Operator):
                 elif prop.template_type == "IfcPropertySingleValue":
                     value_ifc_entity = getattr(self.file, f"create{primary_measure_type}")(value)
 
-                new_pset = ifcopenshell.api.run("pset.add_pset", self.file, product=ifc_element, name=prop.pset_name)
-                ifcopenshell.api.run(
-                    "pset.edit_pset", self.file, pset=new_pset, properties={prop.property_name: value_ifc_entity}
+                new_pset = ifcopenshell.api.pset.add_pset(self.file, product=ifc_element, name=prop.pset_name)
+                ifcopenshell.api.pset.edit_pset(
+                    self.file, pset=new_pset, properties={prop.property_name: value_ifc_entity}
                 )
         self.report({"INFO"}, "Finished applying changes")
         return {"FINISHED"}

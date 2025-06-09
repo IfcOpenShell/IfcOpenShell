@@ -19,15 +19,20 @@
 import bpy
 import math
 import collections
+import collections.abc
 import bmesh
 import re
 import json
 import ifcopenshell
 import ifcopenshell.api
-import ifcopenshell.util.unit
-import ifcopenshell.util.system
+import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.system
+import ifcopenshell.util.unit
 import numpy as np
 import bonsai.core.type
 import bonsai.core.root
@@ -539,14 +544,10 @@ class MEPGenerator:
             ifc_representation_class=None,
         )
 
-        rel = ifcopenshell.api.run(
-            "material.assign_material", ifc_file, products=[element], type="IfcMaterialProfileSet"
-        )
+        rel = ifcopenshell.api.material.assign_material(ifc_file, products=[element], type="IfcMaterialProfileSet")
         profile_set = rel.RelatingMaterial
-        material_profile = ifcopenshell.api.run(
-            "material.add_profile", ifc_file, profile_set=profile_set, material=material
-        )
-        ifcopenshell.api.run("material.assign_profile", ifc_file, material_profile=material_profile, profile=profile)
+        material_profile = ifcopenshell.api.material.add_profile(ifc_file, profile_set=profile_set, material=material)
+        ifcopenshell.api.material.assign_profile(ifc_file, material_profile=material_profile, profile=profile)
         return element
 
     def add_obstruction(self, segment, length, at_segment_start=False):
@@ -800,7 +801,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
                 f"Failed to add transition - transition length is larger the segments and the distance between them.\n"
                 + f"Transition length: {full_transition_length:.2f}m, segments length: {entire_length:.2f}m",
             )
-            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=rep)
             return {"CANCELLED"}
 
         # calculate bunch of points to for adjustments
@@ -832,7 +833,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         start_port_match = fitting_data["start_port_match"] if fitting_data else True
         if transition_type:
             # TODO: handle the case without creating a representation in the first place?
-            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=rep)
         else:  # create new fitting type if nothing is compatible
             mesh = bpy.data.meshes.new("Transition")
             obj = bpy.data.objects.new("Transition", mesh)
@@ -848,9 +849,8 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
             body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
             # Will implicitly remove `mesh`.
             tool.Model.replace_object_ifc_representation(body, obj, rep)
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=transition_type, name="BBIM_Fitting")
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=transition_type, name="BBIM_Fitting")
+            ifcopenshell.api.pset.edit_pset(
                 tool.Ifc.get(),
                 pset=pset,
                 properties={"Data": tool.Ifc.get().createIfcText(json.dumps(transition_data, default=list))},
@@ -1183,7 +1183,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
                 z_sign_type = -1 if bbim_data["flip_z_axis"] else 1
 
             # TODO: handle the case without creating a representation in the first place?
-            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=rep)
         else:  # create new fitting type if nothing is compatible
             mesh = bpy.data.meshes.new("Bend")
             obj = bpy.data.objects.new("Bend", mesh)
@@ -1199,9 +1199,8 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
             # Will implicitly remove `mesh`.
             tool.Model.replace_object_ifc_representation(body, obj, rep)
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=bend_type, name="BBIM_Fitting")
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=bend_type, name="BBIM_Fitting")
+            ifcopenshell.api.pset.edit_pset(
                 tool.Ifc.get(),
                 pset=pset,
                 properties={"Data": tool.Ifc.get().createIfcText(json.dumps(bend_data, default=list))},

@@ -34,6 +34,7 @@ import json
 import math
 import time
 import ifcopenshell
+import ifcopenshell.util.geolocation
 import webbrowser
 import ifcopenshell.geom
 import multiprocessing
@@ -80,6 +81,7 @@ class ExportOBJ(bpy.types.Operator):
         serializer_settings.set("use-element-guids", True)
         settings.set("use-world-coords", True)
 
+        ifc_file: ifcopenshell.file
         if should_load_from_memory:
             ifc_file = tool.Ifc.get()
 

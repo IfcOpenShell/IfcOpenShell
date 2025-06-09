@@ -20,6 +20,8 @@
 import csv
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.root
+import ifcopenshell.api.sequence
 import ifcopenshell.util.date
 import locale
 import re
@@ -136,14 +138,14 @@ class Csv2Ifc:
         if not self.file:
             self.create_boilerplate_ifc()
         if not self.work_plan:
-            self.work_plan = ifcopenshell.api.run("sequence.add_work_plan", self.file)
+            self.work_plan = ifcopenshell.api.sequence.add_work_plan(self.file)
         self.work_schedule = self.create_work_schedule()
         self.create_tasks(self.tasks)
         self.create_rel_sequences(self.tasks)
 
     def create_boilerplate_ifc(self):
         self.file = ifcopenshell.file(schema="IFC4")
-        ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         self.work_plan = self.file.create_entity("IfcWorkPlan")
 
     def create_tasks(self, tasks, parent=None):
@@ -161,16 +163,15 @@ class Csv2Ifc:
             self.create_rel_sequence(task)
 
     def create_work_schedule(self):
-        return ifcopenshell.api.run("sequence.add_work_schedule", self.file, name="import", work_plan=self.work_plan)
+        return ifcopenshell.api.sequence.add_work_schedule(self.file, name="import", work_plan=self.work_plan)
 
     def create_task(self, task, parent_task=None):
         if parent_task is None:
-            task["ifc"] = ifcopenshell.api.run("sequence.add_task", self.file, work_schedule=self.work_schedule)
+            task["ifc"] = ifcopenshell.api.sequence.add_task(self.file, work_schedule=self.work_schedule)
         else:
-            task["ifc"] = ifcopenshell.api.run("sequence.add_task", self.file, parent_task=parent_task)
+            task["ifc"] = ifcopenshell.api.sequence.add_task(self.file, parent_task=parent_task)
 
-        ifcopenshell.api.run(
-            "sequence.edit_task",
+        ifcopenshell.api.sequence.edit_task(
             self.file,
             task=task["ifc"],
             attributes={
@@ -179,9 +180,8 @@ class Csv2Ifc:
                 # "IsMilestone": task["ScheduleStart"] == task["ScheduleFinish"],
             },
         )
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=task["ifc"])
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=task["ifc"])
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={
@@ -211,16 +211,14 @@ class Csv2Ifc:
             task_1 = self.get_entity_by_identification(self.tasks, rel["task_1"])
             task_2 = self.get_entity_by_identification(self.tasks, rel["task_2"])
             rel_type = self.sequence_type_map[rel["rel_type"]]
-            rel_sequence = ifcopenshell.api.run(
-                "sequence.assign_sequence",
+            rel_sequence = ifcopenshell.api.sequence.assign_sequence(
                 self.file,
                 related_process=task_2,
                 relating_process=task_1,
                 sequence_type=rel_type,
             )
             if rel_type:
-                ifcopenshell.api.run(
-                    "sequence.edit_sequence",
+                ifcopenshell.api.sequence.edit_sequence(
                     self.file,
                     rel_sequence=rel_sequence,
                     attributes={"SequenceType": rel_type},

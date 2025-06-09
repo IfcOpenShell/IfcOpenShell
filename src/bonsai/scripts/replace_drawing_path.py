@@ -29,6 +29,8 @@ It works on the active ifc file (if exists).
 
 import bonsai.tool as tool
 import ifcopenshell
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
 import sys
 
 
@@ -53,8 +55,7 @@ for annotation in annotations:
             wrong_sep = "\\"
         if platform == "win32":
             wrong_sep = "/"
-        ifcopenshell.api.run(
-            "pset.edit_pset",
+        ifcopenshell.api.pset.edit_pset(
             file,
             pset=pset_ifc,
             properties={

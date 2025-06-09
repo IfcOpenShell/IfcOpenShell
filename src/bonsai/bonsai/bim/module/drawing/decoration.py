@@ -24,6 +24,7 @@ import bmesh
 import shapely
 import ifcopenshell
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import bonsai.tool as tool
 import bonsai.bim.module.drawing.helper as helper

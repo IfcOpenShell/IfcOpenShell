@@ -23,9 +23,12 @@ import urllib.parse
 import requests
 import webbrowser
 import http.server
-from typing import TypedDict, Literal, Optional
+from typing import TypedDict, Literal, Optional, TYPE_CHECKING, Any
 from typing_extensions import NotRequired
 
+
+if TYPE_CHECKING:
+    import ifcopenshell
 
 __version__ = version = "0.0.0"
 
@@ -858,8 +861,11 @@ class Client:
         return self.get(endpoint, params)
 
 
-def apply_ifc_classification_properties(ifc_file, element, classificationProperties):
+def apply_ifc_classification_properties(
+    ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance, classificationProperties: dict[str, Any]
+) -> None:
     import ifcopenshell.api
+    import ifcopenshell.api.pset
     import ifcopenshell.util.element
 
     psets = ifcopenshell.util.element.get_psets(element)
@@ -871,7 +877,7 @@ def apply_ifc_classification_properties(ifc_file, element, classificationPropert
         if pset:
             pset = ifc_file.by_id(pset["id"])
         else:
-            pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name=prop["propertySet"])
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name=prop["propertySet"])
         if prop["dataType"] == "boolean":
             predefinedValue = predefinedValue == "TRUE"
-        ifcopenshell.api.run("pset.edit_pset", ifc_file, pset=pset, properties={prop["name"]: predefinedValue})
+        ifcopenshell.api.pset.edit_pset(ifc_file, pset=pset, properties={prop["name"]: predefinedValue})

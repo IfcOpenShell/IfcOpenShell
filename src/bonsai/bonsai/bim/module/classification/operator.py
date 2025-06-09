@@ -20,6 +20,7 @@ import bpy
 import json
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.api.classification
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
@@ -47,8 +48,7 @@ class AddClassification(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMClassificationProperties
-        ifcopenshell.api.run(
-            "classification.add_classification",
+        ifcopenshell.api.classification.add_classification(
             tool.Ifc.get(),
             classification=IfcStore.classification_file.by_id(int(props.available_classifications)),
         )
@@ -62,11 +62,9 @@ class AddManualClassification(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMClassificationProperties
         attributes = bonsai.bim.helper.export_attributes(props.classification_attributes)
-        classification = ifcopenshell.api.run(
-            "classification.add_classification", tool.Ifc.get(), classification="Unnamed"
-        )
-        ifcopenshell.api.run(
-            "classification.edit_classification", tool.Ifc.get(), classification=classification, attributes=attributes
+        classification = ifcopenshell.api.classification.add_classification(tool.Ifc.get(), classification="Unnamed")
+        ifcopenshell.api.classification.edit_classification(
+            tool.Ifc.get(), classification=classification, attributes=attributes
         )
         props.is_adding = False
 
@@ -95,17 +93,14 @@ class AddManualClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
         ]
         if products:
             classification = tool.Ifc.get().by_id(int(props.classifications))
-            reference = ifcopenshell.api.run(
-                "classification.add_reference",
+            reference = ifcopenshell.api.classification.add_reference(
                 tool.Ifc.get(),
                 products=products,
                 classification=classification,
                 identification="X",
                 name="Unnamed",
             )
-            ifcopenshell.api.run(
-                "classification.edit_reference", tool.Ifc.get(), reference=reference, attributes=attributes
-            )
+            ifcopenshell.api.classification.edit_reference(tool.Ifc.get(), reference=reference, attributes=attributes)
         props.is_adding = False
 
 
@@ -133,8 +128,8 @@ class AddClassificationFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
                     has_classification = True
             if has_classification:
                 continue
-            classification = ifcopenshell.api.run(
-                "classification.add_classification", tool.Ifc.get(), classification=dictionary["name"]
+            classification = ifcopenshell.api.classification.add_classification(
+                tool.Ifc.get(), classification=dictionary["name"]
             )
             classification.Source = dictionary["organizationNameOwner"]
             classification.Edition = dictionary["version"]
@@ -239,8 +234,7 @@ class RemoveClassification(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        ifcopenshell.api.run(
-            "classification.remove_classification",
+        ifcopenshell.api.classification.remove_classification(
             tool.Ifc.get(),
             classification=self.file.by_id(self.classification),
         )
@@ -329,8 +323,7 @@ class RemoveClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
 
         if elements_by_references:
             for reference, products in elements_by_references.items():
-                ifcopenshell.api.run(
-                    "classification.remove_reference",
+                ifcopenshell.api.classification.remove_reference(
                     tool.Ifc.get(),
                     reference=reference,
                     products=products,
@@ -385,8 +378,7 @@ class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
             if (ifc_definition_id := tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context))
         ]
         if products:
-            ifcopenshell.api.run(
-                "classification.add_reference",
+            ifcopenshell.api.classification.add_reference(
                 tool.Ifc.get(),
                 reference=IfcStore.classification_file.by_id(self.reference),
                 products=products,
@@ -428,8 +420,8 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
                 break
 
         if not classification:
-            classification = ifcopenshell.api.run(
-                "classification.add_classification", tool.Ifc.get(), classification=bsdd_classification.dictionary_name
+            classification = ifcopenshell.api.classification.add_classification(
+                tool.Ifc.get(), classification=bsdd_classification.dictionary_name
             )
             tool.Classification.set_location(classification, bsdd_classification.dictionary_namespace_uri)
 
@@ -438,8 +430,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
             if not ifc_definition_id:
                 continue
             element = tool.Ifc.get().by_id(ifc_definition_id)
-            reference = ifcopenshell.api.run(
-                "classification.add_reference",
+            reference = ifcopenshell.api.classification.add_reference(
                 tool.Ifc.get(),
                 products=[element],
                 classification=classification,
@@ -477,18 +468,16 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
                 if pset:
                     pset = tool.Ifc.get().by_id(pset["id"])
                 elif is_pset:
-                    pset = ifcopenshell.api.run(
-                        "pset.add_pset", tool.Ifc.get(), product=element, name=classification_pset.name
+                    pset = ifcopenshell.api.pset.add_pset(
+                        tool.Ifc.get(), product=element, name=classification_pset.name
                     )
                 else:
-                    pset = ifcopenshell.api.run(
-                        "pset.add_qto", tool.Ifc.get(), product=element, name=classification_pset.name
-                    )
+                    pset = ifcopenshell.api.pset.add_qto(tool.Ifc.get(), product=element, name=classification_pset.name)
 
                 if is_pset:
-                    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties=properties)
+                    ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties=properties)
                 else:
-                    ifcopenshell.api.run("pset.edit_qto", tool.Ifc.get(), qto=pset, properties=properties)
+                    ifcopenshell.api.pset.edit_qto(tool.Ifc.get(), qto=pset, properties=properties)
 
 
 class ChangeClassificationLevel(bpy.types.Operator):

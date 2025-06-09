@@ -20,6 +20,11 @@
 import os
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.context
+import ifcopenshell.api.project
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcopenshell.guid
 from datetime import datetime
 
@@ -166,16 +171,15 @@ class Cityjson2ifc:
             self.IFC_model.create_entity("IfcMapConversion", **self.properties["local_translation"])
 
     def create_new_file(self):
-        self.IFC_model = ifcopenshell.api.run("project.create_file")
-        self.IFC_project = ifcopenshell.api.run(
-            "root.create_entity",
+        self.IFC_model = ifcopenshell.api.project.create_file()
+        self.IFC_project = ifcopenshell.api.root.create_entity(
             self.IFC_model,
             **{"ifc_class": "IfcProject", "name": self.properties.get("name_project", "My Project")},
         )
-        ifcopenshell.api.run("unit.assign_unit", self.IFC_model, length={"is_metric": True, "raw": "METERS"})
+        ifcopenshell.api.unit.assign_unit(self.IFC_model, length={"is_metric": True, "raw": "METERS"})
         self.properties["owner_history"] = self.create_owner_history()
-        self.IFC_representation_context = ifcopenshell.api.run(
-            "context.add_context", self.IFC_model, **{"context_type": "Model"}
+        self.IFC_representation_context = ifcopenshell.api.context.add_context(
+            self.IFC_model, **{"context_type": "Model"}
         )
 
         if not self.city_model.has_metadata() or "presentLoDs" not in self.city_model.j["metadata"]:
@@ -184,8 +188,7 @@ class Cityjson2ifc:
         # create IFC representation subcontexts from lods
         self.create_representation_sub_contexts()
 
-        self.IFC_site = ifcopenshell.api.run(
-            "root.create_entity",
+        self.IFC_site = ifcopenshell.api.root.create_entity(
             self.IFC_model,
             **{"ifc_class": "IfcSite", "name": self.properties.get("name_site", "My Site")},
         )
@@ -205,7 +208,7 @@ class Cityjson2ifc:
 
     def create_representation_sub_context(self, lod):
         # TODO in ifcopenshell.api.context.add_context add support for UserDefinedTargetView
-        # self.IFC_representation_sub_contexts[str(lod)] = ifcopenshell.api.run("context.add_context", self.IFC_model,
+        # self.IFC_representation_sub_contexts[str(lod)] = ifcopenshell.api.context.add_context( self.IFC_model,
         #                                                            **{"context": "Model",
         #                                                               "subcontext": "Body",
         #                                                               "target_view": "USERDEFINED",
@@ -269,9 +272,9 @@ class Cityjson2ifc:
                 for element in representations_in_context:
                     IFC_copied_model.remove(element)
                     # slow:
-                    # ifcopenshell.api.run("geometry.remove_representation", IFC_copied_model, representation=element)
+                    # ifcopenshell.api.geometry.remove_representation( IFC_copied_model, representation=element)
 
-                ifcopenshell.api.run("context.remove_context", IFC_copied_model, context=sub_context)
+                ifcopenshell.api.context.remove_context(IFC_copied_model, context=sub_context)
 
             IFC_copied_model.write(file)
             del IFC_copied_model
@@ -404,5 +407,5 @@ class Cityjson2ifc:
         if len(CJ_attributes) == 0:
             return
 
-        pset = ifcopenshell.api.run("pset.add_pset", self.IFC_model, product=IFC_entity, name="CityJSON_attributes")
-        ifcopenshell.api.run("pset.edit_pset", self.IFC_model, pset=pset, properties=CJ_attributes)
+        pset = ifcopenshell.api.pset.add_pset(self.IFC_model, product=IFC_entity, name="CityJSON_attributes")
+        ifcopenshell.api.pset.edit_pset(self.IFC_model, pset=pset, properties=CJ_attributes)

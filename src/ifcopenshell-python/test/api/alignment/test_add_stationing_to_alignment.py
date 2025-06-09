@@ -19,6 +19,7 @@
 import pytest
 import ifcopenshell.api.alignment
 import ifcopenshell.api.context
+import ifcopenshell.util.element
 
 
 def test_add_stationing_to_alignment():

@@ -31,11 +31,15 @@ from typing import TYPE_CHECKING, Union, Literal, Any
 os.environ["GIT_PYTHON_REFRESH"] = "quiet"
 try:
     import git
+    import git.exc
+    import git.objects
 except ImportError:
     print("Warning: GitPython not available.")
 
 if TYPE_CHECKING:
     import git
+    import git.exc
+    import git.objects
 
     from bonsai.bim.module.ifcgit.prop import IfcGitProperties
 

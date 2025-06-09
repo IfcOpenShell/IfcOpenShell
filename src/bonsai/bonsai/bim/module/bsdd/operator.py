@@ -19,6 +19,7 @@
 import bpy
 import bsdd
 import bonsai.tool as tool
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 from bonsai.core import bsdd as core
 
@@ -101,5 +102,5 @@ class AddBSDDProperties(bpy.types.Operator, tool.Ifc.Operator):
             if pset := current_psets.get(pset_name, None):
                 pset = self.file.by_id(pset["id"])
             else:
-                pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name=pset_name)
-            ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties=properties)
+                pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name=pset_name)
+            ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties=properties)

@@ -263,8 +263,7 @@ def get_application(ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
     for element in ifc.by_type("IfcApplication"):
         if element.ApplicationIdentifier == "Bonsai" and element.Version == version:
             return element
-    return ifcopenshell.api.run(
-        "owner.add_application",
+    return ifcopenshell.api.owner.add_application(
         ifc,
         version=version,
         application_full_name="Bonsai",

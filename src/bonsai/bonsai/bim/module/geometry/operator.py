@@ -22,6 +22,8 @@ import bmesh
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
+import ifcopenshell.api.group
+import ifcopenshell.api.pset
 import ifcopenshell.api.geometry
 import ifcopenshell.api.layer
 import ifcopenshell.api.material
@@ -754,10 +756,10 @@ class CopyRepresentation(bpy.types.Operator, tool.Ifc.Operator):
                 bm.to_mesh(obj.data)
                 old_rep = tool.Geometry.get_representation_by_context(element, geometric_context)
                 if old_rep:
-                    ifcopenshell.api.run(
-                        "geometry.unassign_representation", tool.Ifc.get(), product=element, representation=old_rep
+                    ifcopenshell.api.geometry.unassign_representation(
+                        tool.Ifc.get(), product=element, representation=old_rep
                     )
-                    ifcopenshell.api.run("geometry.remove_representation", tool.Ifc.get(), representation=old_rep)
+                    ifcopenshell.api.geometry.remove_representation(tool.Ifc.get(), representation=old_rep)
                 core.add_representation(
                     tool.Ifc,
                     tool.Geometry,
@@ -1183,10 +1185,9 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             pset = ifcopenshell.util.element.get_pset(part, self.pset_name)
 
             if not pset:
-                pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=part, name=self.pset_name)
+                pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=part, name=self.pset_name)
 
-                ifcopenshell.api.run(
-                    "pset.edit_pset",
+                ifcopenshell.api.pset.edit_pset(
                     tool.Ifc.get(),
                     pset=pset,
                     properties={"Index": index},
@@ -1208,8 +1209,8 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             if self.group_name in product_groups_name:
                 return
 
-            linked_aggregate_group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), name=self.group_name)
-            ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=[element], group=linked_aggregate_group)
+            linked_aggregate_group = ifcopenshell.api.group.add_group(tool.Ifc.get(), name=self.group_name)
+            ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=[element], group=linked_aggregate_group)
 
         def custom_incremental_naming_for_element_assembly(old_to_new):
             for new in old_to_new.values():
@@ -1247,12 +1248,9 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
             for old, new in old_to_new.items():
                 pset = ifcopenshell.util.element.get_pset(old, "BBIM_Linked_Aggregate")
                 if pset:
-                    new_pset = ifcopenshell.api.run(
-                        "pset.add_pset", tool.Ifc.get(), product=new[0], name=self.pset_name
-                    )
+                    new_pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=new[0], name=self.pset_name)
 
-                    ifcopenshell.api.run(
-                        "pset.edit_pset",
+                    ifcopenshell.api.pset.edit_pset(
                         tool.Ifc.get(),
                         pset=new_pset,
                         properties={"Index": pset["Index"]},
@@ -2237,8 +2235,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                         curves.append(profile.OuterCurve)
                         if profile.is_a("IfcArbitraryProfileDefWithVoids"):
                             curves.extend(profile.InnerCurves)
-                    new_footprint = ifcopenshell.api.run(
-                        "geometry.add_footprint_representation",
+                    new_footprint = ifcopenshell.api.geometry.add_footprint_representation(
                         tool.Ifc.get(),
                         context=footprint_context,
                         curves=curves,
@@ -2253,8 +2250,7 @@ class OverrideModeSetObject(bpy.types.Operator, tool.Ifc.Operator):
                             tool.Ifc, tool.Geometry, obj=obj, representation=old_footprint
                         )
                     else:
-                        ifcopenshell.api.run(
-                            "geometry.assign_representation",
+                        ifcopenshell.api.geometry.assign_representation(
                             tool.Ifc.get(),
                             product=element,
                             representation=new_footprint,

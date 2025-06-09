@@ -20,6 +20,9 @@ from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.feature
+import ifcopenshell.api.geometry
+import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
@@ -285,11 +288,8 @@ class Root(bonsai.core.tool.Root):
                     filling_obj = tool.Ifc.get_object(new_subelement)
 
                     existing_opening_occurrence = subelement.FillsVoids[0].RelatingOpeningElement
-                    opening = ifcopenshell.api.run(
-                        "root.copy_class", tool.Ifc.get(), product=existing_opening_occurrence
-                    )
-                    ifcopenshell.api.run(
-                        "geometry.edit_object_placement",
+                    opening = ifcopenshell.api.root.copy_class(tool.Ifc.get(), product=existing_opening_occurrence)
+                    ifcopenshell.api.geometry.edit_object_placement(
                         tool.Ifc.get(),
                         product=opening,
                         matrix=ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement),
@@ -300,17 +300,16 @@ class Root(bonsai.core.tool.Root):
                         existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
                     )
                     representation = ifcopenshell.util.representation.resolve_representation(representation)
-                    mapped_representation = ifcopenshell.api.run(
-                        "geometry.map_representation", tool.Ifc.get(), representation=representation
+                    mapped_representation = ifcopenshell.api.geometry.map_representation(
+                        tool.Ifc.get(), representation=representation
                     )
-                    ifcopenshell.api.run(
-                        "geometry.assign_representation",
+                    ifcopenshell.api.geometry.assign_representation(
                         tool.Ifc.get(),
                         product=opening,
                         representation=mapped_representation,
                     )
-                    ifcopenshell.api.run("feature.add_feature", tool.Ifc.get(), feature=opening, element=element)
-                    ifcopenshell.api.run("feature.add_filling", tool.Ifc.get(), opening=opening, element=filling)
+                    ifcopenshell.api.feature.add_feature(tool.Ifc.get(), feature=opening, element=element)
+                    ifcopenshell.api.feature.add_filling(tool.Ifc.get(), opening=opening, element=filling)
 
                     voided_objs = [voided_obj]
                     # Openings affect all subelements of an aggregate
@@ -344,8 +343,7 @@ class Root(bonsai.core.tool.Root):
                 new_related_element = old_to_new.get(data["related_element"])[0]
             except:
                 continue
-            ifcopenshell.api.run(
-                "geometry.connect_path",
+            ifcopenshell.api.geometry.connect_path(
                 tool.Ifc.get(),
                 relating_element=new_relating_element,
                 related_element=new_related_element,

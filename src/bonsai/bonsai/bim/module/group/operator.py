@@ -19,7 +19,7 @@
 import bpy
 import ifcopenshell.api
 import ifcopenshell.api.group
-import ifcopenshell.util.attribute
+import ifcopenshell.util.element
 import bonsai.bim.helper
 import bonsai.tool as tool
 import json
@@ -108,10 +108,10 @@ class AddGroup(bpy.types.Operator, tool.Ifc.Operator):
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        result = ifcopenshell.api.run("group.add_group", tool.Ifc.get())
+        result = ifcopenshell.api.group.add_group(tool.Ifc.get())
         if self.group:
-            ifcopenshell.api.run(
-                "group.assign_group", tool.Ifc.get(), products=[result], group=tool.Ifc.get().by_id(self.group)
+            ifcopenshell.api.group.assign_group(
+                tool.Ifc.get(), products=[result], group=tool.Ifc.get().by_id(self.group)
             )
         bpy.ops.bim.load_groups()
         return {"FINISHED"}
@@ -139,7 +139,7 @@ class RemoveGroup(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        ifcopenshell.api.run("group.remove_group", self.file, **{"group": self.file.by_id(self.group)})
+        ifcopenshell.api.group.remove_group(self.file, **{"group": self.file.by_id(self.group)})
         bpy.ops.bim.load_groups()
         return {"FINISHED"}
 

@@ -823,6 +823,7 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         import ifcdiff
 
         old = tool.Ifc.get()
+        new: ifcopenshell.file
         new = ifcopenshell.open(self.filepath)
 
         ifc_diff = ifcdiff.IfcDiff(old, new, relationships=[])

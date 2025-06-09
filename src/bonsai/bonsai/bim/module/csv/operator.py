@@ -312,6 +312,7 @@ class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
         import ifccsv
 
         props = tool.Blender.get_csv_props()
+        ifc_file: ifcopenshell.file
         if props.should_load_from_memory:
             ifc_file = tool.Ifc.get()
         else:

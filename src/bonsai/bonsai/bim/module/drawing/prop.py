@@ -119,8 +119,8 @@ def update_is_nts(self: "BIMCameraProperties", context: bpy.types.Context) -> No
     if pset:
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
-        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
-    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"IsNTS": self.is_nts})
+        pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="EPset_Drawing")
+    ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"IsNTS": self.is_nts})
 
 
 def get_diagram_scales(self: "BIMCameraProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
@@ -250,8 +250,8 @@ def update_layer(self: "BIMCameraProperties", context: bpy.types.Context, name: 
     if pset:
         pset = tool.Ifc.get().by_id(pset["id"])
     else:
-        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Drawing")
-    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={name: value})
+        pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="EPset_Drawing")
+    ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={name: value})
 
 
 def get_titleblocks(self, context):

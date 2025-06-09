@@ -21,6 +21,7 @@ import bmesh
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 import bonsai.core.root
@@ -440,9 +441,9 @@ def update_roof_modifier_ifc_data(context: bpy.types.Context) -> None:
 def update_bbim_roof_pset(element: ifcopenshell.entity_instance, roof_data: dict[str, Any]) -> None:
     pset = tool.Pset.get_element_pset(element, "BBIM_Roof")
     if not pset:
-        pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Roof")
+        pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Roof")
     roof_data = tool.Ifc.get().createIfcText(json.dumps(roof_data, default=list))
-    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": roof_data})
+    ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": roof_data})
 
 
 def update_roof_modifier_bmesh(obj: bpy.types.Object) -> None:
@@ -831,7 +832,7 @@ class RemoveRoof(bpy.types.Operator, tool.Ifc.Operator):
 
         assert element
         pset = tool.Pset.get_element_pset(element, "BBIM_Roof")
-        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+        ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
         return {"FINISHED"}
 
 

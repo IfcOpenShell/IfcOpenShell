@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import xml.sax, json, copy, pathlib
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup  # pyright: ignore[reportMissingModuleSource]
 import sys
 
 sys.setrecursionlimit(100)

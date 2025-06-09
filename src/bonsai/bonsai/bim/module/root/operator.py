@@ -21,6 +21,8 @@ import bmesh
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.util.schema
 import ifcopenshell.util.element
@@ -599,27 +601,27 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
             if materials:
                 material = materials[0]  # Arbitrarily pick a material
             else:
-                material = ifcopenshell.api.run("material.add_material", tool.Ifc.get(), name="Unknown")
-            rel = ifcopenshell.api.run(
-                "material.assign_material", tool.Ifc.get(), products=[element], type="IfcMaterialLayerSet"
+                material = ifcopenshell.api.material.add_material(tool.Ifc.get(), name="Unknown")
+            rel = ifcopenshell.api.material.assign_material(
+                tool.Ifc.get(), products=[element], type="IfcMaterialLayerSet"
             )
             layer_set = rel.RelatingMaterial
-            layer = ifcopenshell.api.run("material.add_layer", tool.Ifc.get(), layer_set=layer_set, material=material)
+            layer = ifcopenshell.api.material.add_layer(tool.Ifc.get(), layer_set=layer_set, material=material)
             thickness = 0.1  # Arbitrary metric thickness for now
             layer.LayerThickness = thickness / unit_scale
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Parametric")
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="EPset_Parametric")
             if representation_template == "LAYERSET_AXIS2":
                 axis = "AXIS2"
             elif representation_template == "LAYERSET_AXIS3":
                 axis = "AXIS3"
-            ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"LayerSetDirection": axis})
+            ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"LayerSetDirection": axis})
         elif representation_template == "PROFILESET" or representation_template.startswith("FLOW_SEGMENT_"):
             unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
             materials = tool.Ifc.get().by_type("IfcMaterial")
             if materials:
                 material = materials[0]  # Arbitrarily pick a material
             else:
-                material = ifcopenshell.api.run("material.add_material", tool.Ifc.get(), name="Unknown")
+                material = ifcopenshell.api.material.add_material(tool.Ifc.get(), name="Unknown")
             if representation_template == "PROFILESET":
                 profile_id = tool.Blender.get_enum_safe(props, "profile")
                 if profile_id in ("-", None):
@@ -670,16 +672,14 @@ class AddElement(bpy.types.Operator, tool.Ifc.Operator):
                         WallThickness=default_thickness,
                     )
 
-            rel = ifcopenshell.api.run(
-                "material.assign_material", tool.Ifc.get(), products=[element], type="IfcMaterialProfileSet"
+            rel = ifcopenshell.api.material.assign_material(
+                tool.Ifc.get(), products=[element], type="IfcMaterialProfileSet"
             )
             profile_set = rel.RelatingMaterial
-            material_profile = ifcopenshell.api.run(
-                "material.add_profile", tool.Ifc.get(), profile_set=profile_set, material=material
+            material_profile = ifcopenshell.api.material.add_profile(
+                tool.Ifc.get(), profile_set=profile_set, material=material
             )
-            ifcopenshell.api.run(
-                "material.assign_profile", tool.Ifc.get(), material_profile=material_profile, profile=profile
-            )
+            ifcopenshell.api.material.assign_profile(tool.Ifc.get(), material_profile=material_profile, profile=profile)
         elif representation_template == "WINDOW":
             with context.temp_override(active_object=obj, selected_objects=[]):
                 bpy.ops.bim.add_window()

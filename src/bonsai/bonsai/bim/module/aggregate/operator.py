@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.core.aggregate as core
@@ -112,7 +113,7 @@ class BIM_OT_aggregate_unassign_object(bpy.types.Operator, tool.Ifc.Operator):
                 pset = ifcopenshell.util.element.get_pset(element, "BBIM_Linked_Aggregate")
                 if pset:
                     pset = tool.Ifc.get().by_id(pset["id"])
-                    ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+                    ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
 
 
 class BIM_OT_enable_editing_aggregate(bpy.types.Operator):
@@ -312,7 +313,7 @@ class BIM_OT_break_link_to_other_aggregates(bpy.types.Operator, tool.Ifc.Operato
         for part in parts:
             pset = ifcopenshell.util.element.get_pset(part, "BBIM_Linked_Aggregate")
             pset = tool.Ifc.get().by_id(pset["id"])
-            ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=part, pset=pset)
+            ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=part, pset=pset)
 
         linked_aggregate_group = next(
             r.RelatingGroup
@@ -385,7 +386,7 @@ class BIM_OT_disable_aggregate_mode(bpy.types.Operator):
 
     def execute(self, context):
         bpy.ops.object.select_all(action="DESELECT")
-        bonsai.core.aggregate.exit_aggregate_mode(tool.Aggregate)
+        core.exit_aggregate_mode(tool.Aggregate)
         return {"FINISHED"}
 
 

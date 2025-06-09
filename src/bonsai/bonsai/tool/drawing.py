@@ -38,7 +38,10 @@ import bonsai.core.geometry
 import bonsai.core.type
 import bonsai.tool as tool
 import ifcopenshell.api
+import ifcopenshell.api.context
 import ifcopenshell.api.document
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
 import ifcopenshell.geom
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
@@ -376,7 +379,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def delete_drawing_elements(cls, elements: Iterable[ifcopenshell.entity_instance]) -> None:
         for element in elements:
             obj = tool.Ifc.get_object(element)
-            ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+            ifcopenshell.api.root.remove_product(tool.Ifc.get(), product=element)
             if obj:
                 obj_data = obj.data
                 bpy.data.objects.remove(obj)
@@ -1187,9 +1190,8 @@ class Drawing(bonsai.core.tool.Drawing):
             ifc_file = tool.Ifc.get()
             pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
             if not pset:
-                pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="EPset_Annotation")
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+                pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+            ifcopenshell.api.pset.edit_pset(
                 ifc_file,
                 pset=pset,
                 properties={"Classes": classes},
@@ -1203,9 +1205,8 @@ class Drawing(bonsai.core.tool.Drawing):
         ifc_file = tool.Ifc.get()
         pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
         if not pset:
-            pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="EPset_Annotation")
-        ifcopenshell.api.run(
-            "pset.edit_pset",
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(
             ifc_file,
             pset=pset,
             properties={"Newline_At": newline_at},

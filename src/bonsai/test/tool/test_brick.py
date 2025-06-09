@@ -23,6 +23,8 @@ import brickschema.persistent
 from brickschema.namespaces import REF, A
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.root
 import ifcopenshell.guid
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -325,11 +327,11 @@ class TestGetConvertableBrickSystems(NewFile):
 class TestGetParentSpace(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
-        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcBuildingStorey")
-        subelement = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcSpace")
-        project = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcProject")
-        ifcopenshell.api.run("aggregate.assign_object", ifc, products=[subelement], relating_object=element)
-        ifcopenshell.api.run("aggregate.assign_object", ifc, products=[element], relating_object=project)
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcBuildingStorey")
+        subelement = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcSpace")
+        project = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcProject")
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[subelement], relating_object=element)
+        ifcopenshell.api.aggregate.assign_object(ifc, products=[element], relating_object=project)
         assert subject.get_parent_space(subelement) == element
         assert subject.get_parent_space(element) is None
 

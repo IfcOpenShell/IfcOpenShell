@@ -20,6 +20,7 @@
 import os
 import bpy
 import ifcopenshell.util.element
+import bonsai.core.geometry
 import bonsai.core.type
 import bonsai.core.drawing as core
 import bonsai.tool as tool

@@ -812,16 +812,14 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         assert self.surface_style
 
         if self.surface_style.is_a() == "IfcSurfaceStyleShading":
-            ifcopenshell.api.run(
-                "style.edit_surface_style",
+            ifcopenshell.api.style.edit_surface_style(
                 tool.Ifc.get(),
                 style=self.surface_style,
                 attributes=self.get_shading_attributes(),
             )
             tool.Loader.create_surface_style_shading(material, self.surface_style)
         elif self.surface_style.is_a() == "IfcSurfaceStyleRendering":
-            ifcopenshell.api.run(
-                "style.edit_surface_style",
+            ifcopenshell.api.style.edit_surface_style(
                 tool.Ifc.get(),
                 style=self.surface_style,
                 attributes=self.get_rendering_attributes(),
@@ -858,8 +856,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
         else:
             attributes = tool.Style.get_style_ui_props_attributes(self.surface_style.is_a())
             assert attributes
-            ifcopenshell.api.run(
-                "style.edit_surface_style",
+            ifcopenshell.api.style.edit_surface_style(
                 tool.Ifc.get(),
                 style=self.surface_style,
                 attributes=bonsai.bim.helper.export_attributes(attributes),
@@ -868,8 +865,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
     def add_new_style(self) -> None:
         material = tool.Ifc.get_object(self.style)
         if self.props.is_editing_class == "IfcSurfaceStyleShading":
-            surface_style = ifcopenshell.api.run(
-                "style.add_surface_style",
+            surface_style = ifcopenshell.api.style.add_surface_style(
                 tool.Ifc.get(),
                 style=self.style,
                 ifc_class="IfcSurfaceStyleShading",
@@ -877,8 +873,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             )
             tool.Loader.create_surface_style_shading(material, surface_style)
         elif self.props.is_editing_class == "IfcSurfaceStyleRendering":
-            surface_style = ifcopenshell.api.run(
-                "style.add_surface_style",
+            surface_style = ifcopenshell.api.style.add_surface_style(
                 tool.Ifc.get(),
                 style=self.style,
                 ifc_class="IfcSurfaceStyleRendering",
@@ -901,8 +896,7 @@ class EditSurfaceStyle(bpy.types.Operator, tool.Ifc.Operator):
             tool.Loader.create_surface_style_with_textures(material, self.rendering_style, texture_style)
         else:
             attributes = tool.Style.get_style_ui_props_attributes(self.props.is_editing_class)
-            surface_style = ifcopenshell.api.run(
-                "style.add_surface_style",
+            surface_style = ifcopenshell.api.style.add_surface_style(
                 tool.Ifc.get(),
                 style=self.style,
                 ifc_class=self.props.is_editing_class,

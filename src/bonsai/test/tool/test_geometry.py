@@ -21,6 +21,7 @@ import math
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api.geometry
+import ifcopenshell.api.root
 import ifcopenshell.api.type
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -202,7 +203,7 @@ class TestGetElementType(NewFile):
         ifc = tool.Ifc.get()
         element = ifc.createIfcWall()
         type = ifc.createIfcWallType()
-        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[element], relating_type=type)
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[element], relating_type=type)
         assert subject.get_element_type(element) == type
 
 
@@ -212,7 +213,7 @@ class TestGetElementsOfType(NewFile):
         ifc = tool.Ifc.get()
         element = ifc.createIfcWall()
         type = ifc.createIfcWallType()
-        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[element], relating_type=type)
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[element], relating_type=type)
         assert subject.get_elements_of_type(type) == (element,)
 
 
@@ -328,9 +329,9 @@ class TestRemoveConnection(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
-        element1 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        element2 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
-        rel = ifcopenshell.api.run("geometry.connect_path", ifc, relating_element=element1, related_element=element2)
+        element1 = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        rel = ifcopenshell.api.geometry.connect_path(ifc, relating_element=element1, related_element=element2)
         subject.remove_connection(rel)
         assert not tool.Ifc.get().by_type("IfcRelConnectsPathElements")
 
@@ -445,17 +446,17 @@ class TestSelectConnection(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc().set(ifc)
 
-        element1 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element1 = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
         obj1 = bpy.data.objects.new("Object", None)
         bpy.context.scene.collection.objects.link(obj1)
         tool.Ifc.link(element1, obj1)
 
-        element2 = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element2 = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
         obj2 = bpy.data.objects.new("Object", None)
         bpy.context.scene.collection.objects.link(obj2)
         tool.Ifc.link(element2, obj2)
 
-        rel = ifcopenshell.api.run("geometry.connect_path", ifc, relating_element=element1, related_element=element2)
+        rel = ifcopenshell.api.geometry.connect_path(ifc, relating_element=element1, related_element=element2)
 
         subject.select_connection(rel)
         assert obj1 in bpy.context.selected_objects

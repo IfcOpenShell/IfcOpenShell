@@ -23,6 +23,8 @@ import bmesh
 import collections
 import collections.abc
 import ifcopenshell
+import ifcopenshell.api.geometry
+import ifcopenshell.api.pset
 import bonsai.tool as tool
 import bonsai.core.root
 import bonsai.core.geometry
@@ -82,9 +84,7 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
     profile = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
     if profile:
         representation_data["context"] = profile
-        elevation_representation = ifcopenshell.api.run(
-            "geometry.add_window_representation", ifc_file, **representation_data
-        )
+        elevation_representation = ifcopenshell.api.geometry.add_window_representation(ifc_file, **representation_data)
         tool.Model.replace_object_ifc_representation(profile, obj, elevation_representation)
 
     # MODEL_VIEW representation
@@ -92,7 +92,7 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
     body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
     representation_data["context"] = body
     representation_data["part_of_product"] = ifcopenshell.util.representation.get_part_of_product(element, body)
-    model_representation = ifcopenshell.api.run("geometry.add_window_representation", ifc_file, **representation_data)
+    model_representation = ifcopenshell.api.geometry.add_window_representation(ifc_file, **representation_data)
     representation_data["part_of_product"] = None
     tool.Model.replace_object_ifc_representation(body, obj, model_representation)
     if fallback_material := (int(props.lining_material) or int(props.framing_material) or int(props.glazing_material)):
@@ -115,9 +115,7 @@ def update_window_modifier_representation(context: bpy.types.Context) -> None:
     plan = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Body", "PLAN_VIEW")
     if plan:
         representation_data["context"] = plan
-        plan_representation = ifcopenshell.api.run(
-            "geometry.add_window_representation", ifc_file, **representation_data
-        )
+        plan_representation = ifcopenshell.api.geometry.add_window_representation(ifc_file, **representation_data)
         tool.Model.replace_object_ifc_representation(plan, obj, plan_representation)
 
     bonsai.core.geometry.switch_representation(
@@ -464,10 +462,9 @@ class AddWindow(bpy.types.Operator, tool.Ifc.Operator):
         window_data["panel_properties"] = panel_props
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         if not pset:
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Window")
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Window")
 
-        ifcopenshell.api.run(
-            "pset.edit_pset",
+        ifcopenshell.api.pset.edit_pset(
             tool.Ifc.get(),
             pset=pset,
             properties={"Data": tool.Ifc.get().createIfcText(json.dumps(window_data, default=list))},
@@ -535,7 +532,7 @@ class FinishEditingWindow(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
         window_data = tool.Ifc.get().createIfcText(json.dumps(window_data, default=list))
-        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": window_data})
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": window_data})
         return {"FINISHED"}
 
 
@@ -576,6 +573,6 @@ class RemoveWindow(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Window")
-        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+        ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
 
         return {"FINISHED"}

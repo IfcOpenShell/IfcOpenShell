@@ -1,10 +1,11 @@
 import ifcopenshell
-import ifcopenshell.api
 import ifcopenshell.geom
 import multiprocessing
 
 
 class BlenderImporter:
+    file: ifcopenshell.file
+
     def __init__(self):
         self.file = ifcopenshell.open("/home/dion/untitled.ifc")
         self.cache_path = "cache.h5"

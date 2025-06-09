@@ -1,6 +1,9 @@
 from __future__ import annotations
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.control
+import ifcopenshell.api.resource
+import ifcopenshell.api.sequence
 import ifcopenshell.util.date
 from datetime import datetime, timedelta, date
 from typing import Union, Any, TypedDict
@@ -81,7 +84,7 @@ class ScheduleIfcGenerator:
         if not self.file:
             self.file = self.create_boilerplate_ifc()
         if not self.work_plan:
-            self.work_plan = ifcopenshell.api.run("sequence.add_work_plan", self.file)
+            self.work_plan = ifcopenshell.api.sequence.add_work_plan(self.file)
         work_schedule = self.create_work_schedule()
         self.create_calendars()
         self.create_tasks(work_schedule)
@@ -91,13 +94,13 @@ class ScheduleIfcGenerator:
             self.file.write(self.output)
 
     def create_work_schedule(self) -> ifcopenshell.entity_instance:
-        return ifcopenshell.api.run(
-            "sequence.add_work_schedule", self.file, name=self.project["Name"], work_plan=self.work_plan
+        return ifcopenshell.api.sequence.add_work_schedule(
+            self.file, name=self.project["Name"], work_plan=self.work_plan
         )
 
     def create_calendars(self) -> None:
         for calendar_id, calendar in self.calendars.items():
-            calendar["ifc"] = ifcopenshell.api.run("sequence.add_work_calendar", self.file, name=calendar["Name"])
+            calendar["ifc"] = ifcopenshell.api.sequence.add_work_calendar(self.file, name=calendar["Name"])
             calendar["ifc"].Identification = str(calendar_id)
             self.process_working_week(calendar["StandardWorkWeek"], calendar["ifc"])
             self.process_exceptions(calendar.get("HolidayOrExceptions"), calendar["ifc"])
@@ -107,8 +110,8 @@ class ScheduleIfcGenerator:
             if day["ifc"] or not day.get("WorkTimes"):
                 continue
 
-            day["ifc"] = ifcopenshell.api.run(
-                "sequence.add_work_time", self.file, work_calendar=calendar, time_type="WorkingTimes"
+            day["ifc"] = ifcopenshell.api.sequence.add_work_time(
+                self.file, work_calendar=calendar, time_type="WorkingTimes"
             )
             weekday_component = [self.day_map[day["DayOfWeek"]]]
             for day2 in week:
@@ -120,25 +123,22 @@ class ScheduleIfcGenerator:
                     day2["ifc"] = day["ifc"]
 
             work_time_name = "Weekdays: {}".format(", ".join([str(c) for c in sorted(weekday_component)]))
-            ifcopenshell.api.run(
-                "sequence.edit_work_time",
+            ifcopenshell.api.sequence.edit_work_time(
                 self.file,
                 work_time=day["ifc"],
                 attributes={"Name": work_time_name},
             )
 
-            recurrence = ifcopenshell.api.run(
-                "sequence.assign_recurrence_pattern", self.file, parent=day["ifc"], recurrence_type="WEEKLY"
+            recurrence = ifcopenshell.api.sequence.assign_recurrence_pattern(
+                self.file, parent=day["ifc"], recurrence_type="WEEKLY"
             )
-            ifcopenshell.api.run(
-                "sequence.edit_recurrence_pattern",
+            ifcopenshell.api.sequence.edit_recurrence_pattern(
                 self.file,
                 recurrence_pattern=recurrence,
                 attributes={"WeekdayComponent": weekday_component},
             )
             for work_time in day["WorkTimes"]:
-                ifcopenshell.api.run(
-                    "sequence.add_time_period",
+                ifcopenshell.api.sequence.add_time_period(
                     self.file,
                     recurrence_pattern=recurrence,
                     start_time=work_time["Start"],
@@ -159,11 +159,10 @@ class ScheduleIfcGenerator:
     def process_full_day_exceptions(
         self, year: int, month: int, month_data: dict[str, Any], calendar: ifcopenshell.entity_instance
     ):
-        work_time = ifcopenshell.api.run(
-            "sequence.add_work_time", self.file, work_calendar=calendar, time_type="ExceptionTimes"
+        work_time = ifcopenshell.api.sequence.add_work_time(
+            self.file, work_calendar=calendar, time_type="ExceptionTimes"
         )
-        ifcopenshell.api.run(
-            "sequence.edit_work_time",
+        ifcopenshell.api.sequence.edit_work_time(
             self.file,
             work_time=work_time,
             attributes={
@@ -172,14 +171,12 @@ class ScheduleIfcGenerator:
                 "Finish": date(year, 12, 31),
             },
         )
-        recurrence = ifcopenshell.api.run(
-            "sequence.assign_recurrence_pattern",
+        recurrence = ifcopenshell.api.sequence.assign_recurrence_pattern(
             self.file,
             parent=work_time,
             recurrence_type="YEARLY_BY_DAY_OF_MONTH",
         )
-        ifcopenshell.api.run(
-            "sequence.edit_recurrence_pattern",
+        ifcopenshell.api.sequence.edit_recurrence_pattern(
             self.file,
             recurrence_pattern=recurrence,
             attributes={"DayComponent": month_data["FullDay"], "MonthComponent": [month]},
@@ -192,8 +189,8 @@ class ScheduleIfcGenerator:
             if day["ifc"]:
                 continue
 
-            day["ifc"] = ifcopenshell.api.run(
-                "sequence.add_work_time", self.file, work_calendar=calendar, time_type="ExceptionTimes"
+            day["ifc"] = ifcopenshell.api.sequence.add_work_time(
+                self.file, work_calendar=calendar, time_type="ExceptionTimes"
             )
 
             day_component = [day["Day"]]
@@ -205,8 +202,7 @@ class ScheduleIfcGenerator:
                     # Don't process the next day, as we can group it
                     day2["ifc"] = day["ifc"]
 
-            ifcopenshell.api.run(
-                "sequence.edit_work_time",
+            ifcopenshell.api.sequence.edit_work_time(
                 self.file,
                 work_time=day["ifc"],
                 attributes={
@@ -215,21 +211,18 @@ class ScheduleIfcGenerator:
                     "Finish": date(year, 12, 31),
                 },
             )
-            recurrence = ifcopenshell.api.run(
-                "sequence.assign_recurrence_pattern",
+            recurrence = ifcopenshell.api.sequence.assign_recurrence_pattern(
                 self.file,
                 parent=day["ifc"],
                 recurrence_type="YEARLY_BY_DAY_OF_MONTH",
             )
-            ifcopenshell.api.run(
-                "sequence.edit_recurrence_pattern",
+            ifcopenshell.api.sequence.edit_recurrence_pattern(
                 self.file,
                 recurrence_pattern=recurrence,
                 attributes={"DayComponent": day_component, "MonthComponent": [month]},
             )
             for work_time in day["WorkTimes"]:
-                ifcopenshell.api.run(
-                    "sequence.add_time_period",
+                ifcopenshell.api.sequence.add_time_period(
                     self.file,
                     recurrence_pattern=recurrence,
                     start_time=work_time["Start"],
@@ -245,8 +238,7 @@ class ScheduleIfcGenerator:
     def create_task_from_wbs(self, wbs: WBSEntry, work_schedule: ifcopenshell.entity_instance) -> None:
         if not self.wbs.get(wbs["ParentObjectId"]):
             wbs["ParentObjectId"] = None
-        wbs["ifc"] = ifcopenshell.api.run(
-            "sequence.add_task",
+        wbs["ifc"] = ifcopenshell.api.sequence.add_task(
             self.file,
             work_schedule=None if wbs["ParentObjectId"] else work_schedule,
             parent_task=self.wbs[wbs["ParentObjectId"]]["ifc"] if wbs["ParentObjectId"] else None,
@@ -255,8 +247,7 @@ class ScheduleIfcGenerator:
         if wbs["ParentObjectId"]:
             if self.wbs[wbs["ParentObjectId"]]["ifc"]:
                 identification = str(self.wbs[wbs["ParentObjectId"]]["ifc"].Identification) + "." + str(wbs["Code"])
-        ifcopenshell.api.run(
-            "sequence.edit_task",
+        ifcopenshell.api.sequence.edit_task(
             self.file,
             task=wbs["ifc"],
             attributes={"Name": wbs["Name"], "Identification": str(identification)},
@@ -270,14 +261,12 @@ class ScheduleIfcGenerator:
         wbs: Union[WBSEntry, None],
         work_schedule: Union[ifcopenshell.entity_instance, None],
     ) -> None:
-        activity["ifc"] = ifcopenshell.api.run(
-            "sequence.add_task",
+        activity["ifc"] = ifcopenshell.api.sequence.add_task(
             self.file,
             work_schedule=None if wbs else work_schedule,
             parent_task=wbs["ifc"] if wbs else None,
         )
-        ifcopenshell.api.run(
-            "sequence.edit_task",
+        ifcopenshell.api.sequence.edit_task(
             self.file,
             task=activity["ifc"],
             attributes={
@@ -288,19 +277,17 @@ class ScheduleIfcGenerator:
                 "PredefinedType": "CONSTRUCTION",
             },
         )
-        task_time = ifcopenshell.api.run("sequence.add_task_time", self.file, task=activity["ifc"])
+        task_time = ifcopenshell.api.sequence.add_task_time(self.file, task=activity["ifc"])
         calendar = self.calendars[activity["CalendarObjectId"]]
         # Seems intermittently crashy - can we investigate for larger files?
-        ifcopenshell.api.run(
-            "control.assign_control",
+        ifcopenshell.api.control.assign_control(
             self.file,
             **{
                 "relating_control": calendar["ifc"],
                 "related_object": activity["ifc"],
             },
         )
-        ifcopenshell.api.run(
-            "sequence.edit_task_time",
+        ifcopenshell.api.sequence.edit_task_time(
             self.file,
             task_time=task_time,
             attributes={
@@ -323,14 +310,12 @@ class ScheduleIfcGenerator:
             "Finish to Finish": "FINISH_FINISH",
         }
         for relationship in self.relationships.values():
-            rel_sequence = ifcopenshell.api.run(
-                "sequence.assign_sequence",
+            rel_sequence = ifcopenshell.api.sequence.assign_sequence(
                 self.file,
                 relating_process=self.activities[relationship["PredecessorActivity"]]["ifc"],
                 related_process=self.activities[relationship["SuccessorActivity"]]["ifc"],
             )
-            ifcopenshell.api.run(
-                "sequence.edit_sequence",
+            ifcopenshell.api.sequence.edit_sequence(
                 self.file,
                 rel_sequence=rel_sequence,
                 attributes={"SequenceType": relationship["Type"]},
@@ -338,8 +323,7 @@ class ScheduleIfcGenerator:
             lag = float(relationship["Lag"])
             if lag:
                 calendar = self.calendars[self.activities[relationship["PredecessorActivity"]]["CalendarObjectId"]]
-                ifcopenshell.api.run(
-                    "sequence.assign_lag_time",
+                ifcopenshell.api.sequence.assign_lag_time(
                     self.file,
                     rel_sequence=rel_sequence,
                     lag_value=timedelta(days=lag / float(calendar["HoursPerDay"] or 8)),
@@ -353,14 +337,12 @@ class ScheduleIfcGenerator:
                 parent = self.resources.get(resource.get("ParentObjectId"))
                 if parent:
                     if not parent.get("ifc"):
-                        parent["ifc"] = ifcopenshell.api.run(
-                            "resource.add_resource",
+                        parent["ifc"] = ifcopenshell.api.resource.add_resource(
                             self.file,
                             **{"ifc_class": "IfcCrewResource", "name": parent["Name"]},
                         )
                 if parent:
-                    resource["ifc"] = ifcopenshell.api.run(
-                        "resource.add_resource",
+                    resource["ifc"] = ifcopenshell.api.resource.add_resource(
                         self.file,
                         **{
                             "parent_resource": parent["ifc"] if parent else None,
@@ -369,8 +351,8 @@ class ScheduleIfcGenerator:
                         },
                     )
                 else:
-                    resource["ifc"] = ifcopenshell.api.run(
-                        "resource.add_resource", self.file, **{"ifc_class": "IfcCrewResource", "name": resource["Name"]}
+                    resource["ifc"] = ifcopenshell.api.resource.add_resource(
+                        self.file, **{"ifc_class": "IfcCrewResource", "name": resource["Name"]}
                     )
 
     def create_boilerplate_ifc(self) -> None:

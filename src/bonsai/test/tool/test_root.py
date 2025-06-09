@@ -19,6 +19,8 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.feature
+import ifcopenshell.api.type
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -74,8 +76,8 @@ class TestGetDecompositionRelationships(NewFile):
         element = ifc.createIfcWall()
         opening = ifc.createIfcOpeningElement()
         fill = ifc.createIfcWindow()
-        ifcopenshell.api.run("feature.add_feature", ifc, feature=opening, element=element)
-        ifcopenshell.api.run("feature.add_filling", ifc, opening=opening, element=fill)
+        ifcopenshell.api.feature.add_feature(ifc, feature=opening, element=element)
+        ifcopenshell.api.feature.add_filling(ifc, opening=opening, element=fill)
 
         obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(fill, obj)
@@ -99,7 +101,7 @@ class TestGetElementType(NewFile):
         ifc = tool.Ifc.get()
         element = ifc.createIfcWall()
         type = ifc.createIfcWallType()
-        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[element], relating_type=type)
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[element], relating_type=type)
         assert subject.get_element_type(element) == type
 
 

@@ -174,6 +174,7 @@ class SelectLibraryFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     def _execute(self, context):
         filepath = self.get_filepath()
         ifc_file = tool.Ifc.get()
+        library_file: ifcopenshell.file
         library_file = ifcopenshell.open(filepath)
         if library_file.schema_identifier != ifc_file.schema_identifier:
             self.report(
@@ -2158,8 +2159,7 @@ class AppendInspectedLinkedElement(AppendLibraryElement):
             return {"CANCELLED"}
 
         element_to_append = linked_ifc_file.by_guid(guid)
-        element = ifcopenshell.api.run(
-            "project.append_asset",
+        element = ifcopenshell.api.project.append_asset(
             tool.Ifc.get(),
             library=linked_ifc_file,
             element=element_to_append,

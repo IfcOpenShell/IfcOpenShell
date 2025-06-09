@@ -24,6 +24,7 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.element
 import bonsai.core.tool
 import bonsai.tool as tool
+import bonsai.bim
 from pathlib import Path
 from typing import Literal, final, TYPE_CHECKING
 from bonsai.bim.ifc import IfcStore

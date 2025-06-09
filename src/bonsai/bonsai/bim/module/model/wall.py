@@ -24,6 +24,11 @@ import math
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.feature
+import ifcopenshell.api.material
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.type
 import ifcopenshell.api.geometry
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
@@ -634,7 +639,7 @@ class DrawPolylineWall(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
             material_set_usage = model.by_id(material.id())
             # if material.is_a("IfcMaterialLayerSetUsage"):
             attributes = {"OffsetFromReferenceLine": offset, "DirectionSense": direction_sense}
-            ifcopenshell.api.run("material.edit_layer_usage", model, usage=material_set_usage, attributes=attributes)
+            ifcopenshell.api.material.edit_layer_usage(model, usage=material_set_usage, attributes=attributes)
             tool.Model.recalculate_walls([wall["obj"]])
 
         if walls:
@@ -989,20 +994,18 @@ class DumbWallGenerator:
             ifc_class=ifc_class,
             should_add_representation=False,
         )
-        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=self.relating_type)
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=self.relating_type)
         if self.axis_context:
-            representation = ifcopenshell.api.run(
-                "geometry.add_axis_representation",
+            representation = ifcopenshell.api.geometry.add_axis_representation(
                 tool.Ifc.get(),
                 context=self.axis_context,
                 axis=[(0.0, 0.0), (self.length, 0.0)],
             )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
+            ifcopenshell.api.geometry.assign_representation(
+                tool.Ifc.get(), product=element, representation=representation
             )
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-        representation = ifcopenshell.api.run(
-            "geometry.add_wall_representation",
+        representation = ifcopenshell.api.geometry.add_wall_representation(
             tool.Ifc.get(),
             context=self.body_context,
             thickness=self.layers["thickness"],
@@ -1012,9 +1015,7 @@ class DumbWallGenerator:
             height=self.height,
             x_angle=self.x_angle,
         )
-        ifcopenshell.api.run(
-            "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
-        )
+        ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), product=element, representation=representation)
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
             tool.Geometry,
@@ -1024,8 +1025,8 @@ class DumbWallGenerator:
             is_global=True,
             should_sync_changes_first=False,
         )
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer2"})
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="EPset_Parametric")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer2"})
         material = ifcopenshell.util.element.get_material(element)
         material.LayerSetDirection = "AXIS2"
         tool.Blender.select_object(obj)
@@ -1102,8 +1103,8 @@ class DumbWallJoiner:
         if not element1:
             return
 
-        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATSTART")
-        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type="ATEND")
+        ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type="ATSTART")
+        ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type="ATEND")
 
         axis1 = tool.Model.get_wall_axis(wall1)
         axis = copy.deepcopy(axis1["reference"])
@@ -1142,8 +1143,7 @@ class DumbWallJoiner:
                 description = conn.Description
 
         if relating_element:
-            ifcopenshell.api.run(
-                "geometry.connect_path",
+            ifcopenshell.api.geometry.connect_path(
                 tool.Ifc.get(),
                 relating_element=relating_element,
                 related_element=element2,
@@ -1164,7 +1164,7 @@ class DumbWallJoiner:
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position > cut_percentage:
                 # The opening should be removed from element1.
-                ifcopenshell.api.run("feature.remove_feature", tool.Ifc.get(), feature=opening)
+                ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
 
         # Now let's check element2.
         for opening in [
@@ -1176,7 +1176,7 @@ class DumbWallJoiner:
             _, opening_position = mathutils.geometry.intersect_point_line(opening_location.to_2d(), *axis1["reference"])
             if opening_position < cut_percentage:
                 # The opening should be removed from element2.
-                ifcopenshell.api.run("feature.remove_feature", tool.Ifc.get(), feature=opening)
+                ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
 
         # During the duplication process, filled voids are not copied. So we
         # only need to check fillings on the original element1.
@@ -1202,7 +1202,7 @@ class DumbWallJoiner:
                 rel.RelatedBuildingElement = element2
 
                 # Remove the old opening
-                ifcopenshell.api.run("feature.remove_feature", tool.Ifc.get(), feature=opening)
+                ifcopenshell.api.feature.remove_feature(tool.Ifc.get(), feature=opening)
 
         p1, p2 = ifcopenshell.util.representation.get_reference_line(element1)
         p3 = (wall1.matrix_world.inverted() @ intersect.to_3d()).to_2d() / unit_scale
@@ -1308,15 +1308,13 @@ class DumbWallJoiner:
 
         for rel in element1.ConnectedFrom:
             if rel.is_a() == "IfcRelConnectsElements" and rel.Description == "TOP":
-                ifcopenshell.api.run(
-                    "geometry.disconnect_element",
+                ifcopenshell.api.geometry.disconnect_element(
                     tool.Ifc.get(),
                     relating_element=rel.RelatingElement,
                     related_element=element1,
                 )
 
-        ifcopenshell.api.run(
-            "geometry.connect_element",
+        ifcopenshell.api.geometry.connect_element(
             tool.Ifc.get(),
             relating_element=element2,
             related_element=element1,
@@ -1347,7 +1345,7 @@ class DumbWallJoiner:
         if not connection:
             connection = "ATEND" if intersection_point > 0.5 else "ATSTART"
 
-        ifcopenshell.api.run("geometry.disconnect_path", tool.Ifc.get(), element=element1, connection_type=connection)
+        ifcopenshell.api.geometry.disconnect_path(tool.Ifc.get(), element=element1, connection_type=connection)
 
         if connection == "ATEND":
             self.set_axis(element1, p1, intersect)

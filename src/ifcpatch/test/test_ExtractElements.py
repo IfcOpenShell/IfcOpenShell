@@ -21,29 +21,32 @@ import pytest
 import ifcpatch
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.util.element
 import test.bootstrap
 
 
 class TestExtractElements(test.bootstrap.IFC4):
     def test_basic(self):
-        project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
 
         assert output.by_type("IfcProject")[0].GlobalId == project.GlobalId
         assert output.by_type("IfcWall")[0].GlobalId == wall.GlobalId
 
     def test_keep_spatial_structure(self):
-        project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
 
-        site = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcSite")
-        building = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuilding")
-        storey = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuildingStorey")
-        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[building], relating_object=site)
-        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[storey], relating_object=building)
-        ifcopenshell.api.run("spatial.assign_container", self.file, products=[wall], relating_structure=storey)
+        site = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcSite")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[building], relating_object=site)
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[storey], relating_object=building)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[wall], relating_structure=storey)
 
         output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
 
@@ -53,13 +56,13 @@ class TestExtractElements(test.bootstrap.IFC4):
         assert (site_new := ifcopenshell.util.element.get_aggregate(building_new)).GlobalId == site.GlobalId
 
     def test_keep_aggregate_in_spatial_structure(self):
-        project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
 
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcElementAssembly")
-        container = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcBuildingStorey")
-        subelement = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
-        ifcopenshell.api.run("spatial.assign_container", self.file, products=[element], relating_structure=container)
-        ifcopenshell.api.run("aggregate.assign_object", self.file, products=[subelement], relating_object=element)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcElementAssembly")
+        container = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=container)
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[subelement], relating_object=element)
 
         output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
 
@@ -84,8 +87,8 @@ class TestExtractElements(test.bootstrap.IFC4):
     )
     def test_extracting_non_standard_schema_version(self):
         self.file = ifcopenshell.file(schema_version=(4, 3, 0, 0))
-        project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject")
-        wall = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcWall")
+        project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         output = ifcpatch.execute({"file": self.file, "recipe": "ExtractElements", "arguments": ["IfcWall"]})
         assert output.by_type("IfcProject")[0].GlobalId == project.GlobalId
         assert output.by_type("IfcWall")[0].GlobalId == wall.GlobalId

@@ -20,6 +20,8 @@ import bpy
 import bmesh
 
 import ifcopenshell
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
 import bonsai.tool as tool
 
 import json
@@ -165,10 +167,9 @@ class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
         if pset:
             pset = tool.Ifc.get().by_id(pset["id"])
         else:
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Sverchok")
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Sverchok")
 
-        ifcopenshell.api.run(
-            "pset.edit_pset",
+        ifcopenshell.api.pset.edit_pset(
             tool.Ifc.get(),
             pset=pset,
             properties={"Data": tool.Ifc.get().createIfcText(json.dumps(sverchok_data))},

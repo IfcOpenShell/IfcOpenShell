@@ -20,6 +20,8 @@ import os
 import pytest
 import xmlschema
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.api.material
 from ifctester import ids
 from typing import Optional
 

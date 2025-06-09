@@ -22,6 +22,8 @@ import bpy
 import string
 import svgwrite
 import openpyxl
+import openpyxl.cell  # Unnecessary, bug in typeshed.
+import openpyxl.utils  # Unnecessary, bug in typeshed.
 import bonsai.tool as tool
 
 from bonsai.bim.module.drawing.svgwriter import SvgWriter

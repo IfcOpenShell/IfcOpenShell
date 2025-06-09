@@ -21,6 +21,8 @@ import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.api
+import ifcopenshell.api.cost
+import ifcopenshell.api.nest
 import ifcopenshell.util.element
 import ifcopenshell.util.date
 import ifcopenshell.util.cost
@@ -627,7 +629,7 @@ class Cost(bonsai.core.tool.Cost):
         items = ifcopenshell.util.cost.get_root_cost_items(cost_schedule)
         for item in items:
             cost_item_id = item.id()
-            ifcopenshell.api.run("cost.remove_cost_item", tool.Ifc.get(), cost_item=item)
+            ifcopenshell.api.cost.remove_cost_item(tool.Ifc.get(), cost_item=item)
             tool.Cost.clean_up_cost_item_tree(cost_item_id)
 
     @classmethod
@@ -901,7 +903,7 @@ class Cost(bonsai.core.tool.Cost):
     def change_parent_cost_item(
         cls, cost_item: ifcopenshell.entity_instance, new_parent: ifcopenshell.entity_instance
     ) -> None:
-        ifcopenshell.api.run("nest.change_nest", tool.Ifc.get(), item=cost_item, new_parent=new_parent)
+        ifcopenshell.api.nest.change_nest(tool.Ifc.get(), item=cost_item, new_parent=new_parent)
 
     @classmethod
     def disable_editing_cost_item_parent(cls) -> None:

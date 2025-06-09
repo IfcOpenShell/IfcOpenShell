@@ -76,6 +76,8 @@ def test_file_gc(args):
 
 def test_bug_2517():
     fixtures = os.path.join(os.path.dirname(__file__), "fixtures")
+    model: ifcopenshell.file
+    library: ifcopenshell.file
     model = ifcopenshell.open(f"{fixtures}/bug_2517_test2.ifc")
     library = ifcopenshell.open(f"{fixtures}/bug_2517_lib.ifc")
     result = model.add(library.by_type("IfcClassification")[0])

@@ -22,6 +22,9 @@ from itertools import chain
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.util.element
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
@@ -124,23 +127,20 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         if index is not None:
             iterator = [index]
         for i in iterator:
-            result = ifcopenshell.api.run(
-                "root.create_entity",
+            result = ifcopenshell.api.root.create_entity(
                 self.file,
                 name=self.names[i],
                 ifc_class=self.ifc_class,
             )
             for items in self.elements[i]:
                 if items.is_a("IfcSpatialElement") or items.is_a("IfcSpatialStructureElement"):
-                    ifcopenshell.api.run(
-                        "aggregate.assign_object",
+                    ifcopenshell.api.aggregate.assign_object(
                         self.file,
                         products=[items],
                         relating_object=result,
                     )
                 else:
-                    ifcopenshell.api.run(
-                        "spatial.assign_container",
+                    ifcopenshell.api.spatial.assign_container(
                         self.file,
                         products=[items],
                         relating_structure=result,
@@ -170,30 +170,26 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
                         if removed_element.is_a("IfcSpatialElement") or removed_element.is_a(
                             "IfcSpatialStructureElement"
                         ):
-                            ifcopenshell.api.run(
-                                "aggregate.unassign_object",
+                            ifcopenshell.api.aggregate.unassign_object(
                                 self.file,
                                 products=[removed_element],
                                 relating_object=result,
                             )
                         else:
-                            ifcopenshell.api.run(
-                                "spatial.unassign_container",
+                            ifcopenshell.api.spatial.unassign_container(
                                 self.file,
                                 products=[removed_element],
                                 relating_object=result,
                             )
                     for added_element in element_set - subelements:
                         if added_element.is_a("IfcSpatialElement") or added_element.is_a("IfcSpatialStructureElement"):
-                            ifcopenshell.api.run(
-                                "aggregate.assign_object",
+                            ifcopenshell.api.aggregate.assign_object(
                                 self.file,
                                 products=[added_element],
                                 relating_object=result,
                             )
                         else:
-                            ifcopenshell.api.run(
-                                "spatial.assign_container",
+                            ifcopenshell.api.spatial.assign_container(
                                 self.file,
                                 products=[added_element],
                                 relating_structure=result,
@@ -206,7 +202,7 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
         if self.node_id in SvIfcStore.id_map:
             for element_id in SvIfcStore.id_map[self.node_id]:
                 element = self.file.by_id(element_id)
-                ifcopenshell.api.run("root.remove_product", self.file, product=element)
+                ifcopenshell.api.root.remove_product(self.file, product=element)
             del SvIfcStore.id_map[self.node_id]
 
     def repeat_input_unique(self, input, count):

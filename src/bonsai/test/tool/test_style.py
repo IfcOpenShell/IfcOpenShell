@@ -20,6 +20,7 @@ import os
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.root
 import ifcopenshell.util.representation
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -105,7 +106,7 @@ class TestGetElementsByStyle(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
         style = ifc.createIfcSurfaceStyle()
         item = ifc.createIfcExtrudedAreaSolid()
         ifc.createIfcStyledItem(Item=item, Styles=[style])

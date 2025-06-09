@@ -19,6 +19,13 @@
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.project
+import ifcopenshell.api.root
+import ifcopenshell.api.style
+import ifcopenshell.api.unit
 import ifcopenshell.util.element
 from math import cos, tan, pi
 from pathlib import Path
@@ -37,30 +44,26 @@ class LibraryGenerator:
 
         self.materials = {}
 
-        self.file = ifcopenshell.api.run("project.create_file")
-        self.project = ifcopenshell.api.run("root.create_entity", self.file, ifc_class="IfcProject", name=library_name)
-        self.library = ifcopenshell.api.run(
-            "root.create_entity", self.file, ifc_class="IfcProjectLibrary", name=library_name
+        self.file = ifcopenshell.api.project.create_file()
+        self.project = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject", name=library_name)
+        self.library = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProjectLibrary", name=library_name)
+        ifcopenshell.api.project.assign_declaration(
+            self.file, definitions=[self.library], relating_context=self.project
         )
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[self.library], relating_context=self.project
-        )
-        unit = ifcopenshell.api.run("unit.add_si_unit", self.file, unit_type="LENGTHUNIT", prefix="MILLI")
-        ifcopenshell.api.run("unit.assign_unit", self.file, units=[unit])
+        unit = ifcopenshell.api.unit.add_si_unit(self.file, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(self.file, units=[unit])
 
-        model = ifcopenshell.api.run("context.add_context", self.file, context_type="Model")
-        plan = ifcopenshell.api.run("context.add_context", self.file, context_type="Plan")
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        plan = ifcopenshell.api.context.add_context(self.file, context_type="Plan")
         self.representations = {
-            "model_body": ifcopenshell.api.run(
-                "context.add_context",
+            "model_body": ifcopenshell.api.context.add_context(
                 self.file,
                 context_type="Model",
                 context_identifier="Body",
                 target_view="MODEL_VIEW",
                 parent=model,
             ),
-            "plan_body": ifcopenshell.api.run(
-                "context.add_context",
+            "plan_body": ifcopenshell.api.context.add_context(
                 self.file,
                 context_type="Plan",
                 context_identifier="Body",
@@ -1847,78 +1850,58 @@ class LibraryGenerator:
         self.file.write(output_filename)
 
     def create_explicit_type(self, ifc_class, name, representation_3d, representation_2d, **params):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class=ifc_class, name=name)
         for param, value in params.items():
             setattr(element, param, value)
 
-        ifcopenshell.api.run(
-            "geometry.assign_representation", self.file, product=element, representation=representation_3d
-        )
-        ifcopenshell.api.run(
-            "geometry.assign_representation", self.file, product=element, representation=representation_2d
-        )
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
-        )
+        ifcopenshell.api.geometry.assign_representation(self.file, product=element, representation=representation_3d)
+        ifcopenshell.api.geometry.assign_representation(self.file, product=element, representation=representation_2d)
+        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
         return element
 
     def create_layer_set_type(self, name, data):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=data["type"], name=name)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class=data["type"], name=name)
         element.Description = data["Description"]
-        rel = ifcopenshell.api.run(
-            "material.assign_material", self.file, products=[element], type="IfcMaterialLayerSet"
-        )
+        rel = ifcopenshell.api.material.assign_material(self.file, products=[element], type="IfcMaterialLayerSet")
         layer_set = rel.RelatingMaterial
         for layer_data in data["Layers"]:
-            layer = ifcopenshell.api.run(
-                "material.add_layer", self.file, layer_set=layer_set, material=self.materials[layer_data[1]]["ifc"]
+            layer = ifcopenshell.api.material.add_layer(
+                self.file, layer_set=layer_set, material=self.materials[layer_data[1]]["ifc"]
             )
             layer.Name = layer_data[0]
             layer.LayerThickness = layer_data[2]
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
-        )
+        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
         return element
 
     def create_layer_type(self, ifc_class, name, thickness):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        rel = ifcopenshell.api.run(
-            "material.assign_material", self.file, products=[element], type="IfcMaterialLayerSet"
-        )
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class=ifc_class, name=name)
+        rel = ifcopenshell.api.material.assign_material(self.file, products=[element], type="IfcMaterialLayerSet")
         layer_set = rel.RelatingMaterial
-        layer = ifcopenshell.api.run(
-            "material.add_layer", self.file, layer_set=layer_set, material=self.materials["TBD"]["ifc"]
+        layer = ifcopenshell.api.material.add_layer(
+            self.file, layer_set=layer_set, material=self.materials["TBD"]["ifc"]
         )
         layer.LayerThickness = thickness
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
-        )
+        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
         return element
 
     def create_profile_type(self, ifc_class, name, profile):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
-        rel = ifcopenshell.api.run(
-            "material.assign_material", self.file, products=[element], type="IfcMaterialProfileSet"
-        )
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class=ifc_class, name=name)
+        rel = ifcopenshell.api.material.assign_material(self.file, products=[element], type="IfcMaterialProfileSet")
         profile_set = rel.RelatingMaterial
-        material_profile = ifcopenshell.api.run(
-            "material.add_profile",
+        material_profile = ifcopenshell.api.material.add_profile(
             self.file,
             profile_set=profile_set,
             material=self.material,
             # material=self.materials["TBD"]["ifc"]
         )
-        ifcopenshell.api.run("material.assign_profile", self.file, material_profile=material_profile, profile=profile)
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
-        )
+        ifcopenshell.api.material.assign_profile(self.file, material_profile=material_profile, profile=profile)
+        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
 
     def create_type(self, ifc_class, name, representations):
-        element = ifcopenshell.api.run("root.create_entity", self.file, ifc_class=ifc_class, name=name)
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class=ifc_class, name=name)
         for rep_name, obj_name in representations.items():
             obj = bpy.data.objects.get(obj_name)
-            representation = ifcopenshell.api.run(
-                "geometry.add_representation",
+            representation = ifcopenshell.api.geometry.add_representation(
                 self.file,
                 context=self.representations[rep_name],
                 blender_object=obj,
@@ -1927,9 +1910,8 @@ class LibraryGenerator:
             )
             styles = []
             for slot in obj.material_slots:
-                style = ifcopenshell.api.run("style.add_style", self.file, name=slot.material.name)
-                ifcopenshell.api.run(
-                    "style.add_surface_style",
+                style = ifcopenshell.api.style.add_style(self.file, name=slot.material.name)
+                ifcopenshell.api.style.add_surface_style(
                     self.file,
                     style=style,
                     ifc_class="IfcSurfaceStyleRendering",
@@ -1937,15 +1919,11 @@ class LibraryGenerator:
                 )
                 styles.append(style)
             if styles:
-                ifcopenshell.api.run(
-                    "style.assign_representation_styles", self.file, shape_representation=representation, styles=styles
+                ifcopenshell.api.style.assign_representation_styles(
+                    self.file, shape_representation=representation, styles=styles
                 )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", self.file, product=element, representation=representation
-            )
-        ifcopenshell.api.run(
-            "project.assign_declaration", self.file, definitions=[element], relating_context=self.library
-        )
+            ifcopenshell.api.geometry.assign_representation(self.file, product=element, representation=representation)
+        ifcopenshell.api.project.assign_declaration(self.file, definitions=[element], relating_context=self.library)
 
 
 if __name__ == "__main__":

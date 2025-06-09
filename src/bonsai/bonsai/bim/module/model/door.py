@@ -21,7 +21,9 @@ import bpy
 import bmesh
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.api.material
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.schema
@@ -37,6 +39,7 @@ from typing import Union, Any, Optional
 
 import json
 import collections
+import collections.abc
 
 V_ = tool.Blender.V_
 
@@ -80,9 +83,7 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
     profile = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
     if profile:
         representation_data["context"] = profile
-        elevation_representation = ifcopenshell.api.run(
-            "geometry.add_door_representation", ifc_file, **representation_data
-        )
+        elevation_representation = ifcopenshell.api.geometry.add_door_representation(ifc_file, **representation_data)
         tool.Model.replace_object_ifc_representation(profile, obj, elevation_representation)
 
     # MODEL_VIEW representation
@@ -90,7 +91,7 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
     body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
     representation_data["context"] = body
     representation_data["part_of_product"] = ifcopenshell.util.representation.get_part_of_product(element, body)
-    model_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
+    model_representation = ifcopenshell.api.geometry.add_door_representation(ifc_file, **representation_data)
     representation_data["part_of_product"] = None
     tool.Model.replace_object_ifc_representation(body, obj, model_representation)
     if fallback_material := (int(props.lining_material) or int(props.framing_material) or int(props.glazing_material)):
@@ -113,7 +114,7 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
     plan_body = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Body", "PLAN_VIEW")
     if plan_body:
         representation_data["context"] = plan_body
-        plan_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
+        plan_representation = ifcopenshell.api.geometry.add_door_representation(ifc_file, **representation_data)
         tool.Model.replace_object_ifc_representation(plan_body, obj, plan_representation)
 
     # Annotation/PLAN_VIEW representation
@@ -134,9 +135,7 @@ def update_door_modifier_representation(obj: bpy.types.Object) -> None:
                 )
         else:
             representation_data["context"] = plan_annotation
-            plan_representation = ifcopenshell.api.run(
-                "geometry.add_door_representation", ifc_file, **representation_data
-            )
+            plan_representation = ifcopenshell.api.geometry.add_door_representation(ifc_file, **representation_data)
             tool.Model.replace_object_ifc_representation(plan_annotation, obj, plan_representation)
 
     bonsai.core.geometry.switch_representation(
@@ -539,10 +538,9 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
 
         if not pset:
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Door")
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Door")
 
-        ifcopenshell.api.run(
-            "pset.edit_pset",
+        ifcopenshell.api.pset.edit_pset(
             tool.Ifc.get(),
             pset=pset,
             properties={"Data": tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))},
@@ -622,7 +620,7 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         door_data = tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))
-        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": door_data})
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": door_data})
 
     def _execute(self, context):
         for obj in tool.Blender.get_selected_objects():
@@ -670,7 +668,7 @@ class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
         props.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
-        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+        ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
 
     def _execute(self, context):
         for obj in tool.Blender.get_selected_objects():

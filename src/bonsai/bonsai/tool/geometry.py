@@ -31,6 +31,7 @@ import ifcopenshell.api.boundary
 import ifcopenshell.api.geometry
 import ifcopenshell.api.grid
 import ifcopenshell.api.profile
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.style
 import ifcopenshell.geom
@@ -2250,7 +2251,7 @@ class Geometry(bonsai.core.tool.Geometry):
             pset = ifcopenshell.util.element.get_pset(new[0], "BBIM_Linked_Aggregate")
             if pset:
                 pset = tool.Ifc.get().by_id(pset["id"])
-                ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=new[0], pset=pset)
+                ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=new[0], pset=pset)
 
             if new[0].is_a("IfcElementAssembly"):
                 linked_aggregate_group = [

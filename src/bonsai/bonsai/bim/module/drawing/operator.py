@@ -24,6 +24,7 @@ import bmesh
 import shutil
 import hashlib
 import shapely
+import shapely.ops
 import subprocess
 import numpy as np
 import multiprocessing
@@ -34,9 +35,10 @@ import ifcopenshell.api.pset
 import ifcopenshell.api.style
 import ifcopenshell.ifcopenshell_wrapper
 import ifcopenshell.geom
-import ifcopenshell.util.selector
-import ifcopenshell.util.representation
 import ifcopenshell.util.element
+import ifcopenshell.util.representation
+import ifcopenshell.util.selector
+import ifcopenshell.util.unit
 import bonsai.bim.helper
 import bonsai.bim.handler
 import bonsai.tool as tool

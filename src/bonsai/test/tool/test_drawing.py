@@ -22,6 +22,9 @@ import numpy as np
 import bpy
 import mathutils
 import ifcopenshell
+import ifcopenshell.api.drawing
+import ifcopenshell.api.group
+import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.guid
 import ifcopenshell.util.element
@@ -341,9 +344,9 @@ class TestGetDrawingGroup(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         element = ifc.createIfcAnnotation()
-        group = ifcopenshell.api.run("group.add_group", ifc)
+        group = ifcopenshell.api.group.add_group(ifc)
         group.ObjectType = "DRAWING"
-        ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
+        ifcopenshell.api.group.assign_group(ifc, products=[element], group=group)
         assert subject.get_drawing_group(element) == group
 
 
@@ -352,8 +355,8 @@ class TestGetDrawingTargetView(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         element = ifc.createIfcAnnotation()
-        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="EPset_Drawing")
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"TargetView": "PLAN_VIEW"})
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"TargetView": "PLAN_VIEW"})
         assert subject.get_drawing_target_view(element) == "PLAN_VIEW"
 
 
@@ -362,8 +365,8 @@ class TestGetGroupElements(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         element = ifc.createIfcAnnotation()
-        group = ifcopenshell.api.run("group.add_group", ifc)
-        ifcopenshell.api.run("group.assign_group", ifc, products=[element], group=group)
+        group = ifcopenshell.api.group.add_group(ifc)
+        ifcopenshell.api.group.assign_group(ifc, products=[element], group=group)
         assert subject.get_group_elements(group) == (element,)
 
 
@@ -515,7 +518,7 @@ class TestGetAssignedProduct(NewFile):
         tool.Ifc.set(ifc)
         wall = ifc.createIfcWall()
         label = ifc.createIfcAnnotation()
-        ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
+        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=label)
         assert subject.get_assigned_product(label) == wall
 
 
@@ -524,8 +527,8 @@ class TestImportDrawings(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         drawing = ifc.createIfcAnnotation(Name="FOOBAR", ObjectType="DRAWING")
-        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=drawing, name="EPset_Drawing")
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"TargetView": "PLAN_VIEW"})
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=drawing, name="EPset_Drawing")
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"TargetView": "PLAN_VIEW"})
         subject.import_drawings()
         props = tool.Drawing.get_document_props()
         for d in props.drawings:
@@ -635,7 +638,7 @@ class TestImportAssignedProduct(NewFile):
         tool.Ifc.set(ifc)
         wall = ifc.createIfcWall()
         label = ifc.createIfcAnnotation()
-        ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
+        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=label)
         wall_obj = bpy.data.objects.new("Object", None)
         label_obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(wall, wall_obj)
@@ -794,7 +797,7 @@ class TestUpdateTextValue(NewFile):
         ifc = tool.Ifc.get()
         wall = ifc.createIfcWall(Name="Baz")
         label = ifc.by_type("IfcAnnotation")[0]
-        ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
+        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=label)
 
         ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Name}} Bar"
 
@@ -808,10 +811,10 @@ class TestUpdateTextValue(NewFile):
         obj = bpy.data.objects["Object"]
         ifc = tool.Ifc.get()
         wall = ifc.createIfcWall()
-        pset = ifcopenshell.api.run("pset.add_pset", ifc, name="Custom_Pset", product=wall)
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Key": "Baz"})
+        pset = ifcopenshell.api.pset.add_pset(ifc, name="Custom_Pset", product=wall)
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Key": "Baz"})
         label = ifc.by_type("IfcAnnotation")[0]
-        ifcopenshell.api.run("drawing.assign_product", ifc, relating_product=wall, related_object=label)
+        ifcopenshell.api.drawing.assign_product(ifc, relating_product=wall, related_object=label)
 
         ifc.by_type("IfcTextLiteralWithExtent")[0].Literal = "Foo {{Custom_Pset.Key}} Bar"
 

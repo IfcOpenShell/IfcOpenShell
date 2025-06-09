@@ -26,15 +26,18 @@ TEST_FILE = Path(__file__).parent / "files" / "basic.ifc"
 
 class TestFile:
     def test_run(self):
+        stream_file: ifcopenshell.stream
         stream_file = ifcopenshell.open(TEST_FILE, should_stream=True)
         assert stream_file.schema == "IFC4"
 
     def test_by_id(self):
+        stream_file: ifcopenshell.stream
         stream_file = ifcopenshell.open(TEST_FILE, should_stream=True)
         assert (element := stream_file.by_id(1))
         assert str(element) == "#1=IFCPROJECT('3kv235yMjDO9tHiTzD8QuS',$,'My Project',$,$,$,$,(#14,#26),#9);"
 
     def test_by_type(self):
+        stream_file: ifcopenshell.stream
         stream_file = ifcopenshell.open(TEST_FILE, should_stream=True)
         assert (elements := stream_file.by_type("IfcProject"))
         assert str(elements[0]) == "#1=IFCPROJECT('3kv235yMjDO9tHiTzD8QuS',$,'My Project',$,$,$,$,(#14,#26),#9);"
@@ -42,6 +45,7 @@ class TestFile:
 
 class TestEntity:
     def test_getattr(self):
+        stream_file: ifcopenshell.stream
         stream_file = ifcopenshell.open(TEST_FILE, should_stream=True)
         assert (element := stream_file.by_id(1))
         assert element.Name == "My Project"

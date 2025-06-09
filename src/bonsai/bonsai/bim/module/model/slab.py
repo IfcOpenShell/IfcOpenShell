@@ -22,6 +22,9 @@ import bmesh
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.pset
+import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
@@ -146,20 +149,17 @@ class DumbSlabGenerator:
             ifc_class=ifc_class,
             should_add_representation=False,
         )
-        ifcopenshell.api.run("type.assign_type", self.file, related_objects=[element], relating_type=self.relating_type)
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=self.relating_type)
 
         bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-        representation = ifcopenshell.api.run(
-            "geometry.add_slab_representation",
+        representation = ifcopenshell.api.geometry.add_slab_representation(
             tool.Ifc.get(),
             context=self.body_context,
             depth=self.depth,
             x_angle=self.x_angle,
             polyline=self.polyline,
         )
-        ifcopenshell.api.run(
-            "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
-        )
+        ifcopenshell.api.geometry.assign_representation(tool.Ifc.get(), product=element, representation=representation)
 
         bonsai.core.geometry.switch_representation(
             tool.Ifc,
@@ -178,18 +178,17 @@ class DumbSlabGenerator:
                 curves = [extrusion.SweptArea.OuterCurve]
                 if extrusion.SweptArea.is_a("IfcArbitraryProfileDefWithVoids"):
                     curves.extend(extrusion.SweptArea.InnerCurves)
-                representation = ifcopenshell.api.run(
-                    "geometry.add_footprint_representation",
+                representation = ifcopenshell.api.geometry.add_footprint_representation(
                     tool.Ifc.get(),
                     context=self.footprint_context,
                     curves=curves,
                 )
-                ifcopenshell.api.run(
-                    "geometry.assign_representation", tool.Ifc.get(), product=element, representation=representation
+                ifcopenshell.api.geometry.assign_representation(
+                    tool.Ifc.get(), product=element, representation=representation
                 )
 
-        pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name="EPset_Parametric")
-        ifcopenshell.api.run("pset.edit_pset", self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer3"})
+        pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name="EPset_Parametric")
+        ifcopenshell.api.pset.edit_pset(self.file, pset=pset, properties={"Engine": "Bonsai.DumbLayer3"})
         material = ifcopenshell.util.element.get_material(element)
         material.LayerSetDirection = "AXIS3"
         tool.Blender.select_object(obj)
@@ -562,9 +561,8 @@ class EditSketchExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         if pset:
             pset = tool.Ifc.get().by_id(pset["id"])
         else:
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="EPset_Parametric")
-        ifcopenshell.api.run(
-            "pset.edit_pset",
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="EPset_Parametric")
+        ifcopenshell.api.pset.edit_pset(
             tool.Ifc.get(),
             pset=pset,
             properties={"Engine": "CADSketcher", "Entities": json.dumps(context.scene["sketcher"].to_dict())},
@@ -783,8 +781,8 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
         curves = [profile.OuterCurve]
         if profile.is_a("IfcArbitraryProfileDefWithVoids"):
             curves.extend(profile.InnerCurves)
-        new_footprint = ifcopenshell.api.run(
-            "geometry.add_footprint_representation", tool.Ifc.get(), context=footprint_context, curves=curves
+        new_footprint = ifcopenshell.api.geometry.add_footprint_representation(
+            tool.Ifc.get(), context=footprint_context, curves=curves
         )
         old_footprint = ifcopenshell.util.representation.get_representation(element, "Plan", "FootPrint", "SKETCH_VIEW")
         if old_footprint:
@@ -792,8 +790,8 @@ class EditExtrusionProfile(bpy.types.Operator, tool.Ifc.Operator):
                 ifcopenshell.util.element.replace_attribute(inverse, old_footprint, new_footprint)
             bonsai.core.geometry.remove_representation(tool.Ifc, tool.Geometry, obj=obj, representation=old_footprint)
         else:
-            ifcopenshell.api.run(
-                "geometry.assign_representation", tool.Ifc.get(), product=element, representation=new_footprint
+            ifcopenshell.api.geometry.assign_representation(
+                tool.Ifc.get(), product=element, representation=new_footprint
             )
 
 
@@ -924,8 +922,7 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
         if not getattr(material_set_usage, "ForLayerSet", False):
             return
         attributes = {"OffsetFromReferenceLine": offset, "DirectionSense": direction_sense}
-        ifcopenshell.api.run(
-            "material.edit_layer_usage",
+        ifcopenshell.api.material.edit_layer_usage(
             model,
             **{"usage": material_set_usage, "attributes": attributes},
         )

@@ -23,6 +23,7 @@ import bonsai.tool as tool
 import bonsai.bim.helper
 import bonsai.core.geometry
 import ifcopenshell
+import ifcopenshell.api.feature
 import ifcopenshell.util.representation
 from typing import TYPE_CHECKING
 from collections.abc import Iterable
@@ -57,9 +58,7 @@ class Feature(bonsai.core.tool.Feature):
 
             element_had_openings = tool.Geometry.has_openings(featured_element)
             body_context = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model", "Body")
-            ifcopenshell.api.run(
-                "feature.add_feature", tool.Ifc.get(), feature=feature_element, element=featured_element
-            )
+            ifcopenshell.api.feature.add_feature(tool.Ifc.get(), feature=feature_element, element=featured_element)
 
             if tool.Ifc.is_moved(feature_obj):
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=feature_obj)

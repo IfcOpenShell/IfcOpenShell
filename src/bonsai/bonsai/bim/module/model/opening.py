@@ -27,6 +27,7 @@ import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.api.geometry
 import ifcopenshell.api.feature
+import ifcopenshell.api.root
 import ifcopenshell.geom
 import ifcopenshell.util.shape
 import ifcopenshell.util.element
@@ -68,8 +69,8 @@ class FilledOpeningGenerator:
 
         assert filling and element
         if filling.FillsVoids:
-            ifcopenshell.api.run(
-                "feature.remove_feature", tool.Ifc.get(), feature=filling.FillsVoids[0].RelatingOpeningElement
+            ifcopenshell.api.feature.remove_feature(
+                tool.Ifc.get(), feature=filling.FillsVoids[0].RelatingOpeningElement
             )
 
         if target is None:
@@ -123,15 +124,13 @@ class FilledOpeningGenerator:
 
         existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
 
-        opening = ifcopenshell.api.run(
-            "root.create_entity",
+        opening = ifcopenshell.api.root.create_entity(
             tool.Ifc.get(),
             ifc_class="IfcOpeningElement",
             predefined_type="OPENING",
             name="Opening",
         )
-        ifcopenshell.api.run(
-            "geometry.edit_object_placement",
+        ifcopenshell.api.geometry.edit_object_placement(
             tool.Ifc.get(),
             product=opening,
             matrix=np.array(filling_obj.matrix_world),
@@ -149,15 +148,15 @@ class FilledOpeningGenerator:
                 filling, filling_obj, opening_thickness_si=opening_thickness_si
             )
 
-        mapped_representation = ifcopenshell.api.run(
-            "geometry.map_representation", tool.Ifc.get(), representation=representation
+        mapped_representation = ifcopenshell.api.geometry.map_representation(
+            tool.Ifc.get(), representation=representation
         )
-        ifcopenshell.api.run(
-            "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
+        ifcopenshell.api.geometry.assign_representation(
+            tool.Ifc.get(), product=opening, representation=mapped_representation
         )
 
-        ifcopenshell.api.run("feature.add_feature", tool.Ifc.get(), feature=opening, element=element)
-        ifcopenshell.api.run("feature.add_filling", tool.Ifc.get(), opening=opening, element=filling)
+        ifcopenshell.api.feature.add_feature(tool.Ifc.get(), feature=opening, element=element)
+        ifcopenshell.api.feature.add_filling(tool.Ifc.get(), opening=opening, element=filling)
 
         voided_objs = [voided_obj]
         # Openings affect all subelements of an aggregate
@@ -199,10 +198,8 @@ class FilledOpeningGenerator:
         voided_element = opening.VoidsElements[0].RelatingBuildingElement
 
         opening_rep = ifcopenshell.util.representation.get_representation(opening, "Model", "Body", "MODEL_VIEW")
-        ifcopenshell.api.run(
-            "geometry.unassign_representation", tool.Ifc.get(), product=opening, representation=opening_rep
-        )
-        ifcopenshell.api.run("geometry.remove_representation", tool.Ifc.get(), representation=opening_rep)
+        ifcopenshell.api.geometry.unassign_representation(tool.Ifc.get(), product=opening, representation=opening_rep)
+        ifcopenshell.api.geometry.remove_representation(tool.Ifc.get(), representation=opening_rep)
 
         existing_opening_occurrence = self.get_existing_opening_occurrence_if_any(filling)
 
@@ -211,11 +208,11 @@ class FilledOpeningGenerator:
                 existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
             )
             representation = ifcopenshell.util.representation.resolve_representation(representation)
-            mapped_representation = ifcopenshell.api.run(
-                "geometry.map_representation", tool.Ifc.get(), representation=representation
+            mapped_representation = ifcopenshell.api.geometry.map_representation(
+                tool.Ifc.get(), representation=representation
             )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
+            ifcopenshell.api.geometry.assign_representation(
+                tool.Ifc.get(), product=opening, representation=mapped_representation
             )
         else:
             opening_obj = tool.Ifc.get_object(opening)
@@ -225,11 +222,11 @@ class FilledOpeningGenerator:
 
             filling_obj = tool.Ifc.get_object(filling)
             representation = self.generate_opening_from_filling(filling, filling_obj)
-            mapped_representation = ifcopenshell.api.run(
-                "geometry.map_representation", tool.Ifc.get(), representation=representation
+            mapped_representation = ifcopenshell.api.geometry.map_representation(
+                tool.Ifc.get(), representation=representation
             )
-            ifcopenshell.api.run(
-                "geometry.assign_representation", tool.Ifc.get(), product=opening, representation=mapped_representation
+            ifcopenshell.api.geometry.assign_representation(
+                tool.Ifc.get(), product=opening, representation=mapped_representation
             )
 
         # update voided object representation or all it's parts if it's an aggregate
@@ -396,8 +393,8 @@ class RecalculateFill(bpy.types.Operator, tool.Ifc.Operator):
                     bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=building_obj)
             for opening in openings:
                 bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
-                ifcopenshell.api.run(
-                    "geometry.edit_object_placement", tool.Ifc.get(), product=opening, matrix=obj.matrix_world
+                ifcopenshell.api.geometry.edit_object_placement(
+                    tool.Ifc.get(), product=opening, matrix=obj.matrix_world
                 )
 
             decomposed_building_elements = set()
@@ -737,7 +734,7 @@ class CloneOpening(Operator, tool.Ifc.Operator):
         opening_placement = opening.ObjectPlacement
         opening_representation = opening.Representation
 
-        new_opening = ifcopenshell.api.run("root.create_entity", tool.Ifc.get(), ifc_class="IfcOpeningElement")
+        new_opening = ifcopenshell.api.root.create_entity(tool.Ifc.get(), ifc_class="IfcOpeningElement")
         new_opening.Representation = opening_representation
 
         ifcopenshell.api.feature.add_feature(ifc_file, feature=new_opening, element=voided_element)

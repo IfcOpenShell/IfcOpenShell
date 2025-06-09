@@ -15,6 +15,7 @@ class LineworkContexts(NamedTuple):
 
 class Drawer:
     def execute(self):
+        ifc: ifcopenshell.file
         ifc = ifcopenshell.open(sys.argv[1])
         self.camera_element = ifc.by_guid(sys.argv[2])
         # Don't use draw.main() just whilst we're prototyping and experimenting
