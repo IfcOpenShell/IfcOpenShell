@@ -22,7 +22,6 @@ import os
 import subprocess
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, List
 
 import ifcopenshell as ios
 
@@ -96,7 +95,7 @@ class Ifc2CA:
         self,
         load_group: ios.entity_instance | None = None,
         element: ios.entity_instance | None = None,
-        load_group_ids: List[int] | None = None,
+        load_group_ids: list[int] | None = None,
     ):
         if load_group is not None:
             actions = [
@@ -455,7 +454,7 @@ class Ifc2CA:
         data["appliedCondition"] = self.parse_applied_condition(connection.AppliedCondition, data["geometry_type"])
         return data
 
-    def parse_element_connections(self, element: Dict, connections: List[Dict]):
+    def parse_element_connections(self, element: dict, connections: list[dict]):
         ifc_element = self.file.by_id(element["id"])
         connection_ids = [c["id"] for c in connections]
         rels = [rel for rel in ifc_element.ConnectedBy if rel.RelatedStructuralConnection.id() in connection_ids]
@@ -506,9 +505,9 @@ class Ifc2CA:
 
     def parse_element_loads(
         self,
-        element: Dict,
-        load_group_ids: List[int],
-        load_cases: List[ios.entity_instance],
+        element: dict,
+        load_group_ids: list[int],
+        load_cases: list[ios.entity_instance],
     ):
         ifc_element = self.file.by_id(element["id"])
         actions = self.get_actions(element=ifc_element, load_group_ids=load_group_ids)
@@ -574,10 +573,10 @@ class Ifc2CA:
 
     def add_action_loads(
         self,
-        element: Dict,
+        element: dict,
         action: ios.entity_instance,
-        data: Dict,
-        load_cases: List[ios.entity_instance],
+        data: dict,
+        load_cases: list[ios.entity_instance],
     ):
         load_group = self.get_load_group(action)
         load_group_coeff = 1.0 if load_group.Coefficient is None else load_group.Coefficient
@@ -695,7 +694,7 @@ class Ifc2CA:
                 for key, load in element["loads"]["loadsLC"].items():
                     element["loads"]["loadsCOMB"][key][iComb] = round(comb_factors.dot(load), 4)
 
-    def get_combination_factors(self, load_combination, load_case_ids: List[int]):
+    def get_combination_factors(self, load_combination, load_case_ids: list[int]):
         comb_coeff = 1.0 if load_combination.Coefficient is None else load_combination.Coefficient
         comb_factors = np.array([0.0 for _ in load_case_ids])
         for assignment in self.get_combination_assignments(load_combination):

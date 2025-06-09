@@ -70,7 +70,6 @@ select = [
 ignore = [
     "FA100", # Conflicts with Blender using annotations for props definitions.
     # Maybe will enable later:
-    "UP006", # deprecated symbols
     "UP007", # Optional to X | Y
     "UP015", # Unnecessary mode argument
     "UP028", # yield for -> yield from

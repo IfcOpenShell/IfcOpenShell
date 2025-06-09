@@ -18,7 +18,7 @@ import os
 import re
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Optional
 
 bl_info = {
     "name": "Bonsai Translations",
@@ -70,9 +70,9 @@ def rearrange_files_for_po_import(po_dir_path: Path, temp_directory: tempfile.Te
 class Message:
     msgid: str
     msgctxt: str | None
-    sources: Optional[List[str]] = field(default_factory=list)
+    sources: Optional[list[str]] = field(default_factory=list)
     # mapping languages to translated strings
-    translations: Optional[Dict[str, str]] = field(default_factory=dict)
+    translations: Optional[dict[str, str]] = field(default_factory=dict)
 
 
 def bonsai_strings_parse(addon_directory: Optional[Path] = None, po_directory: Optional[Path] = None):
@@ -98,7 +98,7 @@ def bonsai_strings_parse(addon_directory: Optional[Path] = None, po_directory: O
         r'\b_\("(.*?)"\)',  # gettext called with `_`
     ]
     regexes = [re.compile(pattern) for pattern in patterns]
-    matched_dict: Dict[str, Message] = dict()
+    matched_dict: dict[str, Message] = dict()
 
     # NOTE: currently there is no special handling same message with different contexts
     for root, dirs, files in os.walk(directory):
@@ -151,7 +151,7 @@ def bonsai_strings_parse(addon_directory: Optional[Path] = None, po_directory: O
 
 
 def update_translations_from_po(po_directory: Path, translations_module: Path):
-    translation_data: Dict[str, Message] = dict()
+    translation_data: dict[str, Message] = dict()
 
     def process_po_entry(language: str, current_chunk: list[str]) -> None:
         sources = []

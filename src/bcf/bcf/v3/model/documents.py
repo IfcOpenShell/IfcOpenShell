@@ -1,6 +1,6 @@
 import sys
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
 
 DATACLASS_KWARGS = {} if sys.version_info < (3, 10) else {"slots": True, "kw_only": True}
 
@@ -42,7 +42,7 @@ class DocumentInfoDocuments:
     class Meta:
         global_type = False
 
-    document: List[Document] = field(
+    document: list[Document] = field(
         default_factory=list,
         metadata={
             "name": "Document",

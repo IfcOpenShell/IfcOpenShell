@@ -49,7 +49,7 @@ import bonsai.bim.export_ifc
 from bpy_extras.io_utils import ImportHelper
 from bonsai.bim.module.drawing.decoration import CutDecorator
 from bonsai.bim.module.drawing.data import DecoratorData
-from typing import NamedTuple, List, Union, Optional, Literal, TYPE_CHECKING, Any, TypedDict
+from typing import NamedTuple, Union, Optional, Literal, TYPE_CHECKING, Any, TypedDict
 from lxml import etree
 from math import radians
 from mathutils import Vector, Color, Matrix
@@ -83,8 +83,8 @@ class profile:
 
 
 class LineworkContexts(NamedTuple):
-    body: List[List[int]]
-    annotation: List[List[int]]
+    body: list[list[int]]
+    annotation: list[list[int]]
 
 
 class AddAnnotationType(bpy.types.Operator, tool.Ifc.Operator):

@@ -16,8 +16,8 @@ from models.request import *
 class BCFDB(MyDB):
 
     # implemented
-    def get_projects(self, current_user: User) -> List[ProjectGET]:
-        def get_projects_work(tx) -> List[ProjectGET]:
+    def get_projects(self, current_user: User) -> list[ProjectGET]:
+        def get_projects_work(tx) -> list[ProjectGET]:
             cypher = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)
                 WHERE u.username = $username
@@ -103,8 +103,8 @@ class BCFDB(MyDB):
 
     # implemented
     # returns a collection
-    def get_topics(self, project_id: str, current_user: User) -> List[TopicGET]:
-        def get_topics_work(tx) -> List[TopicGET]:
+    def get_topics(self, project_id: str, current_user: User) -> list[TopicGET]:
+        def get_topics_work(tx) -> list[TopicGET]:
             cypher = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)
                 WHERE u.username = $username
@@ -296,8 +296,8 @@ class BCFDB(MyDB):
 
     # implemented
     # returns a collection
-    def get_files_information(self, project_id: UUID, current_user: User) -> List[ProjectFileInformation]:
-        def get_files_information_work(tx) -> List[ProjectFileInformation]:
+    def get_files_information(self, project_id: UUID, current_user: User) -> list[ProjectFileInformation]:
+        def get_files_information_work(tx) -> list[ProjectFileInformation]:
             cypher = """
                  MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:CONTAINS]->(d:Document)
                  WHERE u.username = $username
@@ -363,7 +363,7 @@ class BCFDB(MyDB):
             # clients can retrieve metadata and the binary content of the file.
             #
             # class ProjectFileInformation(BaseModel):
-            # display_information: Optional[List[ProjectFileDisplayInformation]] = None
+            # display_information: Optional[list[ProjectFileDisplayInformation]] = None
             # file: Optional[FileGET] = None
             #
             # class ProjectFileDisplayInformation(BaseModel):
@@ -383,8 +383,8 @@ class BCFDB(MyDB):
 
     # implemented
     # returns a collection
-    def get_files(self, project_id: UUID, topic_id: UUID, current_user: User) -> List[FileGET]:
-        def get_files_work(tx) -> List[FileGET]:
+    def get_files(self, project_id: UUID, topic_id: UUID, current_user: User) -> list[FileGET]:
+        def get_files_work(tx) -> list[FileGET]:
             cypher = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:REFERS_TO]->(f:Document:Model)
                 WHERE u.username = $username
@@ -405,7 +405,7 @@ class BCFDB(MyDB):
             return session.execute_read(get_files_work)
 
     # implemented
-    def put_files(self, project_id: UUID, topic_id: UUID, files: List[FilePUT], current_user: User) -> List[FileGET]:
+    def put_files(self, project_id: UUID, topic_id: UUID, files: list[FilePUT], current_user: User) -> list[FileGET]:
         def put_files_work(tx) -> bool:
             cypher_delete_references = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:REFERS_TO]->(f:Document:Model)
@@ -458,8 +458,8 @@ class BCFDB(MyDB):
             return self.get_files(project_id, topic_id, current_user)
 
     # implemented
-    def get_comments(self, project_id: UUID, topic_id: UUID, current_user: User) -> List[CommentGET]:
-        def get_comments_work(tx) -> List[CommentGET]:
+    def get_comments(self, project_id: UUID, topic_id: UUID, current_user: User) -> list[CommentGET]:
+        def get_comments_work(tx) -> list[CommentGET]:
             cypher = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(c:Comment)
                 WHERE u.username = $username
@@ -970,8 +970,8 @@ class BCFDB(MyDB):
 
     # implemented
     # returns a collection
-    def get_viewpoints(self, project_id: UUID, topic_id: UUID, current_user: User) -> List[ViewpointGET]:
-        def get_viewpoints_work(tx) -> List[ViewpointGET]:
+    def get_viewpoints(self, project_id: UUID, topic_id: UUID, current_user: User) -> list[ViewpointGET]:
+        def get_viewpoints_work(tx) -> list[ViewpointGET]:
             cypher = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(v:Viewpoint)
                 WHERE u.username = $username
@@ -1053,8 +1053,8 @@ class BCFDB(MyDB):
 
     def get_viewpoint_lines(
         self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID, current_user: User
-    ) -> List[Line]:
-        def get_viewpoint_lines_work(tx) -> List[Line]:
+    ) -> list[Line]:
+        def get_viewpoint_lines_work(tx) -> list[Line]:
             cypher = """
                     MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(v:Viewpoint)-[r4:HAS]->(l:Line)
                     WHERE u.username = $username
@@ -1084,8 +1084,8 @@ class BCFDB(MyDB):
 
     def get_viewpoint_clipping_planes(
         self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID, current_user: User
-    ) -> List[ClippingPlane]:
-        def get_viewpoint_clipping_planes_work(tx) -> List[ClippingPlane]:
+    ) -> list[ClippingPlane]:
+        def get_viewpoint_clipping_planes_work(tx) -> list[ClippingPlane]:
             cypher = """
                     MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(v:Viewpoint)-[r4:HAS]->(cp:ClippingPlane)
                     WHERE u.username = $username
@@ -1114,8 +1114,8 @@ class BCFDB(MyDB):
 
     def get_viewpoint_bitmaps(
         self, project_id: UUID, topic_id: UUID, viewpoint_id: UUID, current_user: User
-    ) -> List[BitmapGET]:
-        def get_viewpoint_bitmaps_work(tx) -> List[BitmapGET]:
+    ) -> list[BitmapGET]:
+        def get_viewpoint_bitmaps_work(tx) -> list[BitmapGET]:
             cypher = """
                     MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:HAS]->(v:Viewpoint)-[r4:HAS]->(b:Bitmap)
                     WHERE u.username = $username
@@ -1361,8 +1361,8 @@ class BCFDB(MyDB):
 
     # implemented
     # returns a collection
-    def get_related_topics(self, project_id: UUID, topic_id: UUID, current_user: User) -> List[TopicGET]:
-        def get_related_topics_work(tx) -> List[TopicGET]:
+    def get_related_topics(self, project_id: UUID, topic_id: UUID, current_user: User) -> list[TopicGET]:
+        def get_related_topics_work(tx) -> list[TopicGET]:
             cypher = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t1:Topic)-[r3:RELATED_TO]->(t2:Topic)
                 WHERE u.username = $username
@@ -1384,8 +1384,8 @@ class BCFDB(MyDB):
             return session.execute_read(get_related_topics_work)
 
     def put_related_topics(
-        self, project_id: UUID, topic_id: UUID, related_topics: List[RelatedTopicPUT], current_user: User
-    ) -> List[TopicGET]:
+        self, project_id: UUID, topic_id: UUID, related_topics: list[RelatedTopicPUT], current_user: User
+    ) -> list[TopicGET]:
         def put_related_topics_work(tx) -> bool:
             for related_topic in related_topics:
                 cypher = """
@@ -1415,8 +1415,8 @@ class BCFDB(MyDB):
     # returns a collection
     def get_topic_document_references(
         self, project_id: UUID, topic_id: UUID, current_user: User
-    ) -> List[DocumentReferenceGET]:
-        def get_topic_document_references_work(tx) -> List[DocumentReferenceGET]:
+    ) -> list[DocumentReferenceGET]:
+        def get_topic_document_references_work(tx) -> list[DocumentReferenceGET]:
             cypher = """
                 MATCH (u:User)-[r1:HAS_ACTIONS_ON]->(p:Project)-[r2:HAS]->(t:Topic)-[r3:REFERS_TO]->(d:Document)
                 WHERE u.username = $username
@@ -1441,7 +1441,7 @@ class BCFDB(MyDB):
 
     def post_topic_document_reference(
         self, project_id: UUID, topic_id: UUID, document_reference: DocumentReferencePOST, current_user: User
-    ) -> List[DocumentReferenceGET]:
+    ) -> list[DocumentReferenceGET]:
         def post_topic_document_reference_work(tx) -> bool:
             if document_reference.guid is None:
                 document_reference.guid = uuid4()
@@ -1494,7 +1494,7 @@ class BCFDB(MyDB):
         reference_id: UUID,
         document_reference: DocumentReferencePUT,
         current_user: User,
-    ) -> List[DocumentReferenceGET]:
+    ) -> list[DocumentReferenceGET]:
         document_reference.guid = reference_id
         document_reference_post = DocumentReferencePOST(document_reference)
         topic_document_references_response = self.post_topic_document_reference(

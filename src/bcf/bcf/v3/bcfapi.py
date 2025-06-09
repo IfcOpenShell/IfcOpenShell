@@ -25,7 +25,7 @@ import urllib.parse
 import uuid
 import webbrowser
 from re import A
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 import requests
 
@@ -174,7 +174,7 @@ class BcfClient:
         except requests.exceptions.HTTPError as e:
             print(f"message: {response.reason}'   '{response.status_code}'   '{ e }")
 
-    def post(self, endpoint: str, data: Any = None, params: Any = None) -> Tuple[int, str]:
+    def post(self, endpoint: str, data: Any = None, params: Any = None) -> tuple[int, str]:
         headers = {
             "Authorization": f"Bearer {self.foundation_client.get_access_token()}",
             "Content-type": "application/json",
@@ -192,7 +192,7 @@ class BcfClient:
             print(f"message: {response.reason}'  '{response.status_code}, {errh}")
             return response.status_code, response.reason
 
-    def put(self, endpoint: str, data: Any = None, params: Any = None) -> Tuple[int, str]:
+    def put(self, endpoint: str, data: Any = None, params: Any = None) -> tuple[int, str]:
         headers = {
             "Authorization": f"Bearer {self.foundation_client.get_access_token()}",
             "Content-type": "application/json",
@@ -210,7 +210,7 @@ class BcfClient:
             print(f"message: {response.reason}'  '{response.status_code}, {errh}")
             return response.status_code, response.reason
 
-    def delete(self, endpoint: str, params: Any = None) -> Tuple[int, str]:
+    def delete(self, endpoint: str, params: Any = None) -> tuple[int, str]:
         headers = {
             "Authorization": f"Bearer {self.foundation_client.get_access_token()}",
             "Content-type": "application/json",
@@ -237,7 +237,7 @@ class BcfClient:
             },
         )
 
-    def update_project(self, project_id: str = "", data: Any = None) -> Tuple[int, str]:
+    def update_project(self, project_id: str = "", data: Any = None) -> tuple[int, str]:
         url = f"{self.baseurl}/projects/{project_id}"
         headers = {"Authorization": f"Bearer {self.foundation_client.get_access_token()}"}
         resp = requests.put(url, headers=headers, data=data)
@@ -276,16 +276,16 @@ class BcfClient:
             },
         )
 
-    def create_topic(self, project_id: str = "", data: Any = None) -> Tuple[int, str]:
+    def create_topic(self, project_id: str = "", data: Any = None) -> tuple[int, str]:
         return self.post(f"/projects/{project_id}/topics", data=data)
 
-    def update_topic(self, project_id: str = "", topic_id: str = "", data: Any = None) -> Tuple[int, str]:
+    def update_topic(self, project_id: str = "", topic_id: str = "", data: Any = None) -> tuple[int, str]:
         return self.put(f"/projects/{project_id}/topics/{topic_id}", data=data)
 
-    def delete_topic(self, project_id: str = "", topic_id: str = "") -> Tuple[int, str]:
+    def delete_topic(self, project_id: str = "", topic_id: str = "") -> tuple[int, str]:
         return self.delete(f"/projects/{project_id}/topics/{topic_id}")
 
-    def get_snippet(self, project_id: str = "", topic_id: str = "") -> Tuple[int, str]:
+    def get_snippet(self, project_id: str = "", topic_id: str = "") -> tuple[int, str]:
         headers = {
             "Authorization": f"Bearer {self.foundation_client.get_access_token()}",
             "Content-type": "application/octet-stream",
@@ -332,7 +332,7 @@ class BcfClient:
         topic_id: str = "",
         data: Any = None,
         params: Any = None,
-    ) -> Tuple[int, str]:
+    ) -> tuple[int, str]:
         return self.put(
             f"/projects/{project_id}/topics/{topic_id}/files",
             data=data,
@@ -347,7 +347,7 @@ class BcfClient:
         topic_id: str = "",
         data: Any = None,
         params: Any = None,
-    ) -> Tuple[int, str]:
+    ) -> tuple[int, str]:
         return self.post(
             f"/projects/{project_id}/topics/{topic_id}/comments",
             data=data,
@@ -363,7 +363,7 @@ class BcfClient:
             },
         )
 
-    def delete_comment(self, project_id: str = "", topic_id: str = "", comment_id: str = "") -> Tuple[int, str]:
+    def delete_comment(self, project_id: str = "", topic_id: str = "", comment_id: str = "") -> tuple[int, str]:
         return self.delete(f"/projects/{project_id}/topics/{topic_id}/comments/{comment_id}")
 
     def update_comment(
@@ -372,7 +372,7 @@ class BcfClient:
         topic_id: str = "",
         comment_id: str = "",
         data: Any = None,
-    ) -> Tuple[int, str]:
+    ) -> tuple[int, str]:
         return self.put(
             f"/projects/{project_id}/topics/{topic_id}/comments/{comment_id}",
             data=data,
@@ -387,7 +387,7 @@ class BcfClient:
             },
         )
 
-    def create_viewpoints(self, project_id: str = "", topic_id: str = "", data: Any = None) -> Tuple[int, str]:
+    def create_viewpoints(self, project_id: str = "", topic_id: str = "", data: Any = None) -> tuple[int, str]:
         return self.post(
             f"/projects/{project_id}/topics/{topic_id}/viewpoints",
             data=data,
@@ -408,7 +408,7 @@ class BcfClient:
         project_id: str = "",
         topic_id: str = "",
         viewpoint_id: str = "",
-    ) -> Tuple[int, str]:
+    ) -> tuple[int, str]:
         return self.delete(
             f"/projects/{project_id}/topics/{topic_id}/viewpoints/{viewpoint_id}",
         )
@@ -478,7 +478,7 @@ class BcfClient:
         project_id: str = "",
         topic_id: str = "",
         data: Any = None,
-    ) -> Tuple[int, str]:
+    ) -> tuple[int, str]:
         return self.put(
             f"/projects/{project_id}/topics/{topic_id}/related_topics",
             data=data,
@@ -498,7 +498,7 @@ class BcfClient:
         project_id: str = "",
         topic_id: str = "",
         data: Any = None,
-    ) -> Tuple[int, str]:
+    ) -> tuple[int, str]:
         return self.post(
             f"/projects/{project_id}/topics/{topic_id}/document_references",
             data=data,
@@ -510,7 +510,7 @@ class BcfClient:
         topic_id: str = "",
         document_reference_id: str = "",
         data: Any = None,
-    ) -> Tuple[int, str]:
+    ) -> tuple[int, str]:
         return self.put(
             f"/projects/{project_id}/topics/{topic_id}/document_references/{document_reference_id}",
             data=data,
@@ -543,7 +543,7 @@ class BcfClient:
 
         return response.status_code
 
-    def get_document(self, project_id: str = "", topic_id: str = "", document_id: str = "") -> Tuple[int, str]:
+    def get_document(self, project_id: str = "", topic_id: str = "", document_id: str = "") -> tuple[int, str]:
         headers = {
             "Authorization": f"Bearer {self.foundation_client.get_access_token()}",
             "Content-type": "application/octet-stream",

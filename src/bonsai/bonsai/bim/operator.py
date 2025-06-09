@@ -42,7 +42,7 @@ from mathutils import Vector, Euler
 from math import radians
 from pathlib import Path
 from collections import namedtuple
-from typing import List, Iterable, Union, TYPE_CHECKING
+from typing import Iterable, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import MultipleFileSelect
@@ -1219,7 +1219,7 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
 
         return {"FINISHED"}
 
-    def get_cutting_plane_data(self, cutting_planes: List[bpy.types.Object]) -> List[CuttingPlaneData]:
+    def get_cutting_plane_data(self, cutting_planes: list[bpy.types.Object]) -> list[CuttingPlaneData]:
         cutting_planes_data = []
 
         for obj in cutting_planes:
@@ -1230,7 +1230,7 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
         return cutting_planes_data
 
     # NOTE: unused, will be used later for cutting boxes support
-    def get_box_cutting_plane_data(self, obj: bpy.types.Object) -> List[CuttingPlaneData]:
+    def get_box_cutting_plane_data(self, obj: bpy.types.Object) -> list[CuttingPlaneData]:
         matrix_world = obj.matrix_world
         rotation = matrix_world.to_quaternion()  # avoid scale for normals
         cutting_planes_data = []

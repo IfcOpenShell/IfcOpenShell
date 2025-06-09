@@ -18,7 +18,6 @@
 
 import datetime
 from datetime import timedelta, date
-from typing import List
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.util.date
@@ -26,7 +25,7 @@ import xml.etree.ElementTree as ET
 
 
 class MSP2Ifc:
-    def __init__(self, optionalColumns: List[str] = []):
+    def __init__(self, optionalColumns: list[str] = []):
         self.xml = None
         self.file = None
         self.ns = None

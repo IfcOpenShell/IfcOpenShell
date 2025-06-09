@@ -34,7 +34,7 @@ import bonsai.tool as tool
 from ifcopenshell.file import UndoSystemError
 from pathlib import Path
 from bonsai.tool.brick import BrickStore
-from typing import Set, Union, Optional, TypedDict, Callable, NotRequired, Literal
+from typing import Union, Optional, TypedDict, Callable, NotRequired, Literal
 
 
 IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]
@@ -69,7 +69,7 @@ class IfcStore:
     cache_path: Optional[str] = None
     id_map: dict[int, IFC_CONNECTED_TYPE] = {}
     guid_map: dict[str, IFC_CONNECTED_TYPE] = {}
-    edited_objs: Set[bpy.types.Object] = set()
+    edited_objs: set[bpy.types.Object] = set()
     pset_template_path: str = ""
     pset_template_file: Optional[ifcopenshell.file] = None
     classification_path: str = ""

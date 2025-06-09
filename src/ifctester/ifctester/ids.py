@@ -38,7 +38,7 @@ from .facet import (
     Cardinality,
     FacetFailure,
 )
-from typing import List, Optional, Union, overload, Literal
+from typing import Optional, Union
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
@@ -98,7 +98,7 @@ class Ids:
         self.filepath: Optional[str] = None
         self.filename: Optional[str] = None
 
-        self.specifications: List[Specification] = []
+        self.specifications: list[Specification] = []
         self.info = {}
         self.info["title"] = title or "Untitled"
         if copyright:
@@ -187,8 +187,8 @@ class Specification:
         instructions=None,
     ):
         self.name = name or "Unnamed"
-        self.applicability: List[Facet] = []
-        self.requirements: List[Facet] = []
+        self.applicability: list[Facet] = []
+        self.requirements: list[Facet] = []
         self.minOccurs: Union[int, str] = minOccurs
         self.maxOccurs: Union[int, str] = maxOccurs
         self.ifcVersion = ifcVersion

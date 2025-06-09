@@ -415,8 +415,8 @@ def upload_cancellation(upload_session: str, current_user: User = Depends(get_cu
 
 @router.post("/documents/1.0/document-versions", tags=[""])
 def document_versions_post(
-    document_ids: List[UUID], current_user: User = Depends(get_current_active_user)
-) -> List[DocumentVersion]:
+    document_ids: list[UUID], current_user: User = Depends(get_current_active_user)
+) -> list[DocumentVersion]:
 
     document_versions = list()
     for document_id in document_ids:

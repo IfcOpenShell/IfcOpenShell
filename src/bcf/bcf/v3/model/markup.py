@@ -1,6 +1,6 @@
 import sys
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Optional
 
 from xsdata.models.datatype import XmlDateTime
 
@@ -165,7 +165,7 @@ class TopicLabels:
     class Meta:
         global_type = False
 
-    label: List[str] = field(
+    label: list[str] = field(
         default_factory=list,
         metadata={
             "name": "Label",
@@ -182,7 +182,7 @@ class TopicReferenceLinks:
     class Meta:
         global_type = False
 
-    reference_link: List[str] = field(
+    reference_link: list[str] = field(
         default_factory=list,
         metadata={
             "name": "ReferenceLink",
@@ -320,7 +320,7 @@ class HeaderFiles:
     class Meta:
         global_type = False
 
-    file: List[File] = field(
+    file: list[File] = field(
         default_factory=list,
         metadata={
             "name": "File",
@@ -335,7 +335,7 @@ class TopicDocumentReferences:
     class Meta:
         global_type = False
 
-    document_reference: List[DocumentReference] = field(
+    document_reference: list[DocumentReference] = field(
         default_factory=list,
         metadata={
             "name": "DocumentReference",
@@ -350,7 +350,7 @@ class TopicRelatedTopics:
     class Meta:
         global_type = False
 
-    related_topic: List[TopicRelatedTopicsRelatedTopic] = field(
+    related_topic: list[TopicRelatedTopicsRelatedTopic] = field(
         default_factory=list,
         metadata={
             "name": "RelatedTopic",
@@ -365,7 +365,7 @@ class TopicViewpoints:
     class Meta:
         global_type = False
 
-    view_point: List[ViewPoint] = field(
+    view_point: list[ViewPoint] = field(
         default_factory=list,
         metadata={
             "name": "ViewPoint",
@@ -392,7 +392,7 @@ class TopicComments:
     class Meta:
         global_type = False
 
-    comment: List[Comment] = field(
+    comment: list[Comment] = field(
         default_factory=list,
         metadata={
             "name": "Comment",

@@ -63,7 +63,6 @@ from typing import (
     Optional,
     Literal,
     Iterator,
-    List,
     TYPE_CHECKING,
     get_args,
     Generator,
@@ -1927,7 +1926,7 @@ class Geometry(bonsai.core.tool.Geometry):
         return new_item
 
     @classmethod
-    def split_by_loose_parts(cls, obj: bpy.types.Object) -> List[bpy.types.Mesh]:
+    def split_by_loose_parts(cls, obj: bpy.types.Object) -> list[bpy.types.Mesh]:
         # Before .copy() since it also copies the selection.
         selection = tool.Blender.get_objects_selection(bpy.context)
 

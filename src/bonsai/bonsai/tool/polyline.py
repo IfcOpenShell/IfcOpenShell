@@ -28,7 +28,7 @@ from dataclasses import dataclass, field
 from lark import Lark, Transformer
 from math import degrees, radians, sin, cos, tan
 from mathutils import Vector, Matrix
-from typing import Optional, Union, Literal, List
+from typing import Optional, Union, Literal
 
 
 class Polyline(bonsai.core.tool.Polyline):
@@ -41,7 +41,7 @@ class Polyline(bonsai.core.tool.Polyline):
         _Y: str = ""
         _Z: str = ""
         _AREA: str = "0"
-        input_options: List[str] = field(default_factory=list)
+        input_options: list[str] = field(default_factory=list)
 
         def set_value(self, attribute_name, value):
             value = str(value)
@@ -94,7 +94,7 @@ class Polyline(bonsai.core.tool.Polyline):
         input_type: "Polyline.InputType" = None
 
     @classmethod
-    def create_input_ui(cls, input_options: List[str] = []) -> PolylineUI:
+    def create_input_ui(cls, input_options: list[str] = []) -> PolylineUI:
         return cls.PolylineUI(input_options=input_options)
 
     @classmethod

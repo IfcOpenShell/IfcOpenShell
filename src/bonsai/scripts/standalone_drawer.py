@@ -3,14 +3,14 @@ import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.geom
 import multiprocessing
-from typing import NamedTuple, List
+from typing import NamedTuple
 
 # python standalone_drawer.py model.ifc guid_of_drawing guids,of,bad,elements output.svg
 
 
 class LineworkContexts(NamedTuple):
-    body: List[List[int]]
-    annotation: List[List[int]]
+    body: list[list[int]]
+    annotation: list[list[int]]
 
 
 class Drawer:

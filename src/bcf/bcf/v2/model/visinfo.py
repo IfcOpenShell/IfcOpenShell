@@ -1,7 +1,7 @@
 import sys
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 
 DATACLASS_KWARGS = {} if sys.version_info < (3, 10) else {"slots": True, "kw_only": True}
 
@@ -136,7 +136,7 @@ class ComponentColoringColor:
     class Meta:
         global_type = False
 
-    component: List[Component] = field(
+    component: list[Component] = field(
         default_factory=list,
         metadata={
             "name": "Component",
@@ -156,7 +156,7 @@ class ComponentColoringColor:
 
 @dataclass(**DATACLASS_KWARGS)
 class ComponentSelection:
-    component: List[Component] = field(
+    component: list[Component] = field(
         default_factory=list,
         metadata={
             "name": "Component",
@@ -171,7 +171,7 @@ class ComponentVisibilityExceptions:
     class Meta:
         global_type = False
 
-    component: List[Component] = field(
+    component: list[Component] = field(
         default_factory=list,
         metadata={
             "name": "Component",
@@ -335,7 +335,7 @@ class VisualizationInfoBitmap:
 
 @dataclass(**DATACLASS_KWARGS)
 class ComponentColoring:
-    color: List[ComponentColoringColor] = field(
+    color: list[ComponentColoringColor] = field(
         default_factory=list,
         metadata={
             "name": "Color",
@@ -368,7 +368,7 @@ class VisualizationInfoClippingPlanes:
     class Meta:
         global_type = False
 
-    clipping_plane: List[ClippingPlane] = field(
+    clipping_plane: list[ClippingPlane] = field(
         default_factory=list,
         metadata={
             "name": "ClippingPlane",
@@ -382,7 +382,7 @@ class VisualizationInfoLines:
     class Meta:
         global_type = False
 
-    line: List[Line] = field(
+    line: list[Line] = field(
         default_factory=list,
         metadata={
             "name": "Line",
@@ -465,7 +465,7 @@ class VisualizationInfo:
             "type": "Element",
         },
     )
-    bitmap: List[VisualizationInfoBitmap] = field(
+    bitmap: list[VisualizationInfoBitmap] = field(
         default_factory=list,
         metadata={
             "name": "Bitmap",

@@ -38,7 +38,7 @@ import ifcopenshell.util.shape
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from bonsai.tool.loader import OBJECT_DATA_TYPE
-from typing import Dict, Union, Optional, Any, Literal, Iterable
+from typing import Union, Optional, Any, Literal, Iterable
 from ifcopenshell.util.shape import MatrixType
 
 
@@ -47,7 +47,7 @@ class MaterialCreator:
     obj: bpy.types.Object
 
     def __init__(self, ifc_import_settings: IfcImportSettings, ifc_importer: IfcImporter):
-        self.styles: Dict[int, bpy.types.Material] = {}
+        self.styles: dict[int, bpy.types.Material] = {}
         self.parsed_meshes: set[str] = set()
         self.ifc_import_settings = ifc_import_settings
         self.ifc_importer = ifc_importer

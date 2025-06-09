@@ -18,8 +18,6 @@
 
 from fractions import Fraction
 from math import pi
-from typing import Any
-from typing import Dict
 from typing import Literal
 from typing import Optional
 from typing import Union
@@ -506,7 +504,7 @@ def get_property_unit(
 
 def get_property_table_unit(
     prop: ifcopenshell.entity_instance, ifc_file: Union[ifcopenshell.file, None], use_cache: bool = False
-) -> Dict[str, Union[ifcopenshell.entity_instance, None]]:
+) -> dict[str, Union[ifcopenshell.entity_instance, None]]:
     """
     Gets the unit definition of a property table
 

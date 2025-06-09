@@ -42,7 +42,7 @@ import numpy as np
 from math import pi
 from mathutils import Vector, Matrix
 from shapely import Polygon
-from typing import Generator, Optional, Union, Literal, List, Any, Iterable, TYPE_CHECKING
+from typing import Generator, Optional, Union, Literal, Any, Iterable, TYPE_CHECKING
 from collections import defaultdict
 from natsort import natsorted
 
@@ -1267,7 +1267,7 @@ class Spatial(bonsai.core.tool.Spatial):
         return None
 
     @classmethod
-    def get_selected_containers(cls) -> List[ifcopenshell.entity_instance]:
+    def get_selected_containers(cls) -> list[ifcopenshell.entity_instance]:
         results = []
         for obj in tool.Blender.get_selected_objects():
             if (element := tool.Ifc.get_entity(obj)) and tool.Root.is_spatial_element(element):

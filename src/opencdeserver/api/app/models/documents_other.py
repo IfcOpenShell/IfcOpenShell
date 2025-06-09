@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Optional
 
 from models.documents_common import CallbackLink, Document
 from models.documents_request import FileToUpload, DocumentMetadataEntry
@@ -24,23 +24,23 @@ class DataForUploadDocuments(BaseModel):
         "and folder the user was on. If the client provides the `server_context` in subsequent calls then "
         "the CDE will attemp to load the UI at the same place."
     )
-    documents: List[FileToUpload]
+    documents: list[FileToUpload]
     callback: Optional[CallbackLink]
     current_user: Optional[User]
-    projects: List[ProjectOnly]
+    projects: list[ProjectOnly]
 
 
 # ---- DOWNLOAD MODELS ----
 
 
 class DocumentMetadataEntries(BaseModel):
-    metadata: List[DocumentMetadataEntry] = Field(description="An array of metadata entries")
+    metadata: list[DocumentMetadataEntry] = Field(description="An array of metadata entries")
 
 
 class Project(BaseModel):
     project_id: str
     name: str
-    documents: Optional[List[Document]] = Field(
+    documents: Optional[list[Document]] = Field(
         description="An array containing all the documents selected by the user"
     )
 
@@ -51,7 +51,7 @@ class DataForDocumentSelection(BaseModel):
         "and folder the user was on. If the client provides the `server_context` in subsequent calls then "
         "the CDE will attemp to load the UI at the same place."
     )
-    projects: List[Project]
+    projects: list[Project]
     callback: Optional[CallbackLink]
     current_user: Optional[User]
 

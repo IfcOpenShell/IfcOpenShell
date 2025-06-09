@@ -20,7 +20,7 @@ import sys
 import json
 import pytest
 import bonsai.core.tool
-from typing import Any, Optional, Type, Union, TypedDict, Literal
+from typing import Any, Optional, TypedDict, Literal
 from typing_extensions import Self
 
 
@@ -277,9 +277,9 @@ class Prophecy:
     - Ensure all predicted calls actually happened.
     """
 
-    subject: Type
+    subject: type
 
-    def __init__(self, cls: Type):
+    def __init__(self, cls: type):
         self.subject = cls
         self.predictions: list[Prediction] = []
         self.calls: list[Call] = []
