@@ -266,8 +266,9 @@ class GroupQtosData(Data):
 
     @classmethod
     def load(cls):
-        props = bpy.context.scene.BIMGroupProperties
-        ifc_definition_id = props.groups[props.active_group_index].ifc_definition_id
+        props = tool.Blender.get_group_props()
+        assert (active_group := props.active_group)
+        ifc_definition_id = active_group.ifc_definition_id
         cls.data = {"qtos": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), qtos_only=True)}
         cls.is_loaded = True
 
@@ -278,8 +279,9 @@ class GroupPsetData(Data):
 
     @classmethod
     def load(cls):
-        props = bpy.context.scene.BIMGroupProperties
-        ifc_definition_id = props.groups[props.active_group_index].ifc_definition_id
+        props = tool.Blender.get_group_props()
+        assert (active_group := props.active_group)
+        ifc_definition_id = active_group.ifc_definition_id
         cls.data = {"psets": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), psets_only=True)}
         cls.is_loaded = True
 

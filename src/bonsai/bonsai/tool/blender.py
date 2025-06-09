@@ -52,6 +52,7 @@ if TYPE_CHECKING:
     from bonsai.bim.module.csv.prop import CsvProperties
     from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
     from bonsai.bim.module.diff.prop import DiffProperties
+    from bonsai.bim.module.group.prop import BIMGroupProperties
 
     T = TypeVar("T")
 
@@ -244,8 +245,9 @@ class Blender(bonsai.core.tool.Blender):
             wsprops = tool.Sequence.get_work_schedule_props()
             return wsprops.active_work_schedule_id
         elif obj_type == "Group":
-            prop = context.scene.BIMGroupProperties
-            return prop.groups[prop.active_group_index].ifc_definition_id
+            props = tool.Blender.get_group_props()
+            assert (active_group := props.active_group)
+            return active_group.ifc_definition_id
         assert_never(obj_type)
 
     @classmethod
@@ -1663,6 +1665,11 @@ class Blender(bonsai.core.tool.Blender):
     def get_diff_props(cls) -> DiffProperties:
         assert (scene := bpy.context.scene)
         return scene.DiffProperties
+
+    @classmethod
+    def get_group_props(cls) -> BIMGroupProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMGroupProperties
 
     @classmethod
     def get_bim_props(cls, scene: Optional[bpy.types.Scene] = None) -> BIMProperties:

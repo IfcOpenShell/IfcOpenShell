@@ -566,6 +566,7 @@ class RefreshIFCMaterials(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.radiance_exporter_properties
+        ifc_file: ifcopenshell.file
         ifc_file = tool.Ifc.get() if props.should_load_from_memory else ifcopenshell.open(props.ifc_file)
 
         props.materials.clear()

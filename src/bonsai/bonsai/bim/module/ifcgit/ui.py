@@ -1,9 +1,15 @@
+from __future__ import annotations
 import bpy
 import time
 import os
 import platform
+import bonsai.tool as tool
+from typing import TYPE_CHECKING
 
 from bonsai.bim.module.ifcgit.data import IfcGitData
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.ifcgit.prop import IfcGitProperties, IfcGitListItem
 
 
 class IFCGIT_PT_panel(bpy.types.Panel):
@@ -35,7 +41,7 @@ class IFCGIT_PT_panel(bpy.types.Panel):
                 )
             return
 
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
 
         # TODO if file isn't saved, offer to save to disk
 
@@ -195,9 +201,17 @@ class IFCGIT_PT_panel(bpy.types.Panel):
 class COMMIT_UL_List(bpy.types.UIList):
     """List of Git commits"""
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
-
-        props = context.scene.IfcGitProperties
+    def draw_item(
+        self,
+        context: bpy.types.UILayout,
+        layout: bpy.types.UILayout,
+        data: IfcGitProperties,
+        item: IfcGitListItem,
+        icon,
+        active_data,
+        active_propname,
+        index: int,
+    ):
 
         current_revision = IfcGitData.data["current_revision"]
 
@@ -212,7 +226,7 @@ class COMMIT_UL_List(bpy.types.UIList):
         refs = ""
         if item.hexsha in lookup:
             for branch in lookup[item.hexsha]:
-                if branch.name == props.display_branch:
+                if branch.name == data.display_branch:
                     refs = "[" + branch.name + "] "
 
         lookup = IfcGitData.data["tags_by_hexsha"]
@@ -272,6 +286,7 @@ class IFCGIT_PT_revision_inspector(bpy.types.Panel):
             IfcGitData.load()
 
         layout = self.layout
+        assert layout
 
         if not IfcGitData.data["git_exe"]:
             row = layout.row()

@@ -31,7 +31,7 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        self.props = context.scene.BIMGroupProperties
+        self.props = tool.Blender.get_group_props()
         self.expanded_groups = json.loads(context.scene.ExpandedGroups.json_string)
         self.props.groups.clear()
 
@@ -95,8 +95,9 @@ class DisableGroupEditingUI(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        context.scene.BIMGroupProperties.is_editing = False
-        context.scene.BIMGroupProperties.active_group_id = 0
+        props = tool.Blender.get_group_props()
+        props.is_editing = False
+        props.active_group_id = 0
         return {"FINISHED"}
 
 
@@ -122,7 +123,7 @@ class EditGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMGroupProperties
+        props = tool.Blender.get_group_props()
         attributes = bonsai.bim.helper.export_attributes(props.group_attributes)
         ifc_file = tool.Ifc.get()
         ifcopenshell.api.group.edit_group(ifc_file, group=ifc_file.by_id(props.active_group_id), attributes=attributes)
@@ -150,7 +151,7 @@ class EnableEditingGroup(bpy.types.Operator, tool.Ifc.Operator):
     group: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMGroupProperties
+        props = tool.Blender.get_group_props()
         props.group_attributes.clear()
         bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.group), props.group_attributes)
         props.active_group_id = self.group
@@ -163,7 +164,8 @@ class DisableEditingGroup(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        context.scene.BIMGroupProperties.active_group_id = 0
+        props = tool.Blender.get_group_props()
+        props.active_group_id = 0
         return {"FINISHED"}
 
 
@@ -183,9 +185,9 @@ class AssignGroup(bpy.types.Operator, tool.Ifc.Operator):
         if not self.is_assigning:
             return bpy.ops.bim.unassign_group(group=self.group)
         products = [
-            tool.Ifc.get_entity(o)
+            element
             for o in tool.Blender.get_selected_objects(include_active=False)
-            if tool.Ifc.get_entity(o)
+            if (element := tool.Ifc.get_entity(o))
         ]
         ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=products, group=tool.Ifc.get().by_id(self.group))
 

@@ -52,15 +52,11 @@ def assign_cost_item_quantity(
     count towards the cost item (they only provide value).
 
     :param cost_item: The IfcCostItem to assign parametric quantities to
-    :type cost_item: ifcopenshell.entity_instance
     :param products: The IfcObjects to assign parametric quantities to
-    :type products: list[ifcopenshell.entity_instance]
     :param prop_name: The name of the quantity. If this is not specified,
         then it is assumed that there is no calculated quantity, and the
         number of objects are counted instead.
-    :type prop_name: str, optional
     :return: None
-    :rtype: None
 
     Example:
 

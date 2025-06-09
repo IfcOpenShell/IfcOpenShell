@@ -16,11 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 from bpy.types import Panel, UIList
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.group.data import GroupsData, ObjectGroupsData
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.group.prop import BIMGroupProperties, Group
 
 
 class BIM_PT_groups(Panel):
@@ -39,7 +44,7 @@ class BIM_PT_groups(Panel):
     def draw(self, context):
         if not GroupsData.is_loaded:
             GroupsData.load()
-        self.props = context.scene.BIMGroupProperties
+        self.props = tool.Blender.get_group_props()
 
         row = self.layout.row(align=True)
         row.label(text=f"{GroupsData.data['total_groups']} Groups Found", icon="OUTLINER")
@@ -99,7 +104,8 @@ class BIM_PT_object_groups(Panel):
     def draw(self, context):
         if not ObjectGroupsData.is_loaded:
             ObjectGroupsData.load()
-        self.props = context.scene.BIMGroupProperties
+        assert self.layout
+        self.props = tool.Blender.get_group_props()
 
         for group in ObjectGroupsData.data["groups"]:
             row = self.layout.row(align=True)
@@ -113,7 +119,17 @@ class BIM_PT_object_groups(Panel):
 
 
 class BIM_UL_groups(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(
+        self,
+        context: bpy.types.Context,
+        layout: bpy.types.UILayout,
+        data: BIMGroupProperties,
+        item: Group,
+        icon,
+        active_data,
+        active_propname,
+        index: int,
+    ):
         if item:
             row = layout.row(align=True)
             for i in range(0, item.tree_depth):

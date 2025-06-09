@@ -27,19 +27,19 @@ if TYPE_CHECKING:
     import git
 
 
-def create_repo(ifcgit: tool.IfcGit, ifc: tool.Ifc) -> None:
+def create_repo(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc]) -> None:
     path_ifc = ifc.get_path()
     path_dir = ifcgit.get_path_dir(path_ifc)
     ifcgit.init_repo(path_dir)
 
 
-def add_file(ifcgit: tool.IfcGit, ifc: tool.Ifc) -> None:
+def add_file(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc]) -> None:
     path_ifc = ifc.get_path()
     repo = ifcgit.repo_from_path(path_ifc)
     ifcgit.add_file_to_repo(repo, path_ifc)
 
 
-def clone_repo(ifcgit: tool.IfcGit, remote_url: str, local_folder: str, operator: bpy.types.Operator) -> None:
+def clone_repo(ifcgit: type[tool.IfcGit], remote_url: str, local_folder: str, operator: bpy.types.Operator) -> None:
     repo = ifcgit.clone_repo(remote_url, local_folder)
     if not repo:
         operator.report({"ERROR"}, "Clone failed")
@@ -48,14 +48,14 @@ def clone_repo(ifcgit: tool.IfcGit, remote_url: str, local_folder: str, operator
     ifcgit.load_anyifc(repo)
 
 
-def discard_uncommitted(ifcgit: tool.IfcGit, ifc: tool.Ifc) -> None:
+def discard_uncommitted(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc]) -> None:
     path_ifc = ifc.get_path()
     # NOTE this is calling the git binary in a subprocess
     ifcgit.git_checkout(path_ifc)
     ifcgit.load_project(path_ifc)
 
 
-def commit_changes(ifcgit: tool.IfcGit, ifc: tool.Ifc, repo: git.Repo) -> None:
+def commit_changes(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], repo: git.Repo) -> None:
     """Commit and create new branches as required"""
     path_ifc = ifc.get_path()
 
@@ -67,34 +67,34 @@ def commit_changes(ifcgit: tool.IfcGit, ifc: tool.Ifc, repo: git.Repo) -> None:
         ifcgit.git_commit(path_ifc)
 
 
-def add_tag(ifcgit: tool.IfcGit, repo: git.Repo) -> None:
+def add_tag(ifcgit: type[tool.IfcGit], repo: git.Repo) -> None:
     ifcgit.add_tag(repo)
 
 
-def delete_tag(ifcgit: tool.IfcGit, repo: git.Repo, tag_name: git.TagReference) -> None:
+def delete_tag(ifcgit: type[tool.IfcGit], repo: git.Repo, tag_name: git.TagReference) -> None:
     ifcgit.delete_tag(repo, tag_name)
 
 
-def add_remote(ifcgit: tool.IfcGit, repo: git.Repo) -> None:
+def add_remote(ifcgit: type[tool.IfcGit], repo: git.Repo) -> None:
     ifcgit.add_remote(repo)
 
 
-def delete_remote(ifcgit: tool.IfcGit, repo: git.Repo) -> None:
+def delete_remote(ifcgit: type[tool.IfcGit], repo: git.Repo) -> None:
     ifcgit.delete_remote(repo)
 
 
-def push(ifcgit: tool.IfcGit, repo: git.Repo, remote_name: str, operator: bpy.types.Operator) -> None:
+def push(ifcgit: type[tool.IfcGit], repo: git.Repo, remote_name: str, operator: bpy.types.Operator) -> None:
     error_message = ifcgit.push(repo, remote_name, repo.active_branch.name)
     if error_message:
         operator.report({"ERROR"}, error_message)
 
 
-def refresh_revision_list(ifcgit: tool.IfcGit, repo: git.Repo, ifc: tool.Ifc) -> None:
+def refresh_revision_list(ifcgit: type[tool.IfcGit], repo: git.Repo, ifc: type[tool.Ifc]) -> None:
     if repo.heads:
         ifcgit.refresh_revision_list(ifc.get_path())
 
 
-def colourise_revision(ifcgit: tool.IfcGit) -> None:
+def colourise_revision(ifcgit: type[tool.IfcGit]) -> None:
 
     step_ids = ifcgit.get_revisions_step_ids()
     if not step_ids:
@@ -104,7 +104,7 @@ def colourise_revision(ifcgit: tool.IfcGit) -> None:
     ifcgit.colourise(final_step_ids)
 
 
-def colourise_uncommitted(ifcgit: tool.IfcGit, ifc: tool.Ifc, repo: git.Repo) -> None:
+def colourise_uncommitted(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], repo: git.Repo) -> None:
     path_ifc = ifc.get_path()
     step_ids = ifcgit.ifc_diff_ids(repo, None, "HEAD", path_ifc)
     if not step_ids:
@@ -114,7 +114,7 @@ def colourise_uncommitted(ifcgit: tool.IfcGit, ifc: tool.Ifc, repo: git.Repo) ->
     ifcgit.colourise(final_step_ids)
 
 
-def switch_revision(ifcgit: tool.IfcGit, ifc: tool.Ifc) -> None:
+def switch_revision(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc]) -> None:
     # FIXME bad things happen when switching to a revision that predates current project
 
     path_ifc = ifc.get_path()
@@ -124,25 +124,25 @@ def switch_revision(ifcgit: tool.IfcGit, ifc: tool.Ifc) -> None:
     ifcgit.decolourise()
 
 
-def merge_branch(ifcgit: tool.IfcGit, ifc: tool.Ifc, operator: bpy.types.Operator) -> None:
+def merge_branch(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], operator: bpy.types.Operator) -> None:
     path_ifc = ifc.get_path()
     ifcgit.config_ifcmerge()
     ifcgit.execute_merge(path_ifc, operator)
 
 
-def entity_log(ifcgit: tool.IfcGit, ifc: tool.Ifc, step_id: int, operator: bpy.types.Operator) -> None:
+def entity_log(ifcgit: type[tool.IfcGit], ifc: type[tool.Ifc], step_id: int, operator: bpy.types.Operator) -> None:
     path_ifc = ifc.get_path()
     log_text = ifcgit.entity_log(path_ifc, step_id)
     # ERROR is only way to display a multi-line message
     operator.report({"ERROR"}, log_text)
 
 
-def install_git(ifcgit: tool.IfcGit, operator: bpy.types.Operator) -> None:
+def install_git(ifcgit: type[tool.IfcGit], operator: bpy.types.Operator) -> None:
     if platform.system() == "Windows":
         ifcgit.install_git_windows(operator=operator)
     else:
         print("install_git() not implemented")
 
 
-def run_git_diff(ifcgit: tool.IfcGit, operator: bpy.types.Operator) -> None:
+def run_git_diff(ifcgit: type[tool.IfcGit], operator: bpy.types.Operator) -> None:
     ifcgit.run_git_diff(operator)
