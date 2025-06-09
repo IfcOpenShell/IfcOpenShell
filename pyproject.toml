@@ -1,35 +1,15 @@
 [tool.black]
 line-length = 120
-include = '''
-    src/(
-        bcf
-        |bcfserver
-        |bonsai
-        |bsdd
-        |foundationserver
-        |ifc2ca
-        |ifc4d
-        |ifc5d
-        |ifcbimtester
-        |ifcblender
-        |ifccityjson
-        |ifcclash
-        |ifccsv
-        |ifcdiff
-        |ifcfm
-        |ifcpatch
-        |ifctester
-        |ifcopenshell-python
-        |ifcsverchok
-        |opencdeserver
-    )/.*.pyi?$
-'''
+include = "src/.*.pyi?$"
 extend-exclude = '''
     src/ifcopenshell-python/ifcopenshell/express/*
     |src/ifcopenshell-python/ifcopenshell/mvd/*
     |src/ifcopenshell-python/ifcopenshell/simple_spf/*
     |src/ifc2ca/templates/*
     |src/ifcconvert/cityjson/*
+    |src/svgfill
+    |src/exterior-shell-extractor
+    |src/pyodide
 '''
 
 [tool.pyright]
