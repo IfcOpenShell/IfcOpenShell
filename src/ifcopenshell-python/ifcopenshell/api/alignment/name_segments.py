@@ -18,7 +18,6 @@
 
 import ifcopenshell
 from ifcopenshell import entity_instance
-from typing import Sequence
 
 
 def name_segments(prefix: str, alignment: entity_instance) -> None:

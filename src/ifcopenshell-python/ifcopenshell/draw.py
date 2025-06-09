@@ -29,7 +29,7 @@ import ifcopenshell.geom
 
 from xml.dom.minidom import parseString
 from dataclasses import dataclass, fields, field
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 import numpy
 

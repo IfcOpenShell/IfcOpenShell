@@ -20,7 +20,8 @@ import datetime
 import ifcopenshell.util.date
 from math import floor
 from functools import cache
-from typing import Union, Literal, Optional, Iterator
+from typing import Union, Literal, Optional
+from collections.abc import Iterator
 
 
 DURATION_TYPE = Literal["ELAPSEDTIME", "WORKTIME", "NOTDEFINED"]

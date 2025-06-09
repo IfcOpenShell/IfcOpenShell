@@ -26,7 +26,8 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.shape
 import ifcopenshell.util.system
 from ifcopenshell.util.shape_builder import np_matrix_to_euler
-from typing import Any, Union, Optional, Generator
+from typing import Any, Union, Optional
+from collections.abc import Generator
 
 
 # The original BIMServer plugin has a function called ifcToCOBie:

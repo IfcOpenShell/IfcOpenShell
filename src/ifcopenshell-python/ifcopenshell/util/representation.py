@@ -22,7 +22,8 @@ import ifcopenshell
 import ifcopenshell.util.representation
 import ifcopenshell.util.placement
 import ifcopenshell.util.shape
-from typing import Optional, Union, TypedDict, Literal, Generator, Sequence
+from typing import Optional, Union, TypedDict, Literal
+from collections.abc import Generator, Sequence
 
 
 CONTEXT_TYPE = Literal["Model", "Plan", "NotDefined"]

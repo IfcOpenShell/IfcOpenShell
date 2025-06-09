@@ -21,7 +21,7 @@ import ifcopenshell.api.alignment
 from ifcopenshell import entity_instance
 
 import math
-from typing import Sequence
+from collections.abc import Sequence
 
 
 def create_vertical_alignment_by_pi_method(

@@ -24,15 +24,8 @@ import zipfile
 import functools
 import ifcopenshell
 from pathlib import Path
-from typing import Any
-from typing import Callable
-from typing import Generator
-from typing import Optional
-from typing import TYPE_CHECKING
-from typing import Union
-from typing import overload
-from typing import Literal
-from typing import TypedDict
+from typing import Any, Optional, TYPE_CHECKING, Union, overload, Literal, TypedDict
+from collections.abc import Callable, Generator
 
 # py39 compat: re-enable when support is dropped
 # from typing_extensions import assert_never

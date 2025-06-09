@@ -33,7 +33,8 @@ from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDe
 from bonsai.bim.module.nest.decorator import NestDecorator
 from mathutils import Vector
 from math import cos
-from typing import Union, Callable
+from typing import Union
+from collections.abc import Callable
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))

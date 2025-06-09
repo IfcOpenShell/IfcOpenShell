@@ -21,7 +21,6 @@ import ifcopenshell.api
 from ifcopenshell import ifcopenshell_wrapper
 import ifcopenshell.geom
 from ifcopenshell import entity_instance
-from typing import Sequence
 import numpy as np
 import math
 

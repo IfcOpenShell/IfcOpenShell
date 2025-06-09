@@ -19,7 +19,6 @@
 import ifcopenshell
 import ifcopenshell.api.alignment
 from ifcopenshell import entity_instance
-from typing import Sequence
 
 
 def map_alignment_segments(

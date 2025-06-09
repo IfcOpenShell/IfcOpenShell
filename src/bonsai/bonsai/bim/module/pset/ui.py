@@ -35,8 +35,7 @@ from bonsai.bim.module.pset.data import (
     WorkSchedulePsetsData,
 )
 from bonsai.bim.module.material.data import ObjectMaterialData
-from typing import Any, Optional, TYPE_CHECKING
-from typing_extensions import assert_never
+from typing import Any, Optional, TYPE_CHECKING, assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.module.pset.prop import IfcProperty, PsetProperties

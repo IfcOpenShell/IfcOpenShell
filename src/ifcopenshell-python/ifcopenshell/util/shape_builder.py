@@ -28,7 +28,8 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
 from math import cos, sin, pi, tan, radians, degrees, atan, sqrt
-from typing import Union, Optional, Literal, Any, Sequence, TYPE_CHECKING
+from typing import Union, Optional, Literal, Any, TYPE_CHECKING
+from collections.abc import Sequence
 from itertools import chain
 
 PRECISION = 1.0e-5

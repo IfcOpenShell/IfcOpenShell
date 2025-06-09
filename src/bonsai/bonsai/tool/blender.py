@@ -42,8 +42,16 @@ from mathutils import Vector
 from pathlib import Path
 from functools import lru_cache, cache
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import Any, Optional, Union, Literal, Iterable, Callable, TypeVar, Generator, TYPE_CHECKING, Sequence, Sized
-from typing_extensions import assert_never
+from typing import (
+    Any,
+    Optional,
+    Union,
+    Literal,
+    TypeVar,
+    TYPE_CHECKING,
+    assert_never,
+)
+from collections.abc import Iterable, Callable, Generator, Sequence, Sized
 
 if TYPE_CHECKING:
     import bpy.stub_internal.rna_enums as rna_enums

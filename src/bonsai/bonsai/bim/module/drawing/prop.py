@@ -46,7 +46,8 @@ from bpy.props import (
     CollectionProperty,
     BoolVectorProperty,
 )
-from typing import TYPE_CHECKING, Literal, Any, Callable, get_args, Union
+from typing import TYPE_CHECKING, Literal, Any, get_args, Union
+from collections.abc import Callable
 
 
 diagram_scales_enum = []

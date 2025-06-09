@@ -33,8 +33,7 @@ import ifcopenshell.util.selector
 from datetime import datetime
 from dateutil import parser, relativedelta
 from bpy_extras.io_utils import ImportHelper, ExportHelper
-from typing import get_args, TYPE_CHECKING
-from typing_extensions import assert_never
+from typing import get_args, TYPE_CHECKING, assert_never
 
 
 class EnableStatusFilters(bpy.types.Operator):

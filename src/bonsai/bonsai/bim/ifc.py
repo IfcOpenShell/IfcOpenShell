@@ -34,7 +34,8 @@ import bonsai.tool as tool
 from ifcopenshell.file import UndoSystemError
 from pathlib import Path
 from bonsai.tool.brick import BrickStore
-from typing import Union, Optional, TypedDict, Callable, NotRequired, Literal
+from typing import Union, Optional, TypedDict, NotRequired, Literal
+from collections.abc import Callable
 
 
 IFC_CONNECTED_TYPE = Union[bpy.types.Material, bpy.types.Object]

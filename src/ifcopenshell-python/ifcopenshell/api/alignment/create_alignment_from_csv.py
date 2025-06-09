@@ -30,7 +30,6 @@ from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment import get_axis_subcontext
 
 import math
-from typing import Sequence
 
 import csv
 

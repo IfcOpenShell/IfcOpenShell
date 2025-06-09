@@ -1,6 +1,7 @@
 import uuid
 import zipfile
-from typing import Any, Iterable, Optional, Literal, Union
+from typing import Any, Optional, Literal, Union
+from collections.abc import Iterable
 
 import numpy as np
 from ifcopenshell import entity_instance

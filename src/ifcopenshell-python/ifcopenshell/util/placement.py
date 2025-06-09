@@ -19,8 +19,8 @@
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
-from typing import Literal, Iterable, Optional
-
+from typing import Literal, Optional
+from collections.abc import Iterable
 
 MatrixType = npt.NDArray[np.float64]
 """`npt.NDArray[np.float64]`"""

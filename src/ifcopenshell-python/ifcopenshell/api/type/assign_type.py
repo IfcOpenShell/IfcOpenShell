@@ -22,7 +22,7 @@ import ifcopenshell.api.owner
 import ifcopenshell.api.material
 import ifcopenshell.guid
 import ifcopenshell.util.element
-from typing import Union, Iterable, Any
+from typing import Union
 
 
 def assign_type(

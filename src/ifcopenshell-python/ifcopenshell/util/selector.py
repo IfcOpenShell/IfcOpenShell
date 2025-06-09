@@ -35,7 +35,8 @@ import ifcopenshell.util.shape
 import ifcopenshell.util.system
 import ifcopenshell.util.unit
 from decimal import Decimal
-from typing import Optional, Any, Union, Iterable
+from typing import Optional, Any, Union
+from collections.abc import Iterable
 
 if sys.version_info >= (3, 10):
     from types import EllipsisType

@@ -45,8 +45,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import Any, Union, Literal, get_args, TYPE_CHECKING
-from typing_extensions import assert_never
+from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 

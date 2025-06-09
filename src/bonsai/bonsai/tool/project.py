@@ -35,7 +35,7 @@ from collections import defaultdict
 from bonsai.bim.ifc import IfcStore
 from ifcopenshell.api.project.append_asset import APPENDABLE_ASSET_TYPES
 from pathlib import Path
-from typing import Optional, Union, TYPE_CHECKING, Generator
+from typing import Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from bonsai.bim.module.project.prop import BIMProjectProperties

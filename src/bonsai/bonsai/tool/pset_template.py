@@ -25,8 +25,7 @@ import ifcopenshell.util.element
 import bonsai.core.tool
 import bonsai.tool as tool
 from pathlib import Path
-from typing import Union, Literal, Any, final
-from typing_extensions import assert_never, TYPE_CHECKING
+from typing import Literal, final, TYPE_CHECKING
 from bonsai.bim.ifc import IfcStore
 
 if TYPE_CHECKING:

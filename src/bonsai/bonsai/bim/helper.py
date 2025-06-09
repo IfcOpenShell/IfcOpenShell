@@ -27,7 +27,8 @@ import ifcopenshell.util.element
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_attribute_doc, get_predefined_type_doc, get_property_doc
 import bonsai.tool as tool
-from typing import Optional, Callable, Any, Union, Iterable, TYPE_CHECKING
+from typing import Optional, Any, Union, TYPE_CHECKING
+from collections.abc import Callable, Iterable
 
 if TYPE_CHECKING:
     import bonsai.bim.prop

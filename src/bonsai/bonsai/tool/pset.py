@@ -26,8 +26,7 @@ import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.schema
-from typing import Union, Literal, Any, TYPE_CHECKING
-from typing_extensions import assert_never
+from typing import Union, Literal, Any, TYPE_CHECKING, assert_never
 
 
 if TYPE_CHECKING:

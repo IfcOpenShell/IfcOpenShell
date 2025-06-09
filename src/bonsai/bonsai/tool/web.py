@@ -26,7 +26,7 @@ import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.api.sequence
 import ifcopenshell.api.cost
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 import time
 import socket
 import sys

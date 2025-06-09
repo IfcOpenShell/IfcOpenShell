@@ -27,8 +27,7 @@ import bonsai.bim.helper
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 from collections import defaultdict
-from typing import Union, Any, TYPE_CHECKING, Optional, Literal
-from typing_extensions import assert_never
+from typing import Union, Any, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     # Avoid circular imports.

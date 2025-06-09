@@ -28,7 +28,8 @@ from datetime import datetime
 import bpy
 import bonsai.tool as tool
 from pathlib import Path
-from typing import Union, Optional, Sequence
+from typing import Union, Optional
+from collections.abc import Sequence
 import json
 import math
 import time

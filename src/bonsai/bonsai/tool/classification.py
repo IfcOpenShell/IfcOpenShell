@@ -22,8 +22,7 @@ import ifcopenshell.api
 import ifcopenshell.util.classification
 import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Any, Optional, Union, Literal, Iterable, Callable
-from typing_extensions import assert_never
+from typing import Union, assert_never
 
 
 class Classification(bonsai.core.tool.Classification):

@@ -25,7 +25,8 @@ import operator
 import subprocess
 import sys
 import time
-from typing import Union, Any, Callable, TypeVar, overload, Iterable, Sequence
+from typing import Union, Any, TypeVar, overload
+from collections.abc import Callable, Sequence
 
 from . import ifcopenshell_wrapper
 from . import settings

@@ -28,8 +28,8 @@ import ifcopenshell.util.unit
 import bonsai.bim.helper
 import json
 from pathlib import Path
-from typing import Optional, Any, Generator, Union, Literal, TYPE_CHECKING
-from typing_extensions import assert_never
+from typing import Optional, Any, Union, Literal, TYPE_CHECKING, assert_never
+from collections.abc import Generator
 
 if TYPE_CHECKING:
     from bonsai.bim.module.cost.prop import BIMCostProperties, CostItemQuantity

@@ -19,7 +19,7 @@
 import ifcopenshell
 from ifcopenshell import ifcopenshell_wrapper
 from ifcopenshell import entity_instance
-from typing import Sequence
+from collections.abc import Sequence
 import math
 
 

@@ -22,8 +22,7 @@ import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
 import ifcopenshell
-from typing import Union, Any, TYPE_CHECKING, Literal
-from typing_extensions import assert_never
+from typing import Union, Any, TYPE_CHECKING, Literal, assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.module.owner.prop import BIMOwnerProperties

@@ -38,7 +38,8 @@ from bonsai.bim.module.drawing.shaders import add_verts_sequence, add_offsets
 from bonsai.bim.module.drawing.helper import format_distance
 from timeit import default_timer as timer
 from functools import cache
-from typing import Optional, Iterator, Union
+from typing import Optional, Union
+from collections.abc import Iterator
 
 UNSPECIAL_ELEMENT_COLOR = (0.2, 0.2, 0.2, 1)  # GREY
 

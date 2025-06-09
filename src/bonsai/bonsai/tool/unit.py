@@ -24,8 +24,7 @@ import ifcopenshell
 import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
-from typing import Union, Literal, Any, TYPE_CHECKING
-from typing_extensions import assert_never
+from typing import Union, Literal, Any, TYPE_CHECKING, assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.module.unit.prop import BIMUnitProperties

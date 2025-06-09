@@ -19,7 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.alignment.add_vertical_alignment
 from ifcopenshell import entity_instance
-from typing import Sequence
+from collections.abc import Sequence
 
 
 def add_vertical_alignment_by_pi_method(

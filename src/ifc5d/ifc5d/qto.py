@@ -31,7 +31,8 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import multiprocessing
 from collections import defaultdict
-from typing import Any, Literal, get_args, Union, Iterable, NamedTuple
+from typing import Any, Literal, get_args, Union, NamedTuple
+from collections.abc import Iterable
 
 
 class Function(NamedTuple):

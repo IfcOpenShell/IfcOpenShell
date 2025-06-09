@@ -30,8 +30,9 @@ import importlib
 import importlib.util
 import re
 from pathlib import Path
-from typing import Union, Iterable, Optional, Any, TypedDict, Literal, Sequence
+from typing import Union, Optional, Any, TypedDict
 from typing_extensions import NotRequired
+from collections.abc import Sequence
 
 
 __version__ = version = "0.0.0"

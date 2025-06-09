@@ -22,7 +22,7 @@ import ifcopenshell.api.geometry
 from ifcopenshell import entity_instance
 
 import math
-from typing import Sequence
+from collections.abc import Sequence
 
 
 def create_geometric_representation(file: ifcopenshell.file, alignment: entity_instance) -> None:

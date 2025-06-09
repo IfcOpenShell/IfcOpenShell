@@ -19,7 +19,7 @@
 import bpy
 import bmesh
 import bonsai.tool as tool
-from typing import Callable
+from collections.abc import Callable
 
 
 def calculate_height(obj: bpy.types.Object) -> float:

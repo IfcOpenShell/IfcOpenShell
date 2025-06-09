@@ -49,7 +49,8 @@ from bonsai.bim import import_ifc
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData, WindowData, DoorData
 from bonsai.bim.module.model.opening import FilledOpeningGenerator
 from ifcopenshell.util.shape_builder import ShapeBuilder, np_to_3d
-from typing import Optional, Union, TypeVar, Any, Iterable, Literal, TYPE_CHECKING, Sequence, TypedDict
+from typing import Optional, Union, TypeVar, Any, Literal, TYPE_CHECKING, TypedDict
+from collections.abc import Iterable, Sequence
 
 T = TypeVar("T")
 V_ = tool.Blender.V_

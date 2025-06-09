@@ -20,7 +20,6 @@ import ifcopenshell
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
 from ifcopenshell import entity_instance
-from typing import Sequence
 
 
 def add_segment_to_layout(file: ifcopenshell.file, alignment: entity_instance, segment: entity_instance) -> None:

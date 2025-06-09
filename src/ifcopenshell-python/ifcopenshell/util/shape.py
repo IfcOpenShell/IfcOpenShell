@@ -27,7 +27,7 @@ import ifcopenshell.util.representation
 from ifcopenshell.util.shape_builder import VectorType
 from math import radians, cos
 from ifcopenshell.geom import ShapeElementType, ShapeType
-from typing import Optional, Literal, Union, Iterable
+from typing import Optional, Literal, Union
 
 tol = 1e-6
 AXIS_LITERAL = Literal["X", "Y", "Z"]

@@ -21,7 +21,7 @@ import ifcopenshell.api.aggregate
 import ifcopenshell.api.alignment
 import ifcopenshell.api.nest
 from ifcopenshell import entity_instance
-from typing import Sequence
+from collections.abc import Sequence
 
 
 def create_alignment_by_pi_method(

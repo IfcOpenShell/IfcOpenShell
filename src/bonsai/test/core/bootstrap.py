@@ -20,8 +20,7 @@ import sys
 import json
 import pytest
 import bonsai.core.tool
-from typing import Any, Optional, TypedDict, Literal
-from typing_extensions import Self
+from typing import Any, Optional, TypedDict, Literal, Self
 
 
 @pytest.fixture

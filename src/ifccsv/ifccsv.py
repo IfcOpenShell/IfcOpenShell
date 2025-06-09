@@ -29,7 +29,8 @@ import ifcopenshell.util.selector
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from statistics import mean
-from typing import Optional, Union, Literal, Iterable
+from typing import Optional, Union, Literal
+from collections.abc import Iterable
 
 try:
     from odf.namespaces import OFFICENS

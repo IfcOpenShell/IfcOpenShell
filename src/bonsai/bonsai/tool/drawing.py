@@ -51,7 +51,8 @@ from shapely.ops import unary_union
 from lxml import etree
 from mathutils import Vector, Matrix
 from fractions import Fraction
-from typing import Optional, Union, Iterable, Any, Literal, Sequence, TYPE_CHECKING, NamedTuple, get_args
+from typing import Optional, Union, Any, Literal, TYPE_CHECKING, NamedTuple
+from collections.abc import Iterable, Sequence
 from pathlib import Path
 
 if TYPE_CHECKING:

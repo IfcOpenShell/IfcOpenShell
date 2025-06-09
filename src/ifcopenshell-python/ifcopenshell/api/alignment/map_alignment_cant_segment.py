@@ -19,7 +19,7 @@
 import ifcopenshell
 from ifcopenshell import entity_instance
 from ifcopenshell.api.alignment import get_axis_subcontext
-from typing import Sequence
+from collections.abc import Sequence
 import math
 
 

@@ -31,7 +31,8 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from mathutils import Vector
 from collections import defaultdict
-from typing import Iterable, Literal, TYPE_CHECKING
+from typing import Literal, TYPE_CHECKING
+from collections.abc import Iterable
 
 if TYPE_CHECKING:
     from bonsai.bim.module.debug.prop import BIMDebugProperties

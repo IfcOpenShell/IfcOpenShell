@@ -18,7 +18,8 @@
 
 import lark
 import ifcopenshell
-from typing import Optional, Union, Literal, Generator, Any
+from typing import Optional, Union, Literal, Any
+from collections.abc import Generator
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 from ifcopenshell.util.doc import get_predefined_type_doc
 from ifcopenshell.util.element import get_psets

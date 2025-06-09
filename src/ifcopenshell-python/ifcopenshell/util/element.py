@@ -20,7 +20,8 @@ import ifcopenshell
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-from typing import Any, Callable, Optional, Union, Literal, overload, Sequence, Generator
+from typing import Any, Callable, Optional, Union, Literal, overload
+from collections.abc import Generator, Sequence
 from collections import namedtuple
 
 

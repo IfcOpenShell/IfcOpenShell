@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Literal, Iterable
+from typing import TYPE_CHECKING, Optional, Literal
 
 if TYPE_CHECKING:
     import bpy

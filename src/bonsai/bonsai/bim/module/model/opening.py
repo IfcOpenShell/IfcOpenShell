@@ -45,7 +45,8 @@ from bpy.types import SpaceView3D
 from bpy.props import FloatProperty
 from bpy_extras.object_utils import AddObjectHelper, object_data_add
 from gpu_extras.batch import batch_for_shader
-from typing import Union, Optional, Any, cast, Sequence
+from typing import Union, Optional, Any, cast
+from collections.abc import Sequence
 
 
 class FilledOpeningGenerator:

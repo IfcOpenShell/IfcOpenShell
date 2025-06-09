@@ -35,8 +35,8 @@ from bpy.props import (
     IntProperty,
     StringProperty,
 )
-from typing import TYPE_CHECKING, Literal, Union, get_args, Generator
-from typing_extensions import assert_never
+from typing import TYPE_CHECKING, Literal, Union, get_args, assert_never
+from collections.abc import Generator
 
 
 def get_export_schema(self: "BIMProjectProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:

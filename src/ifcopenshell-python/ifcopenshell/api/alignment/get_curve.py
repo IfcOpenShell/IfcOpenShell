@@ -19,7 +19,6 @@
 import ifcopenshell
 import ifcopenshell.util
 from ifcopenshell import entity_instance
-from typing import Sequence
 
 import ifcopenshell.util.representation
 

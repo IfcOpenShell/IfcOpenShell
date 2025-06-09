@@ -24,7 +24,8 @@ import bonsai.bim.helper
 import bonsai.core.geometry
 import ifcopenshell
 import ifcopenshell.util.representation
-from typing import Iterable, TYPE_CHECKING
+from typing import TYPE_CHECKING
+from collections.abc import Iterable
 
 if TYPE_CHECKING:
     from bonsai.bim.module.void.prop import BIMBooleanProperties

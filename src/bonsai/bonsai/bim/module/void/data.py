@@ -19,7 +19,8 @@
 import bpy
 import ifcopenshell
 import bonsai.tool as tool
-from typing import Any, Generator, Union
+from typing import Any, Union
+from collections.abc import Generator
 
 
 def refresh():

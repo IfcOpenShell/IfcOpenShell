@@ -19,7 +19,8 @@
 # ############################################################################ #
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Union, Iterable
+from typing import TYPE_CHECKING, Optional
+from collections.abc import Iterable
 
 if TYPE_CHECKING:
     import bpy

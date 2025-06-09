@@ -40,7 +40,8 @@ import uuid
 import shutil
 from collections import deque
 from pathlib import Path
-from typing import Union, Any, Generator
+from typing import Union, Any
+from collections.abc import Generator
 
 
 last_commit_hash = "8888888"

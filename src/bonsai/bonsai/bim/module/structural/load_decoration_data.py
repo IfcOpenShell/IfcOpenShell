@@ -28,7 +28,8 @@ import ifcopenshell.util.unit
 import ifcopenshell.util.unit as ifcunit
 import bonsai.tool as tool
 from bonsai.bim.module.structural.shader import DecorationShader
-from typing import Literal, TypedDict, Iterable
+from typing import Literal, TypedDict
+from collections.abc import Iterable
 
 
 class MemberInfo(TypedDict):

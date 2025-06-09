@@ -59,17 +59,15 @@ from mathutils.bvhtree import BVHTree
 from bonsai.bim.ifc import IfcStore
 from typing import (
     Union,
-    Iterable,
     Optional,
     Literal,
-    Iterator,
     TYPE_CHECKING,
     get_args,
-    Generator,
     cast,
     TypeGuard,
     Any,
 )
+from collections.abc import Iterable, Iterator, Generator
 from typing_extensions import TypeIs
 
 if TYPE_CHECKING:

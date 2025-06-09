@@ -76,7 +76,6 @@ ignore = [
     "UP030", # implicit references for positional format fields
     "UP031", # Replace % with .format
     "UP032", # Replace .format with f-string
-    "UP035", # List -> list
 
     # Deprecated Ruff rules.
     "UP038", # Use X | Y in isinstance

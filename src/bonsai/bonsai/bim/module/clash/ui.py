@@ -22,8 +22,7 @@ import bonsai.tool as tool
 import bonsai.bim.helper
 from bpy.types import Panel
 from bonsai.bim.module.clash.data import ClashData
-from typing import TYPE_CHECKING
-from typing_extensions import assert_never
+from typing import TYPE_CHECKING, assert_never
 
 if TYPE_CHECKING:
     from bonsai.bim.module.clash.prop import BIMClashProperties, ClashSet, SmartClashGroup, Clash

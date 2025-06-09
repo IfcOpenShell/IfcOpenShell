@@ -38,7 +38,8 @@ import bonsai.bim.helper
 from dateutil import parser
 from datetime import datetime
 from datetime import time as datetime_time
-from typing import Optional, Any, Union, Literal, TYPE_CHECKING, Iterable
+from typing import Optional, Any, Union, Literal, TYPE_CHECKING
+from collections.abc import Iterable
 from mathutils import Color
 
 if TYPE_CHECKING:

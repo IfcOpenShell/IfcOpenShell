@@ -27,8 +27,7 @@ import bonsai.core.misc as core
 import bonsai.core.geometry as core_geometry
 import bonsai.core.root
 from mathutils import Vector, Matrix, Euler
-from typing import TYPE_CHECKING, Literal, get_args
-from typing_extensions import assert_never
+from typing import TYPE_CHECKING, Literal, get_args, assert_never
 
 
 class SetOverrideColour(bpy.types.Operator):

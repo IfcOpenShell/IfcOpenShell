@@ -38,7 +38,8 @@ from bonsai.bim.module.drawing.data import DrawingsData
 from bonsai.bim.module.drawing.data import DecoratorData
 from math import pi, ceil, atan, degrees, acos
 from mathutils import geometry, Vector
-from typing import Optional, Self, Union, Sequence, Callable
+from typing import Optional, Self, Union
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 

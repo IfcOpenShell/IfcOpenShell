@@ -18,10 +18,8 @@
 
 from fractions import Fraction
 from math import pi
-from typing import Literal
-from typing import Optional
-from typing import Union
-from typing import Generator
+from typing import Literal, Optional, Union
+from collections.abc import Generator
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper

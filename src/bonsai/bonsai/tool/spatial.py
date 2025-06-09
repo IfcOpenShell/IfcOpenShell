@@ -42,7 +42,8 @@ import numpy as np
 from math import pi
 from mathutils import Vector, Matrix
 from shapely import Polygon
-from typing import Generator, Optional, Union, Literal, Any, Iterable, TYPE_CHECKING
+from typing import Optional, Union, Literal, Any, TYPE_CHECKING
+from collections.abc import Generator, Iterable
 from collections import defaultdict
 from natsort import natsorted
 

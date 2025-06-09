@@ -22,7 +22,8 @@ import bpy.utils.previews
 import importlib
 from bpy_extras.io_utils import ImportHelper, ExportHelper
 from . import handler, ui, prop, operator
-from typing import Callable, Union
+from typing import Union
+from collections.abc import Callable
 
 try:
     from bonsai.translations import translations_dict

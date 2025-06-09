@@ -42,7 +42,8 @@ from mathutils import Vector, Euler
 from math import radians
 from pathlib import Path
 from collections import namedtuple
-from typing import Iterable, Union, TYPE_CHECKING
+from typing import Union, TYPE_CHECKING
+from collections.abc import Iterable
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import MultipleFileSelect

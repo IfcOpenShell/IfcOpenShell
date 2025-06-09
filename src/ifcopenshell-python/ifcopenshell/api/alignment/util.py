@@ -19,7 +19,6 @@
 import ifcopenshell
 import ifcopenshell.api.alignment
 import math
-from typing import Sequence
 
 import numpy as np
 

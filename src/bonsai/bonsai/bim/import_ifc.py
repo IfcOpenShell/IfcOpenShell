@@ -38,7 +38,8 @@ import ifcopenshell.util.shape
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from bonsai.tool.loader import OBJECT_DATA_TYPE
-from typing import Union, Optional, Any, Literal, Iterable
+from typing import Union, Optional, Any, Literal
+from collections.abc import Iterable
 from ifcopenshell.util.shape import MatrixType
 
 

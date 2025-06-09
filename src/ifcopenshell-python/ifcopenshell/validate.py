@@ -50,7 +50,8 @@ import types
 import argparse
 
 from collections import namedtuple
-from typing import Union, Iterator, Any, Optional
+from typing import Union, Any, Optional
+from collections.abc import Iterator
 from logging import Logger, Handler
 
 if sys.version_info >= (3, 10):

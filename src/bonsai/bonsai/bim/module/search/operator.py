@@ -39,8 +39,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import TYPE_CHECKING, Literal, get_args
-from typing_extensions import assert_never
+from typing import TYPE_CHECKING, Literal, get_args, assert_never
 
 
 class AddFilterGroup(Operator):

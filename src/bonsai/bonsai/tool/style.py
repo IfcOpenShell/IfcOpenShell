@@ -28,7 +28,8 @@ import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
 from mathutils import Color
-from typing import Union, Any, Optional, Literal, TYPE_CHECKING, Sequence
+from typing import Union, Any, Optional, Literal, TYPE_CHECKING
+from collections.abc import Sequence
 
 if TYPE_CHECKING:
     from bonsai.bim.prop import Attribute
