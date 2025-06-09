@@ -19,7 +19,7 @@ jobs:
         with:
           submodules: recursive
           repository: pyodide/pyodide
-          ref: '0.26.4'
+          ref: '0.27.7'
           token: ${{ secrets.BUILD_REPO_TOKEN }}
           path: pyodide
 
@@ -29,13 +29,13 @@ jobs:
           sed -i s/0.8.0/$VERSION/g IfcOpenShell/pyodide/meta.yaml
           sed -i s/0.8.0/$VERSION/g IfcOpenShell/pyodide/setup.py
           echo '#!/usr/bin/bash' > script.sh
-          echo 'cd pyodide' > script.sh
-          echo 'make && pip install ./pyodide-build' >> script.sh
+          echo 'cd pyodide' >> script.sh
+          echo 'make' >> script.sh
           echo 'cd ..' >> script.sh
           echo 'mkdir -p packages/ifcopenshell' >> script.sh
           echo 'cp IfcOpenShell/pyodide/meta.yaml packages/ifcopenshell' >> script.sh
           echo 'PYODIDE_ROOT=/src/pyodide \' >> script.sh
-          echo 'PATH=/src/pyodide/emsdk/emsdk:/src/pyodide/emsdk/emsdk/node/20.18.0_64bit/bin:/src/pyodide/emsdk/emsdk/upstream/emscripten:$PATH \' >> script.sh
+          echo 'PATH=/src/pyodide/emsdk/emsdk:/src/pyodide/emsdk/emsdk/node/22.16.0_64bit/bin:/src/pyodide/emsdk/emsdk/upstream/emscripten:$PATH \' >> script.sh
           echo 'pyodide build-recipes ifcopenshell --install' >> script.sh
           chmod +x script.sh
           sed -i s/--tty// pyodide/run_docker
