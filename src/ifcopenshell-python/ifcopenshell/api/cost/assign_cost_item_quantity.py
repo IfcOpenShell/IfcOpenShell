@@ -157,7 +157,7 @@ class Usecase:
                 count = 0
                 for rel in self.settings["cost_item"].Controls:
                     for obj in rel.RelatedObjects:
-                        #Only increment if not a resource
+                        # Only increment if not a resource
                         if not obj.is_a("IfcConstructionResource"):
-                            count +=1
+                            count += 1
                 quantity[3] = count
