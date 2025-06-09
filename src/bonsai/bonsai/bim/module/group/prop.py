@@ -38,13 +38,6 @@ def update_active_group_index(self, context):
     refresh_pset()
 
 
-class ExpandedGroups(StrProperty):
-    json_string: StringProperty(name="JSON String", default="[]")
-
-    if TYPE_CHECKING:
-        json_string: str
-
-
 class Group(PropertyGroup):
     name: StringProperty(name="Name")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
@@ -66,6 +59,7 @@ class BIMGroupProperties(PropertyGroup):
     groups: CollectionProperty(name="Groups", type=Group)
     active_group_index: IntProperty(name="Active Group Index", update=update_active_group_index)
     active_group_id: IntProperty(name="Active Group Id")
+    expanded_groups_json: StringProperty(name="JSON String", default="[]")
 
     if TYPE_CHECKING:
         group_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
@@ -73,6 +67,7 @@ class BIMGroupProperties(PropertyGroup):
         groups: bpy.types.bpy_prop_collection_idprop[Group]
         active_group_index: int
         active_group_id: int
+        expanded_groups_json: str
 
     @property
     def active_group(self) -> Union[Group, None]:

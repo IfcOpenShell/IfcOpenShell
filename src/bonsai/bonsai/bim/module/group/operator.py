@@ -32,7 +32,7 @@ class LoadGroups(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.props = tool.Blender.get_group_props()
-        self.expanded_groups = json.loads(context.scene.ExpandedGroups.json_string)
+        self.expanded_groups = json.loads(self.props.expanded_groups_json)
         self.props.groups.clear()
 
         groups = [
@@ -79,12 +79,13 @@ class ToggleGroup(bpy.types.Operator, tool.Ifc.Operator):
     option: bpy.props.StringProperty(name="Expand or Collapse")
 
     def _execute(self, context):
-        expanded_groups = set(json.loads(context.scene.ExpandedGroups.json_string))
+        props = tool.Blender.get_group_props()
+        expanded_groups = set(json.loads(props.expanded_groups_json))
         if self.option == "Expand":
             expanded_groups.add(self.ifc_definition_id)
         elif self.ifc_definition_id in expanded_groups:
             expanded_groups.remove(self.ifc_definition_id)
-        context.scene.ExpandedGroups.json_string = json.dumps(list(expanded_groups))
+        props.expanded_groups_json = json.dumps(list(expanded_groups))
         bpy.ops.bim.load_groups()
         return {"FINISHED"}
 
