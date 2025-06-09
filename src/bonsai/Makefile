@@ -138,7 +138,7 @@ endif
 	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy --wheel-dir=./wheels
 	# Required by IFCCityJSON
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download cjio --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download "cjio >=0.8, <0.10" --dest=./wheels
 	# Required in general for sorting all sorts of stuff in a nice way
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download natsort --dest=./wheels
 	# Provides express rule validation for ifcopenshell.validate
