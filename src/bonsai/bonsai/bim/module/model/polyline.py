@@ -939,7 +939,7 @@ class PolylineOperator:
                 tool.Blender.update_viewport()
                 return {"RUNNING_MODAL"}
 
-    def get_product_preview_data(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_isntance):
+    def get_product_preview_data(self, context: bpy.types.Context, relating_type: ifcopenshell.entity_instance) -> None:
         if tool.Model.get_usage_type(relating_type) == "PROFILE":
             if relating_type.is_a() in {"IfcColumnType", "IfcPileType"}:
                 data = get_vertical_profile_preview_data(context, relating_type)
