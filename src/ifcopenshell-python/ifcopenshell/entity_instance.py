@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
 import functools
 import importlib
 import numbers
@@ -25,11 +26,14 @@ import operator
 import subprocess
 import sys
 import time
-from typing import Union, Any, TypeVar, overload
+from typing import Union, Any, TypeVar, overload, TYPE_CHECKING
 from collections.abc import Callable, Sequence
 
 from . import ifcopenshell_wrapper
 from . import settings
+
+if TYPE_CHECKING:
+    import ifcopenshell
 
 try:
     import logging
@@ -150,7 +154,8 @@ class entity_instance:
 
     wrapped_data: ifcopenshell_wrapper.entity_instance
 
-    def __init__(self, e, file=None):
+    def __init__(self, e: ifcopenshell_wrapper.entity_instance, file: Union[ifcopenshell.file] = None):
+        # TODO: when it is a tuple?
         if isinstance(e, tuple):
             e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
         super().__setattr__("wrapped_data", e)
@@ -423,7 +428,7 @@ class entity_instance:
         """Return the STEP numerical identifier"""
         return self.wrapped_data.id()
 
-    def __eq__(self, other: "entity_instance") -> bool:
+    def __eq__(self, other: entity_instance) -> bool:
         if not isinstance(self, type(other)):
             return False
         elif None in (self.wrapped_data.file, other.wrapped_data.file):

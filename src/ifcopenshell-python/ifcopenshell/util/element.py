@@ -1592,7 +1592,7 @@ def remove_deep2(
         if not are_inverses_contained():
             return
 
-    to_delete = set()
+    to_delete: set[ifcopenshell.entity_instance] = set()
     subgraph = list(ifc_file.traverse(element, breadth_first=True))
     subgraph.extend(also_consider)
     subgraph_set = set(subgraph)

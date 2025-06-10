@@ -96,8 +96,8 @@ class Usecase:
         ifcopenshell.util.element.remove_deep2(self.file, representation_map)
 
     def unassign_products_using_mapped_representation(self, representation_map: ifcopenshell.entity_instance) -> None:
-        mapped_representations = []
-        just_representations = []
+        mapped_representations: list[dict[str, ifcopenshell.entity_instance]] = []
+        just_representations: list[ifcopenshell.entity_instance] = []
         for map_usage in representation_map.MapUsage or []:
             for inverse in self.file.get_inverse(map_usage):
                 if not inverse.is_a("IfcShapeRepresentation"):
@@ -109,4 +109,4 @@ class Usecase:
         for item in mapped_representations:
             self.unassign_product_representation(item["product"], item["representation"])
         for representation in just_representations:
-            ifcopenshell.api.geometry.remove_representation(self.file, **{"representation": representation})
+            ifcopenshell.api.geometry.remove_representation(self.file, representation=representation)
