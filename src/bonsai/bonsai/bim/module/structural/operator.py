@@ -552,10 +552,7 @@ class UnassignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
         self.file = tool.Ifc.get()
         ifcopenshell.api.aggregate.unassign_object(
             self.file,
-            **{
-                "relating_object": self.file.by_id(self.work_plan),
-                "products": [self.file.by_id(self.load_case)],
-            },
+            products=[self.file.by_id(self.load_case)],
         )
         return {"FINISHED"}
 
