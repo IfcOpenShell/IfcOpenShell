@@ -66,7 +66,7 @@ def unassign_object(file: ifcopenshell.file, related_objects: list[ifcopenshell.
         cur_related_objects = [o for o in rel.RelatedObjects if o not in related_objects_set]
         if cur_related_objects:
             rel.RelatedObjects = cur_related_objects
-            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, element=rel)
         else:
             history = rel.OwnerHistory
             file.remove(rel)

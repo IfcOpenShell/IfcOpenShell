@@ -174,13 +174,12 @@ class Cityjson2ifc:
         self.IFC_model = ifcopenshell.api.project.create_file()
         self.IFC_project = ifcopenshell.api.root.create_entity(
             self.IFC_model,
-            **{"ifc_class": "IfcProject", "name": self.properties.get("name_project", "My Project")},
+            ifc_class="IfcProject",
+            name=self.properties.get("name_project", "My Project"),
         )
         ifcopenshell.api.unit.assign_unit(self.IFC_model, length={"is_metric": True, "raw": "METERS"})
         self.properties["owner_history"] = self.create_owner_history()
-        self.IFC_representation_context = ifcopenshell.api.context.add_context(
-            self.IFC_model, **{"context_type": "Model"}
-        )
+        self.IFC_representation_context = ifcopenshell.api.context.add_context(self.IFC_model, context_type="Model")
 
         if not self.city_model.has_metadata() or "presentLoDs" not in self.city_model.j["metadata"]:
             self.city_model.update_metadata()

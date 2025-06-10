@@ -84,7 +84,7 @@ class RemovePsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOpera
             bpy.ops.bim.disable_editing_pset_template()
         ifcopenshell.api.pset_template.remove_pset_template(
             self.template_file,
-            **{"pset_template": self.template_file.by_id(current_pset_template_id)},
+            pset_template=self.template_file.by_id(current_pset_template_id),
         )
         self.template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()
@@ -170,14 +170,12 @@ class EditPsetTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOperato
         props = tool.PsetTemplate.get_pset_template_props()
         ifcopenshell.api.pset_template.edit_pset_template(
             IfcStore.pset_template_file,
-            **{
-                "pset_template": IfcStore.pset_template_file.by_id(props.active_pset_template_id),
-                "attributes": {
-                    "Name": props.active_pset_template.name,
-                    "Description": props.active_pset_template.description,
-                    "TemplateType": props.active_pset_template.template_type,
-                    "ApplicableEntity": props.active_pset_template.applicable_entity,
-                },
+            pset_template=IfcStore.pset_template_file.by_id(props.active_pset_template_id),
+            attributes={
+                "Name": props.active_pset_template.name,
+                "Description": props.active_pset_template.description,
+                "TemplateType": props.active_pset_template.template_type,
+                "ApplicableEntity": props.active_pset_template.applicable_entity,
             },
         )
         bpy.ops.bim.disable_editing_pset_template()
@@ -250,7 +248,7 @@ class RemovePropTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOpera
     def _execute(self, context):
         ifcopenshell.api.pset_template.remove_prop_template(
             IfcStore.pset_template_file,
-            **{"prop_template": IfcStore.pset_template_file.by_id(self.prop_template)},
+            prop_template=IfcStore.pset_template_file.by_id(self.prop_template),
         )
         IfcStore.pset_template_file.write(IfcStore.pset_template_path)
         bonsai.bim.handler.refresh_ui_data()

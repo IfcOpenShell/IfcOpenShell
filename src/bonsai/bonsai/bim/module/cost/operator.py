@@ -848,10 +848,8 @@ class ReorderCostItem(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         ifcopenshell.api.nest.reorder_nesting(
             tool.Ifc.get(),
-            **{
-                "item": tool.Ifc.get().by_id(self.cost_item),
-                "new_index": self.new_index,
-            },
+            item=tool.Ifc.get().by_id(self.cost_item),
+            new_index=self.new_index,
         )
         tool.Cost.load_cost_schedule_tree()
 

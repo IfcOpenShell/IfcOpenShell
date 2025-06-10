@@ -100,10 +100,8 @@ def add_work_schedule(
     if work_plan:
         ifcopenshell.api.aggregate.assign_object(
             file,
-            **{
-                "products": [work_schedule],
-                "relating_object": work_plan,
-            }
+            products=[work_schedule],
+            relating_object=work_plan,
         )
     elif file.schema != "IFC2X3":
         # TODO: this is an ambiguity by buildingSMART

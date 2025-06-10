@@ -86,4 +86,4 @@ def edit_attributes(file: ifcopenshell.file, product: ifcopenshell.entity_instan
                 product.PredefinedType = "USERDEFINED"
 
     if hasattr(product, "OwnerHistory"):
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": product})
+        ifcopenshell.api.owner.update_owner_history(file, element=product)

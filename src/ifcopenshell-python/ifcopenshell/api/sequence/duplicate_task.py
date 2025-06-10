@@ -166,7 +166,7 @@ class Usecase:
             related_objects = list(referenced_by.RelatedObjects)
             related_objects.append(related_object)
             referenced_by.RelatedObjects = related_objects
-            ifcopenshell.api.owner.update_owner_history(self.file, **{"element": referenced_by})
+            ifcopenshell.api.owner.update_owner_history(self.file, element=referenced_by)
         else:
             referenced_by = self.file.create_entity(
                 "IfcRelDefinesByObject",

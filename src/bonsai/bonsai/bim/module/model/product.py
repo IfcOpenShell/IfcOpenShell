@@ -691,7 +691,8 @@ def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[
         ifcopenshell.api.geometry.assign_representation(
             ifc_file,
             should_run_listeners=False,
-            **{"product": product, "representation": new_box},
+            product=product,
+            representation=new_box,
         )
 
 

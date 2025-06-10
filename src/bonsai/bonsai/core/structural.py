@@ -39,10 +39,8 @@ def assign_structural_analysis_model(
 ) -> None:
     ifc.run(
         "structural.assign_structural_analysis_model",
-        **{
-            "products": products,
-            "structural_analysis_model": structural_analysis_model,
-        },
+        products=products,
+        structural_analysis_model=structural_analysis_model,
     )
 
 
@@ -58,10 +56,8 @@ def edit_structural_analysis_model(ifc: tool.Ifc, structural: tool.Structural) -
     attributes = structural.get_structural_analysis_model_attributes()
     ifc.run(
         "structural.edit_structural_analysis_model",
-        **{
-            "structural_analysis_model": structural.get_active_structural_analysis_model(),
-            "attributes": attributes,
-        },
+        structural_analysis_model=structural.get_active_structural_analysis_model(),
+        attributes=attributes,
     )
     structural.load_structural_analysis_models()
     structural.disable_editing_structural_analysis_model()
@@ -91,7 +87,7 @@ def load_structural_analysis_models(structural: tool.Structural) -> None:
 def remove_structural_analysis_model(ifc: tool.Ifc, structural: tool.Structural, model: int) -> None:
     ifc.run(
         "structural.remove_structural_analysis_model",
-        **{"structural_analysis_model": ifc.get().by_id(model)},
+        structural_analysis_model=ifc.get().by_id(model),
     )
     structural.load_structural_analysis_models()
 
@@ -103,8 +99,6 @@ def unassign_structural_analysis_model(
 ) -> None:
     ifc.run(
         "structural.unassign_structural_analysis_model",
-        **{
-            "products": products,
-            "structural_analysis_model": structural_analysis_model,
-        },
+        products=products,
+        structural_analysis_model=structural_analysis_model,
     )

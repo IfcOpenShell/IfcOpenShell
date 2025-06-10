@@ -248,14 +248,12 @@ class DOCDB(MyDB):
                     raise HTTPException(status_code=400, detail="Document node was not created.")
 
             session_init = DocumentUploadSessionInitialization(
-                **{
-                    "upload_ui_url": os.environ["KONTROLL_BASE_URL"]
-                    + "documents/1.0/"
-                    + "document-upload?upload_session="
-                    + session_uuid,
-                    "expires_in": os.environ["SESSION_URL_VALIDITY_SECONDS"],
-                    "max_size_in_bytes": os.environ["SESSION_MAX_FILE_SIZE_BYTES"],
-                }
+                upload_ui_url=os.environ["KONTROLL_BASE_URL"]
+                + "documents/1.0/"
+                + "document-upload?upload_session="
+                + session_uuid,
+                expires_in=os.environ["SESSION_URL_VALIDITY_SECONDS"],
+                max_size_in_bytes=os.environ["SESSION_MAX_FILE_SIZE_BYTES"],
             )
 
             return session_init
@@ -407,15 +405,13 @@ class DOCDB(MyDB):
         upload_session_url = "?upload_session=" + upload_session
         upload_complete_url = base_url + "upload-completion" + upload_session_url
         upload_cancellation_url = base_url + "upload-cancellation" + upload_session_url
-        upload_completion = LinkData(**{"url": upload_complete_url})
-        upload_cancellation = LinkData(**{"url": upload_cancellation_url})
+        upload_completion = LinkData(url=upload_complete_url)
+        upload_cancellation = LinkData(url=upload_cancellation_url)
         document_to_upload_model = DocumentToUpload(
-            **{
-                "session_file_id": document.session_file_id,
-                "upload_file_parts": list(),
-                "upload_completion": upload_completion,
-                "upload_cancellation": upload_cancellation,
-            }
+            session_file_id=document.session_file_id,
+            upload_file_parts=list(),
+            upload_completion=upload_completion,
+            upload_cancellation=upload_cancellation,
         )
 
         def add_part_work(tx) -> UUID:
@@ -461,14 +457,12 @@ class DOCDB(MyDB):
             upload_part_url = "upload-part/" + str(upload_part_uuid)
             additional_headers = {"values": [{"name": "Content-Length", "value": content_length}]}
             part_instruction = UploadFilePartInstruction(
-                **{
-                    "url": base_url + upload_part_url,
-                    "http_method": "POST",
-                    "additional_headers": additional_headers,
-                    "include_authorization": True,
-                    "content_range_start": content_range_start,
-                    "content_range_end": content_range_end,
-                }
+                url=base_url + upload_part_url,
+                http_method="POST",
+                additional_headers=additional_headers,
+                include_authorization=True,
+                content_range_start=content_range_start,
+                content_range_end=content_range_end,
             )
 
             with self.driver.session() as session:
@@ -800,7 +794,7 @@ class DOCDB(MyDB):
                 MERGE (ss)-[r5:SELECTED]->(d)
             """
 
-            selected_documents_model = DocumentsMarkedAsSelected(**{"documents": list()})
+            selected_documents_model = DocumentsMarkedAsSelected(documents=list())
 
             for document in all_documents:
                 result = tx.run(cypher, selection_session=str(selection_session), document_id=str(document))
@@ -823,13 +817,11 @@ class DOCDB(MyDB):
             os.environ["KONTROLL_BASE_URL"] + "documents/1.0/document/" + document_id + "/version/" + str(version_index)
         )
         return DocumentVersionLinks(
-            **{
-                "document_version": LinkData(**{"url": base}),
-                "document_version_metadata": LinkData(**{"url": base + "/metadata"}),
-                "document_version_download": LinkData(**{"url": base + "/download"}),
-                "document_versions": LinkData(**{"url": base + "/versions"}),
-                "document_details": LinkData(**{"url": base + "/details"}),
-            }
+            document_version=LinkData(url=base),
+            document_version_metadata=LinkData(url=base + "/metadata"),
+            document_version_download=LinkData(url=base + "/download"),
+            document_versions=LinkData(url=base + "/versions"),
+            document_details=LinkData(url=base + "/details"),
         )
 
     def get_download_instructions(self, session_id: UUID, server_context: str, current_user: User) -> SelectedDocuments:
@@ -847,7 +839,7 @@ class DOCDB(MyDB):
                 document_model = self.document_node_to_model(document_node)
                 document_list.append(document_model)
 
-            selected_documents = SelectedDocuments(**{"server_context": server_context, "documents": document_list})
+            selected_documents = SelectedDocuments(server_context=server_context, documents=document_list)
             return selected_documents
 
         with self.driver.session() as session:
@@ -975,7 +967,7 @@ class DOCDB(MyDB):
                     "data_type": DataType.string,
                 }
                 entries.append(entry)
-            return DocumentMetadataEntries(**{"metadata": entries})
+            return DocumentMetadataEntries(metadata=entries)
 
         with self.driver.session() as session:
             return session.execute_read(get_document_version_metadata_work)

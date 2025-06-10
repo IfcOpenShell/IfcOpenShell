@@ -75,7 +75,7 @@ class Usecase:
                         self.file, representation=self.settings["representation"]
                     )
                     self.assign_product_representation(element, mapped_representation)
-        ifcopenshell.api.owner.update_owner_history(self.file, **{"element": self.settings["product"]})
+        ifcopenshell.api.owner.update_owner_history(self.file, element=self.settings["product"])
 
     def assign_product_representation(
         self, product: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance

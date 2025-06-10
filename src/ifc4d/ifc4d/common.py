@@ -282,10 +282,8 @@ class ScheduleIfcGenerator:
         # Seems intermittently crashy - can we investigate for larger files?
         ifcopenshell.api.control.assign_control(
             self.file,
-            **{
-                "relating_control": calendar["ifc"],
-                "related_object": activity["ifc"],
-            },
+            relating_control=calendar["ifc"],
+            related_object=activity["ifc"],
         )
         ifcopenshell.api.sequence.edit_task_time(
             self.file,
@@ -339,20 +337,19 @@ class ScheduleIfcGenerator:
                     if not parent.get("ifc"):
                         parent["ifc"] = ifcopenshell.api.resource.add_resource(
                             self.file,
-                            **{"ifc_class": "IfcCrewResource", "name": parent["Name"]},
+                            ifc_class="IfcCrewResource",
+                            name=parent["Name"],
                         )
                 if parent:
                     resource["ifc"] = ifcopenshell.api.resource.add_resource(
                         self.file,
-                        **{
-                            "parent_resource": parent["ifc"] if parent else None,
-                            "ifc_class": "IfcCrewResource",
-                            "name": resource["Name"],
-                        },
+                        parent_resource=parent["ifc"] if parent else None,
+                        ifc_class="IfcCrewResource",
+                        name=resource["Name"],
                     )
                 else:
                     resource["ifc"] = ifcopenshell.api.resource.add_resource(
-                        self.file, **{"ifc_class": "IfcCrewResource", "name": resource["Name"]}
+                        self.file, ifc_class="IfcCrewResource", name=resource["Name"]
                     )
 
     def create_boilerplate_ifc(self) -> None:

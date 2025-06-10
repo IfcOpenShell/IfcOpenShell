@@ -84,7 +84,7 @@ def assign_control(
         related_objects = set(controls.RelatedObjects)
         related_objects.add(related_object)
         controls.RelatedObjects = list(related_objects)
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": controls})
+        ifcopenshell.api.owner.update_owner_history(file, element=controls)
     else:
         controls = file.create_entity(
             "IfcRelAssignsToControl",

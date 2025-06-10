@@ -123,7 +123,7 @@ def assign_declaration(
         related_definitions = set(has_context.RelatedDefinitions) - set(objects_with_contexts)
         if related_definitions:
             has_context.RelatedDefinitions = list(related_definitions)
-            ifcopenshell.api.owner.update_owner_history(file, **{"element": has_context})
+            ifcopenshell.api.owner.update_owner_history(file, element=has_context)
         else:
             history = has_context.OwnerHistory
             file.remove(has_context)
@@ -133,7 +133,7 @@ def assign_declaration(
     declares = next(iter(all_declares), None)
     if declares:
         declares.RelatedDefinitions = list(set(declares.RelatedDefinitions) | set(objects_to_change))
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": declares})
+        ifcopenshell.api.owner.update_owner_history(file, element=declares)
     else:
         declares = file.create_entity(
             "IfcRelDeclares",

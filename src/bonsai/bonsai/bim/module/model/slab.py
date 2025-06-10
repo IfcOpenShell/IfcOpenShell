@@ -924,7 +924,8 @@ class DrawPolylineSlab(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
         attributes = {"OffsetFromReferenceLine": offset, "DirectionSense": direction_sense}
         ifcopenshell.api.material.edit_layer_usage(
             model,
-            **{"usage": material_set_usage, "attributes": attributes},
+            usage=material_set_usage,
+            attributes=attributes,
         )
         DumbSlabPlaner().regenerate_from_occurence(element, material_set_usage)
 

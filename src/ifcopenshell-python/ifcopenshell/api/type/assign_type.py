@@ -228,7 +228,7 @@ class Usecase:
             cur_related_objects = set(is_typed_by.RelatedObjects) - related_objects_set
             if cur_related_objects:
                 is_typed_by.RelatedObjects = list(cur_related_objects)
-                ifcopenshell.api.owner.update_owner_history(self.file, **{"element": is_typed_by})
+                ifcopenshell.api.owner.update_owner_history(self.file, element=is_typed_by)
             else:
                 history = is_typed_by.OwnerHistory
                 self.file.remove(is_typed_by)
@@ -238,7 +238,7 @@ class Usecase:
         # assign objects to a new type
         if types:
             types.RelatedObjects = list(set(types.RelatedObjects) | related_objects_set)
-            ifcopenshell.api.owner.update_owner_history(self.file, **{"element": types})
+            ifcopenshell.api.owner.update_owner_history(self.file, element=types)
         else:
             types = self.file.create_entity(
                 "IfcRelDefinesByType",

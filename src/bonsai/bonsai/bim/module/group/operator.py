@@ -140,7 +140,7 @@ class RemoveGroup(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        ifcopenshell.api.group.remove_group(self.file, **{"group": self.file.by_id(self.group)})
+        ifcopenshell.api.group.remove_group(self.file, group=self.file.by_id(self.group))
         bpy.ops.bim.load_groups()
         return {"FINISHED"}
 

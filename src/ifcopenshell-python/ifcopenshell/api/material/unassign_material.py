@@ -132,4 +132,4 @@ class Usecase:
                         ifcopenshell.util.element.remove_deep2(self.file, history)
                     continue
                 rel.RelatedObjects = list(related_objects)
-                ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
+                ifcopenshell.api.owner.update_owner_history(self.file, element=rel)

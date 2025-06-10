@@ -92,7 +92,7 @@ def assign_resource(
         related_objects = list(resource_of.RelatedObjects)
         related_objects.append(related_object)
         resource_of.RelatedObjects = related_objects
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": resource_of})
+        ifcopenshell.api.owner.update_owner_history(file, element=resource_of)
     else:
         resource_of = file.create_entity(
             "IfcRelAssignsToResource",

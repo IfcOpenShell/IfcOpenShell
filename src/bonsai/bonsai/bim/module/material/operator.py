@@ -122,11 +122,12 @@ class AssignParameterizedProfile(bpy.types.Operator, tool.Ifc.Operator):
         self.file = tool.Ifc.get()
         profile = ifcopenshell.api.profile.add_parameterized_profile(
             self.file,
-            **{"ifc_class": self.ifc_class},
+            ifc_class=self.ifc_class,
         )
         ifcopenshell.api.material.assign_profile(
             self.file,
-            **{"material_profile": self.file.by_id(self.material_profile), "profile": profile},
+            material_profile=self.file.by_id(self.material_profile),
+            profile=profile,
         )
         bpy.ops.bim.enable_editing_material_set_item(obj=obj.name, material_set_item=self.material_profile)
 
@@ -471,10 +472,8 @@ class RemoveListItem(bpy.types.Operator, tool.Ifc.Operator):
         self.file = tool.Ifc.get()
         ifcopenshell.api.material.remove_list_item(
             self.file,
-            **{
-                "material_list": self.file.by_id(self.list_item_set),
-                "material_index": self.list_item_index,
-            },
+            material_list=self.file.by_id(self.list_item_set),
+            material_index=self.list_item_index,
         )
 
 

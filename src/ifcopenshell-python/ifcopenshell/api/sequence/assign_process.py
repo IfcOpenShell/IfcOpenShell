@@ -101,7 +101,7 @@ def assign_process(
         related_objects = list(operates_on.RelatedObjects)
         related_objects.append(related_object)
         operates_on.RelatedObjects = related_objects
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": operates_on})
+        ifcopenshell.api.owner.update_owner_history(file, element=operates_on)
     else:
         operates_on = file.create_entity(
             "IfcRelAssignsToProcess",

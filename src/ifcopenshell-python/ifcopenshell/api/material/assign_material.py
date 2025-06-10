@@ -328,7 +328,7 @@ class Usecase:
             return self.create_material_association(material)
         previous_related_objects = set(rel.RelatedObjects)
         rel.RelatedObjects = list(previous_related_objects | self.products)
-        ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
+        ifcopenshell.api.owner.update_owner_history(self.file, element=rel)
         return rel
 
     def create_material_association(

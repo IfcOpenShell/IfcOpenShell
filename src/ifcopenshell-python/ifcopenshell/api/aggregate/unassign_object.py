@@ -69,7 +69,7 @@ def unassign_object(file: ifcopenshell.file, products: list[ifcopenshell.entity_
         related_objects = set(rel.RelatedObjects) - products
         if related_objects:
             rel.RelatedObjects = list(related_objects)
-            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, element=rel)
         else:
             history = rel.OwnerHistory
             file.remove(rel)

@@ -326,7 +326,7 @@ class BCFDB(MyDB):
                     "reference": reference,
                 }
                 project_file_information = ProjectFileInformation(
-                    **{"display_information": display_information_list, "file": file_get_json}
+                    display_information=display_information_list, file=file_get_json
                 )
                 project_file_informations.append(project_file_information)
             return project_file_informations

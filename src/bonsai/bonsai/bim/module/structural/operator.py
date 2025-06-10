@@ -137,7 +137,7 @@ class RemoveStructuralConnectionCondition(bpy.types.Operator, tool.Ifc.Operator)
         file = tool.Ifc.get()
         relation = file.by_id(self.connects_structural_member)
         connection = relation.RelatedStructuralConnection
-        ifcopenshell.api.structural.remove_structural_connection_condition(file, **{"relation": relation})
+        ifcopenshell.api.structural.remove_structural_connection_condition(file, relation=relation)
         return {"FINISHED"}
 
 
@@ -150,7 +150,7 @@ class AddStructuralBoundaryCondition(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         file = tool.Ifc.get()
         connection = file.by_id(self.connection)
-        ifcopenshell.api.structural.add_structural_boundary_condition(file, **{"connection": connection})
+        ifcopenshell.api.structural.add_structural_boundary_condition(file, connection=connection)
         return {"FINISHED"}
 
 
@@ -163,7 +163,7 @@ class RemoveStructuralBoundaryCondition(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         file = tool.Ifc.get()
         connection = file.by_id(self.connection)
-        ifcopenshell.api.structural.remove_structural_boundary_condition(file, **{"connection": connection})
+        ifcopenshell.api.structural.remove_structural_boundary_condition(file, connection=connection)
         return {"FINISHED"}
 
 
@@ -234,9 +234,7 @@ class EditStructuralBoundaryCondition(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 attributes[attribute.name] = {"value": attribute.float_value, "type": attribute.enum_value}
 
-        ifcopenshell.api.structural.edit_structural_boundary_condition(
-            file, **{"condition": condition, "attributes": attributes}
-        )
+        ifcopenshell.api.structural.edit_structural_boundary_condition(file, condition=condition, attributes=attributes)
         bpy.ops.bim.disable_editing_structural_boundary_condition()
         return {"FINISHED"}
 
@@ -538,10 +536,8 @@ class AssignStructuralLoadCase(bpy.types.Operator, tool.Ifc.Operator):
         self.file = tool.Ifc.get()
         ifcopenshell.api.aggregate.assign_object(
             self.file,
-            **{
-                "relating_object": self.file.by_id(self.work_plan),
-                "products": [self.file.by_id(self.load_case)],
-            },
+            relating_object=self.file.by_id(self.work_plan),
+            products=[self.file.by_id(self.load_case)],
         )
         return {"FINISHED"}
 
