@@ -1605,7 +1605,7 @@ def remove_deep2(
             and (
                 # 0 or 1 inverses guarantees that the subelement only exists in this subgraph
                 ifc_file.get_total_inverses(subelement) < 2
-                # Alternatively, let's ensure all inverses are within the subgrpah
+                # Alternatively, let's ensure all inverses are within the subgraph
                 or len(set(ifc_file.get_inverse(subelement)) - subgraph_set) == 0
             )
         ):
