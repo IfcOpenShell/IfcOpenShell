@@ -981,7 +981,7 @@ class DOCDB(MyDB):
                 RETURN d AS document
             """
             results = tx.run(cypher, username=current_user.username, document_id=document_id)
-            document_versions = DocumentVersions({"documents": list()})
+            document_versions = DocumentVersions(documents=list())
             for result in results:
                 document_json = self.node_to_json(result.get("document"))
                 document_version = self.get_document_version(document_id, document_json["version_index"], current_user)
