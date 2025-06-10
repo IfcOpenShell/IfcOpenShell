@@ -474,13 +474,21 @@ class RemoveRepresentation(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     representation_id: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        representation_id: int
+
     def _execute(self, context):
+        start_time = time()
+        assert context.active_object
         core.remove_representation(
             tool.Ifc,
             tool.Geometry,
             obj=context.active_object,
             representation=tool.Ifc.get().by_id(self.representation_id),
         )
+        operator_time = time() - start_time
+        if operator_time > 10:
+            self.report({"INFO"}, f"{self.bl_label} was finished in {operator_time:.2f} seconds.")
 
 
 class PurgeUnusedRepresentations(bpy.types.Operator, tool.Ifc.Operator):
