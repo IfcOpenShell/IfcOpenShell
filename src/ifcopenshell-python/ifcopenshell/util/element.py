@@ -1597,10 +1597,17 @@ def remove_deep2(
     subgraph.extend(also_consider)
     subgraph_set = set(subgraph)
     subelement_queue = [element]
+
+    # Cache already processed entities to avoid traversing them multiple time.
+    # E.g. lots of IFCINDEXEDPOLYCURVES may reference the same IFCCARTESIANPOINTLIST2D.
+    processed_ids: set[int] = set()
+
     while subelement_queue:
         subelement = subelement_queue.pop(0)
+        subelement_id = subelement.id()
         if (
-            subelement.id()
+            subelement_id
+            and subelement_id not in processed_ids
             and subelement not in do_not_delete
             and (
                 # 0 or 1 inverses guarantees that the subelement only exists in this subgraph
@@ -1623,6 +1630,7 @@ def remove_deep2(
             for i, attribute in enumerate(subelement):
                 if isinstance(attribute, tuple) and len(attribute) > 10:
                     subelement[i] = []
+        processed_ids.add(subelement_id)
 
     if ifc_file.to_delete is not None:
         ifc_file.to_delete.update(to_delete)
