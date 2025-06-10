@@ -1562,8 +1562,12 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = (
         blender_op.description
         + ".\nAlso makes sure changes are in sync with IFC."
-        + "\nIf IFC object is joined into non-IFC object, it will be removed from IFC."
-        + "\nJoining representation items only supported for joining with other representation items of the same representation."
+        + "\n\nJoining IFC object into another IFC object/Blender object will "
+        + "only merge their current representations and will remove joined object from IFC. "
+        + "Representation items are ignored for this case."
+        + "\n\nJoining representation items only supported for joining with other representation items "
+        + "of the same representation (only mesh-like items supported currently) "
+        + "or with non-IFC Blender objects."
     )
     bl_options = {"REGISTER", "UNDO"}
 
@@ -1646,6 +1650,11 @@ class OverrideJoin(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry.reload_representation(rep_obj)
             context.view_layer.update()
             tool.Root.reload_item_decorator()
+        else:
+            self.report(
+                {"WARNING"},
+                f"Unsupported type of item to join: {item}. Currently only mesh-like items are supported.",
+            )
 
     def join_ifc_obj(self, context: bpy.types.Context) -> None:
         ifc_file = tool.Ifc.get()
