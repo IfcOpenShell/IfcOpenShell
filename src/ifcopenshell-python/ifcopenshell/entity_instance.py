@@ -204,6 +204,7 @@ class entity_instance:
             vs = entity_instance.wrap_value(self.wrapped_data.get_inverse(name), self.wrapped_data.file)
             if settings.unpack_non_aggregate_inverses:
                 schema_name = self.wrapped_data.is_a(True).split(".")[0]
+                ent: ifcopenshell_wrapper.entity
                 ent = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
                 inv = [i for i in ent.all_inverse_attributes() if i.name() == name][0]
                 if (inv.bound1(), inv.bound2()) == (-1, -1):
