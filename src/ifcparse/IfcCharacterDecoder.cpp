@@ -37,6 +37,7 @@
 #include <sstream>
 #include <string>
 #include <algorithm>
+#include <boost/locale.hpp>
 
 #define FIRST_SOLIDUS (1 << 1)
 #define PAGE (1 << 2)
@@ -417,45 +418,9 @@ std::u32string::value_type IfcUtil::convert_codepage(int codepage, int character
 }
 
 std::string IfcUtil::convert_utf8(const std::u32string& string) {
-    return std::wstring_convert<std::codecvt_utf8<char32_t>, char32_t>().to_bytes(string);
+    return boost::locale::conv::utf_to_utf<char>(string);
 }
-
-#ifdef _MSC_VER
-
-// bug in msvc 2015 and 2017, unsure if fixed in later versions
-// edit: maybe not bug actually, but a gap in the standard?
 
 std::u32string IfcUtil::convert_utf8(const std::string& s) {
-    bool is_ascii = true;
-    for (char c : s) {
-        if (static_cast<unsigned char>(c) >= 128) {
-            is_ascii = false;
-            break;
-        }
-    }
-    if (is_ascii) {
-        return std::u32string(s.begin(), s.end());
-    } else {
-        auto converted = std::wstring_convert<std::codecvt_utf8<int32_t>, int32_t>().from_bytes(s);
-        return std::u32string(reinterpret_cast<char32_t const*>(converted.data()));
-    }
+    return boost::locale::conv::utf_to_utf<char32_t>(s);
 }
-
-#else
-
-std::u32string IfcUtil::convert_utf8(const std::string& s) {
-    bool is_ascii = true;
-    for (char c : s) {
-        if (static_cast<unsigned char>(c) >= 128) {
-            is_ascii = false;
-            break;
-        }
-    }
-    if (is_ascii) {
-        return std::u32string(s.begin(), s.end());
-    } else {
-        return std::wstring_convert<std::codecvt_utf8<std::u32string::value_type>, std::u32string::value_type>().from_bytes(s);
-    }
-}
-
-#endif
