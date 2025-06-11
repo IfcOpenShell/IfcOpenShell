@@ -206,7 +206,7 @@ class entity_instance:
                 schema_name = self.wrapped_data.is_a(True).split(".")[0]
                 ent: ifcopenshell_wrapper.entity
                 ent = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
-                inv = [i for i in ent.all_inverse_attributes() if i.name() == name][0]
+                inv = next(i for i in ent.all_inverse_attributes() if i.name() == name)
                 if (inv.bound1(), inv.bound2()) == (-1, -1):
                     if vs:
                         vs = vs[0]
