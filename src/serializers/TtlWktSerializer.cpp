@@ -177,7 +177,7 @@ namespace {
     }
 
     std::string escape_for_turtle(const std::u32string& input) {
-        std::wostringstream escaped;
+        std::ostringstream escaped;
         escaped << "\"";
 
         for (auto& c : input) {
@@ -200,7 +200,7 @@ namespace {
             default:
                 if (c < 0x20 || c > 0x7E) {
                     escaped << "\\u"
-                        << std::hex << std::setw(4) << std::setfill(L'0')
+                        << std::hex << std::setw(4) << std::setfill('0')
                         << (c & 0xFFFF);
                 } else {
                     escaped.put(c);
@@ -209,7 +209,7 @@ namespace {
             }
         }
         escaped << "\"";
-        return IfcUtil::convert_utf8(escaped.str());
+        return escaped.str();
     }
 
     template <typename Fn, typename... Ts>
@@ -262,16 +262,16 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
 {
     filename_.stream << ttl_object_id(o) << " a geo:Feature ;\n";
     filename_.stream << "    dcterms:identifier " << escape_for_turtle(
-        IfcUtil::convert_utf8_to_utf32(o->guid())) << " ;\n";
+        IfcUtil::convert_utf8(o->guid())) << " ;\n";
     filename_.stream << "    rdfs:label " << escape_for_turtle(
-        IfcUtil::convert_utf8_to_utf32(o->name())
+        IfcUtil::convert_utf8(o->name())
     ) << " ;\n";
     filename_.stream << "    geo:hasGeometry " << ttl_object_id(o, "_geometry") << " .\n\n";
 
     if (!o->geometry().polyhedral_faces_with_holes().empty()) {
         filename_.stream << ttl_object_id(o, "_geometry") << " a geo:Geometry ;\n";
         filename_.stream << "    geo:asWKT " << escape_for_turtle(
-            IfcUtil::convert_utf8_to_utf32(
+            IfcUtil::convert_utf8(
                 capture_output(
                     emit_polyhedral_surface,
                     o->geometry().verts(),
@@ -314,7 +314,7 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
             filename_.stream << ttl_object_id(o) << " geo:hasGeometry " << ttl_object_id(o, "_footprint_geometry") << " .\n\n";
             filename_.stream << ttl_object_id(o, "_footprint_geometry") << " a geo:Geometry ;\n";
             filename_.stream << "    geo:asWKT " << escape_for_turtle(
-                IfcUtil::convert_utf8_to_utf32(
+                IfcUtil::convert_utf8(
                     capture_output(
                         // @nb this is line_component, because this is the linestring
                         // from a faceboundary, not the edges as pairs of indices.
@@ -341,7 +341,7 @@ void TtlWktSerializer::write(const IfcGeom::TriangulationElement* o)
             }
         }
         filename_.stream << "    geo:asWKT " << escape_for_turtle(
-            IfcUtil::convert_utf8_to_utf32(
+            IfcUtil::convert_utf8(
                 capture_output(
                     emit_line_strings,
                     o->geometry().verts(),
@@ -355,9 +355,9 @@ void TtlWktSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 #ifdef IFOPSH_WITH_OPENCASCADE
 	filename_.stream << ttl_object_id(brep_obj) << " a geo:Feature ;\n";
 	filename_.stream << "    dcterms:identifier " << escape_for_turtle(
-		IfcUtil::convert_utf8_to_utf32(brep_obj->guid())) << " ;\n";
+		IfcUtil::convert_utf8(brep_obj->guid())) << " ;\n";
 	filename_.stream << "    rdfs:label " << escape_for_turtle(
-		IfcUtil::convert_utf8_to_utf32(brep_obj->name())
+		IfcUtil::convert_utf8(brep_obj->name())
 	) << " .\n";
 
     // @todo unify logic with SVG serializer
@@ -436,7 +436,7 @@ void TtlWktSerializer::write(const IfcGeom::BRepElement* brep_obj) {
 			filename_.stream << ttl_object_id(brep_obj) << " geo:hasGeometry " << ttl_object_id(brep_obj, postfix.c_str()) << " .\n\n";
 			filename_.stream << ttl_object_id(brep_obj, postfix.c_str()) << " a geo:Geometry ;\n";
 			filename_.stream << "    geo:asWKT " << escape_for_turtle(
-				IfcUtil::convert_utf8_to_utf32(
+				IfcUtil::convert_utf8(
 					capture_output(
 						emit_line_component,
 						loop_coords,

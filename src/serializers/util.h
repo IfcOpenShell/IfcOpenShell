@@ -23,6 +23,7 @@
 #include <sstream>
 #include <vector>
 #include <iomanip>
+#include <limits>
 
 #include <boost/shared_ptr.hpp>
 
