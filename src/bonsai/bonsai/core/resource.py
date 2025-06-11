@@ -19,7 +19,8 @@
 # ############################################################################ #
 
 from __future__ import annotations
-from typing import TYPE_CHECKING, Optional, Union, Iterable
+from typing import TYPE_CHECKING, Optional
+from collections.abc import Iterable
 
 if TYPE_CHECKING:
     import bpy
@@ -171,6 +172,10 @@ def import_resources(resource_tool: tool.Resource, file_path: str) -> None:
     resource_tool.load_resources()
 
 
+def export_resources(resource_tool: tool.Resource, file_path: str) -> None:
+    resource_tool.export_resources(file_path)
+
+
 def expand_resource(resource_tool: tool.Resource, resource: ifcopenshell.entity_instance) -> None:
     resource_tool.expand_resource(resource)
     resource_tool.load_resources()
@@ -262,3 +267,7 @@ def calculate_resource_usage(
 ) -> None:
     ifc.run("resource.calculate_resource_usage", resource=resource)
     resource_tool.load_resources()
+
+
+def calculate_resource_quantity(resource_tool: tool.Resource, resource: ifcopenshell.entity_instance) -> None:
+    resource_tool.calculate_resource_quantity(resource)

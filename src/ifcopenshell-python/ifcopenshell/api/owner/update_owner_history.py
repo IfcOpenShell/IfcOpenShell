@@ -59,9 +59,6 @@ def update_owner_history(
         # API calls either.
         ifcopenshell.api.attribute.edit_attributes(model, product=space, attributes={"Name": "Lobby"})
     """
-    settings = {"element": element}
-
-    element = settings["element"]
     if not element.is_a("IfcRoot"):
         return
     user = ifcopenshell.api.owner.settings.get_user(file)

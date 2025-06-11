@@ -26,7 +26,6 @@ import typing
 class Patcher:
     def __init__(
         self,
-        src,
         file,
         logger,
         x: typing.Union[str, float] = "0",
@@ -89,7 +88,6 @@ class Patcher:
             # Some crazy 3D rotation and offset
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "OffsetObjectPlacements", "arguments": [12.5,5,2,False,90,90,45]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.x = float(x)

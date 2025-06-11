@@ -19,7 +19,11 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.context
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import ifcsverchok.helper
+import ifcsverchok.helper as helper
 from sverchok.node_tree import SverchCustomTreeNode
 
 
@@ -28,17 +32,21 @@ class SvIfcCreateProject(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
     bl_label = "IFC Create Project"
 
     def sv_init(self, context):
-        input_socket = self.inputs.new("SvStringsSocket", "file")
-        input_socket.tooltip = "ifc file to add the project to"
-        input_socket = self.inputs.new("SvStringsSocket", "project_name")
-        input_socket.tooltip = "Project name"
-        self.outputs.new("SvVerticesSocket", "file")
+        helper.create_socket(
+            self.inputs, "file", description="IFC file to add the project to", data_type="list[list[ifcopenshell.file]]"
+        )
+        helper.create_socket(self.inputs, "project_name", description="Project name", data_type="list[list[str]]")
+        helper.create_socket(
+            self.outputs,
+            "file",
+            description="IFC file with the project added",
+            data_type="list[list[ifcopenshell.file]]",
+        )
 
     def draw_buttons(self, context, layout):
         op = layout.operator("node.sv_ifc_tooltip", text="", icon="QUESTION", emboss=False).tooltip = (
             "Adds project, unit and context to IFC file"
         )
-        # op.tooltip = self.tooltip
 
     def process(self):
         # file
@@ -52,14 +60,13 @@ class SvIfcCreateProject(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helpe
         project_name = self.inputs["project_name"].sv_get()[0][0]
         self.process_ifc(file, project_name)
 
-    def process_ifc(self, file, project_name):
+    def process_ifc(self, file: ifcopenshell.file, project_name: str) -> None:
         # create project
-        project = ifcopenshell.api.run("root.create_entity", file, ifc_class="IfcProject", name=str(project_name))
-        lengthunit = ifcopenshell.api.run("unit.add_si_unit", file, unit_type="LENGTHUNIT")
-        ifcopenshell.api.run("unit.assign_unit", file, units=[lengthunit])
-        model = ifcopenshell.api.run("context.add_context", file, context_type="Model")
-        context = ifcopenshell.api.run(
-            "context.add_context",
+        project = ifcopenshell.api.root.create_entity(file, ifc_class="IfcProject", name=str(project_name))
+        lengthunit = ifcopenshell.api.unit.add_si_unit(file, unit_type="LENGTHUNIT")
+        ifcopenshell.api.unit.assign_unit(file, units=[lengthunit])
+        model = ifcopenshell.api.context.add_context(file, context_type="Model")
+        context = ifcopenshell.api.context.add_context(
             file,
             context_type="Model",
             context_identifier="Body",

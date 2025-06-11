@@ -17,9 +17,9 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import contextlib
 import bpy
 import bmesh
-import json
 import time
 import logging
 import textwrap
@@ -31,16 +31,22 @@ import webbrowser
 import ifcopenshell
 import bonsai.bim
 import bonsai.tool as tool
+import bonsai.bim.handler
+from enum import Enum
+from bpy_extras.io_utils import ImportHelper
 from bonsai.bim import import_ifc
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty
 from bonsai.bim.ui import IFCFileSelector
 from bonsai.bim.helper import get_enum_items
-from mathutils import Vector, Matrix, Euler
+from mathutils import Vector, Euler
 from math import radians
 from pathlib import Path
 from collections import namedtuple
-from typing import List, Iterable, Union
+from typing import Union, TYPE_CHECKING
+from collections.abc import Iterable
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import MultipleFileSelect
 
 
 class SetTab(bpy.types.Operator):
@@ -48,7 +54,7 @@ class SetTab(bpy.types.Operator):
     # NOTE: bl_label is set to empty string intentionally
     # to avoid showing the operator's name in the tooltips, see #3704
     bl_label = ""
-    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
+    bl_options = {"INTERNAL"}
     tab: bpy.props.StringProperty()
 
     @classmethod
@@ -67,7 +73,7 @@ class SetTab(bpy.types.Operator):
 class SwitchTab(bpy.types.Operator):
     bl_idname = "bim.switch_tab"
     bl_label = "Switch Tab"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_options = set()
     bl_description = "Switches to the last used tab"
 
     def execute(self, context):
@@ -82,11 +88,31 @@ class SwitchTab(bpy.types.Operator):
 class OpenUri(bpy.types.Operator):
     bl_idname = "bim.open_uri"
     bl_label = "Open URI"
-    bl_description = "Open the URL in your Web Browser"
     uri: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        return f"Open the URL in your Web Browser: '{properties.uri}'."
 
     def execute(self, context):
         webbrowser.open(self.uri)
+        return {"FINISHED"}
+
+
+class OpenPath(bpy.types.Operator):
+    bl_idname = "bim.open_path"
+    bl_label = "Open Path"
+    path: bpy.props.StringProperty()
+    tooltip: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties):
+        if properties.tooltip:
+            return properties.tooltip
+        return f"Open path: '{properties.path}'."
+
+    def execute(self, context):
+        tool.Blender.open_file_or_folder(self.path)
         return {"FINISHED"}
 
 
@@ -112,7 +138,8 @@ class CloseBlendWarning(bpy.types.Operator):
     bl_label = "Close Blend Warning"
 
     def execute(self, context):
-        bpy.context.scene.BIMProperties.has_blend_warning = False
+        props = tool.Blender.get_bim_props()
+        props.has_blend_warning = False
         return {"FINISHED"}
 
     def draw(self, context):
@@ -122,12 +149,11 @@ class CloseBlendWarning(bpy.types.Operator):
         return context.window_manager.invoke_props_dialog(self)
 
 
-class SelectURIAttribute(bpy.types.Operator):
+class SelectURIAttribute(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_uri_attribute"
     bl_label = "Select URI Attribute"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select a local file"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     data_path: bpy.props.StringProperty(name="Data Path")
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
 
@@ -148,30 +174,25 @@ class SelectURIAttribute(bpy.types.Operator):
                     # Do you know a better way?
                     pass
         if attribute:
-            filepath = self.filepath
-            if self.use_relative_path:
-                filepath = os.path.relpath(filepath, os.path.dirname(tool.Ifc.get_path()))
-            attribute.string_value = filepath
+            attribute.string_value = tool.Ifc.get_uri(self.filepath, use_relative_path=self.use_relative_path)
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class BIM_OT_multiple_file_selector(bpy.types.Operator):
+class BIM_OT_multiple_file_selector(bpy.types.Operator, ImportHelper):
     """Open Blender's file explorer to select one or multiple files."""
 
     bl_idname = "bim.multiple_file_selector"
     bl_label = "Select File(s)"
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     files: bpy.props.CollectionProperty(name="File Path", type=bpy.types.OperatorFileListElement)
     filter_glob: bpy.props.StringProperty(default="*", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
+    if TYPE_CHECKING:
+        file_props: MultipleFileSelect
+
     @classmethod
-    def poll(self, context):
+    def poll(cls, context):
         return getattr(context, "file_props", None) is not None
 
     def execute(self, context):
@@ -183,64 +204,76 @@ class BIM_OT_multiple_file_selector(bpy.types.Operator):
 
     def invoke(self, context, event):
         self.file_props = context.file_props
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ImportHelper.invoke(self, context, event)
 
 
-class SelectIfcFile(bpy.types.Operator, IFCFileSelector):
+class SelectIfcFile(bpy.types.Operator, IFCFileSelector, ImportHelper):
     bl_idname = "bim.select_ifc_file"
     bl_label = "Select IFC File"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = f"Select a different IFC file.\n{tool.Blender.operator_invoke_filepath_hotkeys_description}"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
     use_relative_path: bpy.props.BoolProperty(name="Use Relative Path", default=False)
+    filename_ext = ".ifc"
 
     def execute(self, context):
         if self.is_existing_ifc_file():
-            context.scene.BIMProperties.ifc_file = self.get_filepath()
+            props = tool.Blender.get_bim_props()
+            props.ifc_file = self.get_filepath()
+            bonsai.bim.handler.loadIfcStore(bpy.context.scene)
+            tool.Blender.clear_undo_history()
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        filepath = Path(context.scene.BIMProperties.ifc_file)
+        props = tool.Blender.get_bim_props()
+        filepath = Path(props.ifc_file)
         res = tool.Blender.operator_invoke_filepath_hotkeys(self, context, event, filepath)
         if res is not None:
             return res
-
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ImportHelper.invoke(self, context, event)
 
 
-class SelectDataDir(bpy.types.Operator):
-    bl_idname = "bim.select_data_dir"
-    bl_label = "Select Data Directory"
+class SelectDir(bpy.types.Operator, ImportHelper):
+    bl_idname = "bim.select_dir"
+    bl_label = "Select Directory"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select the directory that contains all IFC data es. PSet, styles, etc..."
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    bl_description = "Open a file browser to choose the directory"
+    data_path: bpy.props.StringProperty(name="Data Path")
 
     def execute(self, context):
-        context.scene.BIMProperties.data_dir = os.path.dirname(self.filepath)
+        crumbs = self.data_path.split(".")
+        if crumbs[0] == "preferences":
+            crumbs.pop(0)
+            data = tool.Blender.get_addon_preferences()
+        else:
+            data = context
+        while crumbs:
+            crumb = crumbs.pop(0)
+            if crumbs:
+                data = getattr(data, crumb)
+            else:
+                setattr(data, crumb, os.path.dirname(self.filepath))
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ImportHelper.invoke(self, context, event)
 
 
-class SelectSchemaDir(bpy.types.Operator):
-    bl_idname = "bim.select_schema_dir"
-    bl_label = "Select Schema Directory"
-    bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select the directory containing the IFC schema specification"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+class WinRegistryKeys(Enum):
+    __bonsai_key = "bonsai.ifc"
+    # Have to list all keys here
+    # because .DeleteKey can't remove key that has subkeys.
+    BONSAI = rf"Software\Classes\{__bonsai_key}"
+    BONSAI_ICON = rf"{BONSAI}\DefaultIcon"
+    BONSAI_SHELL = rf"{BONSAI}\shell"
+    BONSAI_SHELL_OPEN = rf"{BONSAI}\shell\open"
+    BONSAI_COMMAND = rf"{BONSAI}\shell\open\command"
+    IFC_EXTENSION = r"Software\Classes\.ifc"
+    IFC_EXTENSION_OPEN_WITH = rf"{IFC_EXTENSION}\OpenWihProgids"
 
-    def execute(self, context):
-        context.scene.BIMProperties.schema_dir = os.path.dirname(self.filepath)
-        return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+    @classmethod
+    def get_bonsai_key(cls):
+        return cls.__bonsai_key
 
 
 class FileAssociate(bpy.types.Operator):
@@ -258,23 +291,6 @@ class FileAssociate(bpy.types.Operator):
         # https://stackoverflow.com/questions/1082889/how-to-change-filetype-association-in-the-registry
         return False
 
-    def draw(self, context):
-        # NOTE: really weird thing on windows that typing this command in cmd works
-        # when even if you create .bat with the command below and run it as administrator it won't
-        # Haven't found a workaround yet to automate process completely.
-        command = "ASSOC .IFC=BONSAI"
-        self.layout.label(text="On the next step to create file association ")
-        self.layout.label(text="the system console will be opened ")
-        self.layout.label(text=f"and you will be asked to type command")
-        self.layout.label(text=f"{command}")
-        self.layout.label(text="to create an association.")
-
-    def invoke(self, context, event):
-        if platform.system() == "Windows":
-            return context.window_manager.invoke_props_dialog(self)
-        else:
-            return self.execute(context)
-
     def execute(self, context):
         src_dir = os.path.join(os.path.dirname(__file__), "../libs/desktop")
         binary_path = bpy.app.binary_path
@@ -282,20 +298,44 @@ class FileAssociate(bpy.types.Operator):
             destdir = os.path.join(os.environ["HOME"], ".local")
             self.install_desktop_linux(src_dir=src_dir, destdir=destdir, binary_path=binary_path)
         elif platform.system() == "Windows":
-            self.install_desktop_windows(src_dir, binary_path)
+            self.install_desktop_windows(binary_path)
         self.report({"INFO"}, "Associations established.")
         return {"FINISHED"}
 
-    def install_desktop_windows(self, src_dir, binary_path):
-        # very important to clear this regitstry key before creating new association
-        # tried to do the regitsry change from powershell/cmd - but even admin rights are not enough
-        # this is why we're using .reg
-        reg_change_path = os.path.join(src_dir, "windows_bbim_association.reg")
-        subprocess.run(["cmd", "/c", "call", reg_change_path])
+    def install_desktop_windows(self, binary_path: str) -> None:
+        import winreg
 
-        ps_script_path = os.path.join(src_dir, "windows_bbim_association.ps1")
-        # NOTE: call powershell with RunAs to get admin rights from user
-        subprocess.run(["powershell", "-ExecutionPolicy", "Bypass", "-File", ps_script_path, binary_path], shell=True)
+        filetype_name = "Bonsai IFC Project"
+
+        # File association code from https://github.com/Victor-IX/Blender-Launcher-V2.
+        # Create a ProgID.
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.BONSAI.value) as key:
+            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, filetype_name)
+
+        python_expression = """import bpy;
+        import sys;
+        filepath = sys.argv[sys.argv.index('--') + 1];
+        bpy.ops.bim.load_project(filepath=filepath)
+        """
+        python_expression = "".join(line.strip() for line in python_expression.splitlines())
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.BONSAI_COMMAND.value) as key:
+            winreg.SetValueEx(
+                key,
+                "",
+                0,
+                winreg.REG_SZ,
+                # Pass the file path after '--' to avoid issues with special characters.
+                f'"{binary_path}" --python-expr "{python_expression}" -- "%1"',
+            )
+
+        # Finally associate, changes take effect immediately, no need to restart explorer.
+        # Haven't found any use of setting OpenWihProgids - just adding association makes "Open With" work too.
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.IFC_EXTENSION.value) as key:
+            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, WinRegistryKeys.get_bonsai_key())
+
+        # Add an icon.
+        with winreg.CreateKey(winreg.HKEY_CURRENT_USER, WinRegistryKeys.BONSAI_ICON.value) as key:
+            winreg.SetValueEx(key, "", 0, winreg.REG_SZ, f'"{binary_path}", 0')
 
     def install_desktop_linux(self, src_dir=None, destdir="/tmp", binary_path="/usr/bin/blender"):
         """Creates linux file assocations and launcher icon"""
@@ -370,14 +410,40 @@ class FileUnassociate(bpy.types.Operator):
             self.uninstall_desktop_windows()
         return {"FINISHED"}
 
-    def uninstall_desktop_windows(self):
-        # NOTE: call powershell with RunAs to get admin rights from user
-        cmd = [
-            "powershell",
-            "-Command",
-            "Start-Process -Verb RunAs -Wait cmd -ArgumentList '/c reg delete HKCR\\BONSAI /f'",
-        ]
-        subprocess.run(cmd, check=True)
+    def uninstall_desktop_windows(self) -> None:
+        import winreg
+
+        for key in reversed(WinRegistryKeys):
+            key_path = key.value
+            # Ignore IFC extension keys as you may never know what subkeys it might have.
+            # And removing Bonsai keys is good enough for removing association.
+            if key_path.startswith(WinRegistryKeys.IFC_EXTENSION.value):
+                continue
+            with contextlib.suppress(FileNotFoundError):
+                print(f"Removing registry key '{key_path}'.")
+                winreg.DeleteKey(winreg.HKEY_CURRENT_USER, key_path)
+
+        # TODO: Keys are deprecated since 25-05-01, remove the cleanup later.
+        # Clean up legacy keys, trying to be a good citizen.
+        with contextlib.suppress(FileNotFoundError):
+            with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, r"BLENDERBIM") as key:
+                cmd = (
+                    "powershell",
+                    "-Command",
+                    r"Start-Process -Verb RunAs -Wait cmd -ArgumentList '/c reg delete HKCR\BLENDERBIM /f'",
+                )
+                subprocess.run(cmd, check=True)
+                print("Successfully removed deprecated key 'BLENDERBIM'.")
+        with contextlib.suppress(FileNotFoundError):
+            with winreg.OpenKey(winreg.HKEY_CLASSES_ROOT, r"BONSAI") as key:
+                cmd = (
+                    "powershell",
+                    "-Command",
+                    r"Start-Process -Verb RunAs -Wait cmd -ArgumentList '/c reg delete HKCR\BONSAI /f'",
+                )
+                subprocess.run(cmd, check=True)
+                print("Successfully removed deprecated key 'BONSAI'.")
+
         self.report({"INFO"}, "Association removed.")
 
     def uninstall_desktop_linux(self, destdir="/tmp"):
@@ -477,21 +543,12 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
     def create_section_compare_node(self):
         group = bpy.data.node_groups.new("Section Compare", type="ShaderNodeTree")
-        if bpy.app.version >= (4, 0, 0):
-            input_value = group.interface.new_socket(name="Value", in_out="INPUT", socket_type="NodeSocketFloat")
-            input_value.default_value = 1.0  # Mandatory multiplier for the last node group
-            group.interface.new_socket(name="Vector", in_out="INPUT", socket_type="NodeSocketVector")
-            group.interface.new_socket(name="Line Decorator", in_out="INPUT", socket_type="NodeSocketFloat")
-            group.interface.new_socket(name="Value", in_out="OUTPUT", socket_type="NodeSocketFloat")
-            group.interface.new_socket(name="Line Decorator", in_out="OUTPUT", socket_type="NodeSocketFloat")
-        else:
-            group.inputs.new("NodeSocketFloat", "Value")
-            # Mandatory multiplier for the last node group
-            group.inputs["Value"].default_value = 1.0
-            group.inputs.new("NodeSocketVector", "Vector")
-            group.inputs.new("NodeSocketFloat", "Line Decorator")
-            group.outputs.new("NodeSocketFloat", "Value")
-            group.outputs.new("NodeSocketFloat", "Line Decorator")
+        input_value = group.interface.new_socket(name="Value", in_out="INPUT", socket_type="NodeSocketFloat")
+        input_value.default_value = 1.0  # Mandatory multiplier for the last node group
+        group.interface.new_socket(name="Vector", in_out="INPUT", socket_type="NodeSocketVector")
+        group.interface.new_socket(name="Line Decorator", in_out="INPUT", socket_type="NodeSocketFloat")
+        group.interface.new_socket(name="Value", in_out="OUTPUT", socket_type="NodeSocketFloat")
+        group.interface.new_socket(name="Line Decorator", in_out="OUTPUT", socket_type="NodeSocketFloat")
 
         group_input = group.nodes.new(type="NodeGroupInput")
         group_input.location = 0, 50
@@ -540,12 +597,8 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
 
     def create_section_override_node(self, obj, context):
         group = bpy.data.node_groups.new("Section Override", type="ShaderNodeTree")
-        if bpy.app.version >= (4, 0, 0):
-            group.interface.new_socket(name="Shader", in_out="INPUT", socket_type="NodeSocketShader")
-            group.interface.new_socket(name="Shader", in_out="OUTPUT", socket_type="NodeSocketShader")
-        else:
-            group.inputs.new("NodeSocketShader", "Shader")
-            group.outputs.new("NodeSocketShader", "Shader")
+        group.interface.new_socket(name="Shader", in_out="INPUT", socket_type="NodeSocketShader")
+        group.interface.new_socket(name="Shader", in_out="OUTPUT", socket_type="NodeSocketShader")
         links = group.links
         nodes = group.nodes
 
@@ -577,7 +630,8 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
         backfacing.location = mix_backfacing.location + Vector((-200, 200))
 
         emission = nodes.new(type="ShaderNodeEmission")
-        emission.inputs[0].default_value = list(context.scene.BIMProperties.section_plane_colour) + [1]
+        props = tool.Blender.get_bim_props()
+        emission.inputs[0].default_value = list(props.section_plane_colour) + [1]
         emission.location = mix_backfacing.location - Vector((200, 150))
 
         cut_obj = nodes.new(type="ShaderNodeTexCoord")
@@ -641,7 +695,8 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
             material = bpy.data.materials.new("Section Override")
             material.use_nodes = True
 
-        if context.scene.BIMProperties.should_section_selected_objects:
+        props = tool.Blender.get_bim_props()
+        if props.should_section_selected_objects:
             objects = list(context.selected_objects)
         else:
             objects = list(context.visible_objects)
@@ -664,8 +719,17 @@ class BIM_OT_add_section_plane(bpy.types.Operator):
             material.use_nodes = True
             if material.node_tree.nodes.get("Section Override"):
                 continue
-            material.blend_method = "HASHED"
-            material.shadow_method = "HASHED"
+            # In EEVEE rendering engine, `blend_mode` is deprecated and replaced by `surface_render_method`
+            # https://developer.blender.org/docs/release_notes/4.2/eevee_migration/#materials
+            if hasattr(material, "surface_render_method"):
+                material.surface_render_method = "DITHERED"
+            else:
+                material.blend_method = "HASHED"
+
+            # TODO: Find an alternative to `shadow_method` for EEVEE engine
+            if hasattr(material, "shadow_method"):
+                material.shadow_method = "HASHED"
+
             material_output = tool.Blender.get_material_node(material, "OUTPUT_MATERIAL", {"is_active_output": True})
             if not material_output:
                 continue
@@ -695,13 +759,14 @@ class BIM_OT_remove_section_plane(bpy.types.Operator):
             (
                 n
                 for n in section_override.nodes
-                if isinstance(n, bpy.types.ShaderNodeTexCoord) and n.object.name == name
+                if isinstance(n, bpy.types.ShaderNodeTexCoord) and n.object and n.object.name == name
             ),
             None,
         )
         if tex_coords is not None:
             section_compare = tex_coords.outputs["Object"].links[0].to_node
-            if section_compare.inputs[0].links:
+
+            if section_compare.inputs[0].links and section_compare.outputs[0].links:
                 previous_section_compare = section_compare.inputs[0].links[0].from_node
                 next_section_compare = section_compare.outputs[0].links[0].to_node
                 section_override.links.new(previous_section_compare.outputs[0], next_section_compare.inputs[0])
@@ -746,18 +811,19 @@ class BIM_OT_remove_section_plane(bpy.types.Operator):
             bpy.ops.object.delete()
 
 
-class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
+class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.reload_ifc_file"
     bl_label = "Reload IFC File"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Reload an updated IFC file"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
+    filename_ext = ".ifc"
 
     def _execute(self, context):
         import ifcdiff
 
         old = tool.Ifc.get()
+        new: ifcopenshell.file
         new = ifcopenshell.open(self.filepath)
 
         ifc_diff = ifcdiff.IfcDiff(old, new, relationships=[])
@@ -796,9 +862,11 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
 
         start = time.time()
         logger = logging.getLogger("ImportIFC")
-        path_log = os.path.join(context.scene.BIMProperties.data_dir, "process.log")
-        if not os.access(context.scene.BIMProperties.data_dir, os.W_OK):
-            path_log = os.path.join(tempfile.mkdtemp(), "process.log")
+        path_log = tool.Blender.get_data_dir_path("process.log")
+        if not os.access(path_log.parent, os.W_OK):
+            path_log = os.path.join(
+                tempfile.mkdtemp(dir=tool.Blender.get_addon_preferences().tmp_dir or None), "process.log"
+            )
         logging.basicConfig(
             filename=path_log,
             filemode="a",
@@ -814,12 +882,9 @@ class ReloadIfcFile(bpy.types.Operator, tool.Ifc.Operator):
         settings.logger.info("Import finished in {:.2f} seconds".format(time.time() - start))
         print("Import finished in {:.2f} seconds".format(time.time() - start))
 
-        context.scene.BIMProperties.ifc_file = self.filepath
+        bim_props = tool.Blender.get_bim_props()
+        bim_props.ifc_file = self.filepath
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class AddIfcFile(bpy.types.Operator):
@@ -828,7 +893,8 @@ class AddIfcFile(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.DocProperties.ifc_files.add()
+        props = tool.Drawing.get_document_props()
+        props.ifc_files.add()
         return {"FINISHED"}
 
 
@@ -839,7 +905,8 @@ class RemoveIfcFile(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.DocProperties.ifc_files.remove(self.index)
+        props = tool.Drawing.get_document_props()
+        props.ifc_files.remove(self.index)
         return {"FINISHED"}
 
 
@@ -849,8 +916,11 @@ class FetchObjectPassport(bpy.types.Operator):
 
     def execute(self, context):
         # TODO: this is dead code, awaiting reimplementation. See #1222.
-        for reference in context.active_object.BIMObjectProperties.document_references:
-            reference = context.scene.BIMProperties.document_references[reference.name]
+        obj = context.active_object
+        props = tool.Blender.get_object_bim_props(obj)
+        for reference in props.document_references:
+            bim_props = tool.Blender.get_bim_props()
+            reference = bim_props.document_references[reference.name]
             if reference.location[-6:] == ".blend":
                 self.fetch_blender(reference, context)
         return {"FINISHED"}
@@ -868,7 +938,7 @@ def update_enum_property_search_prop(self, context):
             if self.first_launch:
                 self.first_launch = False
             else:
-                if not self.should_click_ok_to_validate:
+                if not self.should_click_ok:
                     context.window.screen = context.window.screen
             if predefined_type:
                 try:
@@ -889,7 +959,7 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
     collection_identifiers: bpy.props.CollectionProperty(type=StrProperty)
     collection_predefined_types: bpy.props.CollectionProperty(type=StrProperty)
     prop_name: bpy.props.StringProperty()
-    should_click_ok_to_validate: bpy.props.BoolProperty(default=False)
+    should_click_ok: bpy.props.BoolProperty(default=False)
     original_operator_path: bpy.props.StringProperty(name="Original Operator Path", default="", options={"SKIP_SAVE"})
 
     identifiers: list[str]
@@ -953,6 +1023,64 @@ class BIM_OT_enum_property_search(bpy.types.Operator):
                             name=f"{key} > {name if name else predefined_type }",
                             predefined_type=predefined_type,
                         )
+
+
+class BIM_OT_select_entity(bpy.types.Operator):
+    bl_idname = "bim.select_entity"
+    bl_label = "Select Entity"
+    bl_options = {"REGISTER", "UNDO"}
+    ifc_id: bpy.props.IntProperty()
+    tooltip: bpy.props.StringProperty()
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        return properties.tooltip
+
+    def execute(self, context):
+        element = tool.Ifc.get_entity_by_id(self.ifc_id)
+        if not element:
+            self.report({"ERROR"}, f"No IFC element found with id #{self.ifc_id}.")
+            return {"CANCELLED"}
+
+        obj = tool.Ifc.get_object(element)
+        if not isinstance(obj, bpy.types.Object):
+            self.report({"ERROR"}, f"The following element is not present in the scene as Blender object: '{element}'.")
+            return {"CANCELLED"}
+
+        tool.Blender.set_objects_selection(context, obj, [obj], clear_previous_selection=True)
+        return {"FINISHED"}
+
+
+class BIM_OT_select_entity_by_guid(bpy.types.Operator):
+    bl_idname = "bim.select_entity_by_guid"
+    bl_label = "Select Entity by Guid"
+    bl_description = "Select entity by guid currently saved to clipboard"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        assert context.window_manager
+        return f"{cls.bl_description}:\n'{context.window_manager.clipboard.strip()}'"
+
+    def execute(self, context):
+        assert context.window_manager
+
+        ifc_file = tool.Ifc.get()
+        guid = context.window_manager.clipboard.strip()
+        try:
+            element = ifc_file.by_guid(guid)
+        except RuntimeError:
+            self.report({"ERROR"}, f"No IFC element found with guid '{guid}'.")
+            return {"CANCELLED"}
+
+        obj = tool.Ifc.get_object(element)
+        if not isinstance(obj, bpy.types.Object):
+            self.report({"ERROR"}, f"The following element is not present in the scene as Blender object: '{element}'.")
+            return {"CANCELLED"}
+
+        tool.Blender.select_and_activate_single_object(context, obj)
+        self.report({"INFO"}, f"Found and selected element: '{obj.name}'.")
+        return {"FINISHED"}
 
 
 class BIM_OT_select_object(bpy.types.Operator):
@@ -1034,7 +1162,8 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        cutting_planes = [p.obj for p in context.scene.BIMProjectProperties.clipping_planes]
+        props = tool.Project.get_project_props()
+        cutting_planes = [obj for p in props.clipping_planes if (obj := p.obj)]
         if not cutting_planes:
             self.report({"INFO"}, "No cutting planes found.")
             return {"FINISHED"}
@@ -1044,7 +1173,7 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
         objects_processed, t0 = 0, time.time()
         wm.progress_begin(0, len(context.selected_objects))
         for obj_i, obj in enumerate(context.selected_objects):
-            if obj.type != "MESH":
+            if not isinstance((mesh := obj.data), bpy.types.Mesh):
                 continue
 
             if obj in cutting_planes:
@@ -1056,7 +1185,6 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
             ws_to_ls = obj.matrix_world.inverted()
             rotation = ws_to_ls.to_quaternion()
 
-            mesh = obj.data
             bm = tool.Blender.get_bmesh_for_mesh(mesh)
             object_changed = False
 
@@ -1080,7 +1208,7 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
             # don't swap mesh if it wasn't affected by any of the cutting planes
             if object_changed:
                 temp_mesh = bpy.data.meshes.new("temp_cut")
-                temp_mesh.BIMMeshProperties.replaced_mesh = mesh
+                tool.Geometry.get_mesh_props(temp_mesh).replaced_mesh = mesh
                 for material in mesh.materials:
                     temp_mesh.materials.append(material)
                 obj.data = temp_mesh
@@ -1093,7 +1221,7 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
 
         return {"FINISHED"}
 
-    def get_cutting_plane_data(self, cutting_planes: List[bpy.types.Object]) -> List[CuttingPlaneData]:
+    def get_cutting_plane_data(self, cutting_planes: list[bpy.types.Object]) -> list[CuttingPlaneData]:
         cutting_planes_data = []
 
         for obj in cutting_planes:
@@ -1104,7 +1232,7 @@ class ClippingPlaneCutWithCappings(bpy.types.Operator):
         return cutting_planes_data
 
     # NOTE: unused, will be used later for cutting boxes support
-    def get_box_cutting_plane_data(self, obj: bpy.types.Object) -> List[CuttingPlaneData]:
+    def get_box_cutting_plane_data(self, obj: bpy.types.Object) -> list[CuttingPlaneData]:
         matrix_world = obj.matrix_world
         rotation = matrix_world.to_quaternion()  # avoid scale for normals
         cutting_planes_data = []
@@ -1137,9 +1265,58 @@ class RevertClippingPlaneCut(bpy.types.Operator):
         self.report({"INFO"}, f"{objects_processed} processed - {time.time()-t0:.3f} sec")
         return {"FINISHED"}
 
-    def revert_object_mesh(self, obj):
+    def revert_object_mesh(self, obj: bpy.types.Object) -> None:
         mesh = obj.data
-        replaced_mesh = mesh.BIMMeshProperties.replaced_mesh
+        assert isinstance(mesh, bpy.types.Mesh)
+        replaced_mesh = tool.Geometry.get_mesh_props(mesh).replaced_mesh
         if replaced_mesh:
             obj.data = replaced_mesh
             tool.Blender.remove_data_block(mesh, do_unlink=False)
+
+
+class CopyTextToClipboard(bpy.types.Operator):
+    bl_idname = "bim.copy_text_to_clipboard"
+    bl_label = "Copy Text To Clipboard"
+    bl_options = set()
+
+    text: bpy.props.StringProperty(options={"SKIP_SAVE"})
+
+    @classmethod
+    def description(cls, context, properties):
+        return f"Copy text to clipboard: '{properties.text}'."
+
+    def execute(self, context):
+        context.window_manager.clipboard = self.text
+        return {"FINISHED"}
+
+
+class ShowSystemInfo(bpy.types.Operator):
+    bl_idname = "bim.show_system_info"
+    bl_label = "System Info"
+    bl_description = "Show debug information and copy it to the clipboard."
+    bl_options = set()
+
+    info_text: bpy.props.StringProperty()
+
+    def execute(self, context):
+        # invoke_popup doesn't show a popup, if there's no `execute` method.
+        return {"FINISHED"}
+
+    def invoke(self, context, event):
+        assert context.window_manager
+        # Invoke the bim.copy_debug_information operator to get the info to the clipboard
+        bpy.ops.bim.copy_debug_information()
+        self.info_text = context.window_manager.clipboard
+
+        return context.window_manager.invoke_popup(self, width=600)
+
+    def draw(self, context):
+        assert self.layout
+        layout = self.layout
+        col = layout.column()
+
+        for line in self.info_text.split("\n"):
+            col.label(text=line)
+
+        col.separator()
+        col.label(text="(The information has been copied to the clipboard.)")

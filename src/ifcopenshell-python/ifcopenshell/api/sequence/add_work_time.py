@@ -36,12 +36,9 @@ def add_work_time(
 
     :param work_calendar: The IfcWorkCalendar to add the work or holiday
         time definition to.
-    :type work_calendar: ifcopenshell.entity_instance
     :param time_type: Either WorkingTimes or ExceptionTimes, depending on
         what you want to define.
-    :type time_type: str
     :return: The newly created IfcWorkTime
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -74,15 +71,13 @@ def add_work_time(
         ifcopenshell.api.sequence.edit_recurrence_pattern(model,
             recurrence_pattern=pattern, attributes={"DayComponent": [1], "MonthComponent": [1]})
     """
-    settings = {"work_calendar": work_calendar, "time_type": time_type}
-
     work_time = file.create_entity("IfcWorkTime")
-    if settings["time_type"] == "WorkingTimes":
-        working_times = list(settings["work_calendar"].WorkingTimes or [])
+    if time_type == "WorkingTimes":
+        working_times = list(work_calendar.WorkingTimes or [])
         working_times.append(work_time)
-        settings["work_calendar"].WorkingTimes = working_times
-    elif settings["time_type"] == "ExceptionTimes":
-        exception_times = list(settings["work_calendar"].ExceptionTimes or [])
+        work_calendar.WorkingTimes = working_times
+    elif time_type == "ExceptionTimes":
+        exception_times = list(work_calendar.ExceptionTimes or [])
         exception_times.append(work_time)
-        settings["work_calendar"].ExceptionTimes = exception_times
+        work_calendar.ExceptionTimes = exception_times
     return work_time

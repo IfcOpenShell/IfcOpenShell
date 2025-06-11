@@ -33,9 +33,10 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Literal, Union
 
 
-ifcpatchrecipes_enum = []
+ifcpatchrecipes_enum: list[tuple[str, str, str]] = []
 
 
 def purge():
@@ -43,10 +44,9 @@ def purge():
     ifcpatchrecipes_enum = []
 
 
-def get_ifcpatch_recipes(self, context):
+def get_ifcpatch_recipes(self: "BIMPatchProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     global ifcpatchrecipes_enum
     if len(ifcpatchrecipes_enum) < 1:
-        ifcpatchrecipes_enum.clear()
         # Have to add a blank entry because otherwise default recipe might be not loaded
         # properly (need to ensure bim.update_ifc_patch_arguments will be called). See #5540.
         ifcpatchrecipes_enum.append(("-", "-", ""))
@@ -57,11 +57,23 @@ def get_ifcpatch_recipes(self, context):
             if f == "__init__":
                 continue
             docs = ifcpatch.extract_docs(f, "Patcher", "__init__", ("src", "file", "logger", "args"))
-            ifcpatchrecipes_enum.append((f, f, docs.get("description", "") if docs else ""))
-    return sorted(ifcpatchrecipes_enum, key=lambda x: x[0])
+            if docs is None:
+                description = ""
+            else:
+                description = docs["description"]
+                inputs = docs["inputs"]
+                if inputs:
+                    if description:
+                        description += "\n\n"
+                    description += "Parameters:"
+                    for param, input_data in inputs.items():
+                        description += f"\n\n- {param}: {input_data['description']}"
+            ifcpatchrecipes_enum.append((f, f, description))
+        ifcpatchrecipes_enum.sort(key=lambda x: x[0])
+    return ifcpatchrecipes_enum
 
 
-def update_ifc_patch_recipe(self, context):
+def update_ifc_patch_recipe(self: "BIMPatchProperties", context: bpy.types.Context) -> None:
     bpy.ops.bim.update_ifc_patch_arguments(recipe=self.ifc_patch_recipes)
 
 
@@ -75,3 +87,10 @@ class BIMPatchProperties(PropertyGroup):
         name="Load from Memory",
         description="Use IFC file currently loaded in Bonsai",
     )
+
+    if TYPE_CHECKING:
+        ifc_patch_recipes_enum: Union[Literal["-"], str]
+        ifc_patch_input: str
+        ifc_patch_output: str
+        ifc_patch_args_attr: bpy.types.bpy_prop_collection_idprop[Attribute]
+        should_load_from_memory: bool

@@ -26,11 +26,8 @@ def edit_group(file: ifcopenshell.file, group: ifcopenshell.entity_instance, att
     IfcGroup, consult the IFC documentation.
 
     :param group: The IfcGroup entity you want to edit
-    :type group: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -40,7 +37,5 @@ def edit_group(file: ifcopenshell.file, group: ifcopenshell.entity_instance, att
         ifcopenshell.api.group.edit_group(model,
             group=group, attributes={"Description": "All furniture and joinery included in the unit"})
     """
-    settings = {"group": group, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["group"], name, value)
+    for name, value in attributes.items():
+        setattr(group, name, value)

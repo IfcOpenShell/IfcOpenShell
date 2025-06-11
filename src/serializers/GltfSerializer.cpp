@@ -106,7 +106,7 @@ int GltfSerializer::writeMaterial(const ifcopenshell::geometry::taxonomy::style:
 		base[3] = 1. - style->transparency;
 	}
 
-	json_["materials"].push_back({ {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}} });
+	json_["materials"].push_back({ {"name", style->name}, {"doubleSided", true}, {"pbrMetallicRoughness", {{"baseColorFactor", base}, {"metallicFactor", 0}}}});
 	
 	if (style->transparency == style->transparency && style->transparency > 1.e-9) {
 		json_["materials"].back()["alphaMode"] = "BLEND";
@@ -141,12 +141,11 @@ size_t write_accessor(json& j, std::ofstream& ofs, It begin, It end, int bufferV
 	accessor["componentType"] = component_type<typename It::value_type>::value;
 	accessor["count"] = num;
 
-	if (N == 1) {
+	if constexpr (N == 1) {
 		j["bufferViews"].push_back({ {"buffer", 0}, {"byteOffset", (size_t)ofs.tellp()}, { "byteLength", num *  4}, {"target", ELEMENT_ARRAY_BUFFER} });
 	} else {
 		j["bufferViews"].push_back({ {"buffer", 0}, {"byteStride", 12}, { "byteOffset", (size_t)ofs.tellp()}, { "byteLength", num * 12}, {"target", ARRAY_BUFFER}});
 	}
-
 
 	std::array<typename It::value_type, N> min, max;
 	min.fill(std::numeric_limits<typename It::value_type>::max());

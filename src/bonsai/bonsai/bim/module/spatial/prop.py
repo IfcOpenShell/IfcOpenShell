@@ -36,15 +36,18 @@ import bonsai.core.geometry
 import ifcopenshell
 import ifcopenshell.util.element
 import ifcopenshell.util.unit
+from typing import TYPE_CHECKING, Union, Literal
 
 
-def get_subelement_class(self, context):
+def get_subelement_class(
+    self: "BIMSpatialDecompositionProperties", context: bpy.types.Context
+) -> list[tuple[str, str, str]]:
     if not SpatialDecompositionData.is_loaded:
         SpatialDecompositionData.load()
     return SpatialDecompositionData.data["subelement_class"]
 
 
-def update_elevation(self, context):
+def update_elevation(self: "BIMContainer", context: bpy.types.Context) -> None:
     try:
         elevation = float(self.elevation)
         if self.elevation != str(elevation):
@@ -62,7 +65,18 @@ def update_elevation(self, context):
 
 def update_name(self: "BIMContainer", context: bpy.types.Context) -> None:
     if ifc_definition_id := self.ifc_definition_id:
-        tool.Ifc.get_object(tool.Ifc.get().by_id(ifc_definition_id)).name = self.name
+        element = tool.Ifc.get().by_id(ifc_definition_id)
+        tool.Spatial.edit_container_name(element, self.name)
+        if obj := tool.Ifc.get_object(element):
+            tool.Root.set_object_name(obj, element)
+        bonsai.bim.handler.refresh_ui_data()
+
+
+def update_long_name(self: "BIMContainer", context: bpy.types.Context) -> None:
+    if ifc_definition_id := self.ifc_definition_id:
+        element = tool.Ifc.get().by_id(ifc_definition_id)
+        tool.Ifc.run("attribute.edit_attributes", product=element, attributes={"LongName": self.long_name})
+        bonsai.bim.handler.refresh_ui_data()
 
 
 def update_active_container_index(self: "BIMSpatialDecompositionProperties", context: bpy.types.Context) -> None:
@@ -80,25 +94,7 @@ def update_element_mode(self: "BIMSpatialDecompositionProperties", context: bpy.
     tool.Spatial.load_contained_elements()
 
 
-def update_container_obj(self: "BIMObjectSpatialProperties", context: bpy.types.Context) -> None:
-    if self.container_obj is None or not (obj := context.active_object):
-        return
-    if not (element := tool.Ifc.get_entity(self.container_obj)):
-        self.container_obj = None
-        return
-    if tool.Spatial.can_contain(element, obj):
-        return
-    if (
-        (container := ifcopenshell.util.element.get_container(element))
-        and (container_obj := tool.Ifc.get_object(container))
-        and tool.Spatial.can_contain(container, obj)
-    ):
-        self.container_obj = container_obj
-        return
-    self.container_obj = None
-
-
-def update_grid_is_locked(self, context):
+def update_grid_is_locked(self: "BIMGridProperties", context: bpy.types.Context) -> None:
     if not tool.Ifc.get():
         return
     if tool.Ifc.get().schema in ("IFC2X3", "IFC4"):
@@ -115,7 +111,7 @@ def update_grid_is_locked(self, context):
     bonsai.bim.handler.refresh_ui_data()
 
 
-def update_spatial_is_locked(self, context):
+def update_spatial_is_locked(self: "BIMSpatialDecompositionProperties", context: bpy.types.Context) -> None:
     if not tool.Ifc.get():
         return
     if tool.Ifc.get().schema == "IFC2X3":
@@ -126,8 +122,10 @@ def update_spatial_is_locked(self, context):
         if obj := tool.Ifc.get_object(element):
             if self.is_locked:
                 tool.Geometry.lock_object(obj)
+                obj.hide_select = True
             else:
                 tool.Geometry.unlock_object(obj)
+                obj.hide_select = False
     # Need to update ViewportData.mode.
     bonsai.bim.handler.refresh_ui_data()
 
@@ -140,27 +138,46 @@ def update_grid_is_visible(self: "BIMGridProperties", context: bpy.types.Context
     bpy.ops.bim.toggle_grids(is_visible=self.is_visible)
 
 
-def poll_container_obj(self, obj):
-    return obj is None or tool.Ifc.get_entity(obj)
+def poll_container_obj(self: "BIMObjectSpatialProperties", container_obj: bpy.types.Object) -> bool:
+    obj = self.id_data
+    if (
+        (container := tool.Ifc.get_entity(container_obj))
+        and (tool.Ifc.get_entity(obj))
+        and tool.Spatial.can_contain(container, obj)
+    ):
+        return True
+    return False
 
 
 class BIMObjectSpatialProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
-    container_obj: PointerProperty(
-        type=bpy.types.Object, name="Container", update=update_container_obj, poll=poll_container_obj
-    )
+    container_obj: PointerProperty(type=bpy.types.Object, name="Container", poll=poll_container_obj)
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        container_obj: Union[bpy.types.Object, None]
 
 
 class BIMContainer(PropertyGroup):
     name: StringProperty(name="Name", update=update_name)
     ifc_class: StringProperty(name="IFC Class")
     description: StringProperty(name="Description")
-    long_name: StringProperty(name="Long Name")
+    long_name: StringProperty(name="Long Name", update=update_long_name)
     elevation: StringProperty(name="Elevation", update=update_elevation)
     level_index: IntProperty(name="Level Index")
     has_children: BoolProperty(name="Has Children")
     is_expanded: BoolProperty(name="Is Expanded")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
+
+    if TYPE_CHECKING:
+        ifc_class: str
+        description: str
+        long_name: str
+        elevation: str
+        level_index: int
+        has_children: bool
+        is_expanded: bool
+        ifc_definition_id: int
 
 
 class Element(PropertyGroup):
@@ -184,6 +201,16 @@ class Element(PropertyGroup):
             ("OCCURRENCE", "OCCURRENCE", "OCCURRENCE"),
         ),
     )
+
+    if TYPE_CHECKING:
+        ifc_class: str
+        identification: str
+        ifc_definition_id: int
+        level: int
+        has_children: bool
+        total: int
+        is_expanded: bool
+        type: Literal["CLASS", "TYPE", "CLASSIFICATION", "OCCURRENCE"]
 
 
 class BIMSpatialDecompositionProperties(PropertyGroup):
@@ -223,15 +250,30 @@ class BIMSpatialDecompositionProperties(PropertyGroup):
         name="Should Include Children", default=True, update=update_should_include_children
     )
 
-    @property
-    def active_container(self):
-        if self.containers and self.active_container_index < len(self.containers):
-            return self.containers[self.active_container_index]
+    if TYPE_CHECKING:
+        is_locked: bool
+        is_visible: bool
+        container_filter: str
+        containers: bpy.types.bpy_prop_collection_idprop[BIMContainer]
+        contracted_containers: str
+        active_container_index: int
+        element_filter: str
+        elements: bpy.types.bpy_prop_collection_idprop[Element]
+        expanded_elements: str
+        active_element_index: int
+        total_elements: int
+        element_mode: Literal["TYPE", "DECOMPOSITION", "CLASSIFICATION"]
+        subelement_class: str
+        default_container: int
+        should_include_children: bool
 
     @property
-    def active_element(self):
-        if self.elements and self.active_element_index < len(self.elements):
-            return self.elements[self.active_element_index]
+    def active_container(self) -> Union[BIMContainer, None]:
+        return tool.Blender.get_active_uilist_element(self.containers, self.active_container_index)
+
+    @property
+    def active_element(self) -> Union[Element, None]:
+        return tool.Blender.get_active_uilist_element(self.elements, self.active_element_index)
 
 
 class BIMGridProperties(PropertyGroup):
@@ -248,3 +290,8 @@ class BIMGridProperties(PropertyGroup):
         update=update_grid_is_visible,
     )
     grid_axes: CollectionProperty(name="Grid Axes", type=ObjProperty)
+
+    if TYPE_CHECKING:
+        is_locked: bool
+        is_visible: bool
+        grid_axes: bpy.types.bpy_prop_collection_idprop[ObjProperty]

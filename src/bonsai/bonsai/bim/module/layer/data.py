@@ -19,6 +19,7 @@
 import bpy
 import ifcopenshell
 import bonsai.tool as tool
+from typing import Any
 
 
 def refresh():
@@ -31,24 +32,50 @@ class LayersData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_layers": cls.total_layers(), "active_layers": cls.active_layers()}
+        cls.data = {
+            "active_layers": cls.active_layers(),
+            "layers": cls.layers(),
+        }
+        # After .layers().
+        cls.data["total_layers"] = cls.total_layers()
+        # After .layers() and .active_layers().
+        cls.data["layers_enum"] = cls.layers_enum()
+        cls.data["layers_enum_no_active"] = cls.layers_enum(skip_active=True)
+
         cls.is_loaded = True
 
     @classmethod
-    def total_layers(cls):
-        return len(tool.Ifc.get().by_type("IfcPresentationLayerAssignment"))
+    def total_layers(cls) -> int:
+        return len(cls.data["layers"])
 
     @classmethod
-    def active_layers(cls):
-        if not bpy.context.active_object:
-            return []
-        data = bpy.context.active_object.data
-        if not data:
-            return []
-        if not isinstance(data, bpy.types.Mesh) or not data.BIMMeshProperties.ifc_definition_id:
-            return []
+    def layers(cls) -> dict[int, dict[str, Any]]:
         results = dict()
-        shape = tool.Ifc.get().by_id(data.BIMMeshProperties.ifc_definition_id)
-        for inverse in shape.LayerAssignments:
-            results[inverse.id()] = inverse.Name or "Unnamed"
+        KEEP_ATTRS = set(("id", "Name", "Description"))
+        for layer in tool.Ifc.get().by_type("IfcPresentationLayerAssignment"):
+            results[layer.id()] = {k: v for k, v in layer.get_info().items() if k in KEEP_ATTRS}
         return results
+
+    @classmethod
+    def layers_enum(cls, skip_active: bool = False) -> list[tuple[str, str, str]]:
+        active_layers = cls.data["active_layers"]
+        return list(
+            (str(data["id"]), data["Name"], data["Description"] or "")
+            for data in cls.data["layers"].values()
+            if not skip_active or (data["id"] not in active_layers)
+        )
+
+    @classmethod
+    def active_layers(cls) -> dict[int, str]:
+        results = {}
+        if not (obj := bpy.context.active_object) or not (shape := tool.Geometry.get_active_representation(obj)):
+            return results
+
+        attr_name = None
+        if shape.is_a("IfcShapeModel"):
+            attr_name = "LayerAssignments"
+        elif shape.is_a("IfcRepresentationItem"):
+            attr_name = "LayerAssignment"
+        if attr_name is None:
+            return results
+        return {layer.id(): layer.Name or "Unnamed" for layer in getattr(shape, attr_name)}

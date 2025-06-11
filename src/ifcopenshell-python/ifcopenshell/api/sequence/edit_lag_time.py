@@ -28,11 +28,8 @@ def edit_lag_time(file: ifcopenshell.file, lag_time: ifcopenshell.entity_instanc
     IfcLagTime, consult the IFC documentation.
 
     :param lag_time: The IfcLagTime entity you want to edit
-    :type lag_time: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -75,14 +72,12 @@ def edit_lag_time(file: ifcopenshell.file, lag_time: ifcopenshell.entity_instanc
         # Or, let's make it 2 days instead.
         ifcopenshell.api.sequence.edit_lag_time(model, lag_time=lag, attributes={"LagValue": "P2D"})
     """
-    settings = {"lag_time": lag_time, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
+    for name, value in attributes.items():
         if name == "LagValue" and value is not None:
             if isinstance(value, float):
                 value = file.createIfcRatioMeasure(value)
             else:
                 value = file.createIfcDuration(ifcopenshell.util.date.datetime2ifc(value, "IfcDuration"))
-        setattr(settings["lag_time"], name, value)
-    for rel in [r for r in file.get_inverse(settings["lag_time"]) if r.is_a("IfcRelSequence")]:
+        setattr(lag_time, name, value)
+    for rel in [r for r in file.get_inverse(lag_time) if r.is_a("IfcRelSequence")]:
         ifcopenshell.api.sequence.cascade_schedule(file, task=rel.RelatedProcess)

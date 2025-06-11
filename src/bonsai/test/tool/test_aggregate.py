@@ -18,10 +18,11 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
 import ifcopenshell.api.geometry
 import ifcopenshell.api.root
+import ifcopenshell.api.spatial
 import ifcopenshell.api.unit
-import ifcopenshell.api.context
 import ifcopenshell.util.shape_builder
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -122,14 +123,16 @@ class TestDisableEditing(NewFile):
         obj = bpy.data.objects.new("Object", None)
         subject.enable_editing(obj)
         subject.disable_editing(obj)
-        assert obj.BIMObjectAggregateProperties.is_editing is False
+        props = tool.Aggregate.get_object_aggregate_props(obj)
+        assert props.is_editing is False
 
 
 class TestEnableEditing(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
         subject.enable_editing(obj)
-        assert obj.BIMObjectAggregateProperties.is_editing is True
+        props = tool.Aggregate.get_object_aggregate_props(obj)
+        assert props.is_editing is True
 
 
 class TestGetContainer(NewFile):
@@ -138,5 +141,5 @@ class TestGetContainer(NewFile):
         tool.Ifc.set(ifc)
         element = ifc.createIfcWall()
         container = ifc.createIfcBuildingStorey()
-        ifcopenshell.api.run("spatial.assign_container", ifc, products=[element], relating_structure=container)
+        ifcopenshell.api.spatial.assign_container(ifc, products=[element], relating_structure=container)
         assert subject.get_container(element) == container

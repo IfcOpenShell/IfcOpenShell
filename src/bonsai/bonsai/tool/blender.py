@@ -17,10 +17,19 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from __future__ import annotations
+import sys
 import bpy
 import bmesh
 import json
 import os
+import platform
+import subprocess
+import contextlib
+import tempfile
+import traceback
+import numpy as np
+import numpy.typing as npt
+from ifcopenshell import entity_instance
 import ifcopenshell.api
 import ifcopenshell.util.element
 import bonsai.core.tool
@@ -28,12 +37,32 @@ import bonsai.tool as tool
 import bonsai.bim
 import types
 import importlib
+from datetime import datetime
 from mathutils import Vector
 from pathlib import Path
+from functools import lru_cache, cache
 from bonsai.bim.ifc import IFC_CONNECTED_TYPE
-from typing import Any, Optional, Union, Literal, Iterable, Callable
-from typing_extensions import assert_never
+from typing import (
+    Any,
+    Optional,
+    Union,
+    Literal,
+    TypeVar,
+    TYPE_CHECKING,
+    assert_never,
+)
+from collections.abc import Iterable, Callable, Generator, Sequence, Sized
 
+if TYPE_CHECKING:
+    import bpy.stub_internal.rna_enums as rna_enums
+    from bonsai.bim.prop import BIMProperties, BIMObjectProperties
+    from bonsai.bim.module.attribute.prop import BIMAttributeProperties
+    from bonsai.bim.module.csv.prop import CsvProperties
+    from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties
+    from bonsai.bim.module.diff.prop import DiffProperties
+    from bonsai.bim.module.group.prop import BIMGroupProperties
+
+    T = TypeVar("T")
 
 VIEWPORT_ATTRIBUTES = [
     "view_matrix",
@@ -52,9 +81,9 @@ OBJECT_DATA_TYPE = Union[bpy.types.Mesh, bpy.types.Curve, bpy.types.Camera]
 class Blender(bonsai.core.tool.Blender):
     OBJECT_TYPES_THAT_SUPPORT_EDIT_MODE = ("MESH", "CURVE", "SURFACE", "META", "FONT", "LATTICE", "ARMATURE")
     OBJECT_TYPES_THAT_SUPPORT_EDIT_GPENCIL_MODE = ("GPENCIL",)
-    TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME" if bpy.app.version >= (4, 1, 0) else "LIGHTPROBE_GRID"
+    TYPE_MANAGER_ICON = "LIGHTPROBE_VOLUME"
 
-    BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, str], tuple[str, str, str, str, str]]
+    BLENDER_ENUM_ITEM = Union[tuple[str, str, str], tuple[str, str, str, int], tuple[str, str, str, str, int]]
     """
     Options:
 
@@ -64,13 +93,17 @@ class Blender(bonsai.core.tool.Blender):
 
     - (identifier, name, description, icon, number)
     """
+    BLENDER_ENUM_ITEMS = list[BLENDER_ENUM_ITEM]
 
     @classmethod
     def activate_camera(cls, obj: bpy.types.Object) -> None:
 
-        area = tool.Blender.get_view3d_area()
-        is_local_view = area.spaces[0].local_view is not None
+        area = cls.get_view3d_area()
+        assert area
+        assert isinstance((space := area.spaces[0]), bpy.types.SpaceView3D)
+        is_local_view = space.local_view is not None
 
+        assert bpy.context.screen and bpy.context.scene
         if is_local_view:
             # Turn off local view before activating drawing, and then turn it on again.
             for a in bpy.context.screen.areas:
@@ -83,27 +116,31 @@ class Blender(bonsai.core.tool.Blender):
         else:
             bpy.context.scene.camera = obj
 
-        area.spaces[0].region_3d.view_perspective = "CAMERA"
+        assert space.region_3d
+        space.region_3d.view_perspective = "CAMERA"
 
     @classmethod
-    def get_area_props(cls, context: bpy.types.Context) -> Any:
+    def get_area_props(cls, context: bpy.types.Context) -> bpy.types.PropertyGroup:
         try:
             if context.screen.name.endswith("-nonnormal"):  # Ctrl-space temporary fullscreen
-                screen = bpy.data.screens[context.screen.name[0 : -len("-nonnormal")]]
+                screen = bpy.data.screens[context.screen.name.removesuffix("-nonnormal")]
                 # The original area object has its type changed to "EMPTY" apparently
                 index = [a.type for a in screen.areas].index("EMPTY")
                 return screen.BIMAreaProperties[index]
             return context.screen.BIMAreaProperties[context.screen.areas[:].index(context.area)]
-        except:
-            return
+        except IndexError:
+            # Fallback in case areas aren't setup yet.
+            return context.screen.BIMTabProperties
 
     @classmethod
     def set_active_object(cls, obj: bpy.types.Object) -> None:
+        """Set active object and select it."""
         bpy.context.view_layer.objects.active = obj
         obj.select_set(True)
 
     @classmethod
     def clear_active_object(cls) -> None:
+        """Clear active object, object is not unselected."""
         bpy.context.view_layer.objects.active = None
 
     @classmethod
@@ -119,9 +156,7 @@ class Blender(bonsai.core.tool.Blender):
     @classmethod
     def is_tab(cls, context: bpy.types.Context, tab: str) -> bool:
         aprops = cls.get_area_props(context)
-        if not aprops:
-            return context.screen.BIMTabProperties.tab == tab
-        if context.area.spaces.active.search_filter:
+        if aprops.path_from_id() == "BIMAreaProperties" and context.area.spaces.active.search_filter:
             return True
         return aprops.tab == tab
 
@@ -143,16 +178,28 @@ class Blender(bonsai.core.tool.Blender):
         return f"{name} {i}"
 
     @classmethod
-    def get_active_object(cls) -> bpy.types.Object:
-        return bpy.context.view_layer.objects.active
+    def get_active_object(cls, is_selected: bool = False) -> Union[bpy.types.Object, None]:
+        """Gets the active object
+
+        :param is_selected: If true, the active object also needs to be selected.
+        """
+        if obj := (getattr(bpy.context, "active_object", None) or bpy.context.view_layer.objects.active):
+            if not is_selected:
+                return obj
+            if obj.select_get():
+                return obj
 
     @classmethod
-    def get_selected_objects(cls) -> set[bpy.types.Object]:
+    def get_selected_objects(cls, include_active: bool = True) -> set[bpy.types.Object]:
+        """Get selected objects
+
+        :param include_active: If true, the active object is included regardless if it is also selected.
+        """
         if selected_objects := getattr(bpy.context, "selected_objects", None):
-            if active_obj := cls.get_active_object():
+            if include_active and (active_obj := cls.get_active_object()):
                 return set(selected_objects + [active_obj])
             return set(selected_objects)
-        if active_obj := cls.get_active_object():
+        if include_active and (active_obj := cls.get_active_object()):
             return {active_obj}
         return set()
 
@@ -179,43 +226,42 @@ class Blender(bonsai.core.tool.Blender):
         if context is None:
             context = bpy.context
         if obj_type == "Object":
-            return bpy.data.objects.get(obj).BIMObjectProperties.ifc_definition_id
+            props = cls.get_object_bim_props(bpy.data.objects[obj])
+            return props.ifc_definition_id
         elif obj_type == "Material":
-            return context.scene.BIMMaterialProperties.materials[
-                context.scene.BIMMaterialProperties.active_material_index
-            ].ifc_definition_id
-        elif obj_type == "MaterialSet":
-            return ifcopenshell.util.element.get_material(
-                tool.Ifc.get_entity(bpy.data.objects.get(obj)), should_skip_usage=True
-            ).id()
+            props = tool.Material.get_material_props()
+            return props.materials[props.active_material_index].ifc_definition_id
         elif obj_type == "MaterialSetItem":
-            return bpy.data.objects.get(obj).BIMObjectMaterialProperties.active_material_set_item_id
+            obj_ = bpy.data.objects[obj]
+            omprops = tool.Material.get_object_material_props(obj_)
+            return omprops.active_material_set_item_id
         elif obj_type == "Task":
-            return context.scene.BIMTaskTreeProperties.tasks[
-                context.scene.BIMWorkScheduleProperties.active_task_index
-            ].ifc_definition_id
+            tprops = tool.Sequence.get_task_tree_props()
+            wsprops = tool.Sequence.get_work_schedule_props()
+            return tprops.tasks[wsprops.active_task_index].ifc_definition_id
         elif obj_type == "Cost":
-            return context.scene.BIMCostProperties.cost_items[
-                context.scene.BIMCostProperties.active_cost_item_index
-            ].ifc_definition_id
+            cost_props = tool.Cost.get_cost_props()
+            return cost_props.cost_items[cost_props.active_cost_item_index].ifc_definition_id
         elif obj_type == "Resource":
             return context.scene.BIMResourceTreeProperties.resources[
                 context.scene.BIMResourceProperties.active_resource_index
             ].ifc_definition_id
         elif obj_type == "Profile":
-            return context.scene.BIMProfileProperties.profiles[
-                context.scene.BIMProfileProperties.active_profile_index
-            ].ifc_definition_id
+            props = tool.Profile.get_profile_props()
+            return props.profiles[props.active_profile_index].ifc_definition_id
         elif obj_type == "WorkSchedule":
-            return context.scene.BIMWorkScheduleProperties.active_work_schedule_id
+            wsprops = tool.Sequence.get_work_schedule_props()
+            return wsprops.active_work_schedule_id
         elif obj_type == "Group":
-            prop = context.scene.BIMGroupProperties
-            return prop.groups[prop.active_group_index].ifc_definition_id
+            props = tool.Blender.get_group_props()
+            assert (active_group := props.active_group)
+            return active_group.ifc_definition_id
         assert_never(obj_type)
 
     @classmethod
     def is_ifc_object(cls, obj: bpy.types.Object) -> bool:
-        return bool(obj.BIMObjectProperties.ifc_definition_id)
+        props = cls.get_object_bim_props(obj)
+        return bool(props.ifc_definition_id)
 
     @classmethod
     def is_ifc_class_active(cls, ifc_class: str) -> bool:
@@ -260,14 +306,12 @@ class Blender(bonsai.core.tool.Blender):
                     return area
 
     @classmethod
-    def get_view3d_space(cls):
+    def get_view3d_space(cls) -> Union[bpy.types.SpaceView3D, None]:
         if area := cls.get_view3d_area():
-            for space in area.spaces:
-                if space.type == "VIEW_3D":
-                    return space
+            return area.spaces.active
 
     @classmethod
-    def get_blender_prop_default_value(cls, props, prop_name: str) -> Any:
+    def get_blender_prop_default_value(cls, props: bpy.types.bpy_struct, prop_name: str) -> Any:
         prop_bl_rna = props.bl_rna.properties[prop_name]
         if getattr(prop_bl_rna, "array_length", 0) > 0:
             prop_value = prop_bl_rna.default_array
@@ -285,9 +329,19 @@ class Blender(bonsai.core.tool.Blender):
         when in real life you can have a couple of those but should work for the most cases.
         """
         area = cls.get_view3d_area()
+        assert area
         region = next(region for region in area.regions if region.type == "WINDOW")
         space = next(space for space in area.spaces if space.type == "VIEW_3D")
         context_override = {"area": area, "region": region, "space_data": space}
+
+        # Need to override screen and window if area is from a different window.
+        screen: bpy.types.Scene = area.id_data
+        context = bpy.context
+        assert context
+        if context.screen != screen:
+            context_override["screen"] = screen
+            window = next(window for window in context.window_manager.windows if window.screen == screen)
+            context_override["window"] = window
         return context_override
 
     @classmethod
@@ -305,31 +359,22 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def set_viewport_tool(cls, tool_name: str) -> None:
-        with bpy.context.temp_override(**tool.Blender.get_viewport_context()):
+        with bpy.context.temp_override(**cls.get_viewport_context()):
             bpy.ops.wm.tool_set_by_id(name=tool_name)
 
     @classmethod
-    def get_shader_editor_context(cls) -> Union[dict, None]:
+    def get_shader_editor_context(cls) -> Union[dict[str, Any], None]:
         for screen in bpy.data.screens:
             for area in screen.areas:
                 if area.type == "NODE_EDITOR":
-                    for space in area.spaces:
-                        if space.tree_type == "ShaderNodeTree":
-                            context_override = {"area": area, "space": space, "screen": screen}
-                            return context_override
+                    space = area.spaces.active
+                    assert isinstance(space, bpy.types.SpaceNodeEditor)
+                    if space.tree_type == "ShaderNodeTree":
+                        context_override = {"area": area, "space": space, "screen": screen}
+                        return context_override
 
     @classmethod
     def copy_node_graph(cls, material_to: bpy.types.Material, material_from: bpy.types.Material) -> None:
-        # https://projects.blender.org/blender/blender/issues/108763
-        if bpy.app.version[:2] == (4, 0):
-            print(
-                "WARNING. Copying node graph is not supported on Blender 4.0.x due Blender bug, "
-                f"copying node graph from {material_from.name} to {material_to.name} will be skipped"
-            )
-            return
-
-        use_temp_override = bpy.app.version >= (4, 0, 0)
-
         temp_override = cls.get_shader_editor_context()
         shader_editor = temp_override["space"]
 
@@ -345,19 +390,13 @@ class Blender(bonsai.core.tool.Blender):
         # select all nodes and copy them to clipboard
         for node in material_from.node_tree.nodes:
             node.select = True
-        if use_temp_override:
-            with bpy.context.temp_override(**temp_override):
-                bpy.ops.node.clipboard_copy()
-        else:
-            bpy.ops.node.clipboard_copy(temp_override)
+        with bpy.context.temp_override(**temp_override):
+            bpy.ops.node.clipboard_copy()
 
         # back to original material
         shader_editor.node_tree = material_to.node_tree
-        if use_temp_override:
-            with bpy.context.temp_override(**temp_override):
-                bpy.ops.node.clipboard_paste(offset=(0, 0))
-        else:
-            bpy.ops.node.clipboard_paste(temp_override, offset=(0, 0))
+        with bpy.context.temp_override(**temp_override):
+            bpy.ops.node.clipboard_paste(offset=(0, 0))
 
         # restore shader editor settings
         shader_editor.pin = previous_pin_setting
@@ -380,7 +419,7 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def update_viewport(cls) -> None:
-        tool.Blender.get_viewport_context()["area"].tag_redraw()
+        cls.get_viewport_context()["area"].tag_redraw()
 
     @classmethod
     def force_depsgraph_update(cls) -> None:
@@ -423,6 +462,24 @@ class Blender(bonsai.core.tool.Blender):
         if blender_path.is_absolute():
             return blender_path
         return bpy.path.abspath("//") / blender_path
+
+    @classmethod
+    def ensure_bin_in_path(cls) -> None:
+        """Check 'bin' folder is in PATH, if not add for this session"""
+        bin_dir = str(Path(__file__).parent.parent.resolve() / "libs" / "bin")
+        current_path = os.environ["PATH"]
+        if bin_dir not in current_path:
+            os.environ["PATH"] = current_path + os.pathsep + bin_dir
+            # files need to be executable
+            if platform.system() != "Windows":
+                for filename in os.listdir(bin_dir):
+                    file_path = os.path.join(bin_dir, filename)
+                    if os.path.isfile(file_path):
+                        current_permissions = os.stat(file_path).st_mode
+                        try:
+                            os.chmod(file_path, current_permissions | 0o100)
+                        except PermissionError:
+                            pass
 
     @classmethod
     def get_default_selection_keypmap(cls) -> tuple:
@@ -471,23 +528,64 @@ class Blender(bonsai.core.tool.Blender):
         )
         return keymap
 
+    KEY_MODIFIERS = {
+        "A": ("EVENT_ALT", "OPTION" if sys.platform == "Darwin" else "ALT"),
+        "C": ("EVENT_CTRL", "CTRL"),
+        "S": ("EVENT_SHIFT", "⇧"),
+        "E": ("EVENT_PADENTER", "ENTER" if sys.platform == "Darwin" else "RETURN"),
+    }
+
     @classmethod
     def add_layout_hotkey_operator(
-        cls, tool_name: str, layout: bpy.types.UILayout, text: str, hotkey: str, description: str
+        cls,
+        layout: bpy.types.UILayout,
+        text: str,
+        hotkey: str,
+        description: str,
+        ui_context: str = "",
+        *,
+        tool_name: str,
+        module_name: str,
+        operator: Optional[str] = None,
     ) -> tuple[bpy.types.OperatorProperties, bpy.types.UILayout]:
-        modifiers = {
-            "A": "EVENT_ALT",
-            "S": "EVENT_SHIFT",
-        }
+        """
+        :param module_name: Provide `__name__` of the current module,
+            so method could pick up icon previews based on the module's `custom_icon_previews` attribute.
+        :param operator: Operator to display in UI. Displaying the specific operator in UI can be useful
+            to provide poll error messages.
+        """
+        if tool_name == "bim":
+            hotkey_operator = "bim.hotkey"
+        else:
+            hotkey_operator = f"bim.{tool_name}_hotkey"
+        operator_to_use = operator or hotkey_operator
+
         modifier, key = hotkey.split("_")
+        op_text = "" if ui_context == "TOOL_HEADER" else text
+        modifier_icon, modifier_str = cls.KEY_MODIFIERS.get(modifier, ("NONE", ""))
 
-        row = layout.row(align=True)
-        row.label(text="", icon=modifiers[modifier])
-        row.label(text="", icon=f"EVENT_{key}")
+        row = layout if ui_context == "TOOL_HEADER" else layout.row(align=True)
+        module = sys.modules[module_name]
+        icon_previews: Union[bpy.utils.previews.ImagePreviewCollection, None]
+        icon_previews = getattr(module, "custom_icon_previews", None)
+        if icon_previews:
+            custom_icon = icon_previews.get(text.upper().replace(" ", "_"), icon_previews["IFC"]).icon_id
+            op = row.operator(operator_to_use, text=op_text, icon_value=custom_icon)
+        else:
+            op = row.operator(operator_to_use, text=op_text)
+        if ui_context != "TOOL_HEADER":
+            row.label(text="", icon=modifier_icon)
+            row.label(text="", icon=f"EVENT_{key}")
 
-        op = row.operator(f"bim.{tool_name}_hotkey", text=text)
-        op.hotkey = hotkey
-        op.description = description
+        if operator_to_use == hotkey_operator:
+            hotkey_description = f"Hotkey: {modifier_str} {key}".strip()
+            description = "\n\n".join(filter(None, [description, hotkey_description]))
+
+            op.hotkey = hotkey
+            if ui_context == "TOOL_HEADER":
+                op.description = text + "\n" + description
+            else:
+                op.description = description
         return op, row
 
     @classmethod
@@ -497,6 +595,17 @@ class Blender(bonsai.core.tool.Blender):
         Careful with using this method for objects in EDIT mode because
         it requires all EDIT mode changes to be applied.
         """
+        # Example bounding box points for a cube:
+        # [
+        #     (-1.0, -1.0, -1.0),        # 0, min.
+        #     (-1.0, -1.0,  1.0),        # 1
+        #     (-1.0,  1.0,  1.0),        # 2
+        #     (-1.0,  1.0, -1.0),        # 3
+        #     ( 1.0, -1.0, -1.0),        # 4
+        #     ( 1.0, -1.0,  1.0),        # 5
+        #     ( 1.0,  1.0,  1.0),        # 6, max.
+        #     ( 1.0,  1.0, -1.0),        # 7
+        # ]
         bound_box = obj.bound_box
         bbox_dict = {
             "min_x": bound_box[0][0],
@@ -520,6 +629,10 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def set_object_selection(cls, obj: bpy.types.Object, state: bool = True):
+        """Run ``Object.select_set`` but ignore errors if the object is hidden.
+
+        Therefore, doesn't guarantee that the object is actually selected.
+        """
         try:
             obj.select_set(state)
         except RuntimeError:  # Trying to select a hidden object throws an error
@@ -527,10 +640,14 @@ class Blender(bonsai.core.tool.Blender):
 
     @classmethod
     def select_object(cls, obj: bpy.types.Object):
+        """Shortcut for ``set_object_selection(obj, True)``."""
         cls.set_object_selection(obj, True)
 
     @classmethod
     def deselect_object(cls, obj: bpy.types.Object, ensure_active_object: bool = True):
+        """Deselect object (using ``set_object_selection``) and optionally ensure that active
+        object is not the deselected object (last selected object used to replace it as active).
+        """
         cls.set_object_selection(obj, False)
         if ensure_active_object and bpy.context.view_layer.objects.active == obj:
             if bpy.context.selected_objects:
@@ -550,7 +667,7 @@ class Blender(bonsai.core.tool.Blender):
         cls,
         context: bpy.types.Context,
         active_object: Optional[bpy.types.Object] = None,
-        selected_objects: list[bpy.types.Object] = list(),
+        selected_objects: Sequence[bpy.types.Object] = (),
         clear_previous_selection=True,
     ) -> None:
         if clear_previous_selection:
@@ -561,6 +678,12 @@ class Blender(bonsai.core.tool.Blender):
         context.view_layer.objects.active = active_object
         if active_object:
             active_object.select_set(True)
+
+    @classmethod
+    def clear_objects_selection(cls) -> None:
+        """Clear objects selection and active object."""
+        bpy.ops.object.select_all(action="DESELECT")
+        cls.clear_active_object()
 
     @classmethod
     def get_enum_safe(cls, props: bpy.types.PropertyGroup, prop_name: str) -> Union[str, None]:
@@ -609,7 +732,7 @@ class Blender(bonsai.core.tool.Blender):
             False if enum is still invalid (as there no enum items)
             and update callback was not triggered (may need to trigger it manually).
         """
-        current_value = tool.Blender.get_enum_safe(props, prop_name)
+        current_value = cls.get_enum_safe(props, prop_name)
         if current_value is not None:
             # Value is valid, just trigger the update callback.
             setattr(props, prop_name, current_value)
@@ -643,6 +766,10 @@ class Blender(bonsai.core.tool.Blender):
         return {"data_block": getattr(data_to, data_block_type)[0], "msg": ""}
 
     @classmethod
+    def remove_object(cls, obj: bpy.types.Object) -> None:
+        bpy.data.objects.remove(obj)
+
+    @classmethod
     def remove_data_block(cls, data_block: bpy.types.ID, do_unlink=True) -> None:
         """Removes a datablock (such as a mesh)
 
@@ -662,6 +789,20 @@ class Blender(bonsai.core.tool.Blender):
         getattr(bpy.data, collection_name).remove(
             data_block, do_unlink=do_unlink, do_id_user=do_unlink, do_ui_user=do_unlink
         )
+
+    @classmethod
+    def remove_data_blocks(cls, data_blocks: list[bpy.types.ID], remove_unused_data: bool = False) -> None:
+        """Removes several data blocks at once
+
+        :param data_blocks: iterable of data blocks to remove
+        :param remove_unused_data: set to True to purge data that would be orphaned by the operation
+        :return: None
+        :rtype: None
+        """
+        data_blocks = list(data_blocks)
+        if remove_unused_data:
+            data_blocks.extend([o.data for o in data_blocks if hasattr(o, "data") and o.data and o.data.users <= 1])
+        bpy.data.batch_remove(data_blocks)
 
     ## BMESH UTILS ##
     @classmethod
@@ -759,7 +900,8 @@ class Blender(bonsai.core.tool.Blender):
         return results
 
     @classmethod
-    def toggle_edit_mode(cls, context: bpy.types.Context) -> set[str]:
+    def toggle_edit_mode(cls, context: bpy.types.Context) -> set[rna_enums.OperatorReturnItems]:
+        """Run ``object.mode_set(EDIT)``."""
         ao = context.active_object
         if not ao:
             return {"CANCELLED"}
@@ -779,7 +921,7 @@ class Blender(bonsai.core.tool.Blender):
         return bool(element) and element.is_a() in classes
 
     @classmethod
-    def get_object_from_guid(cls, guid: str) -> Union[IFC_CONNECTED_TYPE, None]:
+    def get_object_from_guid(cls, guid: str) -> Union[bpy.types.Object, None]:
         element = tool.Ifc.get().by_guid(guid)
         obj = tool.Ifc.get_object(element)
         if obj:
@@ -795,23 +937,20 @@ class Blender(bonsai.core.tool.Blender):
     operator_invoke_filepath_hotkeys_description = "Hold Shift to open the file, Alt to browse containing directory"
 
     @classmethod
+    def open_file_or_folder(cls, path: str) -> None:
+        if platform.system() == "Windows":
+            os.startfile(path)
+        elif platform.system() == "Darwin":
+            subprocess.Popen(["open", path])
+        else:
+            subprocess.Popen(["xdg-open", path])
+
+    @classmethod
     def operator_invoke_filepath_hotkeys(
         cls, operator: bpy.types.Operator, context: bpy.types.Context, event: bpy.types.Event, filepath: Path
     ) -> Union[set, None]:
         if not event.alt and not event.shift:
             return
-
-        import platform
-        import os
-        import subprocess
-
-        def open_file_or_folder(path):
-            if platform.system() == "Windows":
-                os.startfile(path)
-            elif platform.system() == "Darwin":
-                subprocess.Popen(["open", path])
-            else:
-                subprocess.Popen(["xdg-open", path])
 
         # resolve relative filepaths with .blend path by default
         if not filepath.is_absolute():
@@ -828,20 +967,20 @@ class Blender(bonsai.core.tool.Blender):
             if not filepath.exists():
                 operator.report({"ERROR"}, f'Cannot open non-existing directory: "{filepath.as_posix()}"')
                 return {"CANCELLED"}
-            open_file_or_folder(filepath.as_posix())
+            cls.open_file_or_folder(filepath.as_posix())
             return {"PASS_THROUGH"}
 
-        # holding sHIFT - open file
+        # holding SHIFT - open file
         if not filepath.exists():
             operator.report({"ERROR"}, f'Cannot open non-existing file: "{filepath.as_posix()}"')
             return {"CANCELLED"}
-        open_file_or_folder(filepath.as_posix())
+        cls.open_file_or_folder(filepath.as_posix())
         return {"PASS_THROUGH"}
 
     @classmethod
     def get_layer_collection(cls, collection: bpy.types.Collection) -> Union[bpy.types.LayerCollection, None]:
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-        project_collection = project.BIMObjectProperties.collection
+        project_collection = cls.get_object_bim_props(project).collection
         for layer_collection in bpy.context.view_layer.layer_collection.children:
             if layer_collection.collection == project_collection:
                 for layer_collection2 in layer_collection.children:
@@ -877,7 +1016,7 @@ class Blender(bonsai.core.tool.Blender):
             return False
         if not (element := tool.Ifc.get_entity(obj)):
             return True
-        if obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
+        if obj in tool.Project.get_project_props().clipping_planes_objs:
             return False
         usage_type = tool.Model.get_usage_type(element)
         if usage_type in ("LAYER1", "LAYER2"):
@@ -888,58 +1027,138 @@ class Blender(bonsai.core.tool.Blender):
 
     class Modifier:
         @classmethod
-        def is_eligible_for_railing_modifier(cls, obj):
+        def try_applying_edit_mode(cls, obj: bpy.types.Object, element: entity_instance) -> bool:
+            """Tries to validate the current BIM modifier parameters for the active object
+            Goes into path editing mode if the modifier supports it
+
+            Returns True if an action was taken, False otherwise
+            """
+            if cls.is_roof(element):
+                if cls.is_editing_roof_parameters(obj):
+                    bpy.ops.bim.finish_editing_roof()
+                bpy.ops.bim.enable_editing_roof_path()
+            elif cls.is_railing(element):
+                if cls.is_editing_railing_parameters(obj):
+                    bpy.ops.bim.finish_editing_railing()
+                bpy.ops.bim.enable_editing_railing_path()
+            elif cls.is_editing_stair_parameters(obj):
+                bpy.ops.bim.finish_editing_stair()
+            elif cls.is_editing_door_parameters(obj):
+                bpy.ops.bim.finish_editing_door()
+            elif cls.is_editing_window_parameters(obj):
+                bpy.ops.bim.finish_editing_window()
+            else:
+                return False
+            return True
+
+        @classmethod
+        def try_canceling_editing_modifier_parameters_or_path(cls, obj: bpy.types.Object) -> bool:
+            """Tries to cancel the current BIM modifier parameters or path edition for the active object
+
+            Returns True if an action was taken, False otherwise
+            """
+            if cls.is_editing_railing_path(obj):
+                bpy.ops.bim.cancel_editing_railing_path()
+            elif cls.is_editing_roof_path(obj):
+                bpy.ops.bim.cancel_editing_roof_path()
+            elif cls.is_editing_railing_parameters(obj):
+                bpy.ops.bim.cancel_editing_railing()
+            elif cls.is_editing_door_parameters(obj):
+                bpy.ops.bim.cancel_editing_door()
+            elif cls.is_editing_window_parameters(obj):
+                bpy.ops.bim.cancel_editing_window()
+            elif cls.is_editing_roof_parameters(obj):
+                bpy.ops.bim.cancel_editing_roof()
+            elif cls.is_editing_stair_parameters(obj):
+                bpy.ops.bim.cancel_editing_stair()
+            else:
+                return False
+            return True
+
+        @classmethod
+        def is_eligible_for_railing_modifier(cls, obj: bpy.types.Object) -> bool:
             return tool.Blender.is_object_an_ifc_class(obj, ("IfcRailing", "IfcRailingType"))
 
         @classmethod
-        def is_eligible_for_stair_modifier(cls, obj):
+        def is_eligible_for_stair_modifier(cls, obj: bpy.types.Object) -> bool:
             return tool.Blender.is_object_an_ifc_class(
                 obj, ("IfcStairFlight", "IfcStairFlightType", "IfcMember", "IfcMemberType", "IfcStair", "IfcStairType")
             )
 
         @classmethod
-        def is_eligible_for_window_modifier(cls, obj):
+        def is_eligible_for_window_modifier(cls, obj: bpy.types.Object) -> bool:
             return tool.Blender.is_object_an_ifc_class(obj, ("IfcWindow", "IfcWindowType", "IfcWindowStyle"))
 
         @classmethod
-        def is_eligible_for_door_modifier(cls, obj):
+        def is_eligible_for_door_modifier(cls, obj: bpy.types.Object) -> bool:
             return tool.Blender.is_object_an_ifc_class(obj, ("IfcDoor", "IfcDoorType", "IfcDoorStyle"))
 
         @classmethod
-        def is_eligible_for_roof_modifier(cls, obj):
+        def is_eligible_for_roof_modifier(cls, obj: bpy.types.Object) -> bool:
             return tool.Blender.is_object_an_ifc_class(obj, ("IfcRoof", "IfcRoofType"))
 
         @classmethod
-        def is_railing(cls, element):
+        def is_railing(cls, element: entity_instance) -> bool:
             return tool.Pset.get_element_pset(element, "BBIM_Railing")
 
         @classmethod
-        def is_roof(cls, element):
+        def is_roof(cls, element: entity_instance) -> bool:
             return tool.Pset.get_element_pset(element, "BBIM_Roof")
 
         @classmethod
-        def is_window(cls, element):
+        def is_window(cls, element: entity_instance) -> bool:
             return tool.Pset.get_element_pset(element, "BBIM_Window")
 
         @classmethod
-        def is_door(cls, element):
+        def is_door(cls, element: entity_instance) -> bool:
             return tool.Pset.get_element_pset(element, "BBIM_Door")
 
         @classmethod
-        def is_stair(cls, element):
+        def is_stair(cls, element: entity_instance) -> bool:
             return tool.Pset.get_element_pset(element, "BBIM_Stair")
 
         @classmethod
-        def is_editing_parameters(cls, obj):
-            return obj.BIMRailingProperties.is_editing or obj.BIMRoofProperties.is_editing
+        def is_editing_railing_path(cls, obj: bpy.types.Object):
+            props = tool.Model.get_railing_props(obj)
+            return props.is_editing_path
 
         @classmethod
-        def is_modifier_with_non_editable_path(cls, element):
+        def is_editing_roof_path(cls, obj: bpy.types.Object) -> bool:
+            props = tool.Model.get_roof_props(obj)
+            return props.is_editing_path
+
+        @classmethod
+        def is_editing_railing_parameters(cls, obj: bpy.types.Object) -> bool:
+            props = tool.Model.get_railing_props(obj)
+            return props.is_editing
+
+        @classmethod
+        def is_editing_roof_parameters(cls, obj: bpy.types.Object) -> bool:
+            props = tool.Model.get_roof_props(obj)
+            return props.is_editing
+
+        @classmethod
+        def is_editing_window_parameters(cls, obj: bpy.types.Object) -> bool:
+            props = tool.Model.get_window_props(obj)
+            return props.is_editing
+
+        @classmethod
+        def is_editing_door_parameters(cls, obj: bpy.types.Object) -> bool:
+            props = tool.Model.get_door_props(obj)
+            return props.is_editing
+
+        @classmethod
+        def is_editing_stair_parameters(cls, obj: bpy.types.Object) -> bool:
+            props = tool.Model.get_stair_props(obj)
+            return props.is_editing
+
+        @classmethod
+        def is_modifier_with_non_editable_path(cls, element: entity_instance) -> bool:
             return cls.is_stair(element) or cls.is_door(element) or cls.is_window(element)
 
         class Array:
             @classmethod
-            def bake_children_transform(cls, parent_element, item):
+            def bake_children_transform(cls, parent_element: entity_instance, item: int) -> None:
                 modifier_data = list(cls.get_modifiers_data(parent_element))[item]
                 children = cls.get_children_objects(modifier_data)
                 for child in children:
@@ -949,25 +1168,30 @@ class Blender(bonsai.core.tool.Blender):
                             bpy.ops.constraint.apply(constraint=constraint.name, owner="OBJECT")
 
             @classmethod
-            def constrain_children_to_parent(cls, parent_element):
+            def constrain_children_to_parent(cls, parent_element: ifcopenshell.entity_instance) -> None:
                 parent_obj = tool.Ifc.get_object(parent_element)
+                assert isinstance(parent_obj, bpy.types.Object)
                 children = cls.get_all_children_objects(parent_element)
                 for child in children:
                     constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
                     if constraint:
                         child.constraints.remove(constraint)
                     constraint = child.constraints.new("CHILD_OF")
+                    constraint.name = "BBIM_Array_CHILD_OF"
+                    assert isinstance(constraint, bpy.types.ChildOfConstraint)
                     constraint.target = parent_obj
 
             @classmethod
-            def set_children_lock_state(cls, parent_element, item, lock_state=True):
+            def set_children_lock_state(
+                cls, parent_element: ifcopenshell.entity_instance, item: int, lock_state: bool = True
+            ) -> None:
                 modifier_data = list(cls.get_modifiers_data(parent_element))[item]
                 children = cls.get_children_objects(modifier_data)
                 for child_obj in children:
                     Blender.lock_transform(child_obj, lock_state)
 
             @classmethod
-            def remove_constraints(cls, parent_element):
+            def remove_constraints(cls, parent_element: ifcopenshell.entity_instance) -> None:
                 children = cls.get_all_children_objects(parent_element)
                 for child in children:
                     constraint = next((c for c in child.constraints if c.type == "CHILD_OF"), None)
@@ -975,46 +1199,94 @@ class Blender(bonsai.core.tool.Blender):
                         child.constraints.remove(constraint)
 
             @classmethod
-            def get_all_objects(cls, parent_element):
+            def get_all_objects(cls, parent_element: ifcopenshell.entity_instance) -> list[bpy.types.Object]:
                 parent_obj = tool.Ifc.get_object(parent_element)
+                assert isinstance(parent_obj, bpy.types.Object)
                 children_objects = list(cls.get_all_children_objects(parent_element))
                 array_objects = [parent_obj] + children_objects  # We ensure the parent is at index 0
                 return array_objects
 
             @classmethod
-            def get_all_children_objects(cls, parent_element):
+            def get_all_children_objects(
+                cls, parent_element: ifcopenshell.entity_instance
+            ) -> Generator[bpy.types.Object, None, None]:
                 for array_modifier in cls.get_modifiers_data(parent_element):
                     yield from cls.get_children_objects(array_modifier)
 
             @classmethod
-            def get_modifiers_data(cls, parent_element):
+            def get_modifiers_data(
+                cls, parent_element: ifcopenshell.entity_instance
+            ) -> Generator[dict[str, Any], None, None]:
                 array_pset = ifcopenshell.util.element.get_pset(parent_element, "BBIM_Array")
                 yield from json.loads(array_pset["Data"])
 
             @classmethod
-            def get_children_objects(cls, modifier_data):
+            def get_children_objects(cls, modifier_data: dict[str, Any]) -> Generator[bpy.types.Object, None, None]:
+                child_guid: str
                 for child_guid in modifier_data["children"]:
                     child_obj = tool.Blender.get_object_from_guid(child_guid)
                     if child_obj:
                         yield child_obj
 
+    class Attribute:
+        @classmethod
+        def fill_attribute(cls, data: bpy.types.ID, attribute_name: str, domain: str, data_type: str, values):
+            attribute = cls.ensure_attribute(data, attribute_name, domain, data_type)
+            attribute.data.foreach_set(cls.get_data_name(data_type), values)
+
+        @classmethod
+        def ensure_attribute(cls, data: bpy.types.ID, attribute_name: str, domain: str, data_type: str):
+            attribute = data.attributes.get(attribute_name)
+            if not attribute:
+                attribute = data.attributes.new(attribute_name, domain=domain, type=data_type)
+            return attribute
+
+        @classmethod
+        def get_data_name(cls, data_type: str):
+            if data_type in ("FLOAT", "INT", "BOOLEAN", "STRING"):
+                return "value"
+            if data_type.endswith("VECTOR"):
+                return "vector"
+            elif data_type.endswith("COLOR"):
+                return "color"
+            else:
+                raise NotImplementedError(f"Attribute data type `{data_type}` not implemented yet")
+
+    @classmethod
+    def get_verts_coordinates(cls, verts: bpy.types.MeshVertices) -> npt.NDArray[np.float32]:
+        # It's faster to get them as f and then convert to d
+        # with .astype("d"), if precision is needed.
+        coords = np.empty(len(verts) * 3, dtype="f")
+        verts.foreach_get("co", coords)
+        coords = coords.reshape(-1, 3)
+        return coords
+
     @classmethod
     def get_last_commit_hash(cls) -> Union[str, None]:
-        """Get 8 symbols of last commit hash if it's present or return None otherwise."""
-        bbim = cls.get_bbim_extension_package()
-        commit_hash = bbim.last_commit_hash
-
-        # Commit hash is unset - user is using __init__ from repo
-        # without setting up git repository.
-        if commit_hash == "8888888":
-            return None
-
-        return commit_hash[:7]
+        return bonsai.get_last_commit_hash()
 
     @classmethod
+    @cache
     def get_bonsai_version(cls) -> str:
-        bbim = cls.get_bbim_extension_package()
-        version = bbim.bbim_semver["version"]
+        version = None
+
+        # Try to retrieve actual version for live-dev environment.
+        with contextlib.suppress(Exception):
+            import git
+
+            path = Path(__file__).resolve().parent
+            repo = git.Repo(str(path), search_parent_directories=True)
+            repo_path = repo.working_tree_dir
+            assert repo_path
+            version_ = (Path(repo_path) / "VERSION").read_text().strip()
+            commit_date = bonsai.get_last_commit_date()
+            assert commit_date
+            commit_date = datetime.fromisoformat(commit_date)
+            version = f"{version_}-alpha{commit_date.strftime('%y%m%d')}"
+
+        if version is None:
+            bbim = cls.get_bbim_extension_package()
+            version = bbim.bbim_semver["version"]
         if commit_hash := cls.get_last_commit_hash():
             version += f"-{commit_hash}"
         return version
@@ -1088,7 +1360,7 @@ class Blender(bonsai.core.tool.Blender):
         for item_name in dir(bpy.types):
             item = getattr(bpy.types, item_name)
             # filter only panels
-            if not hasattr(item, "bl_rna") or not isinstance(item.bl_rna, bpy.types.Panel):
+            if not hasattr(item, "bl_rna") or not isinstance(item.bl_rna.base, bpy.types.Panel):
                 continue
             # ignore bbim panels
             if item.__module__.startswith("bonsai"):
@@ -1191,6 +1463,10 @@ class Blender(bonsai.core.tool.Blender):
         return importlib.import_module(name)
 
     @classmethod
+    def is_addon_enabled(cls) -> bool:
+        return cls.get_blender_addon_package_name() in bpy.context.preferences.addons
+
+    @classmethod
     def get_addon_preferences(cls) -> bonsai.bim.ui.BIM_ADDON_preferences:
         blender_package_name = cls.get_blender_addon_package_name()
         return bpy.context.preferences.addons[blender_package_name].preferences
@@ -1204,13 +1480,6 @@ class Blender(bonsai.core.tool.Blender):
             sun_position = importlib.import_module("sun_position")
         except ImportError:
             sun_position = None
-
-        if sun_position:
-            return sun_position
-
-        # No extensions prior to 4.2.
-        if bpy.app.version < (4, 2, 0):
-            return sun_position
 
         if sun_position:
             return sun_position
@@ -1233,3 +1502,328 @@ class Blender(bonsai.core.tool.Blender):
         system = bpy.context.preferences.system
         system_scale = system.dpi * system.pixel_size
         return (system_scale / default_scale) * size
+
+    @classmethod
+    def apply_transform_as_local(cls, obj: bpy.types.Object) -> bool:
+        """Apply object transforms as local matrix, if possible.
+
+        Clear parent and constraints.
+
+        :return: `True` if transform was applied and `False`
+            if transform wasn't applied it's not possible due to a shear.
+        """
+
+        if not obj.parent and not obj.constraints:
+            return True
+
+        matrix = obj.matrix_world.copy()
+        # Matrix has a shear, it cannot be represented as a local matrix
+        # based on rotation+translation+scale.
+        if not matrix.to_3x3().is_orthogonal_axis_vectors:
+            return False
+
+        obj.parent = None
+        obj.constraints.clear()
+        obj.matrix_world = matrix
+        return True
+
+    @classmethod
+    def set_prop_from_path(cls, bpy_object: bpy.types.bpy_struct, prop_path: str, value: Any) -> None:
+        """Set `data_block` property value using path from `path_from_id`."""
+
+        T_ = TypeVar("T_", bound=bpy.types.bpy_struct)
+
+        def path_resolve(obj: T_, prop_path: str) -> tuple[T_, str]:
+            if "." in prop_path:
+                extra_path, prop_path = prop_path.rsplit(".", 1)
+                obj = obj.path_resolve(extra_path)
+            return obj, prop_path
+
+        obj, path = path_resolve(bpy_object, prop_path)
+        setattr(obj, path, value)
+
+    @classmethod
+    def get_microsoft_store_app_id(cls) -> Union[str, None]:
+        """Get Microsoft Store app ID for current Blender instance.
+
+        :return: `None` if Blender is installed not from Microsoft Store (possibly using non-Windows platform).
+            Otherwise return app ID string (e.g. 'ppwjx1n5r4v9t').
+        """
+        if os.name != "nt":
+            return None
+        blender_binary_path = Path(bpy.app.binary_path)
+        if len(blender_binary_path.parents) > 3 and blender_binary_path.parents[2].name == "WindowsApps":
+            return blender_binary_path.parents[1].name.rsplit("__", 1)[-1]
+        return None
+
+    @classmethod
+    def V_(cls, *args: float) -> Vector:
+        """Just a shortcut for creating mathutils Vector."""
+        return Vector(args)
+
+    @classmethod
+    def detect_icon_color_mode(cls, color_path="user_interface.wcol_regular.text", threshold=1.671):
+        """
+        Uses the text color of a given Blender UI property to determine if custom icons should be dark mode (dm) or light mode (lm).
+
+        Common Blender UI text color paths:
+            - "user_interface.wcol_regular.text"  (Regular Text)
+            - "user_interface.wcol_tool.text"  (Tool Text)
+            - "user_interface.wcol_menu_back.text"  (Menu Background Text)
+            - "user_interface.wcol_menu.text"  (Menu Text)
+            - "user_interface.wcol_menu.text_sel"  (Menu Text Selected)
+
+        Args:
+            color_path (str, optional): The attribute path relative to bpy.context.preferences.themes[0].
+            threshold (float, optional): The RGB sum threshold for determining dark mode. Default is 1.671.
+
+        Returns:
+            str: 'dm' (dark mode) if the RGB sum is > threshold, otherwise 'lm' (light mode).
+        """
+        full_path = f"bpy.context.preferences.themes[0].{color_path}"
+
+        try:
+            color = eval(full_path)[:3]  # Dynamically evaluate and extract RGB values
+            rgb_sum = sum(color)
+            return "dm" if rgb_sum > threshold else "lm"
+        except Exception:
+            return "dm"  # Default to dark mode if an error occurs
+
+    @classmethod
+    def get_internal_data_dir(cls) -> Path:
+        return Path(__file__).parent.parent / "bim" / "data"
+
+    @classmethod
+    def get_user_data_dir(cls) -> Path:
+        props = cls.get_bim_props()
+        return Path(props.data_dir)
+
+    @classmethod
+    def get_data_dir_path(cls, relative_path: Union[str, Path]) -> Path:
+        """Get specified data path in data folder.
+        If this path exists in user folder, it takes the precedence."""
+        custom_path = cls.get_user_data_dir() / relative_path
+        if custom_path.exists():
+            return custom_path
+        return cls.get_internal_data_dir() / relative_path
+
+    @classmethod
+    def get_data_dir_paths(cls, relative_dir_path: Union[str, Path], glob_pattern: str) -> Generator[Path, None, None]:
+        """Return paths based on glob pattern from the provided path in data folder.
+        Return paths from internal data folder first and then paths from the user data folder (if it exists)."""
+        custom_path = cls.get_user_data_dir() / relative_dir_path
+        if custom_path.is_dir():
+            for filepath in custom_path.glob(glob_pattern):
+                yield filepath
+
+        default_data_dir = cls.get_internal_data_dir()
+        if default_data_dir == custom_path:
+            return
+        for filepath in (default_data_dir / relative_dir_path).glob(glob_pattern):
+            yield filepath
+
+    @classmethod
+    def setup_user_data_dir(cls) -> None:
+        """Setup empty folders in user data directory to make them more discoverable."""
+        custom_data_dir = cls.get_user_data_dir()
+        # Not all paths from internal data dir are listed here,
+        # only the ones that intended to be used by user.
+        paths_to_create = (
+            custom_data_dir,
+            custom_data_dir / "assets",
+            custom_data_dir / "libraries",
+            custom_data_dir / "pset",  # pset templates.
+            custom_data_dir / "templates" / "projects",
+            custom_data_dir / "templates" / "titleblocks",
+        )
+        for path in paths_to_create:
+            path.mkdir(parents=True, exist_ok=True)
+
+    @classmethod
+    @lru_cache
+    def get_list_of_tools(cls) -> tuple[str, ...]:
+        from bonsai.bim.module.model.workspace import BimTool
+        from bonsai.bim.module.drawing.workspace import AnnotationTool
+
+        return tuple(cls.bl_idname for cls in (BimTool.__subclasses__() + [BimTool, AnnotationTool]))
+
+    @classmethod
+    @lru_cache
+    def get_tools_to_classes_map(cls) -> types.MappingProxyType[str, str]:
+        from bonsai.bim.module.model.workspace import BimTool
+
+        dct = {cls.bl_idname: cls.ifc_element_type for cls in (BimTool.__subclasses__())}
+        return types.MappingProxyType(dct)
+
+    @classmethod
+    def get_object_constraint_props(cls, obj: bpy.types.Object) -> BIMObjectConstraintProperties:
+        return obj.BIMObjectConstraintProperties
+
+    @classmethod
+    def get_constraint_props(cls) -> BIMConstraintProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMConstraintProperties
+
+    @classmethod
+    def get_csv_props(cls) -> CsvProperties:
+        assert (scene := bpy.context.scene)
+        return scene.CsvProperties
+
+    @classmethod
+    def get_diff_props(cls) -> DiffProperties:
+        assert (scene := bpy.context.scene)
+        return scene.DiffProperties
+
+    @classmethod
+    def get_group_props(cls) -> BIMGroupProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMGroupProperties
+
+    @classmethod
+    def get_bim_props(cls, scene: Optional[bpy.types.Scene] = None) -> BIMProperties:
+        if scene is None:
+            scene = bpy.context.scene
+        return scene.BIMProperties
+
+    @classmethod
+    def get_object_bim_props(cls, obj: bpy.types.Object) -> BIMObjectProperties:
+        return obj.BIMObjectProperties
+
+    @classmethod
+    def get_object_attribute_props(cls, obj: bpy.types.Object) -> BIMAttributeProperties:
+        return obj.BIMAttributeProperties
+
+    @classmethod
+    def get_ifc_definition_id(cls, obj: IFC_CONNECTED_TYPE) -> int:
+        if isinstance(obj, bpy.types.Object):
+            return cls.get_object_bim_props(obj).ifc_definition_id
+        return tool.Style.get_material_style_props(obj).ifc_definition_id
+
+    @classmethod
+    def get_active_uilist_element(
+        cls, collection: bpy.types.bpy_prop_collection_idprop[T], index: int
+    ) -> Union[T, None]:
+        if 0 <= index < len(collection):
+            return collection[index]
+        return None
+
+    @classmethod
+    def get_valid_uilist_index(cls, current_index: int, items: Sized) -> int:
+        """
+        Method to help maintaining item selection after some uilist item was removed
+        and items were reloaded.
+        """
+        return max(0, min(current_index, len(items) - 1))
+
+    @classmethod
+    def clear_undo_history(cls) -> None:
+        """Clears the Blender history, Bonsai history, and IfcOpenShell history"""
+        old_undo_steps = bpy.context.preferences.edit.undo_steps
+        bpy.context.preferences.edit.undo_steps = 2
+        for i in range(3):
+            bpy.ops.ed.undo_push(message="Undo history cleared")
+        bpy.context.preferences.edit.undo_steps = old_undo_steps
+        tool.Ifc.clear_history()
+        old_history_size = tool.Ifc.get().history_size
+        tool.Ifc.get().set_history_size(0)
+        tool.Ifc.get().set_history_size(old_history_size)
+
+    @classmethod
+    def get_unit_scale(cls):
+        unit_length = bpy.context.scene.unit_settings.length_unit
+        unit_scale = 1.0
+        if unit_length == "CENTIMETERS":
+            unit_scale = 0.01
+        if unit_length == "MILLIMETERS":
+            unit_scale = 0.001
+        if unit_length == "FEET":
+            unit_scale = 0.3048
+
+        return unit_scale
+
+    @classmethod
+    def validate_shader_batch_data(cls, pos: Any, indices: Optional[Any]) -> bool:
+        """Validate shader batch data.
+
+        If method returns ``False``, then drawing for this batch should be skipped.
+        Should be used always before running ``batch.draw(shader)``
+
+        Important because in Blender 4.4.0 on Mac passing an empty list
+        as ``indices`` is causing a crash.
+
+        See https://projects.blender.org/blender/blender/issues/136831
+        """
+        # Checking `pos` is not critical but we keep it
+        # to ensure batch data is always validated to avoid crashes.
+        if len(pos) == 0 or (indices is not None and len(indices) == 0):
+            return False
+        return True
+
+    @classmethod
+    def extract_error_reports(cls, exception: RuntimeError) -> list[str]:
+        """Extracts error report lines from a runtime exception during operator execution.
+
+        If operator had any `ERROR` reports, it will always raise a `RuntimeError`,
+        no matter what status is returned.
+        And sometimes it's useful to pass those reports to another operator
+        that called it. That way user won't get to see a scary traceback.
+
+        If empty list is returned, then exception should be reraised,
+        as it is an actual unhandled runtime error.
+        """
+        error_message = str(exception)
+        extracted: list[str] = []
+
+        # If operator was cancelled and had error message,
+        # it will always start with this (warnings and info msgs are ignored).
+        if not error_message.startswith("Error: "):
+            return extracted
+
+        # Ignore actual runtime errors, as they has to be handled separately
+        # and not just rereported.
+        if error_message.startswith("Error: Python: Traceback (most recent call last):"):
+            return extracted
+
+        for report in error_message.strip().split("Error: "):
+            report = report.strip()
+            if not report:
+                continue
+            extracted.append(report)
+        return extracted
+
+    @classmethod
+    def report_operator_errors(cls, operator: bpy.types.Operator, error_reports: list[str]) -> None:
+        for report in error_reports:
+            operator.report({"ERROR"}, report)
+
+    @classmethod
+    @contextlib.contextmanager
+    def bonsai_crash_txt(cls, s: str = "") -> Generator[Path, Any, None]:
+        """Create a temporary bonsai.crash.txt file the with current traceback.
+
+        Useful in case Blender crash might occur too unexpectedly (e.g. #6686),
+        and at least we'll have a slightest clue on what happened.
+
+        Intended to be used via `with` block.
+        `atexit` wouldn't work for this as crash breaks everything
+        and no callbacks are called.
+
+        :param s: Optional string to add at the top of the txt file.
+        """
+        # TODO: Indicate that crash occurred after Blender restart?
+
+        # Create a temp file with the traceback.
+        temp_dir = tempfile.gettempdir()
+        path = Path(temp_dir) / "bonsai.crash.txt"
+        traceback_ = "\n".join(traceback.format_stack())
+        output = ""
+        if s:
+            output += f"{s}\n\n"
+        time = datetime.now().isoformat()
+        output += f"Created at: {time} (local time).\n"
+        output += f"Traceback (most recent called last):\n{traceback_}"
+        path.write_text(output)
+        yield path
+
+        # Remove file if crash didn't happened.
+        path.unlink()

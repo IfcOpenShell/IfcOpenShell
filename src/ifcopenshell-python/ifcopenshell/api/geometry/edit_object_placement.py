@@ -22,7 +22,7 @@ import ifcopenshell.api.owner
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 NPArrayOfFloats = npt.NDArray[np.float64]
 
@@ -34,6 +34,27 @@ def edit_object_placement(
     is_si: bool = True,
     should_transform_children: bool = False,
 ) -> ifcopenshell.entity_instance:
+    """Changes the object placement matrix of an element
+
+    The placement matrix is a 4x4 matrix describing the location and
+    orientation of an element in 3D. See
+    https://docs.ifcopenshell.org/ifcopenshell-python/geometry_creation.html#object-placements
+    for more details.
+
+    This only supports local placements. Grid and linear placements are not
+    supported.
+
+    :param matrix: A 4x4 matrix in numpy. If left blank, it is the identity
+        matrix (equivalent to ``np.eye(4)``).
+    :param is_si: If True, the matrix is given in SI units. If false, in
+        project units.
+    :param should_transform_children: A child element is a nested element,
+        opening, filling, etc. If true, child elements will move along with the
+        parent. If false, child elements will stay where they are. Because most
+        placements in IFC are relative, this means that if a child moves, we
+        actually don't change their placement.
+    :return: The new or updated IfcLocalPlacement entity
+    """
     usecase = Usecase()
     usecase.file = file
     usecase.settings = {
@@ -46,6 +67,9 @@ def edit_object_placement(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         if not hasattr(self.settings["product"], "ObjectPlacement"):
             return
@@ -77,7 +101,7 @@ class Usecase:
         new_placement.PlacementRelTo = placement_rel_to
         self.settings["product"].ObjectPlacement = new_placement
 
-        ifcopenshell.api.owner.update_owner_history(self.file, **{"element": self.settings["product"]})
+        ifcopenshell.api.owner.update_owner_history(self.file, element=self.settings["product"])
 
         for settings in children_settings:
             self.settings = settings
@@ -130,7 +154,15 @@ class Usecase:
                     continue
                 elif obj.is_a("IfcFeatureElement"):
                     # Feature elements affect the geometry of their parent, and
-                    # so logically should always move with the parent.
+                    # so logically should always move with the parent. However,
+                    # subchildren (fillings) shouldn't move.
+                    placement2 = obj.ObjectPlacement
+                    for referenced_placement2 in placement2.ReferencedByPlacements:
+                        matrix2 = ifcopenshell.util.placement.get_local_placement(referenced_placement2)
+                        for obj2 in referenced_placement2.PlacesObject:
+                            results.append(
+                                {"product": obj2, "matrix": matrix2, "is_si": False, "should_transform_children": True}
+                            )
                     continue
                 results.append({"product": obj, "matrix": matrix, "is_si": False, "should_transform_children": True})
         return results

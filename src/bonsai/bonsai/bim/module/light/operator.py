@@ -28,11 +28,13 @@ from datetime import datetime
 import bpy
 import bonsai.tool as tool
 from pathlib import Path
-from typing import Union, Optional, Sequence
+from typing import Union, Optional
+from collections.abc import Sequence
 import json
 import math
 import time
 import ifcopenshell
+import ifcopenshell.util.geolocation
 import webbrowser
 import ifcopenshell.geom
 import multiprocessing
@@ -79,6 +81,7 @@ class ExportOBJ(bpy.types.Operator):
         serializer_settings.set("use-element-guids", True)
         settings.set("use-world-coords", True)
 
+        ifc_file: ifcopenshell.file
         if should_load_from_memory:
             ifc_file = tool.Ifc.get()
 
@@ -392,6 +395,7 @@ ground_glow source ground
         scene.add_surface(scene_path)
         scene.add_source(sky_file_path)
         print("Setting up view...")
+        assert isinstance(camera.data, bpy.types.Camera)
         if camera.data.type == "PERSP":
             # Perspective camera
             camera_fov = camera.data.angle
@@ -547,9 +551,11 @@ class ViewFromSun(bpy.types.Operator):
     def execute(self, context):
         if not (camera := bpy.data.objects.get("SunPathCamera")):
             camera = bpy.data.objects.new("SunPathCamera", bpy.data.cameras.new("SunPathCamera"))
+            assert isinstance(camera.data, bpy.types.Camera)
+            assert context.scene
             camera.data.type = "ORTHO"
             camera.data.ortho_scale = 100  # The default of 6m is too small
-            bpy.context.scene.collection.objects.link(camera)
+            context.scene.collection.objects.link(camera)
         tool.Blender.activate_camera(camera)
         props = context.scene.BIMSolarProperties
         props.hour = props.hour  # Just to refresh camera position
@@ -563,6 +569,7 @@ class RefreshIFCMaterials(bpy.types.Operator):
 
     def execute(self, context):
         props = context.scene.radiance_exporter_properties
+        ifc_file: ifcopenshell.file
         ifc_file = tool.Ifc.get() if props.should_load_from_memory else ifcopenshell.open(props.ifc_file)
 
         props.materials.clear()
@@ -638,6 +645,7 @@ class RADIANCE_OT_export_material_mappings(bpy.types.Operator, ExportHelper):
     bl_description = "Export material mappings to a JSON file"
 
     filename_ext = ".json"
+    filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
 
     def execute(self, context):
         props = context.scene.radiance_exporter_properties

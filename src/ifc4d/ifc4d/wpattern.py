@@ -1,15 +1,18 @@
 """
 This class parses the calendar work pattern and retruns a list
 The list returned has a key DayOfWeek which takes a value Sunday to Saturday
-for each day as a key there is a list of working times with the format 
+for each day as a key there is a list of working times with the format
 {"Start": datetime.time, "Finish": datetime.time}
 
 """
 
+import sys
 import re
 from datetime import time, datetime
 from typing import Any
 from ifc4d.common import WorkSlot
+
+ZIP_STRICT = {} if sys.version_info < (3, 10) else {"strict": True}
 
 
 class AstaCalendarWorkPattern:
@@ -120,7 +123,7 @@ class AstaCalendarWorkPattern:
         self.values = self.get_values(string)
         self.dict_wp: list[WorkSlot] = []
 
-        for value, day_name in zip(self.values[1:], self.day_names, strict=True):
+        for value, day_name in zip(self.values[1:], self.day_names, **ZIP_STRICT):
             splt_data = value.strip().split(",")
             workhours: list[dict[str, Any]] = []
             if len(splt_data) >= 7:

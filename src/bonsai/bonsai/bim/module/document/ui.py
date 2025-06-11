@@ -16,8 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bonsai.tool as tool
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.document.data import DocumentData, ObjectDocumentData
 
@@ -33,13 +33,13 @@ class BIM_PT_documents(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not DocumentData.is_loaded:
             DocumentData.load()
 
-        self.props = context.scene.BIMDocumentProperties
+        self.props = tool.Document.get_document_props()
 
         row = self.layout.row(align=True)
         row.label(text="{} Documents Found".format(DocumentData.data["total_information"]), icon="FILE")
@@ -61,14 +61,17 @@ class BIM_PT_documents(Panel):
         if self.props.breadcrumbs:
             row.operator("bim.add_document_reference", text="", icon="FILE_HIDDEN")
 
+        active_document = self.props.active_document
+
         if self.props.active_document_id:
             row.operator("bim.edit_document", text="", icon="CHECKMARK")
             row.operator("bim.disable_editing_document", text="", icon="CANCEL")
-        elif self.props.documents and self.props.active_document_index < len(self.props.documents):
-            ifc_definition_id = self.props.documents[self.props.active_document_index].ifc_definition_id
+        elif active_document:
+            ifc_definition_id = active_document.ifc_definition_id
             row.operator("bim.select_document_objects", text="", icon="RESTRICT_SELECT_OFF").document = (
                 ifc_definition_id
             )
+            row.operator("bim.assign_document", text="", icon="BRUSH_DATA").document = ifc_definition_id
             row.operator("bim.enable_editing_document", text="", icon="GREASEPENCIL").document = ifc_definition_id
             row.operator("bim.remove_document", text="", icon="X").document = ifc_definition_id
 
@@ -90,20 +93,22 @@ class BIM_PT_object_documents(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
+        if not (ifc_id := tool.Blender.get_ifc_definition_id(obj)):
             return False
-        return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
+            return False
+        return True
 
     def draw(self, context):
         if not ObjectDocumentData.is_loaded:
             ObjectDocumentData.load()
 
         obj = context.active_object
-        self.oprops = obj.BIMObjectProperties
-        self.props = context.scene.BIMDocumentProperties
-        self.file = IfcStore.get_file()
+        self.oprops = tool.Blender.get_object_bim_props(obj)
+        self.props = tool.Document.get_document_props()
+        self.file = tool.Ifc.get()
 
         self.draw_add_ui()
 
@@ -155,6 +160,7 @@ class BIM_UL_documents(UIList):
                 row.label(text="", icon="FILE_HIDDEN")
 
             split1 = row.split(factor=0.1)
-            split1.label(text=item.identification)
+            # split1.label(text=item.identification)
+            split1.prop(item, "identification", text="", emboss=False)
             split2 = split1.split(factor=0.9)
-            split2.label(text=item.name)
+            split2.prop(item, "name", text="", emboss=False)

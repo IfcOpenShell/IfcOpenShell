@@ -68,12 +68,14 @@ class ExploreTool(bpy.types.WorkSpaceTool):
         op.hotkey = "S_M"
         row = layout.row(align=True)
         row.prop(prop, "measurement_type", text="Measure Type", expand=True, icon_only=True, emboss=True)
+        row = layout.row(align=True)
+        op = row.operator("bim.clear_measurement", text="", icon="X")
 
 
 class ExploreHotkey(bpy.types.Operator):
     bl_idname = "bim.explore_hotkey"
-    bl_label = "Explore Hotkey"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_label = ""
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
 
@@ -104,4 +106,7 @@ class ExploreHotkey(bpy.types.Operator):
         for obj in tool.Blender.get_selected_objects():
             obj.select_set(False)
         measure_type = bpy.context.scene.MeasureToolSettings.measurement_type
-        bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type=measure_type)
+        if measure_type == "FACE_AREA":
+            bpy.ops.bim.measure_face_area_tool("INVOKE_DEFAULT")
+        else:
+            bpy.ops.bim.measure_tool("INVOKE_DEFAULT", measure_type=measure_type)

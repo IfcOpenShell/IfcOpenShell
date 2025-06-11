@@ -24,6 +24,7 @@ import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.model.data import AuthoringData
 from bpy.types import WorkSpaceTool
+from functools import partial
 
 
 class CoveringTool(WorkSpaceTool):
@@ -31,7 +32,7 @@ class CoveringTool(WorkSpaceTool):
     bl_context_mode = "OBJECT"
     bl_idname = "bim.covering_tool"
     bl_label = "Covering Tool"
-    bl_description = "Create and edit coverings"
+    bl_description = "Create and edit coverings, including ceiling, flooring, cladding, roofing, moulding, skirtingboard, insulation, membrane, sleeving, and wrapping coverings"
     bl_icon = os.path.join(os.path.dirname(__file__), "ops.authoring.covering")
     bl_widget = None
     ifc_element_type = "IfcCoveringType"
@@ -45,17 +46,15 @@ class CoveringTool(WorkSpaceTool):
         CoveringToolUI.draw(context, layout, ifc_element_type=cls.ifc_element_type)
 
 
-def add_layout_hotkey(layout: bpy.types.UILayout, text: str, hotkey: str, description: str) -> None:
-    args = ("covering", layout, text, hotkey, description)
-    tool.Blender.add_layout_hotkey_operator(*args)
+add_layout_hotkey = partial(tool.Blender.add_layout_hotkey_operator, tool_name="covering", module_name=__name__)
 
 
 class CoveringToolUI:
     @classmethod
     def draw(cls, context, layout, ifc_element_type=None):
         cls.layout = layout
-        cls.props = context.scene.BIMModelProperties
-        cls.covering_props = context.scene.BIMCoveringProperties
+        cls.props = tool.Model.get_model_props()
+        cls.covering_props = tool.Covering.get_covering_props()
 
         row = cls.layout.row(align=True)
         if not tool.Ifc.get():
@@ -88,7 +87,7 @@ class CoveringToolUI:
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
             row.label(text="", icon="EVENT_A")
-            row.operator("bim.add_constr_type_instance", text="Add")
+            row.operator("bim.add_occurrence", text="Add")
 
             row = cls.layout.row(align=True)
             row.label(text="", icon="EVENT_SHIFT")
@@ -136,8 +135,8 @@ class CoveringToolUI:
         if AuthoringData.data["ifc_classes"]:
             if cls.props.ifc_class:
                 box = cls.layout.box()
-                if AuthoringData.data["type_thumbnail"]:
-                    box.template_icon(icon_value=AuthoringData.data["type_thumbnail"], scale=5)
+                if thumbnail := AuthoringData.data["relating_type_data"].get("thumbnail"):
+                    box.template_icon(icon_value=thumbnail, scale=5)
                 else:
                     op = box.operator("bim.load_type_thumbnails", text="Load Thumbnails", icon="FILE_REFRESH")
                     op.ifc_class = cls.props.ifc_class
@@ -145,8 +144,8 @@ class CoveringToolUI:
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.covering_hotkey"
-    bl_label = "Hotkey"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_label = ""
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
 
@@ -159,12 +158,11 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         return operator.description or ""
 
     def _execute(self, context):
-        #        self.props = context.scene.BIMCoveringProperties
+        self.props = tool.Covering.get_covering_props()
         getattr(self, f"hotkey_{self.hotkey}")()
 
     def invoke(self, context, event):
         # https://blender.stackexchange.com/questions/276035/how-do-i-make-operators-remember-their-property-values-when-called-from-a-hotkey
-        # self.props = context.scene.BIMSpatialProperties
         return self.execute(context)
 
     def draw(self, context):
@@ -175,22 +173,22 @@ class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(active_obj)
         container = tool.Root.get_default_container()
 
-        if AuthoringData.data["predefined_type"] == "FLOORING":
+        if AuthoringData.data["relating_type_data"].get("predefined_type") == "FLOORING":
             if element and bpy.context.selected_objects and element.is_a("IfcWall"):
                 bpy.ops.bim.add_instance_flooring_coverings_from_walls()
             elif container:
                 bpy.ops.bim.add_instance_flooring_covering_from_cursor()
             else:
-                bpy.ops.bim.add_constr_type_instance()
-        elif AuthoringData.data["predefined_type"] == "CEILING":
+                bpy.ops.bim.add_occurrence()
+        elif AuthoringData.data["relating_type_data"].get("predefined_type") == "CEILING":
             if element and bpy.context.selected_objects and element.is_a("IfcWall"):
                 bpy.ops.bim.add_instance_ceiling_coverings_from_walls()
             elif container:
                 bpy.ops.bim.add_instance_ceiling_covering_from_cursor()
             else:
-                bpy.ops.bim.add_constr_type_instance()
+                bpy.ops.bim.add_occurrence()
         else:
-            bpy.ops.bim.add_constr_type_instance()
+            bpy.ops.bim.add_occurrence()
 
     def hotkey_S_G(self):
         active_obj = bpy.context.active_object

@@ -22,6 +22,7 @@ import ifcopenshell.api.unit
 
 class TestRemoveUnit(test.bootstrap.IFC4):
     def test_remove_a_single_unit(self):
+        self.file.createIfcProject()
         unit = self.file.createIfcContextDependentUnit()
         ifcopenshell.api.unit.remove_unit(self.file, unit=unit)
         assert len(self.file.by_type("IfcContextDependentUnit")) == 0
@@ -44,9 +45,10 @@ class TestRemoveUnit(test.bootstrap.IFC4):
         assert assignment.Units == (unit2,)
 
     def test_removing_a_unit_deeply(self):
+        self.file.createIfcProject()
         unit = ifcopenshell.api.unit.add_conversion_based_unit(self.file, name="foot")
         ifcopenshell.api.unit.remove_unit(self.file, unit=unit)
-        assert len([e for e in self.file]) == 0
+        assert len([e for e in self.file]) == 1
 
 
 class TestRemoveUnitIFC2X3(test.bootstrap.IFC2X3, TestRemoveUnit):

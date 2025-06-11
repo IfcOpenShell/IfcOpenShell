@@ -22,6 +22,9 @@ import bpy
 import string
 import svgwrite
 import openpyxl
+import openpyxl.cell  # Unnecessary, bug in typeshed.
+import openpyxl.utils  # Unnecessary, bug in typeshed.
+import bonsai.tool as tool
 
 from bonsai.bim.module.drawing.svgwriter import SvgWriter
 from odf.opendocument import load as load_ods
@@ -55,7 +58,7 @@ def a1_to_rc(cell):
 
 
 class Scheduler:
-    def schedule(self, infile, outfile):
+    def schedule(self, infile: str, outfile: str) -> None:
         self.svg = svgwrite.Drawing(
             outfile,
             debug=False,
@@ -70,14 +73,15 @@ class Scheduler:
         elif infile.endswith("xlsx"):
             self.schedule_xlsx(infile, outfile)
 
-    def parse_css(self, infile):
+    def parse_css(self, infile: str) -> None:
+        props = tool.Drawing.get_document_props()
         stylesheet_path = os.path.splitext(infile)[0] + ".css"
         if not os.path.exists(stylesheet_path):
-            stylesheet_rel_path = getattr(bpy.context.scene.DocProperties, "schedules_stylesheet_path")
-            ifc_file_path = os.path.dirname(IfcStore.path)
+            stylesheet_rel_path = props.schedules_stylesheet_path
+            ifc_file_path = os.path.dirname(tool.Ifc.get_path())
             stylesheet_path = ifc_file_path + "\\" + stylesheet_rel_path
             if not os.path.exists(stylesheet_path):
-                stylesheet_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", "schedule.css")
+                stylesheet_path = tool.Blender.get_data_dir_path(Path("assets") / "schedule.css")
         with open(stylesheet_path, "r") as stylesheet:
             css = stylesheet.read()
 
@@ -90,7 +94,7 @@ class Scheduler:
 
         self.svg.defs.add(self.svg.style(css))
 
-    def schedule_xlsx(self, infile, outfile):
+    def schedule_xlsx(self, infile: str, outfile: str) -> None:
         workbook = openpyxl.open(infile, data_only=True)
         sheet = workbook.active
 
@@ -235,7 +239,7 @@ class Scheduler:
         self.svg["viewBox"] = "0 0 {} {}".format(total_width, total_height)
         self.svg.save(pretty=True)
 
-    def schedule_ods(self, infile, outfile):
+    def schedule_ods(self, infile: str, outfile: str) -> None:
         doc = load_ods(infile)
 
         # useful for debugging ods
@@ -494,11 +498,11 @@ class Scheduler:
         self.svg["viewBox"] = "0 0 {} {}".format(total_width, total_height)
         self.svg.save(pretty=True)
 
-    def get_style(self, style_name, styles):
+    def get_style(self, style_name: str, styles: dict) -> dict:
         style = styles[style_name] if style_name else {}
         return style
 
-    def get_box_alignment(self, style):
+    def get_box_alignment(self, style: dict) -> str:
         if style and "vertical-align" in style and style["vertical-align"] != "automatic":
             vertical_align = style["vertical-align"]
         else:

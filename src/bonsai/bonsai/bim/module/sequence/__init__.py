@@ -38,8 +38,6 @@ classes = (
     operator.AssignSuccessor,
     operator.AssignWorkSchedule,
     operator.Bonsai_DatePicker,
-    operator.Bonsai_DatePickerSetDate,
-    operator.Bonsai_RedrawDatePicker,
     operator.CalculateTaskDuration,
     operator.ClearPreviousAnimation,
     operator.ContractAllTasks,

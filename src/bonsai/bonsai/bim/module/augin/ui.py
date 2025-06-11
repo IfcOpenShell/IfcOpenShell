@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy.types
+import bonsai.tool as tool
 
 
 class BIM_PT_augin(bpy.types.Panel):
@@ -47,7 +48,8 @@ class BIM_PT_augin(bpy.types.Panel):
         row = layout.row()
         row.label(text="Logged in as " + props.username)
 
-        if not context.scene.BIMProperties.ifc_file:
+        bim_props = tool.Blender.get_bim_props()
+        if not bim_props.ifc_file:
             row = layout.row()
             row.label(text="No IFC Found")
             return

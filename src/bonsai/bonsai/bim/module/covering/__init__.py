@@ -27,7 +27,7 @@ classes = (
 
 def register():
     if not bpy.app.background:
-        bpy.utils.register_tool(workspace.CoveringTool, after={"bim.structural_tool"}, separator=False, group=False)
+        bpy.utils.register_tool(workspace.CoveringTool, after={"bim.wall_tool"}, separator=False, group=False)
     bpy.types.Scene.BIMCoveringProperties = bpy.props.PointerProperty(type=prop.BIMCoveringProperties)
 
 

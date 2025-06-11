@@ -24,15 +24,17 @@ import ifcopenshell.util.unit
 import ifcopenshell.api.owner.settings
 import bonsai.bim
 import bonsai.tool as tool
-import bonsai.core.owner as core_owner
 from bpy.app.handlers import persistent
 from bonsai.bim.ifc import IfcStore
-from bonsai.bim.module.owner.prop import get_user_person, get_user_organisation
 from bonsai.bim.module.model.data import AuthoringData
-from bonsai.bim.module.model.workspace import LIST_OF_TOOLS, TOOLS_TO_CLASSES_MAP
+from bonsai.bim.module.aggregate.decorator import AggregateDecorator
+from bonsai.bim.module.georeference.decorator import GeoreferenceDecorator
+from bonsai.bim.module.model.decorator import WallAxisDecorator, SlabDirectionDecorator
+from bonsai.bim.module.nest.decorator import NestDecorator
 from mathutils import Vector
-from math import cos, degrees
-from typing import Union, Callable
+from math import cos
+from typing import Union
+from collections.abc import Callable
 
 
 cwd = os.path.dirname(os.path.realpath(__file__))
@@ -52,19 +54,24 @@ def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -
         return
 
     if isinstance(obj, bpy.types.Material):
-        if ifc_definition_id := obj.BIMStyleProperties.ifc_definition_id:
-            IfcStore.get_file().by_id(ifc_definition_id).Name = obj.name
-        refresh_ui_data()
+        props = tool.Style.get_material_style_props(obj)
+        if ifc_definition_id := props.ifc_definition_id:
+            if props.is_renaming:
+                props.is_renaming = False
+                return
+            tool.Ifc.get().by_id(ifc_definition_id).Name = obj.name
+            refresh_ui_data()
         return
 
-    if not obj.BIMObjectProperties.ifc_definition_id:
+    props = tool.Blender.get_object_bim_props(obj)
+    if not props.ifc_definition_id:
         return
 
-    if obj.BIMObjectProperties.is_renaming:
-        obj.BIMObjectProperties.is_renaming = False
+    if props.is_renaming:
+        props.is_renaming = False
         return
 
-    element = IfcStore.get_file().by_id(obj.BIMObjectProperties.ifc_definition_id)
+    element = tool.Ifc.get().by_id(props.ifc_definition_id)
     if "/" in obj.name:
         object_name = obj.name
         element_name = obj.name.split("/", 1)[1]
@@ -80,8 +87,8 @@ def name_callback(obj: Union[bpy.types.Object, bpy.types.Material], data: str) -
     if not element.is_a("IfcRoot"):
         return
     element.Name = element_name
-    if obj.BIMObjectProperties.collection:
-        obj.BIMObjectProperties.collection.name = object_name
+    if props.collection:
+        props.collection.name = object_name
     refresh_ui_data()
 
 
@@ -100,29 +107,44 @@ def update_bim_tool_props():
         return
     mode = bpy.context.mode
     current_tool = bpy.context.workspace.tools.from_space_view3d_mode(mode)
-    if not current_tool or current_tool.idname not in LIST_OF_TOOLS:
+    if not current_tool or current_tool.idname not in tool.Blender.get_list_of_tools():
         return
     element = tool.Ifc.get_entity(obj)
     if not element:
         return
+
+    props = tool.Model.get_model_props()
+    aprops = tool.Drawing.get_annotation_props()
+    TOOLS_TO_CLASSES_MAP = tool.Blender.get_tools_to_classes_map()
+    is_annotation_tool = current_tool.idname == "bim.annotation_tool"
+    if element.is_a("IfcTypeProduct") or element.is_a("IfcProduct"):
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type:
+            is_bim_tool = current_tool.idname == "bim.bim_tool"
+
+            if is_annotation_tool and (object_type := tool.Drawing.get_annotation_type_object_type(element_type)):
+                aprops.object_type = object_type
+                aprops.relating_type_id = str(element_type.id())
+                return
+
+            if is_bim_tool:
+                props.ifc_class = element_type.is_a()
+
+            if is_bim_tool or TOOLS_TO_CLASSES_MAP.get(current_tool.idname) == element_type.is_a():
+                props.relating_type_id = str(element_type.id())
+
+    if is_annotation_tool:
+        return
+
     representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
     if not representation:
         return
 
-    props = bpy.context.scene.BIMModelProperties
-    if element.is_a("IfcElementType") or element.is_a("IfcElement"):
-        element_type = ifcopenshell.util.element.get_type(element)
-        if element_type:
-            is_bim_tool = current_tool.idname == "bim.bim_tool"
-            if is_bim_tool:
-                props.ifc_class = element_type.is_a()
-            if is_bim_tool or TOOLS_TO_CLASSES_MAP.get(current_tool.idname) == element_type.is_a():
-                props.relating_type_id = str(element_type.id())
     extrusion = tool.Model.get_extrusion(representation)
     if not extrusion:
         return
 
-    def get_x_angle(extrusion):
+    def get_x_angle(extrusion: ifcopenshell.entity_instance) -> float:
         x, y, z = extrusion.ExtrudedDirection.DirectionRatios
         x_angle = Vector((0, 1)).angle_signed(Vector((y, z)))
         return x_angle
@@ -134,7 +156,7 @@ def update_bim_tool_props():
     if AuthoringData.data["active_material_usage"] == "LAYER2":
         x_angle = get_x_angle(extrusion)
         axis = tool.Model.get_wall_axis(obj)["reference"]
-        props.extrusion_depth = extrusion.Depth * si_conversion * cos(x_angle)
+        props.extrusion_depth = abs(extrusion.Depth * si_conversion * cos(x_angle))
         props.length = (axis[1] - axis[0]).length
         props.x_angle = x_angle
 
@@ -180,6 +202,9 @@ def refresh_ui_data():
     and it need to be refreshed manually if needed.
     """
     from bonsai.bim import modules
+    import bonsai.bim.ui
+
+    bonsai.bim.ui.refresh()
 
     for name, value in modules.items():
         try:
@@ -196,35 +221,38 @@ def refresh_ui_data():
     if isinstance(tool.Ifc.get(), ifcopenshell.sqlite):
         tool.Ifc.get().clear_cache()
 
-    bpy.context.scene.DocProperties.should_draw_decorations = bpy.context.scene.DocProperties.should_draw_decorations
+    props = tool.Drawing.get_document_props()
+    props.should_draw_decorations = props.should_draw_decorations
     if bpy.context.scene.WebProperties.is_connected:
         tool.Web.send_webui_data()
 
 
 @persistent
-def loadIfcStore(scene):
+def loadIfcStore(scene: bpy.types.Scene) -> None:
     IfcStore.purge()
     refresh_ui_data()
-    if not IfcStore.get_file():
+    if not tool.Ifc.get():
         return
-    IfcStore.get_schema()
+    tool.Ifc.schema()
     IfcStore.relink_all_objects()
 
 
 @persistent
-def undo_post(scene):
-    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
-        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
-        IfcStore.undo(until_key=bpy.context.scene.BIMProperties.last_transaction)
+def undo_post(scene: bpy.types.Scene) -> None:
+    props = tool.Blender.get_bim_props()
+    if IfcStore.last_transaction != props.last_transaction:
+        IfcStore.last_transaction = props.last_transaction
+        IfcStore.undo(until_key=props.last_transaction)
         refresh_ui_data()
     tool.Ifc.rebuild_element_maps()
 
 
 @persistent
-def redo_post(scene):
-    if IfcStore.last_transaction != bpy.context.scene.BIMProperties.last_transaction:
-        IfcStore.last_transaction = bpy.context.scene.BIMProperties.last_transaction
-        IfcStore.redo(until_key=bpy.context.scene.BIMProperties.last_transaction)
+def redo_post(scene: bpy.types.Scene) -> None:
+    props = tool.Blender.get_bim_props()
+    if IfcStore.last_transaction != props.last_transaction:
+        IfcStore.last_transaction = props.last_transaction
+        IfcStore.redo(until_key=props.last_transaction)
         refresh_ui_data()
     tool.Ifc.rebuild_element_maps()
 
@@ -235,8 +263,7 @@ def get_application(ifc: ifcopenshell.file) -> ifcopenshell.entity_instance:
     for element in ifc.by_type("IfcApplication"):
         if element.ApplicationIdentifier == "Bonsai" and element.Version == version:
             return element
-    return ifcopenshell.api.run(
-        "owner.add_application",
+    return ifcopenshell.api.owner.add_application(
         ifc,
         version=version,
         application_full_name="Bonsai",
@@ -257,10 +284,10 @@ def get_user(ifc: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None
         return pao
 
 
-def viewport_shading_changed_callback(area):
+def viewport_shading_changed_callback(area: bpy.types.Area) -> None:
     shading = area.spaces.active.shading.type
     if shading == "RENDERED":
-        bpy.context.scene.BIMStylesProperties.active_style_type = "External"
+        tool.Style.get_style_props().active_style_type = "External"
 
 
 def subscribe_to_viewport_shading_changes():
@@ -305,8 +332,6 @@ def load_post(scene):
     # After appending the workspace to ensure BIM viewport is affected.
     subscribe_to_viewport_shading_changes()
 
-    bpy.ops.bim.override_escape("INVOKE_DEFAULT")
-
     # To improve usability for new users, we hijack the scene properties
     # tab. We override default scene properties panels with our own poll
     # to hide them unless the user has chosen to view Blender properties.
@@ -317,4 +342,32 @@ def load_post(scene):
     tool.Blender.setup_tabs()
 
     if tool.Ifc.get() and bpy.data.is_saved:
-        bpy.context.scene.BIMProperties.has_blend_warning = True
+        props = tool.Blender.get_bim_props()
+        props.has_blend_warning = True
+
+    # Bonsai overlays
+    georeference_props = tool.Georeference.get_georeference_props()
+    aggregate_props = tool.Aggregate.get_aggregate_props()
+    nest_props = tool.Nest.get_nest_props()
+    model_props = tool.Model.get_model_props()
+    GeoreferenceDecorator.uninstall()
+    AggregateDecorator.uninstall()
+    NestDecorator.uninstall()
+    WallAxisDecorator.uninstall()
+    SlabDirectionDecorator.uninstall()
+    if georeference_props.should_visualise:
+        GeoreferenceDecorator.install(bpy.context)
+    if aggregate_props.aggregate_decorator:
+        AggregateDecorator.install(bpy.context)
+    if nest_props.nest_decorator:
+        NestDecorator.install(bpy.context)
+    if model_props.show_wall_axis:
+        WallAxisDecorator.install(bpy.context)
+    if model_props.show_slab_direction:
+        SlabDirectionDecorator.install(bpy.context)
+
+    if preferences.should_use_snap and (scene := bpy.context.scene):
+        # Snapping is off by default in Blender, but in BIM, it's more useful to be on
+        scene.tool_settings.use_snap = True
+        # Match default Bonsai snaps
+        scene.tool_settings.snap_elements_base = {"EDGE", "EDGE_PERPENDICULAR", "VERTEX", "EDGE_MIDPOINT", "FACE"}

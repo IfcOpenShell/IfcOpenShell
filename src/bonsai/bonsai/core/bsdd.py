@@ -26,33 +26,20 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def get_class_properties(client: bsdd.Client, bsdd: tool.Bsdd) -> dict[str, dict[str, Any]]:
-    bsdd.clear_class_psets()
-    data = bsdd.get_active_class_data(client)
-    pset_dict = bsdd.get_property_dict(data)
-    if pset_dict is None:
-        return {}
-    bsdd.create_class_psets(pset_dict)
-    return pset_dict
+def import_bsdd_classes(bsdd: tool.Bsdd, obj, obj_type) -> int:
+    return bsdd.import_classes(obj, obj_type)
 
 
-def load_bsdd(client: bsdd.Client, bsdd: tool.Bsdd) -> None:
-    bsdd.clear_domains()
-    if bsdd.should_load_preview_domains():
-        dictionaries = bsdd.get_dictionaries(client)
-    else:
-        dictionaries = bsdd.get_dictionaries(client, "Active")
-    bsdd.create_dictionaries(dictionaries)
+def search_bsdd_properties(bsdd: tool.Bsdd, keyword: str, obj, obj_type) -> int:
+    return bsdd.import_properties(obj, obj_type, keyword)
 
 
-def search_class(keyword: str, client: bsdd.Client, bsdd: tool.Bsdd) -> int:
+def load_bsdd(bsdd: tool.Bsdd) -> None:
+    bsdd.clear_dictionaries()
+    bsdd.create_dictionaries(bsdd.get_dictionaries())
+
+
+def search_bsdd_class(bsdd: tool.Bsdd, keyword: str) -> int:
     bsdd.clear_classes()
     related_entities = bsdd.get_related_ifc_entities()
-    active_dictionary_uri = bsdd.get_active_dictionary_uri()
-    classes = bsdd.search_class(client, keyword, [active_dictionary_uri], related_entities)
-    bsdd.create_classes(classes)
-    return len(classes)
-
-
-def set_active_bsdd_dictionary(name: str, uri: str, bsdd: tool.Bsdd) -> None:
-    bsdd.set_active_bsdd(name, uri)
+    return bsdd.search_class(keyword, related_entities)

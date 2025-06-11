@@ -15,6 +15,7 @@ on:
       - 'src/ifcparse/**'
       - 'src/ifcwrap/**'
       - 'src/qtviewer/**'
+      - 'src/svgfill/**'
       - 'src/serializers/**'
       - 'conda/**'
       - 'cmake/**'
@@ -23,15 +24,15 @@ on:
 
 jobs:
   activate:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     if: |
       github.repository == 'IfcOpenShell/IfcOpenShell' &&
       !contains(github.event.head_commit.message, 'skip ci')
     steps:
       - run: echo ok go
 
-  build:
-    runs-on: ubuntu-latest
+  compile-and-test:
+    runs-on: ubuntu-22.04
     needs: activate
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +48,6 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install xmlschema xsdata numpy lxml pytest isodate lark networkx tabulate python-dateutil shapely
-          pip install mathutils
           pip install src/bcf --no-deps
           pip install https://github.com/Andrej730/aud/archive/refs/heads/master-reduced-size.zip
 
@@ -126,11 +126,22 @@ jobs:
           python tests.py
           cd ../src/ifcopenshell-python
           mv ifcopenshell ifcopenshell-local # Force testing on installed module
-          make test
-          cd ../bcf && make test
+          pip install -e ../ifcpatch --no-deps # Needed for sql.py tests.
+          ERROR=0
+          make test || ERROR=1
+          cd ../bcf && make test || ERROR=1
           pip install requests
-          cd ../bsdd && make test
+          cd ../bsdd && make test || ERROR=1
           pip install deepdiff
-          cd ../ifcdiff && make test
-          cd ../ifcpatch && make test
-          cd ../ifctester && make test
+          cd ../ifcdiff && make test || ERROR=1
+          cd ../ifcpatch && make test || ERROR=1
+          pip install -e ../ifctester --no-deps
+          cd ../ifctester && make test || ERROR=1
+          # Run mathutils related tests at the end to ensure no other code is relying on mathutils.
+          cd ../ifcopenshell-python
+          pip install mathutils
+          make test-mathutils || ERROR=1
+          if [ $ERROR -ne 0 ]; then
+            echo "One or more tests failed";
+            exit 1;
+          fi

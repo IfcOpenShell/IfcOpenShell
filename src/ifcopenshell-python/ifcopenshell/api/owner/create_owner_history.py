@@ -97,7 +97,6 @@ def create_owner_history(file: ifcopenshell.file) -> Union[ifcopenshell.entity_i
         # element.OwnerHistory = ifcopenshell.api.owner.create_owner_history(model)
         space = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSpace")
     """
-    settings = {}
 
     user = ifcopenshell.api.owner.settings.get_user(file)
     if file.schema != "IFC2X3" and not user:

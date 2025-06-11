@@ -39,9 +39,11 @@ class WebData:
 
     @classmethod
     def get_ifc_file_name(cls):
-        filename = os.path.basename(bpy.context.scene.BIMProperties.ifc_file)
+        props = tool.Blender.get_bim_props()
+        filename = os.path.basename(props.ifc_file)
         return filename
 
     @classmethod
     def get_is_dirty(cls):
-        return bpy.context.scene.BIMProperties.is_dirty
+        props = tool.Blender.get_bim_props()
+        return props.is_dirty

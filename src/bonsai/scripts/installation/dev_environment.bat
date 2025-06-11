@@ -6,9 +6,9 @@ setlocal
 rem Uncomment setting REPO_PATH to use custom path for IfcOpenShell repository.
 rem Otherwise by default it is assumed script is executed from IfcOpenShell directory.
 rem SET REPO_PATH=%HOMEDRIVE%\Users\%USERNAME%\Where\Your\Git\Repository\Is\Cloned\IfcOpenShell
-SET BLENDER_PATH=%HOMEDRIVE%\Users\%USERNAME%\AppData\Roaming\Blender Foundation\Blender\4.2
+SET BLENDER_PATH=%HOMEDRIVE%\Users\%USERNAME%\AppData\Roaming\Blender Foundation\Blender\4.4
 SET PACKAGE_PATH=%BLENDER_PATH%\extensions\.local\lib\python3.11\site-packages
-SET BONSAI_PATH=%BLENDER_PATH%\extensions\user_default\bonsai
+SET BONSAI_PATH=%BLENDER_PATH%\extensions\raw_githubusercontent_com\bonsai
 
 
 echo SETUP BONSAI ADD-ON LIVE DEVELOPMENT ENVIRONMENT
@@ -29,6 +29,12 @@ pause
 
 echo Changing to the Git repository directory...
 cd %REPO_PATH%
+
+:: Handle symlinks (they could be disabled by default on Windows).
+git config --local core.symlinks true
+:: Delete and checkout is the only way to ensure files are added as symlinks.
+del /Q src\bonsai\bonsai\bim\data\templates\projects\*.ifc
+git checkout -- src/bonsai/bonsai/bim/data/templates/projects/*.ifc
 
 echo Copy over compiled IfcOpenShell files...
 copy "%PACKAGE_PATH%\ifcopenshell\*_wrapper*" "%CD%\src\ifcopenshell-python\ifcopenshell\"
@@ -67,6 +73,7 @@ mklink /D "%PACKAGE_PATH%\ifcfm" "%CD%\src\ifcfm\ifcfm"
 echo Manually downloading some third party dependencies...
 curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js -o "%PACKAGE_PATH%\bonsai\bim\data\gantt\jsgantt.js"
 curl https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css -o "%PACKAGE_PATH%\bonsai\bim\data\gantt\jsgantt.css"
-curl -L https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o "%PACKAGE_PATH%\bonsai\bim\schema\Brick.ttl"
+curl -L https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl -o "%PACKAGE_PATH%\bonsai\bim\data\brick\Brick.ttl"
+curl https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js -o "%PACKAGE_PATH%\bonsai\bim\data\webui\static\js\jquery.min.js"
 
 pause

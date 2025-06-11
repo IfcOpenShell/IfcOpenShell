@@ -23,7 +23,6 @@ classes = (
     operator.ExecuteIfcTester,
     operator.SelectRequirement,
     operator.SelectFailedEntities,
-    operator.SelectEntity,
     operator.ExportBcf,
     prop.FailedEntities,
     prop.Specification,

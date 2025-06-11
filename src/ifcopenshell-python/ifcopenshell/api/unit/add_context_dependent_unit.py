@@ -35,9 +35,7 @@ def add_context_dependent_unit(
         sensible normal unit for. In that case, firstly stop whatever you're
         doing and have a hard think about your life, and then if life really
         is going that badly for you, check out the IFC docs for IfcUnitEnum.
-    :type unit_type: str
     :param name: Give your unit a name. X what? X bananas?
-    :type name: str
     :param dimensions: Units typically measure one of 7 fundamental physical
         dimensions: length, mass, time, electric current, temperature,
         substance amount, or luminous intensity. These are represented as a
@@ -46,9 +44,7 @@ def add_context_dependent_unit(
         where as an area unit is (2, 0, 0, 0, 0, 0, 0). A unit of meters per
         second is (1, 0, -1, 0, 0, 0, 0). For context dependent units, it is
         recommended to leave this as the default of (0, 0, 0, 0, 0, 0, 0).
-    :type dimensions: list[int]
     :return: The new IfcContextDependentUnit
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -57,11 +53,9 @@ def add_context_dependent_unit(
         # Boxes of things
         ifcopenshell.api.unit.add_context_dependent_unit(model, name="BOXES")
     """
-    settings = {"unit_type": unit_type, "name": name, "dimensions": dimensions}
-
     return file.create_entity(
         "IfcContextDependentUnit",
-        Dimensions=file.createIfcDimensionalExponents(*settings["dimensions"]),
-        UnitType=settings["unit_type"],
-        Name=settings["name"],
+        Dimensions=file.createIfcDimensionalExponents(*dimensions),
+        UnitType=unit_type,
+        Name=name,
     )

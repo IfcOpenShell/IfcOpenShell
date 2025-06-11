@@ -21,11 +21,15 @@ import ifcopenshell.guid
 import ifcopenshell.api.nest
 import ifcopenshell.api.owner
 import ifcopenshell.api.sequence
+import ifcopenshell.util.date
 import ifcopenshell.util.element
 import ifcopenshell.util.sequence
+from typing import Union, Any
 
 
-def duplicate_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+def duplicate_task(
+    file: ifcopenshell.file, task: ifcopenshell.entity_instance
+) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
     """Duplicates a task in the project
 
     The following relationships are also duplicated:
@@ -35,9 +39,7 @@ def duplicate_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance) 
     * The copy will have duplicated nested tasks
 
     :param task: The task to be duplicated
-    :type task: ifcopenshell.entity_instance
     :return: The duplicated task or the list of duplicated tasks if the latter has children
-    :rtype: ifcopenshell.entity_instance or list of ifcopenshell.entity_instance
 
     Example:
     .. code:: python
@@ -55,6 +57,9 @@ def duplicate_task(file: ifcopenshell.file, task: ifcopenshell.entity_instance) 
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         self.tracker = {"current": [], "duplicate": []}
         self.duplicate_task(self.settings["task"])
@@ -151,7 +156,9 @@ class Usecase:
                                 duration_type=inverse.TimeLag.DurationType,
                             )
 
-    def create_object_reference(self, relating_object, related_object):
+    def create_object_reference(
+        self, relating_object: ifcopenshell.entity_instance, related_object: ifcopenshell.entity_instance
+    ) -> ifcopenshell.entity_instance:
         referenced_by = None
         if relating_object.Declares:
             referenced_by = relating_object.Declares[0]
@@ -159,7 +166,7 @@ class Usecase:
             related_objects = list(referenced_by.RelatedObjects)
             related_objects.append(related_object)
             referenced_by.RelatedObjects = related_objects
-            ifcopenshell.api.owner.update_owner_history(self.file, **{"element": referenced_by})
+            ifcopenshell.api.owner.update_owner_history(self.file, element=referenced_by)
         else:
             referenced_by = self.file.create_entity(
                 "IfcRelDefinesByObject",

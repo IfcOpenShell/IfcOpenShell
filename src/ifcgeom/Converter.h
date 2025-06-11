@@ -28,7 +28,7 @@ namespace ifcopenshell { namespace geometry {
 
 		Converter(const std::string& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& settings);
 		
-		~Converter() {}
+		~Converter();
 
 		ifcopenshell::geometry::abstract_mapping* mapping() const { return mapping_; }
 
@@ -51,6 +51,8 @@ namespace ifcopenshell { namespace geometry {
 
 		IfcGeom::BRepElement* create_brep_for_representation_and_product(ifcopenshell::geometry::taxonomy::ptr, const IfcUtil::IfcBaseEntity* product, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place);
 		IfcGeom::BRepElement* create_brep_for_processed_representation(const IfcUtil::IfcBaseEntity* product, const ifcopenshell::geometry::taxonomy::matrix4::ptr& place, IfcGeom::BRepElement*);
+
+		const ifcopenshell::geometry::Settings& settings() { return settings_; }
 	};
 }}
 

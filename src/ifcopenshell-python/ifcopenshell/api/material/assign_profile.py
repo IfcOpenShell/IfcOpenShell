@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.util.representation
+from typing import Any
 
 
 def assign_profile(
@@ -47,7 +48,7 @@ def assign_profile(
 
         # First, let's create a material set. This will later be assigned
         # to our beam type element.
-        material_set = ifcopenshell.api.material.add_profile_set(model,
+        material_set = ifcopenshell.api.material.add_material_set(model,
             name="B1", set_type="IfcMaterialProfileSet")
 
         # Create a steel material.
@@ -55,7 +56,7 @@ def assign_profile(
 
         # Create an I-beam profile curve. Notice how we name our profiles
         # based on standardised steel profile names.
-        hea100 = usecase.file.create_entity(
+        hea100 = model.create_entity(
             "IfcIShapeProfileDef", ProfileName="HEA100", ProfileType="AREA",
             OverallWidth=100, OverallDepth=96, WebThickness=5, FlangeThickness=8, FilletRadius=12,
         )
@@ -83,7 +84,7 @@ def assign_profile(
         # Now let's change the profile to a HEA200 standard profile instead.
         # This will automatically change the body representation that we
         # just added as well to a HEA200 profile.
-        hea200 = usecase.file.create_entity(
+        hea200 = model.create_entity(
             "IfcIShapeProfileDef", ProfileName="HEA200", ProfileType="AREA",
             OverallWidth=200, OverallDepth=190, WebThickness=6.5, FlangeThickness=10, FilletRadius=18,
         )
@@ -91,18 +92,17 @@ def assign_profile(
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"material_profile": material_profile, "profile": profile}
-    return usecase.execute()
+    return usecase.execute(material_profile, profile)
 
 
 class Usecase:
     file: ifcopenshell.file
 
-    def execute(self) -> None:
+    def execute(self, material_profile: ifcopenshell.entity_instance, profile: ifcopenshell.entity_instance) -> None:
         # TODO: handle composite profiles
-        old_profile = self.settings["material_profile"].Profile
-        self.settings["material_profile"].Profile = self.settings["profile"]
-        for profile_set in self.settings["material_profile"].ToMaterialProfileSet:
+        old_profile = material_profile.Profile
+        material_profile.Profile = profile
+        for profile_set in material_profile.ToMaterialProfileSet:
             for inverse in self.file.get_inverse(profile_set):
                 if not inverse.is_a("IfcMaterialProfileSetUsage"):
                     continue
@@ -111,20 +111,20 @@ class Usecase:
                         if not rel.is_a("IfcRelAssociatesMaterial"):
                             continue
                         for element in rel.RelatedObjects:
-                            self.change_profile(element)
+                            self.change_profile(element, profile)
                 else:
                     for rel in inverse.AssociatedTo:
                         for element in rel.RelatedObjects:
-                            self.change_profile(element)
+                            self.change_profile(element, profile)
 
-        if old_profile and len(self.file.get_inverse(old_profile)) == 0:
+        if old_profile and self.file.get_total_inverses(old_profile) == 0:
             # TODO: check remove deep
             self.file.remove(old_profile)
 
-    def change_profile(self, element: ifcopenshell.entity_instance) -> None:
+    def change_profile(self, element: ifcopenshell.entity_instance, profile: ifcopenshell.entity_instance) -> None:
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if not representation:
             return
         for subelement in self.file.traverse(representation):
             if subelement.is_a("IfcSweptAreaSolid"):
-                subelement.SweptArea = self.settings["profile"]
+                subelement.SweptArea = profile

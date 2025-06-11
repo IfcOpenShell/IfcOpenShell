@@ -20,7 +20,6 @@ from __future__ import annotations
 import os
 import bpy
 import json
-import numpy as np
 import datetime
 import zipfile
 import tempfile
@@ -48,7 +47,7 @@ class IfcExporter:
         self.set_header()
         IfcStore.update_cache()
         self.sync_all_objects()
-        self.sync_edited_objects()
+        tool.Project.save_linked_models_to_ifc()
         extension = self.ifc_export_settings.output_file.split(".")[-1].lower()
         if extension == "ifczip":
             with tempfile.TemporaryDirectory() as unzipped_path:
@@ -77,11 +76,7 @@ class IfcExporter:
     def set_header(self):
         self.file.wrapped_data.header.file_name.name = os.path.basename(self.ifc_export_settings.output_file)
         self.file.wrapped_data.header.file_name.time_stamp = (
-            datetime.datetime.utcnow()
-            .replace(tzinfo=datetime.timezone.utc)
-            .astimezone()
-            .replace(microsecond=0)
-            .isoformat()
+            datetime.datetime.utcnow().replace(tzinfo=datetime.UTC).astimezone().replace(microsecond=0).isoformat()
         )
         self.file.wrapped_data.header.file_name.preprocessor_version = "IfcOpenShell {}".format(ifcopenshell.version)
         self.file.wrapped_data.header.file_name.originating_system = "{} {}".format(
@@ -101,47 +96,14 @@ class IfcExporter:
                 result = self.sync_object_placement(obj)
                 if result:
                     results.append(result)
-                result = self.sync_object_material(obj)
-                # TODO: sync_object_material always returns None
-                # so it's never really appended
                 if result:
                     results.append(result)
             except ReferenceError:
                 pass  # The object is likely deleted
         return results
 
-    def sync_edited_objects(self) -> list[ifcopenshell.entity_instance]:
-        results: list[ifcopenshell.entity_instance] = []
-        for obj in IfcStore.edited_objs.copy():
-            if not obj:
-                continue
-            try:
-                if isinstance(obj, bpy.types.Material):
-                    # TODO: do we add materials to edited_objs?
-                    continue
-                else:
-                    element = tool.Ifc.get_entity(obj)
-                    if element:
-                        results.append(element)
-                    bpy.ops.bim.update_representation(obj=obj.name)
-            except ReferenceError:
-                pass  # The object is likely deleted
-        IfcStore.edited_objs.clear()
-        return results
-
-    def sync_object_material(self, obj: bpy.types.Object) -> None:
-        if not obj.data or not isinstance(obj.data, bpy.types.Mesh):
-            return
-        if not self.has_changed_materials(obj):
-            return
-        bpy.ops.bim.update_representation(obj=obj.name)
-
-    def has_changed_materials(self, obj: bpy.types.Object) -> bool:
-        checksum = obj.data.BIMMeshProperties.material_checksum
-        return checksum != tool.Geometry.get_material_checksum(obj)
-
     def sync_object_placement(self, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
-        element = self.file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+        element = self.file.by_id(tool.Blender.get_object_bim_props(obj).ifc_definition_id)
         if tool.Geometry.is_scaled(obj):
             bpy.ops.bim.update_representation(obj=obj.name)
             # update_representation might not apply scale if the object has openings

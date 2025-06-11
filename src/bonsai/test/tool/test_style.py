@@ -20,6 +20,7 @@ import os
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.root
 import ifcopenshell.util.representation
 import bonsai.core.tool
 import bonsai.tool as tool
@@ -47,7 +48,7 @@ class TestCanSupportRenderingStyle(NewFile):
 
 class TestDisableEditing(NewFile):
     def test_run(self):
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         props.is_editing_style = 1
         subject.disable_editing()
         assert props.is_editing_style == 0
@@ -55,14 +56,15 @@ class TestDisableEditing(NewFile):
 
 class TestDisableEditingStyles(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMStylesProperties.is_editing = True
+        props = tool.Style.get_style_props()
+        props.is_editing = True
         subject.disable_editing_styles()
-        assert bpy.context.scene.BIMStylesProperties.is_editing is False
+        assert props.is_editing is False
 
 
 class TestEnableEditing(NewFile):
     def test_run(self):
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         style = ifcopenshell.file().create_entity("IfcSurfaceStyle")
         subject.enable_editing(style)
         assert props.is_editing_style is style.id()
@@ -70,9 +72,10 @@ class TestEnableEditing(NewFile):
 
 class TestEnableEditingStyles(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMStylesProperties.is_editing = False
+        props = props = tool.Style.get_style_props()
+        props.is_editing = False
         subject.enable_editing_styles()
-        assert bpy.context.scene.BIMStylesProperties.is_editing is True
+        assert props.is_editing is True
 
 
 class TestExportSurfaceAttributes(NewFile):
@@ -85,9 +88,10 @@ class TestGetActiveStyleType(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        bpy.context.scene.BIMStylesProperties.style_type = "IfcSurfaceStyle"
+        props = tool.Style.get_style_props()
+        props.style_type = "IfcSurfaceStyle"
         assert subject.get_active_style_type() == "IfcSurfaceStyle"
-        bpy.context.scene.BIMStylesProperties.style_type = "IfcCurveStyle"
+        props.style_type = "IfcCurveStyle"
         assert subject.get_active_style_type() == "IfcCurveStyle"
 
 
@@ -102,7 +106,7 @@ class TestGetElementsByStyle(NewFile):
     def test_run(self):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
-        element = ifcopenshell.api.run("root.create_entity", ifc, ifc_class="IfcWall")
+        element = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
         style = ifc.createIfcSurfaceStyle()
         item = ifc.createIfcExtrudedAreaSolid()
         ifc.createIfcStyledItem(Item=item, Styles=[style])
@@ -117,29 +121,13 @@ class TestGetName(NewFile):
         assert subject.get_name(bpy.data.materials.new("Material")) == "Material"
 
 
-class TestGetStyle(NewFile):
-    def test_getting_no_style(self):
-        assert subject.get_style(bpy.data.materials.new("Material")) is None
-
-    def test_getting_a_linked_style(self):
-        tool.Ifc.set(ifcopenshell.file())
-        style = tool.Ifc.get().createIfcSurfaceStyle()
-        obj = bpy.data.materials.new("Material")
-        obj.BIMStyleProperties.ifc_definition_id = style.id()
-        assert subject.get_style(obj) == style
-
-    def test_getting_nothing_for_a_broken_link_style(self):
-        obj = bpy.data.materials.new("Material")
-        obj.BIMStyleProperties.ifc_definition_id = 1
-        assert subject.get_style(obj) == None
-
-
 class TestGetSurfaceRenderingAttributes(NewFile):
     def test_get_different_surface_and_diffuse_colours_from_a_principled_bsdf(self):
         obj = bpy.data.materials.new("Material")
         obj.diffuse_color = [1, 1, 1, 1]
         obj.use_nodes = True
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert node
         node.inputs["Alpha"].default_value = 0.8
         node.inputs["Base Color"].default_value = [0.5, 0.5, 0.5, 0.5]
         node.inputs["Roughness"].default_value = 0.2
@@ -168,6 +156,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlossy")
@@ -199,6 +188,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node and output
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfDiffuse")
@@ -230,6 +220,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node and output
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeBsdfGlass")
@@ -261,6 +252,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node and output
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeEmission")
@@ -291,6 +283,7 @@ class TestGetSurfaceRenderingAttributes(NewFile):
         obj.use_nodes = True
         output = tool.Blender.get_material_node(obj, "OUTPUT_MATERIAL")
         node = tool.Blender.get_material_node(obj, "BSDF_PRINCIPLED")
+        assert obj.node_tree and node and output
         obj.node_tree.nodes.remove(node)
 
         node = obj.node_tree.nodes.new(type="ShaderNodeVolumePrincipled")
@@ -322,7 +315,8 @@ class TestGetSurfaceRenderingStyle(NewFile):
         style_item = tool.Ifc.get().createIfcSurfaceStyleRendering()
         style = tool.Ifc.get().createIfcSurfaceStyle(Styles=[style_item])
         obj = bpy.data.materials.new("Material")
-        obj.BIMStyleProperties.ifc_definition_id = style.id()
+        props = tool.Style.get_material_style_props(obj)
+        props.ifc_definition_id = style.id()
         assert subject.get_surface_rendering_style(obj) == style_item
 
 
@@ -361,7 +355,7 @@ class TestGetSurfaceShadingStyle(NewFile):
         style_item = tool.Ifc.get().createIfcSurfaceStyleShading()
         style = tool.Ifc.get().createIfcSurfaceStyle(Styles=[style_item])
         obj = bpy.data.materials.new("Material")
-        obj.BIMStyleProperties.ifc_definition_id = style.id()
+        tool.Ifc.link(style, obj)
         assert subject.get_surface_shading_style(obj) == style_item
 
     def test_do_not_get_rendering_styles(self):
@@ -369,7 +363,7 @@ class TestGetSurfaceShadingStyle(NewFile):
         style_item = tool.Ifc.get().createIfcSurfaceStyleRendering()
         style = tool.Ifc.get().createIfcSurfaceStyle(Styles=[style_item])
         obj = bpy.data.materials.new("Material")
-        obj.BIMStyleProperties.ifc_definition_id = style.id()
+        tool.Ifc.link(style, obj)
         assert subject.get_surface_shading_style(obj) is None
 
 
@@ -379,7 +373,7 @@ class TestGetSurfaceTextureStyle(NewFile):
         style_item = tool.Ifc.get().createIfcSurfaceStyleWithTextures()
         style = tool.Ifc.get().createIfcSurfaceStyle(Styles=[style_item])
         obj = bpy.data.materials.new("Material")
-        obj.BIMStyleProperties.ifc_definition_id = style.id()
+        tool.Ifc.link(style, obj)
         assert subject.get_surface_texture_style(obj) == style_item
 
 
@@ -395,24 +389,24 @@ class TestGetUVMaps(NewFile):
 class TestImportSurfaceAttributes(NewFile):
     def test_run(self):
         tool.Ifc.set(ifc := ifcopenshell.file())
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         style = ifc.create_entity("IfcSurfaceStyle", "Name", "BOTH")
         subject.import_surface_attributes(style)
-        assert props.attributes.get("Name").string_value == "Name"
-        assert props.attributes.get("Side").enum_value == "BOTH"
+        assert props.attributes["Name"].string_value == "Name"
+        assert props.attributes["Side"].enum_value == "BOTH"
 
     def test_importing_surface_attributes_twice(self):
         tool.Ifc.set(ifc := ifcopenshell.file())
         style = ifc.create_entity("IfcSurfaceStyle", "Name", "BOTH")
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         subject.import_surface_attributes(style)
         assert len(props.attributes) == 2
-        assert props.attributes.get("Name").string_value == "Name"
-        assert props.attributes.get("Side").enum_value == "BOTH"
+        assert props.attributes["Name"].string_value == "Name"
+        assert props.attributes["Side"].enum_value == "BOTH"
         subject.import_surface_attributes(style)
         assert len(props.attributes) == 2
-        assert props.attributes.get("Name").string_value == "Name"
-        assert props.attributes.get("Side").enum_value == "BOTH"
+        assert props.attributes["Name"].string_value == "Name"
+        assert props.attributes["Side"].enum_value == "BOTH"
 
 
 class TestImportPresentationStyles(NewFile):
@@ -421,7 +415,7 @@ class TestImportPresentationStyles(NewFile):
         tool.Ifc.set(ifc)
         style = ifc.createIfcCurveStyle(Name="Name")
         subject.import_presentation_styles("IfcCurveStyle")
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         assert props.styles[0].ifc_definition_id == style.id()
         assert props.styles[0].name == "Name"
         assert props.styles[0].total_elements == 0
@@ -431,7 +425,7 @@ class TestImportPresentationStyles(NewFile):
         tool.Ifc.set(ifc)
         style = ifc.createIfcFillAreaStyle(Name="Name")
         subject.import_presentation_styles("IfcFillAreaStyle")
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         assert props.styles[0].ifc_definition_id == style.id()
         assert props.styles[0].name == "Name"
         assert props.styles[0].total_elements == 0
@@ -441,7 +435,7 @@ class TestImportPresentationStyles(NewFile):
         tool.Ifc.set(ifc)
         style = ifc.createIfcSurfaceStyle(Name="Name")
         subject.import_presentation_styles("IfcSurfaceStyle")
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         assert props.styles[0].ifc_definition_id == style.id()
         assert props.styles[0].name == "Name"
         assert props.styles[0].total_elements == 0
@@ -451,7 +445,7 @@ class TestImportPresentationStyles(NewFile):
         tool.Ifc.set(ifc)
         style = ifc.createIfcTextStyle(Name="Name")
         subject.import_presentation_styles("IfcTextStyle")
-        props = bpy.context.scene.BIMStylesProperties
+        props = tool.Style.get_style_props()
         assert props.styles[0].ifc_definition_id == style.id()
         assert props.styles[0].name == "Name"
         assert props.styles[0].total_elements == 0
@@ -459,9 +453,10 @@ class TestImportPresentationStyles(NewFile):
 
 class TestIsEditingStyles(NewFile):
     def test_run(self):
-        bpy.context.scene.BIMStylesProperties.is_editing = False
+        props = tool.Style.get_style_props()
+        props.is_editing = False
         assert subject.is_editing_styles() is False
-        bpy.context.scene.BIMStylesProperties.is_editing = True
+        props.is_editing = True
         assert subject.is_editing_styles() is True
 
 

@@ -1,0 +1,93 @@
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+body {
+    width: 100%;
+    height: 100vh;
+
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    grid-template-rows: 80px 1fr;
+    grid-template-areas:
+      "menu menu"
+      "toolbar main";
+}
+.msg {
+    padding-top: 25vh;
+    text-align: center;
+}
+.msg {
+  display: none;
+}
+body.loading .msg {
+  display: block;
+}
+form {
+  display: inline-block;
+  padding: 1vw 5vw;
+  border: solid 1px #eee;
+  border-radius: 1vw;
+}
+form div {
+  margin-bottom: 3vw;
+}
+canvas {
+  display: block;
+}
+#status1 {
+  font-size: 150%;
+  font-weight: bold;
+}
+#branding {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  text-align: right;
+}
+input[type='button'] {
+  padding: 8px 64px;
+  margin-top: 3vw;
+}
+ul {
+  background: #fafafa;
+}
+ul, ul li {
+  padding: 0;
+  margin: 0;
+}
+ul li {
+  display: inline-block;
+  border: solid 1px #ccc;
+  cursor: pointer;
+  width: 64px;
+  height: 64px;
+  padding: 16px;
+  border-radius: 8px;
+  background: #eee;
+  font-size: 32px !important;
+  margin: 8px;
+}
+.tools li {
+  display: block;
+  float: left;
+}
+ul li:hover {
+  border-color: #aaa;
+  background: #ddd;
+}
+.menu {
+  grid-area: menu;
+}
+.toolbar {
+  grid-area: toolbar;
+}
+.toolbar li.active {
+  border-color: #888;
+  background: #ccc;
+}
+.main {
+  grid-area: main;
+}

@@ -21,7 +21,7 @@ import json
 import bisect
 import ifcopenshell
 import ifcopenshell.api
-import ifcopenshell.guid
+import ifcopenshell.api.group
 import ifcopenshell.util.element
 import ifcopenshell.util.selector
 import bonsai.tool as tool
@@ -39,6 +39,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Literal, get_args, assert_never
 
 
 class AddFilterGroup(Operator):
@@ -101,20 +102,10 @@ class SelectFilterElements(bpy.types.Operator):
 
     def execute(self, context):
         filter_groups = tool.Search.get_filter_groups(self.module)
-        global_ids = []
-        for obj in context.selected_objects:
-            if element := tool.Ifc.get_entity(obj):
-                if global_id := getattr(element, "GlobalId", None):
-                    global_ids.append(global_id)
-        if len(global_ids) > 50:
-            # Too much to store in a string property
-            name = f"globalid-filter-{ifcopenshell.guid.new()}"
-            text_data = bpy.data.texts.new(name)
-            text_data.from_string(",".join(global_ids))
-            filter_groups[self.group_index].filters[self.index].value = f"bpy.data.texts['{name}']"
+        query = tool.Search.get_query_for_selected_elements()
+        filter_groups[self.group_index].filters[self.index].value = query
+        if query.startswith("bpy.data.texts['"):
             self.report({"INFO"}, f'List of Global Ids was saved to the text file "{name}" in the current .blend file')
-        else:
-            filter_groups[self.group_index].filters[self.index].value = ",".join(global_ids)
         return {"FINISHED"}
 
 
@@ -153,26 +144,34 @@ class EditFilterQuery(Operator, tool.Ifc.Operator):
 class Search(Operator):
     bl_idname = "bim.search"
     bl_label = "Search"
+    bl_description = "Search IFC elements by the provided query and add them to the current selection."
 
-    property_group: bpy.props.StringProperty(name="Property Group", default="")
+    PropertyGroupType = Literal["CsvProperties", "BIMSearchProperties"]
+    property_group: bpy.props.EnumProperty(
+        name="Property Group", items=[(i, i, "") for i in get_args(PropertyGroupType)]
+    )
+
+    if TYPE_CHECKING:
+        property_group: PropertyGroupType
 
     def execute(self, context):
         if self.property_group == "CsvProperties":
-            props = context.scene.CsvProperties
+            props = tool.Blender.get_csv_props()
         elif self.property_group == "BIMSearchProperties":
-            props = context.scene.BIMSearchProperties
+            props = tool.Search.get_search_props()
         else:
-            raise Exception(f"bim.search - unexpected property group name '{self.property_group}'.")
+            assert_never(self.property_group)
 
         results = ifcopenshell.util.selector.filter_elements(
             tool.Ifc.get(), tool.Search.export_filter_query(props.filter_groups)
         )
 
-        total_selected = 0
-        for element in results:
-            if obj := tool.Ifc.get_object(element):
-                obj.select_set(True)
-        self.report({"INFO"}, f"{len(results)} Results")
+        objs = [obj for e in results if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)]
+        for obj in objs:
+            tool.Blender.set_object_selection(obj)
+        if objs:
+            tool.Blender.set_active_object(objs[0])
+        self.report({"INFO"}, f"{len(results)} Results.")
         return {"FINISHED"}
 
 
@@ -202,9 +201,9 @@ class SaveSearch(Operator, tool.Ifc.Operator):
             group = group[0]
             group.Description = description
         else:
-            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), name=self.name, description=description)
+            group = ifcopenshell.api.group.add_group(tool.Ifc.get(), name=self.name, description=description)
         if results:
-            ifcopenshell.api.run("group.assign_group", tool.Ifc.get(), products=list(results), group=group)
+            ifcopenshell.api.group.assign_group(tool.Ifc.get(), products=list(results), group=group)
 
     def draw(self, context):
         row = self.layout.row()
@@ -223,11 +222,12 @@ class LoadSearch(Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         filter_groups = tool.Search.get_filter_groups(self.module)
-        group = tool.Ifc.get().by_id(int(context.scene.BIMSearchProperties.saved_searches))
+        props = tool.Search.get_search_props()
+        group = tool.Ifc.get().by_id(int(props.saved_searches))
         tool.Search.import_filter_query(tool.Search.get_group_query(group), filter_groups)
 
     def draw(self, context):
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         row = self.layout.row()
         row.prop(props, "saved_searches", text="")
 
@@ -238,6 +238,7 @@ class LoadSearch(Operator, tool.Ifc.Operator):
 class ColourByProperty(Operator):
     bl_idname = "bim.colour_by_property"
     bl_label = "Colour by Property"
+    bl_description = "Color all visible objects by the provided property."
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
@@ -249,7 +250,7 @@ class ColourByProperty(Operator):
         return result
 
     def _execute(self, context):
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         query = props.colourscheme_query if props.colourscheme_key == "QUERY" else props.colourscheme_key
 
         if not query:
@@ -274,6 +275,8 @@ class ColourByProperty(Operator):
             colourscheme = {cs.name: {"colour": cs.colour[0:3], "total": 0} for cs in props.colourscheme}
 
         for obj in context.visible_objects:
+            if obj.type not in ("MESH", "CURVE"):
+                continue
             element = tool.Ifc.get_entity(obj)
             if not element:
                 continue
@@ -364,15 +367,16 @@ class ColourByProperty(Operator):
 class SelectByProperty(Operator):
     bl_idname = "bim.select_by_property"
     bl_label = "Select by Property"
+    bl_description = "Select objects based on currently selected colored property value."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         return props.active_colourscheme_index < len(props.colourscheme)
 
     def execute(self, context):
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         query = props.colourscheme_query if props.colourscheme_key == "QUERY" else props.colourscheme_key
 
         if not query:
@@ -430,7 +434,7 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
         if not self.name:
             return
 
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         query = props.colourscheme_query
 
         group = [g for g in tool.Ifc.get().by_type("IfcGroup") if g.Name == self.name]
@@ -443,7 +447,7 @@ class SaveColourscheme(Operator, tool.Ifc.Operator):
             group.Description = json.dumps(description)
         else:
             description = json.dumps({"type": "BBIM_Search", "colourscheme": colourscheme, "colourscheme_query": query})
-            group = ifcopenshell.api.run("group.add_group", tool.Ifc.get(), name=self.name, description=description)
+            group = ifcopenshell.api.group.add_group(tool.Ifc.get(), name=self.name, description=description)
 
     def invoke(self, context, event):
         return context.window_manager.invoke_props_dialog(self)
@@ -456,7 +460,7 @@ class LoadColourscheme(Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         group = tool.Ifc.get().by_id(int(props.saved_colourschemes))
         description = json.loads(group.Description)
         props.colourscheme_query = description.get("colourscheme_query")
@@ -468,7 +472,7 @@ class LoadColourscheme(Operator, tool.Ifc.Operator):
             new.colour = data["colour"]
 
     def draw(self, context):
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         row = self.layout.row()
         row.prop(props, "saved_colourschemes", text="")
 
@@ -528,6 +532,7 @@ class SelectIfcClass(Operator):
             if element := tool.Ifc.get_entity(obj):
                 classes.add(element.is_a())
                 predefined_types.add(ifcopenshell.util.element.get_predefined_type(element))
+        result = ""
         for cls in classes:
             for element in tool.Ifc.get().by_type(cls):
                 if (
@@ -537,6 +542,15 @@ class SelectIfcClass(Operator):
                     continue
                 if obj := tool.Ifc.get_object(element):
                     tool.Blender.select_object(obj)
+
+            # copy selection query to clipboard
+            if not result:
+                result = f"{cls}"
+            else:
+                result += f", {cls}"
+            bpy.context.window_manager.clipboard = result
+            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+
         return {"FINISHED"}
 
 
@@ -549,19 +563,20 @@ class ResetObjectColours(Operator):
     def execute(self, context):
         for obj in context.visible_objects:
             obj.color = (1, 1, 1, 1)
-        props = context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         props.colourscheme.clear()
         return {"FINISHED"}
 
 
 class ToggleFilterSelection(Operator):
     "Click to select/deselect current selection"
+
     bl_idname = "bim.toggle_filter_selection"
     bl_label = "Toggle Filter Selection"
     action: EnumProperty(items=(("SELECT", "Select", ""), ("DESELECT", "Deselect", "")))
 
     def execute(self, context):
-        props = bpy.context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         self.selecting_actionbool = self.action == "SELECT"
         if props.filter_type == "CLASSES":
             for ifc_class in props.filter_classes:
@@ -586,7 +601,7 @@ class ActivateIfcClassFilter(Operator):
         return True
 
     def invoke(self, context, event):
-        props = bpy.context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         props.filter_classes.clear()
         ifc_types = {}
         for obj in context.selected_objects:
@@ -605,18 +620,20 @@ class ActivateIfcClassFilter(Operator):
         return context.window_manager.invoke_props_dialog(self, width=250)
 
     def execute(self, context):
-        bpy.context.scene.BIMSearchProperties.filter_classes.clear()
+        props = tool.Search.get_search_props()
+        props.filter_classes.clear()
         return {"FINISHED"}
 
     def draw(self, context):
+        props = tool.Search.get_search_props()
         self.layout.template_list(
             "BIM_UL_ifc_class_filter",
             "",
-            context.scene.BIMSearchProperties,
+            props,
             "filter_classes",
-            context.scene.BIMSearchProperties,
+            props,
             "filter_classes_index",
-            rows=min(len(bpy.context.scene.BIMSearchProperties.filter_classes), 20),
+            rows=min(len(props.filter_classes), 20),
         )
         row = self.layout.row(align=True)
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
@@ -637,7 +654,7 @@ class ActivateContainerFilter(Operator):
         return True
 
     def invoke(self, context, event):
-        props = bpy.context.scene.BIMSearchProperties
+        props = tool.Search.get_search_props()
         props.filter_container.clear()
 
         containers = {}
@@ -660,18 +677,20 @@ class ActivateContainerFilter(Operator):
         return context.window_manager.invoke_props_dialog(self, width=250)
 
     def execute(self, context):
-        bpy.context.scene.BIMSearchProperties.filter_container.clear()
+        props = tool.Search.get_search_props()
+        props.filter_container.clear()
         return {"FINISHED"}
 
     def draw(self, context):
+        props = tool.Search.get_search_props()
         self.layout.template_list(
             "BIM_UL_ifc_building_storey_filter",
             "",
-            context.scene.BIMSearchProperties,
+            props,
             "filter_container",
-            context.scene.BIMSearchProperties,
+            props,
             "filter_container_index",
-            rows=min(len(bpy.context.scene.BIMSearchProperties.filter_container), 20),
+            rows=min(len(props.filter_container), 20),
         )
         row = self.layout.row(align=True)
         row.operator("bim.toggle_filter_selection", text="Select All").action = "SELECT"
@@ -696,45 +715,130 @@ class SelectSimilar(Operator, tool.Ifc.Operator):
     bl_idname = "bim.select_similar"
     bl_label = "Select Similar"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Select objects with a similar value\n\n" + "SHIFT+CLICK display the sum of all selected objects"
 
     key: bpy.props.StringProperty()
     calculate_sum: bpy.props.BoolProperty(
         name="Calculate Sum of Selected Objects", default=False, options={"SKIP_SAVE"}
     )
     calculated_sum: bpy.props.FloatProperty(name="Calculated Sum", default=0.0)
+    remove_from_selection: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def description(cls, context, properties):
+        base = "Select objects with a similar value\n\n" "SHIFT+CLICK remove from selection set."
+
+        key = getattr(properties, "key", None)
+        active = context.active_object
+        if not active or not key:
+            return base
+
+        element = tool.Ifc.get_entity(active)
+        if not element:
+            return base
+
+        value = ifcopenshell.util.selector.get_element_value(element, key)
+        if isinstance(value, (int, float)):
+            return base + ("\nCTRL+CLICK display the sum of all selected objects")
+        else:
+            return base
+
+    @classmethod
+    def poll(cls, context):
+        if context.selected_objects or context.active_object:
+            return True
+        cls.poll_message_set("No selected or active object found.")
+        return False
 
     def invoke(self, context, event):
-        if event.type == "LEFTMOUSE" and event.shift:
-            self.calculate_sum = True
+        self.calculate_sum = event.ctrl and event.type == "LEFTMOUSE"
+        self.remove_from_selection = event.shift and event.type == "LEFTMOUSE"
         return self.execute(context)
 
-    def _execute(self, context):
-        props = context.scene.BIMSearchProperties
-        obj = context.active_object
-        element = tool.Ifc.get_entity(obj)
-        key = self.key
-        if key == "PredefinedType":
-            key = "predefined_type"
-        value = ifcopenshell.util.selector.get_element_value(element, key)
+    def execute(self, context):
+        self.calculated_sum = 0  # reset if run before
+        key = "predefined_type" if self.key == "PredefinedType" else self.key
+        dprops = tool.Drawing.get_document_props()
+        tolerance = dprops.tolerance
+        formatted_tolerance = f"{tolerance:.{max(0, -int(f'{tolerance:.1e}'.split('e')[-1])) if tolerance < 1 else 1}f}"
 
-        if self.calculate_sum and isinstance(value, (int, float)):
-            total = 0
-            for obj in context.selected_objects:
-                element = tool.Ifc.get_entity(obj)
-                if not element:
-                    continue
-                value = ifcopenshell.util.selector.get_element_value(element, key)
-                if value:
-                    total += value
-            self.calculated_sum = total
-            bpy.context.window_manager.clipboard = str(self.calculated_sum)
-            self.report({"INFO"}, f"({self.calculated_sum}) was copied to the clipboard.")
+        if self.calculate_sum:
+            self._calculate_sum(context, key)
         else:
-            self.calculated_sum = 0
-            for obj in context.visible_objects:
-                element = tool.Ifc.get_entity(obj)
-                if not element:
-                    continue
-                if ifcopenshell.util.selector.get_element_value(element, key) == value:
-                    obj.select_set(True)
+            reference_values = self._get_reference_values(context, key)
+            if not reference_values:
+                self.report({"WARNING"}, "No valid reference values found.")
+                return {"CANCELLED"}
+
+            matched_count = self._select_objects(context, key, reference_values, tolerance)
+            verb = "Deselected" if self.remove_from_selection else "Selected"
+
+            if all(isinstance(v, (int, float)) for v in reference_values):
+                self.report(
+                    {"INFO"},
+                    f"{verb} all objects that share the same ({self.key}) value(s) within a ({formatted_tolerance}) tolerance.",
+                )
+            else:
+                self.report(
+                    {"INFO"},
+                    f"{verb} all objects that share the same ({self.key}) value(s) from {len(reference_values)} reference object(s).",
+                )
+
+            self._generate_clipboard_query(reference_values[0] if reference_values else None, key)
+
+        return {"FINISHED"}
+
+    def _get_value(self, obj, key):
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return None
+        return ifcopenshell.util.selector.get_element_value(element, key)
+
+    def _get_reference_values(self, context, key):
+        objects = (
+            [context.active_object]
+            if self.remove_from_selection
+            else (context.selected_objects or [context.active_object])
+        )
+        values = [self._get_value(obj, key) for obj in objects]
+        return [v for v in values if v is not None]
+
+    def _compare_values(self, val1, val2, tolerance):
+        if isinstance(val1, (int, float)) and isinstance(val2, (int, float)):
+            return abs(val1 - val2) <= tolerance
+        return val1 == val2
+
+    def _select_objects(self, context, key, reference_values, tolerance):
+        count = 0
+        for obj in context.visible_objects:
+            obj_value = self._get_value(obj, key)
+            if obj_value is None:
+                continue
+            if any(self._compare_values(obj_value, ref_value, tolerance) for ref_value in reference_values):
+                obj.select_set(not self.remove_from_selection)
+                count += 1
+        return count
+
+    def _calculate_sum(self, context, key):
+        total = 0
+        for obj in context.selected_objects:
+            value = self._get_value(obj, key)
+            if isinstance(value, (int, float)):
+                total += value
+        self.calculated_sum = total
+        bpy.context.window_manager.clipboard = str(total)
+        self.report({"INFO"}, f"({total}) was copied to the clipboard.")
+
+    def _generate_clipboard_query(self, value, key):
+        key = "PredefinedType" if key == "predefined_type" else key
+        if value is True:
+            value = "TRUE"
+        elif value is False:
+            value = "FALSE"
+
+        if isinstance(value, list) and value:
+            result = ", ".join(f'{key} = "{item}"' for item in value)
+        else:
+            result = f'{key} = "{value}"'
+
+        bpy.context.window_manager.clipboard = result
+        self.report({"INFO"}, f"({result}) was copied to the clipboard.")

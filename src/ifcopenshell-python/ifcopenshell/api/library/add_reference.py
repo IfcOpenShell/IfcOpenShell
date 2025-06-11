@@ -50,14 +50,10 @@ def add_reference(file: ifcopenshell.file, library: ifcopenshell.entity_instance
         ifcopenshell.api.library.edit_reference(model,
             reference=reference, attributes={"Identification": "http://example.org/digitaltwin#AHU01"})
     """
-    settings = {
-        "library": library,
-    }
-
     if file.schema == "IFC2X3":
         reference = file.createIfcLibraryReference()
-        references = list(settings["library"].LibraryReference or [])
+        references = list(library.LibraryReference or [])
         references.append(reference)
-        settings["library"].LibraryReference = references
+        library.LibraryReference = references
         return reference
-    return file.createIfcLibraryReference(ReferencedLibrary=settings["library"])
+    return file.createIfcLibraryReference(ReferencedLibrary=library)

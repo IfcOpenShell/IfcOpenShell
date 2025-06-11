@@ -39,9 +39,7 @@ def remove_group(file: ifcopenshell.file, group: ifcopenshell.entity_instance) -
         group = ifcopenshell.api.group.add_group(model, name="Unit 1A")
         ifcopenshell.api.group.remove_group(model, group=group)
     """
-    settings = {"group": group}
-
-    for inverse_id in [i.id() for i in file.get_inverse(settings["group"])]:
+    for inverse_id in [i.id() for i in file.get_inverse(group)]:
         try:
             inverse = file.by_id(inverse_id)
         except:
@@ -49,11 +47,11 @@ def remove_group(file: ifcopenshell.file, group: ifcopenshell.entity_instance) -
         if inverse.is_a("IfcRelDefinesByProperties"):
             ifcopenshell.api.pset.remove_pset(
                 file,
-                product=settings["group"],
+                product=group,
                 pset=inverse.RelatingPropertyDefinition,
             )
         elif inverse.is_a("IfcRelAssignsToGroup"):
-            if inverse.RelatingGroup == settings["group"]:
+            if inverse.RelatingGroup == group:
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
@@ -63,7 +61,7 @@ def remove_group(file: ifcopenshell.file, group: ifcopenshell.entity_instance) -
                 file.remove(inverse)
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
-    history = settings["group"].OwnerHistory
-    file.remove(settings["group"])
+    history = group.OwnerHistory
+    file.remove(group)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)

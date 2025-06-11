@@ -39,6 +39,12 @@ group_types: dict[str, tuple[str, ...]] = {
     "IfcSystem": ("IfcProduct",),
     "IfcGroup": ("IfcObjectDefinition",),
 }
+# Subclasses.
+group_types["IfcDistributionCircuit"] = group_types["IfcDistributionSystem"]
+# Replaced by IfcDistributionCircuit in IFC4, though it wasn't limited to IfcDistributionElements:
+# "Usage of IfcElectricalCircuit is as for the supertype IfcSystem".
+group_types["IfcElectricalCircuit"] = group_types["IfcSystem"]
+
 
 FLOW_DIRECTION = Literal["SINK", "SOURCE", "SOURCEANDSINK", "NOTEDEFINED"]
 
@@ -60,13 +66,24 @@ def get_system_elements(system: ifcopenshell.entity_instance) -> list[ifcopenshe
 def get_element_systems(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
     results = []
     for rel in element.HasAssignments:
-        if rel.is_a("IfcRelAssignsToGroup") and rel.RelatingGroup.is_a() in (
-            "IfcSystem",
-            "IfcDistributionSystem",
-            "IfcBuildingSystem",
-            "IfcZone",
-        ):
-            results.append(rel.RelatingGroup)
+        if not rel.is_a("IfcRelAssignsToGroup"):
+            continue
+        group = rel.RelatingGroup
+        if not group.is_a("IfcSystem") or group.is_a() in ("IfcStructuralAnalysisModel", "IfcZone"):
+            continue
+        results.append(group)
+    return results
+
+
+def get_element_zones(element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
+    results = []
+    for rel in element.HasAssignments:
+        if not rel.is_a("IfcRelAssignsToGroup"):
+            continue
+        group = rel.RelatingGroup
+        if not group.is_a("IfcZone"):
+            continue
+        results.append(group)
     return results
 
 

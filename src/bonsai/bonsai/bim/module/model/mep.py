@@ -19,15 +19,20 @@
 import bpy
 import math
 import collections
+import collections.abc
 import bmesh
 import re
 import json
 import ifcopenshell
 import ifcopenshell.api
-import ifcopenshell.util.unit
-import ifcopenshell.util.system
+import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
+import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.system
+import ifcopenshell.util.unit
 import numpy as np
 import bonsai.core.type
 import bonsai.core.root
@@ -539,14 +544,10 @@ class MEPGenerator:
             ifc_representation_class=None,
         )
 
-        rel = ifcopenshell.api.run(
-            "material.assign_material", ifc_file, products=[element], type="IfcMaterialProfileSet"
-        )
+        rel = ifcopenshell.api.material.assign_material(ifc_file, products=[element], type="IfcMaterialProfileSet")
         profile_set = rel.RelatingMaterial
-        material_profile = ifcopenshell.api.run(
-            "material.add_profile", ifc_file, profile_set=profile_set, material=material
-        )
-        ifcopenshell.api.run("material.assign_profile", ifc_file, material_profile=material_profile, profile=profile)
+        material_profile = ifcopenshell.api.material.add_profile(ifc_file, profile_set=profile_set, material=material)
+        ifcopenshell.api.material.assign_profile(ifc_file, material_profile=material_profile, profile=profile)
         return element
 
     def add_obstruction(self, segment, length, at_segment_start=False):
@@ -580,7 +581,7 @@ class MEPGenerator:
         profile_joiner = DumbProfileJoiner()
         # create obstruction occurrence and setup it's length and port
         # NOTE: at this point we loose current blender objects selection
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=obstruction_type.id())
+        bpy.ops.bim.add_occurrence(relating_type_id=obstruction_type.id())
         obstruction_obj = bpy.context.active_object
         obstruction_obj.matrix_world = segment_matrix
 
@@ -800,7 +801,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
                 f"Failed to add transition - transition length is larger the segments and the distance between them.\n"
                 + f"Transition length: {full_transition_length:.2f}m, segments length: {entire_length:.2f}m",
             )
-            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=rep)
             return {"CANCELLED"}
 
         # calculate bunch of points to for adjustments
@@ -832,7 +833,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
         start_port_match = fitting_data["start_port_match"] if fitting_data else True
         if transition_type:
             # TODO: handle the case without creating a representation in the first place?
-            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=rep)
         else:  # create new fitting type if nothing is compatible
             mesh = bpy.data.meshes.new("Transition")
             obj = bpy.data.objects.new("Transition", mesh)
@@ -846,11 +847,10 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=False,
             )
             body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+            # Will implicitly remove `mesh`.
             tool.Model.replace_object_ifc_representation(body, obj, rep)
-            tool.Blender.remove_data_block(mesh)
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=transition_type, name="BBIM_Fitting")
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=transition_type, name="BBIM_Fitting")
+            ifcopenshell.api.pset.edit_pset(
                 tool.Ifc.get(),
                 pset=pset,
                 properties={"Data": tool.Ifc.get().createIfcText(json.dumps(transition_data, default=list))},
@@ -859,7 +859,7 @@ class MEPAddTransition(bpy.types.Operator, tool.Ifc.Operator):
 
         # NOTE: at this point we loose current blender objects selection
         # create transition element
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=transition_type.id())
+        bpy.ops.bim.add_occurrence(relating_type_id=transition_type.id())
         transition_obj = bpy.context.active_object
 
         # adjust transition segment rotation and location
@@ -921,11 +921,11 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             start_element = tool.Ifc.get_entity(start_object)
             end_element = tool.Ifc.get_entity(end_object)
             if not start_element or not end_element:
-                self.report({"ERROR"}, f"Two IFC elements should be selected for the bend.")
+                self.report({"ERROR"}, "Two IFC elements should be selected for the bend.")
                 return {"CANCELLED"}
 
         else:
-            self.report({"ERROR"}, f"Two IFC elements should be provided for the bend.")
+            self.report({"ERROR"}, "Two IFC elements should be provided for the bend.")
             return {"CANCELLED"}
 
         # check rotation difference
@@ -1183,7 +1183,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
                 z_sign_type = -1 if bbim_data["flip_z_axis"] else 1
 
             # TODO: handle the case without creating a representation in the first place?
-            ifcopenshell.api.run("geometry.remove_representation", ifc_file, representation=rep)
+            ifcopenshell.api.geometry.remove_representation(ifc_file, representation=rep)
         else:  # create new fitting type if nothing is compatible
             mesh = bpy.data.meshes.new("Bend")
             obj = bpy.data.objects.new("Bend", mesh)
@@ -1197,11 +1197,10 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
                 should_add_representation=False,
             )
             body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
+            # Will implicitly remove `mesh`.
             tool.Model.replace_object_ifc_representation(body, obj, rep)
-            tool.Blender.remove_data_block(mesh)
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=bend_type, name="BBIM_Fitting")
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=bend_type, name="BBIM_Fitting")
+            ifcopenshell.api.pset.edit_pset(
                 tool.Ifc.get(),
                 pset=pset,
                 properties={"Data": tool.Ifc.get().createIfcText(json.dumps(bend_data, default=list))},
@@ -1210,7 +1209,7 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
 
         # NOTE: at this point we loose current blender objects selection
         # create transition element
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=bend_type.id())
+        bpy.ops.bim.add_occurrence(relating_type_id=bend_type.id())
         fitting_obj = bpy.context.active_object
 
         # adjust fitting object rotation and location
@@ -1248,10 +1247,14 @@ class MEPAddBend(bpy.types.Operator, tool.Ifc.Operator):
             return matrix
 
         fitting_obj.matrix_world = get_fitting_matrix()
+        tool.Model.sync_object_ifc_position(fitting_obj)
 
         # add ports and connect them
         ports = tool.System.get_ports(tool.Ifc.get_entity(fitting_obj))
-        if not start_port_match:
+        start_co = ifcopenshell.util.placement.get_local_placement(start_port.ObjectPlacement)[:, 3]
+        port0_co = ifcopenshell.util.placement.get_local_placement(ports[0].ObjectPlacement)[:, 3]
+        # We cannot use start_port_match because tool.System.get_ports is unordered
+        if not np.allclose(start_co, port0_co):
             start_port, end_port = end_port, start_port
         tool.Ifc.run("system.connect_port", port1=ports[0], port2=start_port, direction="NOTDEFINED")
         tool.Ifc.run("system.connect_port", port1=ports[1], port2=end_port, direction="NOTDEFINED")

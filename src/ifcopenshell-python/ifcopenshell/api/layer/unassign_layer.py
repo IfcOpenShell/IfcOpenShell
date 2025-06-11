@@ -23,19 +23,15 @@ import ifcopenshell.util.element
 def unassign_layer(
     file: ifcopenshell.file, items: list[ifcopenshell.entity_instance], layer: ifcopenshell.entity_instance
 ) -> None:
-    """Unassigns representation items from a layer
+    """Unassigns representation items or representations from a layer
 
-    If the representation item isn't assigned to the layer, nothing will
-    happen.
+    If the element isn't assigned to the layer, nothing will happen.
     If after unassignment layer won't have any assigned items it will be
     removed to keep IFC valid.
 
-    :param items: A list IfcRepresentationItem elements to unassign
-    :type items: list[ifcopenshell.entity_instance]
+    :param items: A list IfcRepresentationItem / IfcRepresentation elements to unassign
     :param layer: The IfcPresentationLayerAssignment to unassign from
-    :type layer: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -65,17 +61,11 @@ def unassign_layer(
         # Let's undo it!
         ifcopenshell.api.layer.unassign_layer(model, items=[representation.Items[0]], layer=layer)
     """
-    settings = {
-        "items": items,
-        "layer": layer,
-    }
-
-    layer = settings["layer"]
     assigned_items = set(layer.AssignedItems) or set()
-    items = set(settings["items"])
-    if not items.issubset(assigned_items):
+    items_set = set(items)
+    if not items_set.issubset(assigned_items):
         return
-    assigned_items = list(assigned_items - items)
+    assigned_items = list(assigned_items - items_set)
 
     # keep IFC valid in case if there are no items left
     if assigned_items:

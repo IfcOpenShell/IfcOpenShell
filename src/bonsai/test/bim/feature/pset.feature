@@ -5,9 +5,10 @@ Scenario: Add pset - object
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
     When I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
@@ -17,15 +18,17 @@ Scenario: Add pset - multiple objects
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And additionally the object "IfcWall/Cube.001" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
@@ -36,9 +39,10 @@ Scenario: Enable pset editing - object
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
     And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
@@ -128,9 +132,10 @@ Scenario: Disable pset editing - object
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
     And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
@@ -202,9 +207,10 @@ Scenario: Edit pset - object
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
     And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
@@ -215,9 +221,10 @@ Scenario: Edit qto - object
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I set "active_object.PsetProperties.qto_name" to "Qto_WallBaseQuantities"
     When I press "bim.add_qto(obj='IfcWall/Cube', obj_type='Object')"
@@ -290,14 +297,16 @@ Scenario: Copy property to selected - copy property
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And additionally the object "IfcWall/Cube.001" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
@@ -310,9 +319,10 @@ Scenario: Remove pset - object
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"
     And I press "bim.add_pset(obj='IfcWall/Cube', obj_type='Object')"
@@ -326,15 +336,17 @@ Scenario: Remove pset - multiple objects
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
     And additionally the object "IfcWall/Cube.001" is selected
     And I set "active_object.PsetProperties.pset_name" to "Pset_WallCommon"

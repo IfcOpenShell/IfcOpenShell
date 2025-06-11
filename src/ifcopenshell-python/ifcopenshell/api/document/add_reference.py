@@ -38,9 +38,7 @@ def add_reference(file: ifcopenshell.file, information: ifcopenshell.entity_inst
 
     :param information: The IfcDocumentInformation that the reference will
         be created for
-    :type information: ifcopenshell.entity_instance
     :return: The newly created IfcDocumentReference entity
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -63,13 +61,11 @@ def add_reference(file: ifcopenshell.file, information: ifcopenshell.entity_inst
         ifcopenshell.api.document.edit_reference(model,
             reference=reference2, attributes={"Identification": "2.1.15"})
     """
-    settings = {"information": information}
-
     if file.schema == "IFC2X3":
         reference = file.create_entity("IfcDocumentReference", ItemReference="X")
-        if settings["information"]:
-            references = list(settings["information"].DocumentReferences or [])
+        if information:
+            references = list(information.DocumentReferences or [])
             references.append(reference)
-            settings["information"].DocumentReferences = references
+            information.DocumentReferences = references
         return reference
-    return file.create_entity("IfcDocumentReference", ReferencedDocument=settings["information"], Identification="X")
+    return file.create_entity("IfcDocumentReference", ReferencedDocument=information, Identification="X")

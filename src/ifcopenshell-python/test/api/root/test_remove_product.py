@@ -20,7 +20,7 @@ import test.bootstrap
 import ifcopenshell.api.unit
 import ifcopenshell.api.nest
 import ifcopenshell.api.root
-import ifcopenshell.api.void
+import ifcopenshell.api.feature
 import ifcopenshell.api.grid
 import ifcopenshell.api.type
 import ifcopenshell.api.pset
@@ -159,7 +159,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
     def test_removing_all_openings_of_an_element(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=element)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=element)
         ifcopenshell.api.root.remove_product(self.file, product=element)
         assert len(list(self.file)) == 0
         assert len(self.file.by_type("IfcWall")) == 0
@@ -180,7 +180,7 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         total_entities = len(list(self.file))
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=element)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=element)
         ifcopenshell.api.root.remove_product(self.file, product=opening)
         assert len(list(self.file)) == total_entities
         assert len(self.file.by_type("IfcOpeningElement")) == 0
@@ -191,8 +191,8 @@ class TestRemoveProduct(test.bootstrap.IFC4):
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
         filling = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
         total_entities = len(list(self.file))
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=element)
-        ifcopenshell.api.void.add_filling(self.file, opening=opening, element=filling)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=element)
+        ifcopenshell.api.feature.add_filling(self.file, opening=opening, element=filling)
         ifcopenshell.api.root.remove_product(self.file, product=filling)
         assert len(list(self.file)) == total_entities
         assert len(self.file.by_type("IfcDoor")) == 0

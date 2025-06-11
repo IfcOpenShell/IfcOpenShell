@@ -16,11 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
-from pathlib import Path
 import os
 import bpy
 import json
-import importlib
+import platformdirs
 import ifcopenshell
 import ifcopenshell.util.pset
 import ifcopenshell.util.unit
@@ -34,9 +33,7 @@ from ifcopenshell.util.doc import (
 import bonsai.bim
 import bonsai.bim.schema
 import bonsai.bim.handler
-from bonsai.bim.ifc import IfcStore
 import bonsai.tool as tool
-from collections import defaultdict
 from bpy.types import PropertyGroup
 from bpy.props import (
     PointerProperty,
@@ -48,20 +45,25 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
-from typing import Any, Union, Literal, get_args, TYPE_CHECKING
-from typing_extensions import assert_never
+from typing import Any, Union, Literal, get_args, TYPE_CHECKING, assert_never
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 
 
-def update_tab(self, context):
+def update_tab(self: "BIMAreaProperties", context: bpy.types.Context) -> None:
+    # Some tabs are intended only for loaded IFC project.
+    if self.tab not in ("PROJECT", "FM", "QUALITY", "BLENDER") and not tool.Ifc.get():
+        enum_items = [i[0] for i in get_tab.enum_items if i]
+        tool.Blender.show_info_message(f"Tab '{self.tab}' only available with loaded IFC project.", "ERROR")
+        self["tab"] = enum_items.index(self.previous_tab)
+        return
     self.alt_tab = self.previous_tab
     self.previous_tab = self.tab
 
 
-def update_global_tab(self, context):
+def update_global_tab(self: "BIMTabProperties", context: bpy.types.Context) -> None:
     tool.Blender.setup_tabs()
-    screen = tool.Blender.get_screen(context)
+    screen = context.id_data
     aprops = screen.BIMAreaProperties[screen.areas[:].index(context.area)]
     aprops.tab = self.tab
 
@@ -70,18 +72,19 @@ def update_global_tab(self, context):
 # https://blender.stackexchange.com/questions/216230/is-there-a-workaround-for-the-known-bug-in-dynamic-enumproperty
 # https://github.com/IfcOpenShell/IfcOpenShell/pull/1945
 # https://github.com/IfcOpenShell/IfcOpenShell/issues/1941
-def cache_string(s):
+# TODO: it would be nice to have some mechanism to clear that cache
+# instead of storing it forever.
+def cache_string(s: Any) -> str:
+    # TODO: is it ever non-string?
     s = str(s)
-    if not hasattr(cache_string, "data"):  # Another way to define a function attribute
-        cache_string.data = defaultdict(str)
     cache_string.data[s] = s
-    return cache_string.data[s]
+    return s
 
 
-cache_string.data = {}
+cache_string.data: dict[str, str] = {}
 
 
-def get_attribute_enum_values(prop, context):
+def get_attribute_enum_values(prop: "Attribute", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     # Support weird buildingSMART dictionary mappings which behave like enums
     items = []
     data = json.loads(prop.enum_items)
@@ -97,10 +100,11 @@ def get_attribute_enum_values(prop, context):
             )
     else:
         for e in data:
+            cache_string(e)
             items.append(
                 (
-                    cache_string(e),
-                    cache_string(e),
+                    e,
+                    e,
                     "",
                 )
             )
@@ -111,24 +115,28 @@ def get_attribute_enum_values(prop, context):
     return items
 
 
-def update_schema_dir(self, context):
+def update_schema_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
     import bonsai.bim.schema
 
-    bonsai.bim.schema.ifc.schema_dir = context.scene.BIMProperties.schema_dir
+    bim_props = tool.Blender.get_bim_props()
+    bonsai.bim.schema.ifc.schema_dir = bim_props.schema_dir
 
 
-def update_data_dir(self, context):
+def update_data_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
     import bonsai.bim.schema
 
-    bonsai.bim.schema.ifc.data_dir = context.scene.BIMProperties.data_dir
+    bim_props = tool.Blender.get_bim_props()
+    bonsai.bim.schema.ifc.data_dir = bim_props.data_dir
 
 
-def update_ifc_file(self, context):
-    if context.scene.BIMProperties.ifc_file:
-        bonsai.bim.handler.loadIfcStore(context.scene)
+def update_cache_dir(self: "BIMProperties", context: bpy.types.Context) -> None:
+    import bonsai.bim.schema
+
+    bim_props = tool.Blender.get_bim_props()
+    bonsai.bim.schema.ifc.cache_dir = bim_props.cache_dir
 
 
-def update_section_color(self, context):
+def update_section_color(self: "BIMProperties", context: bpy.types.Context) -> None:
     section_node_group = bpy.data.node_groups.get("Section Override")
     if section_node_group is None:
         return
@@ -139,7 +147,7 @@ def update_section_color(self, context):
         pass
 
 
-def update_section_line_decorator(self, context):
+def update_section_line_decorator(self: "BIMProperties", context: bpy.types.Context) -> None:
     compare_node_group = bpy.data.node_groups.get("Section Compare")
     if compare_node_group is None:
         return
@@ -158,8 +166,11 @@ class StrProperty(PropertyGroup):
 class ObjProperty(PropertyGroup):
     obj: bpy.props.PointerProperty(type=bpy.types.Object)
 
+    if TYPE_CHECKING:
+        obj: Union[bpy.types.Object, None]
 
-def update_single_file(self, context):
+
+def update_single_file(self: "MultipleFileSelect", context: bpy.types.Context) -> None:
     self.file_list.clear()
     new = self.file_list.add()
     new.name = self.single_file
@@ -169,25 +180,39 @@ class MultipleFileSelect(PropertyGroup):
     single_file: bpy.props.StringProperty(name="Single File Path", description="", update=update_single_file)
     file_list: bpy.props.CollectionProperty(type=StrProperty)
 
-    def set_file_list(self, dirname: str, files: list[str]):
+    if TYPE_CHECKING:
+        single_file: str
+        file_list: bpy.types.bpy_prop_collection_idprop[StrProperty]
+
+    def set_file_list(self, dirname: str, files: list[str]) -> None:
         self.file_list.clear()
 
         for f in files:
             new = self.file_list.add()
             new.name = os.path.join(dirname, f)
 
-    def layout_file_select(self, layout, filter_glob="", text=""):
-        if len(self.file_list) > 1:
-            layout.label(text=f"{len(self.file_list)} Files Selected")
+    def layout_file_select(self, layout: bpy.types.UILayout, filter_glob: str = "", text: str = "") -> None:
+        # NOTE: current multifile selector design doesn't allow selecting files from different folders.
+        column = layout.column(align=True)
+        multiple_files = len(self.file_list) > 1
+        row = column.row(align=True)
+        if multiple_files:
+            row.label(text=f"{len(self.file_list)} Files Selected")
         else:
-            layout.prop(self, "single_file", text=text)
+            row.prop(self, "single_file", text=text)
 
-        layout.context_pointer_set("file_props", self)
-        op = layout.operator("bim.multiple_file_selector", icon="FILE_FOLDER", text="")
+        row.context_pointer_set("file_props", self)
+        op = row.operator("bim.multiple_file_selector", icon="FILE_FOLDER", text="")
         op.filter_glob = filter_glob
 
+        if not multiple_files:
+            return
 
-def update_attribute_value(self, context):
+        for file in self.file_list:
+            column.prop(file, "name", text="")
+
+
+def update_attribute_value(self: "Attribute", context: bpy.types.Context) -> None:
     value_name = self.get_value_name()
     if value_name:
         value_names = [value_name]
@@ -201,27 +226,28 @@ def update_attribute_value(self, context):
             self.is_null = False
 
 
-def update_is_null(self, context):
-    if not self.is_null:
-        return
-    self.string_value = ""
-    self.int_value = 0
-    self.float_value = 0
-    self.length_value = 0
-    self.bool_value = False
-    if self.is_null is not True:
-        self.is_null = True
+def update_is_null(self: "Attribute", context: bpy.types.Context) -> None:
+    if self.is_null:
+        if self.data_type != "enum" and self.get_value() != (default := self.get_value_default()):
+            self.set_value(default)
+        if self.is_null is not True:
+            self.is_null = True
+    if self.update:
+        update = globals()
+        for name in self.update.split("."):
+            update = update[name] if isinstance(update, dict) else getattr(update, name)
+        update(self, context)
 
 
-def set_int_value(self, new_value):
+def set_int_value(self: "Attribute", new_value: int) -> None:
     set_numerical_value(self, "int_value", new_value)
 
 
-def set_float_value(self, new_value):
+def set_float_value(self: "Attribute", new_value: float) -> None:
     set_numerical_value(self, "float_value", new_value)
 
 
-def set_numerical_value(self, value_name, new_value):
+def set_numerical_value(self: "Attribute", value_name: str, new_value: Union[float, int]) -> None:
     if self.value_min_constraint and new_value < self.value_min:
         new_value = self.value_min
     elif self.value_max_constraint and new_value > self.value_max:
@@ -229,37 +255,42 @@ def set_numerical_value(self, value_name, new_value):
     self[value_name] = new_value
 
 
-def get_length_value(self):
+def get_length_value(self: "Attribute") -> float:
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     return self.float_value * si_conversion
 
 
-def set_length_value(self, value):
+def set_length_value(self: "Attribute", value: float) -> None:
     si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
     self.float_value = value / si_conversion
 
 
-def get_display_name(self):
+def get_display_name(self: "Attribute") -> str:
+    DISPLAY_UNIT_TYPES = ("AREA", "VOLUME", "FORCE")
     name = self.name
-    if not self.special_type or self.special_type == "LENGTH":
+    if not self.special_type or self.special_type not in DISPLAY_UNIT_TYPES:
         return name
 
     unit_type = f"{self.special_type}UNIT"
     project_unit = ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), unit_type)
+    if not project_unit:
+        return name
+
     unit_symbol = ifcopenshell.util.unit.get_unit_symbol(project_unit)
     return f"{name}, {unit_symbol}"
 
 
 AttributeDataType = Literal["string", "integer", "float", "boolean", "enum", "file"]
+AttributeSpecialType = Literal["", "DATE", "DATETIME", "LENGTH", "AREA", "VOLUME", "FORCE", "LOGICAL"]
 
 
 class Attribute(PropertyGroup):
     tooltip = "`Right Click > IFC Description` to read the attribute description and online documentation"
-    name: StringProperty(name="Name")
+    name: StringProperty(name="Name")  # pyright: ignore [reportRedeclaration]
     display_name: StringProperty(name="Display Name", get=get_display_name)
-    description: StringProperty(name="Description")
-    ifc_class: StringProperty(name="Ifc Class")
-    data_type: EnumProperty(  # type: ignore [reportRedeclaration]
+    description: StringProperty(name="Description")  # pyright: ignore [reportRedeclaration]
+    ifc_class: StringProperty(name="Ifc Class")  # pyright: ignore [reportRedeclaration]
+    data_type: EnumProperty(  # pyright: ignore [reportRedeclaration]
         name="Data Type",
         items=[(i, i, "") for i in get_args(AttributeDataType)],
     )
@@ -297,9 +328,35 @@ class Attribute(PropertyGroup):
     value_max_constraint: BoolProperty(default=False, description="True if the numerical value has an upper bound")
     special_type: StringProperty(name="Special Value Type", default="")
     metadata: StringProperty(name="Metadata", description="For storing some additional information about the attribute")
+    update: StringProperty(name="Update", description="Custom update function to be executed")
 
     if TYPE_CHECKING:
+        name: str
+        display_name: str
+        description: str
+        ifc_class: str
         data_type: AttributeDataType
+        special_type: AttributeSpecialType
+        string_value: str
+        bool_value: bool
+        int_value: int
+        float_value: float
+        length_value: float
+        enum_items: str
+        enum_descriptions: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        enum_value: str
+        filepath_value: MultipleFileSelect
+        filter_glob: str
+        is_null: bool
+        is_optional: bool
+        is_uri: bool
+        is_selected: bool
+        value_min: float
+        value_min_constraint: bool
+        value_max: float
+        value_max_constraint: bool
+        metadata: str
+        update: str
 
     def get_value(self) -> Union[str, float, int, bool, None]:
         if self.is_optional and self.is_null:
@@ -308,7 +365,11 @@ class Attribute(PropertyGroup):
             return self.string_value.replace("\\n", "\n")
         if self.data_type == "file":
             return [f.name for f in self.filepath_value.file_list]
-        return getattr(self, str(self.get_value_name()), None)
+        value = getattr(self, str(self.get_value_name()), None)
+        if self.special_type == "LOGICAL" and value != "UNKNOWN":
+            # IfcOpenShell expects bool if IfcLogical is True/False.
+            value = value == "TRUE"
+        return value
 
     def get_value_default(self) -> Union[str, float, int, bool]:
         data_type = self.data_type
@@ -366,20 +427,31 @@ class Attribute(PropertyGroup):
         setattr(self, self.get_value_name(), value)
 
 
-def get_tab(self, context):
-    return [
-        ("PROJECT", "Project Overview", "", bonsai.bim.icons["IFC"].icon_id, 0),
-        ("OBJECT", "Object Information", "", "FILE_3D", 1),
-        ("GEOMETRY", "Geometry and Materials", "", "MATERIAL", 2),
-        ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 3),
-        ("SERVICES", "Services and Systems", "", "NETWORK_DRIVE", 4),
-        ("STRUCTURE", "Structural Analysis", "", "EDITMODE_HLT", 5),
-        ("SCHEDULING", "Costing and Scheduling", "", "NLA", 6),
-        ("FM", "Facility Management", "", "PACKAGE", 7),
-        ("QUALITY", "Quality and Coordination", "", "COMMUNITY", 8),
-        None,
-        ("BLENDER", "Blender Properties", "", "BLENDER", 9),
-    ]
+def get_tab(
+    self: "Union[BIMAreaProperties, BIMTabProperties]", context: bpy.types.Context
+) -> list[tuple[str, str, str, str, int]]:
+
+    UIData = bonsai.bim.ui.UIData
+    if not UIData.is_loaded:
+        UIData.load()
+
+    icon_key = f"{UIData.data['menu_icon_color_mode']}_ifc"
+
+    if not hasattr(get_tab, "enum_items"):
+        get_tab.enum_items = [
+            ("PROJECT", "Project Overview", "", bonsai.bim.icons[icon_key].icon_id, 0),
+            ("OBJECT", "Object Information", "", "FILE_3D", 1),
+            ("GEOMETRY", "Geometry and Materials", "", "MATERIAL", 2),
+            ("DRAWINGS", "Drawings and Documents", "", "DOCUMENTS", 3),
+            ("SERVICES", "Services and Systems", "", "NETWORK_DRIVE", 4),
+            ("STRUCTURE", "Structural Analysis", "", "EDITMODE_HLT", 5),
+            ("SCHEDULING", "Costing and Scheduling", "", "NLA", 6),
+            ("FM", "Facility Management", "", "PACKAGE", 7),
+            ("QUALITY", "Quality and Coordination", "", "COMMUNITY", 8),
+            None,
+            ("BLENDER", "Blender Properties", "", "BLENDER", 9),
+        ]
+    return get_tab.enum_items
 
 
 class BIMAreaProperties(PropertyGroup):
@@ -389,16 +461,27 @@ class BIMAreaProperties(PropertyGroup):
     active_tab: BoolProperty(default=True, name="Active Tab")
     inactive_tab: BoolProperty(default=False, name="Inactive Tab")
 
+    if TYPE_CHECKING:
+        tab: str
+        previous_tab: str
+        alt_tab: str
+        active_tab: bool
+        inactive_tab: bool
+
 
 # BIMAreaProperties exists per area and is setup on load post. However, for new
 # or temporary screens, they may not be setup yet, so this global tab
 # properties is used as a fallback.
+# Need it basically only for UI - to display those props and allow changing tab from the dropdown.
 class BIMTabProperties(PropertyGroup):
     tab: EnumProperty(default=0, items=get_tab, name="Tab", update=update_global_tab)
-    previous_tab: StringProperty(default="PROJECT", name="Previous Tab")
-    alt_tab: StringProperty(default="OBJECT", name="Alt Tab")
     active_tab: BoolProperty(default=True, name="Active Tab")
     inactive_tab: BoolProperty(default=False, name="Inactive Tab")
+
+    if TYPE_CHECKING:
+        tab: str
+        active_tab: bool
+        inactive_tab: bool
 
 
 class BIMProperties(PropertyGroup):
@@ -407,11 +490,16 @@ class BIMProperties(PropertyGroup):
         default=os.path.join(cwd, "schema") + os.path.sep, name="Schema Directory", update=update_schema_dir
     )
     data_dir: StringProperty(
-        default=os.path.join(cwd, "data") + os.path.sep, name="Data Directory", update=update_data_dir
+        default=(platformdirs.user_data_path("bonsai", roaming=True, ensure_exists=True) / "data").__str__(),
+        name="Data Directory",
+        update=update_data_dir,
+    )
+    cache_dir: StringProperty(
+        default=platformdirs.user_cache_dir("bonsai"), name="Cache Directory", update=update_cache_dir
     )
     has_blend_warning: BoolProperty(name="Has Blend Warning", default=False)
     pset_dir: StringProperty(default=os.path.join("psets") + os.path.sep, name="Default Psets Directory")
-    ifc_file: StringProperty(name="IFC File", update=update_ifc_file)
+    ifc_file: StringProperty(name="IFC File")
     last_transaction: StringProperty(name="Last Transaction")
     should_section_selected_objects: BoolProperty(name="Section Selected Objects", default=False)
     section_plane_colour: FloatVectorProperty(
@@ -463,6 +551,21 @@ class BIMProperties(PropertyGroup):
         name="IFC Volume Unit",
     )
 
+    if TYPE_CHECKING:
+        is_dirty: bool
+        schema_dir: str
+        data_dir: str
+        cache_dir: str
+        has_blend_warning: bool
+        pset_dir: str
+        ifc_file: str
+        last_transaction: str
+        should_section_selected_objects: bool
+        section_plane_colour: tuple[float, float, float]
+        section_line_decorator_width: float
+        area_unit: str
+        volume_unit: str
+
 
 class IfcParameter(PropertyGroup):
     name: StringProperty(name="Name")
@@ -471,6 +574,13 @@ class IfcParameter(PropertyGroup):
     value: FloatProperty(name="Value")  # For now, only floats
     type: StringProperty(name="Type")
 
+    if TYPE_CHECKING:
+        name: str
+        step_id: int
+        index: int
+        value: float
+        type: str
+
 
 class PsetQto(PropertyGroup):
     name: StringProperty(name="Name")
@@ -478,45 +588,101 @@ class PsetQto(PropertyGroup):
     is_expanded: BoolProperty(name="Is Expanded", default=True)
     is_editable: BoolProperty(name="Is Editable")
 
+    if TYPE_CHECKING:
+        properties: bpy.types.bpy_prop_collection_idprop[Attribute]
+        is_expanded: bool
+        is_editable: bool
+
 
 class GlobalId(PropertyGroup):
     name: StringProperty(name="Name")
+    ifc_definition_id: IntProperty(name="IFC Definition ID")
 
 
 class BIMCollectionProperties(PropertyGroup):
     obj: PointerProperty(type=bpy.types.Object)
+
+    if TYPE_CHECKING:
+        obj: Union[bpy.types.Object, None]
+
+
+BlenderOffsetType = Literal["NONE", "OBJECT_PLACEMENT", "CARTESIAN_POINT", "NOT_APPLICABLE"]
 
 
 class BIMObjectProperties(PropertyGroup):
     collection: PointerProperty(type=bpy.types.Collection)
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     blender_offset_type: EnumProperty(
-        items=[(o, o, "") for o in ["NONE", "OBJECT_PLACEMENT", "CARTESIAN_POINT", "NOT_APPLICABLE"]],
+        items=[(o, o, "") for o in get_args(BlenderOffsetType)],
         name="Blender Offset",
         default="NONE",
     )
     cartesian_point_offset: StringProperty(name="Cartesian Point Offset")
     is_reassigning_class: BoolProperty(name="Is Reassigning Class")
-    is_renaming: BoolProperty(name="Is Renaming", default=False)
+    is_renaming: BoolProperty(
+        name="Is Renaming",
+        description=(
+            "Flag to ensure object name callback wouldn't write new name to IFC. "
+            "Automatically reset to `False` after the next callback."
+        ),
+        default=False,
+    )
     location_checksum: StringProperty(name="Location Checksum")
     rotation_checksum: StringProperty(name="Rotation Checksum")
+
+    if TYPE_CHECKING:
+        collection: Union[bpy.types.Collection, None]
+        ifc_definition_id: int
+        blender_offset_type: BlenderOffsetType
+        cartesian_point_offset: str
+        is_reassigning_class: bool
+        is_renaming: bool
+        location_checksum: str
+        rotation_checksum: str
+
+
+def get_profiles(self: "BIMMeshProperties", context: bpy.types.Context):
+    from bonsai.bim.module.model.data import ItemData
+
+    if not ItemData.is_loaded:
+        ItemData.load()
+    return ItemData.data["profiles_enum"]
+
+
+SubshapeType = Literal["-", "PROFILE", "AXIS"]
 
 
 class BIMMeshProperties(PropertyGroup):
     ifc_definition_id: IntProperty(name="IFC Definition ID")
     ifc_boolean_id: IntProperty(name="IFC Boolean ID")
-    obj: bpy.props.PointerProperty(type=bpy.types.Object)
+    obj: bpy.props.PointerProperty(type=bpy.types.Object, description="Object that using this mesh as a boolean")
     has_openings_applied: BoolProperty(name="Has Openings Applied", default=True)
     is_native: BoolProperty(name="Is Native", default=False)
     is_swept_solid: BoolProperty(name="Is Swept Solid")
     is_parametric: BoolProperty(name="Is Parametric", default=False)
-    subshape_type: StringProperty(name="Subshape Type")
-    ifc_definition: StringProperty(name="IFC Definition")
+    subshape_type: EnumProperty(name="Subshape Type", items=[(i, i, "") for i in get_args(SubshapeType)])
     ifc_parameters: CollectionProperty(name="IFC Parameters", type=IfcParameter)
     item_attributes: CollectionProperty(name="Item Attributes", type=Attribute)
+    item_profile: EnumProperty(name="Item Profile", items=get_profiles)
     material_checksum: StringProperty(name="Material Checksum", default="[]")
     mesh_checksum: StringProperty(name="Mesh Checksum", default="")
     replaced_mesh: PointerProperty(type=bpy.types.Mesh, description="Original mesh to revert section cutaway")
+
+    if TYPE_CHECKING:
+        ifc_definition_id: int
+        ifc_boolean_id: int
+        obj: Union[bpy.types.Object, None]
+        has_openings_applied: bool
+        is_native: bool
+        is_swept_solid: bool
+        is_parametric: bool
+        subshape_type: SubshapeType
+        ifc_parameters: bpy.types.bpy_prop_collection_idprop[IfcParameter]
+        item_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        item_profile: str
+        material_checksum: str
+        mesh_checksum: str
+        replaced_mesh: Union[bpy.types.Mesh, None]
 
 
 class BIMFacet(PropertyGroup):
@@ -537,6 +703,41 @@ class BIMFacet(PropertyGroup):
         ],
     )
 
+    if TYPE_CHECKING:
+        pset: str
+        value: str
+        type: str
+        comparison: Literal["=", "!=", ">=", "<=", ">", "<", "*=", "!*="]
+
 
 class BIMFilterGroup(PropertyGroup):
     filters: CollectionProperty(type=BIMFacet, name="filters")
+
+    if TYPE_CHECKING:
+        filters: bpy.types.bpy_prop_collection_idprop[BIMFacet]
+
+
+class BIMSnapGroups(PropertyGroup):
+    object: BoolProperty(name="Object", default=True)
+    polyline: BoolProperty(name="Polyline", default=True)
+    measure: BoolProperty(name="Measure", default=True)
+
+    if TYPE_CHECKING:
+        object: bool
+        polyline: bool
+        measure: bool
+
+
+class BIMSnapProperties(PropertyGroup):
+    vertex: BoolProperty(name="Vertex", default=True)
+    edge: BoolProperty(name="Edge", default=True)
+    edge_center: BoolProperty(name="Edge Center", default=True)
+    edge_intersection: BoolProperty(name="Edge Intersection", default=True)
+    face: BoolProperty(name="Face", default=True)
+
+    if TYPE_CHECKING:
+        vertex: bool
+        edge: bool
+        edge_center: bool
+        edge_intersection: bool
+        face: bool

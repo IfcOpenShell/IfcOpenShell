@@ -64,12 +64,8 @@ def disconnect_port(file: ifcopenshell.file, port: ifcopenshell.entity_instance)
         # fitting_port1 instead of duct_port2
         ifcopenshell.api.system.disconnect_port(model, port=duct_port2)
     """
-    settings = {
-        "port": port,
-    }
-
-    rels = settings["port"].ConnectedTo or ()
-    rels += settings["port"].ConnectedFrom or ()
+    rels = port.ConnectedTo or ()
+    rels += port.ConnectedFrom or ()
 
     for rel in rels:
         rel.RelatingPort.FlowDirection = None

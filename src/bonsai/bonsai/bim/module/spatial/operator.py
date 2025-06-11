@@ -73,39 +73,152 @@ class DereferenceStructure(bpy.types.Operator, tool.Ifc.Operator):
                 core.dereference_structure(tool.Ifc, tool.Spatial, structure=container, element=element)
 
 
+class ReferenceFromProvidedStructure(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.reference_from_provided_structure"
+    bl_label = "Reference from Provided Structure"
+    bl_description = "Reference selected objects from the provided structure.\n\n" "ALT + Click to dereference instead."
+    bl_options = {"REGISTER", "UNDO"}
+
+    structure: bpy.props.IntProperty(options={"SKIP_SAVE"})
+    dereference: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Blender.get_selected_objects():
+            cls.poll_message_set("No objects selected.")
+            return False
+        return True
+
+    def invoke(self, context, event):
+        self.dereference = event.alt
+        return self.execute(context)
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        structure = ifc_file.by_id(self.structure)
+
+        objs = tool.Spatial.get_selected_objects_without_containers()
+        if not objs:
+            self.report({"INFO"}, "No non-spatial objects are selected.")
+            return
+
+        elements = [e for o in objs if (e := tool.Ifc.get_entity(o))]
+        for element in elements:
+            if self.dereference:
+                core.dereference_structure(tool.Ifc, tool.Spatial, structure=structure, element=element)
+            else:
+                core.reference_structure(tool.Ifc, tool.Spatial, structure=structure, element=element)
+
+        msg = "dereferenced" if self.dereference else "referenced"
+        self.report({"INFO"}, f"{len(elements)} elements {msg} from the structure.")
+
+
+class DereferenceFromProvidedStructure(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.dereference_from_provided_structure"
+    bl_label = "Dereference from Provided Structure"
+    bl_description = "Dereference selected objects from the provided structure."
+    bl_options = {"REGISTER", "UNDO"}
+
+    structure: bpy.props.IntProperty(options={"SKIP_SAVE"})
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Blender.get_selected_objects():
+            cls.poll_message_set("No objects selected.")
+            return False
+        return True
+
+    def _execute(self, context):
+        ifc_file = tool.Ifc.get()
+        structure = ifc_file.by_id(self.structure)
+        objs = tool.Spatial.get_selected_objects_without_containers()
+        if not objs:
+            self.report({"INFO"}, "No non-spatial objects are selected.")
+            return
+
+        elements = [e for o in objs if (e := tool.Ifc.get_entity(o))]
+        for element in elements:
+            core.dereference_structure(tool.Ifc, tool.Spatial, structure=structure, element=element)
+
+        self.report({"INFO"}, f"{len(elements)} elements dereferenced from the structure.")
+
+
 class AssignContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_container"
     bl_label = "Assign Container"
-    bl_description = "Assign the selected objects to the selected container"
+    bl_description = (
+        "Assign the selected objects to the container selected in Spatial Manager.\n\n"
+        "All elements-parts of an aggregate will be skipped.\n"
+        "To assign a container, they should be unassigned from an aggregate first.\n\n"
+        "This will also move objects to the container collection in the outliner.\n"
+        "ALT + Click to ensure objects are only linked in the container collection"
+    )
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty(options={"SKIP_SAVE"})
+    remove_from_other_containers: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        self.remove_from_other_containers = event.alt
+        return self.execute(context)
 
     def _execute(self, context):
-        props = context.active_object.BIMObjectSpatialProperties
         if self.container:
             container = tool.Ifc.get().by_id(self.container)
-        elif (container_obj := props.container_obj) and (container := tool.Ifc.get_entity(container_obj)):
+        elif (
+            (obj := tool.Blender.get_active_object())
+            and (props := tool.Spatial.get_object_spatial_props(obj))
+            and (container_obj := props.container_obj)
+            and (container := tool.Ifc.get_entity(container_obj))
+        ):
             pass
-        for element_obj in context.selected_objects:
+        else:
+            return
+
+        objs: list[bpy.types.Object] = []
+        # In IFC element can be either contained of aggregated,
+        # tehrefore we skip aggregated elements here to prevent confusion.
+        # Can't handle it in `poll` since user might just select bunch of elements
+        # and try to assign a container to them
+        # and excluding aggregates because of the `poll` failing might get awkward.
+        skipped_aggregates = 0
+        for obj in tool.Blender.get_selected_objects():
+            if not (element := tool.Ifc.get_entity(obj)):
+                continue
+            if ifcopenshell.util.element.get_aggregate(element):
+                skipped_aggregates += 1
+                continue
+            objs.append(obj)
+
+        for element_obj in objs:
+            if self.remove_from_other_containers:
+                for col in element_obj.users_collection[:]:
+                    col.objects.unlink(element_obj)
             core.assign_container(tool.Ifc, tool.Collector, tool.Spatial, container=container, element_obj=element_obj)
 
+        aggregates_msg = ""
+        if skipped_aggregates:
+            aggregates_msg = f" {skipped_aggregates} aggregated elements skipped."
+        self.report({"INFO"}, f"{len(objs)} elements assigned.{aggregates_msg}")
 
-class EnableEditingContainer(bpy.types.Operator, tool.Ifc.Operator):
+
+class EnableEditingContainer(bpy.types.Operator):
     bl_idname = "bim.enable_editing_container"
     bl_label = "Enable Editing Container"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.enable_editing_container(tool.Spatial, obj=context.active_object)
+        return {"FINISHED"}
 
 
-class DisableEditingContainer(bpy.types.Operator, tool.Ifc.Operator):
+class DisableEditingContainer(bpy.types.Operator):
     bl_idname = "bim.disable_editing_container"
     bl_label = "Disable Editing Container"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.disable_editing_container(tool.Spatial, obj=context.active_object)
+        return {"FINISHED"}
 
 
 class RemoveContainer(bpy.types.Operator, tool.Ifc.Operator):
@@ -155,7 +268,7 @@ class CopyToContainer(bpy.types.Operator, tool.Ifc.Operator):
         bonsai.bim.handler.refresh_ui_data()
 
 
-class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):
+class SelectContainer(bpy.types.Operator):
     bl_idname = "bim.select_container"
     bl_label = "Select Container"
     bl_options = {"REGISTER", "UNDO"}
@@ -172,13 +285,13 @@ class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):
             self.selection_mode = "SINGLE"
         return self.execute(context)
 
-    def _execute(self, context):
+    def execute(self, context):
         if self.container:
             container = tool.Ifc.get().by_id(self.container)
         elif element := tool.Ifc.get_entity(context.active_object):
             container = ifcopenshell.util.element.get_container(element)
         else:
-            return
+            return {"CANCELLED"}
         if container:
             core.select_container(
                 tool.Ifc,
@@ -186,15 +299,17 @@ class SelectContainer(bpy.types.Operator, tool.Ifc.Operator):
                 container=container,
                 selection_mode=self.selection_mode,
             )
+        return {"FINISHED"}
 
 
-class SelectSimilarContainer(bpy.types.Operator, tool.Ifc.Operator):
+class SelectSimilarContainer(bpy.types.Operator):
     bl_idname = "bim.select_similar_container"
     bl_label = "Select Similar Container"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
+    def execute(self, context):
         core.select_similar_container(tool.Ifc, tool.Spatial, obj=context.active_object)
+        return {"FINISHED"}
 
 
 class SelectProduct(bpy.types.Operator):
@@ -218,36 +333,43 @@ class ImportSpatialDecomposition(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class EditContainerAttributes(bpy.types.Operator):
-    bl_idname = "bim.edit_container_attributes"
-    bl_label = "Edit container attributes"
-    bl_options = {"REGISTER", "UNDO"}
-    container: bpy.props.IntProperty()
-
-    def execute(self, context):
-        core.edit_container_attributes(tool.Spatial, entity=tool.Ifc.get().by_id(self.container))
-        return {"FINISHED"}
-
-
 class ContractContainer(bpy.types.Operator):
     bl_idname = "bim.contract_container"
     bl_label = "Contract Container"
+    bl_description = "Contract the hierarchy\nALT+CLICK to recursively contract"
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty()
+    is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.is_recursive = True
+        return self.execute(context)
 
     def execute(self, context):
-        core.contract_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        core.contract_container(
+            tool.Spatial, container=tool.Ifc.get().by_id(self.container), is_recursive=self.is_recursive
+        )
         return {"FINISHED"}
 
 
 class ExpandContainer(bpy.types.Operator):
     bl_idname = "bim.expand_container"
     bl_label = "Expand Container"
+    bl_description = "Expand the hierarchy\nALT+CLICK to recursively contract"
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty()
+    is_recursive: bpy.props.BoolProperty(name="Is Recursive", default=False, options={"SKIP_SAVE"})
+
+    def invoke(self, context, event):
+        if event.type == "LEFTMOUSE" and event.alt:
+            self.is_recursive = True
+        return self.execute(context)
 
     def execute(self, context):
-        core.expand_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        core.expand_container(
+            tool.Spatial, container=tool.Ifc.get().by_id(self.container), is_recursive=self.is_recursive
+        )
         return {"FINISHED"}
 
 
@@ -256,6 +378,18 @@ class DeleteContainer(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Delete Container"
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty()
+
+    @classmethod
+    def poll(cls, context):
+        props = tool.Spatial.get_spatial_props()
+        active_container = props.active_container
+        if not active_container:
+            cls.poll_message_set("No active container.")
+            return False
+        if active_container.ifc_class == "IfcProject":
+            cls.poll_message_set("Cannot delete IfcProject.")
+            return False
+        return True
 
     def _execute(self, context):
         core.delete_container(tool.Ifc, tool.Spatial, tool.Geometry, container=tool.Ifc.get().by_id(self.container))
@@ -279,170 +413,125 @@ class ToggleContainerElement(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectDecomposedElement(bpy.types.Operator, tool.Ifc.Operator):
+class SelectDecomposedElement(bpy.types.Operator):
     bl_idname = "bim.select_decomposed_element"
     bl_label = "Select Decomposed Element"
     bl_options = {"REGISTER", "UNDO"}
     element: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         if self.element:
             core.select_decomposed_element(tool.Ifc, tool.Spatial, element=tool.Ifc.get().by_id(self.element))
+        return {"FINISHED"}
 
 
-class SelectDecomposedElements(bpy.types.Operator, tool.Ifc.Operator):
+class SelectDecomposedElements(bpy.types.Operator):
     bl_idname = "bim.select_decomposed_elements"
-    bl_label = "Select Children"
+    bl_label = "Select Elements"
     bl_options = {"REGISTER", "UNDO"}
     should_filter: bpy.props.BoolProperty(name="Should Filter", default=True, options={"SKIP_SAVE"})
     container: bpy.props.IntProperty()
 
     @classmethod
     def description(cls, context, operator):
-        return "Select all contained elements filtered by this type" + "\nALT+CLICK to select all contained elements"
+        return "Select the active item" + "\nALT+CLICK to select all listed elements"
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.alt:
             self.should_filter = False
         return self.execute(context)
 
-    def _execute(self, context):
-        ifc_file = tool.Ifc.get()
-        container = ifc_file.by_id(self.container)
-        props = context.scene.BIMSpatialDecompositionProperties
-        element_filter = props.element_filter
-        active_element = props.active_element
-
-        if not self.should_filter and not element_filter:
-            tool.Spatial.select_products(tool.Spatial.get_decomposed_elements(container))
-            return
-
-        if props.element_mode == "TYPE":
-            if active_element.type == "OCCURRENCE":
-                if obj := tool.Ifc.get_object(ifc_file.by_id(active_element.ifc_definition_id)):
-                    tool.Blender.set_active_object(obj)
-                return
-
-            ifc_class = relating_type = None
-            is_untyped = False
-
-            if self.should_filter:
-                if active_element.type == "CLASS":
-                    ifc_class = active_element.name
-                elif active_element.type == "TYPE":
-                    ifc_class = active_element.ifc_class
-                    if ifc_id := active_element.ifc_definition_id:
-                        relating_type = ifc_file.by_id(ifc_id)
-
-            elements = tool.Spatial.get_decomposed_elements(container)
-            elements = tool.Spatial.filter_elements(elements, ifc_class, relating_type, is_untyped, element_filter)
-            tool.Spatial.select_products(elements)
-        elif props.element_mode == "DECOMPOSITION":
-            occurrence = ifc_file.by_id(active_element.ifc_definition_id)
-            elements = ifcopenshell.util.element.get_decomposition(occurrence)
-            elements.add(occurrence)
-            tool.Spatial.select_products(elements)
-        elif props.element_mode == "CLASSIFICATION":
-            if active_element.type == "OCCURRENCE":
-                if obj := tool.Ifc.get_object(ifc_file.by_id(active_element.ifc_definition_id)):
-                    tool.Blender.set_active_object(obj)
-                return
-
-            if active_element.type == "CLASSIFICATION":
-                identification = active_element.identification
-                elements = tool.Spatial.get_decomposed_elements(container)
-
-                def filter_element(element: ifcopenshell.entity_instance) -> bool:
-                    references = ifcopenshell.util.classification.get_references(element)
-                    if identification == "Unclassified":
-                        if not references:
-                            return True
-                    elif any([r for r in references if r[1].startswith(identification)]):
-                        return True
-                    return False
-
-                tool.Spatial.select_products(filter(filter_element, elements))
+    def execute(self, context):
+        tool.Spatial.select_products(tool.Spatial.get_filtered_elements(self.should_filter))
+        return {"FINISHED"}
 
 
-class SetDefaultContainer(bpy.types.Operator, tool.Ifc.Operator):
+class SetDefaultContainer(bpy.types.Operator):
     bl_idname = "bim.set_default_container"
     bl_label = "Set Default Container"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Set this as the default container that all new elements will be contained in"
     container: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    @classmethod
+    def poll(cls, context):
+        props = tool.Spatial.get_spatial_props()
+        active_container = props.active_container
+        if not active_container:
+            cls.poll_message_set("No active container.")
+            return False
+        if active_container.ifc_class == "IfcProject":
+            cls.poll_message_set("Cannot set default IfcProject as default container.")
+            return False
+        return True
+
+    def execute(self, context):
         core.set_default_container(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        core.set_orientation_slot(tool.Spatial, container=tool.Ifc.get().by_id(self.container))
+        return {"FINISHED"}
 
 
-class SetContainerVisibility(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.set_container_visibility"
-    bl_label = "Set Container Visibility"
+class SetElementVisibility(bpy.types.Operator):
+    bl_idname = "bim.set_element_visibility"
+    bl_label = "Set Element Visibility"
     bl_options = {"REGISTER", "UNDO"}
     container: bpy.props.IntProperty()
-    should_include_children: bpy.props.BoolProperty(name="Should Include Children", default=True, options={"SKIP_SAVE"})
+    should_filter: bpy.props.BoolProperty(name="Should Filter", default=True, options={"SKIP_SAVE"})
     mode: bpy.props.StringProperty(name="Mode")
 
     @classmethod
     def description(cls, context, operator):
         if operator.mode == "HIDE":
-            return "Hides the selected container and all children.\n" + "ALT+CLICK to ignore children"
+            return "Hides the active item\n" + "ALT+CLICK to hide all listed items"
         elif operator.mode == "SHOW":
-            return "Shows the selected container and all children.\n" + "ALT+CLICK to ignore children"
-        return "Isolate the selected container and all children.\n" + "ALT+CLICK to ignore children"
+            return "Shows the active item\n" + "ALT+CLICK to show all listed items"
+        return "Isolate the active item\n" + "ALT+CLICK to isolate all listed items"
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.alt:
-            self.should_include_children = False
+            self.should_filter = False
         return self.execute(context)
 
-    def _execute(self, context):
+    def execute(self, context):
         if self.mode == "ISOLATE":
-            if tool.Ifc.get_schema() == "IFC2X3":
-                containers = tool.Ifc.get().by_type("IfcSpatialStructureElement")
-            elif tool.Ifc.get_schema() != "IFC2X3":
-                containers = set(tool.Ifc.get().by_type("IfcSpatialElement"))
-                containers -= set(tool.Ifc.get().by_type("IfcSpatialZone"))
-            for container in containers:
-                if obj := tool.Ifc.get_object(container):
-                    if collection := obj.BIMObjectProperties.collection:
-                        collection.hide_viewport = True
+            context_override = tool.Blender.get_viewport_context()
+            with context.temp_override(**context_override):
+                bpy.ops.object.hide_view_set(unselected=True)
+                bpy.ops.object.hide_view_set(unselected=False)
             should_hide = False
         else:
             should_hide = self.mode == "HIDE"
 
-        container = tool.Ifc.get().by_id(self.container)
-        queue = [container]
-        while queue:
-            container = queue.pop()
-            if obj := tool.Ifc.get_object(container):
-                if collection := obj.BIMObjectProperties.collection:
-                    collection.hide_viewport = should_hide
-            if self.should_include_children:
-                queue.extend(ifcopenshell.util.element.get_parts(container))
+        for element in tool.Spatial.get_filtered_elements(self.should_filter):
+            if obj := tool.Ifc.get_object(element):
+                obj.hide_set(should_hide)
+                for collection in obj.users_collection:
+                    collection.hide_viewport = False
+        return {"FINISHED"}
 
 
-class ToggleGrids(bpy.types.Operator, tool.Ifc.Operator):
+class ToggleGrids(bpy.types.Operator):
     bl_idname = "bim.toggle_grids"
     bl_label = "Toggle Grids"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Show or hide grids and grid axes"
     is_visible: bpy.props.BoolProperty(name="Is Visible", default=False, options={"SKIP_SAVE"})
 
-    def _execute(self, context):
+    def execute(self, context):
         for element in tool.Ifc.get().by_type("IfcGrid") + tool.Ifc.get().by_type("IfcGridAxis"):
             if obj := tool.Ifc.get_object(element):
                 obj.hide_set(not self.is_visible)
+        return {"FINISHED"}
 
 
-class ToggleSpatialElements(bpy.types.Operator, tool.Ifc.Operator):
+class ToggleSpatialElements(bpy.types.Operator):
     bl_idname = "bim.toggle_spatial_elements"
     bl_label = "Toggle Spatial Elements"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Show or hide spatial elements, such as buildings, sites, etc"
     is_visible: bpy.props.BoolProperty(name="Is Visible", default=False, options={"SKIP_SAVE"})
 
-    def _execute(self, context):
+    def execute(self, context):
         if tool.Ifc.get().schema == "IFC2X3":
             elements = tool.Ifc.get().by_type("IfcSpatialStructureElement")
         else:
@@ -450,3 +539,4 @@ class ToggleSpatialElements(bpy.types.Operator, tool.Ifc.Operator):
         for element in elements:
             if obj := tool.Ifc.get_object(element):
                 obj.hide_set(not self.is_visible)
+        return {"FINISHED"}

@@ -86,7 +86,7 @@ PYTHON_VERSIONS = ["3.9.11", "3.10.3", "3.11.8", "3.12.1", "3.13.0"]
 JSON_VERSION = "v3.6.1"
 OCE_VERSION = "0.18.3"
 OCCT_VERSION = "7.8.1"
-BOOST_VERSION = "1.80.0"
+BOOST_VERSION = "1.86.0"
 PCRE_VERSION = "8.41"
 LIBXML2_VERSION = "2.9.11"
 SWIG_VERSION = "4.0.2"
@@ -307,7 +307,7 @@ if platform.system() == "Darwin":
 BOOST_VERSION_UNDERSCORE = BOOST_VERSION.replace(".", "_")
 
 OCE_LOCATION = f"https://github.com/tpaviot/oce/archive/OCE-{OCE_VERSION}.tar.gz"
-BOOST_LOCATION = f"https://boostorg.jfrog.io/artifactory/main/release/{BOOST_VERSION}/source/"
+BOOST_LOCATION = f"https://github.com/boostorg/boost/releases/download/boost-{BOOST_VERSION}/"
 
 # Helper functions
 
@@ -350,6 +350,7 @@ def git_clone_or_pull_repository(clone_url, target_dir, revision=None):
         run([git, "clone", "--recursive", clone_url, target_dir])
     else:
         logger.info(f"directory '{target_dir}' already cloned. Pulling latest changes.")
+        run([git, "-C", target_dir, "fetch", "--all", "--tags", "--force"])
 
     # detect whether we are on a branch and pull
     if run([git, "rev-parse", "--abbrev-ref", "HEAD"], cwd=target_dir) != "HEAD":
@@ -464,6 +465,9 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
         shutil.copytree(os.path.join(extract_dir, "boost"), os.path.join(DEPS_DIR, "install", f"boost-{BOOST_VERSION}", "boost"))
         logger.info(f"\rInstalled {name}     \n")
 
+    if "diskcleanup" in flags:
+        shutil.rmtree(build_dir, ignore_errors=True)
+
 cecho("Collecting dependencies:", GREEN)
 
 # Set compiler flags for 32bit builds on 64bit system
@@ -475,7 +479,7 @@ if platform.system() == "Darwin":
     ADDITIONAL_ARGS = [f"-mmacosx-version-min={TOOLSET}"] + ADDITIONAL_ARGS
 
 if "wasm" in flags:
-    ADDITIONAL_ARGS.extend(("-sWASM_BIGINT", "-fexceptions"))
+    ADDITIONAL_ARGS.extend(("-sWASM_BIGINT", "-fwasm-exceptions", "-lexceptions.js"))
 
 # If the linker supports GC sections, set it up to reduce binary file size
 # -fPIC is required for the shared libraries to work
@@ -524,7 +528,7 @@ if 'hdf5' in targets:
     # not supported
     orig = [os.environ[f] for f in compiler_flags]
     for f in compiler_flags:
-        os.environ[f] = re.sub("-flto(=\w+)?", "", os.environ[f])
+        os.environ[f] = re.sub(r"-flto(=\w+)?", "", os.environ[f])
 
     HDF5_MAJOR = ".".join(HDF5_VERSION.split(".")[:-1])
     build_dependency(
@@ -614,7 +618,7 @@ if USE_OCCT and "occ" in targets:
             "-DBUILD_RELEASE_DISABLE_EXCEPTIONS=Off",
             f"-D3RDPARTY_FREETYPE_DIR={DEPS_DIR}/install/freetype"
         ],
-        download_url = "https://git.dev.opencascade.org/repos/occt.git",
+        download_url = "https://github.com/Open-Cascade-SAS/OCCT",
         download_name = "occt",
         download_tool=download_tool_git,
         patch=patches,
@@ -734,14 +738,16 @@ if "boost" in targets:
             "--with-thread",
             "--with-date_time",
             "--with-iostreams",
+            "--with-filesystem",
             f"link={LINK_TYPE}",
             *toolset,
             *map(str_concat("cxxflags"), CXXFLAGS.strip().split(' ')),
             *map(str_concat("linkflags"), LDFLAGS.strip().split(' ')),
             "stage", "-s", "NO_BZIP2=1"],
         download_url=BOOST_LOCATION,
-        patch="./patches/boost/boostorg_regex_62.patch",
-        download_name=f"boost_{BOOST_VERSION_UNDERSCORE}.tar.bz2"
+        # don't remember what this is, but fail on 1.86
+        # patch="./patches/boost/boostorg_regex_62.patch",
+        download_name=f"boost-{BOOST_VERSION}-b2-nodocs.tar.gz"
     )
     if "wasm" in flags:
         # only supported on nix for now
@@ -984,7 +990,11 @@ if "IfcOpenShell-Python" in targets:
             if platform.system() != "Darwin":
                 if BUILD_CFG == "Release":
                     # TODO: This symbol name depends on the Python version?
-                    run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", glob.glob(os.path.join(module_dir, "_ifcopenshell_wrapper*.so"))[0]], cwd=module_dir)
+                    so = glob.glob(os.path.join(module_dir, "_ifcopenshell_wrapper*.so"))[0]
+                    if "wasm" in flags:
+                        run(['wasm-strip', so, '-k', "dylink.0"])
+                    else:
+                        run([strip, "-s", "-K", "PyInit__ifcopenshell_wrapper", so], cwd=module_dir)
 
             return module_dir
 

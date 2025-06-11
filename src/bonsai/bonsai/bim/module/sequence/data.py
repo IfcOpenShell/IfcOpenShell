@@ -19,8 +19,11 @@
 import bpy
 import bonsai.tool as tool
 import ifcopenshell
-import ifcopenshell.util.date as dateutil
+import ifcopenshell.util.attribute
+import ifcopenshell.util.date
+from ifcopenshell.util.doc import get_predefined_type_doc
 import json
+from typing import Any
 
 
 def refresh():
@@ -32,7 +35,7 @@ def refresh():
 
 
 class SequenceData:
-    data = {}
+    data: dict[str, Any] = {}
     is_loaded = False
 
     @classmethod
@@ -41,6 +44,9 @@ class SequenceData:
             "has_work_plans": cls.has_work_plans(),
             "has_work_schedules": cls.has_work_schedules(),
             "has_work_calendars": cls.has_work_calendars(),
+            "schedule_predefined_types_enum": cls.schedule_predefined_types_enum(),
+            "task_columns_enum": cls.task_columns_enum(),
+            "task_time_columns_enum": cls.task_time_columns_enum(),
         }
         cls.load_work_plans()
         cls.load_work_schedules()
@@ -88,6 +94,7 @@ class SequenceData:
     @classmethod
     def load_work_schedules(cls):
         cls.data["work_schedules"] = {}
+        cls.data["work_schedules_enum"] = []
         for work_schedule in tool.Ifc.get().by_type("IfcWorkSchedule"):
             data = work_schedule.get_info()
             if not data["Name"]:
@@ -106,12 +113,14 @@ class SequenceData:
                     if obj.is_a("IfcTask"):
                         data["RelatedObjects"].append(obj.id())
             cls.data["work_schedules"][work_schedule.id()] = data
+            cls.data["work_schedules_enum"].append((str(work_schedule.id()), data["Name"], ""))
 
         cls.data["number_of_work_schedules_loaded"] = cls.number_of_work_schedules_loaded()
 
     @classmethod
     def load_work_calendars(cls):
         cls.data["work_calendars"] = {}
+        cls.data["work_calendars_enum"] = []
         for work_calendar in tool.Ifc.get().by_type("IfcWorkCalendar"):
             data = work_calendar.get_info()
             del data["OwnerHistory"]
@@ -120,6 +129,7 @@ class SequenceData:
             data["WorkingTimes"] = [t.id() for t in work_calendar.WorkingTimes or []]
             data["ExceptionTimes"] = [t.id() for t in work_calendar.ExceptionTimes or []]
             cls.data["work_calendars"][work_calendar.id()] = data
+            cls.data["work_calendars_enum"].append((str(work_calendar.id()), data["Name"], ""))
 
         cls.data["number_of_work_calendars_loaded"] = len(cls.data["work_calendars"].keys())
 
@@ -234,6 +244,55 @@ class SequenceData:
                 data["NestingIndex"] = rel.RelatedObjects.index(task)
             cls.data["tasks"][task.id()] = data
 
+    @classmethod
+    def schedule_predefined_types_enum(cls) -> list[tuple[str, str, str]]:
+        results: list[tuple[str, str, str]] = []
+        declaration = tool.Ifc().schema().declaration_by_name("IfcWorkSchedule")
+        version = tool.Ifc.get_schema()
+        for attribute in declaration.attributes():
+            if attribute.name() == "PredefinedType":
+                results.extend(
+                    [
+                        (e, e, get_predefined_type_doc(version, "IfcWorkSchedule", e))
+                        for e in ifcopenshell.util.attribute.get_enum_items(attribute)
+                        if e != "BASELINE"
+                    ]
+                )
+                break
+        return results
+
+    @classmethod
+    def task_columns_enum(cls) -> list[tuple[str, str, str]]:
+        schema = tool.Ifc.schema()
+        taskcolumns_enum = []
+        for a in schema.declaration_by_name("IfcTask").all_attributes():
+            if (primitive_type := ifcopenshell.util.attribute.get_primitive_type(a)) not in (
+                "string",
+                "float",
+                "integer",
+                "boolean",
+                "enum",
+            ):
+                continue
+            taskcolumns_enum.append((f"{a.name()}/{primitive_type}", a.name(), ""))
+        return taskcolumns_enum
+
+    @classmethod
+    def task_time_columns_enum(cls) -> list[tuple[str, str, str]]:
+        schema = tool.Ifc.schema()
+        tasktimecolumns_enum = []
+        for a in schema.declaration_by_name("IfcTaskTime").all_attributes():
+            if (primitive_type := ifcopenshell.util.attribute.get_primitive_type(a)) not in (
+                "string",
+                "float",
+                "integer",
+                "boolean",
+                "enum",
+            ):
+                continue
+            tasktimecolumns_enum.append((f"{a.name()}/{primitive_type}", a.name(), ""))
+        return tasktimecolumns_enum
+
 
 class WorkScheduleData:
     data = {}
@@ -248,27 +307,26 @@ class WorkScheduleData:
         cls.is_loaded = True
 
     @classmethod
-    def can_have_baselines(cls):
-        if not bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
+    def can_have_baselines(cls) -> bool:
+        props = tool.Sequence.get_work_schedule_props()
+        if not props.active_work_schedule_id:
             return False
-        return (
-            tool.Ifc.get().by_id(bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id).PredefinedType
-            == "PLANNED"
-        )
+        return tool.Ifc.get().by_id(props.active_work_schedule_id).PredefinedType == "PLANNED"
 
     @classmethod
-    def active_work_schedule_baselines(cls):
+    def active_work_schedule_baselines(cls) -> list[dict[str, Any]]:
         results = []
-        if not bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id:
+        props = tool.Sequence.get_work_schedule_props()
+        if not props.active_work_schedule_id:
             return []
-        for rel in tool.Ifc.get().by_id(bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id).Declares:
+        for rel in tool.Ifc.get().by_id(props.active_work_schedule_id).Declares:
             for work_schedule in rel.RelatedObjects:
                 if work_schedule.PredefinedType == "BASELINE":
                     results.append(
                         {
                             "id": work_schedule.id(),
                             "name": work_schedule.Name or "Unnamed",
-                            "date": str(dateutil.ifc2datetime(work_schedule.CreationDate)),
+                            "date": str(ifcopenshell.util.date.ifc2datetime(work_schedule.CreationDate)),
                         }
                     )
         return results

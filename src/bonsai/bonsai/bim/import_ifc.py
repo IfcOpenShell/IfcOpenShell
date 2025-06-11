@@ -20,9 +20,12 @@ from __future__ import annotations
 import bpy
 import time
 import json
+import ifcpatch
 import logging
+import traceback
 import mathutils
 import numpy as np
+import numpy.typing as npt
 import multiprocessing
 import ifcopenshell
 import ifcopenshell.geom
@@ -33,10 +36,11 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.representation
 import ifcopenshell.util.shape
 import bonsai.tool as tool
-from itertools import chain, accumulate
 from bonsai.bim.ifc import IfcStore, IFC_CONNECTED_TYPE
 from bonsai.tool.loader import OBJECT_DATA_TYPE
-from typing import Dict, Union, Optional, Any
+from typing import Union, Optional, Any, Literal
+from collections.abc import Iterable
+from ifcopenshell.util.shape import MatrixType
 
 
 class MaterialCreator:
@@ -44,7 +48,7 @@ class MaterialCreator:
     obj: bpy.types.Object
 
     def __init__(self, ifc_import_settings: IfcImportSettings, ifc_importer: IfcImporter):
-        self.styles: Dict[int, bpy.types.Material] = {}
+        self.styles: dict[int, bpy.types.Material] = {}
         self.parsed_meshes: set[str] = set()
         self.ifc_import_settings = ifc_import_settings
         self.ifc_importer = ifc_importer
@@ -68,18 +72,37 @@ class MaterialCreator:
         if isinstance(mesh, bpy.types.Curve):
             return
 
+        if mesh.get("has_layer_styles", None) == True:
+            return
+
         self.mesh = mesh
         self.obj = obj
+        if element.is_a("IfcTypeProduct"):
+            self.parse_element_type_material_styles(element)
         self.parsed_meshes.add(self.mesh.name)
-        self.load_texture_maps(shape_has_openings)
+        if not self.ifc_import_settings.load_indexed_maps:
+            self.load_texture_maps(shape_has_openings)
         self.assign_material_slots_to_faces()
         tool.Geometry.record_object_materials(obj)
         del self.mesh["ios_materials"]
 
     def load_existing_materials(self) -> None:
         for material in bpy.data.materials:
-            if ifc_definition_id := material.BIMStyleProperties.ifc_definition_id:
+            if ifc_definition_id := tool.Blender.get_ifc_definition_id(material):
                 self.styles[ifc_definition_id] = material
+
+    def parse_element_type_material_styles(self, element: ifcopenshell.entity_instance) -> None:
+        if self.mesh["ios_materials"]:
+            return  # Already has materials assign to the representation itself
+        # Otherwise, we need to check for material styles on the element, since
+        # create_shape on types only works on representations.
+        mprops = tool.Geometry.get_mesh_props(self.mesh)
+        context = tool.Ifc.get().by_id(mprops.ifc_definition_id).ContextOfItems
+        for material in ifcopenshell.util.element.get_materials(element):
+            if style := ifcopenshell.util.representation.get_material_style(material, context):
+                self.mesh["ios_materials"] = (style.id(),)
+                self.mesh["ios_material_ids"] = [0] * len(self.mesh.polygons)
+                break
 
     def get_ifc_coordinate(self, material: bpy.types.Material) -> Union[ifcopenshell.entity_instance, None]:
         """Get IfcTextureCoordinate"""
@@ -94,7 +117,7 @@ class MaterialCreator:
                     return coords
                 # TODO: support IfcTextureMap
                 if coords.is_a("IfcTextureMap"):
-                    print(f"WARNING. IfcTextureMap texture coordinates is not supported.")
+                    print("WARNING. IfcTextureMap texture coordinates is not supported.")
                     return
 
     def load_texture_maps(self, shape_has_openings: bool) -> None:
@@ -152,7 +175,7 @@ class MaterialCreator:
             if -1 in self.mesh["ios_material_ids"]:
                 material_to_slot[-1] = get_empty_slot_index()
 
-            material_index = [material_to_slot[mat_id] for mat_id in self.mesh["ios_material_ids"]]
+            material_index = np.array([material_to_slot[mat_id] for mat_id in self.mesh["ios_material_ids"]], dtype="I")
             self.mesh.polygons.foreach_set("material_index", material_index)
 
     def resolve_all_stylable_representation_items(
@@ -176,11 +199,16 @@ class MaterialCreator:
 
 
 class IfcImporter:
+    file: ifcopenshell.file
+    """Either provided by user as an attribute or will be loaded from ``input_file`` during ``execute()``."""
+
+    elements: set[ifcopenshell.entity_instance]
+    """Set of IfcElements to import. Excluding ``gross_elements`` and ```native_elements``."""
+
     def __init__(self, ifc_import_settings: IfcImportSettings):
         self.ifc_import_settings = ifc_import_settings
         tool.Loader.set_settings(ifc_import_settings)
         self.diff = None
-        self.file: ifcopenshell.file = None
         self.project = None
         self.has_existing_project = False
         # element guids to blender collections mapping
@@ -194,14 +222,16 @@ class IfcImporter:
         self.meshes: dict[str, OBJECT_DATA_TYPE] = {}
         self.mesh_shapes = {}
         self.time = 0
-        self.unit_scale = 1
+        self.unit_scale = 1.0
         # ifc definition ids to blender elements mapping
         self.added_data: dict[int, IFC_CONNECTED_TYPE] = {}
-        self.native_elements = set()
-        self.native_data = {}
+        self.native_elements: set[ifcopenshell.entity_instance] = set()
+        self.native_data: dict[str, Any] = {}
         self.progress = 0
 
         self.material_creator = MaterialCreator(ifc_import_settings, self)
+        classes_to_wireframe_str = tool.Drawing.get_document_props().classes_to_wireframe
+        self.classes_to_wireframe_list = [word.strip() for word in classes_to_wireframe_str.split(",")]
 
     def profile_code(self, message: str) -> None:
         if not self.time:
@@ -254,6 +284,8 @@ class IfcImporter:
         self.profile_code("Place objects in collections")
         self.setup_arrays()
         self.profile_code("Setup arrays")
+        tool.Project.load_linked_models_from_ifc()
+        self.profile_code("Load linked models")
         self.add_project_to_scene()
         self.profile_code("Add project to scene")
         if self.ifc_import_settings.should_clean_mesh and len(self.file.by_type("IfcElement")) < 1000:
@@ -269,26 +301,39 @@ class IfcImporter:
         tool.Spatial.run_spatial_import_spatial_decomposition()
         if default_container := tool.Spatial.guess_default_container():
             tool.Spatial.set_default_container(default_container)
-        tool.Loader.setup_active_bsdd_classification()
         self.update_progress(100)
         bpy.context.window_manager.progress_end()
 
     def process_context_filter(self) -> None:
+        """Setup contexts. Necessary for importing elements representations."""
+        contexts = self.file.by_type("IfcGeometricRepresentationContext")
+        if len(contexts) > 100:  # Probably something strange happening. Encountered from Revizto.
+            print("Warning! Excessive contexts were found and merged where applicable.")
+            uniques = {}
+            i = 0
+            for element in contexts:
+                data = "-".join([str(a) for a in element])
+                if unique := uniques.get(data, None):
+                    ifcopenshell.util.element.replace_element(element, unique)
+                    self.file.remove(element)
+                    i += 1
+                else:
+                    uniques[data] = element
+            print(f"Replaced {i} IfcGeometricRepresentationContext")
         tool.Loader.settings.contexts = ifcopenshell.util.representation.get_prioritised_contexts(self.file)
         tool.Loader.settings.context_settings = tool.Loader.create_settings()
         tool.Loader.settings.gross_context_settings = tool.Loader.create_settings(is_gross=True)
 
     def process_element_filter(self) -> None:
+        elements: list[ifcopenshell.entity_instance]
         if self.ifc_import_settings.has_filter:
-            self.elements = self.ifc_import_settings.elements
-            if isinstance(self.elements, set):
-                self.elements = list(self.elements)
+            elements = list(self.ifc_import_settings.elements)
             # TODO: enable filtering for annotations
         else:
             if self.file.schema in ("IFC2X3", "IFC4"):
-                self.elements = self.file.by_type("IfcElement") + self.file.by_type("IfcProxy")
+                elements = self.file.by_type("IfcElement") + self.file.by_type("IfcProxy")
             else:
-                self.elements = self.file.by_type("IfcElement")
+                elements = self.file.by_type("IfcElement")
 
         drawing_groups = [g for g in self.file.by_type("IfcGroup") if g.ObjectType == "DRAWING"]
         drawing_annotations = set()
@@ -298,16 +343,16 @@ class IfcImporter:
         self.annotations = set([a for a in self.file.by_type("IfcAnnotation")])
         self.annotations -= drawing_annotations
 
-        self.elements = [e for e in self.elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
+        elements = [e for e in elements if not e.is_a("IfcFeatureElement") or e.is_a("IfcSurfaceFeature")]
         if self.ifc_import_settings.element_limit_mode == "UNLIMITED":
-            self.elements = set(self.elements)
+            self.elements = set(elements)
         else:
             offset = self.ifc_import_settings.element_offset
             offset_limit = offset + self.ifc_import_settings.element_limit
-            self.elements = set(self.elements[offset:offset_limit])
+            self.elements = set(elements[offset:offset_limit])
 
         if self.ifc_import_settings.has_filter or self.ifc_import_settings.element_limit_mode != "UNLIMITED":
-            self.element_types = set([ifcopenshell.util.element.get_type(e) for e in self.elements])
+            self.element_types = {t for e in self.elements if (t := ifcopenshell.util.element.get_type(e))}
         else:
             self.element_types = set(self.file.by_type("IfcTypeProduct"))
 
@@ -329,7 +374,7 @@ class IfcImporter:
         if self.gross_elements:
             print("Warning! Excessive voids were found and skipped for the following elements:")
             for element in self.gross_elements:
-                print(element)
+                print(f"{element} - {len(getattr(element, 'HasOpenings', []))} openings")
 
     def get_spatial_elements_filtered_by_elements(
         self, elements: set[ifcopenshell.entity_instance]
@@ -345,6 +390,7 @@ class IfcImporter:
         return results
 
     def parse_native_elements(self) -> None:
+        # TODO: move to `process_element_filter` to incapsulate all `self.elements` logic.
         if not self.ifc_import_settings.should_load_geometry:
             return
         if not self.file.by_type("IfcSweptDiskSolid"):
@@ -382,7 +428,8 @@ class IfcImporter:
 
         rep = representation
         while True:
-            if len(rep.Items) == 1 and rep.Items[0].is_a("IfcMappedItem"):
+            # Tekla 2023 has missing items, though it's invalid IFC.
+            if rep.Items and len(rep.Items) == 1 and rep.Items[0].is_a("IfcMappedItem"):
                 rep_matrix = ifcopenshell.util.placement.get_mappeditem_transformation(rep.Items[0])
                 if not np.allclose(rep_matrix, np.eye(4)):
                     matrix = rep_matrix @ matrix
@@ -402,7 +449,7 @@ class IfcImporter:
         matrix[2][3] *= self.unit_scale
 
         # Single swept disk solids (e.g. rebar) are better natively represented as beveled curves
-        if self.is_native_swept_disk_solid(element, resolved_representation):
+        if tool.Loader.is_native_swept_disk_solid(element, resolved_representation):
             self.native_data[element.GlobalId] = {
                 "matrix": matrix,
                 "context": context,
@@ -411,27 +458,10 @@ class IfcImporter:
                 "type": "IfcSweptDiskSolid",
             }
             return True
-
-    def is_native_swept_disk_solid(
-        self, element: ifcopenshell.entity_instance, representation: ifcopenshell.entity_instance
-    ) -> bool:
-        items = [i["item"] for i in ifcopenshell.util.representation.resolve_items(representation)]
-        if len(items) == 1 and items[0].is_a("IfcSweptDiskSolid"):
-            if tool.Blender.Modifier.is_railing(element):
-                return False
-            return True
-        elif len(items) and (  # See #2508 why we accommodate for invalid IFCs here
-            items[0].is_a("IfcSweptDiskSolid")
-            and len({i.is_a() for i in items}) == 1
-            and len({i.Radius for i in items}) == 1
-        ):
-            if tool.Blender.Modifier.is_railing(element):
-                return False
-            return True
         return False
 
     def calculate_model_offset(self) -> None:
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if self.ifc_import_settings.false_origin_mode == "MANUAL":
             tool.Loader.set_manual_blender_offset(self.file)
         elif self.ifc_import_settings.false_origin_mode == "AUTOMATIC":
@@ -472,14 +502,16 @@ class IfcImporter:
             if grid.WAxes:
                 self.create_grid_axes(grid.WAxes, grid_obj, grid_placement)
 
-    def create_grid_axes(self, axes, grid_obj, grid_placement):
+    def create_grid_axes(
+        self, axes: list[ifcopenshell.entity_instance], grid_obj: bpy.types.Object, grid_placement: MatrixType
+    ) -> None:
         for axis in axes:
             shape = tool.Loader.create_generic_shape(axis.AxisCurve)
             mesh = self.create_mesh(axis, shape)
             obj = bpy.data.objects.new(tool.Loader.get_name(axis), mesh)
             obj.show_in_front = True
             self.link_element(axis, obj)
-            self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement.copy()))
+            self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, grid_placement))
 
     def create_element_types(self):
         for element_type in self.element_types:
@@ -504,8 +536,9 @@ class IfcImporter:
                         pass
                     elif shape:
                         mesh = self.create_mesh(element, shape)
-                        tool.Loader.link_mesh(shape, mesh)
-                        self.meshes[mesh_name] = mesh
+                        if mesh is not None:
+                            tool.Loader.link_mesh(shape, mesh)
+                            self.meshes[mesh_name] = mesh
                     else:
                         self.ifc_import_settings.logger.error("Failed to generate shape for %s", element)
                 break
@@ -533,13 +566,17 @@ class IfcImporter:
             native_data = self.native_data[element.GlobalId]
             mesh_name = f"{native_data['context'].id()}/{native_data['geometry_id']}"
             mesh = self.meshes.get(mesh_name)
+
+            curve_thickness = None
             if mesh is None:
                 if native_data["type"] == "IfcSweptDiskSolid":
-                    mesh = self.create_native_swept_disk_solid(element, mesh_name, native_data)
+                    mesh, curve_thickness = tool.Loader.create_native_swept_disk_solid(element, mesh_name, native_data)
                 tool.Ifc.link(tool.Ifc.get().by_id(native_data["geometry_id"]), mesh)
                 mesh.name = mesh_name
                 self.meshes[mesh_name] = mesh
-            self.create_product(element, mesh=mesh)
+            obj = self.create_product(element, mesh=mesh)
+            tool.Loader.setup_native_swept_disk_solid_thickness(obj, curve_thickness)
+
         print("Done creating geometry")
 
     def create_spatial_elements(self) -> None:
@@ -559,6 +596,7 @@ class IfcImporter:
             return self.create_generic_sqlite_elements(elements)
 
         if self.ifc_import_settings.should_load_geometry:
+            elements = elements.copy()  # Prevent argument mutation.
             context_settings = (
                 tool.Loader.settings.gross_context_settings if is_gross else tool.Loader.settings.context_settings
             )
@@ -582,6 +620,7 @@ class IfcImporter:
                 obj.hide_select = True
 
     def create_generic_sqlite_elements(self, elements: set[ifcopenshell.entity_instance]) -> None:
+        assert isinstance(self.file, ifcopenshell.sql.sqlite)
         self.geometry_cache = self.file.get_geometry([e.id() for e in elements])
         for geometry_id, geometry in self.geometry_cache["geometry"].items():
             mesh_name = tool.Loader.get_mesh_name_from_shape(type("Geometry", (), {"id": geometry_id}))
@@ -591,21 +630,9 @@ class IfcImporter:
             mesh["has_cartesian_point_offset"] = False
 
             if geometry["faces"]:
-                num_vertices = len(verts) // 3
-                total_faces = len(geometry["faces"])
-                loop_start = range(0, total_faces, 3)
-                num_loops = total_faces // 3
-                loop_total = [3] * num_loops
-                num_vertex_indices = len(geometry["faces"])
-
-                mesh.vertices.add(num_vertices)
-                mesh.vertices.foreach_set("co", verts)
-                mesh.loops.add(num_vertex_indices)
-                mesh.loops.foreach_set("vertex_index", geometry["faces"])
-                mesh.polygons.add(num_loops)
-                mesh.polygons.foreach_set("loop_start", loop_start)
-                mesh.polygons.foreach_set("loop_total", loop_total)
-                mesh.update()
+                mesh = tool.Loader.create_mesh_from_shape(
+                    mesh=mesh, faces=geometry["faces"].reshape(-1, 3), verts=verts.reshape(-1, 3)
+                )
             else:
                 e = geometry["edges"]
                 v = verts
@@ -698,24 +725,21 @@ class IfcImporter:
     def create_structural_point_connections(self):
         for product in self.file.by_type("IfcStructuralPointConnection"):
             # TODO: make this based off ifcopenshell. See #1409
+
+            representation = tool.Structural.get_vertex_representation(product)
+            if not representation:
+                print(
+                    "WARNING. Skipping invalid IfcStructuralPointConnection - "
+                    f"element has no valid representation:\n{product}."
+                )
+                continue
+
+            mesh = tool.Loader.create_structural_point_connection_mesh(representation)
+            if mesh is None:
+                continue
+            tool.Ifc.link(representation, mesh)
+
             placement_matrix = ifcopenshell.util.placement.get_local_placement(product.ObjectPlacement)
-            vertex = None
-            context = None
-            representation = None
-            for subelement in self.file.traverse(product.Representation):
-                if subelement.is_a("IfcVertex") and subelement.VertexGeometry.is_a("IfcCartesianPoint"):
-                    vertex = list(subelement.VertexGeometry.Coordinates)
-                elif subelement.is_a("IfcGeometricRepresentationContext"):
-                    context = subelement
-                elif subelement.is_a("IfcTopologyRepresentation"):
-                    representation = subelement
-            if not vertex or not context or not representation:
-                continue  # TODO implement non cartesian point vertexes
-
-            mesh_name = tool.Geometry.get_representation_name(representation)
-            mesh = bpy.data.meshes.new(mesh_name)
-            mesh.from_pydata([mathutils.Vector(vertex) * self.unit_scale], [], [])
-
             obj = bpy.data.objects.new(tool.Loader.get_name(product), mesh)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, placement_matrix))
             self.link_element(product, obj)
@@ -751,12 +775,9 @@ class IfcImporter:
     def create_pointclouds(self, products: set[ifcopenshell.entity_instance]) -> set[ifcopenshell.entity_instance]:
         result = set()
         for product in products:
-            representation = self.get_pointcloud_representation(product)
-            if representation is not None:
-                pointcloud = self.create_pointcloud(product, representation)
-                if pointcloud is not None:
+            if representation := self.get_pointcloud_representation(product):
+                if pointcloud := self.create_pointcloud(product, representation):
                     result.add(pointcloud)
-
         return result
 
     def create_pointcloud(
@@ -804,21 +825,23 @@ class IfcImporter:
             materials_updated = bool(mesh)
             if mesh is None:
                 mesh = self.create_mesh(element, shape)
-                tool.Loader.link_mesh(shape, mesh)
-                self.meshes[mesh_name] = mesh
+                if mesh is not None:
+                    tool.Loader.link_mesh(shape, mesh)
+                    self.meshes[mesh_name] = mesh
         else:
             mesh = None
 
         obj = bpy.data.objects.new(tool.Loader.get_name(element), mesh)
         self.link_element(element, obj)
-        if getattr(element, "HasOpenings", None):
-            tool.Geometry.lock_scale(obj)
 
-        if shape:
+        for ifcclass in self.classes_to_wireframe_list:
+            if element.is_a(ifcclass):
+                obj.display_type = "WIRE"
+
+        if shape and mesh:
             # We use numpy here because Blender mathutils.Matrix is not accurate enough
-            mat = np.array(shape.transformation.matrix).reshape((4, 4), order="F")
+            mat = ifcopenshell.util.shape.get_shape_matrix(shape)
             self.set_matrix_world(obj, tool.Loader.apply_blender_offset_to_matrix_world(obj, mat))
-            assert mesh  # Type checker.
             if not materials_updated:
                 self.material_creator.create(element, obj, mesh, tool.Geometry.does_shape_has_openings(shape))
         elif mesh:  # When does this occur?
@@ -834,44 +857,7 @@ class IfcImporter:
         return obj
 
     def load_existing_meshes(self) -> None:
-        self.meshes.update({m.name: m for m in bpy.data.meshes})
-
-    def create_native_swept_disk_solid(
-        self, element: ifcopenshell.entity_instance, mesh_name: str, native_data: dict[str, Any]
-    ) -> bpy.types.Curve:
-        # TODO: georeferencing?
-        curve = bpy.data.curves.new(mesh_name, type="CURVE")
-        curve.dimensions = "3D"
-        curve.resolution_u = 2
-        polyline = curve.splines.new("POLY")
-
-        for item_data in ifcopenshell.util.representation.resolve_items(native_data["representation"]):
-            item = item_data["item"]
-            matrix = item_data["matrix"]
-            matrix[0][3] *= self.unit_scale
-            matrix[1][3] *= self.unit_scale
-            matrix[2][3] *= self.unit_scale
-            # TODO: support inner radius, start param, and end param
-            geometry = tool.Loader.create_generic_shape(item.Directrix)
-            if not geometry:
-                continue
-            e = geometry.edges
-            v = geometry.verts
-            vertices = [list(matrix @ [v[i], v[i + 1], v[i + 2], 1]) for i in range(0, len(v), 3)]
-            edges = [[e[i], e[i + 1]] for i in range(0, len(e), 2)]
-            v2 = None
-            for edge in edges:
-                v1 = vertices[edge[0]]
-                if v1 != v2:
-                    polyline = curve.splines.new("POLY")
-                    polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v1)
-                v2 = vertices[edge[1]]
-                polyline.points.add(1)
-                polyline.points[-1].co = native_data["matrix"] @ mathutils.Vector(v2)
-
-        curve.bevel_depth = self.unit_scale * item.Radius
-        curve.use_fill_caps = True
-        return curve
+        self.meshes.update({m.name: m for m in bpy.data.meshes if m.library is None})
 
     def merge_materials_by_colour(self):
         cleaned_materials = {}
@@ -926,18 +912,20 @@ class IfcImporter:
 
     def load_file(self):
         self.ifc_import_settings.logger.info("loading file %s", self.ifc_import_settings.input_file)
-        if not bpy.context.scene.BIMProperties.ifc_file:
-            bpy.context.scene.BIMProperties.ifc_file = self.ifc_import_settings.input_file
-        self.file = IfcStore.get_file()
+        props = tool.Blender.get_bim_props()
+        if not props.ifc_file:
+            props.ifc_file = self.ifc_import_settings.input_file
+        self.file = tool.Ifc.get()
 
     def calculate_unit_scale(self):
         self.unit_scale = ifcopenshell.util.unit.calculate_unit_scale(self.file)
         tool.Loader.set_unit_scale(self.unit_scale)
 
-    def set_units(self):
-        if not (units := self.file.by_type("IfcUnitAssignment")):
+    def set_units(self) -> None:
+        if not (assignment := self.file.by_type("IfcProject")[0].UnitsInContext):
             return  # Geometry is optional in IFC
-        for unit in units[0].Units:
+        props = tool.Blender.get_bim_props()
+        for unit in assignment.Units:
             if unit.is_a("IfcNamedUnit") and unit.UnitType == "LENGTHUNIT":
                 if unit.is_a("IfcSIUnit"):
                     bpy.context.scene.unit_settings.system = "METRIC"
@@ -956,26 +944,27 @@ class IfcImporter:
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "AREAUNIT":
                 name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
                 try:
-                    bpy.context.scene.BIMProperties.area_unit = "{}{}".format(
+                    props.area_unit = "{}{}".format(
                         unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
                     )
                 except:  # Probably an invalid unit.
-                    bpy.context.scene.BIMProperties.area_unit = "SQUARE_METRE"
+                    props.area_unit = "SQUARE_METRE"
             elif unit.is_a("IfcNamedUnit") and unit.UnitType == "VOLUMEUNIT":
                 name = unit.Name if unit.is_a("IfcSIUnit") else unit.Name.lower()
                 try:
-                    bpy.context.scene.BIMProperties.volume_unit = "{}{}".format(
+                    props.volume_unit = "{}{}".format(
                         unit.Prefix + "/" if hasattr(unit, "Prefix") and unit.Prefix else "", name
                     )
                 except:  # Probably an invalid unit.
-                    bpy.context.scene.BIMProperties.volume_unit = "CUBIC_METRE"
+                    props.volume_unit = "CUBIC_METRE"
 
     def create_project(self):
         project = self.file.by_type("IfcProject")[0]
         self.project = {"ifc": project}
         obj = tool.Ifc.get_object(project)
         if obj:
-            self.project["blender"] = obj.BIMObjectProperties.collection
+            props = tool.Blender.get_object_bim_props(obj)
+            self.project["blender"] = props.collection
             self.has_existing_project = True
             return
         self.project["blender"] = bpy.data.collections.new(
@@ -985,10 +974,16 @@ class IfcImporter:
         obj.hide_select = True
         self.project["blender"].objects.link(obj)
         self.project["blender"].BIMCollectionProperties.obj = obj
-        obj.BIMObjectProperties.collection = self.collections[project.GlobalId] = self.project["blender"]
+        props = tool.Blender.get_object_bim_props(obj)
+        props.collection = self.collections[project.GlobalId] = self.project["blender"]
 
     def create_styles(self) -> None:
-        for style in self.file.by_type("IfcSurfaceStyle"):
+        styles = self.file.by_type("IfcSurfaceStyle")
+        if len(styles) > self.ifc_import_settings.style_limit:  # Probably something strange happening
+            print("Warning! Excessive styles were found and merged where applicable.")
+            ifcpatch.execute({"file": self.file, "recipe": "MergeStyles", "arguments": []})
+            styles = self.file.by_type("IfcSurfaceStyle")
+        for style in styles:
             self.create_style(style)
 
     def create_style(self, style: ifcopenshell.entity_instance) -> None:
@@ -1001,10 +996,11 @@ class IfcImporter:
         self.material_creator.styles[style.id()] = blender_material
 
         style_elements = tool.Style.get_style_elements(blender_material)
+        props = tool.Style.get_material_style_props(blender_material)
         if tool.Style.has_blender_external_style(style_elements):
-            blender_material.BIMStyleProperties.active_style_type = "External"
+            props.active_style_type = "External"
         else:
-            blender_material.BIMStyleProperties.active_style_type = "Shading"
+            props.active_style_type = "Shading"
 
     def place_objects_in_collections(self) -> None:
         for ifc_definition_id, obj in self.added_data.items():
@@ -1012,10 +1008,10 @@ class IfcImporter:
                 tool.Collector.assign(obj, should_clean_users_collection=False)
 
     def is_curve_annotation(self, element: ifcopenshell.entity_instance) -> bool:
-        object_type = element.ObjectType
+        object_type = ifcopenshell.util.element.get_predefined_type(element)
         return (
             object_type in tool.Drawing.ANNOTATION_TYPES_DATA
-            and tool.Drawing.ANNOTATION_TYPES_DATA[object_type][3] == "curve"
+            and tool.Drawing.ANNOTATION_TYPES_DATA[object_type].data_type == "curve"
         )
 
     def get_drawing_group(self, element):
@@ -1038,7 +1034,7 @@ class IfcImporter:
         element: ifcopenshell.entity_instance,
         shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
     ) -> bpy.types.Curve:
-        if hasattr(shape, "geometry"):
+        if isinstance(shape, ifcopenshell.geom.ShapeElementType):
             geometry = shape.geometry
         else:
             geometry = shape
@@ -1060,11 +1056,7 @@ class IfcImporter:
             v2 = vertices[edge[1]]
             polyline.points.add(1)
             polyline.points[-1].co = mathutils.Vector(v2)
-        # TODO: remove error handling after we update build in Bonsai.
-        try:
-            edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
-        except AttributeError:
-            edges_item_ids = []
+        edges_item_ids = ifcopenshell.util.shape.get_edges_representation_item_ids(geometry).tolist()
         curve["ios_edges_item_ids"] = edges_item_ids
         return curve
 
@@ -1072,10 +1064,10 @@ class IfcImporter:
         self,
         element: ifcopenshell.entity_instance,
         shape: Union[ifcopenshell.geom.ShapeElementType, ifcopenshell.geom.ShapeType],
-        cartesian_point_offset=None,
-    ) -> bpy.types.Mesh:
+        cartesian_point_offset: Union[npt.NDArray[np.float64], Literal[False]] = None,
+    ) -> Union[bpy.types.Mesh, None]:
         try:
-            if hasattr(shape, "geometry"):
+            if isinstance(shape, ifcopenshell.geom.ShapeElementType):
                 # shape is ShapeElementType
                 geometry = shape.geometry
             else:
@@ -1084,39 +1076,40 @@ class IfcImporter:
             # Mesh may already exists (e.g. during representation reimport)
             # and we assign some suffix to it to prevent Blender from adding '.001' suffix to the new mesh.
             mesh_name = tool.Loader.get_mesh_name_from_shape(geometry)
-            if old_mesh := bpy.data.meshes.get(mesh_name):
+            if old_mesh := bpy.data.meshes.get((mesh_name, None)):
                 old_mesh.name = mesh_name + ".old"
             mesh = bpy.data.meshes.new(mesh_name)
 
+            verts = ifcopenshell.util.shape.get_vertices(geometry)
             if cartesian_point_offset is False:
-                verts = geometry.verts
                 mesh["has_cartesian_point_offset"] = False
             elif cartesian_point_offset is not None:
-                verts_array = np.array(geometry.verts)
-                offset = np.array([-cartesian_point_offset[0], -cartesian_point_offset[1], -cartesian_point_offset[2]])
-                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
-                verts = offset_verts.tolist()
+                verts = verts - cartesian_point_offset
 
                 mesh["has_cartesian_point_offset"] = True
                 mesh["cartesian_point_offset"] = (
                     f"{cartesian_point_offset[0]},{cartesian_point_offset[1]},{cartesian_point_offset[2]}"
                 )
-            elif geometry.verts and tool.Loader.is_point_far_away(
-                (geometry.verts[0], geometry.verts[1], geometry.verts[2]), is_meters=True
-            ):
+            elif verts.size and tool.Loader.is_point_far_away(verts[0], is_meters=True):
                 # Shift geometry close to the origin based off that first vert it found
-                verts_array = np.array(geometry.verts)
-                offset = np.array([-geometry.verts[0], -geometry.verts[1], -geometry.verts[2]])
-                offset_verts = verts_array + np.tile(offset, len(verts_array) // 3)
-                verts = offset_verts.tolist()
+                offset = verts[0]
+                verts = verts - offset
 
                 mesh["has_cartesian_point_offset"] = True
-                mesh["cartesian_point_offset"] = f"{geometry.verts[0]},{geometry.verts[1]},{geometry.verts[2]}"
+                mesh["cartesian_point_offset"] = f"{offset[0]},{offset[1]},{offset[2]}"
             else:
-                verts = geometry.verts
                 mesh["has_cartesian_point_offset"] = False
 
-            return tool.Loader.convert_geometry_to_mesh(geometry, mesh, verts=verts)
+            mesh = tool.Loader.convert_geometry_to_mesh(
+                geometry,
+                mesh,
+                verts=verts,
+                load_indexed_maps=self.ifc_import_settings.load_indexed_maps,
+            )
+            # E.g. `create_mesh` is also used for IfcRelSpaceBoundary.
+            if element.is_a("IfcObjectDefinition"):
+                return tool.Loader.slice_layerset_mesh(element, mesh)
+            return mesh
         except:
             self.ifc_import_settings.logger.error("Could not create mesh for %s", element)
             import traceback
@@ -1124,9 +1117,10 @@ class IfcImporter:
             print(traceback.format_exc())
 
     def set_default_context(self):
+        rprops = tool.Root.get_root_props()
         for subcontext in self.file.by_type("IfcGeometricRepresentationSubContext"):
             if subcontext.ContextIdentifier == "Body":
-                bpy.context.scene.BIMRootProperties.contexts = str(subcontext.id())
+                rprops.contexts = str(subcontext.id())
                 break
 
     def link_element(self, element: ifcopenshell.entity_instance, obj: IFC_CONNECTED_TYPE) -> None:
@@ -1144,7 +1138,22 @@ class IfcImporter:
             bpy.ops.view3d.view_selected()
             bpy.ops.object.select_all(action="DESELECT")
 
-    def setup_arrays(self):
+    def setup_arrays(
+        self,
+        *,
+        annotations_to_import: Optional[set[ifcopenshell.entity_instance]] = None,
+        openings_to_import: Optional[set[ifcopenshell.entity_instance]] = None,
+    ) -> None:
+        # During base import some elements are skipped.
+        is_base_import = True
+        elements_to_import: set[ifcopenshell.entity_instance] = set()
+        if annotations_to_import is not None:
+            is_base_import = False
+            elements_to_import = annotations_to_import
+        elif openings_to_import is not None:
+            is_base_import = False
+            elements_to_import = openings_to_import
+
         for pset in self.file.by_type("IfcPropertySet"):
             if pset.Name != "BBIM_Array":
                 continue
@@ -1152,16 +1161,24 @@ class IfcImporter:
                 continue
             data = json.loads(data)
             for rel in pset.DefinesOccurrence:
+                element: ifcopenshell.entity_instance
                 for element in rel.RelatedObjects:
+                    if is_base_import:
+                        if element.is_a("IfcAnnotation") or element.is_a("IfcOpeningElement"):
+                            continue
+                    else:
+                        if element not in elements_to_import:
+                            continue
                     for i in range(len(data)):
                         tool.Blender.Modifier.Array.set_children_lock_state(element, i, True)
                         tool.Blender.Modifier.Array.constrain_children_to_parent(element)
 
 
 class IfcImportSettings:
+    input_file: Union[str, None] = None
+    logger: Union[logging.Logger, None] = None
+
     def __init__(self):
-        self.logger: logging.Logger = None
-        self.input_file = None
         self.diff_file = None
         self.geometry_library = "opencascade"
         self.should_use_cpu_multiprocessing = True
@@ -1172,6 +1189,7 @@ class IfcImportSettings:
         self.deflection_tolerance = 0.001
         self.angular_tolerance = 0.5
         self.void_limit = 30
+        self.style_limit = 300
         # Locations greater than 1km are not considered "small sites" according to the georeferencing guide
         # Users can configure this if they have to handle larger sites but beware of surveying precision
         self.distance_limit = 1000
@@ -1181,18 +1199,21 @@ class IfcImportSettings:
         self.element_limit_mode = "UNLIMITED"
         self.element_offset = 0
         self.element_limit = 30000
-        self.has_filter = None
+        self.has_filter = False
         self.should_filter_spatial_elements = True
         self.should_setup_viewport_camera = True
-        self.contexts = []
+        self.contexts: list[ifcopenshell.entity_instance] = []
         self.context_settings: list[ifcopenshell.geom.main.settings] = []
         self.gross_context_settings: list[ifcopenshell.geom.main.settings] = []
-        self.elements: set[ifcopenshell.entity_instance] = set()
+        self.elements: Iterable[ifcopenshell.entity_instance] = set()
+        self.load_indexed_maps = False
 
     @staticmethod
-    def factory(context=None, input_file=None, logger=None):
-        scene_diff = bpy.context.scene.DiffProperties
-        props = bpy.context.scene.BIMProjectProperties
+    def factory(
+        context=None, input_file: Optional[str] = None, logger: Optional[logging.Logger] = None
+    ) -> IfcImportSettings:
+        scene_diff = tool.Blender.get_diff_props()
+        props = tool.Project.get_project_props()
         settings = IfcImportSettings()
         settings.input_file = input_file
         if logger is None:
@@ -1208,17 +1229,27 @@ class IfcImportSettings:
         settings.deflection_tolerance = props.deflection_tolerance
         settings.angular_tolerance = props.angular_tolerance
         settings.void_limit = props.void_limit
+        settings.style_limit = props.style_limit
         settings.distance_limit = props.distance_limit
         settings.false_origin_mode = props.false_origin_mode
         try:
             settings.false_origin = [float(o) for o in props.false_origin.split(",")[:3]]
-        except:
-            settings.false_origin = [0, 0, 0]
+        except Exception as e:
+            print(traceback.format_exc())
+            raise Exception(
+                f"Failed to set false origin from string '{props.false_origin}'.\n"
+                f"Error: {str(e)}.\nSee above for the details."
+            )
         try:
             settings.project_north = float(props.project_north)
-        except:
-            settings.project_north = 0
+        except Exception as e:
+            print(traceback.format_exc())
+            raise Exception(
+                f"Failed to set project north from string '{props.project_north}'.\n"
+                f"Error: {str(e)}.\nSee above for the details."
+            )
         settings.element_limit_mode = props.element_limit_mode
         settings.element_offset = props.element_offset
         settings.element_limit = props.element_limit
+        settings.load_indexed_maps = props.load_indexed_maps
         return settings

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 from pydantic import BaseModel
 from models.documents_common import Document, DocumentVersion
 
@@ -10,7 +10,7 @@ from models.documents_common import Document, DocumentVersion
 
 
 class DocumentQuery(BaseModel):
-    document_ids: List[str]
+    document_ids: list[str]
 
 
 class DocumentUpload(Document):
@@ -19,8 +19,8 @@ class DocumentUpload(Document):
 
 
 class MetadataForDocumentsSaved(BaseModel):
-    documents: Optional[List[str]]
+    documents: Optional[list[str]]
 
 
 class DocumentQueryResult(BaseModel):
-    versions: List[DocumentVersion]
+    versions: list[DocumentVersion]

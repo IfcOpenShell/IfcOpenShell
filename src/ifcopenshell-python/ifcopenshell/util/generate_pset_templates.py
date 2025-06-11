@@ -126,7 +126,7 @@ class PsetTemplatesGenerator:
         schema_name = schema_name.upper()
         self.ifc_file = ifcopenshell.api.project.create_file(version=schema_name)
         self.units = dict()
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name)
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(self.ifc_file.schema_identifier)
 
         self.ifc_derived_unit_enum = (
             schema.declaration_by_name("IfcDerivedUnitEnum").as_enumeration_type().enumeration_items()

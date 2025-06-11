@@ -41,15 +41,12 @@ def assign_document(
 
     :param product: The list of objects to associate the document to. This could be
         almost any sensible object in IFC.
-    :type product: list[ifcopenshell.entity_instance]
     :param document: The IfcDocumentReference to associate to, or
         alternatively an IfcDocumentInformation, though this is not
         recommended.
-    :type document: ifcopenshell.entity_instance
     :return: The IfcRelAssociatesDocument relationship
         or `None` if `products` was an empty list or all products were
         already assigned to the `document`.
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -65,43 +62,41 @@ def assign_document(
         # Let's imagine storey represents an IfcBuildingStorey for the ground floor
         ifcopenshell.api.document.assign_document(model, products=[storey], document=reference)
     """
-    settings = {
-        "products": products,
-        "document": document,
-    }
 
     # TODO: do we need to support non-ifcroot elements like we do in classification.add_reference?
     # NOTE: reuses code from `library.assign_reference`
 
-    referenced_elements = ifcopenshell.util.element.get_referenced_elements(settings["document"])
-    products: set[ifcopenshell.entity_instance] = set(settings["products"])
-    products = products - referenced_elements
+    referenced_elements = ifcopenshell.util.element.get_referenced_elements(document)
+    products_set: set[ifcopenshell.entity_instance] = set(products)
+    products_set = products_set - referenced_elements
 
-    if not products:
+    if not products_set:
         return
 
     if file.schema == "IFC2X3":
         rel = next(
-            (r for r in file.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == settings["document"]),
+            (r for r in file.by_type("IfcRelAssociatesDocument") if r.RelatingDocument == document),
             None,
         )
     else:
-        ifc_class = settings["document"].is_a()
+        ifc_class = document.is_a()
         if ifc_class == "IfcDocumentReference":
-            rel = next(iter(settings["document"].DocumentRefForObjects), None)
+            rel = next(iter(document.DocumentRefForObjects), None)
         elif ifc_class == "IfcDocumentInformation":
-            rel = next(iter(settings["document"].DocumentInfoForObjects), None)
+            rel = next(iter(document.DocumentInfoForObjects), None)
+        else:
+            assert False, f"Unexpected document type: {ifc_class}"
 
     if not rel:
         return file.create_entity(
             "IfcRelAssociatesDocument",
             GlobalId=ifcopenshell.guid.new(),
             OwnerHistory=ifcopenshell.api.owner.create_owner_history(file),
-            RelatedObjects=list(products),
-            RelatingDocument=settings["document"],
+            RelatedObjects=list(products_set),
+            RelatingDocument=document,
         )
 
-    related_objects = set(rel.RelatedObjects) | products
+    related_objects = set(rel.RelatedObjects) | products_set
     rel.RelatedObjects = list(related_objects)
     ifcopenshell.api.owner.update_owner_history(file, element=rel)
     return rel

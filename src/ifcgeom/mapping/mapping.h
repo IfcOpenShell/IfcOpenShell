@@ -40,6 +40,7 @@ namespace geometry {
 		// Set of instances to mark failures that are intended, such as representations not
 		// resulting in any items due to dimensionality filters.
 		std::set<const IfcUtil::IfcBaseInterface*> failed_on_purpose_;
+		std::set<const IfcSchema::IfcRepresentationMap*> not_reusable_maps_;
 
 		template <typename T>
 		void process_mapping(bool& matched, taxonomy::ptr& item, IfcUtil::IfcBaseInterface const * inst) {
@@ -85,13 +86,14 @@ namespace geometry {
 		virtual std::map<std::string, IfcUtil::IfcBaseEntity*> get_layers(IfcUtil::IfcBaseEntity*);
 		virtual void initialize_settings();
 		virtual double get_length_unit() const { return length_unit_; }
+		virtual const std::string& get_length_unit_name() const { return length_unit_name_; }
 		virtual aggregate_of_instance::ptr find_openings(const IfcUtil::IfcBaseEntity*);
 		virtual IfcUtil::IfcBaseEntity* representation_of(const IfcUtil::IfcBaseEntity* product);
 
 		virtual const IfcUtil::IfcBaseEntity* get_product_type(const IfcUtil::IfcBaseEntity* product_);
 		virtual const IfcUtil::IfcBaseEntity* get_single_material_association(const IfcUtil::IfcBaseEntity* product);
 		IfcSchema::IfcRepresentation* representation_mapped_to(const IfcSchema::IfcRepresentation* representation);
-		IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation* representation, bool only_direct=false);
+		IfcSchema::IfcProduct::list::ptr products_represented_by(const IfcSchema::IfcRepresentation* representation, IfcSchema::IfcRepresentationMap*& rmap, bool only_direct=false);
 		bool reuse_ok_(const IfcSchema::IfcProduct::list::ptr& products);
 		IfcUtil::IfcBaseEntity* get_decomposing_entity(const IfcUtil::IfcBaseEntity* product, bool include_openings);
 

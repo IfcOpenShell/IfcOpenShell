@@ -16,19 +16,43 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+import bpy
 import os
 import bonsai.bim
 import bonsai.tool as tool
-from bonsai.bim.helper import prop_with_search
+from bonsai.bim.helper import prop_with_search, draw_attributes
 from bpy.types import Panel, Menu, UIList
 from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.project.data import ProjectData, LinksData
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.project.prop import LibraryElement, BIMProjectProperties, FilterCategory, Link
 
 
 def file_import_menu(self, context):
     op = self.layout.operator("bim.load_project", text="IFC (Geometry Only) (.ifc/.ifczip/.ifcxml)")
     op.import_without_ifc_data = True
     op.should_start_fresh_session = False
+
+
+def refresh():
+    UIData.is_loaded = False
+
+
+class UIData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {"menu_item_icon_color_mode": cls.icon_color_mode("user_interface.wcol_menu_item.text")}
+        cls.is_loaded = True
+
+    @classmethod
+    def icon_color_mode(cls, color_path):
+        return tool.Blender.detect_icon_color_mode(color_path)
 
 
 class BIM_MT_project(Menu):
@@ -48,16 +72,22 @@ class BIM_MT_recent_projects(Menu):
     bl_label = "Open Recent IFC Project"
 
     def draw(self, context):
+        if not UIData.is_loaded:
+            UIData.load()
+        ifc_icon = f"{UIData.data['menu_item_icon_color_mode']}_ifc"
+        layout = self.layout
         paths = tool.Project.get_recent_ifc_projects()
         if not paths:
             self.layout.label(text="No Recent IFC Projects")
             return
 
         for path in paths:
-            op = self.layout.operator("bim.load_project", text=path.name, icon_value=bonsai.bim.icons["IFC"].icon_id)
+            row = layout.row()
+            op = row.operator("bim.load_project", text=path.name, icon_value=bonsai.bim.icons[ifc_icon].icon_id)
             op.filepath = str(path)
             op.should_start_fresh_session = True
             op.use_detailed_tooltip = True
+            row.enabled = path.is_file()
 
         self.layout.separator()
         self.layout.operator("bim.clear_recent_ifc_projects", icon="TRASH")
@@ -121,9 +151,9 @@ class BIM_PT_project(Panel):
 
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
-        props = context.scene.BIMProperties
-        pprops = context.scene.BIMProjectProperties
-        self.file = IfcStore.get_file()
+        props = tool.Blender.get_bim_props()
+        pprops = self.props = tool.Project.get_project_props()
+        self.file = tool.Ifc.get()
         if pprops.is_loading:
             self.draw_advanced_loading_ui(context)
         elif self.file or props.ifc_file:
@@ -142,7 +172,7 @@ class BIM_PT_project(Panel):
                 self.draw_unsaved_project_ui(context)
 
     def draw_advanced_loading_ui(self, context):
-        pprops = context.scene.BIMProjectProperties
+        pprops = self.props
         prop_with_search(self.layout, pprops, "filter_mode")
         if pprops.filter_mode in ["DECOMPOSITION", "IFC_CLASS", "IFC_TYPE"]:
             row = self.layout.row(align=True)
@@ -173,6 +203,7 @@ class BIM_PT_project(Panel):
         row.prop(pprops, "should_load_geometry")
         row = self.layout.row()
         row.prop(pprops, "should_merge_materials_by_colour")
+        self.layout.prop(pprops, "load_indexed_maps")
         row = self.layout.row()
         row.prop(pprops, "geometry_library")
         row = self.layout.row()
@@ -181,6 +212,8 @@ class BIM_PT_project(Panel):
         row.prop(pprops, "angular_tolerance")
         row = self.layout.row()
         row.prop(pprops, "void_limit")
+        row = self.layout.row()
+        row.prop(pprops, "style_limit")
         row = self.layout.row()
         row.prop(pprops, "distance_limit")
         row = self.layout.row()
@@ -215,8 +248,8 @@ class BIM_PT_project(Panel):
         row.operator("bim.load_project_elements")
 
     def draw_editing_buttons(self, context, row):
-        pprops = context.scene.BIMProjectProperties
-        if IfcStore.get_file():
+        pprops = self.props
+        if tool.Ifc.get():
             if pprops.is_editing:
                 row.operator("bim.edit_header", icon="CHECKMARK", text="")
                 row.operator("bim.disable_editing_header", icon="CANCEL", text="")
@@ -224,12 +257,12 @@ class BIM_PT_project(Panel):
                 row.operator("bim.enable_editing_header", icon="GREASEPENCIL", text="")
 
     def draw_editable_file_info(self, context):
-        pprops = context.scene.BIMProjectProperties
+        pprops = self.props
 
-        if IfcStore.get_file():
+        if tool.Ifc.get():
             row = self.layout.row(align=True)
             row.label(text="IFC Schema", icon="FILE_CACHE")
-            row.label(text=IfcStore.get_file().schema)
+            row.label(text=tool.Ifc.get().schema)
 
             if pprops.is_editing:
                 row = self.layout.row(align=True)
@@ -250,7 +283,7 @@ class BIM_PT_project(Panel):
             else:
                 row = self.layout.row(align=True)
                 row.label(text="IFC MVD", icon="FILE_HIDDEN")
-                mvd = "".join(IfcStore.get_file().wrapped_data.header.file_description.description)
+                mvd = "".join(tool.Ifc.get().wrapped_data.header.file_description.description)
                 if "[" in mvd:
                     mvd = mvd.split("[")[1][0:-1]
                 row.label(text=mvd)
@@ -274,7 +307,7 @@ class BIM_PT_project(Panel):
 
     def draw_loaded_project_ui(self, context):
         # file name row
-        props = context.scene.BIMProperties
+        props = tool.Blender.get_bim_props()
         file_name_row = self.layout.row(align=True)
         file_name_row.label(text=os.path.basename(props.ifc_file), icon="FILE")
         self.draw_editing_buttons(context, file_name_row)
@@ -284,14 +317,16 @@ class BIM_PT_project(Panel):
 
         # file path row and actions section
         row = self.layout.row(align=True)
-        if context.scene.BIMProperties.is_dirty:
+        if props.is_dirty:
             row.label(text="Saved*", icon="EXPORT")
         else:
             row.label(text="Saved", icon="EXPORT")
         row.label(text=ProjectData.data["last_saved"])
 
         row = self.layout.row(align=True)
-        row.prop(props, "ifc_file", text="")
+        col = row.column()
+        col.enabled = False
+        col.prop(props, "ifc_file", text="")
         row.operator("bim.select_ifc_file", icon="FILE_FOLDER", text="")
 
 
@@ -308,8 +343,8 @@ class BIM_PT_new_project_wizard(Panel):
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
 
-        props = context.scene.BIMProperties
-        pprops = context.scene.BIMProjectProperties
+        props = tool.Blender.get_bim_props()
+        pprops = tool.Project.get_project_props()
         prop_with_search(self.layout, pprops, "export_schema")
         row = self.layout.row()
         row.prop(context.scene.unit_settings, "system")
@@ -337,7 +372,7 @@ class BIM_PT_project_library(Panel):
     def draw(self, context):
         self.layout.use_property_decorate = False
         self.layout.use_property_split = True
-        self.props = context.scene.BIMProjectProperties
+        self.props = tool.Project.get_project_props()
         row = self.layout.row(align=True)
         row.prop(self.props, "library_file", text="")
         if self.props.library_file == "0":
@@ -356,13 +391,42 @@ class BIM_PT_project_library(Panel):
             row.label(text="No Library Loaded", icon="ASSET_MANAGER")
 
     def draw_library_ul(self):
+        layout = self.layout
+        props = self.props
+
+        library_file = IfcStore.library_file
+        assert library_file
+        library_is_selected = props.selected_project_library != "-"
+
+        row = layout.row(align=True)
+        row.prop(self.props, "selected_project_library", text="")
+
+        if library_file.schema != "IFC2X3":
+            row.operator("bim.add_project_library", text="", icon="ADD")
+
+        if library_is_selected and not props.is_editing_project_library:
+            row.prop(props, "is_editing_project_library", text="", icon="GREASEPENCIL")
+
+        row.prop(self.props, "show_library_tree", text="", icon="OUTLINER")
+
+        if props.is_editing_project_library:
+            row = layout.row(align=True)
+            row.operator("bim.edit_project_library", text="Save Attributes", icon="GREASEPENCIL")
+            row.prop(props, "is_editing_project_library", text="", icon="CANCEL")
+            draw_attributes(props.project_library_attributes, layout)
+            row = layout.row()
+            row.prop(props, "parent_library", text="Parent Library")
+            layout.separator()
+
         if not self.props.library_elements:
             row = self.layout.row()
             row.label(text="No Assets Found", icon="ERROR")
             return
+
         row = self.layout.row(align=True)
-        row.label(text=self.props.active_library_element or "Top Level Assets")
-        if self.props.active_library_element:
+        active_library_element = self.props.get_active_library_breadcrumb()
+        row.label(text=(active_library_element.name if active_library_element else "Top Level Assets"))
+        if active_library_element:
             row.operator("bim.rewind_library", icon="FRAME_PREV", text="")
         row.operator("bim.refresh_library", icon="FILE_REFRESH", text="")
         self.layout.template_list(
@@ -385,7 +449,7 @@ class BIM_PT_links(Panel):
     bl_parent_id = "BIM_PT_tab_project_setup"
 
     def draw(self, context):
-        self.props = context.scene.BIMProjectProperties
+        self.props = tool.Project.get_project_props()
         row = self.layout.row(align=True)
         row.operator("bim.link_ifc")
         if self.props.links:
@@ -405,7 +469,7 @@ class BIM_PT_links(Panel):
         if not LinksData.linked_data or not self.props.links:
             if self.props.links:
                 row = self.layout.row(align=True)
-                row.label(text="No Object Selected", icon="QUESTION")
+                row.label(text="No Object Queried with Explore Tool", icon="QUESTION")
             return
 
         row = self.layout.row(align=True)
@@ -440,35 +504,58 @@ class BIM_PT_links(Panel):
 
 
 class BIM_UL_library(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMProjectProperties,
+        item: LibraryElement,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
-            if not item.ifc_definition_id:
+            if item.element_type != "ASSET" and (item.asset_count > 0 or item.has_sublibraries):
                 op = row.operator("bim.change_library_element", text="", icon="DISCLOSURE_TRI_RIGHT", emboss=False)
                 op.element_name = item.name
-            row.label(text=item.name)
-            if (
-                item.ifc_definition_id
-                and IfcStore.library_file.schema != "IFC2X3"
-                and IfcStore.library_file.by_type("IfcProjectLibrary")
-            ):
+                op.breadcrumb_type = item.element_type
+                op.library_id = item.ifc_definition_id
+            if item.ifc_definition_id:
+                row.prop(item, "name", text="", emboss=False)
+            else:
+                row.label(text=item.name)
+            if item.ifc_definition_id and item.is_declarable:
                 if item.is_declared:
                     op = row.operator("bim.unassign_library_declaration", text="", icon="KEYFRAME_HLT", emboss=False)
                     op.definition = item.ifc_definition_id
                 else:
                     op = row.operator("bim.assign_library_declaration", text="", icon="KEYFRAME", emboss=False)
                     op.definition = item.ifc_definition_id
-            if item.ifc_definition_id:
+            if item.element_type == "ASSET":
                 if item.is_appended:
                     row.label(text="", icon="CHECKMARK")
                 else:
                     op = row.operator("bim.append_library_element", text="", icon="APPEND_BLEND")
                     op.definition = item.ifc_definition_id
                     op.prop_index = data.get_library_element_index(item)
+            else:
+                row_ = row.row()
+                row_.alignment = "RIGHT"
+                row_.label(text=str(item.asset_count))
 
 
 class BIM_UL_filter_categories(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMProjectProperties,
+        item: FilterCategory,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
             row.label(text=f"{item.name} ({item.total_elements})")
@@ -482,7 +569,17 @@ class BIM_UL_filter_categories(UIList):
 
 
 class BIM_UL_links(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMProjectProperties,
+        item: Link,
+        icon,
+        active_data,
+        active_propname,
+        index,
+    ):
         if item:
             row = layout.row(align=True)
             if item.is_loaded:
@@ -536,6 +633,7 @@ class BIM_PT_purge(Panel):
         layout = self.layout
         layout.operator("bim.purge_unused_objects", text="Purge Unused Profiles").object_type = "PROFILE"
         layout.operator("bim.purge_unused_objects", text="Purge Unused Types").object_type = "TYPE"
+        layout.operator("bim.purge_unused_openings", text="Purge Unused Openings in Selected Objects")
         row = layout.row(align=True)
         row.label(text="Materials: ")
         row.operator("bim.purge_unused_objects", text="Purge Unused").object_type = "MATERIAL"

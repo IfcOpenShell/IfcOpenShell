@@ -41,9 +41,7 @@ def remove_constraint(file: ifcopenshell.file, constraint: ifcopenshell.entity_i
         ifcopenshell.api.constraint.remove_constraint(model,
             constraint=objective)
     """
-    settings = {"constraint": constraint}
-
-    file.remove(settings["constraint"])
+    file.remove(constraint)
     for rel in file.by_type("IfcRelAssociatesConstraint"):
         if not rel.RelatingConstraint:
             history = rel.OwnerHistory

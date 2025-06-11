@@ -40,14 +40,16 @@ namespace ifcopenshell {
 			struct HasDefault<T, decltype((void)T::defaultvalue, 0)> : std::true_type { };
 #endif
 
-			template <typename Derived, typename T>
+			template <typename Derived, typename T, bool Internal=false>
 			struct SettingBase {
 				typedef T base_type;
 
 				// boost program options does not seem to handle optional<vector> types, so in case
 				// of vector settings we need to strip away the optional and detect argument presence
 				// with !vector::empty()
-				std::conditional_t<std::is_same_v<T, std::vector<double>>, T, boost::optional<T>> value;
+				// tfk: we no longer do this because negative values can not be passed like this as boost confuses them with options
+				// std::conditional_t<std::is_same_v<T, std::vector<double>>, T, boost::optional<T>> value;
+				boost::optional<T> value;
 
 				SettingBase() {}
 
@@ -59,19 +61,22 @@ namespace ifcopenshell {
 							return x;
 						}
 					};
-					if constexpr (std::is_same_v<T, bool>) {
+					if constexpr (Internal) {
+						// do nothing, this is an internal setting and not supposed to be set from the command line
+					} else if constexpr (std::is_same_v<T, bool>) {
 						// @todo bool_switch doesn't work with optional unfortunately...
 						value.emplace();
 						desc.add_options()(Derived::name, apply_default(po::bool_switch(&*value)), Derived::description);
 					} else if constexpr (std::is_same_v<T, std::vector<double>>) {
-						desc.add_options()(Derived::name, apply_default(po::value(&value)->multitoken()), Derived::description);
+						// these options have to be supplied manually in IfcConvert.cpp
+						// desc.add_options()(Derived::name, apply_default(po::value(&value)->multitoken()), Derived::description);
 					} else {
 						desc.add_options()(Derived::name, apply_default(po::value(&value)), Derived::description);
 					}
 				}
 
 				T get() const {
-					if constexpr (std::is_same_v<T, std::vector<double>>) {
+					if constexpr (false && std::is_same_v<T, std::vector<double>>) {
 						return value;
 					} else {
 						if (value) {
@@ -85,7 +90,7 @@ namespace ifcopenshell {
 				}
 
 				bool has() const {
-					if constexpr (std::is_same_v<T, std::vector<double>>) {
+					if constexpr (false && std::is_same_v<T, std::vector<double>>) {
 						return !value.empty();
 					} else {
 						// @todo this is not reliable, better use vmap[...].defaulted()
@@ -117,19 +122,19 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = false;
 			};
 
-			struct LengthUnit : public SettingBase<LengthUnit, double> {
+			struct LengthUnit : public SettingBase<LengthUnit, double, true> {
 				static constexpr const char* const name = "length-unit";
 				static constexpr const char* const description = "";
 				static constexpr double defaultvalue = 1.0;
 			};
 
-			struct PlaneUnit : public SettingBase<PlaneUnit, double> {
+			struct PlaneUnit : public SettingBase<PlaneUnit, double, true> {
 				static constexpr const char* const name = "angle-unit";
 				static constexpr const char* const description = "";
 				static constexpr double defaultvalue = 1.0;
 			};
 
-			struct Precision : public SettingBase<Precision, double> {
+			struct Precision : public SettingBase<Precision, double, true> {
 				static constexpr const char* const name = "precision";
 				static constexpr const char* const description = "";
 				static constexpr double defaultvalue = 0.00001;
@@ -169,13 +174,13 @@ namespace ifcopenshell {
 				static constexpr double defaultvalue = 1.0;
 			};
 
-			struct DebugBooleanOperations : public SettingBase<DebugBooleanOperations, double> {
-				static constexpr const char* const name = "debug-boolean";
-				static constexpr const char* const description = "";
+			struct DebugBooleanOperations : public SettingBase<DebugBooleanOperations, bool> {
+				static constexpr const char* const name = "debug";
+				static constexpr const char* const description = "write boolean operands to file in current directory for debugging purposes";
 				static constexpr bool defaultvalue = false;
 			};
 
-			struct BooleanAttempt2d : public SettingBase<BooleanAttempt2d, double> {
+			struct BooleanAttempt2d : public SettingBase<BooleanAttempt2d, bool> {
 				static constexpr const char* const name = "boolean-attempt-2d";
 				static constexpr const char* const description = "Do not attempt to process boolean subtractions in 2D.";
 				static constexpr bool defaultvalue = true;
@@ -339,6 +344,12 @@ namespace ifcopenshell {
 				static constexpr bool defaultvalue = false;
 			};
 
+			struct PermissiveShapeReuse : public SettingBase<PermissiveShapeReuse, bool> {
+				static constexpr const char* const name = "permissive-shape-reuse";
+				static constexpr const char* const description = "Traverse geometry-level transformations and apply to product-level placement in order to increase reuse of geometries";
+				static constexpr bool defaultvalue = false;
+			};
+
 			struct ForceSpaceTransparency : public SettingBase<ForceSpaceTransparency, double> {
 				static constexpr const char* const name = "force-space-transparency";
 				static constexpr const char* const description = "Overrides transparency of spaces in geometry output.";
@@ -365,32 +376,38 @@ namespace ifcopenshell {
                 static constexpr bool defaultvalue = false;
             };
 
-			enum PiecewiseStepMethod  {
+            struct ComputeCurvature : public SettingBase<ComputeCurvature, bool> {
+                static constexpr const char* const name = "compute-curvature";
+                static constexpr const char* const description = "Specifies whether function_item_evaluator.evaluate() computes curvature.";
+                static constexpr bool defaultvalue = false;
+            };
+
+			enum FunctionStepMethod  {
 				MAXSTEPSIZE,
 				MINSTEPS };
 
-			std::istream& operator>>(std::istream& in, PiecewiseStepMethod& ioo);
+			std::istream& operator>>(std::istream& in, FunctionStepMethod& ioo);
 
-         struct PiecewiseStepType : public SettingBase<PiecewiseStepType, PiecewiseStepMethod> {
-               static constexpr const char* const name = "piecewise-step-type";
-               static constexpr const char* const description = "Indicates the method used for defining step size when evaluating piecewise curves. Provides interpretation of piecewise-step-param";
-               static constexpr PiecewiseStepMethod defaultvalue = MAXSTEPSIZE;
+         struct FunctionStepType : public SettingBase<FunctionStepType, FunctionStepMethod> {
+               static constexpr const char* const name = "function-step-type";
+               static constexpr const char* const description = "Indicates the method used for defining step size when evaluating function-based curves. Provides interpretation of function-step-param";
+               static constexpr FunctionStepMethod defaultvalue = MAXSTEPSIZE;
          };
 
-			struct PiecewiseStepParam : public SettingBase<PiecewiseStepParam, double> {
-               static constexpr const char* const name = "piecewise-step-param";
-               static constexpr const char* const description = "Indicates the parameter value for defining step size when evaluating piecewise curves.";
-               static constexpr double defaultvalue = 0.5; // ceiling of this value is used when PiecewiseStepMethod is MinSteps
+			struct FunctionStepParam : public SettingBase<FunctionStepParam, double> {
+               static constexpr const char* const name = "function-step-param";
+               static constexpr const char* const description = "Indicates the parameter value for defining step size when evaluating function-based curves.";
+               static constexpr double defaultvalue = 0.5; // ceiling of this value is used when FunctionStepMethod is MinSteps
          };
 
 			struct ModelOffset : public SettingBase<ModelOffset, std::vector<double>> {
 				static constexpr const char* const name = "model-offset";
-				static constexpr const char* const description = "Applies an arbitrary offset of form 'x,y,z' to all placements.";
+				static constexpr const char* const description = "Applies an arbitrary offset of form x,y,z to all placements.";
 			};
 
 			struct ModelRotation : public SettingBase<ModelRotation, std::vector<double>> {
 				static constexpr const char* const name = "model-rotation";
-				static constexpr const char* const description = "Applies an arbitrary quaternion rotation of form 'x,y,z,w' to all placements.";
+				static constexpr const char* const description = "Applies an arbitrary quaternion rotation of form x,y,z,w to all placements.";
 			};
 
 			enum TriangulationMethod {
@@ -407,13 +424,91 @@ namespace ifcopenshell {
 				static constexpr TriangulationMethod defaultvalue = TRIANGLE_MESH;
 			};
 
+			struct CgalEmitOriginalEdges : public SettingBase<CgalEmitOriginalEdges, bool> {
+				static constexpr const char* const name = "cgal-original-edges";
+				static constexpr const char* const description = "Try to emit original edge face boundary edges instead of recomputed ones based on face normal. Falls back to triangulated data in case of boolean operands and faces with holes.";
+				static constexpr bool defaultvalue = false;
+			};
 
+			struct OcctNoCleanTriangulation : public SettingBase<OcctNoCleanTriangulation, bool, true> {
+				static constexpr const char* const name = "no-clean-triangulation";
+				static constexpr const char* const description = "Don't clean triangulations, might cause memory leaks";
+				static constexpr bool defaultvalue = false;
+			};
+
+			struct CacheShapes : public SettingBase<CacheShapes, bool> {
+				static constexpr const char* const name = "cache-shapes";
+				static constexpr const char* const description = "Experimental as not all topology hash functions fully implemented";
+				static constexpr bool defaultvalue = false;
+			};
+		}
+		
+		namespace impl {
+			template <typename T>
+			struct readable_name {
+				static constexpr const char* name = "Unknown Type";
+			};
+
+			template <>
+			struct readable_name<bool> {
+				static constexpr const char* name = "bool";
+			};
+
+			template <>
+			struct readable_name<int> {
+				static constexpr const char* name = "int";
+			};
+
+			template <>
+			struct readable_name<double> {
+				static constexpr const char* name = "double";
+			};
+
+			template <>
+			struct readable_name<std::string> {
+				static constexpr const char* name = "std::string";
+			};
+
+			template <>
+			struct readable_name<std::set<int>> {
+				static constexpr const char* name = "std::set<int>";
+			};
+
+			template <>
+			struct readable_name<std::set<std::string>> {
+				static constexpr const char* name = "std::set<std::string>";
+			};
+
+			template <>
+			struct readable_name<std::vector<double>> {
+				static constexpr const char* name = "std::vector<double>";
+			};
+
+			template <>
+			struct readable_name<IteratorOutputOptions> {
+				static constexpr const char* name = "IteratorOutputOptions";
+			};
+
+			template <>
+			struct readable_name<FunctionStepMethod> {
+				static constexpr const char* name = "FunctionStepMethod";
+			};
+
+			template <>
+			struct readable_name<OutputDimensionalityTypes> {
+				static constexpr const char* name = "OutputDimensionalityTypes";
+			};
+
+			template <>
+			struct readable_name<TriangulationMethod> {
+				static constexpr const char* name = "TriangulationMethod";
+			};
 		}
 
 		template <typename settings_t>
 		class IFC_GEOM_API SettingsContainer {
 		public:
-         typedef boost::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>, std::vector<double>, IteratorOutputOptions, PiecewiseStepMethod, OutputDimensionalityTypes, TriangulationMethod> value_variant_t;
+         typedef boost::variant<bool, int, double, std::string, std::set<int>, std::set<std::string>, std::vector<double>, IteratorOutputOptions, FunctionStepMethod, OutputDimensionalityTypes, TriangulationMethod> value_variant_t;
 		private:
 			settings_t settings;
 
@@ -438,16 +533,33 @@ namespace ifcopenshell {
 			}
 
 			template <std::size_t Index>
+			std::string get_type_(const std::string& name) const {
+				if (std::tuple_element_t<Index, settings_t>::name == name) {
+					return impl::readable_name<typename std::tuple_element_t<Index, settings_t>::base_type>::name;
+				}
+				if constexpr (Index + 1 < std::tuple_size_v<settings_t>) {
+					return get_type_<Index + 1>(name);
+				} else {
+					throw std::runtime_error("Setting not available");
+				}
+			}
+
+			template <std::size_t Index>
 			void set_option_(const std::string& name, const value_variant_t& val) {
 				if (std::tuple_element_t<Index, settings_t>::name == name) {
 					if constexpr (std::is_enum_v<typename std::tuple_element_t<Index, settings_t>::base_type>) {
-						if (val.which() == 1) {
-							auto val_as_enum = (typename std::tuple_element_t<Index, settings_t>::base_type) boost::get<int>(val);
+						if (auto* val_ptr = boost::get<int>(&val)) {
+							auto val_as_enum = (typename std::tuple_element_t<Index, settings_t>::base_type) *val_ptr;
 							std::get<Index>(settings).value = val_as_enum;
 							return;
 						}
 					}
-					std::get<Index>(settings).value = boost::get<typename std::tuple_element_t<Index, settings_t>::base_type>(val);
+					try {
+						std::get<Index>(settings).value = boost::get<typename std::tuple_element_t<Index, settings_t>::base_type>(val);
+					} catch (const boost::bad_get&) {
+						std::string ty = impl::readable_name<typename std::tuple_element_t<Index, settings_t>::base_type>::name;
+						throw std::runtime_error("Expected a value of type <" + ty + "> for setting '" + name + "'");
+					}
 				} else if constexpr (Index + 1 < std::tuple_size_v<settings_t>) {
 					set_option_<Index + 1>(name, val);
 				} else {
@@ -492,6 +604,10 @@ namespace ifcopenshell {
 				set_option_<0>(name, val);
 			}
 
+			std::string get_type(const std::string& name) {
+				return get_type_<0>(name);
+			}
+
 			std::vector<std::string> setting_names() const {
 				std::vector<std::string> r;
 				get_setting_names_<0>(r);
@@ -500,7 +616,7 @@ namespace ifcopenshell {
 		};
 
 		class IFC_GEOM_API Settings : public SettingsContainer<
-                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, PiecewiseStepType, PiecewiseStepParam, NoParallelMapping, ModelOffset, ModelRotation, TriangulationType>
+                                          std::tuple<MesherLinearDeflection, MesherAngularDeflection, ReorientShells, LengthUnit, PlaneUnit, Precision, OutputDimensionality, LayersetFirst, DisableBooleanResult, NoWireIntersectionCheck, NoWireIntersectionTolerance, PrecisionFactor, DebugBooleanOperations, BooleanAttempt2d, SurfaceColour, WeldVertices, UseWorldCoords, UnifyShapes, UseMaterialNames, ConvertBackUnits, ContextIds, ContextTypes, ContextIdentifiers, IteratorOutput, DisableOpeningSubtractions, ApplyDefaultMaterials, DontEmitNormals, GenerateUvs, ApplyLayerSets, UseElementHierarchy, ValidateQuantities, EdgeArrows, BuildingLocalPlacement, SiteLocalPlacement, ForceSpaceTransparency, CircleSegments, KeepBoundingBoxes, ComputeCurvature, FunctionStepType, FunctionStepParam, NoParallelMapping, PermissiveShapeReuse, ModelOffset, ModelRotation, TriangulationType, CgalEmitOriginalEdges, OcctNoCleanTriangulation, CacheShapes>
 		>
 		{};
 }

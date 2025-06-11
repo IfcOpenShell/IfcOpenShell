@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+SHELL := sh
 PYTHON:=python3.11
 PIP:=pip3.11
 PATCH:=patch
@@ -46,6 +47,7 @@ VERSION_MINOR:=$(shell cat '../../VERSION' | cut -d '.' -f 2)
 VERSION_PATCH:=$(shell cat '../../VERSION' | cut -d '.' -f 3)
 VERSION_DATE:=$(shell date '+%y%m%d')
 LAST_COMMIT_HASH:=$(shell git rev-parse HEAD)
+LAST_COMMIT_DATE:=$(shell git show -s --format=%cI)
 PYVERSION:=py310
 PYPI_IMP:=cp
 
@@ -85,7 +87,7 @@ BLENDER_PLATFORM:=windows-x64
 endif
 
 # Current build commit hash.
-OLD:=0e5008d
+OLD:=ec13294
 .PHONY: bump
 bump:
 ifndef NEW
@@ -136,7 +138,7 @@ endif
 	# odfpy doesn't come with its own wheel, so whee'l (get it?) create it ourselves!
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) wheel odfpy --wheel-dir=./wheels
 	# Required by IFCCityJSON
-	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download cjio --dest=./wheels
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download "cjio >=0.8, <0.10" --dest=./wheels
 	# Required in general for sorting all sorts of stuff in a nice way
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download natsort --dest=./wheels
 	# Provides express rule validation for ifcopenshell.validate
@@ -177,6 +179,8 @@ endif
 	# Is not platform specific but has platform specific dependencies.
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download python-socketio[asyncio_client] $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download aiohttp $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
+	# Required to access platform specific paths
+	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download platformdirs --dest=./wheels
 	# Required by light module
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pytz --dest=./wheels
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download tzfpy $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
@@ -189,13 +193,15 @@ else
 	cd build && . env/$(VENV_ACTIVATE) && $(PIP) download pyradiance $(PYPI_PLATFORM) --python-version $(PYPI_VERSION) --implementation $(PYPI_IMP) --only-binary=:all: --dest=./wheels
 endif
 
+	# jQuery is required for web UI functionality
+	cd build/bonsai/bim/data/webui/static/js/ && wget https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js
+
 	# Provides jsgantt-improved supports for web-based construction sequencing gantt charts
 	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
 	cd build/bonsai/bim/data/gantt/ && wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
 
 	# Provides IFCJSON functionality
-	# TODO: replace with main repo if https://github.com/IFCJSON-Team/IFC2JSON_python/pull/3 is merged.
-	cd build && wget -O ifc2json.zip https://github.com/Moult/IFC2JSON_python/archive/refs/heads/feature-ios-v0.8.0.zip
+	cd build && wget -O ifc2json.zip https://github.com/IFCJSON-Team/IFC2JSON_python/archive/refs/heads/master.zip
 	cd build && unzip ifc2json.zip && rm ifc2json.zip
 	# IFCJSON doesn't have pyproject.toml, so we use python command.
 	cd build && . env/$(VENV_ACTIVATE) && cd IFC2JSON_python-*/file_converters && \
@@ -212,7 +218,7 @@ endif
 	# Brickschema requires pkg_resources which is provided by Blender.
 	# Provides Brickschema functionality
 	# For now lets bundle the latest nightly schema
-	cd build/bonsai/bim/schema && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
+	cd build/bonsai/bim/data/brick/ && wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
 
 	# Required for hipped roof generation
 	cd build && wget https://github.com/prochitecture/bpypolyskel/archive/refs/heads/master.zip
@@ -226,8 +232,16 @@ endif
 		)" bdist_wheel
 	cp -r build/bpypolyskel-master/dist/*.whl build/wheels/
 
-	# Required for Desktop icon and file association
-	cp -r bonsai/libs/desktop build/bonsai/libs/
+	# folder for executable files
+	mkdir -p build/bonsai/libs/bin
+
+	# required for three-way git merging
+ifeq ($(PLATFORM), win)
+	cd build/bonsai/libs/bin && wget https://github.com/brunopostle/ifcmerge/releases/download/2025-01-26/ifcmerge.zip
+	cd build/bonsai/libs/bin && unzip ifcmerge.zip && rm ifcmerge.zip
+else
+	cd build/bonsai/libs/bin && wget https://raw.githubusercontent.com/brunopostle/ifcmerge/main/ifcmerge && chmod +x ifcmerge
+endif
 
 	# Generate translations module for Bonsai build
 	git clone https://github.com/IfcOpenShell/bonsai-translations.git build/working
@@ -244,6 +258,7 @@ ifeq ($(IS_STABLE), TRUE)
 else
 	$(SED) "s/0.0.0/$(VERSION)-alpha$(VERSION_DATE)/" build/bonsai/blender_manifest.toml
 	$(SED) "s/8888888/$(LAST_COMMIT_HASH)/" build/bonsai/__init__.py
+	$(SED) "s/9999999/$(LAST_COMMIT_DATE)/" build/bonsai/__init__.py
 	$(SED) 's/version = "0.0.0"/version = "$(VERSION)-alpha$(VERSION_DATE)"/' build/pyproject.toml
 endif
 
@@ -268,54 +283,11 @@ endif
 	fi
 	mv build/wheels/*.whl build/bonsai/wheels/
 
-	# Ugly patch to accomodate MacOS universal builds not being recognized by Blender.
-	# Blender doesn't look into the wheel contents, it just checks the name.
-	# So this hack works without working out some way to repack those wheels.
-	# See: https://projects.blender.org/blender/blender/issues/125091
-
-ifeq ($(PLATFORM), macosm1)
-	# Has universal and x86_64 builds.
-	prev_whl_name=$$(find build/bonsai/wheels/lxml-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
+	# Temporary workaround for Blender not handling non-3.11 wheels #5743.
+	# Use '-n' as on macos x86-64 doesn't have a binary wheel and it autoincludes 'cp311'.
 	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed -E "s/macosx_10_([0-9]+)_x86_64\.macosx_11_0_arm64\.macosx_10_\1_universal2/macosx_10_\1_arm64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	# Has only universal build.
-	prev_whl_name=$$(find build/bonsai/wheels/greenlet-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_arm64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-endif
-ifeq ($(PLATFORM), macos)
-	# Has universal and arm64 builds.
-	prev_whl_name=$$(find build/bonsai/wheels/MarkupSafe-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	prev_whl_name=$$(find build/bonsai/wheels/tzfpy-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed -E "s/macosx_10_([0-9]+)_x86_64\.macosx_11_0_arm64\.macosx_10_\1_universal2/macosx_10_\1_x86_64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	prev_whl_name=$$(find build/bonsai/wheels/greenlet-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-
-	# has universal and arm builds.
-	prev_whl_name=$$(find build/bonsai/wheels/fonttools-*.whl); \
-	whl_name=$$(echo $$prev_whl_name | sed "s/_universal2/_x86_64/"); \
-	mv "$$prev_whl_name" "$$whl_name";
-endif
-
-	# Safeguard for unhandled universal files.
-	wheels=$$(find build/bonsai/wheels/*universal2*.whl); \
-	if [ -n "$$wheels" ]; then \
-		echo "Found universal2 wheel files:"; \
-		echo "$$wheels"; \
-		echo "Error: universal2 wheel files are not supported by Blender!"; \
-		exit 1; \
-	fi
+	whl_name=$$(echo $$prev_whl_name | sed "s/-cp39-/-cp$(PYNUMBER)-/"); \
+	mv --update=none "$$prev_whl_name" "$$whl_name";
 
 ifneq ($(PLATFORM), linux)
 	# Safeguard: in case one of `pip download` will break,
@@ -333,6 +305,7 @@ endif
 	rm -rf build/bonsai/bim/
 	rm -rf build/bonsai/core/
 	rm -rf build/bonsai/tool/
+	rm -rf build/bonsai/libs/
 
 ifeq ($(IS_STABLE), TRUE)
 	cd build && zip -r bonsai_$(PYVERSION)-$(VERSION)-$(BLENDER_PLATFORM).zip ./bonsai
@@ -375,6 +348,12 @@ ifndef MODULE
 else
 	pytest test/tool/test_$(MODULE).py
 endif
+
+# Reregistering test is not added to the standard test suite because during unregister
+# Blender removes all Bonsai dependencies breaking dev-environment symlinks.
+.PHONY: test-reregister
+test-reregister:
+	blender --python scripts/reregister_bonsai.py
 
 .PHONY: qa
 qa:

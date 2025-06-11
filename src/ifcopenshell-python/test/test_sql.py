@@ -16,11 +16,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
-import test.bootstrap
-import ifcopenshell
+import tempfile
 import ifcpatch
+import ifcopenshell
 from pathlib import Path
+from ifcpatch.recipes import Ifc2Sql
 
 TEST_FILE = Path(__file__).parent / "files" / "basic.ifc"
 SQLITE_PATH = None
@@ -29,10 +29,12 @@ SQLITE_PATH = None
 def get_ifc_sqlite() -> ifcopenshell.sqlite:
     global SQLITE_PATH
     if SQLITE_PATH is None:
-        SQLITE_PATH = ifcpatch.execute(
-            {"file": ifcopenshell.open(TEST_FILE), "recipe": "Ifc2Sql", "arguments": ["sqlite"]}
-        )
-        assert isinstance(SQLITE_PATH, str)
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".ifcsqlite")
+        ifc_file = ifcopenshell.open(TEST_FILE)
+        assert isinstance(ifc_file, ifcopenshell.file)
+        patcher = Ifc2Sql.Patcher(ifc_file, database=tmp.name)
+        patcher.patch()
+        SQLITE_PATH = tmp.name
     ifc_sqlite = ifcopenshell.open(SQLITE_PATH)
     assert isinstance(ifc_sqlite, ifcopenshell.sqlite)
     return ifc_sqlite

@@ -33,11 +33,8 @@ def map_type_representations(
     be used to ensure consistency of the occurrence's representations.
 
     :param related_object: The IfcElement occurrence.
-    :type related_object: ifcopenshell.entity_instance
     :param relating_type: The IfcElementType type.
-    :type relating_type: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -84,28 +81,23 @@ def map_type_representations(
         # ifcopenshell.api.type.map_type_representations(model,
         #     related_object=furniture, relating_type=furniture_type)
     """
-    settings = {
-        "related_object": related_object,
-        "relating_type": relating_type,
-    }
-
-    if not settings["relating_type"].RepresentationMaps:
+    if not relating_type.RepresentationMaps:
         return
     representations = []
-    if settings["related_object"].Representation:
-        representations = settings["related_object"].Representation.Representations
+    if related_object.Representation:
+        representations = related_object.Representation.Representations
     for representation in representations:
         ifcopenshell.api.geometry.unassign_representation(
             file,
-            product=settings["related_object"],
+            product=related_object,
             representation=representation,
         )
-        ifcopenshell.api.geometry.remove_representation(file, **{"representation": representation})
-    for representation_map in settings["relating_type"].RepresentationMaps:
+        ifcopenshell.api.geometry.remove_representation(file, representation=representation)
+    for representation_map in relating_type.RepresentationMaps:
         representation = representation_map.MappedRepresentation
         mapped_representation = ifcopenshell.api.geometry.map_representation(file, representation=representation)
         ifcopenshell.api.geometry.assign_representation(
             file,
-            product=settings["related_object"],
+            product=related_object,
             representation=mapped_representation,
         )

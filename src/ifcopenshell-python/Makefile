@@ -1,3 +1,4 @@
+SHELL := sh
 IS_STABLE:=FALSE
 VERSION:=$(shell cat ../../VERSION)
 VERSION_DATE:=$(shell date '+%y%m%d')
@@ -39,6 +40,8 @@ ifeq ($(PYVERSION), py312)
 PYNUMBER:=312
 endif
 
+# We actually do support glibc 2.28-2.30 (see #5636)
+# but those are old and there's no demand for it.
 ifeq ($(PLATFORM), linux64)
 PLATFORMTAG:=manylinux_2_31_x86_64
 endif
@@ -52,18 +55,21 @@ ifeq ($(PLATFORM), win64)
 PLATFORMTAG:=win_amd64
 endif
 
-IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.8.1-0e5008d-$(PLATFORM).zip
-IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.8.1-0e5008d-$(PLATFORM).zip
+IOS_URL:=https://s3.amazonaws.com/ifcopenshell-builds/ifcopenshell-python-$(PYNUMBER)-v0.8.3-ec13294-$(PLATFORM).zip
+IFCCONVERT_URL:=https://s3.amazonaws.com/ifcopenshell-builds/IfcConvert-v0.8.3-ec13294-$(PLATFORM).zip
+
+.PHONY: build-urls
+build-urls:
+	@echo ${IOS_URL}
+	@echo ${IFCCONVERT_URL}
 
 .PHONY: test
 test:
-	pytest -p no:pytest-blender test
-
-# safe version of tests without mathutils dependency
-# for tests to work for github workflow with python <3.10 #3895
-.PHONY: test-safe
-test-safe:
 	pytest -p no:pytest-blender test --ignore=test/util/test_shape_builder.py
+
+.PHONY: test-mathutils
+test-mathutils:
+	pytest -p no:pytest-blender test/util/test_shape_builder.py
 
 .PHONY: build-ids-docs
 build-ids-docs:

@@ -48,16 +48,14 @@ def add_role(
             identification="AWB", name="Architects Without Ballpens")
         ifcopenshell.api.owner.add_role(model, assigned_object=organisation, role="ARCHITECT")
     """
-    settings = {"assigned_object": assigned_object, "role": role}
-
-    element = file.createIfcActorRole("ARCHITECT")
-    if settings["role"]:
+    element = file.create_entity("IfcActorRole", Role="ARCHITECT")
+    if role:
         try:
-            element.Role = settings["role"]
+            element.Role = role
         except:
             element.Role = "USERDEFINED"
-            element.UserDefinedRole = settings["role"]
-    roles = list(settings["assigned_object"].Roles) if settings["assigned_object"].Roles else []
+            element.UserDefinedRole = role
+    roles = list(assigned_object.Roles) if assigned_object.Roles else []
     roles.append(element)
-    settings["assigned_object"].Roles = roles
+    assigned_object.Roles = roles
     return element

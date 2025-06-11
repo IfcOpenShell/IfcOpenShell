@@ -24,14 +24,25 @@ import logging
 import tempfile
 import ifcopenshell
 import bonsai.tool as tool
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 
 
-class ExecuteIfcFM(bpy.types.Operator):
+class ExecuteIfcFM(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.execute_ifcfm"
     bl_label = "Execute IfcFM"
-    file_format: bpy.props.StringProperty()
+    bl_description = "Export IfcFM data as a spreadsheet."
+
     filter_glob: bpy.props.StringProperty(default="*.csv;*.ods;*.xlsx", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    @property
+    def filename_ext(self) -> str:
+        props = bpy.context.scene.BIMFMProperties
+        return f".{props.format}"
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.BIMFMProperties
+        layout.prop(props, "format")
 
     @classmethod
     def poll(cls, context):
@@ -40,13 +51,6 @@ class ExecuteIfcFM(bpy.types.Operator):
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
         return True
-
-    def invoke(self, context, event):
-        props = context.scene.BIMFMProperties
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, f".{props.format}")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
     def execute(self, context):
         props = context.scene.BIMFMProperties
@@ -78,15 +82,16 @@ class ExecuteIfcFM(bpy.types.Operator):
                 writer.write_ods(filepath)
             elif props.format == "xlsx":
                 writer.write_xlsx(filepath)
+            self.report({"INFO"}, "IfcFM spreadsheet is saved.")
         return {"FINISHED"}
 
 
-class SelectFMSpreadsheetFiles(bpy.types.Operator):
+class SelectFMSpreadsheetFiles(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_fm_spreadsheet_files"
     bl_label = "Select FM Spreadsheet Files"
+    bl_description = "Select FM spreadsheets to merge."
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xlsx", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     files: bpy.props.CollectionProperty(name="File Path", type=bpy.types.OperatorFileListElement)
 
     def execute(self, context):
@@ -98,29 +103,30 @@ class SelectFMSpreadsheetFiles(bpy.types.Operator):
             new.name = os.path.join(dirname, f.name)
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class ExecuteIfcFMFederate(bpy.types.Operator):
+class ExecuteIfcFMFederate(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.execute_ifcfm_federate"
-    bl_label = "Execute IfcFM"
-    file_format: bpy.props.StringProperty()
+    bl_label = "Merge IfcFM SpreadSheets"
+    bl_description = "Merge added IfcFM spreadsheets."
     filter_glob: bpy.props.StringProperty(default="*.ods;*.xlsx", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+
+    @property
+    def filename_ext(self) -> str:
+        props = bpy.context.scene.BIMFMProperties
+        return f".{props.format}"
+
+    def draw(self, context):
+        layout = self.layout
+        props = context.scene.BIMFMProperties
+        layout.prop(props, "format")
 
     @classmethod
     def poll(cls, context):
         props = context.scene.BIMFMProperties
-        return props.spreadsheet_files
-
-    def invoke(self, context, event):
-        props = context.scene.BIMFMProperties
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, f".{props.format}")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        if not props.spreadsheet_files:
+            cls.poll_message_set("No spreadsheet files selected.")
+            return False
+        return True
 
     def execute(self, context):
         props = context.scene.BIMFMProperties
@@ -132,4 +138,5 @@ class ExecuteIfcFMFederate(bpy.types.Operator):
             writer.write_ods(self.filepath)
         elif props.format == "xlsx":
             writer.write_xlsx(self.filepath)
+        self.report({"INFO"}, "IfcFM spreadsheets is saved.")
         return {"FINISHED"}

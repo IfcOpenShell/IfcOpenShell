@@ -35,11 +35,10 @@ def remove_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instanc
         circle = 1.
         ifcopenshell.api.profile.remove_profile(model, profile=circle)
     """
-    settings = {"profile": profile}
     is_ifc2x3 = file.schema == "IFC2X3"
 
     subelements = set()
-    for attribute in settings["profile"]:
+    for attribute in profile:
         if isinstance(attribute, ifcopenshell.entity_instance):
             subelements.add(attribute)
 
@@ -56,6 +55,6 @@ def remove_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instanc
     for pset in profile_psets:
         ifcopenshell.api.pset.remove_pset(file, product=profile, pset=pset)
 
-    file.remove(settings["profile"])
+    file.remove(profile)
     for subelement in subelements:
         ifcopenshell.util.element.remove_deep2(file, subelement)

@@ -49,11 +49,8 @@ def add_actor(
         IfcPerson if it is a sole individual, or an IfcPersonAndOrganization
         if a specific person is liable within an organisation and must be
         legally nominated.
-    :type actor: ifcopenshell.entity_instance
     :param ifc_class: Either "IfcActor" or "IfcOccupant".
-    :type ifc_class: str, optional
     :return: The newly created IfcActor or IfcOccupant
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -67,8 +64,7 @@ def add_actor(
         # Assign that organisation to a newly created actor
         actor = ifcopenshell.api.owner.add_actor(model, actor=organisation)
     """
-    settings = {"actor": actor, "ifc_class": ifc_class or "IfcActor"}
-
-    actor = ifcopenshell.api.root.create_entity(file, ifc_class=settings["ifc_class"])
-    actor.TheActor = settings["actor"]
-    return actor
+    ifc_class = ifc_class or "IfcActor"
+    actor_ = ifcopenshell.api.root.create_entity(file, ifc_class=ifc_class)
+    actor_.TheActor = actor
+    return actor_

@@ -32,6 +32,8 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from bonsai.bim.module.aggregate.decorator import AggregateDecorator, AggregateModeDecorator
+from typing import TYPE_CHECKING, Union
 
 
 def can_aggregate(relating_obj: bpy.types.Object, related_obj: bpy.types.Object) -> bool:
@@ -73,6 +75,20 @@ def poll_related_object(self: "BIMObjectAggregateProperties", related_obj: bpy.t
     return True
 
 
+def update_aggregate_decorator(self, context):
+    if self.aggregate_decorator:
+        AggregateDecorator.install(bpy.context)
+    else:
+        AggregateDecorator.uninstall()
+
+
+def update_aggregate_mode_decorator(self, context):
+    if self.in_aggregate_mode:
+        AggregateModeDecorator.install(bpy.context)
+    else:
+        AggregateModeDecorator.uninstall()
+
+
 class BIMObjectAggregateProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     relating_object: PointerProperty(name="Relating Whole", type=bpy.types.Object, poll=poll_relating_object)
@@ -82,3 +98,45 @@ class BIMObjectAggregateProperties(PropertyGroup):
         type=bpy.types.Object,
         poll=poll_related_object,
     )
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        relating_object: Union[bpy.types.Object, None]
+        related_object: Union[bpy.types.Object, None]
+
+
+class Objects(bpy.types.PropertyGroup):
+    obj: PointerProperty(type=bpy.types.Object)
+    previous_display_type: bpy.props.StringProperty(default="TEXTURED")
+    previous_hide_select: bpy.props.BoolProperty(default=False)
+
+    if TYPE_CHECKING:
+        obj: Union[bpy.types.Object, None]
+        previous_display_type: str
+        previous_hide_select: bool
+
+
+class BIMAggregateProperties(PropertyGroup):
+    in_aggregate_mode: BoolProperty(name="In Edit Mode", update=update_aggregate_mode_decorator)
+    editing_aggregate: PointerProperty(name="Editing Aggregate", type=bpy.types.Object)
+    previous_editing_aggregate: PointerProperty(name="Editing Aggregate", type=bpy.types.Object)
+    editing_objects: CollectionProperty(type=Objects)
+    not_editing_objects: CollectionProperty(type=Objects)
+    aggregate_decorator: BoolProperty(
+        name="Display Aggregate",
+        default=False,
+        update=update_aggregate_decorator,
+    )
+    previous_state: BoolProperty(
+        name="True if it was previously in aggregate mode",
+        default=False,
+    )
+
+    if TYPE_CHECKING:
+        in_aggregate_mode: bool
+        editing_aggregate: Union[bpy.types.Object, None]
+        previous_editing_aggregate: Union[bpy.types.Object, None]
+        editing_objects: bpy.types.bpy_prop_collection_idprop[Objects]
+        not_editing_objects: bpy.types.bpy_prop_collection_idprop[Objects]
+        aggregate_decorator: bool
+        previous_state: bool

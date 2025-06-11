@@ -19,15 +19,15 @@
 
 import bpy
 import bmesh
-from bmesh.types import BMVert, BMFace
-
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
+import ifcopenshell.api.material
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.schema
 import ifcopenshell.util.unit
-from ifcopenshell.util.shape_builder import V
 import bonsai.tool as tool
 import bonsai.core.geometry
 import bonsai.core.geometry as core
@@ -39,11 +39,13 @@ from typing import Union, Any, Optional
 
 import json
 import collections
+import collections.abc
+
+V_ = tool.Blender.V_
 
 
-def update_door_modifier_representation(context: bpy.types.Context) -> None:
-    obj = context.active_object
-    props = obj.BIMDoorProperties
+def update_door_modifier_representation(obj: bpy.types.Object) -> None:
+    props = tool.Model.get_door_props(obj)
     element = tool.Ifc.get_entity(obj)
     ifc_file = tool.Ifc.get()
     sliding_door = "SLIDING" in props.door_type
@@ -75,29 +77,44 @@ def update_door_modifier_representation(context: bpy.types.Context) -> None:
         },
     }
 
-    previously_active_context = tool.Geometry.get_active_representation_context(obj)
+    active_context = tool.Geometry.get_active_representation_context(obj)
 
     # ELEVATION_VIEW representation
     profile = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Profile", "ELEVATION_VIEW")
     if profile:
         representation_data["context"] = profile
-        elevation_representation = ifcopenshell.api.run(
-            "geometry.add_door_representation", ifc_file, **representation_data
-        )
+        elevation_representation = ifcopenshell.api.geometry.add_door_representation(ifc_file, **representation_data)
         tool.Model.replace_object_ifc_representation(profile, obj, elevation_representation)
 
     # MODEL_VIEW representation
     # (Model/Body defined only BEFORE Plan/Body to prevent #2744)
     body = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Body", "MODEL_VIEW")
     representation_data["context"] = body
-    model_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
+    representation_data["part_of_product"] = ifcopenshell.util.representation.get_part_of_product(element, body)
+    model_representation = ifcopenshell.api.geometry.add_door_representation(ifc_file, **representation_data)
+    representation_data["part_of_product"] = None
     tool.Model.replace_object_ifc_representation(body, obj, model_representation)
+    if fallback_material := (int(props.lining_material) or int(props.framing_material) or int(props.glazing_material)):
+        ifcopenshell.api.material.set_shape_aspect_constituents(
+            ifc_file,
+            element=element,
+            context=body,
+            materials={
+                "Lining": tool.Ifc.get().by_id(int(props.lining_material) or fallback_material),
+                "Framing": tool.Ifc.get().by_id(int(props.framing_material) or fallback_material),
+                "Glazing": tool.Ifc.get().by_id(int(props.glazing_material) or fallback_material),
+            },
+        )
+    elif material := ifcopenshell.util.element.get_material(element):
+        ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
+        if not material.is_a("IfcMaterial") and not ifc_file.get_total_inverses(material):
+            ifcopenshell.api.material.remove_material_set(ifc_file, material=material)
 
     # Body/PLAN_VIEW representation
     plan_body = ifcopenshell.util.representation.get_context(ifc_file, "Plan", "Body", "PLAN_VIEW")
     if plan_body:
         representation_data["context"] = plan_body
-        plan_representation = ifcopenshell.api.run("geometry.add_door_representation", ifc_file, **representation_data)
+        plan_representation = ifcopenshell.api.geometry.add_door_representation(ifc_file, **representation_data)
         tool.Model.replace_object_ifc_representation(plan_body, obj, plan_representation)
 
     # Annotation/PLAN_VIEW representation
@@ -118,43 +135,18 @@ def update_door_modifier_representation(context: bpy.types.Context) -> None:
                 )
         else:
             representation_data["context"] = plan_annotation
-            plan_representation = ifcopenshell.api.run(
-                "geometry.add_door_representation", ifc_file, **representation_data
-            )
+            plan_representation = ifcopenshell.api.geometry.add_door_representation(ifc_file, **representation_data)
             tool.Model.replace_object_ifc_representation(plan_annotation, obj, plan_representation)
 
-    # adding switch representation at the end instead of changing order of representations
-    # to prevent #2744
-    if tool.Geometry.get_active_representation_context(obj) != previously_active_context:
-        previously_active_representation = ifcopenshell.util.representation.get_representation(
-            element,
-            previously_active_context.ContextType,
-            previously_active_context.ContextIdentifier,
-            previously_active_context.TargetView,
-        )
-
-        if not previously_active_representation:
-            # we assume there is no representation because it was
-            # Plan/Annotation/PLAN_VIEW
-            previously_active_context = ifcopenshell.util.representation.get_context(
-                ifc_file, "Plan", "Body", "PLAN_VIEW"
-            )
-            previously_active_representation = ifcopenshell.util.representation.get_representation(
-                element,
-                previously_active_context.ContextType,
-                previously_active_context.ContextIdentifier,
-                previously_active_context.TargetView,
-            )
-
-        bonsai.core.geometry.switch_representation(
-            tool.Ifc,
-            tool.Geometry,
-            obj=obj,
-            representation=previously_active_representation,
-            should_reload=True,
-            is_global=True,
-            should_sync_changes_first=True,
-        )
+    bonsai.core.geometry.switch_representation(
+        tool.Ifc,
+        tool.Geometry,
+        obj=obj,
+        representation=ifcopenshell.util.representation.get_representation(element, active_context),
+        should_reload=True,
+        is_global=True,
+        should_sync_changes_first=False,
+    )
 
     # type attributes
     if tool.Ifc.get_schema() != "IFC2X3":
@@ -169,34 +161,18 @@ def update_door_modifier_representation(context: bpy.types.Context) -> None:
     tool.Model.update_simple_openings(element)
 
 
-# TODO: move it out to tools
-def bm_sort_out_geom(
-    geom_data: list[Union[bmesh.types.BMVert, bmesh.types.BMEdge, bmesh.types.BMFace]]
-) -> dict[str, Any]:
-    geom_dict = {"verts": [], "edges": [], "faces": []}
-
-    for el in geom_data:
-        if isinstance(el, BMVert):
-            geom_dict["verts"].append(el)
-        elif isinstance(el, BMFace):
-            geom_dict["faces"].append(el)
-        else:
-            geom_dict["edges"].append(el)
-    return geom_dict
-
-
 def bm_mirror(
     bm: bmesh.types.BMesh,
     verts: list[bmesh.types.BMVert],
-    mirror_axes: Vector = V(1, 0, 0).freeze(),
-    mirror_point: Vector = V(0, 0, 0).freeze(),
+    mirror_axes: Vector = V_(1, 0, 0).freeze(),
+    mirror_point: Vector = V_(0, 0, 0).freeze(),
     create_copy: bool = False,
 ) -> list[bmesh.types.BMVert]:
     matrix = Matrix.Translation(mirror_point)
     for i, v in enumerate(mirror_axes):
         if not v:
             continue
-        mirror_axis = V(0, 0, 0)
+        mirror_axis = V_(0, 0, 0)
         mirror_axis[i] = 1.0
         matrix = matrix @ Matrix.Scale(-1, 4, mirror_axis)
     matrix = matrix @ Matrix.Translation(-mirror_point)
@@ -208,7 +184,7 @@ def bm_mirror(
         for v in verts:
             faces.update(v.link_faces)
         duplicated = bmesh.ops.duplicate(bm, geom=list(faces))
-        verts = bm_sort_out_geom(duplicated["geom"])["verts"]
+        verts = tool.Model.bm_sort_out_geom(duplicated["geom"])["verts"]
 
     bmesh.ops.transform(bm, verts=verts, matrix=matrix, space=Matrix.Identity(4))
     return verts
@@ -219,9 +195,9 @@ def create_bm_extruded_profile(
     points: list[Vector],
     edges: Optional[list[tuple[int, int]]] = None,
     faces: Optional[list[list[int]]] = None,
-    position: Vector = V(0, 0, 0).freeze(),
+    position: Vector = V_(0, 0, 0).freeze(),
     magnitude: float = 1.0,
-    extrusion_vector: Vector = V(0, 0, 1).freeze(),
+    extrusion_vector: Vector = V_(0, 0, 1).freeze(),
 ) -> list[bmesh.types.BMVert]:
     bm.verts.index_update()
     bm.edges.index_update()
@@ -242,7 +218,7 @@ def create_bm_extruded_profile(
 
     extruded = bmesh.ops.extrude_face_region(bm, geom=new_faces)
     extrusion_vector = extrusion_vector * magnitude
-    extruded_verts = bm_sort_out_geom(extruded["geom"])["verts"]
+    extruded_verts = tool.Model.bm_sort_out_geom(extruded["geom"])["verts"]
     bmesh.ops.translate(bm, vec=extrusion_vector, verts=extruded_verts)
 
     bmesh.ops.translate(bm, vec=position, verts=new_verts + extruded_verts)
@@ -250,7 +226,7 @@ def create_bm_extruded_profile(
 
 
 def create_bm_door_lining(
-    bm: bmesh.types.BMesh, size: Vector, thickness: list, position: Vector = V(0, 0, 0).freeze()
+    bm: bmesh.types.BMesh, size: Vector, thickness: list, position: Vector = V_(0, 0, 0).freeze()
 ) -> list[bmesh.types.BMVert]:
     """`thickness` of the profile is defined as list in the following order: `(SIDE, TOP)`
 
@@ -304,7 +280,7 @@ def create_bm_door_lining(
 
     extruded = bmesh.ops.extrude_face_region(bm, geom=new_faces)
     extrusion_vector = Vector((0, 1, 0)) * depth
-    translate_verts = [v for v in extruded["geom"] if isinstance(v, BMVert)]
+    translate_verts = [v for v in extruded["geom"] if isinstance(v, bmesh.types.BMVert)]
     bmesh.ops.translate(bm, vec=extrusion_vector, verts=translate_verts)
 
     bmesh.ops.translate(bm, vec=position, verts=new_verts + translate_verts)
@@ -314,7 +290,8 @@ def create_bm_door_lining(
 
 def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
     obj = context.active_object
-    props = obj.BIMDoorProperties
+    assert obj
+    props = tool.Model.get_door_props(obj)
 
     overall_width = props.overall_width
     overall_height = props.overall_height
@@ -363,9 +340,9 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
     glass_thickness = 0.01
 
     # handle dimensions (hardcoded)
-    handle_size = V(120, 40, 20) * 0.001
-    handle_offset = V(60, 0, 1000) * 0.001  # to the handle center
-    handle_center_offset = V(handle_size.y / 2, 0, handle_size.z) / 2
+    handle_size = V_(120, 40, 20) * 0.001
+    handle_offset = V_(60, 0, 1000) * 0.001  # to the handle center
+    handle_center_offset = V_(handle_size.y / 2, 0, handle_size.z) / 2
 
     if transfom_offset:
         panel_height = transfom_offset + transom_thickness - lining_to_panel_offset_x - threshold_thickness
@@ -377,7 +354,7 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
     bm = bmesh.new()
 
     # add lining
-    lining_size = V(overall_width, lining_depth, lining_height)
+    lining_size = V_(overall_width, lining_depth, lining_height)
     lining_thickness = [side_lining_thickness, top_lining_thickness]
     lining_verts = create_bm_door_lining(bm, lining_size, lining_thickness)
 
@@ -385,8 +362,8 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
     if not threshold_thickness:
         threshold_verts = []
     else:
-        threshold_size = V(threshold_width, threshold_depth, threshold_thickness)
-        threshold_position = V(side_lining_thickness, threshold_offset, 0)
+        threshold_size = V_(threshold_width, threshold_depth, threshold_thickness)
+        threshold_position = V_(side_lining_thickness, threshold_offset, 0)
         threshold_verts = create_bm_box(bm, threshold_size, threshold_position)
 
     # add casings
@@ -400,12 +377,12 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
         ]
         outer_casing_thickness = inner_casing_thickness.copy() if double_swing_door else casing_thickness
 
-        casing_size = V(overall_width + casing_wall_overlap * 2, casing_depth, overall_height + casing_wall_overlap)
-        casing_position = V(-casing_wall_overlap, -casing_depth, 0)
+        casing_size = V_(overall_width + casing_wall_overlap * 2, casing_depth, overall_height + casing_wall_overlap)
+        casing_position = V_(-casing_wall_overlap, -casing_depth, 0)
         outer_casing_verts = create_bm_door_lining(bm, casing_size, outer_casing_thickness, casing_position)
         casing_verts.extend(outer_casing_verts)
 
-        inner_casing_position = V(-casing_wall_overlap, lining_depth, 0)
+        inner_casing_position = V_(-casing_wall_overlap, lining_depth, 0)
         inner_casing_verts = create_bm_door_lining(bm, casing_size, inner_casing_thickness, inner_casing_position)
         casing_verts.extend(inner_casing_verts)
 
@@ -417,12 +394,12 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
         door_verts.extend(create_bm_box(bm, panel_size, panel_position))
         # add door handle
         handle_points = [
-            V(0, 0, 0),
-            V(0, -handle_size.y, 0),
-            V(handle_size.x, -handle_size.y, 0),
-            V(handle_size.x, -handle_size.y / 2, 0),
-            V(handle_size.y / 2, -handle_size.y / 2, 0),
-            V(handle_size.y / 2, 0, 0),
+            V_(0, 0, 0),
+            V_(0, -handle_size.y, 0),
+            V_(handle_size.x, -handle_size.y, 0),
+            V_(handle_size.x, -handle_size.y / 2, 0),
+            V_(handle_size.y / 2, -handle_size.y / 2, 0),
+            V_(handle_size.y / 2, 0, 0),
         ]
         handle_position = panel_position + handle_offset - handle_center_offset
         door_handle_verts = create_bm_extruded_profile(
@@ -432,22 +409,22 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
 
         if door_swing_type == "LEFT":
             bm_mirror(
-                bm, door_handle_verts, mirror_axes=V(1, 0, 0), mirror_point=panel_position + V(panel_size.x / 2, 0, 0)
+                bm, door_handle_verts, mirror_axes=V_(1, 0, 0), mirror_point=panel_position + V_(panel_size.x / 2, 0, 0)
             )
 
         door_handle_mirrored_verts = bm_mirror(
             bm,
             door_handle_verts,
-            mirror_axes=V(0, 1, 0),
-            mirror_point=handle_position + V(0, panel_size.y / 2, 0),
+            mirror_axes=V_(0, 1, 0),
+            mirror_point=handle_position + V_(0, panel_size.y / 2, 0),
             create_copy=True,
         )
         door_verts.extend(door_handle_mirrored_verts)
         return door_verts
 
     door_verts = []
-    panel_size = V(panel_width, panel_depth, panel_height)
-    panel_position = V(lining_to_panel_offset_x, lining_to_panel_offset_y, threshold_thickness)
+    panel_size = V_(panel_width, panel_depth, panel_height)
+    panel_position = V_(lining_to_panel_offset_x, lining_to_panel_offset_y, threshold_thickness)
 
     if double_door:
         # keeping a little space between doors for readibility
@@ -455,8 +432,8 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
         panel_size.x = panel_size.x / 2 - double_door_offset
         door_verts.extend(create_bm_door_panel(panel_size, panel_position, "LEFT"))
 
-        mirror_point = panel_position + V(door_opening_width / 2, 0, 0)
-        door_verts.extend(bm_mirror(bm, door_verts, V(1, 0, 0), mirror_point, create_copy=True))
+        mirror_point = panel_position + V_(door_opening_width / 2, 0, 0)
+        door_verts.extend(bm_mirror(bm, door_verts, V_(1, 0, 0), mirror_point, create_copy=True))
     else:
         door_swing_type = "LEFT" if door_type.endswith("LEFT") else "RIGHT"
         door_verts.extend(create_bm_door_panel(panel_size, panel_position, door_swing_type))
@@ -473,10 +450,9 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
             side_lining_thickness,
             transom_thickness,
         ]
-        window_lining_thickness.append(transom_thickness)
-        window_lining_size = V(overall_width, lining_depth, window_lining_height)
-        window_position = V(0, 0, overall_height - window_lining_height)
-        frame_size = V(door_opening_width, frame_depth, frame_height)
+        window_lining_size = V_(overall_width, lining_depth, window_lining_height)
+        window_position = V_(0, 0, overall_height - window_lining_height)
+        frame_size = V_(door_opening_width, frame_depth, frame_height)
         window_lining_verts, frame_verts, glass_verts = create_bm_window(
             bm,
             window_lining_size,
@@ -490,7 +466,7 @@ def update_door_modifier_bmesh(context: bpy.types.Context) -> None:
         )
 
     lining_offset_verts = lining_verts + door_verts + window_lining_verts + frame_verts + glass_verts
-    bmesh.ops.translate(bm, vec=V(0, lining_offset, 0), verts=lining_offset_verts)
+    bmesh.ops.translate(bm, vec=V_(0, lining_offset, 0), verts=lining_offset_verts)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
 
     if bpy.context.active_object.mode == "EDIT":
@@ -536,7 +512,7 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
         bpy.context.view_layer.objects.active = obj
-        obj.select_set(True)
+        tool.Blender.select_object(obj)
         bpy.ops.bim.add_door()
         return {"FINISHED"}
 
@@ -545,13 +521,13 @@ class BIM_OT_add_door(bpy.types.Operator, tool.Ifc.Operator):
 class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.add_door"
     bl_label = "Add Door"
-    bl_description = "Add Bonsai parametric door to the active IFC element"
+    bl_description = "Add a Parametric Door to the Selected IFC Door Elements"
     bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        obj = context.active_object
+    def add_door_on_object(self, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMDoorProperties
+        assert element
+        props = tool.Model.get_door_props(obj)
 
         door_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
@@ -562,27 +538,34 @@ class AddDoor(bpy.types.Operator, tool.Ifc.Operator):
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
 
         if not pset:
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Door")
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Door")
 
-        ifcopenshell.api.run(
-            "pset.edit_pset",
+        ifcopenshell.api.pset.edit_pset(
             tool.Ifc.get(),
             pset=pset,
             properties={"Data": tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))},
         )
-        update_door_modifier_representation(context)
+        update_door_modifier_representation(obj)
+
+    def _execute(self, context):
+        for obj in tool.Blender.get_selected_objects():
+            if not tool.Blender.Modifier.is_eligible_for_door_modifier(obj):
+                continue
+            self.add_door_on_object(obj)
         return {"FINISHED"}
 
 
 class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.cancel_editing_door"
-    bl_label = "Cancel Editing Door"
-    bl_options = {"REGISTER"}
+    bl_label = "Cancel Editing Door on Selected Objects"
+    bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        obj = context.active_object
+    def cancel_editing_door_on_object(self, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMDoorProperties
+        assert element
+        if not tool.Blender.Modifier.is_door(element):
+            return
+        props = tool.Model.get_door_props(obj)
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
@@ -602,18 +585,24 @@ class CancelEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
         )
 
         props.is_editing = False
+
+    def _execute(self, context):
+        for obj in tool.Blender.get_selected_objects():
+            self.cancel_editing_door_on_object(obj)
         return {"FINISHED"}
 
 
 class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.finish_editing_door"
-    bl_label = "Finish Editing Door"
-    bl_options = {"REGISTER"}
+    bl_label = "Finish Editing Door on Selected Objects"
+    bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        obj = context.active_object
+    def finish_editing_door_on_object(self, obj):
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMDoorProperties
+        assert element
+        if not tool.Blender.Modifier.is_door(element):
+            return
+        props = tool.Model.get_door_props(obj)
 
         door_data = props.get_general_kwargs(convert_to_project_units=True)
         lining_props = props.get_lining_kwargs(convert_to_project_units=True)
@@ -624,45 +613,64 @@ class FinishEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
 
         props.is_editing = False
 
-        update_door_modifier_representation(context)
+        update_door_modifier_representation(obj)
+        element_type = ifcopenshell.util.element.get_type(element)
+        if element_type:
+            tool.Model.mark_thumbnail_for_update(element_type)
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
         door_data = tool.Ifc.get().createIfcText(json.dumps(door_data, default=list))
-        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": door_data})
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": door_data})
+
+    def _execute(self, context):
+        for obj in tool.Blender.get_selected_objects():
+            self.finish_editing_door_on_object(obj)
         return {"FINISHED"}
 
 
 class EnableEditingDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.enable_editing_door"
-    bl_label = "Enable Editing Door"
-    bl_options = {"REGISTER"}
+    bl_label = "Enable Editing Door on Selected Objects"
+    bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        obj = context.active_object
-        props = obj.BIMDoorProperties
+    def edit_door_on_obj(self, obj):
         element = tool.Ifc.get_entity(obj)
+        assert element
+        if not tool.Blender.Modifier.is_door(element):
+            return
+        props = tool.Model.get_door_props(obj)
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Door", "Data"))
         data.update(data.pop("lining_properties"))
         data.update(data.pop("panel_properties"))
+        data.update(tool.Model.get_constituents_props_data(element))
 
         # required since we could load pset from .ifc and BIMDoorProperties won't be set
         props.set_props_kwargs_from_ifc_data(data)
         props.is_editing = True
+
+    def _execute(self, context):
+        for obj in tool.Blender.get_selected_objects():
+            self.edit_door_on_obj(obj)
         return {"FINISHED"}
 
 
 class RemoveDoor(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_door"
-    bl_label = "Remove Door"
-    bl_options = {"REGISTER"}
+    bl_label = "Remove Door on Selected Objects"
+    bl_options = {"REGISTER", "UNDO"}
 
-    def _execute(self, context):
-        obj = context.active_object
-        props = obj.BIMDoorProperties
+    def remove_door_on_object(self, obj):
         element = tool.Ifc.get_entity(obj)
-        obj.BIMDoorProperties.is_editing = False
+        assert element
+        if not tool.Blender.Modifier.is_door(element):
+            return
+        props = tool.Model.get_door_props(obj)
+        props.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Door")
-        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+        ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
 
+    def _execute(self, context):
+        for obj in tool.Blender.get_selected_objects():
+            self.remove_door_on_object(obj)
         return {"FINISHED"}

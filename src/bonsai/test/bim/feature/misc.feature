@@ -21,33 +21,50 @@ Scenario: Resize to storey
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And the object "IfcWall/Cube" is selected
-    And the variable "storey" is "tool.Ifc.get().by_type('IfcBuildingStorey')[0].id()"
-    And I press "bim.set_default_container(container={storey})"
-    And I press "bim.assign_container(container={storey})"
-    When I press "bim.resize_to_storey(total_storeys=1)"
+    And I look at the "Spatial Decomposition" panel
+    And I select the "My Storey" item in the "BIM_UL_containers_manager" list
+    And I click "Set Default"
+    # Assign Container.
+    And I click "FOLDER_REDIRECT"
+    And I look at the "Miscellaneous" panel
+    When I click "Resize To Storey"
     Then nothing happens
 
-Scenario: Split along edge
+Scenario: Split along edge - boolean mode
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I add a plane of size "4" at "0,0,0"
     And the object "IfcWall/Cube" is selected
     And additionally the object "Plane" is selected
-    When I press "bim.split_along_edge"
+    And I look at the "Miscellaneous" panel
+    When I click "Split Along Edge"
     Then the object "IfcWall/Cube" is an "IfcWall"
     And the object "IfcWall/Cube.001" is an "IfcWall"
 
-Scenario: Enabling and disabling IFC Sverchok
+Scenario: Split along edge - bisect mode
     Given an empty IFC project
-    And I press "preferences.addon_enable(module="sverchok")"
-    And I press "preferences.addon_enable(module="ifcsverchok")"
-    And I press "preferences.addon_disable(module="sverchok")"
-    And I press "preferences.addon_disable(module="ifcsverchok")"
+    And I add a cube
+    And the object "Cube" is selected
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
+    And I add a plane of size "4" at "0,0,0"
+    And the object "IfcWall/Cube" is selected
+    And additionally the object "Plane" is selected
+    And I look at the "Miscellaneous" panel
+    When I click "Bisect At Faces"
+    Then the object "IfcWall/Cube" is an "IfcWall"
+    And the object "IfcWall/Cube.001" is an "IfcWall"
+
+

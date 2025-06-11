@@ -19,6 +19,7 @@
 import bpy
 import bonsai.tool as tool
 import ifcopenshell.util.element
+from typing import Any
 
 
 def refresh():
@@ -58,7 +59,7 @@ class SpatialData:
 
     @classmethod
     def default_container(cls) -> str | None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = tool.Spatial.get_spatial_props()
         if props.default_container:
             try:
                 return tool.Ifc.get().by_id(props.default_container).Name
@@ -79,9 +80,20 @@ class SpatialData:
             return label
 
     @classmethod
-    def references(cls):
-        results = ifcopenshell.util.element.get_referenced_structures(tool.Ifc.get_entity(bpy.context.active_object))
-        return sorted([f"{r.is_a()}/{r.Name or ''}" for r in results])
+    def references(cls) -> list[dict[str, Any]]:
+        assert (obj := bpy.context.active_object) and (element := tool.Ifc.get_entity(obj))
+        results: list[dict[str, Any]] = []
+        for structure in ifcopenshell.util.element.get_referenced_structures(element):
+            ifc_class = structure.is_a()
+            results.append(
+                {
+                    "id": structure.id(),
+                    "name": f"{ifc_class}/{structure.Name or ''}",
+                    "type": ifc_class,
+                }
+            )
+        results.sort(key=lambda x: x["name"])
+        return results
 
     @classmethod
     def is_directly_contained(cls):
@@ -102,7 +114,7 @@ class SpatialDecompositionData:
 
     @classmethod
     def default_container(cls) -> str | None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = tool.Spatial.get_spatial_props()
         if props.default_container:
             try:
                 return tool.Ifc.get().by_id(props.default_container).Name
@@ -110,9 +122,9 @@ class SpatialDecompositionData:
                 pass
 
     @classmethod
-    def subelement_class(cls):
+    def subelement_class(cls) -> list[tuple[str, str, str]]:
         results = []
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = tool.Spatial.get_spatial_props()
         if not (container := props.active_container):
             return results
         container_class = tool.Ifc.get().by_id(container.ifc_definition_id).is_a()

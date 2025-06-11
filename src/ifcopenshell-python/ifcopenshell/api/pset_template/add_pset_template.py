@@ -71,19 +71,15 @@ def add_pset_template(
     overridden by occurrences, and is applicable to everything.
 
     :param name: The name of the property set
-    :type name: str,optional
     :param template_type: Choose from one of PSET_TYPEDRIVENONLY,
         PSET_TYPEDRIVENOVERRIDE, PSET_OCCURRENCEDRIVEN,
         PSET_PERFORMANCEDRIVEN, QTO_TYPEDRIVENONLY, QTO_TYPEDRIVENOVERRIDE,
         QTO_OCCURRENCEDRIVEN, NOTDEFINED
-    :type template_type: str,optional
     :param applicable_entity: The entity that this template is allowed to be
         applied to. For example, IfcWall means that the property set may be
         assigned to walls only. IfcTypeObject, the default, means that the
         property set may be assigned to any type.
-    :type applicable_entity: str,optional
     :return: The newly created IfcPropertySetTemplate
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -99,12 +95,10 @@ def add_pset_template(
             name="HighVoltage", description="Whether there is a risk of high voltage.",
             primary_measure_type="IfcBoolean")
     """
-    settings = {"name": name, "template_type": template_type, "applicable_entity": applicable_entity}
-
     return file.create_entity(
         "IfcPropertySetTemplate",
         GlobalId=ifcopenshell.guid.new(),
-        Name=settings["name"],
-        TemplateType=settings["template_type"],
-        ApplicableEntity=settings["applicable_entity"],
+        Name=name,
+        TemplateType=template_type,
+        ApplicableEntity=applicable_entity,
     )

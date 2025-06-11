@@ -21,6 +21,7 @@ import bpy
 import bcf
 import bcf.bcfxml
 import bcf.v2.bcfxml
+import bonsai.tool as tool
 from typing import Union
 
 
@@ -30,7 +31,8 @@ class BcfStore:
     @classmethod
     def get_bcfxml(cls) -> Union[bcf.bcfxml.BcfXml, None]:
         if not cls.bcfxml:
-            bcf_filepath = bpy.context.scene.BCFProperties.bcf_file
+            props = tool.Bcf.get_bcf_props()
+            bcf_filepath = props.bcf_file
             if not os.path.isabs(bcf_filepath):
                 bcf_filepath = os.path.abspath(os.path.join(bpy.path.abspath("//"), bcf_filepath))
             if bcf_filepath:
@@ -46,7 +48,7 @@ class BcfStore:
     @classmethod
     def set(cls, bcfxml: Union[bcf.bcfxml.BcfXml, None], filepath: str) -> None:
         cls.bcfxml = bcfxml
-        props = bpy.context.scene.BCFProperties
+        props = tool.Bcf.get_bcf_props()
         props.bcf_file = filepath
 
         # Set bcf_version prop on load.

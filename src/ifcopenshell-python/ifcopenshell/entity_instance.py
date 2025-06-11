@@ -17,6 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 
+from __future__ import annotations
 import functools
 import importlib
 import numbers
@@ -25,10 +26,14 @@ import operator
 import subprocess
 import sys
 import time
-from typing import Union, Any, Callable, TypeVar, overload, Iterable
+from typing import Union, Any, TypeVar, overload, TYPE_CHECKING
+from collections.abc import Callable, Sequence
 
 from . import ifcopenshell_wrapper
 from . import settings
+
+if TYPE_CHECKING:
+    import ifcopenshell
 
 try:
     import logging
@@ -149,11 +154,12 @@ class entity_instance:
 
     wrapped_data: ifcopenshell_wrapper.entity_instance
 
-    def __init__(self, e, file=None):
+    def __init__(self, e: ifcopenshell_wrapper.entity_instance, file: Union[ifcopenshell.file] = None):
+        # TODO: when it is a tuple?
         if isinstance(e, tuple):
             e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
-        super(entity_instance, self).__setattr__("wrapped_data", e)
-        super(entity_instance, self).__setattr__("method_list", None)
+        super().__setattr__("wrapped_data", e)
+        super().__setattr__("method_list", None)
 
         # Make sure the file is not gc'ed while we have live instances
         self.wrapped_data.file = file
@@ -181,6 +187,12 @@ class entity_instance:
         return file.from_pointer(self.wrapped_data.file_pointer())
 
     def __getattr__(self, name: str) -> Any:
+        """
+        Any aggregate attributes (e.g. `SET`) are returns as Python tuples.
+
+        Inverse attributes are always returned as tuples, even it's not a set origially in IFC
+        (e.g. IfcFeatureElementSubtraction.VoidsElements)
+        """
         INVALID, FORWARD, INVERSE = range(3)
         attr_cat = self.wrapped_data.get_attribute_category(name)
         if attr_cat == FORWARD:
@@ -192,8 +204,9 @@ class entity_instance:
             vs = entity_instance.wrap_value(self.wrapped_data.get_inverse(name), self.wrapped_data.file)
             if settings.unpack_non_aggregate_inverses:
                 schema_name = self.wrapped_data.is_a(True).split(".")[0]
+                ent: ifcopenshell_wrapper.entity
                 ent = ifcopenshell_wrapper.schema_by_name(schema_name).declaration_by_name(self.is_a())
-                inv = [i for i in ent.all_inverse_attributes() if i.name() == name][0]
+                inv = next(i for i in ent.all_inverse_attributes() if i.name() == name)
                 if (inv.bound1(), inv.bound2()) == (-1, -1):
                     if vs:
                         vs = vs[0]
@@ -248,14 +261,10 @@ class entity_instance:
 
         :param f: A callable that takes a single argument and returns a boolean
             value. It represents the condition.
-        :type f: Callable
         :param g: A callable that takes a single argument and returns a
             transformed value. It represents the transformation.
-        :type g: Callable
         :param value: Any object, the input value to be processed
-        :type value: Any
         :return: Transformed value
-        :rtype: Any
 
         Example:
 
@@ -304,8 +313,6 @@ class entity_instance:
         """Return the data type of a positional attribute of the element
 
         :param attr: The index or name of the attribute
-        :type attr: Union[int, str]
-        :rtype: string
         """
         attr_idx = attr if isinstance(attr, numbers.Integral) else self.wrapped_data.get_argument_index(attr)
         return self.wrapped_data.get_argument_type(attr_idx)
@@ -314,8 +321,6 @@ class entity_instance:
         """Return the name of a positional attribute of the element
 
         :param attr_idx: The index of the attribute
-        :type attr_idx: int
-        :rtype: string
         """
         return self.wrapped_data.get_argument_name(attr_idx)
 
@@ -341,7 +346,7 @@ class entity_instance:
             self.wrapped_data.file.transaction.store_edit(self, idx, value)
 
         if self.method_list is None:
-            super(entity_instance, self).__setattr__("method_list", _method_dict[self.is_a(True)])
+            super().__setattr__("method_list", _method_dict[self.is_a(True)])
 
         method = self.method_list[idx]
 
@@ -405,9 +410,7 @@ class entity_instance:
             returned IFC class name should include schema name
             (e.g. "IFC4.IfcWall" if `True` and "IfcWall" if `False`).
             If omitted will act as `False`.
-        :type args: Union[str, bool]
         :returns: Either the name of the class, or a boolean if it passes the check
-        :rtype: Union[str, bool]
 
         Example:
 
@@ -423,13 +426,10 @@ class entity_instance:
         return self.wrapped_data.is_a(*args)
 
     def id(self) -> int:
-        """Return the STEP numerical identifier
-
-        :rtype: int
-        """
+        """Return the STEP numerical identifier"""
         return self.wrapped_data.id()
 
-    def __eq__(self, other: "entity_instance") -> bool:
+    def __eq__(self, other: entity_instance) -> bool:
         if not isinstance(self, type(other)):
             return False
         elif None in (self.wrapped_data.file, other.wrapped_data.file):
@@ -551,7 +551,7 @@ class entity_instance:
         include_identifier: bool = True,
         recursive: bool = False,
         return_type: Union[type[dict], type] = dict,
-        ignore: Iterable[str] = (),
+        ignore: Sequence[str] = (),
         scalar_only: bool = False,
     ) -> dict[str, Any]:
         """Return a dictionary of the entity_instance's properties (Python and IFC) and their values.
@@ -626,7 +626,7 @@ class entity_instance:
         include_identifier: bool = True,
         recursive: bool = False,
         return_type: type[dict] = dict,
-        ignore: Iterable[str] = (),
+        ignore: Sequence[str] = (),
     ) -> dict[str, Any]:
         """More perfomant version of `.get_info()` but with limited arguments values.\n
         Method has exactly the same signature as `.get_info()` but it doesn't support getting information non-recursively.
@@ -640,6 +640,4 @@ class entity_instance:
         assert recursive
         assert return_type is dict
         assert len(ignore) == 0
-        # TODO: remove after bonsai build update.
-        return ifcopenshell_wrapper.get_info_cpp(self.wrapped_data)
         return ifcopenshell_wrapper.get_info_cpp(self.wrapped_data, include_identifier)

@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
+from typing import Any
 
 
 def unassign_representation_styles(
@@ -63,6 +64,9 @@ def unassign_representation_styles(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         if not self.settings["styles"]:
             return []

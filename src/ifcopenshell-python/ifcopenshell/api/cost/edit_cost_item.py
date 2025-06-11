@@ -28,11 +28,8 @@ def edit_cost_item(
     IfcCostItem, consult the IFC documentation.
 
     :param cost_item: The IfcCostItem entity you want to edit
-    :type cost_item: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -42,7 +39,5 @@ def edit_cost_item(
         item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
         ifcopenshell.api.cost.edit_cost_item(model, cost_item=item, attributes={"Name": "Foo"})
     """
-    settings = {"cost_item": cost_item, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["cost_item"], name, value)
+    for name, value in attributes.items():
+        setattr(cost_item, name, value)

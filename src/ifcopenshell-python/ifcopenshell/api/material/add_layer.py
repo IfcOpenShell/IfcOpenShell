@@ -16,10 +16,15 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
+import ifcopenshell.util.unit
+from typing import Optional
 
 
 def add_layer(
-    file: ifcopenshell.file, layer_set: ifcopenshell.entity_instance, material: ifcopenshell.entity_instance
+    file: ifcopenshell.file,
+    layer_set: ifcopenshell.entity_instance,
+    material: ifcopenshell.entity_instance,
+    name: Optional[str] = None,
 ) -> ifcopenshell.entity_instance:
     """Adds a new layer to a layer set
 
@@ -38,11 +43,9 @@ def add_layer(
         layer set represents a group of layers. See
         ifcopenshell.api.material.add_material_set for more information on
         how to add a layer set.
-    :type layer_set: ifcopenshell.entity_instance
     :param material: The IfcMaterial that the layer is made out of.
-    :type material: ifcopenshell.entity_instance
+    :param name: An optional name of the layer.
     :return: The newly created IfcMaterialLayer
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -80,10 +83,12 @@ def add_layer(
         # Great! Let's assign our material set to our wall type.
         ifcopenshell.api.material.assign_material(model, products=[wall_type], material=material_set)
     """
-    settings = {"layer_set": layer_set, "material": material}
-
-    layers = list(settings["layer_set"].MaterialLayers or [])
-    layer = file.create_entity("IfcMaterialLayer", **{"Material": settings["material"], "LayerThickness": 1.0})
+    unit_scale = ifcopenshell.util.unit.calculate_unit_scale(file)
+    layers = list(layer_set.MaterialLayers or [])
+    if file.schema == "IFC2X3":
+        layer = file.create_entity("IfcMaterialLayer", Material=material, LayerThickness=0.1 / unit_scale)
+    else:
+        layer = file.create_entity("IfcMaterialLayer", Material=material, LayerThickness=0.1 / unit_scale, Name=name)
     layers.append(layer)
-    settings["layer_set"].MaterialLayers = layers
+    layer_set.MaterialLayers = layers
     return layer

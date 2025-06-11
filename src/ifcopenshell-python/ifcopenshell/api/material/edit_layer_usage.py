@@ -29,11 +29,8 @@ def edit_layer_usage(file: ifcopenshell.file, usage: ifcopenshell.entity_instanc
     IfcMaterialLayerSetUsage, consult the IFC documentation.
 
     :param usage: The IfcMaterialLayerSetUsage entity you want to edit
-    :type usage: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -75,7 +72,5 @@ def edit_layer_usage(file: ifcopenshell.file, usage: ifcopenshell.entity_instanc
         ifcopenshell.api.material.edit_layer_usage(model,
             usage=rel.RelatingMaterial, attributes={"OffsetFromReferenceLine": 200})
     """
-    settings = {"usage": usage, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["usage"], name, value)
+    for name, value in attributes.items():
+        setattr(usage, name, value)

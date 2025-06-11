@@ -25,9 +25,7 @@ def remove_address(file: ifcopenshell.file, address: ifcopenshell.entity_instanc
     relationship removed.
 
     :param address: The IfcAddress to remove.
-    :type address: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -40,10 +38,8 @@ def remove_address(file: ifcopenshell.file, address: ifcopenshell.entity_instanc
         # Change our mind and delete it
         ifcopenshell.api.owner.remove_address(model, address=address)
     """
-    settings = {"address": address}
-
-    for inverse in file.get_inverse(settings["address"]):
+    for inverse in file.get_inverse(address):
         if inverse.is_a() in ("IfcOrganization", "IfcPerson"):
-            if inverse.Addresses == (settings["address"],):
+            if inverse.Addresses == (address,):
                 inverse.Addresses = None
-    file.remove(settings["address"])
+    file.remove(address)

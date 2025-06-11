@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api.pset
+import ifcopenshell.util.element
 from typing import Optional, Any
 
 
@@ -33,7 +34,7 @@ def edit_georeferencing(
     surveyor, and a third-party digital engineer with expertise in IFC to
     moderate. For more information, read the Bonsai documentation
     for Georeferencing:
-    https://docs.bonsaibim.org/guides/advanced/georeferencing.html
+    https://docs.bonsaibim.org/guides/authoring/georeferencing.html
 
     For more information about the attributes and data types of an
     IfcCoordinateOperation, consult the IFC documentation.
@@ -46,6 +47,8 @@ def edit_georeferencing(
 
     :param coordinate_operation: The dictionary of attribute names and values
         you want to edit.
+        'MapUnit' attribute in IFC2X3 should be presented as a full unit name (string),
+        in other IFC versions it's presented an IfcNamedUnit.
     :param projected_crs: The IfcProjectedCRS dictionary of attribute
         names and values you want to edit.
 
@@ -90,7 +93,7 @@ def edit_georeferencing(
                         v = file.createIfcText(v)
                     elif k == "Name":
                         v = file.createIfcLabel(v)
-                    else:
+                    elif v is not None:
                         v = file.createIfcIdentifier(v)
                 ifcopenshell.api.pset.edit_pset(file, crs, properties=projected_crs)
         if coordinate_operation:

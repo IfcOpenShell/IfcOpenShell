@@ -25,9 +25,7 @@ def unassign_lag_time(file: ifcopenshell.file, rel_sequence: ifcopenshell.entity
     The schedule is cascaded afterwards.
 
     :param rel_sequence: The sequence to remove the lag time from.
-    :type rel_sequence: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -57,12 +55,8 @@ def unassign_lag_time(file: ifcopenshell.file, rel_sequence: ifcopenshell.entity
         # What if you didn't?
         ifcopenshell.api.sequence.unassign_lag_time(model, rel_sequence=sequence)
     """
-    settings = {
-        "rel_sequence": rel_sequence,
-    }
-
-    if len(file.get_inverse(settings["rel_sequence"].TimeLag)) == 1:
-        file.remove(settings["rel_sequence"].TimeLag)
+    if file.get_total_inverses(current_lag_time := rel_sequence.TimeLag) == 1:
+        file.remove(current_lag_time)
     else:
-        settings["rel_sequence"].TimeLag = None
-    ifcopenshell.api.sequence.cascade_schedule(file, task=settings["rel_sequence"].RelatedProcess)
+        rel_sequence.TimeLag = None
+    ifcopenshell.api.sequence.cascade_schedule(file, task=rel_sequence.RelatedProcess)

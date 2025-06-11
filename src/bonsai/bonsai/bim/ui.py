@@ -19,6 +19,7 @@
 import os
 import bpy
 import platform
+import bonsai.bim.helper
 from pathlib import Path
 from bpy.types import Panel
 from bpy.props import StringProperty, IntProperty, BoolProperty
@@ -34,12 +35,14 @@ import bonsai.bim
 import bonsai.tool as tool
 from ifcopenshell.util.file import IfcHeaderExtractor
 from bonsai.bim.prop import Attribute
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 
 class IFCFileSelector:
-    filepath: str
-    use_relative_path: bool
+    # Avoid overriding blender prop annotations at runtime.
+    if TYPE_CHECKING:
+        filepath: str
+        use_relative_path: bool
 
     def is_existing_ifc_file(self, filepath: Optional[str] = None) -> bool:
         """Check if file path exists and if it's an IFC file.
@@ -50,7 +53,7 @@ class IFCFileSelector:
             path = self.get_filepath_abs()
         else:
             path = Path(filepath)
-        return path.exists() and "ifc" in path.suffix.lower()
+        return path.exists() and path.is_file() and "ifc" in path.suffix.lower()
 
     def get_filepath_abs(self) -> Path:
         # self.filepath filled by fileselect_add is absolute
@@ -66,9 +69,10 @@ class IFCFileSelector:
 
         if self.use_relative_path:
             filepath = filepath.relative_to(bpy.path.abspath("//"))
-        return filepath.as_posix()
+        return filepath.as_posix().replace("\\", "/")
 
-    def draw(self, context):
+    def draw(self, context: bpy.types.Context) -> None:
+        assert isinstance(context.space_data, bpy.types.SpaceFileBrowser)
         # Access filepath & Directory https://blender.stackexchange.com/a/207665
         params = context.space_data.params
         # Decode byte string https://stackoverflow.com/a/47737082/
@@ -119,7 +123,7 @@ class BIM_PT_section_plane(Panel):
     def draw(self, context):
         layout = self.layout
         layout.use_property_split = True
-        props = context.scene.BIMProperties
+        props = tool.Blender.get_bim_props()
 
         layout.prop(props, "should_section_selected_objects")
         layout.prop(props, "section_plane_colour")
@@ -146,7 +150,7 @@ class BIM_PT_section_with_cappings(Panel):
         row.operator("bim.clipping_plane_cut_with_cappings", icon="XRAY", text="Cut")
         row.operator("bim.revert_clipping_plane_cut", icon="FILE_REFRESH", text="Revert Cut")
 
-        props = context.scene.BIMProjectProperties
+        props = tool.Project.get_project_props()
         box = layout.box()
         header = box.row(align=True)
         header.label(text="Clipping Planes")
@@ -223,18 +227,43 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         description='Software to open .pdf, leave blank uses system default. E.g. [["path to application eg. /Applications/Inkscape.app/Contents/MacOS/inkscape", "path"]]',
     )
     spreadsheet_command: StringProperty(name="Spreadsheet Command", description='E.g. [["libreoffice", "path"]]')
-    should_hide_empty_props: BoolProperty(name="Hide Empty Properties", default=True)
-    should_setup_workspace: BoolProperty(name="Setup Workspace Layout for BIM", default=True)
-    activate_workspace: BoolProperty(name="Activate BIM Workspace on Startup", default=True)
+    should_hide_empty_props: BoolProperty(
+        name="Hide Empty Properties",
+        default=True,
+        description="If disabled, this will show empty properties when displaying property sets contents",
+    )
+    should_setup_workspace: BoolProperty(
+        name="Setup Workspace Layout for BIM",
+        default=True,
+        description="If enabled, this will add a default workspace dedicated to working with BIM models.\nIt is recommended to keep this `Enabled`",
+    )
+    activate_workspace: BoolProperty(
+        name="Activate BIM Workspace on Startup",
+        default=True,
+        description="If enabled, this will automatically activate the BIM workspace when opening a project.\nIt is recommended to keep this `Enabled`",
+    )
     should_setup_toolbar: BoolProperty(
         name="Always Show Toolbar In 3D Viewport",
         default=True,
         description="If disabled, the toolbar will only load when an IFC model is active",
     )
+    should_use_snap: BoolProperty(
+        name="Enable Snapping on Startup",
+        default=True,
+        description="If enabled, snapping will be enabled on new sessions.\nIt is recommended to keep this `Enabled`",
+    )
     should_play_chaching_sound: BoolProperty(name="Play A Cha-Ching Sound When Project Costs Updates", default=False)
-    spatial_elements_unselectable: BoolProperty(name="Make Spatial Elements Unselectable By Default", default=True)
+    tmp_dir: StringProperty(
+        name="Temporary Directory",
+        description="Path to create and store temporary files. If left blank, a system default will be used.",
+    )
+    spatial_elements_unselectable: BoolProperty(
+        name="Make Spatial Elements Unselectable By Default",
+        default=True,
+        description="If disabled, it will be possible to select spatial elements in the 3D viewport.\nIt is recommended to keep this `Enabled`, as this can have unintended consequences",
+    )
     decorations_colour: bpy.props.FloatVectorProperty(
-        name="Decorations Colour", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
+        name="Decorations Color", subtype="COLOR", default=(1, 1, 1, 1), min=0.0, max=1.0, size=4
     )
     decorator_color_selected: bpy.props.FloatVectorProperty(
         name="Selected Elements Color",
@@ -281,8 +310,38 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         size=4,
         description="Color of background overlays",
     )
+    opening_focus_opacity: bpy.props.IntProperty(
+        default=100,
+        min=0,
+        max=100,
+        subtype="PERCENTAGE",
+        name="Non-Openings Opacity",
+        description="When modifying openings, other elements of the model will display with some transparency.\n0 is fully transparent and 100 is fully opaque",
+    )
 
-    def draw(self, context):
+    if TYPE_CHECKING:
+        svg2pdf_command: str
+        svg2dxf_command: str
+        svg_command: str
+        layout_svg_command: str
+        pdf_command: str
+        spreadsheet_command: str
+        should_hide_empty_props: bool
+        should_setup_workspace: bool
+        activate_workspace: bool
+        should_setup_toolbar: bool
+        should_play_chaching_sound: bool
+        spatial_elements_unselectable: bool
+        tmp_dir: str
+        decorations_colour: tuple[float, float, float, float]
+        decorator_color_selected: tuple[float, float, float, float]
+        decorator_color_unselected: tuple[float, float, float, float]
+        decorator_color_special: tuple[float, float, float, float]
+        decorator_color_error: tuple[float, float, float, float]
+        decorator_color_background: tuple[float, float, float, float]
+        opening_focus_opacity: int
+
+    def draw(self, context: bpy.types.Context) -> None:
         layout = self.layout
 
         row = layout.row()
@@ -294,92 +353,92 @@ class BIM_ADDON_preferences(bpy.types.AddonPreferences):
         row = layout.row()
         row.operator("bim.file_associate", icon="LOCKVIEW_ON")
         row.operator("bim.file_unassociate", icon="LOCKVIEW_OFF")
-        row = layout.row()
-        row.prop(self, "svg2pdf_command")
-        row = layout.row()
-        row.prop(self, "svg2dxf_command")
-        row = layout.row()
-        row.prop(self, "svg_command")
-        row = layout.row()
-        row.prop(self, "layout_svg_command")
-        row = layout.row()
-        row.prop(self, "pdf_command")
-        row = layout.row()
-        row.prop(self, "spreadsheet_command")
-        row = layout.row()
-        row.prop(self, "should_hide_empty_props")
-        row = layout.row()
-        row.prop(self, "should_setup_workspace")
-        row = layout.row()
-        row.prop(self, "activate_workspace")
-        row = layout.row()
-        row.prop(self, "should_setup_toolbar")
-        row = layout.row()
-        row.prop(self, "should_play_chaching_sound")
-        row = layout.row()
-        row.prop(self, "spatial_elements_unselectable")
 
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Interface", self.draw_interface_settings)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Command Paths", self.draw_commands)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Model", self.draw_model_settings)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Colors", self.draw_decorator_colors)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Directories", self.draw_directories)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Drawing", self.draw_drawing_settings)
+        bonsai.bim.helper.draw_expandable_panel(self.layout, context, "Other", self.draw_other_settings)
+
+    def draw_commands(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        layout.prop(self, "svg2pdf_command")
+        layout.prop(self, "svg2dxf_command")
+        layout.prop(self, "svg_command")
+        layout.prop(self, "layout_svg_command")
+        layout.prop(self, "pdf_command")
+        layout.prop(self, "spreadsheet_command")
+
+    def draw_interface_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        layout.prop(self, "should_hide_empty_props")
+        layout.prop(self, "should_setup_workspace")
+        layout.prop(self, "activate_workspace")
+        layout.prop(self, "should_setup_toolbar")
+        layout.prop(self, "should_use_snap")
+        layout.prop(self, "should_play_chaching_sound")
+        layout.prop(self, "spatial_elements_unselectable")
+
+    def draw_model_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        props = tool.Model.get_model_props()
+        layout.prop(props, "occurrence_name_style")
+        if props.occurrence_name_style == "CUSTOM":
+            layout.prop(props, "occurrence_name_function")
+
+    def draw_directories(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        props = tool.Blender.get_bim_props()
+        row = layout.row(align=True)
+        row.prop(props, "data_dir")
+        row.operator("bim.select_dir", icon="FILE_FOLDER", text="").data_path = "scene.BIMProperties.data_dir"
+
+        row = layout.row(align=True)
+        row.prop(props, "cache_dir")
+        row.operator("bim.select_dir", icon="FILE_FOLDER", text="").data_path = "scene.BIMProperties.cache_dir"
+
+        row = layout.row(align=True)
+        row.prop(self, "tmp_dir")
+        row.operator("bim.select_dir", icon="FILE_FOLDER", text="").data_path = "preferences.tmp_dir"
+
+    def draw_drawing_settings(self, layout: bpy.types.UILayout, context: bpy.types.Context) -> None:
+        props = tool.Blender.get_bim_props()
+        layout.prop(props, "pset_dir")
+        dprops = tool.Drawing.get_document_props()
+        layout.prop(dprops, "sheets_dir")
+        layout.prop(dprops, "layouts_dir")
+        layout.prop(dprops, "titleblocks_dir")
+        layout.prop(dprops, "drawings_dir")
+        layout.prop(dprops, "stylesheet_path")
+        layout.prop(dprops, "schedules_stylesheet_path")
+        layout.prop(dprops, "markers_path")
+        layout.prop(dprops, "symbols_path")
+        layout.prop(dprops, "patterns_path")
+        layout.prop(dprops, "shadingstyles_path")
+        layout.prop(dprops, "shadingstyle_default")
         row = layout.row()
-        row.prop(context.scene.BIMProjectProperties, "should_disable_undo_on_save")
-        row = layout.row()
-        row.prop(context.scene.BIMProjectProperties, "should_stream")
+        row.prop(dprops, "drawing_font")
+        row.prop(dprops, "magic_font_scale")
+        layout.prop(dprops, "imperial_precision")
+        layout.prop(dprops, "tolerance")
+        layout.prop(dprops, "classes_to_wireframe")
+        layout.prop(dprops, "classes_no_cut")
 
-        row = layout.row()
-        row.prop(context.scene.BIMModelProperties, "occurrence_name_style")
-        if context.scene.BIMModelProperties == "CUSTOM":
-            row = layout.row()
-            row.prop(context.scene.BIMModelProperties, "occurrence_name_function")
+    def draw_decorator_colors(self, layout, context):
+        layout.row().prop(self, "decorations_colour")
+        layout.row().prop(self, "decorator_color_selected")
+        layout.row().prop(self, "decorator_color_unselected")
+        layout.row().prop(self, "decorator_color_special")
+        layout.row().prop(self, "decorator_color_error")
+        layout.row().prop(self, "decorator_color_background")
 
-        row = self.layout.row()
-        row.prop(self, "decorations_colour")
-        row = self.layout.row()
-        row.prop(self, "decorator_color_selected")
-        row = self.layout.row()
-        row.prop(self, "decorator_color_unselected")
-        row = self.layout.row()
-        row.prop(self, "decorator_color_special")
-        row = self.layout.row()
-        row.prop(self, "decorator_color_error")
-        row = self.layout.row()
-        row.prop(self, "decorator_color_background")
-
-        row = self.layout.row(align=True)
-        row.prop(context.scene.BIMProperties, "schema_dir")
-        row.operator("bim.select_schema_dir", icon="FILE_FOLDER", text="")
-
-        row = self.layout.row(align=True)
-        row.prop(context.scene.BIMProperties, "data_dir")
-        row.operator("bim.select_data_dir", icon="FILE_FOLDER", text="")
-
-        row = self.layout.row()
-        row.prop(context.scene.BIMProperties, "pset_dir")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "sheets_dir")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "layouts_dir")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "titleblocks_dir")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "drawings_dir")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "stylesheet_path")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "schedules_stylesheet_path")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "markers_path")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "symbols_path")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "patterns_path")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "shadingstyles_path")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "shadingstyle_default")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "drawing_font")
-        row.prop(context.scene.DocProperties, "magic_font_scale")
-        row = self.layout.row()
-        row.prop(context.scene.DocProperties, "imperial_precision")
+    def draw_other_settings(self, layout, context):
+        layout.prop(self, "opening_focus_opacity")
+        props = tool.Project.get_project_props()
+        layout.prop(props, "should_disable_undo_on_save")
+        layout.prop(props, "should_stream")
+        bprops = tool.Bsdd.get_bsdd_props()
+        layout.prop(bprops, "load_preview_dictionaries")
+        layout.prop(bprops, "load_inactive_dictionaries")
+        layout.prop(bprops, "load_test_dictionaries")
 
 
 # Scene panel groups
@@ -392,57 +451,54 @@ class BIM_PT_tabs(Panel):
     bl_options = {"HIDE_HEADER"}
 
     def draw(self, context):
-        try:
-            is_ifc_project = bool(tool.Ifc.get())
-            aprops = tool.Blender.get_area_props(context)
-            if not aprops:
-                # Fallback in case areas aren't setup yet.
-                aprops = context.screen.BIMTabProperties
+        if not UIData.is_loaded:
+            UIData.load()
+        is_ifc_project = bool(tool.Ifc.get())
+        aprops = tool.Blender.get_area_props(context)
+        ifc_icon = f"{UIData.data['tabs_icon_color_mode']}_ifc"
 
-            row = self.layout.row()
-            row.alignment = "CENTER"
-            row.operator(
-                "bim.set_tab",
-                text="",
-                emboss=aprops.tab == "PROJECT",
-                depress=True,
-                icon_value=bonsai.bim.icons["IFC"].icon_id,
-            ).tab = "PROJECT"
-            self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
-            self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
-            self.draw_tab_entry(row, "DOCUMENTS", "DRAWINGS", is_ifc_project, aprops.tab == "DRAWINGS")
-            self.draw_tab_entry(row, "NETWORK_DRIVE", "SERVICES", is_ifc_project, aprops.tab == "SERVICES")
-            self.draw_tab_entry(row, "EDITMODE_HLT", "STRUCTURE", is_ifc_project, aprops.tab == "STRUCTURE")
-            self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
-            self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
-            self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
-            row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
+        row = self.layout.row()
+        row.alignment = "CENTER"
+        row.operator(
+            "bim.set_tab",
+            text="",
+            emboss=aprops.tab == "PROJECT",
+            icon_value=bonsai.bim.icons[ifc_icon].icon_id,
+        ).tab = "PROJECT"
+        self.draw_tab_entry(row, "FILE_3D", "OBJECT", is_ifc_project, aprops.tab == "OBJECT")
+        self.draw_tab_entry(row, "MATERIAL", "GEOMETRY", is_ifc_project, aprops.tab == "GEOMETRY")
+        self.draw_tab_entry(row, "DOCUMENTS", "DRAWINGS", is_ifc_project, aprops.tab == "DRAWINGS")
+        self.draw_tab_entry(row, "NETWORK_DRIVE", "SERVICES", is_ifc_project, aprops.tab == "SERVICES")
+        self.draw_tab_entry(row, "EDITMODE_HLT", "STRUCTURE", is_ifc_project, aprops.tab == "STRUCTURE")
+        self.draw_tab_entry(row, "NLA", "SCHEDULING", is_ifc_project, aprops.tab == "SCHEDULING")
+        self.draw_tab_entry(row, "PACKAGE", "FM", True, aprops.tab == "FM")
+        self.draw_tab_entry(row, "COMMUNITY", "QUALITY", True, aprops.tab == "QUALITY")
+        row.operator("bim.switch_tab", text="", emboss=False, icon="UV_SYNC_SELECT")
 
-            # Yes, that's right.
-            row = self.layout.row()
-            row.alignment = "CENTER"
-            row.scale_y = 0.2
-            for tab in [
-                "PROJECT",
-                "OBJECT",
-                "GEOMETRY",
-                "DRAWINGS",
-                "SERVICES",
-                "STRUCTURE",
-                "SCHEDULING",
-                "FM",
-                "QUALITY",
-                "SWITCH",
-            ]:
-                if aprops.tab == tab:
-                    row.prop(aprops, "active_tab", text="", icon="BLANK1")
-                else:
-                    row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
+        # Yes, that's right.
+        row = self.layout.row()
+        row.alignment = "CENTER"
+        row.scale_y = 0.2
+        for tab in [
+            "PROJECT",
+            "OBJECT",
+            "GEOMETRY",
+            "DRAWINGS",
+            "SERVICES",
+            "STRUCTURE",
+            "SCHEDULING",
+            "FM",
+            "QUALITY",
+            "SWITCH",
+        ]:
+            # Draw a little underscore below the active tab icon.
+            if aprops.tab == tab:
+                row.prop(aprops, "active_tab", text="", icon="BLANK1")
+            else:
+                row.prop(aprops, "inactive_tab", text="", icon="BLANK1", emboss=False)
 
-            row = self.layout.row(align=True)
-            row.prop(aprops, "tab", text="")
-        except:
-            pass  # Prior to load_post, we may not have any area properties setup
+        row = self.layout.row(align=True)
+        row.prop(aprops, "tab", text="")
 
         if bonsai.REINSTALLED_BBIM_VERSION:
             box = self.layout.box()
@@ -469,8 +525,8 @@ class BIM_PT_tabs(Panel):
         if not tool.Ifc.get():
             return
 
-        props = context.scene.BIMProperties
-        if props.has_blend_warning:
+        bim_props = tool.Blender.get_bim_props()
+        if bim_props.has_blend_warning:
             box = self.layout.box()
             box.alert = True
             row = box.row(align=True)
@@ -479,11 +535,19 @@ class BIM_PT_tabs(Panel):
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#saving-and-loading-blend-files"
             row.operator("bim.close_blend_warning", text="", icon="CANCEL")
 
-        if context.mode == "OBJECT" and context.scene.BIMGeometryProperties.mode in ("OBJECT", "ITEM"):
+        gprops = tool.Geometry.get_geometry_props()
+        # Check that Blender mode and IFC Mode do match.
+        if context.mode == "OBJECT" and gprops.mode in ("OBJECT", "ITEM"):
             pass
-        elif context.mode.startswith("EDIT") and context.scene.BIMGeometryProperties.mode == "EDIT":
+        elif context.mode.startswith("EDIT") and gprops.mode == "EDIT":
             pass
-        else:
+        # Occurs when user wasn't using IFC mode or TAB/Esc hotkeys to change mode.
+        # E.g. if user used TAB to set object's mode to EDIT and then used
+        # Blender mode property to set it back to OBJECT.
+        #
+        # We show warning only for objects connected to IFC,
+        # so users with vanilla Blender objects won't be affected.
+        elif tool.Geometry.get_active_or_representation_obj():
             box = self.layout.box()
             box.alert = True
             row = box.row(align=True)
@@ -499,9 +563,9 @@ class BIM_PT_tabs(Panel):
             op = row.operator("bim.open_uri", text="", icon="QUESTION")
             op.uri = "https://docs.bonsaibim.org/guides/troubleshooting.html#incompatible-blender-features"
 
-    def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=False):
+    def draw_tab_entry(self, row, icon, tab_name, enabled=True, highlight=True):
         tab_entry = row.row(align=True)
-        tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon=icon, depress=True).tab = tab_name
+        tab_entry.operator("bim.set_tab", text="", emboss=highlight, icon=icon).tab = tab_name
         tab_entry.enabled = enabled
 
 
@@ -515,11 +579,11 @@ class BIM_PT_tab_new_project_wizard(Panel):
     def poll(cls, context):
         if not tool.Blender.is_tab(context, "PROJECT"):
             return False
-        props = context.scene.BIMProperties
-        pprops = context.scene.BIMProjectProperties
+        bim_props = tool.Blender.get_bim_props()
+        pprops = tool.Project.get_project_props()
         if pprops.is_loading:
             return False
-        elif tool.Ifc.get() or props.ifc_file:
+        elif tool.Ifc.get() or bim_props.ifc_file:
             return False
         return True
 
@@ -537,11 +601,11 @@ class BIM_PT_tab_project_info(Panel):
     def poll(cls, context):
         if not tool.Blender.is_tab(context, "PROJECT"):
             return False
-        props = context.scene.BIMProperties
-        pprops = context.scene.BIMProjectProperties
+        bim_props = tool.Blender.get_bim_props()
+        pprops = tool.Project.get_project_props()
         if pprops.is_loading:
             return True
-        elif tool.Ifc.get() or props.ifc_file:
+        elif tool.Ifc.get() or bim_props.ifc_file:
             return True
         return False
 
@@ -837,11 +901,17 @@ class BIM_PT_tab_object_metadata(Panel):
 
     @classmethod
     def poll(cls, context):
+        props = tool.Project.get_project_props()
         return (
             tool.Blender.is_tab(context, "OBJECT")
             and tool.Ifc.get()
             and (obj := context.active_object)
-            and tool.Ifc.get_entity(obj)
+            # Hide links empty handles.
+            and (
+                obj.type != "EMPTY"
+                or not obj.instance_collection
+                or not any(l.empty_handle == obj for l in props.links)
+            )
         )
 
     def draw(self, context):
@@ -880,8 +950,7 @@ class BIM_PT_tab_representations(Panel):
         return (
             tool.Blender.is_tab(context, "GEOMETRY")
             and tool.Ifc.get()
-            and (obj := context.active_object)
-            and tool.Ifc.get_entity(obj)
+            and tool.Geometry.get_active_or_representation_obj()
         )
 
     def draw(self, context):
@@ -1096,28 +1165,42 @@ class BIM_PT_tab_operations(Panel):
         pass
 
 
+def refresh():
+    UIData.is_loaded = False
+
+
 class UIData:
     data = {}
     is_loaded = False
 
     @classmethod
     def load(cls):
-        cls.data = {"version": cls.version()}
+        cls.data = {
+            "version": cls.version(),
+            "tabs_icon_color_mode": cls.icon_color_mode("user_interface.wcol_regular.text"),
+            "menu_icon_color_mode": cls.icon_color_mode("user_interface.wcol_menu.text"),
+        }
         cls.is_loaded = True
 
     @classmethod
     def version(cls):
         return tool.Blender.get_bonsai_version()
 
+    @classmethod
+    def icon_color_mode(cls, color_path):
+        return tool.Blender.detect_icon_color_mode(color_path)
+
 
 def draw_statusbar(self, context):
     if not UIData.is_loaded:
         UIData.load()
-    text = f"Bonsai v{UIData.data['version']}"
-    self.layout.label(text=text)
+    bonsai_version = f"Bonsai v{UIData.data['version']}"
+    layout = self.layout
+    row = layout.row()
+    row.operator("bim.show_system_info", text=bonsai_version, emboss=False)
 
 
-def draw_custom_context_menu(self, context):
+def draw_custom_context_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
     # https://blender.stackexchange.com/a/275555/86891
     if (
         not hasattr(context, "button_pointer")
@@ -1125,33 +1208,52 @@ def draw_custom_context_menu(self, context):
         or not hasattr(context.button_prop, "identifier")
     ):
         return
-    prop = context.button_pointer
-    prop_name = context.button_prop.identifier
-    prop_value = getattr(prop, prop_name, None)
-    if not isinstance(prop_value, str):
+    # E.g. `bim.props.Attribute`.
+    prop_struct: bpy.types.bpy_struct = context.button_pointer
+    # E.g. `IntProperty("int_value")`
+    prop: bpy.types.Property = context.button_prop
+    prop_name = prop.identifier
+    # TODO: when `prop_struct` doesn't have `prop_name`?
+    if not hasattr(prop_struct, prop_name):
+        return
+    prop_value = getattr(prop_struct, prop_name, ...)
+    if prop_value is ...:
         return
     version = tool.Ifc.get_schema()
+    assert self.layout
     layout = self.layout
 
-    if isinstance(context.button_pointer, Attribute):
-        description = getattr(context.button_pointer, "description", None)
-        ifc_class = getattr(context.button_pointer, "ifc_class", "")
+    if isinstance(prop_struct, Attribute):
+        attr = prop_struct
+        description = attr.description
+        ifc_class = attr.ifc_class
         if ifc_class:
             try:
-                url = get_entity_doc(version, context.button_pointer.ifc_class).get("spec_url", "")
+                url = get_entity_doc(version, ifc_class).get("spec_url", "")
             except RuntimeError:  # It's not an Entity Attribute. Let's try a Property Set attribute.
-                doc = get_property_set_doc(version, context.button_pointer.ifc_class)
+                doc = get_property_set_doc(version, ifc_class)
                 if doc:
                     url = doc.get("spec_url", "")
                 else:  # It's a custom property set. No URL available
                     url = ""
+        attr_name = attr.name
         if description:
             layout.separator()
             op_description = layout.operator("bim.show_description", text="IFC Description", icon="INFO")
-            op_description.attr_name = getattr(context.button_pointer, "name", "")
+            op_description.attr_name = attr_name
             op_description.description = description
             op_description.url = url
+        if attr_name:
+            op = layout.operator("bim.copy_text_to_clipboard", text="Copy Attribute Name", icon="COPYDOWN")
+            op.text = attr_name
     else:
+        # Basically context menu for any Blender property will end up here,
+        # and will check 3 types of docs.
+        # So at least we're skipping all non-string properties.
+        if not isinstance(prop_value, str):
+            return
+
+        docs = None
         # Ugly but we can't know which type of data is under the cursor so we test everything until it clicks
         try:
             docs = get_entity_doc(version, prop_value)
@@ -1175,3 +1277,69 @@ def draw_custom_context_menu(self, context):
                 layout.separator()
                 url_op = layout.operator("bim.open_uri", icon="URL", text="Online IFC Documentation")
                 url_op.uri = url
+
+
+class BIM_PT_decorators_overlay(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "HEADER"
+    bl_parent_id = "VIEW3D_PT_overlay"
+    bl_label = "Bonsai Decorators"
+
+    @classmethod
+    def poll(cls, context):
+        return context.mode == "OBJECT"
+
+    def draw(self, context):
+        layout = self.layout
+
+        view = context.space_data
+        overlay = view.overlay
+
+        georeference_props = tool.Georeference.get_georeference_props()
+        aggregate_props = tool.Aggregate.get_aggregate_props()
+        nest_props = tool.Nest.get_nest_props()
+        model_props = tool.Model.get_model_props()
+        display_all = overlay.show_overlays
+
+        col = layout.column()
+        col.active = display_all
+
+        row = col.row(align=True)
+        row.prop(georeference_props, "should_visualise", text="Georeference")
+        row.prop(georeference_props, "visualization_scale", text="Size", slider=True)
+        row = col.row(align=True)
+        row.prop(aggregate_props, "aggregate_decorator", text="Aggregate")
+        row = col.row(align=True)
+        row.prop(nest_props, "nest_decorator", text="Nest")
+        row = col.row(align=True)
+        row.prop(model_props, "show_wall_axis", text="Wall Axis")
+        row = col.row(align=True)
+        row.prop(model_props, "show_slab_direction", text="Slab Direction")
+
+
+class BIM_PT_snappping(Panel):
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "HEADER"
+    bl_parent_id = "VIEW3D_PT_snapping"
+    bl_label = "Bonsai Snap Target"
+
+    @classmethod
+    def poll(cls, context):
+        return context.mode == "OBJECT"
+
+    def draw(self, context):
+        prop = context.scene.BIMSnapProperties
+        layout = self.layout
+        col = layout.column(align=True)
+        col.prop(prop, "vertex", toggle=True, icon="SNAP_VERTEX")
+        col.prop(prop, "edge", toggle=True, icon="SNAP_EDGE")
+        col.prop(prop, "edge_center", toggle=True, icon="SNAP_MIDPOINT")
+        col.prop(prop, "edge_intersection", toggle=True, icon="SNAP_GRID")
+        col.prop(prop, "face", toggle=True, icon="SNAP_FACE")
+        groups = context.scene.BIMSnapGroups
+        row = layout.row(align=True)
+        row.label(text="Bonsai Target Selection")
+        row = layout.row(align=True)
+        row.prop(groups, "object", toggle=True)
+        row.prop(groups, "polyline", toggle=True)
+        row.prop(groups, "measure", toggle=True)

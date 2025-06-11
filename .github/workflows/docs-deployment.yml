@@ -1,0 +1,36 @@
+name: Build and Deploy Stable Documentation
+
+on:
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          cd src/bonsai/docs
+          pip install -r requirements.txt  # Run pip install from the docs directory
+
+      - name: Build documentation
+        run: |
+          cd src/bonsai/docs
+          make html
+
+      - name: Deploy to GitHub Pages (Stable)
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          deploy_key: ${{ secrets.ACTIONS_DEPLOY_KEY }}
+          external_repository: IfcOpenShell/bonsaibim_org_docs
+          publish_branch: main
+          cname: docs.bonsaibim.org
+          publish_dir: src/bonsai/docs/_build/html

@@ -28,7 +28,9 @@ from typing import Optional
 class Interface(abc.ABC): pass
 def interface(cls):
     attrs = {n: classmethod(abc.abstractmethod(f)) for n, f in inspect.getmembers(cls, predicate=inspect.isfunction)}
-    return type(cls.__name__, (Interface, cls), attrs)
+    new_cls = type(cls.__name__, (Interface, cls), attrs)
+    new_cls.__original_qualname__ = cls.__module__ + "." + cls.__qualname__
+    return new_cls
 
 
 # ############################################################################ #
@@ -90,10 +92,11 @@ class Blender:
     def get_name(cls, ifc_class, name): pass
     def get_obj_ifc_definition_id(cls, obj=None, obj_type=None, context=None): pass
     def get_object_bounding_box(cls, obj): pass
-    def get_selected_objects(cls): pass
+    def get_selected_objects(cls, include_active=False): pass
     def get_viewport_context(cls): pass
     def is_ifc_class_active(cls, ifc_class): pass
     def is_ifc_object(cls, obj): pass
+    def remove_object(cls, obj): pass
     def set_active_object(cls, obj): pass
     def update_viewport(cls): pass
 
@@ -183,7 +186,7 @@ class Classification:
 
 @interface
 class Collector:
-    def assign(cls, obj): pass
+    def assign(cls, obj, should_clean_users_collection=False): pass
 
 
 @interface
@@ -200,7 +203,7 @@ class Cost:
     def change_parent_cost_item(cls, cost_item, new_parent): pass
     def clean_up_cost_item_tree(cls, cost_item): pass
     def contract_cost_item_rate(cls, cost_item): pass
-    def contract_cost_item(cls, cost_item): pass
+    def contract_cost_item(cls, cost_item_id): pass
     def contract_cost_items(cls): pass
     def create_new_cost_item_li(props_collection, cost_item, level_index, type): pass
     def disable_editing_cost_item_parent(cls): pass
@@ -217,7 +220,7 @@ class Cost:
     def enable_editing_cost_items(cls, cost_schedule): pass
     def enable_editing_cost_schedule_attributes(cls, cost_schedule): pass
     def expand_cost_item_rate(cls, cost_item): pass
-    def expand_cost_item(cls, cost_item): pass
+    def expand_cost_item(cls, cost_item_id): pass
     def expand_cost_items(cls): pass
     def export_cost_schedules(cls, filepath, format, cost_schedule): pass
     def format_unit(cls, unit): pass
@@ -225,6 +228,7 @@ class Cost:
     def get_active_cost_schedule(cls): pass
     def get_active_cost_schedule(cls): pass
     def get_attributes_for_cost_value(cls, cost_type, cost_category): pass
+    def get_assigned_rate_cost_item(cls, cost_item): pass
     def get_cost_item_attributes(cls, cost_item): pass
     def get_cost_item_products(cls): pass
     def get_cost_item_quantity_attributes(cls): pass
@@ -246,6 +250,10 @@ class Cost:
     def has_schedules(cls): pass
     def highlight_cost_item(cls, cost_item): pass
     def import_cost_schedule_csv(cls, file_path, is_schedule_of_rates): pass
+    def add_csv_filepath(cls, file_path, is_schedule_of_rates, cost_schedule): pass
+    def remove_csv_filepath(cls, cost_schedule): pass
+    def delete_all_cost_items(cls): pass
+    def refresh_cost_schedule_csv(cls): pass
     def is_active_schedule_of_rates(cls): pass
     def is_cost_schedule_active(cls, cost_schedule): pass
     def is_root_cost_item(cls, cost_item): pass
@@ -323,8 +331,10 @@ class Drawing:
     def export_text_literal_attributes(cls, obj): pass
     def generate_drawing_matrix(cls, target_view, location_hint): pass
     def generate_drawing_name(cls, target_view, location_hint): pass
+    def generate_reference_attributes(cls, reference, **attributes): pass
     def generate_sheet_identification(cls): pass
     def get_annotation_context(cls, target_view, object_type=None): pass
+    def get_annotation_representation(cls, element_type): pass
     def get_assigned_product(cls, element): pass
     def get_body_context(cls): pass
     def get_default_drawing_path(cls, name): pass
@@ -345,10 +355,10 @@ class Drawing:
     def get_name(cls, element): pass
     def get_path_filename(cls, uri): pass
     def get_reference_description(cls, reference): pass
-    def generate_reference_attributes(cls, reference, **attributes): pass
     def get_reference_document(cls, reference): pass
     def get_reference_location(cls, reference): pass
     def get_references_with_location(cls, location): pass
+    def get_representation(cls, element, context): pass
     def get_text_literal(cls, obj): pass
     def get_unit_system(cls): pass
     def import_assigned_product(cls, obj): pass
@@ -357,6 +367,7 @@ class Drawing:
     def import_sheets(cls): pass
     def import_text_attributes(cls, obj): pass
     def is_active_drawing(cls, drawing): pass
+    def is_annotation_object_type(cls, element, object_types): pass
     def is_camera_orthographic(cls): pass
     def is_drawing_active(cls): pass
     def is_editing_sheets(cls): pass
@@ -364,9 +375,11 @@ class Drawing:
     def open_layout_svg(cls, uri): pass
     def open_spreadsheet(cls, uri): pass
     def open_svg(cls, filepath): pass
+    def reload_representation(cls, obj, representation): pass
     def remove_literal_from_annotation(cls, obj, literal): pass
     def run_drawing_activate_model(cls): pass
     def run_root_assign_class(cls, obj=None, ifc_class=None, predefined_type=None, should_add_representation=True, context=None, ifc_representation_class=None): pass
+    def run_type_assign_type(cls, element=None, relating_type=None): pass
     def select_assigned_product(cls, drawing): pass
     def set_drawing_collection_name(cls, drawing, collection): pass
     def set_name(cls, element, name): pass
@@ -376,9 +389,14 @@ class Drawing:
     def sync_object_placement(cls, obj): pass
     def synchronise_ifc_and_text_attributes(cls, obj): pass
     def update_embedded_svg_location(cls, uri, old_location, new_location): pass
+    def update_newline_at(cls, obj): pass
     def update_text_size_pset(cls, obj): pass
     def update_text_value(cls, obj): pass
 
+
+@interface
+class Feature:
+    def add_feature(cls, featured_obj, featured_objs): pass
 
 @interface
 class Geometry:
@@ -386,10 +404,12 @@ class Geometry:
     def clear_cache(cls, element): pass
     def clear_modifiers(cls, obj): pass
     def clear_scale(cls, obj): pass
+    def copy_data_links(cls, data, copied_entities) -> None: pass
     def delete_data(cls, data): pass
     def delete_ifc_object(cls, obj): pass
     def delete_opening_object_placement(cls, opening): pass
     def does_representation_id_exist(cls, representation_id): pass
+    def duplicate_ifc_objects(cls, objects_to_duplicate, active_object=None, duplicate_ifc_objects=None): pass
     def duplicate_object_data(cls, obj): pass
     def get_blender_offset_type(cls, obj): pass
     def get_cartesian_point_offset(cls, obj): pass
@@ -406,12 +426,10 @@ class Geometry:
     def get_total_representation_items(cls, obj): pass
     def has_data_users(cls, data): pass
     def has_material_style_override(cls, obj): pass
-    def import_representation(cls, obj, representation, apply_openings=True): pass
     def import_representation_parameters(cls, data): pass
     def is_body_representation(cls, representation): pass
     def is_box_representation(cls, representation): pass
     def is_data_supported_for_adding_representation(cls, data): pass
-    def is_edited(cls, obj): pass
     def is_mapped_representation(cls, representation): pass
     def is_type_product(cls, element): pass
     def link(cls, element, obj): pass
@@ -419,11 +437,11 @@ class Geometry:
     def record_object_position(cls, obj): pass
     def recreate_object_with_data(cls, obj, data): pass
     def reimport_element_representations(cls, obj, representation, apply_openings=True): pass
-    def reload_representation_item_ids(cls, representation, data) -> None: pass
     def remove_connection(cls, connection): pass
     def rename_object(cls, obj, name): pass
     def replace_object_data_globally(cls, old_data, new_data): pass
     def resolve_mapped_representation(cls, representation): pass
+    def run_edit_object_placement(cls, obj=None): pass
     def run_geometry_update_representation(cls, obj=None): pass
     def run_style_add_style(cls, obj=None): pass
     def select_connection(cls, connection): pass
@@ -481,6 +499,11 @@ class Ifc:
     def set(cls, ifc): pass
     def unlink(cls, element=None, obj=None): pass
     def get_all_element_occurrences(cls, element): pass
+
+
+@interface
+class Layer:
+    pass
 
 
 @interface
@@ -544,27 +567,31 @@ class Misc:
     def run_root_copy_class(cls, obj=None): pass
     def scale_object_to_height(cls, obj, height): pass
     def set_object_origin_to_bottom(cls, obj): pass
-    def split_objects_with_cutter(cls, objs, cutter): pass
+    def boolean_objects_with_cutter(cls, objs, cutter): pass
 
 
 @interface
 class Model:
+    def clip_wall_to_slab(cls, element, bm): pass
+    def connect_wall_to_slab(cls, wall, slab): pass
     def convert_si_to_unit(cls, value): pass
     def convert_unit_to_si(cls, value): pass
     def export_points(cls, position, indices): pass
     def export_profile(cls, obj, position=None): pass
     def generate_occurrence_name(cls, element_type, ifc_class): pass
     def get_extrusion(cls, representation): pass
-    def import_profile(cls, profile, obj=None, position=None): pass
+    def get_manual_booleans(cls, element): pass
+    def get_material_layer_parameters(cls, element): pass
+    def get_slab_clipping_bmesh(cls, obj): pass
+    def get_usage_type(cls, element): pass
+    def get_wall_axis(cls, obj, layers=None): pass
     def import_curve(cls, curve, obj=None, position=None): pass
+    def import_profile(cls, profile, obj=None, position=None): pass
     def import_rectangle(cls, obj, position, profile): pass
     def load_openings(cls, openings): pass
-    def clear_scene_openings(cls): pass
-    def get_usage_type(cls, element): pass
-    def get_material_layer_parameters(cls, element): pass
-    def get_manual_booleans(cls, element): pass
-    def get_wall_axis(cls, obj, layers=None): pass
+    def purge_scene_openings(cls): pass
     def regenerate_array(cls, parent, data): pass
+    def reload_body_representation(cls, obj_or_objects): pass
     def replace_object_ifc_representation(cls, ifc_file, ifc_context, obj, new_representation): pass
 
 
@@ -746,6 +773,8 @@ class Root:
     def is_containable(cls, element): pass
     def is_drawing_annotation(cls, element): pass
     def is_element_a(cls, element, ifc_class): pass
+    def is_in_aggregate_mode(cls, element): pass
+    def is_in_nest_mode(cls, element): pass
     def is_spatial_element(cls, element): pass
     def link_object_data(cls, source_obj, destination_obj): pass
     def recreate_decompositions(cls, relationships, old_to_new): pass
@@ -886,7 +915,6 @@ class Spatial:
     def deselect_objects(cls): pass
     def disable_editing(cls, obj): pass
     def duplicate_object_and_data(cls, obj): pass
-    def edit_container_attributes(cls, entity): pass
     def edit_container_name(cls, container, name): pass
     def enable_editing(cls, obj): pass
     def expand_container(cls, container): pass
@@ -1000,7 +1028,6 @@ class Style:
     def get_elements_by_style(cls, style): pass
     def get_currently_edited_material(cls): pass
     def get_name(cls, obj): pass
-    def get_style(cls, obj): pass
     def get_style_elements(cls, blender_material): pass
     def get_surface_rendering_attributes(cls, obj, verbose=True): pass
     def get_surface_rendering_style(cls, obj): pass
@@ -1012,10 +1039,11 @@ class Style:
     def get_uv_maps(cls, representation): pass
     def import_presentation_styles(cls, style_type): pass
     def import_surface_attributes(cls, style): pass
+    def is_editing_style(cls): pass
     def is_editing_styles(cls): pass
     def reload_material_from_ifc(cls, obj): pass
     def is_style_side_attribute_edited(cls, style, new_attributes): pass
-    def reload_repersentations(cls, style): pass
+    def reload_representations(cls, style): pass
 
 
 @interface

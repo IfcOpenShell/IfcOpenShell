@@ -39,12 +39,13 @@ and data-rich OpenBIM with Blender :)
    .. toctree::
       :hidden:
       :caption: Quickstart
-      :maxdepth: 1
+      :maxdepth: 2
 
       quickstart/introduction_to_bim
       quickstart/installation
       quickstart/explore_model
       quickstart/create_model
+      quickstart/ide/index
       quickstart/next_steps
 
    .. toctree::
@@ -56,8 +57,10 @@ and data-rich OpenBIM with Blender :)
       guides/authoring/georeferencing
       guides/authoring/git_support
       guides/development/index
+      guides/alignment
       guides/authoring/other_addons
       guides/troubleshooting
+      guides/debugging
 
    .. toctree::
       :hidden:
@@ -67,6 +70,7 @@ and data-rich OpenBIM with Blender :)
       reference/interface
       reference/topbar
       reference/properties
+      reference/hotkeys
 
 Need more help? Join the `live chat <https://osarch.org/chat/>`__ or `community
 forums <https://community.osarch.org>`__. Something strange happening? Please

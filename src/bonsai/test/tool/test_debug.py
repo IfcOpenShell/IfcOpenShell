@@ -49,13 +49,14 @@ class TestLoadExpress(NewFile):
         cwd = os.path.dirname(os.path.realpath(__file__))
         schema_path = os.path.join(cwd, "..", "files", "test.exp")
         schema = subject.load_express(schema_path)
-        assert schema.schema_name == "IFCROGUE"
+        assert schema.name() == "IFCROGUE"
         os.remove(schema_path + ".cache.dat")
 
 
 class TestPurgeHdf5Cache(NewFile):
     def test_run(self):
-        cache_dir = Path(bpy.context.scene.BIMProperties.data_dir) / "cache"
+        props = tool.Blender.get_bim_props()
+        cache_dir = Path(props.cache_dir)
         test_file = cache_dir / "test.h5"
         test_file.parent.mkdir(parents=True, exist_ok=True)
         test_file.touch()

@@ -16,18 +16,19 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 import ifcopenshell
+import ifcopenshell.util.element
 
 
-def remove_constituent(file: ifcopenshell.file, constituent: ifcopenshell.entity_instance) -> None:
+def remove_constituent(
+    file: ifcopenshell.file, constituent: ifcopenshell.entity_instance, should_remove_material: bool = False
+) -> None:
     """Removes a constituent from a constituent set
 
     Note that it is invalid to have zero items in a set, so you should leave
     at least one constituent to ensure a valid IFC dataset.
 
     :param constituent: The IfcMaterialConstituent entity you want to remove
-    :type constituent: ifcopenshell.entity_instance
-    :return: None
-    :rtype: None
+    :param should_remove_material: If true, materials with no users will be removed
 
     Example:
 
@@ -51,6 +52,7 @@ def remove_constituent(file: ifcopenshell.file, constituent: ifcopenshell.entity
         # invalid.
         ifcopenshell.api.material.remove_constituent(model, constituent=glazing)
     """
-    settings = {"constituent": constituent}
-
-    file.remove(settings["constituent"])
+    material = constituent.Material
+    file.remove(constituent)
+    if material and should_remove_material:
+        ifcopenshell.util.element.remove_deep2(file, material)

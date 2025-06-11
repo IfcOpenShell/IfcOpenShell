@@ -58,13 +58,9 @@ def add_material(
 
     :param name: The name of the material, typically tagged in a finishes
         drawing or schedule.
-    :type name: str, optional
     :param category: The category of the material.
-    :type category: str, optional
     :param description: A description of the material.
-    :type description: str, optional
     :return: The newly created IfcMaterial
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -81,11 +77,9 @@ def add_material(
         # "Style" has been specified.
         ifcopenshell.api.material.assign_material(model, products=[concrete_bench], material=concrete)
     """
-    settings = {"name": name or "Unnamed", "category": category, "description": description}
-
-    material = file.create_entity("IfcMaterial", **{"Name": settings["name"] or "Unnamed"})
-    if settings["category"]:
-        material.Category = settings["category"]
-    if settings["description"]:
-        material.Description = settings["description"]
+    material = file.create_entity("IfcMaterial", **{"Name": name or "Unnamed"})
+    if category:
+        material.Category = category
+    if description:
+        material.Description = description
     return material

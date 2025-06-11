@@ -16,9 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.feature
+import ifcopenshell.api.geometry
+import ifcopenshell.api.root
+import ifcopenshell.api.style
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
@@ -26,16 +31,26 @@ import bonsai.core.tool
 import bonsai.core.aggregate
 import bonsai.core.geometry
 import bonsai.tool as tool
-from typing import Union, Optional, Any
+from typing import Union, Optional, Any, Literal, TYPE_CHECKING
 from bonsai.bim.module.spatial.decorator import GridDecorator
 from bonsai.bim.module.geometry.decorator import ItemDecorator
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.root.prop import BIMRootProperties
 
 
 class Root(bonsai.core.tool.Root):
     @classmethod
-    def add_tracked_opening(cls, obj: bpy.types.Object) -> None:
-        new = bpy.context.scene.BIMModelProperties.openings.add()
+    def get_root_props(cls) -> BIMRootProperties:
+        return bpy.context.scene.BIMRootProperties
+
+    @classmethod
+    def add_tracked_opening(cls, obj: bpy.types.Object, opening_type: Literal["OPENING", "BOOLEAN"]) -> None:
+        """Add tracked opening or boolean object."""
+        props = tool.Model.get_model_props()
+        new = props.openings.add()
         new.obj = obj
+        new.name = opening_type
 
     @classmethod
     def assign_body_styles(cls, element: ifcopenshell.entity_instance, obj: bpy.types.Object) -> None:
@@ -46,37 +61,47 @@ class Root(bonsai.core.tool.Root):
                 tool.Geometry.run_style_add_style(obj=mat)
                 for mat in tool.Geometry.get_object_materials_without_styles(obj)
             ]
-            ifcopenshell.api.run(
-                "style.assign_representation_styles",
+            props = tool.Geometry.get_geometry_props()
+            ifcopenshell.api.style.assign_representation_styles(
                 tool.Ifc.get(),
                 shape_representation=body,
                 styles=tool.Geometry.get_styles(obj),
-                should_use_presentation_style_assignment=bpy.context.scene.BIMGeometryProperties.should_use_presentation_style_assignment,
+                should_use_presentation_style_assignment=props.should_use_presentation_style_assignment,
             )
 
     @classmethod
-    def copy_representation(cls, source: ifcopenshell.entity_instance, dest: ifcopenshell.entity_instance) -> None:
-        def exclude_callback(attribute):
+    def copy_representation(
+        cls, source: ifcopenshell.entity_instance, dest: ifcopenshell.entity_instance
+    ) -> dict[int, ifcopenshell.entity_instance]:
+        def exclude_callback(attribute: ifcopenshell.entity_instance) -> bool:
             return attribute.is_a("IfcProfileDef") and attribute.ProfileName
+
+        copied_entities: dict[int, ifcopenshell.entity_instance] = {}
 
         if dest.is_a("IfcProduct"):
             if not source.Representation:
-                return
+                return copied_entities
             dest.Representation = ifcopenshell.util.element.copy_deep(
                 tool.Ifc.get(),
                 source.Representation,
                 exclude=["IfcGeometricRepresentationContext"],
                 exclude_callback=exclude_callback,
+                copied_entities=copied_entities,
             )
         elif dest.is_a("IfcTypeProduct"):
             if not source.RepresentationMaps:
-                return
+                return copied_entities
             dest.RepresentationMaps = [
                 ifcopenshell.util.element.copy_deep(
-                    tool.Ifc.get(), m, exclude=["IfcGeometricRepresentationContext"], exclude_callback=exclude_callback
+                    tool.Ifc.get(),
+                    m,
+                    exclude=["IfcGeometricRepresentationContext"],
+                    exclude_callback=exclude_callback,
+                    copied_entities=copied_entities,
                 )
                 for m in source.RepresentationMaps
             ]
+        return copied_entities
 
     @classmethod
     def does_type_have_representations(cls, element: ifcopenshell.entity_instance) -> bool:
@@ -98,13 +123,22 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def get_default_container(cls) -> Optional[ifcopenshell.entity_instance]:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = tool.Spatial.get_spatial_props()
         if container := props.default_container:
             try:
                 return tool.Ifc.get().by_id(container)
             except:
                 props.default_container = 0
         return None
+
+    @classmethod
+    def get_default_container_elevation(cls) -> float:
+        default_container = cls.get_default_container()
+        if not default_container:
+            return 0.0
+        obj = tool.Ifc.get_object(default_container)
+        assert isinstance(obj, bpy.types.Object)
+        return obj.location.z
 
     @classmethod
     def get_connection_relationships(
@@ -156,8 +190,8 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def get_object_representation(cls, obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, None]:
-        if obj.data and obj.data.BIMMeshProperties.ifc_definition_id:
-            return tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+        if obj.data and (mesh_props := tool.Geometry.get_mesh_props(obj.data)).ifc_definition_id:
+            return tool.Ifc.get().by_id(mesh_props.ifc_definition_id)
         element = tool.Ifc.get_entity(obj)
         if element.is_a("IfcTypeProduct"):
             if element.RepresentationMaps:
@@ -206,8 +240,20 @@ class Root(bonsai.core.tool.Root):
         return element.is_a("IfcGridAxis")
 
     @classmethod
+    def is_in_aggregate_mode(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        props = tool.Aggregate.get_aggregate_props()
+        if props.editing_aggregate and props.in_aggregate_mode:
+            return tool.Ifc.get_entity(props.editing_aggregate)
+
+    @classmethod
+    def is_in_nest_mode(cls, element: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        props = tool.Nest.get_nest_props()
+        if props.editing_nest and props.in_nest_mode:
+            return tool.Ifc.get_entity(props.editing_nest)
+
+    @classmethod
     def reload_grid_decorator(cls) -> None:
-        axes = bpy.context.scene.BIMGridProperties.grid_axes
+        axes = tool.Spatial.get_grid_props().grid_axes
         axes.clear()
         for axis in tool.Ifc.get().by_type("IfcGridAxis"):
             if obj := tool.Ifc.get_object(axis):
@@ -242,11 +288,8 @@ class Root(bonsai.core.tool.Root):
                     filling_obj = tool.Ifc.get_object(new_subelement)
 
                     existing_opening_occurrence = subelement.FillsVoids[0].RelatingOpeningElement
-                    opening = ifcopenshell.api.run(
-                        "root.copy_class", tool.Ifc.get(), product=existing_opening_occurrence
-                    )
-                    ifcopenshell.api.run(
-                        "geometry.edit_object_placement",
+                    opening = ifcopenshell.api.root.copy_class(tool.Ifc.get(), product=existing_opening_occurrence)
+                    ifcopenshell.api.geometry.edit_object_placement(
                         tool.Ifc.get(),
                         product=opening,
                         matrix=ifcopenshell.util.placement.get_local_placement(opening.ObjectPlacement),
@@ -257,17 +300,16 @@ class Root(bonsai.core.tool.Root):
                         existing_opening_occurrence, "Model", "Body", "MODEL_VIEW"
                     )
                     representation = ifcopenshell.util.representation.resolve_representation(representation)
-                    mapped_representation = ifcopenshell.api.run(
-                        "geometry.map_representation", tool.Ifc.get(), representation=representation
+                    mapped_representation = ifcopenshell.api.geometry.map_representation(
+                        tool.Ifc.get(), representation=representation
                     )
-                    ifcopenshell.api.run(
-                        "geometry.assign_representation",
+                    ifcopenshell.api.geometry.assign_representation(
                         tool.Ifc.get(),
                         product=opening,
                         representation=mapped_representation,
                     )
-                    ifcopenshell.api.run("void.add_opening", tool.Ifc.get(), opening=opening, element=element)
-                    ifcopenshell.api.run("void.add_filling", tool.Ifc.get(), opening=opening, element=filling)
+                    ifcopenshell.api.feature.add_feature(tool.Ifc.get(), feature=opening, element=element)
+                    ifcopenshell.api.feature.add_filling(tool.Ifc.get(), opening=opening, element=filling)
 
                     voided_objs = [voided_obj]
                     # Openings affect all subelements of an aggregate
@@ -277,8 +319,8 @@ class Root(bonsai.core.tool.Root):
                             voided_objs.append(subobj)
 
                     for voided_obj in voided_objs:
-                        if voided_obj.data:
-                            representation = tool.Ifc.get().by_id(voided_obj.data.BIMMeshProperties.ifc_definition_id)
+                        if data := voided_obj.data:
+                            representation = tool.Ifc.get().by_id(tool.Geometry.get_mesh_props(data).ifc_definition_id)
                             bonsai.core.geometry.switch_representation(
                                 tool.Ifc,
                                 tool.Geometry,
@@ -301,8 +343,7 @@ class Root(bonsai.core.tool.Root):
                 new_related_element = old_to_new.get(data["related_element"])[0]
             except:
                 continue
-            ifcopenshell.api.run(
-                "geometry.connect_path",
+            ifcopenshell.api.geometry.connect_path(
                 tool.Ifc.get(),
                 relating_element=new_relating_element,
                 related_element=new_related_element,
@@ -314,6 +355,7 @@ class Root(bonsai.core.tool.Root):
     def recreate_aggregate(
         cls, old_to_new: dict[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]
     ) -> None:
+        new_aggregate = None
         for old, new in old_to_new.items():
             old_aggregate = ifcopenshell.util.element.get_aggregate(old)
             if old_aggregate:
@@ -350,6 +392,10 @@ class Root(bonsai.core.tool.Root):
                             related_obj=tool.Ifc.get_object(tool.Ifc.get_entity(obj)),
                         )
 
+        if new_aggregate is None:
+            return
+        tool.Blender.select_and_activate_single_object(bpy.context, tool.Ifc.get_object(new_aggregate[0]))
+
     @classmethod
     def run_geometry_add_representation(
         cls,
@@ -371,11 +417,22 @@ class Root(bonsai.core.tool.Root):
 
     @classmethod
     def set_object_name(cls, obj: bpy.types.Object, element: ifcopenshell.entity_instance) -> None:
-        # This disables the Blender name event handler
-        obj.BIMObjectProperties.is_renaming = True
-        name = getattr(element, "Name", getattr(element, "AxisTag", None))
-        obj.name = "{}/{}".format(element.is_a(), name or "Unnamed")
-        obj.BIMObjectProperties.is_renaming = False
+        name = tool.Loader.get_name(element)
+        if obj.name != name:
+            props = tool.Blender.get_object_bim_props(obj)
+            # If it's not an IFC object, then it doesn't have a name callback.
+            # So, we need to protect it writing to IFC.
+            props.is_renaming = bool(tool.Ifc.get_entity(obj))
+            obj.name = name  # The handler will trigger, and reset is_renaming to False
+
+    @classmethod
+    def set_material_name(cls, material: bpy.types.Material, name: str) -> None:
+        """Rename material without triggerring name callback and unnecessary writing to IFC."""
+        if material.name == name:
+            return
+        msprops = tool.Style.get_material_style_props(material)
+        msprops.is_renaming = bool(tool.Ifc.get_entity(material))
+        material.name = name  # The handler will trigger, and reset is_renaming to False.
 
     @classmethod
     def unlink_object(cls, obj: bpy.types.Object) -> None:
@@ -386,10 +443,36 @@ class Root(bonsai.core.tool.Root):
         to unlink them.
         """
         tool.Ifc.unlink(obj=obj)
-        if hasattr(obj.data, "BIMMeshProperties"):
-            obj.data.BIMMeshProperties.ifc_definition_id = 0
+        if tool.Geometry.has_mesh_properties(data := obj.data):
+            tool.Geometry.get_mesh_props(data).ifc_definition_id = 0
         for material_slot in obj.material_slots:
             if material := material_slot.material:
                 tool.Ifc.unlink(obj=material)
         if "Ifc" in obj.name and "/" in obj.name:
             obj.name = obj.name.split("/", 1)[1]
+
+    @classmethod
+    def get_ifc_products(cls) -> tuple[str, ...]:
+        version = tool.Ifc.get_schema()
+        if version == "IFC2X3":
+            products = (
+                "IfcElementType",
+                "IfcElement",
+                "IfcFeatureElement",
+                "IfcSpatialStructureElement",
+                "IfcStructuralItem",
+                "IfcAnnotation",
+                "IfcRelSpaceBoundary",
+            )
+        else:
+            products = (
+                "IfcElementType",
+                "IfcElement",
+                "IfcFeatureElement",
+                "IfcSpatialElement",
+                "IfcSpatialElementType",
+                "IfcStructuralItem",
+                "IfcAnnotation",
+                "IfcRelSpaceBoundary",
+            )
+        return products

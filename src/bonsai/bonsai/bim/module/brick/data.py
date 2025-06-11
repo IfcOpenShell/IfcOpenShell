@@ -52,7 +52,7 @@ class BrickschemaData:
     def active_relations(cls):
         if BrickStore.graph is None:
             return []
-        props = bpy.context.scene.BIMBrickProperties
+        props = tool.Brick.get_brick_props()
         try:
             brick = props.bricks[props.active_brick_index]
         except:

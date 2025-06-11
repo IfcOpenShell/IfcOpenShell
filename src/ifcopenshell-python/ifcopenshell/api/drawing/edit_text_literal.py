@@ -28,11 +28,8 @@ def edit_text_literal(
     IfcTextLiteral, consult the IFC documentation.
 
     :param reference: The IfcTextLiteral entity you want to edit
-    :type reference: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -42,7 +39,5 @@ def edit_text_literal(
         ifcopenshell.api.drawing.edit_text_literal(model,
             text_literal=text, attributes={"Literal": "MY ANNOTATION"})
     """
-    settings = {"text_literal": text_literal, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["text_literal"], name, value)
+    for name, value in attributes.items():
+        setattr(text_literal, name, value)

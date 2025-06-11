@@ -87,16 +87,22 @@ The filters are chained and apply from left to right.
 
     filter[, filter]*
 
-There are nine types of filters to choose from. Some of these filters will add
-new elements to your filter group, and some will filter previously added
-elements in your filter group based on their criteria.
+Below is the table of filters to choose from. Most of these filters will filter
+previously added elements in your filter group based on their criteria.
+
+There are two exceptions - if ``elements`` are not provided to ``filter_elements``
+*Class* and *GlobalId* filters (without ``[!]``) will add new elements to the filter group ,
+otherwise they'll also filter elements based on criteria.
+
+If neither *Class* and *GlobalId* and ``elements`` are not provided then filter
+will search through all IfcTypeProducts and IfcProducts in the IFC project.
 
 .. csv-table::
    :header: "Filter", "Type", "Usage", "Example"
 
     "Class", "Add", "``[!] {{ifc_class_name}}``", "``IfcWall`` adds all IfcWall elements and their subclasses. ``! IfcWall`` subtracts all non-IfcWall elements from the filter group."
     "GlobalId", "Add", "``[!] {{global_id}}``", "``325Q7Fhnf67OZC$$r43uzK`` adds the single element with that GlobalId attribute. ``! 325Q7Fhnf67OZC$$r43uzK`` subtracts that single element."
-    "Attribute", "Filter", "``{{name}}{{=}}{{value}}``", "``Name=Foo`` specifies the criteria that elements must have a ``Name`` attribute with a value of ``Foo``. Attribute names must be spelled exactly the same as in IFC, which means that they must start with an uppercase character."
+    "Attribute", "Filter", "``{{name}}{{=}}{{value}}``", "``Name=Foo`` specifies the criteria that elements must have a ``Name`` attribute with a value of ``Foo``. Attribute names must be spelled exactly the same as in IFC, which means that they must start with an uppercase character. For convenience, ``PredefinedType`` will be get using :func:`ifcopenshell.util.element.get_predefined_type` instead of getting the attribute directly."
     "Property", "Filter", "``{{pset}}.{{prop}}{{=}}{{value}}``", "``Pset_WallCommon.FireRating=2HR`` specifies the criteria that elements must have a ``Pset_WallCommon`` property set, with a ``FireRating`` property within it with a value of ``2HR``. The property set name and the property name are separated by a ``.``."
     "Type", "Filter", "``type{{=}}{{value}}``", "``type=Foo`` specifies the criteria that elements must have a type which has a ``Name`` attribute with a value of ``Foo``."
     "Material", "Filter", "``material{{=}}{{value}}``", "``material=Foo`` specifies the criteria that elements must have a IfcMaterial assigned directly or indirectly (such as within a layer set). That IfcMaterial must have either a ``Name`` or ``Category`` attribute with a value of ``Foo``."
@@ -155,8 +161,9 @@ without needing to write complex code for it.
     "``types.count``", "Count the number of occurrences of a type."
     "``storey.Name``", "Get the ``Name`` attribute of the storey that the element is contained in."
     "``materials.count``", "Count the number of materials assigned to an element."
-    "``material.Name``", "Get the name of the assigned material."
-    "``material.item.0.Name``", "Get the name of the first item in a material set (e.g. the first material layer)"
+    "``material.Name``", "**IfcMaterial**: The name of the assigned material. **IfcMaterialLayerSet**: name of the LayerSetName. **IfcMaterialProfileSet**: The name of the overall material profile set. **IfcMaterialConstituent**: The name of the overall material constituent set."
+    "``material.item.0.Name``", "**IfcMaterial**: N/A. **IfcMaterialLayerSet**: The name of the 1st material layer. **IfcMaterialProfileSet**: The name of the 1st material profile. **IfcMaterialConstituent**: The name of the 1st material constituent."
+    "``material.item.Material.Name.0``", "**IfcMaterial**: The assigned material name. **IfcMaterialLayerSet**: The material name of the 1st material layer. **IfcMaterialProfileSet**: The material name of the 1st material profile. **IfcMaterialConstituent**: The material name of the 1st material constituent."
 
 The element value syntax works by specifying one or more query keys separated
 by a ``.`` character. Each query key returns data based of the results of the
@@ -188,6 +195,7 @@ Valid keys are:
     "``classification``", "Gets the element's classification reference(s)"
     "``group``", "Gets the element's group(s)"
     "``system``", "Gets the element's system(s). This is a subset of group(s)."
+    "``zone``", "Gets the element's zone(s). This is a subset of group(s)."
     "``material`` or ``mat``", "Gets the assigned material, which may be a material set."
     "``item`` or ``i``", "If the previous key returns a material set, gets the relevant material set items"
     "``materials`` or ``mats``", "Gets a list of IfcMaterials assigned directly or indirectly (such as via a material set) to the element"
@@ -240,6 +248,12 @@ nest formulas, for example ``concat(title("foo"), lower("Bar"))`` will produce
     "``title({{value}})``", "``title(""foo"")``", "``Foo``", "Titlecases a string."
     "``concat({{value}}[, {{value2}}]*)``", "``concat(""foo"", ""bar"")``", "``foobar``", "Concatenates two or more strings."
     "``round({{value}}, {{precision}})``", "``round(3.123, 0.1)``", "``3.1``", "Rounds ``{{value}}`` to the nearest ``{{precision}}``."
+    "``int({{value}})``", "``int(3.123)``", "``3``", "Truncates the decimal part of the ``{{value}}``."
     "``number({{value}}[, {{decimal_separator}}[, {{thousands_separator}}]])``", "``number(1234.56, "","", ""."")``", "``1.234,56``", "Formats {{value}} with an optional custom {{decimal_separator}} and {{thousands_separator}}. The default separators are ``.`` and ``,``."
     "``metric_length({{value}}, {{precision}}, {{decimals}})``", "``metric_length(3.123, 0.1, 2)``", "``3.10``", "Rounds ``{{value}}`` to the nearest ``{{precision}}`` then displays using a certain amount of decimal places."
     "``imperial_length({{value}}, {{precision}}, {{input_unit}}, {{output_unit}})``", "``imperial_length(3.22, 4, ""foot"")``", "``3' - 3 3/4""``", "``The {{value}}`` may be specified either as ``foot`` or ``inch`` depending on ``{{input_unit}}``. The ``{{value}}`` is then rounded to the nearest ``1/{{precision}}`` inch then formatted using fractional feet and inches if ``{{output_unit}}`` is set to ``foot`` or just inches if ``{{output_unit}}`` is set to ``inch``."
+
+When using queries in an IfcAnnotation tag surround with backticks. 
+Examples: 
+````number({{Qto_WallBaseQuantities.Width}}, ",",".")```` or 
+````round({{Qto_BuildingElementProxyQuantities.NetVolume}},.1)````

@@ -58,7 +58,7 @@ class SvIfcReadEntity(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.helper.S
             ifc_class = entity.is_a()
             file = SvIfcStore.get_file()
             if file:
-                schema_name = file.wrapped_data.schema
+                schema_name = file.schema_identifier
             else:
                 schema_name = "IFC4"
             self.schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(schema_name)

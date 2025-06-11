@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, constr
-from typing import List, Optional
+from typing import Optional
 
 
 # This file contains models used in both requests and responses during upload and download of documents.
@@ -80,7 +80,7 @@ class Document(BaseModel):
         example="908e1cd4-2e09-11ee-be56-0242ac120003",
     )
     file_description: FileDescription
-    parts: Optional[List[str]]
+    parts: Optional[list[str]]
 
 
 class DocumentVersion(Document):

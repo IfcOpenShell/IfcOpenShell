@@ -28,11 +28,8 @@ def edit_reference(
     IfcClassificationReference, consult the IFC documentation.
 
     :param reference: The IfcClassificationReference entity you want to edit
-    :type reference: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -43,7 +40,5 @@ def edit_reference(
         ifcopenshell.api.classification.edit_reference(model,
             reference=reference, attributes={"Name": "Foo"})
     """
-    settings = {"reference": reference, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["reference"], name, value)
+    for name, value in attributes.items():
+        setattr(reference, name, value)

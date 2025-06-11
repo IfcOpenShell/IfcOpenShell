@@ -24,53 +24,74 @@ import ifcopenshell.util.representation
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import ifcopenshell.api
+import ifcopenshell.api.type
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.geometry
 import bonsai.core.type as core
 import bonsai.core.root
-from bonsai.bim.ifc import IfcStore
+from typing import TYPE_CHECKING
 
 
 class AssignType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_type"
     bl_label = "Assign Type"
+    bl_description = "Assign a type to the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     relating_type: bpy.props.IntProperty()
     related_object: bpy.props.StringProperty()
 
+    if TYPE_CHECKING:
+        relating_type: int
+        related_object: str
+
     def _execute(self, context):
-        type = tool.Ifc.get().by_id(self.relating_type or int(context.active_object.BIMTypeProperties.relating_type))
-        related_objects = (
-            [bpy.data.objects.get(self.related_object)]
-            if self.related_object
-            else context.selected_objects or [context.active_object]
-        )
-        model_props = context.scene.BIMModelProperties
+        if self.relating_type:
+            relating_type = self.relating_type
+        else:
+            assert (obj := context.active_object)
+            props = tool.Type.get_object_type_props(obj)
+            relating_type = int(props.relating_type)
+        relating_type = tool.Ifc.get().by_id(relating_type)
+        if self.related_object:
+            related_objects = [bpy.data.objects[self.related_object]]
+        else:
+            related_objects = tool.Blender.get_selected_objects()
+        model_props = tool.Model.get_model_props()
         for obj in related_objects:
             element = tool.Ifc.get_entity(obj)
-            core.assign_type(tool.Ifc, tool.Type, element=element, type=type)
+            if not element or not element.is_a("IfcObject"):
+                continue
+            core.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
             if model_props.occurrence_name_style == "TYPE":
-                obj.name = tool.Model.generate_occurrence_name(type, element.is_a())
+                obj.name = tool.Model.generate_occurrence_name(relating_type, element.is_a())
 
 
 class UnassignType(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.unassign_type"
     bl_label = "Unassign Type"
+    bl_description = "Unassign a type from the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     related_object: bpy.props.StringProperty()
+
+    if TYPE_CHECKING:
+        related_object: str
 
     def _execute(self, context):
         def exclude_callback(attribute):
             return attribute.is_a("IfcProfileDef") and attribute.ProfileName
 
-        self.file = IfcStore.get_file()
-        objs = [bpy.data.objects.get(self.related_object)] if self.related_object else context.selected_objects
-        for obj in objs:
+        self.file = tool.Ifc.get()
+        if self.related_object:
+            related_objects = [bpy.data.objects[self.related_object]]
+        else:
+            related_objects = tool.Blender.get_selected_objects()
+
+        for obj in related_objects:
             element = tool.Ifc.get_entity(obj)
-            if not element or element.is_a("IfcElementType"):
+            if not element or not element.is_a("IfcObject"):
                 continue
-            ifcopenshell.api.run("type.unassign_type", self.file, related_objects=[element])
+            ifcopenshell.api.type.unassign_type(self.file, related_objects=[element])
 
             if element.Representation:
                 new_active_representation = None
@@ -113,8 +134,10 @@ class EnableEditingType(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.active_object.BIMTypeProperties.is_editing_type = True
-        context.active_object.BIMTypeProperties.relating_type_object = None
+        assert (obj := context.active_object)
+        props = tool.Type.get_object_type_props(obj)
+        props.is_editing_type = True
+        props.relating_type_object = None
         return {"FINISHED"}
 
 
@@ -125,8 +148,10 @@ class DisableEditingType(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        obj.BIMTypeProperties.is_editing_type = False
+        obj = bpy.data.objects[self.obj] if self.obj else context.active_object
+        assert obj
+        props = tool.Type.get_object_type_props(obj)
+        props.is_editing_type = False
         return {"FINISHED"}
 
 
@@ -185,7 +210,7 @@ class SelectSimilarType(bpy.types.Operator):
     related_object: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         objects = bpy.context.selected_objects
 
         # store relating types to avoid selecting same elements multiple times
@@ -198,12 +223,25 @@ class SelectSimilarType(bpy.types.Operator):
                 continue
             relating_types.add(relating_type)
 
+        result = ""
         for relating_type in relating_types:
             related_objects = ifcopenshell.util.element.get_types(relating_type)
+
             for element in related_objects:
                 obj = tool.Ifc.get_object(element)
                 if obj and obj in context.visible_objects:
                     obj.select_set(True)
+
+            # copy selection query to clipboard
+            related_objects_class = related_objects[0].is_a()
+            relating_type_name = relating_type.Name
+            if not result:
+                result = f'{related_objects_class}, type="{relating_type_name}"'
+            else:
+                result += f' + {related_objects_class}, type="{relating_type_name}"'
+            bpy.context.window_manager.clipboard = result
+            self.report({"INFO"}, f"({result}) was copied to the clipboard.")
+
         return {"FINISHED"}
 
 
@@ -214,7 +252,7 @@ class SelectTypeObjects(bpy.types.Operator):
     relating_type: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         relating_type = bpy.data.objects.get(self.relating_type) if self.relating_type else context.active_object
         at_least_one_selectable_typed_object = False
         for element in ifcopenshell.util.element.get_types(tool.Ifc.get_entity(relating_type)):
@@ -265,19 +303,6 @@ class RenameType(bpy.types.Operator, tool.Ifc.Operator):
         self.layout.prop(self, "name")
 
 
-class LaunchRenameType(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.launch_rename_type"
-    bl_label = "Launch Rename Type"
-    bl_options = {"REGISTER", "UNDO"}
-    element: bpy.props.IntProperty()
-    name: bpy.props.StringProperty(name="Name")
-
-    def execute(self, context):
-        # This stub operator is needed because operators from menu skip the invoke call
-        bpy.ops.bim.rename_type("INVOKE_DEFAULT", element=self.element, name=self.name)
-        return {"FINISHED"}
-
-
 class AutoRenameOccurrences(bpy.types.Operator):
     bl_idname = "bim.auto_rename_occurrences"
     bl_label = "Auto Rename Occurrences"
@@ -311,17 +336,17 @@ class DuplicateType(bpy.types.Operator, tool.Ifc.Operator):
             new_obj.data = obj.data.copy()
         new = bonsai.core.root.copy_class(tool.Ifc, tool.Collector, tool.Geometry, tool.Root, obj=new_obj)
         new.Name += " Copy"
-        bpy.ops.bim.load_type_thumbnails(ifc_class=new.is_a())
+        bpy.ops.bim.load_type_thumbnails()
         if obj in context.selectable_objects:
             tool.Blender.select_and_activate_single_object(context, new_obj)
         else:
             self.report({"INFO"}, "Type object can't be selected : It may be hidden or in an excluded collection.")
 
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
 
         ifc_class = new.is_a()
         # Set duplicated type as active in current tool.
         if ifc_class in (i[0] for i in (bonsai.bim.helper.get_enum_items(props, "ifc_class", context) or ()) if i):
-            context.scene.BIMModelProperties.ifc_class = new.is_a()
-            context.scene.BIMModelProperties.relating_type_id = str(new_obj.BIMObjectProperties.ifc_definition_id)
+            props.ifc_class = new.is_a()
+            props.relating_type_id = str(tool.Blender.get_ifc_definition_id(new_obj))
         return {"FINISHED"}

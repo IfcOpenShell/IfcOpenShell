@@ -17,8 +17,8 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.bim.helper
+import bonsai.tool as tool
 from bpy.types import Panel
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.search.data import SearchData
 
 
@@ -33,11 +33,9 @@ class BIM_PT_ifccsv(Panel):
 
     def draw(self, context):
         layout = self.layout
+        props = tool.Blender.get_csv_props()
 
-        scene = context.scene
-        props = scene.CsvProperties
-
-        if IfcStore.get_file():
+        if tool.Ifc.get():
             row = layout.row(align=True)
             row.prop(props, "should_load_from_memory")
             row.operator("bim.import_csv_attributes", icon="IMPORT", text="")
@@ -49,7 +47,7 @@ class BIM_PT_ifccsv(Panel):
             row.operator("bim.export_csv_attributes", icon="EXPORT", text="")
         row.prop(props, "should_show_settings", icon="PREFERENCES", text="")
 
-        if not IfcStore.get_file() or not props.should_load_from_memory:
+        if not tool.Ifc.get() or not props.should_load_from_memory:
             row = layout.row(align=True)
             row.prop(props, "csv_ifc_file")
             row.operator("bim.select_csv_ifc_file", icon="FILE_FOLDER", text="")
@@ -126,5 +124,8 @@ class BIM_PT_ifccsv(Panel):
             row.operator("bim.remove_csv_attribute", icon="X", text="").index = index
 
         row = layout.row(align=True)
-        row.operator("bim.export_ifccsv", icon="EXPORT", text="Export IFC to " + props.format.upper())
+        if props.format == "web":
+            row.operator("bim.export_ifccsv", icon="EXPORT", text="Open Web UI")
+        else:
+            row.operator("bim.export_ifccsv", icon="EXPORT", text="Export IFC to " + props.format.upper())
         row.operator("bim.import_ifccsv", icon="IMPORT")

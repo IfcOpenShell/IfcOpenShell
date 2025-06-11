@@ -43,6 +43,7 @@ class TestEnableEditingLibraryReferences:
 class TestDisableEditingLibraryReferences:
     def test_run(self, library):
         library.clear_editing_mode().should_be_called()
+        library.set_active_library(None).should_be_called()
         subject.disable_editing_library_references(library)
 
 

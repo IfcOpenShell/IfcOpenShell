@@ -21,7 +21,6 @@ import ifcopenshell
 import ifcopenshell.util.schema
 import ifcopenshell.util.attribute
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.prop import StrProperty, Attribute
 from bonsai.bim.module.profile.data import ProfileData
 from bpy.types import PropertyGroup
@@ -35,17 +34,23 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Union
 
 
-def get_profile_classes(self, context):
+def get_profile_classes(self: "BIMProfileProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
     if not ProfileData.is_loaded:
         ProfileData.load()
     return ProfileData.data["profile_classes"]
 
 
 def update_profile_name(self: "Profile", context: bpy.types.Context) -> None:
-    profile = tool.Ifc.get().by_id(self.ifc_definition_id)
+    from bonsai.bim.handler import refresh_ui_data
+
+    profile = tool.Ifc.get_entity_by_id(self.ifc_definition_id)
+    if not profile:
+        return
     profile.ProfileName = self.name
+    refresh_ui_data()
 
 
 class Profile(PropertyGroup):
@@ -53,17 +58,24 @@ class Profile(PropertyGroup):
     ifc_class: StringProperty(name="IFC Class")
     ifc_definition_id: IntProperty(name="IFC Definition ID")
 
+    if TYPE_CHECKING:
+        name: str
+        ifc_class: str
+        ifc_definition_id: int
 
-def update_active_profile_index(self, context):
-    ProfileData.data["active_profile_users"] = ProfileData.active_profile_users()
+
+def update_active_profile_index(self: "BIMProfileProperties", context: bpy.types.Context) -> None:
+    ProfileData.update_active_profile_data()
 
 
 class BIMProfileProperties(PropertyGroup):
     is_editing: BoolProperty(name="Is Editing")
     profiles: CollectionProperty(name="Profiles", type=Profile)
     active_profile_index: IntProperty(name="Active Profile Index", update=update_active_profile_index)
-    active_profile_id: IntProperty(name="Active Profile Id")
-    active_arbitrary_profile_id: IntProperty(name="Active Arbitrary Profile Id")
+    active_profile_id: IntProperty(name="Active Profile Id", description="Currently edited profile ID (attributes).")
+    active_arbitrary_profile_id: IntProperty(
+        name="Active Arbitrary Profile Id", description="Currently edited arbitrary profile ID."
+    )
     profile_attributes: CollectionProperty(name="Profile Attributes", type=Attribute)
     profile_classes: EnumProperty(items=get_profile_classes, name="Profile Classes")
     is_filtering_material_profiles: bpy.props.BoolProperty(
@@ -72,6 +84,26 @@ class BIMProfileProperties(PropertyGroup):
         description="Check to only show IfcProfileDefs attached to IfcMaterialProfiles",
         update=lambda self, context: bpy.ops.bim.load_profiles(),
     )
+    object_to_profile: PointerProperty(
+        name="Object to profile",
+        type=bpy.types.Object,
+        description=(
+            "Optional mesh object to use as a source for a new arbitrary profile.\n"
+            "Object must be a closed mesh and have at least 1 face"
+        ),
+        poll=lambda self, obj: obj.type == "MESH",
+    )
+
+    if TYPE_CHECKING:
+        is_editing: bool
+        profiles: bpy.types.bpy_prop_collection_idprop[Profile]
+        active_profile_index: int
+        active_profile_id: int
+        active_arbitrary_profile_id: int
+        profile_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        profile_classes: str
+        is_filtering_material_profiles: bool
+        object_to_profile: Union[bpy.types.Object, None]
 
 
 def generate_thumbnail_for_active_profile():
@@ -80,7 +112,7 @@ def generate_thumbnail_for_active_profile():
     if bpy.app.background:
         return
 
-    props = bpy.context.scene.BIMProfileProperties
+    props = tool.Profile.get_profile_props()
     ifc_file = tool.Ifc.get()
     preview_collection = ProfileData.preview_collection
 

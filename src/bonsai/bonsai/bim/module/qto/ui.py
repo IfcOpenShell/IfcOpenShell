@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bonsai.bim.module.qto.data import QtoData
 
 
@@ -32,7 +33,7 @@ class BIM_PT_qto(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        props = context.scene.BIMQtoProperties
+        props = tool.Qto.get_qto_props()
 
         row = layout.row()
         if context.selected_objects:
@@ -41,6 +42,7 @@ class BIM_PT_qto(bpy.types.Panel):
             row.label(text="Quantifying All Objects", icon="MOD_EDGESPLIT")
         row = layout.row()
         row.prop(props, "qto_rule", text="")
+        row.prop(props, "fallback", text="", icon="RADIOBUT_ON" if props.fallback else "RADIOBUT_OFF")
         row = layout.row()
         row.operator("bim.perform_quantity_take_off")
 
@@ -56,7 +58,7 @@ class BIM_PT_qto_manual(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        props = context.scene.BIMQtoProperties
+        props = tool.Qto.get_qto_props()
 
         row = layout.row()
         row.prop(props, "calculator")
@@ -82,7 +84,7 @@ class BIM_PT_qto_simple(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
-        props = context.scene.BIMQtoProperties
+        props = tool.Qto.get_qto_props()
 
         row = layout.row()
         row.prop(props, "qto_result", text="Results")
@@ -97,6 +99,8 @@ class BIM_PT_qto_simple(bpy.types.Panel):
         row.operator("bim.calculate_object_volumes")
         row = layout.row()
         row.operator("bim.calculate_formwork_area")
+        row = layout.row()
+        row.operator("bim.calculate_side_formwork_area")
 
 
 class BIM_PT_qto_cost(bpy.types.Panel):

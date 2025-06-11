@@ -26,9 +26,7 @@ def add_monetary_unit(file: ifcopenshell.file, currency: str = "DOLLARYDOO") -> 
     USD, GBP, AUD, MYR, etc.
 
     :param currency: The currency code
-    :type currency: str
     :return: The newly created IfcMonetaryUnit
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -41,6 +39,4 @@ def add_monetary_unit(file: ifcopenshell.file, currency: str = "DOLLARYDOO") -> 
         # Make it our default currency
         ifcopenshell.api.unit.assign_unit(model, units=[zwl])
     """
-    settings = {"currency": currency}
-
-    return file.create_entity("IfcMonetaryUnit", settings["currency"])
+    return file.create_entity("IfcMonetaryUnit", currency)

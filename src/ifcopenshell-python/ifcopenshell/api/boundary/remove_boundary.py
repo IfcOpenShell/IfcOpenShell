@@ -27,9 +27,7 @@ def remove_boundary(file: ifcopenshell.file, boundary: ifcopenshell.entity_insta
     boundary and its connection geometry is removed.
 
     :param boundary: The IfcRelSpaceBoundary you want to remove.
-    :type boundary: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -40,13 +38,11 @@ def remove_boundary(file: ifcopenshell.file, boundary: ifcopenshell.entity_insta
         # Let's remove it!
         ifcopenshell.api.boundary.remove_boundary(model, boundary=boundary)
     """
-    settings = {"boundary": boundary}
-
-    geometry = settings["boundary"].ConnectionGeometry
+    geometry = boundary.ConnectionGeometry
     if geometry:
-        settings["boundary"].ConnectionGeometry = None
+        boundary.ConnectionGeometry = None
         ifcopenshell.util.element.remove_deep2(file, geometry)
-    history = settings["boundary"].OwnerHistory
-    file.remove(settings["boundary"])
+    history = boundary.OwnerHistory
+    file.remove(boundary)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)

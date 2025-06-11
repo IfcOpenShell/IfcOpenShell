@@ -30,17 +30,24 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Literal, get_args
 
 
-def update_diff_json_file(self, context):
+def update_diff_json_file(self: "DiffProperties", context: bpy.types.Context) -> None:
     DiffData.data["diff_json"] = DiffData.diff_json()
+
+
+RelationshipType = Literal["type", "property", "container", "aggregate", "classification"]
 
 
 class Relationships(PropertyGroup):
     relationship: EnumProperty(
         name="Relationship",
-        items=[(r, r.capitalize(), r) for r in ["type", "property", "container", "aggregate", "classification"]],
+        items=[(r, r.capitalize(), r) for r in get_args(RelationshipType)],
     )
+
+    if TYPE_CHECKING:
+        relationship: RelationshipType
 
 
 class DiffProperties(PropertyGroup):
@@ -59,3 +66,12 @@ class DiffProperties(PropertyGroup):
         name="Active File",
         default="NEW",
     )
+
+    if TYPE_CHECKING:
+        diff_json_file: str
+        old_file: str
+        new_file: str
+        diff_relationships: bpy.types.bpy_prop_collection_idprop[Relationships]
+        filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
+        should_load_changed_elements: bool
+        active_file: Literal["NONE", "OLD", "NEW"]

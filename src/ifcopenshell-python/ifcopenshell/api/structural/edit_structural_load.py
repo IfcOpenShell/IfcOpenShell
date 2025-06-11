@@ -28,13 +28,8 @@ def edit_structural_load(
     IfcStructuralLoad, consult the IFC documentation.
 
     :param structural_load: The IfcStructuralLoad entity you want to edit
-    :type structural_load: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
     """
-    settings = {"structural_load": structural_load, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["structural_load"], name, value)
+    for name, value in attributes.items():
+        setattr(structural_load, name, value)

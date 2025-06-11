@@ -55,7 +55,7 @@ def assign_item_style(
         body = ifcopenshell.api.context.add_context(model,
             context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model3d)
 
-        # Let's create a new wall. The wall does not have any geometry yet.
+        # Let's create a new block shaped furniture. The furniture does not have any geometry yet.
         wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall")
 
         # Let's use the "3D Body" representation we created earlier to add a
@@ -81,9 +81,9 @@ def assign_item_style(
                 "Transparency": 0., # 0 is opaque, 1 is transparent
             })
 
-        # Now specifically our wall only will be coloured grey.
-        ifcopenshell.api.style.assign_representation_styles(model,
-            shape_representation=representation, styles=[style])
+        # Now specifically our wall's only item only will be coloured grey.
+        ifcopenshell.api.style.assign_item_style(model,
+            shape_representation=representation, style=style, item=representation.Items[0])
     """
     if not (styled_item := next(iter(item.StyledByItem), None)):
         if style is None:

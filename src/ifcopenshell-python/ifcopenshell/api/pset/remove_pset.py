@@ -28,11 +28,8 @@ def remove_pset(
     All properties that are part of this property set are also removed.
 
     :param product: The IfcObject to remove the property set from.
-    :type product: ifcopenshell.entity_instance
     :param pset: The IfcPropertySet or IfcElementQuantity to remove.
-    :type pset: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -45,27 +42,25 @@ def remove_pset(
         # Remove it!
         ifcopenshell.api.pset.remove_pset(model, product=wall_type, pset=pset)
     """
-    settings = {"product": product, "pset": pset}
-
     to_purge = []
     should_remove_pset = True
-    for inverse in file.get_inverse(settings["pset"]):
+    for inverse in file.get_inverse(pset):
         if inverse.is_a("IfcRelDefinesByProperties"):
             if not inverse.RelatedObjects or len(inverse.RelatedObjects) == 1:
                 to_purge.append(inverse)
             else:
                 related_objects = list(inverse.RelatedObjects)
-                related_objects.remove(settings["product"])
+                related_objects.remove(product)
                 inverse.RelatedObjects = related_objects
                 should_remove_pset = False
     if should_remove_pset:
         properties = []  # Predefined psets have no properties
-        if settings["pset"].is_a("IfcPropertySet"):
-            properties = settings["pset"].HasProperties or []
-        elif settings["pset"].is_a("IfcQuantitySet"):
-            properties = settings["pset"].Quantities or []
-        elif settings["pset"].is_a() in ("IfcMaterialProperties", "IfcProfileProperties"):
-            properties = settings["pset"].Properties or []
+        if pset.is_a("IfcPropertySet"):
+            properties = pset.HasProperties or []
+        elif pset.is_a("IfcQuantitySet"):
+            properties = pset.Quantities or []
+        elif pset.is_a() in ("IfcMaterialProperties", "IfcProfileProperties"):
+            properties = pset.Properties or []
         for prop in properties:
             if file.get_total_inverses(prop) != 1:
                 continue
@@ -75,8 +70,8 @@ def remove_pset(
                     file.remove(enumeration)
             file.remove(prop)
         # IfcMaterialProperties and IfcProfileProperties don't have OwnerHistory
-        history = getattr(settings["pset"], "OwnerHistory", None)
-        file.remove(settings["pset"])
+        history = getattr(pset, "OwnerHistory", None)
+        file.remove(pset)
         if history:
             ifcopenshell.util.element.remove_deep2(file, history)
     for element in to_purge:

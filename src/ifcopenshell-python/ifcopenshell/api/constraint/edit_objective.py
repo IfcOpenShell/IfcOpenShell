@@ -28,11 +28,8 @@ def edit_objective(
     IfcObjective, consult the IFC documentation.
 
     :param objective: The IfcObjective you want to edit.
-    :type objective: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -42,7 +39,5 @@ def edit_objective(
         ifcopenshell.api.constraint.edit_objective(model,
             objective=objective, attributes={"ConstraintGrade": "HARD"})
     """
-    settings = {"objective": objective, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["objective"], name, value)
+    for name, value in attributes.items():
+        setattr(objective, name, value)

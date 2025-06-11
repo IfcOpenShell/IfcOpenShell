@@ -28,7 +28,8 @@ from ..entity_instance import entity_instance
 
 from . import has_occ
 
-from typing import TypeVar, Union, Optional, Generator, Any, Literal, overload, TYPE_CHECKING
+from typing import TypeVar, Union, Optional, Any, Literal, overload, TYPE_CHECKING, cast
+from collections.abc import Generator, Iterable
 
 if TYPE_CHECKING:
     from OCC.Core import TopoDS
@@ -62,51 +63,58 @@ if has_occ:
 
 
 SETTING = Literal[
-    "mesher-linear-deflection",
-    "mesher-angular-deflection",
-    "reorient-shells",
-    "length-unit",
     "angle-unit",
-    "precision",
-    "dimensionality",
-    "layerset-first",
-    "disable-boolean-result",
-    "no-wire-intersection-check",
-    "no-wire-intersection-tolerance",
-    "precision-factor",
-    "debug-boolean",
+    "apply-default-materials",
     "boolean-attempt-2d",
-    "weld-vertices",
-    "use-world-coords",
-    "unify-shapes",
-    "use-material-names",
-    "convert-back-units",
+    "building-local-placement",
+    "cache-shapes",
+    "cgal-original-edges",
+    "circle-segments",
+    "compute-curvature",
+    "context-identifiers",
     "context-ids",
     "context-types",
-    "context-identifiers",
-    "iterator-output",
+    "convert-back-units",
+    "debug",
+    "dimensionality",
+    "disable-boolean-result",
     "disable-opening-subtractions",
-    "apply-default-materials",
-    "no-normals",
-    "generate-uvs",
-    "enable-layerset-slicing",
-    "element-hierarchy",
-    "validate",
     "edge-arrows",
-    "building-local-placement",
-    "site-local-placement",
+    "element-hierarchy",
+    "enable-layerset-slicing",
     "force-space-transparency",
-    "circle-segments",
+    "function-step-param",
+    "function-step-type",
+    "generate-uvs",
+    "iterator-output",
     "keep-bounding-boxes",
-    "piecewise-step-type",
-    "piecewise-step-param",
-    "use-python-opencascade",
-    "no-parallel-mapping",
-    "triangulation-type",
-    "model-rotation",
+    "layerset-first",
+    "length-unit",
+    "mesher-angular-deflection",
+    "mesher-linear-deflection",
     "model-offset",
+    "model-rotation",
+    "no-clean-triangulation",
+    "no-normals",
+    "no-parallel-mapping",
+    "no-wire-intersection-check",
+    "no-wire-intersection-tolerance",
+    "permissive-shape-reuse",
+    "precision-factor",
+    "precision",
+    "reorient-shells",
+    "site-local-placement",
+    "surface-colour",
+    "triangulation-type",
+    "unify-shapes",
+    "use-material-names",
+    "use-python-opencascade",
+    "use-world-coords",
+    "validate",
+    "weld-vertices",
 ]
 SERIALIZER_SETTING = Literal[
+    "base-uri",
     "use-element-names",
     "use-element-guids",
     "use-element-step-ids",
@@ -114,6 +122,7 @@ SERIALIZER_SETTING = Literal[
     "y-up",
     "ecef",
     "digits",
+    "wkt-use-section",
 ]
 
 # NOTE: hybrid-cgal-simple-opencascade is added just as an example
@@ -136,7 +145,7 @@ class settings_mixin:
     """
 
     def __init__(self, **kwargs):
-        super(settings_mixin, self).__init__()
+        super().__init__()
         for k, v in kwargs.items():
             self.set(getattr(self, k), v)
 
@@ -220,6 +229,55 @@ class settings_mixin:
         else:
             raise AttributeError("'Settings' object has no attribute '%s'" % k)
 
+    def build_parser(self, parser) -> None:
+        """
+        Accepts an argparse.ArgumentParser object, enumerates the settings in this container and
+        adds argument parser rules for each.
+        """
+        type_factories = {
+            "bool": bool,
+            "int": int,
+            "double": float,
+            "std::string": str,
+            "std::set<int>": lambda s: list(map(int, s.split(";"))),
+            "std::set<std::string>": lambda s: s.split(";"),
+            "std::vector<double>": lambda s: list(map(float, s.split(";"))),
+            "IteratorOutputOptions": int,
+            "FunctionStepMethod": int,
+            "OutputDimensionalityTypes": int,
+            "TriangulationMethod": int,
+        }
+        for nm in self.setting_names():
+            if nm == "use-python-opencascade":
+                ty == "bool"
+            else:
+                ty = self.get_type(nm)
+            if ty == "bool":
+                group = parser.add_mutually_exclusive_group()
+                group.add_argument(
+                    f"--{nm}",
+                    dest=nm.replace("-", "_"),
+                    action="store_true",
+                )
+                group.add_argument(
+                    f"--no-{nm}",
+                    dest=nm.replace("-", "_"),
+                    action="store_false",
+                )
+                parser.set_defaults(**{nm.replace("-", "_"): None})
+            else:
+                parser.add_argument(f"--{nm}", dest=nm.replace("-", "_"), type=type_factories[ty])
+
+    def apply_namespace(self, namespace) -> None:
+        """
+        Accepts an argparse.Namespace object, enumerates over the values in this namespace and
+        writes them to the settings when available
+        """
+        names = set(self.setting_names())
+        for k, v in namespace._get_kwargs():
+            if k.replace("_", "-") in names and v is not None:
+                self.set(k.replace("_", "-"), v)
+
 
 class serializer_settings(settings_mixin, ifcopenshell_wrapper.SerializerSettings):
     pass
@@ -259,6 +317,8 @@ class iterator(ifcopenshell_wrapper.Iterator):
             include_or_exclude_type = set(x.__class__.__name__ for x in include_or_exclude)
 
             if include_or_exclude_type == {"entity_instance"}:
+                include_or_exclude = cast(set[entity_instance], include_or_exclude)
+
                 if not all(inst.is_a("IfcProduct") for inst in include_or_exclude):
                     raise ValueError("include and exclude need to be an aggregate of IfcProduct")
 
@@ -287,6 +347,10 @@ class iterator(ifcopenshell_wrapper.Iterator):
                     break
 
 
+ClashType = Literal["protrusion", "pierce", "collision", "clearance"]
+CLASH_TYPE_ITEMS = ("protrusion", "pierce", "collision", "clearance")
+
+
 class tree(ifcopenshell_wrapper.tree):
     def __init__(self, file: Optional[file] = None, settings: Optional[settings] = None):
         args = [self]
@@ -305,7 +369,7 @@ class tree(ifcopenshell_wrapper.tree):
     def select(
         self,
         value: Union[
-            entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float], "TopoDS.TopoDS_Shape"
+            entity_instance, ifcopenshell_wrapper.BRepElement, tuple[float, float, float], TopoDS.TopoDS_Shape
         ],
         **kwargs,
     ) -> list[entity_instance]:
@@ -347,17 +411,39 @@ class tree(ifcopenshell_wrapper.tree):
             args.append(kwargs.get("extend", -1.0e-5))
         return [entity_instance(e) for e in ifcopenshell_wrapper.tree.select_box(*args)]
 
-    def clash_intersection_many(self, set_a, set_b, tolerance=0.002, check_all=True):
+    def clash_intersection_many(
+        self,
+        set_a: Iterable[entity_instance],
+        set_b: Iterable[entity_instance],
+        tolerance: float = 0.002,
+        check_all: bool = True,
+    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
         args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], tolerance, check_all]
         return ifcopenshell_wrapper.tree.clash_intersection_many(*args)
 
-    def clash_collision_many(self, set_a, set_b, allow_touching=False):
+    def clash_collision_many(
+        self, set_a: Iterable[entity_instance], set_b: Iterable[entity_instance], allow_touching=False
+    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
         args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], allow_touching]
         return ifcopenshell_wrapper.tree.clash_collision_many(*args)
 
-    def clash_clearance_many(self, set_a, set_b, clearance=0.05, check_all=False):
+    def clash_clearance_many(
+        self,
+        set_a: Iterable[entity_instance],
+        set_b: Iterable[entity_instance],
+        clearance: float = 0.05,
+        check_all: bool = False,
+    ) -> tuple[ifcopenshell_wrapper.clash, ...]:
         args = [self, [e.wrapped_data for e in set_a], [e.wrapped_data for e in set_b], clearance, check_all]
         return ifcopenshell_wrapper.tree.clash_clearance_many(*args)
+
+    @staticmethod
+    def get_clash_type(clash_type_i: int) -> ClashType:
+        """Convert clash type index to a readable string format.
+
+        :param clash_type_i: Type index that comes from ``clash.clash_type``.
+        """
+        return CLASH_TYPE_ITEMS[clash_type_i]
 
 
 def create_shape(
@@ -571,7 +657,10 @@ class serializers:
         hdf5 = ifcopenshell_wrapper.HdfSerializer
     except:
         pass
-
+    try:
+        collada = ifcopenshell_wrapper.ColladaSerializer
+    except:
+        pass
     # ttl is always available since it doesn't depend on any C++ libraries,
     # just people might be using an outdated binary
     if hasattr(ifcopenshell_wrapper, "TtlWktSerializer"):
@@ -582,3 +671,22 @@ class serializers:
         ) -> ifcopenshell_wrapper.SvgSerializer:
             out_filename = transform_string(out_filename)
             return ifcopenshell_wrapper.TtlWktSerializer(out_filename, geometry_settings, settings)
+
+    @classmethod
+    def guess_from_extension(cls, filepath: str):
+        ext = filepath.split(".")[-1]
+        mapping = {
+            "glb": "gltf",
+            "hdf": "hdf5",
+            "h5": "hdf5",
+            "hdf5": "hdf5",
+            "obj": "obj",
+            "svg": "svg",
+            "ttl": "ttl",
+            "xml": "xml",
+            "dae": "collada",
+        }
+        serializer_name = mapping.get(ext)
+        if not serializer_name:
+            raise ValueError(f"No serializer available for .{ext} file")
+        return getattr(cls, serializer_name)

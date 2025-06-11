@@ -25,9 +25,7 @@ def unassign_container(file: ifcopenshell.file, products: list[ifcopenshell.enti
     """Unassigns a container from products.
 
     :param product: A list of IfcProducts to remove the containment from.
-    :type product: list[ifcopenshell.entity_instance]
     :return: None
-    :rtype: None
 
     Example:
 
@@ -54,15 +52,11 @@ def unassign_container(file: ifcopenshell.file, products: list[ifcopenshell.enti
         # Not anymore!
         ifcopenshell.api.spatial.unassign_container(model, products=[wall])
     """
-    settings = {
-        "products": products,
-    }
-
-    products = set(settings["products"])
-    rels = set(rel for product in products if (rel := next(iter(product.ContainedInStructure), None)))
+    products_set = set(products)
+    rels = set(rel for product in products_set if (rel := next(iter(product.ContainedInStructure), None)))
 
     for rel in rels:
-        related_elements = set(rel.RelatedElements) - products
+        related_elements = set(rel.RelatedElements) - products_set
         if related_elements:
             rel.RelatedElements = list(related_elements)
             ifcopenshell.api.owner.update_owner_history(file, element=rel)

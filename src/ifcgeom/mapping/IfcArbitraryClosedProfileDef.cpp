@@ -26,6 +26,10 @@ using namespace ifcopenshell::geometry;
 taxonomy::ptr mapping::map_impl(const IfcSchema::IfcArbitraryClosedProfileDef* inst) {
 	auto loop = taxonomy::cast<taxonomy::loop>(map(inst->OuterCurve()));
 	if (loop) {
+		if (inst->ProfileType() == IfcSchema::IfcProfileTypeEnum::IfcProfileType_CURVE) {
+			return loop;
+		}
+
 		auto face = taxonomy::make<taxonomy::face>();
 		loop->external = true;
 		face->children = { loop };

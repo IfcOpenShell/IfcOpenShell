@@ -31,14 +31,10 @@ def edit_layer(
     IfcMaterialLayer, consult the IFC documentation.
 
     :param layer: The IfcMaterialLayer entity you want to edit
-    :type layer: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict, optional
     :param material: The IfcMaterial entity you want the layer to be made
         from.
-    :type material: ifcopenshell.entity_instance, optional
     :return: None
-    :rtype: None
 
     Example:
 
@@ -63,9 +59,7 @@ def edit_layer(
         layer = ifcopenshell.api.material.add_layer(model, layer_set=material_set, material=gypsum)
         ifcopenshell.api.material.edit_layer(model, layer=layer, attributes={"LayerThickness": 13})
     """
-    settings = {"layer": layer, "attributes": attributes or {}, "material": material}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["layer"], name, value)
-    if settings["material"]:
-        settings["layer"].Material = settings["material"]
+    for name, value in (attributes or {}).items():
+        setattr(layer, name, value)
+    if material:
+        layer.Material = material

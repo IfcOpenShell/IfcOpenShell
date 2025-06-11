@@ -24,23 +24,22 @@ import ifcopenshell
 import bonsai.bim.handler
 import bonsai.bim.import_ifc
 import bonsai.tool as tool
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from bonsai.bim.ifc import IfcStore
 
 
-class SelectDiffJsonFile(bpy.types.Operator):
+class SelectDiffJsonFile(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_diff_json_file"
     bl_label = "Select Diff JSON File"
+    bl_description = "Select filepath for IFC diff results."
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
+    filename_ext = ".json"
 
     def execute(self, context):
-        context.scene.DiffProperties.diff_json_file = self.filepath
+        props = tool.Blender.get_diff_props()
+        props.diff_json_file = self.filepath
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class VisualiseDiff(bpy.types.Operator):
@@ -50,7 +49,8 @@ class VisualiseDiff(bpy.types.Operator):
 
     def execute(self, context):
         ifc_file = tool.Ifc.get()
-        with open(context.scene.DiffProperties.diff_json_file, "r") as file:
+        props = tool.Blender.get_diff_props()
+        with open(props.diff_json_file, "r") as file:
             diff = json.load(file)
         for obj in context.visible_objects:
             obj.color = (1.0, 1.0, 1.0, 1.0)
@@ -65,13 +65,14 @@ class VisualiseDiff(bpy.types.Operator):
                 obj.color = (0.0, 0.0, 0.7, 1.0)
                 continue
 
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            if not (ifc_id := tool.Blender.get_ifc_definition_id(obj)):
                 continue
 
             ifc_file = ""
             for scene in obj.users_scene:
-                if scene.BIMProperties.ifc_file:
-                    ifc_file = scene.BIMProperties.ifc_file
+                bim_props = tool.Blender.get_bim_props(scene)
+                if bim_props.ifc_file:
+                    ifc_file = bim_props.ifc_file
                     if scene.library:
                         break
 
@@ -83,7 +84,7 @@ class VisualiseDiff(bpy.types.Operator):
                 element_file = ifc_file
 
             try:
-                element = element_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+                element = element_file.by_id(ifc_id)
             except:
                 continue
             global_id = getattr(element, "GlobalId", None)
@@ -100,55 +101,45 @@ class VisualiseDiff(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class SelectDiffOldFile(bpy.types.Operator):
+class SelectDiffOldFile(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_diff_old_file"
     bl_label = "Select Diff Old File"
+    bl_description = "Select filepath for an old IFC file to compare."
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
+    filename_ext = ".ifc"
 
     def execute(self, context):
-        context.scene.DiffProperties.old_file = self.filepath
+        props = tool.Blender.get_diff_props()
+        props.old_file = self.filepath
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class SelectDiffNewFile(bpy.types.Operator):
+class SelectDiffNewFile(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_diff_new_file"
     bl_label = "Select Diff New File"
+    bl_description = "Select filepath for a new IFC file to compare."
     bl_options = {"REGISTER", "UNDO"}
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
+    filename_ext = ".ifc"
 
     def execute(self, context):
-        context.scene.DiffProperties.new_file = self.filepath
+        props = tool.Blender.get_diff_props()
+        props.new_file = self.filepath
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class ExecuteIfcDiff(bpy.types.Operator):
+class ExecuteIfcDiff(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.execute_ifc_diff"
     bl_label = "Execute IFC Diff"
+    bl_description = "Compare two IFC files and save a json diff report by the provided filepath."
     filename_ext = ".json"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
-
-    def invoke(self, context, event):
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
     def execute(self, context):
         import ifcdiff
 
-        self.props = context.scene.DiffProperties
+        self.props = tool.Blender.get_diff_props()
 
         if tool.Ifc.get():
             if self.props.active_file == "NONE":
@@ -237,7 +228,8 @@ class SelectDiffObjects(bpy.types.Operator):
 
     def execute(self, context):
         ifc_file = tool.Ifc.get()
-        with open(context.scene.DiffProperties.diff_json_file, "r") as file:
+        props = tool.Blender.get_diff_props()
+        with open(props.diff_json_file, "r") as file:
             diff = json.load(file)
         for obj in context.visible_objects:
             obj.select_set(False)
@@ -252,13 +244,14 @@ class SelectDiffObjects(bpy.types.Operator):
                 obj.select_set(True)
                 continue
 
-            if not obj.BIMObjectProperties.ifc_definition_id:
+            if not (ifc_id := tool.Blender.get_ifc_definition_id(obj)):
                 continue
 
             ifc_file = ""
             for scene in obj.users_scene:
-                if scene.BIMProperties.ifc_file:
-                    ifc_file = scene.BIMProperties.ifc_file
+                bim_props = tool.Blender.get_bim_props(scene)
+                if bim_props.ifc_file:
+                    ifc_file = bim_props.ifc_file
                     if scene.library:
                         break
 
@@ -270,7 +263,7 @@ class SelectDiffObjects(bpy.types.Operator):
                 element_file = ifc_file
 
             try:
-                element = element_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+                element = element_file.by_id(ifc_id)
             except:
                 continue
             global_id = getattr(element, "GlobalId", None)

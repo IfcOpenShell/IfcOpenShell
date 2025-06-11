@@ -33,6 +33,7 @@ from bpy.props import (
 import bonsai.core.brick as core
 import bonsai.tool.brick as tool
 from bonsai.tool.brick import BrickStore
+from typing import TYPE_CHECKING
 
 
 def update_active_brick_index(self, context):
@@ -46,34 +47,41 @@ def get_libraries(self, context):
 
 
 def get_namespaces(self, context):
-    return [(uri, f"{alias}: {uri}", "") for alias, uri in BrickStore.namespaces]
+    global NAMESPACES_ENUM_ITEMS
+    NAMESPACES_ENUM_ITEMS = [(uri, f"{alias}: {uri}", "") for alias, uri in BrickStore.namespaces]
+    return NAMESPACES_ENUM_ITEMS
 
 
 def get_brick_entity_classes(self, context):
+    global ENTITY_CLASSES_ENUM_ITEMS
     entity = self.brick_entity_create_type
-    return [(uri, uri.split("#")[-1], "") for uri in BrickStore.entity_classes[entity]]
+    ENTITY_CLASSES_ENUM_ITEMS = [(uri, uri.split("#")[-1], "") for uri in BrickStore.entity_classes[entity]]
+    return ENTITY_CLASSES_ENUM_ITEMS
 
 
 def get_brick_roots(self, context):
-    return [(root, root, "") for root in BrickStore.root_classes]
+    global BRICK_ROOTS_ENUM_ITEMS
+    BRICK_ROOTS_ENUM_ITEMS = [(root, root, "") for root in BrickStore.root_classes]
+    return BRICK_ROOTS_ENUM_ITEMS
 
 
 def get_brick_relations(self, context):
-    relations = [(uri, uri.split("#")[-1], "") for uri in BrickStore.relationships]
+    global BRICK_RELATIONS_ENUM_ITEMS
+    BRICK_RELATIONS_ENUM_ITEMS = [(uri, uri.split("#")[-1], "") for uri in BrickStore.relationships]
     for relation in BrickschemaData.data["active_relations"]:
         if relation["predicate_name"] == "label":
-            return relations
-    relations.append(("http://www.w3.org/2000/01/rdf-schema#label", "label", ""))
-    return relations
+            return BRICK_RELATIONS_ENUM_ITEMS
+    BRICK_RELATIONS_ENUM_ITEMS.append(("http://www.w3.org/2000/01/rdf-schema#label", "label", ""))
+    return BRICK_RELATIONS_ENUM_ITEMS
 
 
-def update_view(self, context):
-    root = context.scene.BIMBrickProperties.brick_list_root
+def update_view(self: "BIMBrickProperties", context: bpy.types.Context) -> None:
+    root = self.brick_list_root
     core.set_brick_list_root(tool.Brick, brick_root=root, split_screen=False)
 
 
-def split_screen_update_view(self, context):
-    root = context.scene.BIMBrickProperties.split_screen_brick_list_root
+def split_screen_update_view(self: "BIMBrickProperties", context: bpy.types.Context) -> None:
+    root = self.split_screen_brick_list_root
     core.set_brick_list_root(tool.Brick, brick_root=root, split_screen=True)
 
 
@@ -82,6 +90,11 @@ class Brick(PropertyGroup):
     label: StringProperty(name="Label")
     uri: StringProperty(name="URI")
     total_items: IntProperty(name="Total Items")
+
+    if TYPE_CHECKING:
+        label: str
+        uri: str
+        total_items: int
 
 
 class BIMBrickProperties(PropertyGroup):
@@ -117,3 +130,28 @@ class BIMBrickProperties(PropertyGroup):
     split_screen_brick_list_root: EnumProperty(
         name="Split Screen Brick List Root", items=get_brick_roots, update=split_screen_update_view
     )
+
+    if TYPE_CHECKING:
+        active_brick_class: str
+        brick_breadcrumbs: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        bricks: bpy.types.bpy_prop_collection_idprop[Brick]
+        active_brick_index: int
+        libraries: str
+        set_list_root_toggled: bool
+        brick_list_root: str
+        namespace: str
+        new_brick_namespace_alias: str
+        new_brick_namespace_uri: str
+        new_brick_label: str
+        brick_entity_create_type: str
+        brick_entity_class: str
+        brick_create_relations_toggled: bool
+        brick_edit_relations_toggled: bool
+        new_brick_relation_type: str
+        new_brick_relation_object: str
+        split_screen_toggled: bool
+        split_screen_bricks: bpy.types.bpy_prop_collection_idprop[Brick]
+        split_screen_active_brick_index: int
+        split_screen_active_brick_class: str
+        split_screen_brick_breadcrumbs: bpy.types.bpy_prop_collection_idprop[StrProperty]
+        split_screen_brick_list_root: str

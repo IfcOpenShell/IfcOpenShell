@@ -23,6 +23,7 @@ import ifcopenshell.util.placement
 import ifcopenshell.util.schema
 import ifcopenshell.util.unit
 import bonsai.tool as tool
+from typing import Any, Union
 from mathutils import Vector
 
 
@@ -45,42 +46,34 @@ class ViewportData:
         cls.data = {"mode": cls.mode()}
 
     @classmethod
-    def mode(cls):
+    def mode(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
         obj_mode = ("OBJECT", "IFC Object Mode", "View and move the placements of objects", "OBJECT_DATAMODE", 0)
         item_mode = ("ITEM", "IFC Item Mode", "View individual representation items", "MESH_DATA", 1)
         edit_mode = ("EDIT", "IFC Edit Mode", "Edit representation items", "EDITMODE_HLT", 2)
 
         obj = bpy.context.active_object
-        element = tool.Ifc.get_entity(obj)
 
-        modes = [obj_mode]
-
-        if bpy.context.scene.BIMGeometryProperties.representation_obj:
+        modes: list[tuple[str, str, str, str, int]] = [obj_mode]
+        gprops = tool.Geometry.get_geometry_props()
+        if gprops.representation_obj:
             modes.append(item_mode)
 
         if not obj:
             return modes
 
-        if obj in bpy.context.scene.BIMProjectProperties.clipping_planes_objs:
+        element = tool.Ifc.get_entity(obj)
+        pprops = tool.Project.get_project_props()
+        if obj in pprops.clipping_planes_objs:
             pass
         elif element:
-            if (usage := tool.Model.get_usage_type(element)) and usage in ("LAYER1", "LAYER2"):
+            if tool.Geometry.is_locked(element):
                 pass
-            elif tool.Geometry.is_locked(element):
-                pass
-            elif usage == "PROFILE":
-                modes.append(edit_mode)
-            elif usage == "LAYER3":
-                modes.append(edit_mode)
-            elif obj.data and tool.Geometry.is_profile_based(obj.data):
+            elif obj.data and tool.Geometry.has_mesh_properties(obj.data) and tool.Geometry.is_profile_based(obj.data):
                 modes.append(edit_mode)
             elif element.is_a("IfcRelSpaceBoundary"):
                 modes.append(edit_mode)
             elif element.is_a("IfcGridAxis"):
                 modes.append(edit_mode)
-            elif tool.Blender.Modifier.is_editing_parameters(obj):
-                # This should go BEFORE the modifiers
-                pass
             elif tool.Blender.Modifier.is_roof(element):
                 modes.append(edit_mode)
             elif tool.Blender.Modifier.is_railing(element):
@@ -96,7 +89,7 @@ class ViewportData:
 
 
 class RepresentationsData:
-    data = {}
+    data: dict[str, Any] = {}
     is_loaded = False
 
     @classmethod
@@ -110,13 +103,17 @@ class RepresentationsData:
         cls.is_loaded = True
 
     @classmethod
-    def representations(cls):
-        results = []
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+    def representations(cls) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        obj = tool.Geometry.get_active_or_representation_obj()
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        assert element
 
         active_representation_id = None
-        if bpy.context.active_object.data and hasattr(bpy.context.active_object.data, "BIMMeshProperties"):
-            active_representation_id = bpy.context.active_object.data.BIMMeshProperties.ifc_definition_id
+        active_representation = tool.Geometry.get_active_representation(obj)
+        if active_representation:
+            active_representation_id = active_representation.id()
 
         for representation in tool.Geometry.get_representations_iter(element):
             representation_type = representation.RepresentationType
@@ -138,8 +135,8 @@ class RepresentationsData:
         return results
 
     @classmethod
-    def contexts(cls):
-        results = []
+    def contexts(cls) -> tool.Blender.BLENDER_ENUM_ITEMS:
+        results: list[tuple[str, str, str]] = []
         for element in tool.Ifc.get().by_type("IfcGeometricRepresentationContext", include_subtypes=False):
             results.append((str(element.id()), element.ContextType or "Unnamed", ""))
         for element in tool.Ifc.get().by_type("IfcGeometricRepresentationSubContext", include_subtypes=False):
@@ -162,22 +159,25 @@ class RepresentationsData:
         # Ignore objects without representations, e.g. IfcRelSpaceBoundary.
         if not cls.data["representations"]:
             return []
-        obj = bpy.context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
+        assert obj
         if not obj.data:
             return []
         element = tool.Ifc.get_entity(obj)
-        active_representation_id = obj.data.BIMMeshProperties.ifc_definition_id
-        base_representation = tool.Ifc.get().by_id(active_representation_id)
+        assert element
+        base_representation = tool.Geometry.get_active_representation(obj)
+        if not base_representation:
+            return []  # Maybe in profile editing mode
 
         # shape aspects matching context of the active representation
-        matching_shape_aspects = []
+        matching_shape_aspects: list[ifcopenshell.entity_instance] = []
         for shape_aspect in ifcopenshell.util.element.get_shape_aspects(element):
             matching_representation = tool.Geometry.get_shape_aspect_representation(shape_aspect, base_representation)
             if matching_representation:
                 matching_shape_aspects.append(shape_aspect)
 
         # blender enum items
-        new_shape_aspect = [("NEW", "Create A New Shape Aspect", "")]
+        new_shape_aspect = [("NEW", "New Shape Aspect", "")]
         return new_shape_aspect + [(str(s.id()), s.Name or "Unnamed", "") for s in matching_shape_aspects]
 
 
@@ -195,7 +195,7 @@ class RepresentationItemsData:
     @classmethod
     def total_items(cls) -> int:
         result = 0
-        obj = bpy.context.active_object
+        obj = tool.Geometry.get_active_or_representation_obj()
         assert obj
         element = tool.Geometry.get_active_representation(obj)
         if element:
@@ -222,9 +222,12 @@ class ConnectionsData:
         cls.is_loaded = True
 
     @classmethod
-    def connections(cls):
-        results = []
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+    def connections(cls) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        obj = bpy.context.active_object
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        assert element
 
         connected_to = getattr(element, "ConnectedTo", [])
         connected_from = getattr(element, "ConnectedFrom", [])
@@ -288,13 +291,16 @@ class ConnectionsData:
         return results
 
     @classmethod
-    def is_connection_realization(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+    def is_connection_realization(cls) -> Union[list[dict[str, Any]], None]:
+        obj = bpy.context.active_object
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        assert element
         connections = getattr(element, "IsConnectionRealization", None)
         if not connections:
             return
 
-        results = []
+        results: list[dict[str, Any]] = []
         for rel in connections:
             data = {
                 "realizing_elements_connection_type": rel.ConnectionType,
@@ -325,16 +331,19 @@ class DerivedCoordinatesData:
         cls.is_loaded = True
 
     @classmethod
-    def load_z_values(cls):
+    def load_z_values(cls) -> None:
         cls.z_values = [
             (bpy.context.active_object.matrix_world @ Vector(co))[2] for co in bpy.context.active_object.bound_box
         ]
 
     @classmethod
-    def load_collection(cls):
+    def load_collection(cls) -> None:
         cls.collection = None
         cls.collection_z = 0
-        element = tool.Ifc.get_entity(bpy.context.active_object)
+        obj = bpy.context.active_object
+        if not obj:
+            return
+        element = tool.Ifc.get_entity(obj)
         if not element:
             return
         parent = ifcopenshell.util.element.get_aggregate(element)
@@ -395,9 +404,9 @@ class PlacementData:
 
     @classmethod
     def load(cls):
-        cls.data = {"has_placement": cls.has_placement()}
+        cls.data: dict[str, Any] = {"has_placement": cls.has_placement()}
 
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         obj = bpy.context.active_object
         if obj and props.has_blender_offset:
             xyz = cls.original_xyz(obj)
@@ -418,13 +427,14 @@ class PlacementData:
         return False
 
     @classmethod
-    def original_xyz(cls, obj):
+    def original_xyz(cls, obj: bpy.types.Object) -> list[float]:
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
+        translation = obj.matrix_world.translation
         xyz = ifcopenshell.util.geolocation.xyz2enh(
-            obj.matrix_world[0][3],
-            obj.matrix_world[1][3],
-            obj.matrix_world[2][3],
+            translation[0],
+            translation[1],
+            translation[2],
             float(props.blender_offset_x) * unit_scale,
             float(props.blender_offset_y) * unit_scale,
             float(props.blender_offset_z) * unit_scale,

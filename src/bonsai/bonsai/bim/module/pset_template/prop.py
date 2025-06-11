@@ -19,7 +19,9 @@
 import os
 import bpy
 import ifcopenshell
+import ifcopenshell.util.attribute
 from ifcopenshell.util.doc import get_attribute_doc
+import bonsai.tool as tool
 from bonsai.bim.module.pset_template.data import PsetTemplatesData
 from bonsai.bim.prop import StrProperty, Attribute
 from bonsai.bim.ifc import IfcStore
@@ -34,6 +36,7 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING
 
 
 def updatePsetTemplateFiles(self, context):
@@ -79,49 +82,48 @@ def get_property_template_type(self, context):
     return PsetTemplatesData.data["property_template_type"]
 
 
-def get_template_type(self, context):
-    return [
-        (
-            "PSET_TYPEDRIVENONLY",
-            "Pset - IfcTypeObject",
-            "The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.",
-        ),
-        (
-            "PSET_TYPEDRIVENOVERRIDE",
-            "Pset - IfcTypeObject - Override",
-            "The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.",
-        ),
-        (
-            "PSET_OCCURRENCEDRIVEN",
-            "Pset - IfcObject",
-            "The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.",
-        ),
-        (
-            "PSET_PERFORMANCEDRIVEN",
-            "Pset - IfcPerformanceHistory",
-            "The property sets defined by this IfcPropertySetTemplate can only be assigned to IfcPerformanceHistory.",
-        ),
-        (
-            "QTO_TYPEDRIVENONLY",
-            "Qto - IfcTypeObject",
-            "The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.",
-        ),
-        (
-            "QTO_TYPEDRIVENOVERRIDE",
-            "Qto - IfcTypeObject - Override",
-            "The element quantity defined by this IfcPropertySetTemplate can be assigned to subtypes of IfcTypeObject and can be overridden by an element quantity with same name at subtypes of IfcObject.",
-        ),
-        (
-            "QTO_OCCURRENCEDRIVEN",
-            "Qto - IfcObject",
-            "The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.",
-        ),
-        (
-            "NOTDEFINED",
-            "Not defined",
-            "No restriction provided, the property sets defined by this IfcPropertySetTemplate can be assigned to any entity, if not otherwise restricted by the ApplicableEntity attribute.",
-        ),
-    ]
+TEMPLATE_TYPE_ENUM_ITEMS = (
+    (
+        "PSET_TYPEDRIVENONLY",
+        "Pset - IfcTypeObject",
+        "The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.",
+    ),
+    (
+        "PSET_TYPEDRIVENOVERRIDE",
+        "Pset - IfcTypeObject - Override",
+        "The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.",
+    ),
+    (
+        "PSET_OCCURRENCEDRIVEN",
+        "Pset - IfcObject",
+        "The property sets defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.",
+    ),
+    (
+        "PSET_PERFORMANCEDRIVEN",
+        "Pset - IfcPerformanceHistory",
+        "The property sets defined by this IfcPropertySetTemplate can only be assigned to IfcPerformanceHistory.",
+    ),
+    (
+        "QTO_TYPEDRIVENONLY",
+        "Qto - IfcTypeObject",
+        "The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcTypeObject.",
+    ),
+    (
+        "QTO_TYPEDRIVENOVERRIDE",
+        "Qto - IfcTypeObject - Override",
+        "The element quantity defined by this IfcPropertySetTemplate can be assigned to subtypes of IfcTypeObject and can be overridden by an element quantity with same name at subtypes of IfcObject.",
+    ),
+    (
+        "QTO_OCCURRENCEDRIVEN",
+        "Qto - IfcObject",
+        "The element quantity defined by this IfcPropertySetTemplate can only be assigned to subtypes of IfcObject.",
+    ),
+    (
+        "NOTDEFINED",
+        "Not defined",
+        "No restriction provided, the property sets defined by this IfcPropertySetTemplate can be assigned to any entity, if not otherwise restricted by the ApplicableEntity attribute.",
+    ),
+)
 
 
 class PsetTemplate(PropertyGroup):
@@ -138,7 +140,7 @@ class PsetTemplate(PropertyGroup):
         description=get_attribute_doc("IFC4", "IfcPropertySetTemplate", "Description"),
     )
     template_type: EnumProperty(
-        items=get_template_type,
+        items=TEMPLATE_TYPE_ENUM_ITEMS,
         name="Template Type",
         description=get_attribute_doc("IFC4", "IfcPropertySetTemplate", "TemplateType"),
     )
@@ -146,6 +148,13 @@ class PsetTemplate(PropertyGroup):
         name="Applicable Entity",
         description=get_attribute_doc("IFC4", "IfcPropertySetTemplate", "ApplicableEntity"),
     )
+
+    if TYPE_CHECKING:
+        global_id: str
+        name: str
+        description: str
+        template_type: str
+        applicable_entity: str
 
 
 class EnumerationValues(PropertyGroup):
@@ -172,8 +181,11 @@ class PropTemplate(PropertyGroup):
     template_type: EnumProperty(items=get_property_template_type, name="Template Type")
     enum_values: CollectionProperty(type=EnumerationValues)
 
-    def get_value_name(self):
-        ifc_data_type = IfcStore.get_schema().declaration_by_name(self.primary_measure_type)
+    def get_value_name(self) -> str:
+        if self.primary_measure_type == "-":
+            return "string_value"
+        schema = tool.Ifc.schema()
+        ifc_data_type = schema.declaration_by_name(self.primary_measure_type)
         data_type = ifcopenshell.util.attribute.get_primitive_type(ifc_data_type)
         if data_type == "string":
             return "string_value"
@@ -183,6 +195,16 @@ class PropTemplate(PropertyGroup):
             return "int_value"
         elif data_type == "float":
             return "float_value"
+        else:
+            assert False, "Unknown data type"
+
+    if TYPE_CHECKING:
+        global_id: str
+        name: str
+        description: str
+        primary_measure_type: str
+        template_type: str
+        enum_values: bpy.types.bpy_prop_collection_idprop[EnumerationValues]
 
 
 class BIMPsetTemplateProperties(PropertyGroup):
@@ -202,3 +224,11 @@ class BIMPsetTemplateProperties(PropertyGroup):
     active_prop_template_id: IntProperty(name="Active Prop Template Id")
     active_pset_template: PointerProperty(type=PsetTemplate)
     active_prop_template: PointerProperty(type=PropTemplate)
+
+    if TYPE_CHECKING:
+        pset_template_files: str
+        pset_templates: str
+        active_pset_template_id: int
+        active_prop_template_id: int
+        active_pset_template: PsetTemplate
+        active_prop_template: PropTemplate

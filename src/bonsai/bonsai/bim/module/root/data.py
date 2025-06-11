@@ -22,7 +22,6 @@ import ifcopenshell.util.element
 import ifcopenshell.util.schema
 from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc, get_class_suggestions
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
 from typing import Union
 
 
@@ -51,33 +50,18 @@ class IfcClassData:
         cls.data["ifc_class"] = cls.ifc_class()
         cls.data["ifc_predefined_types"] = cls.ifc_predefined_types()
         cls.data["can_reassign_class"] = cls.can_reassign_class()
+        cls.data["profile"] = cls.profile()
 
     @classmethod
     def ifc_products(cls):
-        products = [
-            "IfcElementType",
-            "IfcElement",
-            "IfcSpatialElement",
-            "IfcSpatialElementType",
-            "IfcStructuralItem",
-            "IfcAnnotation",
-            "IfcRelSpaceBoundary",
-        ]
+        products = tool.Root.get_ifc_products()
         version = tool.Ifc.get_schema()
-        if version == "IFC2X3":
-            products = [
-                "IfcElementType",
-                "IfcElement",
-                "IfcSpatialStructureElement",
-                "IfcStructuralItem",
-                "IfcAnnotation",
-                "IfcRelSpaceBoundary",
-            ]
         return [(e, e, (get_entity_doc(version, e) or {}).get("description", "")) for e in products]
 
     @classmethod
     def ifc_classes(cls):
-        ifc_product = bpy.context.scene.BIMRootProperties.ifc_product
+        rprops = tool.Root.get_root_props()
+        ifc_product = rprops.ifc_product
         declaration = tool.Ifc.schema().declaration_by_name(ifc_product)
         declarations = ifcopenshell.util.schema.get_subtypes(declaration)
         names = [d.name() for d in declarations]
@@ -86,17 +70,19 @@ class IfcClassData:
             if tool.Ifc.get_schema() in ("IFC2X3", "IFC4"):
                 names.extend(("IfcDoorStyle", "IfcWindowStyle"))
         if ifc_product == "IfcElement":
-            names.remove("IfcOpeningElement")
-            if tool.Ifc.get_schema() == "IFC4":
-                # Yeah, weird isn't it.
-                names.remove("IfcOpeningStandardCase")
+            feature_elements = ifcopenshell.util.schema.get_subtypes(
+                tool.Ifc.schema().declaration_by_name("IfcFeatureElement")
+            )
+            for feature_element in feature_elements:
+                names.remove(feature_element.name())
         version = tool.Ifc.get_schema()
         return [(c, c, (get_entity_doc(version, c) or {}).get("description", "")) for c in sorted(names)]
 
     @classmethod
     def ifc_predefined_types(cls):
         types_enum = []
-        ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
+        rprops = tool.Root.get_root_props()
+        ifc_class = rprops.ifc_class
         declaration = tool.Ifc.schema().declaration_by_name(ifc_class)
         version = tool.Ifc.get_schema()
         for attribute in declaration.attributes():
@@ -111,7 +97,7 @@ class IfcClassData:
         return types_enum
 
     @classmethod
-    def ifc_classes_suggestions(cls):
+    def ifc_classes_suggestions(cls) -> dict[str, list[dict[str, Union[str, None]]]]:
         # suggestions : dict[class_name: list[dict[predefined_type, name(optional)]]]
         suggestions = defaultdict(list)
         version = tool.Ifc.get_schema()
@@ -130,30 +116,33 @@ class IfcClassData:
 
     @classmethod
     def representation_template(cls):
-        ifc_class = bpy.context.scene.BIMRootProperties.ifc_class
+        rprops = tool.Root.get_root_props()
+        ifc_class = rprops.ifc_class
+        if ifc_class.startswith("IfcStructuralPoint"):
+            return [("VERTEX", "Vertex", "A single 3D point")]
+        elif ifc_class.startswith("IfcStructuralCurve"):
+            return [("EDGE", "Edge", "A straight edge between two points")]
+        elif ifc_class.startswith("IfcStructuralSurface"):
+            return [("FACE", "Face", "A planar face surface")]
         templates = [
             ("EMPTY", "No Geometry", "Start with an empty object"),
             None,
+            (
+                "OBJ",
+                "Tessellation From Object",
+                "Use an object as a template to create a new tessellation",
+            ),
+            (
+                "MESH",
+                "Custom Tessellation",
+                "Create a basic tessellated or faceted cube",
+            ),
+            (
+                "EXTRUSION",
+                "Custom Extruded Solid",
+                "An extrusion from an arbitrary profile",
+            ),
         ]
-        templates.extend(
-            [
-                (
-                    "OBJ",
-                    "Tessellation From Object",
-                    "Use an object as a template to create a new tessellation",
-                ),
-                (
-                    "MESH",
-                    "Custom Tessellation",
-                    "Create a basic tessellated or faceted cube",
-                ),
-                (
-                    "EXTRUSION",
-                    "Custom Extruded Solid",
-                    "An extrusion from an arbitrary profile",
-                ),
-            ]
-        )
         if ifc_class.endswith("Type") or ifc_class.endswith("Style"):
             templates.extend(
                 [
@@ -183,7 +172,7 @@ class IfcClassData:
             templates.extend([None, ("STAIR", "Stair", "Parametric stair")])
         elif ifc_class in ("IfcRailingType", "IfcRailing"):
             templates.extend([None, ("RAILING", "Railing", "Parametric railing")])
-        elif ifc_class in ("IfcRoofType", "IfcRoof"):
+        elif ifc_class in ("IfcRoofType", "IfcRoof", "IfcSlabType", "IfcSlab", "IfcCovering", "IfcCoveringType"):
             templates.extend([None, ("ROOF", "Roof", "Parametric roof with a constant pitch")])
         elif ifc_class and "Segment" in ifc_class:
             templates.extend(
@@ -289,3 +278,13 @@ class IfcClassData:
                 if element.is_a(product[0]):
                     return True
         return False
+
+    @classmethod
+    def profile(cls) -> list[tuple[str, str, str]]:
+        items = [("-", "-", "")]
+        ifc_file = tool.Ifc.get()
+        for profile in ifc_file.by_type("IfcProfileDef"):
+            if not (profile_name := profile.ProfileName):
+                continue
+            items.append((str(profile.id()), profile_name, profile.is_a()))
+        return items

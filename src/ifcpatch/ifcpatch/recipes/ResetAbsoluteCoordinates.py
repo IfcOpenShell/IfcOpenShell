@@ -26,7 +26,6 @@ from typing import Literal, Optional, Union
 class Patcher:
     def __init__(
         self,
-        src: str,
         file: ifcopenshell.file,
         logger: logging.Logger,
         mode: Literal[
@@ -99,7 +98,6 @@ class Patcher:
             # Reset all coordinates with an ordinate larger than 1000 by -500,-200,0
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "ResetAbsoluteCoordinates", "arguments": [False, 1000, -500,-200,0]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.mode = mode.lower()

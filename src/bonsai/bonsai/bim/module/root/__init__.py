@@ -24,7 +24,6 @@ classes = (
     operator.AssignClass,
     operator.DisableReassignClass,
     operator.EnableReassignClass,
-    operator.LaunchAddElement,
     operator.ReassignClass,
     operator.UnlinkObject,
     prop.BIMRootProperties,

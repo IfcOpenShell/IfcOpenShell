@@ -25,10 +25,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# mathutils is broken on Python < 3.10.
-# See: https://gitlab.com/ideasman42/blender-mathutils/-/merge_requests/3
-geometry = ["mathutils"]
-dev = ["pytest"]
+advanced = [
+  "networkx",
+]
+dev = [
+  "pytest",
+  "tabulate",
+]
 
 [project.urls]
 "Homepage" = "http://ifcopenshell.org"
@@ -39,3 +42,6 @@ include = ["ifcopenshell*"]
 
 [tool.setuptools.package-data]
 "*" = ["*.*"]
+
+[tool.ruff]
+extend = "../../pyproject.toml"

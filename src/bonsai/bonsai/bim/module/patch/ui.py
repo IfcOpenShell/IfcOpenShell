@@ -16,10 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.tool as tool
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.helper import draw_attributes
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
 
 
 class BIM_PT_patch(bpy.types.Panel):
@@ -36,8 +41,7 @@ class BIM_PT_patch(bpy.types.Panel):
         layout.use_property_split = True
         layout.use_property_decorate = False
 
-        scene = context.scene
-        props = scene.BIMPatchProperties
+        props = tool.Patch.get_patch_props()
         row = layout.row()
         prop_with_search(row, props, "ifc_patch_recipes")
 
@@ -50,10 +54,17 @@ class BIM_PT_patch(bpy.types.Panel):
             row.prop(props, "ifc_patch_input")
             row.operator("bim.select_ifc_patch_input", icon="FILE_FOLDER", text="")
 
-        row = layout.row(align=True)
-        row.prop(props, "ifc_patch_output")
-        row.operator("bim.select_ifc_patch_output", icon="FILE_FOLDER", text="")
+        if tool.Patch.does_patch_has_output(props.ifc_patch_recipes):
+            row = layout.row(align=True)
+            row.prop(props, "ifc_patch_output")
+            row.operator("bim.select_ifc_patch_output", icon="FILE_FOLDER", text="")
+
+        def draw_callback_(attribute: Attribute, row: bpy.types.UILayout) -> None:
+            if props.ifc_patch_recipes == "ExtractElements" and attribute.name == "Query":
+                row.operator("bim.patch_query_from_selected", text="", icon="EYEDROPPER")
 
         if props.ifc_patch_args_attr:
-            draw_attributes(props.ifc_patch_args_attr, layout)
+            draw_callback = draw_callback_ if props.ifc_patch_recipes == "ExtractElements" else None
+            draw_attributes(props.ifc_patch_args_attr, layout, callback=draw_callback)
+
         op = layout.operator("bim.execute_ifc_patch")

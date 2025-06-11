@@ -17,12 +17,27 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
-import json
 import ifcopenshell.api
-import ifcopenshell.util.attribute
+import ifcopenshell.api.constraint
 import bonsai.bim.helper
 import bonsai.tool as tool
-from bonsai.bim.ifc import IfcStore
+from typing import TYPE_CHECKING
+
+
+def get_active_object(context: bpy.types.Context, obj_name: str) -> bpy.types.Object:
+    if obj_name:
+        obj = bpy.data.objects[obj_name]
+    else:
+        assert (obj := context.active_object)
+    return obj
+
+
+def get_selected_objects(context: bpy.types.Context, obj_name: str) -> list[bpy.types.Object]:
+    if obj_name:
+        objs = [bpy.data.objects[obj_name]]
+    else:
+        objs = context.selected_objects
+    return objs
 
 
 class LoadObjectives(bpy.types.Operator):
@@ -31,7 +46,7 @@ class LoadObjectives(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        props = context.scene.BIMConstraintProperties
+        props = tool.Blender.get_constraint_props()
         props.constraints.clear()
         for constraint in tool.Ifc.get().by_type("IfcObjective"):
             new = props.constraints.add()
@@ -48,7 +63,8 @@ class DisableConstraintEditingUI(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.BIMConstraintProperties.is_editing = ""
+        props = tool.Blender.get_constraint_props()
+        props.is_editing = ""
         bpy.ops.bim.disable_editing_constraint()
         return {"FINISHED"}
 
@@ -59,8 +75,11 @@ class EnableEditingConstraint(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     constraint: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        constraint: int
+
     def execute(self, context):
-        props = context.scene.BIMConstraintProperties
+        props = tool.Blender.get_constraint_props()
         props.constraint_attributes.clear()
         bonsai.bim.helper.import_attributes2(tool.Ifc.get().by_id(self.constraint), props.constraint_attributes)
         props.active_constraint_id = self.constraint
@@ -73,7 +92,8 @@ class DisableEditingConstraint(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.BIMConstraintProperties.active_constraint_id = 0
+        props = tool.Blender.get_constraint_props()
+        props.active_constraint_id = 0
         return {"FINISHED"}
 
 
@@ -83,7 +103,7 @@ class AddObjective(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        result = ifcopenshell.api.run("constraint.add_objective", IfcStore.get_file())
+        result = ifcopenshell.api.constraint.add_objective(tool.Ifc.get())
         bpy.ops.bim.load_objectives()
         bpy.ops.bim.enable_editing_constraint(constraint=result.id())
         return {"FINISHED"}
@@ -95,20 +115,13 @@ class EditObjective(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMConstraintProperties
-        attributes = {}
-        for attribute in props.constraint_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            elif attribute.enum_items:
-                attributes[attribute.name] = attribute.enum_value
-            else:
-                attributes[attribute.name] = attribute.string_value
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "constraint.edit_objective",
-            self.file,
-            **{"objective": self.file.by_id(props.active_constraint_id), "attributes": attributes},
+        props = tool.Blender.get_constraint_props()
+        attributes = bonsai.bim.helper.export_attributes(props.constraint_attributes)
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.constraint.edit_objective(
+            ifc_file,
+            objective=ifc_file.by_id(props.active_constraint_id),
+            attributes=attributes,
         )
         bpy.ops.bim.load_objectives()
         return {"FINISHED"}
@@ -120,12 +133,13 @@ class RemoveConstraint(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     constraint: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        constraint: int
+
     def _execute(self, context):
-        props = context.scene.BIMConstraintProperties
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "constraint.remove_constraint", self.file, **{"constraint": self.file.by_id(self.constraint)}
-        )
+        props = tool.Blender.get_constraint_props()
+        self.file = tool.Ifc.get()
+        ifcopenshell.api.constraint.remove_constraint(self.file, constraint=self.file.by_id(self.constraint))
         if props.is_editing == "IfcObjective":
             bpy.ops.bim.load_objectives()
         return {"FINISHED"}
@@ -137,9 +151,12 @@ class EnableAssigningConstraint(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
+    if TYPE_CHECKING:
+        obj: str
+
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        props = obj.BIMObjectConstraintProperties
+        obj = get_active_object(context, self.obj)
+        props = tool.Blender.get_object_constraint_props(obj)
         if props.available_constraint_types == "IfcObjective":
             bpy.ops.bim.load_objectives()
         props.is_adding = props.available_constraint_types
@@ -152,9 +169,12 @@ class DisableAssigningConstraint(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
 
+    if TYPE_CHECKING:
+        obj: str
+
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj) if self.obj else context.active_object
-        props = obj.BIMObjectConstraintProperties
+        obj = get_active_object(context, self.obj)
+        props = tool.Blender.get_object_constraint_props(obj)
         props.is_adding = ""
         return {"FINISHED"}
 
@@ -166,18 +186,24 @@ class AssignConstraint(bpy.types.Operator, tool.Ifc.Operator):
     obj: bpy.props.StringProperty()
     constraint: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        obj: str
+        constraint: int
+
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        products = [self.file.by_id(obj_id) for obj in objs if (obj_id := obj.BIMObjectProperties.ifc_definition_id)]
+        objs = get_selected_objects(context, self.obj)
+        objs = [bpy.data.objects[self.obj]] if self.obj else context.selected_objects
+        products = [
+            self.file.by_id(obj_id)
+            for obj in objs
+            if (obj_id := tool.Blender.get_object_bim_props(obj).ifc_definition_id)
+        ]
         if products:
-            ifcopenshell.api.run(
-                "constraint.assign_constraint",
+            ifcopenshell.api.constraint.assign_constraint(
                 self.file,
-                **{
-                    "products": products,
-                    "constraint": self.file.by_id(self.constraint),
-                },
+                products=products,
+                constraint=self.file.by_id(self.constraint),
             )
         return {"FINISHED"}
 
@@ -189,17 +215,22 @@ class UnassignConstraint(bpy.types.Operator, tool.Ifc.Operator):
     obj: bpy.props.StringProperty()
     constraint: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        obj: str
+        constraint: int
+
     def _execute(self, context):
         self.file = tool.Ifc.get()
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else context.selected_objects
-        products = [self.file.by_id(obj_id) for obj in objs if (obj_id := obj.BIMObjectProperties.ifc_definition_id)]
+        objs = get_selected_objects(context, self.obj)
+        products = [
+            self.file.by_id(obj_id)
+            for obj in objs
+            if (obj_id := tool.Blender.get_object_bim_props(obj).ifc_definition_id)
+        ]
         if products:
-            ifcopenshell.api.run(
-                "constraint.unassign_constraint",
+            ifcopenshell.api.constraint.unassign_constraint(
                 self.file,
-                **{
-                    "products": products,
-                    "constraint": self.file.by_id(self.constraint),
-                },
+                products=products,
+                constraint=self.file.by_id(self.constraint),
             )
         return {"FINISHED"}

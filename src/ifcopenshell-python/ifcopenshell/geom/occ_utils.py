@@ -232,7 +232,7 @@ def serialize_shape(shape):
 
 
 def create_shape_from_serialization(
-    brep_object: Union[ifcopenshell_wrapper.SerializedElement, ifcopenshell_wrapper.Serialization]
+    brep_object: Union[ifcopenshell_wrapper.SerializedElement, ifcopenshell_wrapper.Serialization],
 ) -> Union[shape_tuple, TopoDS.TopoDS_Shape]:
     brep_data, occ_shape, styles, style_ids = None, None, (), ()
 

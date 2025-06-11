@@ -18,7 +18,8 @@
 
 import lark
 import ifcopenshell
-from typing import Optional, Union, Literal, Generator, Any
+from typing import Optional, Union, Literal, Any
+from collections.abc import Generator
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
 from ifcopenshell.util.doc import get_predefined_type_doc
 from ifcopenshell.util.element import get_psets
@@ -56,7 +57,9 @@ def get_total_quantity(root_element: ifcopenshell.entity_instance) -> Union[floa
 
 
 def calculate_applied_value(
-    root_element: ifcopenshell.entity_instance, cost_value: ifcopenshell.entity_instance, category_filter=None
+    root_element: ifcopenshell.entity_instance,
+    cost_value: ifcopenshell.entity_instance,
+    category_filter: Optional[str] = None,
 ) -> float:
     if cost_value.ArithmeticOperator and cost_value.Components:
         component_values = []
@@ -278,8 +281,8 @@ def get_cost_values(cost_item: ifcopenshell.entity_instance) -> list[dict[str, s
     return results
 
 
-def get_cost_schedule_types(file):
-    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(file.schema)
+def get_cost_schedule_types(file: ifcopenshell.file) -> list[dict[str, str]]:
+    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(file.schema_identifier)
     results = []
     declaration = schema.declaration_by_name("IfcCostSchedule")
     version = file.schema_identifier

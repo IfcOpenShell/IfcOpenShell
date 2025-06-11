@@ -28,7 +28,7 @@
 #  - An arc is reconstructed from 3 points instead of a full circle
 #  - You can now derive the center from an arc without generating geometry
 
-
+from __future__ import annotations
 import sys
 import bpy
 import math
@@ -36,12 +36,20 @@ import bmesh
 import mathutils.geometry
 from mathutils import Vector, Matrix, geometry
 import itertools
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.cad.prop import BIMCadProperties
 
 
 VTX_PRECISION = 1.0e-5
 
 
 class Cad:
+    @classmethod
+    def get_cad_props(cls) -> BIMCadProperties:
+        return bpy.context.scene.BIMCadProperties
+
     @classmethod
     def is_point_on_edge(cls, p, edge):
         """
@@ -94,6 +102,10 @@ class Cad:
         d1 = v1 - v2
         d2 = v3 - v2
 
+        # Rounding avoids problems when dealing with 180 degrees
+        d1 = Vector(round(c, 6) for c in d1)
+        d2 = Vector(round(c, 6) for c in d2)
+
         d1.normalize()
         d2.normalize()
 
@@ -110,17 +122,32 @@ class Cad:
         parameter = (
             round(axis.z, 2) < 0
             or (round(axis.y, 2) == 0 and round(axis.x < 0))
-            or (round(axis.x, 2) == 0 and round(axis.y < 0))
+            or (round(axis.x, 2) == 0 and round(axis.y > 0))
         )
         if new_angle is not None:
             rot_mat = Matrix.Rotation(new_angle, 3, axis)
             rot_vector = (d1 @ rot_mat) if parameter else (rot_mat @ d1)
+
+            # 180 degrees special cases
+            if abs(round(a, 4)) == round(math.pi, 4) and (
+                rot_vector.x == 0.0
+                and rot_vector.y == 0.0
+                or rot_vector.x == 0.0
+                and rot_vector.z == 0.0
+                or rot_vector.y == 0.0
+                and rot_vector.z == 0.0
+            ):
+                rot_vector *= -1
             return rot_vector
         else:
             sign = -1 if parameter else 1
 
             if degrees:
                 a = math.degrees(a)
+
+                # 180 degrees special cases
+                if abs(round(a, 2)) == abs(180.00):
+                    return -180.0
                 return a * sign
             else:
                 return a
@@ -162,7 +189,9 @@ class Cad:
         return geometry.intersect_line_plane(v1, v2, plane_co, plane_no)
 
     @classmethod
-    def intersect_edges(cls, edge1, edge2):
+    def intersect_edges(
+        cls, edge1: tuple[Vector, Vector], edge2: tuple[Vector, Vector]
+    ) -> Union[tuple[Vector, Vector], None]:
         """
         > takes 2 tuples, each tuple contains 2 vectors
         - prepares input for sending to intersect_line_line
@@ -196,9 +225,14 @@ class Cad:
         # in orthogonal view
         # https://en.wikipedia.org/wiki/Skew_lines#Nearest_points
 
+        is_2d = False
         # Starting and ending points
         P1, P1_end = edge1
         P2, P2_end = edge2
+        if len(P1) == 2:
+            is_2d = True
+            P1, P1_end = P1.to_3d(), P1_end.to_3d()
+            P2, P2_end = P2.to_3d(), P2_end.to_3d()
 
         # Directions
         d1 = (P1_end - P1).normalized()
@@ -207,7 +241,7 @@ class Cad:
         n = d1.cross(d2)
 
         # if n is zero, lines are parallel
-        if n.length == 0:
+        if abs(n.length) < 1e-6:
             return None, None
 
         n2 = d2.cross(n)
@@ -218,7 +252,10 @@ class Cad:
 
         C2 = P2 + ((P1 - P2).dot(n1) / (d2.dot(n1))) * d2
 
-        return C1, C2
+        if is_2d:
+            return C1.to_2d(), C2.to_2d()
+        else:
+            return C1, C2
 
     @classmethod
     def get_intersection(cls, edge1, edge2):

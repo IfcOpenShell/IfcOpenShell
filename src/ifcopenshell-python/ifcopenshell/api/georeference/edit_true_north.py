@@ -69,8 +69,4 @@ def edit_true_north(file: ifcopenshell.file, true_north: Optional[Union[tuple[fl
                 context.TrueNorth = file.create_entity("IfcDirection")
         else:
             context.TrueNorth = file.create_entity("IfcDirection")
-        direction = context.TrueNorth
-        if context.CoordinateSpaceDimension == 2:
-            direction.DirectionRatios = (x, y)
-        else:
-            direction.DirectionRatios = (x, y, 0.0)
+        context.TrueNorth.DirectionRatios = (x, y)

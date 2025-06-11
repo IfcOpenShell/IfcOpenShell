@@ -20,11 +20,13 @@ import bpy
 from . import ui, prop, operator, workspace, gizmo, decorator
 
 classes = (
+    operator.AddProjectLibrary,
     operator.AppendEntireLibrary,
     operator.AppendInspectedLinkedElement,
     operator.AppendLibraryElement,
     operator.AppendLibraryElementByQuery,
     operator.AssignLibraryDeclaration,
+    operator.BIM_FH_import_ifc,
     operator.BIM_OT_load_clipping_planes,
     operator.BIM_OT_save_clipping_planes,
     operator.ChangeLibraryElement,
@@ -34,16 +36,20 @@ classes = (
     operator.DisableCulling,
     operator.DisableEditingHeader,
     operator.EditHeader,
+    operator.EditProjectLibrary,
     operator.EnableCulling,
     operator.EnableEditingHeader,
     operator.ExportIFC,
     operator.FlipClippingPlane,
+    operator.IFCFileHandlerOperator,
     operator.LinkIfc,
     operator.LoadLink,
     operator.LoadLinkedProject,
     operator.LoadProject,
     operator.LoadProjectElements,
     operator.MeasureTool,
+    operator.MeasureFaceAreaTool,
+    operator.ClearMeasurement,
     operator.NewProject,
     operator.QueryLinkedElement,
     operator.RefreshClippingPlanes,
@@ -61,9 +67,11 @@ classes = (
     operator.UnlinkIfc,
     operator.UnloadLink,
     workspace.ExploreHotkey,
+    prop.LibraryBreadcrumb,
     prop.LibraryElement,
     prop.FilterCategory,
     prop.Link,
+    prop.EditedObj,
     prop.BIMProjectProperties,
     prop.MeasureToolSettings,
     ui.BIM_MT_new_project,
@@ -79,12 +87,6 @@ classes = (
     ui.BIM_UL_links,
     gizmo.ClippingPlane,
 )
-
-if bpy.app.version >= (4, 1, 0):
-    classes += (
-        operator.IFCFileHandlerOperator,
-        operator.BIM_FH_import_ifc,
-    )
 
 addon_keymaps = []
 

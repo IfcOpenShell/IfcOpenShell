@@ -22,6 +22,8 @@ import test.bim.bootstrap
 import bonsai.core.tool
 import bonsai.tool as tool
 import pytest
+import tempfile
+from pathlib import Path
 from bonsai.tool.ifc import Ifc as subject
 
 
@@ -40,12 +42,14 @@ class TestSet(test.bim.bootstrap.NewFile):
 class TestGet(test.bim.bootstrap.NewFile):
     def test_getting_an_ifc_dataset_from_a_ifc_spf_filepath(self):
         assert subject.get() is None
-        bpy.context.scene.BIMProperties.ifc_file = "test/files/basic.ifc"
+        props = tool.Blender.get_bim_props()
+        props.ifc_file = "test/files/basic.ifc"
         result = subject.get()
         assert isinstance(result, ifcopenshell.file)
 
     def test_getting_the_active_ifc_dataset_regardless_of_ifc_path(self):
-        bpy.context.scene.BIMProperties.ifc_file = "test/files/basic.ifc"
+        props = tool.Blender.get_bim_props()
+        props.ifc_file = "test/files/basic.ifc"
         ifc = ifcopenshell.file()
         subject.set(ifc)
         assert subject.get() == ifc
@@ -91,7 +95,7 @@ class TestIsMoved(test.bim.bootstrap.NewFile):
         tool.Geometry.record_object_position(obj)
         assert subject.is_moved(obj) is False
 
-        obj.matrix_world[0][2] += 1
+        obj.matrix_world[0][3] += 1
         assert subject.is_moved(obj) is True
 
     def test_that_a_type_or_project_never_moves_but_a_grid_axis_does(self):
@@ -127,14 +131,16 @@ class TestGetEntity(test.bim.bootstrap.NewFile):
 
     def test_attempting_without_a_file(self):
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMObjectProperties.ifc_definition_id = 1
+        props = tool.Blender.get_object_bim_props(obj)
+        props.ifc_definition_id = 1
         assert subject.get_entity(obj) is None
 
     def test_attempting_to_get_an_invalidly_linked_object(self):
         ifc = ifcopenshell.file()
         subject.set(ifc)
         obj = bpy.data.objects.new("Object", None)
-        obj.BIMObjectProperties.ifc_definition_id = 1
+        props = tool.Blender.get_object_bim_props(obj)
+        props.ifc_definition_id = 1
         assert subject.get_entity(obj) is None
 
 
@@ -189,7 +195,7 @@ class TestLink(test.bim.bootstrap.NewFile):
         element = ifc.create_entity("IfcShapeRepresentation")
         obj = bpy.data.meshes.new("Material")
         subject.link(element, obj)
-        assert obj.BIMMeshProperties.ifc_definition_id == element.id()
+        assert tool.Geometry.get_mesh_props(obj).ifc_definition_id == element.id()
 
 
 class TestUnlink(test.bim.bootstrap.NewFile):
@@ -233,3 +239,102 @@ class TestUnlink(test.bim.bootstrap.NewFile):
             subject.unlink(element=element, obj=obj)
         assert subject.get_entity(obj) == element
         assert subject.get_object(element) == obj
+
+
+class TestUri(test.bim.bootstrap.NewFile):
+    def test_get_uri(self):
+        ifc = ifcopenshell.file()
+        subject.set(ifc)
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            base_path = Path(tmp_dir)
+            project_dir = base_path / "project"
+            project_dir.mkdir()
+            path = project_dir / "project.ifc"
+            test_name = "test.xml"
+            test_filepath = project_dir / test_name
+            test_filepath.touch()
+            path.touch()
+            subject.set_path(subject.normalize_path(path))
+
+            # Test absolute filepaths.
+            abs_filepath = str(test_filepath)
+            assert subject.get_uri(abs_filepath, False) == subject.normalize_path(abs_filepath)
+            assert subject.get_uri(abs_filepath, True) == test_name
+
+            # Test relative filepaths.
+            rel_filepath = test_name
+            with pytest.raises(ValueError):
+                subject.get_uri(rel_filepath, False)
+
+            assert subject.get_uri(rel_filepath, True) == test_name
+
+            # Test that paths are resolved, but keeping symlinks.
+            link_name = "link.xml"
+            link_path = base_path / link_name
+            link_path.symlink_to(test_filepath)
+
+            # Test absolute paths.
+            abs_filepath = test_filepath.parent / ".." / link_name
+            assert subject.get_uri(abs_filepath, False) == subject.normalize_path(abs_filepath)
+            assert subject.get_uri(abs_filepath, True) == "../" + link_name
+
+            # Test relative paths.
+            rel_filepath = "../" + link_name
+            with pytest.raises(ValueError):
+                subject.get_uri(rel_filepath, False)
+            assert subject.get_uri(rel_filepath, True) == rel_filepath
+
+    def test_resolve_uri(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            base_path = Path(tmp_dir)
+            project_dir = base_path / "project"
+            project_dir.mkdir()
+            path = project_dir / "project.ifc"
+            path.touch()
+            subject.set_path(subject.normalize_path(path))
+            test_name = "test.xml"
+            test_filepath = project_dir / test_name
+            test_filepath.touch()
+
+            # Test absolute filepaths.
+            abs_filepath = str(test_filepath)
+            assert subject.resolve_uri(abs_filepath) == subject.normalize_path(abs_filepath)
+            rel_filepath = test_name
+            assert subject.resolve_uri(rel_filepath) == subject.normalize_path(abs_filepath)
+
+            # Test that paths are resolved, but keeping symlinks.
+            link_name = "link.xml"
+            link_path = base_path / link_name
+            link_path.symlink_to(test_filepath)
+
+            # Test absolute path.
+            abs_filepath = test_filepath.parent / ".." / link_name
+            assert subject.resolve_uri(abs_filepath) == subject.normalize_path(abs_filepath)
+
+            # Test relative path.
+            rel_filepath = "../" + link_name
+            assert subject.resolve_uri(rel_filepath) == subject.normalize_path(abs_filepath)
+
+    def test_normalize_path(self):
+        # Posix format.
+        path = r"test\test.txt"
+        assert subject.normalize_path(path) == "test/test.txt"
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            base_path = Path(tmp_dir)
+            project_path = base_path / "project"
+            project_path.mkdir()
+            original_file = project_path / "test.xml"
+            original_file.touch()
+
+            link_name = "link.xml"
+            link_path = project_path / link_name
+            link_path.symlink_to(original_file)
+
+            # Absolute path.
+            abs_path = project_path / ".." / link_name
+            assert subject.normalize_path(abs_path) == (base_path / link_name).as_posix()
+
+            rel_path = "../" + link_name
+            assert subject.normalize_path(rel_path) == rel_path

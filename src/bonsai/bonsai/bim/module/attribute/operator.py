@@ -19,28 +19,54 @@
 import bpy
 import json
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.attribute
 import ifcopenshell.guid
 import ifcopenshell.util.element
 import bonsai.bim.helper
 import bonsai.tool as tool
 import bonsai.core.attribute as core
-from bonsai.bim.ifc import IfcStore
+import bonsai.core.spatial
+from typing import TYPE_CHECKING
 
 
-class EnableEditingAttributes(bpy.types.Operator):
+def get_objs_for_operation(
+    operator_properties: "AttributesOperator", context: bpy.types.Context
+) -> list[bpy.types.Object]:
+    if operator_properties.obj:
+        return [bpy.data.objects[operator_properties.obj]]
+    if operator_properties.mass_operation:
+        return context.selected_objects[:]
+    obj = context.active_object
+    assert obj
+    return [obj]
+
+
+class AttributesOperator:
+    obj: bpy.props.StringProperty(options={"SKIP_SAVE"})
+    mass_operation: bpy.props.BoolProperty(default=False, options={"SKIP_SAVE"})
+
+    if TYPE_CHECKING:
+        obj: str
+        mass_operation: bool
+
+    def invoke(self, context, event):
+        self.mass_operation = event.alt
+        return self.execute(context)
+
+
+class EnableEditingAttributes(bpy.types.Operator, AttributesOperator):
     bl_idname = "bim.enable_editing_attributes"
     bl_label = "Enable Editing Attributes"
+    bl_description = "ALT + Left Click to enable editing attributes on all selected objects"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
 
-    def execute(self, context):
-        self.file = IfcStore.get_file()
-        obj = bpy.data.objects[self.obj]
-        props = obj.BIMAttributeProperties
+    def enable_editing_attribute_on_obj(self, obj: bpy.types.Object) -> None:
+        props = tool.Blender.get_object_attribute_props(obj)
         props.attributes.clear()
 
         element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
         has_inherited_predefined_type = False
         if not element.is_a("IfcTypeObject") and (element_type := ifcopenshell.util.element.get_type(element)):
             # Allow for None due to https://github.com/buildingSMART/IFC4.3.x-development/issues/818
@@ -66,52 +92,59 @@ class EnableEditingAttributes(bpy.types.Operator):
 
         bonsai.bim.helper.import_attributes2(element, props.attributes, callback=callback)
         props.is_editing_attributes = True
+
+    def execute(self, context):
+        for obj in get_objs_for_operation(self, context):
+            self.enable_editing_attribute_on_obj(obj)
         return {"FINISHED"}
 
 
-class DisableEditingAttributes(bpy.types.Operator):
+class DisableEditingAttributes(bpy.types.Operator, AttributesOperator):
     bl_idname = "bim.disable_editing_attributes"
     bl_label = "Disable Editing Attributes"
+    bl_description = "ALT + Left Click to disable editing attributes on all selected objects"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
+
+    def disable_editing_attributes_on_obj(self, obj: bpy.types.Object) -> None:
+        props = tool.Blender.get_object_attribute_props(obj)
+        props.is_editing_attributes = False
 
     def execute(self, context):
-        obj = bpy.data.objects.get(self.obj)
-        props = obj.BIMAttributeProperties
-        props.is_editing_attributes = False
+        for obj in get_objs_for_operation(self, context):
+            self.disable_editing_attributes_on_obj(obj)
         return {"FINISHED"}
 
 
 class EditAttributes(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.edit_attributes"
     bl_label = "Edit Attributes"
+    bl_description = "Edit the attributes of the active object"
     bl_options = {"REGISTER", "UNDO"}
-    obj: bpy.props.StringProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        obj = bpy.data.objects.get(self.obj)
-        props = obj.BIMAttributeProperties
-        product = tool.Ifc.get_entity(obj)
+        self.file = tool.Ifc.get()
+        obj = tool.Blender.get_active_object(is_selected=False)
+        if not obj or not (element := tool.Ifc.get_entity(obj)):
+            return
 
         def callback(attributes, prop):
             if prop.name in ("RefLatitude", "RefLongitude"):
-                if prop.is_null:
-                    attributes[prop.name] = None
-                else:
+                if not prop.is_null:
                     try:
                         attributes[prop.name] = json.loads(prop.string_value)
                     except:
                         attributes[prop.name] = None
-                return True
+                    return True
 
+        props = tool.Blender.get_object_attribute_props(obj)
         attributes = bonsai.bim.helper.export_attributes(props.attributes, callback=callback)
-        ifcopenshell.api.run("attribute.edit_attributes", self.file, product=product, attributes=attributes)
+        ifcopenshell.api.attribute.edit_attributes(self.file, product=element, attributes=attributes)
 
-        if (name := tool.Loader.get_name(product)) and obj.name != name:
-            obj.name = name
+        tool.Root.set_object_name(obj, element)
         bpy.ops.bim.disable_editing_attributes(obj=obj.name)
-        return {"FINISHED"}
+
+        if tool.Root.is_spatial_element(element):
+            bonsai.core.spatial.import_spatial_decomposition(tool.Spatial)
 
 
 class GenerateGlobalId(bpy.types.Operator, tool.Ifc.Operator):
@@ -138,13 +171,12 @@ class GenerateGlobalId(bpy.types.Operator, tool.Ifc.Operator):
                 element.GlobalId = ifcopenshell.guid.new()
 
         obj = context.active_object
-        if not obj or not obj.BIMAttributeProperties.is_editing_attributes:
+        if not obj or not (props := tool.Blender.get_object_attribute_props(obj)).is_editing_attributes:
             return {"FINISHED"}
 
-        props = obj.BIMAttributeProperties
         element = tool.Ifc.get_entity(obj)
 
-        if not element.is_a("IfcRoot"):
+        if not element or not element.is_a("IfcRoot"):
             return {"FINISHED"}
 
         if self.use_selected and obj in context.selected_objects:
@@ -160,9 +192,15 @@ class GenerateGlobalId(bpy.types.Operator, tool.Ifc.Operator):
 class CopyAttributeToSelection(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.copy_attribute_to_selection"
     bl_label = "Copy Attribute To Selection"
+    bl_options = {"REGISTER", "UNDO"}
     name: bpy.props.StringProperty()
 
     def _execute(self, context):
-        value = context.active_object.BIMAttributeProperties.attributes.get(self.name).get_value()
-        for obj in tool.Blender.get_selected_objects():
-            core.copy_attribute_to_selection(tool.Ifc, name=self.name, value=value, obj=obj)
+        obj = tool.Blender.get_active_object()
+        assert obj
+        props = tool.Blender.get_object_attribute_props(obj)
+        value = props.attributes[self.name].get_value()
+        total = core.copy_attribute_to_selection(
+            tool.Ifc, tool.Blender, tool.Root, tool.Spatial, name=self.name, value=value
+        )
+        self.report({"INFO"}, f"Attribute was successfully copied to {total} elements.")

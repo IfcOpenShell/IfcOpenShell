@@ -35,9 +35,7 @@ def add_layer(file: ifcopenshell.file, name: str = "Unnamed") -> ifcopenshell.en
     may also use this layer information for filtering.
 
     :param name: The name of the layer. Defaults to "Unnamed".
-    :type name: str, optional
     :return: The newly created IfcPresentationLayerAssignment element
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 

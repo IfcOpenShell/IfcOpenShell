@@ -18,7 +18,7 @@
 
 
 class Patcher:
-    def __init__(self, src, file, logger):
+    def __init__(self, file, logger):
         """Removes the built-in Revit Uniformat classification.
 
         Revit has a bug (see https://github.com/Autodesk/revit-ifc/issues/486)
@@ -31,7 +31,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "RemoveRevitUniformatClassification"})
         """
-        self.src = src
         self.file = file
         self.logger = logger
 

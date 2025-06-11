@@ -18,11 +18,11 @@
 
 # ############################################################################ #
 
+from __future__ import annotations
 import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.helper
-import bonsai.bim.module.sequence.helper as helper
 import json
 import time
 import isodate
@@ -31,10 +31,17 @@ import ifcopenshell.util.date as ifcdateutils
 import ifcopenshell.util.cost
 import ifcopenshell.util.resource
 import ifcopenshell.util.constraint
-from typing import Any, Union
+from typing import Any, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.resource.prop import BIMResourceProperties
 
 
 class Resource(bonsai.core.tool.Resource):
+    @classmethod
+    def get_resource_props(cls) -> BIMResourceProperties:
+        return bpy.context.scene.BIMResourceProperties
+
     @classmethod
     def load_resources(cls) -> None:
         def create_new_resource_li(resource, level_index):
@@ -97,6 +104,7 @@ class Resource(bonsai.core.tool.Resource):
         props.active_resource_id = resource.id()
         props.resource_attributes.clear()
         props.editing_resource_type = "ATTRIBUTES"
+        cls.update_cost_values_ui_data()
 
     @classmethod
     def get_resource_attributes(cls) -> dict[str, Any]:
@@ -109,6 +117,7 @@ class Resource(bonsai.core.tool.Resource):
         props.active_resource_time_id = resource.Usage.id()
         props.active_resource_id = resource.id()
         props.editing_resource_type = "USAGE"
+        cls.update_cost_values_ui_data()
 
     @classmethod
     def get_resource_time(cls, resource: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
@@ -153,6 +162,7 @@ class Resource(bonsai.core.tool.Resource):
         props = bpy.context.scene.BIMResourceProperties
         props.active_resource_id = resource.id()
         props.editing_resource_type = "COSTS"
+        cls.update_cost_values_ui_data()
 
     @classmethod
     def disable_editing_resource_cost_value(cls) -> None:
@@ -263,6 +273,7 @@ class Resource(bonsai.core.tool.Resource):
         props.active_resource_id = resource.id()
         props.editing_resource_type = "QUANTITY"
         props.active_resource_class = resource.is_a()
+        cls.update_cost_values_ui_data()
 
     @classmethod
     def enable_editing_resource_quantity(cls, resource_quantity: ifcopenshell.entity_instance) -> None:
@@ -300,10 +311,17 @@ class Resource(bonsai.core.tool.Resource):
         from ifc4d.csv2ifc import Csv2Ifc
 
         start = time.time()
-        p62ifc = Csv2Ifc()
-        p62ifc.csv = file_path
-        p62ifc.file = tool.Ifc.get()
-        p62ifc.execute()
+        csv2ifc = Csv2Ifc(file_path, tool.Ifc.get())
+        csv2ifc.execute()
+        print("Importing Resources CSV finished in {:.2f} seconds".format(time.time() - start))
+
+    @classmethod
+    def export_resources(cls, file_path: str) -> None:
+        from ifc4d.csv2ifc import Ifc2Csv
+
+        start = time.time()
+        csv2ifc = Ifc2Csv(file_path, tool.Ifc.get())
+        csv2ifc.execute()
         print("Importing Resources CSV finished in {:.2f} seconds".format(time.time() - start))
 
     @classmethod
@@ -351,6 +369,8 @@ class Resource(bonsai.core.tool.Resource):
                 )
                 time_consumed = ifcopenshell.util.resource.get_unit_consumed(productivity)
                 if time_consumed:
+                    import bonsai.bim.module.sequence.helper as helper
+
                     durations_attributes = helper.parse_duration_as_blender_props(time_consumed)
                     duration_props.years = durations_attributes["years"]
                     duration_props.months = durations_attributes["months"]
@@ -364,6 +384,8 @@ class Resource(bonsai.core.tool.Resource):
         props = bpy.context.scene.BIMResourceProductivity
         productivity = {}
         if props.quantity_consumed:
+            import bonsai.bim.module.sequence.helper as helper
+
             productivity["BaseQuantityConsumed"] = helper.blender_props_to_iso_duration(
                 props.quantity_consumed, "ELAPSEDTIME", "BaseQuantityConsumed"
             )
@@ -440,6 +462,12 @@ class Resource(bonsai.core.tool.Resource):
         tool.Ifc.run("resource.calculate_resource_usage", resource=resource)
 
     @classmethod
+    def calculate_resource_quantity(cls, resource: ifcopenshell.entity_instance) -> None:
+        quantity: ifcopenshell.entity_instance = resource.BaseQuantity
+        quantity_from_products = ifcopenshell.util.resource.get_total_quantity_produced(resource, quantity.Name)
+        quantity[3] = quantity_from_products
+
+    @classmethod
     def get_task_assignments(cls, resource: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.resource.get_task_assignments(resource)
 
@@ -450,3 +478,11 @@ class Resource(bonsai.core.tool.Resource):
     @classmethod
     def is_attribute_locked(cls, resource: ifcopenshell.entity_instance, attribute) -> bool:
         return ifcopenshell.util.constraint.is_attribute_locked(resource, attribute)
+
+    @classmethod
+    def update_cost_values_ui_data(cls) -> None:
+        from bonsai.bim.module.resource.data import ResourceData
+
+        if not ResourceData.is_loaded:
+            return
+        ResourceData.data["cost_values"] = ResourceData.cost_values()

@@ -3,8 +3,8 @@ Geometry creation
 
 Walls, doors, slabs, and other physical products in IFC can be represented with
 2D or 3D geometry. Most commonly, this geometry is created using graphical
-frontends, like the BlenderBIM Add-on. IfcOpenShell can create and edit
-geometry with code.
+frontends, like `Bonsai <https://bonsaibim.org/>`_. IfcOpenShell can create and
+edit geometry with code.
 
 .. note::
 

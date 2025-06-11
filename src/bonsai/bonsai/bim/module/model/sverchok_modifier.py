@@ -20,11 +20,14 @@ import bpy
 import bmesh
 
 import ifcopenshell
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
 import bonsai.tool as tool
 
 import json
 import zipfile
 import os.path
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 
 
 def update_sverchok_modifier(context):
@@ -164,10 +167,9 @@ class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
         if pset:
             pset = tool.Ifc.get().by_id(pset["id"])
         else:
-            pset = ifcopenshell.api.run("pset.add_pset", tool.Ifc.get(), product=element, name="BBIM_Sverchok")
+            pset = ifcopenshell.api.pset.add_pset(tool.Ifc.get(), product=element, name="BBIM_Sverchok")
 
-        ifcopenshell.api.run(
-            "pset.edit_pset",
+        ifcopenshell.api.pset.edit_pset(
             tool.Ifc.get(),
             pset=pset,
             properties={"Data": tool.Ifc.get().createIfcText(json.dumps(sverchok_data))},
@@ -181,16 +183,14 @@ class UpdateDataFromSverchok(bpy.types.Operator, tool.Ifc.Operator):
 # used code from Sverchok's SvNodeTreeImporter licensed under GPL v3
 # the code was changed to work with ifc sverchok modifier
 # removed the part that was relying on node graph to be opened at execution
-class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
+class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_sverchok_graph"
     bl_label = "Import Sverchok Graph"
+    bl_description = "Import Sverchok graph from a json file."
     bl_options = {"REGISTER"}
 
-    filepath: bpy.props.StringProperty(
-        name="File Path", description="Filepath used to import from", maxlen=1024, default="", subtype="FILE_PATH"
-    )
-
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
+    filename_ext = ".json"
 
     def _execute(self, context):
         import sverchok
@@ -209,10 +209,6 @@ class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
         props.node_group = node_group
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
-
     def draw(self, context):
         col = self.layout.column()
         col.label(text="Destination tree to import JSON:")
@@ -223,16 +219,14 @@ class ImportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
 # used code from Sverchok's SvNodeTreeExporter licensed under GPL v3
 # the code was changed to work with ifc sverchok modifier
 # removed the part that was relying on node graph to be opened at execution
-class ExportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
+class ExportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator, ExportHelper):
     bl_idname = "bim.export_sverchok_graph"
     bl_label = "Export Sverchok Graph"
+    bl_description = "Export Sverchok graph to a json file."
     bl_options = {"REGISTER"}
 
-    filepath: bpy.props.StringProperty(
-        name="File Path", description="Filepath used for exporting to", maxlen=1024, default="", subtype="FILE_PATH"
-    )
-
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
+    filename_ext = ".json"
 
     compact: bpy.props.BoolProperty(default=True, description="Compact representation of the JSON file")
     compress: bpy.props.BoolProperty()
@@ -278,10 +272,6 @@ class ExportSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
                 myzip.write(destination_path, arcname=base)
 
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
     def draw(self, context):
         graph_name = context.active_object.BIMSverchokProperties.node_group.name

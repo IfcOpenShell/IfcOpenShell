@@ -22,10 +22,6 @@ def remove_structural_load(file: ifcopenshell.file, structural_load: ifcopenshel
     """Removes a structural load
 
     :param structural_load: The IfcStructuralLoad to remove.
-    :type structural_load: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
     """
-    settings = {"structural_load": structural_load}
-
-    file.remove(settings["structural_load"])
+    file.remove(structural_load)

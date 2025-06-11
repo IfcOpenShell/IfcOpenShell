@@ -2401,13 +2401,15 @@ namespace {
 std::string SvgSerializer::writeMetadata(const drawing_meta& m) {
 	gp_Trsf trsf;
 	trsf.SetTransformation(m.pln_3d.Position(), gp::XOY());
-	// @todo
-	std::array<std::array<double, 4>, 4> m4 = {{
-		{{ 1, 0, 0, 0 }},
-		{{ 0, 1, 0, 0 }},
-		{{ 0, 0, 1, 0 }},
-		{{ 0, 0, 0, 1 }}
-	}};
+	NCollection_Mat4<double> mat4;
+	trsf.GetMat4(mat4);
+	const auto* d = mat4.GetData();
+	std::array<std::array<double, 4>, 4> m4 = { {
+	   {{ d[0], d[4], d[8], d[12] }},
+	   {{ d[1], d[5], d[9], d[13] }},
+	   {{ d[2], d[6], d[10], d[14] }},
+	   {{ d[3], d[7], d[11], d[15] }}
+	} };
 	return namespace_prefix_ + "plane=\""+ array_to_string(m4) +"\" " +
 		namespace_prefix_ + "matrix3=\"" + array_to_string(m.matrix_3) + "\"";
 }

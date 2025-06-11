@@ -23,9 +23,7 @@ def copy_boundary(file: ifcopenshell.file, boundary: ifcopenshell.entity_instanc
     """Copies a space boundary
 
     :param boundary: The IfcRelSpaceBoundary you want to copy.
-    :type boundary: ifcopenshell.entity_instance
     :return: Duplicate of the IfcRelSpaceBoundary
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -36,9 +34,7 @@ def copy_boundary(file: ifcopenshell.file, boundary: ifcopenshell.entity_instanc
         # And now we have two
         boundary_copy = ifcopenshell.api.boundary.copy_boundary(model, boundary=boundary)
     """
-    settings = {"boundary": boundary}
-
-    result = ifcopenshell.util.element.copy(file, settings["boundary"])
+    result = ifcopenshell.util.element.copy(file, boundary)
     if result.ConnectionGeometry:
         result.ConnectionGeometry = ifcopenshell.util.element.copy_deep(file, result.ConnectionGeometry)
     return result

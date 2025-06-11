@@ -34,9 +34,7 @@ def refresh():
     DrawingsData.is_loaded = False
     ElementFiltersData.is_loaded = False
     AnnotationData.is_loaded = False
-    DecoratorData.data = {}
-    DecoratorData.cut_cache = {}
-    DecoratorData.layerset_cache = {}
+    DecoratorData.is_loaded = False
 
 
 class ProductAssignmentsData:
@@ -82,14 +80,14 @@ class SheetsData:
 
     @classmethod
     def titleblocks(cls):
-        files = Path(os.path.join(bpy.context.scene.BIMProperties.data_dir, "templates", "titleblocks")).glob("*.svg")
-        files = [str(f.stem) for f in files]
+        files = [p.stem for p in tool.Blender.get_data_dir_paths(Path("templates") / "titleblocks", "*.svg")]
 
         if tool.Ifc.get():
             project = tool.Ifc.get().by_type("IfcProject")[0]
             titleblocks_dir = ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir")
             if not titleblocks_dir:
-                titleblocks_dir = bpy.context.scene.DocProperties.titleblocks_dir
+                props = tool.Drawing.get_document_props()
+                titleblocks_dir = props.titleblocks_dir
             titleblocks_dir = tool.Ifc.resolve_uri(titleblocks_dir)
             if os.path.exists(titleblocks_dir):
                 files.extend([str(f.stem) for f in Path(titleblocks_dir).glob("*.svg")])
@@ -120,24 +118,24 @@ class DrawingsData:
         return len([e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"])
 
     @classmethod
-    def location_hint(cls):
-        if bpy.context.scene.DocProperties.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
+    def location_hint(cls) -> list[tuple[tool.Drawing.LocationHintType, str, str]]:
+        props = tool.Drawing.get_document_props()
+        if props.target_view in ["PLAN_VIEW", "REFLECTED_PLAN_VIEW"]:
             results = [("0", "Origin", "")]
             results.extend(
                 [(str(s.id()), s.Name or "Unnamed", "") for s in tool.Ifc.get().by_type("IfcBuildingStorey")]
             )
             return results
-        elif bpy.context.scene.DocProperties.target_view in ["MODEL_VIEW"]:
+        elif props.target_view in ["MODEL_VIEW"]:
             return [(h.upper(), h, "") for h in ["Orthographic", "Perspective"]]
         return [(h.upper(), h, "") for h in ["North", "South", "East", "West"]]
 
     @classmethod
     def active_drawing_pset_data(cls):
-        ifc_file = tool.Ifc.get()
-        drawing_id = bpy.context.scene.DocProperties.active_drawing_id
-        if drawing_id == 0:
+        props = tool.Drawing.get_document_props()
+        drawing = props.get_active_drawing()
+        if drawing is None:
             return {}
-        drawing = ifc_file.by_id(bpy.context.scene.DocProperties.active_drawing_id)
         return ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
 
 
@@ -234,7 +232,43 @@ class DecoratorData:
     # stores 1 type of data per object
     data = {}
     cut_cache = {}
-    layerset_cache = {}
+    slice_cache = {}
+    fill_cache = {}
+
+    @classmethod
+    def load(cls, handler):
+        cls.is_loaded = True
+        cls.cut_cache = {}
+        cls.layerset_cache = {}
+
+        text = {}
+        dimension = {}
+        fall = {}
+        symbol = {}
+        for obj in bpy.context.visible_objects:
+            if not (element := tool.Ifc.get_entity(obj)):
+                continue
+            if tool.Drawing.is_annotation_object_type(element, ("TEXT", "TEXT_LEADER")):
+                text[obj.name] = cls.get_text_data(obj)
+                if text[obj.name]["Symbol"]:
+                    symbol[obj.name] = cls.get_symbol_data(obj)
+            elif tool.Drawing.is_annotation_object_type(
+                element, ("DIMENSION", "DIAMETER", "SECTION_LEVEL", "PLAN_LEVEL", "RADIUS")
+            ):
+                dimension[obj.name] = cls.get_dimension_data(obj)
+            elif tool.Drawing.is_annotation_object_type(
+                element, ("FALL", "SLOPE_ANGLE", "SLOPE_FRACTION", "SLOPE_PERCENT")
+            ):
+                fall[obj.name] = cls.get_fall_data(obj)
+            elif tool.Drawing.is_annotation_object_type(element, ("SYMBOL",)):
+                symbol[obj.name] = cls.get_symbol_data(obj)
+        cls.data = {
+            "text": text,
+            "dimension": dimension,
+            "fall": fall,
+            "symbol": symbol,
+            "object_decorators": cls.object_decorators(handler),
+        }
 
     @classmethod
     def get_batting_thickness(cls, obj):
@@ -293,18 +327,11 @@ class DecoratorData:
         return display_data
 
     @classmethod
-    def get_ifc_text_data(cls, obj: bpy.types.Object) -> dict[str, Any]:
+    def get_text_data(cls, obj: bpy.types.Object) -> dict:
         """used by Ifc Annotations with ObjectType = "TEXT" / "TEXT_LEADER"\n
         returns font size in mm for current ifc text object"""
-        result = cls.data.get(obj.name, None)
-        if result is not None:
-            return result
-
         element = tool.Ifc.get_entity(obj)
-        if not element or not tool.Drawing.is_annotation_object_type(element, ["TEXT", "TEXT_LEADER"]):
-            return None
-
-        props = obj.BIMTextProperties
+        props = tool.Drawing.get_text_props(obj)
         # getting font size
         pset_data = ifcopenshell.util.element.get_pset(element, "EPset_Annotation") or {}
         # use `regular` as default
@@ -320,6 +347,9 @@ class DecoratorData:
 
         # get symbol
         symbol = tool.Drawing.get_annotation_symbol(element)
+
+        # get newline_at
+        newline_at = pset_data.get("Newline_At", 0)
 
         # other attributes
         props_literals = props.literals
@@ -338,14 +368,7 @@ class DecoratorData:
 
             literals_data.append(literal_data)
 
-        text_data = {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol}
-        cls.data[obj.name] = text_data
-        return text_data
-
-    @classmethod
-    def get_symbol(cls, obj: bpy.types.Object) -> Union[str, None]:
-        """used by IfcAnnotations with ObjectType MULTI_SYMBOL"""
-        return tool.Drawing.get_annotation_symbol(tool.Ifc.get_entity(obj))
+        return {"Literals": literals_data, "FontSize": font_size, "Symbol": symbol, "Newline_At": newline_at}
 
     @classmethod
     def get_dimension_data(cls, obj):
@@ -353,15 +376,7 @@ class DecoratorData:
 
         DIMENSION / DIAMETER / SECTION_LEVEL / PLAN_LEVEL / RADIUS
         """
-        result = cls.data.get(obj.name, None)
-        if result is not None:
-            return result
-
         element = tool.Ifc.get_entity(obj)
-        supported_object_types = ("DIMENSION", "DIAMETER", "SECTION_LEVEL", "PLAN_LEVEL", "RADIUS")
-        if not element or not element.is_a("IfcAnnotation") or element.ObjectType not in supported_object_types:
-            return None
-
         dimension_style = "arrow"
         fill_bg = False
         classes = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
@@ -377,17 +392,71 @@ class DecoratorData:
         suppress_zero_inches = pset_data.get("SuppressZeroInches", False)
         text_prefix = pset_data.get("TextPrefix", None) or ""
         text_suffix = pset_data.get("TextSuffix", None) or ""
+        custom_unit_list = pset_data.get("CustomUnit", None) or ""
+        custom_unit = custom_unit_list[0] if custom_unit_list else ""
 
-        dimension_data = {
+        return {
             "dimension_style": dimension_style,
             "show_description_only": show_description_only,
             "suppress_zero_inches": suppress_zero_inches,
             "text_prefix": text_prefix,
             "text_suffix": text_suffix,
             "fill_bg": fill_bg,
+            "custom_unit": custom_unit,
         }
-        cls.data[obj.name] = dimension_data
-        return dimension_data
+
+    @classmethod
+    def get_fall_data(cls, obj):
+        object_type = None
+        if element := tool.Ifc.get_entity(obj):
+            object_type = ifcopenshell.util.element.get_predefined_type(element)
+        return {"object_type": object_type}
+
+    @classmethod
+    def get_symbol_data(cls, obj):
+        return tool.Drawing.get_annotation_symbol(tool.Ifc.get_entity(obj))
+
+    @classmethod
+    def object_decorators(cls, handler):
+        import bonsai.bim.module.drawing.decoration
+
+        if not bonsai.bim.module.drawing.decoration.DecorationsHandler.installed:
+            return []
+
+        props = tool.Drawing.get_document_props()
+        if (drawing := props.get_active_drawing()) is None:
+            return []
+
+        camera = tool.Ifc.get_object(drawing)
+        assert isinstance(camera, bpy.types.Object)
+        collection = tool.Blender.get_object_bim_props(camera).collection
+        assert collection
+
+        results = []
+        viewport = tool.Blender.get_view3d_space()
+
+        for obj in collection.all_objects:
+            if not obj.visible_get(viewport=viewport):
+                continue
+            element = tool.Ifc.get_entity(obj)
+            if not element:
+                continue
+            if not element.is_a("IfcAnnotation"):
+                continue
+            object_type: Union[str, None] = ifcopenshell.util.element.get_predefined_type(element)
+            if object_type == "DRAWING":
+                continue
+            if dec := handler.decorators.get(object_type, None):
+                results.append((obj, dec))
+            elif isinstance(obj.data, bpy.types.Mesh):
+                if object_type == "LINEWORK" and "dashed" in str(
+                    ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Classes")
+                ).split(" "):
+                    results.append((obj, handler.decorators["HIDDEN_LINE"]))
+                else:
+                    results.append((obj, handler.decorators["MISC"]))
+
+        return results
 
 
 class AnnotationData:
@@ -397,7 +466,7 @@ class AnnotationData:
     @classmethod
     def load(cls):
         cls.is_loaded = True
-        cls.props = bpy.context.scene.BIMAnnotationProperties
+        cls.props = tool.Drawing.get_annotation_props()
         cls.data["relating_type_id"] = cls.relating_type_id()
         cls.data["relating_types"] = cls.relating_types()
 

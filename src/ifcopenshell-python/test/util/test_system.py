@@ -21,7 +21,23 @@ import test.bootstrap
 import ifcopenshell.api
 import ifcopenshell.api.root
 import ifcopenshell.api.system
+import ifcopenshell.util.schema
 import ifcopenshell.util.system as subject
+from typing import get_args
+
+
+class TestValidateGroupTypes:
+    def test_run(self):
+        ifcsystem_classes = set()
+        for schema_name in get_args(ifcopenshell.util.schema.IFC_SCHEMA):
+            schema = ifcopenshell.schema_by_name(schema_name)
+            declaration = schema.declaration_by_name("IfcSystem")
+            declarations = ifcopenshell.util.schema.get_subtypes(declaration)
+            ifcsystem_classes.update(d.name() for d in declarations)
+
+        used_classes = set(subject.group_types)
+        unused_classes = ifcsystem_classes - used_classes
+        assert not unused_classes
 
 
 class TestIsAssignable(test.bootstrap.IFC4):

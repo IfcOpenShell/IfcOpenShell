@@ -29,11 +29,8 @@ def edit_work_plan(
     IfcWorkPlan, consult the IFC documentation.
 
     :param work_plan: The IfcWorkPlan entity you want to edit
-    :type work_plan: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -46,12 +43,10 @@ def edit_work_plan(
         ifcopenshell.api.sequence.edit_work_plan(model,
             work_plan=work_plan, attributes={"Description": "Construction of phase 1"})
     """
-    settings = {"work_plan": work_plan, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
+    for name, value in attributes.items():
         if value:
             if "Date" in name or "Time" in name:
                 value = ifcopenshell.util.date.datetime2ifc(value, "IfcDateTime")
             elif name == "Duration" or name == "TotalFloat":
                 value = ifcopenshell.util.date.datetime2ifc(value, "IfcDuration")
-        setattr(settings["work_plan"], name, value)
+        setattr(work_plan, name, value)

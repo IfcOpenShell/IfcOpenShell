@@ -27,56 +27,62 @@ if TYPE_CHECKING:
     import bonsai.tool as tool
 
 
-def enable_editing_text(drawing: tool.Drawing, obj: bpy.types.Object) -> None:
+def enable_editing_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:
     drawing.enable_editing_text(obj)
     drawing.import_text_attributes(obj)
 
 
-def disable_editing_text(drawing: tool.Drawing, obj: bpy.types.Object) -> None:
+def disable_editing_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:
     drawing.disable_editing_text(obj)
 
 
-def edit_text(drawing: tool.Drawing, obj: bpy.types.Object) -> None:
+def edit_text(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:
     drawing.synchronise_ifc_and_text_attributes(obj)
     drawing.update_text_size_pset(obj)
+    drawing.update_newline_at(obj)
     drawing.update_text_value(obj)
     drawing.disable_editing_text(obj)
 
 
-def enable_editing_assigned_product(drawing: tool.Drawing, obj: bpy.types.Object) -> None:
+def enable_editing_assigned_product(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:
     drawing.enable_editing_assigned_product(obj)
     drawing.import_assigned_product(obj)
 
 
-def disable_editing_assigned_product(drawing: tool.Drawing, obj: bpy.types.Object) -> None:
+def disable_editing_assigned_product(drawing: type[tool.Drawing], obj: bpy.types.Object) -> None:
     drawing.disable_editing_assigned_product(obj)
 
 
 def edit_assigned_product(
-    ifc: tool.Ifc, drawing: tool.Drawing, obj: bpy.types.Object, product: Optional[ifcopenshell.entity_instance] = None
+    ifc: type[tool.Ifc],
+    drawing: type[tool.Drawing],
+    obj: bpy.types.Object,
+    product: Optional[ifcopenshell.entity_instance] = None,
 ) -> None:
     element = ifc.get_entity(obj)
+    assert element
     existing_product = drawing.get_assigned_product(element)
     if existing_product != product:
         if existing_product:
             ifc.run("drawing.unassign_product", relating_product=existing_product, related_object=element)
         if product:
             ifc.run("drawing.assign_product", relating_product=product, related_object=element)
-        drawing.update_text_value(obj)
+        if drawing.is_annotation_object_type(element, ("TEXT", "TEXT_LEADER")):
+            drawing.update_text_value(obj)
 
     drawing.disable_editing_assigned_product(obj)
 
 
-def load_sheets(drawing: tool.Drawing) -> None:
+def load_sheets(drawing: type[tool.Drawing]) -> None:
     drawing.import_sheets()
     drawing.enable_editing_sheets()
 
 
-def disable_editing_sheets(drawing: tool.Drawing) -> None:
+def disable_editing_sheets(drawing: type[tool.Drawing]) -> None:
     drawing.disable_editing_sheets()
 
 
-def add_sheet(ifc: tool.Ifc, drawing: tool.Drawing, titleblock: ifcopenshell.entity_instance) -> None:
+def add_sheet(ifc: type[tool.Ifc], drawing: type[tool.Drawing], titleblock: ifcopenshell.entity_instance) -> None:
     sheet = ifc.run("document.add_information")
     layout = ifc.run("document.add_reference", information=sheet)
     titleblock_reference = ifc.run("document.add_reference", information=sheet)
@@ -102,7 +108,7 @@ def add_sheet(ifc: tool.Ifc, drawing: tool.Drawing, titleblock: ifcopenshell.ent
     drawing.import_sheets()
 
 
-def regenerate_sheet(drawing: tool.Drawing, sheet: ifcopenshell.entity_instance) -> None:
+def regenerate_sheet(drawing: type[tool.Drawing], sheet: ifcopenshell.entity_instance) -> None:
     titleblock_uri = drawing.get_document_uri(sheet, "TITLEBLOCK")
     drawing.create_svg_sheet(sheet, drawing.sanitise_filename(Path(titleblock_uri).stem))
     try:
@@ -113,11 +119,11 @@ def regenerate_sheet(drawing: tool.Drawing, sheet: ifcopenshell.entity_instance)
             drawing.delete_file(path_layout)
 
 
-def open_sheet(drawing: tool.Drawing, sheet: ifcopenshell.entity_instance) -> None:
+def open_layout(drawing: type[tool.Drawing], sheet: ifcopenshell.entity_instance) -> None:
     drawing.open_layout_svg(drawing.get_document_uri(sheet, "LAYOUT"))
 
 
-def remove_sheet(ifc: tool.Ifc, drawing: tool.Drawing, sheet: ifcopenshell.entity_instance) -> None:
+def remove_sheet(ifc: type[tool.Ifc], drawing: type[tool.Drawing], sheet: ifcopenshell.entity_instance) -> None:
     for reference in drawing.get_document_references(sheet):
         if drawing.get_reference_description(reference) in ("LAYOUT", "SHEET", "REVISION", "RASTER"):
             uri = ifc.resolve_uri(drawing.get_document_uri(reference))
@@ -128,7 +134,11 @@ def remove_sheet(ifc: tool.Ifc, drawing: tool.Drawing, sheet: ifcopenshell.entit
 
 
 def rename_sheet(
-    ifc: tool.Ifc, drawing: tool.Drawing, sheet: ifcopenshell.entity_instance, identification: str, name: str
+    ifc: type[tool.Ifc],
+    drawing: type[tool.Drawing],
+    sheet: ifcopenshell.entity_instance,
+    identification: str,
+    name: str,
 ) -> None:
     if ifc.get_schema() == "IFC2X3":
         attributes = {"DocumentId": identification, "Name": name}
@@ -156,31 +166,33 @@ def rename_sheet(
 
 
 def rename_reference(
-    ifc: tool.Ifc, drawing: tool.Drawing, reference: ifcopenshell.entity_instance, identification: str
+    ifc: type[tool.Ifc], drawing: type[tool.Drawing], reference: ifcopenshell.entity_instance, identification: str
 ) -> None:
     attributes = drawing.generate_reference_attributes(reference, Identification=identification)
     ifc.run("document.edit_reference", reference=reference, attributes=attributes)
 
 
-def load_schedules(drawing: tool.Drawing) -> None:
+def load_schedules(drawing: type[tool.Drawing]) -> None:
     drawing.import_documents("SCHEDULE")
     drawing.enable_editing_schedules()
 
 
-def load_references(drawing: tool.Drawing) -> None:
+def load_references(drawing: type[tool.Drawing]) -> None:
     drawing.import_documents("REFERENCE")
     drawing.enable_editing_references()
 
 
-def disable_editing_schedules(drawing: tool.Drawing) -> None:
+def disable_editing_schedules(drawing: type[tool.Drawing]) -> None:
     drawing.disable_editing_schedules()
 
 
-def disable_editing_references(drawing: tool.Drawing) -> None:
+def disable_editing_references(drawing: type[tool.Drawing]) -> None:
     drawing.disable_editing_references()
 
 
-def add_document(ifc: tool.Ifc, drawing: tool.Drawing, document_type: tool.Drawing.DOCUMENT_TYPE, uri: str) -> None:
+def add_document(
+    ifc: type[tool.Ifc], drawing: type[tool.Drawing], document_type: type[tool.Drawing].DOCUMENT_TYPE, uri: str
+) -> None:
     document = ifc.run("document.add_information")
     reference = ifc.run("document.add_reference", information=document)
     name = drawing.get_path_filename(uri)
@@ -194,49 +206,50 @@ def add_document(ifc: tool.Ifc, drawing: tool.Drawing, document_type: tool.Drawi
 
 
 def remove_document(
-    ifc: tool.Ifc,
-    drawing: tool.Drawing,
-    document_type: tool.Drawing.DOCUMENT_TYPE,
+    ifc: type[tool.Ifc],
+    drawing: type[tool.Drawing],
+    document_type: type[tool.Drawing].DOCUMENT_TYPE,
     document: ifcopenshell.entity_instance,
 ) -> None:
     ifc.run("document.remove_information", information=document)
     drawing.import_documents(document_type)
 
 
-def open_schedule(drawing: tool.Drawing, schedule: ifcopenshell.entity_instance) -> None:
+def open_schedule(drawing: type[tool.Drawing], schedule: ifcopenshell.entity_instance) -> None:
     drawing.open_spreadsheet(drawing.get_document_uri(schedule))
 
 
-def open_reference(drawing: tool.Drawing, reference: ifcopenshell.entity_instance) -> None:
+def open_reference(drawing: type[tool.Drawing], reference: ifcopenshell.entity_instance) -> None:
     drawing.open_svg(drawing.get_document_uri(reference))
 
 
 def update_document_name(
-    ifc: tool.Ifc, drawing: tool.Drawing, document: ifcopenshell.entity_instance, name=None
+    ifc: type[tool.Ifc], drawing: type[tool.Drawing], document: ifcopenshell.entity_instance, name=None
 ) -> None:
     if drawing.get_name(document) != name:
         ifc.run("document.edit_information", information=document, attributes={"Name": name})
 
 
-def load_drawings(drawing: tool.Drawing) -> None:
+def load_drawings(drawing: type[tool.Drawing]) -> None:
     drawing.import_drawings()
     drawing.enable_editing_drawings()
 
 
-def disable_editing_drawings(drawing: tool.Drawing) -> None:
+def disable_editing_drawings(drawing: type[tool.Drawing]) -> None:
     drawing.disable_editing_drawings()
 
 
 def add_drawing(
-    ifc: tool.Ifc,
-    collector: tool.Collector,
-    drawing: tool.Drawing,
-    target_view: Union[ifcopenshell.util.representation.TARGET_VIEW, None] = None,
-    location_hint: Union[str, None] = None,
+    ifc: type[tool.Ifc],
+    collector: type[tool.Collector],
+    drawing: type[tool.Drawing],
+    target_view: ifcopenshell.util.representation.TARGET_VIEW,
+    location_hint: Union[tool.Drawing.LocationHintLiteral, int],
 ) -> None:
+    assert location_hint is not None
     drawing_name = drawing.ensure_unique_drawing_name(drawing.generate_drawing_name(target_view, location_hint))
     drawing_matrix = drawing.generate_drawing_matrix(target_view, location_hint)
-    camera = drawing.create_camera(drawing_name, drawing_matrix, location_hint)
+    camera = drawing.create_camera(drawing_name, drawing_matrix, location_hint, target_view)
     element = drawing.run_root_assign_class(
         obj=camera,
         ifc_class="IfcAnnotation",
@@ -292,8 +305,10 @@ def add_drawing(
 
 
 def duplicate_drawing(
-    ifc: tool.Ifc,
-    drawing_tool: tool.Drawing,
+    ifc: type[tool.Ifc],
+    blender: type[tool.Blender],
+    drawing_tool: type[tool.Drawing],
+    geometry: type[tool.Geometry],
     drawing: ifcopenshell.entity_instance,
     should_duplicate_annotations: bool = False,
 ) -> ifcopenshell.entity_instance:
@@ -307,13 +322,16 @@ def duplicate_drawing(
     ifc.run("group.edit_group", group=new_group, attributes={"Name": drawing_name, "ObjectType": "DRAWING"})
     ifc.run("group.assign_group", group=new_group, products=[new_drawing])
     if should_duplicate_annotations:
-        for annotation in drawing_tool.get_group_elements(group):
-            if annotation == drawing:
-                continue
-            new_annotation = ifc.run("root.copy_class", product=annotation)
-            drawing_tool.copy_representation(annotation, new_annotation)
-            ifc.run("group.unassign_group", group=group, products=[new_annotation])
-            ifc.run("group.assign_group", group=new_group, products=[new_annotation])
+        new_annotations: list[ifcopenshell.entity_instance] = []
+        annotation_objs = [ifc.get_object(a) for a in drawing_tool.get_group_elements(group) if a != drawing]
+        old_to_new, _ = geometry.duplicate_ifc_objects(annotation_objs)
+        for new_elements in old_to_new.values():
+            # Remove the Blender object, since we haven't actually activated the duplicated drawing
+            for new_element in new_elements:
+                blender.remove_object(ifc.get_object(new_element))
+            new_annotations.extend(new_elements)
+        ifc.run("group.unassign_group", group=group, products=new_annotations)
+        ifc.run("group.assign_group", group=new_group, products=new_annotations)
 
     old_reference = drawing_tool.get_drawing_document(new_drawing)
     ifc.run("document.unassign_document", products=[new_drawing], document=old_reference)
@@ -333,7 +351,9 @@ def duplicate_drawing(
     return new_drawing
 
 
-def remove_drawing(ifc: tool.Ifc, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance) -> None:
+def remove_drawing(
+    ifc: type[tool.Ifc], drawing_tool: type[tool.Drawing], drawing: ifcopenshell.entity_instance
+) -> None:
     if drawing_tool.is_active_drawing(drawing):
         drawing_tool.run_drawing_activate_model()
 
@@ -362,7 +382,7 @@ def remove_drawing(ifc: tool.Ifc, drawing_tool: tool.Drawing, drawing: ifcopensh
 
 
 def update_drawing_name(
-    ifc: tool.Ifc, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance, name: str
+    ifc: type[tool.Ifc], drawing_tool: type[tool.Drawing], drawing: ifcopenshell.entity_instance, name: str
 ) -> None:
     if drawing_tool.get_name(drawing) != name:
         ifc.run("attribute.edit_attributes", product=drawing, attributes={"Name": name})
@@ -398,12 +418,14 @@ def update_drawing_name(
 
 
 def add_annotation(
-    ifc: tool.Ifc,
-    collector: tool.Collector,
-    drawing_tool: tool.Drawing,
+    ifc: type[tool.Ifc],
+    collector: type[tool.Collector],
+    drawing_tool: type[tool.Drawing],
     drawing: ifcopenshell.entity_instance,
     object_type: str,
-) -> None:
+    relating_type: ifcopenshell.entity_instance,
+    enable_editing: bool = False,
+) -> bpy.types.Object:
     target_view = drawing_tool.get_drawing_target_view(drawing)
     context = drawing_tool.get_annotation_context(target_view, object_type)
     if not context:
@@ -412,27 +434,38 @@ def add_annotation(
     drawing_tool.show_decorations()
     obj = drawing_tool.create_annotation_object(drawing, object_type)
     element = ifc.get_entity(obj)
+    # TODO: element is never None?
     if not element:
+        relating_type_rep = drawing_tool.get_annotation_representation(relating_type) if relating_type else None
         element = drawing_tool.run_root_assign_class(
             obj=obj,
             ifc_class="IfcAnnotation",
             predefined_type=object_type,
-            should_add_representation=True,
+            should_add_representation=not relating_type_rep,
             context=context,
             ifc_representation_class=drawing_tool.get_ifc_representation_class(object_type),
         )
+        if relating_type:
+            drawing_tool.run_type_assign_type(element=element, relating_type=relating_type)
         ifc.run("group.assign_group", group=drawing_tool.get_drawing_group(drawing), products=[element])
-    collector.assign(obj)
-    drawing_tool.enable_editing(obj)
+    if representation := drawing_tool.get_representation(element, context):
+        drawing_tool.reload_representation(obj=obj, representation=representation)
+    collector.assign(obj, should_clean_users_collection=True)
+    if not relating_type_rep and object_type != "IMAGE" and enable_editing:
+        drawing_tool.enable_editing(obj)
+    return obj
 
 
-def build_schedule(drawing: tool.Drawing, schedule: ifcopenshell.entity_instance) -> None:
+def build_schedule(drawing: type[tool.Drawing], schedule: ifcopenshell.entity_instance) -> None:
     drawing.create_svg_schedule(schedule)
     drawing.open_svg(drawing.get_path_with_ext(drawing.get_document_uri(schedule), "svg"))
 
 
 def sync_references(
-    ifc: tool.Ifc, collector: tool.Collector, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance
+    ifc: type[tool.Ifc],
+    collector: type[tool.Collector],
+    drawing_tool: type[tool.Drawing],
+    drawing: ifcopenshell.entity_instance,
 ) -> None:
     if not drawing_tool.has_annotation(drawing):
         return
@@ -478,12 +511,15 @@ def sync_references(
             drawing_tool.sync_object_representation(reference_obj)
 
 
-def select_assigned_product(drawing: tool.Drawing, context: bpy.types.Context) -> None:
+def select_assigned_product(drawing: type[tool.Drawing], context: bpy.types.Context) -> None:
     drawing.select_assigned_product(context)
 
 
 def activate_drawing_view(
-    ifc: tool.Ifc, blender: tool.Blender, drawing_tool: tool.Drawing, drawing: ifcopenshell.entity_instance
+    ifc: type[tool.Ifc],
+    blender: type[tool.Blender],
+    drawing_tool: type[tool.Drawing],
+    drawing: ifcopenshell.entity_instance,
 ) -> None:
     camera = ifc.get_object(drawing)
     if not camera:

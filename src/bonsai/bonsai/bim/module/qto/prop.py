@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 import ifc5d.qto
 from bonsai.bim.prop import StrProperty, Attribute
 from bpy.types import PropertyGroup
@@ -30,39 +31,78 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Union
 
 
-def get_qto_rule(self, context):
-    results = []
-    for rule_id, rule in ifc5d.qto.rules.items():
+CALCULATOR_FUNCTION_ENUM_ITEMS: list[Union[tuple[str, str, str], None]] = []
+
+
+def get_qto_rule(self: "BIMQtoProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    results: list[tuple[str, str, str]] = []
+    for rule_id, rule in tool.Qto.get_qto_rules().items():
         results.append((rule_id, rule["name"], rule["description"]))
     return results
 
 
-def get_calculator(self, context):
-    results = []
+def get_calculator(self: "BIMQtoProperties", context: bpy.types.Context) -> list[tuple[str, str, str]]:
+    results: list[tuple[str, str, str]] = []
     for name, calculator in ifc5d.qto.calculators.items():
-        results.append((name, name, calculator.__doc__))
+        results.append((name, name, calculator.__doc__ or ""))
+    # Make IfcOpenShell appear first.
+    results.sort(key=lambda x: x[0] == "IfcOpenShell", reverse=True)
     return results
 
 
-def get_calculator_function(self, context):
+def get_calculator_function(
+    self: "BIMQtoProperties", context: bpy.types.Context
+) -> list[Union[tuple[str, str, str], None]]:
+    global CALCULATOR_FUNCTION_ENUM_ITEMS
     calculator = ifc5d.qto.calculators[self.calculator]
-    results = []
+
+    if calculator is ifc5d.qto.Blender:
+        calculator.populate_descriptions()
+
+    CALCULATOR_FUNCTION_ENUM_ITEMS = []
     previous_measure = None
     for function_id, function in calculator.functions.items():
         measure = function.measure.split("Measure")[0][3:]
         if previous_measure is not None and measure != previous_measure:
-            results.append(None)
-        results.append((function_id, f"{measure}: {function.name}", function.description))
+            CALCULATOR_FUNCTION_ENUM_ITEMS.append(None)
+        description = function.description
+        description += f"\n\nInternal function id: '{function_id}'."
+        CALCULATOR_FUNCTION_ENUM_ITEMS.append((function_id, f"{measure}: {function.name}", description))
         previous_measure = measure
-    return results
+    return CALCULATOR_FUNCTION_ENUM_ITEMS
 
 
 class BIMQtoProperties(PropertyGroup):
     qto_rule: EnumProperty(items=get_qto_rule, name="Qto Rule")
     calculator: EnumProperty(items=get_calculator, name="Calculator")
-    calculator_function: EnumProperty(items=get_calculator_function, name="Calculator Function")
+    calculator_function: EnumProperty(
+        items=get_calculator_function,
+        name="Calculator Function",
+        description=(
+            "Gross functions calculate the measure for the original element's geometry, without openings.\n"
+            "Net functions include the openings substractions.\n\nCurrently selected function"
+        ),
+    )
     qto_result: StringProperty(default="", name="Qto Result")
     qto_name: StringProperty(name="Qto Name", default="My_Qto")
     prop_name: StringProperty(name="Prop Name", default="MyDimension")
+    fallback: BoolProperty(
+        name="Fallback To Other Calculators",
+        description=(
+            "If currently selected calculator does not support quantification "
+            "of some class/quantity set, to try other available calculators."
+        ),
+        default=False,
+    )
+
+    if TYPE_CHECKING:
+        qto_rule: str
+        calculator: str
+        calculator_function: str
+        qto_result: str
+        qto_name: str
+        prop_name: str
+        fallback: bool

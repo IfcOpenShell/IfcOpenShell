@@ -82,3 +82,8 @@ dl.py.property, dl.py.attribute, dl.py.method, dl.py.function {
     color: var(--color-brand-content);
     font-style: italic;
 }
+
+/* Workaround for highlighting issue in Furo */
+[role=main] .highlighted {
+    -webkit-text-fill-color: initial !important;
+}

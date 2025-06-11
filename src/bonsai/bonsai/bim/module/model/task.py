@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.date
 
 
@@ -30,11 +31,10 @@ def calculate_quantities(usecase_path, ifc_file, settings):
     if not element.ScheduleDuration:
         return
     task = [e for e in ifc_file.get_inverse(element) if e.is_a("IfcTask")][0]
-    qto = ifcopenshell.api.run(
-        "pset.add_qto", ifc_file, should_run_listeners=False, product=task, name="Qto_TaskBaseQuantities"
+    qto = ifcopenshell.api.pset.add_qto(
+        ifc_file, should_run_listeners=False, product=task, name="Qto_TaskBaseQuantities"
     )
-    ifcopenshell.api.run(
-        "pset.edit_qto",
+    ifcopenshell.api.pset.edit_qto(
         ifc_file,
         should_run_listeners=False,
         qto=qto,

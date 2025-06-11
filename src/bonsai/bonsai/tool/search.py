@@ -1,62 +1,90 @@
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2022 Dion Moult <dion@thinkmoult.com>
+#
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bonsai is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import annotations
 import bpy
 import json
 import lark
+import bonsai.tool as tool
 import bonsai.core.tool
 import ifcopenshell.guid
 import ifcopenshell.util.selector
 from itertools import cycle
 from bonsai.bim.prop import BIMFacet
-from typing import Union, Literal
+from typing import Union, Literal, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import BIMFilterGroup
+    from bonsai.bim.module.search.prop import BIMSearchProperties
 
 
 class Search(bonsai.core.tool.Search):
+    @classmethod
+    def get_search_props(cls) -> BIMSearchProperties:
+        return bpy.context.scene.BIMSearchProperties
+
     @classmethod
     def get_group_query(cls, group: ifcopenshell.entity_instance) -> str:
         return json.loads(group.Description)["query"]
 
     @classmethod
-    def get_filter_groups(cls, module: str) -> bpy.types.bpy_prop_collection:
+    def get_filter_groups(cls, module: FilterModule) -> bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]:
         if module == "search":
-            return bpy.context.scene.BIMSearchProperties.filter_groups
+            return cls.get_search_props().filter_groups
         elif module == "csv":
-            return bpy.context.scene.CsvProperties.filter_groups
+            return tool.Blender.get_csv_props().filter_groups
         elif module == "diff":
-            return bpy.context.scene.DiffProperties.filter_groups
+            return tool.Blender.get_diff_props().filter_groups
         elif module == "drawing_include":
-            return bpy.context.scene.camera.data.BIMCameraProperties.include_filter_groups
+            assert (scene := bpy.context.scene) and (camera_obj := (scene.camera))
+            return tool.Drawing.get_camera_props(camera_obj).include_filter_groups
         elif module == "drawing_exclude":
-            return bpy.context.scene.camera.data.BIMCameraProperties.exclude_filter_groups
+            assert (scene := bpy.context.scene) and (camera_obj := (scene.camera))
+            return tool.Drawing.get_camera_props(camera_obj).exclude_filter_groups
         elif module.startswith("clash"):
             _, clash_set_index, ab, clash_source_index = module.split("_")
-            return getattr(bpy.context.scene.BIMClashProperties.clash_sets[int(clash_set_index)], ab)[
-                int(clash_source_index)
-            ].filter_groups
+            props = tool.Clash.get_clash_props()
+            return getattr(props.clash_sets[int(clash_set_index)], ab)[int(clash_source_index)].filter_groups
         assert False, f"Unsupported module: {module}"
 
     @classmethod
-    def import_filter_query(cls, query: str, filter_groups: bpy.types.bpy_prop_collection) -> None:
+    def import_filter_query(
+        cls, query: str, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]
+    ) -> None:
         filter_groups.clear()
         transformer = ImportFilterQueryTransformer(filter_groups)
         transformer.transform(ifcopenshell.util.selector.filter_elements_grammar.parse(query))
 
     @classmethod
-    def export_filter_query(cls, filter_groups: bpy.types.bpy_prop_collection) -> str:
+    def export_filter_query(cls, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]) -> str:
         query = []
         for filter_group in filter_groups:
             filter_group_query = []
-            has_instance_or_entity_filter = False
             for ifc_filter in filter_group.filters:
                 if not ifc_filter.value:
                     continue
                 if ifc_filter.type == "instance":
-                    has_instance_or_entity_filter = True
                     if "bpy.data.texts" in ifc_filter.value:
                         data_name = ifc_filter.value.split("bpy.data.texts")[1][2:-2]
                         filter_group_query.append(bpy.data.texts[data_name].as_string())
                     else:
                         filter_group_query.append(ifc_filter.value)
                 elif ifc_filter.type == "entity":
-                    has_instance_or_entity_filter = True
                     filter_group_query.append(ifc_filter.value)
                 elif ifc_filter.type == "attribute":
                     if not ifc_filter.name:
@@ -93,9 +121,6 @@ class Search(bonsai.core.tool.Search):
                     keys = cls.wrap_value(ifc_filter, ifc_filter.name)
                     comparison, value = cls.get_comparison_and_value(ifc_filter)
                     filter_group_query.append(f"query:{keys}{comparison}{value}")
-            if not has_instance_or_entity_filter:
-                filter_group_query.insert(0, "IfcProduct")
-                filter_group_query.insert(0, "IfcTypeProduct")
             query.append(", ".join(filter_group_query))
         return " + ".join(query)
 
@@ -267,9 +292,26 @@ class Search(bonsai.core.tool.Search):
             return palette[-1]
         return cls.interpolate_color(palette[index], palette[index + 1], fraction)
 
+    @classmethod
+    def get_query_for_selected_elements(cls) -> str:
+        global_ids = []
+        for obj in tool.Blender.get_selected_objects():
+            if element := tool.Ifc.get_entity(obj):
+                if global_id := getattr(element, "GlobalId", None):
+                    global_ids.append(global_id)
+
+        query = ",".join(global_ids)
+        if len(global_ids) > 50:
+            # Too much to store in a string property.
+            name = f"globalid-filter-{ifcopenshell.guid.new()}"
+            text_data = bpy.data.texts.new(name)
+            text_data.from_string(query)
+            query = f"bpy.data.texts['{name}']"
+        return query
+
 
 class ImportFilterQueryTransformer(lark.Transformer):
-    def __init__(self, filter_groups):
+    def __init__(self, filter_groups: bpy.types.bpy_prop_collection_idprop[BIMFilterGroup]):
         self.filter_groups = filter_groups
 
     def get_results(self):

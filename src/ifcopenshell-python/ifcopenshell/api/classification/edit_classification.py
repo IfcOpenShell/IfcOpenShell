@@ -28,11 +28,8 @@ def edit_classification(
     IfcClassification, consult the IFC documentation.
 
     :param classification: The IfcClassification entity you want to edit
-    :type classification: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -43,7 +40,5 @@ def edit_classification(
         ifcopenshell.api.classification.edit_classification(model,
             classification=classification, attributes={"Name": "Foo"})
     """
-    settings = {"classification": classification, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["classification"], name, value)
+    for name, value in attributes.items():
+        setattr(classification, name, value)

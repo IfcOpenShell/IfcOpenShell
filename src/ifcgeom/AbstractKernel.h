@@ -34,15 +34,20 @@ namespace ifcopenshell {
 	namespace geometry { namespace kernels {
 
 	class IFC_GEOM_API AbstractKernel {
+	private:
+		std::unordered_map<taxonomy::item::ptr, IfcGeom::ConversionResults, ifcopenshell::geometry::taxonomy::hash_functor, ifcopenshell::geometry::taxonomy::equal_functor> cache_;
 	protected:
 		std::string geometry_library_;
 		Settings settings_;
 	public:
 		bool propagate_exceptions = false;
+		bool partial_success_is_success = true;
 			
 		AbstractKernel(const std::string& geometry_library, const Settings& settings)
 			: geometry_library_(geometry_library)
 			, settings_(settings) {}
+
+		virtual ~AbstractKernel() = default;
 
 		virtual bool convert(const taxonomy::ptr, IfcGeom::ConversionResults&);
 		const Settings& settings() const;
@@ -76,7 +81,12 @@ namespace ifcopenshell {
 		virtual bool convert_impl(const taxonomy::sweep_along_curve::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
 		virtual bool convert_impl(const taxonomy::loft::ptr, IfcGeom::ConversionResults&) { throw not_implemented_error(); }
 		virtual bool convert_impl(const taxonomy::collection::ptr, IfcGeom::ConversionResults&);
-		virtual bool convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs);
+		virtual bool convert_impl(const taxonomy::function_item::ptr item, IfcGeom::ConversionResults& cs);
+      virtual bool convert_impl(const taxonomy::functor_item::ptr item, IfcGeom::ConversionResults& cs);
+      virtual bool convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs);
+      virtual bool convert_impl(const taxonomy::gradient_function::ptr item, IfcGeom::ConversionResults& cs);
+      virtual bool convert_impl(const taxonomy::cant_function::ptr item, IfcGeom::ConversionResults& cs);
+      virtual bool convert_impl(const taxonomy::offset_function::ptr item, IfcGeom::ConversionResults& cs);
 
 		/*
 		virtual void set_offset(const std::array<double, 3> &p_offset);

@@ -1,6 +1,6 @@
 """XML Parser and Serializer factories."""
 
-from typing import Optional, Protocol, Type, TypeVar
+from typing import Optional, Protocol, TypeVar
 
 from xsdata.formats.dataclass.context import XmlContext
 from xsdata.formats.dataclass.parsers import XmlParser
@@ -29,7 +29,7 @@ T = TypeVar("T")
 class AbstractXmlParserSerializer(Protocol):
     """XML Parser and serializer wrapper."""
 
-    def parse(self, xml: bytes, clazz: Type[T]) -> T:
+    def parse(self, xml: bytes, clazz: type[T]) -> T:
         """
         Parse an XML file to an object.
 
@@ -61,7 +61,7 @@ class XmlParserSerializer:
         self.parser = build_xml_parser(self.context)
         self.serializer = build_serializer(self.context)
 
-    def parse(self, xml: bytes, clazz: Type[T]) -> T:
+    def parse(self, xml: bytes, clazz: type[T]) -> T:
         """
         Parse an XML file to an object.
 

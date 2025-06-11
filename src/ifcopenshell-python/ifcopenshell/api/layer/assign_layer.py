@@ -22,7 +22,7 @@ import ifcopenshell
 def assign_layer(
     file: ifcopenshell.file, items: list[ifcopenshell.entity_instance], layer: ifcopenshell.entity_instance
 ) -> None:
-    """Assigns representation items to a layer
+    """Assigns representation items or representations to a layer
 
     In IFC, instead of objects being assigned to layers, representation
     items are assigned to layers. Representation items are portions of the
@@ -31,14 +31,11 @@ def assign_layer(
     its frame) assigned to one layer, and another portion (e.g. the glazing
     panels) assigned to another layer.
 
-    :param items: The list of IfcRepresentationItems to assign to the layer. This
+    :param items: The list of IfcRepresentationItems / IfcRepresentations to assign to the layer. This
         should be the items from the object's IfcShapeRepresentation.
-    :type items: list[ifcopenshell.entity_instance]
     :param layer: The IfcPresentationLayerAssignment layer to assign the
         item to.
-    :type layer: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -65,15 +62,10 @@ def assign_layer(
         # only one item) to the layer.
         ifcopenshell.api.layer.assign_layer(model, items=[representation.Items[0]], layer=layer)
     """
-    settings = {
-        "items": items,
-        "layer": layer,
-    }
-
     # support AssignedItems == None since layer might just got created
-    layer = settings["layer"]
+    assigned_items: set[ifcopenshell.entity_instance]
     assigned_items = set(layer.AssignedItems or [])
-    items = set(settings["items"])
-    if items.issubset(assigned_items):
+    items_set = set(items)
+    if items_set.issubset(assigned_items):
         return
-    layer.AssignedItems = list(assigned_items | items)
+    layer.AssignedItems = list(assigned_items | items_set)

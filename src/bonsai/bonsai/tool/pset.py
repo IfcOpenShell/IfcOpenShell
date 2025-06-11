@@ -16,19 +16,29 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell
+import ifcopenshell.api.pset
 import ifcopenshell.util.attribute
 import ifcopenshell.util.element
+import bonsai.bim.helper
 import bonsai.core.tool
 import bonsai.tool as tool
 import bonsai.bim.schema
-from typing import Union, Literal, Any
-from typing_extensions import assert_never
+from typing import Union, Literal, Any, TYPE_CHECKING, assert_never
+
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.pset.prop import PsetProperties, GlobalPsetProperties
 
 
 class Pset(bonsai.core.tool.Pset):
     PSET_TYPE = Literal["PSET", "QTO"]
+
+    @classmethod
+    def get_global_pset_props(cls) -> GlobalPsetProperties:
+        return bpy.context.scene.GlobalPsetProperties
 
     @classmethod
     def get_element_pset(
@@ -39,13 +49,11 @@ class Pset(bonsai.core.tool.Pset):
             return tool.Ifc.get().by_id(pset["id"])
 
     @classmethod
-    def get_pset_props(cls, obj: str, obj_type: tool.Ifc.OBJECT_TYPE) -> bpy.types.PropertyGroup:
+    def get_pset_props(cls, obj: str, obj_type: tool.Ifc.OBJECT_TYPE) -> PsetProperties:
         if obj_type == "Object":
             return bpy.data.objects.get(obj).PsetProperties
         elif obj_type == "Material":
             return bpy.context.scene.MaterialPsetProperties
-        elif obj_type == "MaterialSet":
-            return bpy.data.objects.get(obj).MaterialSetPsetProperties
         elif obj_type == "MaterialSetItem":
             return bpy.data.objects.get(obj).MaterialSetItemPsetProperties
         elif obj_type == "Task":
@@ -64,7 +72,7 @@ class Pset(bonsai.core.tool.Pset):
     def get_pset_name(cls, obj: str, obj_type: tool.Ifc.OBJECT_TYPE, pset_type: PSET_TYPE = "PSET") -> str:
         props = cls.get_pset_props(obj, obj_type)
         name = props.pset_name if pset_type == "PSET" else props.qto_name
-        if name == "BBIM_CUSTOM":
+        if name in ("BBIM_CUSTOM", "BBIM_BSDD"):
             return ""
         return name
 
@@ -76,7 +84,9 @@ class Pset(bonsai.core.tool.Pset):
             predefined_type = ifcopenshell.util.element.get_predefined_type(element)
         return bool(
             pset_name
-            in bonsai.bim.schema.ifc.psetqto.get_applicable_names(element.is_a(), predefined_type, pset_only=True)
+            in bonsai.bim.schema.ifc.psetqto.get_applicable_names(
+                element.is_a(), predefined_type, pset_only=True, schema=tool.Ifc.get_schema()
+            )
         )
 
     @classmethod
@@ -98,7 +108,40 @@ class Pset(bonsai.core.tool.Pset):
         )
 
     @classmethod
-    def import_pset_from_existing(cls, pset: ifcopenshell.entity_instance, props: bpy.types.PropertyGroup) -> None:
+    def get_special_type_for_prop(cls, prop_or_prop_template: ifcopenshell.entity_instance) -> str:
+        special_type = ""
+        if prop_or_prop_template.is_a("IfcPropertyTemplate"):
+            primary_measure_type = prop_or_prop_template.PrimaryMeasureType
+            template_type = prop_or_prop_template.TemplateType
+            if primary_measure_type in ("IfcPositiveLengthMeasure", "IfcLengthMeasure") or template_type == "Q_LENGTH":
+                special_type = "LENGTH"
+            elif primary_measure_type == "IfcAreaMeasure" or template_type == "Q_AREA":
+                special_type = "AREA"
+            elif primary_measure_type == "IfcVolumeMeasure" or template_type == "Q_VOLUME":
+                special_type = "VOLUME"
+        else:
+            if prop_or_prop_template.is_a("IfcPropertySingleValue"):
+                value = prop_or_prop_template.NominalValue
+                if value is not None:
+                    value_type = value.is_a()
+                    if value_type in ("IfcLengthMeasure", "IfcPositiveLengthMeasure"):
+                        special_type = "LENGTH"
+                    elif value_type == "IfcAreaMeasure":
+                        special_type = "AREA"
+                    elif value_type == "IfcVolumeMeasure":
+                        special_type = "VOLUME"
+            elif prop_or_prop_template.is_a("IfcPhysicalSimpleQuantity"):
+                prop_class = prop_or_prop_template.is_a()
+                if prop_class == "IfcQuantityArea":
+                    special_type = "AREA"
+                elif prop_class == "IfcQuantityVolume":
+                    special_type = "VOLUME"
+                elif prop_class == "IfcQuantityLength":
+                    special_type = "LENGTH"
+        return special_type
+
+    @classmethod
+    def import_pset_from_existing(cls, pset: ifcopenshell.entity_instance, props: PsetProperties) -> None:
         pset_props = []
         if pset.is_a("IfcElementQuantity"):
             pset_props = pset.Quantities
@@ -118,12 +161,25 @@ class Pset(bonsai.core.tool.Pset):
                 metadata.name = prop.Name
                 metadata.is_null = len(simple_prop.enumerated_value.enumerated_values) == 0
                 metadata.is_optional = True
-                metadata.set_value(prop.EnumerationReference.EnumerationValues[0].wrappedValue)
+                enum_reference = prop.EnumerationReference
+                selected_enum_items = [v.wrappedValue for v in (prop.EnumerationValues or ())]
 
-                enum_items = [v.wrappedValue for v in prop.EnumerationReference.EnumerationValues]
-                selected_enum_items = [v.wrappedValue for v in prop.EnumerationValues]
-                data_type = metadata.get_value_name(display_only=True)
+                # If there is no reference, then just use the current values.
+                if enum_reference is None:
+                    enum_items = selected_enum_items
+                else:
+                    enum_items = [v.wrappedValue for v in enum_reference.EnumerationValues]
 
+                # In theory there could be no reference and no current values,
+                # nothing to show then, I guess.
+                if not enum_items:
+                    continue
+
+                # Trigger metadata to detect data_type.
+                metadata.set_value(enum_items[0])
+                data_type = metadata.get_value_name()
+
+                # Fill enum items.
                 for enum in enum_items:
                     new = simple_prop.enumerated_value.enumerated_values.add()
                     setattr(new, data_type, enum)
@@ -133,6 +189,8 @@ class Pset(bonsai.core.tool.Pset):
                     value = prop.NominalValue.wrappedValue if prop.NominalValue else None
                 elif prop.is_a("IfcPhysicalSimpleQuantity"):
                     value = prop[3]
+                else:
+                    assert False
                 new_prop = props.properties.add()
                 new_prop.name = prop.Name
                 metadata = new_prop.metadata
@@ -140,6 +198,7 @@ class Pset(bonsai.core.tool.Pset):
                 metadata.name = prop.Name
                 metadata.is_null = value is None
                 metadata.is_optional = True
+                metadata.special_type = cls.get_special_type_for_prop(prop)
                 metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
 
     @classmethod
@@ -215,22 +274,7 @@ class Pset(bonsai.core.tool.Pset):
         metadata.is_optional = True
         metadata.is_uri = prop_template.PrimaryMeasureType == "IfcURIReference"
         metadata.data_type = cls.get_prop_template_primitive_type(prop_template)
-
-        special_type = ""
-        if (
-            prop_template.PrimaryMeasureType
-            in (
-                "IfcPositiveLengthMeasure",
-                "IfcLengthMeasure",
-            )
-            or prop_template.TemplateType == "Q_LENGTH"
-        ):
-            special_type = "LENGTH"
-        elif prop_template.PrimaryMeasureType == "IfcAreaMeasure" or prop_template.TemplateType == "Q_AREA":
-            special_type = "AREA"
-        elif prop_template.PrimaryMeasureType == "IfcVolumeMeasure" or prop_template.TemplateType == "Q_VOLUME":
-            special_type = "VOLUME"
-        metadata.special_type = special_type
+        metadata.special_type = cls.get_special_type_for_prop(prop_template)
 
         if metadata.data_type == "string":
             metadata.string_value = "" if metadata.is_null else str(data[prop_template.Name])
@@ -252,19 +296,41 @@ class Pset(bonsai.core.tool.Pset):
         props: bpy.types.PropertyGroup,
     ) -> None:
         if pset:
-            data = ifcopenshell.util.element.get_property_definition(pset)
+            data = ifcopenshell.util.element.get_property_definition(pset, verbose=True)
             del data["id"]
         else:
             data = {}
+        simplified_data = {prop_name: prop_data["value"] for prop_name, prop_data in data.items()}
+
+        # For every prop we first ensure that existing prop value type matches the template value type
+        # to prevent data loss and error casting data.
+        # Property will be added later by import_pset_from_existing.
         for prop_template in sorted(pset_template.HasPropertyTemplates, key=lambda p: p.Name):
-            if not prop_template.is_a("IfcSimplePropertyTemplate"):
+            if (
+                not prop_template.is_a("IfcSimplePropertyTemplate")
+                or prop_template.PrimaryMeasureType == "IfcComplexNumber"
+            ):
                 continue  # Other types not yet supported
+            prop_data = data.get(prop_template.Name)
             if prop_template.TemplateType == "P_SINGLEVALUE":
-                cls.import_single_value_from_template(pset_template, prop_template, data, props)
+                if prop_data:
+                    if prop_data["class"] != "IfcPropertySingleValue":
+                        continue
+                    template_data_type = cls.get_prop_template_primitive_type(prop_template)
+                    existing_data_type = prop_data.get("value_type", None)
+                    if existing_data_type and template_data_type != existing_data_type:
+                        continue
+                    continue
+                cls.import_single_value_from_template(pset_template, prop_template, simplified_data, props)
+
             elif prop_template.TemplateType.startswith("Q_"):
-                cls.import_single_value_from_template(pset_template, prop_template, data, props)
+                cls.import_single_value_from_template(pset_template, prop_template, simplified_data, props)
+
             elif prop_template.TemplateType == "P_ENUMERATEDVALUE":
-                cls.import_enumerated_value_from_template(prop_template, data, props)
+                if prop_data and prop_data["class"] != "IfcPropertyEnumeratedValue":
+                    continue
+                cls.import_enumerated_value_from_template(prop_template, simplified_data, props)
+
             else:
                 # NOTE: currently unsupported types:
                 # - P_BOUNDEDVALUE
@@ -300,8 +366,17 @@ class Pset(bonsai.core.tool.Pset):
 
     @classmethod
     def add_proposed_property(cls, name: str, value: Any, props: bpy.types.PropertyGroup) -> Union[None, str]:
+        from ifcopenshell.api.pset.edit_qto import infer_property_type
+
         if props.properties.get(name):
             return f"Property '{name}' already exists."
+        special_type = ""
+        if props.active_pset_type == "QTO":
+            if not isinstance(value, (float, int)):
+                return f"Quantity sets support only numeric values. Provided value: '{value}' ({type(value).__name__})."
+            property_type = infer_property_type(name, value)
+            if property_type in ("Area", "Length", "Volume"):
+                special_type = property_type.upper()
         prop = props.properties.add()
         prop.name = name
         metadata = prop.metadata
@@ -309,6 +384,7 @@ class Pset(bonsai.core.tool.Pset):
         metadata.name = name
         metadata.is_null = value is None
         metadata.is_optional = True
+        metadata.special_type = special_type
         metadata.set_value(metadata.get_value_default() if metadata.is_null else value)
 
     @classmethod

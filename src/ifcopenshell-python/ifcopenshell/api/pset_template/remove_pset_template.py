@@ -26,9 +26,7 @@ def remove_pset_template(file: ifcopenshell.file, pset_template: ifcopenshell.en
     along with it.
 
     :param pset_template: The IfcPropertySetTemplate to remove.
-    :type pset_template: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -40,6 +38,4 @@ def remove_pset_template(file: ifcopenshell.file, pset_template: ifcopenshell.en
         # Let's remove the template.
         ifcopenshell.api.pset_template.remove_pset_template(model, pset_template=template)
     """
-    settings = {"pset_template": pset_template}
-
-    ifcopenshell.util.element.remove_deep(file, settings["pset_template"])
+    ifcopenshell.util.element.remove_deep(file, pset_template)

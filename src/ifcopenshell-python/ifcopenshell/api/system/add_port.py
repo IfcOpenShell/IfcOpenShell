@@ -22,7 +22,9 @@ import ifcopenshell.api.system
 from typing import Optional
 
 
-def add_port(file: ifcopenshell.file, element: Optional[ifcopenshell.entity_instance] = None) -> None:
+def add_port(
+    file: ifcopenshell.file, element: Optional[ifcopenshell.entity_instance] = None
+) -> ifcopenshell.entity_instance:
     """Adds a new distribution port to an element
 
     A distribution port represents a connection point on an element, where
@@ -36,9 +38,7 @@ def add_port(file: ifcopenshell.file, element: Optional[ifcopenshell.entity_inst
 
     :param element: The IfcDistributionElement you want to add a
         distribution port to.
-    :type element: ifcopenshell.entity_instance, optional
     :return: The newly created IfcDistributionPort
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -52,11 +52,7 @@ def add_port(file: ifcopenshell.file, element: Optional[ifcopenshell.entity_inst
         port1 = ifcopenshell.api.system.add_port(model, element=duct)
         port2 = ifcopenshell.api.system.add_port(model, element=duct)
     """
-    settings = {
-        "element": element,
-    }
-
     port = ifcopenshell.api.root.create_entity(file, ifc_class="IfcDistributionPort")
-    if settings["element"]:
-        ifcopenshell.api.system.assign_port(file, element=settings["element"], port=port)
+    if element:
+        ifcopenshell.api.system.assign_port(file, element=element, port=port)
     return port

@@ -19,7 +19,7 @@
 import ifcopenshell.api.profile
 import pytest
 import test.bootstrap
-import ifcopenshell.api.void
+import ifcopenshell.api.feature
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.type
@@ -38,6 +38,29 @@ import ifcopenshell.api.aggregate
 import ifcopenshell.api.group
 import ifcopenshell.guid
 import ifcopenshell.util.element as subject
+from ifcopenshell.util.shape_builder import ShapeBuilder
+
+
+class TestIFC2X3MaterialProfilePsts(test.bootstrap.IFC2X3):
+    def test_get_profile_pset(self):
+        profile = ifcopenshell.api.profile.add_parameterized_profile(self.file, "IfcRectangleProfileDef")
+        pset = ifcopenshell.api.pset.add_pset(self.file, profile, "")
+        pset.Perimeter = 25.0
+        # We don't support them, just making sure there are no errors.
+        assert subject.get_pset(profile, "Test") is None
+        assert subject.get_psets(profile) == {}
+
+    def get_material_pset_extended_params(self):
+        material_with_extended_params = ifcopenshell.api.material.add_material(self.file)
+        pset = ifcopenshell.api.pset.add_pset(self.file, material_with_extended_params, "Test")
+        ifcopenshell.api.pset.edit_pset(self.file, pset, "Test", {"GassPressure": 25.0})
+        pset_data = subject.get_pset(material_with_extended_params, "Test")
+        del pset_data["id"]
+        assert pset_data == {"GassPressure": 25.0}
+        psets_data = subject.get_psets(material_with_extended_params)
+        for value in psets_data.values():
+            del value["id"]
+        assert psets_data == {"Test": {"GassPressure": 25.0}}
 
 
 class TestGetPsetIFC4(test.bootstrap.IFC4):
@@ -53,6 +76,7 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
             "id": 4,
             "class": "IfcPropertySingleValue",
             "value": "b",
+            "value_type": "IfcLabel",
         }
 
     def test_getting_the_psets_of_a_product_type_as_a_dictionary(self):
@@ -66,6 +90,7 @@ class TestGetPsetIFC4(test.bootstrap.IFC4):
                 "id": 3,
                 "class": "IfcPropertySingleValue",
                 "value": "y",
+                "value_type": "IfcLabel",
             },
             "id": pset.id(),
         }
@@ -384,6 +409,25 @@ class TestGetShapeAspects(test.bootstrap.IFC4):
         shape_aspect.PartOfProductDefinitionShape = product_shape
         assert tuple(subject.get_shape_aspects(element)) == (shape_aspect,)
 
+    def test_getting_the_shape_aspects_of_a_product_with_inheritance(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
+
+        # Setup type shape aspect.
+        type_shape_aspect = self.file.create_entity("IfcShapeAspect")
+        representation_map = self.file.create_entity("IfcRepresentationMap")
+        element_type.RepresentationMaps = (representation_map,)
+        type_shape_aspect.PartOfProductDefinitionShape = representation_map
+
+        # Setup occurrence shape aspect.
+        occurrence_shape_aspect = self.file.create_entity("IfcShapeAspect")
+        product_shape = self.file.create_entity("IfcProductDefinitionShape")
+        element.Representation = product_shape
+        occurrence_shape_aspect.PartOfProductDefinitionShape = product_shape
+
+        assert subject.get_shape_aspects(element) == [type_shape_aspect, occurrence_shape_aspect]
+
 
 class TestGetMaterial(test.bootstrap.IFC4):
     def test_getting_the_material_of_a_product(self):
@@ -532,6 +576,7 @@ class TestGetElementsByMaterial(test.bootstrap.IFC4):
         assert subject.get_elements_by_material(self.file, material) == {element}
 
     def test_getting_elements_of_a_material_layer_set(self):
+        self.file.create_entity("IfcProject")  # add_layer.
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         element_type = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
         ifcopenshell.api.type.assign_type(self.file, related_objects=[element], relating_type=element_type)
@@ -706,6 +751,18 @@ class TestGetElementsByRepresentation(test.bootstrap.IFC4):
         assert subject.get_elements_by_representation(self.file, representation) == {element}
 
 
+class TestGetElementsByProfile(test.bootstrap.IFC4):
+    def test_getting_elements_by_profile(self):
+        builder = ShapeBuilder(self.file)
+        self.file.create_entity("IfcProject")  # add_context.
+        element = self.file.create_entity("IfcWall")
+        model = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        extrusion = builder.extrude(profile := builder.profile(builder.rectangle()))
+        representation = builder.get_representation(model, items=[extrusion])
+        ifcopenshell.api.geometry.assign_representation(self.file, element, representation)
+        assert subject.get_elements_by_profile(profile) == {element}
+
+
 class TestGetElementsByLayer(test.bootstrap.IFC4):
     def test_getting_the_elements_of_a_layer(self):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
@@ -777,6 +834,26 @@ class TestGetContainerIFC4(test.bootstrap.IFC4):
         ifcopenshell.api.aggregate.assign_object(self.file, products=[subelement], relating_object=element)
         assert subject.get_container(subelement, should_get_direct=True) is None
 
+    def test_getting_the_specific_spatial_container_of_an_element(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[storey], relating_object=building)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=storey)
+        assert subject.get_container(element, ifc_class="IfcBuilding") == building
+        assert subject.get_container(element, ifc_class="IfcSite") == None
+
+    def test_getting_the_specific_spatial_container_of_an_element_indirectly(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[subelement], relating_object=element)
+        building = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuilding")
+        storey = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[storey], relating_object=building)
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=storey)
+        assert subject.get_container(subelement, ifc_class="IfcBuilding") == building
+        assert subject.get_container(subelement, ifc_class="IfcSite") == None
+
 
 class TestGetReferencedStructures(test.bootstrap.IFC4):
     def test_getting_references_of_an_element(self):
@@ -825,8 +902,8 @@ class TestGetDecompositionIFC4(test.bootstrap.IFC4):
         element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
         subsubelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
-        ifcopenshell.api.void.add_opening(self.file, element=element, opening=subelement)
-        ifcopenshell.api.void.add_filling(self.file, element=subsubelement, opening=subelement)
+        ifcopenshell.api.feature.add_feature(self.file, element=element, feature=subelement)
+        ifcopenshell.api.feature.add_filling(self.file, element=subsubelement, opening=subelement)
         results = subject.get_decomposition(element)
         assert subelement in results
         assert subsubelement in results
@@ -866,6 +943,72 @@ class TestGetNestIFC4(test.bootstrap.IFC4):
 
 
 class TestGetNestIFC2X3(test.bootstrap.IFC2X3, TestGetNestIFC4):
+    pass
+
+
+class TestGetPartsIFC4(test.bootstrap.IFC4):
+    def test_run(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.aggregate.assign_object(self.file, products=[subelement], relating_object=element)
+
+        # Test two separate rels.
+        rel = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRelAggregates")
+        subelement2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        rel.RelatingObject = element
+        rel.RelatedObjects = [subelement2]
+
+        assert set(subject.get_parts(element)) == {subelement, subelement2}
+
+
+class TestGetPartsIFC2X3(test.bootstrap.IFC2X3, TestGetPartsIFC4):
+    pass
+
+
+class TestGetContainedIFC4(test.bootstrap.IFC4):
+    def test_run(self):
+        container = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcBuildingStorey")
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.spatial.assign_container(self.file, products=[element], relating_structure=container)
+
+        # Test two separate rels.
+        rel = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRelContainedInSpatialStructure")
+        element2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        rel.RelatingStructure = container
+        rel.RelatedElements = [element2]
+
+        assert set(subject.get_contained(container)) == {element, element2}
+
+
+class TestGetContainedIFC2X3(test.bootstrap.IFC2X3, TestGetContainedIFC4):
+    pass
+
+
+class TestGetComponentsIFC4(test.bootstrap.IFC4):
+    def test_run(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcElementAssembly")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        ifcopenshell.api.nest.assign_object(self.file, related_objects=[subelement], relating_object=element)
+
+        # Test two separate rels.
+        rel = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcRelNests")
+        subelement2 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
+        rel.RelatingObject = element
+        rel.RelatedObjects = [subelement2]
+
+        assert set(subject.get_components(element)) == {subelement, subelement2}
+
+    def test_include_ports(self):
+        element = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowSegment")
+        port = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDistributionPort")
+        subelement = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcFlowSegment")
+        ifcopenshell.api.nest.assign_object(self.file, related_objects=[port, subelement], relating_object=element)
+
+        assert set(subject.get_components(element)) == {subelement}
+        assert set(subject.get_components(element, include_ports=True)) == {port, subelement}
+
+
+class TestGetComponentsIFC2X3(test.bootstrap.IFC2X3, TestGetComponentsIFC4):
     pass
 
 

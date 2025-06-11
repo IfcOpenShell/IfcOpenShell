@@ -38,16 +38,6 @@ using namespace IfcGeom;
 using namespace ifcopenshell::geometry;
 using namespace ifcopenshell::geometry::kernels;
 
-void CgalKernel::remove_duplicate_points_from_loop(cgal_wire_t& polygon) {
-	std::set<cgal_point_t> points;
-	for (int i = 0; i < polygon.size(); ++i) {
-		if (points.count(polygon[i])) {
-			polygon.erase(polygon.begin() + i);
-			--i;
-		} else points.insert(polygon[i]);
-	}
-}
-
 namespace {
 	struct PolyhedronBuilder : public CGAL::Modifier_base<CGAL::Polyhedron_3<Kernel_>::HalfedgeDS> {
 	private:
@@ -88,16 +78,8 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(std
 		//    fresult << polyhedron << std::endl;
 		//    fresult.close();
 		return CGAL::Polyhedron_3<Kernel_>();
-	} if (polyhedron.is_closed()) {
-		try {
-			if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
-				CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
-			}
-		} catch (CGAL::Failure_exception& e) {
-			Logger::Message(Logger::LOG_ERROR, e);
-		}
 	}
-
+	
 	//  std::cout << "After: " << polyhedron.size_of_vertices() << " vertices and " << polyhedron.size_of_facets() << " facets" << std::endl;
 
 	return polyhedron;
@@ -122,6 +104,15 @@ CGAL::Polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_polyhedron(con
 
 CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(std::list<cgal_face_t> &face_list) {
 	CGAL::Polyhedron_3<Kernel_> polyhedron = create_polyhedron(face_list);
+	if (polyhedron.is_closed()) {
+		try {
+			if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+				CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+			}
+		} catch (CGAL::Failure_exception& e) {
+			Logger::Message(Logger::LOG_ERROR, e);
+		}
+	}
 	CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
 	CGAL::Nef_polyhedron_3<Kernel_> nef_polyhedron;
 	try {
@@ -135,6 +126,17 @@ CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhe
 CGAL::Nef_polyhedron_3<Kernel_> ifcopenshell::geometry::utils::create_nef_polyhedron(CGAL::Polyhedron_3<Kernel_> &polyhedron) {
 	// @todo needed?
 	polyhedron.normalize_border();
+
+	if (polyhedron.is_closed()) {
+		try {
+			if (!CGAL::Polygon_mesh_processing::is_outward_oriented(polyhedron)) {
+				CGAL::Polygon_mesh_processing::reverse_face_orientations(polyhedron);
+			}
+		} catch (CGAL::Failure_exception& e) {
+			Logger::Message(Logger::LOG_ERROR, e);
+		}
+	}
+
 	if (polyhedron.is_valid(false, 3) && polyhedron.is_closed()) {
 		// @todo is it necessary to triangulat?
 		CGAL::Polygon_mesh_processing::triangulate_faces(polyhedron);
@@ -711,17 +713,31 @@ bool CgalKernel::convert(const taxonomy::loop::ptr loop, cgal_wire_t& result) {
 	// A loop should consist of at least three vertices
 	std::size_t original_count = polygon.size();
 	if (original_count < 3) {
-		Logger::Message(Logger::LOG_ERROR, "Not enough edges for:", loop->instance);
+		Logger::Warning("Not enough edges for:", loop->instance);
 		return false;
 	}
 
 	// Remove points that are too close to one another
-	remove_duplicate_points_from_loop(polygon);
+	// this is done now in the mapping layer with Eigen
+	// remove_duplicate_points_from_loop(polygon);
 
 	std::size_t count = polygon.size();
 	if (original_count - count != 0) {
 		std::stringstream ss; ss << (original_count - count) << " edges removed for:";
-		Logger::Message(Logger::LOG_WARNING, ss.str(), loop->instance);
+		Logger::Warning(ss.str(), loop->instance);
+	}
+
+	{
+		std::set<cgal_point_t> visited_points;
+		for (auto& p : polygon) {
+			if (visited_points.find(p) != visited_points.end()) {
+				Logger::Error("Skipping self-intersecting loop", loop->instance);
+				// @todo signal somehow that occt kernel might be able to solve this
+				// @todo implement cycle detection using Arrangement_2, but that only works in exact kernel
+				return false;
+			}
+			visited_points.insert(p);
+		}
 	}
 
 	std::vector<Kernel_::Segment_3> segments;
@@ -1039,13 +1055,24 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::dir
 
 	std::list<cgal_face_t> face_list;
 
+	auto& fs = direction->ccomponents();
+	cgal_direction_t dir(fs(0), fs(1), fs(2));
+
 	int wi = 0;
 	for (auto& w : faces_to_extrude) {
 
-		face_list.push_back(cgal_face_t{ w });
+		auto fnorm = newell(w);
+		const bool reverse = fnorm * dir > 0;
 
-		auto& fs = direction->ccomponents();
-		cgal_direction_t dir(fs(0), fs(1), fs(2));
+		if (reverse) {
+			cgal_face_t bottom_face;
+			for (auto vertex = w.rbegin(); vertex != w.rend(); ++vertex) {
+				bottom_face.outer.push_back(*vertex);
+			}
+			face_list.push_back(bottom_face);
+		} else {
+			face_list.push_back(cgal_face_t{ w });
+		}
 
 		int si = 0;
 		for (std::vector<Kernel_::Point_3>::const_iterator current_vertex = w.begin();
@@ -1061,19 +1088,31 @@ bool CgalKernel::process_extrusion(const cgal_face_t& bottom_face, taxonomy::dir
 			}
 
 			cgal_face_t side_face;
-			side_face.outer.push_back(*next_vertex);
-			side_face.outer.push_back(*current_vertex);
-			side_face.outer.push_back(*current_vertex + height * dir);
-			side_face.outer.push_back(*next_vertex + height * dir);
+			if (reverse) {
+				side_face.outer.push_back(*current_vertex + height * dir);
+				side_face.outer.push_back(*next_vertex + height * dir);
+				side_face.outer.push_back(*next_vertex);
+				side_face.outer.push_back(*current_vertex);
+			} else {
+				side_face.outer.push_back(*current_vertex);
+				side_face.outer.push_back(*next_vertex);
+				side_face.outer.push_back(*next_vertex + height * dir);
+				side_face.outer.push_back(*current_vertex + height * dir);
+			}
 			face_list.push_back(side_face);
 		}
 
 		cgal_face_t top_face;
-		for (std::vector<Kernel_::Point_3>::const_reverse_iterator vertex = w.rbegin();
-			vertex != w.rend();
-			++vertex) {
-			top_face.outer.push_back(*vertex + height * dir);
-		} face_list.push_back(top_face);
+		if (reverse) {
+			for (auto vertex = w.begin(); vertex != w.end(); ++vertex) {
+				top_face.outer.push_back(*vertex + height * dir);
+			}
+		} else {
+			for (auto vertex = w.rbegin(); vertex != w.rend(); ++vertex) {
+				top_face.outer.push_back(*vertex + height * dir);
+			}
+		}
+		face_list.push_back(top_face);
 
 		wi++;
 	}
@@ -1930,6 +1969,17 @@ bool CgalKernel::convert_impl(const taxonomy::boolean_result::ptr br, Conversion
 				if (!convert(face, fs) || fs.size() != 1) {
 					return false;
 				}
+				
+				auto& w = fs.front().outer;
+				CGAL::Polygon_2<Kernel_> ps;
+				for (auto& p : w) {
+					ps.push_back({ p.x(), p.y() });
+				}
+				if (!ps.is_simple()) {
+					Logger::Warning("Polygonal boundary not simple", face->children[0]->instance);
+					continue;
+				}
+
 				// static 
 				auto z = taxonomy::make<taxonomy::direction3>(0, 0, 1);
 				cgal_shape_t poly;

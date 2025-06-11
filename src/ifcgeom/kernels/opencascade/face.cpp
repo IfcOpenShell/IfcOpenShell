@@ -270,7 +270,8 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 
 	face_definition fd;
 
-	if (face->basis) {
+	// when the surface is planar we do not care about it
+	if (face->basis && face->basis->kind() != taxonomy::PLANE) {
 		fd.surface() = convert_surface(face->basis);
 	}
 
@@ -324,6 +325,19 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 
 			if (!same_sense) {
 				wire.Reverse();
+			}
+
+			// @todo does wire intersection handling respect/preserve orientation?
+			wire_tolerance_settings settings{
+				!settings_.get<settings::NoWireIntersectionCheck>().get(),
+				!settings_.get<settings::NoWireIntersectionTolerance>().get(),
+				0.,
+				settings_.get<settings::Precision>().get()
+			};
+			TopTools_ListOfShape results;
+			if (settings.use_wire_intersection_check && util::wire_intersections(wire, results, settings)) {
+				Logger::Warning("Self-intersections with " + boost::lexical_cast<std::string>(results.Extent()) + " cycles detected");
+				util::select_largest(results, wire);
 			}
 
 			wire_senses.Bind(wire.Oriented(TopAbs_FORWARD), same_sense ? TopAbs_FORWARD : TopAbs_REVERSED);
@@ -429,7 +443,38 @@ bool OpenCascadeKernel::convert(const taxonomy::face::ptr face, TopoDS_Shape& re
 					mf.Add(*it);
 				}
 
-				face_list.Append(mf.Face());
+				ShapeFix_Shape sfs(mf.Face());
+				Handle(ShapeExtend_MsgRegistrator) msg;
+				msg = new ShapeExtend_MsgRegistrator;
+				sfs.SetMsgRegistrator(msg);
+				sfs.Perform();
+
+				ShapeExtend_DataMapIteratorOfDataMapOfShapeListOfMsg jt(msg->MapShape());
+				for (; jt.More(); jt.Next()) {
+					Message_ListIteratorOfListOfMsg kt(jt.Value());
+					for (; kt.More(); kt.Next()) {
+						char* c = new char[kt.Value().Original().LengthOfCString() + 1];
+						kt.Value().Original().ToUTF8CString(c);
+						std::string message = c;
+						delete[] c;
+						Logger::Warning(message, face->instance);
+					}
+				}
+
+				if (sfs.Shape().ShapeType() == TopAbs_FACE) {
+					face_list.Append(sfs.Shape());
+				} else if (sfs.Shape().ShapeType() == TopAbs_COMPOUND) {
+					TopoDS_Iterator it(sfs.Shape());
+					for (; it.More(); it.Next()) {
+						if (it.Value().ShapeType() == TopAbs_FACE) {
+							face_list.Append(it.Value());
+						} else {
+							Logger::Error("Unsupported output from face healing");
+						}
+					}
+				} else {
+					Logger::Error("Unsupported output from face healing");
+				}
 			} else {
 				face_list.Append(f);
 			}

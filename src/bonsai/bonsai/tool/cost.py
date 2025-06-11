@@ -1,35 +1,72 @@
-import os
+# Bonsai - OpenBIM Blender Add-on
+# Copyright (C) 2021 Dion Moult <dion@thinkmoult.com>, 2022 Yassine Oualid <yassine@sigmadimensions.com>
+#
+# This file is part of Bonsai.
+#
+# Bonsai is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# Bonsai is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
+
+from __future__ import annotations
 import bpy
 import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.api
+import ifcopenshell.api.cost
+import ifcopenshell.api.nest
 import ifcopenshell.util.element
 import ifcopenshell.util.date
 import ifcopenshell.util.cost
 import ifcopenshell.util.unit
 import bonsai.bim.helper
 import json
-from typing import Optional, Any, Generator, Union, Literal
+from pathlib import Path
+from typing import Optional, Any, Union, Literal, TYPE_CHECKING, assert_never
+from collections.abc import Generator
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.cost.prop import BIMCostProperties, CostItemQuantity
 
 
 class Cost(bonsai.core.tool.Cost):
 
     RELATED_OBJECT_TYPE = Literal["PRODUCT", "PROCESS", "RESOURCE"]
 
+    # TODO: Do we really need them cached as class attributes?
+    contracted_cost_items: list[int]
+    """List of contracted cost item ids."""
+
+    contracted_cost_item_rates: list[int]
+    """List of contracted const item rates ids."""
+
+    @classmethod
+    def get_cost_props(cls) -> BIMCostProperties:
+        return bpy.context.scene.BIMCostProperties
+
     @classmethod
     def get_cost_schedule_attributes(cls) -> dict[str, Any]:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         return bonsai.bim.helper.export_attributes(props.cost_schedule_attributes)
 
     @classmethod
     def disable_editing_cost_schedule(cls) -> None:
         cls.store_active_schedule_columns()
-        bpy.context.scene.BIMCostProperties.active_cost_schedule_id = 0
+        props = cls.get_cost_props()
+        props.active_cost_schedule_id = 0
         cls.disable_editing_cost_item()
 
     @classmethod
     def load_active_schedule_columns(cls) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         active_columns = props.columns
         storage = props.columns_storage
         active_cost_schedule_id = cls.get_active_cost_schedule().id()
@@ -52,7 +89,7 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def store_active_schedule_columns(cls) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         active_columns = props.columns
         storage = props.columns_storage
         active_cost_schedule_id = cls.get_active_cost_schedule().id()
@@ -66,7 +103,7 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def remove_stored_schedule_columns(cls, cost_schedule: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         storage = props.columns_storage
         active_cost_schedule_id = cost_schedule.id()
 
@@ -78,8 +115,9 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def enable_editing_cost_schedule_attributes(cls, cost_schedule: ifcopenshell.entity_instance) -> None:
-        bpy.context.scene.BIMCostProperties.active_cost_schedule_id = cost_schedule.id()
-        bpy.context.scene.BIMCostProperties.is_editing = "COST_SCHEDULE_ATTRIBUTES"
+        props = cls.get_cost_props()
+        props.active_cost_schedule_id = cost_schedule.id()
+        props.is_editing = "COST_SCHEDULE_ATTRIBUTES"
 
     @classmethod
     def load_cost_schedule_attributes(cls, cost_schedule: ifcopenshell.entity_instance) -> None:
@@ -88,13 +126,13 @@ class Cost(bonsai.core.tool.Cost):
                 prop.string_value = "" if prop.is_null else ifcopenshell.util.date.ifc2datetime(data[name]).isoformat()
                 return True
 
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.cost_schedule_attributes.clear()
         bonsai.bim.helper.import_attributes2(cost_schedule, props.cost_schedule_attributes, callback=special_import)
 
     @classmethod
     def enable_editing_cost_items(cls, cost_schedule: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.active_cost_schedule_id = cost_schedule.id()
         props.is_editing = "COST_ITEMS"
 
@@ -111,7 +149,7 @@ class Cost(bonsai.core.tool.Cost):
 
             device = aud.Device()
             # chaching.mp3 is by Lucish_ CC-BY-3.0 https://freesound.org/people/Lucish_/sounds/554841/
-            sound = aud.Sound(os.path.join(bpy.context.scene.BIMProperties.data_dir, "chaching.mp3"))
+            sound = aud.Sound(tool.Blender.get_data_dir_path(filename="chaching.mp3").__str__())
             handle = device.play(sound)
             sound_buffered = aud.Sound.buffer(sound)
             handle_buffered = device.play(sound_buffered)
@@ -122,7 +160,7 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def load_cost_schedule_tree(cls) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.is_cost_update_enabled = False
         cost_schedule = tool.Ifc.get().by_id(props.active_cost_schedule_id)
         props.cost_items.clear()
@@ -132,20 +170,23 @@ class Cost(bonsai.core.tool.Cost):
             for rel in cost_schedule.Controls or []
             for cost_item in rel.RelatedObjects or []
         ]
+        props.active_cost_item_index = tool.Blender.get_valid_uilist_index(
+            props.active_cost_item_index, props.cost_items
+        )
         props.is_cost_update_enabled = True
 
     @classmethod
-    def expand_cost_item(cls, cost_item: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
+    def expand_cost_item(cls, cost_item_id: int) -> None:
+        props = cls.get_cost_props()
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        if cost_item.id() in cls.contracted_cost_items:
-            cls.contracted_cost_items.remove(cost_item.id())
+        if cost_item_id in cls.contracted_cost_items:
+            cls.contracted_cost_items.remove(cost_item_id)
             props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
     def expand_cost_items(cls) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         cls.contracted_cost_items = json.loads(props.contracted_cost_items)
         for cost_item in props.cost_items:
             if cost_item.ifc_definition_id in cls.contracted_cost_items:
@@ -153,16 +194,16 @@ class Cost(bonsai.core.tool.Cost):
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
-    def contract_cost_item(cls, cost_item: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
+    def contract_cost_item(cls, cost_item_id: int) -> None:
+        props = cls.get_cost_props()
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
-        cls.contracted_cost_items.append(cost_item.id())
+        cls.contracted_cost_items.append(cost_item_id)
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
 
     @classmethod
     def contract_cost_items(cls) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
         for cost_item in props.cost_items:
@@ -172,47 +213,50 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def clean_up_cost_item_tree(cls, cost_item_id: int) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        """Clean up cost item tree after ``cost_item_id`` was deleted."""
+        props = cls.get_cost_props()
         if not hasattr(cls, "contracted_cost_items"):
             cls.contracted_cost_items = json.loads(props.contracted_cost_items)
         if props.active_cost_item_id == cost_item_id:
             props.active_cost_item_id = 0
-        if props.active_cost_item_index in cls.contracted_cost_items:
-            cls.contracted_cost_items.remove(props.active_cost_item_index)
+        if cost_item_id in cls.contracted_cost_items:
+            cls.contracted_cost_items.remove(cost_item_id)
         props.contracted_cost_items = json.dumps(cls.contracted_cost_items)
         cls.enable_editing_cost_items(cost_schedule=tool.Ifc.get().by_id(props.active_cost_schedule_id))
 
     @classmethod
     def enable_editing_cost_item_attributes(cls, cost_item: ifcopenshell.entity_instance):
-        bpy.context.scene.BIMCostProperties.active_cost_item_id = cost_item.id()
-        bpy.context.scene.BIMCostProperties.cost_item_editing_type = "ATTRIBUTES"
+        props = cls.get_cost_props()
+        props.active_cost_item_id = cost_item.id()
+        props.cost_item_editing_type = "ATTRIBUTES"
 
     @classmethod
     def load_cost_item_attributes(cls, cost_item: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.cost_item_attributes.clear()
         bonsai.bim.helper.import_attributes2(cost_item, props.cost_item_attributes)
 
     @classmethod
     def disable_editing_cost_item(cls) -> None:
-        bpy.context.scene.BIMCostProperties.active_cost_item_id = 0
-        bpy.context.scene.BIMCostProperties.change_cost_item_parent = False
+        props = cls.get_cost_props()
+        props.active_cost_item_id = 0
+        props.change_cost_item_parent = False
 
     @classmethod
     def get_cost_item_attributes(cls) -> dict[str, Any]:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         return bonsai.bim.helper.export_attributes(props.cost_item_attributes)
 
     @classmethod
     def get_active_cost_item(cls) -> Union[ifcopenshell.entity_instance, None]:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         if not props.active_cost_item_id:
             return None
-        return tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.active_cost_item_id)
+        return tool.Ifc.get().by_id(props.active_cost_item_id)
 
     @classmethod
     def get_highlighted_cost_item(cls) -> Union[ifcopenshell.entity_instance, None]:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         if not props.active_cost_schedule_id:
             return
         if props.active_cost_item_index < len(props.cost_items):
@@ -225,7 +269,7 @@ class Cost(bonsai.core.tool.Cost):
             cost_item = cls.get_highlighted_cost_item()
             if not cost_item:
                 return
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.cost_item_type_products.clear()
         # TODO implement process and resource types
         # props.cost_item_processes.clear()
@@ -246,7 +290,11 @@ class Cost(bonsai.core.tool.Cost):
     def load_cost_item_quantity_assignments(
         cls, cost_item: ifcopenshell.entity_instance, related_object_type: RELATED_OBJECT_TYPE
     ) -> None:
-        def create_list_items(collection, cost_item, is_deep):
+        def create_list_items(
+            collection: bpy.types.bpy_prop_collection_idprop[CostItemQuantity],
+            cost_item: ifcopenshell.entity_instance,
+            is_deep: bool,
+        ) -> None:
             products = cls.get_cost_item_assignments(cost_item, filter_by_type=related_object_type, is_deep=False)
             for product in products:
                 new = collection.add()
@@ -259,18 +307,18 @@ class Cost(bonsai.core.tool.Cost):
                 for cost_item in ifcopenshell.util.cost.get_nested_cost_items(cost_item, is_deep):
                     create_list_items(collection, cost_item, is_deep=False)
 
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         if related_object_type == "PRODUCT":
             props.cost_item_products.clear()
-            is_deep = bpy.context.scene.BIMCostProperties.show_nested_elements
+            is_deep = props.show_nested_elements
             create_list_items(props.cost_item_products, cost_item, is_deep)
         elif related_object_type == "PROCESS":
             props.cost_item_processes.clear()
-            is_deep = bpy.context.scene.BIMCostProperties.show_nested_tasks
+            is_deep = props.show_nested_tasks
             create_list_items(props.cost_item_processes, cost_item, is_deep)
         elif related_object_type == "RESOURCE":
             props.cost_item_resources.clear()
-            is_deep = bpy.context.scene.BIMCostProperties.show_nested_resources
+            is_deep = props.show_nested_resources
             create_list_items(props.cost_item_resources, cost_item, is_deep)
 
     @classmethod
@@ -285,14 +333,17 @@ class Cost(bonsai.core.tool.Cost):
         cls, cost_item: ifcopenshell.entity_instance, product: ifcopenshell.entity_instance
     ) -> tuple[list[ifcopenshell.entity_instance], Union[str, None]]:
         selected_quantitites = []
-        unit = ""
+        unit = None
+        cost_quantities = cost_item.CostQuantities
+        if not cost_quantities:
+            return selected_quantitites, unit
+
+        cost_quantities = set(cost_quantities)
         for quantities in ifcopenshell.util.element.get_psets(product, qtos_only=True).values():
             for qto in tool.Ifc.get().by_id(quantities["id"]).Quantities or []:
-                for quantity in cost_item.CostQuantities or []:
-                    if quantity == qto:
-                        selected_quantitites.append(quantity)
-                        if not unit:
-                            unit = cls.get_quantity_unit_symbol(quantity)
+                if qto in cost_quantities:
+                    selected_quantitites.append(qto)
+        unit = next((symbol for q in cost_quantities if (symbol := cls.get_quantity_unit_symbol(q))), None)
         return selected_quantitites, unit
 
     @classmethod
@@ -315,33 +366,35 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def enable_editing_cost_item_quantities(cls, cost_item: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.active_cost_item_id = cost_item.id()
         props.cost_item_editing_type = "QUANTITIES"
 
     @classmethod
     def enable_editing_cost_item_quantity(cls, physical_quantity: ifcopenshell.entity_instance) -> None:
-        bpy.context.scene.BIMCostProperties.active_cost_item_quantity_id = physical_quantity.id()
+        props = cls.get_cost_props()
+        props.active_cost_item_quantity_id = physical_quantity.id()
 
     @classmethod
     def load_cost_item_quantity_attributes(cls, physical_quantity: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.quantity_attributes.clear()
         bonsai.bim.helper.import_attributes2(physical_quantity, props.quantity_attributes)
 
     @classmethod
     def enable_editing_cost_item_values(cls, cost_item: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.active_cost_item_id = cost_item.id()
         props.cost_item_editing_type = "VALUES"
 
     @classmethod
     def disable_editing_cost_item_quantity(cls) -> None:
-        bpy.context.scene.BIMCostProperties.active_cost_item_quantity_id = 0
+        props = cls.get_cost_props()
+        props.active_cost_item_quantity_id = 0
 
     @classmethod
     def get_cost_item_quantity_attributes(cls) -> dict[str, Any]:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         return bonsai.bim.helper.export_attributes(props.quantity_attributes)
 
     @classmethod
@@ -350,7 +403,8 @@ class Cost(bonsai.core.tool.Cost):
     ) -> dict[str, Any]:
         if cost_type == "FIXED":
             category = None
-            attributes = {"AppliedValue": bpy.context.scene.BIMCostProperties.fixed_cost_value}
+            props = cls.get_cost_props()
+            attributes = {"AppliedValue": props.fixed_cost_value}
         elif cost_type == "SUM":
             category = "*"
             attributes = {"Category": category}
@@ -398,9 +452,10 @@ class Cost(bonsai.core.tool.Cost):
                             break
                 return True
 
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.cost_value_attributes.clear()
-        is_rates = cls.is_active_schedule_of_rates()
+        # is_rates = cls.is_active_schedule_of_rates()
+        is_rates = True  # so it is possible to assign a cost item rate that it not only from a  Schedule of Rate
         callback = lambda name, prop, data: import_attributes(
             name, prop, data, cost_value, is_rates, props.cost_value_attributes
         )
@@ -414,38 +469,37 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def is_active_schedule_of_rates(cls) -> bool:
-        return (
-            tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.active_cost_schedule_id).PredefinedType
-            == "SCHEDULEOFRATES"
-        )
+        props = cls.get_cost_props()
+        return tool.Ifc.get().by_id(props.active_cost_schedule_id).PredefinedType == "SCHEDULEOFRATES"
 
     @classmethod
     def enable_editing_cost_item_value(cls, cost_value: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.active_cost_value_id = cost_value.id()
         props.cost_value_editing_type = "ATTRIBUTES"
 
     @classmethod
     def disable_editing_cost_item_value(cls) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.active_cost_value_id = 0
         props.cost_value_editing_type = ""
 
     @classmethod
     def load_cost_item_value_formula_attributes(cls, cost_value: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.cost_value_attributes.clear()
-        bpy.context.scene.BIMCostProperties.cost_value_formula = ifcopenshell.util.cost.serialise_cost_value(cost_value)
+        props.cost_value_formula = ifcopenshell.util.cost.serialise_cost_value(cost_value)
 
     @classmethod
     def enable_editing_cost_item_value_formula(cls, cost_value: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.active_cost_value_id = cost_value.id()
         props.cost_value_editing_type = "FORMULA"
 
     @classmethod
     def get_cost_item_value_formula(cls) -> str:
-        return bpy.context.scene.BIMCostProperties.cost_value_formula
+        props = cls.get_cost_props()
+        return props.cost_value_formula
 
     @classmethod
     def get_cost_value_attributes(cls) -> dict[str, Any]:
@@ -462,15 +516,14 @@ class Cost(bonsai.core.tool.Cost):
             if prop.name == "UnitBasisUnit":
                 return True
 
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         callback = lambda attributes, prop: export_attributes(attributes, prop)
         return bonsai.bim.helper.export_attributes(props.cost_value_attributes, callback)
 
     @classmethod
     def get_cost_value_unit_component(cls) -> ifcopenshell.entity_instance:
-        return tool.Ifc.get().by_id(
-            int(bpy.context.scene.BIMCostProperties.cost_value_attributes.get("UnitBasisUnit").enum_value)
-        )
+        props = cls.get_cost_props()
+        return tool.Ifc.get().by_id(int(props.cost_value_attributes["UnitBasisUnit"].enum_value))
 
     @classmethod
     def get_cost_item_assignments(
@@ -485,7 +538,8 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def show_nested_cost_item_elements(cls) -> bool:
-        return bpy.context.scene.BIMCostProperties.show_nested_elements
+        props = cls.get_cost_props()
+        return props.show_nested_elements
 
     @classmethod
     def get_cost_item_products(
@@ -521,50 +575,129 @@ class Cost(bonsai.core.tool.Cost):
         return products
 
     @classmethod
-    def import_cost_schedule_csv(cls, file_path: Optional[str] = None, is_schedule_of_rates: bool = False) -> None:
+    def import_cost_schedule_csv(
+        cls, file_path: Optional[str] = None, is_schedule_of_rates: bool = False
+    ) -> ifcopenshell.entity_instance:
         if not file_path:
             return
         from ifc5d.csv2ifc import Csv2Ifc
         import time
 
         start = time.time()
+        csv2ifc = Csv2Ifc(file_path, tool.Ifc.get(), is_schedule_of_rates=is_schedule_of_rates)
+        csv2ifc.execute()
+        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        return csv2ifc.cost_schedule
+
+    @classmethod
+    def add_csv_filepath(
+        cls,
+        file_path: Optional[str] = None,
+        is_schedule_of_rates: bool = False,
+        cost_schedule: ifcopenshell.entity_instance = None,
+    ) -> None:
+        if not file_path:
+            return
+
+        props = cls.get_cost_props()
+        if not props.active_cost_schedule_id in [item.cost_schedule_id for item in props.cost_schedule_files]:
+            item = props.cost_schedule_files.add()
+            item.cost_schedule_id = cost_schedule.id()
+            item.csv_filepath = file_path
+        else:
+            return
+
+    @classmethod
+    def remove_csv_filepath(cls, cost_schedule: ifcopenshell.entity_instance = None) -> None:
+        if not cost_schedule:
+            return
+
+        props = cls.get_cost_props()
+        cost_schedule_id = cost_schedule.id()
+        if cost_schedule_id in [item.cost_schedule_id for item in props.cost_schedule_files]:
+            for i, item in enumerate(props.cost_schedule_files):
+                if item.cost_schedule_id == cost_schedule_id:
+                    props.cost_schedule_files.remove(i)
+                    print(f"Cost schedule id={cost_schedule_id} csv filepath correctly removed")
+                    return
+        else:
+            return
+
+    @classmethod
+    def delete_all_cost_items(cls):
+        cost_schedule = tool.Cost.get_active_cost_schedule()
+        items = ifcopenshell.util.cost.get_root_cost_items(cost_schedule)
+        for item in items:
+            cost_item_id = item.id()
+            ifcopenshell.api.cost.remove_cost_item(tool.Ifc.get(), cost_item=item)
+            tool.Cost.clean_up_cost_item_tree(cost_item_id)
+
+    @classmethod
+    def refresh_cost_schedule_csv(cls):
+        from ifc5d.csv2ifc import Csv2Ifc
+
+        props = cls.get_cost_props()
+        cost_schedule_id = props.active_cost_schedule_id
+        file_path = next(
+            (item.csv_filepath for item in props.cost_schedule_files if item.cost_schedule_id == cost_schedule_id), None
+        )
+        if not file_path:
+            return
+
+        cost_schedule = tool.Ifc.get_entity_by_id(cost_schedule_id)
+
         csv2ifc = Csv2Ifc()
         csv2ifc.csv = file_path
         csv2ifc.file = tool.Ifc.get()
-        csv2ifc.is_schedule_of_rates = is_schedule_of_rates
-        csv2ifc.execute()
-        print("Import finished in {:.2f} seconds".format(time.time() - start))
+        csv2ifc.cost_schedule = cost_schedule
+        csv2ifc.is_schedule_of_rates = False
+        csv2ifc.refresh()
+
+        print("Csv file correctly refreshed")
 
     @classmethod
     def add_cost_column(cls, name: str) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         new = props.columns.add()
         new.name = name
 
     @classmethod
     def remove_cost_column(cls, name: str) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.columns.remove(props.columns.find(name))
 
     @classmethod
-    def expand_cost_item_rate(cls, cost_item: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
-        contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
-        contracted_cost_item_rates.remove(cost_item)
-        props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
-        cls.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
+    def get_active_schedule_of_rates(cls) -> Union[ifcopenshell.entity_instance, None]:
+        props = cls.get_cost_props()
+        schedule_id = tool.Blender.get_enum_safe(props, "schedule_of_rates")
+        if schedule_id is None:
+            return
+        return tool.Ifc.get().by_id(int(schedule_id))
 
     @classmethod
-    def contract_cost_item_rate(cls, cost_item: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
-        contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
-        contracted_cost_item_rates.append(cost_item)
-        props.contracted_cost_item_rates = json.dumps(contracted_cost_item_rates)
-        cls.load_schedule_of_rates_tree(schedule_of_rates=tool.Ifc.get().by_id(int(props.schedule_of_rates)))
+    def expand_cost_item_rate(cls, cost_item_id: int) -> None:
+        props = cls.get_cost_props()
+        if not hasattr(cls, "contracted_cost_item_rates"):
+            cls.contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
+        if cost_item_id in cls.contracted_cost_item_rates:
+            cls.contracted_cost_item_rates.remove(cost_item_id)
+            props.contracted_cost_item_rates = json.dumps(cls.contracted_cost_item_rates)
+
+    @classmethod
+    def contract_cost_item_rate(cls, cost_item_id: int) -> None:
+        props = cls.get_cost_props()
+        if not hasattr(cls, "contracted_cost_item_rates"):
+            cls.contracted_cost_item_rates = json.loads(props.contracted_cost_item_rates)
+        cls.contracted_cost_item_rates.append(cost_item_id)
+        props.contracted_cost_item_rates = json.dumps(cls.contracted_cost_item_rates)
 
     @classmethod
     def create_new_cost_item_li(
-        cls, props_collection, cost_item: ifcopenshell.entity_instance, level_index: int, type: str = "cost_rate"
+        cls,
+        props_collection,
+        cost_item: ifcopenshell.entity_instance,
+        level_index: int,
+        type: Literal["cost", "cost_rate"] = "cost_rate",
     ) -> None:
         new = props_collection.add()
         new.ifc_definition_id = cost_item.id()
@@ -587,7 +720,7 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def load_schedule_of_rates_tree(cls, schedule_of_rates: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.is_cost_update_enabled = False
         props.cost_item_rates.clear()
         props.columns.clear()
@@ -601,16 +734,19 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def export_cost_schedules(
-        cls, filepath: str, format: str, cost_schedule: Optional[ifcopenshell.entity_instance] = None
+        cls,
+        dirpath: str,
+        format: Literal["CSV", "ODS", "XLSX"],
+        cost_schedule: Optional[ifcopenshell.entity_instance] = None,
     ) -> Union[str, None]:
         import subprocess
         import os
         import sys
 
-        if filepath:
-            path = filepath
+        if dirpath:
+            path = dirpath
         else:
-            path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "build", "cost_schedules")
+            path = tool.Blender.get_data_dir_path(Path("build") / "cost_schedules").__str__()
 
         if not os.path.exists(path):
             os.makedirs(path)
@@ -629,6 +765,8 @@ class Cost(bonsai.core.tool.Cost):
 
             writer = Ifc5DXlsxWriter(file=tool.Ifc.get(), output=path, cost_schedule=cost_schedule)
             writer.write()
+        else:
+            assert_never(format)
         try:
             if path:
                 if sys.platform == "win32":
@@ -671,31 +809,31 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def is_cost_schedule_active(cls, cost_schedule: ifcopenshell.entity_instance) -> bool:
-        return True if cost_schedule.id() == bpy.context.scene.BIMCostProperties.active_cost_schedule_id else False
+        props = cls.get_cost_props()
+        return True if cost_schedule.id() == props.active_cost_schedule_id else False
 
     @classmethod
     def get_active_cost_schedule(cls) -> Union[ifcopenshell.entity_instance, None]:
-        if not bpy.context.scene.BIMCostProperties.active_cost_schedule_id:
+        props = cls.get_cost_props()
+        if not props.active_cost_schedule_id:
             return None
-        return tool.Ifc.get().by_id(bpy.context.scene.BIMCostProperties.active_cost_schedule_id)
+        return tool.Ifc.get().by_id(props.active_cost_schedule_id)
 
     @classmethod
     def highlight_cost_item(cls, cost_item: ifcopenshell.entity_instance) -> None:
-        def expand_ancestors(cost_item):
-            cls.expand_cost_item(cost_item)
+        def expand_ancestors(cost_item: ifcopenshell.entity_instance) -> None:
+            cls.expand_cost_item(cost_item.id())
             for rel in cost_item.Nests or []:
                 parent_cost = rel.RelatingObject if rel.RelatingObject.is_a("IfcCostItem") else None
                 if parent_cost:
                     expand_ancestors(parent_cost)
             cls.load_cost_schedule_tree()
 
-        cost_props = bpy.context.scene.BIMCostProperties
+        cost_props = cls.get_cost_props()
         if not cost_item.id() in [item.ifc_definition_id for item in cost_props.cost_items]:
             expand_ancestors(cost_item)
-        cost_item_index = [item.ifc_definition_id for item in bpy.context.scene.BIMCostProperties.cost_items].index(
-            cost_item.id()
-        ) or 0
-        bpy.context.scene.BIMCostProperties.active_cost_item_index = cost_item_index
+        cost_item_index = [item.ifc_definition_id for item in cost_props.cost_items].index(cost_item.id()) or 0
+        cost_props.active_cost_item_index = cost_item_index
 
     @classmethod
     def get_cost_items_for_product(cls, product: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -713,8 +851,14 @@ class Cost(bonsai.core.tool.Cost):
         return bool(cost_items)
 
     @classmethod
+    def get_assigned_rate_cost_item(cls, cost_item: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+        for assignment in cost_item.HasAssignments:
+            if assignment.RelatingControl.is_a() == "IfcCostItem":
+                return assignment.RelatingControl
+
+    @classmethod
     def load_product_cost_items(cls, product: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         props.is_cost_update_enabled = False
         props.product_cost_items.clear()
         cost_items = ifcopenshell.util.cost.get_cost_items_for_product(product)
@@ -748,7 +892,7 @@ class Cost(bonsai.core.tool.Cost):
     def toggle_cost_item_parent_change(cls, cost_item: Optional[ifcopenshell.entity_instance] = None) -> None:
         if not cost_item:
             return
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         if props.change_cost_item_parent:
             props.active_cost_item_id = cost_item.id()
             props.cost_item_editing_type = "PARENT"
@@ -759,12 +903,13 @@ class Cost(bonsai.core.tool.Cost):
     def change_parent_cost_item(
         cls, cost_item: ifcopenshell.entity_instance, new_parent: ifcopenshell.entity_instance
     ) -> None:
-        ifcopenshell.api.run("nest.change_nest", tool.Ifc.get(), item=cost_item, new_parent=new_parent)
+        ifcopenshell.api.nest.change_nest(tool.Ifc.get(), item=cost_item, new_parent=new_parent)
 
     @classmethod
     def disable_editing_cost_item_parent(cls) -> None:
-        bpy.context.scene.BIMCostProperties.active_cost_item_id = 0
-        bpy.context.scene.BIMCostProperties.change_cost_item_parent = False
+        props = cls.get_cost_props()
+        props.active_cost_item_id = 0
+        props.change_cost_item_parent = False
 
     @classmethod
     def load_cost_item_quantities(cls, cost_item: Optional[ifcopenshell.entity_instance] = None) -> None:
@@ -804,7 +949,7 @@ class Cost(bonsai.core.tool.Cost):
 
     @classmethod
     def get_currency_attributes(cls) -> dict[str, str]:
-        props = bpy.context.scene.BIMCostProperties
+        props = cls.get_cost_props()
         currency = props.currency
         if currency == "CUSTOM":
             currency = props.custom_currency

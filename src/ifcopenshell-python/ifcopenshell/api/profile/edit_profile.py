@@ -26,11 +26,8 @@ def edit_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instance,
     IfcProfileDef, consult the IFC documentation.
 
     :param profile: The IfcProfileDef entity you want to edit
-    :type profile: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -43,7 +40,5 @@ def edit_profile(file: ifcopenshell.file, profile: ifcopenshell.entity_instance,
         ifcopenshell.api.profile.edit_profile(model,
             profile=circle, attributes={"ProfileName": "1000mm Dia"})
     """
-    settings = {"profile": profile, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["profile"], name, value)
+    for name, value in attributes.items():
+        setattr(profile, name, value)

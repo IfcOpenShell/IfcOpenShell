@@ -43,9 +43,11 @@ import numpy
 import inspect
 import importlib
 import ifcopenshell
-from typing import Callable, Any, Optional
+from typing import Callable, Any, Optional, TYPE_CHECKING
 from functools import partial
 
+if TYPE_CHECKING:
+    import ifcopenshell.api
 
 pre_listeners: dict[str, dict] = {}
 post_listeners: dict[str, dict] = {}
@@ -82,6 +84,7 @@ def run(
     should_run_listeners: bool = True,
     **settings: Any,
 ) -> Any:
+    """This is deprecated and will be removed in a future version. Do not use this function."""
     usecase_function = CACHED_USECASES.get(usecase_path)
     if not usecase_function:
         importlib.import_module(f"ifcopenshell.api.{usecase_path}")
@@ -162,7 +165,7 @@ def remove_all_listeners():
     post_listeners.clear()
 
 
-def extract_docs(module, usecase):
+def extract_docs(module: str, usecase: str) -> dict[str, Any]:
     import typing
     import collections
 
@@ -184,7 +187,7 @@ def extract_docs(module, usecase):
     type_hints = typing.get_type_hints(function_init)
     for name, socket_data in inputs.items():
         type_hint = type_hints[name]
-        if isinstance(type_hint, typing._UnionGenericAlias):
+        if isinstance(type_hint, typing._UnionGenericAlias):  # pyright: ignore[reportAttributeAccessIssue]
             inputs[name]["type"] = [t.__name__ for t in typing.get_args(type_hint)]
         else:
             inputs[name]["type"] = type_hint.__name__

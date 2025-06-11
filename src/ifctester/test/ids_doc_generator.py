@@ -23,6 +23,14 @@ import pytest
 import functools
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.aggregate
+import ifcopenshell.api.context
+import ifcopenshell.api.geometry
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
+import ifcopenshell.api.spatial
+import ifcopenshell.api.type
+import ifcopenshell.api.unit
 import ifcopenshell.guid
 import ifctester
 import test_facet
@@ -303,13 +311,12 @@ specs.to_xml(str(ids_path))
 # Create sample model
 model = ifcopenshell.file()
 
-project = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcProject", name="My Project")
+project = ifcopenshell.api.root.create_entity(model, ifc_class="IfcProject", name="My Project")
 project.Name = "TEST"
-ifcopenshell.api.run("unit.assign_unit", model)
+ifcopenshell.api.unit.assign_unit(model)
 
-context = ifcopenshell.api.run("context.add_context", model, context_type="Model")
-body = ifcopenshell.api.run(
-    "context.add_context",
+context = ifcopenshell.api.context.add_context(model, context_type="Model")
+body = ifcopenshell.api.context.add_context(
     model,
     context_type="Model",
     context_identifier="Body",
@@ -317,37 +324,37 @@ body = ifcopenshell.api.run(
     parent=context,
 )
 
-site = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcSite", name="My Site")
-building = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuilding", name="Building A")
-storey = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcBuildingStorey", name="Ground Floor")
+site = ifcopenshell.api.root.create_entity(model, ifc_class="IfcSite", name="My Site")
+building = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuilding", name="Building A")
+storey = ifcopenshell.api.root.create_entity(model, ifc_class="IfcBuildingStorey", name="Ground Floor")
 
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=project, products=[site])
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=site, products=[building])
-ifcopenshell.api.run("aggregate.assign_object", model, relating_object=building, products=[storey])
+ifcopenshell.api.aggregate.assign_object(model, relating_object=project, products=[site])
+ifcopenshell.api.aggregate.assign_object(model, relating_object=site, products=[building])
+ifcopenshell.api.aggregate.assign_object(model, relating_object=building, products=[storey])
 
 wall_types = []
 for i in range(0, 4):
-    wall_type = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWallType", name=f"DEMO{i + 1}")
-    wall = ifcopenshell.api.run("root.create_entity", model, ifc_class="IfcWall", name=f"WALL {i + 1}")
-    ifcopenshell.api.run("type.assign_type", model, related_objects=[wall], relating_type=wall_type)
-    representation = ifcopenshell.api.run(
-        "geometry.add_wall_representation", model, context=body, length=5, height=3, thickness=(i + 1) * 0.05
+    wall_type = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWallType", name=f"DEMO{i + 1}")
+    wall = ifcopenshell.api.root.create_entity(model, ifc_class="IfcWall", name=f"WALL {i + 1}")
+    ifcopenshell.api.type.assign_type(model, related_objects=[wall], relating_type=wall_type)
+    representation = ifcopenshell.api.geometry.add_wall_representation(
+        model, context=body, length=5, height=3, thickness=(i + 1) * 0.05
     )
     if i == 0:
         pass
     elif i == 1:
-        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
-        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"FireRating": "-/-/-"})
+        pset = ifcopenshell.api.pset.add_pset(model, product=wall_type, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(model, pset=pset, properties={"FireRating": "-/-/-"})
     elif i == 2:
-        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
-        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"FireRating": "120/120/120"})
+        pset = ifcopenshell.api.pset.add_pset(model, product=wall_type, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(model, pset=pset, properties={"FireRating": "120/120/120"})
     elif i == 3:
-        pset = ifcopenshell.api.run("pset.add_pset", model, product=wall_type, name="Pset_WallCommon")
-        ifcopenshell.api.run("pset.edit_pset", model, pset=pset, properties={"FireRating": "FOOBAR"})
-    ifcopenshell.api.run("geometry.assign_representation", model, product=wall, representation=representation)
+        pset = ifcopenshell.api.pset.add_pset(model, product=wall_type, name="Pset_WallCommon")
+        ifcopenshell.api.pset.edit_pset(model, pset=pset, properties={"FireRating": "FOOBAR"})
+    ifcopenshell.api.geometry.assign_representation(model, product=wall, representation=representation)
     location = np.eye(4)
     location[1][3] += i * 1
-    ifcopenshell.api.run("geometry.edit_object_placement", model, product=wall, matrix=location)
-    ifcopenshell.api.run("spatial.assign_container", model, relating_structure=storey, products=[wall])
+    ifcopenshell.api.geometry.edit_object_placement(model, product=wall, matrix=location)
+    ifcopenshell.api.spatial.assign_container(model, relating_structure=storey, products=[wall])
 
 model.write(os.path.join(outdir, "library", "sample.ifc"))

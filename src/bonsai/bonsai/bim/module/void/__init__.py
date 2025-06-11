@@ -22,19 +22,26 @@ from . import ui, prop, operator
 classes = (
     operator.AddFilling,
     operator.AddOpening,
+    operator.BooleansMarkAsManual,
+    operator.DisableEditingBooleans,
+    operator.EnableEditingBooleans,
     operator.RemoveFilling,
     operator.RemoveOpening,
     operator.SelectDecomposition,
-    operator.BooleansMarkAsManual,
+    prop.Boolean,
     prop.VoidProperties,
+    prop.BIMBooleanProperties,
     ui.BIM_PT_voids,
     ui.BIM_PT_booleans,
+    ui.BIM_UL_booleans,
 )
 
 
 def register():
     bpy.types.Scene.VoidProperties = bpy.props.PointerProperty(type=prop.VoidProperties)
+    bpy.types.Scene.BIMBooleanProperties = bpy.props.PointerProperty(type=prop.BIMBooleanProperties)
 
 
 def unregister():
     del bpy.types.Scene.VoidProperties
+    del bpy.types.Scene.BIMBooleanProperties

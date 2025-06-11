@@ -46,9 +46,7 @@ def add_cost_value(file: ifcopenshell.file, parent: ifcopenshell.entity_instance
     :param parent: A parent IfcCostItem, if specifying a price directly to a
         cost item, or a top-level price component. Alternatively, this can
         be set to a IfcCostValue, if specifying price subcomponents.
-    :type parent: ifcopenshell.entity_instance
     :return: The newly created IfcCostValue
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -91,19 +89,17 @@ def add_cost_value(file: ifcopenshell.file, parent: ifcopenshell.entity_instance
         ifcopenshell.api.cost.edit_cost_value(model,
             cost_value=subvalue2, attributes={"AppliedValue": 3.0})
     """
-    settings = {"parent": parent}
-
     value = file.create_entity("IfcCostValue")
-    if settings["parent"].is_a("IfcCostItem"):
-        values = list(settings["parent"].CostValues or [])
+    if parent.is_a("IfcCostItem"):
+        values = list(parent.CostValues or [])
         values.append(value)
-        settings["parent"].CostValues = values
-    elif settings["parent"].is_a("IfcConstructionResource"):
-        values = list(settings["parent"].BaseCosts or [])
+        parent.CostValues = values
+    elif parent.is_a("IfcConstructionResource"):
+        values = list(parent.BaseCosts or [])
         values.append(value)
-        settings["parent"].BaseCosts = values
-    elif settings["parent"].is_a("IfcCostValue"):
-        values = list(settings["parent"].Components or [])
+        parent.BaseCosts = values
+    elif parent.is_a("IfcCostValue"):
+        values = list(parent.Components or [])
         values.append(value)
-        settings["parent"].Components = values
+        parent.Components = values
     return value

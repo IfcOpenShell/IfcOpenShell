@@ -18,6 +18,8 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.api.pset
 import bonsai.core.tool
 import bonsai.tool as tool
 from bonsai.tool.pset import Pset as subject
@@ -34,7 +36,7 @@ class TestGetElementPset(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         element = ifc.createIfcWall()
-        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo")
         assert subject.get_element_pset(element, "Foo") == pset
 
 
@@ -43,9 +45,9 @@ class TestIsPsetEmpty(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         element = ifc.createIfcWall()
-        pset = ifcopenshell.api.run("pset.add_pset", ifc, product=element, name="Foo")
+        pset = ifcopenshell.api.pset.add_pset(ifc, product=element, name="Foo")
         assert subject.is_pset_empty(pset) is True
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": "Bar"})
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Foo": "Bar"})
         assert subject.is_pset_empty(pset) is False
-        ifcopenshell.api.run("pset.edit_pset", ifc, pset=pset, properties={"Foo": None})
+        ifcopenshell.api.pset.edit_pset(ifc, pset=pset, properties={"Foo": None})
         assert subject.is_pset_empty(pset) is True

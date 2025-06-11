@@ -40,12 +40,9 @@ def add_si_unit(
 
     :param unit_type: A type of unit chosen from the list above. For
         example, choosing LENGTHUNIT will give you a metre.
-    :type unit_type: str
     :param prefix: A prefix chosen from the list above, or None for no
         prefix.
-    :type prefix: str,optional
     :return: The newly created IfcSIUnit
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -58,7 +55,5 @@ def add_si_unit(
         # Make it our default units, if we are doing a metric building
         ifcopenshell.api.unit.assign_unit(model, units=[length, area])
     """
-    settings = {"unit_type": unit_type, "prefix": prefix}
-
-    name = ifcopenshell.util.unit.si_type_names.get(settings["unit_type"], None)
-    return file.create_entity("IfcSIUnit", UnitType=settings["unit_type"], Name=name, Prefix=settings["prefix"])
+    name = ifcopenshell.util.unit.si_type_names.get(unit_type, None)
+    return file.create_entity("IfcSIUnit", UnitType=unit_type, Name=name, Prefix=prefix)

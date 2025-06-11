@@ -139,34 +139,31 @@ def get_nested_resources(resource: ifcopenshell.entity_instance) -> list[ifcopen
     return [object for rel in resource.IsNestedBy or [] for object in rel.RelatedObjects]
 
 
-def get_cost(resource: ifcopenshell.entity_instance) -> tuple[float, Union[str, None]]:
-    base_costs = getattr(resource, "BaseCosts", [])
-    costs = (
-        [ifcopenshell.util.cost.calculate_applied_value(resource, cost_value) for cost_value in base_costs]
-        if base_costs
-        else []
-    )
-    cost = sum(costs)
-    unit_basis = (
-        next((cost_value.UnitBasis for cost_value in base_costs if cost_value.UnitBasis), None) if base_costs else None
-    )
-    unit = (
-        unit_basis.UnitComponent.Name
-        if unit_basis and unit_basis.UnitComponent.is_a("IfcConversionBasedUnit")
-        else None
-    )
+def get_cost(resource: ifcopenshell.entity_instance) -> tuple[Union[float, None], Union[str, None]]:
+    """Get cost data for IfcConstructionResource.
+
+    :return: a tuple of cost and unit.
+    """
+    cost, unit = None, None
+    if base_costs := resource.BaseCosts:
+        costs = [ifcopenshell.util.cost.calculate_applied_value(resource, cost_value) for cost_value in base_costs]
+        cost = sum(costs)
+        unit_basis = next((unit_basis for cost_value in base_costs if (unit_basis := cost_value.UnitBasis)), None)
+        if unit_basis and (unit_component := unit_basis.UnitComponent).is_a("IfcConversionBasedUnit"):
+            unit = unit_component.Name
     return cost, unit
 
 
 def get_quantity(resource: ifcopenshell.entity_instance) -> float:
-    if resource.BaseQuantity:
-        return resource.BaseQuantity[3]
     if resource.Usage and resource.Usage.ScheduleWork:
         duration = ifcopenshell.util.date.ifc2datetime(resource.Usage.ScheduleWork)
         return duration.total_seconds() / 3600
+    # TODO: is it safe to assume None quantity should be treated as 1.0? See #910 in ifc4x3dev.
+    quantity = resource.BaseQuantity
+    return 1.0 if quantity is None else quantity[3]
 
 
-def get_parent_cost(resource: ifcopenshell.entity_instance) -> Union[tuple[float, Union[str, None]], None]:
+def get_parent_cost(resource: ifcopenshell.entity_instance) -> Union[tuple[Union[float, None], Union[str, None]], None]:
     if not (nests := resource.Nests):
         return
     else:

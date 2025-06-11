@@ -17,9 +17,11 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bl_ui_utils.layout
 import bonsai.bim
 import bonsai.tool as tool
 from bpy.types import Panel, Menu
+from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.model.data import (
     AuthoringData,
     ArrayData,
@@ -30,13 +32,9 @@ from bonsai.bim.module.model.data import (
     RailingData,
     RoofData,
 )
-from bonsai.bim.module.model.prop import get_ifc_class
 from bonsai.bim.module.model.stair import regenerate_stair_mesh
-from bonsai.bim.module.model.window import update_window_modifier_bmesh
-from bonsai.bim.module.model.door import update_door_modifier_bmesh
 from bonsai.bim.module.model.railing import update_railing_modifier_bmesh
 from bonsai.bim.module.model.roof import update_roof_modifier_bmesh
-from bonsai.bim.helper import prop_with_search
 from collections.abc import Iterable
 
 
@@ -55,10 +53,11 @@ class BIM_MT_type_menu(bpy.types.Menu):
     relating_type_id: bpy.props.IntProperty(name="Relating Type Id")
 
     def draw(self, context):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         layout = self.layout
-        op = layout.operator("bim.launch_rename_type", icon="GREASEPENCIL", text="Rename Type")
-        op.element = props.menu_relating_type_id
+        with bl_ui_utils.layout.operator_context(layout, "INVOKE_REGION_WIN"):
+            op = layout.operator("bim.rename_type", icon="GREASEPENCIL", text="Rename Type")
+            op.element = props.menu_relating_type_id
         op = layout.operator("bim.select_type", icon="OBJECT_DATA")
         op.relating_type = props.menu_relating_type_id
         op = layout.operator("bim.duplicate_type", icon="DUPLICATE")
@@ -74,7 +73,7 @@ class LaunchTypeMenu(bpy.types.Operator):
     relating_type_id: bpy.props.IntProperty(name="Relating Type Id")
 
     def execute(self, context):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         props.menu_relating_type_id = self.relating_type_id
         bpy.ops.wm.call_menu(name="BIM_MT_type_menu")
         return {"FINISHED"}
@@ -84,57 +83,55 @@ class LaunchTypeManager(bpy.types.Operator):
     bl_idname = "bim.launch_type_manager"
     bl_label = "Launch Type Manager"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Display all available Construction Types to add new instances"
+    bl_description = "Browse, Edit and Manage Types"
 
     def execute(self, context):
-        bpy.ops.bim.hotkey("INVOKE_DEFAULT", hotkey="S_A")
         return {"FINISHED"}
 
     def invoke(self, context, event):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         props.type_page = 1
-        if get_ifc_class(None, context):
-            ifc_class = props.ifc_class or AuthoringData.data["ifc_element_type"]
-        else:
-            ifc_class = AuthoringData.data["ifc_element_type"]
-
-        # will be None if project has no types
-        if ifc_class is not None:
-            bpy.ops.bim.load_type_thumbnails(ifc_class=ifc_class, offset=0, limit=9)
-        return context.window_manager.invoke_props_dialog(
-            self, width=550, title="Type Manager", confirm_text="Add Type"
-        )
+        bpy.ops.bim.load_type_thumbnails()
+        return context.window_manager.invoke_props_dialog(self, width=550, title="Type Manager", confirm_text="Close")
 
     def draw(self, context):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         row = self.layout.row(align=True)
-        if AuthoringData.data["total_types"] > 1:
-            text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}s"
-        else:
-            text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type']}"
+        text = f"{AuthoringData.data['total_types']} {AuthoringData.data['ifc_element_type'] or 'Types'}"
+        if AuthoringData.data["ifc_element_type"] and AuthoringData.data["total_types"] > 1:
+            text += "s"
         row.label(text=text, icon="FILE_VOLUME")
-        # prop_with_search(row, props, "ifc_class", text="", should_click_ok_to_validate=True)
         row.menu("BIM_MT_type_manager_menu", text="", icon="PREFERENCES")
+
         row = self.layout.row(align=True)
-        row.operator("bim.launch_add_element", text=f"Create New {AuthoringData.data['ifc_element_type']}", icon="ADD")
+        op = row.operator(
+            "bim.add_element", text=f"Create New {AuthoringData.data['ifc_element_type'] or 'Type'}", icon="ADD"
+        )
+        op.is_specific_tool = bool(AuthoringData.data["ifc_element_type"])
+        op.ifc_product = "IfcElementType"
+        op.ifc_class = AuthoringData.data["ifc_element_type"] or props.ifc_class or ""
+
+        row = self.layout.row(align=True)
+        row.prop(props, "search_name", icon="FILTER", text="")
 
         columns = self.layout.column_flow(columns=3)
-        row = columns.row(align=True)
-        row.alignment = "CENTER"
-        ### In case you want something here in the future
+        if AuthoringData.data["total_pages"] > 0:
+            row = columns.row(align=True)
+            row.alignment = "RIGHT"
+            row2 = row.row(align=True)
+            row2.label(text="Page")
+            row2.prop(props, "type_page", text="", emboss=False)
+            row2.label(text=f"/{AuthoringData.data['total_pages']} ")
 
-        ###
+            prev_page_op = row.row(align=True)
+            op = prev_page_op.operator("bim.change_type_page", icon="TRIA_LEFT", text="")
+            op.page = AuthoringData.data["prev_page"] or 0
+            prev_page_op.enabled = op.page > 0
 
-        row = columns.row(align=True)
-        row.alignment = "RIGHT"
-        if AuthoringData.data["total_pages"] > 1:
-            row.label(text=f"Page {props.type_page}/{AuthoringData.data['total_pages']} ")
-        if AuthoringData.data["prev_page"]:
-            op = row.operator("bim.change_type_page", icon="TRIA_LEFT", text="")
-            op.page = AuthoringData.data["prev_page"]
-        if AuthoringData.data["next_page"]:
-            op = row.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
-            op.page = AuthoringData.data["next_page"]
+            next_page_op = row.row(align=True)
+            op = next_page_op.operator("bim.change_type_page", icon="TRIA_RIGHT", text="")
+            op.page = AuthoringData.data["next_page"] or 0
+            next_page_op.enabled = op.page > 0
 
         flow = self.layout.grid_flow(row_major=True, columns=3, even_columns=True, even_rows=True, align=True)
 
@@ -142,11 +139,11 @@ class LaunchTypeManager(bpy.types.Operator):
             outer_col = flow.column()
             box = outer_col.box()
 
-            row = box.row(align=True)
+            row = box.row()
             op = row.operator("bim.set_active_type", text=relating_type["name"], icon="BLANK1", emboss=False)
             op.relating_type = relating_type["id"]
 
-            op = row.operator("bim.launch_type_menu", icon="DOWNARROW_HLT", text="", emboss=False)
+            op = row.operator("bim.launch_type_menu", icon="PREFERENCES", text="", emboss=True)
             op.relating_type_id = relating_type["id"]
 
             row = box.row()
@@ -154,20 +151,25 @@ class LaunchTypeManager(bpy.types.Operator):
             op = row.operator("bim.set_active_type", text=relating_type["description"], emboss=False)
             op.relating_type = relating_type["id"]
 
-            if relating_type["icon_id"]:
+            if icon_id := AuthoringData.type_thumbnails.get(relating_type["id"], 0):
                 # Yep, that's EXACTLY how it's done. And I'm proud of it.
                 row1 = box.row()
                 row1.ui_units_y = 0.01
-                row1.template_icon(icon_value=relating_type["icon_id"], scale=4)
+                row1.template_icon(icon_value=icon_id, scale=4)
                 row2 = box.column(align=True)
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
                 row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
-                row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
+                is_current_relating_type = relating_type["id"] == AuthoringData.data["relating_type_data"].get("id")
+                if is_current_relating_type:
+                    active_row = row2.row()
+                    active_row.alignment = "CENTER"
+                    active_row.label(text="Active", icon="CHECKMARK")
+                else:
+                    row2.operator("bim.set_active_type", text="", emboss=False).relating_type = relating_type["id"]
             else:
                 row = box.row()
-                op = box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH", emboss=False)
-                op.ifc_class = props.ifc_class
+                box.operator("bim.load_type_thumbnails", text="", icon="FILE_REFRESH")
 
             row = box.row()
             row.alignment = "CENTER"
@@ -208,7 +210,9 @@ class BIM_PT_array(bpy.types.Panel):
         if not ArrayData.is_loaded:
             ArrayData.load()
 
-        props = context.active_object.BIMArrayProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Model.get_array_props(obj)
 
         if ArrayData.data["parameters"]:
             row = self.layout.row(align=True)
@@ -282,7 +286,7 @@ class BIM_PT_stair(bpy.types.Panel):
 
         obj = context.active_object
         assert obj
-        props = obj.BIMStairProperties
+        props = tool.Model.get_stair_props(obj)
 
         if StairData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -302,6 +306,15 @@ class BIM_PT_stair(bpy.types.Panel):
                         self.layout.prop(props, prop_name, text="")
                     else:
                         self.layout.prop(props, prop_name)
+                    if prop_name == "height":  # Weak but we just want to insert this inside props drawing
+                        row_length = self.layout.row(align=True)
+                        row_length.prop(props, "total_length_target")
+                        row_length.prop(
+                            props,
+                            "total_length_lock",
+                            text="",
+                            icon="LOCKED" if props.total_length_lock else "UNLOCKED",
+                        )
                 regenerate_stair_mesh(obj)
             else:
                 calculated_params = StairData.data["calculated_params"]
@@ -386,7 +399,9 @@ class BIM_PT_window(bpy.types.Panel):
         if not WindowData.is_loaded:
             WindowData.load()
 
-        props = context.active_object.BIMWindowProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Model.get_window_props(obj)
 
         if WindowData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -427,8 +442,14 @@ class BIM_PT_window(bpy.types.Panel):
                     for panel_i in range(number_of_panels):
                         cols[panel_i + 1].prop(props, prop, index=panel_i, text="")
 
-                update_window_modifier_bmesh(context)
-
+                self.layout.use_property_split = True
+                self.layout.label(text="Material Properties")
+                row = prop_with_search(self.layout, props, "lining_material")
+                tool.Model.draw_material_ui_select(row, props.lining_material)
+                row = prop_with_search(self.layout, props, "framing_material", text="Panel Material")
+                tool.Model.draw_material_ui_select(row, props.framing_material)
+                row = prop_with_search(self.layout, props, "glazing_material")
+                tool.Model.draw_material_ui_select(row, props.glazing_material)
             else:
                 row.operator("bim.enable_editing_window", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_window", icon="X", text="")
@@ -471,7 +492,6 @@ class BIM_PT_window(bpy.types.Panel):
                         prop_value = panel_props[prop_name][panel_i]
                         r.label(text=str(prop_value))
                         r = cols[panel_i + 1].row()
-
         else:
             row = self.layout.row()
             row.label(text="No Window Found")
@@ -495,7 +515,9 @@ class BIM_PT_door(bpy.types.Panel):
         if not DoorData.is_loaded:
             DoorData.load()
 
-        props = context.active_object.BIMDoorProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Model.get_door_props(obj)
 
         if DoorData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -511,17 +533,25 @@ class BIM_PT_door(bpy.types.Panel):
                     self.layout.prop(props, prop)
 
                 lining_props = props.get_lining_kwargs()
-                self.layout.label(text="Lining properties")
+                self.layout.label(text="Lining Properties")
                 for prop in lining_props:
                     self.layout.prop(props, prop)
 
                 panel_props = props.get_panel_kwargs()
-                self.layout.label(text="Panel properties")
+                self.layout.label(text="Panel Properties")
                 for prop in panel_props:
                     self.layout.prop(props, prop)
 
-                update_door_modifier_bmesh(context)
+                self.layout.use_property_split = True
+                self.layout.label(text="Material Properties")
 
+                row = prop_with_search(self.layout, props, "lining_material")
+                tool.Model.draw_material_ui_select(row, props.lining_material)
+                row = prop_with_search(self.layout, props, "framing_material", text="Panel Material")
+                tool.Model.draw_material_ui_select(row, props.framing_material)
+                if props.transom_thickness:
+                    row = prop_with_search(self.layout, props, "glazing_material")
+                    tool.Model.draw_material_ui_select(row, props.framing_material)
             else:
                 row.operator("bim.enable_editing_door", icon="GREASEPENCIL", text="")
                 row.operator("bim.remove_door", icon="X", text="")
@@ -548,7 +578,7 @@ class BIM_PT_door(bpy.types.Panel):
         else:
             row = self.layout.row()
             row.label(text="No Door Found")
-            row.operator("bim.add_door", icon="ADD", text="").obj = ""
+            row.operator("bim.add_door", icon="ADD", text="")
 
 
 class BIM_PT_railing(bpy.types.Panel):
@@ -568,7 +598,9 @@ class BIM_PT_railing(bpy.types.Panel):
         if not RailingData.is_loaded:
             RailingData.load()
 
-        props = context.active_object.BIMRailingProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Model.get_railing_props(obj)
 
         if RailingData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -596,6 +628,7 @@ class BIM_PT_railing(bpy.types.Panel):
 
             else:
                 row.operator("bim.enable_editing_railing", icon="GREASEPENCIL", text="")
+                row.operator("bim.copy_railing_parameters", icon="COPYDOWN", text="")
                 row.operator("bim.enable_editing_railing_path", icon="ANIM", text="")
                 # TODO: good for preview but probably should move to .is_editing == True
                 # since it's writing to ifc
@@ -632,7 +665,7 @@ class BIM_PT_roof(bpy.types.Panel):
 
         obj = context.active_object
         assert obj
-        props = obj.BIMRoofProperties
+        props = tool.Model.get_roof_props(obj)
 
         if RoofData.data["pset_data"]:
             row = self.layout.row(align=True)
@@ -648,13 +681,12 @@ class BIM_PT_roof(bpy.types.Panel):
                     self.layout.prop(props, prop)
 
                 update_roof_modifier_bmesh(obj)
-
             elif props.is_editing_path:
                 row.operator("bim.finish_editing_roof_path", icon="CHECKMARK", text="")
                 row.operator("bim.cancel_editing_roof_path", icon="CANCEL", text="")
-
             else:
                 row.operator("bim.enable_editing_roof", icon="GREASEPENCIL", text="")
+                row.operator("bim.copy_roof_parameters", icon="COPYDOWN", text="")
                 row.operator("bim.enable_editing_roof_path", icon="ANIM", text="")
                 row.operator("bim.remove_roof", icon="X", text="")
 
@@ -669,17 +701,50 @@ class BIM_PT_roof(bpy.types.Panel):
             row.operator("bim.add_roof", icon="ADD", text="")
 
 
-class BIM_MT_elements(Menu):
-    bl_idname = "BIM_MT_elements"
-    bl_label = "IFC Elements"
+class BIM_PT_external_parametric_geometry(bpy.types.Panel):
+    bl_label = "External Parametric Geometry"
+    bl_idname = "BIM_PT_external_parametric_geometry"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_options = {"DEFAULT_CLOSED"}
+    bl_parent_id = "BIM_PT_tab_parametric_geometry"
+
+    @classmethod
+    def poll(cls, context):
+        return (obj := context.active_object) and obj.type == "MESH"
 
     def draw(self, context):
-        # TODO consolidate in Item mode UI then remove
-        self.layout.operator("bim.add_potential_half_space_solid", text="Half Space", icon="ORIENTATION_NORMAL")
-        self.layout.operator("bim.add_potential_opening", text="Opening", icon="CUBE")
+        obj = context.active_object
+        assert obj
+        layout = self.layout
+        assert layout
+        props = tool.Model.get_epg_props(obj)
+
+        row = layout.row(align=True)
+        row.alignment = "RIGHT"
+
+        if not props.is_editing:
+            row.prop(props, "is_editing", icon="GREASEPENCIL", text="")
+            return
+
+        row.operator("bim.apply_external_parametric_geometry", icon="CHECKMARK", text="")
+        row.prop(props, "is_editing", icon="CANCEL", text="")
+        row = layout.row(align=True)
+        row.prop_search(props, "geo_nodes", bpy.data, "node_groups")
+        if props.geo_nodes:
+            assert (modifier := tool.Model.get_epg_modifier(obj))
+            inputs = tool.Model.get_parametric_geometry_inputs(modifier)
+            # NOTE: users won't be able to see inputs descriptions.
+            # If we add group node inputs as modifiers inputs, descriptions will be visible.
+            # But then we need to ensure inputs are up to date
+            # (e.g. probably just by adding a refresh button).
+            for input in inputs:
+                row = layout.row(align=True)
+                row.prop(input, "default_value", text=input.name)
 
 
-def add_menu(self, context):
-    self.layout.operator("bim.launch_add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")
-    self.layout.menu("BIM_MT_elements", icon_value=bonsai.bim.icons["IFC"].icon_id)
+def add_menu(self: bpy.types.Menu, context: bpy.types.Context) -> None:
+    self.layout.operator_context = "INVOKE_REGION_WIN"
+    self.layout.operator("bim.add_element", icon_value=bonsai.bim.icons["IFC"].icon_id, text="IFC Element")
     self.layout.separator()

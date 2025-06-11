@@ -20,23 +20,22 @@ import bpy
 import json
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.pset
+import ifcopenshell.api.classification
 import ifcopenshell.util.classification
 import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.bim.helper
+from bpy_extras.io_utils import ImportHelper
 from bonsai.bim.ifc import IfcStore
 
 
-class LoadClassificationLibrary(bpy.types.Operator, tool.Ifc.Operator):
+class LoadClassificationLibrary(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.load_classification_library"
     bl_label = "Load Classification Library"
+    bl_description = "Load classification library from the provided filepath."
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
     def _execute(self, context):
         IfcStore.classification_file = ifcopenshell.open(self.filepath)
@@ -49,8 +48,7 @@ class AddClassification(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMClassificationProperties
-        ifcopenshell.api.run(
-            "classification.add_classification",
+        ifcopenshell.api.classification.add_classification(
             tool.Ifc.get(),
             classification=IfcStore.classification_file.by_id(int(props.available_classifications)),
         )
@@ -64,11 +62,9 @@ class AddManualClassification(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         props = context.scene.BIMClassificationProperties
         attributes = bonsai.bim.helper.export_attributes(props.classification_attributes)
-        classification = ifcopenshell.api.run(
-            "classification.add_classification", tool.Ifc.get(), classification="Unnamed"
-        )
-        ifcopenshell.api.run(
-            "classification.edit_classification", tool.Ifc.get(), classification=classification, attributes=attributes
+        classification = ifcopenshell.api.classification.add_classification(tool.Ifc.get(), classification="Unnamed")
+        ifcopenshell.api.classification.edit_classification(
+            tool.Ifc.get(), classification=classification, attributes=attributes
         )
         props.is_adding = False
 
@@ -97,17 +93,14 @@ class AddManualClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
         ]
         if products:
             classification = tool.Ifc.get().by_id(int(props.classifications))
-            reference = ifcopenshell.api.run(
-                "classification.add_reference",
+            reference = ifcopenshell.api.classification.add_reference(
                 tool.Ifc.get(),
                 products=products,
                 classification=classification,
                 identification="X",
                 name="Unnamed",
             )
-            ifcopenshell.api.run(
-                "classification.edit_reference", tool.Ifc.get(), reference=reference, attributes=attributes
-            )
+            ifcopenshell.api.classification.edit_reference(tool.Ifc.get(), reference=reference, attributes=attributes)
         props.is_adding = False
 
 
@@ -117,29 +110,30 @@ class AddClassificationFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMBSDDProperties
-        domain = next((d for d in props.domains if d.name == props.active_domain and d.uri == props.active_uri), None)
-
-        # Maybe user loaded preview domains, set it as active
-        # and then reloaded them without preview domains.
-        if not domain:
-            self.report(
-                {"INFO"},
-                f"Couldn't find domain '{props.active_domain}' ({props.active_uri}). Try to reload bSDD dictionaries.",
+        cprops = context.scene.BIMClassificationProperties
+        bprops = tool.Bsdd.get_bsdd_props()
+        if cprops.classification_source == "BSDD":
+            dictionaries = [d.uri for d in bprops.dictionaries if d.is_active]
+        else:
+            dictionaries = [cprops.classification_source]
+        for uri in dictionaries:
+            if not (dictionary := tool.Bsdd.get_dictionary(uri)):
+                continue
+            has_classification = False
+            for element in tool.Ifc.get().by_type("IfcClassification"):
+                if element.Name == dictionary["name"] or (
+                    tool.Classification.get_location(element) == dictionary["uri"]
+                ):
+                    self.report({"INFO"}, f"Classification '{dictionary['name']}' is already added to the project.")
+                    has_classification = True
+            if has_classification:
+                continue
+            classification = ifcopenshell.api.classification.add_classification(
+                tool.Ifc.get(), classification=dictionary["name"]
             )
-            return
-
-        for element in tool.Ifc.get().by_type("IfcClassification"):
-            if element.Name == props.active_domain or (tool.Classification.get_location(element) == domain.uri):
-                self.report({"INFO"}, f"Classification '{props.active_domain}' is already added to the project.")
-                return
-
-        classification = ifcopenshell.api.run(
-            "classification.add_classification", tool.Ifc.get(), classification=props.active_domain
-        )
-        classification.Source = domain.organization_name_owner
-        classification.Edition = domain.version
-        tool.Classification.set_location(classification, domain.uri)
+            classification.Source = dictionary["organizationNameOwner"]
+            classification.Edition = dictionary["version"]
+            tool.Classification.set_location(classification, dictionary["uri"])
 
 
 class EnableAddingManualClassification(bpy.types.Operator):
@@ -200,7 +194,8 @@ class EnableEditingClassification(bpy.types.Operator):
     def execute(self, context):
         def callback(name, prop, data):
             if name == "ReferenceTokens":
-                new = bpy.context.scene.BIMGeoreferenceProperties.projected_crs.add()
+                geo_props = tool.Georeference.get_georeference_props()
+                new = geo_props.projected_crs.add()
                 new.name = name
                 new.data_type = "string"
                 new.is_null = data[name] is None
@@ -238,9 +233,8 @@ class RemoveClassification(bpy.types.Operator, tool.Ifc.Operator):
     classification: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "classification.remove_classification",
+        self.file = tool.Ifc.get()
+        ifcopenshell.api.classification.remove_classification(
             tool.Ifc.get(),
             classification=self.file.by_id(self.classification),
         )
@@ -253,19 +247,18 @@ class EditClassification(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMClassificationProperties
-        attributes = {}
-        for attribute in props.classification_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            elif attribute.name == "ReferenceTokens":
-                attributes[attribute.name] = json.loads(attribute.string_value)
-            else:
-                attributes[attribute.name] = attribute.string_value
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "classification.edit_classification",
-            self.file,
-            **{"classification": self.file.by_id(props.active_classification_id), "attributes": attributes},
+
+        def callback(attributes, prop):
+            if prop.name == "ReferenceTokens":
+                attributes[prop.name] = json.loads(prop.string_value)
+                return True
+
+        attributes = bonsai.bim.helper.export_attributes(props.classification_attributes, callback=callback)
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.classification.edit_classification(
+            ifc_file,
+            classification=ifc_file.by_id(props.active_classification_id),
+            attributes=attributes,
         )
         bpy.ops.bim.disable_editing_classification()
 
@@ -330,8 +323,7 @@ class RemoveClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
 
         if elements_by_references:
             for reference, products in elements_by_references.items():
-                ifcopenshell.api.run(
-                    "classification.remove_reference",
+                ifcopenshell.api.classification.remove_reference(
                     tool.Ifc.get(),
                     reference=reference,
                     products=products,
@@ -346,17 +338,11 @@ class EditClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props = context.scene.BIMClassificationReferenceProperties
-        attributes = {}
-        for attribute in props.reference_attributes:
-            if attribute.is_null:
-                attributes[attribute.name] = None
-            else:
-                attributes[attribute.name] = attribute.string_value
-        self.file = IfcStore.get_file()
-        ifcopenshell.api.run(
-            "classification.edit_reference",
-            self.file,
-            reference=self.file.by_id(props.active_reference_id),
+        attributes = bonsai.bim.helper.export_attributes(props.reference_attributes)
+        ifc_file = tool.Ifc.get()
+        ifcopenshell.api.classification.edit_reference(
+            ifc_file,
+            reference=ifc_file.by_id(props.active_reference_id),
             attributes=attributes,
         )
         bpy.ops.bim.disable_editing_classification_reference()
@@ -392,8 +378,7 @@ class AddClassificationReference(bpy.types.Operator, tool.Ifc.Operator):
             if (ifc_definition_id := tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context))
         ]
         if products:
-            ifcopenshell.api.run(
-                "classification.add_reference",
+            ifcopenshell.api.classification.add_reference(
                 tool.Ifc.get(),
                 reference=IfcStore.classification_file.by_id(self.reference),
                 products=products,
@@ -428,25 +413,24 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
 
         classification = None
         for element in tool.Ifc.get().by_type("IfcClassification"):
-            if element.Name == bsdd_classification.domain_name or (
-                tool.Classification.get_location(element) == bsdd_classification.domain_namespace_uri
+            if element.Name == bsdd_classification.dictionary_name or (
+                tool.Classification.get_location(element) == bsdd_classification.dictionary_namespace_uri
             ):
                 classification = element
                 break
 
         if not classification:
-            classification = ifcopenshell.api.run(
-                "classification.add_classification", tool.Ifc.get(), classification=bsdd_classification.domain_name
+            classification = ifcopenshell.api.classification.add_classification(
+                tool.Ifc.get(), classification=bsdd_classification.dictionary_name
             )
-            tool.Classification.set_location(classification, bsdd_classification.domain_namespace_uri)
+            tool.Classification.set_location(classification, bsdd_classification.dictionary_namespace_uri)
 
         for obj in objects:
             ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(obj, self.obj_type, context)
             if not ifc_definition_id:
                 continue
             element = tool.Ifc.get().by_id(ifc_definition_id)
-            reference = ifcopenshell.api.run(
-                "classification.add_reference",
+            reference = ifcopenshell.api.classification.add_reference(
                 tool.Ifc.get(),
                 products=[element],
                 classification=classification,
@@ -465,6 +449,7 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
                 for prop in blender_properties:
                     properties[prop.name] = prop.get_value()
 
+                # TODO: is this still the correct approach?
                 if classification_pset.name == "undefined_set":
                     if "ObjectType" in properties:
                         if hasattr(element, "ObjectType"):
@@ -483,18 +468,16 @@ class AddClassificationReferenceFromBSDD(bpy.types.Operator, tool.Ifc.Operator):
                 if pset:
                     pset = tool.Ifc.get().by_id(pset["id"])
                 elif is_pset:
-                    pset = ifcopenshell.api.run(
-                        "pset.add_pset", tool.Ifc.get(), product=element, name=classification_pset.name
+                    pset = ifcopenshell.api.pset.add_pset(
+                        tool.Ifc.get(), product=element, name=classification_pset.name
                     )
                 else:
-                    pset = ifcopenshell.api.run(
-                        "pset.add_qto", tool.Ifc.get(), product=element, name=classification_pset.name
-                    )
+                    pset = ifcopenshell.api.pset.add_qto(tool.Ifc.get(), product=element, name=classification_pset.name)
 
                 if is_pset:
-                    ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties=properties)
+                    ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties=properties)
                 else:
-                    ifcopenshell.api.run("pset.edit_qto", tool.Ifc.get(), qto=pset, properties=properties)
+                    ifcopenshell.api.pset.edit_qto(tool.Ifc.get(), qto=pset, properties=properties)
 
 
 class ChangeClassificationLevel(bpy.types.Operator):

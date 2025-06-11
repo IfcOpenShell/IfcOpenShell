@@ -16,15 +16,12 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
+import ifcopenshell
 import datetime
+import isodate
 from re import findall
 from dateutil import parser
 from typing import Literal, Union, Any, overload
-
-try:
-    import isodate
-except ModuleNotFoundError as e:
-    print(f"Note: duration parsing not available due to missing dependencies: util.date - {e}")
 
 
 def timedelta2duration(timedelta):
@@ -41,7 +38,7 @@ def timedelta2duration(timedelta):
     return isodate.Duration(**components)
 
 
-def ifc2datetime(element):
+def ifc2datetime(element: Union[str, int, ifcopenshell.entity_instance]):
     if isinstance(element, str) and "P" in element[0:2]:  # IfcDuration
         duration = parse_duration(element)
         if isinstance(duration, datetime.timedelta):
@@ -73,36 +70,39 @@ def ifc2datetime(element):
         )
 
 
-def get_isosplit(s, split):
-    if split in s:
-        n, s = s.split(split)
+def readable_ifc_duration(duration: str) -> str:
+    """Convert ISO duration to more readable string format.
+
+    Examples:
+    - "P2Y3M1W4DT5H45M30S" -> "2 Y 3 M 1 W 4 D 5 h 45 m 30 s"
+    - "P2Y3MT30S" -> "2 Y 3 M 30 s"
+    - "PT2500H" -> "2500 h" (hours are not converted to days)
+    """
+    # NOTE: we don't use isodate.parseduration as it's going to
+    # represent "PT2500H" as "12w 6d 4h", though user may want
+    # intentionally to use just hours.
+
+    if "T" in duration:
+        period_duration, time_duration = duration.split("T")
+        period_duration = period_duration[1:]
     else:
-        n = 0
-    return n, s
+        period_duration = duration[1:]
+        time_duration = ""
 
+    result: list[str] = []
+    for designator in ("Y", "M", "W", "D"):
+        if designator in period_duration:
+            value, period_duration = period_duration.split(designator)
+            if float(value):
+                result.append(f"{value}{designator}")
 
-def readable_ifc_duration(string):
-    string = string.split("P")[-1]
-
-    years, string = get_isosplit(string, "Y")
-    months, string = get_isosplit(string, "M")
-    weeks, string = get_isosplit(string, "W")
-    days, string = get_isosplit(string, "D")
-    _, string = get_isosplit(string, "T")
-    hours, string = get_isosplit(string, "H")
-    minutes, string = get_isosplit(string, "M")
-    seconds, string = get_isosplit(string, "S")
-
-    final_string = ""
-    final_string += f"{years} y " if years else ""
-    final_string += f"{months} m " if months else ""
-    final_string += f"{weeks} w " if weeks else ""
-    final_string += f"{days} d " if days else ""
-    final_string += f"{round(float(hours),2)} h " if hours else ""
-    final_string += f"{minutes} m " if minutes else ""
-    final_string += f"{seconds} s " if seconds else ""
-
-    return final_string
+    if time_duration:
+        for designator in ("H", "M", "S"):
+            if designator in time_duration:
+                value, time_duration = time_duration.split(designator)
+                if float(value):
+                    result.append(f"{value}{designator.lower()}")
+    return " ".join(result)
 
 
 @overload
@@ -211,7 +211,7 @@ def string_to_duration(duration_string):
     return isodate.duration_isoformat(datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds))
 
 
-def parse_duration(value):
+def parse_duration(value: Union[str, None]) -> Union[datetime.timedelta, None]:
     if not value:
         return None
     if isinstance(value, str):
@@ -258,7 +258,7 @@ def parse_duration(value):
                 return None
 
 
-def canonicalise_time(time):
+def canonicalise_time(time: Union[datetime.datetime, None]) -> str:
     if not time:
         return "-"
     return time.strftime("%d/%m/%y")

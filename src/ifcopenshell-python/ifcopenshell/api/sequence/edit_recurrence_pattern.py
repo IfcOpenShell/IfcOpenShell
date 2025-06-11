@@ -30,11 +30,8 @@ def edit_recurrence_pattern(
     IfcRecurrencePattern, consult the IFC documentation.
 
     :param recurrence_pattern: The IfcRecurrencePattern entity you want to edit
-    :type recurrence_pattern: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -55,13 +52,8 @@ def edit_recurrence_pattern(
         ifcopenshell.api.sequence.edit_recurrence_pattern(model,
             recurrence_pattern=pattern, attributes={"WeekdayComponent": [1, 2, 3, 4, 5]})
     """
-    settings = {
-        "recurrence_pattern": recurrence_pattern,
-        "attributes": attributes,
-    }
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["recurrence_pattern"], name, value)
+    for name, value in attributes.items():
+        setattr(recurrence_pattern, name, value)
 
     ifcopenshell.util.sequence.is_working_day.cache_clear()
     ifcopenshell.util.sequence.is_calendar_applicable.cache_clear()

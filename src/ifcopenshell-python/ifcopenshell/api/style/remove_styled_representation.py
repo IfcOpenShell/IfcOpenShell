@@ -25,9 +25,7 @@ def remove_styled_representation(file: ifcopenshell.file, representation: ifcope
     removes the representation but not the underlying styles.
 
     :param representation: The IfcStyledRepresentation to remove.
-    :type representation: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -36,17 +34,15 @@ def remove_styled_representation(file: ifcopenshell.file, representation: ifcope
         # Remove a styled representation
         ifcopenshell.api.style.remove_styled_representation(model, representation=representation)
     """
-    settings = {"representation": representation}
-
-    for inverse in file.get_inverse(settings["representation"]):
+    for inverse in file.get_inverse(representation):
         if inverse.is_a("IfcMaterialDefinitionRepresentation") and len(inverse.Representations) == 1:
             file.remove(inverse)
 
-    for item in settings["representation"].Items:
+    for item in representation.Items:
         if item.is_a("IfcStyledItem") and file.get_total_inverses(item) == 1:
             for style in item.Styles:
                 if style.is_a("IfcPresentationStyleAssignment"):
                     file.remove(style)
             file.remove(item)
 
-    file.remove(settings["representation"])
+    file.remove(representation)

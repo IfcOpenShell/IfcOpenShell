@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import re
 import collections
@@ -34,8 +35,13 @@ import subprocess
 import numpy as np
 import bonsai.core.tool
 import bonsai.core.geometry
+import bonsai.core.type
 import bonsai.tool as tool
 import ifcopenshell.api
+import ifcopenshell.api.context
+import ifcopenshell.api.document
+import ifcopenshell.api.pset
+import ifcopenshell.api.root
 import ifcopenshell.geom
 import ifcopenshell.util.representation
 import ifcopenshell.util.element
@@ -48,37 +54,88 @@ from shapely.ops import unary_union
 from lxml import etree
 from mathutils import Vector, Matrix
 from fractions import Fraction
-from typing import Optional, Union, Iterable, Any, Literal
+from typing import Optional, Union, Any, Literal, TYPE_CHECKING, NamedTuple
+from collections.abc import Iterable, Sequence
 from pathlib import Path
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.drawing.prop import (
+        DocProperties,
+        Sheet,
+        BIMAnnotationProperties,
+        BIMTextProperties,
+        BIMCameraProperties,
+        BIMAssignedProductProperties,
+    )
+    from bonsai.bim.module.drawing.prop import Drawing as DrawingProperties
 
 
 class Drawing(bonsai.core.tool.Drawing):
     ANNOTATION_DATA_TYPE = Literal["empty", "curve", "mesh"]
     DOCUMENT_TYPE = Literal["SCHEDULE", "REFERENCE"]
+    LocationHintLiteral = Literal["PERSPECTIVE", "ORTHOGRAPHIC", "NORTH", "SOUTH", "EAST", "WEST"]
+    LOCATION_HINT_LITERALS = ("PERSPECTIVE", "ORTHOGRAPHIC", "NORTH", "SOUTH", "EAST", "WEST")
+    LocationHintType = Union[LocationHintLiteral, str]
 
     # ObjectType: annotation_name, description, icon, data_type
     # fmt: off
-    ANNOTATION_TYPES_DATA = {
-        "DIMENSION":     ("Dimension",        "Add dimensions annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "FIXED_SIZE", "curve"),
-        "ANGLE":         ("Angle",            "", "DRIVER_ROTATIONAL_DIFFERENCE", "curve"),
-        "RADIUS":        ("Radius",           "", "FORWARD", "curve"),
-        "DIAMETER":      ("Diameter",         "Add diameter annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "ARROW_LEFTRIGHT", "curve"),
-        "TEXT":          ("Text",             "", "SMALL_CAPS", "empty"),
-        "TEXT_LEADER":   ("Leader",           "", "TRACKING_BACKWARDS", "curve"),
-        "STAIR_ARROW":   ("Stair Arrow",      "Add stair arrow annotation.\nIf you have IfcStairFlight object selected, it will be used as a reference for the annotation", "SCREEN_BACK", "curve"),
-        "PLAN_LEVEL":    ("Level (Plan)",     "", "SORTBYEXT", "curve"),
-        "SECTION_LEVEL": ("Level (Section)",  "", "TRIA_DOWN", "curve"),
-        "BREAKLINE":     ("Breakline",        "", "FCURVE", "mesh"),
-        "SYMBOL":        ("Symbol",           "", "KEYFRAME", "empty"),
-        "MULTI_SYMBOL":  ("Multi-Symbol",     "", "OUTLINER_DATA_POINTCLOUD", "mesh"),
-        "LINEWORK":      ("Line",             "", "SNAP_MIDPOINT", "mesh"),
-        "BATTING":       ("Batting",          "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set", "FORCE_FORCE", "mesh"),
-        "REVISION_CLOUD":("Revision Cloud",   "Add revision cloud", "VOLUME_DATA", "mesh"),
-        "FILL_AREA":     ("Fill Area",        "", "NODE_TEXTURE", "mesh"),
-        "FALL":          ("Fall",             "", "SORT_ASC", "curve"),
-        "IMAGE":         ("Image",            "Add reference image attached to the drawing", "TEXTURE", "mesh"),
+
+    class AnnotationObjectType(NamedTuple):
+        annotation_name: str
+        description: str
+        icon: str
+        data_type: Drawing.ANNOTATION_DATA_TYPE
+
+    ANNOTATION_TYPES_DATA: dict[str, AnnotationObjectType] = {
+        "DIMENSION":     AnnotationObjectType("Dimension",        "Add dimensions annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "FIXED_SIZE", "curve"),
+        "ANGLE":         AnnotationObjectType("Angle",            "", "DRIVER_ROTATIONAL_DIFFERENCE", "curve"),
+        "RADIUS":        AnnotationObjectType("Radius",           "", "FORWARD", "curve"),
+        "DIAMETER":      AnnotationObjectType("Diameter",         "Add diameter annotation.\nMeasurement values can be hidden through ShowDescriptionOnly property\nof BBIM_Dimension property set", "ARROW_LEFTRIGHT", "curve"),
+        "TEXT":          AnnotationObjectType("Text",             "", "SMALL_CAPS", "empty"),
+        "TEXT_LEADER":   AnnotationObjectType("Leader",           "", "TRACKING_BACKWARDS", "curve"),
+        "STAIR_ARROW":   AnnotationObjectType("Stair Arrow",      "Add stair arrow annotation.\nIf you have IfcStairFlight object selected, it will be used as a reference for the annotation", "SCREEN_BACK", "curve"),
+        "PLAN_LEVEL":    AnnotationObjectType("Level (Plan)",     "", "SORTBYEXT", "curve"),
+        "SECTION_LEVEL": AnnotationObjectType("Level (Section)",  "", "TRIA_DOWN", "curve"),
+        "BREAKLINE":     AnnotationObjectType("Breakline",        "", "FCURVE", "mesh"),
+        "SYMBOL":        AnnotationObjectType("Symbol",           "", "KEYFRAME", "empty"),
+        "MULTI_SYMBOL":  AnnotationObjectType("Multi-Symbol",     "", "OUTLINER_DATA_POINTCLOUD", "mesh"),
+        "LINEWORK":      AnnotationObjectType("Line",             "", "SNAP_MIDPOINT", "mesh"),
+        "BATTING":       AnnotationObjectType("Batting",          "Add batting annotation.\nThickness could be changed through Thickness property of BBIM_Batting property set", "FORCE_FORCE", "mesh"),
+        "REVISION_CLOUD":AnnotationObjectType("Revision Cloud",   "Add revision cloud", "VOLUME_DATA", "mesh"),
+        "FILL_AREA":     AnnotationObjectType("Fill Area",        "", "NODE_TEXTURE", "mesh"),
+        "FALL":          AnnotationObjectType("Fall",             "", "SORT_ASC", "curve"),
+        "IMAGE":         AnnotationObjectType("Image",            "Add reference image attached to the drawing", "TEXTURE", "mesh"),
     }
     # fmt: on
+
+    @classmethod
+    def get_document_props(cls) -> DocProperties:
+        assert (scene := bpy.context.scene)
+        return scene.DocProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_annotation_props(cls) -> BIMAnnotationProperties:
+        assert (scene := bpy.context.scene)
+        return scene.BIMAnnotationProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_text_props(cls, obj: bpy.types.Object) -> BIMTextProperties:
+        return obj.BIMTextProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_camera_props(cls, camera: Union[bpy.types.Object, bpy.types.Camera]) -> BIMCameraProperties:
+        """
+        :param camera: Camera object or camera.
+        """
+        if isinstance(camera, bpy.types.Camera):
+            data = camera
+        else:
+            assert isinstance(data := camera.data, bpy.types.Camera)
+        return data.BIMCameraProperties  # pyright: ignore[reportAttributeAccessIssue]
+
+    @classmethod
+    def get_object_assigned_product_props(cls, obj: bpy.types.Object) -> BIMAssignedProductProperties:
+        return obj.BIMAssignedProductProperties  # pyright: ignore[reportAttributeAccessIssue]
 
     @classmethod
     def canonicalise_class_name(cls, name: str) -> str:
@@ -93,7 +150,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_annotation_data_type(cls, object_type: str) -> ANNOTATION_DATA_TYPE:
-        return cls.ANNOTATION_TYPES_DATA[object_type][3]
+        return cls.ANNOTATION_TYPES_DATA[object_type].data_type
 
     @classmethod
     def create_annotation_object(cls, drawing: ifcopenshell.entity_instance, object_type: str) -> bpy.types.Object:
@@ -212,26 +269,31 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def is_annotation_object_type(
-        cls, element: ifcopenshell.entity_instance, object_types: Union[str, list[str]]
+        cls, element: ifcopenshell.entity_instance, object_types: Union[str, Sequence[str]]
     ) -> bool:
-        if not isinstance(object_types, collections.abc.Iterable):
+        if isinstance(object_types, str):
             object_types = [object_types]
 
         element_type = element.is_a()
 
-        if element_type == "IfcAnnotation" and element.ObjectType in object_types:
+        if element_type == "IfcAnnotation" and ifcopenshell.util.element.get_predefined_type(element) in object_types:
             return True
 
-        if (
-            element_type == "IfcTypeProduct"
-            and element.ApplicableOccurrence
-            and element.ApplicableOccurrence.startswith("IfcAnnotation/")
+        if element_type == "IfcTypeProduct" and (
+            applicable_object_type := cls.get_annotation_type_object_type(element)
         ):
-            applicable_object_type = element.ApplicableOccurrence.split("/")[1]
             if applicable_object_type in object_types:
                 return True
 
         return False
+
+    @classmethod
+    def get_annotation_type_object_type(cls, element_type: ifcopenshell.entity_instance) -> Union[str, None]:
+        applicable_occurrence: Union[str, None]
+        applicable_occurrence = element_type.ApplicableOccurrence
+        if not applicable_occurrence or not applicable_occurrence.startswith("IfcAnnotation/"):
+            return
+        return applicable_occurrence.split("/", 1)[1]
 
     @classmethod
     def get_annotation_representation(
@@ -248,22 +310,30 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def create_camera(
-        cls, name: str, matrix: Matrix, location_hint: Literal["PERSPECTIVE", "ORTHOGRAPHIC"]
+        cls,
+        name: str,
+        matrix: Matrix,
+        location_hint: Union[LocationHintLiteral, int],
+        target_view: ifcopenshell.util.representation.TARGET_VIEW,
     ) -> bpy.types.Object:
-        camera = bpy.data.objects.new(name, bpy.data.cameras.new(name))
-        camera.location = (0, 0, 1.5)  # The view shall be 1.5m above the origin
-        camera.data.show_limits = True
+        camera = bpy.data.objects.new(name, (camera_data := bpy.data.cameras.new(name)))
+        props = cls.get_camera_props(camera_data)
+        camera_data.show_limits = True
         if location_hint == "PERSPECTIVE":
-            camera.data.type = "PERSP"
+            props.camera_type = "PERSP"
         else:
-            camera.data.type = "ORTHO"
-        camera.data.ortho_scale = 50  # The default of 6m is too small
-        camera.data.clip_start = 0.002  # 2mm is close to zero but allows any GPU-drawn lines to be visible.
-        camera.data.clip_end = 10  # A slightly more reasonable default
+            props.camera_type = "ORTHO"
+        camera_data.ortho_scale = 50  # The default of 6m is too small
+        camera_data.clip_start = 0.002  # 2mm is close to zero but allows any GPU-drawn lines to be visible.
+        if target_view == "MODEL_VIEW":
+            assert (space := tool.Blender.get_view3d_space())
+            camera_data.clip_end = max(space.clip_end, 10)
+        else:
+            camera_data.clip_end = 10  # A slightly more reasonable default
         if bpy.context.scene.unit_settings.system == "IMPERIAL":
-            camera.data.BIMCameraProperties.diagram_scale = '1/8"=1\'-0"|1/96'
+            props.diagram_scale = '1/8"=1\'-0"|1/96'
         else:
-            camera.data.BIMCameraProperties.diagram_scale = "1:100|1/100"
+            props.diagram_scale = "1:100|1/100"
         camera.matrix_world = matrix
         return camera
 
@@ -281,7 +351,6 @@ class Drawing(bonsai.core.tool.Drawing):
         import bonsai.bim.module.drawing.sheeter as sheeter
 
         sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
         uri = cls.get_document_uri(document, "LAYOUT")
         sheet_builder.create(uri, titleblock)
         return uri
@@ -291,7 +360,6 @@ class Drawing(bonsai.core.tool.Drawing):
         import bonsai.bim.module.drawing.sheeter as sheeter
 
         sheet_builder = sheeter.SheetBuilder()
-        sheet_builder.data_dir = bpy.context.scene.BIMProperties.data_dir
         drawing_references = {}
         drawing_names = []
         for reference in cls.get_document_references(sheet):
@@ -311,7 +379,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def delete_drawing_elements(cls, elements: Iterable[ifcopenshell.entity_instance]) -> None:
         for element in elements:
             obj = tool.Ifc.get_object(element)
-            ifcopenshell.api.run("root.remove_product", tool.Ifc.get(), product=element)
+            ifcopenshell.api.root.remove_product(tool.Ifc.get(), product=element)
             if obj:
                 obj_data = obj.data
                 bpy.data.objects.remove(obj)
@@ -324,59 +392,75 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def disable_editing_drawings(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_drawings = False
+        props = tool.Drawing.get_document_props()
+        props.is_editing_drawings = False
 
     @classmethod
     def disable_editing_schedules(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_schedules = False
+        props = tool.Drawing.get_document_props()
+        props.is_editing_schedules = False
 
     @classmethod
     def disable_editing_references(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_references = False
+        props = tool.Drawing.get_document_props()
+        props.is_editing_references = False
 
     @classmethod
     def disable_editing_sheets(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_sheets = False
+        props = tool.Drawing.get_document_props()
+        props.is_editing_sheets = False
 
     @classmethod
     def disable_editing_text(cls, obj: bpy.types.Object) -> None:
-        obj.BIMTextProperties.is_editing = False
+        props = tool.Drawing.get_text_props(obj)
+        props.is_editing = False
 
     @classmethod
     def disable_editing_assigned_product(cls, obj: bpy.types.Object) -> None:
-        obj.BIMAssignedProductProperties.is_editing_product = False
+        props = cls.get_object_assigned_product_props(obj)
+        props.is_editing_product = False
 
     @classmethod
     def enable_editing(cls, obj: bpy.types.Object) -> None:
-        bpy.ops.object.select_all(action="DESELECT")
-        bpy.context.view_layer.objects.active = obj
-        obj.select_set(True)
-        if obj.data:
-            bpy.ops.object.mode_set(mode="EDIT")
+        from bonsai.bim.module.geometry.data import ViewportData
+
+        tool.Blender.select_and_activate_single_object(bpy.context, obj)
+        if not obj.data:
+            return
+        ViewportData.load()  # Reload valid modes
+        bpy.ops.bim.override_mode_set_edit()  # Enter item mode
+        ViewportData.load()  # Reload valid modes
+        bpy.ops.bim.override_mode_set_edit()  # Enter edit mode
 
     @classmethod
     def enable_editing_drawings(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_drawings = True
+        props = tool.Drawing.get_document_props()
+        props.is_editing_drawings = True
 
     @classmethod
     def enable_editing_schedules(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_schedules = True
+        props = tool.Drawing.get_document_props()
+        props.is_editing_schedules = True
 
     @classmethod
     def enable_editing_references(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_references = True
+        props = tool.Drawing.get_document_props()
+        props.is_editing_references = True
 
     @classmethod
     def enable_editing_sheets(cls) -> None:
-        bpy.context.scene.DocProperties.is_editing_sheets = True
+        props = tool.Drawing.get_document_props()
+        props.is_editing_sheets = True
 
     @classmethod
     def enable_editing_text(cls, obj: bpy.types.Object) -> None:
-        obj.BIMTextProperties.is_editing = True
+        props = cls.get_text_props(obj)
+        props.is_editing = True
 
     @classmethod
     def enable_editing_assigned_product(cls, obj: bpy.types.Object) -> None:
-        obj.BIMAssignedProductProperties.is_editing_product = True
+        props = cls.get_object_assigned_product_props(obj)
+        props.is_editing_product = True
 
     @classmethod
     def ensure_unique_drawing_name(cls, name: str) -> str:
@@ -396,7 +480,8 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def export_text_literal_attributes(cls, obj: bpy.types.Object) -> list[dict[str, Any]]:
         literals = []
-        for literal_props in obj.BIMTextProperties.literals:
+        props = tool.Drawing.get_text_props(obj)
+        for literal_props in props.literals:
             literal_data = bonsai.bim.helper.export_attributes(literal_props.attributes)
             literals.append(literal_data)
         return literals
@@ -412,11 +497,14 @@ class Drawing(bonsai.core.tool.Drawing):
             "PLAN_LEVEL",
         ):
             parent = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Plan")
+            if not parent:
+                parent = ifcopenshell.api.context.add_context(tool.Ifc.get(), context_type="Plan")
         else:
             parent = ifcopenshell.util.representation.get_context(tool.Ifc.get(), "Model")
+            if not parent:
+                parent = ifcopenshell.api.context.add_context(tool.Ifc.get(), context_type="Model")
 
-        return ifcopenshell.api.run(
-            "context.add_context",
+        return ifcopenshell.api.context.add_context(
             tool.Ifc.get(),
             context_type=parent.ContextType,
             context_identifier="Annotation",
@@ -480,7 +568,7 @@ class Drawing(bonsai.core.tool.Drawing):
     def get_drawing_collection(cls, drawing: ifcopenshell.entity_instance) -> Union[bpy.types.Collection, None]:
         obj = tool.Ifc.get_object(drawing)
         if obj:
-            return obj.BIMObjectProperties.collection
+            return tool.Blender.get_object_bim_props(obj).collection
 
     @classmethod
     def get_drawing_group(cls, drawing: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
@@ -524,47 +612,81 @@ class Drawing(bonsai.core.tool.Drawing):
         return element.Name
 
     @classmethod
+    def update_camera_matrix(
+        cls,
+        matrix: Matrix,
+        *,
+        camera_dir: Vector,
+        up: Vector,
+    ) -> None:
+        # Camera dir is actually Z-.
+        camera_dir = -camera_dir
+        right = up.cross(camera_dir)
+        assert isinstance(right, Vector)
+        matrix.col[0][:3] = right
+        matrix.col[1][:3] = up
+        matrix.col[2][:3] = camera_dir
+
+    @classmethod
     def generate_drawing_matrix(
-        cls, target_view: ifcopenshell.util.representation.TARGET_VIEW, location_hint: str
+        cls,
+        target_view: ifcopenshell.util.representation.TARGET_VIEW,
+        location_hint: Union[LocationHintLiteral, int],
     ) -> Matrix:
+        assert bpy.context.scene
+        m = Matrix()
         x, y, z = (0, 0, 0) if location_hint == 0 else bpy.context.scene.cursor.matrix.translation
-        if target_view == "PLAN_VIEW":
+        X, Y, Z = m.to_3x3()
+        if isinstance(location_hint, int):
+            if target_view == "REFLECTED_PLAN_VIEW":
+                # Flip Z axis.
+                m.col[2] *= -1
             if location_hint:
-                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.translation.z
-                return mathutils.Matrix(((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z + 1.6), (0, 0, 0, 1)))
-        elif target_view == "REFLECTED_PLAN_VIEW":
-            if location_hint:
-                z = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint)).matrix_world.translation.z
-                m = mathutils.Matrix()
-                m[2][2] = -1
-                m.translation = (x, y, z + 1.6)
-                return m
-            return mathutils.Matrix(((1, 0, 0, 0), (0, 1, 0, 0), (0, 0, -1, 0), (0, 0, 0, 1)))
+                storey = tool.Ifc.get_object(tool.Ifc.get().by_id(location_hint))
+                assert isinstance(storey, bpy.types.Object)
+                z = storey.matrix_world.translation.z
+                if target_view == "PLAN_VIEW":
+                    # Keep default camera direction - Z-.
+                    m.translation = (x, y, z + 1.6)
+                    return m
+                elif target_view == "REFLECTED_PLAN_VIEW":
+                    m.translation = (x, y, z + 1.6)
+                else:
+                    assert False, target_view
+            return m
         elif target_view == "ELEVATION_VIEW":
+            m.translation = (x, y, z)
             if location_hint == "NORTH":
-                return mathutils.Matrix(((-1, 0, 0, x), (0, 0, 1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=-Y, up=Z)
             elif location_hint == "SOUTH":
-                return mathutils.Matrix(((1, 0, 0, x), (0, 0, -1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=Y, up=Z)
             elif location_hint == "EAST":
-                return mathutils.Matrix(((0, 0, 1, x), (1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=-X, up=Z)
             elif location_hint == "WEST":
-                return mathutils.Matrix(((0, 0, -1, x), (-1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=X, up=Z)
+            return m
         elif target_view == "SECTION_VIEW":
+            m.translation = (x, y, z)
+            X, Y, Z = m.to_3x3()
             if location_hint == "NORTH":
-                return mathutils.Matrix(((1, 0, 0, x), (0, 0, -1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=Y, up=Z)
             elif location_hint == "SOUTH":
-                return mathutils.Matrix(((-1, 0, 0, x), (0, 0, 1, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=-Y, up=Z)
             elif location_hint == "EAST":
-                return mathutils.Matrix(((0, 0, -1, x), (-1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=X, up=Z)
             elif location_hint == "WEST":
-                return mathutils.Matrix(((0, 0, 1, x), (1, 0, 0, y), (0, 1, 0, z), (0, 0, 0, 1)))
+                cls.update_camera_matrix(m, camera_dir=-X, up=Z)
+            return m
         elif target_view == "MODEL_VIEW":
-            return mathutils.Matrix(((1, 0, 0, x), (0, 1, 0, y), (0, 0, 1, z), (0, 0, 0, 1)))
-        return mathutils.Matrix()
+            assert (space := tool.Blender.get_view3d_space())
+            assert (r3d := space.region_3d)
+            return r3d.view_matrix.inverted()
+        return m
 
     @classmethod
     def generate_sheet_identification(cls) -> str:
         number = len([d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"])
+        number += 1
         return "A" + str(number).zfill(2)
 
     @classmethod
@@ -587,7 +709,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def is_editing_sheets(cls) -> bool:
-        return bpy.context.scene.DocProperties.is_editing_sheets
+        props = tool.Drawing.get_document_props()
+        return props.is_editing_sheets
 
     @classmethod
     def remove_literal_from_annotation(cls, obj: bpy.types.Object, literal: ifcopenshell.entity_instance) -> None:
@@ -607,7 +730,8 @@ class Drawing(bonsai.core.tool.Drawing):
     def synchronise_ifc_and_text_attributes(cls, obj: bpy.types.Object) -> None:
         literals = cls.get_text_literal(obj, return_list=True)
         literals_attributes = cls.export_text_literal_attributes(obj)
-        defined_ifc_ids = [l.ifc_definition_id for l in obj.BIMTextProperties.literals]
+        props = cls.get_text_props(obj)
+        defined_ifc_ids = [l.ifc_definition_id for l in props.literals]
         ifc_file = tool.Ifc.get()
 
         for ifc_definition_id, attributes in zip(defined_ifc_ids, literals_attributes):
@@ -675,8 +799,19 @@ class Drawing(bonsai.core.tool.Drawing):
         ifc_importer.load_existing_meshes()
         ifc_importer.material_creator.load_existing_materials()
         ifc_importer.create_generic_elements(elements)
+        ifc_importer.setup_arrays(annotations_to_import=elements)
         for obj in ifc_importer.added_data.values():
             tool.Collector.assign(obj)
+
+    @classmethod
+    def get_camera_shape_matrix(
+        cls, drawing: ifcopenshell.entity_instance, shape: ifcopenshell.geom.ShapeElementType
+    ) -> Matrix:
+        mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
+
+        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
+            mat[1][1] *= -1
+        return mat
 
     # NOTE: EPsetDrawing pset is completely synced with BIMCameraProperties
     # but BIMCameraProperties are only synced with EPsetDrawing at drawing import
@@ -696,11 +831,7 @@ class Drawing(bonsai.core.tool.Drawing):
         cls.import_camera_props(drawing, camera)
         tool.Ifc.link(drawing, obj)
 
-        mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
-        obj.matrix_world = mat
-
-        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
-            obj.matrix_world[1][1] *= -1
+        obj.matrix_world = cls.get_camera_shape_matrix(drawing, shape)
 
         tool.Geometry.record_object_position(obj)
         tool.Collector.assign(obj)
@@ -720,10 +851,8 @@ class Drawing(bonsai.core.tool.Drawing):
             obj.data = camera
         else:
             obj = bpy.data.objects.new(tool.Loader.get_name(drawing), camera)
-        mat = Matrix(ifcopenshell.util.shape.get_shape_matrix(shape))
-        obj.matrix_world = mat
-        if cls.get_drawing_target_view(drawing) == "REFLECTED_PLAN_VIEW":
-            obj.matrix_world[1][1] *= -1
+
+        obj.matrix_world = cls.get_camera_shape_matrix(drawing, shape)
         return obj
 
     @classmethod
@@ -731,53 +860,63 @@ class Drawing(bonsai.core.tool.Drawing):
         from bonsai.bim.module.drawing.prop import get_diagram_scales
 
         # Temporarily clear the definition id to prevent prop update callbacks to IFC.
-        camera_props = camera.BIMCameraProperties
+        camera_props = cls.get_camera_props(camera)
         update_props = camera_props.update_props
         camera_props.update_props = False
 
-        camera.BIMCameraProperties.has_underlay = False
-        camera.BIMCameraProperties.has_linework = True
-        camera.BIMCameraProperties.has_annotation = True
-        camera.BIMCameraProperties.target_view = "PLAN_VIEW"
-        camera.BIMCameraProperties.is_nts = False
+        camera_props.has_underlay = False
+        camera_props.has_linework = True
+        camera_props.has_annotation = True
+        camera_props.target_view = "PLAN_VIEW"
+        camera_props.is_nts = False
 
         pset = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
         if pset:
             if "TargetView" in pset:
-                camera.BIMCameraProperties.target_view = pset["TargetView"]
+                camera_props.target_view = pset["TargetView"]
             if "Scale" in pset:
                 valid_scales = [
                     i[0] for i in get_diagram_scales(None, bpy.context) if pset["Scale"] == i[0].split("|")[-1]
                 ]
                 if valid_scales:
-                    camera.BIMCameraProperties.diagram_scale = valid_scales[0]
+                    camera_props.diagram_scale = valid_scales[0]
                 else:
-                    camera.BIMCameraProperties.diagram_scale = "CUSTOM"
+                    camera_props.diagram_scale = "CUSTOM"
                     if ":" in pset["HumanScale"]:
                         numerator, denominator = pset["HumanScale"].split(":")
                     else:
                         numerator, denominator = pset["HumanScale"].split("=")
-                    camera.BIMCameraProperties.custom_scale_numerator = numerator
-                    camera.BIMCameraProperties.custom_scale_denominator = denominator
+                    camera_props.custom_scale_numerator = numerator
+                    camera_props.custom_scale_denominator = denominator
             if "HasUnderlay" in pset:
-                camera.BIMCameraProperties.has_underlay = bool(pset["HasUnderlay"])
+                camera_props.has_underlay = bool(pset["HasUnderlay"])
             if "HasLinework" in pset:
-                camera.BIMCameraProperties.has_linework = bool(pset["HasLinework"])
+                camera_props.has_linework = bool(pset["HasLinework"])
             if "HasAnnotation" in pset:
-                camera.BIMCameraProperties.has_annotation = bool(pset["HasAnnotation"])
+                camera_props.has_annotation = bool(pset["HasAnnotation"])
             if "IsNTS" in pset:
-                camera.BIMCameraProperties.is_nts = bool(pset["IsNTS"])
+                camera_props.is_nts = bool(pset["IsNTS"])
+            if "DPI" in pset:
+                camera_props.dpi = int(pset["DPI"])
+            if "LineworkMode" in pset:
+                camera_props.linework_mode = str(pset["LineworkMode"])
+            if "FillMode" in pset:
+                camera_props.fill_mode = str(pset["FillMode"])
+            if "CutMode" in pset:
+                camera_props.cut_mode = str(pset["CutMode"])
 
         camera_props.update_props = update_props
 
     @classmethod
     def import_drawings(cls) -> None:
-        props = bpy.context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         expanded_target_views = {d.target_view for d in props.drawings if d.is_expanded}
-        current_drawings_selection = {d.ifc_definition_id: d.is_selected for d in props.drawings}
+        if not hasattr(cls, "drawing_selected_states"):
+            cls.drawing_selected_states = {}
+        cls.drawing_selected_states.update({d.ifc_definition_id: d.is_selected for d in props.drawings if d.is_drawing})
         props.drawings.clear()
         drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
-        grouped_drawings = {
+        grouped_drawings: dict[str, list[ifcopenshell.entity_instance]] = {
             "MODEL_VIEW": [],
             "PLAN_VIEW": [],
             "SECTION_VIEW": [],
@@ -801,13 +940,13 @@ class Drawing(bonsai.core.tool.Drawing):
             for drawing in sorted(drawings, key=lambda x: x.Name or "Unnamed"):
                 new = props.drawings.add()
                 new.name = drawing.Name or "Unnamed"
-                new.is_selected = current_drawings_selection.get(drawing.id(), True)
+                new.is_selected = cls.drawing_selected_states.setdefault(drawing.id(), True)
                 new.is_drawing = True
                 new.ifc_definition_id = drawing.id()  # Last, to prevent unnecessary prop callbacks
 
     @classmethod
     def import_documents(cls, document_type: DOCUMENT_TYPE) -> None:
-        dprops = bpy.context.scene.DocProperties
+        dprops = cls.get_document_props()
         if document_type == "SCHEDULE":
             documents_collection = dprops.schedules
         elif document_type == "REFERENCE":
@@ -826,8 +965,11 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def import_sheets(cls) -> None:
-        props = bpy.context.scene.DocProperties
+        props = cls.get_document_props()
         expanded_sheets = {s.ifc_definition_id for s in props.sheets if s.is_expanded}
+        if not hasattr(cls, "sheet_selected_states"):
+            cls.sheet_selected_states = {}
+        cls.sheet_selected_states.update({s.ifc_definition_id: s.is_selected for s in props.sheets if s.is_sheet})
         props.sheets.clear()
         sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
         for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):
@@ -840,6 +982,7 @@ class Drawing(bonsai.core.tool.Drawing):
             new.name = sheet.Name
             new.is_sheet = True
             new.is_expanded = sheet.id() in expanded_sheets
+            new.is_selected = cls.sheet_selected_states.setdefault(sheet.id(), True)
 
             if not new.is_expanded:
                 continue
@@ -862,13 +1005,13 @@ class Drawing(bonsai.core.tool.Drawing):
                 new.reference_type = reference_description
 
     @classmethod
-    def get_active_sheet(cls, context: bpy.types.Context) -> bpy.types.PropertyGroup:
-        props = context.scene.DocProperties
+    def get_active_sheet(cls, context: bpy.types.Context) -> Sheet:
+        props = cls.get_document_props()
         return next(s for s in props.sheets[: props.active_sheet_index + 1][::-1] if s.is_sheet)
 
     @classmethod
-    def get_active_drawing_item(cls) -> Union[bpy.types.PropertyGroup, None]:
-        props = bpy.context.scene.DocProperties
+    def get_active_drawing_item(cls) -> Union[DrawingProperties, None]:
+        props = cls.get_document_props()
         drawing_index = props.active_drawing_index
         if len(props.drawings) > drawing_index >= 0:
             item = props.drawings[drawing_index]
@@ -876,10 +1019,25 @@ class Drawing(bonsai.core.tool.Drawing):
                 return item
 
     @classmethod
+    def get_active_sheet_item(cls, *, is_sheet: bool = False, reference_type: str = "") -> Union[Sheet, None]:
+        props = cls.get_document_props()
+        sheet_index = props.active_sheet_index
+        if len(props.sheets) > sheet_index >= 0:
+            item = props.sheets[sheet_index]
+            if not is_sheet and not reference_type:
+                return item
+            if is_sheet:
+                if item.is_sheet:
+                    return item
+            elif reference_type:
+                if item.reference_type == reference_type:
+                    return item
+
+    @classmethod
     def import_text_attributes(cls, obj: bpy.types.Object) -> None:
         from bonsai.bim.module.drawing.prop import BOX_ALIGNMENT_POSITIONS
 
-        props = obj.BIMTextProperties
+        props = cls.get_text_props(obj)
         props.literals.clear()
 
         for ifc_literal in cls.get_text_literal(obj, return_list=True):
@@ -894,17 +1052,21 @@ class Drawing(bonsai.core.tool.Drawing):
 
         from bonsai.bim.module.drawing.data import DecoratorData
 
-        text_data = DecoratorData.get_ifc_text_data(obj)
+        text_data = DecoratorData.get_text_data(obj)
         props.font_size = str(text_data["FontSize"])
+        props.newline_at = text_data["Newline_At"]
 
     @classmethod
     def import_assigned_product(cls, obj: bpy.types.Object) -> None:
         element = tool.Ifc.get_entity(obj)
+        assert element
         product = cls.get_assigned_product(element)
+        props = cls.get_object_assigned_product_props(obj)
         if product:
-            obj.BIMAssignedProductProperties.relating_product = tool.Ifc.get_object(product)
+            assert isinstance(product_obj := tool.Ifc.get_object(product), bpy.types.Object)
+            props.relating_product = product_obj
         else:
-            obj.BIMAssignedProductProperties.relating_product = None
+            props.relating_product = None
 
     @classmethod
     def open_with_user_command(cls, user_command: str, path: str) -> None:
@@ -957,6 +1119,26 @@ class Drawing(bonsai.core.tool.Drawing):
         )
 
     @classmethod
+    def run_type_assign_type(cls, element: ifcopenshell.entity_instance, relating_type: ifcopenshell.entity_instance):
+        return bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
+
+    @classmethod
+    def reload_representation(cls, obj: bpy.types.Object, representation: ifcopenshell.entity_instance):
+        return bonsai.core.geometry.switch_representation(
+            tool.Ifc,
+            tool.Geometry,
+            obj=obj,
+            representation=representation,
+            should_reload=True,
+            is_global=True,
+            should_sync_changes_first=False,
+        )
+
+    @classmethod
+    def get_representation(cls, element, context):
+        return ifcopenshell.util.representation.get_representation(element, context)
+
+    @classmethod
     def set_drawing_collection_name(
         cls, drawing: ifcopenshell.entity_instance, collection: bpy.types.Collection
     ) -> None:
@@ -968,11 +1150,12 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def show_decorations(cls) -> None:
-        bpy.context.scene.DocProperties.should_draw_decorations = True
+        props = tool.Drawing.get_document_props()
+        props.should_draw_decorations = True
 
     @classmethod
     def update_text_value(cls, obj: bpy.types.Object) -> None:
-        props = obj.BIMTextProperties
+        props = cls.get_text_props(obj)
         literals = cls.get_text_literal(obj, return_list=True)
         cls.import_text_attributes(obj)
         for i, literal in enumerate(literals):
@@ -986,7 +1169,7 @@ class Drawing(bonsai.core.tool.Drawing):
         """
         from bonsai.bim.module.drawing.data import FONT_SIZES
 
-        props = obj.BIMTextProperties
+        props = cls.get_text_props(obj)
         element = tool.Ifc.get_entity(obj)
         # updating text font size in EPset_Annotation.Classes
         font_size = float(props.font_size)
@@ -1007,13 +1190,27 @@ class Drawing(bonsai.core.tool.Drawing):
             ifc_file = tool.Ifc.get()
             pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
             if not pset:
-                pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="EPset_Annotation")
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+                pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+            ifcopenshell.api.pset.edit_pset(
                 ifc_file,
                 pset=pset,
                 properties={"Classes": classes},
             )
+
+    @classmethod
+    def update_newline_at(cls, obj: bpy.types.Object) -> None:
+        props = cls.get_text_props(obj)
+        element = tool.Ifc.get_entity(obj)
+        newline_at = int(props.newline_at)
+        ifc_file = tool.Ifc.get()
+        pset = tool.Pset.get_element_pset(element, "EPset_Annotation")
+        if not pset:
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="EPset_Annotation")
+        ifcopenshell.api.pset.edit_pset(
+            ifc_file,
+            pset=pset,
+            properties={"Newline_At": newline_at},
+        )
 
     # TODO below this point is highly experimental prototype code with no tests
 
@@ -1035,13 +1232,17 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def generate_drawing_name(
-        cls, target_view: ifcopenshell.util.representation.TARGET_VIEW, location_hint: str
+        cls,
+        target_view: ifcopenshell.util.representation.TARGET_VIEW,
+        location_hint: Union[LocationHintLiteral, int],
     ) -> str:
-        if target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW") and location_hint:
-            location = tool.Ifc.get().by_id(location_hint)
-            if target_view == "REFLECTED_PLAN_VIEW":
-                target_view = "RCP_VIEW"
-            return (location.Name or "UNNAMED").upper() + " " + target_view.split("_")[0]
+        if isinstance(location_hint, int):
+            if location_hint:
+                location = tool.Ifc.get().by_id(location_hint)
+                target_view_ = target_view
+                if target_view == "REFLECTED_PLAN_VIEW":
+                    target_view_ = "RCP_VIEW"
+                return (location.Name or "UNNAMED").upper() + " " + target_view_.split("_")[0]
         elif target_view in ("SECTION_VIEW", "ELEVATION_VIEW") and location_hint:
             return location_hint + " " + target_view.split("_")[0]
         elif target_view == "MODEL_VIEW" and location_hint:
@@ -1051,36 +1252,34 @@ class Drawing(bonsai.core.tool.Drawing):
     @classmethod
     def get_default_layout_path(cls, identification: str, name: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
+        props = tool.Drawing.get_document_props()
         layouts_dir = (
-            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "LayoutsDir")
-            or bpy.context.scene.DocProperties.layouts_dir
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "LayoutsDir") or props.layouts_dir
         )
         return os.path.join(layouts_dir, cls.sanitise_filename(f"{identification} - {name}.svg")).replace("\\", "/")
 
     @classmethod
     def get_default_sheet_path(cls, identification: str, name: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
-        sheets_dir = (
-            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "SheetsDir")
-            or bpy.context.scene.DocProperties.sheets_dir
-        )
+        props = tool.Drawing.get_document_props()
+        sheets_dir = ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "SheetsDir") or props.sheets_dir
         return os.path.join(sheets_dir, cls.sanitise_filename(f"{identification} - {name}.svg")).replace("\\", "/")
 
     @classmethod
     def get_default_titleblock_path(cls, name: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
+        props = tool.Drawing.get_document_props()
         titleblocks_dir = (
-            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir")
-            or bpy.context.scene.DocProperties.titleblocks_dir
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "TitleblocksDir") or props.titleblocks_dir
         )
         return os.path.join(titleblocks_dir, cls.sanitise_filename(f"{name}.svg")).replace("\\", "/")
 
     @classmethod
     def get_default_drawing_path(cls, name: str) -> str:
         project = tool.Ifc.get().by_type("IfcProject")[0]
+        props = tool.Drawing.get_document_props()
         drawings_dir = (
-            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "DrawingsDir")
-            or bpy.context.scene.DocProperties.drawings_dir
+            ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", "DrawingsDir") or props.drawings_dir
         )
         return os.path.join(drawings_dir, cls.sanitise_filename(f"{name}.svg")).replace("\\", "/")
 
@@ -1088,18 +1287,22 @@ class Drawing(bonsai.core.tool.Drawing):
     def sanitise_filename(cls, name: str) -> str:
         return "".join(x for x in name if (x.isalnum() or x in "._- "))
 
+    ResourceType = Literal["Stylesheet", "Markers", "Symbols", "Patterns", "ShadingStyles"]
+    RESOURCE_TYPES = ("Stylesheet", "Markers", "Symbols", "Patterns", "ShadingStyles")
+
     @classmethod
     def get_default_drawing_resource_path(cls, resource: str) -> Union[str, None]:
         project = tool.Ifc.get().by_type("IfcProject")[0]
+        props = tool.Drawing.get_document_props()
         resource_path = ifcopenshell.util.element.get_pset(project, "BBIM_Documentation", f"{resource}Path") or getattr(
-            bpy.context.scene.DocProperties, f"{resource.lower()}_path"
+            props, f"{resource.lower()}_path"
         )
         if resource_path:
             return resource_path.replace("\\", "/")
 
     @classmethod
     def get_default_shading_style(cls) -> str:
-        dprops = bpy.context.scene.DocProperties
+        dprops = tool.Drawing.get_document_props()
         return dprops.shadingstyle_default
 
     @classmethod
@@ -1108,8 +1311,8 @@ class Drawing(bonsai.core.tool.Drawing):
         os.makedirs(os.path.dirname(resource_path), exist_ok=True)
         if not os.path.exists(resource_path):
             resource_basename = os.path.basename(resource_path)
-            ootb_resource = os.path.join(bpy.context.scene.BIMProperties.data_dir, "assets", resource_basename)
-            if os.path.exists(ootb_resource):
+            ootb_resource = tool.Blender.get_data_dir_path(Path("assets") / resource_basename)
+            if ootb_resource.is_file():
                 shutil.copy(ootb_resource, resource_path)
 
     @classmethod
@@ -1141,17 +1344,32 @@ class Drawing(bonsai.core.tool.Drawing):
     ) -> Union[ifcopenshell.entity_instance, bool, None]:
         if drawing == reference_element:
             return True
+        if reference_element.is_a("IfcGridAxis"):
+            # We cannot associate IfcGridAxis directly, so we establish a convention:
+            # IfcRelAssignsToProduct.RelatingProduct = IfcGrid
+            # IfcRelAssignsToProduct.Name = IfcGridAxis.AxisTag
+            grid = None
+            for attribute in ("PartOfW", "PartOfV", "PartOfU"):
+                if getattr(reference_element, attribute, None):
+                    grid = getattr(reference_element, attribute)[0]
+                    break
+
+            for element in cls.get_group_elements(cls.get_drawing_group(drawing)):
+                if not element.is_a("IfcAnnotation"):
+                    continue
+                for rel in element.HasAssignments:
+                    if (
+                        rel.is_a("IfcRelAssignsToProduct")
+                        and rel.RelatingProduct == grid
+                        and rel.Name == reference_element.AxisTag
+                    ):
+                        return element
+            return
         for element in cls.get_group_elements(cls.get_drawing_group(drawing)):
             if element.is_a("IfcAnnotation"):
                 for rel in element.HasAssignments:
-                    if rel.is_a("IfcRelAssignsToProduct"):
-                        if rel.RelatingProduct == reference_element:
-                            return element
-                        # We cannot associate IfcGridAxis directly, so we establish a convention:
-                        # IfcRelAssignsToProduct.RelatingProduct = IfcGrid
-                        # IfcRelAssignsToProduct.Name = IfcGridAxis.AxisTag
-                        elif reference_element.is_a("IfcGridAxis") and rel.Name == reference_element.AxisTag:
-                            return element
+                    if rel.is_a("IfcRelAssignsToProduct") and rel.RelatingProduct == reference_element:
+                        return element
 
     @classmethod
     def generate_reference_annotation(
@@ -1195,8 +1413,13 @@ class Drawing(bonsai.core.tool.Drawing):
         import bonsai.bim.module.drawing.helper as helper
 
         camera = tool.Ifc.get_object(drawing)
-        bounds = helper.ortho_view_frame(camera.data) if camera.data.type == "ORTHO" else None
+        assert isinstance(camera, bpy.types.Object)
+        assert isinstance((camera_data := camera.data), bpy.types.Camera)
+        props = tool.Drawing.get_camera_props(camera_data)
+
+        bounds = helper.ortho_view_frame(camera_data) if camera_data.type == "ORTHO" else None
         reference_obj = tool.Ifc.get_object(reference_element)
+        assert isinstance(reference_obj, bpy.types.Object)
 
         def to_camera_coords(camera: bpy.types.Object, reference_obj: bpy.types.Object) -> Matrix:
             mat = reference_obj.matrix_world.copy()
@@ -1204,12 +1427,12 @@ class Drawing(bonsai.core.tool.Drawing):
             xyz[2] = 0
             xyz = camera.matrix_world @ xyz
             mat.translation = xyz
-            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
+            annotation_offset = mathutils.Vector((0, 0, -camera_data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
             mat.translation += annotation_offset
             return mat
 
-        def project_point_onto_camera(point, camera):
+        def project_point_onto_camera(point: Vector, camera: bpy.types.Object) -> Vector:
             projection = camera.matrix_world.to_quaternion() @ mathutils.Vector((0, 0, -1))
             return camera.matrix_world.inverted() @ mathutils.geometry.intersect_line_plane(
                 point.xyz, point.xyz - projection, camera.location, projection
@@ -1217,12 +1440,12 @@ class Drawing(bonsai.core.tool.Drawing):
 
         obj_matrix = to_camera_coords(camera, reference_obj)
 
-        if camera.data.BIMCameraProperties.raster_x > camera.data.BIMCameraProperties.raster_y:
-            width = camera.data.ortho_scale
-            height = width / camera.data.BIMCameraProperties.raster_x * camera.data.BIMCameraProperties.raster_y
+        if props.raster_x > props.raster_y:
+            width = camera_data.ortho_scale
+            height = width / props.raster_x * props.raster_y
         else:
-            height = camera.data.ortho_scale
-            width = height / camera.data.BIMCameraProperties.raster_y * camera.data.BIMCameraProperties.raster_x
+            height = camera_data.ortho_scale
+            width = height / props.raster_y * props.raster_x
 
         projection = project_point_onto_camera(reference_obj.location, camera)
         co1 = camera.matrix_world @ mathutils.Vector((width / 2, projection[1], -1))
@@ -1250,6 +1473,12 @@ class Drawing(bonsai.core.tool.Drawing):
             context=context,
             ifc_representation_class=None,
         )
+        bpy.data.curves.remove(data)
+
+        assert element
+        representation = ifcopenshell.util.representation.get_representation(element, context)
+        assert representation
+        obj.data["ios_edges_item_ids"] = (representation.Items[0].id(),)
         return element
 
     @classmethod
@@ -1382,40 +1611,47 @@ class Drawing(bonsai.core.tool.Drawing):
         drawing: ifcopenshell.entity_instance,
         reference_element: ifcopenshell.entity_instance,
         context: ifcopenshell.entity_instance,
-    ) -> ifcopenshell.entity_instance:
+    ) -> Union[ifcopenshell.entity_instance, None]:
         import bonsai.bim.module.drawing.helper as helper
 
         target_view = tool.Drawing.get_drawing_target_view(drawing)
 
         camera = tool.Ifc.get_object(drawing)
+        assert isinstance(camera, bpy.types.Object)
+        assert isinstance(camera_data := camera.data, bpy.types.Camera)
 
-        is_ortho = camera.data.type == "ORTHO"
-        bounds = helper.ortho_view_frame(camera.data) if is_ortho else None
+        is_ortho = camera_data.type == "ORTHO"
+        bounds = helper.ortho_view_frame(camera_data) if is_ortho else None
         clipping = is_ortho and target_view in ("PLAN_VIEW", "REFLECTED_PLAN_VIEW")
         elevating = is_ortho and target_view in ("ELEVATION_VIEW", "SECTION_VIEW")
 
         def clone(src: bpy.types.Object) -> bpy.types.Object:
             dst = src.copy()
+            assert isinstance(dst.data, bpy.types.Mesh)
             dst.data = dst.data.copy()
             dst.name = dst.name.replace("IfcGridAxis/", "")
-            dst.BIMObjectProperties.ifc_definition_id = 0
-            dst.data.BIMMeshProperties.ifc_definition_id = 0
+            tool.Blender.get_object_bim_props(dst).ifc_definition_id = 0
+            tool.Geometry.get_mesh_props(dst.data).ifc_definition_id = 0
             return dst
 
         def disassemble(obj: bpy.types.Object) -> tuple[bpy.types.Object, bmesh.types.BMesh]:
+            assert isinstance(obj.data, bpy.types.Mesh)
             mesh = bmesh.new()
             mesh.verts.ensure_lookup_table()
             mesh.from_mesh(obj.data)
             return obj, mesh
 
         def assemble(obj: bpy.types.Object, mesh: bmesh.types.BMesh) -> bpy.types.Object:
+            assert isinstance(obj.data, bpy.types.Mesh)
             mesh.to_mesh(obj.data)
             return obj
 
-        def to_camera_coords(obj: bpy.types.Object, mesh: bpy.types.Mesh) -> tuple[bpy.types.Object, bpy.types.Mesh]:
+        def to_camera_coords(
+            obj: bpy.types.Object, mesh: bmesh.types.BMesh
+        ) -> tuple[bpy.types.Object, bmesh.types.BMesh]:
             mesh.transform(camera.matrix_world.inverted() @ obj.matrix_world)
             obj.matrix_world = camera.matrix_world
-            annotation_offset = mathutils.Vector((0, 0, -camera.data.clip_start - 0.05))
+            annotation_offset = mathutils.Vector((0, 0, -camera_data.clip_start - 0.05))
             annotation_offset = camera.matrix_world.to_quaternion() @ annotation_offset
             obj.matrix_world.translation += annotation_offset
             return obj, mesh
@@ -1446,6 +1682,7 @@ class Drawing(bonsai.core.tool.Drawing):
         obj = tool.Ifc.get_object(reference_element)
         if not obj:
             return
+        assert isinstance(obj, bpy.types.Object)
         obj, mesh = to_camera_coords(*disassemble(clone(obj)))
 
         if clipping:
@@ -1474,22 +1711,24 @@ class Drawing(bonsai.core.tool.Drawing):
         a_quaternion = a.matrix_world.to_quaternion()
         b_quaternion = b.matrix_world.to_quaternion()
         for axis in axes:
-            if abs((a_quaternion @ axis).angle((b_quaternion @ axis)) - (math.pi / 2)) < 1e-5:
+            if abs((a_quaternion @ axis).angle(b_quaternion @ axis) - (math.pi / 2)) < 1e-5:
                 return True
         return False
 
     @classmethod
     def get_camera_block(cls, obj: bpy.types.Object) -> dict:
-        raster_x = obj.data.BIMCameraProperties.raster_x
-        raster_y = obj.data.BIMCameraProperties.raster_y
+        assert isinstance(camera := obj.data, bpy.types.Camera)
+        props = tool.Drawing.get_camera_props(camera)
+        raster_x = props.raster_x
+        raster_y = props.raster_y
 
         if raster_x > raster_y:
-            width = obj.data.ortho_scale
+            width = camera.ortho_scale
             height = width / raster_x * raster_y
         else:
-            height = obj.data.ortho_scale
+            height = camera.ortho_scale
             width = height / raster_y * raster_x
-        depth = obj.data.clip_end
+        depth = camera.clip_end
 
         verts = (
             obj.matrix_world @ mathutils.Vector((-width / 2, -height / 2, -depth)),
@@ -1640,15 +1879,9 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def get_drawing_metadata(cls, drawing: ifcopenshell.entity_instance) -> list[str]:
-        # fmt: off
-        return [
-            v.strip()
-            for v in (
-                ifcopenshell.util.element.get_psets(drawing)["EPset_Drawing"].get("Metadata", "") or ""
-            ).split(",")
-            if v
-        ]
-        # fmt: on
+        pset_data = ifcopenshell.util.element.get_pset(drawing, "EPset_Drawing")
+        metadata_str = pset_data.get("Metadata", "") or ""
+        return [v_ for v in metadata_str.split(",") if (v_ := v.strip())]
 
     @classmethod
     def get_annotation_z_index(cls, drawing: ifcopenshell.entity_instance) -> float:
@@ -1661,6 +1894,11 @@ class Drawing(bonsai.core.tool.Drawing):
             # EPset_AnnotationSurveyArea is not standard! See bSI-4.3 proposal #660.
             symbol = ifcopenshell.util.element.get_pset(element, "EPset_AnnotationSurveyArea", "PointType")
         return symbol
+
+    @classmethod
+    def get_newline_at(cls, element: ifcopenshell.entity_instance) -> Union[int, 0]:
+        newline_at = ifcopenshell.util.element.get_pset(element, "EPset_Annotation", "Newline_At")
+        return newline_at
 
     @classmethod
     def has_linework(cls, drawing: ifcopenshell.entity_instance) -> bool:
@@ -1686,7 +1924,7 @@ class Drawing(bonsai.core.tool.Drawing):
         if include:
             elements = ifcopenshell.util.selector.filter_elements(ifc_file, include)
         else:
-            if tool.Ifc.get_schema() == "IFC2X3":
+            if ifc_file.schema == "IFC2X3":
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialStructureElement"))
             else:
                 base_elements = set(ifc_file.by_type("IfcElement") + ifc_file.by_type("IfcSpatialElement"))
@@ -1765,7 +2003,7 @@ class Drawing(bonsai.core.tool.Drawing):
         return bool(
             camera is not None
             and camera.type == "CAMERA"
-            and camera.BIMObjectProperties.ifc_definition_id
+            and tool.Blender.get_ifc_definition_id(camera)
             and area is not None
         )
 
@@ -1776,7 +2014,8 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def is_active_drawing(cls, drawing: ifcopenshell.entity_instance) -> bool:
-        return drawing.id() == bpy.context.scene.DocProperties.active_drawing_id
+        props = tool.Drawing.get_document_props()
+        return drawing.id() == props.active_drawing_id
 
     @classmethod
     def run_drawing_activate_model(cls) -> None:
@@ -1786,11 +2025,12 @@ class Drawing(bonsai.core.tool.Drawing):
     def isolate_camera_collection(cls, camera: bpy.types.Object) -> None:
         drawings = [e for e in tool.Ifc.get().by_type("IfcAnnotation") if e.ObjectType == "DRAWING"]
         drawing_collections = []
-        camera_collection = camera.BIMObjectProperties.collection
+        camera_collection = tool.Blender.get_object_bim_props(camera).collection
         for drawing in drawings:
             if not (drawing_obj := tool.Ifc.get_object(drawing)):
                 continue
-            if not (drawing_collection := drawing_obj.BIMObjectProperties.collection):
+            oprops = tool.Blender.get_object_bim_props(drawing_obj)
+            if not (drawing_collection := oprops.collection):
                 continue
             if drawing_obj == camera:
                 drawing_collection.hide_render = False
@@ -1798,7 +2038,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 drawing_collection.hide_render = True
 
         project = tool.Ifc.get_object(tool.Ifc.get().by_type("IfcProject")[0])
-        project_collection = project.BIMObjectProperties.collection
+        project_collection = tool.Blender.get_object_bim_props(project).collection
         for layer_collection in bpy.context.view_layer.layer_collection.children:
             if layer_collection.collection == project_collection:
                 for layer_collection2 in layer_collection.children:
@@ -1814,6 +2054,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
         # Sync viewport objects visibility with selectors from EPset_Drawing/Include and /Exclude
         drawing = tool.Ifc.get_entity(camera)
+        assert drawing and isinstance(camera.data, bpy.types.Camera)
 
         filtered_elements = cls.get_drawing_elements(drawing) | cls.get_drawing_spaces(drawing)
         filtered_elements.add(drawing)
@@ -1852,7 +2093,7 @@ class Drawing(bonsai.core.tool.Drawing):
                 subcontexts.append(context_filter)
 
         # Hide everything first, then selectively show. This is significantly faster.
-        with bpy.context.temp_override(area=next(a for a in bpy.context.screen.areas if a.type == "VIEW_3D")):
+        with bpy.context.temp_override(**tool.Blender.get_viewport_context()):
             bpy.ops.object.hide_view_set(unselected=False)
             bpy.ops.object.hide_view_set(unselected=True)
 
@@ -1903,14 +2144,13 @@ class Drawing(bonsai.core.tool.Drawing):
         cls.import_camera_props(drawing, camera.data)
 
         for obj in selected_objects_before:
-            obj.hide_set(False)
             obj.select_set(True)
 
     @classmethod
     def get_elements_in_camera_view(
         cls, camera: bpy.types.Object, objs: list[bpy.types.Object]
     ) -> set[ifcopenshell.entity_instance]:
-        props = camera.data.BIMCameraProperties
+        props = tool.Drawing.get_camera_props(camera)
         x = props.width
         y = props.height
 
@@ -1987,6 +2227,7 @@ class Drawing(bonsai.core.tool.Drawing):
 
     @classmethod
     def bisect_mesh(cls, obj: bpy.types.Object, camera: bpy.types.Object) -> tuple[list[Vector], list[list[int]]]:
+        # TODO consolidate with other bisect functions
         camera_matrix = obj.matrix_world.inverted() @ camera.matrix_world
         plane_co = camera_matrix.translation
         plane_no = camera_matrix.col[2].xyz
@@ -1997,9 +2238,37 @@ class Drawing(bonsai.core.tool.Drawing):
         return cls.bisect_mesh_with_plane(obj, plane_co, plane_no, global_offset=global_offset)
 
     @classmethod
+    def bisect_bmesh(cls, obj, bm, geom, camera):
+        # TODO consolidate with other bisect functions
+        camera_matrix = obj.matrix_world.inverted() @ camera.matrix_world
+        plane_co = camera_matrix.translation
+        plane_no = camera_matrix.col[2].xyz
+
+        global_offset = camera.matrix_world.col[2].xyz * -camera.data.clip_start
+
+        # Run the bisect operation
+        results = bmesh.ops.bisect_plane(bm, geom=geom, dist=0.0001, plane_co=plane_co, plane_no=plane_no)
+
+        vert_map = {}
+        verts = []
+        edges = []
+        i = 0
+        for geom in results["geom_cut"]:
+            if isinstance(geom, bmesh.types.BMVert):
+                verts.append(tuple((obj.matrix_world @ geom.co) + global_offset))
+                vert_map[geom.index] = i
+                i += 1
+            else:
+                # It seems as though edges always appear after verts
+                edges.append([vert_map[v.index] for v in geom.verts])
+
+        return verts, edges
+
+    @classmethod
     def bisect_mesh_with_plane(
         cls, obj: bpy.types.Object, plane_co: Vector, plane_no: Vector, global_offset: Optional[Vector] = None
     ) -> tuple[list[Vector], list[list[int]]]:
+        # TODO consolidate with other bisect functions
         if global_offset is None:
             global_offset = Vector()
 
@@ -2028,13 +2297,23 @@ class Drawing(bonsai.core.tool.Drawing):
         return verts, edges
 
     @classmethod
+    def get_extrusion_vector(cls, wall):
+        if body := ifcopenshell.util.representation.get_representation(wall, "Model", "Body", "MODEL_VIEW"):
+            for item in ifcopenshell.util.representation.resolve_representation(body).Items:
+                while item.is_a("IfcBooleanResult"):
+                    item = item.FirstOperand
+                if item.is_a("IfcExtrudedAreaSolid"):
+                    return Vector(item.ExtrudedDirection.DirectionRatios)
+        return Vector([0.0, 0.0, 1.0])
+
+    @classmethod
     def get_scale_ratio(cls, scale: str) -> float:
         numerator, denominator = scale.split("/")
         return float(numerator) / float(denominator)
 
     @classmethod
-    def get_diagram_scale(cls, obj: bpy.types.Object) -> dict[str, float]:
-        props = obj.data.BIMCameraProperties
+    def get_diagram_scale(cls, camera: Union[bpy.types.Object, bpy.types.Camera]) -> dict[str, str]:
+        props = cls.get_camera_props(camera)
         scale = props.diagram_scale
         if scale != "CUSTOM":
             human_scale, scale = scale.split("|")
@@ -2177,3 +2456,16 @@ class Drawing(bonsai.core.tool.Drawing):
                         msp.add_line(*points)
 
         finalize_dxf()
+
+    @classmethod
+    def remove_drawing_from_sheet(cls, reference: ifcopenshell.entity_instance) -> None:
+        import bonsai.bim.module.drawing.sheeter as sheeter
+
+        sheet = tool.Drawing.get_reference_document(reference)
+
+        sheet_builder = sheeter.SheetBuilder()
+        sheet_builder.remove_drawing(reference, sheet)
+
+        ifcopenshell.api.document.remove_reference(tool.Ifc.get(), reference=reference)
+
+        tool.Drawing.import_sheets()

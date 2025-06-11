@@ -47,3 +47,5 @@ cmake ${CMAKE_ARGS} -G Ninja \
 ninja
 
 ninja install -j 1
+
+python "${RECIPE_DIR}/update_version_init.py" "${PKG_VERSION}" "${SP_DIR}/ifcopenshell/__init__.py"

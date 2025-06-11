@@ -25,15 +25,18 @@ import ifcopenshell.util.resource
 
 
 def calculate_resource_usage(file: ifcopenshell.file, resource: ifcopenshell.entity_instance) -> None:
-    """Calculates the number of resources required to perform scheduled work on a task."""
-    settings = {"resource": resource}
+    """Calculates the number of resources required to perform scheduled work on a task.
 
-    if ifcopenshell.util.constraint.is_attribute_locked(settings["resource"], "Usage.ScheduleUsage"):
+    :param resource: The IfcConstructionResource to calculate the usage for.
+    :return: None
+    """
+
+    if ifcopenshell.util.constraint.is_attribute_locked(resource, "Usage.ScheduleUsage"):
         return
-    if not settings["resource"].Usage or not settings["resource"].Usage.ScheduleWork:
+    if not resource.Usage or not resource.Usage.ScheduleWork:
         return
 
-    task = ifcopenshell.util.resource.get_task_assignments(settings["resource"])
+    task = ifcopenshell.util.resource.get_task_assignments(resource)
     if not task or not task.TaskTime:
         return
 
@@ -46,7 +49,7 @@ def calculate_resource_usage(file: ifcopenshell.file, resource: ifcopenshell.ent
     seconds = task_duration.days * hours_per_day * 60 * 60
     seconds += task_duration.seconds
 
-    person_hours = ifcopenshell.util.date.ifc2datetime(settings["resource"].Usage.ScheduleWork)
+    person_hours = ifcopenshell.util.date.ifc2datetime(resource.Usage.ScheduleWork)
 
     required_resources = person_hours.total_seconds() / seconds
-    settings["resource"].Usage.ScheduleUsage = float(required_resources)
+    resource.Usage.ScheduleUsage = float(required_resources)

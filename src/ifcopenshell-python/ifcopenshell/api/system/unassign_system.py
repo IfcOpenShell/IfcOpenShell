@@ -29,11 +29,8 @@ def unassign_system(
     """Unassigns list of products from a system
 
     :param products: The list of IfcDistributionElements to unassign from the system.
-    :type products: list[ifcopenshell.entity_instance]
     :param system: The IfcSystem you want to unassign the element from.
-    :type system: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -52,9 +49,4 @@ def unassign_system(
         # Not anymore!
         ifcopenshell.api.system.unassign_system(model, products=[duct], system=system)
     """
-    settings = {
-        "products": products,
-        "system": system,
-    }
-
-    ifcopenshell.api.group.unassign_group(file, products=settings["products"], group=settings["system"])
+    ifcopenshell.api.group.unassign_group(file, products=products, group=system)

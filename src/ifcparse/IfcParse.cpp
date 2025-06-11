@@ -502,7 +502,9 @@ Token IfcParse::GeneralTokenPtr(IfcSpfLexer* lexer, unsigned start, unsigned end
     if (first == '#') {
         token.type = Token_IDENTIFIER;
         if (!ParseInt(tokenStr.c_str() + 1, token.value_int)) {
-            throw IfcException("Identifier token as not integer");
+            Logger::Message(Logger::LOG_ERROR, "Token '" + tokenStr + "' at offset " + std::to_string(token.startPos) + " is not valid");
+            token.type = Token_OPERATOR;
+            token.value_char = '$';
         }
     } else if (first == '\'') {
         token.type = Token_STRING;
@@ -718,13 +720,19 @@ void IfcParse::IfcFile::load(unsigned entity_instance_name, const IfcParse::enti
                     const auto* decl = schema_->declaration_by_name(TokenFunc::asStringRef(next));
                     parse_context ps;
                     tokens->Next();
-                    load(0, nullptr, ps, -1);
-                    auto* simple_type_instance = schema_->instantiate(decl, ps.construct(-1, references_to_resolve, decl, boost::none));
+                    // The only case we know where a defined type contains entity
+                    // instance references is IfcPropertySetDefinitionSet. For
+                    // that purpose we propagate the entity_instance_name to
+                    // register inverses to the host entity (and not the defined
+                    // type) and to be able to actually register the references in
+                    // the 2nd pass.
+                    load(entity_instance_name, entity, ps, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index);
+                    auto* simple_type_instance = schema_->instantiate(decl, ps.construct(entity_instance_name, references_to_resolve, decl, boost::none, attribute_index == -1 ? (int)attribute_index_within_data : attribute_index));
                     //@todo decide addEntity(((IfcUtil::IfcBaseClass*)*entity));
                     context.push(simple_type_instance);
                     simple_type_instance->file_ = this;
                 } catch (IfcException& e) {
-                    Logger::Message(Logger::LOG_ERROR, e.what());
+                    Logger::Message(Logger::LOG_ERROR, std::string(e.what()) + " at offset " + std::to_string(next.startPos));
                     // #4070 We didn't actually capture an aggregate entry, undo length increment.
                     return_value--;
                 }
@@ -1128,6 +1136,23 @@ class apply_individual_instance_visitor {
 
 template <typename T>
 void IfcUtil::IfcBaseClass::set_attribute_value(size_t i, const T& t) {
+    if constexpr (std::is_same_v<std::decay_t<T>, double>) {
+        if (!std::isfinite(t)) {
+            throw IfcParse::IfcException("Only finite values are allowed");
+        }
+    }
+    if constexpr (std::is_same_v<std::decay_t<T>, std::vector<double>>) {
+        if (std::any_of(t.begin(), t.end(), [](double d) { return !std::isfinite(d); })) {
+            throw IfcParse::IfcException("Only finite values are allowed");
+        }
+    }
+    if constexpr (std::is_same_v<std::decay_t<T>, std::vector<std::vector<double>>>) {
+        for (auto& tt : t) {
+            if (std::any_of(tt.begin(), tt.end(), [](double d) { return !std::isfinite(d); })) {
+                throw IfcParse::IfcException("Only finite values are allowed");
+            }
+        }
+    }
     auto current_attribute = data_.get_attribute_value(i);
     if (file_ != nullptr) {
 
@@ -1307,7 +1332,13 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 
             parse_context ps;
             tokens->Next();
-            load(current_id, entity_type->as_entity(), ps, -1);
+            try {
+                load(current_id, entity_type->as_entity(), ps, -1);
+            } catch (const IfcInvalidTokenException& e) {
+                good_ = file_open_status::INVALID_SYNTAX;
+                Logger::Error(e);
+                break;
+            }
             instance = schema_->instantiate(entity_type, ps.construct(current_id, references_to_resolve, entity_type, boost::none));
             instance->file_ = this;
             instance->id_ = current_id;
@@ -1377,7 +1408,7 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
             Logger::Message(Logger::LOG_ERROR, "Parsing terminated");
         }
 
-        if (next_token.type == Token_NONE) {
+        if (!stream->eof && next_token.type == Token_NONE) {
             good_ = file_open_status::INVALID_SYNTAX;
             break;
         }
@@ -1389,28 +1420,63 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
 
     delete tokens;
 
+    if (good_ != file_open_status::SUCCESS) {
+        references_to_resolve.clear();
+        return;
+    }
+
     for (const auto& p : references_to_resolve) {
         const auto& ref = p.first.name_;
         const auto& refattr = p.first.index_;
         if (auto* v = boost::get<reference_or_simple_type>(&p.second)) {
-            if (auto* name = boost::get<int>(v)) {
+            if (auto* name = boost::get<InstanceReference>(v)) {
                 entity_by_id_t::const_iterator it = byid_.find(*name);
                 if (it == byid_.end()) {
-                    Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
+                    Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                 } else {
-                    byid_[p.first.name_]->data().storage_.set(p.first.index_, it->second);
+                    auto* storage = &byid_[p.first.name_]->data().storage_;
+                    auto attr_index = p.first.index_;
+                    
+                    if (storage->has<IfcUtil::IfcBaseClass*>(attr_index)) {
+                        auto inst = storage->get<IfcUtil::IfcBaseClass*>(attr_index);
+                        if (!inst->declaration().as_entity()) {
+                            storage = &inst->data().storage_;
+                            attr_index = 0;
+                        }
+                    }
+
+                    if (storage->has<Blank>(attr_index)) {
+                        storage->set(attr_index, it->second);
+                    } else {
+                        Logger::Error("Duplicate definition for instance reference");
+                    }
                 }
             } else if (auto* inst = boost::get<IfcUtil::IfcBaseClass*>(v)) {
-                byid_[p.first.name_]->data().storage_.set(p.first.index_, *inst);
+                auto* storage = &byid_[p.first.name_]->data().storage_;
+                auto attr_index = p.first.index_;
+
+                if (storage->has<IfcUtil::IfcBaseClass*>(attr_index)) {
+                    auto inst = storage->get<IfcUtil::IfcBaseClass*>(attr_index);
+                    if (!inst->declaration().as_entity()) {
+                        storage = &inst->data().storage_;
+                        attr_index = 0;
+                    }
+                }
+
+                if (storage->has<Blank>(attr_index)) {
+                    storage->set(attr_index, *inst);
+                } else {
+                    Logger::Error("Duplicate definition for instance reference");
+                }
             }
         } else if (auto* v = boost::get<std::vector<reference_or_simple_type>>(&p.second)) {
             aggregate_of_instance::ptr instances(new aggregate_of_instance);
             instances->reserve(v->size());
             for (const auto& vi : *v) {
-                if (auto* name = boost::get<int>(&vi)) {
+                if (auto* name = boost::get<InstanceReference>(&vi)) {
                     entity_by_id_t::const_iterator it = byid_.find(*name);
                     if (it == byid_.end()) {
-                        Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
+                        Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                     } else {
                         instances->push(it->second);
                     }
@@ -1418,16 +1484,32 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
                     instances->push(*inst);
                 }
             }
-            byid_[p.first.name_]->data().storage_.set(p.first.index_, instances);
+
+            auto* storage = &byid_[p.first.name_]->data().storage_;
+            auto attr_index = p.first.index_;
+
+            if (storage->has<IfcUtil::IfcBaseClass*>(attr_index)) {
+                auto inst = storage->get<IfcUtil::IfcBaseClass*>(attr_index);
+                if (!inst->declaration().as_entity()) {
+                    storage = &inst->data().storage_;
+                    attr_index = 0;
+                }
+            }
+
+            if (storage->has<Blank>(attr_index)) {
+                storage->set(attr_index, instances);
+            } else {
+                Logger::Error("Duplicate definition for instance reference");
+            }
         } else if (auto* v = boost::get<std::vector<std::vector<reference_or_simple_type>>>(&p.second)) {
             aggregate_of_aggregate_of_instance::ptr instances(new aggregate_of_aggregate_of_instance);
             for (const auto& vi : *v) {
                 std::vector<IfcUtil::IfcBaseClass*> inner;
                 for (const auto& vii : vi) {
-                    if (auto* name = boost::get<int>(&vii)) {
+                    if (auto* name = boost::get<InstanceReference>(&vii)) {
                         entity_by_id_t::const_iterator it = byid_.find(*name);
                         if (it == byid_.end()) {
-                            Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found");
+                            Logger::Error("Instance reference #" + std::to_string(*name) + " used by instance #" + std::to_string(ref) + " at attribute index " + std::to_string(refattr) + " not found at offset " + std::to_string(name->file_offset));
                         } else {
                             inner.push_back(it->second);
                         }
@@ -1437,7 +1519,23 @@ void IfcFile::initialize_(IfcParse::IfcSpfStream* s) {
                 }
                 instances->push(inner);
             }
-            byid_[p.first.name_]->data().storage_.set(p.first.index_, instances);
+
+            auto* storage = &byid_[p.first.name_]->data().storage_;
+            auto attr_index = p.first.index_;
+
+            if (storage->has<IfcUtil::IfcBaseClass*>(attr_index)) {
+                auto inst = storage->get<IfcUtil::IfcBaseClass*>(attr_index);
+                if (!inst->declaration().as_entity()) {
+                    storage = &inst->data().storage_;
+                    attr_index = 0;
+                }
+            }
+
+            if (storage->has<Blank>(attr_index)) {
+                storage->set(attr_index, instances);
+            } else {
+                Logger::Error("Duplicate definition for instance reference");
+            }
         }
     }
 

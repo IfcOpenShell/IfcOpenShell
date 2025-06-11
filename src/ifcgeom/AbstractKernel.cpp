@@ -3,7 +3,7 @@
 #include "../ifcgeom/IfcGeomElement.h"
 #include "../ifcgeom/ConversionSettings.h"
 #include "../ifcgeom/abstract_mapping.h"
-#include "../ifcgeom/piecewise_function_evaluator.h"
+#include "../ifcgeom/function_item_evaluator.h"
 
 #ifdef IFOPSH_WITH_OPENCASCADE
 #include "../ifcgeom/kernels/opencascade/OpenCascadeKernel.h"
@@ -22,6 +22,16 @@
 using namespace ifcopenshell::geometry;
 
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::ptr item, IfcGeom::ConversionResults& results) {
+	if (settings_.get<settings::CacheShapes>().get()) {
+		auto it = cache_.find(item);
+		if (it != cache_.end()) {
+			results = it->second;
+			Logger::Notice("Cache hit #" + std::to_string(item->instance->as<IfcUtil::IfcBaseEntity>()->id()) +
+				" -> #" + std::to_string(it->first->instance->as<IfcUtil::IfcBaseEntity>()->id()));
+			return true;
+		}
+	}
+
 	auto with_exception_handling = [&](auto fn) {
 		try {
 			return fn();
@@ -44,11 +54,18 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert(const taxonomy::pt
 		}
 	};
 
+	bool res;
 	if (propagate_exceptions) {
-		return without_exception_handling(process_with_upgrade);
+		res = without_exception_handling(process_with_upgrade);
 	} else {
-		return with_exception_handling(process_with_upgrade);
+		res = with_exception_handling(process_with_upgrade);
 	}
+
+	if (settings_.get<settings::CacheShapes>().get() && res) {
+		cache_.insert({ item, results });
+	}
+
+	return res;
 }
 
 const Settings& ifcopenshell::geometry::kernels::AbstractKernel::settings() const
@@ -71,15 +88,16 @@ bool is_valid_for_kernel(const ifcopenshell::geometry::kernels::AbstractKernel* 
 		return dynamic_cast<ifcopenshell::geometry::CgalShape*>(shp.Shape().get()) != nullptr;
 	}
 #endif
+    return false;
 }
 
 class HybridKernel : public ifcopenshell::geometry::kernels::AbstractKernel {
-	std::vector<AbstractKernel*> kernels_;
+	std::vector<std::unique_ptr<AbstractKernel>> kernels_;
 	ifcopenshell::geometry::abstract_mapping* mapping_;
 public:
-	HybridKernel(const std::string& name, IfcParse::IfcFile* file, Settings& settings, std::vector<AbstractKernel*> kernels)
+	HybridKernel(const std::string& name, IfcParse::IfcFile* file, Settings& settings, std::vector<std::unique_ptr<AbstractKernel>>&& kernels)
 		: AbstractKernel(name, settings)
-		, kernels_(kernels)
+		, kernels_(std::move(kernels))
 		, mapping_(ifcopenshell::geometry::impl::mapping_implementations().construct(file, settings))
 	{}
 	virtual bool convert(const taxonomy::ptr item, IfcGeom::ConversionResults& rs) {
@@ -87,7 +105,7 @@ public:
 		bool has_openings = ops && ops->size();
 		for (auto& k : kernels_) {
 #ifdef IFOPSH_WITH_CGAL
-			if (has_openings && dynamic_cast<ifcopenshell::geometry::kernels::SimpleCgalKernel*>(k)) {
+			if (has_openings && dynamic_cast<ifcopenshell::geometry::kernels::SimpleCgalKernel*>(k.get())) {
 				// @todo this would fail later on in the find_openings() call, because we have a
 				// SimpleCgalShape which cannot be used on a kernel that supports booleans.
 				// @todo 1 implement the translation between various conversion result shapes
@@ -137,7 +155,7 @@ public:
 		for (auto& k : kernels_) {
 			bool is_valid = true;
 			for (auto& s : entity_shapes) {
-				if (!is_valid_for_kernel(k, s)) {
+				if (!is_valid_for_kernel(k.get(), s)) {
 					is_valid = false;
 					break;
 				}
@@ -178,7 +196,7 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 
 	if (geometry_library_lower.rfind("hybrid-", 0) == 0) {
 		geometry_library_lower = geometry_library_lower.substr(strlen("hybrid"));
-		std::vector<AbstractKernel*> kernels;
+		std::vector<std::unique_ptr<AbstractKernel>> kernels;
 		while (!geometry_library_lower.empty()) {
 			if (geometry_library_lower.find("-", 0) == 0) {
 				geometry_library_lower = geometry_library_lower.substr(strlen("-"));
@@ -188,19 +206,19 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 			auto n = kernels.size();
 #ifdef IFOPSH_WITH_OPENCASCADE
 			if (geometry_library_lower.find("opencascade", 0) == 0) {
-				kernels.push_back(new IfcGeom::OpenCascadeKernel(conv_settings));
+				kernels.emplace_back(new IfcGeom::OpenCascadeKernel(conv_settings));
 				geometry_library_lower = geometry_library_lower.substr(strlen("opencascade"));
 			}
 #endif
 
 #ifdef IFOPSH_WITH_CGAL
 			if (geometry_library_lower.find("cgal-simple", 0) == 0) {
-				kernels.push_back(new SimpleCgalKernel(conv_settings));
+				kernels.emplace_back(new SimpleCgalKernel(conv_settings));
 				geometry_library_lower = geometry_library_lower.substr(strlen("cgal-simple"));
 			}
 
 			if (geometry_library_lower.find("cgal", 0) == 0) {
-				kernels.push_back(new CgalKernel(conv_settings));
+				kernels.emplace_back(new CgalKernel(conv_settings));
 				geometry_library_lower = geometry_library_lower.substr(strlen("cgal"));
 			}
 #endif
@@ -211,10 +229,11 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 
 		for (auto it = kernels.begin(); it != kernels.end(); ++it) {
 			(**it).propagate_exceptions = it == kernels.begin();
+			(**it).partial_success_is_success = it == kernels.end() - 1;
 		}
 
 		if (!kernels.empty()) {
-			return new HybridKernel(geometry_library, file, conv_settings, kernels);
+			return new HybridKernel(geometry_library, file, conv_settings, std::move(kernels));
 		}
 	}
 	
@@ -224,7 +243,9 @@ ifcopenshell::geometry::kernels::AbstractKernel* ifcopenshell::geometry::kernels
 bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::collection::ptr collection, IfcGeom::ConversionResults& r) {
 	auto s = r.size();
 	for (auto& c : collection->children) {
-		convert(c, r);
+		if (!convert(c, r) && !partial_success_is_success) {
+			return false;
+		}
 	}
 	for (auto i = s; i < r.size(); ++i) {
 		if (collection->matrix) {
@@ -237,9 +258,44 @@ bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonom
 	return r.size() > s;
 }
 
-bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs) {
-   piecewise_function_evaluator evaluator(item);
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::function_item::ptr item, IfcGeom::ConversionResults& cs) {
+   function_item_evaluator evaluator(settings(),item);
    auto expl = evaluator.evaluate();
 	expl->instance = item->instance;
 	return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::functor_item::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::piecewise_function::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::gradient_function::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::cant_function::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
+}
+
+bool ifcopenshell::geometry::kernels::AbstractKernel::convert_impl(const taxonomy::offset_function::ptr item, IfcGeom::ConversionResults& cs) {
+    function_item_evaluator evaluator(settings(), item);
+    auto expl = evaluator.evaluate();
+    expl->instance = item->instance;
+    return convert(expl, cs);
 }

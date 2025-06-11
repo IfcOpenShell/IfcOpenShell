@@ -71,10 +71,24 @@ def update_sun_path_size(self, context):
     update_sun_path(self)
 
 
-def update_display_shadows(self, context):
-    if self.display_shadows:
+def update_shadow_mode(self, context):
+    if self.shadow_mode == "SHADING":
         update_sun_path(self)
         context.scene.render.engine = "BLENDER_WORKBENCH"
+        context.scene.display.shading.light = "FLAT"
+        context.scene.display.shading.show_shadows = True
+        context.scene.display.shading.show_object_outline = True
+        context.scene.display.shadow_focus = 1.0
+        context.scene.view_settings.view_transform = "Standard"  # Preserve shading colours
+        space = tool.Blender.get_view3d_space()
+        space.shading.type = "RENDERED"
+    elif self.shadow_mode == "RENDERING":
+        if context.scene.sun_pos_properties.sun_object is None:
+            bpy.ops.object.light_add(type="SUN", radius=1, align="WORLD", location=(0, 0, 0), scale=(1, 1, 1))
+            bpy.ops.object.move_to_collection(collection_index=0)
+            context.scene.sun_pos_properties.sun_object = bpy.context.active_object
+        update_sun_path(self)
+        context.scene.render.engine = "BLENDER_EEVEE_NEXT"
         context.scene.display.shading.light = "FLAT"
         context.scene.display.shading.show_shadows = True
         context.scene.display.shading.show_object_outline = True
@@ -113,6 +127,7 @@ def update_sun_path(self):
     sun_props.sun_distance = self.sun_path_size
     sun_props.latitude = self.latitude
     sun_props.longitude = self.longitude
+    sun_props.year = self.year
     sun_props.month = self.month
     sun_props.day = self.day
     sun_props.time = self.hour + (self.minute / 60)
@@ -271,9 +286,12 @@ class RadianceExporterProperties(PropertyGroup):
     )
 
     def get_subcategories(self, context):
+        global SUBCATEGORIES_ENUM_ITEMS
         if self.category in spectraldb:
-            return [(k, k, "") for k in spectraldb[self.category].keys()]
-        return []
+            SUBCATEGORIES_ENUM_ITEMS = [(k, k, "") for k in spectraldb[self.category].keys()]
+        else:
+            SUBCATEGORIES_ENUM_ITEMS = []
+        return SUBCATEGORIES_ENUM_ITEMS
 
     subcategory: bpy.props.EnumProperty(
         items=get_subcategories, name="Subcategory", description="Material subcategory", update=update_material_mapping
@@ -379,6 +397,7 @@ class BIMSolarProperties(PropertyGroup):
     longitude: FloatProperty(name="Longitude", min=-180, max=180, update=update_latlong)
     timezone: StringProperty(name="Timezone", default="Etc/GMT")
     true_north: FloatProperty(name="True North", min=-180, max=180, update=update_true_north)
+    year: IntProperty(name="Year", min=1, max=9999, default=2025, update=update_date)
     month: IntProperty(name="Month", min=1, max=12, default=1, update=update_date)
     day: IntProperty(name="Date", min=1, max=31, default=1, update=update_date)
     hour: IntProperty(name="Hour", min=0, max=23, default=12, update=update_hourminute)
@@ -389,11 +408,27 @@ class BIMSolarProperties(PropertyGroup):
     azimuth: FloatProperty(name="Azimuth")
     elevation: FloatProperty(name="Elevation")
     UTC_zone: FloatProperty(name="UTC Zone")
-    display_shadows: BoolProperty(
-        name="Display Shadows",
-        default=False,
-        description="Enables a visual style to display shadows easily",
-        update=update_display_shadows,
+    shadow_mode: bpy.props.EnumProperty(
+        items=(
+            ("NONE", "No Shadows", "No shadows"),
+            (
+                "SHADING",
+                "Shaded",
+                "Fast shadows sufficient for external shadow analysis based on shading styles",
+                "SHADING_SOLID",
+                1,
+            ),
+            (
+                "RENDERING",
+                "Rendered",
+                "Raycast (Eevee) shadows considering transparency based on rendering styles",
+                "SHADING_RENDERED",
+                2,
+            ),
+        ),
+        name="Shadow Mode",
+        description="How to display shadows in the scene",
+        update=update_shadow_mode,
     )
     display_sun_path: BoolProperty(
         name="Display Sun Path",

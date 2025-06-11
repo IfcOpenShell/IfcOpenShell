@@ -18,6 +18,7 @@
 
 import bpy
 import bonsai.tool as tool
+from ifcopenshell.util.doc import get_entity_doc
 
 
 def refresh():
@@ -31,12 +32,20 @@ class ConstraintsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_objectives": cls.total_objectives()}
+        cls.data = {
+            "total_objectives": cls.total_objectives(),
+            "constraint_types_enum": cls.constraint_types_enum(),
+        }
         cls.is_loaded = True
 
     @classmethod
     def total_objectives(cls):
         return len(tool.Ifc.get().by_type("IfcObjective"))
+
+    @classmethod
+    def constraint_types_enum(cls) -> list[tuple[str, str, str]]:
+        version = tool.Ifc.get_schema()
+        return [(c, c, get_entity_doc(version, c).get("description", "")) for c in ["IfcObjective"]]
 
 
 class ObjectConstraintsData:

@@ -18,6 +18,10 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.context
+import ifcopenshell.api.document
+import ifcopenshell.api.root
+import ifcopenshell.api.unit
 import bonsai.core.tool
 import bonsai.tool as tool
 import tempfile
@@ -95,7 +99,8 @@ class TestSetContext(NewFile):
         tool.Ifc.set(ifc)
         context = ifc.createIfcGeometricRepresentationContext()
         subject.set_context(context)
-        assert bpy.context.scene.BIMRootProperties.contexts == str(context.id())
+        rprops = tool.Root.get_root_props()
+        assert rprops.contexts == str(context.id())
 
 
 class TestSetDefaultContext(NewFile):
@@ -103,9 +108,8 @@ class TestSetDefaultContext(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         ifc.createIfcProject()
-        model = ifcopenshell.api.run("context.add_context", ifc, context_type="Model")
-        body = ifcopenshell.api.run(
-            "context.add_context",
+        model = ifcopenshell.api.context.add_context(ifc, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
             ifc,
             parent=model,
             context_type="Model",
@@ -113,7 +117,8 @@ class TestSetDefaultContext(NewFile):
             target_view="MODEL_VIEW",
         )
         subject.set_default_context()
-        assert bpy.context.scene.BIMRootProperties.contexts == str(body.id())
+        rprops = tool.Root.get_root_props()
+        assert rprops.contexts == str(body.id())
 
 
 class TestSetDefaultModelingDimensions(NewFile):
@@ -121,9 +126,9 @@ class TestSetDefaultModelingDimensions(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         ifc.createIfcProject()
-        ifcopenshell.api.run("unit.assign_unit", ifc)
+        ifcopenshell.api.unit.assign_unit(ifc)
         subject.set_default_modeling_dimensions()
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         assert props.extrusion_depth == 3
         assert props.length == 1
         assert props.rl1 == 0
@@ -238,3 +243,108 @@ class TestLoadProject(NewFile):
         assert not tool.Ifc.get()
         assert bpy.data.objects["IfcWall/Wall"]
         assert tool.Blender.is_valid_data_block(monkey)
+
+
+class TestLoadLinkedModels(NewFile):
+    def test_load_linked_models_no_document(self):
+        props = tool.Project.get_project_props()
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        subject.load_linked_models_from_ifc()
+        assert len(props.links) == 0
+
+    def test_load_linked_models_document_no_references(self):
+        ifc = ifcopenshell.file()
+        props = tool.Project.get_project_props()
+        ifcopenshell.api.root.create_entity(ifc, "IfcProject")
+        document = ifcopenshell.api.document.add_information(ifc)
+        document.Name = "BBIM_Linked_Models"
+        tool.Ifc.set(ifc)
+        subject.load_linked_models_from_ifc()
+        assert len(props.links) == 0
+
+    def test_load_linked_models_document_with_references(self):
+        ifc = ifcopenshell.file()
+        props = tool.Project.get_project_props()
+        ifcopenshell.api.root.create_entity(ifc, "IfcProject")
+        document = ifcopenshell.api.document.add_information(ifc)
+        document.Name = "BBIM_Linked_Models"
+        reference = ifcopenshell.api.document.add_reference(ifc, document)
+        linked_model_path = "test.ifc"
+        reference.Location = linked_model_path
+        tool.Ifc.set(ifc)
+        subject.load_linked_models_from_ifc()
+        assert len(props.links) == 1
+        assert props.links[0].name == linked_model_path
+
+
+class TestSaveLinkedModelsToIfc(NewFile):
+    def test_save_linked_models_to_ifc_no_links(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+        subject.save_linked_models_to_ifc()
+        assert len(ifc.by_type("IfcDocumentInformation")) == 0
+        assert len(ifc.by_type("IfcDocumentReference")) == 0
+
+    def test_save_linked_models_to_ifc_paths_to_add(self):
+        ifc = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc, "IfcProject")
+        props = tool.Project.get_project_props()
+        link = props.links.add()
+        linked_model_path = "test.ifc"
+        link.name = linked_model_path
+        tool.Ifc.set(ifc)
+        subject.save_linked_models_to_ifc()
+        assert len(documents := ifc.by_type("IfcDocumentInformation")) == 1
+        assert documents[0].Name == "BBIM_Linked_Models"
+        assert len(references := ifc.by_type("IfcDocumentReference")) == 1
+        assert references[0].Location == linked_model_path
+
+    def test_save_linked_models_to_ifc_already_created_references(self):
+        ifc = ifcopenshell.file()
+        links = tool.Project.get_project_props().links
+        ifcopenshell.api.root.create_entity(ifc, "IfcProject")
+
+        document = ifcopenshell.api.document.add_information(ifc)
+        document.Name = "BBIM_Linked_Models"
+        document_id = document.id()
+        reference = ifcopenshell.api.document.add_reference(ifc, document)
+        linked_model_path = "test.ifc"
+        reference.Location = linked_model_path
+        reference_id = reference.id()
+
+        link = links.add()
+        linked_model_path = "test.ifc"
+        link.name = linked_model_path
+        tool.Ifc.set(ifc)
+        subject.save_linked_models_to_ifc()
+
+        # Information and references to stay intact.
+        assert len(documents := ifc.by_type("IfcDocumentInformation")) == 1
+        assert documents[0].id() == document_id
+        assert documents[0].Name == "BBIM_Linked_Models"
+        assert len(references := ifc.by_type("IfcDocumentReference")) == 1
+        assert references[0].id() == reference_id
+        assert references[0].Location == linked_model_path
+
+    def test_save_linked_models_to_ifc_references_to_remove(self):
+        ifc = ifcopenshell.file()
+        links = tool.Project.get_project_props().links
+        ifcopenshell.api.root.create_entity(ifc, "IfcProject")
+
+        document = ifcopenshell.api.document.add_information(ifc)
+        document.Name = "BBIM_Linked_Models"
+        document_id = document.id()
+        reference = ifcopenshell.api.document.add_reference(ifc, document)
+        linked_model_path = "test.ifc"
+        reference.Location = linked_model_path
+
+        tool.Ifc.set(ifc)
+        subject.save_linked_models_to_ifc()
+        links.clear()
+
+        # Remove reference for removed link.
+        assert len(documents := ifc.by_type("IfcDocumentInformation")) == 1
+        assert documents[0].id() == document_id
+        assert documents[0].Name == "BBIM_Linked_Models"
+        assert len(ifc.by_type("IfcDocumentReference")) == 0

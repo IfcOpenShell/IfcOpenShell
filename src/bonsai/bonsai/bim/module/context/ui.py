@@ -33,13 +33,14 @@ class BIM_PT_context(bpy.types.Panel):
 
     @classmethod
     def poll(cls, context):
-        return tool.Ifc.get()
+        return bool(tool.Ifc.get())
 
     def draw(self, context):
         if not ContextData.is_loaded:
             ContextData.load()
 
-        props = context.scene.BIMContextProperties
+        assert self.layout
+        props = tool.Context.get_context_props()
 
         row = self.layout.row(align=True)
         row.prop(props, "contexts", text="")

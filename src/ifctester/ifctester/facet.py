@@ -128,11 +128,15 @@ class Facet:
             templates = self.applicability_templates
         elif clause_type == "requirement":
             is_prohibited = False
-            if specification.maxOccurs == 0:
+            if specification and specification.maxOccurs == 0:
                 is_prohibited = not is_prohibited
-            if requirement.cardinality == "prohibited":
+            if requirement and requirement.cardinality == "prohibited":
                 is_prohibited = not is_prohibited
             templates = self.prohibited_templates if is_prohibited else self.requirement_templates
+            if requirement and requirement.cardinality == "optional":
+                templates = [
+                    t.replace("shall", "may").replace("Shall", "May").replace("must", "may") for t in templates
+                ]
 
         for template in templates:
             total_variables = len(template) - len(template.replace("{", ""))
@@ -253,7 +257,7 @@ class Attribute(Facet):
             return super().filter(ifc_file, elements)
 
         results = []
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
         entities = {entity.name(): entity for entity in schema.entities()}
 
         def ignore_subtypes(entity):
@@ -275,16 +279,13 @@ class Attribute(Facet):
         return results
 
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> AttributeResult:
-        if self.cardinality == "optional":
-            return AttributeResult(True)
-
         if isinstance(self.name, str):
             names = [self.name]
             attribute_type = inst.wrapped_data.get_attribute_category(self.name)
             if attribute_type == 1:  # Forward attribute
                 values = [getattr(inst, self.name, None)]
             else:
-                values = [None]
+                values = []
         else:
             info = inst.get_info()
             names = []
@@ -300,6 +301,8 @@ class Attribute(Facet):
         reason = None
 
         if not is_pass:
+            if self.cardinality == "optional":
+                return AttributeResult(True)
             reason = {"type": "NOVALUE"}
 
         if is_pass:
@@ -390,9 +393,6 @@ class Classification(Facet):
         return ifc_file.by_type("IfcObjectDefinition")
 
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> ClassificationResult:
-        if self.cardinality == "optional":
-            return ClassificationResult(True)  # Is this really the correct behaviour?
-
         leaf_references = ifcopenshell.util.classification.get_references(inst)
 
         references = leaf_references.copy()
@@ -403,6 +403,8 @@ class Classification(Facet):
         reason = None
 
         if not is_pass:
+            if self.cardinality == "optional":
+                return ClassificationResult(True)
             reason = {"type": "NOVALUE"}
 
         if is_pass and self.value:
@@ -412,7 +414,8 @@ class Classification(Facet):
                 reason = {"type": "VALUE", "actual": values}
 
         if is_pass:
-            systems = [ifcopenshell.util.classification.get_classification(r).Name for r in references]
+            classifications = filter(None, (ifcopenshell.util.classification.get_classification(r) for r in references))
+            systems = [r.Name for r in classifications]
             is_pass = any([self.system == s for s in systems])
             if not is_pass:
                 reason = {"type": "SYSTEM", "actual": systems}
@@ -652,9 +655,6 @@ class Property(Facet):
         )
 
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> PropertyResult:
-        if self.cardinality == "optional":
-            return PropertyResult(True)
-
         if isinstance(self.propertySet, str):
             pset = get_pset(inst, self.propertySet)
             psets = {self.propertySet: pset} if pset else {}
@@ -666,6 +666,8 @@ class Property(Facet):
         reason = None
 
         if not is_pass:
+            if self.cardinality == "optional":
+                return PropertyResult(True)
             reason = {"type": "NOPSET"}
 
         if is_pass:
@@ -686,6 +688,8 @@ class Property(Facet):
                     props[pset_name] = {k: v for k, v in pset_props.items() if k == self.baseName}
 
                 if not bool(props[pset_name]):
+                    if self.cardinality == "optional":
+                        return PropertyResult(True)
                     is_pass = False
                     reason = {"type": "NOVALUE"}
                     break
@@ -793,7 +797,7 @@ class Property(Facet):
                         props[pset_name][prop_entity.Name] = values
                     elif prop_entity.is_a("IfcPropertyTableValue"):
                         values = []
-                        units = ifcopenshell.util.unit.get_property_unit(prop_entity, inst.wrapped_data.file)
+                        units = ifcopenshell.util.unit.get_property_table_unit(prop_entity, inst.wrapped_data.file)
                         for attribute in ["Defining", "Defined"]:
                             column_values = props[pset_name][prop_entity.Name][f"{attribute}Values"]
                             if not column_values:
@@ -913,15 +917,14 @@ class Material(Facet):
         return ifc_file.by_type("IfcObjectDefinition")
 
     def __call__(self, inst: ifcopenshell.entity_instance, logger: Optional[Logger] = None) -> MaterialResult:
-        if self.cardinality == "optional":
-            return MaterialResult(True)
-
         material = ifcopenshell.util.element.get_material(inst, should_skip_usage=True)
 
         is_pass = material is not None
         reason = None
 
         if not is_pass:
+            if self.cardinality == "optional":
+                return MaterialResult(True)
             reason = {"type": "NOVALUE"}
 
         if is_pass and self.value:
@@ -995,7 +998,17 @@ class Restriction:
         for constraint, value in self.options.items():
             value = [value] if not isinstance(value, list) else value
             for v in value:
-                if constraint in ["length", "minLength", "maxLength"]:
+                if constraint in [
+                    "length",
+                    "minLength",
+                    "maxLength",
+                    "maxExclusive",
+                    "maxInclusive",
+                    "minExclusive",
+                    "minInclusive",
+                    "totalDigits",
+                    "fractionDigits",
+                ]:
                     value_dict = {"@value": v}
                 else:
                     value_dict = {"@value": str(v)}
@@ -1047,7 +1060,7 @@ class Restriction:
 
 
 class Result:
-    def __init__(self, is_pass, reason=None):
+    def __init__(self, is_pass: bool, reason: Optional[dict[str, Any]] = None):
         self.is_pass = is_pass
         self.reason = reason
 

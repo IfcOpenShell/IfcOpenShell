@@ -30,7 +30,7 @@ class TestEditTrueNorth(test.bootstrap.IFC4):
         model = ifcopenshell.api.context.add_context(self.file, "Model")
         plan = ifcopenshell.api.context.add_context(self.file, "Plan")
         ifcopenshell.api.georeference.edit_true_north(self.file, true_north=[0.0, 1.0])
-        assert model.TrueNorth[0] == (0.0, 1.0, 0.0)
+        assert model.TrueNorth[0] == (0.0, 1.0)
         assert plan.TrueNorth[0] == (0.0, 1.0)
         ifcopenshell.api.georeference.edit_true_north(self.file, true_north=[-0.5, 0.8660254])
         assert np.isclose(ifcopenshell.util.geolocation.get_true_north(self.file), 30)

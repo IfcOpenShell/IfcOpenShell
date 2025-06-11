@@ -51,13 +51,10 @@ def assign_sequence(
     predecessor and successor tasks in the planning profession.
 
     :param relating_process: The previous / predecessor task.
-    :type relating_process: ifcopenshell.entity_instance
     :param related_process: The next / successor task.
-    :type related_process: ifcopenshell.entity_instance
     :param sequence_type: Choose from FINISH_START, FINISH_FINISH,
         START_START, or START_FINISH.
     :return: The newly created IfcRelSequence
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -109,24 +106,18 @@ def assign_sequence(
         # to be 2000-01-05.
         ifcopenshell.api.sequence.cascade_schedule(model, task=formwork)
     """
-    settings = {
-        "relating_process": relating_process,
-        "related_process": related_process,
-        "sequence_type": sequence_type,
-    }
-
-    for rel in settings["related_process"].IsSuccessorFrom or []:
-        if rel.RelatingProcess == settings["relating_process"]:
+    for rel in related_process.IsSuccessorFrom or []:
+        if rel.RelatingProcess == relating_process:
             return rel
     rel = file.create_entity(
         "IfcRelSequence",
         **{
             "GlobalId": ifcopenshell.guid.new(),
             "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-            "RelatingProcess": settings["relating_process"],
-            "RelatedProcess": settings["related_process"],
-            "SequenceType": settings["sequence_type"],
+            "RelatingProcess": relating_process,
+            "RelatedProcess": related_process,
+            "SequenceType": sequence_type,
         }
     )
-    ifcopenshell.api.sequence.cascade_schedule(file, task=settings["relating_process"])
+    ifcopenshell.api.sequence.cascade_schedule(file, task=relating_process)
     return rel

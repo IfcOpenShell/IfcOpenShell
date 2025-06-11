@@ -19,8 +19,8 @@
 import numpy as np
 import numpy.typing as npt
 import ifcopenshell
-from typing import Literal, Iterable, Optional
-
+from typing import Literal, Optional
+from collections.abc import Iterable
 
 MatrixType = npt.NDArray[np.float64]
 """`npt.NDArray[np.float64]`"""
@@ -137,9 +137,7 @@ def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) ->
     ``get_mappeditem_transformation`` instead.
 
     :param item: The IfcCartesianTransformationOperator entity
-    :type item: ifcopenshell.entity_instance
     :return: A 4x4 numpy transformation matrix
-    :rtype: MatrixType
     """
     origin = np.array(inst.LocalOrigin.Coordinates)
     axis1 = np.array((1.0, 0.0, 0.0))
@@ -167,6 +165,8 @@ def get_cartesiantransformationoperator3d(inst: ifcopenshell.entity_instance) ->
     if inst.is_a("IfcCartesianTransformationOperator3DnonUniform"):
         scale2 = inst.Scale2 if inst.Scale2 is not None else scale1
         scale3 = inst.Scale3 if inst.Scale3 is not None else scale1
+    else:
+        scale2 = scale3 = scale1
 
     m4.T[0] *= scale1
     m4.T[1] *= scale2

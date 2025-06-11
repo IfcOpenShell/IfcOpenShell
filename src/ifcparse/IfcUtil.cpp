@@ -207,10 +207,10 @@ IfcUtil::IfcBaseEntity::IfcBaseEntity(IfcEntityInstanceData&& data)
 {}
 
 void IfcUtil::IfcBaseEntity::populate_derived() {
-    for (auto it = declaration().derived().begin(); it != declaration().derived().end(); ++it) {
+    for (auto it = declaration().as_entity()->derived().begin(); it != declaration().as_entity()->derived().end(); ++it) {
         if (*it) {
             this->data().storage_.set(
-                std::distance(declaration().derived().begin(), it),
+                std::distance(declaration().as_entity()->derived().begin(), it),
                 Derived{}
             );
         }
@@ -231,6 +231,9 @@ AttributeValue IfcUtil::IfcBaseEntity::get(const std::string& name) const
 }
 
 aggregate_of_instance::ptr IfcUtil::IfcBaseEntity::get_inverse(const std::string& name) const {
+    if (file_ == nullptr) {
+        throw IfcParse::IfcException("Instance not added to file");
+    }
     const std::vector<const IfcParse::inverse_attribute*> attrs = declaration().as_entity()->all_inverse_attributes();
     std::vector<const IfcParse::inverse_attribute*>::const_iterator iter = attrs.begin();
     for (; iter != attrs.end(); ++iter) {

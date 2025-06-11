@@ -33,7 +33,6 @@ def refresh():
     ObjectPsetsData.is_loaded = False
     ObjectQtosData.is_loaded = False
     MaterialPsetsData.is_loaded = False
-    MaterialSetPsetsData.is_loaded = False
     MaterialSetItemPsetsData.is_loaded = False
     TaskQtosData.is_loaded = False
     ResourceQtosData.is_loaded = False
@@ -56,7 +55,11 @@ class Data:
         for name, data in sorted(psetqtos.items()):
             pset = ifc_file.by_id(data["id"])
             pset_uses = ifcopenshell.util.element.get_elements_by_pset(pset)
-            has_template = bool(tool.Pset.get_pset_template(name))
+            pset_template = tool.Pset.get_pset_template(name)
+            if has_template := bool(pset_template):
+                template_available_in_ui = pset_template
+            else:
+                template_available_in_ui = False
             results.append(
                 {
                     "id": data["id"],
@@ -114,7 +117,10 @@ class ObjectPsetsData(Data):
         if not element:
             return []
         psets = bonsai.bim.schema.ifc.psetqto.get_applicable(
-            element.is_a(), ifcopenshell.util.element.get_predefined_type(element), pset_only=True
+            element.is_a(),
+            ifcopenshell.util.element.get_predefined_type(element),
+            pset_only=True,
+            schema=tool.Ifc.get_schema(),
         )
         psetnames = cls.format_pset_enum(psets)
         assigned_names = ifcopenshell.util.element.get_psets(element, psets_only=True, should_inherit=False).keys()
@@ -127,7 +133,10 @@ class ObjectPsetsData(Data):
         if not element:
             return []
         qtos = bonsai.bim.schema.ifc.psetqto.get_applicable(
-            element.is_a(), ifcopenshell.util.element.get_predefined_type(element), qto_only=True
+            element.is_a(),
+            ifcopenshell.util.element.get_predefined_type(element),
+            qto_only=True,
+            schema=tool.Ifc.get_schema(),
         )
         return cls.format_pset_enum(qtos)
 
@@ -166,7 +175,7 @@ class MaterialPsetsData(Data):
     @classmethod
     def load(cls):
         ifc_definition_id = None
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         if props.materials and props.active_material_index < len(props.materials):
             ifc_definition_id = props.materials[props.active_material_index].ifc_definition_id
 
@@ -179,35 +188,21 @@ class MaterialPsetsData(Data):
 
     @classmethod
     def pset_name(cls):
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         if props.materials and props.active_material_index < len(props.materials):
             material = props.materials[props.active_material_index]
             if material.ifc_definition_id:
                 material = tool.Ifc.get().by_id(material.ifc_definition_id)
                 category = getattr(material, "Category", None) or None
-                psets = bonsai.bim.schema.ifc.psetqto.get_applicable("IfcMaterial", category, pset_only=True)
+                psets = bonsai.bim.schema.ifc.psetqto.get_applicable(
+                    props.material_type, category, pset_only=True, schema=tool.Ifc.get_schema()
+                )
                 psetnames = cls.format_pset_enum(psets)
                 assigned_names = ifcopenshell.util.element.get_psets(
                     material, psets_only=True, should_inherit=False
                 ).keys()
                 return [p for p in psetnames if p[0] not in assigned_names]
         return []
-
-
-class MaterialSetPsetsData(Data):
-    data = {}
-    is_loaded = False
-
-    @classmethod
-    def load(cls):
-        psets = {}
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if element:
-            material = ifcopenshell.util.element.get_material(element, should_skip_usage=True)
-            if material and "Set" in material.is_a():
-                psets = cls.psetqtos(material)
-        cls.data = {"psets": psets}
-        cls.is_loaded = True
 
 
 class MaterialSetItemPsetsData(Data):
@@ -217,7 +212,9 @@ class MaterialSetItemPsetsData(Data):
     @classmethod
     def load(cls):
         psets = {}
-        ifc_definition_id = bpy.context.active_object.BIMObjectMaterialProperties.active_material_set_item_id
+        obj = bpy.context.active_object
+        assert obj
+        ifc_definition_id = tool.Material.get_object_material_props(obj).active_material_set_item_id
         if ifc_definition_id:
             psets = cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id))
         cls.data = {"psets": psets}
@@ -230,8 +227,8 @@ class TaskQtosData(Data):
 
     @classmethod
     def load(cls):
-        wprops = bpy.context.scene.BIMWorkScheduleProperties
-        tprops = bpy.context.scene.BIMTaskTreeProperties
+        wprops = tool.Sequence.get_work_schedule_props()
+        tprops = tool.Sequence.get_task_tree_props()
         ifc_definition_id = tprops.tasks[wprops.active_task_index].ifc_definition_id
         cls.data = {"qtos": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), qtos_only=True)}
         cls.is_loaded = True
@@ -269,8 +266,9 @@ class GroupQtosData(Data):
 
     @classmethod
     def load(cls):
-        props = bpy.context.scene.BIMGroupProperties
-        ifc_definition_id = props.groups[props.active_group_index].ifc_definition_id
+        props = tool.Blender.get_group_props()
+        assert (active_group := props.active_group)
+        ifc_definition_id = active_group.ifc_definition_id
         cls.data = {"qtos": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), qtos_only=True)}
         cls.is_loaded = True
 
@@ -281,8 +279,9 @@ class GroupPsetData(Data):
 
     @classmethod
     def load(cls):
-        props = bpy.context.scene.BIMGroupProperties
-        ifc_definition_id = props.groups[props.active_group_index].ifc_definition_id
+        props = tool.Blender.get_group_props()
+        assert (active_group := props.active_group)
+        ifc_definition_id = active_group.ifc_definition_id
         cls.data = {"psets": cls.psetqtos(tool.Ifc.get_entity_by_id(ifc_definition_id), psets_only=True)}
         cls.is_loaded = True
 
@@ -314,7 +313,8 @@ class WorkSchedulePsetsData(Data):
 
     @classmethod
     def load(cls):
-        ifc_definition_id = bpy.context.scene.BIMWorkScheduleProperties.active_work_schedule_id
+        props = tool.Sequence.get_work_schedule_props()
+        ifc_definition_id = props.active_work_schedule_id
         cls.data = {"psets": cls.psetqtos(tool.Ifc.get().by_id(ifc_definition_id), psets_only=True)}
         cls.is_loaded = True
 

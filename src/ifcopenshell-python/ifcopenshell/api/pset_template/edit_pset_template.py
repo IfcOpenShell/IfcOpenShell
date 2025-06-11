@@ -28,11 +28,8 @@ def edit_pset_template(
     IfcPropertySetTemplate, consult the IFC documentation.
 
     :param pset_template: The IfcPropertySetTemplate entity you want to edit
-    :type pset_template: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -45,7 +42,5 @@ def edit_pset_template(
         ifcopenshell.api.pset_template.edit_pset_template(model,
             pset_template=template, attributes={"Name": "ABC_RiskFactors"})
     """
-    settings = {"pset_template": pset_template, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["pset_template"], name, value)
+    for name, value in attributes.items():
+        setattr(pset_template, name, value)

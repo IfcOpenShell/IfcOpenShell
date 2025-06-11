@@ -19,24 +19,22 @@
 import ifcopenshell
 import ifcopenshell.api.group
 import ifcopenshell.util.system
+from typing import Union
 
 
 def assign_system(
     file: ifcopenshell.file,
     products: list[ifcopenshell.entity_instance],
     system: ifcopenshell.entity_instance,
-) -> None:
+) -> Union[ifcopenshell.entity_instance, None]:
     """Assigns distribution elements to a system
 
     Note that it is not necessary to assign distribution ports to a system.
 
     :param products: The list of IfcDistributionElements to assign to the system.
-    :type products: list[ifcopenshell.entity_instance]
     :param system: The IfcSystem you want to assign the element to.
-    :type system: ifcopenshell.entity_instance
     :return: The IfcRelAssignsToGroup relationship
         or `None` if `products` was empty list.
-    :rtype: [ifcopenshell.entity_instance, None]
 
     Example:
 
@@ -52,14 +50,6 @@ def assign_system(
         # This duct is part of the system
         ifcopenshell.api.system.assign_system(model, products=[duct], system=system)
     """
-    settings = {
-        "products": products,
-        "system": system,
-    }
-
-    system = settings["system"]
-    products = settings["products"]
-
     if not all(ifcopenshell.util.system.is_assignable(failed_product := product, system) for product in products):
         raise TypeError(f"You cannot assign an {failed_product.is_a()} to an {system.is_a()}")
 

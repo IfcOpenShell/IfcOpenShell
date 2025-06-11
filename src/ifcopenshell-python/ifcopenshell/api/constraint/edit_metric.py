@@ -26,11 +26,8 @@ def edit_metric(file: ifcopenshell.file, metric: ifcopenshell.entity_instance, a
     IfcMetric, consult the IFC documentation.
 
     :param metric: The IfcMetric you want to edit.
-    :type metric: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -42,7 +39,5 @@ def edit_metric(file: ifcopenshell.file, metric: ifcopenshell.entity_instance, a
         ifcopenshell.api.constraint.edit_metric(model,
             metric=metric, attributes={"ConstraintGrade": "HARD"})
     """
-    settings = {"metric": metric, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["metric"], name, value)
+    for name, value in attributes.items():
+        setattr(metric, name, value)

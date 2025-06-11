@@ -18,7 +18,7 @@
  ********************************************************************************/
 
 #include "mapping.h"
-#include "../piecewise_function_evaluator.h"
+#include "../function_item_evaluator.h"
 #define mapping POSTFIX_SCHEMA(mapping)
 using namespace ifcopenshell::geometry;
 
@@ -34,11 +34,12 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcFixedReferenceSweptAreaSolid
 	loft->axis = nullptr;
 
 	// @todo currently only the case is handled where directrix returns a piecewise_function
-	if (auto pwf = taxonomy::dcast<taxonomy::piecewise_function>(dir)) {
-      piecewise_function_evaluator evaluator(pwf,&settings_);
+	if (auto fn = taxonomy::dcast<taxonomy::function_item>(dir)) {
+      function_item_evaluator evaluator(settings_,fn);
 		double start = 0;
-		double end = pwf->length();
-#ifdef SCHEMA_HAS_IfcDirectrixCurveSweptAreaSolid
+      double end = fn->length();
+	  // IfcPointByDistanceExpression is introduced in rc2, the code below doesn't work on rc1 because startparam is optional<double>
+#if defined(SCHEMA_HAS_IfcDirectrixCurveSweptAreaSolid) && defined(SCHEMA_HAS_IfcPointByDistanceExpression)
 		// IfcDirectrixCurveSweptAreaSolid introduced in 4.3 changed attribute type
 		// from optional IfcParamValue to optional IfcCurveMeasureSelect.
 		// Invocation of mapping on pre-4.3 models can never result in a piecewise_function.

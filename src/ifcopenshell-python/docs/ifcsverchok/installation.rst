@@ -12,7 +12,7 @@ Packaged installation
 
 IfcSverchok is packaged like a regular Blender add-on, so installation is the
 same as any other Blender add-on. `Download IfcSverchok here
-<https://github.com/IfcOpenShell/IfcOpenShell/releases/download/ifcsverchok-0.8.1/ifcsverchok-0.8.1.zip>`__.
+<https://github.com/IfcOpenShell/IfcOpenShell/releases/download/ifcsverchok-0.8.2/ifcsverchok-0.8.2.zip>`__.
 
 Like all Blender add-ons, they can be installed using ``Edit > Preferences >
 Addons > Install > Choose Downloaded ZIP > Enable Add-on Checkbox``. You can

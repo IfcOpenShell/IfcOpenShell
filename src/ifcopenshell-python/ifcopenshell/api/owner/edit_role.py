@@ -26,11 +26,8 @@ def edit_role(file: ifcopenshell.file, role: ifcopenshell.entity_instance, attri
     IfcActorRole, consult the IFC documentation.
 
     :param role: The IfcActorRole entity you want to edit
-    :type role: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -45,7 +42,5 @@ def edit_role(file: ifcopenshell.file, role: ifcopenshell.entity_instance, attri
         # But Bob is not an architect
         ifcopenshell.api.owner.edit_role(model, role=role, attributes={"Role": "CONSTRUCTIONMANAGER"})
     """
-    settings = {"role": role, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["role"], name, value)
+    for name, value in attributes.items():
+        setattr(role, name, value)

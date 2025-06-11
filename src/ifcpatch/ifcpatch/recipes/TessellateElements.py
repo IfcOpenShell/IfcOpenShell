@@ -18,6 +18,7 @@
 
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.geom
 import ifcopenshell.util.selector
 import ifcopenshell.util.shape
@@ -30,7 +31,6 @@ from typing import Union
 class Patcher:
     def __init__(
         self,
-        src: str,
         file: ifcopenshell.file,
         logger: Logger,
         query: str = "IfcBeam",
@@ -58,7 +58,6 @@ class Patcher:
 
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "TessellateElements", "arguments": ["IfcBeam", False]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.query = query
@@ -91,12 +90,12 @@ class Patcher:
             shape: Union[ifcopenshell.geom.ShapeType, ifcopenshell.geom.ShapeElementType],
         ) -> None:
             geometry = getattr(shape, "geometry", shape)
-            v = [[x.tolist() for x in ifcopenshell.util.shape.get_vertices(geometry)]]
+            v = [ifcopenshell.util.shape.get_vertices(geometry).tolist()]
             f = [ifcopenshell.util.shape.get_faces(geometry).tolist()]
             replacements[element] = (v, f)
 
         iterator = ifcopenshell.geom.iterator(settings, self.file, multiprocessing.cpu_count(), include=products)
-        replacements = {}
+        replacements: dict[ifcopenshell.entity_instance, tuple[list, list]] = {}
         if iterator.initialize():
             for shape in iterator:
                 element = self.file.by_guid(shape.guid)
@@ -114,8 +113,7 @@ class Patcher:
             v, f = geometry
             if not v or not f:
                 continue
-            mesh = ifcopenshell.api.run(
-                "geometry.add_mesh_representation",
+            mesh = ifcopenshell.api.geometry.add_mesh_representation(
                 self.file,
                 context=context,
                 vertices=v,

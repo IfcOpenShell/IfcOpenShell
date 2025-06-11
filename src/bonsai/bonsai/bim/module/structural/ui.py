@@ -16,10 +16,11 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
+import bonsai.tool as tool
 import bonsai.bim.helper
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import draw_attributes, prop_with_search
 from bonsai.bim.module.structural.data import (
     StructuralBoundaryConditionsData,
@@ -31,9 +32,25 @@ from bonsai.bim.module.structural.data import (
     StructuralConnectionData,
     BoundaryConditionsData,
 )
+from typing import TYPE_CHECKING, Any, Union
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.structural.prop import (
+        BIMStructuralProperties,
+        BIMObjectStructuralProperties,
+        BoundaryCondition,
+        StructuralLoad,
+        StructuralActivity,
+        StructuralAnalysisModel,
+    )
 
 
-def draw_boundary_condition_ui(layout, boundary_condition, connection_id, props):
+def draw_boundary_condition_ui(
+    layout: bpy.types.UILayout,
+    boundary_condition: dict[str, Any],
+    connection_id: int,
+    props: BIMObjectStructuralProperties,
+) -> None:
     row = layout.row(align=True)
     if not boundary_condition:
         row.label(text="No Boundary Condition Found", icon="CON_TRACKTO")
@@ -59,23 +76,13 @@ def draw_boundary_condition_ui(layout, boundary_condition, connection_id, props)
         draw_boundary_condition_read_only_ui(layout, boundary_condition)
 
 
-def draw_boundary_condition_editable_ui(layout, props):
-    for attribute in props.boundary_condition_attributes:
-        if attribute.data_type == "string":
-            row = layout.row()
-            row.prop(attribute, "string_value", text=attribute["name"])
-        else:
-            row = layout.row(align=True)
-            row.prop(attribute, "enum_value", text=attribute["name"])
-            if attribute.enum_value == "IfcBoolean":
-                row.prop(attribute, "bool_value", text="")
-            else:
-                row.prop(attribute, "float_value", text="")
-        if attribute.is_optional:
-            row.prop(attribute, "is_null", icon="RADIOBUT_OFF" if attribute.is_null else "RADIOBUT_ON", text="")
+def draw_boundary_condition_editable_ui(
+    layout: bpy.types.UILayout, props: Union[BIMStructuralProperties, BIMObjectStructuralProperties]
+) -> None:
+    draw_attributes(props.boundary_condition_attributes, layout)
 
 
-def draw_boundary_condition_read_only_ui(layout, boundary_condition):
+def draw_boundary_condition_read_only_ui(layout: bpy.types.UILayout, boundary_condition: dict[str, Any]) -> None:
     for attribute in boundary_condition["attributes"]:
         row = layout.row(align=True)
         row.label(text=attribute["name"])
@@ -97,14 +104,14 @@ class BIM_PT_structural_boundary_conditions(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not (tool.Ifc.get_object_by_identifier(ifc_id)):
             return False
-        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
+        if not tool.Ifc.get().by_id(ifc_id).is_a("IfcStructuralConnection"):
             return False
         return True
 
@@ -112,11 +119,15 @@ class BIM_PT_structural_boundary_conditions(Panel):
         if not StructuralBoundaryConditionsData.is_loaded:
             StructuralBoundaryConditionsData.load()
 
+        obj = context.active_object
+        assert obj
+        self.props = tool.Structural.get_object_structural_props(obj)
+
         draw_boundary_condition_ui(
             self.layout,
             StructuralBoundaryConditionsData.data["boundary_condition"],
             StructuralBoundaryConditionsData.data["connection_id"],
-            context.active_object.BIMStructuralProperties,
+            self.props,
         )
 
 
@@ -132,14 +143,14 @@ class BIM_PT_connected_structural_members(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not (tool.Ifc.get_object_by_identifier(ifc_id)):
             return False
-        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
+        if not tool.Ifc.get().by_id(ifc_id).is_a("IfcStructuralConnection"):
             return False
         return True
 
@@ -147,7 +158,9 @@ class BIM_PT_connected_structural_members(Panel):
         if not ConnectedStructuralMembersData.is_loaded:
             ConnectedStructuralMembersData.load()
 
-        self.props = context.active_object.BIMStructuralProperties
+        obj = context.active_object
+        assert obj
+        self.props = tool.Structural.get_object_structural_props(obj)
 
         row = self.layout.row(align=True)
         row.prop(self.props, "relating_structural_member", text="", icon="CON_TRACKTO")
@@ -185,14 +198,14 @@ class BIM_PT_structural_member(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
-        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralMember"):
+        if not tool.Ifc.get().by_id(ifc_id).is_a("IfcStructuralMember"):
             return False
         return True
 
@@ -200,7 +213,9 @@ class BIM_PT_structural_member(Panel):
         if not StructuralMemberData.is_loaded:
             StructuralMemberData.load()
 
-        self.props = context.active_object.BIMStructuralProperties
+        obj = context.active_object
+        assert obj
+        self.props = tool.Structural.get_object_structural_props(obj)
 
         if StructuralMemberData.data["active_object_class"] == "IfcStructuralCurveMember":
             if self.props.is_editing_axis:
@@ -228,14 +243,14 @@ class BIM_PT_structural_connection(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
-        if not props.ifc_definition_id:
+        ifc_id = tool.Blender.get_ifc_definition_id(obj)
+        if not ifc_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(ifc_id):
             return False
-        if not IfcStore.get_file().by_id(props.ifc_definition_id).is_a("IfcStructuralConnection"):
+        if not tool.Ifc.get().by_id(ifc_id).is_a("IfcStructuralConnection"):
             return False
         return True
 
@@ -243,7 +258,9 @@ class BIM_PT_structural_connection(Panel):
         if not StructuralConnectionData.is_loaded:
             StructuralConnectionData.load()
 
-        self.props = context.active_object.BIMStructuralProperties
+        obj = context.active_object
+        assert obj
+        self.props = tool.Structural.get_object_structural_props(obj)
 
         if StructuralConnectionData.data["active_object_class"] == "IfcStructuralCurveConnection":
             if self.props.is_editing_axis:
@@ -286,14 +303,14 @@ class BIM_PT_structural_analysis_models(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not StructuralAnalysisModelsData.is_loaded:
             StructuralAnalysisModelsData.load()
 
-        self.props = context.scene.BIMStructuralProperties
+        self.props = tool.Structural.get_structural_props()
 
         row = self.layout.row(align=True)
         row.label(
@@ -321,13 +338,21 @@ class BIM_PT_structural_analysis_models(Panel):
 
 
 class BIM_UL_structural_analysis_models(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context: bpy.types.Context,
+        layout: bpy.types.UILayout,
+        data: BIMStructuralProperties,
+        item: StructuralAnalysisModel,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)
 
             if context.active_object:
-                oprops = context.active_object.BIMObjectProperties
                 if item.ifc_definition_id in StructuralAnalysisModelsData.data["active_model_ids"]:
                     op = row.operator(
                         "bim.unassign_structural_analysis_model", text="", icon="KEYFRAME_HLT", emboss=False
@@ -337,10 +362,10 @@ class BIM_UL_structural_analysis_models(UIList):
                     op = row.operator("bim.assign_structural_analysis_model", text="", icon="KEYFRAME", emboss=False)
                     op.structural_analysis_model = item.ifc_definition_id
 
-            if context.scene.BIMStructuralProperties.active_structural_analysis_model_id == item.ifc_definition_id:
+            if data.active_structural_analysis_model_id == item.ifc_definition_id:
                 row.operator("bim.edit_structural_analysis_model", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_structural_analysis_model", text="", icon="CANCEL")
-            elif context.scene.BIMStructuralProperties.active_structural_analysis_model_id:
+            elif data.active_structural_analysis_model_id:
                 op = row.operator("bim.remove_structural_analysis_model", text="", icon="X")
                 op.structural_analysis_model = item.ifc_definition_id
             else:
@@ -360,14 +385,14 @@ class BIM_PT_structural_load_cases(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not StructuralLoadCasesData.is_loaded:
             StructuralLoadCasesData.load()
 
-        self.props = context.scene.BIMStructuralProperties
+        self.props = tool.Structural.get_structural_props()
 
         row = self.layout.row()
         row.operator("bim.add_structural_load_case", icon="ADD")
@@ -438,11 +463,50 @@ class BIM_PT_structural_load_cases(Panel):
 
 
 class BIM_UL_structural_activities(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMStructuralProperties,
+        item: StructuralActivity,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)
             row.label(text=item.applied_load_class)
+
+
+class BIM_PT_show_structural_activities(Panel):
+    bl_label = "Show Loads"
+    bl_idname = "BIM_PT_show_structural_activities"
+    bl_space_type = "PROPERTIES"
+    bl_region_type = "WINDOW"
+    bl_context = "scene"
+    bl_parent_id = "BIM_PT_tab_structural"
+
+    @classmethod
+    def poll(cls, context):
+        file = tool.Ifc.get()
+        return file and hasattr(file, "schema") and file.schema != "IFC2X3"
+
+    def draw(self, context):
+        self.props = tool.Structural.get_structural_props()
+
+        row = self.layout.row(align=True)
+        row.operator(
+            "bim.show_loads",
+            text="Show Loads",
+            icon="HIDE_OFF",
+        )
+        row = self.layout.row(align=True)
+        row.prop(self.props, "reference_frame")
+        row = self.layout.row(align=True)
+        row.prop(self.props, "activity_type")
+        row = self.layout.row(align=True)
+        row.prop(self.props, "load_group_to_show")
 
 
 class BIM_PT_structural_loads(Panel):
@@ -455,14 +519,14 @@ class BIM_PT_structural_loads(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not StructuralLoadsData.is_loaded:
             StructuralLoadsData.load()
 
-        self.props = context.scene.BIMStructuralProperties
+        self.props = tool.Structural.get_structural_props()
 
         row = self.layout.row(align=True)
         row.label(text=f"{StructuralLoadsData.data['total_loads']} Structural Loads Found", icon="ANIM_DATA")
@@ -472,7 +536,7 @@ class BIM_PT_structural_loads(Panel):
                 text="FILTER - OFF" if not self.props.filtered_structural_loads else "FILTER - ON",
                 icon="FILTER",
             )
-            row.operator("bim.disable_structural_load_editing_ui", text="", icon="SCREEN_BACK")
+            row.operator("bim.disable_structural_load_editing_ui", text="", icon="CANCEL")
 
             row = self.layout.row(align=True)
             prop_with_search(row, self.props, "structural_load_types", text="")
@@ -495,16 +559,25 @@ class BIM_PT_structural_loads(Panel):
 
 
 class BIM_UL_structural_loads(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMStructuralProperties,
+        item: StructuralLoad,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
             row.label(text=f"{item.name} ({item.number_of_inverse_references})")
             row.label(text=StructuralLoadsData.data["load_classes"][item.ifc_definition_id])
 
-            if context.scene.BIMStructuralProperties.active_structural_load_id == item.ifc_definition_id:
+            if data.active_structural_load_id == item.ifc_definition_id:
                 row.operator("bim.edit_structural_load", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_structural_load", text="", icon="CANCEL")
-            elif context.scene.BIMStructuralProperties.active_structural_load_id:
+            elif data.active_structural_load_id:
                 op = row.operator("bim.remove_structural_load", text="", icon="X")
                 op.structural_load = item.ifc_definition_id
             else:
@@ -524,14 +597,14 @@ class BIM_PT_boundary_conditions(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not BoundaryConditionsData.is_loaded:
             BoundaryConditionsData.load()
 
-        self.props = context.scene.BIMStructuralProperties
+        self.props = tool.Structural.get_structural_props()
 
         row = self.layout.row(align=True)
         row.label(
@@ -543,7 +616,7 @@ class BIM_PT_boundary_conditions(Panel):
                 text="FILTER - OFF" if not self.props.filtered_boundary_conditions else "FILTER - ON",
                 icon="FILTER",
             )
-            row.operator("bim.disable_boundary_condition_editing_ui", text="", icon="SCREEN_BACK")
+            row.operator("bim.disable_boundary_condition_editing_ui", text="", icon="CANCEL")
 
             row = self.layout.row(align=True)
             prop_with_search(row, self.props, "boundary_condition_types", text="")
@@ -569,16 +642,25 @@ class BIM_PT_boundary_conditions(Panel):
 
 
 class BIM_UL_boundary_conditions(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMStructuralProperties,
+        item: BoundaryCondition,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
             row.label(text=f"{item.name} ({item.number_of_inverse_references})")
             row.label(text=BoundaryConditionsData.data["condition_classes"][item.ifc_definition_id])
 
-            if context.scene.BIMStructuralProperties.active_boundary_condition_id == item.ifc_definition_id:
+            if data.active_boundary_condition_id == item.ifc_definition_id:
                 row.operator("bim.edit_boundary_condition", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_boundary_condition", text="", icon="CANCEL")
-            elif context.scene.BIMStructuralProperties.active_boundary_condition_id:
+            elif data.active_boundary_condition_id:
                 op = row.operator("bim.remove_boundary_condition", text="", icon="X")
                 op.boundary_condition = item.ifc_definition_id
             else:

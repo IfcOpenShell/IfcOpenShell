@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Community Forums
+    url: https://community.osarch.org/
+    about: Have a question? Want to discuss an idea? Try the OSArch forums instead.
+  - name: Live Chat
+    url: https://osarch.org/chat
+    about: Have a really confusing issue? Want real-time support?

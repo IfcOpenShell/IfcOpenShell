@@ -29,9 +29,7 @@ def remove_material(file: ifcopenshell.file, material: ifcopenshell.entity_insta
     take care of this situation themselves.
 
     :param material: The IfcMaterial entity you want to remove
-    :type material: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -43,10 +41,8 @@ def remove_material(file: ifcopenshell.file, material: ifcopenshell.entity_insta
         # ... and remove it
         ifcopenshell.api.material.remove_material(model, material=aluminium)
     """
-    settings = {"material": material}
-
-    inverse_elements = file.get_inverse(settings["material"])
-    file.remove(settings["material"])
+    inverse_elements = file.get_inverse(material)
+    file.remove(material)
     # TODO: Right now, we we choose only to delete set items (e.g. a layer) but not the material set
     # This can lead to invalid material sets, but we assume the user will deal with it
     for inverse in inverse_elements:

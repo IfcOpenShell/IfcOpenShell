@@ -16,13 +16,13 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import json
 import bpy
+import ifcopenshell.ifcopenshell_wrapper as W
 import ifcopenshell.api.material
 import ifcopenshell.express
-import ifcopenshell.express.schema
-import ifcopenshell.express.schema_class
 import ifcopenshell.util.element
 import ifcopenshell.util.schema
 import bonsai.core.style
@@ -31,29 +31,46 @@ import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
 from mathutils import Vector
 from collections import defaultdict
-from typing import Iterable, Literal
+from typing import Literal, TYPE_CHECKING
+from collections.abc import Iterable
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.debug.prop import BIMDebugProperties
 
 
 class Debug(bonsai.core.tool.Debug):
     @classmethod
-    def add_schema_identifier(cls, schema: ifcopenshell.express.schema_class.SchemaClass) -> None:
-        IfcStore.schema_identifiers.append(schema.schema_name)
+    def get_debug_props(cls) -> BIMDebugProperties:
+        return bpy.context.scene.BIMDebugProperties
 
     @classmethod
-    def load_express(cls, filename: str) -> ifcopenshell.express.schema_class.SchemaClass:
+    def add_schema_identifier(cls, schema: W.schema_definition) -> None:
+        IfcStore.schema_identifiers.append(schema.name())
+
+    @classmethod
+    def load_express(cls, filename: str) -> W.schema_definition:
         schema = ifcopenshell.express.parse(filename)
         ifcopenshell.register_schema(schema)
-        return schema
+        return schema.schema
 
     @classmethod
     def purge_hdf5_cache(cls) -> None:
-        cache_dir = os.path.join(bpy.context.scene.BIMProperties.data_dir, "cache")
+        props = tool.Blender.get_bim_props()
+        cache_dir = props.cache_dir
         filelist = [f for f in os.listdir(cache_dir) if f.endswith(".h5")]
         for f in filelist:
             try:
                 os.remove(os.path.join(cache_dir, f))
             except PermissionError:
                 pass
+
+    @classmethod
+    def debug_bmesh(cls, bm: bmesh.types.BMesh, name: str = "Debug") -> bpy.types.Object:
+        mesh = bpy.data.meshes.new("Debug")
+        bm.to_mesh(mesh)
+        obj = bpy.data.objects.new(name, mesh)
+        bpy.context.scene.collection.objects.link(obj)
+        return obj
 
     @classmethod
     def debug_geometry(
@@ -112,8 +129,7 @@ class Debug(bonsai.core.tool.Debug):
         """
 
         def get_hash(element: ifcopenshell.entity_instance) -> int:
-            # TODO: replace with get_info_2 after bonsai build update.
-            return hash(json.dumps(element.get_info(include_identifier=False, recursive=True), sort_keys=True))
+            return hash(json.dumps(element.get_info_2(include_identifier=False, recursive=True), sort_keys=True))
 
         ifc_file = tool.Ifc.get()
         merged_element_types: dict[str, list[str]] = {}
@@ -131,8 +147,8 @@ class Debug(bonsai.core.tool.Debug):
             # Calculate hashes.
             hash_to_elements: defaultdict[int, list[ifcopenshell.entity_instance]] = defaultdict(list)
             for element in elements:
-                # Ignore unnamed elements as they may be not safe to merge.
-                if not element.Name:
+                # Except for styles, ignore unnamed elements as they may be not safe to merge
+                if object_type != "STYLE" and not element.Name:
                     continue
                 element_hash = get_hash(element)
                 hash_to_elements[element_hash].append(element)

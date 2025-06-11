@@ -65,6 +65,8 @@ def remove_style(
         avoid unnecessary reloads.
     """
     obj = ifc.get_object(style)
+    if style_tool.is_editing_style() and obj == style_tool.get_currently_edited_material():
+        style_tool.disable_editing()
     # Get style_type before removing object as later StylesData might fail to load
     # due object not yet removed completely.
     style_type = style_tool.get_active_style_type()
@@ -159,7 +161,7 @@ def edit_style(ifc: tool.Ifc, style: tool.Style) -> None:
     style.disable_editing()
     load_styles(style, style.get_active_style_type())
     if is_style_side_attribute_edited:
-        style.reload_repersentations(style_element)
+        style.reload_representations(style_element)
 
 
 def load_styles(style: tool.Style, style_type: str) -> None:

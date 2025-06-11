@@ -19,6 +19,7 @@
 import ifcopenshell
 import ifcopenshell.api.owner
 import ifcopenshell.util.element
+from typing import Any
 
 
 def unassign_material(file: ifcopenshell.file, products: list[ifcopenshell.entity_instance]) -> None:
@@ -30,10 +31,11 @@ def unassign_material(file: ifcopenshell.file, products: list[ifcopenshell.entit
 
     If the product does not have a material, nothing happens.
 
+    Unassigning a LayerSet or ProfileSet from the product type will also
+    remove all Usages of the set.
+
     :param products: The list IfcProducts that may or may not have a material
-    :type product: list[ifcopenshell.entity_instance]
     :return: None
-    :rtype: None
 
     Example:
 
@@ -53,15 +55,16 @@ def unassign_material(file: ifcopenshell.file, products: list[ifcopenshell.entit
     """
     usecase = Usecase()
     usecase.file = file
-    usecase.settings = {"products": products}
-    return usecase.execute()
+    return usecase.execute(products)
 
 
 class Usecase:
-    def execute(self):
-        self.products = set(self.settings["products"])
-        if not self.products:
+    file: ifcopenshell.file
+
+    def execute(self, products: list[ifcopenshell.entity_instance]) -> None:
+        if not products:
             return
+        self.products = set(products)
 
         self.remove_material_usages_from_types()
         self.unassign_materials()
@@ -76,6 +79,8 @@ class Usecase:
                 continue
             if material.is_a() in ["IfcMaterialLayerSet", "IfcMaterialProfileSet"]:
                 # Remove set usages
+                # TODO: be more considerate and remove only usages
+                # associated with the set + product type, not all usages?
                 for inverse in self.file.get_inverse(material):
                     if self.file.schema == "IFC2X3":
                         if not inverse.is_a("IfcMaterialLayerSetUsage"):
@@ -127,4 +132,4 @@ class Usecase:
                         ifcopenshell.util.element.remove_deep2(self.file, history)
                     continue
                 rel.RelatedObjects = list(related_objects)
-                ifcopenshell.api.owner.update_owner_history(self.file, **{"element": rel})
+                ifcopenshell.api.owner.update_owner_history(self.file, element=rel)

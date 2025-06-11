@@ -16,61 +16,19 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import os
 import bpy
 import math
 import bmesh
 import bonsai.tool as tool
 import ifcopenshell.util.element
+from pathlib import Path
 from mathutils import Vector, Matrix
 from typing import Optional
 
 
 class Annotator:
-    @staticmethod
-    def add_text(related_element: Optional[ifcopenshell.entity_instance] = None) -> bpy.types.Object:
-        curve = bpy.data.curves.new(type="FONT", name="Text")
-        curve.body = "TEXT"
-        obj = bpy.data.objects.new("Text", curve)
-        obj.matrix_world = bpy.context.scene.camera.matrix_world
-        if related_element is None:
-            location, _, _, _ = Annotator.get_placeholder_coords(bpy.context)
-        else:
-            obj.data.BIMAssignedProductProperties.related_element = related_element
-            location = related_element.location
-        obj.location = location
-        obj.hide_render = True
-        font = bpy.data.fonts.get("OpenGost TypeB TT")
-        if not font:
-            font = bpy.data.fonts.load(
-                os.path.join(bpy.context.scene.BIMProperties.data_dir, "fonts", "OpenGost Type B TT.ttf")
-            )
-            font.name = "OpenGost Type B TT"
-        obj.data.font = font
-        obj.data.BIMTextProperties.font_size = "2.5"
-        collection = bpy.context.scene.camera.BIMObjectProperties.collection
-        collection.objects.link(obj)
-        Annotator.resize_text(obj)
-        return obj
-
-    @staticmethod
-    def resize_text(text_obj: bpy.types.Object) -> None:
-        camera = None
-        group = tool.Drawing.get_drawing_group(tool.Ifc.get_entity(text_obj))
-        for element in tool.Drawing.get_drawing_elements(group):
-            if element.is_a("IfcAnnotation") and element.ObjectType == "DRAWING":
-                camera = tool.Ifc.get_object(element)
-                break
-        if not camera:
-            return
-        # This is a magic number for OpenGost
-        font_size = 1.6 / 1000
-        font_size *= float(text_obj.data.BIMTextProperties.font_size)
-
-        font_size /= tool.Drawing.get_scale_ratio(tool.Drawing.get_diagram_scale(camera)["Scale"])
-
-        text_obj.data.size = font_size
-
     @staticmethod
     def add_line_to_annotation(
         obj: bpy.types.Object, co1: Optional[Vector] = None, co2: Optional[Vector] = None
@@ -122,12 +80,20 @@ class Annotator:
         return obj
 
     @staticmethod
-    def get_annotation_obj(drawing: ifcopenshell.entity_instance, object_type: str, data_type: str) -> bpy.types.Object:
+    def get_annotation_obj(
+        drawing: ifcopenshell.entity_instance, object_type: str, data_type: tool.Drawing.ANNOTATION_DATA_TYPE
+    ) -> bpy.types.Object:
+        assert bpy.context.scene
         camera = tool.Ifc.get_object(drawing)
-        co1, _, _, _ = Annotator.get_placeholder_coords(camera)
+        assert isinstance(camera, bpy.types.Object)
+        # those annotations you want to obey the depth of the 3d cursor
+        if object_type == "PLAN_LEVEL":
+            co1 = bpy.context.scene.cursor.location.copy()
+        else:
+            co1, _, _, _ = Annotator.get_placeholder_coords(camera)
         matrix_world = tool.Drawing.get_camera_matrix(camera)
         matrix_world.translation = co1
-        collection = camera.BIMObjectProperties.collection
+        collection = tool.Blender.get_object_bim_props(camera).collection
 
         if object_type == "TEXT":
             obj = bpy.data.objects.new(object_type, None)
@@ -144,11 +110,17 @@ class Annotator:
             collection.objects.link(obj)
             return obj
 
-        if object_type != "ANGLE":
-            for obj in collection.objects:
-                element = tool.Ifc.get_entity(obj)
-                if element and element.ObjectType == object_type and obj.type == object_type.upper():
-                    return obj
+        # TODO: remove as outdated?
+        # Is reusing the same objects preventing the creation of new annotations.
+        # if object_type != "ANGLE":
+        #     for obj in collection.objects:
+        #         element = tool.Ifc.get_entity(obj)
+        #         if (
+        #             element
+        #             and ifcopenshell.util.element.get_predefined_type(element) == object_type
+        #             and obj.type == data_type.upper()
+        #         ):
+        #             return obj
 
         if data_type == "mesh":
             data = bpy.data.meshes.new(object_type)

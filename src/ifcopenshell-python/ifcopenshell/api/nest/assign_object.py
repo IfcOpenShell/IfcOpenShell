@@ -146,7 +146,7 @@ def assign_object(
         cur_related_objects = [o for o in nests.RelatedObjects if o not in related_objects_set]
         if cur_related_objects:
             nests.RelatedObjects = list(cur_related_objects)
-            ifcopenshell.api.owner.update_owner_history(file, **{"element": nests})
+            ifcopenshell.api.owner.update_owner_history(file, element=nests)
         else:
             history = nests.OwnerHistory
             file.remove(nests)
@@ -160,7 +160,7 @@ def assign_object(
         is_nested_by.RelatedObjects = cur_related_objects + [
             o for o in related_objects if o not in cur_related_objects_set
         ]
-        ifcopenshell.api.owner.update_owner_history(file, **{"element": is_nested_by})
+        ifcopenshell.api.owner.update_owner_history(file, element=is_nested_by)
     else:
         is_nested_by = file.create_entity(
             "IfcRelNests",

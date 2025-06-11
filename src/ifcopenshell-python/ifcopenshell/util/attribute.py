@@ -21,7 +21,7 @@ from typing import Union
 
 
 def get_primitive_type(
-    attribute_or_data_type: Union[ifcopenshell_wrapper.attribute, ifcopenshell_wrapper.parameter_type]
+    attribute_or_data_type: Union[ifcopenshell_wrapper.attribute, ifcopenshell_wrapper.parameter_type],
 ) -> Union[str, tuple[str, list[str]]]:
     if hasattr(attribute_or_data_type, "type_of_attribute"):
         data_type = str(attribute_or_data_type.type_of_attribute())
@@ -47,9 +47,9 @@ def get_primitive_type(
         return "float"
     elif "<number>" in data_type or "<integer>" in data_type:
         return "integer"
-    elif "<boolean>" in data_type or "<logical>" in data_type:
+    elif "<boolean>" in data_type:
         return "boolean"
-    elif "<enumeration" in data_type:
+    elif "<logical>" in data_type or "<enumeration" in data_type:
         return "enum"
     elif "<binary" in data_type:
         return "binary"

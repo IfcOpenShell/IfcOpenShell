@@ -23,8 +23,9 @@ import sys
 
 # sys.path.append('C:\Program Files\Python37\Lib\site-packages')
 import lxml
-import bspy
-from bspy import Gbxml
+import lxml.etree
+import bspy  # pyright: ignore[reportMissingImports]
+from bspy import Gbxml  # pyright: ignore[reportMissingImports]
 
 
 class GbxmlExporter:

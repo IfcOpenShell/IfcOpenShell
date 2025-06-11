@@ -21,7 +21,6 @@ import ifcopenshell
 import ifcopenshell.util.element
 import bonsai.tool as tool
 import bonsai.core.nest as core
-from bonsai.bim.ifc import IfcStore
 
 
 class BIM_OT_nest_assign_object(bpy.types.Operator, tool.Ifc.Operator):
@@ -113,7 +112,7 @@ class BIM_OT_select_components(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         obj = bpy.data.objects.get(self.obj) or context.active_object
         components = ifcopenshell.util.element.get_components(tool.Ifc.get_entity(obj))
         component_objs = set(tool.Ifc.get_object(c) for c in components)
@@ -132,11 +131,41 @@ class BIM_OT_select_nest(bpy.types.Operator):
     obj: bpy.props.StringProperty()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         obj = bpy.data.objects.get(self.obj) or context.active_object
         nest = ifcopenshell.util.element.get_nest(tool.Ifc.get_entity(obj))
         nest_obj = tool.Ifc.get_object(nest)
         if nest_obj in context.selectable_objects:
             nest_obj.select_set(True)
             bpy.context.view_layer.objects.active = nest_obj
+        return {"FINISHED"}
+
+
+class BIM_OT_disable_nest_mode(bpy.types.Operator):
+    bl_idname = "bim.disable_nest_mode"
+    bl_label = "Disable Nest Mode"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        bpy.ops.object.select_all(action="DESELECT")
+        core.disable_nest_mode(tool.Nest)
+        return {"FINISHED"}
+
+
+class BIM_OT_toggle_nest_mode_local_view(bpy.types.Operator):
+    bl_idname = "bim.toggle_nest_mode_local_view"
+    bl_label = "Toggle Nest Mode Local View"
+    bl_options = {"REGISTER", "UNDO"}
+
+    def execute(self, context):
+        props = tool.Nest.get_nest_props()
+        objs = [o.obj for o in props.editing_objects]
+        if props.in_nest_mode:
+            if context.space_data.local_view:
+                bpy.ops.view3d.localview()
+            else:
+                for obj in objs:
+                    obj.select_set(True)
+                bpy.ops.view3d.localview()
+
         return {"FINISHED"}

@@ -18,11 +18,14 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api.geometry
 import ifcopenshell.api.material
+import ifcopenshell.api.root
 import ifcopenshell.api.style
+import ifcopenshell.api.type
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
-import ifcopenshell.util.unit
+import ifcopenshell.util.shape_builder
 import bonsai.core.tool
 import bonsai.tool as tool
 import numpy as np
@@ -41,13 +44,15 @@ class TestGenerateOccurrenceName(NewFile):
     def test_generating_based_on_class(self):
         ifc = ifcopenshell.file()
         element_type = ifc.createIfcWallType(Name="Foobar")
-        bpy.context.scene.BIMModelProperties.occurrence_name_style = "CLASS"
+        props = tool.Model.get_model_props()
+        props.occurrence_name_style = "CLASS"
         assert subject.generate_occurrence_name(element_type, "IfcWall") == "Wall"
 
     def test_generating_based_on_type_name(self):
         ifc = ifcopenshell.file()
         element_type = ifc.createIfcWallType()
-        bpy.context.scene.BIMModelProperties.occurrence_name_style = "TYPE"
+        props = tool.Model.get_model_props()
+        props.occurrence_name_style = "TYPE"
         assert subject.generate_occurrence_name(element_type, "IfcWall") == "Unnamed"
         element_type.Name = "Foobar"
         assert subject.generate_occurrence_name(element_type, "IfcWall") == "Foobar"
@@ -55,8 +60,9 @@ class TestGenerateOccurrenceName(NewFile):
     def test_generating_based_on_a_custom_function(self):
         ifc = ifcopenshell.file()
         element_type = ifc.createIfcWallType()
-        bpy.context.scene.BIMModelProperties.occurrence_name_style = "CUSTOM"
-        bpy.context.scene.BIMModelProperties.occurrence_name_function = '"Foobar"'
+        props = tool.Model.get_model_props()
+        props.occurrence_name_style = "CUSTOM"
+        props.occurrence_name_function = '"Foobar"'
         assert subject.generate_occurrence_name(element_type, "IfcWall") == "Foobar"
 
 
@@ -68,14 +74,16 @@ class TestGetBooleans(NewFile):
         context = ifc.createIfcGeometricRepresentationContext()
         element = ifc.createIfcWall()
 
-        items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
+        items = [ifc.createIfcExtrudedAreaSolid()]
         representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
         tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
 
-        bool1 = set(tool.Ifc.run("geometry.add_boolean", representation=representation, matrix=np.eye(4)))
-        bool2 = set(tool.Ifc.run("geometry.add_boolean", representation=representation, matrix=np.eye(4)))
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc)
+        cut1 = builder.half_space_solid(builder.plane())
+        cut2 = builder.half_space_solid(builder.plane())
+        bools = ifcopenshell.api.geometry.add_boolean(ifc, first_item=items[0], second_items=[cut1, cut2])
 
-        assert set(subject.get_booleans(element, representation)) == bool1 | bool2
+        assert set(subject.get_booleans(element, representation)) == set(bools)
 
 
 class TestGetManualBooleans(NewFile):
@@ -86,18 +94,22 @@ class TestGetManualBooleans(NewFile):
         context = ifc.createIfcGeometricRepresentationContext()
         element = ifc.createIfcWall()
 
-        items = [ifc.createIfcExtrudedAreaSolid(), ifc.createIfcExtrudedAreaSolid()]
+        items = [ifc.createIfcExtrudedAreaSolid()]
         representation = ifc.createIfcShapeRepresentation(Items=items, ContextOfItems=context)
         tool.Ifc.run("geometry.assign_representation", product=element, representation=representation)
 
-        bool1 = set(tool.Ifc.run("geometry.add_boolean", representation=representation, matrix=np.eye(4)))
-        bool2 = set(tool.Ifc.run("geometry.add_boolean", representation=representation, matrix=np.eye(4)))
+        builder = ifcopenshell.util.shape_builder.ShapeBuilder(ifc)
+        cut1 = builder.half_space_solid(builder.plane())
+        cut2 = builder.half_space_solid(builder.plane())
+        bools = ifcopenshell.api.geometry.add_boolean(ifc, first_item=items[0], second_items=[cut1, cut2])
 
-        assert set(subject.get_booleans(element, representation)) == bool1 | bool2
+        assert set(subject.get_booleans(element, representation)) == set(bools)
         assert len(subject.get_manual_booleans(element, representation)) == 0
 
-        subject.mark_manual_booleans(element, bool1)
-        assert set(subject.get_manual_booleans(element, representation)) == bool1
+        bool1 = list(bools)[0]
+
+        subject.mark_manual_booleans(element, [bool1])
+        assert set(subject.get_manual_booleans(element, representation)) == {bool1}
 
 
 class TestMarkManualBooleans(NewFile):
@@ -184,7 +196,7 @@ class TestGenerateStair2DProfile(NewFile):
         assert np.all(edges == np.array(edges_gen))
         assert faces == tuple(tuple(face) for face in faces_gen)
         for vert, vert_gen in zip(verts, verts_gen, strict=True):
-            assert tool.Cad.are_vectors_equal(vert, vert_gen, 0.01)
+            assert np.allclose(vert, V(vert_gen), atol=0.01)
 
     def test_create_concrete_stair(self):
         kwargs = {
@@ -369,27 +381,31 @@ class TestGenerateStair2DProfile(NewFile):
 
 class TestUsingArrays(NewFile):
     def setup_array(self, add_second_layer=False, sync_children=False):
-        bpy.context.scene.BIMProjectProperties.template_file = "0"
+        tool.Project.get_project_props().template_file = "0"
         bpy.ops.bim.create_project()
 
         bpy.ops.mesh.primitive_cube_add()
         obj = bpy.context.active_object
-        bpy.context.scene.BIMRootProperties.ifc_product = "IfcElement"
+        assert obj
+        rprops = tool.Root.get_root_props()
+        rprops.ifc_product = "IfcElement"
         bpy.ops.bim.assign_class(ifc_class="IfcActuator", predefined_type="ELECTRICACTUATOR", userdefined_type="")
 
         bpy.ops.bim.add_array()
         bpy.ops.bim.enable_editing_array(item=0)
-        obj.BIMArrayProperties.count = 4
-        obj.BIMArrayProperties.x = 4
-        obj.BIMArrayProperties.sync_children = sync_children
+        props = tool.Model.get_array_props(obj)
+        props.count = 4
+        props.x = 4
+        props.sync_children = sync_children
         bpy.ops.bim.edit_array(item=0)
 
         if add_second_layer:
             bpy.ops.bim.add_array()
             bpy.ops.bim.enable_editing_array(item=1)
-            obj.BIMArrayProperties.count = 3
-            obj.BIMArrayProperties.y = 4
-            obj.BIMArrayProperties.sync_children = sync_children
+            props = tool.Model.get_array_props(obj)
+            props.count = 3
+            props.y = 4
+            props.sync_children = sync_children
             bpy.ops.bim.edit_array(item=1)
 
     def test_remove_array_last_to_first(self):
@@ -449,7 +465,7 @@ class TestApplyIfcMaterialChanges(NewFile):
     def get_used_styles(self, obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:
         ifc_file = tool.Ifc.get()
         return {
-            ifc_file.by_id(s.material.BIMStyleProperties.ifc_definition_id) for s in obj.material_slots if s.material
+            ifc_file.by_id(tool.Blender.get_ifc_definition_id(s.material)) for s in obj.material_slots if s.material
         }
 
     def get_mesh(self, obj: bpy.types.Object) -> bpy.types.Mesh:
@@ -458,7 +474,8 @@ class TestApplyIfcMaterialChanges(NewFile):
         return mesh
 
     def setup_test(self, and_elements: bool = True) -> None:
-        bpy.context.scene.BIMProjectProperties.template_file = "0"
+        props = tool.Project.get_project_props()
+        props.template_file = "0"
         bpy.context.scene.unit_settings.length_unit = "MILLIMETERS"
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
@@ -470,20 +487,21 @@ class TestApplyIfcMaterialChanges(NewFile):
         red_material = ifcopenshell.api.material.add_material(ifc_file, "Red Material")
         bpy.ops.bim.load_styles(style_type="IfcSurfaceStyle")
         bpy.ops.bim.enable_adding_presentation_style()
-        bpy.data.scenes["Scene"].BIMStylesProperties.style_name = "Red"
+        sprops = tool.Style.get_style_props()
+        sprops.style_name = "Red"
         bpy.ops.bim.add_presentation_style()
-        red_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Red"))
+        red_style = next(i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Red")
         ifcopenshell.api.style.assign_material_style(ifc_file, red_material, red_style, context)
 
         blue_material = ifcopenshell.api.material.add_material(ifc_file, "Blue Material")
         bpy.ops.bim.enable_adding_presentation_style()
-        bpy.data.scenes["Scene"].BIMStylesProperties.style_name = "Blue"
+        sprops.style_name = "Blue"
         bpy.ops.bim.add_presentation_style()
-        blue_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Blue"))
+        blue_style = next(i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Blue")
         ifcopenshell.api.style.assign_material_style(ifc_file, blue_material, blue_style, context)
 
         bpy.ops.bim.enable_adding_presentation_style()
-        bpy.data.scenes["Scene"].BIMStylesProperties.style_name = "Green"
+        sprops.style_name = "Green"
         bpy.ops.bim.add_presentation_style()
 
         if and_elements:
@@ -491,7 +509,7 @@ class TestApplyIfcMaterialChanges(NewFile):
 
     def setup_elements(self) -> None:
         ifc_file = tool.Ifc.get()
-        blue_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Blue Material"))
+        blue_material = next(i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Blue Material")
         blue_style = tool.Material.get_style(blue_material)
 
         # Element type.
@@ -502,22 +520,20 @@ class TestApplyIfcMaterialChanges(NewFile):
 
         # Setup occurrences.
         relating_type_id = element_type.id()
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
         simple = bpy.context.active_object
         simple.name = "Simple"
 
         # Occurrence with an opening.
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
         with_opening = bpy.context.active_object
         with_opening.name = "With Opening"
-        bpy.ops.bim.add_potential_opening()
-        tool.Blender.set_objects_selection(
-            bpy.context, active_object=with_opening, selected_objects=[with_opening, bpy.data.objects["Opening"]]
-        )
-        bpy.ops.bim.add_opening()
+        props = tool.Root.get_root_props()
+        props.representation_obj = with_opening
+        bpy.ops.bim.add_element(ifc_product="IfcFeatureElement", ifc_class="IfcOpeningElement")
 
         # Occurrence with a material override.
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
         with_material = bpy.context.active_object
         with_material.name = "With Material"
         tool.Blender.set_objects_selection(bpy.context, active_object=with_material, selected_objects=[with_material])
@@ -537,9 +553,9 @@ class TestApplyIfcMaterialChanges(NewFile):
         self.setup_test()
         ifc_file = tool.Ifc.get()
         element_type = next(ifc_file.by_type("IfcActuatorType").__iter__())
-        red_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material"))
+        red_material = next(i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material")
         red_style = tool.Material.get_style(red_material)
-        blue_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Blue"))
+        blue_style = next(i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Blue")
 
         ifcopenshell.api.material.assign_material(ifc_file, material=red_material, products=[element_type])
         tool.Material.ensure_material_assigned([element_type], material=red_material)
@@ -561,8 +577,8 @@ class TestApplyIfcMaterialChanges(NewFile):
         self.setup_test()
         ifc_file = tool.Ifc.get()
         element_type = next(ifc_file.by_type("IfcActuatorType").__iter__())
-        red_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material"))
-        green_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Green"))
+        red_material = next(i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material")
+        green_style = next(i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Green")
 
         # Occurrence with a style.
         element_type_obj = tool.Ifc.get_object(element_type)
@@ -586,9 +602,9 @@ class TestApplyIfcMaterialChanges(NewFile):
     def test_assign_material_to_representation_that_has_2_items_and_1_item_has_a_style(self):
         self.setup_test(and_elements=False)
         ifc_file = tool.Ifc.get()
-        red_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material"))
+        red_material = next(i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material")
         red_style = tool.Material.get_style(red_material)
-        green_style = next((i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Green"))
+        green_style = next(i for i in ifc_file.by_type("IfcSurfaceStyle") if i.Name == "Green")
 
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
@@ -607,7 +623,7 @@ class TestApplyIfcMaterialChanges(NewFile):
         tool.Geometry._reload_representation(obj)
 
         def get_material_indices(mesh: bpy.types.Mesh) -> np.ndarray:
-            buffer = np.empty(len(mesh.polygons), dtype=np.int32)
+            buffer = np.empty(len(mesh.polygons), dtype="I")
             mesh.polygons.foreach_get("material_index", buffer)
             return buffer
 
@@ -633,6 +649,7 @@ class TestApplyIfcMaterialChanges(NewFile):
 
         ifcopenshell.api.material.assign_material(ifc_file, products=[element], material=red_material)
         tool.Material.ensure_material_assigned([element], material=red_material)
+        mesh = self.get_mesh(obj)
         assert mesh.materials[:] == [bpy.data.materials["Red"]]
         # All polygons are just reassigned to the existing material.
         assert set(get_material_indices(mesh)) == {mesh.materials.find("Red")}
@@ -648,7 +665,7 @@ class TestApplyIfcMaterialChanges(NewFile):
         self.setup_test(and_elements=True)
         ifc_file = tool.Ifc.get()
         element_type = next(ifc_file.by_type("IfcActuatorType").__iter__())
-        red_material = next((i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material"))
+        red_material = next(i for i in ifc_file.by_type("IfcMaterial") if i.Name == "Red Material")
         no_style_material = ifcopenshell.api.material.add_material(ifc_file, "No Style")
         obj = bpy.data.objects["Simple"]
         element = tool.Ifc.get_entity(obj)
@@ -664,3 +681,44 @@ class TestApplyIfcMaterialChanges(NewFile):
         ifcopenshell.api.material.unassign_material(ifc_file, products=[element])
         tool.Material.ensure_material_unassigned([element])
         assert self.get_mesh(obj).materials[:] == [bpy.data.materials["Red"]]
+
+
+class TestOffsetWall(NewFile):
+    def test_run(self):
+        ifc = ifcopenshell.file()
+        tool.Ifc.set(ifc)
+
+        wall_type = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWallType", name="WAL01")
+        material_set = ifcopenshell.api.material.add_material_set(ifc, set_type="IfcMaterialLayerSet")
+        material = ifcopenshell.api.material.add_material(ifc, name="PB01", category="gypsum")
+        layer = ifcopenshell.api.material.add_layer(ifc, layer_set=material_set, material=material)
+        ifcopenshell.api.material.edit_layer(ifc, layer=layer, attributes={"LayerThickness": 100})
+        ifcopenshell.api.material.assign_material(ifc, products=[wall_type], material=material_set)
+
+        wall = ifcopenshell.api.root.create_entity(ifc, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[wall], relating_type=wall_type)
+        rel = ifcopenshell.api.material.assign_material(ifc, products=[wall], type="IfcMaterialLayerSetUsage")
+        usage = rel.RelatingMaterial
+        obj = bpy.data.objects.new("Wall", None)
+        tool.Ifc.link(wall, obj)
+
+        usage.DirectionSense = "POSITIVE"
+        subject.offset_wall(obj, "CENTER")
+        assert usage.OffsetFromReferenceLine == -50
+        usage.DirectionSense = "NEGATIVE"
+        subject.offset_wall(obj, "CENTER")
+        assert usage.OffsetFromReferenceLine == 50
+
+        usage.DirectionSense = "POSITIVE"
+        subject.offset_wall(obj, "INTERIOR")
+        assert usage.OffsetFromReferenceLine == -100
+        usage.DirectionSense = "NEGATIVE"
+        subject.offset_wall(obj, "INTERIOR")
+        assert usage.OffsetFromReferenceLine == 0
+
+        usage.DirectionSense = "POSITIVE"
+        subject.offset_wall(obj, "EXTERIOR")
+        assert usage.OffsetFromReferenceLine == 0
+        usage.DirectionSense = "NEGATIVE"
+        subject.offset_wall(obj, "EXTERIOR")
+        assert usage.OffsetFromReferenceLine == 100

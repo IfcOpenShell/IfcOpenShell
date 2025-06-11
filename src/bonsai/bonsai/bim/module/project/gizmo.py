@@ -18,6 +18,7 @@
 
 
 import bpy
+import bonsai.tool as tool
 from bpy.types import GizmoGroup
 from mathutils import Matrix
 
@@ -32,11 +33,12 @@ class ClippingPlane(GizmoGroup):
     @classmethod
     def poll(cls, context):
         obj = context.object
+        props = tool.Project.get_project_props()
         return (
             context.selected_objects
             and obj
             and obj.name.startswith("ClippingPlane")
-            and obj in [sp.obj for sp in context.scene.BIMProjectProperties.clipping_planes]
+            and obj in [sp.obj for sp in props.clipping_planes]
         )
 
     def setup(self, context):

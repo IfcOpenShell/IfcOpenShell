@@ -38,13 +38,16 @@ class AttributesData:
     def attributes(cls):
         results = []
         element = tool.Ifc.get_entity(bpy.context.active_object)
+        assert element
         data = element.get_info()
-        if hasattr(element, "GlobalId"):
+        if "GlobalId" in data:
             excluded_keys = ["id", "type"]
         else:
             excluded_keys = ["type"]
+        # Same types also filtered by `import_attribute`.
+        exclude_value_types = (tuple, ifcopenshell.entity_instance)
         for key, value in data.items():
-            if value is None or isinstance(value, ifcopenshell.entity_instance) or key in excluded_keys:
+            if value is None or isinstance(value, exclude_value_types) or key in excluded_keys:
                 continue
             if key == "id":
                 key = "STEP ID"

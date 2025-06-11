@@ -16,13 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.style.data import StylesData, BlenderMaterialStyleData
-from typing import Union
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.style.prop import BIMStylesProperties, Style
 
 
 class BIM_PT_styles(Panel):
@@ -36,13 +39,13 @@ class BIM_PT_styles(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not StylesData.is_loaded:
             StylesData.load()
 
-        self.props = context.scene.BIMStylesProperties
+        self.props = tool.Style.get_style_props()
 
         if not self.props.is_editing:
             row = self.layout.row(align=True)
@@ -52,7 +55,8 @@ class BIM_PT_styles(Panel):
             row.operator("bim.load_styles", text="", icon="IMPORT").style_type = style_type
             return
 
-        active_style = bool(self.props.styles and self.props.active_style_index < len(self.props.styles))
+        self.is_ifc2x3 = tool.Ifc.get_schema() == "IFC2X3"
+        active_style = self.props.active_style
         row = self.layout.row(align=True)
         row.label(text="{} {}s".format(len(self.props.styles), self.props.style_type), icon="SHADING_RENDERED")
         row.operator("bim.disable_editing_styles", text="", icon="CANCEL")
@@ -62,7 +66,7 @@ class BIM_PT_styles(Panel):
         if not self.props.is_adding:
             row.operator("bim.enable_adding_presentation_style", text="", icon="ADD")
         if active_style:
-            style = self.props.styles[self.props.active_style_index]
+            style = active_style
 
             row.operator("bim.duplicate_style", text="", icon="DUPLICATE").style = style.ifc_definition_id
             row.operator("bim.select_by_style", text="", icon="RESTRICT_SELECT_OFF").style = style.ifc_definition_id
@@ -96,7 +100,8 @@ class BIM_PT_styles(Panel):
         if active_style:
             row = self.layout.row(align=True)
             if material := style.blender_material:
-                row.prop(material.BIMStyleProperties, "active_style_type", icon="SHADING_RENDERED", text="")
+                msprops = tool.Style.get_material_style_props(material)
+                row.prop(msprops, "active_style_type", icon="SHADING_RENDERED", text="")
                 op = row.operator("bim.update_current_style", icon="FILE_REFRESH", text="")
                 op.style_id = style.ifc_definition_id
 
@@ -130,30 +135,33 @@ class BIM_PT_styles(Panel):
         if self.props.is_editing_style:
             if self.props.is_editing_class == "IfcSurfaceStyle":
                 bonsai.bim.helper.draw_attributes(self.props.attributes, self.layout)
-                row = self.layout.row(align=True)
-                row.operator("bim.edit_style", text="Save Attributes", icon="CHECKMARK")
-                row.operator("bim.disable_editing_style", text="", icon="CANCEL")
+                edit_label = "Save Attributes"
             elif self.props.is_editing_class == "IfcSurfaceStyleShading":
                 self.draw_surface_style_shading()
+                edit_label = "Save Shading Style"
             elif self.props.is_editing_class == "IfcSurfaceStyleRendering":
                 self.draw_surface_style_rendering()
+                edit_label = "Save Rendering Style"
             elif self.props.is_editing_class == "IfcExternallyDefinedSurfaceStyle":
                 self.draw_externally_defined_surface_style()
+                edit_label = "Save External Style"
             elif self.props.is_editing_class == "IfcSurfaceStyleWithTextures":
                 self.draw_surface_style_with_textures()
+                edit_label = "Save Texture Style"
             elif self.props.is_editing_class == "IfcSurfaceStyleRefraction":
                 self.draw_refraction_surface_style()
+                edit_label = "Save Refaction Style"
             else:  # IfcSurfaceStyleLighting
                 self.draw_lighting_surface_style()
+                edit_label = "Save Lighting Style"
+            self.draw_edit_ui(edit_label)
 
     def draw_surface_style_shading(self):
         row = self.layout.row()
         row.prop(self.props, "surface_colour")
-        row = self.layout.row()
-        row.prop(self.props, "transparency")
-        row = self.layout.row(align=True)
-        row.operator("bim.edit_surface_style", text="Save Shading Style", icon="CHECKMARK")
-        row.operator("bim.disable_editing_style", text="", icon="CANCEL")
+        if not self.is_ifc2x3:
+            row = self.layout.row()
+            row.prop(self.props, "transparency")
 
     def draw_surface_style_rendering(self):
         row = self.layout.row()
@@ -164,8 +172,8 @@ class BIM_PT_styles(Panel):
         row.prop(self.props, "reflectance_method")
 
         if self.props.reflectance_method not in ("PHYSICAL", "NOTDEFINED", "FLAT"):
-            self.layout.label(text=f"Supported reflectance methods are:")
-            self.layout.label(text=f"PHYSICAL / NOTDEFINED / FLAT")
+            self.layout.label(text="Supported reflectance methods are:")
+            self.layout.label(text="PHYSICAL / NOTDEFINED / FLAT")
 
         row = self.layout.row(align=True)
         row.label(text="Emissive" if self.props.reflectance_method == "FLAT" else "Diffuse")
@@ -213,16 +221,13 @@ class BIM_PT_styles(Panel):
             icon="RADIOBUT_OFF" if self.props.is_specular_highlight_null else "RADIOBUT_ON",
         )
 
-        row = self.layout.row(align=True)
-        row.operator("bim.edit_surface_style", text="Save Rendering Style", icon="CHECKMARK")
-        row.operator("bim.disable_editing_style", text="", icon="CANCEL")
-
     def draw_surface_style_with_textures(self):
         textures = self.props.textures
         row = self.layout.row(align=True)
         row.label(text=f"Style has {len(textures)} textures", icon="SHADING_TEXTURE")
         row.operator("bim.add_surface_texture", text="", icon="ADD")
-        self.layout.prop(self.props, "uv_mode")
+        if textures:
+            self.layout.prop(self.props, "uv_mode")
 
         for i, texture in enumerate(textures):
             split = self.layout.split(factor=0.30, align=True)
@@ -235,44 +240,46 @@ class BIM_PT_styles(Panel):
             op_clear = row.operator("bim.remove_texture_map", text="", icon="X")
             op_path.texture_map_index = op_clear.texture_map_index = i
 
-        row = self.layout.row(align=True)
-        row.operator("bim.edit_surface_style", text="Save Texture Style", icon="CHECKMARK")
-        row.operator("bim.disable_editing_style", text="", icon="CANCEL")
-
     def draw_externally_defined_surface_style(self):
         row = self.layout.row()
         op = row.operator("bim.browse_external_style", icon="APPEND_BLEND", text="Append From Blend File")
-        style = self.props.styles[self.props.active_style_index]
+        style = self.props.active_style
         op.active_surface_style_id = style.ifc_definition_id
         bonsai.bim.helper.draw_attributes(self.props.external_style_attributes, self.layout)
-        row = self.layout.row(align=True)
-        row.operator("bim.edit_surface_style", text="Save External Style", icon="CHECKMARK")
-        row.operator("bim.disable_editing_style", text="", icon="CANCEL")
 
     def draw_refraction_surface_style(self):
         bonsai.bim.helper.draw_attributes(self.props.refraction_style_attributes, self.layout)
         row = self.layout.row(align=True)
-        row.operator("bim.edit_surface_style", text="Save Refraction Style", icon="CHECKMARK")
-        row.operator("bim.disable_editing_style", text="", icon="CANCEL")
 
     def draw_lighting_surface_style(self):
         bonsai.bim.helper.draw_attributes(self.props.lighting_style_colours, self.layout)
+
+    def draw_edit_ui(self, edit_label: str):
         row = self.layout.row(align=True)
-        row.operator("bim.edit_surface_style", text="Save Lighting Style", icon="CHECKMARK")
+        row.operator("bim.edit_surface_style", text=edit_label, icon="CHECKMARK")
+        if self.props.is_editing_existing_style:
+            row.operator("bim.remove_surface_style", text="", icon="X")
         row.operator("bim.disable_editing_style", text="", icon="CANCEL")
 
 
 class BIM_UL_styles(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMStylesProperties,
+        item: Style,
+        icon,
+        active_data,
+        active_property,
+    ):
         if item:
             row = layout.row(align=True)
-            material_icon = 0
-            if material := item.blender_material:
-                preview = material.preview_ensure()
-                material_icon = preview.icon_id
-            row.prop(item, "name", text="", emboss=False, icon_value=material_icon)
+            if item.ifc_definition_id == data.is_editing_style:
+                row.label(text="", icon="GREASEPENCIL")
+            row.prop(item, "name", text="", emboss=False)
             if item.has_surface_colour:
-                row = row.row(align=True)
+                row = row.row(align=item.has_diffuse_colour)
                 row.enabled = False
                 row.prop(item, "surface_colour", text="")
                 if item.has_diffuse_colour:
@@ -304,7 +311,7 @@ class BIM_PT_style(Panel):
 
     @classmethod
     def poll(cls, context):
-        return bool(tool.Ifc.get() and (material := context.material) and material.BIMStyleProperties.ifc_definition_id)
+        return bool(tool.Ifc.get() and (material := context.material) and tool.Blender.get_ifc_definition_id(material))
 
     def draw(self, context):
         # NOTE: this UI is needed only to indicate whether blender material is linked to IFC
@@ -314,10 +321,11 @@ class BIM_PT_style(Panel):
             BlenderMaterialStyleData.load()
 
         material = context.material
-        style_id = material.BIMStyleProperties.ifc_definition_id
+        assert material
+        style_id = tool.Blender.get_ifc_definition_id(material)
         row = self.layout.row(align=True)
 
-        if style_id and not BlenderMaterialStyleData.data["is_linked_to_style"]:
+        if not BlenderMaterialStyleData.data["is_linked_to_style"]:
             row.label(text="Material has linked IFC from a different project.")
             op = row.operator("bim.unlink_style", icon="UNLINKED", text="")
             op.blender_material = material.name
@@ -333,3 +341,12 @@ class BIM_PT_style(Panel):
         row = self.layout.row(align=True)
         row.label(text="IFC Style Name:")
         row.label(text=BlenderMaterialStyleData.data["linked_style_name"])
+
+
+def draw_asset_browser_context_menu_append(self, context):
+    asset = context.asset
+    if not asset or not asset.id_type == "MATERIAL":
+        return
+    if not tool.Style.get_style_props().is_editing:
+        return
+    self.layout.operator("bim.set_asset_material_to_external_style")

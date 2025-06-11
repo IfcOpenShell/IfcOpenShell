@@ -139,6 +139,18 @@ class TestAssignMaterialIFC2X3(test.bootstrap.IFC2X3):
         assert material_list.Materials[0] == material
         assert ifcopenshell.util.element.get_material(element2) == material_list
 
+    def test_assign_element_material_layer_set_usage_with_provided_material_set(self):
+        element_type1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1], relating_type=element_type1)
+        ifcopenshell.api.material.assign_material(self.file, products=[element_type1], type="IfcMaterialLayerSet")
+
+        provided_material_set = self.file.create_entity("IfcMaterialLayerSet")
+        ifcopenshell.api.material.assign_material(
+            self.file, products=[element1], material=provided_material_set, type="IfcMaterialLayerSetUsage"
+        )
+        assert ifcopenshell.util.element.get_material(element1, should_skip_usage=True) == provided_material_set
+
 
 class TestAssignMaterialIFC4(test.bootstrap.IFC4, TestAssignMaterialIFC2X3):
     def test_assign_type_material_profile_set(self):
@@ -204,3 +216,15 @@ class TestAssignMaterialIFC4(test.bootstrap.IFC4, TestAssignMaterialIFC2X3):
         assert material_set.is_a("IfcMaterialConstituentSet")
         assert not material_set.MaterialConstituents
         assert ifcopenshell.util.element.get_material(element2) == material_set
+
+    def test_assign_element_material_profile_set_usage_with_provided_material_set(self):
+        element_type1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWallType")
+        element1 = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
+        ifcopenshell.api.type.assign_type(self.file, related_objects=[element1], relating_type=element_type1)
+        ifcopenshell.api.material.assign_material(self.file, products=[element_type1], type="IfcMaterialProfileSet")
+
+        provided_material_set = self.file.create_entity("IfcMaterialProfileSet")
+        ifcopenshell.api.material.assign_material(
+            self.file, products=[element1], material=provided_material_set, type="IfcMaterialProfileSetUsage"
+        )
+        assert ifcopenshell.util.element.get_material(element1, should_skip_usage=True) == provided_material_set

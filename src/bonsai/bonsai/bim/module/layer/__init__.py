@@ -27,6 +27,7 @@ classes = (
     operator.EditPresentationLayer,
     operator.EnableEditingLayer,
     operator.LoadLayers,
+    operator.SelectLayerInLayerUI,
     operator.RemovePresentationLayer,
     operator.SelectLayerProducts,
     operator.UnassignPresentationLayer,

@@ -65,7 +65,7 @@ def add_pset(
 
 def enable_pset_editing(
     pset_tool: tool.Pset,
-    pset: ifcopenshell.entity_instance,
+    pset: Union[ifcopenshell.entity_instance, None],
     pset_name: str,
     pset_type: tool.Pset.PSET_TYPE,
     obj_name: str,

@@ -24,10 +24,12 @@ import mathutils
 import numpy as np
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.geometry
 import ifcopenshell.util.system
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
 import ifcopenshell.util.representation
+import ifcopenshell.util.shape_builder
 import ifcopenshell.util.type
 import ifcopenshell.util.unit
 import bonsai.tool as tool
@@ -56,7 +58,8 @@ class AddEmptyType(bpy.types.Operator, AddObjectHelper):
     def execute(self, context):
         obj = bpy.data.objects.new("TYPEX", None)
         context.scene.collection.objects.link(obj)
-        context.scene.BIMRootProperties.ifc_product = "IfcElementType"
+        rprops = tool.Root.get_root_props()
+        rprops.ifc_product = "IfcElementType"
         tool.Blender.select_and_activate_single_object(context, obj)
         return {"FINISHED"}
 
@@ -69,7 +72,7 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
     ifc_element_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMRootProperties
+        props = tool.Root.get_root_props()
         props.ifc_product = "IfcElementType"
         props.ifc_class = self.ifc_element_type
         if self.ifc_element_type == "IfcWallType":
@@ -78,41 +81,92 @@ class AddDefaultType(bpy.types.Operator, tool.Ifc.Operator):
             else:
                 props.ifc_predefined_type = "SOLIDWALL"
             props.representation_template = "LAYERSET_AXIS2"
+        elif self.ifc_element_type == "IfcRailingType":
+            props.ifc_predefined_type = "BALUSTRADE"
+            props.representation_template = "RAILING"
+
+        elif self.ifc_element_type == "IfcRoofType":
+            props.ifc_predefined_type = "HIP_ROOF"
+            props.representation_template = "ROOF"
         elif self.ifc_element_type == "IfcSlabType":
             props.ifc_predefined_type = "FLOOR"
             props.representation_template = "LAYERSET_AXIS3"
+
         elif self.ifc_element_type == "IfcDoorType":
             props.ifc_predefined_type = "DOOR"
             props.representation_template = "DOOR"
         elif self.ifc_element_type == "IfcWindowType":
             props.ifc_predefined_type = "WINDOW"
             props.representation_template = "WINDOW"
+
         elif self.ifc_element_type == "IfcColumnType":
             props.ifc_predefined_type = "COLUMN"
             props.representation_template = "PROFILESET"
         elif self.ifc_element_type == "IfcBeamType":
             props.ifc_predefined_type = "BEAM"
             props.representation_template = "PROFILESET"
+        elif self.ifc_element_type == "IfcMemberType":
+            props.ifc_predefined_type = "CHORD"
+            props.representation_template = "PROFILESET"
+        elif self.ifc_element_type == "IfcPlateType":
+            props.ifc_predefined_type = "SHEET"
+            props.representation_template = "LAYERSET_AXIS3"
+        elif self.ifc_element_type == "IfcFootingType":
+            props.ifc_predefined_type = "FOOTING_BEAM"
+            props.representation_template = "PROFILESET"
+        elif self.ifc_element_type == "IfcPileType":
+            props.ifc_predefined_type = "COHESION"
+            props.representation_template = "PROFILESET"
+
         elif self.ifc_element_type == "IfcDuctSegmentType":
             props.ifc_predefined_type = "RIGIDSEGMENT"
             props.representation_template = "FLOW_SEGMENT_RECTANGULAR"
         elif self.ifc_element_type == "IfcPipeSegmentType":
             props.ifc_predefined_type = "RIGIDSEGMENT"
             props.representation_template = "FLOW_SEGMENT_CIRCULAR"
+
+        elif self.ifc_element_type == "IfcStairFlightType":
+            props.ifc_predefined_type = "STRAIGHT"
+            props.representation_template = "STAIR"
+        elif self.ifc_element_type == "IfcRampFlightType":
+            props.ifc_predefined_type = "STRAIGHT"
+            props.representation_template = "LAYERSET_AXIS3"
+
+        elif self.ifc_element_type == "IfcFurnitureType":
+            props.ifc_predefined_type = "CHAIR"
+            props.representation_template = "MESH"
+        elif self.ifc_element_type == "IfcSanitaryTerminalType":
+            props.ifc_predefined_type = "TOILETPAN"
+            props.representation_template = "MESH"
+        elif self.ifc_element_type == "IfcLightFixtureType":
+            props.ifc_predefined_type = "DIRECTIONSOURCE"
+            props.representation_template = "MESH"
+        elif self.ifc_element_type == "IfcElectricApplianceType":
+            props.ifc_predefined_type = "WASHINGMACHINE"
+            props.representation_template = "MESH"
+        elif self.ifc_element_type == "IfcGeographicElementType":
+            if tool.Ifc.get().schema == "IFC4":
+                props.ifc_predefined_type = "USERDEFINED"
+                props.ifc_userdefined_type = "VEGETATION"
+            elif tool.Ifc.get().schema == "IFC4X3":
+                props.ifc_predefined_type = "VEGETATION"
+            props.representation_template = "MESH"
+
         bpy.ops.bim.add_element()
 
 
-class AddOccurrence(bpy.types.Operator, PolylineOperator):
-    bl_idname = "bim.add_occurrence"
-    bl_label = "Add Occurrence"
+class DrawOccurrence(bpy.types.Operator, PolylineOperator, tool.Ifc.Operator):
+    bl_idname = "bim.draw_occurrence"
+    bl_label = "Draw Occurrence"
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
     def poll(cls, context):
         return context.space_data.type == "VIEW_3D"
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        bpy.types.Operator.__init__(self, *args, **kwargs)
+        PolylineOperator.__init__(self)
 
     def create_occurrence(self, context, event):
         if not self.relating_type:
@@ -141,14 +195,17 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         context.scene.cursor.location = Vector((point.x, point.y, point.z))
         tool.Polyline.clear_polyline()
 
-        bpy.ops.bim.add_constr_type_instance("INVOKE_DEFAULT")
+        bpy.ops.bim.add_occurrence("INVOKE_DEFAULT")
 
         if snap_obj:
             snap_obj.select_set(False)
 
     def modal(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="MODAL")
+
+    def _modal(self, context, event):
         # Ensure state of BIM tool props is valid
-        props = bpy.context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = tool.Blender.get_enum_safe(props, "relating_type_id")
         relating_type_id_data = AuthoringData.data["relating_type_id"]
         if not relating_type_id and relating_type_id_data:
@@ -178,7 +235,9 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         self.handle_snap_selection(context, event)
 
         if not self.tool_state.is_input_on and event.value == "RELEASE" and event.type in {"RIGHTMOUSE"}:
+            self.tool_state.axis_method = None
             context.workspace.status_text_set(text=None)
+            ProductDecorator.uninstall()
             PolylineDecorator.uninstall()
             tool.Polyline.clear_polyline()
             tool.Blender.update_viewport()
@@ -186,6 +245,8 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
 
         if event.value == "RELEASE" and event.type == "LEFTMOUSE":
             self.create_occurrence(context, event)
+
+        self.get_product_preview_data(context, self.relating_type)
 
         cancel = self.handle_cancelation(context, event)
         if cancel is not None:
@@ -195,6 +256,9 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         return {"RUNNING_MODAL"}
 
     def invoke(self, context, event):
+        return IfcStore.execute_ifc_operator(self, context, event, method="INVOKE")
+
+    def _invoke(self, context, event):
         super().invoke(context, event)
         ProductDecorator.install(context)
         self.tool_state.use_default_container = True
@@ -202,8 +266,8 @@ class AddOccurrence(bpy.types.Operator, PolylineOperator):
         return {"RUNNING_MODAL"}
 
 
-class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
-    bl_idname = "bim.add_constr_type_instance"
+class AddOccurrence(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.add_occurrence"
     bl_label = "Add Type Occurrence"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Add Type Instance"
@@ -228,7 +292,7 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
     )
 
     def invoke(self, context, event):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = self.relating_type_id or props.relating_type_id
         if (
             relating_type_id
@@ -247,7 +311,7 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
         row.prop(self, "representation_template", text="")
 
     def _execute(self, context):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         relating_type_id = self.relating_type_id or props.relating_type_id
 
         if not relating_type_id:
@@ -269,6 +333,12 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
         ifc_class = relating_type.is_a()
         instance_class = ifcopenshell.util.type.get_applicable_entities(ifc_class, tool.Ifc.get().schema)[0]
         material = ifcopenshell.util.element.get_material(relating_type)
+
+        existing_context = None
+        for existing_occurrence in ifcopenshell.util.element.get_types(relating_type):
+            if existing_obj := tool.Ifc.get_object(existing_occurrence):
+                existing_context = tool.Geometry.get_active_representation_context(existing_obj)
+                break
 
         if material and material.is_a("IfcMaterialProfileSet"):
             if obj := profile.DumbProfileGenerator(relating_type).generate():
@@ -295,7 +365,7 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
             )
             bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
-            rprops = context.scene.BIMRootProperties
+            rprops = tool.Root.get_root_props()
             ifc_context = None
             if get_enum_items(rprops, "contexts", context):
                 ifc_context = int(rprops.contexts or "0") or None
@@ -359,7 +429,10 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
         element = tool.Ifc.get_entity(obj)
         bonsai.core.type.assign_type(tool.Ifc, tool.Type, element=element, type=relating_type)
 
-        representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
+        if existing_context:
+            representation = ifcopenshell.util.representation.get_representation(element, existing_context)
+        else:
+            representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")
         if not representation and element.Representation:
             representation = element.Representation.Representations[0]
 
@@ -413,7 +486,7 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
         ):
             if instance_class in ["IfcWindow", "IfcDoor"]:
                 # TODO For now we are hardcoding windows and doors as a prototype
-                bpy.ops.bim.add_filled_opening(voided_obj=building_obj.name, filling_obj=obj.name)
+                tool.Model.add_filled_opening(building_obj, obj)
         else:
             if self.container_obj:
                 if props.rl_mode == "BOTTOM":
@@ -423,15 +496,16 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
                 elif props.rl_mode == "CURSOR":
                     pass
 
+        tool.Model.sync_object_ifc_position(obj)
+
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
         for port in ifcopenshell.util.system.get_ports(relating_type):
             mat = Matrix(ifcopenshell.util.placement.get_local_placement(port.ObjectPlacement))
             mat.translation *= unit_scale
             mat = obj.matrix_world @ mat
-            new_port = tool.Ifc.run("root.create_entity", ifc_class="IfcDistributionPort")
+            new_port = tool.Ifc.run("system.add_port", element=element)
             new_port.PredefinedType = port.PredefinedType
             new_port.SystemType = port.SystemType
-            tool.Ifc.run("system.assign_port", element=element, port=new_port)
             tool.Ifc.run("geometry.edit_object_placement", product=new_port, matrix=mat, is_si=True)
 
         if ifc_class == "IfcDoorType" and len(context.selected_objects) >= 1:
@@ -442,7 +516,8 @@ class AddConstrTypeInstance(bpy.types.Operator, tool.Ifc.Operator):
 
     def set_flow_segment_rl(self, obj):
         if self.container_obj:
-            obj.location[2] = self.container_obj.location[2] + bpy.context.scene.BIMModelProperties.rl2
+            props = tool.Model.get_model_props()
+            obj.location[2] = self.container_obj.location[2] + props.rl2
 
     @staticmethod
     def generate_layered_element(ifc_class: str, relating_type: ifcopenshell.entity_instance) -> bool:
@@ -470,9 +545,9 @@ class ChangeTypePage(bpy.types.Operator, tool.Ifc.Operator):
     page: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMModelProperties
-        bpy.ops.bim.load_type_thumbnails(ifc_class=props.ifc_class, offset=9 * (self.page - 1), limit=9)
+        props = tool.Model.get_model_props()
         props.type_page = self.page
+        bpy.ops.bim.load_type_thumbnails()
         return {"FINISHED"}
 
 
@@ -483,9 +558,8 @@ class SetActiveType(bpy.types.Operator, tool.Ifc.Operator):
     relating_type: bpy.props.IntProperty()
 
     def _execute(self, context):
-        props = context.scene.BIMModelProperties
+        props = tool.Model.get_model_props()
         props.relating_type_id = str(self.relating_type)
-        context.window.screen = context.window.screen  # Closes the type manager popup
 
 
 class AlignProduct(bpy.types.Operator):
@@ -495,88 +569,46 @@ class AlignProduct(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     AlignType = Literal["CENTERLINE", "POSITIVE", "NEGATIVE"]
-    align_type: bpy.props.EnumProperty(  # type: ignore [reportRedeclaration]
-        items=((i, i, "") for i in get_args(AlignType))
+    align_type: bpy.props.EnumProperty(  # pyright: ignore [reportRedeclaration]
+        items=[(i, i, "") for i in get_args(AlignType)]
     )
 
     if TYPE_CHECKING:
         align_type: AlignType
 
     def execute(self, context):
-        selected_objs = context.selected_objects
-        if len(selected_objs) < 2 or not context.active_object:
-            self.report({"ERROR"}, "Please select atleast 2 objects.")
-            return {"FINISHED"}
-        if self.align_type == "CENTERLINE":
-            point = context.active_object.matrix_world @ (
-                Vector(context.active_object.bound_box[0]) + (context.active_object.dimensions / 2)
-            )
-        elif self.align_type == "POSITIVE":
-            point = context.active_object.matrix_world @ Vector(context.active_object.bound_box[6])
-        elif self.align_type == "NEGATIVE":
-            point = context.active_object.matrix_world @ Vector(context.active_object.bound_box[0])
-        else:
-            assert_never(self.align_type)
-
-        active_x_axis = context.active_object.matrix_world.to_quaternion() @ Vector((1, 0, 0))
-        active_y_axis = context.active_object.matrix_world.to_quaternion() @ Vector((0, 1, 0))
-        active_z_axis = context.active_object.matrix_world.to_quaternion() @ Vector((0, 0, 1))
-
-        x_distances = self.get_axis_distances(point, active_x_axis, context)
-        y_distances = self.get_axis_distances(point, active_y_axis, context)
-        if abs(sum(x_distances)) < abs(sum(y_distances)):
-            for i, obj in enumerate(selected_objs):
-                obj.matrix_world = Matrix.Translation(active_x_axis * -x_distances[i]) @ obj.matrix_world
-        else:
-            for i, obj in enumerate(selected_objs):
-                obj.matrix_world = Matrix.Translation(active_y_axis * -y_distances[i]) @ obj.matrix_world
+        try:
+            core.align_objects(tool.Blender, tool.Model, self.align_type)
+        except core.RequireAtLeastTwoElements as e:
+            self.report({"ERROR"}, str(e))
         return {"FINISHED"}
 
-    def get_axis_distances(self, point: Vector, axis: Vector, context: bpy.types.Context) -> list[float]:
-        results = []
-        for obj in context.selected_objects:
-            if self.align_type == "CENTERLINE":
-                obj_point = obj.matrix_world @ (Vector(obj.bound_box[0]) + (obj.dimensions / 2))
-            elif self.align_type == "POSITIVE":
-                obj_point = obj.matrix_world @ Vector(obj.bound_box[6])
-            elif self.align_type == "NEGATIVE":
-                obj_point = obj.matrix_world @ Vector(obj.bound_box[0])
-            else:
-                assert_never(self.align_type)
-            results.append(mathutils.geometry.distance_point_to_plane(obj_point, point, axis))
-        return results
 
-
-class LoadTypeThumbnails(bpy.types.Operator, tool.Ifc.Operator):
+class LoadTypeThumbnails(bpy.types.Operator):
     bl_idname = "bim.load_type_thumbnails"
     bl_label = "Load Type Thumbnails"
     bl_options = {"REGISTER", "UNDO"}
-    ifc_class: bpy.props.StringProperty()
-    limit: bpy.props.IntProperty()
-    offset: bpy.props.IntProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         if bpy.app.background:
-            return
+            return {"FINISHED"}
 
-        props = bpy.context.scene.BIMModelProperties
-        processing = set()
         # Only process at most one paginated class at a time.
         # Large projects have hundreds of types which can lead to unnecessary lag.
-        queue = sorted(tool.Ifc.get().by_type(self.ifc_class), key=lambda e: e.Name or "Unnamed")
-        if self.limit:
-            queue = queue[self.offset : self.offset + self.limit]
-        else:
-            offset = 9 * (props.type_page - 1)
-            if offset < 0:
-                offset = 0
-            queue = queue[offset : offset + 9]
+        if not AuthoringData.is_loaded:
+            AuthoringData.load()
+        queue = [tool.Ifc.get().by_id(t["id"]) for t in AuthoringData.data["paginated_relating_types"]]
+
+        # The active type may be in another page than the active one:
+        if relating_type_id_current := AuthoringData.data["relating_type_data"].get("id"):
+            active_element = tool.Ifc.get_entity_by_id(relating_type_id_current)
+            if active_element and active_element not in queue:
+                queue.append(active_element)
 
         while queue:
             # if bpy.app.is_job_running("RENDER_PREVIEW") does not seem to reflect asset preview generation
             element = queue.pop()
-            if tool.Model.update_thumbnail_for_element(element):
-                queue.append(element)
+            tool.Model.mark_thumbnail_for_update(element)
         return {"FINISHED"}
 
 
@@ -639,14 +671,15 @@ class MirrorElements(bpy.types.Operator, tool.Ifc.Operator):
             obj.matrix_world = newmat
 
 
-def generate_box(usecase_path, ifc_file, settings):
+def generate_box(usecase_path: str, ifc_file: ifcopenshell.file, settings: dict[str, Any]) -> None:
     box_context = ifcopenshell.util.representation.get_context(ifc_file, "Model", "Box", "MODEL_VIEW")
     if not box_context:
         return
     obj = settings["blender_object"]
     if 0 in list(obj.dimensions):
         return
-    product = ifc_file.by_id(obj.BIMObjectProperties.ifc_definition_id)
+    product = tool.Ifc.get_entity(obj)
+    assert product
     old_box = ifcopenshell.util.representation.get_representation(product, "Model", "Box", "MODEL_VIEW")
     if settings["context"].ContextType == "Model" and getattr(settings["context"], "ContextIdentifier") == "Body":
         if old_box:
@@ -654,14 +687,12 @@ def generate_box(usecase_path, ifc_file, settings):
 
         new_settings = settings.copy()
         new_settings["context"] = box_context
-        new_box = ifcopenshell.api.run(
-            "geometry.add_representation", ifc_file, should_run_listeners=False, **new_settings
-        )
-        ifcopenshell.api.run(
-            "geometry.assign_representation",
+        new_box = ifcopenshell.api.geometry.add_representation(ifc_file, should_run_listeners=False, **new_settings)
+        ifcopenshell.api.geometry.assign_representation(
             ifc_file,
             should_run_listeners=False,
-            **{"product": product, "representation": new_box},
+            product=product,
+            representation=new_box,
         )
 
 
@@ -679,7 +710,7 @@ def regenerate_profile_usage(usecase_path, ifc_file, settings):
                 elements.append(element)
 
     for element in elements:
-        obj = IfcStore.get_element(element.id())
+        obj = tool.Ifc.get_object_by_identifier(element.id())
         if not obj:
             continue
         representation = ifcopenshell.util.representation.get_representation(element, "Model", "Body", "MODEL_VIEW")

@@ -17,20 +17,26 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import test.bootstrap
+import ifcopenshell.api.layer
 import ifcopenshell.api.geometry
 import ifcopenshell.api.georeference
 import ifcopenshell.api.pset
 import ifcopenshell.api.root
 import ifcopenshell.api.type
 import ifcopenshell.api.cost
-import ifcopenshell.api.void
+import ifcopenshell.api.feature
 import ifcopenshell.api.style
 import ifcopenshell.api.context
 import ifcopenshell.api.project
 import ifcopenshell.api.material
+import ifcopenshell.api.profile
+import ifcopenshell.api.unit
+import ifcopenshell.api.owner.settings
 import ifcopenshell.util.element
 import ifcopenshell.util.placement
+import ifcopenshell.util.unit
 import numpy as np
+from ifcopenshell.util.shape_builder import ShapeBuilder
 
 
 class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
@@ -75,6 +81,29 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         # make sure it's still valid
         assert context.WorldCoordinateSystem
 
+    def test_add_new_contexts_if_necessary(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        lib_context = ifcopenshell.api.context.add_context(library, context_type="Model")
+        lib_subcontext = ifcopenshell.api.context.add_context(
+            library, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=lib_context
+        )
+
+        # It has no contexts right now
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+
+        material = ifcopenshell.api.material.add_material(library, name="Material")
+        style = ifcopenshell.api.style.add_style(library)
+        ifcopenshell.api.style.assign_material_style(library, material=material, style=style, context=lib_subcontext)
+
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=material)
+        assert len(self.file.by_type("IfcProject")) == 1
+        assert len(self.file.by_type("IfcGeometricRepresentationContext", include_subtypes=False)) == 1
+        assert len(self.file.by_type("IfcGeometricRepresentationSubContext", include_subtypes=False)) == 1
+        context = self.file.by_type("IfcMaterial")[0].HasRepresentation[0].Representations[0].ContextOfItems
+        # make sure it's still valid
+        assert context.WorldCoordinateSystem
+
     def test_append_a_single_type_product_even_though_an_inverse_material_relationship_is_shared(self):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
@@ -113,7 +142,9 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert set(self.file.by_type("IfcWall")) == set()
 
     def test_append_two_type_products_sharing_the_same_material_indirectly_via_a_material_set(self):
+        ifcopenshell.api.root.create_entity(self.file, "IfcProject")
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, "IfcProject")
         element1 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
         element2 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
         material = ifcopenshell.api.material.add_material(library, name="Material")
@@ -160,7 +191,9 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         assert self.file.by_type("IfcStyledItem")[0].Item == self.file.by_type("IfcBoundingBox")[0]
 
     def test_append_product_with_styles_to_reuse_styleditems(self):
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
         element_type = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
         history = library.createIfcOwnerHistory()
         element_type.OwnerHistory = history
@@ -370,7 +403,7 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         library = ifcopenshell.api.project.create_file(version=self.file.schema)
         element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
         opening = ifcopenshell.api.root.create_entity(library, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.add_opening(library, opening=opening, element=element)
+        ifcopenshell.api.feature.add_feature(library, feature=opening, element=element)
         ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
         assert self.file.by_type("IfcWall")[0].HasOpenings[0].RelatedOpeningElement.is_a("IfcOpeningElement")
 
@@ -433,6 +466,162 @@ class TestAppendAssetIFC2X3(test.bootstrap.IFC2X3):
         del shading_colour_info["id"], shading_colour_info["type"]
         assert shading_colour_info == shading_attrs["SurfaceColour"]
 
+    def test_update_rels_appending_subsequent_assets(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element1 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(library, product=element1, name="Test")
+        element2 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        ifcopenshell.api.pset.assign_pset(library, pset=pset, products=[element2])
+
+        reuse_identities = {}
+        element1_ = ifcopenshell.api.project.append_asset(
+            self.file, library, element1, reuse_identities=reuse_identities
+        )
+        element2_ = ifcopenshell.api.project.append_asset(
+            self.file, library, element2, reuse_identities=reuse_identities
+        )
+        pset_data = ifcopenshell.util.element.get_psets(element1_)
+        assert "Test" in pset_data
+        assert ifcopenshell.util.element.get_psets(element2_) == pset_data
+
+    def test_update_rels_appending_subsequent_assets_identifying_rels_by_guids(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        element1 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        pset = ifcopenshell.api.pset.add_pset(library, product=element1, name="Test")
+        element2 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        pset_rel = ifcopenshell.api.pset.assign_pset(library, pset=pset, products=[element2])
+        assert pset_rel
+        pset_rel_guid: str = pset_rel.GlobalId
+
+        element1_ = ifcopenshell.api.project.append_asset(self.file, library, element1)
+        element2_ = ifcopenshell.api.project.append_asset(self.file, library, element2)
+        pset_data = ifcopenshell.util.element.get_psets(element1_)
+
+        appended_rels = [e for e in self.file.by_type("IfcRelDefinesByProperties") if e.GlobalId == pset_rel_guid]
+        assert len(appended_rels) == 1
+        assert set(appended_rels[0].RelatedObjects) == {element1_, element2_}
+        assert ifcopenshell.util.element.get_psets(element2_) == pset_data
+
+    def test_reuse_identities_to_avoid_removed_entities_and_possible_crashes(self):
+        self.file.create_entity("IfcProject")
+        context = ifcopenshell.api.context.add_context(self.file, context_type="Model")
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        library.create_entity("IfcProject")
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        item = library.create_entity("IfcBoundingBox")
+        lib_context = ifcopenshell.api.context.add_context(library, context_type="Model")
+        representation = library.create_entity("IfcShapeRepresentation", Items=[item], ContextOfItems=lib_context)
+        element.Representation = library.create_entity("IfcProductDefinitionShape", Representations=[representation])
+        reuse_identities: dict[int, ifcopenshell.entity_instance] = {}
+        ifcopenshell.api.project.append_asset(
+            self.file, library=library, element=element, reuse_identities=reuse_identities
+        )
+        str(reuse_identities)  # Will trigger crash if there are no removed entities.
+
+    def test_file_add_to_convert_units(self):
+        library = ifcopenshell.file()
+        builder = ShapeBuilder(library)
+        ifcopenshell.api.root.create_entity(library, "IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(library, unit_type="LENGTHUNIT", prefix="MILLI")
+        ifcopenshell.api.unit.assign_unit(library, units=[unit])
+        ifc_file = ifcopenshell.file()
+        ifcopenshell.api.root.create_entity(ifc_file, "IfcProject")
+        unit = ifcopenshell.api.unit.add_si_unit(ifc_file, unit_type="LENGTHUNIT")
+        ifcopenshell.api.unit.assign_unit(ifc_file, units=[unit])
+
+        # Simple floats.
+        profile = ifcopenshell.api.profile.add_parameterized_profile(library, "IfcCircleProfileDef")
+        profile.Radius = 10.0
+        new_profile = ifcopenshell.api.project.append_asset(ifc_file, library, profile)
+        assert new_profile.Radius == 0.01
+
+        # Aggregates of floats.
+        arbitrary_profile = builder.profile(builder.rectangle((1000, 1000)))
+        new_arbitrary_profile = ifcopenshell.api.project.append_asset(ifc_file, library, arbitrary_profile)
+        updated_points = np.array(arbitrary_profile.OuterCurve.Points) * 0.001
+        assert np.allclose(updated_points, new_arbitrary_profile.OuterCurve.Points)
+
+        # Entities without ids.
+        annotation = ifcopenshell.api.root.create_entity(library, "IfcAnnotation")
+        annotation.ObjectType = "LineOfSight"
+        pset = ifcopenshell.api.pset.add_pset(library, annotation, "Pset_AnnotationLineOfSight")
+        ifcopenshell.api.pset.edit_pset(library, pset, properties={"RoadVisibleDistanceLeft": 10})
+        new_annotation = ifcopenshell.api.project.append_asset(ifc_file, library, annotation)
+        assert (
+            ifcopenshell.util.element.get_pset(new_annotation, "Pset_AnnotationLineOfSight", "RoadVisibleDistanceLeft")
+            == 0.01
+        )
+
+    def test_append_presentation_layer_for_representation_item(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        builder = ShapeBuilder(library)
+        model = ifcopenshell.api.context.add_context(library, context_type="Model")
+        item = builder.extrude(builder.profile(builder.rectangle((1, 1))))
+        representation = builder.get_representation(model, item)
+        ifcopenshell.api.geometry.assign_representation(library, element, representation)
+        layer = ifcopenshell.api.layer.add_layer(library, name="TestLayer")
+        ifcopenshell.api.layer.assign_layer(library, items=[item], layer=layer)
+
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+        extrusions = tuple(self.file.by_type("IfcExtrudedAreaSolid"))
+        assert self.file.by_type("IfcPresentationLayerAssignment")[0].AssignedItems == extrusions
+
+    def test_append_presentation_layer_for_representation(self):
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        element = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWall")
+        builder = ShapeBuilder(library)
+        model = ifcopenshell.api.context.add_context(library, context_type="Model")
+        item = builder.extrude(builder.profile(builder.rectangle((1, 1))))
+        representation = builder.get_representation(model, item)
+        ifcopenshell.api.geometry.assign_representation(library, element, representation)
+        layer = ifcopenshell.api.layer.add_layer(library, name="TestLayer")
+        ifcopenshell.api.layer.assign_layer(library, items=[representation], layer=layer)
+
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        ifcopenshell.api.project.append_asset(self.file, library=library, element=element)
+        representations = tuple(self.file.by_type("IfcRepresentation"))
+        assert self.file.by_type("IfcPresentationLayerAssignment")[0].AssignedItems == representations
+
+    def test_append_owner_history_without_producing_duplicates(self):
+        ifc_file = ifcopenshell.file()
+        library = ifcopenshell.file()
+
+        # Setup owner history.
+        ifcopenshell.api.owner.settings.factory_reset()
+        person = ifcopenshell.api.owner.add_person(library)
+        ifcopenshell.api.owner.add_role(library, person, "CONTRIBUTOR")
+        organization = ifcopenshell.api.owner.add_organisation(library)
+        user = ifcopenshell.api.owner.add_person_and_organisation(library, person=person, organisation=organization)
+        application = ifcopenshell.api.owner.add_application(library)
+        assert len(library.by_type("IfcPerson")) == 1
+        assert len(library.by_type("IfcPersonAndOrganization")) == 1
+        assert len(library.by_type("IfcApplication")) == 1
+        assert len(library.by_type("IfcOrganization")) == 2
+
+        # IfcOrganization's attributes.
+        assert len(library.by_type("IfcTelecomAddress")) == 1
+        # IfcPerson's attributes.
+        assert len(library.by_type("IfcActorRole")) == 2
+
+        # Add 2 wall types.
+        wall_type_1 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
+        wall_type_2 = ifcopenshell.api.root.create_entity(library, ifc_class="IfcWallType")
+
+        ifcopenshell.api.project.append_asset(ifc_file, library, wall_type_1)
+        ifcopenshell.api.project.append_asset(ifc_file, library, wall_type_2)
+
+        assert len(ifc_file.by_type("IfcPerson")) == 1
+        assert len(ifc_file.by_type("IfcPersonAndOrganization")) == 1
+        assert len(ifc_file.by_type("IfcApplication")) == 1
+        assert len(ifc_file.by_type("IfcOrganization")) == 2
+        # Ensure their attributes are also not duplicated.
+        assert len(ifc_file.by_type("IfcTelecomAddress")) == 1
+        assert len(ifc_file.by_type("IfcActorRole")) == 2
+
 
 class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
     # NOTE: breaks in IFC2X3 since IfcProfileDef doesn't have "HasProperties" inverse in ifc2x3
@@ -481,3 +670,107 @@ class TestAppendAssetIFC4(test.bootstrap.IFC4, TestAppendAssetIFC2X3):
         appended_item = self.file.by_type("IfcCostSchedule")[0].Controls[0].RelatedObjects[0]
         assert appended_item.is_a("IfcCostItem")
         assert appended_item.IsNestedBy[0].RelatedObjects[0].is_a("IfcCostItem")
+
+    def test_not_duplicate_profiles_materials_styles_based_on_name(self):
+        # Setup library.
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        model = ifcopenshell.api.context.add_context(library, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            library, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        column_type = ifcopenshell.api.root.create_entity(library, "IfcColumnType")
+        library_profile = ifcopenshell.api.profile.add_parameterized_profile(library, "IfcCircleProfileDef")
+        library_profile.ProfileName = "TestProfile"
+        material_set = ifcopenshell.api.material.add_material_set(library, set_type="IfcMaterialProfileSet")
+        library_material = ifcopenshell.api.material.add_material(library, "TestMaterial")
+        library_style = ifcopenshell.api.style.add_style(library, "TestStyle", ifc_class="IfcSurfaceStyle")
+        ifcopenshell.api.style.assign_material_style(library, library_material, library_style, body)
+        ifcopenshell.api.material.add_profile(library, material_set, library_material, library_profile)
+        ifcopenshell.api.material.assign_material(
+            library, [column_type], material=material_set, type="IfcMaterialProfileSet"
+        )
+
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        # Test adding a profile with existing name.
+        profile = ifcopenshell.api.profile.add_parameterized_profile(self.file, "IfcCircleProfileDef")
+        profile.ProfileName = "TestProfile"
+        ifcopenshell.api.project.append_asset(self.file, library, library_profile)
+        profiles = self.file.by_type("IfcProfileDef")
+        assert len(profiles) == 1 and profiles[0].ProfileName == "TestProfile"
+
+        # Test adding a material with existing name.
+        ifcopenshell.api.material.add_material(self.file, "TestMaterial")
+        ifcopenshell.api.project.append_asset(self.file, library, library_material)
+        materials = self.file.by_type("IfcMaterial")
+        assert len(materials) == 1 and materials[0].Name == "TestMaterial"
+
+        # Test adding a style with existing name.
+        ifcopenshell.api.style.add_style(self.file, "TestStyle", ifc_class="IfcSurfaceStyle")
+        ifcopenshell.api.project.append_asset(self.file, library, library_style)
+        styles = self.file.by_type("IfcSurfaceStyle")
+        assert len(styles) == 1 and styles[0].Name == "TestStyle"
+
+        # Test implicitly adding profile+material+style with existing names.
+        ifcopenshell.api.project.append_asset(self.file, library, column_type)
+        assert len(self.file.by_type("IfcColumnType")) == 1
+        profiles = self.file.by_type("IfcProfileDef")
+        assert len(profiles) == 1 and profiles[0].ProfileName == "TestProfile"
+        materials = self.file.by_type("IfcMaterial")
+        assert len(materials) == 1 and materials[0].Name == "TestMaterial"
+        styles = self.file.by_type("IfcSurfaceStyle")
+        assert len(styles) == 1 and styles[0].Name == "TestStyle"
+
+    def test_duplicate_profiles_materials_styles_based_on_name_if_uniqueness_is_not_assumed(self):
+        # Setup library.
+        library = ifcopenshell.api.project.create_file(version=self.file.schema)
+        ifcopenshell.api.root.create_entity(library, ifc_class="IfcProject")
+        model = ifcopenshell.api.context.add_context(library, context_type="Model")
+        body = ifcopenshell.api.context.add_context(
+            library, context_type="Model", context_identifier="Body", target_view="MODEL_VIEW", parent=model
+        )
+        column_type = ifcopenshell.api.root.create_entity(library, "IfcColumnType")
+        library_profile = ifcopenshell.api.profile.add_parameterized_profile(library, "IfcCircleProfileDef")
+        library_profile.ProfileName = "TestProfile"
+        material_set = ifcopenshell.api.material.add_material_set(library, set_type="IfcMaterialProfileSet")
+        library_material = ifcopenshell.api.material.add_material(library, "TestMaterial")
+        library_style = ifcopenshell.api.style.add_style(library, "TestStyle", ifc_class="IfcSurfaceStyle")
+        ifcopenshell.api.style.assign_material_style(library, library_material, library_style, body)
+        ifcopenshell.api.material.add_profile(library, material_set, library_material, library_profile)
+        ifcopenshell.api.material.assign_material(
+            library, [column_type], material=material_set, type="IfcMaterialProfileSet"
+        )
+
+        ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcProject")
+        # Test adding a profile with existing name.
+        profile = ifcopenshell.api.profile.add_parameterized_profile(self.file, "IfcCircleProfileDef")
+        profile.ProfileName = "TestProfile"
+        ifcopenshell.api.project.append_asset(
+            self.file, library, library_profile, assume_asset_uniqueness_by_name=False
+        )
+        profiles = self.file.by_type("IfcProfileDef")
+        assert len(profiles) == 2 and all(p.ProfileName == "TestProfile" for p in profiles)
+
+        # Test adding a material with existing name.
+        ifcopenshell.api.material.add_material(self.file, "TestMaterial")
+        ifcopenshell.api.project.append_asset(
+            self.file, library, library_material, assume_asset_uniqueness_by_name=False
+        )
+        materials = self.file.by_type("IfcMaterial")
+        assert len(materials) == 2 and all(m.Name == "TestMaterial" for m in materials)
+
+        # Test adding a style with existing name.
+        ifcopenshell.api.style.add_style(self.file, "TestStyle", ifc_class="IfcSurfaceStyle")
+        ifcopenshell.api.project.append_asset(self.file, library, library_style, assume_asset_uniqueness_by_name=False)
+        styles = self.file.by_type("IfcSurfaceStyle")
+        assert len(styles) == 2 and all(s.Name == "TestStyle" for s in styles)
+
+        # Test implicitly adding profile+material+style with existing names.
+        ifcopenshell.api.project.append_asset(self.file, library, column_type, assume_asset_uniqueness_by_name=False)
+        assert len(self.file.by_type("IfcColumnType")) == 1
+        profiles = self.file.by_type("IfcProfileDef")
+        assert len(profiles) == 2 and all(p.ProfileName == "TestProfile" for p in profiles)
+        materials = self.file.by_type("IfcMaterial")
+        assert len(materials) == 2 and all(m.Name == "TestMaterial" for m in materials)
+        styles = self.file.by_type("IfcSurfaceStyle")
+        assert len(styles) == 2 and all(s.Name == "TestStyle" for s in styles)

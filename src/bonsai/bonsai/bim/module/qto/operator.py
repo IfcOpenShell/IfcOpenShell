@@ -21,13 +21,13 @@ import ifcopenshell
 import ifcopenshell.api
 import bonsai.tool as tool
 import bonsai.core.qto as core
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.qto import helper
 
 
 class CalculateCircleRadius(bpy.types.Operator):
     bl_idname = "bim.calculate_circle_radius"
     bl_label = "Calculate Circle Radius"
+    bl_description = "Calculate circle radius for the selected object's selected vertices."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -42,6 +42,7 @@ class CalculateCircleRadius(bpy.types.Operator):
 class CalculateEdgeLengths(bpy.types.Operator):
     bl_idname = "bim.calculate_edge_lengths"
     bl_label = "Calculate Edge Lengths"
+    bl_description = "Calculate edge lengths for the selected mesh objects."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -50,13 +51,14 @@ class CalculateEdgeLengths(bpy.types.Operator):
 
     def execute(self, context):
         result = helper.calculate_edges_lengths([o for o in context.selected_objects if o.type == "MESH"], context)
-        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        tool.Qto.set_qto_result(result)
         return {"FINISHED"}
 
 
 class CalculateFaceAreas(bpy.types.Operator):
     bl_idname = "bim.calculate_face_areas"
     bl_label = "Calculate Face Areas"
+    bl_description = "Calculate face areas for the selected mesh objects."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -65,13 +67,14 @@ class CalculateFaceAreas(bpy.types.Operator):
 
     def execute(self, context):
         result = helper.calculate_faces_areas([o for o in context.selected_objects if o.type == "MESH"], context)
-        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        tool.Qto.set_qto_result(result)
         return {"FINISHED"}
 
 
 class CalculateObjectVolumes(bpy.types.Operator):
     bl_idname = "bim.calculate_object_volumes"
     bl_label = "Calculate Object Volumes"
+    bl_description = "Calculate volumes for the selected mesh objects."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -80,13 +83,14 @@ class CalculateObjectVolumes(bpy.types.Operator):
 
     def execute(self, context):
         result = helper.calculate_volumes([o for o in context.selected_objects if o.type == "MESH"], context)
-        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        tool.Qto.set_qto_result(result)
         return {"FINISHED"}
 
 
 class CalculateFormworkArea(bpy.types.Operator):
     bl_idname = "bim.calculate_formwork_area"
     bl_label = "Calculate Formwork Area"
+    bl_description = "Calculate formwork area for the selected mesh objects."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -95,13 +99,14 @@ class CalculateFormworkArea(bpy.types.Operator):
 
     def execute(self, context):
         result = helper.calculate_formwork_area([o for o in context.selected_objects if o.type == "MESH"], context)
-        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        tool.Qto.set_qto_result(result)
         return {"FINISHED"}
 
 
 class CalculateSideFormworkArea(bpy.types.Operator):
     bl_idname = "bim.calculate_side_formwork_area"
     bl_label = "Calculate Side Formwork Area"
+    bl_description = "Calculate side formwork area for the selected mesh objects."
     bl_options = {"REGISTER", "UNDO"}
 
     @classmethod
@@ -110,7 +115,7 @@ class CalculateSideFormworkArea(bpy.types.Operator):
 
     def execute(self, context):
         result = helper.calculate_side_formwork_area([o for o in context.selected_objects if o.type == "MESH"], context)
-        context.scene.BIMQtoProperties.qto_result = str(round(result, 3))
+        tool.Qto.set_qto_result(result)
         return {"FINISHED"}
 
 
@@ -127,9 +132,9 @@ class CalculateSingleQuantity(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         import ifc5d.qto
 
-        props = context.scene.BIMQtoProperties
-        elements = set()
-        for obj in context.selected_objects:
+        props = tool.Qto.get_qto_props()
+        elements: set[ifcopenshell.entity_instance] = set()
+        for obj in tool.Blender.get_selected_objects(include_active=False):
             element = tool.Ifc.get_entity(obj)
             if element:
                 elements.add(element)
@@ -145,6 +150,10 @@ class CalculateSingleQuantity(bpy.types.Operator, tool.Ifc.Operator):
         ifc_file = tool.Ifc.get()
         results = ifc5d.qto.quantify(ifc_file, elements, rules)
         ifc5d.qto.edit_qtos(ifc_file, results)
+
+        not_quantified_elements = elements - set(results.keys())
+        not_quantified_message = tool.Qto.get_not_quantified_elements_message(not_quantified_elements)
+        self.report({"INFO"}, f"Quantity was calculated for {len(elements)} elements.{not_quantified_message}")
         return {"FINISHED"}
 
 
@@ -164,8 +173,9 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
     def _execute(self, context):
         import ifc5d.qto
 
-        props = context.scene.BIMQtoProperties
+        props = tool.Qto.get_qto_props()
 
+        elements: set[ifcopenshell.entity_instance]
         if context.selected_objects:
             elements = set()
             for obj in context.selected_objects:
@@ -175,11 +185,21 @@ class PerformQuantityTakeOff(bpy.types.Operator, tool.Ifc.Operator):
         else:
             elements = set(tool.Ifc.get().by_type("IfcElement"))
 
-        rules = ifc5d.qto.rules[props.qto_rule]
+        def run_quantification(
+            rule: str, elements: set[ifcopenshell.entity_instance]
+        ) -> set[ifcopenshell.entity_instance]:
+            rules = ifc5d.qto.rules[rule]
+            ifc_file = tool.Ifc.get()
+            results = ifc5d.qto.quantify(ifc_file, elements, rules)
+            ifc5d.qto.edit_qtos(ifc_file, results)
+            not_quantified_elements = elements - set(results.keys())
+            return not_quantified_elements
 
-        ifc_file = tool.Ifc.get()
-        results = ifc5d.qto.quantify(ifc_file, elements, rules)
-        ifc5d.qto.edit_qtos(ifc_file, results)
+        not_quantified_elements = run_quantification(props.qto_rule, elements)
+        if props.fallback and not_quantified_elements:
+            alternative_rules = next(rule for rule in tool.Qto.get_qto_rules() if rule != props.qto_rule)
+            not_quantified_elements = run_quantification(alternative_rules, not_quantified_elements)
 
-        self.report({"INFO"}, f"Quantities are calculated for {len(elements)} elements.")
+        not_quantified_message = tool.Qto.get_not_quantified_elements_message(not_quantified_elements)
+        self.report({"INFO"}, f"Quantities are calculated for {len(elements)} elements.{not_quantified_message}")
         return {"FINISHED"}

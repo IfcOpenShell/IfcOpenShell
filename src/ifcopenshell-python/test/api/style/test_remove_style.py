@@ -44,6 +44,8 @@ class TestRemoveStyle(test.bootstrap.IFC4):
         ]
         for style_type in STYLE_TYPES:
             style = self.file.create_entity(style_type)
+            if style_type == "IfcFillAreaStyle":
+                style.FillStyles = (self.file.create_entity("IfcDraughtingPreDefinedColour", Name="cyan"),)
             ifcopenshell.api.style.remove_style(self.file, style=style)
             assert len(self.file.by_type("IfcPresentationStyle")) == 0
 

@@ -27,7 +27,7 @@ import ifcopenshell
 import ifcopenshell.util.selector
 import bonsai.tool as tool
 import bonsai.bim.module.drawing.scheduler as scheduler
-from bonsai.bim.ifc import IfcStore
+from bpy_extras.io_utils import ExportHelper, ImportHelper
 from bonsai.bim.handler import refresh_ui_data
 from typing import TYPE_CHECKING
 from collections import Counter
@@ -43,7 +43,8 @@ class AddCsvAttribute(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        attribute = context.scene.CsvProperties.csv_attributes.add()
+        props = tool.Blender.get_csv_props()
+        props.csv_attributes.add()
         return {"FINISHED"}
 
 
@@ -54,7 +55,8 @@ class RemoveCsvAttribute(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        context.scene.CsvProperties.csv_attributes.remove(self.index)
+        props = tool.Blender.get_csv_props()
+        props.csv_attributes.remove(self.index)
         return {"FINISHED"}
 
 
@@ -65,7 +67,8 @@ class RemoveAllCsvAttributes(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        context.scene.CsvProperties.csv_attributes.clear()
+        props = tool.Blender.get_csv_props()
+        props.csv_attributes.clear()
         return {"FINISHED"}
 
 
@@ -77,8 +80,9 @@ class ReorderCsvAttribute(bpy.types.Operator):
     new_index: bpy.props.IntProperty()
 
     def execute(self, context):
-        old = context.scene.CsvProperties.csv_attributes[self.old_index]
-        new = context.scene.CsvProperties.csv_attributes[self.new_index]
+        props = tool.Blender.get_csv_props()
+        old = props.csv_attributes[self.old_index]
+        new = props.csv_attributes[self.new_index]
         props = ["name", "header", "sort", "group", "varies_value", "summary", "formatting"]
         for prop in props:
             value = getattr(new, prop)
@@ -87,16 +91,16 @@ class ReorderCsvAttribute(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class ImportCsvAttributes(bpy.types.Operator):
+class ImportCsvAttributes(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.import_csv_attributes"
     bl_label = "Load CSV Settings"
     bl_description = "Import a json template for CSV export"
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
+    filename_ext = ".json"
 
     def execute(self, context):
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
         data = json.load(open(self.filepath))
         tool.Search.import_filter_query(data["query"], props.filter_groups)
 
@@ -122,22 +126,17 @@ class ImportCsvAttributes(bpy.types.Operator):
                 setattr(new, prop, attribute[prop])
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class ExportCsvAttributes(bpy.types.Operator):
+class ExportCsvAttributes(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_csv_attributes"
     bl_label = "Save CSV Settings"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Save a json template for CSV export"
     filename_ext = ".json"
     filter_glob: bpy.props.StringProperty(default="*.json", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
 
         settings = {}
         for prop in [
@@ -176,43 +175,45 @@ class ExportCsvAttributes(bpy.types.Operator):
 
         return {"FINISHED"}
 
-    def invoke(self, context, event):
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".json")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
-
-class ExportIfcCsv(bpy.types.Operator):
+class ExportIfcCsv(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_ifccsv"
     bl_label = "Export IFC"
+    bl_description = "Export IFC data as a spreadsheet."
     filename_ext = ".csv"
+    filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
         if not props.should_load_from_memory and not props.csv_ifc_file:
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
         return True
 
+    @classmethod
+    def description(cls, context, properties):
+        props = tool.Blender.get_csv_props()
+        if props.format == "web":
+            return "Open Web UI for spreadsheet data export."
+        return f"Export IFC data as a spreadsheet by the provided filepath in '{props.format}' format ."
+
     def invoke(self, context, event):
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
         if props.format == "web":
             return self.execute(context)
-        self.filepath = bpy.path.ensure_ext(bpy.data.filepath, f".{props.format}")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        self.filter_glob = f"*.{props.format}"
+        self.filename_ext = f".{props.format}"
+        return ExportHelper.invoke(self, context, event)
 
     def execute(self, context):
         import ifccsv
 
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
         self.filepath = bpy.path.ensure_ext(self.filepath, f".{props.format}")
         if props.should_load_from_memory:
-            ifc_file = IfcStore.get_file()
+            ifc_file = tool.Ifc.get()
         else:
             ifc_file = ifcopenshell.open(props.csv_ifc_file)
         results = ifcopenshell.util.selector.filter_elements(
@@ -288,16 +289,16 @@ class ExportIfcCsv(bpy.types.Operator):
         ]
 
 
-class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator):
+class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator, ImportHelper):
     bl_idname = "bim.import_ifccsv"
     bl_label = "Import to IFC"
+    bl_description = "Import IFC data from a spreadsheet."
     bl_options = {"REGISTER", "UNDO"}
     filter_glob: bpy.props.StringProperty(default="*.csv;*.ods;*.xlsx", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
         if not props.should_load_from_memory and not props.csv_ifc_file:
             cls.poll_message_set("Select an IFC file or use 'load from memory' if it's loaded in Bonsai.")
             return False
@@ -305,16 +306,15 @@ class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator):
 
     def invoke(self, context, event):
         self.filepath = bpy.path.ensure_ext(bpy.data.filepath, ".csv")
-        WindowManager = context.window_manager
-        WindowManager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
+        return ImportHelper.invoke(self, context, event)
 
     def _execute(self, context):
         import ifccsv
 
-        props = context.scene.CsvProperties
+        props = tool.Blender.get_csv_props()
+        ifc_file: ifcopenshell.file
         if props.should_load_from_memory:
-            ifc_file = IfcStore.get_file()
+            ifc_file = tool.Ifc.get()
         else:
             ifc_file = ifcopenshell.open(props.csv_ifc_file)
         ifc_csv = ifccsv.IfcCsv()
@@ -329,6 +329,7 @@ class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator):
             empty=props.empty_value,
             bool_true=props.true_value,
             bool_false=props.false_value,
+            concat=props.concat_value,
         )
         if not props.should_load_from_memory:
             ifc_file.write(props.csv_ifc_file)
@@ -337,18 +338,15 @@ class ImportIfcCsv(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class SelectCsvIfcFile(bpy.types.Operator):
+class SelectCsvIfcFile(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_csv_ifc_file"
     bl_label = "Select CSV IFC File"
+    bl_description = "Select IFC file for spreadsheet import/export."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".ifc"
     filter_glob: bpy.props.StringProperty(default="*.ifc;*.ifczip;*.ifcxml", options={"HIDDEN"})
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
-        context.scene.CsvProperties.csv_ifc_file = self.filepath
+        props = tool.Blender.get_csv_props()
+        props.csv_ifc_file = self.filepath
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}

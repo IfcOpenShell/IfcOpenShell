@@ -26,11 +26,8 @@ def edit_person(file: ifcopenshell.file, person: ifcopenshell.entity_instance, a
     IfcPerson, consult the IFC documentation.
 
     :param person: The IfcPerson entity you want to edit
-    :type person: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -41,7 +38,5 @@ def edit_person(file: ifcopenshell.file, person: ifcopenshell.entity_instance, a
         ifcopenshell.api.owner.edit_person(model, person=person,
             attributes={"MiddleNames": ["The"], "FamilyName": "Builder"})
     """
-    settings = {"person": person, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["person"], name, value)
+    for name, value in attributes.items():
+        setattr(person, name, value)

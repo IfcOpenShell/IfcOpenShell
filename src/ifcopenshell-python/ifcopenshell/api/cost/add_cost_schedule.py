@@ -39,13 +39,10 @@ def add_cost_schedule(
     managing any cost items.
 
     :param name: The name of the cost schedule.
-    :type name: str, optional
     :param predefined_type: The predefined type of the cost schedule, chosen
         from a valid type in the IFC documentation for
         IfcCostScheduleTypeEnum
-    :type predefined_type: str, optional
     :return: The newly created IfcCostSchedule entity
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -55,13 +52,11 @@ def add_cost_schedule(
         # Now that we have a cost schedule, we may add cost items to it
         item = ifcopenshell.api.cost.add_cost_item(model, cost_schedule=schedule)
     """
-    settings = {"name": name, "predefined_type": predefined_type}
-
     cost_schedule = ifcopenshell.api.root.create_entity(
         file,
         ifc_class="IfcCostSchedule",
-        predefined_type=settings["predefined_type"],
-        name=settings["name"],
+        predefined_type=predefined_type,
+        name=name,
     )
     if file.schema == "IFC2X3":
         cost_schedule.UpdateDate = createIfcDateAndTime(file, datetime.now())

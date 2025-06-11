@@ -24,6 +24,7 @@ import ifcopenshell.util.attribute
 import ifcopenshell.util.doc
 import bonsai.tool as tool
 from bonsai.bim.ifc import IfcStore
+from typing import Any
 
 
 def refresh():
@@ -44,46 +45,74 @@ class PsetTemplatesData:
 
         # after pset_template_files because it loads IfcStore.pset_template_file
         cls.data["primary_measure_type"] = cls.primary_measure_type()
-        cls.data["property_template_type"] = cls.property_template_type()
         cls.data["pset_template"] = cls.pset_template()
         cls.data["prop_templates"] = cls.prop_templates()
 
+        # after pset_template and prop_templates
+        cls.data["property_template_type"] = cls.property_template_type()
+
     @classmethod
-    def primary_measure_type(cls):
+    def primary_measure_type(cls) -> list[tuple[str, str, str]]:
         ifc_file = IfcStore.pset_template_file
         if not ifc_file:
             return []
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+        schema = ifcopenshell.schema_by_name(ifc_file.schema)
         version = ifc_file.schema
-        return [
+        enum_items = [
             (t, t, ifcopenshell.util.doc.get_type_doc(version, t).get("description", ""))
             for t in sorted([d.name() for d in schema.declarations() if hasattr(d, "declared_type")])
         ]
+        enum_items = [("-", "-", "")] + enum_items
+        return enum_items
 
     @classmethod
-    def property_template_type(cls):
+    def property_template_type(cls) -> list[tuple[str, str, str]]:
         ifc_file = IfcStore.pset_template_file
         if not ifc_file:
             return []
-        schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+        pset_data = cls.data["pset_template"]
+        if not pset_data:
+            return []
+
+        # Can't use get_pset_template_type
+        # because need to check both template and prop templates to avoid conflicts during transition.
+        pset_types = set()
+        template_type = pset_data["TemplateType"]
+        if template_type:
+            if template_type.startswith("PSET_"):
+                pset_types.add("PSET")
+            elif template_type.startswith("QTO_"):
+                pset_types.add("QTO")
+            # Can also be 'NOTDEFINED'.
+
+        prop_templates = cls.data["prop_templates"]
+        for prop in prop_templates:
+            prop_template_type = prop["TemplateType"]
+            if prop_template_type:
+                if prop_template_type.startswith("P_"):
+                    pset_types.add("PSET")
+                else:  # All other values are Q_.
+                    pset_types.add("QTO")
+
+        # If mixed typed are used (e.g. during transition), assume type is not specified.
+        pset_type = next(iter(pset_types)) if len(pset_types) == 1 else None
+
+        schema = ifcopenshell.schema_by_name(ifc_file.schema)
         attribute = schema.declaration_by_name("IfcSimplePropertyTemplate").attributes()[0]
-        return [(i, i, "") for i in ifcopenshell.util.attribute.get_enum_items(attribute)]
+        enum_items = [
+            a
+            for a in ifcopenshell.util.attribute.get_enum_items(attribute)
+            if pset_type is None
+            or (pset_type == "PSET" and a.startswith("P_"))
+            or (pset_type == "QTO" and a.startswith("Q_"))
+        ]
+        return [(i, i, "") for i in enum_items]
 
     @classmethod
-    def pset_template_files(cls):
-        results = []
-        pset_dir = os.path.join(bpy.context.scene.BIMProperties.data_dir, "pset")
-        files = os.listdir(pset_dir)
-        for f in files:
-            results.append(
-                (os.path.join(pset_dir, f), os.path.splitext(os.path.basename(f))[0], "Global Pset Template")
-            )
-
-        pset_dir = tool.Ifc.resolve_uri(bpy.context.scene.BIMProperties.pset_dir)
-        if os.path.isdir(pset_dir):
-            for path in pathlib.Path(pset_dir).glob("*.ifc"):
-                results.append((str(path), os.path.splitext(os.path.basename(str(path)))[0], "Project Pset Template"))
-
+    def pset_template_files(cls) -> list[tuple[str, str, str]]:
+        results: list[tuple[str, str, str]] = []
+        for path, pset_location in tool.PsetTemplate.get_pset_template_files():
+            results.append((str(path), path.stem, pset_location))
         return sorted(results, key=lambda x: x[1])
 
     @classmethod
@@ -91,13 +120,14 @@ class PsetTemplatesData:
         if not cls.data["pset_template_files"]:
             return []
         if not IfcStore.pset_template_file:
-            IfcStore.pset_template_path = bpy.context.scene.BIMPsetTemplateProperties.pset_template_files
+            props = tool.PsetTemplate.get_pset_template_props()
+            IfcStore.pset_template_path = props.pset_template_files
             IfcStore.pset_template_file = ifcopenshell.open(IfcStore.pset_template_path)
         return [(str(t.id()), t.Name, "") for t in IfcStore.pset_template_file.by_type("IfcPropertySetTemplate")]
 
     @classmethod
-    def pset_template(cls):
-        props = bpy.context.scene.BIMPsetTemplateProperties
+    def pset_template(cls) -> dict[str, Any]:
+        props = tool.PsetTemplate.get_pset_template_props()
         template_id = props.pset_templates
         if not template_id:
             return {}
@@ -109,8 +139,8 @@ class PsetTemplatesData:
         return info
 
     @classmethod
-    def prop_templates(cls):
-        props = bpy.context.scene.BIMPsetTemplateProperties
+    def prop_templates(cls) -> list[dict[str, Any]]:
+        props = tool.PsetTemplate.get_pset_template_props()
         template_id = props.pset_templates
         if not template_id:
             return []

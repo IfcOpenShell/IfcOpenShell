@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with IfcPatch.  If not, see <http://www.gnu.org/licenses/>.
 
-""" This script regenerates all drawing paths in case they have been created in a different operating system.
+"""This script regenerates all drawing paths in case they have been created in a different operating system.
 
 It is useful when an annotation drawing has been created on windows and you want to recreate the
 drawig in linux.
@@ -29,6 +29,8 @@ It works on the active ifc file (if exists).
 
 import bonsai.tool as tool
 import ifcopenshell
+import ifcopenshell.api.pset
+import ifcopenshell.util.element
 import sys
 
 
@@ -53,8 +55,7 @@ for annotation in annotations:
             wrong_sep = "\\"
         if platform == "win32":
             wrong_sep = "/"
-        ifcopenshell.api.run(
-            "pset.edit_pset",
+        ifcopenshell.api.pset.edit_pset(
             file,
             pset=pset_ifc,
             properties={

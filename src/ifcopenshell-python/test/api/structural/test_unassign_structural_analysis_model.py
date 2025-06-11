@@ -29,12 +29,12 @@ class TestUnassignStructuralAnalysisModel(test.bootstrap.IFC4):
         )
         ifcopenshell.api.structural.assign_structural_analysis_model(
             self.file,
-            product=product,
+            products=[product],
             structural_analysis_model=subject,
         )
         ifcopenshell.api.structural.unassign_structural_analysis_model(
             self.file,
-            product=product,
+            products=[product],
             structural_analysis_model=subject,
         )
         models = self.file.by_type("IfcStructuralAnalysisModel")

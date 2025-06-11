@@ -16,12 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+# pyright: reportUnnecessaryTypeIgnoreComment=error
+
 import bpy
-import ifcopenshell.api
+import textwrap
+import ifcopenshell.api.nest
 import bonsai.tool as tool
-from bpy_extras.io_utils import ImportHelper
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 import bonsai.tool as tool
 import bonsai.core.cost as core
+from typing import get_args, TYPE_CHECKING, Literal
 
 
 class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
@@ -33,16 +37,19 @@ class AddCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     object_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        predefined_type = context.scene.BIMCostProperties.cost_schedule_predefined_types
+        props = tool.Cost.get_cost_props()
+        predefined_type = props.cost_schedule_predefined_types
         if predefined_type == "USERDEFINED":
             predefined_type = self.object_type
         core.add_cost_schedule(tool.Ifc, name=self.name, predefined_type=predefined_type)
 
     def draw(self, context):
         layout = self.layout
+        assert layout
+        props = tool.Cost.get_cost_props()
         layout.prop(self, "name", text="Name")
-        layout.prop(context.scene.BIMCostProperties, "cost_schedule_predefined_types", text="Type")
-        if context.scene.BIMCostProperties.cost_schedule_predefined_types == "USERDEFINED":
+        layout.prop(props, "cost_schedule_predefined_types", text="Type")
+        if props.cost_schedule_predefined_types == "USERDEFINED":
             layout.prop(self, "object_type", text="Object type")
 
     def invoke(self, context, event):
@@ -55,10 +62,11 @@ class EditCostSchedule(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
+        props = tool.Cost.get_cost_props()
         core.edit_cost_schedule(
             tool.Ifc,
             tool.Cost,
-            cost_schedule=tool.Ifc.get().by_id(context.scene.BIMCostProperties.active_cost_schedule_id),
+            cost_schedule=tool.Ifc.get().by_id(props.active_cost_schedule_id),
         )
 
 
@@ -141,8 +149,11 @@ class ExpandCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Expand this cost item"
     cost_item: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        cost_item: int
+
     def _execute(self, context):
-        core.expand_cost_item(tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+        core.expand_cost_item(tool.Cost, cost_item_id=self.cost_item)
 
 
 class ExpandCostItems(bpy.types.Operator, tool.Ifc.Operator):
@@ -150,7 +161,6 @@ class ExpandCostItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Expand Cost Items"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Expand all cost items"
-    cost_items: bpy.props.StringProperty()
 
     def _execute(self, context):
         core.expand_cost_items(tool.Cost)
@@ -163,8 +173,11 @@ class ContractCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_description = "Contract a cost item"
     cost_item: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        cost_item: int
+
     def _execute(self, context):
-        core.contract_cost_item(tool.Cost, cost_item=tool.Ifc.get().by_id(self.cost_item))
+        core.contract_cost_item(tool.Cost, cost_item_id=self.cost_item)
 
 
 class ContractCostItems(bpy.types.Operator, tool.Ifc.Operator):
@@ -172,7 +185,6 @@ class ContractCostItems(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Contract Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Collapse cost item tree"
-    cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
         core.contract_cost_items(tool.Cost)
@@ -183,6 +195,9 @@ class RemoveCostItem(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Remove Cost Item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        cost_item: int
 
     def _execute(self, context):
         core.remove_cost_item(tool.Ifc, tool.Cost, cost_item_id=self.cost_item)
@@ -261,17 +276,34 @@ class AssignCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Assign Cost Item Quantity"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
-    related_object_type: bpy.props.StringProperty()
+    related_object_type: bpy.props.EnumProperty(  # pyright: ignore [reportRedeclaration]
+        items=[(i, i, "") for i in get_args(tool.Cost.RELATED_OBJECT_TYPE)],
+    )
     prop_name: bpy.props.StringProperty()
 
+    if TYPE_CHECKING:
+        related_object_type: tool.Cost.RELATED_OBJECT_TYPE
+
+    @classmethod
+    def description(cls, context, properties) -> str:
+        descr = f"Assign cost item quantity to the active cost item from active {properties.related_object_type}"
+        if prop_name := properties.prop_name:
+            descr += f" property '{prop_name}'"
+        return descr
+
     def _execute(self, context):
-        core.assign_cost_item_quantity(
+        result = core.assign_cost_item_quantity(
             tool.Ifc,
             tool.Cost,
             cost_item=tool.Ifc.get().by_id(self.cost_item),
             related_object_type=self.related_object_type,
             prop_name=self.prop_name,  # TODO: REVIEW PROP_NAME USABILITY
         )
+        if not result:
+            self.report(
+                {"ERROR"},
+                f"Cost item wasn't assigned - no objects of type '{self.related_object_type}' are selected.",
+            )
 
 
 class UnassignCostItemQuantity(bpy.types.Operator, tool.Ifc.Operator):
@@ -403,7 +435,7 @@ class AddCostValue(bpy.types.Operator, tool.Ifc.Operator):
 
 class RemoveCostItemValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.remove_cost_value"
-    bl_label = "Add Cost Item Value"
+    bl_label = "Remove Cost Item Value"
     bl_options = {"REGISTER", "UNDO"}
     parent: bpy.props.IntProperty()
     cost_value: bpy.props.IntProperty()
@@ -513,6 +545,7 @@ class SelectCostScheduleProducts(bpy.types.Operator):
 class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator):
     bl_idname = "bim.import_cost_schedule_csv"
     bl_label = "Import Cost Schedule CSV"
+    bl_description = "Import cost schdule from the provided .csv file."
     bl_options = {"REGISTER", "UNDO"}
     filename_ext = ".csv"
     filter_glob: bpy.props.StringProperty(default="*.csv", options={"HIDDEN"})
@@ -527,7 +560,19 @@ class ImportCostScheduleCsv(bpy.types.Operator, ImportHelper, tool.Ifc.Operator)
         return True
 
     def _execute(self, context):
-        core.import_cost_schedule_csv(tool.Cost, self.filepath, self.is_schedule_of_rates)
+        cost_schedule = core.import_cost_schedule_csv(tool.Cost, self.filepath, self.is_schedule_of_rates)
+        core.add_csv_filepath(tool.Cost, self.filepath, self.is_schedule_of_rates, cost_schedule)
+        return {"FINISHED"}
+
+
+class RefreshCostScheduleCsv(bpy.types.Operator, tool.Ifc.Operator):
+    bl_idname = "bim.refresh_cost_schedule_csv"
+    bl_label = "Refresh Cost Schedule CSV"
+    bl_options = {"REGISTER", "UNDO"}
+
+    @classmethod
+    def _execute(self, context):
+        core.refresh_cost_schedule_csv(tool.Ifc, tool.Cost)
         return {"FINISHED"}
 
 
@@ -539,7 +584,8 @@ class AddCostColumn(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not context.scene.BIMCostProperties.cost_column:
+        props = tool.Cost.get_cost_props()
+        if not props.cost_column:
             cls.poll_message_set("Cost column name is empty")
             return False
         return True
@@ -568,6 +614,34 @@ class LoadCostItemQuantities(bpy.types.Operator):
     def execute(self, context):
         core.load_cost_item_quantities(tool.Cost)
         return {"FINISHED"}
+
+
+class ShowAssignedCostRate(bpy.types.Operator):
+    bl_idname = "bim.show_assigned_cost_rate"
+    bl_label = "Info about the assigned cost item rate"
+    bl_options = {"REGISTER"}
+    assigned_rate_identification: bpy.props.StringProperty()
+    assigned_rate_name: bpy.props.StringProperty()
+    assigned_rate_description: bpy.props.StringProperty()
+    assigned_rate_total_value: bpy.props.FloatProperty()
+
+    def invoke(self, context, event):
+        wm = context.window_manager
+        return wm.invoke_props_dialog(self, width=450)
+
+    def execute(self, context):
+        # core.load_cost_item_quantities(tool.Cost) IS IT NECESSARY?
+        return {"FINISHED"}
+
+    def draw(self, context):
+        layout = self.layout
+        wrapper = textwrap.TextWrapper(width=80)
+        layout.label(text=f"ID: {self.assigned_rate_identification}")
+        layout.label(text=f"Name: {self.assigned_rate_name}")
+        layout.label(text="Description:")
+        for line in wrapper.wrap(str(self.assigned_rate_description)):
+            layout.label(text=line)
+        layout.label(text=f"Value: {self.assigned_rate_total_value}")
 
 
 class LoadCostItemElementQuantities(bpy.types.Operator):
@@ -613,25 +687,18 @@ class LoadCostItemTypes(bpy.types.Operator):
 class AssignCostValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_cost_value"
     bl_label = "Assign Cost Rate Value"
+    bl_description = "Assign cost rate value to active cost item"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
     cost_rate: bpy.props.IntProperty()
 
     def _execute(self, context):
         core.assign_cost_value(
-            tool.Ifc, cost_item=tool.Ifc.get().by_id(self.cost_item), cost_rate=tool.Ifc.get().by_id(self.cost_rate)
+            tool.Ifc,
+            tool.Cost,
+            cost_item=tool.Ifc.get().by_id(self.cost_item),
+            cost_rate=tool.Ifc.get().by_id(self.cost_rate),
         )
-
-
-class LoadScheduleOfRates(bpy.types.Operator):
-    bl_idname = "bim.load_schedule_of_rates_tree"
-    bl_label = "Load Schedule of Rates"
-    bl_options = {"REGISTER", "UNDO"}
-    cost_schedule: bpy.props.IntProperty()
-
-    def execute(self, context):
-        core.load_schedule_of_rates_tree(tool.Cost, schedule_of_rates=tool.Ifc.get().by_id(self.cost_schedule))
-        return {"FINISHED"}
 
 
 class ExpandCostItemRate(bpy.types.Operator, tool.Ifc.Operator):
@@ -639,6 +706,9 @@ class ExpandCostItemRate(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Expand Cost Item Rate"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
+
+    if TYPE_CHECKING:
+        cost_item: int
 
     def _execute(self, context):
         core.expand_cost_item_rate(tool.Cost, self.cost_item)
@@ -651,6 +721,9 @@ class ContractCostItemRate(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
+    if TYPE_CHECKING:
+        cost_item: int
+
     def _execute(self, context):
         core.contract_cost_item_rate(tool.Cost, self.cost_item)
         return {"FINISHED"}
@@ -659,6 +732,7 @@ class ContractCostItemRate(bpy.types.Operator, tool.Ifc.Operator):
 class CalculateCostItemResourceValue(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.calculate_cost_item_resource_value"
     bl_label = "Calculate Cost Item Resource Value"
+    bl_description = "Calculate cost item value based on it's resources. Any previous cost values are removed"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
 
@@ -667,12 +741,13 @@ class CalculateCostItemResourceValue(bpy.types.Operator, tool.Ifc.Operator):
         return {"FINISHED"}
 
 
-class ExportCostSchedules(bpy.types.Operator):
+class ExportCostSchedules(bpy.types.Operator, ExportHelper):
     bl_idname = "bim.export_cost_schedules"
     bl_label = "Export Cost Schedule"
     bl_options = {"REGISTER", "UNDO"}
-    bl_description = "Export a cost schedule to a CSV, XSLX OR ODS file"
-    cost_schedule: bpy.props.IntProperty()
+    bl_description = "Export current/all cost schedules as CSV, XSLX or ODS files to the provided directory."
+
+    cost_schedule: bpy.props.IntProperty(options={"SKIP_SAVE"})
     format: bpy.props.EnumProperty(name="Format", items=(("CSV", "CSV", ""), ("XLSX", "XLSX", ""), ("ODS", "ODS", "")))
     directory: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_folder: bpy.props.BoolProperty(
@@ -680,19 +755,29 @@ class ExportCostSchedules(bpy.types.Operator):
         default=True,
     )
 
+    if TYPE_CHECKING:
+        cost_schedule: int
+        format: Literal["CSV", "XLSX", "ODS"]
+        directory: str
+
+    def check(self, context):
+        if self.filepath != self.directory:
+            self.filepath = self.directory
+            return True
+        return False
+
+    @property
+    def filename_ext(self) -> str:
+        return f".{self.format.lower()}"
+
     def execute(self, context):
         cost_schedule = tool.Ifc.get().by_id(self.cost_schedule) if self.cost_schedule else None
         r = core.export_cost_schedules(
-            tool.Cost, filepath=self.directory, format=self.format, cost_schedule=cost_schedule
+            tool.Cost, dirpath=self.directory, format=self.format, cost_schedule=cost_schedule
         )
         if isinstance(r, str):
             self.report({"ERROR"}, r)
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        wm = context.window_manager
-        wm.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
     def draw(self, context):
         self.layout.label(text="Choose a format")
@@ -705,7 +790,12 @@ class ClearCostItemAssignments(bpy.types.Operator, tool.Ifc.Operator):
     bl_label = "Clear Cost Item Product Assignments"
     bl_options = {"REGISTER", "UNDO"}
     cost_item: bpy.props.IntProperty()
-    related_object_type: bpy.props.StringProperty()
+    related_object_type: bpy.props.EnumProperty(  # pyright: ignore [reportRedeclaration]
+        items=[(i, i, "") for i in get_args(tool.Cost.RELATED_OBJECT_TYPE)],
+    )
+
+    if TYPE_CHECKING:
+        related_object_type: tool.Cost.RELATED_OBJECT_TYPE
 
     def _execute(self, context):
         core.clear_cost_item_assignments(
@@ -724,15 +814,14 @@ class LoadProductCostItems(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not tool.Ifc.get() or not (obj := context.active_object) or not (obj.BIMObjectProperties.ifc_definition_id):
+        if not tool.Ifc.get() or not (obj := context.active_object) or not (tool.Blender.get_ifc_definition_id(obj)):
             cls.poll_message_set("No IFC object is active.")
             return False
         return True
 
     def execute(self, context):
-        core.load_product_cost_items(
-            tool.Cost, product=tool.Ifc.get().by_id(context.active_object.BIMObjectProperties.ifc_definition_id)
-        )
+        obj = context.active_object
+        core.load_product_cost_items(tool.Cost, product=tool.Ifc.get_entity(obj))
         return {"FINISHED"}
 
 
@@ -757,13 +846,10 @@ class ReorderCostItem(bpy.types.Operator, tool.Ifc.Operator):
     cost_item: bpy.props.IntProperty()
 
     def _execute(self, context):
-        ifcopenshell.api.run(
-            "nest.reorder_nesting",
+        ifcopenshell.api.nest.reorder_nesting(
             tool.Ifc.get(),
-            **{
-                "item": tool.Ifc.get().by_id(self.cost_item),
-                "new_index": self.new_index,
-            },
+            item=tool.Ifc.get().by_id(self.cost_item),
+            new_index=self.new_index,
         )
         tool.Cost.load_cost_schedule_tree()
 

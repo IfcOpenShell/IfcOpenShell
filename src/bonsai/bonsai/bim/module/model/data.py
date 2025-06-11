@@ -26,6 +26,7 @@ from ifcopenshell.util.doc import get_entity_doc, get_predefined_type_doc
 import bonsai.tool as tool
 from math import degrees
 from natsort import natsorted
+from typing import Union, Optional, Any
 
 
 def refresh():
@@ -42,45 +43,54 @@ def refresh():
 
 class AuthoringData:
     data = {}
-    type_thumbnails = {}
+    type_thumbnails: dict[int, int] = {}
     types_per_page = 9
-    ifc_element_type = None
     is_loaded = False
 
     @classmethod
-    def load(cls, ifc_element_type=None):
+    def load(cls, ifc_element_type: Optional[str] = None):
         cls.is_loaded = True
-        cls.props = bpy.context.scene.BIMModelProperties
-        if ifc_element_type:
-            cls.ifc_element_type = None if ifc_element_type == "all" else ifc_element_type
+        cls.props = tool.Model.get_model_props()
         cls.data["default_container"] = cls.default_container()
-        cls.data["ifc_element_type"] = cls.ifc_element_type
+        cls.data["ifc_element_type"] = ifc_element_type
         cls.data["ifc_classes"] = cls.ifc_classes()
-        cls.data["relating_type_id"] = cls.relating_type_id()  # only after .ifc_classes()
-        cls.data["relating_type_name"] = cls.relating_type_name()  # only after .relating_type_id()
-        cls.data["relating_type_description"] = cls.relating_type_description()  # only after .relating_type_id()
-        cls.data["predefined_type"] = cls.predefined_type()  # only after .relating_type_id()
-
-        # only after .ifc_classes()
+        cls.data["ifc_class_current"] = cls.ifc_class_current()
+        # Make sure .ifc_classes() was run before next lines
+        cls.data["type_elements"] = cls.type_elements()
+        cls.data["type_elements_filtered"] = cls.type_elements_filtered()
+        # After .type_elements().
+        cls.data["relating_type_id"] = cls.relating_type_id()
+        # Make sure .relating_type_id() was run before next lines
+        cls.data["relating_type_data"] = cls.relating_type_data()
+        # Make sure .type_elements_filtered() was run before next lines
         cls.data["total_types"] = cls.total_types()
-        cls.data["total_pages"] = cls.total_pages()
+        cls.data["total_pages"] = cls.total_pages()  # Only after .total_types()
         cls.data["next_page"] = cls.next_page()
         cls.data["prev_page"] = cls.prev_page()
         cls.data["paginated_relating_types"] = cls.paginated_relating_types()
 
-        cls.data["type_thumbnail"] = cls.type_thumbnail()  # only after .relating_type_id()
+        cls.data["materials"] = cls.materials()
         cls.data["is_voidable_element"] = cls.is_voidable_element()
         cls.data["has_visible_openings"] = cls.has_visible_openings()
         cls.data["has_visible_boundaries"] = cls.has_visible_boundaries()
         cls.data["active_class"] = cls.active_class()
         cls.data["active_material_usage"] = cls.active_material_usage()
+        cls.data["has_extrusion"] = cls.has_extrusion()
+        cls.data["is_representation_item_active"] = cls.is_representation_item_active()
+        # After is_representation_item_active.
+        cls.data["is_representation_item_swept_solid"] = cls.is_representation_item_swept_solid()
+
         cls.data["active_representation_type"] = cls.active_representation_type()
         cls.data["boundary_class"] = cls.boundary_class()
         cls.data["selected_material_usages"] = cls.selected_material_usages()
 
+        # Only after .active_material_usage() and .active_class()
+        cls.data["is_flippable_element"] = cls.is_flippable_element()
+        cls.data["is_regenable_element"] = cls.is_regenable_element()
+
     @classmethod
     def default_container(cls) -> str | None:
-        props = bpy.context.scene.BIMSpatialDecompositionProperties
+        props = tool.Spatial.get_spatial_props()
         if props.default_container:
             try:
                 return tool.Ifc.get().by_id(props.default_container).Name
@@ -96,24 +106,18 @@ class AuthoringData:
         return [(c, c, get_entity_doc(version, c).get("description", "")) for c in sorted(names)]
 
     @classmethod
-    def type_thumbnail(cls):
-        if not cls.data["relating_type_id"]:
-            return 0
-        relating_type_id = tool.Blender.get_enum_safe(cls.props, "relating_type_id")
-        if relating_type_id is None:
-            return 0
-        element = tool.Ifc.get().by_id(int(relating_type_id))
-        return cls.type_thumbnails.get(element.id(), None) or 0
+    def materials(cls):
+        results = [("0", "None", "No material")]
+        results.extend([(str(m.id()), m.Name or "Unnamed", "") for m in tool.Ifc.get().by_type("IfcMaterial")])
+        return results
 
     @classmethod
     def total_types(cls):
-        ifc_class = cls.props.ifc_class
-        return len(tool.Ifc.get().by_type(ifc_class)) if ifc_class else 0
+        return len(cls.data["type_elements_filtered"])
 
     @classmethod
     def total_pages(cls):
-        ifc_class = cls.props.ifc_class
-        total_types = len(tool.Ifc.get().by_type(ifc_class)) if ifc_class else 0
+        total_types = cls.data["total_types"]
         return math.ceil(total_types / cls.types_per_page)
 
     @classmethod
@@ -127,34 +131,82 @@ class AuthoringData:
             return cls.props.type_page - 1
 
     @classmethod
-    def paginated_relating_types(cls):
-        ifc_class = cls.props.ifc_class
+    def type_elements(cls):
+        ifc_class = cls.data["ifc_class_current"]
         if not ifc_class:
             return []
+        elements = list(tool.Ifc.get().by_type(ifc_class))
+        return natsorted(elements, key=lambda s: (s.Name or "Unnamed").lower())
+
+    @classmethod
+    def type_elements_filtered(cls):
+        search_query = cls.props.search_name.lower()
+
+        def filter_element(element: ifcopenshell.entity_instance) -> bool:
+            if search_query in (element.Name or "Unnamed").lower():
+                return True
+            if search_query in (element.Description or "").lower():
+                return True
+            if search_query in (ifcopenshell.util.element.get_predefined_type(element) or "").lower():
+                return True
+            return False
+
+        elements = cls.data["type_elements"]
+        if cls.props.search_name:
+            return [e for e in elements if filter_element(e)]
+        return elements
+
+    @classmethod
+    def paginated_relating_types(cls):
         results = []
-        elements = natsorted(tool.Ifc.get().by_type(ifc_class), key=lambda e: e.Name or "Unnamed")
+        elements = cls.data["type_elements_filtered"]
         elements = elements[(cls.props.type_page - 1) * cls.types_per_page : cls.props.type_page * cls.types_per_page]
         for element in elements:
-            predefined_type = ifcopenshell.util.element.get_predefined_type(element)
-            if predefined_type == "NOTDEFINED":
-                predefined_type = None
-            results.append(
-                {
-                    "id": element.id(),
-                    "ifc_class": element.is_a(),
-                    "name": element.Name or "Unnamed",
-                    "description": element.Description or "No Description",
-                    "predefined_type": predefined_type,
-                    "icon_id": cls.type_thumbnails.get(element.id(), None) or 0,
-                }
-            )
+            results.append(cls.get_type_data(element))
         return results
+
+    @classmethod
+    def get_type_data(cls, element: ifcopenshell.entity_instance) -> dict[str, Any]:
+        predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+        if predefined_type == "NOTDEFINED":
+            predefined_type = None
+        data = {
+            "id": element.id(),
+            "ifc_class": element.is_a(),
+            "name": element.Name or "Unnamed",
+            "description": element.Description or "No Description",
+            "predefined_type": predefined_type,
+            "icon_id": cls.type_thumbnails.get(element.id(), 0),
+        }
+        return data
 
     @classmethod
     def is_voidable_element(cls):
         if active_object := tool.Blender.get_active_object():
             element = tool.Ifc.get_entity(active_object)
             return element and element.is_a("IfcElement") and not element.is_a("IfcOpeningElement")
+
+    @classmethod
+    def is_flippable_element(cls):
+        return cls.data["active_material_usage"] in ("LAYER2", "PROFILE") or cls.data["active_class"] in (
+            "IfcWindow",
+            "IfcWindowStandardCase",
+            "IfcDoor",
+            "IfcDoorStandardCase",
+        )
+
+    @classmethod
+    def is_regenable_element(cls):
+        if cls.data["active_material_usage"] in ("LAYER2", "PROFILE") and cls.data["active_class"] not in (
+            "IfcCableCarrierSegment",
+            "IfcCableSegment",
+            "IfcDuctSegment",
+            "IfcPipeSegment",
+        ):
+            return True
+        if cls.data["active_class"] in ("IfcWindow", "IfcWindowStandardCase", "IfcDoor", "IfcDoorStandardCase"):
+            return True
+        return False
 
     @classmethod
     def has_visible_openings(cls):
@@ -180,17 +232,39 @@ class AuthoringData:
 
     @classmethod
     def active_class(cls):
-        if active_object := tool.Blender.get_active_object():
-            element = tool.Ifc.get_entity(active_object)
-            if element:
-                return element.is_a()
+        if (obj := tool.Blender.get_active_object()) and (element := tool.Ifc.get_entity(obj)):
+            return element.is_a()
 
     @classmethod
     def active_material_usage(cls):
-        if active_object := tool.Blender.get_active_object():
-            element = tool.Ifc.get_entity(active_object)
-            if element:
-                return tool.Model.get_usage_type(element)
+        if (obj := tool.Blender.get_active_object()) and (element := tool.Ifc.get_entity(obj)):
+            return tool.Model.get_usage_type(element)
+
+    @classmethod
+    def has_extrusion(cls) -> bool:
+        if not (obj := tool.Blender.get_active_object()) or not (
+            representation := tool.Geometry.get_active_representation(obj)
+        ):
+            return False
+
+        # Skip representation items.
+        if not representation.is_a("IfcShapeRepresentation"):
+            return False
+
+        return bool(tool.Model.get_extrusion(representation))
+
+    @classmethod
+    def is_representation_item_active(cls) -> bool:
+        if not (obj := tool.Blender.get_active_object()):
+            return False
+        return tool.Geometry.is_representation_item(obj)
+
+    @classmethod
+    def is_representation_item_swept_solid(cls) -> bool:
+        if not cls.data["is_representation_item_active"]:
+            return False
+        assert (obj := bpy.context.active_object) and (item := tool.Geometry.get_representation_item(obj))
+        return item.is_a("IfcSweptAreaSolid")
 
     @classmethod
     def active_representation_type(cls):
@@ -219,44 +293,31 @@ class AuthoringData:
         return results
 
     @classmethod
-    def relating_type_id(cls):
+    def ifc_class_current(cls):
         ifc_classes = cls.data["ifc_classes"]
         if not ifc_classes:
             return []
-        results = []
         ifc_class = tool.Blender.get_enum_safe(cls.props, "ifc_class")
         if not ifc_class and ifc_classes:
             ifc_class = ifc_classes[0][0]
-        if ifc_class:
-            elements = natsorted(tool.Ifc.get().by_type(ifc_class), key=lambda s: (s.Name or "Unnamed").lower())
-            results.extend(elements)
-            return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in results]
-        return []
+        return ifc_class
 
     @classmethod
-    def relating_type_name(cls):
+    def relating_type_id(cls):
+        elements = cls.data["type_elements"]
+        return [(str(e.id()), e.Name or "Unnamed", e.Description or "") for e in elements]
+
+    @classmethod
+    def relating_type_data(cls) -> dict[str, Any]:
         relating_type_id = tool.Blender.get_enum_safe(cls.props, "relating_type_id")
         relating_type_id_data = cls.data["relating_type_id"]
-        if not relating_type_id and relating_type_id_data:
-            relating_type_id = relating_type_id_data[0][0]
-        if relating_type_id:
-            return tool.Ifc.get().by_id(int(relating_type_id)).Name or "Unnamed"
-
-    @classmethod
-    def relating_type_description(cls):
-        if relating_type_id := cls.props.relating_type_id:
-            return tool.Ifc.get().by_id(int(relating_type_id)).Description or "No description"
-
-    @classmethod
-    def predefined_type(cls):
-        relating_type_id = tool.Blender.get_enum_safe(cls.props, "relating_type_id")
         if relating_type_id is None:
-            return
-        relating_type = tool.Ifc.get().by_id(int(relating_type_id))
-        if not hasattr(relating_type, "PredefinedType"):
-            return
-        predefined_type = relating_type.PredefinedType
-        return predefined_type
+            if not relating_type_id_data:
+                return {}
+            relating_type_id = relating_type_id_data[0][0]
+        ifc_file = tool.Ifc.get()
+        relating_type = ifc_file.by_id(int(relating_type_id))
+        return cls.get_type_data(relating_type)
 
     @classmethod
     def selected_material_usages(cls):
@@ -324,7 +385,9 @@ class StairData:
 
     @classmethod
     def general_params(cls):
-        props = bpy.context.active_object.BIMStairProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_stair_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_props_kwargs(stair_type=data["stair_type"])
@@ -390,7 +453,9 @@ class WindowData:
 
     @classmethod
     def general_params(cls):
-        props = bpy.context.active_object.BIMWindowProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_window_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_general_kwargs()
@@ -401,7 +466,9 @@ class WindowData:
 
     @classmethod
     def lining_params(cls):
-        props = bpy.context.active_object.BIMWindowProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_window_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         lining_data = data["lining_properties"]
         lining_params = {}
@@ -413,7 +480,9 @@ class WindowData:
 
     @classmethod
     def panel_params(cls):
-        props = bpy.context.active_object.BIMWindowProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_window_props(obj)
         panel_data = cls.data["pset_data"]["data_dict"]["panel_properties"]
         panel_params = {}
         panel_props = props.get_panel_kwargs()
@@ -444,7 +513,9 @@ class DoorData:
 
     @classmethod
     def general_params(cls):
-        props = bpy.context.active_object.BIMDoorProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_door_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_general_kwargs()
@@ -455,7 +526,9 @@ class DoorData:
 
     @classmethod
     def lining_params(cls):
-        props = bpy.context.active_object.BIMDoorProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_door_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         lining_data = data["lining_properties"]
         lining_params = {}
@@ -467,7 +540,9 @@ class DoorData:
 
     @classmethod
     def panel_params(cls):
-        props = bpy.context.active_object.BIMDoorProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_door_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         panel_data = cls.data["pset_data"]["data_dict"]["panel_properties"]
         panel_params = {}
@@ -498,7 +573,9 @@ class RailingData:
 
     @classmethod
     def general_params(cls):
-        props = bpy.context.active_object.BIMRailingProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_railing_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_general_kwargs(railing_type=data["railing_type"])
@@ -524,6 +601,7 @@ class RoofData:
         if not cls.data["pset_data"]:
             return
         cls.data["general_params"] = cls.general_params()
+        cls.data["path_data"] = cls.path_data()
 
     @classmethod
     def pset_data(cls):
@@ -531,7 +609,9 @@ class RoofData:
 
     @classmethod
     def general_params(cls):
-        props = bpy.context.active_object.BIMRoofProperties
+        obj = bpy.context.active_object
+        assert obj
+        props = tool.Model.get_roof_props(obj)
         data = cls.data["pset_data"]["data_dict"]
         general_params = {}
         general_props = props.get_general_kwargs(generation_method=data["generation_method"])
@@ -544,6 +624,10 @@ class RoofData:
             general_params[prop_readable_name] = prop_value
         return general_params
 
+    @classmethod
+    def path_data(cls):
+        return cls.data["pset_data"]["data_dict"]["path_data"]
+
 
 class ItemData:
     data = {}
@@ -555,23 +639,44 @@ class ItemData:
         cls.data = {}
         cls.data["representation_identifier"] = cls.representation_identifier()
         cls.data["representation_type"] = cls.representation_type()
-        cls.data["is_representation_item_active"] = cls.is_representation_item_active()
+        cls.data["representation_usage"] = cls.representation_usage()
+        cls.data["profiles_enum"] = cls.profiles_enum()
 
     @classmethod
     def representation_identifier(cls):
-        props = bpy.context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         rep = tool.Geometry.get_active_representation(props.representation_obj)
         return rep.RepresentationIdentifier
 
     @classmethod
     def representation_type(cls):
-        props = bpy.context.scene.BIMGeometryProperties
+        props = tool.Geometry.get_geometry_props()
         rep = tool.Geometry.get_active_representation(props.representation_obj)
         return rep.RepresentationType
 
     @classmethod
-    def is_representation_item_active(cls) -> bool:
-        object = bpy.context.active_object
-        if not object:
-            return False
-        return tool.Geometry.is_representation_item(object)
+    def representation_usage(cls):
+        props = tool.Geometry.get_geometry_props()
+        return tool.Model.get_usage_type(tool.Ifc.get_entity(props.representation_obj))
+
+    @classmethod
+    def profiles_enum(cls) -> list[Union[tuple[str, str, str], None]]:
+        ifc_file = tool.Ifc.get()
+        profiles: list[Union[tuple[str, str, str], None]] = []
+        profiles.append(
+            (
+                "-",
+                "Use Unnamed Profile",
+                "If named profile is currently used, replace it with the unnamed version so it can be edited without affecting original profile.",
+            )
+        )
+        profiles.append(None)
+
+        named_profiles: list[tuple[str, str, str]] = []
+        for profile in ifc_file.by_type("IfcProfileDef"):
+            if (profile_name := profile.ProfileName) is None:
+                continue
+            named_profiles.append((str(profile.id()), profile_name, profile.is_a()))
+        named_profiles.sort(key=lambda x: x[1])
+        profiles.extend(named_profiles)
+        return profiles

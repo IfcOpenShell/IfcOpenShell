@@ -24,7 +24,6 @@ import ifcopenshell.util.element
 import bonsai.bim.handler
 import bonsai.tool as tool
 import bonsai.core.document as core
-from bonsai.bim.ifc import IfcStore
 
 
 class LoadProjectDocuments(bpy.types.Operator):
@@ -116,7 +115,7 @@ class EditDocument(bpy.types.Operator, tool.Ifc.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def _execute(self, context):
-        props = context.scene.BIMDocumentProperties
+        props = tool.Document.get_document_props()
         core.edit_document(tool.Ifc, tool.Document, document=tool.Ifc.get().by_id(props.active_document_id))
 
 
@@ -133,13 +132,14 @@ class RemoveDocument(bpy.types.Operator, tool.Ifc.Operator):
 class AssignDocument(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.assign_document"
     bl_label = "Assign Document"
+    bl_description = "Assign active document to the selected objects."
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     document: bpy.props.IntProperty()
 
     def _execute(self, context):
         document = tool.Ifc.get().by_id(self.document)
-        objs = [bpy.data.objects.get(self.obj)] if self.obj else tool.Blender.get_selected_objects()
+        objs = [bpy.data.objects[self.obj]] if self.obj else tool.Blender.get_selected_objects()
         for obj in objs:
             element = tool.Ifc.get_entity(obj)
             if element:

@@ -21,13 +21,19 @@ from typing import Optional
 
 
 def get_references(element: ifcopenshell.entity_instance, should_inherit=True) -> set[ifcopenshell.entity_instance]:
+    """Gets classification references associated with the element
+
+    :param should_inherit: If true, classification references are inherited
+        from the type. Classifications can be overriden per system.
+    :return: A set of IfcClassificationReference
+    """
     results = set()
     if not element.is_a("IfcRoot"):
         if (references := getattr(element, "HasExternalReferences", None)) is not None or (
             references := getattr(element, "HasExternalReference", None)
         ) is not None:
             return {r.RelatingReference for r in references}
-    if should_inherit:
+    if should_inherit and element.is_a("IfcObject"):
         element_type = ifcopenshell.util.element.get_type(element)
         if element_type and element_type != element:
             results = get_references(element_type)
@@ -52,9 +58,14 @@ def get_references(element: ifcopenshell.entity_instance, should_inherit=True) -
 
 
 def get_classification(reference: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
+    """Get the IfcClassification that a classification reference belongs to
+
+    :param reference: An IfcClassificationReference
+    :return: IfcClassification
+    """
     if reference.is_a("IfcClassification"):
         return reference
-    return get_classification(reference.ReferencedSource)
+    return get_classification(reference.ReferencedSource) if reference.ReferencedSource is not None else None
 
 
 def get_inherited_references(reference: Optional[ifcopenshell.entity_instance]) -> list[ifcopenshell.entity_instance]:

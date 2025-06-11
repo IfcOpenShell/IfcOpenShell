@@ -17,6 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bpy.types import Panel
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.pset_template.data import PsetTemplatesData
@@ -35,7 +36,7 @@ class BIM_PT_pset_template(Panel):
         if not PsetTemplatesData.is_loaded:
             PsetTemplatesData.load()
 
-        self.props = context.scene.BIMPsetTemplateProperties
+        self.props = tool.PsetTemplate.get_pset_template_props()
 
         row = self.layout.row(align=True)
         if PsetTemplatesData.data["pset_template_files"]:
@@ -45,6 +46,11 @@ class BIM_PT_pset_template(Panel):
         row.operator("bim.add_pset_template_file", icon="ADD", text="")
         if PsetTemplatesData.data["pset_template_files"]:
             row.operator("bim.remove_pset_template_file", icon="X", text="")
+
+        op = row.operator("bim.open_path", icon="FILE_FOLDER", text="")
+        pset_templates_path = tool.Blender.get_data_dir_path("pset").__str__()
+        op.path = pset_templates_path
+        op.tooltip = f"Open user pset templates folder: '{pset_templates_path}'."
 
         row = self.layout.row(align=True)
 
@@ -88,9 +94,12 @@ class BIM_PT_pset_template(Panel):
             row = self.layout.row(align=True)
 
             if self.props.active_prop_template_id and self.props.active_prop_template_id == prop_template["id"]:
+                active_prop_template = self.props.active_prop_template
                 row.prop(self.props.active_prop_template, "name", text="")
                 row.prop(self.props.active_prop_template, "description", text="")
-                prop_with_search(row, self.props.active_prop_template, "primary_measure_type", text="")
+                # Quantities don't use primary measure type.
+                if active_prop_template.template_type.startswith("P_"):
+                    prop_with_search(row, self.props.active_prop_template, "primary_measure_type", text="")
                 row.prop(self.props.active_prop_template, "template_type", text="")
 
                 if self.props.active_prop_template.template_type == "P_ENUMERATEDVALUE":

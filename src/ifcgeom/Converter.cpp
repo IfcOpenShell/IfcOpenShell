@@ -6,10 +6,21 @@ using namespace ifcopenshell::geometry;
 
 ifcopenshell::geometry::Converter::Converter(const std::string& geometry_library, IfcParse::IfcFile* file, ifcopenshell::geometry::Settings& s)
 	: geometry_library_(boost::to_lower_copy(geometry_library))
-	, settings_(s)
 {
-	mapping_ = impl::mapping_implementations().construct(file, settings_);
+	mapping_ = impl::mapping_implementations().construct(file, s);
 	kernel_ = kernels::construct(file, geometry_library, mapping_->settings());
+	// Mapping reads unit information and applies to settings
+	settings_ = mapping_->settings();
+}
+
+ifcopenshell::geometry::Converter::~Converter()
+{
+	if (kernel_ != nullptr) {
+		delete kernel_;
+	}
+	if (mapping_ != nullptr) {
+		delete mapping_;
+	}
 }
 
 namespace {
@@ -115,11 +126,13 @@ IfcGeom::BRepElement* ifcopenshell::geometry::Converter::create_brep_for_represe
 	}
 
 	if (single_material) {
-		auto s = taxonomy::cast<taxonomy::style>(mapping_->map(single_material));
-		for (auto it = shapes.begin(); it != shapes.end(); ++it) {
-			if (!it->hasStyle() && s) {
-				it->setStyle(s);
-				material_style_applied = true;
+		if (auto itm = mapping_->map(single_material)) {
+			auto s = taxonomy::cast<taxonomy::style>(itm);
+			for (auto it = shapes.begin(); it != shapes.end(); ++it) {
+				if (!it->hasStyle() && s) {
+					it->setStyle(s);
+					material_style_applied = true;
+				}
 			}
 		}
 	} else {

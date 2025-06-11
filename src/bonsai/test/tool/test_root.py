@@ -19,6 +19,8 @@
 import bpy
 import ifcopenshell
 import ifcopenshell.api
+import ifcopenshell.api.feature
+import ifcopenshell.api.type
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -33,9 +35,10 @@ class TestImplementsTool(NewFile):
 class TestAddTrackedOpening(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
-        subject.add_tracked_opening(obj)
-        props = bpy.context.scene.BIMModelProperties
+        subject.add_tracked_opening(obj, "OPENING")
+        props = tool.Model.get_model_props()
         assert props.openings[0].obj == obj
+        assert props.openings[0].name == "OPENING"
 
 
 class TestCopyRepresentation(NewFile):
@@ -73,8 +76,8 @@ class TestGetDecompositionRelationships(NewFile):
         element = ifc.createIfcWall()
         opening = ifc.createIfcOpeningElement()
         fill = ifc.createIfcWindow()
-        ifcopenshell.api.run("void.add_opening", ifc, opening=opening, element=element)
-        ifcopenshell.api.run("void.add_filling", ifc, opening=opening, element=fill)
+        ifcopenshell.api.feature.add_feature(ifc, feature=opening, element=element)
+        ifcopenshell.api.feature.add_filling(ifc, opening=opening, element=fill)
 
         obj = bpy.data.objects.new("Object", None)
         tool.Ifc.link(fill, obj)
@@ -98,7 +101,7 @@ class TestGetElementType(NewFile):
         ifc = tool.Ifc.get()
         element = ifc.createIfcWall()
         type = ifc.createIfcWallType()
-        ifcopenshell.api.run("type.assign_type", ifc, related_objects=[element], relating_type=type)
+        ifcopenshell.api.type.assign_type(ifc, related_objects=[element], relating_type=type)
         assert subject.get_element_type(element) == type
 
 
@@ -119,8 +122,8 @@ class TestGetObjectRepresentation(NewFile):
         ifc = ifcopenshell.file()
         tool.Ifc.set(ifc)
         representation = ifc.createIfcShapeRepresentation()
-        obj = bpy.data.objects.new("Object", bpy.data.meshes.new("Mesh"))
-        obj.data.BIMMeshProperties.ifc_definition_id = representation.id()
+        obj = bpy.data.objects.new("Object", (mesh := bpy.data.meshes.new("Mesh")))
+        tool.Geometry.get_mesh_props(mesh).ifc_definition_id = representation.id()
         assert subject.get_object_representation(obj) == representation
 
 
@@ -173,8 +176,41 @@ class TestSetObjectName(NewFile):
 
 
 class TestReassignClass(NewFile):
+    def test_reassign_type_to_reassign_occurrences(self):
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        context = bpy.context
+
+        n_wall_types = len(ifc_file.by_type("IfcWallType"))
+        n_slab_types = len(ifc_file.by_type("IfcSlabType"))
+        relating_type = ifc_file.by_type("IfcSlabType")[0]
+        relating_type_obj = tool.Ifc.get_object(relating_type)
+        assert isinstance(relating_type_obj, bpy.types.Object)
+        relating_type_id = relating_type.id()
+
+        # Add occurrences.
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+
+        # Run operator.
+        tool.Blender.set_objects_selection(context, relating_type_obj, selected_objects=(relating_type_obj,))
+        props = tool.Root.get_root_props()
+        props.ifc_product = "IfcElementType"
+        props.ifc_class = "IfcWallType"
+        bpy.ops.bim.reassign_class()
+
+        assert len(ifc_file.by_type("IfcWall")) == 3
+        assert len(ifc_file.by_type("IfcSlab")) == 0
+        assert len(ifc_file.by_type("IfcWallType")) == n_wall_types + 1
+        assert len(ifc_file.by_type("IfcSlabType")) == n_slab_types - 1
+        for wall in ifc_file.by_type("IfcWall"):
+            assert isinstance(obj := tool.Ifc.get_object(wall), bpy.types.Object)
+            assert obj.name.startswith("IfcWall/")
+
     def test_reassigning_multiple_occurrences_of_the_same_type(self):
-        bpy.context.scene.BIMProjectProperties.template_file = "IFC4 Demo Template.ifc"
+        tool.Project.get_project_props().template_file = "IFC4 Demo Template.ifc"
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
         context = bpy.context
@@ -183,15 +219,19 @@ class TestReassignClass(NewFile):
         n_slab_types = len(ifc_file.by_type("IfcSlabType"))
 
         # create 3 slabs
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
-        bpy.ops.bim.add_constr_type_instance(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
+        bpy.ops.bim.add_occurrence(relating_type_id=relating_type_id)
 
-        slabs = [tool.Ifc.get_object(e) for e in ifc_file.by_type("IfcSlab")]
+        slabs = [
+            obj for e in ifc_file.by_type("IfcSlab") if isinstance(obj := tool.Ifc.get_object(e), bpy.types.Object)
+        ]
         assert len(slabs) == 3
         tool.Blender.set_objects_selection(context, slabs[0], (slabs[1],))
-        context.scene.BIMRootProperties.ifc_product = "IfcElement"
-        context.scene.BIMRootProperties.ifc_class = "IfcWall"
+
+        props = tool.Root.get_root_props()
+        props.ifc_product = "IfcElement"
+        props.ifc_class = "IfcWall"
         bpy.ops.bim.reassign_class()
 
         assert len(ifc_file.by_type("IfcWall")) == 3

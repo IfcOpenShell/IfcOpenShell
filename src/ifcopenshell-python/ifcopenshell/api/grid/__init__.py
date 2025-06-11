@@ -23,10 +23,7 @@ A grid in IFC may contain two or more axes running in two or more directions.
 
 from .. import wrap_usecases
 
-try:
-    from .create_axis_curve import create_axis_curve
-except ModuleNotFoundError as e:
-    print(f"Note: API not available due to missing dependencies: grid.create_axis_curve - {e}")
+from .create_axis_curve import create_axis_curve
 from .create_grid_axis import create_grid_axis
 from .remove_grid_axis import remove_grid_axis
 

@@ -30,6 +30,55 @@ def refresh():
     StructuralLoadCasesData.is_loaded = False
     StructuralLoadsData.is_loaded = False
     BoundaryConditionsData.is_loaded = False
+    LoadGroupDecorationData.is_loaded = False
+
+
+class LoadGroupDecorationData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {
+            "load_groups_to_show": cls.load_groups_to_show(),
+        }
+        cls.is_loaded = True
+
+    @classmethod
+    def load_groups_to_show(cls) -> list[tuple[str, str, str]]:
+        ret: list[tuple[str, str, str]] = []
+        abrv = {
+            "LOAD_CASE": "L.Case: ",
+            "LOAD_COMBINATION": "L.Comb: ",
+            "LOAD_GROUP": "L.Gr: ",
+            "USERDEFINED": "U.Def: ",
+            "NOTDEFINED": "N.Def: ",
+        }
+        models = tool.Ifc.get().by_type("IfcStructuralAnalysisModel")
+        if not models:
+            return ret
+
+        m = models[0]
+        props = tool.Structural.get_structural_props()
+        if props.activity_type == "Action":
+            groups = m.LoadedBy or []
+            for g in groups:
+                ret.append((str(g.id()), ".   " + abrv[g.PredefinedType] + "   " + g.Name, ""))
+                related_objects = [rel.RelatedObjects for rel in g.IsGroupedBy]
+                for item in related_objects:
+                    for subgoup in [sg for sg in item if sg.is_a("IfcStructuralLoadGroup")]:
+                        ret.append((str(subgoup.id()), ".       " + abrv[subgoup.PredefinedType] + subgoup.Name, ""))
+
+        elif props.activity_type == "External Reaction":
+            groups = m.HasResults or []
+            for g in groups:
+                result_name = g.ResultForLoadGroup.Name or ""
+                group_name = g.Name or ""
+                ret.append((str(g.id()), group_name + " " + result_name, ""))
+
+        if len(ret) == 0:
+            ret.append(("", "", ""))
+        return ret
 
 
 class StructuralBoundaryConditionsData:
@@ -79,7 +128,8 @@ class ConnectedStructuralMembersData:
         if not element:
             return []
         results = []
-        props = bpy.context.active_object.BIMStructuralProperties
+        assert obj
+        props = tool.Structural.get_object_structural_props(obj)
         for rel in element.ConnectsStructuralMembers or []:
             condition = rel.AppliedCondition
             if condition:
@@ -208,7 +258,7 @@ class StructuralLoadCasesData:
 
     @classmethod
     def applicable_structural_loads(cls):
-        props = bpy.context.scene.BIMStructuralProperties
+        props = tool.Structural.get_structural_props()
         results = []
         for load in tool.Ifc.get().by_type("IfcStructuralLoad"):
             if not load.Name or not load.is_a(props.applicable_structural_load_types):

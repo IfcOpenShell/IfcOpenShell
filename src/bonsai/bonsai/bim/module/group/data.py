@@ -48,12 +48,8 @@ class ObjectGroupsData:
 
     @classmethod
     def load(cls):
-        cls.data = {"total_groups": cls.total_groups(), "groups": cls.groups()}
+        cls.data = {"groups": cls.groups()}
         cls.is_loaded = True
-
-    @classmethod
-    def total_groups(cls):
-        return len(tool.Ifc.get().by_type("IfcGroup", include_subtypes=False))
 
     @classmethod
     def groups(cls):

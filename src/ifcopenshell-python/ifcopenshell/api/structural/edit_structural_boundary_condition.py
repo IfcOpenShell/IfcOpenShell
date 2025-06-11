@@ -28,19 +28,14 @@ def edit_structural_boundary_condition(
     IfcBoundaryCondition, consult the IFC documentation.
 
     :param condition: The IfcBoundaryCondition entity you want to edit
-    :type condition: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
     """
-    settings = {"condition": condition, "attributes": attributes}
-
-    for name, data in settings["attributes"].items():
+    for name, data in attributes.items():
         if data["type"] == "string" or data["type"] == "null":
             value = data["value"]
         elif data["type"] == "IfcBoolean":
             value = file.createIfcBoolean(data["value"])
         else:
             value = file.create_entity(data["type"], data["value"])
-        setattr(settings["condition"], name, value)
+        setattr(condition, name, value)

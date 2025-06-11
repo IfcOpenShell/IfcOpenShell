@@ -16,10 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 from bpy.types import Panel, UIList
 from bonsai.bim.module.spatial.data import SpatialData, SpatialDecompositionData
 import bonsai.tool as tool
+from typing import TYPE_CHECKING, cast, Any
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.spatial.prop import BIMSpatialDecompositionProperties, BIMContainer, Element
 
 
 class BIM_PT_spatial(Panel):
@@ -40,7 +45,9 @@ class BIM_PT_spatial(Panel):
         if not SpatialData.is_loaded:
             SpatialData.load()
 
-        osprops = context.active_object.BIMObjectSpatialProperties
+        obj = context.active_object
+        assert obj
+        osprops = tool.Spatial.get_object_spatial_props(obj)
 
         if osprops.is_editing:
             if SpatialData.data["default_container"]:
@@ -49,6 +56,8 @@ class BIM_PT_spatial(Panel):
                 row.operator("bim.assign_container", icon="CHECKMARK", text="")
                 row.operator("bim.disable_editing_container", icon="CANCEL", text="")
 
+            # TODO: deprecate as it's very hard to discover
+            # containers are not even selectable by default.
             if SpatialData.data["selected_containers"]:
                 row = self.layout.row()
                 row.label(text=f"{len(SpatialData.data['selected_containers'])} Selected Containers")
@@ -79,14 +88,16 @@ class BIM_PT_spatial(Panel):
                 row.label(text="No Spatial Container")
                 row.operator("bim.enable_editing_container", icon="GREASEPENCIL", text="")
 
-            if references := SpatialData.data["references"]:
+            if references := cast(list[dict[str, Any]], SpatialData.data["references"]):
                 self.layout.label(text=f"{len(references)} References:")
             else:
                 self.layout.label(text="No References Found")
 
             for reference in references:
                 row = self.layout.row()
-                row.label(text=reference, icon="LINKED")
+                row.label(text=reference["name"], icon="LINKED")
+                op = row.operator("bim.dereference_from_provided_structure", icon="X", text="")
+                op.structure = reference["id"]
 
 
 class BIM_PT_spatial_decomposition(Panel):
@@ -103,7 +114,7 @@ class BIM_PT_spatial_decomposition(Panel):
         return tool.Ifc.get()
 
     def draw_header(self, context):
-        props = context.scene.BIMSpatialDecompositionProperties
+        props = tool.Spatial.get_spatial_props()
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
         icon = "HIDE_OFF" if props.is_visible else "HIDE_ON"
@@ -114,7 +125,7 @@ class BIM_PT_spatial_decomposition(Panel):
     def draw(self, context):
         if not SpatialDecompositionData.is_loaded:
             SpatialDecompositionData.load()
-        self.props = context.scene.BIMSpatialDecompositionProperties
+        self.props = tool.Spatial.get_spatial_props()
 
         if SpatialDecompositionData.data["default_container"]:
             row = self.layout.row(align=True)
@@ -136,21 +147,17 @@ class BIM_PT_spatial_decomposition(Panel):
             op.part_class = self.props.subelement_class
 
             row = self.layout.row(align=True)
-            if self.props.active_container.ifc_class == "IfcProject":
-                row.enabled = False
-            op = row.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
+
+            col = row.column(align=True)
+            op = col.operator("bim.set_default_container", icon="OUTLINER_COLLECTION", text="Set Default")
             op.container = ifc_definition_id
-            op = row.operator("bim.set_container_visibility", icon="FULLSCREEN_EXIT", text="Isolate")
-            op.mode = "ISOLATE"
-            op.container = ifc_definition_id
-            op = row.operator("bim.set_container_visibility", icon="HIDE_OFF", text="")
-            op.mode = "SHOW"
-            op.container = ifc_definition_id
-            op = row.operator("bim.set_container_visibility", icon="HIDE_ON", text="")
-            op.mode = "HIDE"
-            op.container = ifc_definition_id
-            row.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
-            op = row.operator("bim.delete_container", icon="X", text="")
+
+            # The only operator that's enabled for IfcProject.
+            col = row.column(align=True)
+            col.operator("bim.select_container", icon="OBJECT_DATA", text="").container = ifc_definition_id
+
+            col = row.column(align=True)
+            op = col.operator("bim.delete_container", icon="X", text="")
             op.container = ifc_definition_id
 
         self.layout.template_list(
@@ -166,7 +173,14 @@ class BIM_PT_spatial_decomposition(Panel):
         if not self.props.active_container:
             return
 
-        if not self.props.total_elements:
+        container_has_elements = bool(self.props.total_elements)
+        if container_has_elements:
+            row = self.layout.row()
+            row.label(
+                text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Elements",
+                icon="FILE_3D",
+            )
+        else:
             row = self.layout.row(align=True)
             row.label(text=f"{self.props.active_container.ifc_class} > No Elements", icon="FILE_3D")
             row.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
@@ -174,21 +188,43 @@ class BIM_PT_spatial_decomposition(Panel):
             row = self.layout.row(align=True)
             row.prop(self.props, "element_mode", text="", icon="FILEBROWSER")
             row.prop(self.props, "should_include_children", text="", icon="OUTLINER")
-            return
 
         row = self.layout.row(align=True)
-        row.label(
-            text=f"{self.props.active_container.ifc_class} > {self.props.total_elements} Elements",
-            icon="FILE_3D",
-        )
-        row.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
-        op = row.operator("bim.select_decomposed_element", icon="OBJECT_DATA", text="")
+        row.alignment = "RIGHT"
+
+        col = row.column()
+        row_ = col.row(align=True)
+        row_.enabled = container_has_elements
+        op = row_.operator("bim.set_element_visibility", icon="FULLSCREEN_EXIT", text="")
+        op.mode = "ISOLATE"
+        op.container = ifc_definition_id
+
+        op = row_.operator("bim.set_element_visibility", icon="HIDE_OFF", text="")
+        op.mode = "SHOW"
+        op.container = ifc_definition_id
+
+        op = row_.operator("bim.set_element_visibility", icon="HIDE_ON", text="")
+        op.mode = "HIDE"
+        op.container = ifc_definition_id
+
+        col = row.column()
+        row_ = col.row(align=True)
+        row_.operator("bim.assign_container", icon="FOLDER_REDIRECT", text="").container = ifc_definition_id
+        row_.operator("bim.reference_from_provided_structure", icon="LINKED", text="").structure = ifc_definition_id
+
+        col = row.column()
+        row_ = col.row(align=True)
+        row_.enabled = container_has_elements
+        op = row_.operator("bim.select_decomposed_element", icon="OBJECT_DATA", text="")
         if active_element := self.props.active_element:
             op.element = active_element.ifc_definition_id
         else:
             op.element = 0
-        op = row.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
+        op = row_.operator("bim.select_decomposed_elements", icon="RESTRICT_SELECT_OFF", text="")
         op.container = ifc_definition_id
+
+        if not container_has_elements:
+            return
 
         row = self.layout.row(align=True)
         row.prop(self.props, "element_mode", text="", icon="FILEBROWSER")
@@ -219,7 +255,7 @@ class BIM_PT_grids(Panel):
         self.layout.row().operator("mesh.add_grid", icon="ADD", text="Add Grids")
 
     def draw_header(self, context):
-        props = context.scene.BIMGridProperties
+        props = tool.Spatial.get_grid_props()
         row = self.layout.row(align=True)
         row.label(text="")  # empty text occupies the left of the row
         icon = "HIDE_OFF" if props.is_visible else "HIDE_ON"
@@ -229,25 +265,37 @@ class BIM_PT_grids(Panel):
 
 
 class BIM_UL_containers_manager(UIList):
-    def __init__(self):
+    icon_by_class = {
+        "IfcProject": "FILE",
+        "IfcSite": "WORLD",
+        "IfcBuilding": "HOME",
+        "IfcBuildingStorey": "LINENUMBERS_OFF",
+        "IfcSpace": "ANTIALIASED",
+        "IfcFacilityPart": "MOD_FLUID",
+        "IfcBridgePart": "MOD_FLUID",
+        "IfcFacilityPartCommon": "MOD_FLUID",
+        "IfcMarinePart": "MOD_FLUID",
+        "IfcRailwayPart": "MOD_FLUID",
+        "IfcRoadPart": "MOD_FLUID",
+    }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.use_filter_show = True
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMSpatialDecompositionProperties,
+        item: BIMContainer,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
-            icon = {
-                "IfcProject": "FILE",
-                "IfcSite": "WORLD",
-                "IfcBuilding": "HOME",
-                "IfcBuildingStorey": "LINENUMBERS_OFF",
-                "IfcSpace": "ANTIALIASED",
-                "IfcFacilityPart": "MOD_FLUID",
-                "IfcBridgePart": "MOD_FLUID",
-                "IfcFacilityPartCommon": "MOD_FLUID",
-                "IfcMarinePart": "MOD_FLUID",
-                "IfcRailwayPart": "MOD_FLUID",
-                "IfcRoadPart": "MOD_FLUID",
-            }.get(item.ifc_class, "META_PLANE")
+            icon = self.icon_by_class.get(item.ifc_class, "META_PLANE")
             split = row.split(factor=0.85)
             if item.long_name:
                 split2 = split.split(factor=0.7)
@@ -261,7 +309,7 @@ class BIM_UL_containers_manager(UIList):
                 row.prop(item, "name", emboss=False, text="", icon=icon)
             split.prop(item, "elevation", emboss=False, text="")
 
-    def draw_hierarchy(self, row, item):
+    def draw_hierarchy(self, row: bpy.types.UILayout, item: BIMContainer) -> None:
         if item.level_index:
             for i in range(0, item.level_index - 1):
                 row.label(text="", icon="BLANK1")
@@ -279,11 +327,12 @@ class BIM_UL_containers_manager(UIList):
 
     def draw_filter(self, context, layout):
         row = layout.row()
-        row.prop(context.scene.BIMSpatialDecompositionProperties, "container_filter", text="", icon="VIEWZOOM")
+        props = tool.Spatial.get_spatial_props()
+        row.prop(props, "container_filter", text="", icon="VIEWZOOM")
 
-    def filter_items(self, context, data, propname):
+    def filter_items(self, context: bpy.types.Context, data: BIMSpatialDecompositionProperties, propname: str):
         items = getattr(data, propname)
-        filter_name = context.scene.BIMSpatialDecompositionProperties.container_filter.lower()
+        filter_name = data.container_filter.lower()
         filter_flags = [self.bitflag_filter_item] * len(items)
 
         for idx, item in enumerate(items):
@@ -299,20 +348,32 @@ class BIM_UL_containers_manager(UIList):
         return filter_flags, []
 
         items = getattr(data, propname)
-        filter_name = context.scene.BIMSpatialDecompositionProperties.container_filter
+        filter_name = data.container_filter
         filtered = bpy.types.UI_UL_list.filter_items_by_name(filter_name, self.bitflag_filter_item, items, "name")
         return filtered, []
 
 
 class BIM_UL_elements(UIList):
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.use_filter_show = True
 
     def draw_toggle(self, row: bpy.types.UILayout, is_expanded: bool, index: int):
         icon_id = "DISCLOSURE_TRI_DOWN" if is_expanded else "DISCLOSURE_TRI_RIGHT"
         row.operator("bim.toggle_container_element", text="", emboss=False, icon=icon_id).element_index = index
 
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname, index, fit_flag):
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMSpatialDecompositionProperties,
+        item: Element,
+        icon,
+        active_data,
+        active_propname,
+        index,
+        fit_flag,
+    ):
         if item:
             row = layout.row(align=True)
             for _ in range(item.level):
@@ -327,11 +388,12 @@ class BIM_UL_elements(UIList):
 
     def draw_filter(self, context, layout):
         row = layout.row()
-        row.prop(context.scene.BIMSpatialDecompositionProperties, "element_filter", text="", icon="VIEWZOOM")
+        props = tool.Spatial.get_spatial_props()
+        row.prop(props, "element_filter", text="", icon="VIEWZOOM")
 
-    def filter_items(self, context, data, propname):
+    def filter_items(self, context: bpy.types.Context, data: BIMSpatialDecompositionProperties, propname: str):
         items = getattr(data, propname)
-        filter_name = context.scene.BIMSpatialDecompositionProperties.element_filter
+        filter_name = data.element_filter
         filtered = bpy.types.UI_UL_list.filter_items_by_name(filter_name, self.bitflag_filter_item, items, "name")
         return filtered, []
 

@@ -26,11 +26,8 @@ def edit_actor(file: ifcopenshell.file, actor: ifcopenshell.entity_instance, att
     IfcActor, consult the IFC documentation.
 
     :param actor: The IfcActor entity you want to edit
-    :type actor: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -49,7 +46,5 @@ def edit_actor(file: ifcopenshell.file, actor: ifcopenshell.entity_instance, att
         ifcopenshell.api.actor.edit_actor(model,
             actor=actor, attributes={"Description": "Responsible for buildings A, B, and C."})
     """
-    settings = {"actor": actor, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["actor"], name, value)
+    for name, value in attributes.items():
+        setattr(actor, name, value)

@@ -27,6 +27,7 @@ If you want to associated a whole element to a "layer", consider using
 
 from .. import wrap_usecases
 from .add_layer import add_layer
+from .add_layer_with_style import add_layer_with_style
 from .assign_layer import assign_layer
 from .edit_layer import edit_layer
 from .remove_layer import remove_layer
@@ -36,6 +37,7 @@ wrap_usecases(__path__, __name__)
 
 __all__ = [
     "add_layer",
+    "add_layer_with_style",
     "assign_layer",
     "edit_layer",
     "remove_layer",

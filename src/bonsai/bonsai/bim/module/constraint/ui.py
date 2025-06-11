@@ -16,10 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
+import bonsai.tool as tool
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.constraint.data import ConstraintsData, ObjectConstraintsData
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.constraint.prop import BIMConstraintProperties, BIMObjectConstraintProperties, Constraint
 
 
 class BIM_PT_constraints(Panel):
@@ -33,19 +38,19 @@ class BIM_PT_constraints(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         if not ConstraintsData.is_loaded:
             ConstraintsData.load()
 
-        self.props = context.scene.BIMConstraintProperties
+        self.props = tool.Blender.get_constraint_props()
 
         if not self.props.is_editing or self.props.is_editing == "IfcObjective":
             row = self.layout.row(align=True)
             row.label(text=f"{ConstraintsData.data['total_objectives']} Objectives Found", icon="LIGHT")
             if self.props.is_editing == "IfcObjective":
-                row.operator("bim.disable_constraint_editing_ui", text="", icon="CHECKMARK")
+                row.operator("bim.disable_constraint_editing_ui", text="", icon="CANCEL")
                 row.operator("bim.add_objective", text="", icon="ADD")
             else:
                 row.operator("bim.load_objectives", text="", icon="GREASEPENCIL")
@@ -79,21 +84,21 @@ class BIM_PT_object_constraints(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        if not IfcStore.get_element(context.active_object.BIMObjectProperties.ifc_definition_id):
-            return False
-        return bool(context.active_object.BIMObjectProperties.ifc_definition_id)
+        props = tool.Blender.get_object_bim_props(obj)
+        return bool(tool.Ifc.get_object_by_identifier(props.ifc_definition_id))
 
     def draw(self, context):
         if not ObjectConstraintsData.is_loaded:
             ObjectConstraintsData.load()
 
         obj = context.active_object
-        self.oprops = obj.BIMObjectProperties
-        self.sprops = context.scene.BIMConstraintProperties
-        self.props = obj.BIMObjectConstraintProperties
-        self.file = IfcStore.get_file()
+        assert obj
+        self.oprops = tool.Blender.get_object_bim_props(obj)
+        self.sprops = tool.Blender.get_constraint_props()
+        self.props = tool.Blender.get_object_constraint_props(obj)
+        self.file = tool.Ifc.get()
 
         self.draw_add_ui()
 
@@ -131,15 +136,24 @@ class BIM_PT_object_constraints(Panel):
 
 
 class BIM_UL_constraints(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout,
+        data: BIMConstraintProperties,
+        item: Constraint,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)
-            if context.scene.BIMConstraintProperties.active_constraint_id == item.ifc_definition_id:
-                if context.scene.BIMConstraintProperties.is_editing == "IfcObjective":
+            if data.active_constraint_id == item.ifc_definition_id:
+                if data.is_editing == "IfcObjective":
                     row.operator("bim.edit_objective", text="", icon="CHECKMARK")
                 row.operator("bim.disable_editing_constraint", text="", icon="CANCEL")
-            elif context.scene.BIMConstraintProperties.active_constraint_id:
+            elif data.active_constraint_id:
                 row.operator("bim.remove_constraint", text="", icon="X").constraint = item.ifc_definition_id
             else:
                 op = row.operator("bim.enable_editing_constraint", text="", icon="GREASEPENCIL")
@@ -148,7 +162,16 @@ class BIM_UL_constraints(UIList):
 
 
 class BIM_UL_object_constraints(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    def draw_item(
+        self,
+        context,
+        layout,
+        data: BIMObjectConstraintProperties,
+        item: Constraint,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
             row.label(text=item.name)

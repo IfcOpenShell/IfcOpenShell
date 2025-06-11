@@ -28,9 +28,7 @@ def unassign_recurrence_pattern(file: ifcopenshell.file, recurrence_pattern: ifc
     or replace IfcTaskTimeRecurring with IfcTaskTime).
 
     :param recurrence_pattern: The IfcRecurrencePattern to remove.
-    :type recurrence_pattern: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -50,8 +48,6 @@ def unassign_recurrence_pattern(file: ifcopenshell.file, recurrence_pattern: ifc
         # Change our mind, let's just maintain it whenever we feel like it.
         ifcopenshell.api.sequence.unassign_recurrence_pattern(recurrence_pattern=pattern)
     """
-    settings = {"recurrence_pattern": recurrence_pattern}
-
-    for time_period in settings["recurrence_pattern"].TimePeriods or []:
+    for time_period in recurrence_pattern.TimePeriods or []:
         file.remove(time_period)
-    file.remove(settings["recurrence_pattern"])
+    file.remove(recurrence_pattern)

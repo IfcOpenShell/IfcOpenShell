@@ -16,10 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
 import bonsai.tool as tool
 import bonsai.bim.module.type.prop as type_prop
 from bpy.types import Panel
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import prop_with_search
 from bonsai.bim.module.type.data import TypeData
 
@@ -47,29 +47,31 @@ class BIM_PT_type(Panel):
         if not TypeData.is_loaded:
             TypeData.load()
 
-        oprops = context.active_object.BIMObjectProperties
+        obj = context.active_object
+        assert obj
+        oprops = tool.Blender.get_object_bim_props(obj)
 
         if TypeData.data["is_product"]:
             self.draw_product_ui(context)
         else:
             self.draw_type_ui(context)
 
-    def draw_type_ui(self, context):
-        props = context.active_object.BIMTypeProperties
-        oprops = context.active_object.BIMObjectProperties
+    def draw_type_ui(self, context: bpy.types.Context) -> None:
+        assert (obj := context.active_object)
+        oprops = tool.Blender.get_object_bim_props(obj)
         row = self.layout.row(align=True)
         row.label(text=f"{TypeData.data['total_instances']} Typed Objects")
         select_type_objects_row = row.row(align=True)
         select_type_objects_row.operator("bim.select_type_objects", icon="RESTRICT_SELECT_OFF", text="")
         select_type_objects_row.enabled = int(TypeData.data["total_instances"]) > 0
         op = row.operator("bim.duplicate_type", icon="DUPLICATE", text="")
-        op.element = context.active_object.BIMObjectProperties.ifc_definition_id
+        op.element = oprops.ifc_definition_id
         row.operator("bim.auto_rename_occurrences", icon="ITALIC", text="")
 
-    def draw_product_ui(self, context):
+    def draw_product_ui(self, context: bpy.types.Context) -> None:
         layout = self.layout
-        props = context.active_object.BIMTypeProperties
-        oprops = context.active_object.BIMObjectProperties
+        assert (obj := context.active_object)
+        props = tool.Type.get_object_type_props(obj)
 
         if props.is_editing_type:
             row = layout.row(align=True)
@@ -98,4 +100,4 @@ class BIM_PT_type(Panel):
 
 
 def add_object_button(self, context):
-    self.layout.operator("bim.add_constr_type_instance", icon="PLUGIN")
+    self.layout.operator("bim.add_occurrence", icon="PLUGIN")

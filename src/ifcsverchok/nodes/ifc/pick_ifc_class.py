@@ -64,7 +64,7 @@ def get_ifc_classes(self, context):
     file = SvIfcStore.get_file()
     if not file:
         return []
-    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema)
+    schema = ifcopenshell.ifcopenshell_wrapper.schema_by_name(file.schema_identifier)
     declaration = schema.declaration_by_name(self.ifc_product)
 
     def get_classes(declaration):

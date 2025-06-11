@@ -36,6 +36,11 @@ def assign_representation_styles(
     to the object representation as an override. This API function provides
     that capability.
 
+    This function assigns styles in bulk in an ordered manner to every item in
+    the representation, so the order and total styles provided is significant.
+    If you want more granular control, use
+    :func:`ifcopenshell.api.style.assign_item_style`.
+
     If you want to assign styles to a material instead (recommended), then
     please see ifcopenshell.api.style.assign_material_style.
 

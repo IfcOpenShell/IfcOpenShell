@@ -25,7 +25,7 @@ import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
 from bonsai.tool.loader import Loader as subject
 import numpy as np
-from ifcopenshell.util.shape_builder import ShapeBuilder, V
+from ifcopenshell.util.shape_builder import ShapeBuilder
 from mathutils import Vector
 from pathlib import Path
 
@@ -39,6 +39,8 @@ class TestCreatingStyles(NewFile):
     def test_create_surface_style_with_textures_from_data(self):
         # this case occurs when we edit shader properties without saving them to IFC
         bpy.ops.bim.create_project()
+        ifc_path = Path("test/files/temp/test.ifc").absolute()
+        bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
 
         bpy.ops.mesh.primitive_cube_add(size=10, location=(0, 0, 4))
         obj = bpy.data.objects["Cube"]
@@ -59,7 +61,7 @@ class TestCreatingStyles(NewFile):
         texture_data = [
             {
                 "Mode": "DIFFUSE",
-                "URLReference": "bonsai/test/files/image.jpg",
+                "URLReference": "../image.jpg",
                 "type": "IfcImageTexture",
                 "uv_mode": "Generated",
             },
@@ -69,7 +71,7 @@ class TestCreatingStyles(NewFile):
         subject.create_surface_style_with_textures(material, style_data, texture_data)
 
         used_node_types = set([n.type for n in material.node_tree.nodes[:]])
-        assert used_node_types == set((["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"]))
+        assert used_node_types == set(["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"])
 
         bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
         alpha = 1 - style_data["Transparency"]
@@ -85,13 +87,15 @@ class TestCreatingStyles(NewFile):
         assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"
         assert image_node.inputs["Vector"].links[0].from_socket.name == "Generated"
 
-        original_path = Path(tool.Ifc.get_path()).parent / Path(texture_data[0]["URLReference"])
+        original_path = (Path(tool.Ifc.get_path()).parent / Path(texture_data[0]["URLReference"])).absolute().resolve()
         loaded_filepath = Path(image_node.image.filepath)
-        assert original_path == loaded_filepath
+        assert original_path.absolute() == loaded_filepath
 
     def test_create_surface_style_with_textures_from_ifc(self):
         # this case occurs when we edit shader properties without saving them to IFC
         bpy.ops.bim.create_project()
+        ifc_path = Path("test/files/temp/test.ifc").absolute()
+        bpy.ops.bim.save_project(filepath=str(ifc_path), should_save_as=True)
 
         style = tool.Ifc.run("style.add_style", name="test")
         material = bpy.data.materials.new(style.Name)
@@ -114,7 +118,7 @@ class TestCreatingStyles(NewFile):
 
         textures = [
             {
-                "URLReference": "bonsai/test/files/image.jpg",
+                "URLReference": "../image.jpg",
                 "Mode": "DIFFUSE",
                 "RepeatS": True,
                 "RepeatT": True,
@@ -133,7 +137,7 @@ class TestCreatingStyles(NewFile):
         subject.create_surface_style_with_textures(material, rendering_style, texture_style)
 
         used_node_types = set([n.type for n in material.node_tree.nodes[:]])
-        assert used_node_types == set((["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"]))
+        assert used_node_types == set(["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"])
 
         color_to_tuple = lambda x: (x.Red, x.Green, x.Blue)
         bsdf = tool.Blender.get_material_node(material, "BSDF_PRINCIPLED")
@@ -149,7 +153,7 @@ class TestCreatingStyles(NewFile):
         image_node = tool.Blender.get_material_node(material, "TEX_IMAGE")
         assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"
         assert image_node.inputs["Vector"].links[0].from_socket.name == "Generated"
-        original_path = Path(tool.Ifc.get_path()).parent / Path(textures[0].URLReference)
+        original_path = (Path(tool.Ifc.get_path()).parent / Path(textures[0].URLReference)).absolute().resolve()
         loaded_filepath = Path(image_node.image.filepath)
         assert original_path == loaded_filepath
 
@@ -246,7 +250,7 @@ class TestCreatingStyles(NewFile):
         subject.create_surface_style_with_textures(material, rendering_style, texture_style)
 
         used_node_types = set([n.type for n in material.node_tree.nodes[:]])
-        assert used_node_types == set((["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"]))
+        assert used_node_types == set(["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"])
 
         image_node = tool.Blender.get_material_node(material, "TEX_IMAGE")
         assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"
@@ -381,7 +385,7 @@ class TestCreatingStyles(NewFile):
         subject.create_surface_style_with_textures(material, rendering_style, texture_style)
 
         used_node_types = set([n.type for n in material.node_tree.nodes[:]])
-        assert used_node_types == set((["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"]))
+        assert used_node_types == set(["OUTPUT_MATERIAL", "BSDF_PRINCIPLED", "TEX_IMAGE", "TEX_COORD"])
 
         image_node = tool.Blender.get_material_node(material, "TEX_IMAGE")
         assert image_node.outputs["Color"].links[0].to_socket.name == "Base Color"
@@ -516,7 +520,8 @@ class TestLoadingIndexedMap(NewFile):
 class TestSetupActiveBsddClassification(NewFile):
     def run_test(self, schema: ifcopenshell.util.schema.IFC_SCHEMA) -> None:
         schema_ = "IFC4X3_ADD2" if schema == "IFC4X3" else schema
-        bpy.context.scene.BIMProjectProperties.export_schema = schema_
+        props = tool.Project.get_project_props()
+        props.export_schema = schema_
         bpy.ops.bim.create_project()
         ifc_file = tool.Ifc.get()
         name = "CCI Construction"
@@ -544,3 +549,51 @@ class TestSetupActiveBsddClassification(NewFile):
 
     def test_set_load_and_set_active_bsdd_ifc4x3(self):
         self.run_test("IFC4X3")
+
+
+class TestCreatePointCloudMesh(NewFile):
+    def test_cartesian_point_list_3d(self):
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        coords = ((1.0, 2.0, 3.0), (4.0, 5.0, 6.0))
+        item = ifc_file.createIfcCartesianPointList3D(coords)
+        rep = ifc_file.createIfcShapeRepresentation(Items=[item])
+        mesh = subject.create_point_cloud_mesh(rep)
+        assert len(mesh.vertices) == 2
+        verts = np.array([v.co for v in mesh.vertices])
+        assert np.allclose(verts, np.array([np.array(c) for c in coords]))
+
+    def test_cartesian_point_list_2d(self):
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        coords = ((1.0, 2.0), (4.0, 5.0))
+        coords3d = ((1.0, 2.0, 0.0), (4.0, 5.0, 0.0))
+        item = ifc_file.createIfcCartesianPointList2D(coords)
+        rep = ifc_file.createIfcShapeRepresentation(Items=[item])
+        mesh = subject.create_point_cloud_mesh(rep)
+        assert len(mesh.vertices) == 2
+        verts = np.array([v.co for v in mesh.vertices])
+        assert np.allclose(verts, np.array([np.array(c) for c in coords3d]))
+
+    def test_point_3d(self):
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        coords = ((1.0, 2.0, 0.0),)
+        item = ifc_file.createIfcCartesianPoint(Coordinates=coords[0])
+        rep = ifc_file.createIfcShapeRepresentation(Items=[item])
+        mesh = subject.create_point_cloud_mesh(rep)
+        assert len(mesh.vertices) == 1
+        verts = np.array([v.co for v in mesh.vertices])
+        assert np.allclose(verts, np.array([np.array(c) for c in coords]))
+
+    def test_point_2d(self):
+        bpy.ops.bim.create_project()
+        ifc_file = tool.Ifc.get()
+        coords = ((1.0, 2.0),)
+        coords3d = ((1.0, 2.0, 0.0),)
+        item = ifc_file.createIfcCartesianPoint(Coordinates=coords[0])
+        rep = ifc_file.createIfcShapeRepresentation(Items=[item])
+        mesh = subject.create_point_cloud_mesh(rep)
+        assert len(mesh.vertices) == 1
+        verts = np.array([v.co for v in mesh.vertices])
+        assert np.allclose(verts, np.array([np.array(c) for c in coords3d]))

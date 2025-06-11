@@ -23,26 +23,13 @@ import bonsai.bim.module.type.prop as type_prop
 import ifcopenshell.util.unit
 from bpy.types import WorkSpaceTool
 from bonsai.bim.module.model.data import AuthoringData, RailingData, RoofData
-
-
-# TODO duplicate code in cad/workspace and model/workspace
-def check_display_mode():
-    global display_mode
-    try:
-        theme = bpy.context.preferences.themes["Default"]
-        text_color = theme.user_interface.wcol_menu_item.text
-        if sum(text_color) < 2.6:
-            display_mode = "lm"
-        else:
-            display_mode = "dm"
-    except:
-        display_mode = "dm"
+from functools import partial
 
 
 def load_custom_icons():
-    global custom_icon_previews
+    global custom_icon_previews, display_mode
     if display_mode is None:
-        check_display_mode()
+        display_mode = tool.Blender.detect_icon_color_mode("user_interface.wcol_tool.text")
 
     icons_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "icons")
     custom_icon_previews = bpy.utils.previews.new()
@@ -82,12 +69,15 @@ class CadTool(WorkSpaceTool):
         ("bim.cad_hotkey", {"type": "X", "value": "PRESS", "shift": True}, {"properties": [("hotkey", "S_X")]}),
     )
 
-    def draw_settings(context, layout, workspace_tool):
+    def draw_settings(
+        context: bpy.types.Context, layout: bpy.types.UILayout, workspace_tool: bpy.types.WorkSpaceTool
+    ) -> None:
         ui_context = str(context.region.type)
         obj = context.active_object
-        if not obj or not obj.data:
+        if not obj or not (data := obj.data):
             return
-        if hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "PROFILE":
+        is_profile = tool.Geometry.is_profile_object_active()
+        if is_profile:
             element = tool.Ifc.get_entity(obj)
             if element:
                 if element.is_a("IfcProfileDef"):
@@ -122,20 +112,25 @@ class CadTool(WorkSpaceTool):
                 row, "Join", "S_T", "Joins two non-parallel paths at their intersection", ui_context
             )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Fillet", "S_V", "Fillet", ui_context)
+            add_layout_hotkey_operator(row, "Fillet", "S_F", bpy.ops.bim.add_ifcarcindex_fillet.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Offset", "S_O", "Offset", ui_context)
+            add_layout_hotkey_operator(row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Rectangle", "S_R", "Rectangle", ui_context)
+            add_layout_hotkey_operator(row, "Rectangle", "S_R", bpy.ops.bim.add_rectangle.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Circle", "S_C", "Circle", ui_context)
+            add_layout_hotkey_operator(row, "Circle", "S_C", bpy.ops.bim.add_ifccircle.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "3-Point Arc", "S_V", "3-Point Arc", ui_context)
+            add_layout_hotkey_operator(row, "3-Point Arc", "S_V", bpy.ops.bim.set_arc_index.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Reset Vertex", "S_X", "Reset Vertex", ui_context)
+            add_layout_hotkey_operator(row, "Reset Vertex", "S_X", bpy.ops.bim.reset_vertex.__doc__, ui_context)
 
-        elif hasattr(obj.data, "BIMMeshProperties") and obj.data.BIMMeshProperties.subshape_type == "AXIS":
-            add_header_apply_button(layout, "Edit Axis", "bim.set_arc_index", "bim.set_arc_index", ui_context)
+        elif (
+            isinstance(data, tool.Geometry.TYPES_WITH_MESH_PROPERTIES)
+            and tool.Geometry.get_mesh_props(data).subshape_type == "AXIS"
+        ):
+            add_header_apply_button(
+                layout, "Edit Axis", "bim.edit_extrusion_axis", "bim.disable_editing_extrusion_axis", ui_context
+            )
             row = layout.row(align=True)
             add_layout_hotkey_operator(row, "Extend", "S_E", "Extends/reduces element to 3D cursor", ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
@@ -143,15 +138,15 @@ class CadTool(WorkSpaceTool):
                 row, "Join", "S_T", "Joins two non-parallel paths at their intersection", ui_context
             )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Fillet", "S_F", "Fillet", ui_context)
+            add_layout_hotkey_operator(row, "Fillet", "S_F", bpy.ops.bim.cad_fillet.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Offset", "S_O", "Offset", ui_context)
+            add_layout_hotkey_operator(row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__, ui_context)
 
         else:
             if (
                 (RailingData.is_loaded or not RailingData.load())
                 and RailingData.data["pset_data"]
-                and context.active_object.BIMRailingProperties.is_editing_path
+                and tool.Model.get_railing_props(obj).is_editing_path
             ):
                 add_header_apply_button(
                     layout,
@@ -164,7 +159,7 @@ class CadTool(WorkSpaceTool):
             elif (
                 (RoofData.is_loaded or not RoofData.load())
                 and RoofData.data["pset_data"]
-                and context.active_object.BIMRoofProperties.is_editing_path
+                and tool.Model.get_roof_props(obj).is_editing_path
             ):
                 add_header_apply_button(
                     layout, "Edit Roof Path", "bim.finish_editing_roof_path", "bim.cancel_editing_roof_path", ui_context
@@ -179,19 +174,19 @@ class CadTool(WorkSpaceTool):
                 row, "Join", "S_T", "Joins two non-parallel paths at their intersection", ui_context
             )
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Fillet", "S_V", "Fillet", ui_context)
+            add_layout_hotkey_operator(row, "Fillet", "S_F", bpy.ops.bim.add_ifcarcindex_fillet.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "Offset", "S_O", "Offset", ui_context)
+            add_layout_hotkey_operator(row, "Offset", "S_O", bpy.ops.bim.cad_offset.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "2-Point Arc", "S_C", "2-Point Arc", ui_context)
+            add_layout_hotkey_operator(row, "2-Point Arc", "S_C", bpy.ops.bim.cad_arc_from_2_points.__doc__, ui_context)
             row = row if ui_context == "TOOL_HEADER" else layout.row(align=True)
-            add_layout_hotkey_operator(row, "3-Point Arc", "S_V", "3-Point Arc", ui_context)
+            add_layout_hotkey_operator(row, "3-Point Arc", "S_V", bpy.ops.bim.cad_arc_from_3_points.__doc__, ui_context)
 
 
 class CadHotkey(bpy.types.Operator):
     bl_idname = "bim.cad_hotkey"
-    bl_label = "CAD Hotkey"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_label = ""
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
 
@@ -200,19 +195,21 @@ class CadHotkey(bpy.types.Operator):
         return operator.description or ""
 
     def execute(self, context):
-        self.props = context.scene.BIMCadProperties
+        self.props = tool.Cad.get_cad_props()
         getattr(self, f"hotkey_{self.hotkey}")()
         return {"FINISHED"}
 
     def draw(self, context):
-        props = context.scene.BIMCadProperties
+        props = tool.Cad.get_cad_props()
+        obj = context.active_object
+
         if self.hotkey == "S_C":
-            if self.is_profile():
+            if tool.Geometry.is_profile_object_active():
                 row = self.layout.row()
                 row.prop(props, "radius")
 
         elif self.hotkey == "S_F":
-            if not self.is_profile():
+            if not tool.Geometry.is_profile_object_active():
                 row = self.layout.row()
                 row.prop(props, "resolution")
             row = self.layout.row()
@@ -223,7 +220,7 @@ class CadHotkey(bpy.types.Operator):
             row.prop(props, "distance")
 
         elif self.hotkey == "S_R":
-            if self.is_profile():
+            if tool.Geometry.is_profile_object_active():
                 row = self.layout.row()
                 row.prop(props, "x")
                 row = self.layout.row()
@@ -231,20 +228,18 @@ class CadHotkey(bpy.types.Operator):
             elif (
                 (RoofData.is_loaded or not RoofData.load())
                 and RoofData.data["pset_data"]
-                and bpy.context.active_object.BIMRoofProperties.is_editing_path
+                and tool.Model.get_roof_props(obj).is_editing_path
             ):
                 self.layout.row().prop(props, "gable_roof_edge_angle")
-                self.layout.row().prop(props, "gable_roof_separate_verts")
 
         elif self.hotkey == "S_V":
-            if not self.is_profile():
+            if not tool.Geometry.is_profile_object_active():
                 row = self.layout.row()
                 row.prop(props, "resolution")
 
     def hotkey_S_C(self):
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        if self.is_profile():
-            bpy.ops.bim.add_ifccircle(radius=self.props.radius / si_conversion)
+        if tool.Geometry.is_profile_object_active():
+            bpy.ops.bim.add_ifccircle(radius=self.props.radius)
         else:
             bpy.ops.bim.cad_arc_from_2_points()
 
@@ -252,65 +247,69 @@ class CadHotkey(bpy.types.Operator):
         bpy.ops.bim.cad_trim_extend()
 
     def hotkey_S_F(self):
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        if self.is_profile():
-            bpy.ops.bim.add_ifcarcindex_fillet(radius=self.props.radius / si_conversion)
+        if tool.Geometry.is_profile_object_active():
+            bpy.ops.bim.add_ifcarcindex_fillet(radius=self.props.radius)
         else:
-            bpy.ops.bim.cad_fillet(resolution=self.props.resolution, radius=self.props.radius / si_conversion)
+            bpy.ops.bim.cad_fillet(resolution=self.props.resolution, radius=self.props.radius)
 
     def hotkey_S_O(self):
-        si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-        bpy.ops.bim.cad_offset(distance=self.props.distance / si_conversion)
+        bpy.ops.bim.cad_offset(distance=self.props.distance)
 
     def hotkey_S_Q(self):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        if bpy.context.active_object.data.BIMMeshProperties.subshape_type == "PROFILE":
+        obj = bpy.context.active_object
+
+        if not obj:
+            return
+
+        if not tool.Geometry.has_mesh_properties(data := obj.data):
+            return
+
+        element = tool.Ifc.get_entity(obj)
+        if not element:
+            return
+
+        mprops = tool.Geometry.get_mesh_props(data)
+        if mprops.subshape_type == "PROFILE":
             if element.is_a("IfcProfileDef"):
                 bpy.ops.bim.edit_arbitrary_profile()
             elif element.is_a("IfcRelSpaceBoundary"):
                 bpy.ops.bim.edit_boundary_geometry()
             else:
                 bpy.ops.bim.edit_extrusion_profile()
-        elif bpy.context.active_object.data.BIMMeshProperties.subshape_type == "AXIS":
+        elif mprops.subshape_type == "AXIS":
             bpy.ops.bim.edit_extrusion_axis()
 
     def hotkey_S_R(self):
-        if self.is_profile():
-            si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
-            bpy.ops.bim.add_rectangle(x=self.props.x / si_conversion, y=self.props.y / si_conversion)
+        obj = bpy.context.active_object
+        if not obj:
+            return
+
+        if tool.Geometry.is_profile_object_active():
+            bpy.ops.bim.add_rectangle(x=self.props.x, y=self.props.y)
         elif (
             (RoofData.is_loaded or not RoofData.load())
             and RoofData.data["pset_data"]
-            and bpy.context.active_object.BIMRoofProperties.is_editing_path
+            and tool.Model.get_roof_props(obj).is_editing_path
         ):
-            bpy.ops.bim.set_gable_roof_edge_angle(
-                angle=self.props.gable_roof_edge_angle, separate_verts=self.props.gable_roof_separate_verts
-            )
+            bpy.ops.bim.set_gable_roof_edge_angle(angle=self.props.gable_roof_edge_angle)
 
     def hotkey_S_T(self):
         bpy.ops.bim.cad_mitre()
 
     def hotkey_S_V(self):
-        if self.is_profile():
+        if tool.Geometry.is_profile_object_active():
             bpy.ops.bim.set_arc_index()
         else:
             bpy.ops.bim.cad_arc_from_3_points(resolution=self.props.resolution)
 
     def hotkey_S_X(self):
-        if self.is_profile():
+        if tool.Geometry.is_profile_object_active():
             bpy.ops.bim.reset_vertex()
 
-    def is_profile(self):
-        obj = bpy.context.active_object
-        return (
-            obj
-            and obj.data
-            and hasattr(obj.data, "BIMMeshProperties")
-            and obj.data.BIMMeshProperties.subshape_type == "PROFILE"
-        )
 
-
-def add_header_apply_button(layout, text, apply_operator, cancel_operator, ui_context=""):
+def add_header_apply_button(
+    layout: bpy.types.UILayout, text: str, apply_operator: str, cancel_operator: str, ui_context: str = ""
+) -> None:
     custom_icon = custom_icon_previews.get(text.upper().replace(" ", "_"), custom_icon_previews["IFC"]).icon_id
     row = layout.row(align=True)
     row.label(text=f"{text} Mode", icon_value=custom_icon)
@@ -329,32 +328,8 @@ def add_header_apply_button(layout, text, apply_operator, cancel_operator, ui_co
     row.label(text="Tools")
 
 
-def add_layout_hotkey_operator(layout, text, hotkey, description, ui_context=""):
-    parts = hotkey.split("_")
-    modifier, key = parts
-    op_text = "" if ui_context == "TOOL_HEADER" else text
-    custom_icon = custom_icon_previews.get(text.upper().replace(" ", "_"), custom_icon_previews["IFC"]).icon_id
-    modifier_icon, modifier_str = MODIFIERS.get(modifier, ("NONE", ""))
-
-    row = layout if ui_context == "TOOL_HEADER" else layout.row(align=True)
-    op = row.operator("bim.cad_hotkey", text=op_text, icon_value=custom_icon)
-
-    if ui_context != "TOOL_HEADER" and len(parts) == 2:
-        layout = layout.row(align=True)  # Create a new line for hotkey display
-        layout.label(text="", icon=modifier_icon)
-        layout.label(text="", icon=f"EVENT_{key}")
-
-    hotkey_description = f"Hotkey: {modifier_str} {key}"
-    description = "\n\n".join(filter(None, [hotkey_description if description else ""]))
-    op.hotkey = hotkey
-    op.description = description or hotkey_description
-
-    return op
+add_layout_hotkey_operator = partial(tool.Blender.add_layout_hotkey_operator, tool_name="cad", module_name=__name__)
 
 
 custom_icon_previews = None
 display_mode = None
-
-MODIFIERS = {
-    "S": ("EVENT_SHIFT", "⇧"),
-}

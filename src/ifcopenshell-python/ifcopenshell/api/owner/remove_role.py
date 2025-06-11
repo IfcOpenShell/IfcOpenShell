@@ -25,9 +25,7 @@ def remove_role(file: ifcopenshell.file, role: ifcopenshell.entity_instance) -> 
     leave some of them without roles.
 
     :param role: The IfcActorRole to remove.
-    :type role: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -40,13 +38,11 @@ def remove_role(file: ifcopenshell.file, role: ifcopenshell.entity_instance) -> 
         # After running this, the organisation will have no role again
         ifcopenshell.api.owner.remove_role(model, role=role)
     """
-    settings = {"role": role}
-
-    for inverse in file.get_inverse(settings["role"]):
+    for inverse in file.get_inverse(role):
         if inverse.is_a() in ("IfcOrganization", "IfcPerson", "IfcPersonAndOrganization"):
-            if inverse.Roles == (settings["role"],):
+            if inverse.Roles == (role,):
                 inverse.Roles = None
         elif inverse.is_a("IfcResourceLevelRelationship") and not inverse.is_a("IfcOrganizationRelationship"):
-            if inverse.RelatedResourceObjects == (settings["organisation"],):
+            if inverse.RelatedResourceObjects == (organisation,):
                 file.remove(inverse)
-    file.remove(settings["role"])
+    file.remove(role)

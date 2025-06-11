@@ -43,7 +43,7 @@ class DiffData:
 
     @classmethod
     def diff_json(cls):
-        props = bpy.context.scene.DiffProperties
+        props = tool.Blender.get_diff_props()
         if not props.diff_json_file:
             cls.diff = None
             return

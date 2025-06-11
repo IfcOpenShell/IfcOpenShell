@@ -28,14 +28,8 @@ def edit_structural_analysis_model(
     IfcStructuralAnalysisModel, consult the IFC documentation.
 
     :param structural_analysis_model: The IfcStructuralAnalysisModel entity you want to edit
-    :type structural_analysis_model: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
     """
-    settings = {"structural_analysis_model": structural_analysis_model, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["structural_analysis_model"], name, value)
-    return settings["structural_analysis_model"]
+    for name, value in attributes.items():
+        setattr(structural_analysis_model, name, value)

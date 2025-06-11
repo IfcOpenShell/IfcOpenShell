@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import ifcopenshell.util.element
 import ifcopenshell.util.system
@@ -29,13 +30,31 @@ import re
 from math import pi, cos, sin
 from mathutils import Matrix, Vector
 from bonsai.bim.module.system.data import ObjectSystemData, SystemDecorationData
-from bonsai.bim.module.drawing.decoration import profile_consequential
 from enum import Enum
+from typing import TYPE_CHECKING, Optional, Any, Union
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.system.prop import BIMSystemProperties, BIMZoneProperties, BIMZoneProperties
 
 
 class System(bonsai.core.tool.System):
     @classmethod
-    def add_ports(cls, obj, add_start_port=True, add_end_port=True, end_port_pos=None, offset_end_port=None):
+    def get_system_props(cls) -> BIMSystemProperties:
+        return bpy.context.scene.BIMSystemProperties
+
+    @classmethod
+    def get_zone_props(cls) -> BIMZoneProperties:
+        return bpy.context.scene.BIMZoneProperties
+
+    @classmethod
+    def add_ports(
+        cls,
+        obj: bpy.types.Object,
+        add_start_port: bool = True,
+        add_end_port: bool = True,
+        end_port_pos: Optional[Vector] = None,
+        offset_end_port: Optional[Vector] = None,
+    ) -> list[ifcopenshell.entity_instance]:
         def add_port(mep_element, matrix):
             port = tool.Ifc.run("system.add_port", element=mep_element)
             port.FlowDirection = "NOTDEFINED"
@@ -66,7 +85,7 @@ class System(bonsai.core.tool.System):
         return ports
 
     @classmethod
-    def create_empty_at_cursor_with_element_orientation(cls, element):
+    def create_empty_at_cursor_with_element_orientation(cls, element: ifcopenshell.entity_instance) -> bpy.types.Object:
         element_obj = tool.Ifc.get_object(element)
         obj = bpy.data.objects.new("Port", None)
         obj.matrix_world = element_obj.matrix_world
@@ -75,38 +94,38 @@ class System(bonsai.core.tool.System):
         return obj
 
     @classmethod
-    def delete_element_objects(cls, elements):
+    def delete_element_objects(cls, elements: list[ifcopenshell.entity_instance]) -> None:
         for element in elements:
             obj = tool.Ifc.get_object(element)
             if obj:
                 bpy.data.objects.remove(obj)
 
     @classmethod
-    def disable_editing_system(cls):
-        bpy.context.scene.BIMSystemProperties.edited_system_id = 0
+    def disable_editing_system(cls) -> None:
+        cls.get_system_props().edited_system_id = 0
 
     @classmethod
-    def disable_system_editing_ui(cls):
-        bpy.context.scene.BIMSystemProperties.is_editing = False
+    def disable_system_editing_ui(cls) -> None:
+        cls.get_system_props().is_editing = False
 
     @classmethod
-    def enable_system_editing_ui(cls):
-        bpy.context.scene.BIMSystemProperties.is_editing = True
+    def enable_system_editing_ui(cls) -> None:
+        cls.get_system_props().is_editing = True
 
     @classmethod
-    def export_system_attributes(cls):
-        return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMSystemProperties.system_attributes)
+    def export_system_attributes(cls) -> dict[str, Any]:
+        return bonsai.bim.helper.export_attributes(cls.get_system_props().system_attributes)
 
     @classmethod
-    def get_connected_port(cls, port):
+    def get_connected_port(cls, port: ifcopenshell.entity_instance) -> Union[ifcopenshell.entity_instance, None]:
         return ifcopenshell.util.system.get_connected_port(port)
 
     @classmethod
-    def get_ports(cls, element):
+    def get_ports(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         return ifcopenshell.util.system.get_ports(element)
 
     @classmethod
-    def get_port_relating_element(cls, port):
+    def get_port_relating_element(cls, port: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
         if tool.Ifc.get_schema() == "IFC2X3":
             element = port.ContainedIn[0].RelatedElement
         else:
@@ -114,7 +133,7 @@ class System(bonsai.core.tool.System):
         return element
 
     @classmethod
-    def get_port_predefined_type(cls, mep_element):
+    def get_port_predefined_type(cls, mep_element: ifcopenshell.entity_instance) -> str:
         split_camel_case = lambda x: re.findall("[A-Z][^A-Z]*", x)
         mep_class = mep_element.is_a()
         if mep_class.endswith("Type"):
@@ -125,53 +144,61 @@ class System(bonsai.core.tool.System):
         return class_name
 
     @classmethod
-    def import_system_attributes(cls, system):
-        props = bpy.context.scene.BIMSystemProperties
+    def import_system_attributes(cls, system: ifcopenshell.entity_instance) -> None:
+        props = cls.get_system_props()
         props.system_attributes.clear()
         bonsai.bim.helper.import_attributes2(system, props.system_attributes)
 
     @classmethod
-    def get_systems(cls):
+    def get_systems(cls) -> list[ifcopenshell.entity_instance]:
         if tool.Ifc.get_schema() == "IFC2X3":
             return tool.Ifc.get().by_type("IfcSystem") + tool.Ifc.get().by_type("IfcZone")
         return tool.Ifc.get().by_type("IfcSystem")
 
     @classmethod
-    def import_systems(cls):
-        props = bpy.context.scene.BIMSystemProperties
+    def import_systems(cls) -> None:
+        props = cls.get_system_props()
         props.systems.clear()
         for system in cls.get_systems():
             if system.is_a() in ["IfcStructuralAnalysisModel"]:
                 continue
             new = props.systems.add()
             new.ifc_definition_id = system.id()
-            new.name = system.Name or "Unnamed"
+            new["name"] = system.Name or "Unnamed"
             new.ifc_class = system.is_a()
 
     @classmethod
     def load_ports(cls, element: ifcopenshell.entity_instance, ports: list[ifcopenshell.entity_instance]) -> None:
         if not ports:
             return
+
+        ports_to_create = ports.copy()
+        for port in ports:
+            if tool.Ifc.get_object(port):
+                ports_to_create.remove(port)
+
         obj = tool.Ifc.get_object(element)
+        assert isinstance(obj, bpy.types.Object)
         ifc_import_settings = import_ifc.IfcImportSettings.factory()
         ifc_importer = import_ifc.IfcImporter(ifc_import_settings)
         ifc_importer.file = tool.Ifc.get()
         ifc_importer.calculate_unit_scale()
         ifc_importer.process_context_filter()
-        ifc_importer.create_generic_elements(set(ports))
+        ifc_importer.create_generic_elements(set(ports_to_create))
 
         container = ifcopenshell.util.element.get_container(element)
         if container:
-            collection = tool.Ifc.get_object(container).BIMObjectProperties.collection
+            collection = tool.Blender.get_object_bim_props(tool.Ifc.get_object(container)).collection
             ifc_importer.collections[container.GlobalId] = collection
         ifc_importer.place_objects_in_collections()
 
         for port_obj in ifc_importer.added_data.values():
+            assert isinstance(port_obj, bpy.types.Object)
             port_obj.parent = obj
             port_obj.matrix_parent_inverse = obj.matrix_world.inverted()
 
     @classmethod
-    def run_geometry_edit_object_placement(cls, obj=None):
+    def run_geometry_edit_object_placement(cls, obj: bpy.types.Object) -> None:
         return bonsai.core.geometry.edit_object_placement(tool.Ifc, tool.Geometry, tool.Surveyor, obj=obj)
 
     @classmethod
@@ -197,24 +224,24 @@ class System(bonsai.core.tool.System):
         )
 
     @classmethod
-    def select_system_products(cls, system):
+    def select_system_products(cls, system: ifcopenshell.entity_instance) -> None:
         tool.Spatial.select_products(ifcopenshell.util.system.get_system_elements(system))
 
     @classmethod
-    def set_active_edited_system(cls, system):
-        bpy.context.scene.BIMSystemProperties.edited_system_id = system.id()
+    def set_active_edited_system(cls, system: ifcopenshell.entity_instance) -> None:
+        cls.get_system_props().edited_system_id = system.id()
 
     @classmethod
-    def set_active_system(cls, system):
-        bpy.context.scene.BIMSystemProperties.active_system_id = system.id()
+    def set_active_system(cls, system: ifcopenshell.entity_instance) -> None:
+        cls.get_system_props().active_system_id = system.id()
 
     @classmethod
-    def get_active_system(cls):
-        system_props = bpy.context.scene.BIMSystemProperties
+    def get_active_system(cls) -> Union[ifcopenshell.entity_instance, None]:
+        system_props = cls.get_system_props()
         return tool.Ifc.get_entity_by_id(system_props.active_system_id)
 
     @classmethod
-    def get_decoration_data(cls):
+    def get_decoration_data(cls) -> dict[str, Any]:
         all_vertices = []
         preview_edges = []
         special_vertices = []
@@ -313,32 +340,37 @@ class System(bonsai.core.tool.System):
 
                 # for now it's hardcoded to local Y axis to avoid using viewport data
                 # for performance reasons
-                edge_ortho = obj.matrix_world.col[1].to_3d().normalized()
-                second_ortho = edge_dir.cross(edge_ortho)
-                edge_ortho = second_ortho.cross(edge_dir)
+                for j in range(2):
+                    edge_ortho = obj.matrix_world.col[j].to_3d().normalized()
+                    second_ortho = edge_dir.cross(edge_ortho)
+                    edge_ortho = second_ortho.cross(edge_dir)
 
-                # direction lines should be around the edge center
-                n_direction_lines, start_offset = divmod(edge_length, direction_lines_offset)
-                n_direction_lines = int(n_direction_lines) + 1
-                start_offset /= 2
-                start_offset = edge_dir * start_offset + base_vert
-                cur_vert_index = start_vert_i + len(port_data)
+                    # direction lines should be around the edge center
+                    n_direction_lines, start_offset = divmod(edge_length, direction_lines_offset)
+                    n_direction_lines = int(n_direction_lines) + 1
+                    start_offset /= 2
+                    start_offset = edge_dir * start_offset + base_vert
 
-                for i in range(n_direction_lines):
-                    cur_offset = start_offset + edge_dir * i * direction_lines_offset
                     if both_directions:
-                        verts_pos.append(cur_offset + edge_ortho * direction_lines_width)
-                        verts_pos.append(cur_offset - edge_ortho * direction_lines_width)
-                        edges.append((cur_vert_index, cur_vert_index + 1))
-                        cur_vert_index += 2
+                        cur_vert_index = start_vert_i + len(port_data) + j * 2 * n_direction_lines
                     else:
-                        arrow_base = cur_offset - edge_dir * direction_lines_width
-                        verts_pos.append(arrow_base + edge_ortho * direction_lines_width)
-                        verts_pos.append(cur_offset)
-                        verts_pos.append(arrow_base - edge_ortho * direction_lines_width)
-                        edges.append((cur_vert_index, cur_vert_index + 1))
-                        edges.append((cur_vert_index + 1, cur_vert_index + 2))
-                        cur_vert_index += 3
+                        cur_vert_index = start_vert_i + len(port_data) + j * 3 * n_direction_lines
+
+                    for i in range(n_direction_lines):
+                        cur_offset = start_offset + edge_dir * i * direction_lines_offset
+                        if both_directions:
+                            verts_pos.append(cur_offset + edge_ortho * direction_lines_width)
+                            verts_pos.append(cur_offset - edge_ortho * direction_lines_width)
+                            edges.append((cur_vert_index, cur_vert_index + 1))
+                            cur_vert_index += 2
+                        else:
+                            arrow_base = cur_offset - edge_dir * direction_lines_width
+                            verts_pos.append(arrow_base + edge_ortho * direction_lines_width)
+                            verts_pos.append(cur_offset)
+                            verts_pos.append(arrow_base - edge_ortho * direction_lines_width)
+                            edges.append((cur_vert_index, cur_vert_index + 1))
+                            edges.append((cur_vert_index + 1, cur_vert_index + 2))
+                            cur_vert_index += 3
 
             all_vertices.extend(verts_pos)
 
@@ -359,7 +391,11 @@ class System(bonsai.core.tool.System):
         return decoration_data
 
     @classmethod
-    def get_connected_elements(cls, element, traversed_elements=None):
+    def get_connected_elements(
+        cls,
+        element: ifcopenshell.entity_instance,
+        traversed_elements: Optional[set[ifcopenshell.entity_instance]] = None,
+    ) -> set[ifcopenshell.entity_instance]:
         """Recursively retrieves all connected elements to the given `element`.
 
         `traversed_elements` is a set to store connected elements fetched recursively,
@@ -379,17 +415,30 @@ class System(bonsai.core.tool.System):
         return traversed_elements
 
     @classmethod
-    def is_mep_element(cls, element):
+    def is_mep_element(cls, element: ifcopenshell.entity_instance) -> bool:
         return element.is_a("IfcFlowSegment") or element.is_a("IfcFlowFitting")
 
     @classmethod
-    def get_flow_element_controls(cls, element):
+    def get_flow_element_controls(cls, element: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
         if not element.HasControlElements:
             return []
         return [control for control in element.HasControlElements[0].RelatedControlElements]
 
     @classmethod
-    def get_flow_control_flow_element(cls, element):
+    def get_flow_control_flow_element(
+        cls, element: ifcopenshell.entity_instance
+    ) -> Union[ifcopenshell.entity_instance, None]:
         if not element.AssignedToFlowElement:
             return
         return element.AssignedToFlowElement[0].RelatingFlowElement
+
+    @classmethod
+    def draw_system_ui(cls, layout: bpy.types.UILayout, system_id: int, system_name: str, system_class: str) -> None:
+        from bonsai.bim.module.system.ui import SYSTEM_ICONS
+
+        row = layout.row(align=True)
+        row.label(text=system_name, icon=SYSTEM_ICONS[system_class])
+        op = row.operator("bim.select_system_products", text="", icon="RESTRICT_SELECT_OFF")
+        op.system = system_id
+        op = row.operator("bim.unassign_system", text="", icon="X")
+        op.system = system_id

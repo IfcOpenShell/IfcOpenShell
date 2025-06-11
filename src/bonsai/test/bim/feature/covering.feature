@@ -9,26 +9,27 @@ Scenario: Execute generate flooring coverings from walls
     And the variable "element_type" is "[e for e in {ifc}.by_type('IfcWallType') if e.Name == 'WAL100'][0].id()"
     And I set "scene.BIMModelProperties.relating_type_id" to "{element_type}"
     # 1st wall
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     And the object "IfcWall/Wall" is selected
     And I press "bim.change_layer_length(length=3.6)"
     # 2nd wall
     And the cursor is at "3.6,0.1,3"
     And I set "scene.BIMModelProperties.length" to "2.0"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     # 3rd wall
     And the cursor is at "3.5,2.1,3"
     And I set "scene.BIMModelProperties.length" to "3.5"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     # 4th wall
     And the cursor is at "0,2.0,0"
     And I set "scene.BIMModelProperties.length" to "1.9"
-    And I press "bim.add_constr_type_instance"
+    And I press "bim.add_occurrence"
     # add_instance_flooring_coverings_from_walls is expecting FLOORING predefined type.
     And the object "IfcCoveringType/COV30" is selected
-    And I press "bim.enable_editing_attributes(obj='IfcCoveringType/COV30')"
-    And I set "active_object.BIMAttributeProperties.attributes[6].enum_value" to "FLOORING"
-    And I press "bim.edit_attributes(obj='IfcCoveringType/COV30')"
+    And I look at the "Attributes" panel
+    And I click "Edit"
+    And I set the "PredefinedType" property to "FLOORING"
+    And I click "Save Attributes"
     # Run the operator.
     When the object "IfcWall/Wall" is selected
     And additionally the object "IfcWall/Wall.001" is selected

@@ -27,11 +27,8 @@ def edit_context(file: ifcopenshell.file, context: ifcopenshell.entity_instance,
     IfcGeometricRepresentationContext, consult the IFC documentation.
 
     :param context: The IfcGeometricRepresentationContext entity you want to edit
-    :type context: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -47,7 +44,5 @@ def edit_context(file: ifcopenshell.file, context: ifcopenshell.entity_instance,
         ifcopenshell.api.context.edit_context(model,
             context=body, attributes={"ContextIdentifier": "Body"})
     """
-    settings = {"context": context, "attributes": attributes}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["context"], name, value)
+    for name, value in attributes.items():
+        setattr(context, name, value)

@@ -1,7 +1,8 @@
 # Please update REPO_PATH and BLENDER_PATH in the script below.
-# Default BLENDER_PATH on Mac: "/Users/$USER/Library/Application Support/Blender/4.2/"
-# Default BLENDER_PATH on Linux: "$HOME/.config/blender/4.2/"
+# Default BLENDER_PATH on Mac: "/Users/$USER/Library/Application Support/Blender/4.4"
+# Default BLENDER_PATH on Linux: "$HOME/.config/blender/4.4"
 # REPO_PATH="/path/to/where/your/git/repository/is/cloned/IfcOpenShell"
+set -e
 REPO_PATH=""
 BLENDER_PATH=""
 PACKAGE_PATH="${BLENDER_PATH}/extensions/.local/lib/python3.11/site-packages"
@@ -9,11 +10,15 @@ PACKAGE_PATH="${BLENDER_PATH}/extensions/.local/lib/python3.11/site-packages"
 # BONSAI_PATH="${BLENDER_PATH}/extensions/user_default/bonsai"
 BONSAI_PATH="${BLENDER_PATH}/extensions/raw_githubusercontent_com/bonsai"
 
+# Validate inputs.
+[ -z "$REPO_PATH" ] && echo "Error: REPO_PATH is not set." && exit 1
+[ -z "$BLENDER_PATH" ] && echo "Error: BLENDER_PATH is not set." && exit 1
+
 # Changing to the Git repository directory
 cd "${REPO_PATH}"
 
 # Copy over compiled IfcOpenShell files
-cp "${PACKAGE_PATH}/ifcopenshell/*_wrapper*" "${PWD}/src/ifcopenshell-python/ifcopenshell/"
+cp "${PACKAGE_PATH}/ifcopenshell/"*_wrapper* "${PWD}/src/ifcopenshell-python/ifcopenshell/"
 
 # Remove extension and link to Git
 rm "${BONSAI_PATH}/__init__.py"
@@ -50,5 +55,7 @@ ln -s "${PWD}/src/ifcfm/ifcfm" "${PACKAGE_PATH}/ifcfm"
 cd "${PACKAGE_PATH}/bonsai/bim/data/gantt"
 wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.js
 wget https://raw.githubusercontent.com/jsGanttImproved/jsgantt-improved/master/dist/jsgantt.css
-cd "${PACKAGE_PATH}/bonsai/bim/schema"
+cd "${PACKAGE_PATH}/bonsai/bim/data/brick"
 wget https://github.com/BrickSchema/Brick/releases/download/nightly/Brick.ttl
+cd "${PACKAGE_PATH}/bonsai/bim/data/webui/static/js"
+wget https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js

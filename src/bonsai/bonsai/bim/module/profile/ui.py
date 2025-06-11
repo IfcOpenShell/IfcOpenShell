@@ -16,12 +16,17 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.bim.helper
 import bonsai.tool as tool
 from bpy.types import Panel, UIList
 from bonsai.bim.module.profile.data import ProfileData
 from bonsai.bim.module.profile.prop import generate_thumbnail_for_active_profile
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.module.profile.prop import BIMProfileProperties, Profile
 
 
 class BIM_PT_profiles(Panel):
@@ -40,7 +45,7 @@ class BIM_PT_profiles(Panel):
     def draw(self, context):
         if not ProfileData.is_loaded:
             ProfileData.load()
-        self.props = context.scene.BIMProfileProperties
+        self.props = tool.Profile.get_profile_props()
 
         active_profile = None
         if self.props.is_editing and (active_profile := tool.Profile.get_active_profile_ui()):
@@ -70,10 +75,49 @@ class BIM_PT_profiles(Panel):
         if not self.props.is_editing:
             return
 
+        does_active_profile_exist: bool = ProfileData.data["does_active_profile_exist"]
+
         row = self.layout.row(align=True)
-        row.prop(self.props, "profile_classes", text="")
+        if self.props.profile_classes == "IfcArbitraryClosedProfileDef":
+            split = row.split(factor=0.5, align=True)
+            row = split.row(align=True)
+            row.prop(self.props, "profile_classes", text="")
+            row = split.row(align=True)
+            row.prop(self.props, "object_to_profile", text="")
+        else:
+            row.prop(self.props, "profile_classes", text="")
         row.operator("bim.add_profile_def", text="", icon="ADD")
-        row.operator("bim.duplicate_profile_def", icon="DUPLICATE", text="")
+
+        if active_profile and not does_active_profile_exist:
+            box = self.layout.box()
+            box.label(icon="ERROR", text=f"Active profile is missing from IFC project.")
+            row = box.row(align=True)
+            row.label(text="Reload Profiles UI.")
+            row.operator("bim.load_profiles", text="", icon="FILE_REFRESH")
+
+        elif active_profile and does_active_profile_exist:
+            row = self.layout.row(align=True)
+            row.alignment = "RIGHT"
+
+            is_editable = active_profile.ifc_class in (
+                "IfcArbitraryClosedProfileDef",
+                "IfcArbitraryProfileDefWithVoids",
+                "IfcCompositeProfileDef",
+            )
+            if self.props.active_profile_id == active_profile.ifc_definition_id:
+                row.operator("bim.edit_profile", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_profile", text="", icon="CANCEL")
+            elif self.props.active_arbitrary_profile_id:
+                row.operator("bim.edit_arbitrary_profile", text="", icon="CHECKMARK")
+                row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
+            else:
+                row.operator("bim.duplicate_profile_def", icon="DUPLICATE", text="")
+                row.operator("bim.select_by_profile", icon="RESTRICT_SELECT_OFF", text="")
+                if is_editable:
+                    row.operator("bim.enable_editing_arbitrary_profile", text="", icon="ITALIC")
+                op = row.operator("bim.enable_editing_profile", text="", icon="GREASEPENCIL")
+                op.profile = active_profile.ifc_definition_id
+                row.operator("bim.remove_profile_def", text="", icon="X").profile = active_profile.ifc_definition_id
 
         self.layout.template_list(
             "BIM_UL_profiles",
@@ -87,21 +131,7 @@ class BIM_PT_profiles(Panel):
         row = self.layout.row()
         row.prop(self.props, "is_filtering_material_profiles", text="Filter Material Profiles")
 
-        if active_profile:
-            if active_profile.ifc_class in (
-                "IfcArbitraryClosedProfileDef",
-                "IfcArbitraryProfileDefWithVoids",
-            ):
-                if self.props.active_arbitrary_profile_id:
-                    row = self.layout.row(align=True)
-                    row.operator("bim.edit_arbitrary_profile", text="Save Arbitrary Profile", icon="CHECKMARK")
-                    row.operator("bim.disable_editing_arbitrary_profile", text="", icon="CANCEL")
-                else:
-                    row = self.layout.row()
-                    row.operator(
-                        "bim.enable_editing_arbitrary_profile", text="Edit Arbitrary Profile", icon="GREASEPENCIL"
-                    )
-
+        if active_profile and does_active_profile_exist:
             users_of_profile = ProfileData.data["active_profile_users"]
             self.layout.label(icon="INFO", text=f"Profile has {users_of_profile} inverse relationship(s) in project")
 
@@ -113,19 +143,19 @@ class BIM_PT_profiles(Panel):
 
 
 class BIM_UL_profiles(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.BIMProfileProperties
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: BIMProfileProperties,
+        item: Profile,
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
             row = layout.row(align=True)
+            if item.ifc_definition_id == data.active_profile_id:
+                row.label(text="", icon="GREASEPENCIL")
             row.prop(item, "name", text="", emboss=False)
             row.label(text=item.ifc_class)
-
-            if props.active_profile_id == item.ifc_definition_id:
-                row.operator("bim.edit_profile", text="", icon="CHECKMARK")
-                row.operator("bim.disable_editing_profile", text="", icon="CANCEL")
-            elif props.active_profile_id:
-                row.operator("bim.remove_profile_def", text="", icon="X").profile = item.ifc_definition_id
-            else:
-                op = row.operator("bim.enable_editing_profile", text="", icon="GREASEPENCIL")
-                op.profile = item.ifc_definition_id
-                row.operator("bim.remove_profile_def", text="", icon="X").profile = item.ifc_definition_id

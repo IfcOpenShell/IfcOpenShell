@@ -16,10 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import annotations
 import bpy
 import bonsai.tool as tool
-from bpy.types import Panel
+from bpy.types import Panel, UIList
 from bonsai.bim.module.void.data import BooleansData, VoidsData
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import bpy.stub_internal.rna_enums as rna_enums
+
+
+OPENING_ICON = "SELECT_SUBTRACT"
+FILLING_ICON = "SELECT_INTERSECT"
+VOIDED_ELEMENT_ICON = "SELECT_EXTEND"
 
 
 class BIM_PT_voids(Panel):
@@ -42,11 +52,8 @@ class BIM_PT_voids(Panel):
         if not VoidsData.is_loaded:
             VoidsData.load()
 
-        props = context.active_object.BIMObjectProperties
-
-        if len(context.selected_objects) == 2:
-            row = self.layout.row(align=True)
-            op = row.operator("bim.add_opening", icon="ADD", text="Add Opening")
+        row = self.layout.row(align=True)
+        op = row.operator("bim.add_opening", icon="ADD", text="Add Opening")
 
         if VoidsData.data["active_opening"]:
             row = self.layout.row()
@@ -55,27 +62,52 @@ class BIM_PT_voids(Panel):
 
             if not VoidsData.data["fillings"]:
                 row = self.layout.row()
-                row.label(text="No Fillings", icon="SELECT_INTERSECT")
+                row.label(text="No Fillings", icon=FILLING_ICON)
 
             for filling in VoidsData.data["fillings"]:
                 row = self.layout.row(align=True)
-                row.label(text=filling["Name"], icon="SELECT_INTERSECT")
+                self.draw_selectable_element_ui(row, filling, "filling", FILLING_ICON)
                 row.operator("bim.remove_filling", icon="X", text="").filling = filling["id"]
+
+            if voided := VoidsData.data["voided_element"]:
+                row = self.layout.row(align=True)
+                self.draw_selectable_element_ui(row, voided, "voided", VOIDED_ELEMENT_ICON)
+
         else:
             if not VoidsData.data["openings"]:
                 row = self.layout.row()
-                row.label(text="No Openings", icon="SELECT_SUBTRACT")
+                row.label(text="No Openings", icon=OPENING_ICON)
 
             for opening in VoidsData.data["openings"]:
                 if opening["HasFillings"]:
                     for filling in opening["HasFillings"]:
                         row = self.layout.row(align=True)
-                        row.label(text=opening["Name"], icon="SELECT_SUBTRACT")
-                        row.label(text=filling["Name"], icon="SELECT_INTERSECT")
+                        row.label(text=opening["Name"], icon=OPENING_ICON)
+                        self.draw_selectable_element_ui(row, filling, "filling", FILLING_ICON)
                 else:
                     row = self.layout.row(align=True)
-                    row.label(text=opening["Name"], icon="SELECT_SUBTRACT")
+                    row.label(text=opening["Name"], icon=OPENING_ICON)
                 row.operator("bim.remove_opening", icon="X", text="").opening_id = opening["id"]
+
+            if (opening := VoidsData.data["filled_voids"]) is None:
+                row = self.layout.row()
+                row.label(text="No Voids Filled", icon=VOIDED_ELEMENT_ICON)
+            else:
+                row = self.layout.row()
+                row.label(text="Voided Element:", icon=VOIDED_ELEMENT_ICON)
+                row = self.layout.row(align=True)
+                row.label(text=opening["Name"], icon=OPENING_ICON)
+                voided_element = opening["VoidsElements"]
+                if voided_element is not None:
+                    self.draw_selectable_element_ui(row, voided_element, "voided", VOIDED_ELEMENT_ICON)
+
+    def draw_selectable_element_ui(
+        self, layout: bpy.types.UILayout, element_data: dict[str, Any], object_hint: str, icon: rna_enums.IconItems
+    ) -> None:
+        layout.label(text=element_data["Name"], icon=icon)
+        op = layout.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF")
+        op.ifc_id = element_data["id"]
+        op.tooltip = f"Select {object_hint} object."
 
 
 class BIM_PT_booleans(Panel):
@@ -91,48 +123,68 @@ class BIM_PT_booleans(Panel):
     @classmethod
     def poll(cls, context):
         return (
-            context.active_object is not None
-            and context.active_object.type == "MESH"
-            and hasattr(context.active_object.data, "BIMMeshProperties")
-            and (
-                context.active_object.data.BIMMeshProperties.ifc_definition_id
-                or context.active_object.data.BIMMeshProperties.ifc_boolean_id
-            )
+            (obj := context.active_object) is not None
+            and isinstance(data := obj.data, bpy.types.Mesh)
+            and (mesh_props := tool.Geometry.get_mesh_props(data))
+            and (mesh_props.ifc_definition_id or mesh_props.ifc_boolean_id)
         )
 
     def draw(self, context):
         if not BooleansData.is_loaded:
             BooleansData.load()
 
-        if not context.active_object.data:
-            return
-        layout = self.layout
-        props = context.active_object.data.BIMMeshProperties
+        obj = context.active_object
+        assert obj
+        mesh = obj.data
+        assert isinstance(mesh, bpy.types.Mesh)
 
-        if context.active_object.data.BIMMeshProperties.ifc_definition_id:
+        layout = self.layout
+        props = tool.Feature.get_boolean_props()
+
+        if tool.Geometry.get_mesh_props(mesh).ifc_definition_id:
             row = layout.row(align=True)
             total_booleans = BooleansData.data["total_booleans"]
             manual_booleans = BooleansData.data["manual_booleans"]
             row.label(text=f"{len(total_booleans)} Booleans Found ({len(manual_booleans)} Manual)")
-            row.operator("bim.add_boolean", text="", icon="ADD")
-            show_boolean_button = row.row(align=True)
-            show_boolean_button.operator("bim.show_booleans", text="", icon="HIDE_OFF")
-            show_boolean_button.enabled = len(total_booleans) > 0
-            row.operator("bim.hide_booleans", text="", icon="HIDE_ON")
-
+            if props.is_editing:
+                row.operator("bim.disable_editing_booleans", icon="CANCEL", text="")
+            else:
+                row.operator("bim.enable_editing_booleans", icon="IMPORT", text="")
             booleans_are_manual = len(manual_booleans) == len(total_booleans)
             op = row.operator(
                 "bim.booleans_mark_as_manual", text="", icon="PINNED" if booleans_are_manual else "UNPINNED"
             )
             op.mark_as_manual = not booleans_are_manual
 
-        elif context.active_object.data.BIMMeshProperties.ifc_boolean_id:
-            upsteam_obj = context.active_object.data.BIMMeshProperties.obj
-            upstream_obj_ifc_id = upsteam_obj.BIMObjectProperties.ifc_definition_id
+        if not props.is_editing:
+            return
 
+        row = layout.row(align=True)
+        row.prop(props, "operator", text="")
+        row.operator("bim.add_boolean", text="", icon="ADD")
+
+        row = layout.row(align=True)
+        row.alignment = "RIGHT"
+        row.operator("bim.select_boolean", text="", icon="RESTRICT_SELECT_OFF")
+        row.operator("bim.remove_boolean", text="", icon="X")
+
+        self.layout.template_list("BIM_UL_booleans", "", props, "booleans", props, "active_boolean_index")
+
+
+class BIM_UL_booleans(UIList):
+    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+        if item:
+            if item.operator == "DIFFERENCE":
+                icon = "SELECT_DIFFERENCE"
+            elif item.operator == "INTERSECTION":
+                icon = "SELECT_INTERSECT"
+            elif item.operator == "UNION":
+                icon = "SELECT_EXTEND"
+            elif "IfcHalfSpaceSolid" in item.name:
+                icon = "NORMALS_FACE"
+            else:
+                icon = "MESH_DATA"
             row = layout.row(align=True)
-            row.label(text=upsteam_obj.name)
-            row.operator("bim.select_entity", text="", icon="RESTRICT_SELECT_OFF").ifc_id = upstream_obj_ifc_id
-
-            row = layout.row()
-            row.operator("bim.remove_booleans", text="Remove Boolean", icon="X")
+            for i in range(0, item.level):
+                row.label(text="", icon="BLANK1")
+            row.label(text=item.name, icon=icon)

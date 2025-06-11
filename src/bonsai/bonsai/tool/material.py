@@ -27,18 +27,27 @@ import bonsai.bim.helper
 import ifcopenshell.util.unit
 import ifcopenshell.util.element
 from collections import defaultdict
-from typing import Union, Any, TYPE_CHECKING, Optional, Literal
-from typing_extensions import assert_never
+from typing import Union, Any, TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
     # Avoid circular imports.
     from bonsai.bim.module.material.prop import Material as MaterialItem
+    from bonsai.bim.module.material.prop import BIMMaterialProperties, BIMObjectMaterialProperties
 
 
 class Material(bonsai.core.tool.Material):
     @classmethod
+    def get_material_props(cls) -> BIMMaterialProperties:
+        return bpy.context.scene.BIMMaterialProperties
+
+    @classmethod
+    def get_object_material_props(cls, obj: bpy.types.Object) -> BIMObjectMaterialProperties:
+        return obj.BIMObjectMaterialProperties
+
+    @classmethod
     def disable_editing_materials(cls) -> None:
-        bpy.context.scene.BIMMaterialProperties.is_editing = False
+        props = tool.Material.get_material_props()
+        props.is_editing = False
 
     @classmethod
     def duplicate_material(cls, material: ifcopenshell.entity_instance) -> ifcopenshell.entity_instance:
@@ -55,11 +64,13 @@ class Material(bonsai.core.tool.Material):
 
     @classmethod
     def enable_editing_materials(cls) -> None:
-        bpy.context.scene.BIMMaterialProperties.is_editing = True
+        props = tool.Material.get_material_props()
+        props.is_editing = True
 
     @classmethod
     def get_active_material_type(cls) -> str:
-        return bpy.context.scene.BIMMaterialProperties.material_type
+        props = tool.Material.get_material_props()
+        return props.material_type
 
     @classmethod
     def get_elements_by_material(cls, material: ifcopenshell.entity_instance) -> list[ifcopenshell.entity_instance]:
@@ -68,7 +79,7 @@ class Material(bonsai.core.tool.Material):
     @classmethod
     def get_active_material_item(cls) -> Union[MaterialItem, None]:
         """Get active material props item if index is valid, otherwise, return None."""
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         if 0 <= props.active_material_index < len(props.materials):
             return props.materials[props.active_material_index]
         return None
@@ -80,7 +91,7 @@ class Material(bonsai.core.tool.Material):
 
     @classmethod
     def import_material_definitions(cls, material_type: str) -> None:
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
 
         # Store active category name to reselect it later.
         # Occurs when we expand/contract all categories.
@@ -127,16 +138,21 @@ class Material(bonsai.core.tool.Material):
 
             if category_index_to_reselect is not None:
                 props.active_material_index = category_index_to_reselect
-            return
-        for material in materials:
-            new = props.materials.add()
-            new["name"] = get_name(material)
-            new.ifc_definition_id = material.id()
-            new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+        else:
+            for material in materials:
+                new = props.materials.add()
+                new["name"] = get_name(material)
+                new.ifc_definition_id = material.id()
+                new.total_elements = len(ifcopenshell.util.element.get_elements_by_material(tool.Ifc.get(), material))
+
+        from bonsai.bim.module.material.data import MaterialsData
+
+        MaterialsData.data["material_styles_data"] = MaterialsData.material_styles_data()
 
     @classmethod
     def is_editing_materials(cls) -> bool:
-        return bpy.context.scene.BIMMaterialProperties.is_editing
+        props = tool.Material.get_material_props()
+        return props.is_editing
 
     @classmethod
     def is_material_used_in_sets(cls, material: ifcopenshell.entity_instance) -> bool:
@@ -152,23 +168,24 @@ class Material(bonsai.core.tool.Material):
 
     @classmethod
     def load_material_attributes(cls, material: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         props.material_attributes.clear()
         bonsai.bim.helper.import_attributes2(material, props.material_attributes)
 
     @classmethod
     def enable_editing_material(cls, material: ifcopenshell.entity_instance) -> None:
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         props.active_material_id = material.id()
         props.editing_material_type = "ATTRIBUTES"
 
     @classmethod
     def get_material_attributes(cls) -> dict[str, Any]:
-        return bonsai.bim.helper.export_attributes(bpy.context.scene.BIMMaterialProperties.material_attributes)
+        props = tool.Material.get_material_props()
+        return bonsai.bim.helper.export_attributes(props.material_attributes)
 
     @classmethod
     def disable_editing_material(cls) -> None:
-        props = bpy.context.scene.BIMMaterialProperties
+        props = tool.Material.get_material_props()
         props.active_material_id = 0
         props.editing_material_type = ""
 
@@ -189,11 +206,14 @@ class Material(bonsai.core.tool.Material):
     @classmethod
     def get_object_ui_material_type(cls) -> str:
         active_obj = bpy.context.active_object
-        return active_obj.BIMObjectMaterialProperties.material_type
+        assert active_obj
+        return tool.Material.get_object_material_props(active_obj).material_type
 
     @classmethod
     def get_object_ui_active_material(cls) -> ifcopenshell.entity_instance:
-        return tool.Ifc.get().by_id(int(bpy.context.active_object.BIMObjectMaterialProperties.material))
+        obj = bpy.context.active_object
+        assert obj
+        return tool.Ifc.get().by_id(int(tool.Material.get_object_material_props(obj).material))
 
     @classmethod
     def get_material(
@@ -308,7 +328,10 @@ class Material(bonsai.core.tool.Material):
         or some other may be applied now since it's no longer overridden,
         therefore we need to make sure blender materials reflect correct styles.
 
-        Designed to be called after material.unassign_material API call."""
+        Designed to be called after material.unassign_material API call.
+
+        Will reload representations, invalidating existing object data.
+        """
         elements = elements.copy()  # Avoid argument mutation.
         for element in elements[:]:
             if element.is_a("IfcElementType"):
@@ -429,3 +452,14 @@ class Material(bonsai.core.tool.Material):
 
         i += cls.purge_unused_materials()
         return i
+
+    @classmethod
+    def get_material_name(cls, material: ifcopenshell.entity_instance) -> Union[str, None]:
+        ifc_class = material.is_a()
+        if ifc_class == "IfcMaterialList":
+            return None
+        elif ifc_class == "IfcMaterialLayerSet":
+            # Optional IfcLabel.
+            return material.LayerSetName
+        # Optional IfcLabel except for IfcMaterial.
+        return material.Name

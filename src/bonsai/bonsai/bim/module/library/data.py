@@ -47,7 +47,8 @@ class LibrariesData:
 
     @classmethod
     def library_attributes(cls):
-        library_id = bpy.context.scene.BIMLibraryProperties.active_library_id
+        props = tool.Library.get_library_props()
+        library_id = props.active_library_id
         if not library_id:
             return []
         results = []
@@ -63,7 +64,7 @@ class LibrariesData:
 
     @classmethod
     def reference_attributes(cls):
-        props = bpy.context.scene.BIMLibraryProperties
+        props = tool.Library.get_library_props()
         try:
             reference_id = props.references[props.active_reference_index].ifc_definition_id
         except:

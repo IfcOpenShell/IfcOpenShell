@@ -121,18 +121,17 @@ def import_spatial_decomposition(spatial: tool.Spatial) -> None:
     spatial.import_spatial_decomposition()
 
 
-def edit_container_attributes(spatial: tool.Spatial, entity: ifcopenshell.entity_instance) -> None:
-    spatial.edit_container_attributes(entity)
+def set_orientation_slot(spatial: tool.Spatial, container: ifcopenshell.entity_instance) -> None:
+    spatial.create_orientation_slot(container)
+
+
+def contract_container(spatial: tool.Spatial, container: ifcopenshell.entity_instance, is_recursive: bool) -> None:
+    spatial.contract_container(container, is_recursive=is_recursive)
     spatial.import_spatial_decomposition()
 
 
-def contract_container(spatial: tool.Spatial, container: ifcopenshell.entity_instance) -> None:
-    spatial.contract_container(container)
-    spatial.import_spatial_decomposition()
-
-
-def expand_container(spatial: tool.Spatial, container: ifcopenshell.entity_instance) -> None:
-    spatial.expand_container(container)
+def expand_container(spatial: tool.Spatial, container: ifcopenshell.entity_instance, is_recursive: bool) -> None:
+    spatial.expand_container(container, is_recursive=is_recursive)
     spatial.import_spatial_decomposition()
 
 

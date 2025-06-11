@@ -109,6 +109,8 @@ namespace {
 				throw std::runtime_error("Different trim types not supported");
 			}
 
+			const bool reversed = !e->orientation.get_value_or(true);
+
 			TopoDS_Edge E;
 			auto e_basis = e->basis;
 			if (e_basis) {
@@ -140,7 +142,6 @@ namespace {
 					curve = approx.Curve();
 				}
 
-				const bool reversed = !e->orientation.get_value_or(true);
 				const bool is_conic = e_basis->kind() == taxonomy::ELLIPSE || e_basis->kind() == taxonomy::CIRCLE;
 
 				auto e_start = e->start;
@@ -180,10 +181,6 @@ namespace {
 				if (!e->curve_sense.get_value_or(true)) {
 					E.Reverse();
 				}
-
-				if (reversed) {
-					E.Reverse();
-				}
 			} else {
 				if (e->start.which() != 1) {
 					throw std::runtime_error("Non-cartesian trim on edge without curve");
@@ -192,6 +189,10 @@ namespace {
 				auto p2 = OpenCascadeKernel::convert_xyz<gp_Pnt>(*boost::get<taxonomy::point3::ptr>(e->end));
 
 				E = BRepBuilderAPI_MakeEdge(p1, p2).Edge();
+			}
+
+			if (reversed) {
+				E.Reverse();
 			}
 
 #ifdef IFOPSH_DEBUG
@@ -228,6 +229,8 @@ OpenCascadeKernel::curve_creation_visitor_result_type OpenCascadeKernel::convert
 		throw std::runtime_error("No curve created");
 	}
 }
+
+#include "../../../ifcparse/IfcFile.h"
 
 bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wire) {
 	TopTools_ListOfShape converted_segments;
@@ -272,12 +275,13 @@ bool OpenCascadeKernel::convert(const taxonomy::loop::ptr loop, TopoDS_Wire& wir
 
 	TopTools_ListIteratorOfListOfShape it(converted_segments);
 
-	/*
-	@todo
-	IfcEntityList::ptr profile = l->data().getInverse(&IfcSchema::IfcProfileDef::Class(), -1);
-	const bool force_close = profile && profile->size() > 0;
-	*/
-	const bool force_close = false;
+	bool force_close = false;
+	if (loop->instance && loop->instance->as<IfcUtil::IfcBaseEntity>() && loop->instance->as<IfcUtil::IfcBaseEntity>()->file_) {
+		auto* inst = loop->instance->as<IfcUtil::IfcBaseEntity>();
+		auto* file = loop->instance->as<IfcUtil::IfcBaseEntity>()->file_;
+		auto profile = file->getInverse(inst->id(), file->schema()->declaration_by_name("IfcProfileDef"), -1);
+		force_close = profile && profile->size() > 0;
+	}
 
 	wire_builder bld(precision_, loop->instance ? loop->instance->as<IfcUtil::IfcBaseEntity>() : nullptr);
 	shape_pair_enumerate(it, bld, force_close);

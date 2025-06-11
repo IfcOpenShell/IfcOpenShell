@@ -31,13 +31,9 @@ def add_person(
 
     :param identification: The computer readable unique identification of
         the person. For example, their username in a CDE or alias.
-    :type identification: str, optional
     :param family_name: The family name
-    :type family_name: str, optional
     :param given_name: The given name
-    :type given_name: str, optional
     :return: The newly created IfcPerson
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -46,15 +42,9 @@ def add_person(
         ifcopenshell.api.owner.add_person(model,
             identification="bobthebuilder", family_name="Thebuilder", given_name="Bob")
     """
-    settings = {
-        "identification": identification,
-        "family_name": family_name,
-        "given_name": given_name,
-    }
-
-    data = {"FamilyName": settings["family_name"], "GivenName": settings["given_name"]}
+    data = {"FamilyName": family_name, "GivenName": given_name}
     if file.schema == "IFC2X3":
-        data["Id"] = settings["identification"]
+        data["Id"] = identification
     else:
-        data["Identification"] = settings["identification"]
+        data["Identification"] = identification
     return file.create_entity("IfcPerson", **data)

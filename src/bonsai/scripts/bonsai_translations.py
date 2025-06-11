@@ -18,7 +18,7 @@ import os
 import re
 from pathlib import Path
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Optional
 
 bl_info = {
     "name": "Bonsai Translations",
@@ -70,12 +70,12 @@ def rearrange_files_for_po_import(po_dir_path: Path, temp_directory: tempfile.Te
 class Message:
     msgid: str
     msgctxt: str | None
-    sources: Optional[List[str]] = field(default_factory=list)
+    sources: Optional[list[str]] = field(default_factory=list)
     # mapping languages to translated strings
-    translations: Optional[Dict[str, str]] = field(default_factory=dict)
+    translations: Optional[dict[str, str]] = field(default_factory=dict)
 
 
-def bonsai_strings_parse(addon_directory=None, po_directory=None):
+def bonsai_strings_parse(addon_directory: Optional[Path] = None, po_directory: Optional[Path] = None):
     # NOTE: we decided to use our own parser due bug in Blender parser
     # as it tends to pick up strings from other addons and other Blender parts
     # and this bug probably would be to low of a priority for Blender to fix
@@ -98,7 +98,7 @@ def bonsai_strings_parse(addon_directory=None, po_directory=None):
         r'\b_\("(.*?)"\)',  # gettext called with `_`
     ]
     regexes = [re.compile(pattern) for pattern in patterns]
-    matched_dict: Dict[str, Message] = dict()
+    matched_dict: dict[str, Message] = dict()
 
     # NOTE: currently there is no special handling same message with different contexts
     for root, dirs, files in os.walk(directory):
@@ -151,9 +151,9 @@ def bonsai_strings_parse(addon_directory=None, po_directory=None):
 
 
 def update_translations_from_po(po_directory: Path, translations_module: Path):
-    translation_data: Dict[str, Message] = dict()
+    translation_data: dict[str, Message] = dict()
 
-    def process_po_entry(language, current_chunk: list[str]):
+    def process_po_entry(language: str, current_chunk: list[str]) -> None:
         sources = []
         msgid = None
         msgstr = None
@@ -171,6 +171,7 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
             elif line.startswith("#:"):
                 sources.append(line.removeprefix("# ").strip())
 
+        assert msgid is not None and msgstr is not None
         msg = translation_data.get(msgid)
         if msg is None:
             msg = Message(msgid, msgctxt, sources, {language: msgstr})
@@ -179,12 +180,12 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
             msg.sources.extend(sources)
             msg.translations[language] = msgstr
 
-    # load data from .po files
-    langs = set()
+    # load data from .po files to translation_data.
+    langs: set[str] = set()
     for po_file_path in po_directory.glob("**/*.po"):
         lang = po_file_path.stem
         langs.add(lang)
-        with open(po_file_path, "r") as po_file:
+        with open(po_file_path, "r", encoding="utf-8") as po_file:
             current_chunk = []
             for line in po_file:
                 current_chunk.append(line)
@@ -200,7 +201,8 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
     for lang in langs:
         ret.append(f'{tab}"{lang}": {{')
         for msgid, msg in translation_data.items():
-            if (msgstr := msg.translations[lang]) in (None, ""):
+            # World isn't perfect and .po files can get out of sync, so let's make it permissive.
+            if (msgstr := msg.translations.get(lang)) in (None, ""):
                 continue
             msgctxt = msg.msgctxt
             if not msgctxt:
@@ -210,7 +212,7 @@ def update_translations_from_po(po_directory: Path, translations_module: Path):
 
     ret.append("}")
 
-    with open(translations_module / "translations.py", "w") as fo:
+    with open(translations_module / "translations.py", "w", encoding="utf-8") as fo:
         fo.write("\n".join(ret))
 
 
@@ -272,8 +274,10 @@ if BPY_IS_LOADED:
                     f"Couldn't find locale path in the source directory, creating dummy directory: {source_locale_path}.",
                 )
 
-            from ui_translate.settings import settings as ui_translate_settings
-            from ui_translate.update_ui import UI_OT_i18n_updatetranslation_init_settings
+            from ui_translate.settings import settings as ui_translate_settings  # pyright: ignore[reportMissingImports]
+            from ui_translate.update_ui import (  # pyright: ignore[reportMissingImports]
+                UI_OT_i18n_updatetranslation_init_settings,
+            )
 
             i18n_settings = context.window_manager.i18n_update_settings
             if not i18n_settings.is_init:

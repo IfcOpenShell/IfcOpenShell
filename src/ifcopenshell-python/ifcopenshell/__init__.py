@@ -65,7 +65,7 @@ if TYPE_CHECKING:
     import ifcopenshell.express.schema_class
 
 
-if hasattr(os, "uname"):
+if sys.platform != "win32":
     platform_system = os.uname()[0].lower()
 else:
     platform_system = "windows"
@@ -158,7 +158,7 @@ def open(
         print(products[0] == model[122] == model["2XQ$n5SLP5MBLyL442paFx"]) # True
     """
     path = Path(path)
-    if not path.exists():
+    if not path.is_file():
         raise FileNotFoundError(f"File does not exist: '{path}'.")
     if format is None:
         format = guess_format(path)
@@ -166,7 +166,7 @@ def open(
         f = ifcopenshell_wrapper.parse_ifcxml(str(path.absolute()))
         if f:
             return file(f)
-        raise IOError(f"Failed to parse .ifcXML file from {path}")
+        raise OSError(f"Failed to parse .ifcXML file from {path}")
     if format == ".ifcZIP":
         with tempfile.TemporaryDirectory() as unzipped_path:
             with zipfile.ZipFile(path) as zf:
@@ -237,6 +237,10 @@ def schema_by_name(
 
     :param schema: Which IFC schema to use, chosen from "IFC2X3", "IFC4",
         or "IFC4X3". These refer to the ISO approved versions of IFC.
+        E.g. from ``ifcopenshell.file.schema_identifier``.
+        Passing ``ifcopenshell.file.schema`` also will work but may result
+        in not precisely matching schema but it's only conern if you're
+        using not one of the main schemas.
     :param schema_version: If you want to specify an exact version of IFC
         that may not be an ISO approved version, use this argument instead
         of ``schema``. IFC versions on technical.buildingsmart.org are
@@ -256,7 +260,7 @@ def schema_by_name(
     return ifcopenshell_wrapper.schema_by_name(schema)
 
 
-def guess_format(path: Path) -> Union[str, None]:
+def guess_format(path: Path) -> Literal[".ifc", ".ifcZIP", ".ifcXML", ".ifcJSON", ".ifcSQLite", None]:
     """Guesses the IFC format using file extension
 
     IFCs may be serialised as different formats. The most common is a ``.ifc``
@@ -269,8 +273,6 @@ def guess_format(path: Path) -> Union[str, None]:
 
     Users generally won't call this function. The :func:`open` function uses
     this internally to guess the file format.
-
-    :return: Either .ifc, .ifcZIP, .ifcXML, .ifcJSON, .ifcSQLite, or None.
     """
     suffix = path.suffix.lower()
     if suffix == ".ifc":

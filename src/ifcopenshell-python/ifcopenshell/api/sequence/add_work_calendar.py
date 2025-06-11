@@ -38,12 +38,10 @@ def add_work_calendar(
 
     :param name: The name of the calendar. Typically something like
         "5 Day Working Week" or "24/7".
-    :type name: str, optional
     :param predefined_type: The type of calendar, typically used to more
         specifically define shifts, such as FIRSTSHIFT, SECONDSHIFT, or
         THIRDSHIFT. Leave as NOTDEFINED for basic calendar usage.
     :return: The newly created IfcWorkCalendar
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -79,13 +77,11 @@ def add_work_calendar(
         # this calendar by default (though you can override them).
         ifcopenshell.api.control.assign_control(model, relating_control=calendar, related_object=task)
     """
-    settings = {"name": name, "predefined_type": predefined_type}
-
     work_calendar = ifcopenshell.api.root.create_entity(
         file,
         ifc_class="IfcWorkCalendar",
-        predefined_type=settings["predefined_type"],
-        name=settings["name"],
+        predefined_type=predefined_type,
+        name=name,
     )
     context = file.by_type("IfcContext")[0]
     ifcopenshell.api.project.assign_declaration(

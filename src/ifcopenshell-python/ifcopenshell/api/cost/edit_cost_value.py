@@ -31,11 +31,8 @@ def edit_cost_value(
     IfcCostValue, consult the IFC documentation.
 
     :param cost_value: The IfcCostValue entity you want to edit
-    :type cost_value: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -49,20 +46,18 @@ def edit_cost_value(
         ifcopenshell.api.cost.edit_cost_value(model, cost_value=value,
             attributes={"AppliedValue": 42.0})
     """
-    settings = {"cost_value": cost_value, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
+    for name, value in attributes.items():
         if name == "AppliedValue" and value is not None:
             # TODO: support all applied value select types
             value = file.createIfcMonetaryMeasure(value)
         elif name == "UnitBasis":
-            old_unit_basis = settings["cost_value"].UnitBasis
+            old_unit_basis = cost_value.UnitBasis
             if value:
                 value_component = file.create_entity(
                     ifcopenshell.util.unit.get_unit_measure_class(value["UnitComponent"].UnitType),
                     value["ValueComponent"],
                 )
                 value = file.create_entity("IfcMeasureWithUnit", value_component, value["UnitComponent"])
-            if old_unit_basis and len(file.get_inverse(old_unit_basis)) == 0:
+            if old_unit_basis and file.get_total_inverses(old_unit_basis) == 0:
                 ifcopenshell.util.element.remove_deep(file, old_unit_basis)
-        setattr(settings["cost_value"], name, value)
+        setattr(cost_value, name, value)

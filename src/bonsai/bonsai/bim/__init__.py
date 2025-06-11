@@ -20,9 +20,10 @@ import os
 import bpy
 import bpy.utils.previews
 import importlib
-from pathlib import Path
-from . import handler, ui, prop, operator, helper
-from typing import Callable, Union
+from bpy_extras.io_utils import ImportHelper, ExportHelper
+from . import handler, ui, prop, operator
+from typing import Union
+from collections.abc import Callable
 
 try:
     from bonsai.translations import translations_dict
@@ -84,6 +85,7 @@ modules = {
     "covering": None,
     "web": None,
     "light": None,
+    "alignment": None,
     # Uncomment this line to enable loading of the demo module. Happy hacking!
     # The name "demo" must correlate to a folder name in `bim/module/`.
     # "demo": None,
@@ -99,26 +101,30 @@ classes = [
     operator.BIM_OT_add_section_plane,
     operator.BIM_OT_delete_object,
     operator.BIM_OT_remove_section_plane,
+    operator.BIM_OT_select_entity,
+    operator.BIM_OT_select_entity_by_guid,
     operator.BIM_OT_select_object,
     operator.BIM_OT_show_description,
     operator.BIM_OT_multiple_file_selector,
     operator.ClippingPlaneCutWithCappings,
     operator.CloseBlendWarning,
     operator.CloseError,
+    operator.CopyTextToClipboard,
     operator.EditBlenderCollection,
     operator.FileAssociate,
     operator.FileUnassociate,
+    operator.OpenPath,
     operator.OpenUpstream,
     operator.OpenUri,
     operator.ReloadIfcFile,
     operator.RemoveIfcFile,
     operator.RevertClippingPlaneCut,
-    operator.SelectDataDir,
+    operator.SelectDir,
     operator.SelectIfcFile,
-    operator.SelectSchemaDir,
     operator.SelectURIAttribute,
     operator.SetTab,
     operator.SwitchTab,
+    operator.ShowSystemInfo,
     prop.StrProperty,
     operator.BIM_OT_enum_property_search,  # /!\ Register AFTER prop.StrProperty
     prop.ObjProperty,
@@ -135,6 +141,8 @@ classes = [
     prop.BIMMeshProperties,
     prop.BIMFacet,
     prop.BIMFilterGroup,
+    prop.BIMSnapProperties,
+    prop.BIMSnapGroups,
     ui.BIM_UL_clipping_plane,
     ui.BIM_UL_generic,
     ui.BIM_UL_topics,
@@ -145,10 +153,10 @@ classes = [
     ui.BIM_PT_tab_new_project_wizard,
     ui.BIM_PT_tab_project_info,
     ui.BIM_PT_tab_spatial,
+    ui.BIM_PT_tab_grouping_and_filtering,
     ui.BIM_PT_tab_project_setup,
     ui.BIM_PT_tab_geometry,
     ui.BIM_PT_tab_stakeholders,
-    ui.BIM_PT_tab_grouping_and_filtering,
     # Object information
     ui.BIM_PT_tab_object_metadata,
     ui.BIM_PT_tab_misc,
@@ -190,6 +198,8 @@ classes = [
     # TODO: move this somewhere else and clean it up
     ui.BIM_PT_section_plane,
     ui.BIM_PT_section_with_cappings,
+    ui.BIM_PT_decorators_overlay,
+    ui.BIM_PT_snappping,
 ]
 
 for mod in modules.values():
@@ -215,13 +225,20 @@ def on_register(scene):
 
 def register():
     for cls in classes:
+        # Prevent crashes in Blender 4.4.0, see #6420.
+        if issubclass(cls, (ImportHelper, ExportHelper)):
+            assert getattr(cls, "bl_description", "") or cls.__doc__, cls
+
         bpy.utils.register_class(cls)
+
     bpy.app.handlers.depsgraph_update_post.append(on_register)
     bpy.app.handlers.undo_post.append(handler.undo_post)
     bpy.app.handlers.redo_post.append(handler.redo_post)
     bpy.app.handlers.load_post.append(handler.load_post)
     bpy.app.handlers.load_post.append(handler.loadIfcStore)
     bpy.types.Scene.BIMProperties = bpy.props.PointerProperty(type=prop.BIMProperties)
+    bpy.types.Scene.BIMSnapProperties = bpy.props.PointerProperty(type=prop.BIMSnapProperties)
+    bpy.types.Scene.BIMSnapGroups = bpy.props.PointerProperty(type=prop.BIMSnapGroups)
     bpy.types.Screen.BIMAreaProperties = bpy.props.CollectionProperty(type=prop.BIMAreaProperties)
     bpy.types.Screen.BIMTabProperties = bpy.props.PointerProperty(type=prop.BIMTabProperties)
     bpy.types.Collection.BIMCollectionProperties = bpy.props.PointerProperty(type=prop.BIMCollectionProperties)
@@ -255,6 +272,12 @@ def register():
 
     icons = icon_preview
     bpy.app.translations.register("bonsai", translations_dict)
+
+    import bonsai.tool as tool
+
+    tool.Blender.ensure_bin_in_path()
+    # RestrictedContext doesn't allow accessing scene attribute, postpone it for a bit.
+    bpy.app.timers.register(tool.Blender.setup_user_data_dir, first_interval=0.1)
 
 
 def unregister():

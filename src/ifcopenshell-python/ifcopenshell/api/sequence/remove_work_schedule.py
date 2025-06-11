@@ -47,32 +47,30 @@ def remove_work_schedule(file: ifcopenshell.file, work_schedule: ifcopenshell.en
         # And remove it immediately
         ifcopenshell.api.sequence.remove_work_schedule(model, work_schedule=schedule)
     """
-    settings = {"work_schedule": work_schedule}
-
     # TODO: do a deep purge
     ifcopenshell.api.project.unassign_declaration(
-        file, definitions=[settings["work_schedule"]], relating_context=file.by_type("IfcContext")[0]
+        file, definitions=[work_schedule], relating_context=file.by_type("IfcContext")[0]
     )
 
-    if settings["work_schedule"].Declares:
-        for rel in settings["work_schedule"].Declares:
-            for work_schedule in rel.RelatedObjects:
-                ifcopenshell.api.sequence.remove_work_schedule(file, work_schedule=work_schedule)
+    if work_schedule.Declares:
+        for rel in work_schedule.Declares:
+            for work_schedule_ in rel.RelatedObjects:
+                ifcopenshell.api.sequence.remove_work_schedule(file, work_schedule=work_schedule_)
 
     # Unassign from work plans.
-    if settings["work_schedule"].Decomposes:
-        ifcopenshell.api.aggregate.unassign_object(file, [settings["work_schedule"]])
+    if work_schedule.Decomposes:
+        ifcopenshell.api.aggregate.unassign_object(file, [work_schedule])
 
-    for inverse in file.get_inverse(settings["work_schedule"]):
+    for inverse in file.get_inverse(work_schedule):
         if inverse.is_a("IfcRelDefinesByObject"):
-            if inverse.RelatingObject == settings["work_schedule"] or len(inverse.RelatedObjects) == 1:
+            if inverse.RelatingObject == work_schedule or len(inverse.RelatedObjects) == 1:
                 history = inverse.OwnerHistory
                 file.remove(inverse)
                 if history:
                     ifcopenshell.util.element.remove_deep2(file, history)
             else:
                 related_objects = list(inverse.RelatedObjects)
-                related_objects.remove(settings["work_schedule"])
+                related_objects.remove(work_schedule)
                 inverse.RelatedObjects = related_objects
         elif inverse.is_a("IfcRelAssignsToControl"):
             [
@@ -81,7 +79,7 @@ def remove_work_schedule(file: ifcopenshell.file, work_schedule: ifcopenshell.en
                 if related_object.is_a("IfcTask")
             ]
 
-    history = settings["work_schedule"].OwnerHistory
-    file.remove(settings["work_schedule"])
+    history = work_schedule.OwnerHistory
+    file.remove(work_schedule)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)

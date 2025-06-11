@@ -18,6 +18,8 @@
 
 import bpy
 import ifcopenshell
+import ifcopenshell.api
+import ifcopenshell.api.spatial
 import bonsai.core.tool
 import bonsai.tool as tool
 from test.bim.bootstrap import NewFile
@@ -54,14 +56,16 @@ class TestDisableEditing(NewFile):
         obj = bpy.data.objects.new("Object", None)
         subject.enable_editing(obj)
         subject.disable_editing(obj)
-        assert obj.BIMObjectNestProperties.is_editing is False
+        props = tool.Nest.get_object_nest_props(obj)
+        assert props.is_editing is False
 
 
 class TestEnableEditing(NewFile):
     def test_run(self):
         obj = bpy.data.objects.new("Object", None)
         subject.enable_editing(obj)
-        assert obj.BIMObjectNestProperties.is_editing is True
+        props = tool.Nest.get_object_nest_props(obj)
+        assert props.is_editing is True
 
 
 class TestGetContainer(NewFile):
@@ -70,5 +74,5 @@ class TestGetContainer(NewFile):
         tool.Ifc.set(ifc)
         element = ifc.createIfcWall()
         container = ifc.createIfcBuildingStorey()
-        ifcopenshell.api.run("spatial.assign_container", ifc, products=[element], relating_structure=container)
+        ifcopenshell.api.spatial.assign_container(ifc, products=[element], relating_structure=container)
         assert subject.get_container(element) == container

@@ -23,6 +23,7 @@ import time
 import random
 import logging
 import subprocess
+import platform
 import ifcopenshell
 import ifcopenshell.api
 import ifcopenshell.geom
@@ -36,10 +37,12 @@ import bonsai.core.profile
 import bonsai.core.type
 import bonsai.bim.handler
 import bonsai.bim.import_ifc as import_ifc
+from collections import defaultdict
+from bpy_extras.io_utils import ImportHelper, ExportHelper
 from pathlib import Path
 from bonsai import get_debug_info, format_debug_info
 from bonsai.bim.ifc import IfcStore
-from typing import get_args
+from typing import get_args, Union
 
 
 class CopyDebugInformation(bpy.types.Operator):
@@ -78,10 +81,10 @@ class PrintIfcFile(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def execute(self, context):
-        print(IfcStore.get_file().wrapped_data.to_string())
+        print(tool.Ifc.get().wrapped_data.to_string())
         return {"FINISHED"}
 
 
@@ -101,13 +104,14 @@ class ConvertToBlender(bpy.types.Operator):
                 if tool.Geometry.has_mesh_properties(data):
                     if data.library:
                         continue
-                    data.BIMMeshProperties.ifc_definition_id = 0
+                    tool.Geometry.get_mesh_props(data).ifc_definition_id = 0
         for material in bpy.data.materials:
             if material.library:
                 continue
             tool.Ifc.unlink(obj=material)
-        context.scene.BIMProperties.ifc_file = ""
-        context.scene.BIMDebugProperties.attributes.clear()
+        bim_props = tool.Blender.get_bim_props()
+        bim_props.ifc_file = ""
+        tool.Debug.get_debug_props().attributes.clear()
         IfcStore.purge()
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
@@ -149,6 +153,67 @@ class ValidateIfcFile(bpy.types.Operator):
         return {"FINISHED"}
 
 
+class ValidateIfcAssets(bpy.types.Operator):
+    bl_idname = "bim.validate_ifc_assets"
+    bl_label = "Validate IFC Assets"
+    bl_description = (
+        "Run Bonsai validation for IFC assets.\n\n"
+        "There's an internal Bonsai convention to treat some IFC assets "
+        "as unique based on their name (e.g. profiles, materials, styles).\n"
+        "Though it's not required by IFC, it is a generally good practice "
+        "to keep asset names unique and it also helps with various issues.\n"
+        "If it's not conformed, it could lead to duplicated assets or "
+        "the opposite - different assets of the same name treated as one."
+    )
+    bl_options = set()
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("IFC file is not loaded.")
+            return False
+        return True
+
+    def execute(self, context):
+        ifc_file = tool.Ifc.get()
+
+        ifc_classes = {
+            "IfcMaterial": "Name",
+            "IfcProfileDef": "ProfileName",
+            "IfcPresentationStyle": "Name",
+        }
+
+        issues_found = False
+        unique_assets: defaultdict[str, list[ifcopenshell.entity_instance]]
+        for ifc_class, name_attr in ifc_classes.items():
+            unique_assets = defaultdict(list)
+            for asset in ifc_file.by_type(ifc_class):
+                asset_name: Union[str, None] = getattr(asset, name_attr)
+                if asset_name is None:
+                    continue
+                unique_assets[asset_name].append(asset)
+
+            msg = ""
+            for asset_name, assets in unique_assets.items():
+                if len(assets) == 1:
+                    continue
+                msg += f"{ifc_class} name '{asset_name}' is used by multiple assets:\n"
+                for asset in assets:
+                    msg += f"- {asset}\n"
+
+            if msg:
+                issues_found = True
+                msg = f"Found issues validating {ifc_class} assets.\n" + msg
+                print(msg)
+
+        if issues_found:
+            self.report({"INFO"}, "Check asset validation results in the system console.")
+        else:
+            self.report({"INFO"}, "No asset validation issues found.")
+
+        return {"FINISHED"}
+
+
 class ProfileImportIFC(bpy.types.Operator):
     profile_filename = "blender.prof"
     bl_idname = "bim.profile_import_ifc"
@@ -160,7 +225,8 @@ class ProfileImportIFC(bpy.types.Operator):
         if not tool.Ifc.get():
             cls.poll_message_set("No IFC file loaded.")
             return False
-        if not context.scene.BIMProperties.ifc_file:
+        bim_props = tool.Blender.get_bim_props()
+        if not bim_props.ifc_file:
             cls.poll_message_set("Current IFC file is not saved.")
             return False
         return True
@@ -184,10 +250,10 @@ class CreateAllShapes(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         elements = self.file.by_type("IfcElement") + self.file.by_type("IfcSpace")
 
         total = len(elements)
@@ -256,7 +322,7 @@ class CreateShapeFromStepId(bpy.types.Operator):
         logger = logging.getLogger("ImportIFC")
         self.ifc_import_settings = import_ifc.IfcImportSettings.factory(context, IfcStore.path, logger)
         self.file = tool.Ifc.get()
-        element = self.file.by_id(self.step_id or int(context.scene.BIMDebugProperties.step_id))
+        element = self.file.by_id(self.step_id or int(tool.Debug.get_debug_props().step_id))
         settings = ifcopenshell.geom.settings()
         settings.set("keep-bounding-boxes", True)
         if self.should_include_curves:
@@ -309,7 +375,7 @@ class RewindInspector(bpy.types.Operator):
     bl_description = "Rewind the Inspector to the previously inspected element"
 
     def execute(self, context):
-        props = context.scene.BIMDebugProperties
+        props = tool.Debug.get_debug_props()
         total_breadcrumbs = len(props.step_id_breadcrumb)
         if total_breadcrumbs < 2:
             return {"FINISHED"}
@@ -328,13 +394,13 @@ class InspectFromStepId(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def execute(self, context):
-        self.file = IfcStore.get_file()
-        debug_props = context.scene.BIMDebugProperties
+        self.file = tool.Ifc.get()
+        debug_props = tool.Debug.get_debug_props()
         debug_props.active_step_id = self.step_id
-        crumb = context.scene.BIMDebugProperties.step_id_breadcrumb.add()
+        crumb = debug_props.step_id_breadcrumb.add()
         crumb.name = str(self.step_id)
         element = self.file.by_id(self.step_id)
         debug_props.attributes.clear()
@@ -377,18 +443,29 @@ class InspectFromObject(bpy.types.Operator):
     bl_description = "Inspect the Active Object's attributes and references"
 
     @classmethod
+    def get_active_object_ifc_definition(cls, context: bpy.types.Context) -> Union[int, None]:
+        obj = context.active_object
+        assert obj
+        if ifc_id := tool.Blender.get_ifc_definition_id(obj):
+            return ifc_id
+        if (
+            (data := obj.data)
+            and tool.Geometry.has_mesh_properties(data)
+            and (ifc_id := tool.Geometry.get_mesh_props(data).ifc_definition_id)
+        ):
+            return ifc_id
+
+    @classmethod
     def poll(cls, context):
         if not context.active_object:
-            if bpy.app.version >= (3, 0, 0):
-                cls.poll_message_set("No Active Object")
-        elif not context.active_object.BIMObjectProperties.ifc_definition_id:
-            if bpy.app.version >= (3, 0, 0):
-                cls.poll_message_set("Active Object doesn't have an IFC definition")
+            cls.poll_message_set("No Active Object")
+        elif not cls.get_active_object_ifc_definition(context):
+            cls.poll_message_set("Active Object doesn't have an IFC definition")
         else:
             return True
 
     def execute(self, context):
-        bpy.ops.bim.inspect_from_step_id(step_id=context.active_object.BIMObjectProperties.ifc_definition_id)
+        bpy.ops.bim.inspect_from_step_id(step_id=InspectFromObject.get_active_object_ifc_definition(context))
         return {"FINISHED"}
 
 
@@ -411,7 +488,7 @@ class PrintObjectPlacement(bpy.types.Operator):
         return self.execute(context)
 
     def execute(self, context):
-        placement = ifcopenshell.util.placement.get_local_placement(IfcStore.get_file().by_id(self.step_id))
+        placement = ifcopenshell.util.placement.get_local_placement(tool.Ifc.get().by_id(self.step_id))
         if self.create_empty_object:
             bpy.ops.object.empty_add(type="ARROWS")
             si_conversion = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())
@@ -427,27 +504,24 @@ class ParseExpress(bpy.types.Operator):
     bl_label = "Parse Express"
 
     def execute(self, context):
-        core.parse_express(tool.Debug, context.scene.BIMDebugProperties.express_file)
+        props = tool.Debug.get_debug_props()
+        core.parse_express(tool.Debug, props.express_file)
         bonsai.bim.handler.refresh_ui_data()
         return {"FINISHED"}
 
 
-class SelectExpressFile(bpy.types.Operator):
+class SelectExpressFile(bpy.types.Operator, ImportHelper):
     bl_idname = "bim.select_express_file"
     bl_label = "Select Express File"
     bl_options = {"REGISTER", "UNDO"}
     bl_description = "Select an IFC EXPRESS definition"
-    filepath: bpy.props.StringProperty(subtype="FILE_PATH")
     filter_glob: bpy.props.StringProperty(default="*.exp", options={"HIDDEN"})
 
     def execute(self, context):
+        props = tool.Debug.get_debug_props()
         if os.path.exists(self.filepath) and "exp" in os.path.splitext(self.filepath)[1]:
-            context.scene.BIMDebugProperties.express_file = self.filepath
+            props.express_file = self.filepath
         return {"FINISHED"}
-
-    def invoke(self, context, event):
-        context.window_manager.fileselect_add(self)
-        return {"RUNNING_MODAL"}
 
 
 class PurgeHdf5Cache(bpy.types.Operator):
@@ -486,7 +560,7 @@ class PrintUnusedElementStats(bpy.types.Operator):
     ignore_styled_items: bpy.props.BoolProperty(name="Ignore Styled Items", default=True)
 
     def execute(self, context):
-        props = context.scene.BIMDebugProperties
+        props = tool.Debug.get_debug_props()
         # ignore some classes that could have zero 0 inverse references by their nature
         ignore_classes = []
         if self.ignore_contexts:
@@ -498,6 +572,7 @@ class PrintUnusedElementStats(bpy.types.Operator):
         if self.ignore_styled_items:
             ignore_classes += ["IfcStyledItem"]
         ignore_classes += [
+            "IfcDocumentReference",  # Document references for sheet elements (drawings, schedules, etc).
             "IfcIndexedColourMap",  # Only referenced by inverse attributes.
             "IfcIndexedTextureMap",  # Only referenced by inverse attributes.
         ]
@@ -507,21 +582,22 @@ class PrintUnusedElementStats(bpy.types.Operator):
         return {"FINISHED"}
 
 
-class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
+class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator, ExportHelper):
     bl_idname = "bim.purge_unused_elements_by_class"
     bl_label = "Purge Unused Elements By Class"
     bl_description = (
         "Will find all elements of class that have no inverse references and will remove them, use very carefully.\n"
-        "If IFC class is provided in neighbour field, will purge only elemnts of the provided class. Otherwise will purge all white-listed elements.\n"
+        "If IFC class is provided in neighbour field, will purge only elements of the provided class. Otherwise will purge all white-listed elements.\n"
         "ALT+CLICK to provide a path where to save the IFC file with the removed elements (note changes will be applied to the current IFC too)"
     )
     bl_options = {"REGISTER", "UNDO"}
+    filename_ext = ".ifc"
     filepath: bpy.props.StringProperty(subtype="FILE_PATH", options={"SKIP_SAVE"})
     filter_glob: bpy.props.StringProperty(default="*.ifc", options={"HIDDEN"})
 
     def invoke(self, context, event):
         if event.type == "LEFTMOUSE" and event.alt:
-            context.window_manager.fileselect_add(self)
+            return ExportHelper.invoke(self, context, event)
         return self.execute(context)
 
     @classmethod
@@ -532,7 +608,7 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
         return True
 
     def _execute(self, context):
-        props = context.scene.BIMDebugProperties
+        props = tool.Debug.get_debug_props()
         if props.ifc_class_purge:
             purged_elements = core.purge_unused_elements(tool.Ifc, tool.Debug, props.ifc_class_purge)
             self.report({"INFO"}, f"{purged_elements} unused elements found and removed.")
@@ -598,18 +674,30 @@ class PurgeUnusedElementsByClass(bpy.types.Operator, tool.Ifc.Operator):
             "IfcUnitAssignment",
             "IfcVirtualGridIntersection",
         ]
+        whitelist_exceptions = {
+            # Document references for sheet elements (drawings, schedules, etc).
+            "IfcExternalReference": ("IfcDocumentReference",),
+        }
 
         total_purged = 0
+        schema = tool.Ifc.schema()
         while True:
             total_batches = 0
             print("*" * 100)
             total_batch_purged = 0
             for ifc_class in whitelisted_classes:
                 total_class_purged = 0
+
+                # Ensure class is present in the schema.
                 try:
-                    elements = tool.Ifc.get().by_type(ifc_class)
-                except:
-                    continue  # Probably not in this schema?
+                    schema.declaration_by_name(ifc_class)
+                except RuntimeError:
+                    continue
+
+                elements = tool.Ifc.get().by_type(ifc_class)
+                if ifc_class in whitelist_exceptions:
+                    elements = [e for e in elements if not any(e.is_a(c) for c in whitelist_exceptions[ifc_class])]
+
                 to_purge = set()
                 for element in elements:
                     try:
@@ -676,15 +764,17 @@ class PurgeUnusedObjects(bpy.types.Operator, tool.Ifc.Operator):
         if purged == 0:
             return
 
-        scene = context.scene
         if object_type == "PROFILE":
-            if scene.BIMProfileProperties.is_editing:
+            props = tool.Profile.get_profile_props()
+            if props.is_editing:
                 bpy.ops.bim.load_profiles()
         elif object_type == "STYLE":
-            if scene.BIMStylesProperties.is_editing:
+            props = tool.Style.get_style_props()
+            if props.is_editing:
                 bpy.ops.bim.load_styles()
         elif object_type == "MATERIAL":
-            if scene.BIMMaterialProperties.is_editing:
+            props = tool.Material.get_material_props()
+            if props.is_editing:
                 bpy.ops.bim.load_materials()
 
 
@@ -713,9 +803,9 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
             return {"CANCELLED"}
         plural_object_type = f"{object_type.lower()}s"
         if merged_data:
-            print(f"Merged {plural_object_type}:")
             for element_type, element_names in merged_data.items():
-                print(f"- {element_type}: {', '.join(element_names)}")
+                names = ", ".join([n or "Unnamed" for n in element_names])
+                print(f"- {element_type}: {names}")
         merged = sum(len(v) for v in merged_data.values())
 
         msg = " See system console for details." if merged else ""
@@ -724,15 +814,17 @@ class MergeIdenticalObjects(bpy.types.Operator, tool.Ifc.Operator):
         if merged == 0:
             return
 
-        scene = context.scene
         if object_type == "PROFILE":
-            if scene.BIMProfileProperties.is_editing:
+            props = tool.Profile.get_profile_props()
+            if props.is_editing:
                 bpy.ops.bim.load_profiles()
         elif object_type == "STYLE":
-            if scene.BIMStylesProperties.is_editing:
+            props = tool.Style.get_style_props()
+            if props.is_editing:
                 bpy.ops.bim.load_styles()
         elif object_type == "MATERIAL":
-            if scene.BIMMaterialProperties.is_editing:
+            props = tool.Material.get_material_props()
+            if props.is_editing:
                 bpy.ops.bim.load_materials()
 
 
@@ -788,7 +880,7 @@ class DebugActiveDrawing(bpy.types.Operator):
     )
 
     def execute(self, context: bpy.types.Context):
-        props = context.scene.DocProperties
+        props = tool.Drawing.get_document_props()
         drawing_item = props.drawings[props.active_drawing_index]
         drawing = tool.Ifc.get().by_id(drawing_item.ifc_definition_id)
 
@@ -923,7 +1015,24 @@ class RestartBlender(bpy.types.Operator):
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        import os
+        # Save preferences manually since we're restarting Blender using .execv
+        # and it doens't have a chance to save them on exit.
+        if context.preferences.use_preferences_save:
+            bpy.ops.wm.save_userpref()
 
-        path = bpy.app.binary_path
-        os.execv(path, sys.argv)
+        ms_store_app_id = tool.Blender.get_microsoft_store_app_id()
+        if not ms_store_app_id:
+            path = bpy.app.binary_path
+            if platform.system() == "Windows":
+                args = sys.argv[1:]
+                command_line = subprocess.list2cmdline([path] + args)
+                os.execv(path, [command_line])
+            else:
+                os.execv(path, sys.argv)
+        else:
+            # Microsoft apps do not allow launching blender.exe directly
+            # since Blender folder is kind of private.
+            cmd_exe = Path(os.environ["SystemRoot"]) / "system32" / "cmd.exe"
+            blender_app = f"shell:AppsFolder\\BlenderFoundation.Blender_{ms_store_app_id}!BLENDER"
+            cmd_args = ["/c", "start", blender_app] + sys.argv[1:]
+            os.execv(cmd_exe, cmd_args)

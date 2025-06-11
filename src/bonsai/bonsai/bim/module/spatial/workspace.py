@@ -23,6 +23,7 @@ import bonsai.tool as tool
 from bonsai.bim.module.model.data import AuthoringData
 from bpy.types import WorkSpaceTool
 import bonsai.core.spatial
+from functools import partial
 
 
 class SpatialTool(WorkSpaceTool):
@@ -49,16 +50,14 @@ class SpatialTool(WorkSpaceTool):
         SpatialToolUI.draw(context, layout)
 
 
-def add_layout_hotkey(layout: bpy.types.UILayout, text: str, hotkey: str, description: str) -> None:
-    args = ("spatial", layout, text, hotkey, description)
-    tool.Blender.add_layout_hotkey_operator(*args)
+add_layout_hotkey = partial(tool.Blender.add_layout_hotkey_operator, tool_name="spatial", module_name=__name__)
 
 
 class SpatialToolUI:
     @classmethod
     def draw(cls, context, layout):
         cls.layout = layout
-        cls.model_props = context.scene.BIMModelProperties
+        cls.model_props = tool.Model.get_model_props()
 
         row = cls.layout.row(align=True)
         if not tool.Ifc.get():
@@ -125,8 +124,8 @@ class SpatialToolUI:
 
 class Hotkey(bpy.types.Operator, tool.Ifc.Operator):
     bl_idname = "bim.spatial_hotkey"
-    bl_label = "Hotkey"
-    bl_options = {"REGISTER", "UNDO"}
+    bl_label = ""
+    bl_options = {"REGISTER", "UNDO", "INTERNAL"}
     hotkey: bpy.props.StringProperty()
     description: bpy.props.StringProperty()
 

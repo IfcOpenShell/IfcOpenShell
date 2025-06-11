@@ -10,23 +10,14 @@ Scenario: Add type - adding via manual class assignment
     When I press "bim.assign_class"
     Then nothing happens
 
-Scenario: Add type - add from empty template
-    Given an empty IFC project
-    And I press "bim.launch_type_manager"
-    And I set "scene.BIMModelProperties.type_class" to "IfcWallType"
-    And I set "scene.BIMModelProperties.type_predefined_type" to "SOLIDWALL"
-    And I set "scene.BIMModelProperties.type_template" to "EMPTY"
-    When I press "bim.add_type"
-    Then the object "IfcWallType/TYPEX" is an "IfcWallType"
-    And the object "IfcWallType/TYPEX" has no data
-
 Scenario: Enable editing type
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     When I press "bim.enable_editing_type"
     Then nothing happens
 
@@ -34,9 +25,10 @@ Scenario: Disable editing type
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I press "bim.enable_editing_type"
     When I press "bim.disable_editing_type"
     Then nothing happens
@@ -45,9 +37,10 @@ Scenario: Assign type - assign to an empty type
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I add an empty
     And the object "Empty" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
@@ -61,9 +54,10 @@ Scenario: Assign type - assign to a type with representation maps
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I add a cube
     And the object "Cube" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
@@ -73,13 +67,14 @@ Scenario: Assign type - assign to a type with representation maps
     And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "MappedRepresentation" representation of "Model/Body/MODEL_VIEW"
 
-Scenario: Assign type - assign to a type with a material layer set, which automatically recreates the shape
+Scenario: Assign type - assign to a type with a material layer set, which automatically recreates a mesh and resets dimensions
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I add an empty
     And the object "Empty" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
@@ -92,15 +87,37 @@ Scenario: Assign type - assign to a type with a material layer set, which automa
     And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcWall/Cube" has a "100" thick layered material containing the material "Default"
-    And the object "IfcWall/Cube" dimensions are "2,.1,3"
+    And the object "IfcWall/Cube" dimensions are "1,.1,1"
+
+Scenario: Assign type - assign to a type with a material layer set, which automatically recreates a solid (preserving parameters)
+    Given an empty IFC project
+    And I trigger "Add Element"
+    And I set the "Definition" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I set the "Representation" property to "Custom Extruded Solid"
+    And I click "OK"
+    And I add an empty
+    And the object "Empty" is selected
+    And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I press "bim.assign_class"
+    And I press "bim.add_material()"
+    And I set "active_object.BIMObjectMaterialProperties.material_type" to "IfcMaterialLayerSet"
+    And I press "bim.assign_material"
+    When the variable "type" is "{ifc}.by_type('IfcWallType')[0].id()"
+    And I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Unnamed')"
+    Then the object "IfcWall/Unnamed" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
+    And the object "IfcWall/Unnamed" has a "100" thick layered material containing the material "Default"
+    And the object "IfcWall/Unnamed" dimensions are ".5,.1,.5"
 
 Scenario: Assign type - assign to a different type with a material layer set
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I add an empty
     And the object "Empty" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
@@ -127,18 +144,19 @@ Scenario: Assign type - assign to a different type with a material layer set
     When I press "bim.assign_type(relating_type={type}, related_object='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "SweptSolid" representation of "Model/Body/MODEL_VIEW"
     And the object "IfcWall/Cube" has a "100" thick layered material containing the material "Default"
-    And the object "IfcWall/Cube" dimensions are "2,.1,3"
+    And the object "IfcWall/Cube" dimensions are "1,.1,1"
     When I press "bim.assign_type(relating_type={type2}, related_object='IfcWall/Cube')"
     Then the object "IfcWall/Cube" has a "200" thick layered material containing the material "Default"
-    And the object "IfcWall/Cube" dimensions are "2,.2,3"
+    And the object "IfcWall/Cube" dimensions are "1,.2,1"
 
 Scenario: Assign type - assign to a type with a material profile set
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I add an empty
     And the object "Empty" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
@@ -160,9 +178,10 @@ Scenario: Select type objects
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I add an empty
     And the object "Empty" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
@@ -178,14 +197,16 @@ Scenario: Select similar type
     Given an empty IFC project
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I add a cube
     And the object "Cube" is selected
-    And I set "scene.BIMRootProperties.ifc_product" to "IfcElement"
-    And I set "scene.BIMRootProperties.ifc_class" to "IfcWall"
-    And I press "bim.assign_class"
+    And I look at the "Class" panel
+    And I set the "Products" property to "IfcElement"
+    And I set the "Class" property to "IfcWall"
+    And I click "Assign IFC Class"
     And I add an empty
     And the object "Empty" is selected
     And I set "scene.BIMRootProperties.ifc_product" to "IfcElementType"
@@ -202,11 +223,11 @@ Scenario: Select similar type
 Scenario: Purge unused types
     Given an empty IFC project
     And I press "bim.launch_type_manager"
-    And I set "scene.BIMModelProperties.type_class" to "IfcWallType"
-    And I set "scene.BIMModelProperties.type_predefined_type" to "SOLIDWALL"
-    And I set "scene.BIMModelProperties.type_template" to "EMPTY"
-    When I press "bim.add_type"
-    Then the object "IfcWallType/TYPEX" is an "IfcWallType"
-    And the object "IfcWallType/TYPEX" has no data
-    When I press "bim.purge_unused_types"
-    Then the object "IfcWallType/TYPEX" does not exist
+    And I set "scene.BIMRootProperties.ifc_class" to "IfcWallType"
+    And I set "scene.BIMRootProperties.ifc_predefined_type" to "SOLIDWALL"
+    And I set "scene.BIMRootProperties.representation_template" to "EMPTY"
+    When I press "bim.add_element"
+    Then the object "IfcWallType/Unnamed" is an "IfcWallType"
+    And the object "IfcWallType/Unnamed" has no data
+    When I press "bim.purge_unused_objects(object_type='TYPE')"
+    Then the object "IfcWallType/Unnamed" does not exist

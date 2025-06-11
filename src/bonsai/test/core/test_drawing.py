@@ -17,7 +17,7 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bonsai.core.drawing as subject
-from test.core.bootstrap import ifc, drawing, collector
+from test.core.bootstrap import ifc, drawing, collector, geometry, blender, Prophecy
 
 
 class TestEnableEditingText:
@@ -34,9 +34,10 @@ class TestDisableEditingText:
 
 
 class TestEditText:
-    def test_run(self, ifc, drawing):
+    def test_run(self, drawing):
         drawing.synchronise_ifc_and_text_attributes("obj").should_be_called()
         drawing.update_text_size_pset("obj").should_be_called()
+        drawing.update_newline_at("obj").should_be_called()
         drawing.update_text_value("obj").should_be_called()
         drawing.disable_editing_text("obj").should_be_called()
         subject.edit_text(drawing, obj="obj")
@@ -56,14 +57,26 @@ class TestDisableEditingAssignedProduct:
 
 
 class TestEditAssignedProduct:
-    def test_run(self, ifc, drawing):
+    def test_text_annotation(self, ifc, drawing):
         ifc.get_entity("obj").should_be_called().will_return("element")
         drawing.get_assigned_product("element").should_be_called().will_return("existing_product")
         ifc.run(
             "drawing.unassign_product", relating_product="existing_product", related_object="element"
         ).should_be_called()
         ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
+        drawing.is_annotation_object_type("element", ("TEXT", "TEXT_LEADER")).should_be_called().will_return(True)
         drawing.update_text_value("obj").should_be_called()
+        drawing.disable_editing_assigned_product("obj").should_be_called()
+        subject.edit_assigned_product(ifc, drawing, obj="obj", product="product")
+
+    def test_non_text_annotation(self, ifc, drawing):
+        ifc.get_entity("obj").should_be_called().will_return("element")
+        drawing.get_assigned_product("element").should_be_called().will_return("existing_product")
+        ifc.run(
+            "drawing.unassign_product", relating_product="existing_product", related_object="element"
+        ).should_be_called()
+        ifc.run("drawing.assign_product", relating_product="product", related_object="element").should_be_called()
+        drawing.is_annotation_object_type("element", ("TEXT", "TEXT_LEADER")).should_be_called().will_return(False)
         drawing.disable_editing_assigned_product("obj").should_be_called()
         subject.edit_assigned_product(ifc, drawing, obj="obj", product="product")
 
@@ -149,11 +162,11 @@ class TestAddSheet:
         subject.add_sheet(ifc, drawing, titleblock="titleblock")
 
 
-class TestOpenSheet:
+class TestOpenLayout:
     def test_run(self, drawing):
         drawing.get_document_uri("sheet", "LAYOUT").should_be_called().will_return("uri")
         drawing.open_layout_svg("uri").should_be_called()
-        subject.open_sheet(drawing, sheet="sheet")
+        subject.open_layout(drawing, sheet="sheet")
 
 
 class TestRemoveSheet:
@@ -383,7 +396,7 @@ class TestAddDrawing:
 
 
 class TestDuplicateDrawing:
-    def test_run(self, ifc, drawing):
+    def test_run(self, ifc: Prophecy, blender: Prophecy, drawing: Prophecy, geometry: Prophecy):
         drawing.get_name("drawing").should_be_called().will_return("name")
         drawing.ensure_unique_drawing_name("name").should_be_called().will_return("unique_name")
         ifc.run("root.copy_class", product="drawing").should_be_called().will_return("new_drawing")
@@ -397,8 +410,13 @@ class TestDuplicateDrawing:
         ).should_be_called()
         ifc.run("group.assign_group", group="new_group", products=["new_drawing"]).should_be_called()
         drawing.get_group_elements("group").should_be_called().will_return(["drawing", "annotation"])
-        ifc.run("root.copy_class", product="annotation").should_be_called().will_return("new_annotation")
-        drawing.copy_representation("annotation", "new_annotation").should_be_called()
+        ifc.get_object("annotation").should_be_called().will_return("annotation_obj")
+        geometry.duplicate_ifc_objects(["annotation_obj"]).should_be_called().will_return(
+            ({"annotation": ["new_annotation"]}, None)
+        )
+        ifc.get_object("new_annotation").should_be_called().will_return("new_annotation_obj")
+        blender.remove_object("new_annotation_obj").should_be_called()
+
         ifc.run("group.unassign_group", group="group", products=["new_annotation"]).should_be_called()
         ifc.run("group.assign_group", group="new_group", products=["new_annotation"]).should_be_called()
 
@@ -420,7 +438,7 @@ class TestDuplicateDrawing:
         ifc.run("document.assign_document", products=["new_drawing"], document="reference").should_be_called()
 
         drawing.import_drawings().should_be_called()
-        subject.duplicate_drawing(ifc, drawing, drawing="drawing", should_duplicate_annotations=True)
+        subject.duplicate_drawing(ifc, blender, drawing, geometry, drawing="drawing", should_duplicate_annotations=True)
 
 
 class TestRemoveDrawing:
@@ -520,19 +538,30 @@ class TestAddAnnotation:
         drawing.create_annotation_object("drawing", "object_type").should_be_called().will_return("obj")
         ifc.get_entity("obj").should_be_called().will_return(None)
         drawing.get_ifc_representation_class("object_type").should_be_called().will_return("ifc_representation_class")
+        drawing.get_annotation_representation("element_type").should_be_called().will_return("type_rep")
         drawing.run_root_assign_class(
             obj="obj",
             ifc_class="IfcAnnotation",
             predefined_type="object_type",
-            should_add_representation=True,
+            should_add_representation=False,
             context="context",
             ifc_representation_class="ifc_representation_class",
         ).should_be_called().will_return("element")
         drawing.get_drawing_group("drawing").should_be_called().will_return("group")
+        drawing.run_type_assign_type(element="element", relating_type="element_type").should_be_called()
         ifc.run("group.assign_group", group="group", products=["element"]).should_be_called()
-        collector.assign("obj").should_be_called()
-        drawing.enable_editing("obj").should_be_called()
-        subject.add_annotation(ifc, collector, drawing, drawing="drawing", object_type="object_type")
+        drawing.get_representation("element", "context").should_be_called().will_return("rep")
+        drawing.reload_representation(obj="obj", representation="rep").should_be_called()
+        collector.assign("obj", should_clean_users_collection=True).should_be_called()
+        subject.add_annotation(
+            ifc,
+            collector,
+            drawing,
+            drawing="drawing",
+            object_type="object_type",
+            relating_type="element_type",
+            enable_editing=False,
+        )
 
     def test_create_a_missing_annotation_context_on_the_fly(self, ifc, collector, drawing):
         drawing.get_drawing_target_view("drawing").should_be_called().will_return("target_view")
@@ -542,6 +571,7 @@ class TestAddAnnotation:
         drawing.create_annotation_object("drawing", "object_type").should_be_called().will_return("obj")
         ifc.get_entity("obj").should_be_called().will_return(None)
         drawing.get_ifc_representation_class("object_type").should_be_called().will_return("ifc_representation_class")
+        drawing.get_annotation_representation("element_type").should_be_called().will_return(None)
         drawing.run_root_assign_class(
             obj="obj",
             ifc_class="IfcAnnotation",
@@ -550,8 +580,19 @@ class TestAddAnnotation:
             context="context",
             ifc_representation_class="ifc_representation_class",
         ).should_be_called().will_return("element")
+        drawing.run_type_assign_type(element="element", relating_type="element_type").should_be_called()
         drawing.get_drawing_group("drawing").should_be_called().will_return("group")
         ifc.run("group.assign_group", group="group", products=["element"]).should_be_called()
-        collector.assign("obj").should_be_called()
+        drawing.get_representation("element", "context").should_be_called().will_return("rep")
+        drawing.reload_representation(obj="obj", representation="rep").should_be_called()
+        collector.assign("obj", should_clean_users_collection=True).should_be_called()
         drawing.enable_editing("obj").should_be_called()
-        subject.add_annotation(ifc, collector, drawing, drawing="drawing", object_type="object_type")
+        subject.add_annotation(
+            ifc,
+            collector,
+            drawing,
+            drawing="drawing",
+            object_type="object_type",
+            relating_type="element_type",
+            enable_editing=True,
+        )

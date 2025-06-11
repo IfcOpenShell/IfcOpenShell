@@ -36,11 +36,8 @@ def assign_cost_value(
     rates as a "template" to quickly populate your rates from.
 
     :param cost_item: The IfcCostItem that you want to copy the values to
-    :type cost_item: ifcopenshell.entity_instance
     :param cost_rate: The IfcCostItem that you want to copy the values from
-    :type cost_rate: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -61,16 +58,14 @@ def assign_cost_value(
         # Now the cost item has the same rate as the one from the schedule of rate's item
         ifcopenshell.api.cost.assign_cost_value(model, cost_item=item, cost_rate=rate)
     """
-    settings = {"cost_item": cost_item, "cost_rate": cost_rate}
-
-    if settings["cost_item"].CostValues:
+    if cost_item.CostValues:
         [
             ifcopenshell.api.cost.remove_cost_value(
                 file,
-                parent=settings["cost_item"],
+                parent=cost_item,
                 cost_value=cost_value,
             )
-            for cost_value in settings["cost_item"].CostValues
+            for cost_value in cost_item.CostValues
         ]
     # This is an assumption, and not part of the official IFC documentation
-    settings["cost_item"].CostValues = settings["cost_rate"].CostValues
+    cost_item.CostValues = cost_rate.CostValues

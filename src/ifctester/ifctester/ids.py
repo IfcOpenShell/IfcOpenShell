@@ -20,6 +20,7 @@ from __future__ import annotations
 import os
 import datetime
 import ifcopenshell
+from xmlschema.validators.exceptions import XMLSchemaValidationError
 from xmlschema import XMLSchema
 from xmlschema import etree_tostring
 from xml.etree import ElementTree as ET
@@ -37,22 +38,41 @@ from .facet import (
     Cardinality,
     FacetFailure,
 )
-from typing import List, Optional, Union, overload, Literal
+from typing import Optional, Union
 
 cwd = os.path.dirname(os.path.realpath(__file__))
 schema = None
 
 
-@overload
-def open(filepath: str, validate: Literal[False] = False) -> Ids: ...
-@overload
-def open(filepath: str, validate: Literal[True]) -> None: ...
-def open(filepath: str, validate=False) -> Union[Ids, None]:
-    if validate:
-        get_schema().validate(filepath)
-    return Ids().parse(
-        get_schema().decode(filepath, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"})
-    )
+class IdsXmlValidationError(Exception):
+    def __init__(self, xml_error: XMLSchemaValidationError, message: str):
+        self.xml_error = xml_error
+        super().__init__(message)
+
+
+def open(filepath: str, validate: bool = False) -> Ids:
+    try:
+        if validate:
+            get_schema().validate(filepath)
+        decode = get_schema().decode(
+            filepath, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
+        )
+    except XMLSchemaValidationError as e:
+        raise IdsXmlValidationError(e, f"Provided .ids file ({filepath}) appears to be invalid. See details above.")
+    return Ids().parse(decode)
+
+
+def from_string(xml: str, validate: bool = False) -> Ids:
+    tree = ET.ElementTree(ET.fromstring(xml))
+    try:
+        if validate:
+            get_schema().validate(tree)
+        decode = get_schema().decode(
+            tree, strip_namespaces=True, namespaces={"": "http://standards.buildingsmart.org/IDS"}
+        )
+    except XMLSchemaValidationError as e:
+        raise IdsXmlValidationError(e, "Provided XML appears to be invalid. See details above.")
+    return Ids().parse(decode)
 
 
 def get_schema():
@@ -78,7 +98,7 @@ class Ids:
         self.filepath: Optional[str] = None
         self.filename: Optional[str] = None
 
-        self.specifications: List[Specification] = []
+        self.specifications: list[Specification] = []
         self.info = {}
         self.info["title"] = title or "Untitled"
         if copyright:
@@ -167,8 +187,8 @@ class Specification:
         instructions=None,
     ):
         self.name = name or "Unnamed"
-        self.applicability: List[Facet] = []
-        self.requirements: List[Facet] = []
+        self.applicability: list[Facet] = []
+        self.requirements: list[Facet] = []
         self.minOccurs: Union[int, str] = minOccurs
         self.maxOccurs: Union[int, str] = maxOccurs
         self.ifcVersion = ifcVersion
@@ -237,7 +257,7 @@ class Specification:
                 facets = [facets]
             for facet_xml in facets:
                 name_capitalised = name[0].upper() + name[1:]
-                facet = globals()[name_capitalised]().parse(facet_xml)
+                facet = globals()[name_capitalised]().parse(facet_xml or {})
                 results.append(facet)
         return results
 

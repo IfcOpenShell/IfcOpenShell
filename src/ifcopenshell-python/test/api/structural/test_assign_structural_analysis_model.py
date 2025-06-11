@@ -29,12 +29,13 @@ class TestAssignStructuralAnalysisModel(test.bootstrap.IFC4):
         )
         rel = ifcopenshell.api.structural.assign_structural_analysis_model(
             self.file,
-            product=product,
+            products=[product],
             structural_analysis_model=subject,
         )
+        assert rel
         assert rel.is_a("IfcRelAssignsToGroup")
         assert rel.RelatingGroup == subject
-        assert product in rel.RelatedObjects
+        assert rel.RelatedObjects == (product,)
 
 
 class TestAssignStructuralAnalysisModelIFC2X3(test.bootstrap.IFC2X3, TestAssignStructuralAnalysisModel):

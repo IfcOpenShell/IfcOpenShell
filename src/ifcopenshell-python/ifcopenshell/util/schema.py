@@ -30,13 +30,21 @@ cwd = os.path.dirname(os.path.realpath(__file__))
 IFC_SCHEMA = Literal["IFC2X3", "IFC4", "IFC4X3"]
 
 
-def get_fallback_schema(version: str) -> str:
-    """fallback to the schema version we do have docs and mapping for,
-    needed to support IFC versions like 4X3_RC1, 4X1 etc"""
+def get_fallback_schema(version: str) -> IFC_SCHEMA:
+    """Fallback to the schema version we do have docs and mapping for.
+
+    Needed to support IFC versions like 4X3_RC1, 4X1 etc.
+
+    :param version: Typically a string from ``ifcopenshell.file.schema_identifier``, e.g. IFC4X3_ADD2
+    """
     if version.startswith("IFC4X3"):
         version = "IFC4X3"
     elif version.startswith("IFC4"):
         version = "IFC4"
+    elif version.startswith("IFC2X3"):
+        version = "IFC2X3"
+    else:
+        assert False, f"Unexpected schema version: {version}."
     return version
 
 
@@ -65,7 +73,7 @@ def get_declaration(element: ifcopenshell.entity_instance):
     return element.wrapped_data.declaration().as_entity()
 
 
-def is_a(declaration: ifcopenshell.ifcopenshell_wrapper.entity, ifc_class: str) -> bool:
+def is_a(declaration: ifcopenshell.ifcopenshell_wrapper.declaration, ifc_class: str) -> bool:
     """Checks if a schema declaration is a class
 
     :param declaration: The declaration from the schema.
@@ -80,12 +88,7 @@ def is_a(declaration: ifcopenshell.ifcopenshell_wrapper.entity, ifc_class: str) 
         declaration = ifcopenshell.util.schema.get_declaration(wall)
         ifcopenshell.util.schema.is_a(declaration, "IfcRoot") # True
     """
-    ifc_class = ifc_class.upper()
-    if declaration.name_uc() == ifc_class:
-        return True
-    if declaration.supertype():
-        return is_a(declaration.supertype(), ifc_class)
-    return False
+    return declaration._is(ifc_class)
 
 
 def get_supertypes(
@@ -145,7 +148,7 @@ def get_subtypes(
 
 
 def reassign_class(
-    ifc_file: ifcopenshell.file, element: ifcopenshell.entity_instance, new_class: str
+    ifc_file: Union[ifcopenshell.file, None], element: ifcopenshell.entity_instance, new_class: str
 ) -> ifcopenshell.entity_instance:
     """
     Attempts to change the class (entity name) of `element` to `new_class` by
@@ -159,13 +162,23 @@ def reassign_class(
       (such as IfcRelNests)
 
     It's unlikely that this affects real-world usage of this function.
+
+    :raises ValueError: If ``new_class`` does not exist in the provided file schema.
     """
 
-    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema)
+    if element.is_a() == new_class:
+        return element
+
+    if not ifc_file:
+        ifc_file = element.file
+
+    schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
     try:
         declaration = schema.declaration_by_name(new_class)
-    except:
-        raise Exception(f"Class of {element} could not be changed to {new_class} as the class does not exist")
+    except RuntimeError:
+        raise ValueError(
+            f"Class of {element} could not be changed to {new_class} as the class does not exist in schema {ifc_file.schema_identifier}."
+        )
 
     info = element.get_info()
 
@@ -246,6 +259,9 @@ class BatchReassignClass:
 
 
 class Migrator:
+    migrated_ids: dict[int, int]
+    attribute_overrides: dict[int, dict[int, str]]
+
     def __init__(self):
         self.migrated_ids = {}
         self.attribute_overrides = {}
@@ -308,7 +324,8 @@ class Migrator:
             "User": None,
         }
 
-    def preprocess(self, old_file: ifcopenshell.file, new_file: ifcopenshell.file):
+    def preprocess(self, old_file: ifcopenshell.file, new_file: ifcopenshell.file) -> None:
+        new_file.assign_header_from(old_file)
         to_delete = set()
 
         if old_file.schema == "IFC2X3" and new_file.schema == "IFC4":
@@ -340,7 +357,12 @@ class Migrator:
         self, element: ifcopenshell.entity_instance, new_file: ifcopenshell.file
     ) -> ifcopenshell.entity_instance:
         if element.id() == 0:
-            return new_file.create_entity(element.is_a(), element.wrappedValue)
+            ifc_class = element.is_a()
+            if ifc_class == "IfcCountMeasure" and new_file.schema == "IFC4X3":
+                value = element.wrappedValue
+                if isinstance(value, float):
+                    ifc_class = "IfcNumericMeasure"
+            return new_file.create_entity(ifc_class, element.wrappedValue)
         try:
             return new_file.by_id(self.migrated_ids[element.id()])
         except:
@@ -359,18 +381,30 @@ class Migrator:
     def migrate_class(
         self, element: ifcopenshell.entity_instance, new_file: ifcopenshell.file
     ) -> ifcopenshell.entity_instance:
+        ifc_class = element.is_a()
+        if ifc_class == "IfcQuantityCount" and new_file.schema == "IFC4X3":
+            # 3 IfcPhysicalSimpleQuantity Value
+            value = element[3]
+            if isinstance(value, float):
+                ifc_class = "IfcQuantityNumber"
         try:
-            new_element = new_file.create_entity(element.is_a())
+            new_element = new_file.create_entity(ifc_class)
         except:
             # The element does not exist in this schema
             # Complex migration is not yet supported (e.g. polygonal face set to faceted brep)
             if new_file.schema == "IFC2X3":
-                new_element = new_file.create_entity(self.class_4_to_2x3[element.is_a()])
+                new_element = new_file.create_entity(self.class_4_to_2x3[ifc_class])
             elif new_file.schema == "IFC4":
-                new_element = new_file.create_entity(self.class_2x3_to_4[element.is_a()])
+                new_element = new_file.create_entity(self.class_2x3_to_4[ifc_class])
         return new_element
 
-    def migrate_attributes(self, element, new_file, new_element, new_element_schema):
+    def migrate_attributes(
+        self,
+        element: ifcopenshell.entity_instance,
+        new_file: ifcopenshell.file,
+        new_element: ifcopenshell.entity_instance,
+        new_element_schema: ifcopenshell_wrapper.declaration,
+    ) -> ifcopenshell.entity_instance:
         for attribute_index, value in self.attribute_overrides.get(element.id(), {}).items():
             new_element[attribute_index] = value
         for i, attribute in enumerate(new_element_schema.all_attributes()):
@@ -388,21 +422,32 @@ class Migrator:
         reverse_mapping: bool = False,
     ) -> Union[Any, None]:
         # print("Searching for an equivalent", element, new_element, attribute.name())
+        ifc_class = new_element.is_a()
+        attr_name = attribute.name()
         try:
             if reverse_mapping:
-                equivalent_map = attributes_mapping[new_element.is_a()]
-                equivalent = list(equivalent_map.keys())[list(equivalent_map.values()).index(attribute.name())]
+                equivalent_map = attributes_mapping[ifc_class]
+                equivalent = list(equivalent_map.keys())[list(equivalent_map.values()).index(attr_name)]
             else:
-                equivalent = attributes_mapping[new_element.is_a()][attribute.name()]
+                equivalent = attributes_mapping[ifc_class][attr_name]
             if hasattr(element, equivalent):
                 # print("Equivalent found", equivalent)
                 return getattr(element, equivalent)
             else:
                 return
         except Exception as e:
+            if (
+                ifc_class == "IfcQuantityNumber"
+                and attr_name == "NumberValue"
+                and new_element.file.schema == "IFC4X3"
+                and element.is_a("IfcQuantityCount")
+            ):
+                # 3 IfcPhysicalSimpleQuantity Value
+                return element[3]
+
             print(
                 "Unable to find equivalent attribute of {} to migrate from {} to {}".format(
-                    attribute.name(), element, new_element
+                    attr_name, element, new_element
                 )
             )
             raise e

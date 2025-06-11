@@ -17,10 +17,10 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 import bpy
+import bonsai.tool as tool
 from bonsai.bim.prop import StrProperty, Attribute
 from bonsai.bim.module.pset.data import refresh as refresh_pset
 from bpy.types import PropertyGroup
-import json
 from bpy.props import (
     PointerProperty,
     StringProperty,
@@ -31,14 +31,11 @@ from bpy.props import (
     FloatVectorProperty,
     CollectionProperty,
 )
+from typing import TYPE_CHECKING, Union
 
 
 def update_active_group_index(self, context):
     refresh_pset()
-
-
-class ExpandedGroups(StrProperty):
-    json_string: StringProperty(name="JSON String", default="[]")
 
 
 class Group(PropertyGroup):
@@ -48,6 +45,13 @@ class Group(PropertyGroup):
     has_children: BoolProperty(name="Has Children", default=False)
     tree_depth: IntProperty(name="Tree Depth")
 
+    if TYPE_CHECKING:
+        name: str
+        ifc_definition_id: int
+        is_expanded: bool
+        has_children: bool
+        tree_depth: int
+
 
 class BIMGroupProperties(PropertyGroup):
     group_attributes: CollectionProperty(name="Group Attributes", type=Attribute)
@@ -55,3 +59,16 @@ class BIMGroupProperties(PropertyGroup):
     groups: CollectionProperty(name="Groups", type=Group)
     active_group_index: IntProperty(name="Active Group Index", update=update_active_group_index)
     active_group_id: IntProperty(name="Active Group Id")
+    expanded_groups_json: StringProperty(name="JSON String", default="[]")
+
+    if TYPE_CHECKING:
+        group_attributes: bpy.types.bpy_prop_collection_idprop[Attribute]
+        is_editing: bool
+        groups: bpy.types.bpy_prop_collection_idprop[Group]
+        active_group_index: int
+        active_group_id: int
+        expanded_groups_json: str
+
+    @property
+    def active_group(self) -> Union[Group, None]:
+        return tool.Blender.get_active_uilist_element(self.groups, self.active_group_index)

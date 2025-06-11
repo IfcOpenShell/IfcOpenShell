@@ -22,7 +22,7 @@ from logging import Logger
 
 
 class Patcher:
-    def __init__(self, src: str, file: ifcopenshell.file, logger: Logger, only_duplicates=False):
+    def __init__(self, file: ifcopenshell.file, logger: Logger, only_duplicates: bool = False):
         """Regenerate GlobalIds in an IFC model
 
         All root elements in an IFC model must be identified by a unique Global
@@ -48,7 +48,6 @@ class Patcher:
             # Regenerate only duplicate GlobalIds
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "RegenerateGlobalIds", "arguments": [True]})
         """
-        self.src = src
         self.file = file
         self.logger = logger
         self.only_duplicates = only_duplicates

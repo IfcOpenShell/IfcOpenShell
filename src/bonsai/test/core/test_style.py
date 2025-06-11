@@ -50,6 +50,9 @@ class TestAddStyle:
 
 class TestRemoveStyle:
     def remove_a_style_common(self, ifc, style):
+        style.is_editing_style().should_be_called().will_return(True)
+        style.get_currently_edited_material().should_be_called().will_return("obj")
+        style.disable_editing().should_be_called()
         ifc.get_object("style").should_be_called().will_return("obj")
         ifc.unlink(element="style").should_be_called()
         ifc.run("style.remove_style", style="style").should_be_called()
@@ -208,7 +211,7 @@ class TestEditStyle:
         style.import_presentation_styles("style_type").should_be_called()
         style.enable_editing_styles().should_be_called()
 
-        style.reload_repersentations("style_element").should_be_called()
+        style.reload_representations("style_element").should_be_called()
 
         subject.edit_style(ifc, style)
 

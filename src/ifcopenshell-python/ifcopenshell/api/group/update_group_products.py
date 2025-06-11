@@ -45,24 +45,19 @@ def update_group_products(
         ifcopenshell.api.group.update_group_products(model,
             products=model.by_type("IfcFurniture"), group=group)
     """
-    settings = {
-        "group": group,
-        "products": products,
-    }
-
-    if not settings["group"].IsGroupedBy:
+    if not group.IsGroupedBy:
         return file.create_entity(
             "IfcRelAssignsToGroup",
             **{
                 "GlobalId": ifcopenshell.guid.new(),
                 "OwnerHistory": ifcopenshell.api.owner.create_owner_history(file),
-                "RelatedObjects": settings["products"],
-                "RelatingGroup": settings["group"],
+                "RelatedObjects": products,
+                "RelatingGroup": group,
             }
         )
     else:
-        rels = settings["group"].IsGroupedBy
-        objects = set(settings["products"])
+        rels = group.IsGroupedBy
+        objects = set(products)
         for rel in rels:
             objects.update([g for g in rel.RelatedObjects if g.is_a("IfcGroup")])
         to_purge = rels[1:]

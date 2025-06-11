@@ -172,6 +172,8 @@ class BIM_PT_solar(bpy.types.Panel):
         if SolarData.data["true_north"] is not None:
             row.operator("bim.import_true_north", icon="IMPORT", text="")
 
+        row = self.layout.row()
+        row.prop(props, "year")
         row = self.layout.row(align=True)
         row.prop(
             props,
@@ -216,8 +218,8 @@ class BIM_PT_solar(bpy.types.Panel):
 
         box = row.box()
 
-        sunrise = sun_position.sun_calc.format_hms(sun_position.sun_calc.sun.sunrise)
-        sunset = sun_position.sun_calc.format_hms(sun_position.sun_calc.sun.sunset)
+        sunrise = sun_position.sun_calc.format_hms(sun_props.sunrise_time)
+        sunset = sun_position.sun_calc.format_hms(sun_props.sunset_time)
 
         row2 = box.row()
         row2.label(text=f"Sunrise: {sunrise}")
@@ -234,8 +236,14 @@ class BIM_PT_solar(bpy.types.Panel):
             row.operator("bim.move_sun_path_to_3d_cursor")
 
         row = self.layout.row(align=True)
-        row.prop(props, "display_shadows", icon="SHADING_RENDERED")
-        row.prop(context.scene.display.shading, "shadow_intensity", text="Shadow Intensity")
+        row.prop(props, "shadow_mode", icon="SHADING_RENDERED", expand=True)
+
+        if props.shadow_mode == "SHADING":
+            row = self.layout.row()
+            row.prop(context.scene.display.shading, "shadow_intensity", text="Shadow Intensity")
+        elif props.shadow_mode == "RENDERING":
+            row = self.layout.row()
+            row.prop(context.scene.sun_pos_properties.sun_object.data, "energy", text="Sun Intensity")
 
         row = self.layout.row(align=True)
         row.operator("bim.view_from_sun", icon="LIGHT_HEMI")

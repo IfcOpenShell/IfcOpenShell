@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
+import bpy
+import ifcopenshell
 import isodate
+import bonsai.tool as tool
 import bonsai.bim.helper
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.helper import draw_attributes
 from bonsai.bim.module.sequence.data import (
     WorkPlansData,
@@ -28,6 +30,11 @@ from bonsai.bim.module.sequence.data import (
     TaskICOMData,
     AnimationColorSchemeData,
 )
+from typing import Any, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from bonsai.bim.prop import Attribute
+    from bonsai.bim.module.sequence.prop import BIMWorkScheduleProperties, BIMTaskTreeProperties, Task
 
 
 class BIM_PT_status(Panel):
@@ -41,7 +48,7 @@ class BIM_PT_status(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         self.props = context.scene.BIMStatusProperties
@@ -73,7 +80,7 @@ class BIM_PT_work_plans(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and file.schema != "IFC2X3"
 
     def draw(self, context):
@@ -143,7 +150,7 @@ class BIM_PT_work_schedules(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
@@ -151,8 +158,8 @@ class BIM_PT_work_schedules(Panel):
             SequenceData.load()
         if not WorkScheduleData.is_loaded:
             WorkScheduleData.load()
-        self.props = context.scene.BIMWorkScheduleProperties
-        self.tprops = context.scene.BIMTaskTreeProperties
+        self.props = tool.Sequence.get_work_schedule_props()
+        self.tprops = tool.Sequence.get_task_tree_props()
 
         if not self.props.active_work_schedule_id:
             row = self.layout.row(align=True)
@@ -319,6 +326,7 @@ class BIM_PT_work_schedules(Panel):
         row.operator("bim.contract_all_tasks", text="Contract All")
         row = self.layout.row(align=True)
         self.draw_task_operators()
+        BIM_UL_tasks.draw_header(self.layout)
         self.layout.template_list(
             "BIM_UL_tasks",
             "",
@@ -475,14 +483,14 @@ class BIM_PT_animation_tools(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMWorkScheduleProperties
+        props = tool.Sequence.get_work_schedule_props()
         if props.active_work_schedule_id:
             return True
         return False
 
     def draw(self, context):
-        self.props = context.scene.BIMWorkScheduleProperties
-        self.animation_props = context.scene.BIMAnimationProperties
+        self.props = tool.Sequence.get_work_schedule_props()
+        self.animation_props = tool.Sequence.get_animation_props()
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         row.prop(self.props, "should_show_visualisation_ui", text="Animation Settings", icon="SETTINGS")
@@ -587,14 +595,14 @@ class BIM_PT_animation_Color_Scheme(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
         if not AnimationColorSchemeData.is_loaded:
             AnimationColorSchemeData.load()
 
-        self.animation_props = context.scene.BIMAnimationProperties
+        self.animation_props = tool.Sequence.get_animation_props()
         row = self.layout.row(align=True)
         row.alignment = "RIGHT"
         row.operator("bim.load_default_animation_color_scheme", text="Load default", icon="SEQUENCE_COLOR_04")
@@ -608,8 +616,8 @@ class BIM_PT_animation_Color_Scheme(Panel):
         row1.label(text="INPUT COLORS", icon="COLLECTION_COLOR_01")
         row1 = col.row()
         row1.template_list(
-            "BIM_UL_animation_colors",
-            "",
+            BIM_UL_animation_colors.__name__,
+            BIM_UL_animation_colors.__name__ + "_task_input_colors",
             self.animation_props,
             "task_input_colors",
             self.animation_props,
@@ -620,8 +628,8 @@ class BIM_PT_animation_Color_Scheme(Panel):
         row1.label(text="OUTPUT COLORS", icon="COLLECTION_COLOR_04")
         row1 = col.row()
         row1.template_list(
-            "BIM_UL_animation_colors",
-            "",
+            BIM_UL_animation_colors.__name__,
+            BIM_UL_animation_colors.__name__ + "_task_output_colors",
             self.animation_props,
             "task_output_colors",
             self.animation_props,
@@ -641,10 +649,11 @@ class BIM_PT_task_icom(Panel):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.BIMWorkScheduleProperties
+        props = tool.Sequence.get_work_schedule_props()
         if not props.active_work_schedule_id:
             return False
-        total_tasks = len(context.scene.BIMTaskTreeProperties.tasks)
+        tprops = tool.Sequence.get_task_tree_props()
+        total_tasks = len(tprops.tasks)
         if total_tasks > 0 and props.active_task_index < total_tasks:
             return True
         return False
@@ -653,8 +662,8 @@ class BIM_PT_task_icom(Panel):
         if not TaskICOMData.is_loaded:
             TaskICOMData.load()
 
-        self.props = context.scene.BIMWorkScheduleProperties
-        self.tprops = context.scene.BIMTaskTreeProperties
+        self.props = tool.Sequence.get_work_schedule_props()
+        self.tprops = tool.Sequence.get_task_tree_props()
         task = self.tprops.tasks[self.props.active_task_index]
 
         grid = self.layout.grid_flow(columns=3, even_columns=True)
@@ -746,8 +755,17 @@ class BIM_PT_task_icom(Panel):
 
 
 class BIM_UL_task_columns(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
-        props = context.scene.BIMWorkScheduleProperties
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: "BIMWorkScheduleProperties",
+        item: "Attribute",
+        icon,
+        active_data,
+        active_propname,
+    ):
+        props = tool.Sequence.get_work_schedule_props()
         if item:
             row = layout.row(align=True)
             row.prop(item, "name", emboss=False, text="")
@@ -813,10 +831,30 @@ class BIM_UL_product_output_tasks(UIList):
 
 
 class BIM_UL_tasks(UIList):
-    def draw_item(self, context, layout, data, item, icon, active_data, active_propname):
+    @classmethod
+    def draw_header(cls, layout: bpy.types.UILayout):
+        props = tool.Sequence.get_work_schedule_props()
+        row = layout.row(align=True)
+
+        split1 = row.split(factor=0.1)
+        split1.label(text="ID", icon="BLANK1")
+        split2 = split1.split(factor=0.9 - min(0.5, 0.15 * len(props.columns)))
+        split2.label(text="Name")
+        cls.draw_custom_columns(props, split2, header=True)
+
+    def draw_item(
+        self,
+        context,
+        layout: bpy.types.UILayout,
+        data: "BIMTaskTreeProperties",
+        item: "Task",
+        icon,
+        active_data,
+        active_propname,
+    ):
         if item:
-            self.props = context.scene.BIMWorkScheduleProperties
-            task = IfcStore.get_file().by_id(item.ifc_definition_id)
+            self.props = tool.Sequence.get_work_schedule_props()
+            task = SequenceData.data["tasks"][item.ifc_definition_id]
             row = layout.row(align=True)
 
             self.draw_hierarchy(row, item)
@@ -826,7 +864,7 @@ class BIM_UL_tasks(UIList):
             split2 = split1.split(factor=0.9 - min(0.5, 0.15 * len(self.props.columns)))
             split2.prop(item, "name", emboss=False, text="")
 
-            self.draw_custom_columns(split2, item, task)
+            BIM_UL_tasks.draw_custom_columns(self.props, split2, item, task)
 
             if self.props.active_task_id and self.props.editing_task_type == "ATTRIBUTES":
                 row.prop(
@@ -859,7 +897,7 @@ class BIM_UL_tasks(UIList):
                     op = row.operator("bim.assign_successor", text="", icon="TRACKING_FORWARDS", emboss=False)
                 op.task = item.ifc_definition_id
 
-    def draw_order_operator(self, row, ifc_definition_id):
+    def draw_order_operator(self, row: bpy.types.UILayout, ifc_definition_id: int) -> None:
         task = SequenceData.data["tasks"][ifc_definition_id]
         if task["NestingIndex"] is not None:
             if task["NestingIndex"] == 0:
@@ -871,7 +909,7 @@ class BIM_UL_tasks(UIList):
                 op.task = ifc_definition_id
                 op.new_index = task["NestingIndex"] - 1
 
-    def draw_hierarchy(self, row, item):
+    def draw_hierarchy(self, row: bpy.types.UILayout, item: bpy.types.PropertyGroup) -> None:
         for i in range(0, item.level_index):
             row.label(text="", icon="BLANK1")
         if item.has_children:
@@ -886,37 +924,70 @@ class BIM_UL_tasks(UIList):
         else:
             row.label(text="", icon="DOT")
 
-    def draw_custom_columns(self, row, item, task):
-        for column in self.props.columns:
+    @classmethod
+    def draw_custom_columns(
+        cls,
+        props: bpy.types.PropertyGroup,
+        row: bpy.types.UILayout,
+        item: Optional[bpy.types.PropertyGroup] = None,
+        task: Optional[dict[str, Any]] = None,
+        *,
+        header: bool = False,
+    ) -> None:
+        if not header:
+            assert item and task
+
+        for column in props.columns:
             if column.name == "IfcTaskTime.ScheduleStart":
-                if item.derived_start:
-                    row.label(text=item.derived_start + "*")
+                if header:
+                    row.label(text="Start")
                 else:
-                    row.prop(item, "start", emboss=False, text="")
+                    if item.derived_start:
+                        row.label(text=item.derived_start + "*")
+                    else:
+                        row.prop(item, "start", emboss=False, text="")
             elif column.name == "IfcTaskTime.ScheduleFinish":
-                if item.derived_finish:
-                    row.label(text=item.derived_finish + "*")
+                if header:
+                    row.label(text="Finish")
                 else:
-                    row.prop(item, "finish", emboss=False, text="")
+                    if item.derived_finish:
+                        row.label(text=item.derived_finish + "*")
+                    else:
+                        row.prop(item, "finish", emboss=False, text="")
             elif column.name == "IfcTaskTime.ScheduleDuration":
-                if item.derived_duration:
-                    row.label(text=item.derived_duration + "*")
+                if header:
+                    row.label(text="Duration")
                 else:
-                    row.prop(item, "duration", emboss=False, text="")
+                    if item.derived_duration:
+                        row.label(text=item.derived_duration + "*")
+                    else:
+                        row.prop(item, "duration", emboss=False, text="")
             elif column.name == "Controls.Calendar":
-                if item.derived_calendar:
-                    row.label(text=item.derived_calendar + "*")
+                if header:
+                    row.label(text="Calendar")
                 else:
-                    row.label(text=item.calendar or "-")
+                    if item.derived_calendar:
+                        row.label(text=item.derived_calendar + "*")
+                    else:
+                        row.label(text=item.calendar or "-")
             else:
                 ifc_class, name = column.name.split(".")
-                if ifc_class == "IfcTask":
-                    value = getattr(task, name)
-                elif ifc_class == "IfcTaskTime":
-                    value = getattr(task.TaskTime, name) if task.TaskTime else None
-                if value is None:
-                    value = "-"
-                row.label(text=str(value))
+                if header:
+                    row.label(text=name)
+                else:
+                    if ifc_class == "IfcTask":
+                        value = task[name]
+                    elif ifc_class == "IfcTaskTime":
+                        if (task_time_id := task["TaskTime"]) is None:
+                            value = None
+                        else:
+                            value = SequenceData.data["task_times"][task_time_id][name]
+                    else:
+                        assert False, f"Unexpected ifc_class '{ifc_class}'."
+                    if value is None:
+                        value = "-"
+                    else:
+                        row.label(text=str(value))
 
 
 class BIM_PT_work_calendars(Panel):
@@ -930,7 +1001,7 @@ class BIM_PT_work_calendars(Panel):
 
     @classmethod
     def poll(cls, context):
-        file = IfcStore.get_file()
+        file = tool.Ifc.get()
         return file and hasattr(file, "schema") and file.schema != "IFC2X3"
 
     def draw(self, context):
@@ -1007,7 +1078,7 @@ class BIM_PT_work_calendars(Panel):
         if self.props.active_work_time_id == work_time["id"]:
             self.draw_editable_work_time_ui(work_time)
 
-    def draw_editable_work_time_ui(self, work_time):
+    def draw_editable_work_time_ui(self, work_time: dict[str, Any]) -> None:
         draw_attributes(self.props.work_time_attributes, self.layout)
         if work_time["RecurrencePattern"]:
             self.draw_editable_recurrence_pattern_ui(
@@ -1091,7 +1162,7 @@ class BIM_PT_4D_Tools(Panel):
     bl_parent_id = "BIM_PT_tab_sequence"
 
     def draw(self, context):
-        self.props = context.scene.BIMWorkScheduleProperties
+        self.props = tool.Sequence.get_work_schedule_props()
         row = self.layout.row()
         row.operator("bim.load_product_related_tasks", text="Load Tasks", icon="FILE_REFRESH")
         row.prop(self.props, "filter_by_active_schedule", text="Filter by Active Schedule")

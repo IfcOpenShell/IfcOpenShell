@@ -20,7 +20,7 @@ import bpy
 import json
 import bmesh
 import ifcopenshell
-import ifcopenshell.api
+import ifcopenshell.api.pset
 import ifcopenshell.util.element
 import ifcopenshell.util.representation
 import ifcopenshell.util.unit
@@ -34,7 +34,8 @@ from bpy_extras.object_utils import AddObjectHelper, object_data_add
 
 
 def regenerate_stair_mesh(obj: bpy.types.Object) -> None:
-    props_kwargs = obj.BIMStairProperties.get_props_kwargs()
+    props = tool.Model.get_stair_props(obj)
+    props_kwargs = props.get_props_kwargs()
     vertices, edges, faces = tool.Model.generate_stair_2d_profile(**props_kwargs)
 
     bm = bmesh.new()
@@ -69,7 +70,8 @@ def update_ifc_stair_props(obj: bpy.types.Object) -> None:
     since it's going to update ifc representation
     """
     element = tool.Ifc.get_entity(obj)
-    props = obj.BIMStairProperties
+    assert element
+    props = tool.Model.get_stair_props(obj)
     ifc_file = tool.Ifc.get()
 
     if tool.Ifc.get_schema() != "IFC2X3" and element.is_a("IfcStairFlight"):
@@ -96,10 +98,9 @@ def update_ifc_stair_props(obj: bpy.types.Object) -> None:
     # update pset with ifc properties
     pset_common = tool.Pset.get_element_pset(element, "Pset_StairFlightCommon")
     if not pset_common:
-        pset_common = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="Pset_StairFlightCommon")
+        pset_common = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="Pset_StairFlightCommon")
 
-    ifcopenshell.api.run(
-        "pset.edit_pset",
+    ifcopenshell.api.pset.edit_pset(
         ifc_file,
         pset=pset_common,
         properties={
@@ -167,7 +168,7 @@ class BIM_OT_add_stair(bpy.types.Operator, tool.Ifc.Operator):
         bpy.ops.object.select_all(action="DESELECT")
         bpy.context.view_layer.objects.active = None
         bpy.context.view_layer.objects.active = obj
-        obj.select_set(True)
+        tool.Blender.select_object(obj)
         bpy.ops.bim.add_stair()
         return {"FINISHED"}
 
@@ -183,16 +184,16 @@ class AddStair(bpy.types.Operator, tool.Ifc.Operator):
         obj = context.active_object
         assert obj
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMStairProperties
+        assert element
+        props = tool.Model.get_stair_props(obj)
         ifc_file = tool.Ifc.get()
 
         stair_data = props.get_props_kwargs(convert_to_project_units=True)
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
         if not pset:
-            pset = ifcopenshell.api.run("pset.add_pset", ifc_file, product=element, name="BBIM_Stair")
+            pset = ifcopenshell.api.pset.add_pset(ifc_file, product=element, name="BBIM_Stair")
 
-        ifcopenshell.api.run(
-            "pset.edit_pset",
+        ifcopenshell.api.pset.edit_pset(
             ifc_file,
             pset=pset,
             properties={"Data": tool.Ifc.get().createIfcText(json.dumps(stair_data))},
@@ -214,9 +215,11 @@ class CancelEditingStair(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         element = tool.Ifc.get_entity(obj)
+        assert element
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Stair", "Data"))
-        props = obj.BIMStairProperties
+        props = tool.Model.get_stair_props(obj)
         # restore previous settings since editing was canceled
         props.set_props_kwargs_from_ifc_data(data)
         regenerate_stair_mesh(obj)
@@ -233,8 +236,10 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
+        assert obj
         element = tool.Ifc.get_entity(obj)
-        props = obj.BIMStairProperties
+        assert element
+        props = tool.Model.get_stair_props(obj)
 
         data = props.get_props_kwargs(convert_to_project_units=True)
         props.is_editing = False
@@ -243,7 +248,7 @@ class FinishEditingStair(bpy.types.Operator, tool.Ifc.Operator):
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
         data = tool.Ifc.get().createIfcText(json.dumps(data))
-        ifcopenshell.api.run("pset.edit_pset", tool.Ifc.get(), pset=pset, properties={"Data": data})
+        ifcopenshell.api.pset.edit_pset(tool.Ifc.get(), pset=pset, properties={"Data": data})
 
         # update IfcStairFlight properties
         update_ifc_stair_props(obj)
@@ -257,7 +262,8 @@ class EnableEditingStair(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        props = obj.BIMStairProperties
+        assert obj
+        props = tool.Model.get_stair_props(obj)
         element = tool.Ifc.get_entity(obj)
         data = json.loads(ifcopenshell.util.element.get_pset(element, "BBIM_Stair", "Data"))
         # required since we could load pset from .ifc and BIMStairProperties won't be set
@@ -273,11 +279,13 @@ class RemoveStair(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         obj = context.active_object
-        props = obj.BIMStairProperties
+        assert obj
+        props = tool.Model.get_stair_props(obj)
         element = tool.Ifc.get_entity(obj)
-        obj.BIMStairProperties.is_editing = False
+        assert element
+        props.is_editing = False
 
         pset = tool.Pset.get_element_pset(element, "BBIM_Stair")
-        ifcopenshell.api.run("pset.remove_pset", tool.Ifc.get(), product=element, pset=pset)
+        ifcopenshell.api.pset.remove_pset(tool.Ifc.get(), product=element, pset=pset)
 
         return {"FINISHED"}

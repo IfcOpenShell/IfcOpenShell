@@ -76,12 +76,12 @@ class DisablePsetEditing(bpy.types.Operator, tool.Ifc.Operator):
             pset = tool.Ifc.get().by_id(props.active_pset_id)
             ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
             if tool.Pset.is_pset_empty(pset):
-                ifcopenshell.api.run(
-                    "pset.remove_pset", tool.Ifc.get(), product=tool.Ifc.get().by_id(ifc_definition_id), pset=pset
+                ifcopenshell.api.pset.remove_pset(
+                    tool.Ifc.get(), product=tool.Ifc.get().by_id(ifc_definition_id), pset=pset
                 )
         props.active_pset_id = 0
         props.active_pset_name = ""
-        props.active_pset_type = ""
+        props.active_pset_type = "-"
 
 
 class EditPset(bpy.types.Operator, tool.Ifc.Operator):
@@ -94,7 +94,7 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
     properties: bpy.props.StringProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         props = tool.Pset.get_pset_props(self.obj, self.obj_type)
         ifc_definition_id = tool.Blender.get_obj_ifc_definition_id(self.obj, self.obj_type, context)
         element = tool.Ifc.get().by_id(ifc_definition_id)
@@ -104,10 +104,10 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
         if pset_id:
             pset = self.file.by_id(pset_id)
         elif props.active_pset_type == "PSET":
-            pset = ifcopenshell.api.run("pset.add_pset", self.file, product=element, name=props.active_pset_name)
+            pset = ifcopenshell.api.pset.add_pset(self.file, product=element, name=props.active_pset_name)
             props.active_pset_id = pset.id()
         elif props.active_pset_type == "QTO":
-            pset = ifcopenshell.api.run("pset.add_qto", self.file, product=element, name=props.active_pset_name)
+            pset = ifcopenshell.api.pset.add_qto(self.file, product=element, name=props.active_pset_name)
             props.active_pset_id = pset.id()
 
         if self.properties:
@@ -123,8 +123,7 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
                     ]
 
         if pset.is_a() in ("IfcPropertySet", "IfcMaterialProperties", "IfcProfileProperties"):
-            ifcopenshell.api.run(
-                "pset.edit_pset",
+            ifcopenshell.api.pset.edit_pset(
                 self.file,
                 pset=pset,
                 name=props.active_pset_name,
@@ -139,8 +138,7 @@ class EditPset(bpy.types.Operator, tool.Ifc.Operator):
                     properties[key] = round(value, 4)
                 elif not isinstance(value, int):
                     properties[key] = 0
-            ifcopenshell.api.run(
-                "pset.edit_qto",
+            ifcopenshell.api.pset.edit_qto(
                 self.file,
                 qto=pset,
                 name=props.active_pset_name,
@@ -175,20 +173,21 @@ class RemovePset(bpy.types.Operator, tool.Ifc.Operator):
             element = tool.Ifc.get().by_id(ifc_definition_id)
             pset = ifcopenshell.util.element.get_psets(element, should_inherit=False).get(pset_name, None)
             if pset:
-                ifcopenshell.api.run(
-                    "pset.remove_pset", tool.Ifc.get(), product=element, pset=tool.Ifc.get().by_id(pset["id"])
+                ifcopenshell.api.pset.remove_pset(
+                    tool.Ifc.get(), product=element, pset=tool.Ifc.get().by_id(pset["id"])
                 )
 
 
-class AddPset(bpy.types.Operator, tool.Ifc.Operator):
+class AddPset(bpy.types.Operator):
     bl_idname = "bim.add_pset"
     bl_label = "Add Pset"
     bl_options = {"REGISTER", "UNDO"}
     obj: bpy.props.StringProperty()
     obj_type: bpy.props.StringProperty()
 
-    def _execute(self, context):
+    def execute(self, context):
         core.add_pset(tool.Ifc, tool.Pset, tool.Blender, obj_name=self.obj, obj_type=self.obj_type)
+        return {"FINISHED"}
 
 
 class UnsharePset(bpy.types.Operator, tool.Ifc.Operator):
@@ -225,7 +224,7 @@ class AddQto(bpy.types.Operator, tool.Ifc.Operator):
     obj_type: bpy.props.StringProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         qto_name = tool.Pset.get_pset_name(self.obj, self.obj_type, pset_type="QTO")
         bpy.ops.bim.enable_pset_editing(
             pset_id=0, pset_name=qto_name, pset_type="QTO", obj=self.obj, obj_type=self.obj_type
@@ -313,7 +312,7 @@ class BIM_OT_rename_parameters(bpy.types.Operator, tool.Ifc.Operator):
 
     def _execute(self, context):
         props_to_map = context.scene.RenameProperties
-        ifc_file = IfcStore.get_file()
+        ifc_file = tool.Ifc.get()
         all_ifc_elements = ifc_file.by_type("IfcElement")
 
         for ifc_element in all_ifc_elements:
@@ -346,14 +345,13 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator, tool.Ifc.Operator):
     index: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         props = context.scene.AddEditProperties
 
         for obj in tool.Blender.get_selected_objects():
-            ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
-            if not ifc_definition_id:
+            ifc_element = tool.Ifc.get_entity(obj)
+            if not ifc_element:
                 continue
-            ifc_element = tool.Ifc.get().by_id(ifc_definition_id)
 
             for prop in props:
                 value = getattr(prop, prop.get_value_name())
@@ -364,9 +362,9 @@ class BIM_OT_add_edit_custom_property(bpy.types.Operator, tool.Ifc.Operator):
                 elif prop.template_type == "IfcPropertySingleValue":
                     value_ifc_entity = getattr(self.file, f"create{primary_measure_type}")(value)
 
-                new_pset = ifcopenshell.api.run("pset.add_pset", self.file, product=ifc_element, name=prop.pset_name)
-                ifcopenshell.api.run(
-                    "pset.edit_pset", self.file, pset=new_pset, properties={prop.property_name: value_ifc_entity}
+                new_pset = ifcopenshell.api.pset.add_pset(self.file, product=ifc_element, name=prop.pset_name)
+                ifcopenshell.api.pset.edit_pset(
+                    self.file, pset=new_pset, properties={prop.property_name: value_ifc_entity}
                 )
         self.report({"INFO"}, "Finished applying changes")
         return {"FINISHED"}
@@ -401,27 +399,23 @@ class BIM_OT_bulk_remove_psets(bpy.types.Operator, tool.Ifc.Operator):
     index: bpy.props.IntProperty()
 
     def _execute(self, context):
-        self.file = IfcStore.get_file()
+        self.file = tool.Ifc.get()
         props = context.scene.DeletePsets
 
         for obj in tool.Blender.get_selected_objects():
-            ifc_definition_id = obj.BIMObjectProperties.ifc_definition_id
-            if not ifc_definition_id:
+            ifc_element = tool.Ifc.get_entity(obj)
+            if not ifc_element:
                 continue
-            ifc_element = tool.Ifc.get().by_id(ifc_definition_id)
             psets = ifcopenshell.util.element.get_psets(ifc_element)
 
             for prop in props:
                 pset = prop.pset_name
                 if pset in psets:
                     try:
-                        ifcopenshell.api.run(
-                            "pset.remove_pset",
+                        ifcopenshell.api.pset.remove_pset(
                             self.file,
-                            **{
-                                "product": self.file.by_id(ifc_definition_id),
-                                "pset": self.file.by_id(psets[pset]["id"]),
-                            },
+                            product=ifc_element,
+                            pset=self.file.by_id(psets[pset]["id"]),
                         )
                     except KeyError:
                         pass  # Sometimes the pset id is not found, I'm not sure why this happens though. - vulevukusej
@@ -447,6 +441,33 @@ class AddProposedProp(bpy.types.Operator):
     prop_name: bpy.props.StringProperty()
     prop_value: bpy.props.StringProperty()
 
+    @classmethod
+    def description(cls, context, properties):
+        description = "Add proposed property to the custom property set.\n\n"
+        props = tool.Pset.get_pset_props(properties.obj, properties.obj_type)
+        if props.active_pset_type == "PSET":
+            description += (
+                "Property type will be deduced from the provided value. Possible types:\n"
+                "- provide an integer or a float to create integer/real property\n"
+                "- 'true', 'false' to add a boolean property\n"
+                "- 'null' or '' (empty value) to add a null property\n"
+                "- any other value will be added as a string property"
+            )
+        else:
+            from ifcopenshell.api.pset.edit_qto import FLOAT_TYPE_KEYWORDS
+
+            description += (
+                "Property type will be deduced from the provided value and property name. Possible types:\n"
+                "- Integer values - Count type\n"
+                "- Float values - will try to match one of the keywords below in prop name, "
+                "otherwise will default to Length type\n\n"
+                "Types and their keywords:\n"
+            )
+            for prop_type, keywords in FLOAT_TYPE_KEYWORDS:
+                description += f"- {prop_type} - {', '.join(keywords)}\n"
+            description = description.rstrip()  # Strip last newline.
+        return description
+
     def execute(self, context):
         res = core.add_proposed_prop(tool.Pset, self.obj, self.obj_type, self.prop_name, self.prop_value)
         if res:
@@ -463,14 +484,14 @@ class SavePsetAsTemplate(bpy.types.Operator, tool.PsetTemplate.PsetTemplateOpera
     pset_id: bpy.props.IntProperty()
 
     def invoke(self, context, event):
-        props = context.scene.BIMPsetTemplateProperties
+        props = tool.PsetTemplate.get_pset_template_props()
         if tool.Blender.get_enum_safe(props, "pset_template_files") is None:
             self.report({"ERROR"}, "No template files found. You can create one in Property Set Templates UI.")
             return {"CANCELLED"}
         return context.window_manager.invoke_props_dialog(self, width=250)
 
     def draw(self, context):
-        props = context.scene.BIMPsetTemplateProperties
+        props = tool.PsetTemplate.get_pset_template_props()
         self.layout.prop(props, "pset_template_files", text="Template File")
 
     def _execute(self, context):

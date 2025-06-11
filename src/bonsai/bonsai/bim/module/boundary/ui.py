@@ -18,7 +18,6 @@
 
 import bpy
 from bpy.types import Panel, UIList
-from bonsai.bim.ifc import IfcStore
 import bonsai.tool as tool
 from bonsai.bim.module.boundary.data import SpaceBoundariesData
 
@@ -34,7 +33,7 @@ class BIM_PT_SceneBoundaries(Panel):
 
     @classmethod
     def poll(cls, context):
-        return IfcStore.get_file()
+        return tool.Ifc.get()
 
     def draw(self, context):
         row = self.layout.row(align=True)
@@ -53,21 +52,23 @@ class BIM_PT_Boundary(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
+        props = tool.Blender.get_object_bim_props(obj)
         if not props.ifc_definition_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
             return False
-        entity = IfcStore.get_file().by_id(props.ifc_definition_id)
+        entity = tool.Ifc.get().by_id(props.ifc_definition_id)
         return entity.is_a("IfcRelSpaceBoundary")
 
     def draw(self, context):
-        props = context.active_object.BIMObjectProperties
+        obj = context.active_object
+        assert obj
+        props = tool.Blender.get_object_bim_props(obj)
         ifc_file = tool.Ifc.get()
         boundary = ifc_file.by_id(props.ifc_definition_id)
-        self.bprops = context.active_object.bim_boundary_properties
+        self.bprops = tool.Boundary.get_object_boundary_props(obj)
         if self.bprops.is_editing:
             row = self.layout.row(align=True)
             row.operator("bim.edit_boundary_attributes", icon="CHECKMARK", text="Save Attributes")
@@ -127,12 +128,12 @@ class BIM_PT_SpaceBoundaries(Panel):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             return False
-        props = context.active_object.BIMObjectProperties
+        props = tool.Blender.get_object_bim_props(obj)
         if not props.ifc_definition_id:
             return False
-        if not IfcStore.get_element(props.ifc_definition_id):
+        if not tool.Ifc.get_object_by_identifier(props.ifc_definition_id):
             return False
         element = tool.Ifc.get_entity(context.active_object)
         for ifc_class in ("IfcSpace", "IfcExternalSpatialElement"):
@@ -144,7 +145,9 @@ class BIM_PT_SpaceBoundaries(Panel):
         if not SpaceBoundariesData.is_loaded:
             SpaceBoundariesData.load()
 
-        self.props = context.active_object.BIMObjectProperties
+        obj = context.active_object
+        assert obj
+        self.props = tool.Blender.get_object_bim_props(obj)
         self.ifc_file = tool.Ifc.get()
         row = self.layout.row()
         row.operator("bim.load_space_boundaries")

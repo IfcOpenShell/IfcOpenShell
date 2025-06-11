@@ -1,3 +1,6 @@
+@demo
+Feature: Demo
+
 # ############################################################################ #
 
 # Hey there! Welcome to the Bonsai code. Please feel free to reach
@@ -16,9 +19,6 @@
 #|# These tests read like english. You can see all the possible sentences defined
 #|# in test_feature.py. Most of the time, there is already a sentence defined for
 #|# what you want to test.
-#|
-#|@demo
-#|Feature: Demo
 #|
 #|# Every operator has at least one scenario associated with it to test it.
 #|Scenario: Demonstrate hello world

@@ -98,3 +98,4 @@ Imports data from external sources into the Blender session or IFC model.
 - **P6 (.xer)**: Imports a P6 XER file containing a work schedule into the active IFC model.
 - **Powerproject (.pp)**: Imports a Powerproject file containing a work schedule into the active IFC model.
 - **Microsoft Project (.xml)**: Imports a Microsoft Project XML file containing a work schedule into the active IFC model.
+- **Alignment (.csv)**: Imports a CSV containing horizontal and vertical alignments defined by the PI method into the active IFC model.

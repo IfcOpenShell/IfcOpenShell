@@ -36,6 +36,9 @@ def create_project(
     if ifc.get():
         return
 
+    # TODO: simplify by generating IFC file and then just import it using IfcImporter
+    # instead of handling Blender objects logic here?
+
     ifc.set(ifc.run("project.create_file", version=schema))
 
     if schema == "IFC2X3":

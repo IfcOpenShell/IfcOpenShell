@@ -21,7 +21,7 @@ import test.bootstrap
 import ifcopenshell.api.unit
 import ifcopenshell.api.type
 import ifcopenshell.api.root
-import ifcopenshell.api.void
+import ifcopenshell.api.feature
 import ifcopenshell.api.pset
 import ifcopenshell.api.group
 import ifcopenshell.api.system
@@ -134,7 +134,7 @@ class TestCopyClass(test.bootstrap.IFC4):
         # IfcOpeningElement opening
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=wall)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
         new = ifcopenshell.api.root.copy_class(self.file, product=wall)
         assert wall.HasOpenings[0] != new.HasOpenings[0]
         assert wall.HasOpenings[0].RelatedOpeningElement == opening
@@ -144,7 +144,7 @@ class TestCopyClass(test.bootstrap.IFC4):
         # IfcVoidingFeature opening
         plate = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcPlate")
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcVoidingFeature")
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=plate)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=plate)
         new = ifcopenshell.api.root.copy_class(self.file, product=plate)
         assert plate.HasOpenings[0] != new.HasOpenings[0]
         assert plate.HasOpenings[0].RelatedOpeningElement == opening
@@ -155,15 +155,15 @@ class TestCopyClass(test.bootstrap.IFC4):
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
         window = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWindow")
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=wall)
-        ifcopenshell.api.void.add_filling(self.file, opening=opening, element=window)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
+        ifcopenshell.api.feature.add_filling(self.file, opening=opening, element=window)
         new = ifcopenshell.api.root.copy_class(self.file, product=wall)
         assert not new.HasOpenings
 
     def test_copying_an_opening_voiding_an_element(self):
         wall = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcWall")
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.add_opening(self.file, opening=opening, element=wall)
+        ifcopenshell.api.feature.add_feature(self.file, feature=opening, element=wall)
         new = ifcopenshell.api.root.copy_class(self.file, product=opening)
         assert opening.VoidsElements[0] != new.VoidsElements[0]
         assert new.VoidsElements[0].RelatingBuildingElement == wall
@@ -171,14 +171,14 @@ class TestCopyClass(test.bootstrap.IFC4):
     def test_copying_an_opening_with_a_filling(self):
         door = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.add_filling(self.file, opening=opening, element=door)
+        ifcopenshell.api.feature.add_filling(self.file, opening=opening, element=door)
         new = ifcopenshell.api.root.copy_class(self.file, product=opening)
         assert not new.HasFillings
 
     def test_copying_a_filling(self):
         door = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcDoor")
         opening = ifcopenshell.api.root.create_entity(self.file, ifc_class="IfcOpeningElement")
-        ifcopenshell.api.void.add_filling(self.file, opening=opening, element=door)
+        ifcopenshell.api.feature.add_filling(self.file, opening=opening, element=door)
         new = ifcopenshell.api.root.copy_class(self.file, product=door)
         assert not new.FillsVoids
 

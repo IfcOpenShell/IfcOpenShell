@@ -167,7 +167,7 @@ class GeoreferenceData:
             result["rotation"] = str(round(ifcopenshell.util.geolocation.yaxis2angle(*wcs[:, 1][:2]), 3))
             result["x"], result["y"], result["z"] = wcs[:, 3][:3]
 
-            props = bpy.context.scene.BIMGeoreferenceProperties
+            props = tool.Georeference.get_georeference_props()
             if props.has_blender_offset:
                 blender_xyz = ifcopenshell.util.geolocation.enh2xyz(
                     result["x"],
@@ -193,7 +193,7 @@ class GeoreferenceData:
 
     @classmethod
     def local_origin(cls):
-        props = bpy.context.scene.BIMGeoreferenceProperties
+        props = tool.Georeference.get_georeference_props()
         if not props.has_blender_offset:
             return
         unit_scale = ifcopenshell.util.unit.calculate_unit_scale(tool.Ifc.get())

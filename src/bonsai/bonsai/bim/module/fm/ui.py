@@ -18,7 +18,6 @@
 
 import bonsai.tool as tool
 from bpy.types import Panel
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.fm.data import FMData
 
 
@@ -40,11 +39,11 @@ class BIM_PT_fm(Panel):
         scene = context.scene
         props = scene.BIMFMProperties
 
-        if IfcStore.get_file():
+        if tool.Ifc.get():
             row = layout.row()
             row.prop(props, "should_load_from_memory")
 
-        if not IfcStore.get_file() or not props.should_load_from_memory:
+        if not tool.Ifc.get() or not props.should_load_from_memory:
             row = layout.row()
             props.ifc_files.layout_file_select(row, "*.ifc;*.ifczip;*.ifcxml", "IFC File(s)")
 

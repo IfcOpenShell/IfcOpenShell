@@ -27,18 +27,14 @@ def remove_structural_connection_condition(file: ifcopenshell.file, relation: if
     The condition and the member itself is preserved.
 
     :param relation: The IfcRelConnectsStructuralMember to remove.
-    :type relation: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
     """
-    settings = {"relation": relation}
-
-    if settings["relation"].AppliedCondition:
+    if relation.AppliedCondition:
         ifcopenshell.api.structural.remove_structural_boundary_condition(
             file,
-            connection=settings["relation"].RelatedStructuralConnection,
+            connection=relation.RelatedStructuralConnection,
         )
-    history = settings["relation"].OwnerHistory
-    file.remove(settings["relation"])
+    history = relation.OwnerHistory
+    file.remove(relation)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)

@@ -36,15 +36,12 @@ def add_resource_quantity(
     This base quantity is then used in other calculations.
 
     :param resource: The IfcConstructionResource to add a quantity to.
-    :type resource: ifcopenshell.entity_instance
     :param ifc_class: The type of quantity to add, chosen from
         IfcQuantityArea (for material), IfcQuantityCount (for products),
         IfcQuantityLength (for material), IfcQuantityTime (for equipment or
         labour), IfcQuantityVolume (for material), and IfcQuantityWeight
         (for material).
-    :type ifc_class: str,optional
     :return: The newly created quantity depending on the IFC class
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -65,8 +62,6 @@ def add_resource_quantity(
         ifcopenshell.api.resource.edit_resource_quantity(model,
             physical_quantity=quantity, attributes={"TimeValue": 8.0})
     """
-    settings = {"resource": resource, "ifc_class": ifc_class}
-
     resource_type = resource.is_a()
     supported_quantities = ifcopenshell.util.resource.RESOURCES_TO_QUANTITIES[resource_type]
     if ifc_class not in supported_quantities:
@@ -75,14 +70,14 @@ def add_resource_quantity(
             f"Supported quantities: {','.join(supported_quantities)}"
         )
 
-    quantity = file.create_entity(settings["ifc_class"], Name="Unnamed")
+    quantity = file.create_entity(ifc_class, Name="Unnamed")
     # 3 IfcPhysicalSimpleQuantity Value
-    if settings["ifc_class"] == "IfcQuantityCount":
+    if ifc_class == "IfcQuantityCount":
         quantity[3] = 0
     else:
         quantity[3] = 0.0
-    old_quantity = settings["resource"].BaseQuantity
-    settings["resource"].BaseQuantity = quantity
+    old_quantity = resource.BaseQuantity
+    resource.BaseQuantity = quantity
     if old_quantity:
         ifcopenshell.util.element.remove_deep(file, old_quantity)
     return quantity

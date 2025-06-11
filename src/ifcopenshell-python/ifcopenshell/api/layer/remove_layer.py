@@ -25,9 +25,7 @@ def remove_layer(file: ifcopenshell.file, layer: ifcopenshell.entity_instance) -
     relationship to the layer will be removed.
 
     :param layer: The IfcPresentationLayerAssignment entity to remove
-    :type layer: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 

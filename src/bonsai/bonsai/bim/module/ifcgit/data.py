@@ -153,7 +153,7 @@ class IfcGitData:
 
     @classmethod
     def commit(cls):
-        props = bpy.context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         if cls.repo() and len(props.ifcgit_commits) > 0:
             item = props.ifcgit_commits[props.commit_index]
             try:
@@ -163,7 +163,7 @@ class IfcGitData:
 
     @classmethod
     def current_revision(cls):
-        props = bpy.context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         if cls.repo() and cls.repo().head.is_valid() and len(props.ifcgit_commits) > 0:
             return tool.IfcGitRepo.repo.commit()
 

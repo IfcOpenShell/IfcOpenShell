@@ -58,6 +58,7 @@ def audit():
     filename = ifcopenshell.guid.new()
     ids_filepath = os.path.join("uploads", filename + ".ids")
     ifc_filepath = os.path.join("uploads", filename + ".ifc")
+    os.makedirs("uploads", exist_ok=True)
     request.files.get("ids").save(ids_filepath)
     request.files.get("ifc").save(ifc_filepath)
 
@@ -76,3 +77,7 @@ def audit():
     engine = ifctester.reporter.Json(specs)
     engine.report()
     return engine.to_string()
+
+
+if __name__ == "__main__":
+    app.run(debug=False)

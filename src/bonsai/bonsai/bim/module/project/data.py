@@ -23,7 +23,7 @@ import ifcopenshell.util.file
 from bonsai.bim.ifc import IfcStore
 from pathlib import Path
 from collections import defaultdict
-from typing import Union
+from typing import Union, Any
 
 
 def refresh():
@@ -69,11 +69,8 @@ class ProjectData:
         if not ifc_file:
             return []
         current_schema = tool.Ifc.get().schema_identifier
-        files = (Path(bpy.context.scene.BIMProperties.data_dir) / "libraries").iterdir()
         results = [("0", "Custom Library", "")]
-        for f in files:
-            if not f.suffix.lower().startswith(".ifc"):
-                continue
+        for f in tool.Blender.get_data_dir_paths("libraries", "*.ifc*"):
             if cls.get_file_schema(f) != current_schema:
                 continue
             results.append((f.name, f.stem, "Library"))
@@ -85,10 +82,7 @@ class ProjectData:
         for export_schema in cls.data["export_schema"]:
             template_files[export_schema[0]].append(("0", "Blank Project", ""))
 
-        files = (Path(bpy.context.scene.BIMProperties.data_dir) / "templates" / "projects").iterdir()
-        for f in files:
-            if not f.suffix.lower().startswith(".ifc"):
-                continue
+        for f in tool.Blender.get_data_dir_paths(Path("templates") / "projects", "*.ifc*"):
             current_schema = cls.get_file_schema(f)
             if current_schema not in template_files:
                 continue
@@ -112,6 +106,59 @@ class ProjectData:
         if ifc := tool.Ifc.get():
             return len(ifc.by_type("IfcElement"))
         return 0
+
+
+class ProjectLibraryData:
+    data: dict[str, Any] = {}
+    is_loaded: bool = False
+
+    @classmethod
+    def load(cls):
+        cls.data = {}
+        cls.data["project_libraries"] = cls.project_libraries()
+        # After .project_libraries().
+        cls.data["project_libraries_enum"] = cls.project_libraries_enum()
+        cls.data["parent_libraries_enum"] = cls.parent_libraries_enum()
+        cls.is_loaded = True
+
+    @classmethod
+    def project_libraries(cls) -> dict[int, dict[str, Any]]:
+        results = {}
+        library_file = IfcStore.library_file
+        if library_file is None or library_file.schema == "IFC2X3":
+            return results
+        KEEP_ATTRS = set(("id", "Name", "Description"))
+        for l in library_file.by_type("IfcProjectLibrary"):
+            results[l.id()] = {k: v for k, v in l.get_info().items() if k in KEEP_ATTRS}
+        return results
+
+    @classmethod
+    def project_libraries_enum(cls) -> list[tuple[str, str, str, str, int]]:
+        results = []
+        project_libraries = cls.data["project_libraries"].values()
+        if not project_libraries:
+            results.append(("-", "No Library", "", "", 0))
+
+        props = tool.Project.get_project_props()
+        libs = []
+        for i, data in enumerate(cls.data["project_libraries"].values(), len(results)):
+            icon = "GREASEPENCIL" if props.editing_project_library_id == data["id"] else ""
+            libs.append((str(data["id"]), data["Name"] or "Unnamed", data["Description"] or "", icon, i))
+        libs.sort(key=lambda x: x[1])
+        results += libs
+        return results
+
+    @classmethod
+    def parent_libraries_enum(cls) -> list[tuple[str, str, str]]:
+        results: list[tuple[str, str, str]] = []
+        library_file = IfcStore.library_file
+        if library_file is None or library_file.schema == "IFC2X3":
+            return results
+        project = library_file.by_type("IfcProject")[0]
+        results.append((str(project.id()), f"IfcProject {project.Name or 'Unnamed'}", project.Description or ""))
+        for library_id, data in cls.data["project_libraries"].items():
+            results.append((str(library_id), data["Name"] or "Unnamed", data["Description"] or ""))
+        return results
 
 
 class LinksData:

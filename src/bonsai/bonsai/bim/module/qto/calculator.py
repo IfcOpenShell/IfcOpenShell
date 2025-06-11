@@ -24,18 +24,35 @@ import bonsai.tool as tool
 import ifcopenshell
 import ifcopenshell.geom
 import ifcopenshell.util.element
+import ifc5d.qto
 from mathutils import Vector, Matrix
 from mathutils.bvhtree import BVHTree
 from shapely.geometry import Polygon
 from shapely.ops import unary_union
-from typing import Literal, Union, Optional
+from typing import Literal, Union, Optional, assert_never
 
 
 AxisType = Literal["x", "y", "z"]
 VectorTuple = tuple[float, float, float]
 
 
+def get_x(o: bpy.types.Object) -> float:
+    """Calculate the length along the local X axis."""
+    return o.bound_box[6][0] - o.bound_box[0][0]
+
+
+def get_y(o: bpy.types.Object) -> float:
+    """Calculate the length along the local Y axis."""
+    return o.bound_box[6][1] - o.bound_box[0][1]
+
+
+def get_z(o: bpy.types.Object) -> float:
+    """Calculate the length along the local Z axis."""
+    return o.bound_box[6][2] - o.bound_box[0][2]
+
+
 def get_units(o: bpy.types.Object, vg_index: int) -> int:
+    assert isinstance(o.data, bpy.types.Mesh)
     return len([v for v in o.data.vertices if vg_index in [g.group for g in v.groups]])
 
 
@@ -45,25 +62,19 @@ def get_linear_length(o: bpy.types.Object) -> float:
     :param o: Blender Object
     :return: Length
     """
-    x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
-    y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-    z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+    x = get_x(o)
+    y = get_y(o)
+    z = get_z(o)
     return max(x, y, z)
 
 
-def get_length(o: bpy.types.Object, vg_index: Optional[int] = None, main_axis: str = "x") -> float:
+def get_length(o: bpy.types.Object, vg_index: Optional[int] = None) -> float:
+    """Calculate the object length trying to guess the main axis."""
     if vg_index is None:
-        x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
-        y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-        z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
-        if get_object_main_axis(o) == "x" or main_axis == "x":
-            return max(x, y)
-        if get_object_main_axis(o) == "z":
-            return max(z, x)
-        if get_object_main_axis(o) == "y":
-            return max(y, z)
+        return get_linear_length(o)
 
     length = 0
+    assert isinstance(o.data, bpy.types.Mesh)
     edges = [
         e
         for e in o.data.edges
@@ -84,6 +95,20 @@ def get_stair_length(obj: bpy.types.Object) -> float:
     return stair_length
 
 
+def get_footing_length(o: bpy.types.Object) -> float:
+    element = tool.Ifc.get_entity(o)
+    assert element
+    predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+    if not predefined_type:
+        return get_length(o)
+    if predefined_type == "FOOTING_BEAM" or predefined_type == "STRIP_FOOTING":
+        return get_z(o)
+    elif predefined_type == "PAD_FOOTING":
+        return max(get_x(o), get_y(o))
+    else:
+        return get_length(o)
+
+
 def get_net_stair_area(obj: bpy.types.Object) -> float:
     OBB_obj = get_OBB_object(obj)
     OBB_net_footprint_area = get_net_footprint_area(OBB_obj)
@@ -97,7 +122,9 @@ def get_gross_stair_area(obj: bpy.types.Object) -> float:
 
 
 def get_parametric_axis(obj: bpy.types.Object) -> Literal["AXIS2", "AXIS3", None]:
-    relating_type = ifcopenshell.util.element.get_type(tool.Ifc.get_entity(obj))
+    element = tool.Ifc.get_entity(obj)
+    assert element
+    relating_type = ifcopenshell.util.element.get_type(element)
     if relating_type:
         parametric = ifcopenshell.util.element.get_psets(relating_type).get("EPset_Parametric")
         if parametric:
@@ -120,6 +147,8 @@ def get_covering_gross_area(obj: bpy.types.Object) -> float:
         return get_gross_side_area(obj)
     elif parametrix_axis == "AXIS3":
         return get_gross_footprint_area(obj)
+    else:
+        assert_never(parametrix_axis)
 
 
 def get_covering_net_area(obj: bpy.types.Object) -> float:
@@ -130,6 +159,8 @@ def get_covering_net_area(obj: bpy.types.Object) -> float:
         return get_net_side_area(obj)
     elif parametrix_axis == "AXIS3":
         return get_net_footprint_area(obj)
+    else:
+        assert_never(parametrix_axis)
 
 
 def get_covering_width(obj: bpy.types.Object) -> float:
@@ -140,26 +171,46 @@ def get_covering_width(obj: bpy.types.Object) -> float:
         return get_width(obj)
     elif parametrix_axis == "AXIS3":
         return get_height(obj)
+    else:
+        assert_never(parametrix_axis)
 
 
 def get_width(o: bpy.types.Object) -> float:
     """_summary_: Returns the width of the object bounding box
 
+    Min value between X and Y axes lengths.
+
     :param blender-object o: blender object
     :return float: width
     """
-    x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
-    y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
+    x = get_x(o)
+    y = get_y(o)
     return min(x, y)
+
+
+def get_footing_height(o: bpy.types.Object) -> float:
+    element = tool.Ifc.get_entity(o)
+    assert element
+    predefined_type = ifcopenshell.util.element.get_predefined_type(element)
+    if not predefined_type:
+        return get_height(o)
+    if predefined_type == "FOOTING_BEAM" or predefined_type == "STRIP_FOOTING":
+        return get_y(o)
+    elif predefined_type == "PAD_FOOTING":
+        return get_z(o)
+    else:
+        return get_height(o)
 
 
 def get_height(o: bpy.types.Object) -> float:
     """_summary_: Returns the height of the object bounding box
 
+    Based on the the length along the local Z axis.
+
     :param blender-object o: blender object
     :return float: height
     """
-    return (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+    return get_z(o)
 
 
 def get_opening_height(obj: bpy.types.Object) -> float:
@@ -204,6 +255,7 @@ def get_finish_floor_height(obj: bpy.types.Object) -> float:
     space_min_z_value = get_min_global_z(obj)
 
     element = tool.Ifc.get_entity(obj)
+    assert element
     decompositions = ifcopenshell.util.element.get_decomposition(element)
     flooring_max_z_value = space_min_z_value
     for decomposition in decompositions:
@@ -212,6 +264,7 @@ def get_finish_floor_height(obj: bpy.types.Object) -> float:
             and ifcopenshell.util.element.get_predefined_type(decomposition) == "FLOORING"
         ):
             flooring_obj = tool.Ifc.get_object(decomposition)
+            assert isinstance(flooring_obj, bpy.types.Object)
             flooring_z_value = get_max_global_z(flooring_obj)
             if flooring_z_value > space_min_z_value:
                 flooring_max_z_value = flooring_z_value
@@ -224,6 +277,7 @@ def get_ceiling_height(obj: bpy.types.Object) -> float:
     space_max_z_value = get_max_global_z(obj)
 
     element = tool.Ifc.get_entity(obj)
+    assert element
     decompositions = ifcopenshell.util.element.get_decomposition(element)
     ceiling_min_z_value = space_max_z_value
     for decomposition in decompositions:
@@ -232,6 +286,7 @@ def get_ceiling_height(obj: bpy.types.Object) -> float:
             and ifcopenshell.util.element.get_predefined_type(decomposition) == "CEILING"
         ):
             ceiling_obj = tool.Ifc.get_object(decomposition)
+            assert isinstance(ceiling_obj, bpy.types.Object)
             ceiling_z_value = get_min_global_z(ceiling_obj)
             if ceiling_z_value < space_max_z_value:
                 ceiling_min_z_value = ceiling_z_value
@@ -257,6 +312,7 @@ def get_net_perimeter(o: bpy.types.Object) -> float:
 
 def get_gross_perimeter(o: bpy.types.Object) -> float:
     element = tool.Ifc.get_entity(o)
+    assert element
     mesh = get_gross_element_mesh(element)
     gross_obj = bpy.data.objects.new("GrossObj", mesh)
     gross_perimeter = get_net_perimeter(gross_obj)
@@ -269,7 +325,8 @@ def get_space_net_perimeter(obj: bpy.types.Object) -> float:
 
 
 def get_rectangular_perimeter(obj: bpy.types.Object) -> float:
-    length = get_length(obj, main_axis="x")
+    """Get object perimeter in XZ plane."""
+    length = get_x(obj)
     height = get_height(obj)
     return (length + height) * 2
 
@@ -277,6 +334,7 @@ def get_rectangular_perimeter(obj: bpy.types.Object) -> float:
 def get_lowest_polygons(o: bpy.types.Object) -> list[bpy.types.MeshPolygon]:
     lowest_polygons = []
     lowest_z = None
+    assert isinstance(o.data, bpy.types.Mesh)
     for polygon in o.data.polygons:
         z = round(polygon.center[2], 3)
         if lowest_z is None:
@@ -294,6 +352,7 @@ def get_lowest_polygons(o: bpy.types.Object) -> list[bpy.types.MeshPolygon]:
 def get_highest_polygons(o: bpy.types.Object) -> list[bpy.types.MeshPolygon]:
     highest_polygons = []
     highest_z = None
+    assert isinstance(o.data, bpy.types.Mesh)
     for polygon in o.data.polygons:
         z = round(polygon.center[2], 3)
         if highest_z is None:
@@ -309,10 +368,12 @@ def get_highest_polygons(o: bpy.types.Object) -> list[bpy.types.MeshPolygon]:
 
 
 def get_edge_key_distance(obj: bpy.types.Object, edge_key: tuple[int, int]) -> float:
+    assert isinstance(obj.data, bpy.types.Mesh)
     return (obj.data.vertices[edge_key[1]].co - obj.data.vertices[edge_key[0]].co).length
 
 
 def get_edge_distance(obj: bpy.types.Object, edge: bpy.types.MeshEdge) -> float:
+    assert isinstance(obj.data, bpy.types.Mesh)
     return (obj.data.vertices[edge.vertices[1]].co - obj.data.vertices[edge.vertices[0]].co).length
 
 
@@ -327,6 +388,7 @@ def get_net_floor_area(obj: bpy.types.Object) -> float:
         decomposition_type = decomposition.get_info()["type"]
         if decomposition_type == "IfcColumn" or decomposition_type == "IfcColumn":
             decomposition_obj = tool.Ifc.get_object(decomposition)
+            assert isinstance(decomposition_obj, bpy.types.Object)
             net_footprint_obj_area = get_net_footprint_area(decomposition_obj)
             total_net_floor_area -= net_footprint_obj_area
 
@@ -345,6 +407,7 @@ def get_gross_ceiling_area(obj: bpy.types.Object) -> float:
         decomposition_predefined_type = ifcopenshell.util.element.get_predefined_type(decomposition)
         if decomposition_class == "IfcCovering" and decomposition_predefined_type == "CEILING":
             decomposition_obj = tool.Ifc.get_object(decomposition)
+            assert isinstance(decomposition_obj, bpy.types.Object)
             total_gross_ceiling_area += get_gross_footprint_area(decomposition_obj)
 
     return total_gross_ceiling_area
@@ -362,10 +425,12 @@ def get_net_ceiling_area(obj: bpy.types.Object) -> float:
         decomposition_predefined_type = ifcopenshell.util.element.get_predefined_type(decomposition)
         if decomposition_class == "IfcCovering" and decomposition_predefined_type == "CEILING":
             decomposition_obj = tool.Ifc.get_object(decomposition)
+            assert isinstance(decomposition_obj, bpy.types.Object)
             total_net_ceiling_area += get_net_footprint_area(decomposition_obj)
 
         if decomposition_class == "IfcWall" or decomposition_class == "IfcColumn":
             decomposition_obj = tool.Ifc.get_object(decomposition)
+            assert isinstance(decomposition_obj, bpy.types.Object)
             total_net_ceiling_area -= get_net_roofprint_area(decomposition_obj)
 
     return total_net_ceiling_area
@@ -382,6 +447,7 @@ def get_space_net_volume(obj: bpy.types.Object) -> float:
         decomposition_type = decomposition.get_info()["type"]
         if decomposition_type == "IfcWall" or decomposition_type == "IfcColumn":
             decomposition_obj = tool.Ifc.get_object(decomposition)
+            assert isinstance(decomposition_obj, bpy.types.Object)
             total_space_net_volume -= get_net_volume(decomposition_obj)
 
     return total_space_net_volume
@@ -408,6 +474,7 @@ def get_gross_footprint_area(o: bpy.types.Object) -> float:
         return get_net_footprint_area(o)
 
     element = tool.Ifc.get_entity(o)
+    assert element
     mesh = get_gross_element_mesh(element)
     gross_obj = bpy.data.objects.new("GrossObj", mesh)
     gross_footprint_area = get_net_footprint_area(gross_obj)
@@ -432,14 +499,15 @@ def get_net_roofprint_area(o: bpy.types.Object) -> float:
 def get_side_area(o: bpy.types.Object) -> float:
     # There are a few dumb options for this, but this seems the dumbest
     # until I get more practical experience on what works best.
-    x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
-    y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-    z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+    x = get_x(o)
+    y = get_y(o)
+    z = get_z(o)
     return max(x * z, y * z)
 
 
 def get_cross_section_area(obj: bpy.types.Object) -> float:
-    representation = tool.Ifc.get().by_id(obj.data.BIMMeshProperties.ifc_definition_id)
+    representation = tool.Geometry.get_active_representation(obj)
+    assert representation
     item = representation.Items[0]
     while True:
         if item.is_a("IfcExtrudedAreaSolid"):
@@ -461,12 +529,14 @@ def get_gross_surface_area(o: bpy.types.Object, vg_index: Optional[int] = None) 
             return get_net_surface_area(o)
 
         element = tool.Ifc.get_entity(o)
+        assert element
         mesh = get_gross_element_mesh(element)
         area = get_mesh_area(mesh)
         bpy.data.meshes.remove(mesh)
         return area
 
     area = 0
+    assert isinstance(o.data, bpy.types.Mesh)
     vertices_in_vg = [v.index for v in o.data.vertices if vg_index in [g.group for g in v.groups]]
     for polygon in o.data.polygons:
         if is_polygon_in_vg(polygon, vertices_in_vg):
@@ -475,6 +545,7 @@ def get_gross_surface_area(o: bpy.types.Object, vg_index: Optional[int] = None) 
 
 
 def get_net_surface_area(obj: bpy.types.Object) -> float:
+    assert isinstance(obj.data, bpy.types.Mesh)
     return get_mesh_area(obj.data)
 
 
@@ -485,7 +556,7 @@ def get_mesh_area(mesh: bpy.types.Mesh) -> float:
     return area
 
 
-def is_polygon_in_vg(polygon: bpy.types.MeshPolygon, vertices_in_vg: list[bpy.types.MeshVertex]) -> bool:
+def is_polygon_in_vg(polygon: bpy.types.MeshPolygon, vertices_in_vg: list[int]) -> bool:
     for v in polygon.vertices:
         if v not in vertices_in_vg:
             return False
@@ -493,6 +564,7 @@ def is_polygon_in_vg(polygon: bpy.types.MeshPolygon, vertices_in_vg: list[bpy.ty
 
 
 def get_net_volume(o: bpy.types.Object) -> float:
+    assert isinstance(o.data, bpy.types.Mesh)
     o_mesh = bmesh.new()
     o_mesh.from_mesh(o.data)
     volume = o_mesh.calc_volume()
@@ -505,6 +577,7 @@ def get_gross_volume(o: bpy.types.Object) -> float:
         return get_net_volume(o)
 
     element = tool.Ifc.get_entity(o)
+    assert element
     mesh = get_gross_element_mesh(element)
     bm = get_bmesh_from_mesh(mesh)
 
@@ -516,80 +589,74 @@ def get_gross_volume(o: bpy.types.Object) -> float:
     return gross_volume
 
 
-def has_openings(obj: bpy.types.Object) -> Union[ifcopenshell.entity_instance, list[ifcopenshell.entity_instance]]:
+def has_openings(obj: bpy.types.Object) -> list[ifcopenshell.entity_instance]:
     element = tool.Ifc.get_entity(obj)
-    return element and getattr(element, "HasOpenings", [])
+    if not element:
+        return []
+    return [o for o in ifcopenshell.util.element.get_openings(element)]
 
 
-def get_obj_decompositions(obj: bpy.types.Object) -> list[ifcopenshell.entity_instance]:
+def get_obj_decompositions(obj: bpy.types.Object) -> set[ifcopenshell.entity_instance]:
     element = tool.Ifc.get_entity(obj)
+    assert element
     decompositions = ifcopenshell.util.element.get_decomposition(element)
     return decompositions
 
 
 def get_gross_weight(obj: bpy.types.Object) -> Union[float, None]:
+    """Get gross weight of the object.
+
+    Based on gross volume and Pset_MaterialCommon.MassDensity
+    or Pset_ProfileMechanical.MassPerLength and extrusion depth if it's profile based.
+    """
+
+    weight = get_profile_obj_weight(obj)
+    if weight is not None:
+        return weight
+
     obj_mass_density = get_obj_mass_density(obj)
     if not obj_mass_density:
         return
+
     gross_volume = get_gross_volume(obj)
     gross_weight = obj_mass_density * gross_volume
     return gross_weight
 
 
 def get_net_weight(obj: bpy.types.Object) -> Union[float, None]:
+    """Get net weight of the object.
+
+    Based on Pset_ProfileMechanical.MassPerLength and extrusion depth
+    (for profile based objects, though objects with openings are not supported)
+    or object's net volume and Pset_MaterialCommon.MassDensity.
+    """
+
+    if not has_openings(obj):
+        weight = get_profile_obj_weight(obj)
+        if weight is not None:
+            return weight
+
     obj_mass_density = get_obj_mass_density(obj)
     if not obj_mass_density:
         return
+
     net_volume = get_net_volume(obj)
     net_weight = obj_mass_density * net_volume
     return net_weight
 
 
 def get_obj_mass_density(obj: bpy.types.Object) -> Union[float, None]:
+    """Calculate object mass density based on Pset_MaterialCommon.MassDensity."""
     entity = tool.Ifc.get_entity(obj)
-    material = ifcopenshell.util.element.get_material(entity)
-    if material is None:
-        return
+    assert entity
+    return ifcopenshell.util.element.get_element_mass_density(entity)
 
-    if (
-        material.is_a("IfcMaterialLayerSet")
-        or material.is_a("IfcMaterialProfileSet")
-        or material.is_a("IfcMaterialConstituentSet")
-    ):
-        return
 
-    if material.is_a("IfcMaterial"):
-        material_mass_density = ifcopenshell.util.element.get_pset(material, "Pset_MaterialCommon", "MassDensity")
-        return material_mass_density
-
-    if material.is_a("IfcMaterialLayerSetUsage"):
-        material_layers = material.ForLayerSet.MaterialLayers
-        densities = []
-        thicknesses = []
-        obj_mass_density = 0
-        for material_layer in material_layers:
-            material_mass_density = ifcopenshell.util.element.get_pset(
-                material_layer.Material, "Pset_MaterialCommon", "MassDensity"
-            )
-            if material_mass_density is None:
-                return
-            densities.append(material_mass_density)
-            thickness = material_layer.LayerThickness
-            thicknesses.append(thickness)
-            obj_mass_density = obj_mass_density + (material_mass_density * thickness)
-        total_thickness = sum(thicknesses)
-        obj_mass_density = obj_mass_density / total_thickness
-        return obj_mass_density
-
-    if material.is_a("IfcMaterialProfileSetUsage"):
-        material_profiles = material.ForProfileSet.MaterialProfiles
-        if len(material_profiles) == 1:
-            material_mass_density = ifcopenshell.util.element.get_pset(
-                material_profiles[0].Material, "Pset_MaterialCommon", "MassDensity"
-            )
-            return material_mass_density
-        else:
-            return
+def get_profile_obj_weight(obj: bpy.types.Object) -> Union[float, None]:
+    element = tool.Ifc.get_entity(obj)
+    assert element
+    weight = ifc5d.qto.IfcOpenShell.get_weight_profile_based(element)
+    return weight
 
 
 def get_opening_type(opening: bpy.types.Object, obj: bpy.types.Object) -> Literal["OPENING", "RECESS"]:
@@ -599,6 +666,7 @@ def get_opening_type(opening: bpy.types.Object, obj: bpy.types.Object) -> Litera
     :param blender-object obj: blender object
     :return string: "OPENING" or "RECESS"
     """
+    assert isinstance(opening.data, bpy.types.Mesh)
     polygons = opening.data.polygons
     ray_intersections = 0
 
@@ -633,7 +701,8 @@ def get_opening_area(
     """
     total_opening_area = 0
     ifc = tool.Ifc.get()
-    ifc_element = ifc.by_id(obj.BIMObjectProperties.ifc_definition_id)
+    ifc_element = tool.Ifc.get_entity(obj)
+    assert ifc_element
     if len(openings := ifc_element.HasOpenings) != 0:
         for opening in openings:
             opening_id = opening.RelatedOpeningElement.GlobalId
@@ -694,21 +763,25 @@ def get_lateral_area(
     y_axis = [0, 1, 0]
     z_axis = [0, 0, 1]
 
-    if get_object_main_axis(obj) == "x" or main_axis == "x":
-        main_axis = x_axis
+    main_axis_guess = get_object_main_axis(obj)
+    if main_axis_guess == "x" or main_axis == "x":
+        main_axis_v = x_axis
         side_axis = y_axis
         top_axis = z_axis
-    elif get_object_main_axis(obj) == "z":
-        main_axis = z_axis
+    elif main_axis_guess == "z":
+        main_axis_v = z_axis
         side_axis = x_axis
         top_axis = y_axis
-    elif get_object_main_axis(obj) == "y":
-        main_axis = y_axis
+    elif main_axis_guess == "y":
+        main_axis_v = y_axis
         side_axis = z_axis
         top_axis = x_axis
+    else:
+        assert_never(main_axis_guess)
 
     area = 0
     total_opening_area = 0 if subtract_openings else get_opening_area(obj, angle_z1=angle_z1, angle_z2=angle_z2)
+    assert isinstance(obj.data, bpy.types.Mesh)
     polygons = obj.data.polygons
 
     for polygon in polygons:
@@ -716,7 +789,7 @@ def get_lateral_area(
         if angle_to_top_axis < angle_z1 or angle_to_top_axis > angle_z2:
             continue
         if exclude_end_areas:
-            angle_to_main_axis = math.degrees(polygon.normal.rotation_difference(Vector(main_axis)).angle)
+            angle_to_main_axis = math.degrees(polygon.normal.rotation_difference(Vector(main_axis_v)).angle)
             if angle_to_main_axis < 45 or angle_to_main_axis > 135:
                 continue
         if exclude_side_areas:
@@ -748,6 +821,7 @@ def get_outer_surface_area(obj: bpy.types.Object) -> float:
 
 def get_end_area(obj: bpy.types.Object) -> float:
     element = tool.Ifc.get_entity(obj)
+    assert element
     gross_mesh = get_gross_element_mesh(element)
     gross_obj = bpy.data.objects.new("MyObject", gross_mesh)
 
@@ -761,17 +835,19 @@ def get_end_area(obj: bpy.types.Object) -> float:
     return end_area
 
 
-def get_gross_top_area(obj: bpy.types.Object, angle: int = 45) -> float:
+def get_gross_top_area(obj: bpy.types.Object, angle: float = 45) -> float:
     """_summary_: Returns the gross top area of the object.
 
-    :param blender-object obj: blender object
-    :param int angle: Angle measured from the positive z-axis to the normal-vector of the area. Values lower than this will be ignored, defaults to 45
-    :return float: Gross Top Area
+    :param obj: blender object
+    :param angle: Angle in degrees measured from the positive z-axis to the normal-vector of the area.
+        Values higher than this will be ignored.
+    :return: Gross Top Area
     """
 
     z_axis = (0, 0, 1)
     area = 0
     opening_area = 0
+    assert isinstance(obj.data, bpy.types.Mesh)
     polygons = obj.data.polygons
 
     ifc = tool.Ifc.get()
@@ -783,6 +859,7 @@ def get_gross_top_area(obj: bpy.types.Object, angle: int = 45) -> float:
 
                 entity = ifc.by_guid(opening_id)
                 open_obj = tool.Ifc.get_object(entity)
+                assert isinstance(open_obj, bpy.types.Object)
                 opening_area += get_net_top_area(open_obj, angle=angle)
             else:
                 continue
@@ -796,18 +873,19 @@ def get_gross_top_area(obj: bpy.types.Object, angle: int = 45) -> float:
 
 
 # curently net top area is larger then projected area, because its taking into account internal polygons, or window sills
-def get_net_top_area(obj: bpy.types.Object, angle: int = 45, ignore_internal: bool = True) -> float:
+def get_net_top_area(obj: bpy.types.Object, angle: float = 45, ignore_internal: bool = True) -> float:
     """_summary_: Returns the net top area of the object.
 
     :param blender-object obj: blender object
-    :param int angle: Angle measured from the positive z-axis to the normal-vector of the area.
-        Values lower than this will be ignored, defaults to 45
-    :param bool ignore_internal: Toggle whether internal areas should be subtracted (Like window sills),
+    :param angle: Angle measured from the positive z-axis to the normal-vector of the area.
+        Values higher than this will be ignored.
+    :param ignore_internal: Toggle whether internal areas should be subtracted (Like window sills),
         defaults to True
-    :return float: Net Top Area
+    :return: Net Top Area
     """
     z_axis = (0, 0, 1)
-    area = 0
+    area = 0.0
+    assert isinstance(obj.data, bpy.types.Mesh)
     polygons = obj.data.polygons
 
     for polygon in polygons:
@@ -869,7 +947,7 @@ def get_OBB_object(obj: bpy.types.Object) -> bpy.types.Object:
     :param blender-object obj: Blender Object
     :return blender-object: OBB of the Object
     """
-    ifc_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_id = tool.Blender.get_ifc_definition_id(obj)
     bbox = obj.bound_box
     # matrix transformation to go from obj coordinates to world coordinates:
     obb = [Vector(v) for v in bbox]
@@ -911,9 +989,10 @@ def get_AABB_object(obj: bpy.types.Object) -> bpy.types.Object:
     :param blender-object obj: Blender Object
     :return blender-object: AABB of the Object
     """
-    ifc_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_id = tool.Blender.get_ifc_definition_id(obj)
     aabb_mesh = bpy.data.meshes.new(f"OBB_{ifc_id}")
 
+    assert isinstance(obj.data, bpy.types.Mesh)
     x = [v.co.x for v in obj.data.vertices]
     y = [v.co.y for v in obj.data.vertices]
     z = [v.co.z for v in obj.data.vertices]
@@ -976,9 +1055,10 @@ def get_bisected_obj(
     :param tuple(x,y,z) plane_no_neg: Tuple describing the normal vector of the lower bisection plane. Example: (0,0,-1)
     :return _type_: _description_
     """
-    ifc_id = obj.BIMObjectProperties.ifc_definition_id
+    ifc_id = tool.Blender.get_ifc_definition_id(obj)
 
     bis_obj = obj.copy()
+    assert isinstance(obj.data, bpy.types.Mesh)
     bis_obj.data = obj.data.copy()
     bis_obj.name = f"Bisected_{ifc_id}"
 
@@ -1036,6 +1116,7 @@ def get_touching_objects(obj: bpy.types.Object, class_filter: list[str]) -> list
     obj.rotation_euler[1] += math.radians(0.001)
     bpy.context.evaluated_depsgraph_get().update()
 
+    assert isinstance(obj.data, bpy.types.Mesh)
     obj_mesh = bmesh.new()
     obj_mesh.from_mesh(obj.data)
     obj_mesh.transform(obj.matrix_world)
@@ -1048,11 +1129,14 @@ def get_touching_objects(obj: bpy.types.Object, class_filter: list[str]) -> list
     for f in class_filter:
         filtered_objects += ifc.by_type(f)
 
+    blender_o = None
     for o in filtered_objects:
         blender_o = tool.Ifc.get_object(o)
         if blender_o == obj:
             continue
         o_mesh = bmesh.new()
+        assert isinstance(blender_o, bpy.types.Object)
+        assert isinstance(blender_o.data, bpy.types.Mesh)
         try:
             o_mesh.from_mesh(blender_o.data)
         except:
@@ -1065,6 +1149,7 @@ def get_touching_objects(obj: bpy.types.Object, class_filter: list[str]) -> list
             touching_objects.append(blender_o)
 
     # return the objects to their original states
+    assert isinstance(blender_o, bpy.types.Object)
     blender_o.rotation_euler[0] -= math.radians(0.001)
     blender_o.rotation_euler[1] -= math.radians(0.001)
     bpy.context.evaluated_depsgraph_get().update()
@@ -1082,6 +1167,8 @@ def get_contact_area(object1: bpy.types.Object, object2: bpy.types.Object) -> fl
     # list of tuples, each tuple containing the index of the polygon in object1 and object2 that are touching
     total_area = 0
 
+    assert isinstance(object1.data, bpy.types.Mesh)
+    assert isinstance(object2.data, bpy.types.Mesh)
     for poly1 in object1.data.polygons:
         for poly2 in object2.data.polygons:
             total_area += get_intersection_between_polygons(object1, poly1, object2, poly2)
@@ -1147,6 +1234,7 @@ def create_shapely_polygon(obj: bpy.types.Object, polygon: bpy.types.MeshPolygon
     """
     polygon_tuples = []
     odata = obj.data
+    assert isinstance(odata, bpy.types.Mesh)
     for loop_index in polygon.loop_indices:
         loop = odata.loops[loop_index]
         coords = obj.matrix_world @ odata.vertices[loop.vertex_index].co
@@ -1171,27 +1259,7 @@ def create_mesh_from_shape(
         settings.set("keep-bounding-boxes", True)
     shape = ifcopenshell.geom.create_shape(settings, element)
     geometry = shape.geometry if element.is_a("IfcRoot") else shape
-    faces = geometry.faces
-    verts = geometry.verts
-
-    mesh = bpy.data.meshes.new("myBeautifulMesh")
-
-    num_vertices = len(verts) // 3
-    total_faces = len(faces)
-    loop_start = range(0, total_faces, 3)
-    num_loops = total_faces // 3
-    loop_total = [3] * num_loops
-    num_vertex_indices = len(faces)
-
-    mesh.vertices.add(num_vertices)
-    mesh.vertices.foreach_set("co", verts)
-    mesh.loops.add(num_vertex_indices)
-    mesh.loops.foreach_set("vertex_index", faces)
-    mesh.polygons.add(num_loops)
-    mesh.polygons.foreach_set("loop_start", loop_start)
-    mesh.polygons.foreach_set("loop_total", loop_total)
-    mesh.update()
-    return mesh
+    return tool.Loader.create_mesh_from_shape(geometry)
 
 
 def get_bmesh_from_mesh(mesh: bpy.types.Mesh) -> bmesh.types.BMesh:
@@ -1203,27 +1271,24 @@ def get_bmesh_from_mesh(mesh: bpy.types.Mesh) -> bmesh.types.BMesh:
 def get_object_main_axis(o: bpy.types.Object) -> AxisType:
     """_summary_: Returns the main object axis. Useful for profile-defined objects.
 
+    Main axis is the axis with the largest dimension.
+
     :param blender-object o: Blender Object
     :return str: main axis x or y or z
     """
-    x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
-    y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-    z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
 
-    if x >= y and x > z:
-        return "x"
-    if y > z and y > x:
-        return "y"
-    if z > x and z > y:
-        return "z"
-    else:
-        return "x"
+    axes: list[tuple[AxisType, float]] = [
+        ("x", get_x(o)),
+        ("y", get_y(o)),
+        ("z", get_z(o)),
+    ]
+    return max(axes, key=lambda x: x[1])[0]
 
 
 def is_opening_horizontal(o: bpy.types.Object) -> bool:
-    x = (Vector(o.bound_box[4]) - Vector(o.bound_box[0])).length
-    y = (Vector(o.bound_box[3]) - Vector(o.bound_box[0])).length
-    z = (Vector(o.bound_box[1]) - Vector(o.bound_box[0])).length
+    x = get_x(o)
+    y = get_y(o)
+    z = get_z(o)
 
     return z < x and z < y
 

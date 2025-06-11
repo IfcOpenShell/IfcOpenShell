@@ -23,6 +23,7 @@ import ifcopenshell.util.system
 import ifcopenshell.util.unit
 from ifcopenshell.util.doc import get_entity_doc
 import bonsai.tool as tool
+from typing import Any, Union
 
 
 def refresh():
@@ -43,6 +44,7 @@ class SystemData:
         cls.data = {
             "system_class": cls.system_class(),
             "total_systems": cls.total_systems(),
+            "active_system": cls.active_system(),
         }
         cls.is_loaded = True
 
@@ -62,6 +64,13 @@ class SystemData:
     @classmethod
     def total_systems(cls):
         return len(tool.System.get_systems())
+
+    @classmethod
+    def active_system(cls) -> Union[dict[str, Any], None]:
+        active_system = tool.System.get_active_system()
+        if not active_system:
+            return None
+        return {"id": active_system.id(), "Name": active_system.Name, "ifc_class": active_system.is_a()}
 
 
 class ObjectSystemData:
@@ -121,8 +130,9 @@ class PortData:
 
     @classmethod
     def load(cls):
-        element = tool.Ifc.get_entity(bpy.context.active_object)
-        cls.element = element
+        cls.element = None
+        if obj := bpy.context.active_object:
+            cls.element = tool.Ifc.get_entity(obj)
         is_port = cls.is_port()
         cls.data = {
             "total_ports": cls.total_ports(),
@@ -136,19 +146,19 @@ class PortData:
         cls.is_loaded = True
 
     @classmethod
-    def total_ports(cls):
+    def total_ports(cls) -> int:
         return len(ifcopenshell.util.system.get_ports(cls.element))
 
     @classmethod
-    def is_port(cls):
-        return cls.element and cls.element.is_a("IfcDistributionPort")
+    def is_port(cls) -> bool:
+        return bool(cls.element and cls.element.is_a("IfcDistributionPort"))
 
     @classmethod
-    def port_relating_object_name(cls):
+    def port_relating_object_name(cls) -> str:
         return tool.Ifc.get_object(tool.System.get_port_relating_element(cls.element)).name
 
     @classmethod
-    def port_connected_object_name(cls):
+    def port_connected_object_name(cls) -> Union[str, None]:
         connected_port = tool.System.get_connected_port(cls.element)
         if not connected_port:
             return
@@ -156,7 +166,7 @@ class PortData:
         return tool.Ifc.get_object(connected_element).name
 
     @classmethod
-    def located_ports_data(cls):
+    def located_ports_data(cls) -> list[dict[str, Any]]:
         ports = ifcopenshell.util.system.get_ports(cls.element)
 
         data = []
@@ -169,17 +179,24 @@ class PortData:
             else:
                 connected_obj_name = None
 
-            data.append((port, port_obj_name, connected_obj_name))
+            data.append(
+                {
+                    "id": port.id(),
+                    "FlowDirection": port.FlowDirection,
+                    "port_obj_name": port_obj_name,
+                    "connected_obj_name": connected_obj_name,
+                }
+            )
         return data
 
     @classmethod
-    def selected_objects_flow_direction(cls):
-        for port, _, connected_obj_name in cls.data["located_ports_data"]:
-            if connected_obj_name is None:
+    def selected_objects_flow_direction(cls) -> Union[str, None]:
+        for port_data in cls.data["located_ports_data"]:
+            if port_data["connected_obj_name"] is None:
                 continue
-            connected_obj = bpy.data.objects[connected_obj_name]
+            connected_obj = bpy.data.objects[port_data["connected_obj_name"]]
             if connected_obj in bpy.context.selected_objects:
-                return port.FlowDirection
+                return port_data["FlowDirection"]
 
 
 class SystemDecorationData:
@@ -266,6 +283,15 @@ class ActiveObjectZonesData:
         cls.is_loaded = True
 
     @classmethod
-    def zones(cls):
-        systems = ifcopenshell.util.system.get_element_systems(tool.Ifc.get_entity(bpy.context.active_object))
-        return [s.Name or "Unnamed" for s in systems if s.is_a("IfcZone")]
+    def zones(cls) -> list[dict[str, Any]]:
+        obj = bpy.context.active_object
+        assert obj
+        element = tool.Ifc.get_entity(obj)
+        assert element
+        return [
+            {
+                "id": z.id(),
+                "Name": (z.Name or "Unnamed"),
+            }
+            for z in ifcopenshell.util.system.get_element_zones(element)
+        ]

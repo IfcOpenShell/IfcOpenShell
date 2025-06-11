@@ -39,12 +39,9 @@ def add_address(
 
     :param assigned_object: The IfcOrganization or IfcPerson the contact
         address belongs to.
-    :type assigned_object: ifcopenshell.entity_instance
     :param ifc_class: Either IfcPostalAddress or IfcTelecomAddress. Defaults
         to IfcPostalAddress.
-    :type ifc_class: str, optional
     :return: The new IfcPostalAddress or IfcTelecomAddress
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -67,10 +64,8 @@ def add_address(
             "ElectronicMailAddresses": ["bobthebuilder@example.com"],
             "WWWHomePageURL": "https://thinkmoult.com"})
     """
-    settings = {"assigned_object": assigned_object, "ifc_class": ifc_class}
-
-    address = file.create_entity(settings["ifc_class"], "OFFICE")
-    addresses = list(settings["assigned_object"].Addresses) if settings["assigned_object"].Addresses else []
+    address = file.create_entity(ifc_class, "OFFICE")
+    addresses = list(assigned_object.Addresses) if assigned_object.Addresses else []
     addresses.append(address)
-    settings["assigned_object"].Addresses = addresses
+    assigned_object.Addresses = addresses
     return address

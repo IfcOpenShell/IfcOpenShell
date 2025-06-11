@@ -44,17 +44,13 @@ def add_time_period(
 
     :param recurrence_pattern: The IfcRecurrencePattern to add the time
         period to. See ifcopenshell.api.sequence.assign_recurrence_pattern.
-    :type recurrence_pattern: ifcopenshell.entity_instance
     :param start_time: The start time of the time period, in a format
         compatible with IfcTime, such as an ISO format time string or a
         datetime.time object.
-    :type start_time: str,datetime.time
     :param end_time: The end time of the time period, in a format
         compatible with IfcTime, such as an ISO format time string or a
         datetime.time object.
-    :type end_time: str,datetime.time
     :return: The newly created IfcTimePeriod
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -81,18 +77,12 @@ def add_time_period(
         ifcopenshell.api.sequence.add_time_period(model,
             recurrence_pattern=pattern, start_time="13:00", end_time="17:00")
     """
-    settings = {
-        "recurrence_pattern": recurrence_pattern,
-        "start_time": start_time,
-        "end_time": end_time,
-    }
-
     time_period = file.create_entity("IfcTimePeriod")
-    time_period.StartTime = ifcopenshell.util.date.datetime2ifc(settings["start_time"], "IfcTime")
-    time_period.EndTime = ifcopenshell.util.date.datetime2ifc(settings["end_time"], "IfcTime")
-    time_periods = list(settings["recurrence_pattern"].TimePeriods or [])
+    time_period.StartTime = ifcopenshell.util.date.datetime2ifc(start_time, "IfcTime")
+    time_period.EndTime = ifcopenshell.util.date.datetime2ifc(end_time, "IfcTime")
+    time_periods = list(recurrence_pattern.TimePeriods or [])
     time_periods.append(time_period)
-    settings["recurrence_pattern"].TimePeriods = time_periods
+    recurrence_pattern.TimePeriods = time_periods
 
     ifcopenshell.util.sequence.is_working_day.cache_clear()
     ifcopenshell.util.sequence.is_calendar_applicable.cache_clear()

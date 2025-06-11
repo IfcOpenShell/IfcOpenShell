@@ -26,7 +26,7 @@ import bonsai.core.tool
 import bonsai.tool as tool
 import ifcopenshell.api.sequence
 import ifcopenshell.api.cost
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 import time
 import socket
 import sys
@@ -112,23 +112,18 @@ class Web(bonsai.core.tool.Web):
 
         global ws_process
 
-        webui_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui")
-        ws_path = os.path.join(webui_path, "sioserver.py")
+        webui_path = tool.Blender.get_data_dir_path("webui")
+        ws_path = (webui_path / "sioserver.py").__str__()
 
         py_version = sys.version_info
 
-        if bpy.app.version >= (4, 2, 0):
-            bonsai_lib_path = (
-                Path(bpy.utils.user_resource("EXTENSIONS"))
-                / ".local"
-                / "lib"
-                / f"python{py_version.major}.{py_version.minor}"
-                / "site-packages"
-            )
-        else:
-            addon = [a for a in addon_utils.modules() if a.bl_info["name"] == "Bonsai"][0]
-            bonsai_path = os.path.dirname(addon.__file__)
-            bonsai_lib_path = os.path.join(bonsai_path, "libs", "site", "packages")
+        bonsai_lib_path = (
+            Path(bpy.utils.user_resource("EXTENSIONS"))
+            / ".local"
+            / "lib"
+            / f"python{py_version.major}.{py_version.minor}"
+            / "site-packages"
+        )
 
         env = os.environ.copy()
         env["BONSAI_LIB_PATH"] = str(bonsai_lib_path)
@@ -136,7 +131,7 @@ class Web(bonsai.core.tool.Web):
 
         ws_process = subprocess.Popen(
             [sys.executable, ws_path, "--p", str(port), "--host", "127.0.0.1"],
-            cwd=webui_path,
+            cwd=webui_path.__str__(),
             env=env,
         )
 
@@ -208,8 +203,7 @@ class Web(bonsai.core.tool.Web):
             cls.disconnect_websocket_server()
 
         # sleep(0.5)
-        webui_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui")
-        pid_file = os.path.join(webui_path, "running_pid.json")
+        pid_file = tool.Blender.get_data_dir_path("webui") / "running_pid.json"
         with open(pid_file, "r") as f:
             pids = json.load(f)
 
@@ -246,8 +240,7 @@ class Web(bonsai.core.tool.Web):
         while True:
             if time.time() - start > max_time:
                 return False
-            webui_path = os.path.join(bpy.context.scene.BIMProperties.data_dir, "webui")
-            pid_file = os.path.join(webui_path, "running_pid.json")
+            pid_file = tool.Blender.get_data_dir_path("webui") / "running_pid.json"
             try:
                 with open(pid_file, "r") as f:
                     data = json.load(f)
@@ -737,7 +730,8 @@ class Web(bonsai.core.tool.Web):
         if operator_data["type"] == "getDrawings":
             drawings_data = []
             sheets_data = []
-            ifc_file_dir = os.path.dirname(bpy.context.scene.BIMProperties.ifc_file)
+            props = tool.Blender.get_bim_props()
+            ifc_file_dir = os.path.dirname(props.ifc_file)
 
             sheets = [d for d in tool.Ifc.get().by_type("IfcDocumentInformation") if d.Scope == "SHEET"]
             for sheet in sorted(sheets, key=lambda s: getattr(s, "Identification", getattr(s, "DocumentId", None))):

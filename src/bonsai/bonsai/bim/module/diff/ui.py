@@ -17,7 +17,6 @@
 # along with Bonsai.  If not, see <http://www.gnu.org/licenses/>.
 
 from bpy.types import Panel
-from bonsai.bim.ifc import IfcStore
 from bonsai.bim.module.diff.data import DiffData
 import bonsai.bim.helper
 import bonsai.tool as tool
@@ -38,9 +37,7 @@ class BIM_PT_diff(Panel):
 
         layout = self.layout
         layout.use_property_split = True
-
-        scene = context.scene
-        props = scene.DiffProperties
+        props = tool.Blender.get_diff_props()
 
         layout.label(text="IFC Diff Setup:")
 

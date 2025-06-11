@@ -26,11 +26,8 @@ def edit_monetary_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instan
     IfcMonetaryUnit, consult the IFC documentation.
 
     :param unit: The IfcMonetaryUnit entity you want to edit
-    :type unit: ifcopenshell.entity_instance
     :param attributes: a dictionary of attribute names and values.
-    :type attributes: dict
     :return: None
-    :rtype: None
 
     Example:
 
@@ -43,7 +40,5 @@ def edit_monetary_unit(file: ifcopenshell.file, unit: ifcopenshell.entity_instan
         # Ah who are we kidding
         ifcopenshell.api.unit.edit_monetary_unit(model, unit=zwl, attributes={"Currency": "USD"})
     """
-    settings = {"unit": unit, "attributes": attributes or {}}
-
-    for name, value in settings["attributes"].items():
-        setattr(settings["unit"], name, value)
+    for name, value in attributes.items():
+        setattr(unit, name, value)

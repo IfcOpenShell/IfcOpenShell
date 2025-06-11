@@ -66,7 +66,15 @@ class IFC_PARSE_API file_open_status {
     }
 };
 
-typedef boost::variant<int, IfcUtil::IfcBaseClass*> reference_or_simple_type;
+struct InstanceReference {
+    int v;
+    size_t file_offset;
+    operator int() const {
+        return v;
+    }
+};
+
+typedef boost::variant<InstanceReference, IfcUtil::IfcBaseClass*> reference_or_simple_type;
 typedef std::list<std::pair<MutableAttributeValue, boost::variant<reference_or_simple_type, std::vector<reference_or_simple_type>, std::vector<std::vector<reference_or_simple_type>>>>> unresolved_references;
 
 struct parse_context {
@@ -92,7 +100,7 @@ struct parse_context {
 
     void push(IfcUtil::IfcBaseClass* inst);
 
-    IfcEntityInstanceData construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size);
+    IfcEntityInstanceData construct(int name, unresolved_references& references_to_resolve, const IfcParse::declaration* decl, boost::optional<size_t> expected_size, int resolve_reference_index=-1);
 };
 
 /// This class provides several static convenience functions and variables
@@ -105,6 +113,7 @@ class IFC_PARSE_API IfcFile {
     typedef boost::unordered_map<unsigned int, IfcUtil::IfcBaseClass*> entity_by_id_t;
     typedef boost::unordered_map<uint32_t, IfcUtil::IfcBaseClass*> entity_by_iden_t;
     typedef std::map<std::string, IfcUtil::IfcBaseClass*> entity_by_guid_t;
+    // instance_id, declaration->index_in_schema, attribute_index
     typedef std::tuple<int, short, short> inverse_attr_record;
     enum INVERSE_ATTR {
         INSTANCE_ID,

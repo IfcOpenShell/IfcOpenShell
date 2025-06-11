@@ -31,10 +31,10 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 	std::vector<cross_section> cross_sections;
 
 	auto dir = map(inst->Directrix());
-	auto pwf = taxonomy::dcast<taxonomy::piecewise_function>(dir);
-	if (!pwf) {
+	auto fn = taxonomy::dcast<taxonomy::function_item>(dir);
+	if (!fn) {
 		// Only implement on alignment curves
-        Logger::Warning("IfcSectionedSolidHorizontal is only implemented for piecewise function Directrix curves", inst);
+        Logger::Warning("IfcSectionedSolidHorizontal is only implemented for Directrix curves based on taxonomy::function_item", inst);
         return nullptr;
 	}
 
@@ -43,18 +43,19 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 	auto csps = inst->CrossSectionPositions();
 	std::vector<taxonomy::face::ptr> faces;
 
-	// The PointByDistanceExpressesions are factored out into (a) a cartesian offset relative to the
+	// The PointByDistanceExpressions are factored out into (a) a cartesian offset relative to the
 	// reference frame along a certain curve location (b) the longitude.
 
 	// The longitudes determine the range of the sweep and the offsets are interpolated in between
 	// sweep segments. 
 	std::vector<Eigen::Vector3d> profile_offsets;
+	std::vector<boost::optional<Eigen::Matrix3d>> profile_rotations;
 	std::vector<double> longitudes;
 
 	for (auto& cs : *css) {
 		faces.push_back(std::move(taxonomy::cast<taxonomy::face>(map(cs))));
 	}
-#ifdef SCHEMA_HAS_IfcPointByDistanceExpression
+#if defined(SCHEMA_HAS_IfcPointByDistanceExpression) && !defined(SCHEMA_IfcSectionedSurface_HAS_FixedAxisVertical)
 	for (auto& csp : *csps) {
 		auto pbde = csp->Location()->as<IfcSchema::IfcPointByDistanceExpression>(true);
 
@@ -69,10 +70,20 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 		);
 
 		profile_offsets.push_back(po);
+
+		boost::optional<Eigen::Matrix3d> rot;
+		if (csp->Axis() && csp->RefDirection()) {
+			rot = taxonomy::matrix4(
+				Eigen::Vector3d(0, 0, 0),
+				taxonomy::cast<taxonomy::direction3>(map(csp->Axis()))->ccomponents(),
+				taxonomy::cast<taxonomy::direction3>(map(csp->RefDirection()))->ccomponents()).ccomponents().block<3,3>(0,0);
+		} else if (csp->Axis()) {
+			rot = taxonomy::matrix4(
+				Eigen::Vector3d(0, 0, 0),
+				taxonomy::cast<taxonomy::direction3>(map(csp->Axis()))->ccomponents()).ccomponents().block<3, 3>(0, 0);
+		}
+		profile_rotations.push_back(rot);
 	}
-#else
-	return nullptr;
-#endif
 	if (faces.size() != profile_offsets.size()) {
 		Logger::Warning("Expected CrossSections and CrossSectionPositions to be equal length, but got " + std::to_string(faces.size()) + " and " + std::to_string(profile_offsets.size()) + " respectively", inst);
 		return nullptr;
@@ -83,11 +94,14 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcSectionedSolidHorizontal* in
 	}
 
 	for (size_t i = 0; i < faces.size(); ++i) {
-		cross_sections.push_back({ longitudes[i], faces[i], profile_offsets[i] });
+		cross_sections.push_back({ longitudes[i], faces[i], profile_offsets[i], profile_rotations[i]});
 	}
-	}
+#else
+    return nullptr;
+#endif
+   }
 
-	return make_loft(settings_, inst, pwf, cross_sections);
+	return make_loft(settings_, inst, fn, cross_sections);
 }
 
 #endif

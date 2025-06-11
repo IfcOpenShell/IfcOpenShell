@@ -19,8 +19,11 @@
 import bpy
 import math
 import mathutils.geometry
+import ifcopenshell
+import ifcopenshell.util.unit
 import bonsai.tool as tool
 from mathutils import Vector
+from typing import Union
 
 # Code taken and updated from https://blenderartists.org/t/detecting-intersection-of-bounding-boxes/457520/2
 
@@ -128,15 +131,53 @@ def format_distance(
     decimal_places=None,
     suppress_zero_inches=False,
     in_unit_length=False,
+    custom_unit=None,
 ):
-    s_code = "\u00b2"  # Superscript two THIS IS LEGACY (but being kept for when Area Measurements are re-implimented)
-
-    # Get Scene Unit Settings
-    scaleFactor = bpy.context.scene.unit_settings.scale_length
+    # Get Blender Scene Unit Settings
+    unit_scale = bpy.context.scene.unit_settings.scale_length
     unit_system = bpy.context.scene.unit_settings.system
     unit_length = bpy.context.scene.unit_settings.length_unit
+    area_unit_symbol = " m2" if unit_system == "METRIC" else " ft2"
 
-    value *= scaleFactor
+    # Get IFC Unit Settings
+    if tool.Ifc.get():
+        unit_scale = 1
+        if length_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "LENGTHUNIT"):
+            unit_system = "METRIC" if length_unit.Name == "METRE" else "IMPERIAL"
+            unit_length = length_unit.Name.upper()
+            if hasattr(length_unit, "Prefix") and length_unit.Prefix:
+                unit_length = length_unit.Prefix + length_unit.Name
+            unit_length_mapping = {
+                "FOOT": "FEET",
+                "INCH": "INCHES",
+                "METRE": "METERS",
+                "DECIMETRE": "DECIMETERS",
+                "CENTIMETRE": "CENTIMETERS",
+                "MILLIMETRE": "MILLIMETERS",
+            }
+            unit_length = unit_length_mapping[unit_length]
+        # For now we only format area in IFC Units
+        if area_unit := ifcopenshell.util.unit.get_project_unit(tool.Ifc.get(), "AREAUNIT"):
+            area_unit_symbol = " " + ifcopenshell.util.unit.get_unit_symbol(area_unit)
+
+    unit_fraction = True if unit_system == "IMPERIAL" else False
+
+    # Custom Unit Settings
+    if custom_unit:
+        unit_mapping = {
+            "Feet and Inches - Fractional": ("IMPERIAL", "FEET", True),
+            "Feet - Decimal": ("IMPERIAL", "FEET", False),
+            "Inches - Fractional": ("IMPERIAL", "INCHES", True),
+            "Inches - Decimal": ("IMPERIAL", "INCHES", False),
+            "Meters": ("METRIC", "METERS", False),
+            "Decimeters": ("METRIC", "DECIMETERS", False),
+            "Centimeters": ("METRIC", "CENTIMETERS", False),
+            "Millimeters": ("METRIC", "MILLIMETERS", False),
+        }
+        if custom_unit in unit_mapping:
+            unit_system, unit_length, unit_fraction = unit_mapping[custom_unit]
+
+    value *= unit_scale
 
     # Imperial Formatting
     if unit_system == "IMPERIAL":
@@ -161,10 +202,14 @@ def format_distance(
 
         base = int(precision)
         decInches = value * toInches
+        decFeet = decInches / 12
 
         # Separate ft and inches
-        # Unless Inches are the specified Length Unit
-        if unit_length != "INCHES":
+        # Unless Inches are the specified Length Unit or unit_fraction is False
+        if unit_length == "FEET" and not unit_fraction:
+            feet = round(decInches / inPerFoot, 3)  # keep decimal
+            decInches = 0
+        elif unit_length != "INCHES":
             feet = int(decInches / inPerFoot)  # remove decimal
             decInches -= feet * inPerFoot
         else:
@@ -199,6 +244,10 @@ def format_distance(
                 feet += 1
                 inches = 0
 
+        # Check whether decimal or fractional
+        if not unit_fraction:
+            inches = round(decInches, 3)
+            frac = None
         if not isArea:
             add_inches = bool(inches) or not suppress_zero_inches or (inches == 0 and frac)
             tx_dist = ""
@@ -224,18 +273,39 @@ def format_distance(
                 tx_dist += str(frac) + "/" + str(base)
             if add_inches or frac:
                 tx_dist += '"'
+            if precision == "12" and unit_system == "IMPERIAL":
+                tx_dist = str(round(decFeet)) + "'"
         else:
-            tx_dist = str("%1.3f" % (value * toInches / inPerFoot)) + " sq. ft."
+            fmt = "%1.3f"
+            sq_feet = round(value * toInches / inPerFoot, 4)
+            tx_dist = ""
+            if area_unit_symbol == " ft2":
+                fmt += area_unit_symbol
+                tx_dist = fmt % sq_feet
+            if area_unit_symbol == " in2":
+                sq_inch = sq_feet * 144
+                fmt += area_unit_symbol
+                tx_dist = fmt % sq_inch
+            if area_unit_symbol == " yd2":
+                sq_yard = sq_feet / 9
+                fmt += area_unit_symbol
+                tx_dist = fmt % sq_yard
+            if area_unit_symbol == " mi2":
+                sq_mile = sq_feet / 27878400
+                fmt += area_unit_symbol
+                tx_dist = fmt % sq_mile
 
     # METRIC FORMATTING
     elif unit_system == "METRIC":
         if in_unit_length:
+            if unit_length == "DECIMETERS":
+                value = value / 10
             if unit_length == "CENTIMETERS":
                 value = value / 100
             if unit_length == "MILLIMETERS":
                 value = value / 1000
 
-        if precision:
+        if precision and isinstance(precision, float):
             value = precision * round(float(value) / precision)
 
         if decimal_places is not None:
@@ -248,6 +318,14 @@ def format_distance(
             if hide_units is False:
                 fmt += " m"
             tx_dist = fmt % value
+        # Decimeters
+        elif unit_length == "DECIMETERS":
+            if decimal_places is None:
+                fmt = "%1.1f"
+            if hide_units is False:
+                fmt += " dm"
+            d_dm = value * (10)
+            tx_dist = fmt % d_dm
         # Centimeters
         elif unit_length == "CENTIMETERS":
             if decimal_places is None:
@@ -287,21 +365,31 @@ def format_distance(
                     d_mm = value * (1000)
                     tx_dist = fmt % d_mm
         if isArea:
-            tx_dist += s_code
+            if area_unit_symbol == " m2":
+                if decimal_places is None:
+                    fmt = "%1.3f"
+                if hide_units is False:
+                    fmt += area_unit_symbol
+                tx_dist = fmt % value
+            if area_unit_symbol == " cm2":
+                if decimal_places is None:
+                    fmt = "%1.1f"
+                if hide_units is False:
+                    fmt += area_unit_symbol
+                d_cm = value * (10000)
+                tx_dist = fmt % d_cm
+            if area_unit_symbol == " mm2":
+                if decimal_places is None:
+                    fmt = "%1.0f"
+                if hide_units is False:
+                    fmt += area_unit_symbol
+                d_cm = value * (1000000)
+                tx_dist = fmt % d_cm
+
     else:
         tx_dist = fmt % value
 
     return tx_dist
-
-
-def get_active_drawing(scene):
-    """Get active drawing collection and camera"""
-    props = scene.DocProperties
-    try:
-        camera = tool.Ifc.get_object(tool.Ifc.get().by_id(props.active_drawing_id))
-        return camera.BIMObjectProperties.collection, camera
-    except:
-        return None, None
 
 
 def get_project_collection(scene):
@@ -313,13 +401,15 @@ def get_project_collection(scene):
     return colls[0]
 
 
-def parse_diagram_scale(camera):
+def parse_diagram_scale(camera: bpy.types.Camera) -> float:
     """Returns numeric value of scale"""
-    if camera.BIMCameraProperties.diagram_scale == "CUSTOM":
-        _, fraction = camera.BIMCameraProperties.custom_diagram_scale.split("|")
+    props = tool.Drawing.get_camera_props(camera)
+    if props.diagram_scale == "CUSTOM":
+        numerator = props.custom_scale_numerator
+        denominator = props.custom_scale_denominator
     else:
-        _, fraction = camera.BIMCameraProperties.diagram_scale.split("|")
-    numerator, denominator = fraction.split("/")
+        _, fraction = props.diagram_scale.split("|")
+        numerator, denominator = fraction.split("/")
     return float(numerator) / float(denominator)
 
 
@@ -331,12 +421,11 @@ def ortho_view_frame(
     Similar to `bpy.types.Camera.view_frame`
 
     :arg camera: camera of drawing
-    :type camera: bpy.types.Camera + BIMCameraProperties
     :arg margin: margins, in scene units
-    :type margin: float
     :return: (xmin, xmax, ymin, ymax, zmin, zmax) in local camera coordinates
     """
-    aspect = camera.BIMCameraProperties.raster_y / camera.BIMCameraProperties.raster_x
+    props = tool.Drawing.get_camera_props(camera)
+    aspect = props.raster_y / props.raster_x
     size = camera.ortho_scale
     hwidth = size * 0.5
     hheight = size * 0.5 * aspect
@@ -414,3 +503,38 @@ def elevate_segment(bounds, segm):
         return None
     x = p1.x
     return [Vector((x, ymin, zmin)), Vector((x, ymax, zmin))]
+
+
+def add_newline_between_words(text: str, newline_at: int) -> str:
+    result = []
+    start = 0
+
+    while start < len(text):
+        # Find the next newline character if present
+        newline_index = text.find("\n", start)
+        if newline_index != -1 and newline_index < start + newline_at:
+            # If a newline is found within the current range
+            result.append(text[start:newline_index])  # Add text up to the newline
+            start = newline_index + 1  # Move past the newline
+            continue
+
+        # Find the end index considering the limit newline_at
+        end = start + newline_at
+        if end >= len(text):  # If we're at the end of the string
+            result.append(text[start:])
+            break
+
+        # Look for the nearest space around the newline_at limit
+        space_index = text.rfind(" ", start, end)  # Try to break before newline_at
+        if space_index == -1:  # No space found, force a break at newline_at
+            space_index = text.find(" ", end)  # Try to break after newline_at
+
+        if space_index == -1:  # If there's still no space, take the rest of the text
+            result.append(text[start:])
+            break
+
+        # Add the chunk and update the start position
+        result.append(text[start:space_index])
+        start = space_index + 1  # Skip the space itself
+
+    return "\n".join(result)

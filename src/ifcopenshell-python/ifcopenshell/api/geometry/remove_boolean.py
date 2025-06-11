@@ -20,40 +20,42 @@ import ifcopenshell.util.element
 
 
 def remove_boolean(file: ifcopenshell.file, item: ifcopenshell.entity_instance) -> None:
-    usecase = Usecase()
-    usecase.file = file
-    usecase.settings = {"item": item}
-    return usecase.execute()
+    """Removes a boolean operation without deleting the operands
 
+    The first operand will replace the boolean result itself, and the second
+    operand will be reset as a top level representation item.
 
-class Usecase:
-    def execute(self):
-        item = None
-        for inverse in self.file.get_inverse(self.settings["item"]):
+    This may affect the Items of IfcShapeRepresentation, so it is recommended
+    to run :func:`ifcopenshell.api.geometry.validate_type` after all boolean
+    modifications are complete.
+
+    :param item: This may either be an IfcBooleanResult or an
+        IfcRepresentationItem that is participating in one or more boolean
+        results (in which case all are removed).
+    """
+    if not item.is_a("IfcBooleanResult"):
+        for inverse in file.get_inverse(item):
             if inverse.is_a("IfcBooleanResult"):
-                item = inverse
-                break
+                remove_boolean(file, inverse)
+        return
 
-        representation = self.get_representation(item)
+    representations = []
+    queue = list(file.get_inverse(item))
+    while queue:
+        inverse = queue.pop()
+        if inverse.is_a("IfcShapeRepresentation"):
+            representations.append(inverse)
+        elif inverse.is_a("IfcBooleanResult"):
+            queue.extend(file.get_inverse(inverse))
+        elif inverse.is_a("IfcCsgSolid"):
+            queue.extend(file.get_inverse(inverse))
 
-        first_operand = item.FirstOperand
-        second_operand = item.SecondOperand
-        for inverse in self.file.get_inverse(item):
-            ifcopenshell.util.element.replace_attribute(inverse, item, first_operand)
-        self.file.remove(item)
-        ifcopenshell.util.element.remove_deep2(self.file, second_operand)
+    first = item.FirstOperand
+    second = item.SecondOperand
+    for inverse in file.get_inverse(item):
+        ifcopenshell.util.element.replace_attribute(inverse, item, first)
 
-        item_classes = {i.is_a() for i in representation.Items}
-        if "IfcBooleanResult" in item_classes:
-            representation.RepresentationType = "CSG"
-        elif "IfcBooleanClippingResult" in item_classes:
-            representation.RepresentationType = "Clipping"
-        else:
-            representation.RepresentationType = "SweptSolid"
+    for representation in set(representations):
+        representation.Items = list(representation.Items) + [second]
 
-    def get_representation(self, item):
-        for inverse in self.file.get_inverse(item):
-            if inverse.is_a("IfcShapeRepresentation"):
-                return inverse
-            elif inverse.is_a("IfcRepresentationItem"):
-                return self.get_representation(inverse)
+    file.remove(item)

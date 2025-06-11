@@ -17,7 +17,7 @@
 # along with IfcOpenShell.  If not, see <http://www.gnu.org/licenses/>.
 
 import ifcopenshell.api
-from typing import Optional
+from typing import Optional, Any
 
 
 def add_application(
@@ -38,17 +38,12 @@ def add_application(
     :param application_developer: The IfcOrganization responsible for
         creating the application. Defaults to generating an IfcOpenShell
         organisation if none is provided.
-    :type application_developer: ifcopenshell.entity_instance, optional
     :param version: The version of the application. Defaults to the
         ifcopenshell.version data if not specified.
-    :type version: str, optional
     :param application_full_name: The name of the application
-    :type application_full_name: str, optional
     :param application_identifier: An identification string for the
         application intended for computers to read.
-    :type application_identifier: str, optional
     :return: The newly created IfcApplication
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -68,6 +63,9 @@ def add_application(
 
 
 class Usecase:
+    file: ifcopenshell.file
+    settings: dict[str, Any]
+
     def execute(self):
         if not self.settings["application_developer"]:
             self.settings["application_developer"] = self.create_application_organisation()

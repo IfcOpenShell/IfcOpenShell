@@ -29,7 +29,6 @@ def add_objective(file: ifcopenshell.file) -> ifcopenshell.entity_instance:
     quantities. See ifcopenshell.api.constraint.add_metric for more information.
 
     :return: The newly created IfcObjective entity
-    :rtype: ifcopenshell.entity_instance
 
     Example:
 
@@ -42,8 +41,6 @@ def add_objective(file: ifcopenshell.file) -> ifcopenshell.entity_instance:
         # Note: the objective right now is purely qualitative and for
         # information purposes. You may wish to add quantiative metrics.
     """
-    settings = {}
-
     return file.create_entity(
         "IfcObjective", **{"Name": "Unnamed", "ConstraintGrade": "NOTDEFINED", "ObjectiveQualifier": "NOTDEFINED"}
     )

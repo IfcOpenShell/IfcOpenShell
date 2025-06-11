@@ -31,6 +31,8 @@ classes = (
     operator.EnableEditingProfile,
     operator.LoadProfiles,
     operator.RemoveProfileDef,
+    operator.SelectByProfile,
+    operator.SelectProfileInProfilesUI,
     prop.Profile,
     prop.BIMProfileProperties,
     ui.BIM_PT_profiles,

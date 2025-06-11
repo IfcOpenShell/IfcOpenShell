@@ -67,7 +67,7 @@ def unassign_declaration(
         related_definitions = set(rel.RelatedDefinitions) - definitions
         if related_definitions:
             rel.RelatedDefinitions = list(related_definitions)
-            ifcopenshell.api.owner.update_owner_history(file, **{"element": rel})
+            ifcopenshell.api.owner.update_owner_history(file, element=rel)
         else:
             history = rel.OwnerHistory
             file.remove(rel)

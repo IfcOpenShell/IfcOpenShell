@@ -19,6 +19,7 @@
 import bpy
 import logging
 import ifcopenshell
+import ifcopenshell.geom
 import ifcsverchok.helper
 from ifcsverchok.ifcstore import SvIfcStore
 import bonsai.bim.import_ifc

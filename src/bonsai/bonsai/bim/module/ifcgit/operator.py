@@ -68,7 +68,7 @@ class CloneRepo(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         if (
             props.remote_url
             and props.local_folder
@@ -80,7 +80,7 @@ class CloneRepo(bpy.types.Operator):
 
     def execute(self, context):
 
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         core.clone_repo(tool.IfcGit, props.remote_url, props.local_folder, self)
         props.remote_url = ""
         refresh()
@@ -112,7 +112,7 @@ class CommitChanges(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         IfcGitData.make_sure_is_loaded()
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         repo = IfcGitData.data["repo"]
         if props.commit_message == "":
             return False
@@ -148,7 +148,7 @@ class AddTag(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         IfcGitData.make_sure_is_loaded()
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         if props.new_tag_name == "":
             return False
         repo = IfcGitData.data["repo"]
@@ -218,7 +218,7 @@ class DisplayRevision(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         if props.ifcgit_commits:
             return True
 
@@ -253,7 +253,7 @@ class SwitchRevision(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         if props.ifcgit_commits:
             return True
 
@@ -274,7 +274,7 @@ class Merge(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         IfcGitData.make_sure_is_loaded()
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         if IfcGitData.data["ifcmerge_exe"] and props.ifcgit_commits and not IfcGitData.data["is_detached"]:
             return True
         return False
@@ -296,8 +296,7 @@ class Push(bpy.types.Operator):
     bl_options = {"REGISTER"}
 
     def execute(self, context):
-
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         repo = IfcGitData.data["repo"]
         core.push(tool.IfcGit, repo, props.select_remote, self)
         return {"FINISHED"}
@@ -311,8 +310,7 @@ class Fetch(bpy.types.Operator):
     bl_options = {"REGISTER"}
 
     def execute(self, context):
-
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         repo = IfcGitData.data["repo"]
         remote = repo.remotes[props.select_remote]
         remote.fetch()
@@ -329,7 +327,7 @@ class AddRemote(bpy.types.Operator):
     @classmethod
     def poll(cls, context):
         IfcGitData.make_sure_is_loaded()
-        props = context.scene.IfcGitProperties
+        props = tool.IfcGit.get_ifcgit_props()
         repo = IfcGitData.data["repo"]
         if (
             not repo
@@ -374,15 +372,60 @@ class ObjectLog(bpy.types.Operator):
 
     @classmethod
     def poll(cls, context):
-        if not context.active_object:
+        if not (obj := context.active_object):
             cls.poll_message_set("No Active Object")
-        elif not context.active_object.BIMObjectProperties.ifc_definition_id:
+        elif not tool.Blender.get_ifc_definition_id(obj):
             cls.poll_message_set("Active Object doesn't have an IFC definition")
         else:
             return True
 
     def execute(self, context):
-
-        step_id = context.active_object.BIMObjectProperties.ifc_definition_id
+        obj = context.active_object
+        assert obj
+        step_id = tool.Blender.get_ifc_definition_id(obj)
         core.entity_log(tool.IfcGit, tool.Ifc, step_id, self)
+        return {"FINISHED"}
+
+
+class InstallGit(bpy.types.Operator):
+    """Install Git Version Control System from the
+    Windows Package Manager Community Repository,
+    requires restarting Blender after installation"""
+
+    bl_label = "Install Git"
+    bl_idname = "ifcgit.install_git"
+    bl_options = {"REGISTER"}
+
+    @classmethod
+    def poll(cls, context):
+        IfcGitData.make_sure_is_loaded()
+        if IfcGitData.data["git_exe"]:
+            return False
+        return True
+
+    def execute(self, context):
+        core.install_git(tool.IfcGit, self)
+        refresh()
+        return {"FINISHED"}
+
+
+class RunGitDiff(bpy.types.Operator):
+    """Run `git diff` for the current version of IFC file and the last saved one."""
+
+    bl_label = "Git Diff"
+    bl_idname = "ifcgit.git_diff"
+    bl_options = set()
+
+    @classmethod
+    def poll(cls, context):
+        if not tool.Ifc.get():
+            cls.poll_message_set("No IFC file loaded.")
+            return False
+        if not tool.Ifc.get_path():
+            cls.poll_message_set("Current IFC file was never saved.")
+            return False
+        return True
+
+    def execute(self, context):
+        core.run_git_diff(tool.IfcGit, self)
         return {"FINISHED"}

@@ -44,6 +44,7 @@ classes = (
     operator.SelectHighPolygonMeshes,
     operator.SelectHighestPolygonMeshes,
     operator.ToggleDetailedIOSLogs,
+    operator.ValidateIfcAssets,
     operator.ValidateIfcFile,
     prop.BIMDebugProperties,
     ui.BIM_PT_debug,

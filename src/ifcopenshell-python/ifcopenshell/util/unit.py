@@ -18,7 +18,8 @@
 
 from fractions import Fraction
 from math import pi
-from typing import Iterable, Any, Union, Literal, Optional
+from typing import Literal, Optional, Union
+from collections.abc import Generator
 
 import ifcopenshell
 import ifcopenshell.ifcopenshell_wrapper as ifcopenshell_wrapper
@@ -289,15 +290,11 @@ unit_symbols = {
     "SECOND": "s",
     "SQUARE_METRE": "m2",
     "METRE": "m",
-    # non si units
-    "cubic inch": "in3",
-    "cubic foot": "ft3",
-    "cubic yard": "yd3",
-    "square inch": "in2",
-    "square foot": "ft2",
-    "square yard": "yd2",
-    "square mile": "mi2",
+    "NEWTON": "N",
+    "PASCAL": "Pa",
     # conversion based units
+    "pound-force": "lbf",
+    "pound-force per square inch": "psi",
     "thou": "th",
     "inch": "in",
     "foot": "ft",
@@ -408,12 +405,34 @@ def get_named_dimensions(name):
 
 
 def get_unit_assignment(ifc_file: ifcopenshell.file) -> Union[ifcopenshell.entity_instance, None]:
-    unit_assignments = ifc_file.by_type("IfcUnitAssignment")
-    if unit_assignments:
-        return unit_assignments[0]
+    return ifc_file.by_type("IfcProject")[0].UnitsInContext
 
 
-def get_project_unit(ifc_file: ifcopenshell.file, unit_type: str) -> Union[ifcopenshell.entity_instance, None]:
+def cache_units(ifc_file: ifcopenshell.file) -> None:
+    """Cache the default units for performance
+
+    Repetitively fetching project units (such as for determining the unit of a
+    property) can be costly. This enables a cache to make it faster. If the
+    project units change, you can update the cache by rerunning this function.
+
+    :param ifc_file: The IFC file.
+    """
+    ifc_file.units = {}
+    if assignment := get_unit_assignment(ifc_file):
+        ifc_file.units = {u.UnitType: u for u in assignment.Units if getattr(u, "UnitType", None)}
+
+
+def clear_unit_cache(ifc_file: ifcopenshell.file) -> None:
+    """Clears the unit cache of the project
+
+    :param ifc_file: The IFC file.
+    """
+    ifc_file.units = {}
+
+
+def get_project_unit(
+    ifc_file: ifcopenshell.file, unit_type: str, use_cache: bool = False
+) -> Union[ifcopenshell.entity_instance, None]:
     """Get the default project unit of a particular unit type
 
     :param ifc_file: The IFC file.
@@ -422,6 +441,10 @@ def get_project_unit(ifc_file: ifcopenshell.file, unit_type: str) -> Union[ifcop
     :return: The IFC unit entity, or nothing if there is no default project
         unit defined.
     """
+    if use_cache and not ifc_file.units:
+        cache_units(ifc_file)
+    if units := ifc_file.units:
+        return units.get(unit_type, None)
     if unit_assignment := get_unit_assignment(ifc_file):
         for unit in unit_assignment.Units or []:
             if getattr(unit, "UnitType", None) == unit_type:
@@ -429,9 +452,59 @@ def get_project_unit(ifc_file: ifcopenshell.file, unit_type: str) -> Union[ifcop
 
 
 def get_property_unit(
-    prop: ifcopenshell.entity_instance, ifc_file: ifcopenshell.file
+    prop: ifcopenshell.entity_instance, ifc_file: Union[ifcopenshell.file, None], use_cache: bool = False
 ) -> Union[ifcopenshell.entity_instance, None]:
     """Gets the unit definition of a property or quantity
+
+    Properties and quantities in psets and qtos can be associated with a unit.
+    This unit may be defined at the property itself explicitly, or if not
+    specified, fallback to the project default.
+
+    :param prop: The IfcProperty instance. You can fetch this via the instance
+        ID if doing :func:`ifcopenshell.util.element.get_psets` with
+        ``verbose=True``.
+    :param ifc_file: The IFC file being used. This is necessary to check
+        default project units.
+    :return: The IFC unit entity, or nothing if there is no default project
+        unit defined.
+    """
+    if unit := getattr(prop, "Unit", None):
+        return unit
+
+    value = None
+    measure_class = None
+
+    if prop.is_a("IfcPhysicalSimpleQuantity"):
+        entity = prop.wrapped_data.declaration().as_entity()
+        measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
+    elif prop.is_a("IfcPropertySingleValue"):
+        measure_class = prop.NominalValue.is_a()
+    elif prop.is_a("IfcPropertyEnumeratedValue"):
+        if prop.EnumerationReference:
+            if unit := prop.EnumerationReference.Unit:
+                return unit
+            if value := next(iter(prop.EnumerationReference.EnumerationValues or ()), None):
+                measure_class = value.is_a()
+        if value := next(iter(prop.EnumerationValues or ()), None):
+            measure_class = value.is_a()
+    elif prop.is_a("IfcPropertyListValue"):
+        if value := next(iter(prop.ListValues or ()), None):
+            measure_class = value.is_a()
+    elif prop.is_a("IfcPropertyBoundedValue"):
+        if value := (prop.UpperBoundValue or prop.LowerBoundValue or prop.SetPointValue):
+            measure_class = value.is_a()
+
+    if measure_class and (unit_type := get_measure_unit_type(measure_class)):
+        if not ifc_file:
+            ifc_file = prop.file
+        return get_project_unit(ifc_file, unit_type, use_cache=use_cache)
+
+
+def get_property_table_unit(
+    prop: ifcopenshell.entity_instance, ifc_file: Union[ifcopenshell.file, None], use_cache: bool = False
+) -> dict[str, Union[ifcopenshell.entity_instance, None]]:
+    """
+    Gets the unit definition of a property table
 
     Properties and quantities in psets and qtos can be associated with a unit.
     This unit may be defined at the property itself explicitly, or if not
@@ -440,61 +513,34 @@ def get_property_unit(
     :param prop: The property instance. You can fetch this via the instance ID
         if doing :func:`ifcopenshell.util.element.get_psets` with
         ``verbose=True``.
+
     :param ifc_file: The IFC file being used. This is necessary to check
         default project units.
-    :return: The IFC unit entity, or nothing if there is no default project
-        unit defined.
+
+    :return: A dictionary containing IFC unit entity by keyword.
+        If a unit-entity is missing,
+        the value associated to the key is `null`.
     """
-    unit = getattr(prop, "Unit", None)
-    if unit:
-        return unit
-    unit_assignment = get_unit_assignment(ifc_file)
-    if not unit_assignment:
-        return
-    entity = prop.wrapped_data.declaration().as_entity()
-    measure_class = None
-    if prop.is_a("IfcPhysicalSimpleQuantity"):
-        measure_class = entity.attribute_by_index(3).type_of_attribute().declared_type().name()
-    elif prop.is_a("IfcPropertySingleValue") and prop.NominalValue:
-        measure_class = prop.NominalValue.is_a()
-    elif prop.is_a("IfcPropertyEnumeratedValue"):
-        if prop.EnumerationReference:
-            unit = getattr(prop.EnumerationReference, "Unit", None)
-            if unit:
-                return unit
-        if prop.EnumerationValues:
-            measure_class = prop.EnumerationValues[0].is_a()
-    elif prop.is_a("IfcPropertyListValue") and prop.ListValues:
-        measure_class = prop.ListValues[0].is_a()
-    elif prop.is_a("IfcPropertyBoundedValue"):
-        if prop.UpperBoundValue:
-            measure_class = prop.UpperBoundValue.is_a()
-        elif prop.LowerBoundValue:
-            measure_class = prop.LowerBoundValue.is_a()
-        elif prop.SetPointValue:
-            measure_class = prop.SetPointValue.is_a()
-    elif prop.is_a("IfcPropertyTableValue"):
-        table_units = {}
-        for attribute in ["Defining", "Defined"]:
-            if getattr(prop, f"{attribute}Unit"):
-                table_units[f"{attribute}Unit"] = getattr(prop, f"{attribute}Unit")
-            elif getattr(prop, f"{attribute}Values"):
-                measure_class = getattr(prop, f"{attribute}Values")[0].is_a()
-                unit_type = get_measure_unit_type(measure_class)
-                units = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == unit_type]
-                if units:
-                    table_units[f"{attribute}Unit"] = units[0]
-                else:
-                    table_units[f"{attribute}Unit"] = None
-            else:
-                table_units[f"{attribute}Unit"] = None
-        return table_units
-    if measure_class is None:
-        return
-    unit_type = get_measure_unit_type(measure_class)
-    units = [u for u in unit_assignment.Units if getattr(u, "UnitType", None) == unit_type]
-    if units:
-        return units[0]
+    if not ifc_file:
+        ifc_file = prop.file
+    defining_unit = None
+    if unit := prop.DefiningUnit:
+        defining_unit = unit
+    elif value := next(iter(prop.DefiningValues or ()), None):
+        if unit_type := get_measure_unit_type(value.is_a()):
+            defining_unit = get_project_unit(ifc_file, unit_type, use_cache=use_cache)
+
+    defined_unit = None
+    if unit := prop.DefinedUnit:
+        defined_unit = unit
+    elif value := next(iter(prop.DefinedValues or ()), None):
+        if unit_type := get_measure_unit_type(value.is_a()):
+            defined_unit = get_project_unit(ifc_file, unit_type, use_cache=use_cache)
+
+    return {
+        "DefiningUnit": defining_unit,
+        "DefinedUnit": defined_unit,
+    }
 
 
 def get_unit_measure_class(unit_type: str) -> MEASURE_CLASS:
@@ -574,7 +620,7 @@ def get_symbol_quantity_class(symbol: Optional[str] = None) -> QUANTITY_CLASS:
 
 
 def get_unit_symbol(unit: ifcopenshell.entity_instance) -> str:
-    symbol = ""
+    symbol: str = ""
     if unit.is_a("IfcSIUnit"):
         symbol += prefix_symbols.get(unit.Prefix, "")
     symbol += unit_symbols.get(unit.Name.replace("METER", "METRE"), "?")
@@ -645,9 +691,9 @@ def calculate_unit_scale(ifc_file: ifcopenshell.file, unit_type: str = "LENGTHUN
     :param unit_type: The type of SI unit, defaults to "LENGTHUNIT"
     :returns: The scale factor
     """
-    if not ifc_file.by_type("IfcUnitAssignment"):
+    # Currently we assume that all ifc projects must have IfcProject.
+    if not (projects := ifc_file.by_type("IfcProject")) or not (units := projects[0].UnitsInContext):
         return 1
-    units = ifc_file.by_type("IfcUnitAssignment")[0]
     unit_scale = 1
     for unit in units.Units:
         if not hasattr(unit, "UnitType") or unit.UnitType != unit_type:
@@ -725,9 +771,14 @@ def format_length(
 
 
 def is_attr_type(
-    content_type: ifcopenshell_wrapper.parameter_type, ifc_unit_type_name: str, include_select_types: bool = True
+    content_type: ifcopenshell_wrapper.parameter_type,
+    ifc_unit_type_name: str,
+    include_select_types: bool = True,
 ) -> Union[ifcopenshell_wrapper.type_declaration, None]:
     cur_decl = content_type
+
+    if hasattr(cur_decl, "name") and cur_decl.name() == ifc_unit_type_name:
+        return cur_decl
 
     if include_select_types:
         if hasattr(cur_decl, "select_list"):
@@ -735,17 +786,8 @@ def is_attr_type(
                 if is_attr_type(select_item, ifc_unit_type_name):
                     return select_item
 
-    while hasattr(cur_decl, "declared_type") is True:
-        cur_decl = cur_decl.declared_type()
-        if include_select_types:
-            if hasattr(cur_decl, "select_list"):
-                for select_item in cur_decl.select_list():
-                    if is_attr_type(select_item, ifc_unit_type_name):
-                        return select_item
-        if hasattr(cur_decl, "name") is False:
-            continue
-        if cur_decl.name() == ifc_unit_type_name:
-            return cur_decl
+    if hasattr(cur_decl, "declared_type"):
+        return is_attr_type(cur_decl.declared_type(), ifc_unit_type_name, include_select_types)
 
     if isinstance(cur_decl, ifcopenshell_wrapper.aggregation_type):
         # support aggregate of aggregates, as in IfcCartesianPointList3D.CoordList
@@ -756,27 +798,30 @@ def is_attr_type(
             return get_declared_type_from_aggregate(cur_decl)
 
         cur_decl = get_declared_type_from_aggregate(cur_decl)
-        if hasattr(cur_decl, "name") and cur_decl.name() == ifc_unit_type_name:
-            return cur_decl
-        while hasattr(cur_decl, "declared_type") is True:
-            cur_decl = cur_decl.declared_type()
-            if hasattr(cur_decl, "name") is False:
-                continue
-            if cur_decl.name() == ifc_unit_type_name:
-                return cur_decl
+        return is_attr_type(cur_decl, ifc_unit_type_name, include_select_types)
 
     return None
 
 
-def iter_element_and_attributes_per_type(
-    ifc_file: ifcopenshell.file, attr_type_name: str
-) -> Iterable[tuple[ifcopenshell.entity_instance, ifcopenshell_wrapper.attribute, Any]]:
+FloatOrSequenceOfFloats = Union[float, tuple["FloatOrSequenceOfFloats", ...]]
+
+
+def iter_element_and_attributes_per_type(ifc_file: ifcopenshell.file, attr_type_name: str) -> Generator[
+    tuple[
+        ifcopenshell.entity_instance,
+        ifcopenshell_wrapper.attribute,
+        Union[FloatOrSequenceOfFloats, ifcopenshell.entity_instance],
+    ],
+    None,
+    None,
+]:
     schema: ifcopenshell_wrapper.schema_definition = ifcopenshell_wrapper.schema_by_name(ifc_file.schema_identifier)
 
     for element in ifc_file:
         entity = schema.declaration_by_name(element.is_a())
         attrs = entity.all_attributes()
-        for attr, val, is_derived in zip(attrs, list(element), entity.derived()):
+        attrs_derived: tuple[bool, ...] = entity.derived()
+        for attr, val, is_derived in zip(attrs, list(element), attrs_derived):
             if is_derived:
                 continue
 
@@ -791,6 +836,17 @@ def iter_element_and_attributes_per_type(
 
             if isinstance(val, ifcopenshell.entity_instance) and not val.is_a(attr_type_name):
                 continue
+            elif isinstance(val, tuple):
+                if not val:
+                    continue
+                val_ = val[0]
+                # If it's a tuple of entities, just yield the entities we need to edit.
+                if isinstance(val_, ifcopenshell.entity_instance):
+                    for val_ in val:
+                        if not val_.is_a(attr_type_name):
+                            continue
+                        yield element, attr, val_
+                    continue
 
             yield element, attr, val
 
@@ -799,6 +855,8 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
     """Converts all units in an IFC file to the specified target units. Returns a new file."""
     import ifcopenshell.util.element
     import ifcopenshell.util.geolocation
+    import ifcopenshell.api.georeference
+    import ifcopenshell.api.unit
 
     prefix = get_prefix(target_units)
     si_unit = get_unit_name(target_units)
@@ -819,16 +877,17 @@ def convert_file_length_units(ifc_file: ifcopenshell.file, target_units: str = "
         new_length = ifcopenshell.api.unit.add_conversion_based_unit(file_patched, name=target_units)
 
     # support tuple of tuples, as in IfcCartesianPointList3D.CoordList
-    def convert_value(value):
+    def convert_value(value: FloatOrSequenceOfFloats) -> FloatOrSequenceOfFloats:
         if not isinstance(value, tuple):
             return convert_unit(value, old_length, new_length)
         return tuple(convert_value(v) for v in value)
 
     # Traverse all elements and their nested attributes in the file and convert them
     for element, attr, val in iter_element_and_attributes_per_type(file_patched, "IfcLengthMeasure"):
+        # NOTE: There is no risk of editing same entities twice as they're all recreated
+        # after file is reloaded as `file_patched`.
         if isinstance(val, ifcopenshell.entity_instance):
-            new_value = convert_value(val.wrappedValue)
-            getattr(element, attr.name()).wrappedValue = new_value
+            val.wrappedValue = convert_value(val.wrappedValue)
         else:
             new_value = convert_value(val)
             setattr(element, attr.name(), new_value)

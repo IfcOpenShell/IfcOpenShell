@@ -24,9 +24,7 @@ def remove_actor(file: ifcopenshell.file, actor: ifcopenshell.entity_instance) -
     """Removes an actor
 
     :param actor: The IfcActor to remove.
-    :type actor: ifcopenshell.entity_instance
     :return: None
-    :rtype: None
 
     Example:
 
@@ -44,9 +42,7 @@ def remove_actor(file: ifcopenshell.file, actor: ifcopenshell.entity_instance) -
         # Actually we need ballpens on this project
         ifcopenshell.api.owner.remove_actor(model, actor=actor)
     """
-    settings = {"actor": actor}
-
-    history = settings["actor"].OwnerHistory
-    file.remove(settings["actor"])
+    history = actor.OwnerHistory
+    file.remove(actor)
     if history:
         ifcopenshell.util.element.remove_deep2(file, history)

@@ -18,16 +18,17 @@
 
 import ifcopenshell
 import ifcopenshell.util.schema
+import ifcpatch
 import typing
+from typing import Union
 from logging import Logger
 
 
-class Patcher:
+class Patcher(ifcpatch.BasePatcher):
     def __init__(
         self,
-        src: str,
         file: ifcopenshell.file,
-        logger: Logger,
+        logger: Union[Logger, None] = None,
         schema: ifcopenshell.util.schema.IFC_SCHEMA = "IFC4",
     ):
         """Migrate from one IFC version to another
@@ -36,7 +37,6 @@ class Patcher:
         possible. Upgrading to IFC4 is more stable than downgrading to IFC2X3.
 
         :param schema: The schema identifier of the IFC version to migrate to.
-        :type schema: str
 
         Example:
 
@@ -45,9 +45,7 @@ class Patcher:
             # Upgrade an IFC2X3 model to IFC4
             ifcpatch.execute({"input": "input.ifc", "file": model, "recipe": "Migrate", "arguments": ["IFC4"]})
         """
-        self.src = src
-        self.file = file
-        self.logger = logger
+        super().__init__(file, logger)
         self.schema = schema
 
     def patch(self):

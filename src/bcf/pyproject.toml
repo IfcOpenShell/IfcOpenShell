@@ -16,6 +16,7 @@ dependencies = [
     "xsdata>=24.4",
     "numpy",
     "ifcopenshell",
+    "requests",
 ]
 version = "0.0.0"
 classifiers = [
