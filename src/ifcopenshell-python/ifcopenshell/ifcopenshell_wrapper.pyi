@@ -878,7 +878,18 @@ class file:
         """Internal IfcFile pointer address."""
         ...
 
-    def getInverse(self, instance_id, type, attribute_index): ...
+    def get_inverses_by_declaration(
+        self, instance_id: int, type: declaration, attribute_index: int
+    ) -> tuple[entity_instance, ...]:
+        """Get instance inverses of the particular type defined by ``declaration``.
+
+        :param declaration: Type of inverses to find.
+            Supertypes are also supported - e.g. 'IfcRoot' will also include all 'IfcRelationship' inverses.
+        :param attribute_index: Find references only from the provided attribute index.
+            Could be set to ``-1`` to consider all attributes.
+        """
+        ...
+
     def getMaxId(self): ...
     def get_total_inverses_by_id(self, instance_id: int) -> int: ...
     def getUnit(self, unit_type): ...

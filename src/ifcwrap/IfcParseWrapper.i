@@ -51,6 +51,7 @@ private:
 %rename("by_id") instance_by_id;
 %rename("by_type") instances_by_type;
 %rename("by_type_excl_subtypes") instances_by_type_excl_subtypes;
+%rename("get_inverses_by_declaration") getInverse;
 %rename("get_total_inverses_by_id") getTotalInverses;
 %rename("entity_instance") IfcBaseClass;
 %rename("file") IfcFile;
