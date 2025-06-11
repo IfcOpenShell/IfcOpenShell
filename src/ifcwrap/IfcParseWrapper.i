@@ -128,17 +128,26 @@ static IfcUtil::ArgumentType helper_fn_attribute_type(const IfcUtil::IfcBaseClas
 	IfcUtil::IfcBaseClass* by_guid(const std::string& guid) {
 		return $self->instance_by_guid(guid);
 	}
-	
+
 	aggregate_of_instance::ptr get_inverse(IfcUtil::IfcBaseClass* e) {
-		return $self->getInverse(e->as<IfcUtil::IfcBaseEntity>()->id(), 0, -1);
+		if (auto e_ = e->as<IfcUtil::IfcBaseEntity>()) {
+			return $self->getInverse(e_->id(), 0, -1);
+		}
+		throw IfcParse::IfcException("Only entities with ids are supported for get_inverse. Provided entity: '" + e->declaration().name() + "'.");
 	}
 
 	std::vector<int> get_inverse_indices(IfcUtil::IfcBaseClass* e) {
-		return $self->get_inverse_indices(e->as<IfcUtil::IfcBaseEntity>()->id());
+		if (auto e_ = e->as<IfcUtil::IfcBaseEntity>()) {
+			return $self->get_inverse_indices(e_->id());
+		}
+		throw IfcParse::IfcException("Only entities with ids are supported for get_inverse_indices. Provided entity: '" + e->declaration().name() + "'.");
 	}
 
 	int get_total_inverses(IfcUtil::IfcBaseClass* e) {
-		return $self->getTotalInverses(e->as<IfcUtil::IfcBaseEntity>()->id());
+		if (auto e_ = e->as<IfcUtil::IfcBaseEntity>()) {
+			return $self->getTotalInverses(e_->id());
+		}
+		throw IfcParse::IfcException("Only entities with ids are supported for get_total_inverses. Provided entity: '" + e->declaration().name() + "'.");
 	}
 
 	void write(const std::string& fn) {
