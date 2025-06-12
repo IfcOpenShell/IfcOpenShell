@@ -422,5 +422,15 @@ std::string IfcUtil::convert_utf8(const std::u32string& string) {
 }
 
 std::u32string IfcUtil::convert_utf8(const std::string& s) {
+    bool is_ascii = true;
+    for (char c : s) {
+        if (static_cast<unsigned char>(c) >= 128) {
+            is_ascii = false;
+            break;
+        }
+    }
+    if (is_ascii) {
+        return std::u32string(s.begin(), s.end());
+    }
     return boost::locale::conv::utf_to_utf<char32_t>(s);
 }
