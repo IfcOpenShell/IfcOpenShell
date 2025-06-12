@@ -19,7 +19,7 @@ jobs:
         with:
           submodules: recursive
           repository: pyodide/pyodide
-          ref: '0.27.7'
+          ref: '0.28.0a3'
           token: ${{ secrets.BUILD_REPO_TOKEN }}
           path: pyodide
 
