@@ -69,6 +69,7 @@ import sysconfig
 import ssl
 ssl._create_default_https_context = ssl._create_unverified_context
 
+import time
 from urllib.request import urlretrieve
 
 
@@ -385,7 +386,14 @@ def build_dependency(name, mode, build_tool_args, download_url, download_name, d
             
         download_path = os.path.join(build_dir, download_name)
         if not os.path.exists(download_path):
-            urlretrieve(url, os.path.join(build_dir, download_path))
+            for _ in range(3):
+                try:
+                    urlretrieve(url, os.path.join(build_dir, download_path))
+                    break
+                except ConnectionError as e:
+                    print(e, "... retrying...")
+                    time.sleep(30.)
+                    continue
         else:
             logger.info(f"Download '{download_path}' already exists, assuming it's an undamaged download and that it has been extracted if possible, skipping")
     elif download_tool == download_tool_git:
