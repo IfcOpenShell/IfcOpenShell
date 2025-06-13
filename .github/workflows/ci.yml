@@ -82,6 +82,7 @@ jobs:
           cmake \
                -DCMAKE_C_COMPILER_LAUNCHER=ccache \
                -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
+               -DCMAKE_CXX_STANDARD=17 \
                -DCMAKE_BUILD_TYPE=Release \
                -DCMAKE_PREFIX_PATH=/usr \
                -DCMAKE_SYSTEM_PREFIX_PATH=/usr \

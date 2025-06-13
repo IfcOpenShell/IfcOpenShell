@@ -842,6 +842,7 @@ os.makedirs(executables_dir, exist_ok=True)
 
 
 cmake_args = [
+    "-DCMAKE_CXX_STANDARD="            "17",
     "-DUSE_MMAP="                      "OFF",
     "-DBUILD_EXAMPLES="                "OFF",
     "-DBUILD_SHARED_LIBS="             +OFF_ON[not BUILD_STATIC],

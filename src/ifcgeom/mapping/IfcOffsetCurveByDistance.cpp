@@ -97,9 +97,9 @@ taxonomy::ptr mapping::map_impl(const IfcSchema::IfcOffsetCurveByDistances* inst
         double dp = *(*prev)->DistanceAlong()->as<IfcSchema::IfcLengthMeasure>();
 #endif
         if ((dp < 0.0 || basis_curve_length < dp) 
-             or 
+             || 
             (dn < 0.0 || basis_curve_length < dn)
-           or
+           ||
             (dn < dp)
            )
         {
