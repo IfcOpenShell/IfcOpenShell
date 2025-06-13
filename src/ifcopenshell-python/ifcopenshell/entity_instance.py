@@ -536,8 +536,8 @@ class entity_instance:
         # Proper entity instances have a stable identity by means of the numeric
         # step id. Selected type instances (such as IfcPropertySingleValue.NominalValue
         # always have id=0, so we hash <type, value, file pointer>
-        if self.id():
-            return hash((self.id(), self.wrapped_data.file_pointer()))
+        if id_ := self.id():
+            return hash((id_, self.wrapped_data.file_pointer()))
         else:
             return hash((self.is_a(), self[0], self.wrapped_data.file_pointer()))
 
