@@ -240,7 +240,7 @@ void ifcopenshell::geometry::CgalShape::Triangulate(ifcopenshell::geometry::Sett
 
 		if (!shape_to_use->is_valid()) {
 			Logger::Message(Logger::LOG_ERROR, "Invalid Polyhedron_3 in object (after triangulation)");
-			// return;
+			return;
 		}
 	}
 
