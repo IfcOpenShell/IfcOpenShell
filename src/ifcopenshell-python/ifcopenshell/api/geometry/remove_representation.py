@@ -51,8 +51,9 @@ def remove_representation(
             for s in subelement.LayerAssignment if not is_ifc2x3 else subelement.LayerAssignments:
                 presentation_layer_assignments_items.add(s)
             # IfcTessellatedFaceSet inverses
-            [textures.add(t) for t in getattr(subelement, "HasTextures", []) or []]
-            [colours.add(t) for t in getattr(subelement, "HasColours", []) or []]
+            if subelement.is_a() == "IfcTessellatedFaceSet":
+                textures.update(subelement.HasTextures)
+                colours.update(subelement.HasColours)
         elif subelement.is_a("IfcRepresentation"):
             for layer in subelement.LayerAssignments:
                 presentation_layer_assignments_reps.add(layer)
