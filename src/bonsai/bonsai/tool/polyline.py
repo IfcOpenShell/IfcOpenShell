@@ -200,8 +200,6 @@ class Polyline(bonsai.core.tool.Polyline):
             input_ui.set_value("WORLD_ANGLE", orientation_angle)
             return
 
-        return
-
     @classmethod
     def calculate_area(cls, context: bpy.types.Context, input_ui: PolylineUI) -> Union[PolylineUI, None]:
         try:

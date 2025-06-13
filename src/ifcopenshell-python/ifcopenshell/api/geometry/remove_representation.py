@@ -41,9 +41,9 @@ def remove_representation(
     styled_items = set()
     presentation_layer_assignments_items: set[ifcopenshell.entity_instance] = set()
     presentation_layer_assignments_reps: set[ifcopenshell.entity_instance] = set()
-    textures = set()
-    colours = set()
-    named_profiles = set()
+    textures: set[ifcopenshell.entity_instance] = set()
+    colours: set[ifcopenshell.entity_instance] = set()
+    named_profiles: set[ifcopenshell.entity_instance] = set()
     for subelement in file.traverse(representation):
         if subelement.is_a("IfcRepresentationItem"):
             [styled_items.add(s) for s in subelement.StyledByItem or []]

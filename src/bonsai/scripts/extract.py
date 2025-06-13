@@ -82,9 +82,8 @@ class IfcElementHandler(xml.sax.ContentHandler):
                     for detail in soup.find_all("details"):
                         if detail.summary.string == "Entity definition" and detail.p:
                             return str(detail.p.text.replace("\n", " "))
-            return None
         except:
-            return None
+            pass
             # print('Failed to get description for {}'.format(name))
         return None
 

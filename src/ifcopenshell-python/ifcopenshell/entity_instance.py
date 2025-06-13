@@ -154,8 +154,14 @@ class entity_instance:
 
     wrapped_data: ifcopenshell_wrapper.entity_instance
 
-    def __init__(self, e: ifcopenshell_wrapper.entity_instance, file: Union[ifcopenshell.file] = None):
-        # TODO: when it is a tuple?
+    def __init__(
+        self,
+        e: Union[ifcopenshell_wrapper.entity_instance, tuple[str, str]],
+        file: Union[ifcopenshell.file, None] = None,
+    ):
+        """
+        :param e: Wrapper's ``entity_instance`` or a tuple ``(schema_identifier, ifc_class)``.
+        """
         if isinstance(e, tuple):
             e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
         super().__setattr__("wrapped_data", e)
@@ -290,11 +296,11 @@ class entity_instance:
             return value
 
     @staticmethod
-    def wrap_value(v, file):
-        def wrap(e):
+    def wrap_value(v, file: ifcopenshell.file):
+        def wrap(e: ifcopenshell_wrapper.entity_instance) -> entity_instance:
             return entity_instance(e, file)
 
-        def is_instance(e):
+        def is_instance(e: Any) -> bool:
             return isinstance(e, ifcopenshell_wrapper.entity_instance)
 
         return entity_instance.walk(is_instance, wrap, v)

@@ -23,6 +23,7 @@ import numbers
 import zipfile
 import functools
 import ifcopenshell
+import weakref
 from pathlib import Path
 from typing import Any, Optional, TYPE_CHECKING, Union, overload, Literal, TypedDict
 from collections.abc import Callable, Generator
@@ -241,7 +242,11 @@ class Transaction:
                 pass
 
 
-file_dict = {}
+file_dict: dict[int, weakref.ReferenceType[file]] = {}
+"""Mapping of internal IfcFile pointer addressed to existing ``ifcopenshell.file``.
+
+Needed only to quickly access related from ``entity_instance`` it's ``file``.
+"""
 
 READ_ERROR = ifcopenshell_wrapper.file_open_status.READ_ERROR
 NO_HEADER = ifcopenshell_wrapper.file_open_status.NO_HEADER
@@ -349,9 +354,7 @@ class file:
         self.future = []
         self.transaction: Optional[Transaction] = None
 
-        import weakref
-
-        file_dict[self.file_pointer()] = weakref.ref(self)
+        file_dict[self.wrapped_data.file_pointer()] = weakref.ref(self)
 
     def __del__(self) -> None:
         # Avoid infinite recursion if file is failed to initialize
@@ -402,7 +405,7 @@ class file:
             raise UndoSystemError("Error during transaction redo.", transaction) from e
         self.history.append(transaction)
 
-    def create_entity(self, type: str, *args, **kwargs) -> ifcopenshell.entity_instance:
+    def create_entity(self, type: str, *args: Any, **kwargs: Any) -> ifcopenshell.entity_instance:
         """Create a new IFC entity in the file.
 
         You can also use dynamic methods similar to `ifc_file.createIfcWall(...)`
@@ -768,8 +771,9 @@ class file:
         return file(ifcopenshell_wrapper.read(s))
 
     @staticmethod
-    def from_pointer(v) -> file:
-        return file_dict.get(v)()
+    def from_pointer(address: int) -> file:
+        assert (f := file_dict[address]()) is not None
+        return f
 
     def to_string(self) -> str:
         return self.wrapped_data.to_string()

@@ -1519,7 +1519,7 @@ def unbatch_remove_deep2(ifc_file: ifcopenshell.file) -> ifcopenshell.file:
     lines = iter(ifc_string.split("\n"))
     ids_to_delete = iter(sorted([e.id() for e in ifc_file.to_delete]))
     id_to_delete = next(ids_to_delete, None)
-    result = []
+    result: list[str] = []
 
     for line in lines:
         if id_to_delete is None:

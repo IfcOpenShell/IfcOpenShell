@@ -102,7 +102,6 @@ class SvIfcAddSpatialElement(bpy.types.Node, SverchCustomTreeNode, ifcsverchok.h
             self.elements = [list(chain.from_iterable(el)) for el in self.elements]
         if not self.elements[0][0]:
             raise Exception('Mandatory input "Element(s)" is missing.')
-            return
         self.file = SvIfcStore.get_file()
         self.elements = [[self.file.by_id(step_id) for step_id in element] for element in self.elements]
 
