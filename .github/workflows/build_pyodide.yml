@@ -40,7 +40,7 @@ jobs:
           chmod +x script.sh
           sed -i s/--tty// pyodide/run_docker
           pyodide/run_docker ./script.sh
-          mv dist/ifcopenshell-$VERSION-py3-none-any.whl dist/ifcopenshell-$VERSION+${GITHUB_SHA:0:7}-cp312-cp312-emscripten_3_1_58_wasm32.whl
+          mv dist/ifcopenshell-$VERSION-py3-none-any.whl dist/ifcopenshell-$VERSION+${GITHUB_SHA:0:7}-cp313-cp313-emscripten_4_0_9_wasm32.whl
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
