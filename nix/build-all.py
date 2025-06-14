@@ -96,7 +96,7 @@ HDF5_VERSION = "1.12.1"
 
 GMP_VERSION = "6.2.1"
 MPFR_VERSION = "3.1.6" # latest is 4.1.0
-CGAL_VERSION = "5.5.5"
+CGAL_VERSION = "5.6.x-branch"
 USD_VERSION = "23.05"
 TBB_VERSION = "2021.9.0"
 
@@ -800,7 +800,7 @@ if "cgal" in targets:
         download_url="https://github.com/CGAL/cgal.git",
         download_name="cgal",
         download_tool=download_tool_git,
-        revision=f"v{CGAL_VERSION}"
+        revision=CGAL_VERSION
     )
 
 if "usd" in targets:
