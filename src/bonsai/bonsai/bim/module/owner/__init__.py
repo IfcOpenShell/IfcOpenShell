@@ -48,6 +48,7 @@ classes = (
     operator.RemoveActor,
     operator.RemoveAddress,
     operator.RemoveAddressAttribute,
+    operator.RemoveApplication,
     operator.RemoveOrganisation,
     operator.RemovePerson,
     operator.RemovePersonAndOrganisation,
@@ -61,6 +62,7 @@ classes = (
     ui.BIM_PT_owner,
     ui.BIM_PT_actor,
     ui.BIM_PT_object_actor,
+    ui.BIM_PT_applications,
 )
 
 

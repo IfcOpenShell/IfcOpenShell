@@ -21,6 +21,7 @@ import ifcopenshell
 import bonsai.tool as tool
 from typing import Any, Union
 from ifcopenshell.util.doc import get_entity_doc
+from natsort import natsorted
 
 
 def refresh():
@@ -340,3 +341,32 @@ class ObjectActorData:
     @classmethod
     def get_roles(cls, parent: ifcopenshell.entity_instance) -> list[Union[str, None]]:
         return [r.UserDefinedRole or r.Role for r in parent.Roles or []]
+
+
+class ApplicationsData:
+    data = {}
+    is_loaded = False
+
+    @classmethod
+    def load(cls) -> None:
+        cls.is_loaded = True
+        cls.data = {
+            "applications": cls.applications(),
+        }
+
+    @classmethod
+    def applications(cls) -> list[dict[str, Any]]:
+        applications: list[dict[str, Any]] = []
+        ifc_file = tool.Ifc.get()
+        for application in ifc_file.by_type("IfcApplication"):
+            total_inverses = ifc_file.get_total_inverses(application)
+            name = application.ApplicationFullName
+            if total_inverses == 0:
+                name += " (unused)"
+            applications.append(
+                {
+                    "id": application.id(),
+                    "name": name,
+                }
+            )
+        return natsorted(applications, key=lambda x: x["name"])
