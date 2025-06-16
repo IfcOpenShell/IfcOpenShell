@@ -55,7 +55,7 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         bpy.ops.bim.add_classification_reference_from_bsdd(obj="IfcSpace/Cube", obj_type="Object")
         refs = ifcopenshell.util.classification.get_references(element)
         assert len(refs) == 1
-        assert list(refs)[0].Location.startswith(uri)
+        assert next(iter(refs)).Location.startswith(uri)
 
     def test_add_classification_refence_with_props(self):
         bpy.ops.bim.create_project()
@@ -92,7 +92,7 @@ class TestAddClassificationReferenceFromBSDD(NewFile):
         assert pset and pset["Handicap Accessible"] == True
         refs = ifcopenshell.util.classification.get_references(element)
         assert len(refs) == 1
-        assert list(refs)[0].Location.startswith(uri)
+        assert next(iter(refs)).Location.startswith(uri)
 
     def test_add_clasification_reference_with_object_type(self):
         bpy.ops.bim.create_project()

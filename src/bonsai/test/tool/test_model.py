@@ -106,7 +106,7 @@ class TestGetManualBooleans(NewFile):
         assert set(subject.get_booleans(element, representation)) == set(bools)
         assert len(subject.get_manual_booleans(element, representation)) == 0
 
-        bool1 = list(bools)[0]
+        bool1 = bools[0]
 
         subject.mark_manual_booleans(element, [bool1])
         assert set(subject.get_manual_booleans(element, representation)) == {bool1}

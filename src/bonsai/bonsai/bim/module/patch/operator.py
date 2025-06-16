@@ -140,7 +140,7 @@ class UpdateIfcPatchArguments(bpy.types.Operator):
                     if "file" in data_type or is_filepath_argument:
                         data_type = ["file"]
 
-                    data_type = [dt for dt in data_type if dt != "NoneType"][0]
+                    data_type = next(dt for dt in data_type if dt != "NoneType")
 
                 data_types: dict[str, AttributeDataType] = {
                     "Literal": "enum",

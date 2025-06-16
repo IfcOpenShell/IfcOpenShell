@@ -37,7 +37,7 @@ class TestAddBoolean(test.bootstrap.IFC4):
 
         booleans = ifcopenshell.api.geometry.add_boolean(self.file, first, [second])
         assert len(booleans) == 1
-        boolean = list(booleans)[0]
+        boolean = booleans[0]
         assert boolean.is_a("IfcBooleanResult")
         assert boolean.FirstOperand == first
         assert boolean.SecondOperand == second
@@ -107,16 +107,16 @@ class TestAddBoolean(test.bootstrap.IFC4):
         assert len(rep.Items) == 2
 
         assert self.file.get_total_inverses(first1) == 1
-        result = list(self.file.get_inverse(first1))[0]
+        result = next(iter(self.file.get_inverse(first1)))
         assert result.FirstOperand == first1
         assert result.SecondOperand == second1
-        result2 = list(self.file.get_inverse(result))[0]
+        result2 = next(iter(self.file.get_inverse(result)))
         assert result2.FirstOperand == result
         # Second2 is now used twice. Reusing is OK (albeit confusing), so long as things don't get recursive.
         assert result2.SecondOperand == second2
 
         assert self.file.get_total_inverses(first2) == 1
-        result3 = list(self.file.get_inverse(first2))[0]
+        result3 = next(iter(self.file.get_inverse(first2)))
         assert result3.FirstOperand == first2
         assert result3.SecondOperand == second2
 

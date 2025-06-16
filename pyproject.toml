@@ -39,13 +39,14 @@ exclude = [
 [tool.ruff.lint]
 select = [
     # Default Ruff rules.
-    # "E4",  # imports
-    # "E7",  # statements
-    "E9",  # io errors
-    # "F",  # pyflakes
+    # "E4",        # imports
+    # "E7",        # statements
+    "E9",          # io errors
+    # "F",         # pyflakes
     #
-    "FA",  # future annotations
-    "UP",  # pyupgrade
+    "FA",          # future annotations
+    "UP",          # pyupgrade
+    "RUF015",      # next() > list_comprehension[0]
 ]
 ignore = [
     "FA100", # Conflicts with Blender using annotations for props definitions.

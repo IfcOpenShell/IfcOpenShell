@@ -676,11 +676,11 @@ class Property(Facet):
                 props[pset_name] = {}
                 if isinstance(self.baseName, str):
                     prop = pset_props.get(self.baseName)
-                    if prop == "UNKNOWN" and [
+                    if prop == "UNKNOWN" and next(
                         p
                         for p in self.get_properties(inst.wrapped_data.file.by_id(pset_props["id"]))
                         if p.Name == self.baseName
-                    ][0].NominalValue.is_a("IfcLogical"):
+                    ).NominalValue.is_a("IfcLogical"):
                         pass
                     elif prop is not None and prop != "":
                         props[pset_name][self.baseName] = prop

@@ -192,7 +192,7 @@ class MODEL:
 
             el["linkObjs"] = [None for _ in el["connections"]]
             for j, rel in enumerate(el["connections"]):
-                conn = [c for c in connections if c["referenceName"] == rel["relatedConnection"]][0]
+                conn = next(c for c in connections if c["referenceName"] == rel["relatedConnection"])
                 if rel["eccentricity"]:
                     rel["index"] = len(conn["relatedElements"]) + 1
 

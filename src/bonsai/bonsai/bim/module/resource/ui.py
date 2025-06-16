@@ -250,7 +250,8 @@ class BIM_PT_resources(Panel):
 
         if resource["BaseQuantity"]:
             quantity = resource["BaseQuantity"]
-            value = quantity[[k for k in quantity.keys() if "Value" in k][0]]
+            key = next(k for k in quantity.keys() if "Value" in k)
+            value = quantity[key]
             row = self.layout.row(align=True)
             row.label(text=quantity["Name"])
             row.label(text="{0:.2f}".format(value))

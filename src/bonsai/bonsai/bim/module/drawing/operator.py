@@ -1062,7 +1062,7 @@ class CreateDrawing(bpy.types.Operator):
                     # file 2 only has the groups we are interested in.
                     # in fact in the approach, it's only a single group
 
-                    g2 = list(yield_groups(svg2))[0]
+                    g2 = next(yield_groups(svg2))
 
                     # Loop over the cell paths
                     for pi, p in enumerate(g2.getElementsByTagName("path")):

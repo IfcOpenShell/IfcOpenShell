@@ -48,14 +48,14 @@ def create_segment_representations(
             representation.RepresentationIdentifier == "FootPrint" and representation.RepresentationType == "Curve2D"
         ):
             curve = ifcopenshell.api.alignment.get_basis_curve(alignment)
-            nested_alignment = [
+            nested_alignment = next(
                 c for c in ifcopenshell.util.element.get_components(alignment) if c.is_a("IfcAlignmentHorizontal")
-            ][0]
+            )
         elif representation.RepresentationIdentifier == "Axis" and representation.RepresentationType == "Curve3D":
             curve = ifcopenshell.api.alignment.get_curve(alignment)
-            nested_alignment = [
+            nested_alignment = next(
                 c for c in ifcopenshell.util.element.get_components(alignment) if c.is_a("IfcAlignmentVertical")
-            ][0]
+            )
 
         curve_segments = curve.Segments
         segments = nested_alignment.IsNestedBy[0].RelatingObjects

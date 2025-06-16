@@ -1223,12 +1223,12 @@ class DuplicateMoveLinkedAggregate(bpy.types.Operator):
         def custom_incremental_naming_for_element_assembly(old_to_new):
             for new in old_to_new.values():
                 if new[0].is_a("IfcElementAssembly"):
-                    group_elements = [
+                    group_elements: list[ifcopenshell.entity_instance] = next(
                         r.RelatedObjects
                         for r in getattr(new[0], "HasAssignments", []) or []
                         if r.is_a("IfcRelAssignsToGroup")
                         if "BBIM_Linked_Aggregate" in r.RelatingGroup.Name
-                    ][0]
+                    )
 
                     number = len(group_elements) - 1
                     number = f"{number:02d}"
@@ -1365,12 +1365,12 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
             tool.Geometry.delete_ifc_object(tool.Ifc.get_object(element))
 
         def get_original_names(element: ifcopenshell.entity_instance) -> dict[int, dict[int, str]]:
-            group = [
+            group = next(
                 r.RelatingGroup
                 for r in getattr(element, "HasAssignments", []) or []
                 if r.is_a("IfcRelAssignsToGroup")
                 if self.group_name in r.RelatingGroup.Name
-            ][0].id()
+            ).id()
             original_names[group] = {}
 
             pset = ifcopenshell.util.element.get_pset(element, self.pset_name)
@@ -1506,7 +1506,7 @@ class RefreshLinkedAggregate(bpy.types.Operator, tool.Ifc.Operator):
         for group in linked_aggregate_groups:
             elements = tool.Drawing.get_group_elements(tool.Ifc.get().by_id(group))
             if len(linked_aggregate_groups) > 1:
-                base_instance = [e for e in elements if e in selected_parents][0]
+                base_instance = next(e for e in elements if e in selected_parents)
                 instances_to_refresh = elements
 
             elif (len(linked_aggregate_groups) == 1) and (len(selected_parents) > 1):

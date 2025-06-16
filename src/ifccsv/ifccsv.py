@@ -286,7 +286,7 @@ class IfcCsv:
                 reverse = sort_data["order"] == "DESC"
                 self.results = sorted(self.results, key=lambda x: natural_sort(x[i]), reverse=reverse)
         else:
-            if include_global_id and len(list(self.results)[0]) > 1:
+            if include_global_id and len(next(iter(self.results))) > 1:
                 self.results = sorted(self.results, key=lambda x: x[1])
             elif not include_global_id:
                 self.results = sorted(self.results, key=lambda x: x[0])

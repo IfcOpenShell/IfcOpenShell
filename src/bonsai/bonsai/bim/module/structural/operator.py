@@ -199,7 +199,7 @@ class EnableEditingStructuralBoundaryCondition(bpy.types.Operator):
             elif isinstance(value, float):
                 new.float_value = 0.0 if new.is_null else value
                 new.data_type = "float"
-                new.enum_value = [i for i in enum_items if i != "IfcBoolean"][0]
+                new.enum_value = next(i for i in enum_items if i != "IfcBoolean")
             elif data_type == "string":
                 new.string_value = "" if new.is_null else value
                 new.data_type = "string"
@@ -975,7 +975,7 @@ class EnableEditingBoundaryCondition(bpy.types.Operator):
             elif isinstance(value, float):
                 new.float_value = 0.0 if new.is_null else value
                 new.data_type = "float"
-                new.enum_value = [i for i in enum_items if i != "IfcBoolean"][0]
+                new.enum_value = next(i for i in enum_items if i != "IfcBoolean")
             elif data_type == "string":
                 new.string_value = "" if new.is_null else value
                 new.data_type = "string"

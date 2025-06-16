@@ -248,9 +248,9 @@ def generate_hipped_roof_bmesh(
         for angled_edge, edge_angle in angled_edges:
             if angled_edge == verts:
                 face_angles[edge.link_faces[0]] = edge_angle
-                ridge_vert = [v for v in face_verts if v.co.copy().freeze() not in verts][0]
+                ridge_vert = next(v for v in face_verts if v.co.copy().freeze() not in verts)
                 if len(ridge_vert.link_edges) == 3:
-                    ridge_edge = [e for e in ridge_vert.link_edges if e not in edge.link_faces[0].edges][0]
+                    ridge_edge = next(e for e in ridge_vert.link_edges if e not in edge.link_faces[0].edges)
                     other_ridge_vert = ridge_edge.other_vert(ridge_vert)
                 else:
                     # We cannot actually get this correct without a weighted

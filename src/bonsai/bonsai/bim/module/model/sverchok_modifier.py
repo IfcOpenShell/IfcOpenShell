@@ -82,7 +82,7 @@ class CreateNewSverchokGraph(bpy.types.Operator, tool.Ifc.Operator):
         sverchok.ui.sv_temporal_viewers.add_temporal_viewer_draw(
             node_group.nodes, node_group.links, plane, cut_links=True
         )
-        viewer = [n for n in node_group.nodes if n.bl_idname == "SvViewerDrawMk4"][0]
+        viewer = next(n for n in node_group.nodes if n.bl_idname == "SvViewerDrawMk4")
         viewer.label = f"IFCOutput {viewer.label}"
 
         props.node_group = node_group

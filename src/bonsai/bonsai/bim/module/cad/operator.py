@@ -177,7 +177,7 @@ class CadFillet(bpy.types.Operator):
             selected_edges.append(cut_edges[1])
 
         # Calculate the distance to slide each edge to make space for the fillet arc
-        shared_vert = list(set(selected_edges[0].verts) & set(selected_edges[1].verts))[0]
+        shared_vert = next(iter(set(selected_edges[0].verts) & set(selected_edges[1].verts)))
         v1 = selected_edges[0].other_vert(shared_vert)
         v2 = selected_edges[1].other_vert(shared_vert)
         dir1 = (v1.co - shared_vert.co).normalized()
@@ -205,7 +205,7 @@ class CadFillet(bpy.types.Operator):
         # If faces are involved, then the chamfer edge protects existing faces from the newly created fillet.
         # If no faces are involved, we delete the chamfer edge.
         if is_wire:
-            chamfer_edge = [e for e in bm.edges if shared_vert in e.verts and v2 in e.verts][0]
+            chamfer_edge = next(e for e in bm.edges if shared_vert in e.verts and v2 in e.verts)
             bm.edges.remove(chamfer_edge)
 
         bm.verts.index_update()
@@ -675,7 +675,7 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         bm = bmesh.from_edit_mesh(self.mesh)
         edges = [e for e in bm.edges if e.select and not e.hide]
 
-        mid = list(set(edges[0].verts) & set(edges[1].verts))[0]
+        mid = next(iter(set(edges[0].verts) & set(edges[1].verts)))
         v1 = edges[0].other_vert(mid)
         v2 = edges[1].other_vert(mid)
         assert v1 and v2
@@ -738,7 +738,7 @@ class AddIfcArcIndexFillet(bpy.types.Operator):
         bmesh.ops.remove_doubles(bm, verts=all_verts, dist=1e-4)
 
         # Calculate the distance to slide each edge to make space for the fillet arc
-        shared_vert = list(set(selected_edges[0].verts) & set(selected_edges[1].verts))[0]
+        shared_vert = next(iter(set(selected_edges[0].verts) & set(selected_edges[1].verts)))
         v1 = selected_edges[0].other_vert(shared_vert)
         v2 = selected_edges[1].other_vert(shared_vert)
         assert v1 and v2

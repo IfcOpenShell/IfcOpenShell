@@ -102,7 +102,7 @@ class DumbProfileGenerator:
     def create_profile(self):
         ifc_classes = ifcopenshell.util.type.get_applicable_entities(self.relating_type.is_a(), self.file.schema)
         # Standard cases are deprecated, so let's cull them
-        ifc_class = [c for c in ifc_classes if "StandardCase" not in c][0]
+        ifc_class = next(c for c in ifc_classes if "StandardCase" not in c)
 
         mesh = bpy.data.meshes.new("Dummy")
         obj = bpy.data.objects.new(tool.Model.generate_occurrence_name(self.relating_type, ifc_class), mesh)
@@ -296,9 +296,9 @@ class ExtendProfile(bpy.types.Operator, tool.Ifc.Operator):
 
         if len(selected_objs) == 2:
             if self.join_type == "L":
-                joiner.join_L([o for o in selected_objs if o != context.active_object][0], context.active_object)
+                joiner.join_L(next(o for o in selected_objs if o != context.active_object), context.active_object)
             elif self.join_type == "V":
-                joiner.join_V([o for o in selected_objs if o != context.active_object][0], context.active_object)
+                joiner.join_V(next(o for o in selected_objs if o != context.active_object), context.active_object)
         if len(selected_objs) < 2:
             return {"FINISHED"}
         if self.join_type == "T":

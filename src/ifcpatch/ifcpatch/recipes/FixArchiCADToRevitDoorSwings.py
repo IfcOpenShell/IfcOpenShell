@@ -166,9 +166,9 @@ class Patcher:
             related_elements.append(door_copy)
             door.ContainedInStructure[0].RelatedElements = related_elements
 
-            body_context = [
+            body_context = next(
                 c for c in self.file.by_type("IfcGeometricRepresentationSubContext") if c.ContextIdentifier == "Body"
-            ][0]
+            )
             for subelement in self.file.traverse(footprint_reps[0]):
                 if not subelement.is_a("IfcShapeRepresentation"):
                     continue

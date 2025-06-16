@@ -177,9 +177,9 @@ class TestRemoveRelation(NewFile):
     def test_run(self):
         TestAddRelation().test_run()
         assert BrickStore.graph
-        source, relation, destination = list(
-            BrickStore.graph.triples((None, URIRef("https://brickschema.org/schema/Brick#feeds"), None))
-        )[0]
+        source, relation, destination = next(
+            iter(BrickStore.graph.triples((None, URIRef("https://brickschema.org/schema/Brick#feeds"), None)))
+        )
         subject.remove_relation(source, relation, destination)
         assert not list(
             BrickStore.graph.triples(

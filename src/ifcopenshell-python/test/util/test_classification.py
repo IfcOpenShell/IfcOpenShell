@@ -81,8 +81,8 @@ class TestGetReferences(test.bootstrap.IFC4):
             reference=reference2,
             classification=classification,
         )
-        reference1 = [r for r in self.file.by_type("IfcClassificationReference") if r.Identification == "1"][0]
-        reference2 = [r for r in self.file.by_type("IfcClassificationReference") if r.Identification == "2"][0]
+        reference1 = next(r for r in self.file.by_type("IfcClassificationReference") if r.Identification == "1")
+        reference2 = next(r for r in self.file.by_type("IfcClassificationReference") if r.Identification == "2")
         assert subject.get_references(element_type) == set([reference2])
         assert subject.get_references(element) == set([reference1])
 

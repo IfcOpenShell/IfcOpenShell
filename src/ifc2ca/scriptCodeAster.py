@@ -164,7 +164,7 @@ class CommandFileConstructor:
             self.calculateRestraints(conn)
         for el in elements:
             for rel in el["connections"]:
-                conn = [c for c in connections if c["ref_id"] == rel["related_connection"]][0]
+                conn = next(c for c in connections if c["ref_id"] == rel["related_connection"])
                 rel["conn_string"] = None
                 if conn["geometry_type"] == "Vertex":
                     rel["conn_string"] = "_0DC_"

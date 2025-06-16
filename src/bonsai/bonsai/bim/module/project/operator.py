@@ -320,7 +320,7 @@ class ChangeLibraryElement(bpy.types.Operator):
             for element in elements:
                 ifc_classes_elements[element.is_a()].append(element)
 
-            if len(ifc_classes_elements) == 1 and list(ifc_classes_elements)[0] == self.element_name:
+            if len(ifc_classes_elements) == 1 and next(iter(ifc_classes_elements)) == self.element_name:
                 for name, ifc_definition_id in sorted(
                     [(self.get_name(e), e.id()) for e in ifc_classes_elements[self.element_name]]
                 ):
