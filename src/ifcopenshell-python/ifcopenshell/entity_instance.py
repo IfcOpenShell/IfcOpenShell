@@ -162,13 +162,16 @@ class entity_instance:
         """
         :param e: Wrapper's ``entity_instance`` or a tuple ``(schema_identifier, ifc_class)``.
         """
+        # Instances of this class will be created and removed very often,
+        # so it's important to keep it very optimized.
+
         if isinstance(e, tuple):
             e = ifcopenshell_wrapper.new_IfcBaseClass(*e)
-        super().__setattr__("wrapped_data", e)
-        super().__setattr__("method_list", None)
+        object.__setattr__(self, "wrapped_data", e)
+        object.__setattr__(self, "method_list", None)
 
         # Make sure the file is not gc'ed while we have live instances
-        self.wrapped_data.file = file
+        e.file = file
 
     def __del__(self):
         """
@@ -180,7 +183,7 @@ class entity_instance:
         # and wrapped_data is unset. Hacky since we override
         # both __dict__ and __dir__.
         try:
-            wrapped_data = super().__getattribute__("wrapped_data")
+            wrapped_data = object.__getattribute__(self, "wrapped_data")
             wrapped_data.file = None
         except AttributeError:
             return
